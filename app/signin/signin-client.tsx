@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/browser";
+import OAuthButtons from "./oauth-buttons";
+
 
 export default function SignInClient() {
   const supabase = supabaseBrowser();
@@ -47,13 +49,10 @@ export default function SignInClient() {
     <div style={{ maxWidth: 420, margin: "64px auto", padding: 16 }}>
       <h1 style={{ fontSize: 28, fontWeight: 700 }}>Sign in</h1>
 
-      <button
-        onClick={signInWithGoogle}
-        disabled={loading}
-        style={{ width: "100%", padding: 12, marginTop: 16 }}
-      >
-        Continue with Google
-      </button>
+      <OAuthButtons />
+<div style={{ margin: "14px 0", textAlign: "center", opacity: 0.6, fontSize: 12 }}>or</div>
+{/* existing email/password form */}
+
 
       <div style={{ margin: "16px 0", textAlign: "center", opacity: 0.7 }}>or</div>
 
