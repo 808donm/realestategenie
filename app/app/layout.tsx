@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { supabaseServer } from "@/lib/supabase/server";
 import SignOutButton from "./dashboard/signout-button";
@@ -11,9 +12,22 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div style={{ minHeight: "100vh", background: "#fafafa" }}>
       <header style={{ background: "#fff", borderBottom: "1px solid #eee" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto", padding: "14px 16px", display: "flex", gap: 14, alignItems: "center" }}>
-          <Link href="/app/dashboard" style={{ fontWeight: 900, textDecoration: "none" }}>
-            RealEstateGenie
-          </Link>
+          <Link
+  href="/app/dashboard"
+  style={{ display: "flex", alignItems: "center", gap: 10, fontWeight: 900, textDecoration: "none" }}
+>
+  <Image
+    src="/real-estate-genie-logo.png"
+    alt="The Real Estate Genie"
+    width={28}
+    height={28}
+    priority
+    style={{ borderRadius: 6 }}
+  />
+  <span>
+    The Real Estate Genie<span style={{ fontSize: 12, verticalAlign: "super" }}>™</span>
+  </span>
+</Link>
 
           <nav style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
             <NavLink href="/app/dashboard">Dashboard</NavLink>

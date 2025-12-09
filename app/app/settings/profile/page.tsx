@@ -25,12 +25,37 @@ export default async function ProfilePage() {
     );
   }
 
+async function updateLandingPage(formData: FormData) {
+  "use server";
+  const landing_page = String(formData.get("landing_page") || "dashboard");
+
+  const supabase = await supabaseServer();
+  const { data } = await supabase.auth.getUser();
+  if (!data.user) return;
+
+  await supabase
+    .from("agents")
+    .update({ landing_page })
+    .eq("id", data.user.id);
+}
+
+
   return (
     <div style={{ maxWidth: 720, margin: "40px auto", padding: 16 }}>
       <h1 style={{ fontSize: 28, fontWeight: 700 }}>Agent Profile</h1>
       <p style={{ opacity: 0.75 }}>
         This info appears on your open house pages.
       </p>
+
+      <form action={updateLandingPage} style={{ marginTop: 16, display: "flex", gap: 10, alignItems: "center" }}>
+        <label style={{ fontWeight: 800 }}>Landing page</label>
+        <select name="landing_page" defaultValue={agent?.landing_page ?? "dashboard"} style={{ padding: 8 }}>
+        <option value="dashboard">Dashboard</option>
+        <option value="open-houses">Open Houses</option>
+        </select>
+        <button style={{ padding: "8px 10px", fontWeight: 800 }}>Save</button>
+     </form>
+
 
       <ProfileForm agent={agent} />
     </div>

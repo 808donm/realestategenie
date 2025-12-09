@@ -25,6 +25,17 @@ export default async function OpenHouseDetail({
     );
   }
 
+async function setStatus(formData: FormData) {
+  "use server";
+  const status = String(formData.get("status") || "");
+  const supabase = await (await import("@/lib/supabase/server")).supabaseServer();
+
+  await supabase
+    .from("open_house_events")
+    .update({ status })
+    .eq("id", params.id);
+}
+
   return (
     <div style={{ maxWidth: 900, margin: "40px auto", padding: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
@@ -38,6 +49,16 @@ export default async function OpenHouseDetail({
             Status: <strong>{evt.status}</strong>
           </p>
         </div>
+
+        <form action={setStatus} style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <select name="status" defaultValue={evt.status} style={{ padding: 8 }}>
+          <option value="draft">draft</option>
+          <option value="published">published</option>
+          <option value="archived">archived</option>
+          </select>
+          <button style={{ padding: "8px 10px", fontWeight: 800 }}>Save</button>
+       </form>
+
 
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <Link href="/app/open-houses">Back to list</Link>
