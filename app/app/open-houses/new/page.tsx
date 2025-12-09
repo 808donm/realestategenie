@@ -1,79 +1,71 @@
-"use client";
+import { supabaseServer } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { supabaseBrowser } from "@/lib/supabase/browser";
+export default async function NewOpenHousePage() {
+  const supabase = await supabaseServer();
 
-export default function NewOpenHousePage() {
-  const supabase = supabaseBrowser();
-  const router = useRouter();
+  async function create(formData: FormData) {
+    "use server";
 
-  const [address, setAddress] = useState("");
-  const [startAt, setStartAt] = useState("");
-  const [endAt, setEndAt] = useState("");
-  const [err, setErr] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
+    const supabase = await supabaseServer();
 
-  async function create(e: React.FormEvent) {
-    e.preventDefault();
-    setErr(null);
-    setSaving(true);
+    const address = String(formData.get("address") || "").trim();
+    const start_at = String(formData.get("start_at") || "");
+    const end_at = String(formData.get("end_at") || "");
 
-    const { data: userRes } = await supabase.auth.getUser();
-    const user = userRes.user;
-    if (!user) {
-      setSaving(false);
-      setErr("Not signed in.");
-      return;
-    }
+    if (!address || !start_at || !end_at) return;
 
     const { data, error } = await supabase
       .from("open_house_events")
       .insert({
-        agent_id: user.id,
-        address: address.trim(),
-        start_at: new Date(startAt).toISOString(),
-        end_at: new Date(endAt).toISOString(),
+        address,
+        start_at,
+        end_at,
         status: "draft",
+        pdf_download_enabled: false,
+        details_page_enabled: true,
       })
       .select("id")
       .single();
 
-    setSaving(false);
+    if (error || !data) return;
 
-    if (error) {
-      setErr(error.message);
-      return;
-    }
-
-    router.push(`/app/open-houses/${data.id}`);
+    redirect(`/app/open-houses/${data.id}`);
   }
 
-  return (
-    <div style={{ maxWidth: 720, margin: "40px auto", padding: 16 }}>
-      <h1 style={{ fontSize: 28, fontWeight: 700 }}>New Open House</h1>
+  // simple defaults: now + 2 hours
+  const now = new Date();
+  const startDefault = new Date(now.getTime() + 15 * 60 * 1000);
+  const endDefault = new Date(startDefault.getTime() + 2 * 60 * 60 * 1000);
 
-      <form onSubmit={create} style={{ marginTop: 16, display: "grid", gap: 12 }}>
+  const toLocalInput = (d: Date) =>
+    new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+
+  return (
+    <div style={{ maxWidth: 700 }}>
+      <h1 style={{ fontSize: 28, fontWeight: 900, marginTop: 0 }}>New Open House</h1>
+
+      <form action={create} style={{ display: "grid", gap: 12, marginTop: 12 }}>
         <div>
           <label style={{ display: "block", fontSize: 12, marginBottom: 6 }}>Address</label>
-          <input value={address} onChange={(e) => setAddress(e.target.value)} style={{ width: "100%", padding: 10 }} required />
+          <input name="address" style={{ width: "100%", padding: 10 }} placeholder="123 Main St, Honolulu, HI" required />
         </div>
 
-        <div>
-          <label style={{ display: "block", fontSize: 12, marginBottom: 6 }}>Start</label>
-          <input type="datetime-local" value={startAt} onChange={(e) => setStartAt(e.target.value)} style={{ padding: 10 }} required />
+        <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr" }}>
+          <div>
+            <label style={{ display: "block", fontSize: 12, marginBottom: 6 }}>Start</label>
+            <input name="start_at" type="datetime-local" defaultValue={toLocalInput(startDefault)} style={{ width: "100%", padding: 10 }} required />
+          </div>
+          <div>
+            <label style={{ display: "block", fontSize: 12, marginBottom: 6 }}>End</label>
+            <input name="end_at" type="datetime-local" defaultValue={toLocalInput(endDefault)} style={{ width: "100%", padding: 10 }} required />
+          </div>
         </div>
 
-        <div>
-          <label style={{ display: "block", fontSize: 12, marginBottom: 6 }}>End</label>
-          <input type="datetime-local" value={endAt} onChange={(e) => setEndAt(e.target.value)} style={{ padding: 10 }} required />
-        </div>
-
-        <button disabled={saving} style={{ padding: 12, fontWeight: 700 }}>
-          {saving ? "Creating…" : "Create"}
-        </button>
-
-        {err && <p style={{ color: "crimson", margin: 0 }}>{err}</p>}
+        <button style={{ padding: 12, fontWeight: 900 }}>Create</button>
+        <p style={{ margin: 0, opacity: 0.7, fontSize: 12 }}>
+          After creating, you’ll publish it and generate the QR check-in link.
+        </p>
       </form>
     </div>
   );

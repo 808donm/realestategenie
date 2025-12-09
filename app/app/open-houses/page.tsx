@@ -1,45 +1,60 @@
 import Link from "next/link";
 import { supabaseServer } from "@/lib/supabase/server";
 
-export default async function OpenHousesPage() {
+export default async function OpenHousesIndex() {
   const supabase = await supabaseServer();
-  const { data: userData } = await supabase.auth.getUser();
-  if (!userData.user) return <div style={{ padding: 24 }}>Not signed in.</div>;
 
   const { data: events, error } = await supabase
     .from("open_house_events")
     .select("id,address,start_at,end_at,status")
-    .order("start_at", { ascending: false });
+    .order("start_at", { ascending: false })
+    .limit(50);
 
   return (
-    <div style={{ maxWidth: 900, margin: "40px auto", padding: 16 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h1 style={{ fontSize: 28, fontWeight: 700 }}>Open Houses</h1>
-        <Link href="/app/open-houses/new">+ New</Link>
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+        <h1 style={{ margin: 0, fontSize: 28, fontWeight: 900 }}>Open Houses</h1>
+        <Link href="/app/open-houses/new" style={btn}>+ New Open House</Link>
       </div>
 
       {error && <p style={{ color: "crimson" }}>{error.message}</p>}
 
-      <div style={{ marginTop: 16, display: "grid", gap: 12 }}>
+      <div style={{ marginTop: 16, display: "grid", gap: 10 }}>
         {(events ?? []).map((e) => (
           <Link
             key={e.id}
             href={`/app/open-houses/${e.id}`}
-            style={{ padding: 14, border: "1px solid #ddd", borderRadius: 12, display: "block" }}
+            style={{ textDecoration: "none", color: "inherit" }}
           >
-            <div style={{ fontWeight: 700 }}>{e.address}</div>
-            <div style={{ opacity: 0.75, fontSize: 12 }}>
-              {new Date(e.start_at).toLocaleString()} → {new Date(e.end_at).toLocaleString()}
-            </div>
-            <div style={{ marginTop: 6, fontSize: 12 }}>
-              Status: <strong>{e.status}</strong>
+            <div style={{ padding: 14, background: "#fff", border: "1px solid #e6e6e6", borderRadius: 14 }}>
+              <div style={{ fontWeight: 900 }}>{e.address}</div>
+              <div style={{ fontSize: 12, opacity: 0.75, marginTop: 6 }}>
+                {new Date(e.start_at).toLocaleString()} → {new Date(e.end_at).toLocaleString()}
+              </div>
+              <div style={{ fontSize: 12, marginTop: 6 }}>
+                Status: <strong>{e.status}</strong>
+              </div>
             </div>
           </Link>
         ))}
+
         {(!events || events.length === 0) && (
-          <p style={{ opacity: 0.7 }}>No open houses yet.</p>
+          <div style={{ padding: 14, background: "#fff", border: "1px solid #e6e6e6", borderRadius: 14 }}>
+            <p style={{ margin: 0, opacity: 0.75 }}>
+              No open houses yet. Create one and generate your QR check-in link.
+            </p>
+          </div>
         )}
       </div>
     </div>
   );
 }
+
+const btn: React.CSSProperties = {
+  padding: "10px 12px",
+  border: "1px solid #ddd",
+  borderRadius: 12,
+  fontWeight: 800,
+  textDecoration: "none",
+  background: "#fff",
+};
