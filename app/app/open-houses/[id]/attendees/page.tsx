@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { supabaseServer } from "@/lib/supabase/server";
+<Link href={`/app/open-houses/${evt.id}/attendees`}>View attendees</Link>
 
 export default async function EventAttendeesPage({ params }: { params: { id: string } }) {
   const supabase = await supabaseServer();
