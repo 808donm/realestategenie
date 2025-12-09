@@ -17,16 +17,6 @@ export default async function OpenHouseIntakePage({
     .eq("id", params.eventId)
     .single();
 
-if (event.status !== "published") {
-  return (
-    <div style={{ padding: 24 }}>
-      <h1 style={{ marginTop: 0 }}>This open house is not active yet.</h1>
-      <p style={{ opacity: 0.75 }}>Please ask the agent for the active QR code.</p>
-    </div>
-  );
-}
-
-
   if (error || !event) {
     return (
       <div style={{ maxWidth: 720, margin: "40px auto", padding: 16 }}>
