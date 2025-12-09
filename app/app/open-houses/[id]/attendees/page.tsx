@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { supabaseServer } from "@/lib/supabase/server";
-<Link href={`/app/open-houses/${evt.id}/attendees`}>View attendees</Link>
 
 export default async function EventAttendeesPage({ params }: { params: { id: string } }) {
   const supabase = await supabaseServer();
@@ -36,6 +35,10 @@ export default async function EventAttendeesPage({ params }: { params: { id: str
           <Link href="/app/leads">All Leads</Link>
         </div>
       </div>
+
+      <div style={{ display: "flex", gap: 12, marginTop: 12 }}>
+        <Link href={`/app/open-houses/${evt.id}/attendees`}>View attendees</Link>
+     </div>
 
       {error && <p style={{ color: "crimson" }}>{error.message}</p>}
 
