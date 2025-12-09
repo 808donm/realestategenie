@@ -1,5 +1,5 @@
 import { supabaseServer } from "@/lib/supabase/server";
-import IntakeForm from "./intake-form";
+import IntakeForm from "./intake-form.client";
 
 export default async function OpenHouseIntakePage({
   params,
