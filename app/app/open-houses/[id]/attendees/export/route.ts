@@ -1,13 +1,18 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 
-export async function GET(_: Request, { params }: { params: { id: string } }) {
+export async function GET(
+  _req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  const { id } = await context.params;
+
   const supabase = await supabaseServer();
 
   const { data: leads, error } = await supabase
     .from("lead_submissions")
     .select("created_at,payload")
-    .eq("event_id", params.id)
+    .eq("event_id", id)
     .order("created_at", { ascending: true });
 
   if (error) {
@@ -31,10 +36,23 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
     };
   });
 
-  const header = Object.keys(rows[0] ?? {
-    created_at: "", name: "", email: "", phone_e164: "", representation: "", timeline: "", financing: "",
-    neighborhoods: "", must_haves: "", consent_email: "", consent_sms: ""
-  }).join(",");
+  const headerObj =
+    rows[0] ??
+    ({
+      created_at: "",
+      name: "",
+      email: "",
+      phone_e164: "",
+      representation: "",
+      timeline: "",
+      financing: "",
+      neighborhoods: "",
+      must_haves: "",
+      consent_email: "",
+      consent_sms: "",
+    } as const);
+
+  const header = Object.keys(headerObj).join(",");
 
   const escape = (v: any) => {
     const s = String(v ?? "");
@@ -50,7 +68,7 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
   return new NextResponse(csv, {
     headers: {
       "content-type": "text/csv; charset=utf-8",
-      "content-disposition": `attachment; filename="attendees-${params.id}.csv"`,
+      "content-disposition": `attachment; filename="attendees-${id}.csv"`,
     },
   });
 }
