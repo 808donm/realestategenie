@@ -22,7 +22,8 @@ export default async function OpenHouseDetail({ params }: { params: { id: string
       </p>
       <p>Status: <strong>{evt.status}</strong></p>
 
-      <QRPanel eventId={evt.id} status={evt.status} />
+      <QRPanel eventId={event.id} status={event.status} />
+
     </div>
   );
 }
