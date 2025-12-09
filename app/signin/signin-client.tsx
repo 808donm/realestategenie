@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/browser";
@@ -48,6 +49,19 @@ export default function SignInClient() {
   return (
     <div style={{ maxWidth: 420, margin: "64px auto", padding: 16 }}>
       <h1 style={{ fontSize: 28, fontWeight: 700 }}>Sign in</h1>
+
+     <div style={{ display: "grid", placeItems: "center", marginBottom: 18 }}>
+  <Image
+    src="/real-estate-genie-logo.png"
+    alt="The Real Estate Genie"
+    width={250}
+    height={250}
+    priority
+  />
+  <div style={{ marginTop: 10, fontSize: 22, fontWeight: 900 }}>
+    The Real Estate Genie<span style={{ fontSize: 14, verticalAlign: "super" }}>™</span>
+  </div>
+</div>
 
       <OAuthButtons />
 <div style={{ margin: "14px 0", textAlign: "center", opacity: 0.6, fontSize: 12 }}>or</div>

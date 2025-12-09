@@ -11,7 +11,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div style={{ minHeight: "100vh", background: "#fafafa" }}>
       <header style={{ background: "#fff", borderBottom: "1px solid #eee" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto", padding: "14px 16px", display: "flex", gap: 14, alignItems: "center" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto", padding: "20px 18px", display: "flex", gap: 14, alignItems: "center" }}>
           <Link
   href="/app/dashboard"
   style={{ display: "flex", alignItems: "center", gap: 10, fontWeight: 900, textDecoration: "none" }}
@@ -19,12 +19,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   <Image
     src="/real-estate-genie-logo.png"
     alt="The Real Estate Genie"
-    width={28}
-    height={28}
+    width={44}
+    height={44}
     priority
     style={{ borderRadius: 6 }}
   />
-  <span>
+  <span style={{ fontSize: 18, letterSpacing: 0.2 }}>
     The Real Estate Genie<span style={{ fontSize: 12, verticalAlign: "super" }}>™</span>
   </span>
 </Link>
@@ -44,7 +44,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </header>
 
       <main>
-        <div style={{ maxWidth: 1100, margin: "0 auto", padding: "20px 16px" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto", padding: "20px 18px" }}>
           {children}
         </div>
       </main>
