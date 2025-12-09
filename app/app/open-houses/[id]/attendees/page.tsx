@@ -37,7 +37,7 @@ export default async function EventAttendeesPage({ params }: { params: { id: str
       </div>
 
       <div style={{ display: "flex", gap: 12, marginTop: 12 }}>
-        <Link href={`/app/open-houses/${evt.id}/attendees`}>View attendees</Link>
+        <Link href={`/app/open-houses/${params.id}`}>View attendees</Link>
      </div>
 
       {error && <p style={{ color: "crimson" }}>{error.message}</p>}
