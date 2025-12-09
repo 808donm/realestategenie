@@ -1,7 +1,7 @@
 import { supabaseServer } from "@/lib/supabase/server";
 
 export default async function DashboardPage() {
-  const supabase = supabaseServer();
+  const supabase = await supabaseServer();
   const { data } = await supabase.auth.getUser();
 
   return (
