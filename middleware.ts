@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
-const AAL2_PATH_PREFIXES = ["/app/integrations", "/app/settings/security"];
+const AAL2_PATH_PREFIXES = ["/app/integrations"];
 const APP_PREFIX = "/app";
 
 export async function middleware(req: NextRequest) {
