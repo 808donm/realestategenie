@@ -10,11 +10,24 @@ export default async function NewOpenHousePage() {
 
     const supabase = await supabaseServer();
 
+    // Get authenticated user
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      console.error("No authenticated user");
+      return;
+    }
+
     const address = String(formData.get("address") || "").trim();
     const start_at = String(formData.get("start_at") || "");
     const end_at = String(formData.get("end_at") || "");
 
-    if (!address || !start_at || !end_at) return;
+    if (!address || !start_at || !end_at) {
+      console.error("Missing required fields");
+      return;
+    }
 
     // Geocode the address to get coordinates
     const geoResult = await geocodeAddress(address);
@@ -22,6 +35,7 @@ export default async function NewOpenHousePage() {
     const { data, error } = await supabase
       .from("open_house_events")
       .insert({
+        agent_id: user.id, // Add the missing agent_id!
         address,
         start_at,
         end_at,
@@ -34,7 +48,15 @@ export default async function NewOpenHousePage() {
       .select("id")
       .single();
 
-    if (error || !data) return;
+    if (error) {
+      console.error("Error creating open house:", error);
+      return;
+    }
+
+    if (!data) {
+      console.error("No data returned from insert");
+      return;
+    }
 
     redirect(`/app/open-houses/${data.id}`);
   }
