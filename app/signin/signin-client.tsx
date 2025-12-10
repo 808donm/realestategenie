@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/browser";
@@ -103,7 +104,14 @@ export default function SignInClient() {
           )}
 
           <p className="text-xs text-center text-muted-foreground">
-            By signing in, you agree to our Terms of Service and Privacy Policy
+            By signing in, you agree to our{" "}
+            <Link href="/terms" className="text-primary hover:underline">
+              Terms of Service
+            </Link>{" "}
+            and{" "}
+            <Link href="/privacy" className="text-primary hover:underline">
+              Privacy Policy
+            </Link>
           </p>
         </CardContent>
       </Card>
