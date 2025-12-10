@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { calculateHeatScore } from "@/lib/lead-scoring";
+import { syncLeadToGHL } from "@/lib/integrations/ghl-sync";
+import { dispatchWebhook } from "@/lib/webhooks/dispatcher";
 
 const admin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -35,7 +38,7 @@ export async function POST(req: Request) {
     // Service role bypasses RLS so this is safe server-side.
     const { data: evt, error: evtErr } = await admin
       .from("open_house_events")
-      .select("id,agent_id")
+      .select("id,agent_id,address")
       .eq("id", eventId)
       .single();
 
@@ -43,27 +46,61 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
-    const { error: insErr } = await admin.from("lead_submissions").insert({
-      event_id: eventId,
-      agent_id: evt.agent_id,
-      payload,
-      heat_score: 0,
-      pushed_to_ghl: false,
-    });
+    // Calculate heat score
+    const heatScore = calculateHeatScore(payload);
 
-    if (insErr) {
-      return NextResponse.json({ error: insErr.message }, { status: 400 });
+    // Insert lead
+    const { data: lead, error: insErr } = await admin
+      .from("lead_submissions")
+      .insert({
+        event_id: eventId,
+        agent_id: evt.agent_id,
+        payload,
+        heat_score: heatScore,
+        pushed_to_ghl: false,
+      })
+      .select()
+      .single();
+
+    if (insErr || !lead) {
+      return NextResponse.json({ error: insErr?.message || "Failed to create lead" }, { status: 400 });
     }
 
-    // Optional: write audit record
+    // Write audit record
     await admin.from("audit_log").insert({
       agent_id: evt.agent_id,
       event_id: eventId,
       action: "lead_submitted",
-      details: { source: "open_house_qr" },
+      details: { source: "open_house_qr", heat_score: heatScore },
     });
 
-    return NextResponse.json({ ok: true });
+    // Trigger async integrations (non-blocking)
+    Promise.all([
+      // Sync to GHL
+      syncLeadToGHL(lead.id).catch((err) =>
+        console.error("GHL sync failed:", err)
+      ),
+      // Dispatch webhook for lead.submitted
+      dispatchWebhook(evt.agent_id, "lead.submitted", {
+        lead_id: lead.id,
+        event_id: eventId,
+        property_address: evt.address,
+        heat_score: heatScore,
+        payload,
+      }).catch((err) => console.error("Webhook dispatch failed:", err)),
+      // If hot lead, dispatch lead.hot_scored webhook
+      heatScore >= 80
+        ? dispatchWebhook(evt.agent_id, "lead.hot_scored", {
+            lead_id: lead.id,
+            event_id: eventId,
+            property_address: evt.address,
+            heat_score: heatScore,
+            payload,
+          }).catch((err) => console.error("Hot lead webhook failed:", err))
+        : Promise.resolve(),
+    ]).catch((err) => console.error("Integration errors:", err));
+
+    return NextResponse.json({ ok: true, heat_score: heatScore });
   } catch (e: any) {
     return NextResponse.json(
       { error: e?.message || "Unknown error" },
