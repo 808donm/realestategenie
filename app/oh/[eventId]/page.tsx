@@ -1,5 +1,6 @@
 import { supabaseServer } from "@/lib/supabase/server";
 import IntakeForm from "./intake-form.client";
+import PropertyMap from "@/components/PropertyMapWrapper";
 
 export default async function OpenHouseIntakePage({
   params,
@@ -12,7 +13,7 @@ export default async function OpenHouseIntakePage({
   const { data: event, error } = await supabase
     .from("public_open_house_event")
     .select(
-      "id,address,start_at,end_at,details_page_enabled,flyer_pdf_url,pdf_download_enabled,display_name,license_number,phone_e164,locations_served,photo_url"
+      "id,address,start_at,end_at,details_page_enabled,flyer_pdf_url,pdf_download_enabled,display_name,license_number,phone_e164,locations_served,photo_url,latitude,longitude"
     )
     .eq("id", params.eventId)
     .single();
@@ -67,6 +68,18 @@ export default async function OpenHouseIntakePage({
         {new Date(event.start_at).toLocaleString()} →{" "}
         {new Date(event.end_at).toLocaleString()}
       </p>
+
+      {/* Property Location Map */}
+      {event.latitude && event.longitude && (
+        <div style={{ marginTop: 18 }}>
+          <PropertyMap
+            latitude={event.latitude}
+            longitude={event.longitude}
+            address={event.address}
+            className="h-[250px]"
+          />
+        </div>
+      )}
 
       <div style={{ marginTop: 18 }}>
         <IntakeForm eventId={event.id} />

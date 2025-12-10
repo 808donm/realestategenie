@@ -1,5 +1,6 @@
 import { supabaseServer } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { geocodeAddress } from "@/lib/geocoding";
 
 export default async function NewOpenHousePage() {
   const supabase = await supabaseServer();
@@ -15,6 +16,9 @@ export default async function NewOpenHousePage() {
 
     if (!address || !start_at || !end_at) return;
 
+    // Geocode the address to get coordinates
+    const geoResult = await geocodeAddress(address);
+
     const { data, error } = await supabase
       .from("open_house_events")
       .insert({
@@ -24,6 +28,8 @@ export default async function NewOpenHousePage() {
         status: "draft",
         pdf_download_enabled: false,
         details_page_enabled: true,
+        latitude: geoResult?.latitude ?? null,
+        longitude: geoResult?.longitude ?? null,
       })
       .select("id")
       .single();
@@ -49,6 +55,9 @@ export default async function NewOpenHousePage() {
         <div>
           <label style={{ display: "block", fontSize: 12, marginBottom: 6 }}>Address</label>
           <input name="address" style={{ width: "100%", padding: 10 }} placeholder="123 Main St, Honolulu, HI" required />
+          <p style={{ fontSize: 11, opacity: 0.6, margin: "4px 0 0 0" }}>
+            We'll automatically geocode this address to show a map on your open house page.
+          </p>
         </div>
 
         <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr" }}>
