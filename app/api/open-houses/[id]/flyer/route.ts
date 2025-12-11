@@ -87,7 +87,7 @@ export async function GET(
     if (propertyPhotoData) {
       try {
         const photoWidth = pageWidth - (margin * 2);
-        const photoHeight = 100; // Fixed height, will maintain aspect ratio
+        const photoHeight = 50; // Fixed height, will maintain aspect ratio
         pdf.addImage(propertyPhotoData, "JPEG", margin, yPos, photoWidth, photoHeight, undefined, "FAST");
         yPos += photoHeight + 10;
       } catch (error) {
