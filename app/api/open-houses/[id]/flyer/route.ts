@@ -110,7 +110,7 @@ export async function GET(
 
       pdf.setFont("helvetica", "normal");
       pdf.setFontSize(10);
-      event.key_features.forEach((feature) => {
+      event.key_features.forEach((feature: string) => {
         pdf.text(`• ${feature}`, margin + 5, yPos);
         yPos += 5;
       });
