@@ -13,11 +13,41 @@ export default async function NewOpenHousePage() {
     // Get authenticated user
     const {
       data: { user },
+      error: authError,
     } = await supabase.auth.getUser();
 
-    if (!user) {
-      console.error("No authenticated user");
-      return;
+    if (authError) {
+      console.error("Auth error:", authError);
+      throw new Error(`Authentication failed: ${authError.message}`);
+    }
+
+    if (!user || !user.id) {
+      console.error("No authenticated user or user ID");
+      throw new Error("You must be signed in to create an open house");
+    }
+
+    console.log("User ID:", user.id);
+
+    // Ensure agent profile exists
+    const { data: agent, error: agentError } = await supabase
+      .from("agents")
+      .select("id")
+      .eq("id", user.id)
+      .single();
+
+    if (agentError || !agent) {
+      console.log("Agent profile not found, creating...");
+      // Create agent profile if it doesn't exist
+      const { error: createError } = await supabase.from("agents").insert({
+        id: user.id,
+        email: user.email || "",
+        display_name: user.user_metadata?.full_name || user.email || "",
+      });
+
+      if (createError) {
+        console.error("Error creating agent profile:", createError);
+        throw new Error("Failed to create agent profile. Please try again.");
+      }
     }
 
     const address = String(formData.get("address") || "").trim();
@@ -26,8 +56,10 @@ export default async function NewOpenHousePage() {
 
     if (!address || !start_at || !end_at) {
       console.error("Missing required fields");
-      return;
+      throw new Error("Please fill in all required fields");
     }
+
+    console.log("Creating open house with agent_id:", user.id);
 
     // Geocode the address to get coordinates
     const geoResult = await geocodeAddress(address);
@@ -35,7 +67,7 @@ export default async function NewOpenHousePage() {
     const { data, error } = await supabase
       .from("open_house_events")
       .insert({
-        agent_id: user.id, // Add the missing agent_id!
+        agent_id: user.id,
         address,
         start_at,
         end_at,
@@ -50,14 +82,15 @@ export default async function NewOpenHousePage() {
 
     if (error) {
       console.error("Error creating open house:", error);
-      return;
+      throw new Error(`Failed to create open house: ${error.message}`);
     }
 
     if (!data) {
       console.error("No data returned from insert");
-      return;
+      throw new Error("Failed to create open house. Please try again.");
     }
 
+    console.log("Open house created successfully:", data.id);
     redirect(`/app/open-houses/${data.id}`);
   }
 
