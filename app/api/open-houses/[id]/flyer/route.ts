@@ -24,7 +24,9 @@ export async function GET(
         price,
         key_features,
         listing_description,
-        property_photo_url
+        property_photo_url,
+        latitude,
+        longitude
       `)
       .eq("id", id)
       .single();
@@ -65,6 +67,31 @@ export async function GET(
       }
     }
 
+    // Fetch static map if coordinates available
+    let mapImageData: string | null = null;
+    if (event.latitude && event.longitude) {
+      try {
+        // Use OpenStreetMap static map via geoapify or similar service
+        // Using a simple tile-based approach with OpenStreetMap
+        const zoom = 15;
+        const width = 400;
+        const height = 300;
+
+        // Using staticmap.openstreetmap.de service (free OSM static maps)
+        const mapUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${event.latitude},${event.longitude}&zoom=${zoom}&size=${width}x${height}&maptype=mapnik&markers=${event.latitude},${event.longitude},red-pushpin`;
+
+        const mapResponse = await fetch(mapUrl);
+        if (mapResponse.ok) {
+          const mapBuffer = await mapResponse.arrayBuffer();
+          const mapBase64 = Buffer.from(mapBuffer).toString("base64");
+          mapImageData = `data:image/png;base64,${mapBase64}`;
+        }
+      } catch (error) {
+        console.error("Failed to fetch map image:", error);
+        // Continue without the map
+      }
+    }
+
     // Generate PDF
     const pdf = new jsPDF({
       orientation: "portrait",
@@ -83,40 +110,79 @@ export async function GET(
 
     let yPos = 35;
 
-    // Property Photo
-    if (propertyPhotoData) {
+    // Property Photo and Map
+    const hasPhoto = !!propertyPhotoData;
+    const hasMap = !!mapImageData;
+
+    if (hasPhoto || hasMap) {
       try {
-        // Create a temporary image to get dimensions
-        const img = new Image();
-        img.src = propertyPhotoData;
+        const maxContentWidth = pageWidth - (margin * 2);
+        const maxHeight = 70; // Maximum height in mm
+        const gap = 5; // Gap between photo and map
 
-        // Calculate scaled dimensions maintaining aspect ratio
-        const maxPhotoWidth = pageWidth - (margin * 2);
-        const maxPhotoHeight = 60; // Maximum height in mm
+        if (hasPhoto && hasMap) {
+          // Both photo and map - show side by side
+          const itemWidth = (maxContentWidth - gap) / 2;
 
-        // Get image dimensions (note: this is synchronous for base64 data URIs)
-        const imgWidth = img.width || 800;
-        const imgHeight = img.height || 600;
-        const aspectRatio = imgWidth / imgHeight;
+          // Property Photo (left side)
+          const photoImg = new Image();
+          photoImg.src = propertyPhotoData!;
+          const photoAspect = (photoImg.width || 800) / (photoImg.height || 600);
+          let photoWidth = itemWidth;
+          let photoHeight = photoWidth / photoAspect;
+          if (photoHeight > maxHeight) {
+            photoHeight = maxHeight;
+            photoWidth = photoHeight * photoAspect;
+          }
+          const photoX = margin + (itemWidth - photoWidth) / 2;
+          pdf.addImage(propertyPhotoData!, "JPEG", photoX, yPos, photoWidth, photoHeight, undefined, "FAST");
 
-        // Calculate final dimensions
-        let photoWidth = maxPhotoWidth;
-        let photoHeight = photoWidth / aspectRatio;
+          // Map (right side)
+          const mapImg = new Image();
+          mapImg.src = mapImageData!;
+          const mapAspect = (mapImg.width || 400) / (mapImg.height || 300);
+          let mapWidth = itemWidth;
+          let mapHeight = mapWidth / mapAspect;
+          if (mapHeight > maxHeight) {
+            mapHeight = maxHeight;
+            mapWidth = mapHeight * mapAspect;
+          }
+          const mapX = margin + itemWidth + gap + (itemWidth - mapWidth) / 2;
+          pdf.addImage(mapImageData!, "PNG", mapX, yPos, mapWidth, mapHeight, undefined, "FAST");
 
-        // If height exceeds max, scale down based on height instead
-        if (photoHeight > maxPhotoHeight) {
-          photoHeight = maxPhotoHeight;
-          photoWidth = photoHeight * aspectRatio;
+          yPos += Math.max(photoHeight, mapHeight) + 10;
+        } else if (hasPhoto) {
+          // Only photo - full width
+          const photoImg = new Image();
+          photoImg.src = propertyPhotoData!;
+          const photoAspect = (photoImg.width || 800) / (photoImg.height || 600);
+          let photoWidth = maxContentWidth;
+          let photoHeight = photoWidth / photoAspect;
+          if (photoHeight > maxHeight) {
+            photoHeight = maxHeight;
+            photoWidth = photoHeight * photoAspect;
+          }
+          const photoX = margin + (maxContentWidth - photoWidth) / 2;
+          pdf.addImage(propertyPhotoData!, "JPEG", photoX, yPos, photoWidth, photoHeight, undefined, "FAST");
+          yPos += photoHeight + 10;
+        } else if (hasMap) {
+          // Only map - full width
+          const mapImg = new Image();
+          mapImg.src = mapImageData!;
+          const mapAspect = (mapImg.width || 400) / (mapImg.height || 300);
+          let mapWidth = maxContentWidth;
+          let mapHeight = mapWidth / mapAspect;
+          if (mapHeight > maxHeight) {
+            mapHeight = maxHeight;
+            mapWidth = mapHeight * mapAspect;
+          }
+          const mapX = margin + (maxContentWidth - mapWidth) / 2;
+          pdf.addImage(mapImageData!, "PNG", mapX, yPos, mapWidth, mapHeight, undefined, "FAST");
+          yPos += mapHeight + 10;
         }
-
-        // Center the image if it's narrower than max width
-        const photoX = margin + (maxPhotoWidth - photoWidth) / 2;
-
-        pdf.addImage(propertyPhotoData, "JPEG", photoX, yPos, photoWidth, photoHeight, undefined, "FAST");
-        yPos += photoHeight + 10;
       } catch (error) {
-        console.error("Failed to add property photo to PDF:", error);
-        // Continue without the photo
+        console.error("Failed to add images to PDF:", error);
+        // Continue without the images
       }
     }
 
