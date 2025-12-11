@@ -91,46 +91,71 @@ export async function GET(
     if (event.latitude && event.longitude) {
       try {
         const zoom = 15;
-        mapWidth = 400;
-        mapHeight = 300;
+        mapWidth = 600;
+        mapHeight = 400;
 
-        // Using staticmap.openstreetmap.de service (free OSM static maps)
-        const mapUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${event.latitude},${event.longitude}&zoom=${zoom}&size=${mapWidth}x${mapHeight}&maptype=mapnik&markers=${event.latitude},${event.longitude},red-pushpin`;
+        // Try multiple static map services in order of preference
+        const mapServices = [
+          // MapQuest Open Static Map (more reliable)
+          `https://www.mapquestapi.com/staticmap/v5/map?center=${event.latitude},${event.longitude}&zoom=${zoom}&size=${mapWidth},${mapHeight}&locations=${event.latitude},${event.longitude}|marker-sm-red`,
 
-        console.log("Fetching map from:", mapUrl);
-        const mapResponse = await fetch(mapUrl, {
-          headers: { 'User-Agent': 'RealEstateGenie/1.0' },
-          signal: AbortSignal.timeout(10000) // 10 second timeout
-        });
+          // OpenStreetMap static map service
+          `https://staticmap.openstreetmap.de/staticmap.php?center=${event.latitude},${event.longitude}&zoom=${zoom}&size=${mapWidth}x${mapHeight}&maptype=mapnik&markers=${event.latitude},${event.longitude},red-pushpin`,
+        ];
 
-        console.log("Map response status:", mapResponse.status);
-
-        if (mapResponse.ok) {
-          const contentType = mapResponse.headers.get("content-type");
-          console.log("Map content type:", contentType);
-
-          const mapBuffer = await mapResponse.arrayBuffer();
-          const mapBufferNode = Buffer.from(mapBuffer);
-
-          console.log("Map buffer size:", mapBufferNode.length);
-
-          // Get actual map dimensions
+        for (const mapUrl of mapServices) {
           try {
-            const dimensions = sizeOf(mapBufferNode);
-            console.log("Map dimensions:", dimensions);
-            if (dimensions.width && dimensions.height) {
-              mapWidth = dimensions.width;
-              mapHeight = dimensions.height;
-            }
-          } catch (err) {
-            console.error("Failed to get map dimensions:", err);
-          }
+            console.log("Trying map service:", mapUrl.split('?')[0]);
+            const mapResponse = await fetch(mapUrl, {
+              headers: { 'User-Agent': 'RealEstateGenie/1.0' },
+              signal: AbortSignal.timeout(15000) // 15 second timeout
+            });
 
-          const mapBase64 = mapBufferNode.toString("base64");
-          mapImageData = `data:image/png;base64,${mapBase64}`;
-          console.log("Map image data created, length:", mapImageData.length);
-        } else {
-          console.error("Map fetch failed with status:", mapResponse.status);
+            console.log("Map response status:", mapResponse.status);
+
+            if (mapResponse.ok) {
+              const contentType = mapResponse.headers.get("content-type");
+              console.log("Map content type:", contentType);
+
+              const mapBuffer = await mapResponse.arrayBuffer();
+              const mapBufferNode = Buffer.from(mapBuffer);
+
+              console.log("Map buffer size:", mapBufferNode.length);
+
+              // Verify we got an image, not an error page
+              if (mapBufferNode.length < 1000) {
+                console.warn("Map buffer too small, likely an error response");
+                continue;
+              }
+
+              // Get actual map dimensions
+              try {
+                const dimensions = sizeOf(mapBufferNode);
+                console.log("Map dimensions:", dimensions);
+                if (dimensions.width && dimensions.height) {
+                  mapWidth = dimensions.width;
+                  mapHeight = dimensions.height;
+
+                  const mapBase64 = mapBufferNode.toString("base64");
+                  mapImageData = `data:image/png;base64,${mapBase64}`;
+                  console.log("Map image data created successfully, length:", mapImageData.length);
+                  break; // Success! Stop trying other services
+                }
+              } catch (err) {
+                console.error("Failed to get map dimensions:", err);
+                continue;
+              }
+            } else {
+              console.error("Map fetch failed with status:", mapResponse.status);
+            }
+          } catch (serviceError) {
+            console.error("Error with map service:", serviceError);
+            // Try next service
+          }
+        }
+
+        if (!mapImageData) {
+          console.error("All map services failed");
         }
       } catch (error) {
         console.error("Failed to fetch map image:", error);
