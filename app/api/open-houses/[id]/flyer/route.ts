@@ -23,7 +23,8 @@ export async function GET(
         sqft,
         price,
         key_features,
-        listing_description
+        listing_description,
+        property_photo_url
       `)
       .eq("id", id)
       .single();
@@ -47,6 +48,23 @@ export async function GET(
       .eq("id", user.id)
       .single();
 
+    // Fetch property photo if available
+    let propertyPhotoData: string | null = null;
+    if (event.property_photo_url) {
+      try {
+        const photoResponse = await fetch(event.property_photo_url);
+        if (photoResponse.ok) {
+          const photoBuffer = await photoResponse.arrayBuffer();
+          const photoBase64 = Buffer.from(photoBuffer).toString("base64");
+          const contentType = photoResponse.headers.get("content-type") || "image/jpeg";
+          propertyPhotoData = `data:${contentType};base64,${photoBase64}`;
+        }
+      } catch (error) {
+        console.error("Failed to fetch property photo:", error);
+        // Continue without the photo
+      }
+    }
+
     // Generate PDF
     const pdf = new jsPDF({
       orientation: "portrait",
@@ -63,10 +81,24 @@ export async function GET(
     pdf.setFont("helvetica", "bold");
     pdf.text(event.address, margin, 25);
 
+    let yPos = 35;
+
+    // Property Photo
+    if (propertyPhotoData) {
+      try {
+        const photoWidth = pageWidth - (margin * 2);
+        const photoHeight = 100; // Fixed height, will maintain aspect ratio
+        pdf.addImage(propertyPhotoData, "JPEG", margin, yPos, photoWidth, photoHeight, undefined, "FAST");
+        yPos += photoHeight + 10;
+      } catch (error) {
+        console.error("Failed to add property photo to PDF:", error);
+        // Continue without the photo
+      }
+    }
+
     // Property Details Box
     pdf.setFontSize(12);
     pdf.setFont("helvetica", "normal");
-    let yPos = 40;
 
     if (event.price) {
       pdf.setFontSize(20);

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { supabaseServer } from "@/lib/supabase/server";
 import QRPanel from "./qr-panel";
 import PropertyMap from "@/components/PropertyMapWrapper";
@@ -14,7 +15,7 @@ export default async function OpenHouseDetail({
   const { data: evt, error } = await supabase
     .from("open_house_events")
     .select(
-      "id,address,start_at,end_at,status,pdf_download_enabled,details_page_enabled,latitude,longitude"
+      "id,address,start_at,end_at,status,pdf_download_enabled,details_page_enabled,latitude,longitude,property_photo_url"
     )
     .eq("id", id)
     .single();
@@ -96,6 +97,24 @@ async function setStatus(formData: FormData) {
           </a>
         </div>
       </div>
+
+      {/* Property Photo */}
+      {evt.property_photo_url && (
+        <div style={{ marginTop: 32 }}>
+          <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 12 }}>
+            Property Photo
+          </h2>
+          <div style={{ position: "relative", width: "100%", maxWidth: 800, height: 400, borderRadius: 8, overflow: "hidden" }}>
+            <Image
+              src={evt.property_photo_url}
+              alt={`Property at ${evt.address}`}
+              fill
+              style={{ objectFit: "cover" }}
+              priority
+            />
+          </div>
+        </div>
+      )}
 
       {/* Property Location Map */}
       {evt.latitude && evt.longitude ? (

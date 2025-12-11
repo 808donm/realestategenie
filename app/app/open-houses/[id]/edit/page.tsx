@@ -14,7 +14,7 @@ export default async function EditPropertyDetails({
   const { data: evt, error } = await supabase
     .from("open_house_events")
     .select(
-      "id,address,beds,baths,sqft,price,listing_description,key_features,agent_id"
+      "id,address,beds,baths,sqft,price,listing_description,key_features,agent_id,property_photo_url"
     )
     .eq("id", id)
     .single();
@@ -58,6 +58,7 @@ export default async function EditPropertyDetails({
           price: evt.price,
           listing_description: evt.listing_description,
           key_features: evt.key_features,
+          property_photo_url: evt.property_photo_url,
         }}
       />
 
