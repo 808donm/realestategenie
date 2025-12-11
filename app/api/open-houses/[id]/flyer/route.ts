@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import jsPDF from "jspdf";
+import sizeOf from "image-size";
 
 export async function GET(
   request: NextRequest,
@@ -52,12 +53,27 @@ export async function GET(
 
     // Fetch property photo if available
     let propertyPhotoData: string | null = null;
+    let photoWidth = 800;
+    let photoHeight = 600;
     if (event.property_photo_url) {
       try {
         const photoResponse = await fetch(event.property_photo_url);
         if (photoResponse.ok) {
           const photoBuffer = await photoResponse.arrayBuffer();
-          const photoBase64 = Buffer.from(photoBuffer).toString("base64");
+          const photoBufferNode = Buffer.from(photoBuffer);
+
+          // Get image dimensions
+          try {
+            const dimensions = sizeOf(photoBufferNode);
+            if (dimensions.width && dimensions.height) {
+              photoWidth = dimensions.width;
+              photoHeight = dimensions.height;
+            }
+          } catch (err) {
+            console.error("Failed to get photo dimensions:", err);
+          }
+
+          const photoBase64 = photoBufferNode.toString("base64");
           const contentType = photoResponse.headers.get("content-type") || "image/jpeg";
           propertyPhotoData = `data:${contentType};base64,${photoBase64}`;
         }
@@ -69,21 +85,36 @@ export async function GET(
 
     // Fetch static map if coordinates available
     let mapImageData: string | null = null;
+    let mapWidth = 400;
+    let mapHeight = 300;
     if (event.latitude && event.longitude) {
       try {
         // Use OpenStreetMap static map via geoapify or similar service
         // Using a simple tile-based approach with OpenStreetMap
         const zoom = 15;
-        const width = 400;
-        const height = 300;
+        mapWidth = 400;
+        mapHeight = 300;
 
         // Using staticmap.openstreetmap.de service (free OSM static maps)
-        const mapUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${event.latitude},${event.longitude}&zoom=${zoom}&size=${width}x${height}&maptype=mapnik&markers=${event.latitude},${event.longitude},red-pushpin`;
+        const mapUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${event.latitude},${event.longitude}&zoom=${zoom}&size=${mapWidth}x${mapHeight}&maptype=mapnik&markers=${event.latitude},${event.longitude},red-pushpin`;
 
         const mapResponse = await fetch(mapUrl);
         if (mapResponse.ok) {
           const mapBuffer = await mapResponse.arrayBuffer();
-          const mapBase64 = Buffer.from(mapBuffer).toString("base64");
+          const mapBufferNode = Buffer.from(mapBuffer);
+
+          // Get actual map dimensions
+          try {
+            const dimensions = sizeOf(mapBufferNode);
+            if (dimensions.width && dimensions.height) {
+              mapWidth = dimensions.width;
+              mapHeight = dimensions.height;
+            }
+          } catch (err) {
+            console.error("Failed to get map dimensions:", err);
+          }
+
+          const mapBase64 = mapBufferNode.toString("base64");
           mapImageData = `data:image/png;base64,${mapBase64}`;
         }
       } catch (error) {
@@ -125,60 +156,52 @@ export async function GET(
           const itemWidth = (maxContentWidth - gap) / 2;
 
           // Property Photo (left side)
-          const photoImg = new Image();
-          photoImg.src = propertyPhotoData!;
-          const photoAspect = (photoImg.width || 800) / (photoImg.height || 600);
-          let photoWidth = itemWidth;
-          let photoHeight = photoWidth / photoAspect;
-          if (photoHeight > maxHeight) {
-            photoHeight = maxHeight;
-            photoWidth = photoHeight * photoAspect;
+          const photoAspect = photoWidth / photoHeight;
+          let scaledPhotoWidth = itemWidth;
+          let scaledPhotoHeight = scaledPhotoWidth / photoAspect;
+          if (scaledPhotoHeight > maxHeight) {
+            scaledPhotoHeight = maxHeight;
+            scaledPhotoWidth = scaledPhotoHeight * photoAspect;
           }
-          const photoX = margin + (itemWidth - photoWidth) / 2;
-          pdf.addImage(propertyPhotoData!, "JPEG", photoX, yPos, photoWidth, photoHeight, undefined, "FAST");
+          const photoX = margin + (itemWidth - scaledPhotoWidth) / 2;
+          pdf.addImage(propertyPhotoData!, "JPEG", photoX, yPos, scaledPhotoWidth, scaledPhotoHeight, undefined, "FAST");
 
           // Map (right side)
-          const mapImg = new Image();
-          mapImg.src = mapImageData!;
-          const mapAspect = (mapImg.width || 400) / (mapImg.height || 300);
-          let mapWidth = itemWidth;
-          let mapHeight = mapWidth / mapAspect;
-          if (mapHeight > maxHeight) {
-            mapHeight = maxHeight;
-            mapWidth = mapHeight * mapAspect;
+          const mapAspect = mapWidth / mapHeight;
+          let scaledMapWidth = itemWidth;
+          let scaledMapHeight = scaledMapWidth / mapAspect;
+          if (scaledMapHeight > maxHeight) {
+            scaledMapHeight = maxHeight;
+            scaledMapWidth = scaledMapHeight * mapAspect;
           }
-          const mapX = margin + itemWidth + gap + (itemWidth - mapWidth) / 2;
-          pdf.addImage(mapImageData!, "PNG", mapX, yPos, mapWidth, mapHeight, undefined, "FAST");
+          const mapX = margin + itemWidth + gap + (itemWidth - scaledMapWidth) / 2;
+          pdf.addImage(mapImageData!, "PNG", mapX, yPos, scaledMapWidth, scaledMapHeight, undefined, "FAST");
 
-          yPos += Math.max(photoHeight, mapHeight) + 10;
+          yPos += Math.max(scaledPhotoHeight, scaledMapHeight) + 10;
         } else if (hasPhoto) {
           // Only photo - full width
-          const photoImg = new Image();
-          photoImg.src = propertyPhotoData!;
-          const photoAspect = (photoImg.width || 800) / (photoImg.height || 600);
-          let photoWidth = maxContentWidth;
-          let photoHeight = photoWidth / photoAspect;
-          if (photoHeight > maxHeight) {
-            photoHeight = maxHeight;
-            photoWidth = photoHeight * photoAspect;
+          const photoAspect = photoWidth / photoHeight;
+          let scaledPhotoWidth = maxContentWidth;
+          let scaledPhotoHeight = scaledPhotoWidth / photoAspect;
+          if (scaledPhotoHeight > maxHeight) {
+            scaledPhotoHeight = maxHeight;
+            scaledPhotoWidth = scaledPhotoHeight * photoAspect;
           }
-          const photoX = margin + (maxContentWidth - photoWidth) / 2;
-          pdf.addImage(propertyPhotoData!, "JPEG", photoX, yPos, photoWidth, photoHeight, undefined, "FAST");
-          yPos += photoHeight + 10;
+          const photoX = margin + (maxContentWidth - scaledPhotoWidth) / 2;
+          pdf.addImage(propertyPhotoData!, "JPEG", photoX, yPos, scaledPhotoWidth, scaledPhotoHeight, undefined, "FAST");
+          yPos += scaledPhotoHeight + 10;
         } else if (hasMap) {
           // Only map - full width
-          const mapImg = new Image();
-          mapImg.src = mapImageData!;
-          const mapAspect = (mapImg.width || 400) / (mapImg.height || 300);
-          let mapWidth = maxContentWidth;
-          let mapHeight = mapWidth / mapAspect;
-          if (mapHeight > maxHeight) {
-            mapHeight = maxHeight;
-            mapWidth = mapHeight * mapAspect;
+          const mapAspect = mapWidth / mapHeight;
+          let scaledMapWidth = maxContentWidth;
+          let scaledMapHeight = scaledMapWidth / mapAspect;
+          if (scaledMapHeight > maxHeight) {
+            scaledMapHeight = maxHeight;
+            scaledMapWidth = scaledMapHeight * mapAspect;
           }
-          const mapX = margin + (maxContentWidth - mapWidth) / 2;
-          pdf.addImage(mapImageData!, "PNG", mapX, yPos, mapWidth, mapHeight, undefined, "FAST");
-          yPos += mapHeight + 10;
+          const mapX = margin + (maxContentWidth - scaledMapWidth) / 2;
+          pdf.addImage(mapImageData!, "PNG", mapX, yPos, scaledMapWidth, scaledMapHeight, undefined, "FAST");
+          yPos += scaledMapHeight + 10;
         }
       } catch (error) {
         console.error("Failed to add images to PDF:", error);
