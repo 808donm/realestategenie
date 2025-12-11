@@ -197,7 +197,7 @@ export default function PropertyDetailsForm({ eventId, initialData }: PropertyDe
               </div>
               <Button
                 type="button"
-                variant="destructive"
+                variant="danger"
                 onClick={handlePhotoDelete}
                 disabled={uploadingPhoto}
                 size="sm"
