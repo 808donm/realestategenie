@@ -65,11 +65,26 @@ async function setStatus(formData: FormData) {
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <Link href="/app/open-houses">Back to list</Link>
           <Link href={`/app/open-houses/${evt.id}/attendees`}>Attendees</Link>
+          <a
+            href={`/api/open-houses/${evt.id}/flyer`}
+            download
+            style={{
+              padding: "8px 12px",
+              background: "#3b82f6",
+              color: "white",
+              borderRadius: 6,
+              textDecoration: "none",
+              fontWeight: 600,
+              fontSize: 14,
+            }}
+          >
+            📄 Download Flyer
+          </a>
         </div>
       </div>
 
       {/* Property Location Map */}
-      {evt.latitude && evt.longitude && (
+      {evt.latitude && evt.longitude ? (
         <div style={{ marginTop: 32 }}>
           <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 12 }}>
             Property Location
@@ -80,6 +95,12 @@ async function setStatus(formData: FormData) {
             address={evt.address}
             className="h-[400px]"
           />
+        </div>
+      ) : (
+        <div style={{ marginTop: 32, padding: 16, background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 8 }}>
+          <p style={{ margin: 0, fontSize: 14 }}>
+            <strong>Map not available:</strong> No coordinates found for this address. The geocoding service may have been unavailable when this open house was created.
+          </p>
         </div>
       )}
 
