@@ -6,8 +6,9 @@ import PropertyMap from "@/components/PropertyMapWrapper";
 export default async function OpenHouseDetail({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = await params;
   const supabase = await supabaseServer();
 
   const { data: evt, error } = await supabase
@@ -15,7 +16,7 @@ export default async function OpenHouseDetail({
     .select(
       "id,address,start_at,end_at,status,pdf_download_enabled,details_page_enabled,latitude,longitude"
     )
-    .eq("id", params.id)
+    .eq("id", id)
     .single();
 
   if (error || !evt) {
@@ -34,7 +35,7 @@ async function setStatus(formData: FormData) {
   await supabase
     .from("open_house_events")
     .update({ status })
-    .eq("id", params.id);
+    .eq("id", id);
 }
 
   return (

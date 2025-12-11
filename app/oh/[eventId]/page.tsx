@@ -5,8 +5,9 @@ import PropertyMap from "@/components/PropertyMapWrapper";
 export default async function OpenHouseIntakePage({
   params,
 }: {
-  params: { eventId: string };
+  params: Promise<{ eventId: string }>;
 }) {
+  const { eventId } = await params;
   const supabase = await supabaseServer();
 
   // Read from the public VIEW (published events only)
@@ -15,7 +16,7 @@ export default async function OpenHouseIntakePage({
     .select(
       "id,address,start_at,end_at,details_page_enabled,flyer_pdf_url,pdf_download_enabled,display_name,license_number,phone_e164,locations_served,photo_url,latitude,longitude"
     )
-    .eq("id", params.eventId)
+    .eq("id", eventId)
     .single();
 
   if (error || !event) {

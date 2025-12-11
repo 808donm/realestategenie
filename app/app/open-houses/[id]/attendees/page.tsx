@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { supabaseServer } from "@/lib/supabase/server";
 
-export default async function EventAttendeesPage({ params }: { params: { id: string } }) {
+export default async function EventAttendeesPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const supabase = await supabaseServer();
 
   const { data: event, error: eventErr } = await supabase
     .from("open_house_events")
     .select("id,address,start_at,status")
-    .eq("id", params.id)
+    .eq("id", id)
     .single();
 
   if (eventErr || !event) {
@@ -17,7 +18,7 @@ export default async function EventAttendeesPage({ params }: { params: { id: str
   const { data: leads, error } = await supabase
     .from("lead_submissions")
     .select("id,created_at,payload")
-    .eq("event_id", params.id)
+    .eq("event_id", id)
     .order("created_at", { ascending: false })
     .limit(500);
 
@@ -31,14 +32,14 @@ export default async function EventAttendeesPage({ params }: { params: { id: str
           </p>
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <Link href={`/app/open-houses/${params.id}`}>Back</Link>
+          <Link href={`/app/open-houses/${id}`}>Back</Link>
           <Link href="/app/leads">All Leads</Link>
         </div>
       </div>
 
       <div style={{ display: "flex", gap: 12, marginTop: 12 }}>
-        <Link href={`/app/open-houses/${params.id}`}>View attendees</Link>
-        <Link href={`/app/open-houses/${params.id}/attendees/export`}>Export CSV</Link>
+        <Link href={`/app/open-houses/${id}`}>View attendees</Link>
+        <Link href={`/app/open-houses/${id}/attendees/export`}>Export CSV</Link>
      </div>
 
       {error && <p style={{ color: "crimson" }}>{error.message}</p>}
