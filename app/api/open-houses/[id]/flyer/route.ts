@@ -86,9 +86,33 @@ export async function GET(
     // Property Photo
     if (propertyPhotoData) {
       try {
-        const photoWidth = pageWidth - (margin * 2);
-        const photoHeight = 50; // Fixed height, will maintain aspect ratio
-        pdf.addImage(propertyPhotoData, "JPEG", margin, yPos, photoWidth, photoHeight, undefined, "FAST");
+        // Create a temporary image to get dimensions
+        const img = new Image();
+        img.src = propertyPhotoData;
+
+        // Calculate scaled dimensions maintaining aspect ratio
+        const maxPhotoWidth = pageWidth - (margin * 2);
+        const maxPhotoHeight = 60; // Maximum height in mm
+
+        // Get image dimensions (note: this is synchronous for base64 data URIs)
+        const imgWidth = img.width || 800;
+        const imgHeight = img.height || 600;
+        const aspectRatio = imgWidth / imgHeight;
+
+        // Calculate final dimensions
+        let photoWidth = maxPhotoWidth;
+        let photoHeight = photoWidth / aspectRatio;
+
+        // If height exceeds max, scale down based on height instead
+        if (photoHeight > maxPhotoHeight) {
+          photoHeight = maxPhotoHeight;
+          photoWidth = photoHeight * aspectRatio;
+        }
+
+        // Center the image if it's narrower than max width
+        const photoX = margin + (maxPhotoWidth - photoWidth) / 2;
+
+        pdf.addImage(propertyPhotoData, "JPEG", photoX, yPos, photoWidth, photoHeight, undefined, "FAST");
         yPos += photoHeight + 10;
       } catch (error) {
         console.error("Failed to add property photo to PDF:", error);
