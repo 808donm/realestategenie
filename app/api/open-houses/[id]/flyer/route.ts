@@ -90,8 +90,6 @@ export async function GET(
     let mapHeight = 300;
     if (event.latitude && event.longitude) {
       try {
-        // Use OpenStreetMap static map via geoapify or similar service
-        // Using a simple tile-based approach with OpenStreetMap
         const zoom = 15;
         mapWidth = 400;
         mapHeight = 300;
@@ -99,14 +97,27 @@ export async function GET(
         // Using staticmap.openstreetmap.de service (free OSM static maps)
         const mapUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${event.latitude},${event.longitude}&zoom=${zoom}&size=${mapWidth}x${mapHeight}&maptype=mapnik&markers=${event.latitude},${event.longitude},red-pushpin`;
 
-        const mapResponse = await fetch(mapUrl);
+        console.log("Fetching map from:", mapUrl);
+        const mapResponse = await fetch(mapUrl, {
+          headers: { 'User-Agent': 'RealEstateGenie/1.0' },
+          signal: AbortSignal.timeout(10000) // 10 second timeout
+        });
+
+        console.log("Map response status:", mapResponse.status);
+
         if (mapResponse.ok) {
+          const contentType = mapResponse.headers.get("content-type");
+          console.log("Map content type:", contentType);
+
           const mapBuffer = await mapResponse.arrayBuffer();
           const mapBufferNode = Buffer.from(mapBuffer);
+
+          console.log("Map buffer size:", mapBufferNode.length);
 
           // Get actual map dimensions
           try {
             const dimensions = sizeOf(mapBufferNode);
+            console.log("Map dimensions:", dimensions);
             if (dimensions.width && dimensions.height) {
               mapWidth = dimensions.width;
               mapHeight = dimensions.height;
@@ -117,6 +128,9 @@ export async function GET(
 
           const mapBase64 = mapBufferNode.toString("base64");
           mapImageData = `data:image/png;base64,${mapBase64}`;
+          console.log("Map image data created, length:", mapImageData.length);
+        } else {
+          console.error("Map fetch failed with status:", mapResponse.status);
         }
       } catch (error) {
         console.error("Failed to fetch map image:", error);
@@ -311,32 +325,31 @@ export async function GET(
       yPos += qrSize + 8;
     }
 
-    // Open House Information Box
-    yPos += 10;
+    // Open House Information - Compact Banner
+    yPos += 8;
+
+    // Draw compact banner
     pdf.setDrawColor(0, 0, 255);
     pdf.setFillColor(230, 240, 255);
-    pdf.roundedRect(margin, yPos, pageWidth - (margin * 2), 25, 3, 3, "FD");
+    pdf.roundedRect(margin, yPos, pageWidth - (margin * 2), 18, 3, 3, "FD");
 
-    yPos += 8;
+    // Open house text on one line
     pdf.setTextColor(0, 0, 150);
-    pdf.setFontSize(14);
+    pdf.setFontSize(11);
     pdf.setFont("helvetica", "bold");
-    pdf.text("OPEN HOUSE", margin + 5, yPos);
-
-    yPos += 8;
-    pdf.setTextColor(0, 0, 0);
-    pdf.setFontSize(12);
-    pdf.setFont("helvetica", "normal");
     const startDate = new Date(event.start_at);
     const endDate = new Date(event.end_at);
-    const openHouseText = `${startDate.toLocaleDateString()} • ${startDate.toLocaleTimeString([], {
+    const openHouseText = `OPEN HOUSE: ${startDate.toLocaleDateString()} • ${startDate.toLocaleTimeString([], {
       hour: "2-digit",
       minute: "2-digit"
     })} - ${endDate.toLocaleTimeString([], {
       hour: "2-digit",
       minute: "2-digit"
     })}`;
-    pdf.text(openHouseText, margin + 5, yPos);
+    pdf.text(openHouseText, margin + 5, yPos + 11);
+    pdf.setTextColor(0, 0, 0);
+
+    yPos += 25;
 
     // Agent Information (Bottom)
     yPos = pageHeight - 50;
