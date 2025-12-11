@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import jsPDF from "jspdf";
 import sizeOf from "image-size";
+import QRCode from "qrcode";
 
 export async function GET(
   request: NextRequest,
@@ -121,6 +122,22 @@ export async function GET(
         console.error("Failed to fetch map image:", error);
         // Continue without the map
       }
+    }
+
+    // Generate QR code for check-in
+    let qrCodeData: string | null = null;
+    try {
+      const origin = request.headers.get("origin") || request.headers.get("referer")?.split("/").slice(0, 3).join("/") || "";
+      const checkInUrl = `${origin}/oh/${id}`;
+      qrCodeData = await QRCode.toDataURL(checkInUrl, {
+        errorCorrectionLevel: "M",
+        margin: 2,
+        scale: 8,
+        width: 200,
+      });
+    } catch (error) {
+      console.error("Failed to generate QR code:", error);
+      // Continue without QR code
     }
 
     // Generate PDF
@@ -245,9 +262,14 @@ export async function GET(
       yPos += (lines.length * 5) + 5;
     }
 
-    // Key Features
+    // Key Features with QR Code
     if (event.key_features && event.key_features.length > 0) {
       yPos += 5;
+      const featuresStartY = yPos;
+      const qrSize = 35; // QR code size in mm
+      const qrGap = 10; // Gap between text and QR code
+      const textWidth = qrCodeData ? (pageWidth - (margin * 2) - qrSize - qrGap) : (pageWidth - (margin * 2));
+
       pdf.setFontSize(12);
       pdf.setFont("helvetica", "bold");
       pdf.text("Key Features:", margin, yPos);
@@ -256,9 +278,37 @@ export async function GET(
       pdf.setFont("helvetica", "normal");
       pdf.setFontSize(10);
       event.key_features.forEach((feature: string) => {
-        pdf.text(`• ${feature}`, margin + 5, yPos);
-        yPos += 5;
+        const lines = pdf.splitTextToSize(`• ${feature}`, textWidth);
+        pdf.text(lines, margin + 5, yPos);
+        yPos += lines.length * 5;
       });
+
+      // Add QR code on the right side if available
+      if (qrCodeData) {
+        const qrX = margin + textWidth + qrGap;
+        const qrY = featuresStartY;
+        pdf.addImage(qrCodeData, "PNG", qrX, qrY, qrSize, qrSize, undefined, "FAST");
+
+        // Add label under QR code
+        pdf.setFontSize(8);
+        pdf.setFont("helvetica", "bold");
+        const labelY = qrY + qrSize + 3;
+        pdf.text("Scan to Check In", qrX + (qrSize / 2), labelY, { align: "center" });
+      }
+    } else if (qrCodeData) {
+      // No features, but we have QR code - show it centered
+      yPos += 5;
+      const qrSize = 35;
+      const qrX = margin + ((pageWidth - (margin * 2) - qrSize) / 2);
+      pdf.addImage(qrCodeData, "PNG", qrX, yPos, qrSize, qrSize, undefined, "FAST");
+
+      // Add label under QR code
+      pdf.setFontSize(8);
+      pdf.setFont("helvetica", "bold");
+      const labelY = yPos + qrSize + 3;
+      pdf.text("Scan to Check In", qrX + (qrSize / 2), labelY, { align: "center" });
+
+      yPos += qrSize + 8;
     }
 
     // Open House Information Box
