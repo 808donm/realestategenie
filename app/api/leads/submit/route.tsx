@@ -135,13 +135,21 @@ export async function POST(req: Request) {
       const origin = process.env.NEXT_PUBLIC_APP_URL || 'https://yourdomain.com';
       const flyerUrl = `${origin}/api/open-houses/${eventId}/flyer`;
 
+      console.log('Checking GHL connection...');
+      console.log('isGHLConnected:', !!isGHLConnected);
+      console.log('ghlConfig exists:', !!ghlConfig);
+      console.log('Will use GHL:', !!(isGHLConnected && ghlConfig));
+
       // If GHL is connected, use GHL for notifications
       if (isGHLConnected && ghlConfig) {
+        console.log('GHL notification flow starting...');
         try {
           // Create or update contact in GHL first
           const nameParts = payload.name.split(' ');
           const firstName = nameParts[0] || payload.name;
           const lastName = nameParts.slice(1).join(' ') || '';
+
+          console.log('Creating/updating GHL contact:', { email: payload.email, firstName, lastName });
 
           const contact = await createOrUpdateGHLContact({
             locationId: ghlConfig.location_id,
@@ -153,6 +161,8 @@ export async function POST(req: Request) {
             source: 'Open House',
             tags: ['Open House Lead', evt?.address || 'Property'],
           });
+
+          console.log('GHL contact created/updated:', contact.id);
 
           // Create opportunity in GHL pipeline
           try {
@@ -285,19 +295,25 @@ export async function POST(req: Request) {
           }
         } catch (error) {
           console.error('GHL notification error:', error);
+          console.error('Error details:', JSON.stringify(error, null, 2));
           // Fall back to Resend/Twilio if GHL fails
           console.log('Falling back to Resend/Twilio...');
           await sendFallbackNotifications();
         }
       } else {
         // Use Resend/Twilio if GHL is not connected
+        console.log('GHL not connected, using Resend/Twilio fallback');
         await sendFallbackNotifications();
       }
 
       // Fallback function using Resend/Twilio
       async function sendFallbackNotifications() {
+        console.log('=== FALLBACK NOTIFICATIONS ===');
+        console.log('Using Resend/Twilio for notifications');
+
         // 1. Send check-in confirmation email
         if (payload.consent?.email) {
+          console.log('Attempting to send check-in email via Resend...');
           try {
             await sendCheckInConfirmation({
               to: payload.email,
