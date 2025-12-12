@@ -1,6 +1,8 @@
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = process.env.RESEND_API_KEY
+  ? new Resend(process.env.RESEND_API_KEY)
+  : null;
 
 export interface CheckInConfirmationParams {
   to: string;
@@ -24,6 +26,11 @@ export interface GreetingEmailParams {
 }
 
 export async function sendCheckInConfirmation(params: CheckInConfirmationParams) {
+  if (!resend) {
+    console.warn('Resend not configured, skipping email');
+    return null;
+  }
+
   try {
     const { data, error } = await resend.emails.send({
       from: process.env.EMAIL_FROM || 'Open House <noreply@yourdomain.com>',
@@ -45,6 +52,11 @@ export async function sendCheckInConfirmation(params: CheckInConfirmationParams)
 }
 
 export async function sendGreetingEmail(params: GreetingEmailParams) {
+  if (!resend) {
+    console.warn('Resend not configured, skipping email');
+    return null;
+  }
+
   try {
     const { data, error } = await resend.emails.send({
       from: process.env.EMAIL_FROM || 'Open House <noreply@yourdomain.com>',
