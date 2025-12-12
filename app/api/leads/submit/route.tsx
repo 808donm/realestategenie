@@ -100,6 +100,28 @@ export async function POST(req: Request) {
       details: { source: "open_house_qr", heat_score: heatScore },
     });
 
+    // Prepare flyer URL and formatted dates for webhooks and notifications
+    const origin = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : 'https://yourdomain.com';
+    const flyerUrl = `${origin}/api/open-houses/${eventId}/flyer`;
+
+    const startDate = new Date(evt.start_at);
+    const endDate = new Date(evt.end_at);
+    const openHouseDate = startDate.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    const openHouseTime = `${startDate.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit'
+    })} - ${endDate.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit'
+    })}`;
+
     // Send notifications to attendee
     const sendNotifications = async () => {
       if (!agent) {
@@ -114,27 +136,17 @@ export async function POST(req: Request) {
       console.log('Email consent:', payload.consent?.email);
       console.log('SMS consent:', payload.consent?.sms);
       console.log('GHL connected:', isGHLConnected);
+      console.log('Flyer URL:', flyerUrl);
 
-      const startDate = new Date(evt.start_at);
-      const endDate = new Date(evt.end_at);
-      const openHouseDate = startDate.toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-      const openHouseTime = `${startDate.toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit'
-      })} - ${endDate.toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit'
-      })}`;
+      // NOTE: Direct GHL email/SMS sending is DISABLED
+      // Use GHL workflows with webhooks instead for better control
+      // The webhook will include flyer_url, open_house_date, open_house_time, and all lead data
+      console.log('Direct notifications disabled - using webhooks for GHL workflows');
+      return;
 
-      // Flyer URL (download endpoint)
-      const origin = process.env.NEXT_PUBLIC_APP_URL || 'https://yourdomain.com';
-      const flyerUrl = `${origin}/api/open-houses/${eventId}/flyer`;
-
+      /* DISABLED: Direct GHL/Resend/Twilio notifications
+       * Use webhook-triggered GHL workflows instead
+       *
       console.log('Checking GHL connection...');
       console.log('isGHLConnected:', !!isGHLConnected);
       console.log('ghlConfig exists:', !!ghlConfig);
@@ -383,6 +395,7 @@ export async function POST(req: Request) {
           }
         }
       }
+      END OF DISABLED CODE */
     };
 
     // Trigger async integrations (non-blocking)
@@ -395,12 +408,18 @@ export async function POST(req: Request) {
       syncLeadToGHL(lead.id).catch((err) =>
         console.error("GHL sync failed:", err)
       ),
-      // Dispatch webhook for lead.submitted
+      // Dispatch webhook for lead.submitted (for GHL workflows)
       dispatchWebhook(evt.agent_id, "lead.submitted", {
         lead_id: lead.id,
         event_id: eventId,
         property_address: evt.address,
         heat_score: heatScore,
+        flyer_url: flyerUrl,
+        open_house_date: openHouseDate,
+        open_house_time: openHouseTime,
+        agent_name: agent?.display_name || '',
+        agent_email: agent?.email || '',
+        agent_phone: agent?.phone_e164 || '',
         payload,
       }).catch((err) => console.error("Webhook dispatch failed:", err)),
       // If hot lead, dispatch lead.hot_scored webhook
