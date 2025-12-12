@@ -10,6 +10,7 @@ export interface CheckInSMSParams {
   agentName: string;
   agentPhone: string;
   propertyAddress: string;
+  flyerUrl: string;
 }
 
 export interface GreetingSMSParams {
@@ -31,7 +32,7 @@ export async function sendCheckInSMS(params: CheckInSMSParams) {
   }
 
   try {
-    const message = `Hi ${params.attendeeName}! Thanks for visiting ${params.propertyAddress}. If you have questions, contact ${params.agentName} at ${params.agentPhone}. Reply STOP to opt out.`;
+    const message = `Hi ${params.attendeeName}! Thanks for visiting ${params.propertyAddress}. Download the property fact sheet: ${params.flyerUrl}. Questions? Contact ${params.agentName} at ${params.agentPhone}. Reply STOP to opt out.`;
 
     const result = await twilioClient.messages.create({
       body: message,

@@ -216,7 +216,7 @@ export async function POST(req: Request) {
           // 2. Send check-in confirmation SMS via GHL
           if (payload.consent?.sms && contact?.id) {
             try {
-              const smsMessage = `Hi ${payload.name}! Thanks for visiting ${evt?.address || 'this property'}. If you have questions, contact ${agent?.display_name || 'your agent'} at ${agent?.phone_e164 || ''}. Reply STOP to opt out.`;
+              const smsMessage = `Hi ${payload.name}! Thanks for visiting ${evt?.address || 'this property'}. Download the property fact sheet: ${flyerUrl}. Questions? Contact ${agent?.display_name || 'your agent'} at ${agent?.phone_e164 || ''}. Reply STOP to opt out.`;
 
               await sendGHLSMS({
                 locationId: ghlConfig.location_id,
@@ -314,6 +314,7 @@ export async function POST(req: Request) {
               agentName: agent?.display_name || 'Your Agent',
               agentPhone: agent?.phone_e164 || '',
               propertyAddress: evt?.address || 'this property',
+              flyerUrl,
             });
             console.log('Check-in confirmation SMS sent to:', payload.phone_e164);
           } catch (error) {

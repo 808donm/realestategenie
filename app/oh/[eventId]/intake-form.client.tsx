@@ -91,7 +91,8 @@ export default function IntakeForm({ eventId }: { eventId: string }) {
       return;
     }
 
-    setMsg("Thanks! You’re checked in.");
+    // Redirect to thank you page
+    window.location.href = `/oh/${eventId}/thank-you`;
   }
 
   return (
