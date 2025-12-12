@@ -102,7 +102,18 @@ export async function POST(req: Request) {
 
     // Send notifications to attendee
     const sendNotifications = async () => {
-      if (!agent) return;
+      if (!agent) {
+        console.warn('No agent found, skipping notifications');
+        return;
+      }
+
+      console.log('=== STARTING NOTIFICATIONS ===');
+      console.log('Agent:', agent.display_name);
+      console.log('Payload email:', payload.email);
+      console.log('Payload phone:', payload.phone_e164);
+      console.log('Email consent:', payload.consent?.email);
+      console.log('SMS consent:', payload.consent?.sms);
+      console.log('GHL connected:', isGHLConnected);
 
       const startDate = new Date(evt.start_at);
       const endDate = new Date(evt.end_at);
