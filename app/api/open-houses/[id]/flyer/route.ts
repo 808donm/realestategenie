@@ -417,31 +417,37 @@ export async function GET(
     // Open House Information - Compact Banner
     yPos += 8;
 
-    // Draw compact banner
-    pdf.setDrawColor(0, 0, 255);
-    pdf.setFillColor(230, 240, 255);
-    pdf.roundedRect(margin, yPos, pageWidth - (margin * 2), 18, 3, 3, "FD");
+    // Calculate footer height (need to reserve space)
+    const footerHeight = 50; // Total space needed for footer
+    const footerStartY = pageHeight - footerHeight;
+    const bannerHeight = 18;
 
-    // Open house text on one line
-    pdf.setTextColor(0, 0, 150);
-    pdf.setFontSize(11);
-    pdf.setFont("helvetica", "bold");
-    const startDate = new Date(event.start_at);
-    const endDate = new Date(event.end_at);
-    const openHouseText = `OPEN HOUSE: ${startDate.toLocaleDateString()} • ${startDate.toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit"
-    })} - ${endDate.toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit"
-    })}`;
-    pdf.text(openHouseText, margin + 5, yPos + 11);
-    pdf.setTextColor(0, 0, 0);
+    // Check if banner would overlap footer - if so, skip banner or adjust
+    if (yPos + bannerHeight + 10 < footerStartY) {
+      // Safe to draw banner
+      pdf.setDrawColor(0, 0, 255);
+      pdf.setFillColor(230, 240, 255);
+      pdf.roundedRect(margin, yPos, pageWidth - (margin * 2), bannerHeight, 3, 3, "FD");
 
-    yPos += 25;
+      // Open house text on one line
+      pdf.setTextColor(0, 0, 150);
+      pdf.setFontSize(11);
+      pdf.setFont("helvetica", "bold");
+      const startDate = new Date(event.start_at);
+      const endDate = new Date(event.end_at);
+      const openHouseText = `OPEN HOUSE: ${startDate.toLocaleDateString()} • ${startDate.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      })} - ${endDate.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      })}`;
+      pdf.text(openHouseText, margin + 5, yPos + 11);
+      pdf.setTextColor(0, 0, 0);
+    }
 
-    // Agent Information (Bottom)
-    yPos = pageHeight - 50;
+    // Agent Information (Bottom) - always at fixed position
+    yPos = footerStartY;
     pdf.setDrawColor(200, 200, 200);
     pdf.line(margin, yPos, pageWidth - margin, yPos);
 
