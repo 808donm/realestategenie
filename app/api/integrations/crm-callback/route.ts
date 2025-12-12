@@ -91,8 +91,6 @@ export async function GET(req: NextRequest) {
           user_id: userId,
           company_id: companyId,
         },
-        last_sync_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
       }, {
         onConflict: "agent_id,provider",
       })
