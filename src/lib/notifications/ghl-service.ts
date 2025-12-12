@@ -107,6 +107,8 @@ export async function createOrUpdateGHLContact(params: {
   phone: string;
   firstName: string;
   lastName?: string;
+  source?: string;
+  tags?: string[];
 }) {
   try {
     // First, search for existing contact
@@ -126,6 +128,17 @@ export async function createOrUpdateGHLContact(params: {
       const searchData = await searchResponse.json();
       if (searchData.contact) {
         console.log('Found existing GHL contact:', searchData.contact.id);
+
+        // Update existing contact with new tags if provided
+        if (params.tags && params.tags.length > 0) {
+          await addGHLTags({
+            contactId: searchData.contact.id,
+            locationId: params.locationId,
+            accessToken: params.accessToken,
+            tags: params.tags,
+          });
+        }
+
         return searchData.contact;
       }
     }
@@ -146,6 +159,8 @@ export async function createOrUpdateGHLContact(params: {
           phone: params.phone,
           firstName: params.firstName,
           lastName: params.lastName || '',
+          source: params.source || 'Open House',
+          tags: params.tags || [],
         }),
       }
     );
@@ -161,6 +176,132 @@ export async function createOrUpdateGHLContact(params: {
     return contactData.contact;
   } catch (error) {
     console.error('Error creating/updating GHL contact:', error);
+    throw error;
+  }
+}
+
+/**
+ * Add tags to a GHL contact
+ */
+export async function addGHLTags(params: {
+  contactId: string;
+  locationId: string;
+  accessToken: string;
+  tags: string[];
+}) {
+  try {
+    const response = await fetch(
+      `https://services.leadconnectorhq.com/contacts/${params.contactId}/tags`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${params.accessToken}`,
+          'Content-Type': 'application/json',
+          'Version': '2021-07-28',
+        },
+        body: JSON.stringify({
+          tags: params.tags,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('GHL add tags failed:', error);
+      throw new Error(`GHL add tags failed: ${error}`);
+    }
+
+    const data = await response.json();
+    console.log('Added tags to GHL contact:', params.tags);
+    return data;
+  } catch (error) {
+    console.error('Error adding GHL tags:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get pipelines for a location
+ */
+export async function getGHLPipelines(params: {
+  locationId: string;
+  accessToken: string;
+}) {
+  try {
+    const response = await fetch(
+      `https://services.leadconnectorhq.com/opportunities/pipelines?locationId=${params.locationId}`,
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${params.accessToken}`,
+          'Content-Type': 'application/json',
+          'Version': '2021-07-28',
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('GHL get pipelines failed:', error);
+      throw new Error(`GHL get pipelines failed: ${error}`);
+    }
+
+    const data = await response.json();
+    return data.pipelines || [];
+  } catch (error) {
+    console.error('Error getting GHL pipelines:', error);
+    throw error;
+  }
+}
+
+/**
+ * Create an opportunity in GHL pipeline
+ */
+export async function createGHLOpportunity(params: {
+  locationId: string;
+  accessToken: string;
+  contactId: string;
+  pipelineId: string;
+  pipelineStageId: string;
+  name: string;
+  status?: 'open' | 'won' | 'lost' | 'abandoned';
+  monetaryValue?: number;
+  source?: string;
+}) {
+  try {
+    const response = await fetch(
+      `https://services.leadconnectorhq.com/opportunities/`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${params.accessToken}`,
+          'Content-Type': 'application/json',
+          'Version': '2021-07-28',
+        },
+        body: JSON.stringify({
+          locationId: params.locationId,
+          contactId: params.contactId,
+          pipelineId: params.pipelineId,
+          pipelineStageId: params.pipelineStageId,
+          name: params.name,
+          status: params.status || 'open',
+          monetaryValue: params.monetaryValue,
+          source: params.source || 'Open House',
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('GHL opportunity creation failed:', error);
+      throw new Error(`GHL opportunity creation failed: ${error}`);
+    }
+
+    const data = await response.json();
+    console.log('Created GHL opportunity:', data.opportunity?.id);
+    return data.opportunity;
+  } catch (error) {
+    console.error('Error creating GHL opportunity:', error);
     throw error;
   }
 }

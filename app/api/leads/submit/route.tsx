@@ -5,7 +5,7 @@ import { syncLeadToGHL } from "@/lib/integrations/ghl-sync";
 import { dispatchWebhook } from "@/lib/webhooks/dispatcher";
 import { sendCheckInConfirmation, sendGreetingEmail } from "@/lib/notifications/email-service";
 import { sendCheckInSMS, sendGreetingSMS } from "@/lib/notifications/sms-service";
-import { sendGHLEmail, sendGHLSMS, createOrUpdateGHLContact } from "@/lib/notifications/ghl-service";
+import { sendGHLEmail, sendGHLSMS, createOrUpdateGHLContact, getGHLPipelines, createGHLOpportunity } from "@/lib/notifications/ghl-service";
 
 const admin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -139,7 +139,41 @@ export async function POST(req: Request) {
             phone: payload.phone_e164,
             firstName,
             lastName,
+            source: 'Open House',
+            tags: ['Open House Lead', evt?.address || 'Property'],
           });
+
+          // Create opportunity in GHL pipeline
+          try {
+            // Get pipelines for the location
+            const pipelines = await getGHLPipelines({
+              locationId: ghlConfig.location_id,
+              accessToken: ghlConfig.access_token,
+            });
+
+            if (pipelines && pipelines.length > 0) {
+              // Use the first pipeline and its first stage
+              const defaultPipeline = pipelines[0];
+              const firstStage = defaultPipeline.stages?.[0];
+
+              if (defaultPipeline.id && firstStage?.id) {
+                await createGHLOpportunity({
+                  locationId: ghlConfig.location_id,
+                  accessToken: ghlConfig.access_token,
+                  contactId: contact.id,
+                  pipelineId: defaultPipeline.id,
+                  pipelineStageId: firstStage.id,
+                  name: `Open House - ${evt?.address || 'Property'}`,
+                  status: 'open',
+                  source: 'Open House',
+                });
+                console.log('Created GHL opportunity for:', payload.email);
+              }
+            }
+          } catch (error) {
+            console.error('Failed to create GHL opportunity:', error);
+            // Continue with notifications even if opportunity creation fails
+          }
 
           // 1. Send check-in confirmation email via GHL
           if (payload.consent?.email) {
