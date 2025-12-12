@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 
 /**
- * Handle GHL OAuth callback
- * GET /api/integrations/ghl/callback?code=xxx&state=xxx
+ * Handle CRM OAuth callback
+ * GET /api/integrations/crm-callback?code=xxx&state=xxx
  */
 export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
         client_secret: process.env.GHL_CLIENT_SECRET!,
         grant_type: "authorization_code",
         code,
-        redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/integrations/ghl/callback`,
+        redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/integrations/crm-callback`,
       }),
     });
 

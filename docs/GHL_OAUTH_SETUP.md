@@ -25,13 +25,15 @@ This guide explains how to configure GoHighLevel OAuth integration for your Open
 
 1. **Redirect URI:** This is critical for the OAuth flow to work
    ```
-   https://yourdomain.com/api/integrations/ghl/callback
+   https://yourdomain.com/api/integrations/crm-callback
    ```
    Replace `yourdomain.com` with your actual Vercel production domain.
 
+   **Important:** Don't use "ghl" or "gohighlevel" in the callback URL as GHL's system may reject it.
+
    For testing locally:
    ```
-   http://localhost:3000/api/integrations/ghl/callback
+   http://localhost:3000/api/integrations/crm-callback
    ```
 
 2. **Scopes:** Select the following scopes:
@@ -86,7 +88,8 @@ NEXT_PUBLIC_APP_URL=https://yourdomain.com
 **Solution:**
 1. Check that the **Redirect URI** in your GHL app settings **exactly matches** your callback URL
 2. Make sure `NEXT_PUBLIC_APP_URL` environment variable is set correctly
-3. Try the connection flow again
+3. Ensure you're NOT using "ghl" or "gohighlevel" in the callback URL
+4. Try the connection flow again
 
 ### Issue: "Invalid redirect_uri" Error
 
@@ -95,11 +98,12 @@ NEXT_PUBLIC_APP_URL=https://yourdomain.com
 **Solution:**
 1. Ensure the redirect URI in your GHL app settings is exactly:
    ```
-   https://yourdomain.com/api/integrations/ghl/callback
+   https://yourdomain.com/api/integrations/crm-callback
    ```
 2. No trailing slash
 3. Must use HTTPS in production
-4. Check for typos
+4. Don't use "ghl" or "gohighlevel" in the URL
+5. Check for typos
 
 ### Issue: "Insufficient scopes" Error
 

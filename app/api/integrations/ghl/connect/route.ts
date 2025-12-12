@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
   ghlAuthUrl.searchParams.append("client_id", process.env.GHL_CLIENT_ID!);
   ghlAuthUrl.searchParams.append(
     "redirect_uri",
-    `${process.env.NEXT_PUBLIC_APP_URL}/api/integrations/ghl/callback`
+    `${process.env.NEXT_PUBLIC_APP_URL}/api/integrations/crm-callback`
   );
   ghlAuthUrl.searchParams.append("scope", "contacts.write contacts.readonly opportunities.write opportunities.readonly locations.readonly");
   ghlAuthUrl.searchParams.append("state", state);
