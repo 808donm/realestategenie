@@ -12,7 +12,20 @@ export async function GET(
     const { id } = await params;
     const supabase = await supabaseServer();
 
-    // Get open house event details
+    // Check authentication FIRST (before querying database with RLS)
+    const {
+      data: { user },
+      error: authError
+    } = await supabase.auth.getUser();
+
+    console.log("Auth user:", user?.id);
+    console.log("Auth error:", authError);
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized - Please sign in to download the flyer" }, { status: 401 });
+    }
+
+    // Get open house event details (RLS will filter by agent_id = auth.uid())
     const { data: event, error } = await supabase
       .from("open_house_events")
       .select(`
@@ -34,16 +47,15 @@ export async function GET(
       .single();
 
     if (error || !event) {
-      return NextResponse.json({ error: "Open house not found" }, { status: 404 });
-    }
-
-    // Get agent details
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      console.error("Event query error:", error);
+      console.error("Event ID:", id);
+      console.error("User ID:", user.id);
+      console.error("Event data:", event);
+      return NextResponse.json({
+        error: "Open house not found or you don't have permission to access it",
+        details: error?.message,
+        eventId: id
+      }, { status: 404 });
     }
 
     const { data: agent } = await supabase
