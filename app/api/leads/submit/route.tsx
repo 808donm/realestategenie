@@ -149,7 +149,7 @@ export async function POST(req: Request) {
                 agentName: agent?.display_name || 'Your Agent',
                 agentEmail: agent?.email || '',
                 agentPhone: agent?.phone_e164 || '',
-                propertyAddress: evt.address,
+                propertyAddress: evt?.address || 'this property',
                 openHouseDate,
                 openHouseTime,
                 flyerUrl,
@@ -159,7 +159,7 @@ export async function POST(req: Request) {
                 locationId: ghlConfig.location_id,
                 accessToken: ghlConfig.access_token,
                 to: payload.email,
-                subject: `Thank you for visiting ${evt.address}`,
+                subject: `Thank you for visiting ${evt?.address || 'this property'}`,
                 html: emailHtml,
               });
               console.log('GHL check-in confirmation email sent to:', payload.email);
@@ -171,7 +171,7 @@ export async function POST(req: Request) {
           // 2. Send check-in confirmation SMS via GHL
           if (payload.consent?.sms && contact?.id) {
             try {
-              const smsMessage = `Hi ${payload.name}! Thanks for visiting ${evt.address}. If you have questions, contact ${agent?.display_name || 'your agent'} at ${agent?.phone_e164 || ''}. Reply STOP to opt out.`;
+              const smsMessage = `Hi ${payload.name}! Thanks for visiting ${evt?.address || 'this property'}. If you have questions, contact ${agent?.display_name || 'your agent'} at ${agent?.phone_e164 || ''}. Reply STOP to opt out.`;
 
               await sendGHLSMS({
                 locationId: ghlConfig.location_id,
@@ -194,14 +194,14 @@ export async function POST(req: Request) {
                   agentName: agent?.display_name || 'Your Agent',
                   agentEmail: agent?.email || '',
                   agentPhone: agent?.phone_e164 || '',
-                  propertyAddress: evt.address,
+                  propertyAddress: evt?.address || 'this property',
                 });
 
                 await sendGHLEmail({
                   locationId: ghlConfig.location_id,
                   accessToken: ghlConfig.access_token,
                   to: payload.email,
-                  subject: `Great meeting you at ${evt.address}!`,
+                  subject: `Great meeting you at ${evt?.address || 'this property'}!`,
                   html: greetingHtml,
                 });
                 console.log('GHL greeting email sent to:', payload.email);
@@ -213,7 +213,7 @@ export async function POST(req: Request) {
             // 4. Send greeting SMS to unrepresented attendees via GHL
             if (payload.consent?.sms && contact?.id) {
               try {
-                const greetingSMS = `Hi ${payload.name}! Great meeting you at ${evt.address}. I'll follow up within 24 hours. Looking forward to helping you! - ${agent?.display_name || 'Your Agent'}. Reply STOP to opt out.`;
+                const greetingSMS = `Hi ${payload.name}! Great meeting you at ${evt?.address || 'this property'}. I'll follow up within 24 hours. Looking forward to helping you! - ${agent?.display_name || 'Your Agent'}. Reply STOP to opt out.`;
 
                 await sendGHLSMS({
                   locationId: ghlConfig.location_id,
@@ -249,7 +249,7 @@ export async function POST(req: Request) {
               agentName: agent?.display_name || 'Your Agent',
               agentEmail: agent?.email || '',
               agentPhone: agent?.phone_e164 || '',
-              propertyAddress: evt.address,
+              propertyAddress: evt?.address || 'this property',
               openHouseDate,
               openHouseTime,
               flyerUrl,
@@ -268,7 +268,7 @@ export async function POST(req: Request) {
               attendeeName: payload.name,
               agentName: agent?.display_name || 'Your Agent',
               agentPhone: agent?.phone_e164 || '',
-              propertyAddress: evt.address,
+              propertyAddress: evt?.address || 'this property',
             });
             console.log('Check-in confirmation SMS sent to:', payload.phone_e164);
           } catch (error) {
@@ -286,7 +286,7 @@ export async function POST(req: Request) {
                 agentName: agent?.display_name || 'Your Agent',
                 agentEmail: agent?.email || '',
                 agentPhone: agent?.phone_e164 || '',
-                propertyAddress: evt.address,
+                propertyAddress: evt?.address || 'this property',
               });
               console.log('Greeting email sent to:', payload.email);
             } catch (error) {
@@ -301,7 +301,7 @@ export async function POST(req: Request) {
                 to: payload.phone_e164,
                 attendeeName: payload.name,
                 agentName: agent?.display_name || 'Your Agent',
-                propertyAddress: evt.address,
+                propertyAddress: evt?.address || 'this property',
               });
               console.log('Greeting SMS sent to:', payload.phone_e164);
             } catch (error) {
