@@ -2,6 +2,7 @@ import { supabaseServer } from "@/lib/supabase/server";
 import GHLIntegrationCard from "./ghl-card";
 import N8NIntegrationCard from "./n8n-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import IntegrationsNotifications from "./notifications";
 
 export default async function IntegrationsPage() {
   const supabase = await supabaseServer();
@@ -25,6 +26,8 @@ export default async function IntegrationsPage() {
 
   return (
     <div className="space-y-6">
+      <IntegrationsNotifications />
+
       <div>
         <h1 className="text-3xl font-bold">Integrations</h1>
         <p className="text-muted-foreground mt-2">
