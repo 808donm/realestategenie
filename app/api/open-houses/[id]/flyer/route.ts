@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseServer } from "@/lib/supabase/server";
+import { createClient } from "@supabase/supabase-js";
 import jsPDF from "jspdf";
 import sizeOf from "image-size";
 import QRCode from "qrcode";
+
+// Use admin client to bypass RLS - flyer is public for anyone with the link
+const admin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { auth: { persistSession: false } }
+);
 
 export async function GET(
   request: NextRequest,
@@ -10,23 +17,10 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const supabase = await supabaseServer();
 
-    // Check authentication FIRST (before querying database with RLS)
-    const {
-      data: { user },
-      error: authError
-    } = await supabase.auth.getUser();
-
-    console.log("Auth user:", user?.id);
-    console.log("Auth error:", authError);
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized - Please sign in to download the flyer" }, { status: 401 });
-    }
-
-    // Get open house event details (RLS will filter by agent_id = auth.uid())
-    const { data: event, error } = await supabase
+    // Get open house event details using admin client (bypasses RLS)
+    // The flyer is publicly accessible to anyone with the link
+    const { data: event, error } = await admin
       .from("open_house_events")
       .select(`
         id,
@@ -41,27 +35,34 @@ export async function GET(
         listing_description,
         property_photo_url,
         latitude,
-        longitude
+        longitude,
+        agent_id,
+        status
       `)
       .eq("id", id)
       .single();
 
     if (error || !event) {
       console.error("Event query error:", error);
-      console.error("Event ID:", id);
-      console.error("User ID:", user.id);
-      console.error("Event data:", event);
       return NextResponse.json({
-        error: "Open house not found or you don't have permission to access it",
+        error: "Open house not found",
         details: error?.message,
         eventId: id
       }, { status: 404 });
     }
 
-    const { data: agent } = await supabase
+    // Only allow downloading flyers for published events
+    if (event.status !== 'published') {
+      return NextResponse.json({
+        error: "This open house is not published yet",
+      }, { status: 403 });
+    }
+
+    // Get agent details using admin client
+    const { data: agent } = await admin
       .from("agents")
       .select("display_name, phone_e164, email, license_number, brokerage_name, photo_url, headshot_url, company_logo_url")
-      .eq("id", user.id)
+      .eq("id", event.agent_id)
       .single();
 
     // Fetch property photo if available
