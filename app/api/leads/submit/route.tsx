@@ -152,16 +152,27 @@ export async function POST(req: Request) {
             });
 
             if (pipelines && pipelines.length > 0) {
-              // Use the first pipeline and its first stage
-              const defaultPipeline = pipelines[0];
-              const firstStage = defaultPipeline.stages?.[0];
+              // Look for "Real Estate Pipeline" by name first (for Real Estate Genie snapshot)
+              let targetPipeline = pipelines.find(
+                (p: any) => p.name === 'Real Estate Pipeline'
+              );
 
-              if (defaultPipeline.id && firstStage?.id) {
+              // Fallback to first pipeline if "Real Estate Pipeline" not found
+              if (!targetPipeline) {
+                targetPipeline = pipelines[0];
+                console.log('Real Estate Pipeline not found, using first pipeline:', targetPipeline.name);
+              } else {
+                console.log('Using Real Estate Pipeline');
+              }
+
+              const firstStage = targetPipeline.stages?.[0];
+
+              if (targetPipeline.id && firstStage?.id) {
                 await createGHLOpportunity({
                   locationId: ghlConfig.location_id,
                   accessToken: ghlConfig.access_token,
                   contactId: contact.id,
-                  pipelineId: defaultPipeline.id,
+                  pipelineId: targetPipeline.id,
                   pipelineStageId: firstStage.id,
                   name: `Open House - ${evt?.address || 'Property'}`,
                   status: 'open',
