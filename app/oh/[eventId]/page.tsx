@@ -14,7 +14,7 @@ export default async function OpenHouseIntakePage({
   const { data: event, error } = await supabase
     .from("public_open_house_event")
     .select(
-      "id,address,start_at,end_at,details_page_enabled,flyer_pdf_url,pdf_download_enabled,display_name,license_number,phone_e164,locations_served,photo_url,latitude,longitude"
+      "id,address,start_at,end_at,details_page_enabled,flyer_pdf_url,pdf_download_enabled,display_name,license_number,phone_e164,locations_served,photo_url,headshot_url,company_logo_url,latitude,longitude"
     )
     .eq("id", eventId)
     .single();
@@ -32,20 +32,40 @@ export default async function OpenHouseIntakePage({
 
   return (
     <div style={{ maxWidth: 720, margin: "40px auto", padding: 16 }}>
+      {/* Company Logo (if available) */}
+      {event.company_logo_url && (
+        <div style={{ marginBottom: 16, textAlign: "center" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={event.company_logo_url}
+            alt="Company Logo"
+            style={{ maxWidth: 200, maxHeight: 60, objectFit: "contain" }}
+          />
+        </div>
+      )}
+
       <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
-        {event.photo_url ? (
+        {event.headshot_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={event.headshot_url}
+            alt="Agent"
+            style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover", border: "3px solid #e5e7eb" }}
+          />
+        ) : event.photo_url ? (
+          // Fallback to old photo_url if headshot not available
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={event.photo_url}
             alt="Agent"
-            style={{ width: 56, height: 56, borderRadius: 12, objectFit: "cover" }}
+            style={{ width: 64, height: 64, borderRadius: 12, objectFit: "cover" }}
           />
         ) : (
           <div
             style={{
-              width: 56,
-              height: 56,
-              borderRadius: 12,
+              width: 64,
+              height: 64,
+              borderRadius: "50%",
               background: "#eee",
             }}
           />

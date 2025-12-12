@@ -48,7 +48,7 @@ export async function GET(
 
     const { data: agent } = await supabase
       .from("agents")
-      .select("display_name, phone_e164, email, license_number, brokerage_name, photo_url")
+      .select("display_name, phone_e164, email, license_number, brokerage_name, photo_url, headshot_url, company_logo_url")
       .eq("id", user.id)
       .single();
 
@@ -177,6 +177,70 @@ export async function GET(
     } catch (error) {
       console.error("Failed to generate QR code:", error);
       // Continue without QR code
+    }
+
+    // Fetch agent headshot if available
+    let headshotData: string | null = null;
+    let headshotWidth = 150;
+    let headshotHeight = 150;
+    if (agent?.headshot_url) {
+      try {
+        const headshotResponse = await fetch(agent.headshot_url);
+        if (headshotResponse.ok) {
+          const headshotBuffer = await headshotResponse.arrayBuffer();
+          const headshotBufferNode = Buffer.from(headshotBuffer);
+
+          // Get image dimensions
+          try {
+            const dimensions = sizeOf(headshotBufferNode);
+            if (dimensions.width && dimensions.height) {
+              headshotWidth = dimensions.width;
+              headshotHeight = dimensions.height;
+            }
+          } catch (err) {
+            console.error("Failed to get headshot dimensions:", err);
+          }
+
+          const headshotBase64 = headshotBufferNode.toString("base64");
+          const contentType = headshotResponse.headers.get("content-type") || "image/jpeg";
+          headshotData = `data:${contentType};base64,${headshotBase64}`;
+        }
+      } catch (error) {
+        console.error("Failed to fetch headshot:", error);
+        // Continue without headshot
+      }
+    }
+
+    // Fetch company logo if available
+    let logoData: string | null = null;
+    let logoWidth = 200;
+    let logoHeight = 100;
+    if (agent?.company_logo_url) {
+      try {
+        const logoResponse = await fetch(agent.company_logo_url);
+        if (logoResponse.ok) {
+          const logoBuffer = await logoResponse.arrayBuffer();
+          const logoBufferNode = Buffer.from(logoBuffer);
+
+          // Get image dimensions
+          try {
+            const dimensions = sizeOf(logoBufferNode);
+            if (dimensions.width && dimensions.height) {
+              logoWidth = dimensions.width;
+              logoHeight = dimensions.height;
+            }
+          } catch (err) {
+            console.error("Failed to get logo dimensions:", err);
+          }
+
+          const logoBase64 = logoBufferNode.toString("base64");
+          const contentType = logoResponse.headers.get("content-type") || "image/png";
+          logoData = `data:${contentType};base64,${logoBase64}`;
+        }
+      } catch (error) {
+        console.error("Failed to fetch logo:", error);
+        // Continue without logo
+      }
     }
 
     // Generate PDF
@@ -382,27 +446,64 @@ export async function GET(
     pdf.line(margin, yPos, pageWidth - margin, yPos);
 
     yPos += 8;
+
+    // Layout: Headshot (left) | Agent Info (middle) | Company Logo (right)
+    const agentSectionHeight = 40;
+    const headshotSize = 25; // mm
+    const logoMaxWidth = 40; // mm
+    const logoMaxHeight = 20; // mm
+    let textStartX = margin;
+
+    // Add agent headshot (left)
+    if (headshotData) {
+      try {
+        pdf.addImage(headshotData, "JPEG", margin, yPos, headshotSize, headshotSize, undefined, "FAST");
+        textStartX = margin + headshotSize + 5; // Add gap after headshot
+      } catch (error) {
+        console.error("Failed to add headshot to PDF:", error);
+      }
+    }
+
+    // Add company logo (right side)
+    if (logoData) {
+      try {
+        // Scale logo to fit within max dimensions while maintaining aspect ratio
+        const logoAspect = logoWidth / logoHeight;
+        let scaledLogoWidth = logoMaxWidth;
+        let scaledLogoHeight = scaledLogoWidth / logoAspect;
+        if (scaledLogoHeight > logoMaxHeight) {
+          scaledLogoHeight = logoMaxHeight;
+          scaledLogoWidth = scaledLogoHeight * logoAspect;
+        }
+        const logoX = pageWidth - margin - scaledLogoWidth;
+        pdf.addImage(logoData, "PNG", logoX, yPos, scaledLogoWidth, scaledLogoHeight, undefined, "FAST");
+      } catch (error) {
+        console.error("Failed to add logo to PDF:", error);
+      }
+    }
+
+    // Agent text information (middle)
     pdf.setFontSize(14);
     pdf.setFont("helvetica", "bold");
-    pdf.text(agent?.display_name || "Your Agent", margin, yPos);
+    pdf.text(agent?.display_name || "Your Agent", textStartX, yPos + 5);
 
-    yPos += 6;
+    let textY = yPos + 11;
     pdf.setFontSize(10);
     pdf.setFont("helvetica", "normal");
     if (agent?.brokerage_name) {
-      pdf.text(agent.brokerage_name, margin, yPos);
-      yPos += 5;
+      pdf.text(agent.brokerage_name, textStartX, textY);
+      textY += 5;
     }
     if (agent?.phone_e164) {
-      pdf.text(`Phone: ${agent.phone_e164}`, margin, yPos);
-      yPos += 5;
+      pdf.text(`Phone: ${agent.phone_e164}`, textStartX, textY);
+      textY += 5;
     }
     if (agent?.email) {
-      pdf.text(`Email: ${agent.email}`, margin, yPos);
-      yPos += 5;
+      pdf.text(`Email: ${agent.email}`, textStartX, textY);
+      textY += 5;
     }
     if (agent?.license_number) {
-      pdf.text(`License: ${agent.license_number}`, margin, yPos);
+      pdf.text(`License: ${agent.license_number}`, textStartX, textY);
     }
 
     // Disclaimer (Bottom)
