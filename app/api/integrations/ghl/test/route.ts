@@ -36,36 +36,60 @@ export async function POST(req: NextRequest) {
     const config = integration.config as any;
     const client = new GHLClient(config.access_token);
 
-    // Test by fetching locations
-    const locations = await client.getLocations();
+    // Test by fetching pipelines for the connected location
+    // This works with location-scoped tokens (unlike getLocations which needs agency token)
+    const pipelines = await client.getPipelines(config.location_id);
 
-    // Update last_sync_at
-    await supabase
-      .from("integrations")
-      .update({
-        last_sync_at: new Date().toISOString(),
-        status: "connected",
-        last_error: null,
-      })
-      .eq("id", integration.id);
+    // Update integration status (skip last_sync_at if column doesn't exist)
+    const updateData: any = {
+      status: "connected",
+      last_error: null,
+    };
+
+    // Try to update last_sync_at if the column exists
+    try {
+      await supabase
+        .from("integrations")
+        .update({
+          ...updateData,
+          last_sync_at: new Date().toISOString(),
+        })
+        .eq("id", integration.id);
+    } catch {
+      // Fall back to update without last_sync_at
+      await supabase
+        .from("integrations")
+        .update(updateData)
+        .eq("id", integration.id);
+    }
 
     return NextResponse.json({
       success: true,
-      locations: locations.locations,
+      locationId: config.location_id,
+      pipelines: pipelines.pipelines?.length || 0,
       message: "GHL connection successful",
     });
   } catch (error: any) {
     console.error("GHL test error:", error);
 
-    // Update error status
-    await supabase
-      .from("integrations")
-      .update({
-        status: "error",
-        last_error: error.message,
-      })
-      .eq("agent_id", user.id)
-      .eq("provider", "ghl");
+    // Update error status (handle missing last_error column gracefully)
+    try {
+      await supabase
+        .from("integrations")
+        .update({
+          status: "error",
+          last_error: error.message,
+        })
+        .eq("agent_id", user.id)
+        .eq("provider", "ghl");
+    } catch {
+      // If last_error column doesn't exist, just update status
+      await supabase
+        .from("integrations")
+        .update({ status: "error" })
+        .eq("agent_id", user.id)
+        .eq("provider", "ghl");
+    }
 
     return NextResponse.json(
       { error: error.message || "GHL test failed" },
