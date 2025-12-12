@@ -32,11 +32,15 @@ async function setStatus(formData: FormData) {
   "use server";
   const status = String(formData.get("status") || "");
   const supabase = await (await import("@/lib/supabase/server")).supabaseServer();
+  const { revalidatePath } = await import("next/cache");
 
   await supabase
     .from("open_house_events")
     .update({ status })
     .eq("id", id);
+
+  // Revalidate the page to show updated status
+  revalidatePath(`/app/open-houses/${id}`);
 }
 
   return (
