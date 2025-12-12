@@ -32,6 +32,8 @@ type Agent = {
   phone_e164: string | null;
   locations_served: string[] | null;
   photo_url: string | null;
+  headshot_url: string | null;
+  company_logo_url: string | null;
 };
 
 export default function ProfileForm({ agent }: { agent: Agent }) {
@@ -48,10 +50,121 @@ export default function ProfileForm({ agent }: { agent: Agent }) {
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
+  const [headshotUrl, setHeadshotUrl] = useState(agent.headshot_url);
+  const [logoUrl, setLogoUrl] = useState(agent.company_logo_url);
+  const [uploadingHeadshot, setUploadingHeadshot] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+
   const normalizedPhone = useMemo(() => {
     if (!phoneInput.trim()) return null;
     return toE164US(phoneInput.trim());
   }, [phoneInput]);
+
+  async function handleHeadshotUpload(file: File | undefined) {
+    if (!file) return;
+
+    setUploadingHeadshot(true);
+    setErr(null);
+
+    const formData = new FormData();
+    formData.append("photo", file);
+
+    try {
+      const response = await fetch("/api/agents/headshot", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setHeadshotUrl(data.url);
+        setMsg("Headshot uploaded successfully");
+      } else {
+        const data = await response.json();
+        setErr(data.error || "Failed to upload headshot");
+      }
+    } catch (error: any) {
+      setErr(error.message || "Upload failed");
+    } finally {
+      setUploadingHeadshot(false);
+    }
+  }
+
+  async function handleHeadshotDelete() {
+    if (!confirm("Delete your headshot photo?")) return;
+
+    setUploadingHeadshot(true);
+
+    try {
+      const response = await fetch("/api/agents/headshot", {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        setHeadshotUrl(null);
+        setMsg("Headshot deleted");
+      } else {
+        setErr("Failed to delete headshot");
+      }
+    } catch (error: any) {
+      setErr(error.message || "Delete failed");
+    } finally {
+      setUploadingHeadshot(false);
+    }
+  }
+
+  async function handleLogoUpload(file: File | undefined) {
+    if (!file) return;
+
+    setUploadingLogo(true);
+    setErr(null);
+
+    const formData = new FormData();
+    formData.append("logo", file);
+
+    try {
+      const response = await fetch("/api/agents/logo", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setLogoUrl(data.url);
+        setMsg("Company logo uploaded successfully");
+      } else {
+        const data = await response.json();
+        setErr(data.error || "Failed to upload logo");
+      }
+    } catch (error: any) {
+      setErr(error.message || "Upload failed");
+    } finally {
+      setUploadingLogo(false);
+    }
+  }
+
+  async function handleLogoDelete() {
+    if (!confirm("Delete your company logo?")) return;
+
+    setUploadingLogo(true);
+
+    try {
+      const response = await fetch("/api/agents/logo", {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        setLogoUrl(null);
+        setMsg("Company logo deleted");
+      } else {
+        setErr("Failed to delete logo");
+      }
+    } catch (error: any) {
+      setErr(error.message || "Delete failed");
+    } finally {
+      setUploadingLogo(false);
+    }
+  }
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -95,6 +208,77 @@ export default function ProfileForm({ agent }: { agent: Agent }) {
   return (
     <form onSubmit={save} style={{ marginTop: 24 }}>
       <div style={{ display: "grid", gap: 14 }}>
+        {/* Agent Headshot */}
+        <div>
+          <label style={{ display: "block", fontSize: 12, marginBottom: 6, fontWeight: 600 }}>
+            Agent Photo
+          </label>
+          {headshotUrl ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <img
+                src={headshotUrl}
+                alt="Agent headshot"
+                style={{ width: 150, height: 150, objectFit: "cover", borderRadius: 8, border: "2px solid #e5e7eb" }}
+              />
+              <button
+                type="button"
+                onClick={handleHeadshotDelete}
+                disabled={uploadingHeadshot}
+                style={{ padding: "8px 12px", width: 150, background: "#ef4444", color: "white", border: "none", borderRadius: 6, cursor: "pointer" }}
+              >
+                {uploadingHeadshot ? "Deleting..." : "Delete Photo"}
+              </button>
+            </div>
+          ) : (
+            <input
+              type="file"
+              accept="image/jpeg,image/jpg,image/png,image/webp"
+              onChange={(e) => handleHeadshotUpload(e.target.files?.[0])}
+              disabled={uploadingHeadshot}
+              style={{ padding: 8 }}
+            />
+          )}
+          {uploadingHeadshot && <p style={{ fontSize: 12, opacity: 0.7, margin: "6px 0 0 0" }}>Uploading...</p>}
+        </div>
+
+        {/* Company Logo */}
+        <div>
+          <label style={{ display: "block", fontSize: 12, marginBottom: 6, fontWeight: 600 }}>
+            Company Logo
+          </label>
+          {logoUrl ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <img
+                src={logoUrl}
+                alt="Company logo"
+                style={{ width: 200, height: 100, objectFit: "contain", borderRadius: 8, border: "2px solid #e5e7eb", padding: 10, background: "white" }}
+              />
+              <button
+                type="button"
+                onClick={handleLogoDelete}
+                disabled={uploadingLogo}
+                style={{ padding: "8px 12px", width: 150, background: "#ef4444", color: "white", border: "none", borderRadius: 6, cursor: "pointer" }}
+              >
+                {uploadingLogo ? "Deleting..." : "Delete Logo"}
+              </button>
+            </div>
+          ) : (
+            <input
+              type="file"
+              accept="image/jpeg,image/jpg,image/png,image/webp,image/svg+xml"
+              onChange={(e) => handleLogoUpload(e.target.files?.[0])}
+              disabled={uploadingLogo}
+              style={{ padding: 8 }}
+            />
+          )}
+          {uploadingLogo && <p style={{ fontSize: 12, opacity: 0.7, margin: "6px 0 0 0" }}>Uploading...</p>}
+          <p style={{ fontSize: 11, opacity: 0.6, margin: "6px 0 0 0" }}>
+            SVG, PNG, JPG, or WebP (5MB max)
+          </p>
+        </div>
+
+        <hr style={{ border: "none", borderTop: "1px solid #e5e7eb", margin: "10px 0" }} />
+
         <div>
           <label style={{ display: "block", fontSize: 12, marginBottom: 6 }}>Name</label>
           <input
