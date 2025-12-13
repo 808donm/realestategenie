@@ -166,9 +166,36 @@ export async function createOrUpdateGHLContact(params: {
     );
 
     if (!createResponse.ok) {
-      const error = await createResponse.text();
-      console.error('GHL contact creation failed:', error);
-      throw new Error(`GHL contact creation failed: ${error}`);
+      const errorText = await createResponse.text();
+      console.error('GHL contact creation failed:', errorText);
+
+      // If duplicate contact error, extract the existing contact ID from the error
+      try {
+        const errorData = JSON.parse(errorText);
+        if (errorData.statusCode === 400 && errorData.message?.includes('duplicated contacts')) {
+          const existingContactId = errorData.meta?.contactId;
+          if (existingContactId) {
+            console.log('Contact already exists, using existing contact ID:', existingContactId);
+
+            // Add tags to existing contact if provided
+            if (params.tags && params.tags.length > 0) {
+              await addGHLTags({
+                contactId: existingContactId,
+                locationId: params.locationId,
+                accessToken: params.accessToken,
+                tags: params.tags,
+              });
+            }
+
+            // Return the existing contact
+            return { id: existingContactId };
+          }
+        }
+      } catch (parseError) {
+        // If we can't parse the error, continue with the original error
+      }
+
+      throw new Error(`GHL contact creation failed: ${errorText}`);
     }
 
     const contactData = await createResponse.json();
