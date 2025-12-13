@@ -138,20 +138,6 @@ export async function POST(req: Request) {
       console.log('GHL connected:', isGHLConnected);
       console.log('Flyer URL:', flyerUrl);
 
-      // NOTE: Direct GHL email/SMS sending is DISABLED
-      // Use GHL workflows with webhooks instead for better control
-      // The webhook will include flyer_url, open_house_date, open_house_time, and all lead data
-      console.log('Direct notifications disabled - using webhooks for GHL workflows');
-      return;
-
-      /* DISABLED: Direct GHL/Resend/Twilio notifications
-       * Use webhook-triggered GHL workflows instead
-       *
-      console.log('Checking GHL connection...');
-      console.log('isGHLConnected:', !!isGHLConnected);
-      console.log('ghlConfig exists:', !!ghlConfig);
-      console.log('Will use GHL:', !!(isGHLConnected && ghlConfig));
-
       // If GHL is connected, use GHL for notifications
       if (isGHLConnected && ghlConfig) {
         console.log('GHL notification flow starting...');
@@ -395,7 +381,6 @@ export async function POST(req: Request) {
           }
         }
       }
-      END OF DISABLED CODE */
     };
 
     // Trigger async integrations (non-blocking)
