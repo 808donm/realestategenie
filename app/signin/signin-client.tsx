@@ -15,10 +15,11 @@ export default function SignInClient() {
   const supabase = supabaseBrowser();
   const params = useSearchParams();
   const redirectTo = params.get("redirect") || "/app/dashboard";
+  const oauthError = params.get("error");
 
   const [email, setEmail] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
-  const [err, setErr] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(oauthError);
   const [loading, setLoading] = useState(false);
 
   async function sendMagicLink(e: React.FormEvent) {

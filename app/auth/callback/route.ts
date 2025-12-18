@@ -30,10 +30,20 @@ export async function GET(req: NextRequest) {
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (error) {
+      console.error("OAuth callback error:", error);
       const signInUrl = new URL("/signin", url.origin);
+      signInUrl.searchParams.set("error", error.message);
       signInUrl.searchParams.set("redirect", redirect);
       return NextResponse.redirect(signInUrl);
     }
+  }
+
+  // If no code, redirect to signin with error
+  if (!code) {
+    console.error("No code in OAuth callback");
+    const signInUrl = new URL("/signin", url.origin);
+    signInUrl.searchParams.set("error", "No authorization code received");
+    return NextResponse.redirect(signInUrl);
   }
 
   return res;
