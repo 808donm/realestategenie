@@ -1,7 +1,19 @@
 import { Resend } from "resend";
 
-// Initialize Resend client
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Lazy initialize Resend client only when needed
+let resendClient: Resend | null = null;
+
+function getResendClient(): Resend {
+  if (!process.env.RESEND_API_KEY) {
+    throw new Error("RESEND_API_KEY is not configured. Add it to your environment variables.");
+  }
+
+  if (!resendClient) {
+    resendClient = new Resend(process.env.RESEND_API_KEY);
+  }
+
+  return resendClient;
+}
 
 export interface SendInvitationEmailParams {
   to: string;
@@ -12,6 +24,9 @@ export interface SendInvitationEmailParams {
 
 export async function sendInvitationEmail(params: SendInvitationEmailParams) {
   const { to, invitationUrl, invitedBy, expiresAt } = params;
+
+  // Get Resend client (will throw if API key not configured)
+  const resend = getResendClient();
 
   // Format expiration date
   const expirationDate = new Date(expiresAt).toLocaleDateString("en-US", {
