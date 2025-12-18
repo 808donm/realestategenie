@@ -42,7 +42,15 @@ export default function InvitationsClient({
       }
 
       const data = await response.json();
-      alert(`Invitation sent to ${email}\n\nInvitation link:\n${data.inviteUrl}`);
+
+      if (data.emailSent) {
+        alert(`✅ Invitation email sent to ${email}\n\nThe recipient will receive an email with instructions to join.`);
+      } else if (data.warning) {
+        alert(`⚠️ ${data.warning}\n\nInvitation link:\n${data.inviteUrl}`);
+      } else {
+        alert(`Invitation created for ${email}\n\nInvitation link:\n${data.inviteUrl}`);
+      }
+
       setEmail("");
       router.refresh();
     } catch (error: any) {

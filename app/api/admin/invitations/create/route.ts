@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { createClient } from "@supabase/supabase-js";
 import { logError } from "@/lib/error-logging";
+import { sendInvitationEmail } from "@/lib/email/resend";
 import crypto from "crypto";
 
 const admin = createClient(
@@ -105,14 +106,41 @@ export async function POST(request: NextRequest) {
       (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
     const inviteUrl = `${origin}/accept-invite/${invitation.id}?token=${token}`;
 
-    // Send invitation email via GHL (if connected)
-    // For now, we'll just return the link - you can integrate GHL email here
-    console.log("Invitation created:", { email, inviteUrl });
+    // Send invitation email via Resend
+    try {
+      await sendInvitationEmail({
+        to: email,
+        invitationUrl: inviteUrl,
+        invitedBy: adminUser.display_name || adminUser.email,
+        expiresAt: new Date(invitation.expires_at),
+      });
+
+      console.log("Invitation email sent successfully to:", email);
+    } catch (emailError: any) {
+      // Log email error but don't fail the invitation creation
+      console.error("Failed to send invitation email:", emailError);
+      await logError({
+        agentId: user.id,
+        endpoint: "/api/admin/invitations/create",
+        errorMessage: `Failed to send invitation email: ${emailError.message}`,
+        severity: "warning",
+      });
+
+      // Return success but indicate email wasn't sent
+      return NextResponse.json({
+        success: true,
+        inviteUrl,
+        invitation,
+        emailSent: false,
+        warning: "Invitation created but email could not be sent. Please share the link manually.",
+      });
+    }
 
     return NextResponse.json({
       success: true,
       inviteUrl,
       invitation,
+      emailSent: true,
     });
   } catch (error: any) {
     await logError({
