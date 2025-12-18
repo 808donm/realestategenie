@@ -23,6 +23,7 @@ export default function InvitationsClient({
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [copyingId, setCopyingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   async function sendInvitation(e: React.FormEvent) {
     e.preventDefault();
@@ -71,6 +72,32 @@ export default function InvitationsClient({
       alert(`Invitation link:\n${inviteUrl}`);
     } finally {
       setCopyingId(null);
+    }
+  }
+
+  async function deleteInvitation(invitationId: string, email: string) {
+    if (!confirm(`Delete invitation for ${email}?\n\nThis cannot be undone.`)) {
+      return;
+    }
+
+    setDeletingId(invitationId);
+    try {
+      const response = await fetch("/api/admin/invitations/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ invitationId }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to delete invitation");
+      }
+
+      router.refresh();
+    } catch (error: any) {
+      alert(error.message || "Failed to delete invitation");
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -150,7 +177,9 @@ export default function InvitationsClient({
           <InvitationTable
             invitations={pendingInvites}
             onCopyLink={copyInviteLink}
+            onDelete={deleteInvitation}
             copyingId={copyingId}
+            deletingId={deletingId}
           />
         </div>
       )}
@@ -178,7 +207,9 @@ export default function InvitationsClient({
           <InvitationTable
             invitations={otherInvites}
             onCopyLink={copyInviteLink}
+            onDelete={deleteInvitation}
             copyingId={copyingId}
+            deletingId={deletingId}
           />
         </div>
       )}
@@ -189,11 +220,15 @@ export default function InvitationsClient({
 function InvitationTable({
   invitations,
   onCopyLink,
+  onDelete,
   copyingId,
+  deletingId,
 }: {
   invitations: Invitation[];
   onCopyLink: (id: string) => void;
+  onDelete: (id: string, email: string) => void;
   copyingId: string | null;
+  deletingId: string | null;
 }) {
   return (
     <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -232,24 +267,43 @@ function InvitationTable({
               {new Date(inv.expires_at).toLocaleDateString()}
             </td>
             <td style={{ padding: "16px 24px" }}>
-              {inv.status === "pending" && (
+              <div style={{ display: "flex", gap: 8 }}>
+                {inv.status === "pending" && (
+                  <button
+                    onClick={() => onCopyLink(inv.id)}
+                    disabled={copyingId === inv.id || deletingId === inv.id}
+                    style={{
+                      padding: "6px 12px",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      borderRadius: 6,
+                      border: "none",
+                      background: "#3b82f6",
+                      color: "white",
+                      cursor: copyingId === inv.id || deletingId === inv.id ? "not-allowed" : "pointer",
+                      opacity: copyingId === inv.id || deletingId === inv.id ? 0.5 : 1,
+                    }}
+                  >
+                    {copyingId === inv.id ? "Copying..." : "Copy Link"}
+                  </button>
+                )}
                 <button
-                  onClick={() => onCopyLink(inv.id)}
-                  disabled={copyingId === inv.id}
+                  onClick={() => onDelete(inv.id, inv.email)}
+                  disabled={deletingId === inv.id}
                   style={{
                     padding: "6px 12px",
                     fontSize: 12,
                     fontWeight: 600,
                     borderRadius: 6,
-                    border: "none",
-                    background: "#3b82f6",
-                    color: "white",
-                    cursor: "pointer",
+                    border: "1px solid #dc2626",
+                    background: deletingId === inv.id ? "#fca5a5" : "white",
+                    color: "#dc2626",
+                    cursor: deletingId === inv.id ? "not-allowed" : "pointer",
                   }}
                 >
-                  {copyingId === inv.id ? "Copying..." : "Copy Link"}
+                  {deletingId === inv.id ? "Deleting..." : "Delete"}
                 </button>
-              )}
+              </div>
             </td>
           </tr>
         ))}
