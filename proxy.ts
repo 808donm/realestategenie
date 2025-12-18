@@ -37,6 +37,13 @@ export default async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Log authentication status for debugging
+  const pathname = request.nextUrl.pathname;
+  if (pathname.startsWith("/app") || pathname.startsWith("/auth")) {
+    console.log(`[Proxy] ${pathname} - User authenticated:`, !!user, user?.email || "none");
+    console.log(`[Proxy] Cookies:`, request.cookies.getAll().filter(c => c.name.startsWith("sb-")).map(c => c.name));
+  }
+
   // Refresh session if user is authenticated
   if (user) {
     // This will refresh the session if needed
@@ -64,6 +71,7 @@ export default async function proxy(request: NextRequest) {
   // Protect /app routes - redirect to signin if not authenticated
   if (request.nextUrl.pathname.startsWith("/app") && !isPublicRoute) {
     if (!user) {
+      console.log(`[Proxy] Redirecting to signin - no user found for protected route:`, pathname);
       const url = request.nextUrl.clone();
       url.pathname = "/signin";
       url.searchParams.set("redirect", request.nextUrl.pathname);
