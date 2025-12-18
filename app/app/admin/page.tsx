@@ -6,16 +6,8 @@ export default async function AdminOverviewPage() {
 
   const supabase = await supabaseServer();
 
-  // Get statistics
-  const [
-    { count: totalUsers },
-    { count: activeUsers },
-    { count: disabledUsers },
-    { count: pendingInvites },
-    { count: totalOpenHouses },
-    { count: totalLeads },
-    { count: recentErrors },
-  ] = await Promise.all([
+  // Get statistics with error handling
+  const results = await Promise.all([
     supabase.from("agents").select("*", { count: "exact", head: true }),
     supabase
       .from("agents")
@@ -36,6 +28,14 @@ export default async function AdminOverviewPage() {
       .select("*", { count: "exact", head: true })
       .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
   ]);
+
+  const totalUsers = results[0].count ?? 0;
+  const activeUsers = results[1].count ?? 0;
+  const disabledUsers = results[2].count ?? 0;
+  const pendingInvites = results[3].count ?? 0;
+  const totalOpenHouses = results[4].count ?? 0;
+  const totalLeads = results[5].count ?? 0;
+  const recentErrors = results[6].count ?? 0;
 
   return (
     <div>
@@ -185,13 +185,6 @@ function QuickActionButton({
         textDecoration: "none",
         fontSize: 14,
         fontWeight: 600,
-        transition: "background 0.2s",
-      }}
-      onMouseOver={(e) => {
-        e.currentTarget.style.background = "#2563eb";
-      }}
-      onMouseOut={(e) => {
-        e.currentTarget.style.background = "#3b82f6";
       }}
     >
       {children}
