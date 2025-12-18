@@ -43,6 +43,47 @@ export default async function proxy(request: NextRequest) {
     await supabase.auth.getSession();
   }
 
+  // Define public routes that don't require authentication
+  const publicRoutes = [
+    "/signin",
+    "/signup",
+    "/auth/callback",
+    "/api",
+    "/oh", // Public open house check-in pages
+    "/accept-invite",
+    "/privacy",
+    "/terms",
+    "/data-deletion",
+    "/mfa",
+  ];
+
+  const isPublicRoute = publicRoutes.some((route) =>
+    request.nextUrl.pathname.startsWith(route)
+  );
+
+  // Protect /app routes - redirect to signin if not authenticated
+  if (request.nextUrl.pathname.startsWith("/app") && !isPublicRoute) {
+    if (!user) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/signin";
+      url.searchParams.set("redirect", request.nextUrl.pathname);
+      return NextResponse.redirect(url);
+    }
+  }
+
+  // Redirect authenticated users away from signin/signup pages
+  if (
+    (request.nextUrl.pathname === "/signin" ||
+      request.nextUrl.pathname === "/signup") &&
+    user
+  ) {
+    const redirectPath = request.nextUrl.searchParams.get("redirect") || "/app/dashboard";
+    const url = request.nextUrl.clone();
+    url.pathname = redirectPath;
+    url.search = ""; // Clear search params
+    return NextResponse.redirect(url);
+  }
+
   return supabaseResponse;
 }
 
