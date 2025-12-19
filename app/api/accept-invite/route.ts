@@ -88,35 +88,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user already exists in auth using getUserByEmail (more reliable)
-    try {
-      const { data: existingAuthUser } = await admin.auth.admin.getUserByEmail(email);
+    // Check if user already exists by trying to list users with this email
+    const { data: usersList } = await admin.auth.admin.listUsers();
+    const existingAuthUser = usersList?.users?.find((u) => u.email === email);
 
-      if (existingAuthUser?.user) {
-        console.log(`Found existing auth user for ${email}, deleting...`);
+    if (existingAuthUser) {
+      console.log(`Found existing auth user for ${email}, deleting...`);
 
-        // Delete with shouldSoftDelete: false to ensure hard delete
-        const { error: deleteAuthError } = await admin.auth.admin.deleteUser(
-          existingAuthUser.user.id,
-          false // shouldSoftDelete = false for hard delete
+      // Delete with shouldSoftDelete: false to ensure hard delete
+      const { error: deleteAuthError } = await admin.auth.admin.deleteUser(
+        existingAuthUser.id,
+        false // shouldSoftDelete = false for hard delete
+      );
+
+      if (deleteAuthError) {
+        console.error("Failed to delete existing auth user:", deleteAuthError);
+        return NextResponse.json(
+          { error: `Cannot create account: An account with this email already exists and could not be removed. Please contact support.` },
+          { status: 409 }
         );
+      } else {
+        console.log(`Successfully deleted auth user for ${email}`);
 
-        if (deleteAuthError) {
-          console.error("Failed to delete existing auth user:", deleteAuthError);
-          return NextResponse.json(
-            { error: `Cannot create account: An account with this email already exists and could not be removed. Please contact support.` },
-            { status: 409 }
-          );
-        } else {
-          console.log(`Successfully deleted auth user for ${email}`);
-
-          // Wait a moment for cascade deletes to complete
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
+        // Wait a moment for cascade deletes to complete
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       }
-    } catch (e: any) {
-      // User doesn't exist, this is fine
-      console.log(`No existing auth user found for ${email}:`, e.message);
     }
 
     // Double-check agent record doesn't exist (should be cascade deleted)
