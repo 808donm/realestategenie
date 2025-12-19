@@ -44,7 +44,7 @@ export default function SignInClient() {
         <CardHeader className="text-center space-y-4">
           <div className="flex justify-center">
             <Image
-              src="/real-estate-genie-logo.png"
+              src="/logo.jpeg"
               alt="The Real Estate Genie"
               width={120}
               height={120}

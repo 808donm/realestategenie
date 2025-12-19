@@ -17,7 +17,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   style={{ display: "flex", alignItems: "center", gap: 10, fontWeight: 900, textDecoration: "none" }}
 >
   <Image
-    src="/real-estate-genie-logo.png"
+    src="/logo.jpeg"
     alt="The Real Estate Genie"
     width={44}
     height={44}
