@@ -88,73 +88,61 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Step 1: Check and delete agent record first (this triggers cascade deletes for leads, etc.)
+    // Check if user already exists as an agent or in auth
+    const { data: usersList } = await admin.auth.admin.listUsers();
+    const existingAuthUser = usersList?.users?.find((u) => u.email === email);
     const { data: existingAgent } = await admin
       .from("agents")
       .select("id")
       .eq("email", email)
       .maybeSingle();
 
-    if (existingAgent) {
-      console.log(`Found existing agent record for ${email}, deleting...`);
-      const { error: deleteAgentError } = await admin
-        .from("agents")
-        .delete()
-        .eq("id", existingAgent.id);
+    // Check if email exists in lead submissions (stored in JSONB payload)
+    const { data: existingLeads, error: leadCheckError } = await admin
+      .from("lead_submissions")
+      .select("id")
+      .contains("payload", { email: email });
 
-      if (deleteAgentError) {
-        console.error("Failed to delete existing agent:", deleteAgentError);
+    console.log(`Pre-creation check for ${email}:`, {
+      hasAuthUser: !!existingAuthUser,
+      hasAgent: !!existingAgent,
+      hasLeads: existingLeads?.length || 0,
+    });
+
+    // Delete any lead submissions with this email
+    if (existingLeads && existingLeads.length > 0) {
+      console.log(`Found ${existingLeads.length} lead submissions for ${email}, deleting...`);
+      const { error: deleteLeadsError } = await admin
+        .from("lead_submissions")
+        .delete()
+        .contains("payload", { email: email });
+
+      if (deleteLeadsError) {
+        console.error("Failed to delete lead submissions:", deleteLeadsError);
       } else {
-        console.log(`Successfully deleted agent record for ${email}`);
-        // Wait for cascade deletes to complete (leads, events, etc.)
-        await new Promise((resolve) => setTimeout(resolve, 2000));
+        console.log(`Successfully deleted lead submissions for ${email}`);
       }
     }
 
-    // Step 2: Check and delete auth user with hard delete
-    const { data: usersList } = await admin.auth.admin.listUsers();
-    let existingAuthUser = usersList?.users?.find((u) => u.email === email);
-
-    if (existingAuthUser) {
-      console.log(`Found existing auth user for ${email}, attempting hard delete...`);
-
-      // Try hard delete first
-      let deleteError = (await admin.auth.admin.deleteUser(existingAuthUser.id, false)).error;
-
-      if (deleteError) {
-        console.log("Hard delete failed, trying soft delete...");
-        // If hard delete fails, try soft delete
-        deleteError = (await admin.auth.admin.deleteUser(existingAuthUser.id, true)).error;
+    // If user exists in auth or agents, we need to clean up
+    if (existingAuthUser || existingAgent) {
+      // Delete agent first (triggers cascade)
+      if (existingAgent) {
+        console.log(`Deleting existing agent for ${email}...`);
+        await admin.from("agents").delete().eq("id", existingAgent.id);
+        await new Promise((resolve) => setTimeout(resolve, 2000));
       }
 
-      if (deleteError) {
-        console.error("Failed to delete existing auth user:", deleteError);
-        return NextResponse.json(
-          { error: `Cannot create account: Unable to clean up existing account. Please try again in a few minutes or contact support.` },
-          { status: 409 }
-        );
+      // Delete auth user
+      if (existingAuthUser) {
+        console.log(`Deleting existing auth user for ${email}...`);
+        await admin.auth.admin.deleteUser(existingAuthUser.id, false);
+        await new Promise((resolve) => setTimeout(resolve, 3000));
       }
-
-      console.log(`Successfully deleted auth user for ${email}, waiting for cleanup...`);
-      // Wait longer for auth system to fully process deletion
-      await new Promise((resolve) => setTimeout(resolve, 3000));
-
-      // Verify the user is actually gone
-      const { data: verifyList } = await admin.auth.admin.listUsers();
-      const stillExists = verifyList?.users?.find((u) => u.email === email);
-
-      if (stillExists) {
-        console.error(`User ${email} still exists after deletion attempt`);
-        return NextResponse.json(
-          { error: `Account cleanup incomplete. Please wait 30 seconds and try again.` },
-          { status: 409 }
-        );
-      }
-
-      console.log(`Verified: User ${email} has been completely removed`);
     }
 
     // Create user in Supabase Auth
+    console.log(`Creating new auth user for ${email}...`);
     const { data: authData, error: authError } = await admin.auth.admin.createUser({
       email,
       password,
