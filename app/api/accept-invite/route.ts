@@ -88,27 +88,60 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user already exists in auth
-    const { data: existingUsers } = await admin.auth.admin.listUsers();
-    const existingAuthUser = existingUsers?.users?.find((u) => u.email === email);
+    // Check if user already exists in auth using getUserByEmail (more reliable)
+    try {
+      const { data: existingAuthUser } = await admin.auth.admin.getUserByEmail(email);
 
-    if (existingAuthUser) {
-      // Delete existing auth user if found
-      console.log(`Deleting existing auth user for ${email}`);
-      await admin.auth.admin.deleteUser(existingAuthUser.id);
+      if (existingAuthUser?.user) {
+        console.log(`Found existing auth user for ${email}, deleting...`);
+
+        // Delete with shouldSoftDelete: false to ensure hard delete
+        const { error: deleteAuthError } = await admin.auth.admin.deleteUser(
+          existingAuthUser.user.id,
+          false // shouldSoftDelete = false for hard delete
+        );
+
+        if (deleteAuthError) {
+          console.error("Failed to delete existing auth user:", deleteAuthError);
+          return NextResponse.json(
+            { error: `Cannot create account: An account with this email already exists and could not be removed. Please contact support.` },
+            { status: 409 }
+          );
+        } else {
+          console.log(`Successfully deleted auth user for ${email}`);
+
+          // Wait a moment for cascade deletes to complete
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+    } catch (e: any) {
+      // User doesn't exist, this is fine
+      console.log(`No existing auth user found for ${email}:`, e.message);
     }
 
-    // Check if agent record exists
+    // Double-check agent record doesn't exist (should be cascade deleted)
     const { data: existingAgent } = await admin
       .from("agents")
       .select("id")
       .eq("email", email)
-      .single();
+      .maybeSingle();
 
     if (existingAgent) {
-      // Delete existing agent record
-      console.log(`Deleting existing agent record for ${email}`);
-      await admin.from("agents").delete().eq("id", existingAgent.id);
+      console.log(`Agent record still exists for ${email}, manually deleting...`);
+      const { error: deleteAgentError } = await admin
+        .from("agents")
+        .delete()
+        .eq("id", existingAgent.id);
+
+      if (deleteAgentError) {
+        console.error("Failed to delete existing agent:", deleteAgentError);
+        return NextResponse.json(
+          { error: `Cannot create account: Database cleanup failed. Please contact support.` },
+          { status: 500 }
+        );
+      } else {
+        console.log(`Successfully deleted agent record for ${email}`);
+      }
     }
 
     // Create user in Supabase Auth
