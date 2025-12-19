@@ -1,6 +1,5 @@
 import { supabaseServer } from "@/lib/supabase/server";
 import GHLIntegrationCard from "./ghl-card";
-import N8NIntegrationCard from "./n8n-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import IntegrationsNotifications from "./notifications";
 
@@ -22,7 +21,6 @@ export default async function IntegrationsPage() {
     .eq("agent_id", user.id);
 
   const ghlIntegration = integrations?.find((i) => i.provider === "ghl");
-  const n8nIntegration = integrations?.find((i) => i.provider === "n8n");
 
   return (
     <div className="space-y-6">
@@ -35,9 +33,8 @@ export default async function IntegrationsPage() {
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-1">
         <GHLIntegrationCard integration={ghlIntegration} />
-        <N8NIntegrationCard integration={n8nIntegration} />
       </div>
 
       <Card>
