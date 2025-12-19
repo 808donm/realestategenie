@@ -44,7 +44,7 @@ export async function sendInvitationEmail(params: SendInvitationEmailParams) {
 
   try {
     const { data, error } = await resend.emails.send({
-      from: "Real Estate Genie <noreply@realestategenie.app>",
+      from: "Real Estate Genie <onboarding@resend.dev>",
       to: [to],
       subject: "You've been invited to Real Estate Genie",
       html: getInvitationEmailHtml({
@@ -75,7 +75,7 @@ export async function sendVerificationCode(params: SendVerificationCodeParams) {
 
   try {
     const { data, error } = await resend.emails.send({
-      from: "Real Estate Genie <noreply@realestategenie.app>",
+      from: "Real Estate Genie <onboarding@resend.dev>",
       to: [to],
       subject: "Verify your email - Real Estate Genie",
       html: getVerificationEmailHtml({ code, expiresInMinutes }),
