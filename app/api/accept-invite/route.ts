@@ -88,6 +88,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check if user already exists in auth
+    const { data: existingUsers } = await admin.auth.admin.listUsers();
+    const existingAuthUser = existingUsers?.users?.find((u) => u.email === email);
+
+    if (existingAuthUser) {
+      // Delete existing auth user if found
+      console.log(`Deleting existing auth user for ${email}`);
+      await admin.auth.admin.deleteUser(existingAuthUser.id);
+    }
+
+    // Check if agent record exists
+    const { data: existingAgent } = await admin
+      .from("agents")
+      .select("id")
+      .eq("email", email)
+      .single();
+
+    if (existingAgent) {
+      // Delete existing agent record
+      console.log(`Deleting existing agent record for ${email}`);
+      await admin.from("agents").delete().eq("id", existingAgent.id);
+    }
+
     // Create user in Supabase Auth
     const { data: authData, error: authError } = await admin.auth.admin.createUser({
       email,
@@ -99,13 +122,14 @@ export async function POST(request: NextRequest) {
     });
 
     if (authError || !authData.user) {
+      console.error("Auth creation error:", authError);
       await logError({
         endpoint: "/api/accept-invite",
         errorMessage: authError?.message || "Failed to create user",
         severity: "error",
       });
       return NextResponse.json(
-        { error: authError?.message || "Failed to create account" },
+        { error: `Database error creating new user: ${authError?.message || "Unknown error"}` },
         { status: 500 }
       );
     }
@@ -120,6 +144,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (agentError) {
+      console.error("Agent creation error:", agentError);
       // Rollback: delete the auth user
       await admin.auth.admin.deleteUser(authData.user.id);
 
@@ -129,7 +154,7 @@ export async function POST(request: NextRequest) {
         severity: "error",
       });
       return NextResponse.json(
-        { error: "Failed to create agent profile" },
+        { error: `Database error creating agent profile: ${agentError.message}` },
         { status: 500 }
       );
     }
