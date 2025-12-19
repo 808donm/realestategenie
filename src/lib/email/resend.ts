@@ -52,6 +52,11 @@ export async function sendInvitationEmail(params: SendInvitationEmailParams) {
         invitedBy,
         expirationDate,
       }),
+      text: getInvitationEmailText({
+        invitationUrl,
+        invitedBy,
+        expirationDate,
+      }),
     });
 
     if (error) {
@@ -79,6 +84,7 @@ export async function sendVerificationCode(params: SendVerificationCodeParams) {
       to: [to],
       subject: "Verify your email - Real Estate Genie",
       html: getVerificationEmailHtml({ code, expiresInMinutes }),
+      text: getVerificationEmailText({ code, expiresInMinutes }),
     });
 
     if (error) {
@@ -297,3 +303,60 @@ function getInvitationEmailHtml({
 </html>
   `.trim();
 }
+
+function getVerificationEmailText({
+  code,
+  expiresInMinutes,
+}: {
+  code: string;
+  expiresInMinutes: number;
+}) {
+  return `
+The Real Estate Genie
+Verify Your Email
+
+Hi there!
+
+To complete your registration, please enter this verification code:
+
+${code}
+
+This code expires in ${expiresInMinutes} minutes.
+
+If you didn't request this code, you can safely ignore this email.
+
+© ${new Date().getFullYear()} Real Estate Genie. All rights reserved.
+Manage your open houses and leads like a pro.
+  `.trim();
+}
+
+function getInvitationEmailText({
+  invitationUrl,
+  invitedBy,
+  expirationDate,
+}: {
+  invitationUrl: string;
+  invitedBy: string;
+  expirationDate: string;
+}) {
+  return `
+The Real Estate Genie
+You've Been Invited!
+
+Hi there!
+
+${invitedBy} has invited you to join Real Estate Genie, the powerful platform for managing open houses and capturing leads.
+
+Click the link below to create your account and get started:
+
+${invitationUrl}
+
+This invitation expires on ${expirationDate}.
+
+If you didn't expect this invitation, you can safely ignore this email.
+
+© ${new Date().getFullYear()} Real Estate Genie. All rights reserved.
+Manage your open houses and leads like a pro.
+  `.trim();
+}
+
