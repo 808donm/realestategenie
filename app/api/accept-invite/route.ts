@@ -10,9 +10,9 @@ const admin = createClient(
 
 export async function POST(request: NextRequest) {
   try {
-    const { invitationId, email, password, fullName } = await request.json();
+    const { invitationId, email, password, fullName, verificationCode } = await request.json();
 
-    if (!invitationId || !email || !password || !fullName) {
+    if (!invitationId || !email || !password || !fullName || !verificationCode) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check expiration
+    // Check invitation expiration
     if (new Date(invitation.expires_at) < new Date()) {
       await admin
         .from("user_invitations")
@@ -44,6 +44,46 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json(
         { error: "Invitation has expired" },
+        { status: 400 }
+      );
+    }
+
+    // Verify the verification code
+    if (!invitation.verification_code) {
+      return NextResponse.json(
+        { error: "Verification code not generated. Please request a new code." },
+        { status: 400 }
+      );
+    }
+
+    // Check verification code expiration
+    if (new Date(invitation.verification_code_expires_at) < new Date()) {
+      return NextResponse.json(
+        { error: "Verification code has expired. Please request a new code." },
+        { status: 400 }
+      );
+    }
+
+    // Check verification attempts (max 5 attempts)
+    if (invitation.verification_attempts >= 5) {
+      return NextResponse.json(
+        { error: "Too many failed attempts. Please request a new code." },
+        { status: 400 }
+      );
+    }
+
+    // Verify code matches
+    if (invitation.verification_code !== verificationCode.trim()) {
+      // Increment failed attempts
+      await admin
+        .from("user_invitations")
+        .update({
+          verification_attempts: invitation.verification_attempts + 1,
+        })
+        .eq("id", invitationId);
+
+      return NextResponse.json(
+        { error: "Invalid verification code. Please try again." },
         { status: 400 }
       );
     }

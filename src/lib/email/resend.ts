@@ -22,6 +22,12 @@ export interface SendInvitationEmailParams {
   expiresAt: Date;
 }
 
+export interface SendVerificationCodeParams {
+  to: string;
+  code: string;
+  expiresInMinutes: number;
+}
+
 export async function sendInvitationEmail(params: SendInvitationEmailParams) {
   const { to, invitationUrl, invitedBy, expiresAt } = params;
 
@@ -59,6 +65,128 @@ export async function sendInvitationEmail(params: SendInvitationEmailParams) {
     console.error("Failed to send invitation email:", error);
     throw error;
   }
+}
+
+export async function sendVerificationCode(params: SendVerificationCodeParams) {
+  const { to, code, expiresInMinutes } = params;
+
+  // Get Resend client (will throw if API key not configured)
+  const resend = getResendClient();
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: "Real Estate Genie <noreply@realestategenie.app>",
+      to: [to],
+      subject: "Verify your email - Real Estate Genie",
+      html: getVerificationEmailHtml({ code, expiresInMinutes }),
+    });
+
+    if (error) {
+      console.error("Resend verification code error:", error);
+      throw new Error(`Failed to send verification code: ${error.message}`);
+    }
+
+    console.log("Verification code sent successfully:", data?.id);
+    return data;
+  } catch (error: any) {
+    console.error("Failed to send verification code:", error);
+    throw error;
+  }
+}
+
+function getVerificationEmailHtml({
+  code,
+  expiresInMinutes,
+}: {
+  code: string;
+  expiresInMinutes: number;
+}) {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify Your Email</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f9fafb;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f9fafb; padding: 40px 0;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden;">
+
+          <!-- Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 40px 30px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: 800;">
+                The Real Estate Genie<sup style="font-size: 14px;">™</sup>
+              </h1>
+              <p style="margin: 10px 0 0; color: rgba(255,255,255,0.9); font-size: 16px;">
+                Verify Your Email
+              </p>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="padding: 40px;">
+              <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #374151;">
+                Hi there! 👋
+              </p>
+
+              <p style="margin: 0 0 30px; font-size: 16px; line-height: 1.6; color: #374151;">
+                To complete your registration, please enter this verification code:
+              </p>
+
+              <!-- Verification Code -->
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center" style="padding: 0 0 30px;">
+                    <div style="display: inline-block; padding: 20px 40px; background: #f3f4f6; border-radius: 8px; border: 2px dashed #9ca3af;">
+                      <span style="font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #1f2937; font-family: monospace;">
+                        ${code}
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Expiration Notice -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #fef3c7; border-radius: 8px; border-left: 4px solid #f59e0b;">
+                <tr>
+                  <td style="padding: 16px 20px;">
+                    <p style="margin: 0; font-size: 14px; color: #92400e;">
+                      ⏱️ <strong>This code expires in ${expiresInMinutes} minutes.</strong>
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin: 30px 0 0; font-size: 14px; line-height: 1.6; color: #6b7280;">
+                If you didn't request this code, you can safely ignore this email.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f9fafb; padding: 30px 40px; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 0 0 10px; font-size: 12px; color: #6b7280; text-align: center;">
+                © ${new Date().getFullYear()} Real Estate Genie. All rights reserved.
+              </p>
+              <p style="margin: 0; font-size: 12px; color: #9ca3af; text-align: center;">
+                Manage your open houses and leads like a pro.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `.trim();
 }
 
 function getInvitationEmailHtml({
