@@ -44,17 +44,11 @@ export default async function IntegrationsPage() {
             More integrations are on the way
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-3">
+        <CardContent className="grid gap-4 md:grid-cols-2">
           <div className="p-4 border rounded-lg opacity-50">
             <h3 className="font-semibold mb-1">IDX Broker</h3>
             <p className="text-sm text-muted-foreground">
               Sync listings and property data
-            </p>
-          </div>
-          <div className="p-4 border rounded-lg opacity-50">
-            <h3 className="font-semibold mb-1">Zapier</h3>
-            <p className="text-sm text-muted-foreground">
-              Connect 5,000+ apps
             </p>
           </div>
           <div className="p-4 border rounded-lg opacity-50">
