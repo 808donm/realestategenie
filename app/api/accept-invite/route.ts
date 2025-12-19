@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
     // Wait a bit to ensure all deletions are processed
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    // Create user in Supabase Auth with additional options to bypass issues
+    // Create user in Supabase Auth
     console.log(`Creating new auth user for ${email}...`);
     const { data: authData, error: authError } = await admin.auth.admin.createUser({
       email,
@@ -153,8 +153,6 @@ export async function POST(request: NextRequest) {
       user_metadata: {
         full_name: fullName,
       },
-      // Try with a random UUID to avoid any ID conflicts
-      user_id: undefined, // Let Supabase generate the ID
     });
 
     if (authError || !authData.user) {
