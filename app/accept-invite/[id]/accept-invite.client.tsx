@@ -128,6 +128,36 @@ export default function AcceptInviteClient({
     }
   }
 
+  function generateStrongPassword() {
+    const length = 16;
+    const uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const lowercase = "abcdefghijklmnopqrstuvwxyz";
+    const numbers = "0123456789";
+    const symbols = "!@#$%^&*-_=+";
+    const allChars = uppercase + lowercase + numbers + symbols;
+
+    let password = "";
+    // Ensure at least one of each type
+    password += uppercase[Math.floor(Math.random() * uppercase.length)];
+    password += lowercase[Math.floor(Math.random() * lowercase.length)];
+    password += numbers[Math.floor(Math.random() * numbers.length)];
+    password += symbols[Math.floor(Math.random() * symbols.length)];
+
+    // Fill the rest randomly
+    for (let i = password.length; i < length; i++) {
+      password += allChars[Math.floor(Math.random() * allChars.length)];
+    }
+
+    // Shuffle the password
+    password = password
+      .split("")
+      .sort(() => Math.random() - 0.5)
+      .join("");
+
+    setPassword(password);
+    setConfirmPassword(password);
+  }
+
   return (
     <div style={{ maxWidth: 500, margin: "100px auto", padding: 24 }}>
       <div style={{ textAlign: "center", marginBottom: 32 }}>
@@ -200,9 +230,26 @@ export default function AcceptInviteClient({
             </div>
 
             <div>
-              <label style={{ display: "block", fontSize: 14, fontWeight: 600, marginBottom: 8 }}>
-                Password
-              </label>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                <label style={{ fontSize: 14, fontWeight: 600 }}>
+                  Password
+                </label>
+                <button
+                  type="button"
+                  onClick={generateStrongPassword}
+                  style={{
+                    fontSize: 12,
+                    color: "#3b82f6",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    textDecoration: "underline",
+                    fontWeight: 600,
+                  }}
+                >
+                  Generate strong password
+                </button>
+              </div>
               <input
                 type="password"
                 value={password}
