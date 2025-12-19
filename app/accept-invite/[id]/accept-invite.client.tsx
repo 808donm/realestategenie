@@ -133,7 +133,7 @@ export default function AcceptInviteClient({
       <div style={{ textAlign: "center", marginBottom: 32 }}>
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
           <img
-            src="/logo.jpeg"
+            src="/logo.png"
             alt="The Real Estate Genie"
             width={200}
             height={200}
