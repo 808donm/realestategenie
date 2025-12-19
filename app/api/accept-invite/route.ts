@@ -107,13 +107,13 @@ export async function POST(request: NextRequest) {
       } else {
         console.log(`Successfully deleted agent record for ${email}`);
         // Wait for cascade deletes to complete (leads, events, etc.)
-        await new Promise((resolve) => setTimeout(resolve, 1500));
+        await new Promise((resolve) => setTimeout(resolve, 2000));
       }
     }
 
     // Step 2: Check and delete auth user with hard delete
     const { data: usersList } = await admin.auth.admin.listUsers();
-    const existingAuthUser = usersList?.users?.find((u) => u.email === email);
+    let existingAuthUser = usersList?.users?.find((u) => u.email === email);
 
     if (existingAuthUser) {
       console.log(`Found existing auth user for ${email}, attempting hard delete...`);
@@ -135,9 +135,23 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      console.log(`Successfully deleted auth user for ${email}`);
+      console.log(`Successfully deleted auth user for ${email}, waiting for cleanup...`);
       // Wait longer for auth system to fully process deletion
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+
+      // Verify the user is actually gone
+      const { data: verifyList } = await admin.auth.admin.listUsers();
+      const stillExists = verifyList?.users?.find((u) => u.email === email);
+
+      if (stillExists) {
+        console.error(`User ${email} still exists after deletion attempt`);
+        return NextResponse.json(
+          { error: `Account cleanup incomplete. Please wait 30 seconds and try again.` },
+          { status: 409 }
+        );
+      }
+
+      console.log(`Verified: User ${email} has been completely removed`);
     }
 
     // Create user in Supabase Auth
@@ -152,13 +166,17 @@ export async function POST(request: NextRequest) {
 
     if (authError || !authData.user) {
       console.error("Auth creation error:", authError);
+      console.error("Auth error details:", JSON.stringify(authError, null, 2));
+      console.error("Auth error code:", (authError as any)?.code);
+      console.error("Auth error status:", (authError as any)?.status);
+
       await logError({
         endpoint: "/api/accept-invite",
         errorMessage: authError?.message || "Failed to create user",
         severity: "error",
       });
       return NextResponse.json(
-        { error: `Database error creating new user: ${authError?.message || "Unknown error"}` },
+        { error: `Database error creating new user: ${authError?.message || "Unknown error"}. Please try again or contact support if the issue persists.` },
         { status: 500 }
       );
     }
