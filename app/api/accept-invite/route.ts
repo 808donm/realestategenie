@@ -141,7 +141,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create user in Supabase Auth
+    // Wait a bit to ensure all deletions are processed
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    // Create user in Supabase Auth with additional options to bypass issues
     console.log(`Creating new auth user for ${email}...`);
     const { data: authData, error: authError } = await admin.auth.admin.createUser({
       email,
@@ -150,6 +153,8 @@ export async function POST(request: NextRequest) {
       user_metadata: {
         full_name: fullName,
       },
+      // Try with a random UUID to avoid any ID conflicts
+      user_id: undefined, // Let Supabase generate the ID
     });
 
     if (authError || !authData.user) {
@@ -169,30 +174,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create agent profile
-    const { error: agentError } = await admin.from("agents").insert({
-      id: authData.user.id,
-      email,
-      display_name: fullName,
-      is_admin: false,
-      account_status: "active",
-    });
+    console.log(`Successfully created auth user for ${email}, agent profile created by trigger`);
 
-    if (agentError) {
-      console.error("Agent creation error:", agentError);
-      // Rollback: delete the auth user
-      await admin.auth.admin.deleteUser(authData.user.id);
-
-      await logError({
-        endpoint: "/api/accept-invite",
-        errorMessage: agentError.message,
-        severity: "error",
-      });
-      return NextResponse.json(
-        { error: `Database error creating agent profile: ${agentError.message}` },
-        { status: 500 }
-      );
-    }
+    // Note: Agent profile is automatically created by the on_auth_user_created trigger
+    // No need to manually insert into agents table
 
     // Mark invitation as accepted
     await admin
