@@ -27,6 +27,7 @@ interface GenerateProfileModalProps {
   onSuccess: (profileId: string) => void;
   defaultAddress?: string;
   defaultCity?: string;
+  defaultNeighborhood?: string;
 }
 
 export default function GenerateProfileModal({
@@ -35,12 +36,13 @@ export default function GenerateProfileModal({
   onSuccess,
   defaultAddress = "",
   defaultCity = "",
+  defaultNeighborhood = "",
 }: GenerateProfileModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   // Form fields
-  const [neighborhoodName, setNeighborhoodName] = useState("");
+  const [neighborhoodName, setNeighborhoodName] = useState(defaultNeighborhood);
   const [address, setAddress] = useState(defaultAddress);
   const [city, setCity] = useState(defaultCity);
   const [stateProvince, setStateProvince] = useState("");
