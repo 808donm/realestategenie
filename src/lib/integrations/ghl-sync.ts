@@ -5,6 +5,7 @@
 
 import { GHLClient, GHLContact, GHLOpportunity } from "./ghl-client";
 import { createClient } from "@supabase/supabase-js";
+import { sendAutomatedFlyerFollowup } from "../notifications/flyer-followup-service";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -229,6 +230,21 @@ Consent: ${payload.consent?.sms ? "SMS ✓" : ""} ${payload.consent?.email ? "Em
         ghl_contact_id: contactId,
         ghl_opportunity_id: opportunityId,
       },
+    });
+
+    // Send automated flyer follow-up (non-blocking)
+    // This sends a thank you message asking if they want the flyer
+    sendAutomatedFlyerFollowup({
+      leadId,
+      agentId: lead.agent_id,
+      eventId: lead.event_id,
+      ghlContactId: contactId,
+      agentName: config.agent_name || payload.name,
+      propertyAddress,
+      leadFirstName: firstName,
+    }).catch((err) => {
+      console.error("Failed to send automated flyer follow-up:", err);
+      // Don't fail the sync if follow-up fails
     });
 
     return {
