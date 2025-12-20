@@ -368,8 +368,7 @@ export async function generateDOCX(
           ...(profileData.amenitiesList.parks.length > 0
             ? [
                 new Paragraph({
-                  text: "Parks:",
-                  bold: true,
+                  children: [new TextRun({ text: "Parks:", bold: true })],
                   spacing: { before: 100, after: 50 },
                 }),
                 ...profileData.amenitiesList.parks.map(
@@ -385,8 +384,7 @@ export async function generateDOCX(
           ...(profileData.amenitiesList.shopping.length > 0
             ? [
                 new Paragraph({
-                  text: "Shopping:",
-                  bold: true,
+                  children: [new TextRun({ text: "Shopping:", bold: true })],
                   spacing: { before: 100, after: 50 },
                 }),
                 ...profileData.amenitiesList.shopping.map(
@@ -402,8 +400,7 @@ export async function generateDOCX(
           ...(profileData.amenitiesList.dining.length > 0
             ? [
                 new Paragraph({
-                  text: "Dining:",
-                  bold: true,
+                  children: [new TextRun({ text: "Dining:", bold: true })],
                   spacing: { before: 100, after: 50 },
                 }),
                 ...profileData.amenitiesList.dining.map(
