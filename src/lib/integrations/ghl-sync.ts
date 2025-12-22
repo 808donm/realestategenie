@@ -188,6 +188,38 @@ export async function syncLeadToGHL(leadId: string): Promise<{
       contactId = newContact.id!;
     }
 
+    // Create registration record for this open house
+    // Check if registration already exists
+    const { data: existingReg } = await supabaseAdmin
+      .from("open_house_registrations")
+      .select("id")
+      .eq("ghl_contact_id", contactId)
+      .eq("event_id", lead.event_id)
+      .single();
+
+    if (!existingReg) {
+      // Create new registration
+      const { error: regError } = await supabaseAdmin
+        .from("open_house_registrations")
+        .insert({
+          agent_id: lead.agent_id,
+          event_id: lead.event_id,
+          lead_id: leadId,
+          ghl_contact_id: contactId,
+          registered_at: new Date().toISOString(),
+          flyer_status: "pending",
+        });
+
+      if (regError) {
+        console.error("Failed to create registration record:", regError);
+        // Don't fail the sync - just log the error
+      } else {
+        console.log("Created registration record for contact:", contactId, "event:", lead.event_id);
+      }
+    } else {
+      console.log("Registration already exists for contact:", contactId, "event:", lead.event_id);
+    }
+
     // Fetch integration mapping for pipeline/stage
     const { data: mapping } = await supabaseAdmin
       .from("integration_mappings")
