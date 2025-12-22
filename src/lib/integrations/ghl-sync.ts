@@ -5,7 +5,7 @@
 
 import { GHLClient, GHLContact, GHLOpportunity } from "./ghl-client";
 import { createClient } from "@supabase/supabase-js";
-import { sendAutomatedFlyerFollowup } from "../notifications/flyer-followup-service";
+import { sendToGHLWorkflow } from "./ghl-webhook";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -88,14 +88,21 @@ export async function syncLeadToGHL(leadId: string): Promise<{
     const config = integration.config as any;
     const client = new GHLClient(config.access_token);
 
-    // Fetch event for property address
+    // Fetch event for property details
     const { data: event } = await supabaseAdmin
       .from("open_house_events")
-      .select("address")
+      .select("address, start_at, end_at, beds, baths, sqft, price")
       .eq("id", lead.event_id)
       .single();
 
     const propertyAddress = event?.address || "Unknown Property";
+
+    // Fetch agent details for workflow
+    const { data: agent } = await supabaseAdmin
+      .from("agents")
+      .select("display_name, email, phone_e164, license_number")
+      .eq("id", lead.agent_id)
+      .single();
 
     // Prepare contact data
     const payload = lead.payload as any;
@@ -232,19 +239,43 @@ Consent: ${payload.consent?.sms ? "SMS ✓" : ""} ${payload.consent?.email ? "Em
       },
     });
 
-    // Send automated flyer follow-up (non-blocking)
-    // This sends a thank you message asking if they want the flyer
-    sendAutomatedFlyerFollowup({
-      leadId,
-      agentId: lead.agent_id,
-      eventId: lead.event_id,
-      ghlContactId: contactId,
-      agentName: config.agent_name || payload.name,
-      propertyAddress,
-      leadFirstName: firstName,
+    // Trigger GHL workflow for automated follow-up (non-blocking)
+    // This sends data to GHL webhook which triggers the workflow
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.realestategenie.app";
+    const flyerUrl = `${baseUrl}/api/open-houses/${lead.event_id}/flyer`;
+
+    sendToGHLWorkflow(lead.agent_id, {
+      event_id: lead.event_id,
+      property_address: propertyAddress,
+      flyer_url: flyerUrl,
+      event_start_time: event?.start_at || new Date().toISOString(),
+      event_end_time: event?.end_at || new Date().toISOString(),
+
+      contact_id: contactId,
+      first_name: firstName,
+      last_name: lastName,
+      email: payload.email || "",
+      phone: payload.phone_e164 || "",
+
+      beds: event?.beds,
+      baths: event?.baths,
+      sqft: event?.sqft,
+      price: event?.price,
+
+      representation: payload.representation,
+      timeline: payload.timeline,
+      financing: payload.financing,
+      neighborhoods: payload.neighborhoods,
+      must_haves: payload.must_haves,
+      wants_agent_reach_out: payload.wants_agent_reach_out,
+
+      agent_name: agent?.display_name || "Agent",
+      agent_email: agent?.email || "",
+      agent_phone: agent?.phone_e164 || "",
+      agent_license: agent?.license_number,
     }).catch((err) => {
-      console.error("Failed to send automated flyer follow-up:", err);
-      // Don't fail the sync if follow-up fails
+      console.error("Failed to trigger GHL workflow:", err);
+      // Don't fail the sync if workflow trigger fails
     });
 
     return {
