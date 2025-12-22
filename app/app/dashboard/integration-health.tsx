@@ -12,11 +12,6 @@ type IntegrationHealth = {
     connected: boolean;
     lastUpdated: string | null;
   };
-  n8n: {
-    connected: boolean;
-    lastUpdated: string | null;
-    webhookSuccessRate: number | null;
-  };
 };
 
 export default function IntegrationHealth() {
@@ -50,17 +45,15 @@ export default function IntegrationHealth() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {[...Array(2)].map((_, i) => (
-              <div key={i} className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 bg-muted animate-pulse rounded-full" />
-                  <div className="space-y-2">
-                    <div className="h-4 w-24 bg-muted animate-pulse rounded" />
-                    <div className="h-3 w-32 bg-muted animate-pulse rounded" />
-                  </div>
+            <div className="flex items-center justify-between p-4 border rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 bg-muted animate-pulse rounded-full" />
+                <div className="space-y-2">
+                  <div className="h-4 w-24 bg-muted animate-pulse rounded" />
+                  <div className="h-3 w-32 bg-muted animate-pulse rounded" />
                 </div>
               </div>
-            ))}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -107,8 +100,6 @@ export default function IntegrationHealth() {
     return `${diffDays}d ago`;
   };
 
-  const allConnected = health.ghl.connected && health.n8n.connected;
-
   return (
     <Card>
       <CardHeader>
@@ -143,40 +134,15 @@ export default function IntegrationHealth() {
             {getHealthStatus(health.ghl.connected)}
           </div>
 
-          {/* n8n Webhooks */}
-          <div className="flex items-center justify-between p-4 border rounded-lg">
-            <div className="flex items-center gap-3">
-              {getHealthIcon(health.n8n.connected)}
-              <div>
-                <div className="font-semibold">n8n Automation</div>
-                <div className="text-sm text-muted-foreground">
-                  {health.n8n.connected ? (
-                    health.n8n.webhookSuccessRate !== null ? (
-                      <>
-                        Success rate: {health.n8n.webhookSuccessRate.toFixed(0)}%
-                        {" • "}Last 10 deliveries
-                      </>
-                    ) : (
-                      `Configured: ${formatLastUpdated(health.n8n.lastUpdated)}`
-                    )
-                  ) : (
-                    "Not configured"
-                  )}
-                </div>
-              </div>
-            </div>
-            {getHealthStatus(health.n8n.connected, health.n8n.webhookSuccessRate)}
-          </div>
-
           {/* Call to Action */}
-          {!allConnected && (
+          {!health.ghl.connected && (
             <div className="flex items-start gap-2 p-4 bg-warning/10 border border-warning/20 rounded-lg">
               <AlertCircle className="h-5 w-5 text-warning mt-0.5" />
               <div className="flex-1">
                 <div className="font-medium text-sm">Action Required</div>
                 <div className="text-sm text-muted-foreground mt-1">
-                  Connect your integrations to automatically sync leads to your CRM and trigger
-                  workflows.
+                  Connect GoHighLevel to automatically sync leads to your CRM and enable automated
+                  follow-ups.
                 </div>
                 <Link href="/app/integrations">
                   <Button variant="outline" size="sm" className="mt-2">
