@@ -5,7 +5,6 @@
 
 import { GHLClient, GHLContact, GHLOpportunity } from "./ghl-client";
 import { createClient } from "@supabase/supabase-js";
-import { sendToGHLWorkflow } from "./ghl-webhook";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -110,6 +109,22 @@ export async function syncLeadToGHL(leadId: string): Promise<{
     const firstName = nameParts[0] || payload.name;
     const lastName = nameParts.slice(1).join(" ") || "";
 
+    // Build flyer URL
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.realestategenie.app";
+    const flyerUrl = `${baseUrl}/api/open-houses/${lead.event_id}/flyer`;
+
+    // Format event time for display
+    const eventStartTime = event?.start_at
+      ? new Date(event.start_at).toLocaleString("en-US", {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+        })
+      : "";
+
     const contactData: GHLContact = {
       locationId: config.location_id,
       firstName,
@@ -118,18 +133,38 @@ export async function syncLeadToGHL(leadId: string): Promise<{
       email: payload.email || undefined,
       phone: payload.phone_e164 || undefined,
       tags: [
-        "open-house",
-        propertyAddress,
+        `open-house-${lead.event_id}`, // Primary trigger tag
+        "open-house",                   // Category tag
+        propertyAddress,                // For filtering
+        getHeatLevel(lead.heat_score),  // hot/warm/cold
         payload.timeline || "",
         payload.financing || "",
-        getHeatLevel(lead.heat_score),
       ].filter(Boolean),
       source: "Open House QR",
       customFields: {
+        // Property details for email template
+        property_address: propertyAddress,
+        property_flyer_url: flyerUrl,
+        event_start_time: eventStartTime,
+        open_house_event_id: lead.event_id,
+
+        // Property specs
+        beds: event?.beds?.toString() || "",
+        baths: event?.baths?.toString() || "",
+        sqft: event?.sqft?.toString() || "",
+        price: event?.price?.toString() || "",
+
+        // Lead qualification
+        heat_score: lead.heat_score?.toString() || "",
         representation: payload.representation || "",
         wants_reach_out: payload.wants_agent_reach_out ? "Yes" : "No",
+        timeline: payload.timeline || "",
+        financing: payload.financing || "",
         neighborhoods: payload.neighborhoods || "",
         must_haves: payload.must_haves || "",
+
+        // Agent info for email
+        agent_license: agent?.license_number || "",
       },
     };
 
@@ -239,44 +274,9 @@ Consent: ${payload.consent?.sms ? "SMS ✓" : ""} ${payload.consent?.email ? "Em
       },
     });
 
-    // Trigger GHL workflow for automated follow-up (non-blocking)
-    // This sends data to GHL webhook which triggers the workflow
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.realestategenie.app";
-    const flyerUrl = `${baseUrl}/api/open-houses/${lead.event_id}/flyer`;
-
-    sendToGHLWorkflow(lead.agent_id, {
-      event_id: lead.event_id,
-      property_address: propertyAddress,
-      flyer_url: flyerUrl,
-      event_start_time: event?.start_at || new Date().toISOString(),
-      event_end_time: event?.end_at || new Date().toISOString(),
-
-      contact_id: contactId,
-      first_name: firstName,
-      last_name: lastName,
-      email: payload.email || "",
-      phone: payload.phone_e164 || "",
-
-      beds: event?.beds,
-      baths: event?.baths,
-      sqft: event?.sqft,
-      price: event?.price,
-
-      representation: payload.representation,
-      timeline: payload.timeline,
-      financing: payload.financing,
-      neighborhoods: payload.neighborhoods,
-      must_haves: payload.must_haves,
-      wants_agent_reach_out: payload.wants_agent_reach_out,
-
-      agent_name: agent?.display_name || "Agent",
-      agent_email: agent?.email || "",
-      agent_phone: agent?.phone_e164 || "",
-      agent_license: agent?.license_number,
-    }).catch((err) => {
-      console.error("Failed to trigger GHL workflow:", err);
-      // Don't fail the sync if workflow trigger fails
-    });
+    // GHL workflow will automatically trigger when the tag "open-house-{eventId}" is added
+    // No need to send webhook - the tag addition is the trigger!
+    console.log(`Contact synced to GHL. Workflow will trigger on tag: open-house-${lead.event_id}`);
 
     return {
       success: true,
