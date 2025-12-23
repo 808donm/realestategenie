@@ -150,36 +150,38 @@ export async function createOrUpdateGHLContact(params: {
     console.log('[GHL] Contact payload:', JSON.stringify(contactPayload));
     console.log('[GHL] Sending create request...');
 
-    // Create AbortController for timeout
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+    // Create a hard timeout promise that rejects after 5 seconds
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => {
+        reject(new Error('GHL_TIMEOUT: Request exceeded 5 seconds'));
+      }, 5000);
+    });
 
+    // Create the fetch promise
+    const fetchPromise = fetch(
+      `https://services.leadconnectorhq.com/contacts/`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${params.accessToken}`,
+          'Content-Type': 'application/json',
+          'Version': '2021-07-28',
+        },
+        body: JSON.stringify(contactPayload),
+      }
+    );
+
+    // Race between fetch and timeout
     let createResponse;
     try {
-      createResponse = await fetch(
-        `https://services.leadconnectorhq.com/contacts/`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${params.accessToken}`,
-            'Content-Type': 'application/json',
-            'Version': '2021-07-28',
-          },
-          body: JSON.stringify(contactPayload),
-          signal: controller.signal,
-        }
-      );
-      clearTimeout(timeoutId);
-    } catch (fetchError: any) {
-      clearTimeout(timeoutId);
-      console.error('[GHL] Fetch error:', fetchError.name, fetchError.message);
-      if (fetchError.name === 'AbortError') {
-        console.error('[GHL] Request timed out after 15 seconds');
-      }
-      throw fetchError;
+      console.log('[GHL] Waiting for response (5 second timeout)...');
+      createResponse = await Promise.race([fetchPromise, timeoutPromise]);
+      console.log('[GHL] Create response received');
+    } catch (error: any) {
+      console.error('[GHL] Request failed or timed out:', error.message);
+      throw error;
     }
 
-    console.log('[GHL] Create response received');
     console.log('[GHL] Create response status:', createResponse.status);
 
     if (!createResponse.ok) {
