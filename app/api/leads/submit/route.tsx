@@ -6,6 +6,7 @@ import { dispatchWebhook } from "@/lib/webhooks/dispatcher";
 import { sendCheckInConfirmation, sendGreetingEmail } from "@/lib/notifications/email-service";
 import { sendCheckInSMS, sendGreetingSMS } from "@/lib/notifications/sms-service";
 import { sendGHLEmail, sendGHLSMS, createOrUpdateGHLContact, getGHLPipelines, createGHLOpportunity } from "@/lib/notifications/ghl-service";
+import { getValidGHLConfig } from "@/lib/integrations/ghl-token-refresh";
 
 const admin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -61,16 +62,9 @@ export async function POST(req: Request) {
       // Continue without agent details - notifications will be skipped
     }
 
-    // Get GHL integration credentials if connected
-    const { data: ghlIntegration } = await admin
-      .from("integrations")
-      .select("config,status")
-      .eq("agent_id", evt.agent_id)
-      .eq("provider", "ghl")
-      .single();
-
-    const isGHLConnected = ghlIntegration?.status === "connected" && ghlIntegration?.config;
-    const ghlConfig = isGHLConnected ? ghlIntegration.config : null;
+    // Get GHL integration credentials if connected (automatically refreshes token if expired)
+    const ghlConfig = await getValidGHLConfig(evt.agent_id);
+    const isGHLConnected = ghlConfig !== null;
 
     // Calculate heat score
     const heatScore = calculateHeatScore(payload);

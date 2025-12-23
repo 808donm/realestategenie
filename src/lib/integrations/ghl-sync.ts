@@ -5,6 +5,7 @@
 
 import { GHLClient, GHLContact, GHLOpportunity } from "./ghl-client";
 import { createClient } from "@supabase/supabase-js";
+import { getValidGHLConfig } from "./ghl-token-refresh";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -68,24 +69,26 @@ export async function syncLeadToGHL(leadId: string): Promise<{
       throw new Error("Lead not found");
     }
 
-    // Fetch GHL integration for agent
+    // Get GHL config (automatically refreshes token if expired)
+    const config = await getValidGHLConfig(lead.agent_id);
+
+    if (!config) {
+      throw new Error("GHL not connected for this agent");
+    }
+
+    const client = new GHLClient(config.access_token);
+
+    // Get integration record for metadata updates
     const { data: integration, error: integrationError } = await supabaseAdmin
       .from("integrations")
-      .select("*")
+      .select("id")
       .eq("agent_id", lead.agent_id)
       .eq("provider", "ghl")
       .single();
 
     if (integrationError || !integration) {
-      throw new Error("GHL not connected for this agent");
+      throw new Error("GHL integration record not found");
     }
-
-    if (integration.status !== "connected") {
-      throw new Error("GHL integration is not active");
-    }
-
-    const config = integration.config as any;
-    const client = new GHLClient(config.access_token);
 
     // Fetch event for property details
     const { data: event } = await supabaseAdmin
