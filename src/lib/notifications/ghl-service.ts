@@ -27,7 +27,7 @@ export async function createGHLOpenHouseAndLinkContact(params: {
 
     // Create OpenHouse custom object
     const openHouseResponse = await fetch(
-      `https://services.leadconnectorhq.com/locations/${params.locationId}/customObjects`,
+      `https://services.leadconnectorhq.com/objects/openHouse/records`,
       {
         method: 'POST',
         headers: {
@@ -36,19 +36,17 @@ export async function createGHLOpenHouseAndLinkContact(params: {
           'Version': '2021-07-28',
         },
         body: JSON.stringify({
-          objectType: 'openHouse',
-          data: {
-            openHouseId: params.eventId,
-            address: params.address,
-            startDateTime: params.startDateTime,
-            endDateTime: params.endDateTime,
-            flyerUrl: params.flyerUrl,
-            agentId: params.agentId,
-            beds: params.beds?.toString() || '',
-            baths: params.baths?.toString() || '',
-            sqft: params.sqft?.toString() || '',
-            price: params.price?.toString() || '',
-          },
+          locationId: params.locationId,
+          openHouseId: params.eventId,
+          address: params.address,
+          startDateTime: params.startDateTime,
+          endDateTime: params.endDateTime,
+          flyerUrl: params.flyerUrl,
+          agentId: params.agentId,
+          beds: params.beds?.toString() || '',
+          baths: params.baths?.toString() || '',
+          sqft: params.sqft?.toString() || '',
+          price: params.price?.toString() || '',
         }),
       }
     );
@@ -66,7 +64,7 @@ export async function createGHLOpenHouseAndLinkContact(params: {
     // Create Registration custom object linking contact to OpenHouse
     console.log('[GHL] Creating Registration to link contact to OpenHouse...');
     const registrationResponse = await fetch(
-      `https://services.leadconnectorhq.com/locations/${params.locationId}/customObjects`,
+      `https://services.leadconnectorhq.com/objects/registration/records`,
       {
         method: 'POST',
         headers: {
@@ -75,14 +73,12 @@ export async function createGHLOpenHouseAndLinkContact(params: {
           'Version': '2021-07-28',
         },
         body: JSON.stringify({
-          objectType: 'registration',
-          data: {
-            registrationId: `reg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-            contactId: params.contactId,
-            openHouseId: openHouseId,
-            registeredAt: new Date().toISOString(),
-            flyerStatus: 'pending',
-          },
+          locationId: params.locationId,
+          registrationId: `reg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+          contactId: params.contactId,
+          openHouseId: openHouseId,
+          registeredAt: new Date().toISOString(),
+          flyerStatus: 'pending',
           relationships: [
             {
               relatedObjectId: params.contactId,

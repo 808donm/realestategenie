@@ -42,7 +42,7 @@ export async function POST(req: Request) {
     // Service role bypasses RLS so this is safe server-side.
     const { data: evt, error: evtErr } = await admin
       .from("open_house_events")
-      .select("id,agent_id,address,start_at,end_at")
+      .select("id,agent_id,address,start_at,end_at,beds,baths,sqft,price")
       .eq("id", eventId)
       .single();
 
@@ -132,12 +132,9 @@ export async function POST(req: Request) {
       console.log('GHL connected:', isGHLConnected);
       console.log('Flyer URL:', flyerUrl);
 
-      // CRITICAL: GHL API is timing out consistently (>5 seconds)
-      // Temporarily disabled to ensure notifications are sent via Resend/Twilio
-      // GHL sync still happens in background via syncLeadToGHL
-      const useGHLForNotifications = false;
-
-      if (useGHLForNotifications && isGHLConnected && ghlConfig) {
+      // Create contact and custom objects in GHL
+      // Tag-based workflow will handle email/SMS notifications
+      if (isGHLConnected && ghlConfig) {
         console.log('Creating GHL contact with workflow trigger tags...');
         try {
           const nameParts = payload.name.split(' ');
@@ -169,10 +166,10 @@ export async function POST(req: Request) {
                   endDateTime: evt.end_at,
                   flyerUrl,
                   agentId: evt.agent_id,
-                  beds: undefined, // Add these if available in evt
-                  baths: undefined,
-                  sqft: undefined,
-                  price: undefined,
+                  beds: evt.beds,
+                  baths: evt.baths,
+                  sqft: evt.sqft,
+                  price: evt.price,
                   contactId: contact.id,
                 });
                 console.log('GHL OpenHouse and Registration created successfully');
