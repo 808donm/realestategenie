@@ -3,6 +3,116 @@
  * Sends emails and SMS through GoHighLevel API
  */
 
+/**
+ * Create OpenHouse custom object and link contact to it
+ * This creates the proper relational structure in GHL for workflows to access
+ */
+export async function createGHLOpenHouseAndLinkContact(params: {
+  locationId: string;
+  accessToken: string;
+  eventId: string;
+  address: string;
+  startDateTime: string;
+  endDateTime: string;
+  flyerUrl: string;
+  agentId: string;
+  beds?: number;
+  baths?: number;
+  sqft?: number;
+  price?: number;
+  contactId: string;
+}) {
+  try {
+    console.log('[GHL] Creating OpenHouse custom object...');
+
+    // Create OpenHouse custom object
+    const openHouseResponse = await fetch(
+      `https://services.leadconnectorhq.com/locations/${params.locationId}/customObjects`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${params.accessToken}`,
+          'Content-Type': 'application/json',
+          'Version': '2021-07-28',
+        },
+        body: JSON.stringify({
+          objectType: 'openHouse',
+          data: {
+            openHouseId: params.eventId,
+            address: params.address,
+            startDateTime: params.startDateTime,
+            endDateTime: params.endDateTime,
+            flyerUrl: params.flyerUrl,
+            agentId: params.agentId,
+            beds: params.beds?.toString() || '',
+            baths: params.baths?.toString() || '',
+            sqft: params.sqft?.toString() || '',
+            price: params.price?.toString() || '',
+          },
+        }),
+      }
+    );
+
+    if (!openHouseResponse.ok) {
+      const error = await openHouseResponse.text();
+      console.error('[GHL] OpenHouse creation failed:', error);
+      throw new Error(`Failed to create OpenHouse: ${error}`);
+    }
+
+    const openHouseData = await openHouseResponse.json();
+    const openHouseId = openHouseData.id;
+    console.log('[GHL] OpenHouse created:', openHouseId);
+
+    // Create Registration custom object linking contact to OpenHouse
+    console.log('[GHL] Creating Registration to link contact to OpenHouse...');
+    const registrationResponse = await fetch(
+      `https://services.leadconnectorhq.com/locations/${params.locationId}/customObjects`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${params.accessToken}`,
+          'Content-Type': 'application/json',
+          'Version': '2021-07-28',
+        },
+        body: JSON.stringify({
+          objectType: 'registration',
+          data: {
+            registrationId: `reg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+            contactId: params.contactId,
+            openHouseId: openHouseId,
+            registeredAt: new Date().toISOString(),
+            flyerStatus: 'pending',
+          },
+          relationships: [
+            {
+              relatedObjectId: params.contactId,
+              relationType: 'contact',
+            },
+            {
+              relatedObjectId: openHouseId,
+              relationType: 'openHouse',
+            },
+          ],
+        }),
+      }
+    );
+
+    if (!registrationResponse.ok) {
+      const error = await registrationResponse.text();
+      console.error('[GHL] Registration creation failed:', error);
+      // Don't throw - contact was still created
+    } else {
+      const registrationData = await registrationResponse.json();
+      console.log('[GHL] Registration created:', registrationData.id);
+    }
+
+    return { openHouseId, contactId: params.contactId };
+  } catch (error: any) {
+    console.error('[GHL] Error creating OpenHouse and Registration:', error);
+    throw error;
+  }
+}
+
 export interface GHLEmailParams {
   locationId: string;
   accessToken: string;

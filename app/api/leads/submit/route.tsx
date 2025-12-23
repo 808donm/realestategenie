@@ -5,7 +5,7 @@ import { syncLeadToGHL } from "@/lib/integrations/ghl-sync";
 import { dispatchWebhook } from "@/lib/webhooks/dispatcher";
 import { sendCheckInConfirmation, sendGreetingEmail } from "@/lib/notifications/email-service";
 import { sendCheckInSMS, sendGreetingSMS } from "@/lib/notifications/sms-service";
-import { sendGHLEmail, sendGHLSMS, createOrUpdateGHLContact, getGHLPipelines, createGHLOpportunity } from "@/lib/notifications/ghl-service";
+import { sendGHLEmail, sendGHLSMS, createOrUpdateGHLContact, getGHLPipelines, createGHLOpportunity, createGHLOpenHouseAndLinkContact } from "@/lib/notifications/ghl-service";
 import { getValidGHLConfig } from "@/lib/integrations/ghl-token-refresh";
 
 const admin = createClient(
@@ -151,17 +151,32 @@ export async function POST(req: Request) {
             lastName,
             source: 'Open House',
             tags: ['OpenHouse', evt?.address || 'Property'], // Tag will trigger workflow
-            customFields: {
-              'property_address': evt?.address || '',
-              'property_flyer_url': flyerUrl,
-              'open_house_date': openHouseDate,
-              'open_house_time': openHouseTime,
-              'agent_name': agent?.display_name || '',
-              'agent_email': agent?.email || '',
-              'agent_phone': agent?.phone_e164 || '',
-            },
-          }).then((contact) => {
+          }).then(async (contact) => {
             console.log('GHL contact created successfully:', contact?.id);
+
+            // Now create OpenHouse custom object and link via Registration
+            if (contact?.id) {
+              try {
+                await createGHLOpenHouseAndLinkContact({
+                  locationId: ghlConfig.location_id,
+                  accessToken: ghlConfig.access_token,
+                  eventId: eventId,
+                  address: evt?.address || '',
+                  startDateTime: evt.start_at,
+                  endDateTime: evt.end_at,
+                  flyerUrl,
+                  agentId: evt.agent_id,
+                  beds: undefined, // Add these if available in evt
+                  baths: undefined,
+                  sqft: undefined,
+                  price: undefined,
+                  contactId: contact.id,
+                });
+                console.log('GHL OpenHouse and Registration created successfully');
+              } catch (linkError: any) {
+                console.error('Failed to create OpenHouse/Registration:', linkError.message);
+              }
+            }
           }).catch((error) => {
             console.error('GHL contact creation failed (non-blocking):', error.message);
           });
