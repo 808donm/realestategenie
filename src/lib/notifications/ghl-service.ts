@@ -21,48 +21,12 @@ export interface GHLSMSParams {
 
 /**
  * Send email via GHL
+ * Uses the conversations/messages API with type=Email
  */
 export async function sendGHLEmail(params: GHLEmailParams) {
   try {
-    const response = await fetch(
-      `https://services.leadconnectorhq.com/conversations/messages/email`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${params.accessToken}`,
-          'Content-Type': 'application/json',
-          'Version': '2021-07-28',
-        },
-        body: JSON.stringify({
-          locationId: params.locationId,
-          email: params.to,
-          subject: params.subject,
-          html: params.html,
-          from: params.from,
-        }),
-      }
-    );
+    console.log('[GHL] Attempting to send email to:', params.to);
 
-    if (!response.ok) {
-      const error = await response.text();
-      console.error('GHL email send failed:', error);
-      throw new Error(`GHL email failed: ${error}`);
-    }
-
-    const data = await response.json();
-    console.log('GHL email sent successfully:', data);
-    return data;
-  } catch (error) {
-    console.error('Error sending GHL email:', error);
-    throw error;
-  }
-}
-
-/**
- * Send SMS via GHL
- */
-export async function sendGHLSMS(params: GHLSMSParams) {
-  try {
     const response = await fetch(
       `https://services.leadconnectorhq.com/conversations/messages`,
       {
@@ -73,25 +37,81 @@ export async function sendGHLSMS(params: GHLSMSParams) {
           'Version': '2021-07-28',
         },
         body: JSON.stringify({
-          type: 'SMS',
+          type: 'Email',
           locationId: params.locationId,
-          contactId: params.to, // This should be a GHL contact ID
-          message: params.message,
+          email: params.to,
+          subject: params.subject,
+          html: params.html,
         }),
       }
     );
 
+    console.log('[GHL] Email send response status:', response.status);
+
     if (!response.ok) {
       const error = await response.text();
-      console.error('GHL SMS send failed:', error);
+      console.error('[GHL] Email send failed:', response.status, error);
+      throw new Error(`GHL email failed: ${error}`);
+    }
+
+    const data = await response.json();
+    console.log('[GHL] Email sent successfully');
+    return data;
+  } catch (error) {
+    console.error('[GHL] Error sending email:', error);
+    throw error;
+  }
+}
+
+/**
+ * Send SMS via GHL
+ * Note: Requires a phone number to be configured in the GHL location (LC Phone or Twilio)
+ */
+export async function sendGHLSMS(params: GHLSMSParams) {
+  try {
+    console.log('[GHL] Attempting to send SMS to contact:', params.to);
+
+    const payload = {
+      type: 'SMS',
+      locationId: params.locationId,
+      contactId: params.to, // This should be a GHL contact ID
+      message: params.message,
+    };
+
+    console.log('[GHL] SMS payload:', JSON.stringify(payload));
+
+    const response = await fetch(
+      `https://services.leadconnectorhq.com/conversations/messages`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${params.accessToken}`,
+          'Content-Type': 'application/json',
+          'Version': '2021-07-28',
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    console.log('[GHL] SMS send response status:', response.status);
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('[GHL] SMS send failed:', response.status, error);
+
+      // If SMS fails due to permissions or setup, log it but don't fail the whole process
+      if (response.status === 401) {
+        console.warn('[GHL] SMS not authorized - may need phone number configured in GHL location or different scopes');
+      }
+
       throw new Error(`GHL SMS failed: ${error}`);
     }
 
     const data = await response.json();
-    console.log('GHL SMS sent successfully:', data);
+    console.log('[GHL] SMS sent successfully');
     return data;
   } catch (error) {
-    console.error('Error sending GHL SMS:', error);
+    console.error('[GHL] Error sending SMS:', error);
     throw error;
   }
 }
