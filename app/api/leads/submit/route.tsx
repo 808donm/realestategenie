@@ -143,18 +143,25 @@ export async function POST(req: Request) {
 
           console.log('Creating/updating GHL contact:', { email: payload.email, firstName, lastName });
 
-          const contact = await createOrUpdateGHLContact({
-            locationId: ghlConfig.location_id,
-            accessToken: ghlConfig.access_token,
-            email: payload.email,
-            phone: payload.phone_e164,
-            firstName,
-            lastName,
-            source: 'Open House',
-            tags: ['Open House Lead', evt?.address || 'Property'],
-          });
-
-          console.log('GHL contact created/updated:', contact.id);
+          let contact;
+          try {
+            contact = await createOrUpdateGHLContact({
+              locationId: ghlConfig.location_id,
+              accessToken: ghlConfig.access_token,
+              email: payload.email,
+              phone: payload.phone_e164,
+              firstName,
+              lastName,
+              source: 'Open House',
+              tags: ['Open House Lead', evt?.address || 'Property'],
+            });
+            console.log('GHL contact created/updated:', contact?.id);
+          } catch (contactError: any) {
+            console.error('Contact creation failed with error:', contactError);
+            console.error('Error name:', contactError.name);
+            console.error('Error message:', contactError.message);
+            throw contactError; // Re-throw to trigger fallback
+          }
 
           // Create opportunity in GHL pipeline
           try {

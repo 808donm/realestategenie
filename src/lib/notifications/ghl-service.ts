@@ -148,6 +148,7 @@ export async function createOrUpdateGHLContact(params: {
       tags: params.tags || [],
     };
     console.log('[GHL] Contact payload:', JSON.stringify(contactPayload));
+    console.log('[GHL] Sending create request...');
 
     const createResponse = await fetch(
       `https://services.leadconnectorhq.com/contacts/`,
@@ -159,9 +160,11 @@ export async function createOrUpdateGHLContact(params: {
           'Version': '2021-07-28',
         },
         body: JSON.stringify(contactPayload),
+        signal: AbortSignal.timeout(10000), // 10 second timeout
       }
     );
 
+    console.log('[GHL] Create response received');
     console.log('[GHL] Create response status:', createResponse.status);
 
     if (!createResponse.ok) {
@@ -209,10 +212,14 @@ export async function createOrUpdateGHLContact(params: {
     }
 
     const contactData = await createResponse.json();
+    console.log('[GHL] Response data:', JSON.stringify(contactData));
     console.log('[GHL] Created new GHL contact:', contactData.contact?.id || contactData.id);
     return contactData.contact || contactData;
-  } catch (error) {
-    console.error('Error creating/updating GHL contact:', error);
+  } catch (error: any) {
+    console.error('[GHL] Error creating/updating GHL contact:', error);
+    if (error.name === 'TimeoutError' || error.name === 'AbortError') {
+      console.error('[GHL] Request timed out after 10 seconds');
+    }
     throw error;
   }
 }
