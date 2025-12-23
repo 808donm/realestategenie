@@ -138,41 +138,57 @@ export async function createOrUpdateGHLContact(params: {
 
     // First, search for existing contact
     console.log('[GHL] Searching for existing contact...');
-    const searchResponse = await fetch(
-      `https://services.leadconnectorhq.com/contacts/search/duplicate?locationId=${params.locationId}&email=${encodeURIComponent(params.email)}`,
-      {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${params.accessToken}`,
-          'Content-Type': 'application/json',
-          'Version': '2021-07-28',
-        },
-      }
-    );
 
-    console.log('[GHL] Search response status:', searchResponse.status);
-
-    if (searchResponse.ok) {
-      const searchData = await searchResponse.json();
-      console.log('[GHL] Search data received:', JSON.stringify(searchData));
-
-      if (searchData.contact) {
-        console.log('[GHL] Found existing contact:', searchData.contact.id);
-
-        // Update existing contact with new tags if provided
-        if (params.tags && params.tags.length > 0) {
-          console.log('[GHL] Adding tags to existing contact:', params.tags);
-          await addGHLTags({
-            contactId: searchData.contact.id,
-            locationId: params.locationId,
-            accessToken: params.accessToken,
-            tags: params.tags,
-          });
+    let existingContact = null;
+    try {
+      const searchResponse = await fetch(
+        `https://services.leadconnectorhq.com/contacts/search/duplicate?locationId=${params.locationId}&email=${encodeURIComponent(params.email)}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${params.accessToken}`,
+            'Content-Type': 'application/json',
+            'Version': '2021-07-28',
+          },
         }
+      );
 
-        console.log('[GHL] Returning existing contact');
-        return searchData.contact;
+      console.log('[GHL] Search response status:', searchResponse.status);
+
+      if (searchResponse.ok) {
+        const searchData = await searchResponse.json();
+        console.log('[GHL] Search data received:', JSON.stringify(searchData));
+
+        if (searchData.contact) {
+          console.log('[GHL] Found existing contact:', searchData.contact.id);
+          existingContact = searchData.contact;
+
+          // Update existing contact with new tags if provided
+          if (params.tags && params.tags.length > 0) {
+            console.log('[GHL] Adding tags to existing contact:', params.tags);
+            try {
+              await addGHLTags({
+                contactId: searchData.contact.id,
+                locationId: params.locationId,
+                accessToken: params.accessToken,
+                tags: params.tags,
+              });
+            } catch (tagError) {
+              console.error('[GHL] Failed to add tags, but continuing:', tagError);
+            }
+          }
+
+          console.log('[GHL] Returning existing contact');
+          return searchData.contact;
+        }
+      } else {
+        const errorText = await searchResponse.text();
+        console.warn('[GHL] Search failed with status:', searchResponse.status, errorText);
+        // Continue to create new contact
       }
+    } catch (searchError) {
+      console.error('[GHL] Search error (will attempt to create new contact):', searchError);
+      // Continue to create new contact
     }
 
     // Create new contact if not found
