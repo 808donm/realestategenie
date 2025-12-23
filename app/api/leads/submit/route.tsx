@@ -132,8 +132,11 @@ export async function POST(req: Request) {
       console.log('GHL connected:', isGHLConnected);
       console.log('Flyer URL:', flyerUrl);
 
-      // If GHL is connected, use GHL for notifications
-      if (isGHLConnected && ghlConfig) {
+      // TEMPORARY: Skip GHL notifications due to timeout issues, use Resend/Twilio instead
+      // GHL sync will still happen in the background via syncLeadToGHL
+      const useGHLForNotifications = false; // Set to true once GHL API performance improves
+
+      if (useGHLForNotifications && isGHLConnected && ghlConfig) {
         console.log('GHL notification flow starting...');
         try {
           // Create or update contact in GHL first
