@@ -136,63 +136,8 @@ export async function createOrUpdateGHLContact(params: {
     console.log('[GHL] Email:', params.email);
     console.log('[GHL] Phone:', params.phone);
 
-    // First, search for existing contact
-    console.log('[GHL] Searching for existing contact...');
-
-    let existingContact = null;
-    try {
-      const searchResponse = await fetch(
-        `https://services.leadconnectorhq.com/contacts/search/duplicate?locationId=${params.locationId}&email=${encodeURIComponent(params.email)}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${params.accessToken}`,
-            'Content-Type': 'application/json',
-            'Version': '2021-07-28',
-          },
-        }
-      );
-
-      console.log('[GHL] Search response status:', searchResponse.status);
-
-      if (searchResponse.ok) {
-        const searchData = await searchResponse.json();
-        console.log('[GHL] Search data received:', JSON.stringify(searchData));
-
-        if (searchData.contact) {
-          console.log('[GHL] Found existing contact:', searchData.contact.id);
-          existingContact = searchData.contact;
-
-          // Update existing contact with new tags if provided
-          if (params.tags && params.tags.length > 0) {
-            console.log('[GHL] Adding tags to existing contact:', params.tags);
-            try {
-              await addGHLTags({
-                contactId: searchData.contact.id,
-                locationId: params.locationId,
-                accessToken: params.accessToken,
-                tags: params.tags,
-              });
-            } catch (tagError) {
-              console.error('[GHL] Failed to add tags, but continuing:', tagError);
-            }
-          }
-
-          console.log('[GHL] Returning existing contact');
-          return searchData.contact;
-        }
-      } else {
-        const errorText = await searchResponse.text();
-        console.warn('[GHL] Search failed with status:', searchResponse.status, errorText);
-        // Continue to create new contact
-      }
-    } catch (searchError) {
-      console.error('[GHL] Search error (will attempt to create new contact):', searchError);
-      // Continue to create new contact
-    }
-
-    // Create new contact if not found
-    console.log('[GHL] No existing contact found, creating new contact...');
+    // Create contact - GHL will handle duplicates and return existing contact if duplicate
+    console.log('[GHL] Creating/updating contact...');
     const contactPayload = {
       locationId: params.locationId,
       email: params.email,
@@ -226,19 +171,29 @@ export async function createOrUpdateGHLContact(params: {
       // If duplicate contact error, extract the existing contact ID from the error
       try {
         const errorData = JSON.parse(errorText);
-        if (errorData.statusCode === 400 && errorData.message?.includes('duplicated contacts')) {
-          const existingContactId = errorData.meta?.contactId;
+        console.log('[GHL] Parsed error data:', JSON.stringify(errorData));
+
+        if (errorData.statusCode === 422 || errorData.statusCode === 400) {
+          // Check for duplicate contact in various error formats
+          const existingContactId = errorData.meta?.contactId || errorData.contactId || errorData.contact?.id;
+
           if (existingContactId) {
-            console.log('Contact already exists, using existing contact ID:', existingContactId);
+            console.log('[GHL] Contact already exists, using existing contact ID:', existingContactId);
 
             // Add tags to existing contact if provided
             if (params.tags && params.tags.length > 0) {
-              await addGHLTags({
-                contactId: existingContactId,
-                locationId: params.locationId,
-                accessToken: params.accessToken,
-                tags: params.tags,
-              });
+              try {
+                console.log('[GHL] Adding tags to existing contact...');
+                await addGHLTags({
+                  contactId: existingContactId,
+                  locationId: params.locationId,
+                  accessToken: params.accessToken,
+                  tags: params.tags,
+                });
+                console.log('[GHL] Tags added successfully');
+              } catch (tagError) {
+                console.error('[GHL] Failed to add tags, but continuing:', tagError);
+              }
             }
 
             // Return the existing contact
@@ -246,6 +201,7 @@ export async function createOrUpdateGHLContact(params: {
           }
         }
       } catch (parseError) {
+        console.error('[GHL] Failed to parse error response:', parseError);
         // If we can't parse the error, continue with the original error
       }
 
@@ -253,8 +209,8 @@ export async function createOrUpdateGHLContact(params: {
     }
 
     const contactData = await createResponse.json();
-    console.log('Created new GHL contact:', contactData.contact.id);
-    return contactData.contact;
+    console.log('[GHL] Created new GHL contact:', contactData.contact?.id || contactData.id);
+    return contactData.contact || contactData;
   } catch (error) {
     console.error('Error creating/updating GHL contact:', error);
     throw error;
