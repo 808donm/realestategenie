@@ -132,169 +132,45 @@ export async function POST(req: Request) {
       console.log('GHL connected:', isGHLConnected);
       console.log('Flyer URL:', flyerUrl);
 
-      // TEMPORARY: Skip GHL notifications due to timeout issues, use Resend/Twilio instead
-      // GHL sync will still happen in the background via syncLeadToGHL
-      const useGHLForNotifications = false; // Set to true once GHL API performance improves
-
-      if (useGHLForNotifications && isGHLConnected && ghlConfig) {
-        console.log('GHL notification flow starting...');
+      // Strategy: Create contact with tags to trigger GHL workflow
+      // The workflow will handle email/SMS sending (more reliable than API calls)
+      if (isGHLConnected && ghlConfig) {
+        console.log('Creating GHL contact with workflow trigger tags...');
         try {
-          // Create or update contact in GHL first
           const nameParts = payload.name.split(' ');
           const firstName = nameParts[0] || payload.name;
           const lastName = nameParts.slice(1).join(' ') || '';
 
-          console.log('Creating/updating GHL contact:', { email: payload.email, firstName, lastName });
+          // Fire-and-forget contact creation - don't wait for response
+          createOrUpdateGHLContact({
+            locationId: ghlConfig.location_id,
+            accessToken: ghlConfig.access_token,
+            email: payload.email,
+            phone: payload.phone_e164,
+            firstName,
+            lastName,
+            source: 'Open House',
+            tags: ['OpenHouse', evt?.address || 'Property'], // Tag will trigger workflow
+            customFields: {
+              'property_address': evt?.address || '',
+              'property_flyer_url': flyerUrl,
+              'open_house_date': openHouseDate,
+              'open_house_time': openHouseTime,
+              'agent_name': agent?.display_name || '',
+              'agent_email': agent?.email || '',
+              'agent_phone': agent?.phone_e164 || '',
+            },
+          }).then((contact) => {
+            console.log('GHL contact created successfully:', contact?.id);
+          }).catch((error) => {
+            console.error('GHL contact creation failed (non-blocking):', error.message);
+          });
 
-          let contact;
-          try {
-            contact = await createOrUpdateGHLContact({
-              locationId: ghlConfig.location_id,
-              accessToken: ghlConfig.access_token,
-              email: payload.email,
-              phone: payload.phone_e164,
-              firstName,
-              lastName,
-              source: 'Open House',
-              tags: ['Open House Lead', evt?.address || 'Property'],
-            });
-            console.log('GHL contact created/updated:', contact?.id);
-          } catch (contactError: any) {
-            console.error('Contact creation failed with error:', contactError);
-            console.error('Error name:', contactError.name);
-            console.error('Error message:', contactError.message);
-            throw contactError; // Re-throw to trigger fallback
-          }
+          console.log('Contact creation initiated - GHL workflow will handle notifications');
+          console.log('Contact will be tagged with: OpenHouse');
+          console.log('Property address:', evt?.address);
 
-          // Create opportunity in GHL pipeline
-          try {
-            // Get pipelines for the location
-            const pipelines = await getGHLPipelines({
-              locationId: ghlConfig.location_id,
-              accessToken: ghlConfig.access_token,
-            });
-
-            if (pipelines && pipelines.length > 0) {
-              // Look for "Real Estate Pipeline" by name first (for Real Estate Genie snapshot)
-              let targetPipeline = pipelines.find(
-                (p: any) => p.name === 'Real Estate Pipeline'
-              );
-
-              // Fallback to first pipeline if "Real Estate Pipeline" not found
-              if (!targetPipeline) {
-                targetPipeline = pipelines[0];
-                console.log('Real Estate Pipeline not found, using first pipeline:', targetPipeline.name);
-              } else {
-                console.log('Using Real Estate Pipeline');
-              }
-
-              const firstStage = targetPipeline.stages?.[0];
-
-              if (targetPipeline.id && firstStage?.id) {
-                await createGHLOpportunity({
-                  locationId: ghlConfig.location_id,
-                  accessToken: ghlConfig.access_token,
-                  contactId: contact.id,
-                  pipelineId: targetPipeline.id,
-                  pipelineStageId: firstStage.id,
-                  name: `Open House - ${evt?.address || 'Property'}`,
-                  status: 'open',
-                  source: 'Open House',
-                });
-                console.log('Created GHL opportunity for:', payload.email);
-              }
-            }
-          } catch (error) {
-            console.error('Failed to create GHL opportunity:', error);
-            // Continue with notifications even if opportunity creation fails
-          }
-
-          // 1. Send check-in confirmation email via GHL
-          if (payload.consent?.email) {
-            try {
-              const emailHtml = generateCheckInEmailHTML({
-                attendeeName: payload.name,
-                agentName: agent?.display_name || 'Your Agent',
-                agentEmail: agent?.email || '',
-                agentPhone: agent?.phone_e164 || '',
-                propertyAddress: evt?.address || 'this property',
-                openHouseDate,
-                openHouseTime,
-                flyerUrl,
-              });
-
-              await sendGHLEmail({
-                locationId: ghlConfig.location_id,
-                accessToken: ghlConfig.access_token,
-                to: payload.email,
-                subject: `Thank you for visiting ${evt?.address || 'this property'}`,
-                html: emailHtml,
-              });
-              console.log('GHL check-in confirmation email sent to:', payload.email);
-            } catch (error) {
-              console.error('Failed to send GHL check-in email:', error);
-            }
-          }
-
-          // 2. Send check-in confirmation SMS via GHL
-          if (payload.consent?.sms && contact?.id) {
-            try {
-              const smsMessage = `Hi ${payload.name}! Thanks for visiting ${evt?.address || 'this property'}. Download the property fact sheet: ${flyerUrl}. Questions? Contact ${agent?.display_name || 'your agent'} at ${agent?.phone_e164 || ''}. Reply STOP to opt out.`;
-
-              await sendGHLSMS({
-                locationId: ghlConfig.location_id,
-                accessToken: ghlConfig.access_token,
-                to: contact.id, // GHL uses contact ID for SMS
-                message: smsMessage,
-              });
-              console.log('GHL check-in confirmation SMS sent to:', payload.phone_e164);
-            } catch (error) {
-              console.error('Failed to send GHL check-in SMS:', error);
-            }
-          }
-
-          // 3. Send greeting email to unrepresented attendees via GHL
-          if (payload.representation === 'no' && payload.wants_agent_reach_out) {
-            if (payload.consent?.email) {
-              try {
-                const greetingHtml = generateGreetingEmailHTML({
-                  attendeeName: payload.name,
-                  agentName: agent?.display_name || 'Your Agent',
-                  agentEmail: agent?.email || '',
-                  agentPhone: agent?.phone_e164 || '',
-                  propertyAddress: evt?.address || 'this property',
-                });
-
-                await sendGHLEmail({
-                  locationId: ghlConfig.location_id,
-                  accessToken: ghlConfig.access_token,
-                  to: payload.email,
-                  subject: `Great meeting you at ${evt?.address || 'this property'}!`,
-                  html: greetingHtml,
-                });
-                console.log('GHL greeting email sent to:', payload.email);
-              } catch (error) {
-                console.error('Failed to send GHL greeting email:', error);
-              }
-            }
-
-            // 4. Send greeting SMS to unrepresented attendees via GHL
-            if (payload.consent?.sms && contact?.id) {
-              try {
-                const greetingSMS = `Hi ${payload.name}! Great meeting you at ${evt?.address || 'this property'}. I'll follow up within 24 hours. Looking forward to helping you! - ${agent?.display_name || 'Your Agent'}. Reply STOP to opt out.`;
-
-                await sendGHLSMS({
-                  locationId: ghlConfig.location_id,
-                  accessToken: ghlConfig.access_token,
-                  to: contact.id,
-                  message: greetingSMS,
-                });
-                console.log('GHL greeting SMS sent to:', payload.phone_e164);
-              } catch (error) {
-                console.error('Failed to send GHL greeting SMS:', error);
-              }
-            }
-          }
+          // The rest is handled by the GHL workflow triggered by the "OpenHouse" tag
         } catch (error) {
           console.error('GHL notification error:', error);
           console.error('Error details:', JSON.stringify(error, null, 2));

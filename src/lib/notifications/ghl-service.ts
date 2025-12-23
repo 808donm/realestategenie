@@ -129,6 +129,7 @@ export async function createOrUpdateGHLContact(params: {
   lastName?: string;
   source?: string;
   tags?: string[];
+  customFields?: Record<string, string>;
 }) {
   try {
     console.log('[GHL] Starting contact creation/update process...');
@@ -138,7 +139,7 @@ export async function createOrUpdateGHLContact(params: {
 
     // Create contact - GHL will handle duplicates and return existing contact if duplicate
     console.log('[GHL] Creating/updating contact...');
-    const contactPayload = {
+    const contactPayload: any = {
       locationId: params.locationId,
       email: params.email,
       phone: params.phone,
@@ -147,6 +148,12 @@ export async function createOrUpdateGHLContact(params: {
       source: params.source || 'Open House',
       tags: params.tags || [],
     };
+
+    // Add custom fields if provided
+    if (params.customFields && Object.keys(params.customFields).length > 0) {
+      contactPayload.customFields = params.customFields;
+    }
+
     console.log('[GHL] Contact payload:', JSON.stringify(contactPayload));
     console.log('[GHL] Sending create request...');
 
