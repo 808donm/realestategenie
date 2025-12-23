@@ -25,9 +25,9 @@ export async function createGHLOpenHouseAndLinkContact(params: {
   try {
     console.log('[GHL] Creating OpenHouse custom object...');
 
-    // Create OpenHouse custom object
+    // Create OpenHouse custom object (using correct GHL API structure)
     const openHouseResponse = await fetch(
-      `https://services.leadconnectorhq.com/objects/openHouse/records`,
+      `https://services.leadconnectorhq.com/objects/custom_objects.openhouse/records?locationId=${params.locationId}`,
       {
         method: 'POST',
         headers: {
@@ -36,17 +36,18 @@ export async function createGHLOpenHouseAndLinkContact(params: {
           'Version': '2021-07-28',
         },
         body: JSON.stringify({
-          locationId: params.locationId,
-          openHouseId: params.eventId,
-          address: params.address,
-          startDateTime: params.startDateTime,
-          endDateTime: params.endDateTime,
-          flyerUrl: params.flyerUrl,
-          agentId: params.agentId,
-          beds: params.beds?.toString() || '',
-          baths: params.baths?.toString() || '',
-          sqft: params.sqft?.toString() || '',
-          price: params.price?.toString() || '',
+          properties: {
+            openHouseId: params.eventId,
+            address: params.address,
+            startDateTime: params.startDateTime,
+            endDateTime: params.endDateTime,
+            flyerUrl: params.flyerUrl,
+            agentId: params.agentId,
+            beds: params.beds?.toString() || '',
+            baths: params.baths?.toString() || '',
+            sqft: params.sqft?.toString() || '',
+            price: params.price?.toString() || '',
+          },
         }),
       }
     );
@@ -58,13 +59,13 @@ export async function createGHLOpenHouseAndLinkContact(params: {
     }
 
     const openHouseData = await openHouseResponse.json();
-    const openHouseId = openHouseData.id;
-    console.log('[GHL] OpenHouse created:', openHouseId);
+    const openHouseRecordId = openHouseData.id;
+    console.log('[GHL] OpenHouse created:', openHouseRecordId);
 
     // Create Registration custom object linking contact to OpenHouse
     console.log('[GHL] Creating Registration to link contact to OpenHouse...');
     const registrationResponse = await fetch(
-      `https://services.leadconnectorhq.com/objects/registration/records`,
+      `https://services.leadconnectorhq.com/objects/custom_objects.registrations/records?locationId=${params.locationId}`,
       {
         method: 'POST',
         headers: {
@@ -73,22 +74,13 @@ export async function createGHLOpenHouseAndLinkContact(params: {
           'Version': '2021-07-28',
         },
         body: JSON.stringify({
-          locationId: params.locationId,
-          registrationId: `reg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-          contactId: params.contactId,
-          openHouseId: openHouseId,
-          registeredAt: new Date().toISOString(),
-          flyerStatus: 'pending',
-          relationships: [
-            {
-              relatedObjectId: params.contactId,
-              relationType: 'contact',
-            },
-            {
-              relatedObjectId: openHouseId,
-              relationType: 'openHouse',
-            },
-          ],
+          properties: {
+            registrationId: `reg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+            contactId: params.contactId,
+            openHouseId: openHouseRecordId,
+            registeredAt: new Date().toISOString(),
+            flyerStatus: 'pending',
+          },
         }),
       }
     );
@@ -96,13 +88,27 @@ export async function createGHLOpenHouseAndLinkContact(params: {
     if (!registrationResponse.ok) {
       const error = await registrationResponse.text();
       console.error('[GHL] Registration creation failed:', error);
-      // Don't throw - contact was still created
-    } else {
-      const registrationData = await registrationResponse.json();
-      console.log('[GHL] Registration created:', registrationData.id);
+      // Don't throw - we'll try to create associations anyway
     }
 
-    return { openHouseId, contactId: params.contactId };
+    const registrationData = await registrationResponse.json();
+    const registrationRecordId = registrationData?.id;
+    console.log('[GHL] Registration created:', registrationRecordId);
+
+    // Create associations (relationships) between records
+    // Note: This requires the association IDs to be set up in GHL first
+    if (registrationRecordId && openHouseRecordId) {
+      console.log('[GHL] Creating associations between Registration, OpenHouse, and Contact...');
+
+      // TODO: Get the correct associationId values from GHL
+      // These need to be fetched from: GET /associations/definitions
+      // For now, we'll log that associations need to be set up
+      console.log('[GHL] Note: Associations need to be created manually or via association API');
+      console.log('[GHL] - Registration → OpenHouse');
+      console.log('[GHL] - Registration → Contact');
+    }
+
+    return { openHouseId: openHouseRecordId, contactId: params.contactId, registrationId: registrationRecordId };
   } catch (error: any) {
     console.error('[GHL] Error creating OpenHouse and Registration:', error);
     throw error;
