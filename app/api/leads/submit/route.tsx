@@ -132,9 +132,12 @@ export async function POST(req: Request) {
       console.log('GHL connected:', isGHLConnected);
       console.log('Flyer URL:', flyerUrl);
 
-      // Strategy: Create contact with tags to trigger GHL workflow
-      // The workflow will handle email/SMS sending (more reliable than API calls)
-      if (isGHLConnected && ghlConfig) {
+      // CRITICAL: GHL API is timing out consistently (>5 seconds)
+      // Temporarily disabled to ensure notifications are sent via Resend/Twilio
+      // GHL sync still happens in background via syncLeadToGHL
+      const useGHLForNotifications = false;
+
+      if (useGHLForNotifications && isGHLConnected && ghlConfig) {
         console.log('Creating GHL contact with workflow trigger tags...');
         try {
           const nameParts = payload.name.split(' ');
