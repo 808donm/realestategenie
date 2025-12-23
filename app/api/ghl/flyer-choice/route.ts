@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { GHLClient } from "@/lib/integrations/ghl-client";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -12,7 +13,7 @@ const supabaseAdmin = createClient(
  * POST /api/ghl/flyer-choice
  *
  * Called by GHL when contact replies with a number (1, 2, 3, etc.)
- * Validates offer token and returns the selected property's flyer
+ * Validates offer token, sends SMS directly via GHL API
  */
 export async function POST(request: NextRequest) {
   try {
@@ -62,11 +63,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get GHL integration for sending SMS
+    let client: GHLClient | null = null;
+    if (sessions && sessions.length > 0) {
+      const session = sessions[0];
+      const { data: integration } = await supabaseAdmin
+        .from("integrations")
+        .select("*")
+        .eq("agent_id", session.agent_id)
+        .eq("provider", "ghl")
+        .eq("status", "connected")
+        .single();
+
+      if (integration) {
+        const config = integration.config as any;
+        client = new GHLClient(config.access_token);
+      }
+    }
+
     if (!sessions || sessions.length === 0) {
       console.log("No active offer session found for contact:", contactId);
+
+      if (client) {
+        await client.sendSMS({
+          contactId,
+          message: "Sorry, I don't have any active property offers for you. Please reply YES to request a flyer.",
+        });
+      }
+
       return NextResponse.json({
         action: "no_active_offer",
-        message: "Sorry, I don't have any active property offers for you. Please reply YES to request a flyer.",
       });
     }
 
@@ -83,17 +109,29 @@ export async function POST(request: NextRequest) {
         .update({ status: "expired" })
         .eq("id", session.id);
 
+      if (client) {
+        await client.sendSMS({
+          contactId,
+          message: "Sorry, this offer has expired. Please reply YES to get a new list of properties.",
+        });
+      }
+
       return NextResponse.json({
         action: "expired",
-        message: "Sorry, this offer has expired. Please reply YES to get a new list of properties.",
       });
     }
 
     // Validate choice is within range
     if (selectedPosition > session.offer_count) {
+      if (client) {
+        await client.sendSMS({
+          contactId,
+          message: `Please choose a number between 1 and ${session.offer_count}.`,
+        });
+      }
+
       return NextResponse.json({
         action: "out_of_range",
-        message: `Please choose a number between 1 and ${session.offer_count}.`,
       });
     }
 
@@ -134,6 +172,16 @@ export async function POST(request: NextRequest) {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.realestategenie.app";
     const flyerUrl = `${baseUrl}/api/open-houses/${registration.event_id}/flyer`;
     const propertyAddress = `${event.street_address}, ${event.city}, ${event.state_province}`;
+
+    const message = `Here's your property flyer for ${propertyAddress}:\n\n${flyerUrl}\n\nLooking forward to seeing you at the open house!`;
+
+    // Send SMS via GHL API
+    if (client) {
+      await client.sendSMS({
+        contactId,
+        message,
+      });
+    }
 
     // Update the selected registration
     await supabaseAdmin
@@ -176,7 +224,6 @@ export async function POST(request: NextRequest) {
       flyerUrl,
       propertyAddress,
       selectedPosition,
-      message: `Here's your property flyer for ${propertyAddress}:\n\n${flyerUrl}\n\nLooking forward to seeing you at the open house!`,
     });
   } catch (error: any) {
     console.error("Flyer choice error:", error);

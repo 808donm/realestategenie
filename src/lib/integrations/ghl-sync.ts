@@ -188,17 +188,84 @@ export async function syncLeadToGHL(leadId: string): Promise<{
       contactId = newContact.id!;
     }
 
-    // Create registration record for this open house
-    // Check if registration already exists
+    // Create Registration Custom Object in GHL + local tracking record
+    // Check if registration already exists in our database
     const { data: existingReg } = await supabaseAdmin
       .from("open_house_registrations")
-      .select("id")
+      .select("id, ghl_registration_id")
       .eq("ghl_contact_id", contactId)
       .eq("event_id", lead.event_id)
       .single();
 
+    let ghlRegistrationId: string | undefined;
+
     if (!existingReg) {
-      // Create new registration
+      // Get or create OpenHouse Custom Object ID
+      let ghlOpenHouseId = event?.ghl_custom_object_id;
+
+      if (!ghlOpenHouseId && event) {
+        // Create OpenHouse Custom Object in GHL
+        try {
+          const openHouseRecord = await client.createCustomObjectRecord({
+            locationId: config.location_id,
+            objectType: "openHouse",
+            data: {
+              openHouseId: lead.event_id,
+              address: propertyAddress,
+              startDateTime: event.start_at,
+              endDateTime: event.end_at,
+              flyerUrl,
+              agentId: lead.agent_id,
+              beds: event.beds,
+              baths: event.baths,
+              sqft: event.sqft,
+              price: event.price,
+            },
+          });
+
+          ghlOpenHouseId = openHouseRecord.id;
+
+          // Store OpenHouse Custom Object ID in our database
+          await supabaseAdmin
+            .from("open_house_events")
+            .update({ ghl_custom_object_id: ghlOpenHouseId })
+            .eq("id", lead.event_id);
+
+          console.log("Created OpenHouse Custom Object in GHL:", ghlOpenHouseId);
+        } catch (err: any) {
+          console.error("Failed to create OpenHouse Custom Object:", err);
+          // Continue without it - registration can still work
+        }
+      }
+
+      // Create Registration Custom Object in GHL
+      try {
+        const registrationRecord = await client.createCustomObjectRecord({
+          locationId: config.location_id,
+          objectType: "registration",
+          data: {
+            registrationId: `reg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+            contactId,
+            openHouseId: ghlOpenHouseId || lead.event_id,
+            registeredAt: new Date().toISOString(),
+            flyerStatus: "pending",
+          },
+          relationships: [
+            {
+              relatedObjectId: contactId,
+              relationType: "contact",
+            },
+          ],
+        });
+
+        ghlRegistrationId = registrationRecord.id;
+        console.log("Created Registration Custom Object in GHL:", ghlRegistrationId);
+      } catch (err: any) {
+        console.error("Failed to create Registration Custom Object:", err);
+        // Continue without it - we'll still track locally
+      }
+
+      // Create local registration tracking record
       const { error: regError } = await supabaseAdmin
         .from("open_house_registrations")
         .insert({
@@ -206,18 +273,21 @@ export async function syncLeadToGHL(leadId: string): Promise<{
           event_id: lead.event_id,
           lead_id: leadId,
           ghl_contact_id: contactId,
+          ghl_registration_id: ghlRegistrationId,
+          ghl_open_house_id: ghlOpenHouseId,
           registered_at: new Date().toISOString(),
           flyer_status: "pending",
         });
 
       if (regError) {
-        console.error("Failed to create registration record:", regError);
+        console.error("Failed to create local registration record:", regError);
         // Don't fail the sync - just log the error
       } else {
-        console.log("Created registration record for contact:", contactId, "event:", lead.event_id);
+        console.log("Created local registration record for contact:", contactId, "event:", lead.event_id);
       }
     } else {
       console.log("Registration already exists for contact:", contactId, "event:", lead.event_id);
+      ghlRegistrationId = existingReg.ghl_registration_id || undefined;
     }
 
     // Fetch integration mapping for pipeline/stage

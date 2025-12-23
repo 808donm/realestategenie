@@ -46,6 +46,29 @@ export type GHLNote = {
   userId?: string;
 };
 
+export type GHLCustomObjectRecord = {
+  id?: string;
+  locationId: string;
+  objectType: string; // "openHouse" or "registration"
+  data: Record<string, any>;
+  relationships?: Array<{
+    relatedObjectId: string;
+    relationType: string;
+  }>;
+};
+
+export type GHLSMSMessage = {
+  contactId: string;
+  locationId?: string;
+  message: string;
+};
+
+export type GHLEmailMessage = {
+  contactId: string;
+  subject: string;
+  html: string;
+};
+
 export class GHLClient {
   private accessToken: string;
   private baseUrl = "https://services.leadconnectorhq.com";
@@ -171,6 +194,93 @@ export class GHLClient {
    */
   async getLocations(): Promise<{ locations: any[] }> {
     return this.request<{ locations: any[] }>("/locations/search");
+  }
+
+  /**
+   * Create a Custom Object Record
+   * Used for OpenHouse and Registration objects
+   */
+  async createCustomObjectRecord(record: GHLCustomObjectRecord): Promise<{ id: string }> {
+    const endpoint = `/objects/${record.objectType}/records`;
+    return this.request<{ id: string }>(endpoint, {
+      method: "POST",
+      body: JSON.stringify({
+        locationId: record.locationId,
+        ...record.data,
+        relationships: record.relationships,
+      }),
+    });
+  }
+
+  /**
+   * Update a Custom Object Record
+   */
+  async updateCustomObjectRecord(
+    objectType: string,
+    recordId: string,
+    updates: Record<string, any>
+  ): Promise<void> {
+    const endpoint = `/objects/${objectType}/records/${recordId}`;
+    await this.request(endpoint, {
+      method: "PUT",
+      body: JSON.stringify(updates),
+    });
+  }
+
+  /**
+   * Query Custom Object Records
+   * Search for records by field values
+   */
+  async queryCustomObjectRecords(
+    objectType: string,
+    locationId: string,
+    filters: Record<string, any>
+  ): Promise<{ records: any[] }> {
+    const endpoint = `/objects/${objectType}/records/search`;
+    return this.request<{ records: any[] }>(endpoint, {
+      method: "POST",
+      body: JSON.stringify({
+        locationId,
+        filter: filters,
+      }),
+    });
+  }
+
+  /**
+   * Get a Custom Object Record by ID
+   */
+  async getCustomObjectRecord(objectType: string, recordId: string): Promise<any> {
+    const endpoint = `/objects/${objectType}/records/${recordId}`;
+    return this.request(endpoint);
+  }
+
+  /**
+   * Send SMS message to a contact
+   */
+  async sendSMS(message: GHLSMSMessage): Promise<{ messageId: string }> {
+    return this.request<{ messageId: string }>("/conversations/messages", {
+      method: "POST",
+      body: JSON.stringify({
+        type: "SMS",
+        contactId: message.contactId,
+        message: message.message,
+      }),
+    });
+  }
+
+  /**
+   * Send Email message to a contact
+   */
+  async sendEmail(email: GHLEmailMessage): Promise<{ messageId: string }> {
+    return this.request<{ messageId: string }>("/conversations/messages", {
+      method: "POST",
+      body: JSON.stringify({
+        type: "Email",
+        contactId: email.contactId,
+        subject: email.subject,
+        html: email.html,
+      }),
+    });
   }
 }
 

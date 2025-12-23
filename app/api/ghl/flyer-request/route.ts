@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { randomBytes } from "crypto";
+import { GHLClient } from "@/lib/integrations/ghl-client";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -8,19 +9,19 @@ const supabaseAdmin = createClient(
   { auth: { persistSession: false } }
 );
 
+const FLYER_EXPIRATION_DAYS = 3;
+
 /**
  * GHL Workflow Webhook: Handle "YES" replies for flyer requests
  * POST /api/ghl/flyer-request
  *
  * Called by GHL when contact replies YES to initial SMS
- * Decision logic:
- * - 1 pending registration → Return single flyer URL
- * - 2+ pending registrations → Generate offer token, return choice list
+ * Queries registrations, checks 3-day expiration, sends SMS directly via GHL API
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { contactId, agentId } = body;
+    const { contactId } = body;
 
     if (!contactId) {
       return NextResponse.json(
@@ -49,7 +50,8 @@ export async function POST(request: NextRequest) {
           baths,
           sqft,
           price,
-          start_at
+          start_at,
+          created_at
         )
       `)
       .eq("ghl_contact_id", contactId)
@@ -67,20 +69,81 @@ export async function POST(request: NextRequest) {
     if (!registrations || registrations.length === 0) {
       console.log("No pending registrations found for contact:", contactId);
       return NextResponse.json({
-        message: "No pending open house registrations found.",
+        message: "No pending registrations",
         action: "none",
       });
     }
 
+    // Get agent info for phone number and GHL integration
+    const agentId = registrations[0].agent_id;
+    const { data: agent } = await supabaseAdmin
+      .from("agents")
+      .select("display_name, phone_e164")
+      .eq("id", agentId)
+      .single();
+
+    const agentPhone = agent?.phone_e164 || "808-555-1234";
+
+    // Get GHL integration for sending SMS
+    const { data: integration } = await supabaseAdmin
+      .from("integrations")
+      .select("*")
+      .eq("agent_id", agentId)
+      .eq("provider", "ghl")
+      .eq("status", "connected")
+      .single();
+
+    if (!integration) {
+      console.error("No active GHL integration for agent:", agentId);
+      return NextResponse.json(
+        { error: "GHL integration not found" },
+        { status: 500 }
+      );
+    }
+
+    const config = integration.config as any;
+    const client = new GHLClient(config.access_token);
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.realestategenie.app";
 
+    // Filter out expired registrations (> 3 days old)
+    const now = new Date();
+    const activeRegistrations = registrations.filter((reg) => {
+      const regDate = new Date(reg.registered_at);
+      const daysSinceReg = (now.getTime() - regDate.getTime()) / (1000 * 60 * 60 * 24);
+      return daysSinceReg <= FLYER_EXPIRATION_DAYS;
+    });
+
+    // Check if all registrations are expired
+    if (activeRegistrations.length === 0) {
+      const expiredMessage = `Thanks for your interest! This open house registration has expired. Please contact ${agent?.display_name || "your agent"} at ${agentPhone} for the property flyer.`;
+
+      await client.sendSMS({
+        contactId,
+        message: expiredMessage,
+      });
+
+      console.log("All registrations expired. Sent contact agent message.");
+
+      return NextResponse.json({
+        action: "expired",
+        message: expiredMessage,
+      });
+    }
+
     // DECISION LOGIC
-    if (registrations.length === 1) {
+    if (activeRegistrations.length === 1) {
       // Single property - send flyer directly
-      const reg = registrations[0];
+      const reg = activeRegistrations[0];
       const event = reg.open_house_events as any;
       const flyerUrl = `${baseUrl}/api/open-houses/${reg.event_id}/flyer`;
       const propertyAddress = `${event.street_address}, ${event.city}, ${event.state_province}`;
+
+      const message = `Here's your property flyer for ${propertyAddress}:\n\n${flyerUrl}\n\nSee you at the open house!`;
+
+      await client.sendSMS({
+        contactId,
+        message,
+      });
 
       // Update registration status to 'sent'
       await supabaseAdmin
@@ -99,24 +162,23 @@ export async function POST(request: NextRequest) {
         action: "send_single",
         flyerUrl,
         propertyAddress,
-        message: `Here's your property flyer for ${propertyAddress}:\n\n${flyerUrl}\n\nSee you at the open house!`,
       });
     } else {
-      // Multiple properties - generate offer token and return choices
+      // Multiple properties - generate offer token and send choice list
       const offerToken = randomBytes(16).toString("hex");
       const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
       // Create offer session
-      const registrationIds = registrations.map((r) => r.id);
+      const registrationIds = activeRegistrations.map((r) => r.id);
 
       const { error: sessionError } = await supabaseAdmin
         .from("flyer_offer_sessions")
         .insert({
-          agent_id: agentId || registrations[0].agent_id,
+          agent_id: agentId,
           ghl_contact_id: contactId,
           offer_token: offerToken,
           registration_ids: registrationIds,
-          offer_count: registrations.length,
+          offer_count: activeRegistrations.length,
           expires_at: expiresAt.toISOString(),
           status: "active",
         });
@@ -140,18 +202,18 @@ export async function POST(request: NextRequest) {
         })
         .in("id", registrationIds);
 
-      // Also update offer_position for each registration
-      for (let i = 0; i < registrations.length; i++) {
+      // Set offer_position for each registration
+      for (let i = 0; i < activeRegistrations.length; i++) {
         await supabaseAdmin
           .from("open_house_registrations")
           .update({ offer_position: i + 1 })
-          .eq("id", registrations[i].id);
+          .eq("id", activeRegistrations[i].id);
       }
 
       // Build choice list message
       let choiceMessage = "Great! I see you're registered for multiple open houses:\n\n";
 
-      registrations.forEach((reg, index) => {
+      activeRegistrations.forEach((reg, index) => {
         const event = reg.open_house_events as any;
         const address = `${event.street_address}, ${event.city}`;
         const details = [event.beds && `${event.beds}bd`, event.baths && `${event.baths}ba`]
@@ -160,16 +222,21 @@ export async function POST(request: NextRequest) {
         choiceMessage += `${index + 1}. ${address}${details ? ` (${details})` : ""}\n`;
       });
 
-      choiceMessage += `\nReply with the number (1-${registrations.length}) to get that property's flyer.`;
+      choiceMessage += `\nReply with the number (1-${activeRegistrations.length}) to get that property's flyer.`;
 
-      console.log("Offer created with token:", offerToken, "for", registrations.length, "properties");
+      // Send SMS via GHL API
+      await client.sendSMS({
+        contactId,
+        message: choiceMessage,
+      });
+
+      console.log("Offer created with token:", offerToken, "for", activeRegistrations.length, "properties");
 
       return NextResponse.json({
         action: "send_choices",
         offerToken,
-        propertyCount: registrations.length,
+        propertyCount: activeRegistrations.length,
         expiresAt: expiresAt.toISOString(),
-        message: choiceMessage,
       });
     }
   } catch (error: any) {
