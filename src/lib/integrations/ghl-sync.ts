@@ -90,7 +90,7 @@ export async function syncLeadToGHL(leadId: string): Promise<{
     // Fetch event for property details
     const { data: event } = await supabaseAdmin
       .from("open_house_events")
-      .select("address, start_at, end_at, beds, baths, sqft, price")
+      .select("address, start_at, end_at, beds, baths, sqft, price, ghl_custom_object_id")
       .eq("id", lead.event_id)
       .single();
 
