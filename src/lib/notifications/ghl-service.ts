@@ -149,9 +149,12 @@ export async function createOrUpdateGHLContact(params: {
       tags: params.tags || [],
     };
 
-    // Add custom fields if provided
+    // Add custom fields if provided (GHL expects array format, not object)
     if (params.customFields && Object.keys(params.customFields).length > 0) {
-      contactPayload.customFields = params.customFields;
+      contactPayload.customFields = Object.entries(params.customFields).map(([key, value]) => ({
+        key,
+        field_value: value,
+      }));
     }
 
     console.log('[GHL] Contact payload:', JSON.stringify(contactPayload));
