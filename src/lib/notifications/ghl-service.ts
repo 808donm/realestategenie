@@ -111,7 +111,13 @@ export async function createOrUpdateGHLContact(params: {
   tags?: string[];
 }) {
   try {
+    console.log('[GHL] Starting contact creation/update process...');
+    console.log('[GHL] Location ID:', params.locationId);
+    console.log('[GHL] Email:', params.email);
+    console.log('[GHL] Phone:', params.phone);
+
     // First, search for existing contact
+    console.log('[GHL] Searching for existing contact...');
     const searchResponse = await fetch(
       `https://services.leadconnectorhq.com/contacts/search/duplicate?locationId=${params.locationId}&email=${encodeURIComponent(params.email)}`,
       {
@@ -124,13 +130,18 @@ export async function createOrUpdateGHLContact(params: {
       }
     );
 
+    console.log('[GHL] Search response status:', searchResponse.status);
+
     if (searchResponse.ok) {
       const searchData = await searchResponse.json();
+      console.log('[GHL] Search data received:', JSON.stringify(searchData));
+
       if (searchData.contact) {
-        console.log('Found existing GHL contact:', searchData.contact.id);
+        console.log('[GHL] Found existing contact:', searchData.contact.id);
 
         // Update existing contact with new tags if provided
         if (params.tags && params.tags.length > 0) {
+          console.log('[GHL] Adding tags to existing contact:', params.tags);
           await addGHLTags({
             contactId: searchData.contact.id,
             locationId: params.locationId,
@@ -139,11 +150,24 @@ export async function createOrUpdateGHLContact(params: {
           });
         }
 
+        console.log('[GHL] Returning existing contact');
         return searchData.contact;
       }
     }
 
     // Create new contact if not found
+    console.log('[GHL] No existing contact found, creating new contact...');
+    const contactPayload = {
+      locationId: params.locationId,
+      email: params.email,
+      phone: params.phone,
+      firstName: params.firstName,
+      lastName: params.lastName || '',
+      source: params.source || 'Open House',
+      tags: params.tags || [],
+    };
+    console.log('[GHL] Contact payload:', JSON.stringify(contactPayload));
+
     const createResponse = await fetch(
       `https://services.leadconnectorhq.com/contacts/`,
       {
@@ -153,21 +177,15 @@ export async function createOrUpdateGHLContact(params: {
           'Content-Type': 'application/json',
           'Version': '2021-07-28',
         },
-        body: JSON.stringify({
-          locationId: params.locationId,
-          email: params.email,
-          phone: params.phone,
-          firstName: params.firstName,
-          lastName: params.lastName || '',
-          source: params.source || 'Open House',
-          tags: params.tags || [],
-        }),
+        body: JSON.stringify(contactPayload),
       }
     );
 
+    console.log('[GHL] Create response status:', createResponse.status);
+
     if (!createResponse.ok) {
       const errorText = await createResponse.text();
-      console.error('GHL contact creation failed:', errorText);
+      console.error('[GHL] Contact creation failed:', createResponse.status, errorText);
 
       // If duplicate contact error, extract the existing contact ID from the error
       try {
