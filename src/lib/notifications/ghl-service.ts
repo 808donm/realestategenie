@@ -43,8 +43,9 @@ export async function createGHLOpenHouseAndLinkContact(params: {
             endDateTime: params.endDateTime,
             flyerUrl: params.flyerUrl,
             agentId: params.agentId,
+            locationId: params.locationId,
             beds: params.beds?.toString() || '',
-            baths: params.baths?.toString() || '',
+            bath: params.baths?.toString() || '', // Note: GHL uses singular 'bath' not 'baths'
             sqft: params.sqft?.toString() || '',
             price: params.price?.toString() || '',
           },
