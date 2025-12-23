@@ -150,19 +150,34 @@ export async function createOrUpdateGHLContact(params: {
     console.log('[GHL] Contact payload:', JSON.stringify(contactPayload));
     console.log('[GHL] Sending create request...');
 
-    const createResponse = await fetch(
-      `https://services.leadconnectorhq.com/contacts/`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${params.accessToken}`,
-          'Content-Type': 'application/json',
-          'Version': '2021-07-28',
-        },
-        body: JSON.stringify(contactPayload),
-        signal: AbortSignal.timeout(10000), // 10 second timeout
+    // Create AbortController for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+
+    let createResponse;
+    try {
+      createResponse = await fetch(
+        `https://services.leadconnectorhq.com/contacts/`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${params.accessToken}`,
+            'Content-Type': 'application/json',
+            'Version': '2021-07-28',
+          },
+          body: JSON.stringify(contactPayload),
+          signal: controller.signal,
+        }
+      );
+      clearTimeout(timeoutId);
+    } catch (fetchError: any) {
+      clearTimeout(timeoutId);
+      console.error('[GHL] Fetch error:', fetchError.name, fetchError.message);
+      if (fetchError.name === 'AbortError') {
+        console.error('[GHL] Request timed out after 15 seconds');
       }
-    );
+      throw fetchError;
+    }
 
     console.log('[GHL] Create response received');
     console.log('[GHL] Create response status:', createResponse.status);
@@ -217,9 +232,7 @@ export async function createOrUpdateGHLContact(params: {
     return contactData.contact || contactData;
   } catch (error: any) {
     console.error('[GHL] Error creating/updating GHL contact:', error);
-    if (error.name === 'TimeoutError' || error.name === 'AbortError') {
-      console.error('[GHL] Request timed out after 10 seconds');
-    }
+    console.error('[GHL] Error stack:', error.stack);
     throw error;
   }
 }
