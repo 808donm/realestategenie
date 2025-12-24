@@ -36,6 +36,7 @@ export async function createGHLOpenHouseAndLinkContact(params: {
           'Version': '2021-07-28',
         },
         body: JSON.stringify({
+          locationId: params.locationId,
           properties: {
             openhouseid: params.eventId,
             address: params.address,
@@ -75,6 +76,7 @@ export async function createGHLOpenHouseAndLinkContact(params: {
           'Version': '2021-07-28',
         },
         body: JSON.stringify({
+          locationId: params.locationId,
           properties: {
             registrationid: `reg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
             contactid: params.contactId,
