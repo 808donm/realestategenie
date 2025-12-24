@@ -33,6 +33,25 @@ export async function createGHLOpenHouseRecord(params: {
 
     // Create OpenHouse custom object (using correct GHL API structure)
     let openHouseResponse: Response;
+    const requestPayload = {
+      locationId: params.locationId,
+      properties: {
+        "custom_objects.openhouses.openhouseid": params.eventId,
+        "custom_objects.openhouses.address": params.address,
+        "custom_objects.openhouses.startdatetime": params.startDateTime,
+        "custom_objects.openhouses.enddatetime": params.endDateTime,
+        "custom_objects.openhouses.flyerurl": params.flyerUrl,
+        "custom_objects.openhouses.agentid": params.agentId,
+        "custom_objects.openhouses.locationid": params.locationId,
+        "custom_objects.openhouses.beds": params.beds?.toString() || '',
+        "custom_objects.openhouses.baths": params.baths?.toString() || '',
+        "custom_objects.openhouses.sqft": params.sqft?.toString() || '',
+        "custom_objects.openhouses.price": params.price?.toString() || '',
+      },
+    };
+
+    console.log('[GHL] OpenHouse request payload:', JSON.stringify(requestPayload));
+
     try {
       openHouseResponse = await fetch(
         `https://services.leadconnectorhq.com/objects/custom_objects.openhouses/records?locationId=${params.locationId}`,
@@ -43,22 +62,7 @@ export async function createGHLOpenHouseRecord(params: {
             'Content-Type': 'application/json',
             'Version': '2021-07-28',
           },
-          body: JSON.stringify({
-            locationId: params.locationId,
-            properties: {
-              "custom_objects.openhouses.openhouseid": params.eventId,
-              "custom_objects.openhouses.address": params.address,
-              "custom_objects.openhouses.startdatetime": params.startDateTime,
-              "custom_objects.openhouses.enddatetime": params.endDateTime,
-              "custom_objects.openhouses.flyerurl": params.flyerUrl,
-              "custom_objects.openhouses.agentid": params.agentId,
-              "custom_objects.openhouses.locationid": params.locationId,
-              "custom_objects.openhouses.beds": params.beds?.toString() || '',
-              "custom_objects.openhouses.baths": params.baths?.toString() || '',
-              "custom_objects.openhouses.sqft": params.sqft?.toString() || '',
-              "custom_objects.openhouses.price": params.price?.toString() || '',
-            },
-          }),
+          body: JSON.stringify(requestPayload),
           signal: controller.signal,
         }
       );
@@ -76,13 +80,15 @@ export async function createGHLOpenHouseRecord(params: {
     console.log('[GHL] OpenHouse response status:', openHouseResponse.status);
     console.log('[GHL] OpenHouse response time (ms):', Date.now() - startedAt);
 
+    const openHouseResponseText = await openHouseResponse.text();
+
     if (!openHouseResponse.ok) {
-      const error = await openHouseResponse.text();
-      console.error('[GHL] OpenHouse creation failed:', error);
-      throw new Error(`Failed to create OpenHouse: ${error}`);
+      console.error('[GHL] OpenHouse creation failed:', openHouseResponseText);
+      throw new Error(`Failed to create OpenHouse: ${openHouseResponseText}`);
     }
 
-    const openHouseData = await openHouseResponse.json();
+    console.log('[GHL] OpenHouse response body:', openHouseResponseText);
+    const openHouseData = JSON.parse(openHouseResponseText);
     const openHouseRecordId = openHouseData.id;
     console.log('[GHL] OpenHouse created:', openHouseRecordId);
 
