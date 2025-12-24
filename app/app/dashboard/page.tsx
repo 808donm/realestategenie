@@ -81,26 +81,26 @@ export default async function DashboardPage() {
         <Link href="/app/integrations">
           <Button variant="outline">Integrations</Button>
         </Link>
+        <Link href="/app/pm">
+          <Button variant="default" size="lg" style={{ background: '#0070f3', color: 'white' }}>
+            🏢 Property Management (PM Module)
+          </Button>
+        </Link>
       </div>
 
-      {/* DEBUG: This should be visible */}
-      <div style={{ padding: '20px', background: '#ff0000', color: '#ffffff', fontSize: '24px', fontWeight: 'bold' }}>
-        DEBUG: PM SECTION SHOULD APPEAR BELOW
-      </div>
-
-      {/* Property Management Module */}
+      {/* Property Management Module Card - Full Feature Section */}
       <Card className="border-primary bg-primary/5">
         <CardContent className="py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-semibold mb-1">Property Management</h3>
+              <h3 className="text-lg font-semibold mb-1">Property Management Module</h3>
               <p className="text-sm text-muted-foreground">
-                Manage rental properties, leases, applications, and maintenance
+                Manage rental properties (50-100 units), track applications, leases, and maintenance requests
               </p>
             </div>
             <Link href="/app/pm">
               <Button size="lg">
-                Go to PM
+                Go to PM Module
               </Button>
             </Link>
           </div>
