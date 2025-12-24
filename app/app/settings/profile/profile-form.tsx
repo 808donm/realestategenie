@@ -34,6 +34,7 @@ type Agent = {
   photo_url: string | null;
   headshot_url: string | null;
   company_logo_url: string | null;
+  agency_name: string | null;
 };
 
 export default function ProfileForm({ agent }: { agent: Agent }) {
@@ -41,6 +42,7 @@ export default function ProfileForm({ agent }: { agent: Agent }) {
 
   const [displayName, setDisplayName] = useState(agent.display_name ?? "");
   const [licenseNumber, setLicenseNumber] = useState(agent.license_number ?? "");
+  const [agencyName, setAgencyName] = useState(agent.agency_name ?? "");
   const [phoneInput, setPhoneInput] = useState(agent.phone_e164 ?? "");
   const [locationsCsv, setLocationsCsv] = useState(
     (agent.locations_served ?? []).join(", ")
@@ -193,6 +195,7 @@ export default function ProfileForm({ agent }: { agent: Agent }) {
       .update({
         display_name: displayName.trim(),
         license_number: licenseNumber.trim() || null,
+        agency_name: agencyName.trim() || null,
         phone_e164: normalizedPhone,
         locations_served: locations,
         updated_at: new Date().toISOString(),
@@ -314,6 +317,19 @@ export default function ProfileForm({ agent }: { agent: Agent }) {
             placeholder="RB-xxxxxx"
             style={{ width: "100%", padding: 10 }}
           />
+        </div>
+
+        <div>
+          <label style={{ display: "block", fontSize: 12, marginBottom: 6 }}>Agency/Company name</label>
+          <input
+            value={agencyName}
+            onChange={(e) => setAgencyName(e.target.value)}
+            placeholder="Island Properties LLC"
+            style={{ width: "100%", padding: 10 }}
+          />
+          <p style={{ fontSize: 11, opacity: 0.6, margin: "6px 0 0 0" }}>
+            Your real estate agency or brokerage name (used in SMS notifications)
+          </p>
         </div>
 
         <div>
