@@ -3,9 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { calculateHeatScore } from "@/lib/lead-scoring";
 import { syncLeadToGHL } from "@/lib/integrations/ghl-sync";
 import { dispatchWebhook } from "@/lib/webhooks/dispatcher";
-import { sendCheckInConfirmation, sendGreetingEmail } from "@/lib/notifications/email-service";
-import { sendCheckInSMS, sendGreetingSMS } from "@/lib/notifications/sms-service";
-import { sendGHLEmail, sendGHLSMS, createOrUpdateGHLContact, getGHLPipelines, createGHLOpportunity, createGHLRegistrationRecord, createGHLOpenHouseRecord } from "@/lib/notifications/ghl-service";
+import { createOrUpdateGHLContact, createGHLRegistrationRecord, createGHLOpenHouseRecord } from "@/lib/notifications/ghl-service";
 import { getValidGHLConfig } from "@/lib/integrations/ghl-token-refresh";
 
 const admin = createClient(
@@ -224,92 +222,10 @@ export async function POST(req: Request) {
         } catch (error) {
           console.error('GHL notification error:', error);
           console.error('Error details:', JSON.stringify(error, null, 2));
-          // Fall back to Resend/Twilio if GHL fails
-          console.log('Falling back to Resend/Twilio...');
-          await sendFallbackNotifications();
+          console.log('GHL notifications failed:', error);
         }
       } else {
-        // Use Resend/Twilio if GHL is not connected
-        console.log('GHL not connected, using Resend/Twilio fallback');
-        await sendFallbackNotifications();
-      }
-
-      // Fallback function using Resend/Twilio
-      async function sendFallbackNotifications() {
-        console.log('=== FALLBACK NOTIFICATIONS ===');
-        console.log('Using Resend/Twilio for notifications');
-
-        // 1. Send check-in confirmation email
-        if (payload.consent?.email) {
-          console.log('Attempting to send check-in email via Resend...');
-          try {
-            await sendCheckInConfirmation({
-              to: payload.email,
-              attendeeName: payload.name,
-              agentName: agent?.display_name || 'Your Agent',
-              agentEmail: agent?.email || '',
-              agentPhone: agent?.phone_e164 || '',
-              propertyAddress: evt?.address || 'this property',
-              openHouseDate,
-              openHouseTime,
-              flyerUrl,
-            });
-            console.log('Check-in confirmation email sent to:', payload.email);
-          } catch (error) {
-            console.error('Failed to send check-in confirmation email:', error);
-          }
-        }
-
-        // 2. Send check-in confirmation SMS
-        if (payload.consent?.sms && payload.phone_e164) {
-          try {
-            await sendCheckInSMS({
-              to: payload.phone_e164,
-              attendeeName: payload.name,
-              agentName: agent?.display_name || 'Your Agent',
-              agentPhone: agent?.phone_e164 || '',
-              propertyAddress: evt?.address || 'this property',
-              flyerUrl,
-            });
-            console.log('Check-in confirmation SMS sent to:', payload.phone_e164);
-          } catch (error) {
-            console.error('Failed to send check-in confirmation SMS:', error);
-          }
-        }
-
-        // 3. Send greeting email to unrepresented attendees
-        if (payload.representation === 'no' && payload.wants_agent_reach_out) {
-          if (payload.consent?.email) {
-            try {
-              await sendGreetingEmail({
-                to: payload.email,
-                attendeeName: payload.name,
-                agentName: agent?.display_name || 'Your Agent',
-                agentEmail: agent?.email || '',
-                agentPhone: agent?.phone_e164 || '',
-                propertyAddress: evt?.address || 'this property',
-              });
-              console.log('Greeting email sent to:', payload.email);
-            } catch (error) {
-              console.error('Failed to send greeting email:', error);
-            }
-          }
-
-          // 4. Send greeting SMS
-          if (payload.consent?.sms && payload.phone_e164) {
-            try {
-              await sendGreetingSMS({
-                to: payload.phone_e164,
-                attendeeName: payload.name,
-                agentName: agent?.display_name || 'Your Agent',
-                propertyAddress: evt?.address || 'this property',
-              });
-              console.log('Greeting SMS sent to:', payload.phone_e164);
-            } catch (error) {
-              console.error('Failed to send greeting SMS:', error);
-            }
-          }
-        }
+        console.log('GHL not connected, skipping notifications');
       }
     };
 
@@ -356,93 +272,4 @@ export async function POST(req: Request) {
       { status: 500 }
     );
   }
-}
-
-// Helper functions for email HTML generation
-function generateCheckInEmailHTML(params: {
-  attendeeName: string;
-  agentName: string;
-  agentEmail: string;
-  agentPhone: string;
-  propertyAddress: string;
-  openHouseDate: string;
-  openHouseTime: string;
-  flyerUrl: string;
-}): string {
-  return `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
-    <h1 style="color: white; margin: 0; font-size: 28px;">Thank You for Visiting!</h1>
-  </div>
-  <div style="background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 10px 10px;">
-    <p style="font-size: 18px; margin-top: 0;">Hi ${params.attendeeName},</p>
-    <p style="font-size: 16px;">Thank you for attending the open house at:</p>
-    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #667eea; margin: 20px 0;">
-      <p style="margin: 0; font-size: 18px; font-weight: bold; color: #667eea;">${params.propertyAddress}</p>
-      <p style="margin: 10px 0 0 0; color: #666; font-size: 14px;">${params.openHouseDate} • ${params.openHouseTime}</p>
-    </div>
-    <p style="font-size: 16px;">We appreciate your interest and hope you enjoyed viewing the property!</p>
-    <div style="text-align: center; margin: 30px 0;">
-      <a href="${params.flyerUrl}" style="display: inline-block; background: #667eea; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">📄 Download Property Flyer</a>
-    </div>
-    <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
-    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
-      <h3 style="margin-top: 0; color: #667eea;">Your Agent</h3>
-      <p style="margin: 5px 0; font-weight: bold; font-size: 16px;">${params.agentName}</p>
-      <p style="margin: 5px 0; color: #666;">📧 <a href="mailto:${params.agentEmail}" style="color: #667eea; text-decoration: none;">${params.agentEmail}</a></p>
-      <p style="margin: 5px 0; color: #666;">📱 <a href="tel:${params.agentPhone}" style="color: #667eea; text-decoration: none;">${params.agentPhone}</a></p>
-    </div>
-    <p style="font-size: 14px; color: #666; margin-top: 30px;">If you have any questions or would like to schedule a private showing, please don't hesitate to reach out!</p>
-  </div>
-</body>
-</html>
-  `;
-}
-
-function generateGreetingEmailHTML(params: {
-  attendeeName: string;
-  agentName: string;
-  agentEmail: string;
-  agentPhone: string;
-  propertyAddress: string;
-}): string {
-  return `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
-    <h1 style="color: white; margin: 0; font-size: 28px;">Great Meeting You!</h1>
-  </div>
-  <div style="background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 10px 10px;">
-    <p style="font-size: 18px; margin-top: 0;">Hi ${params.attendeeName},</p>
-    <p style="font-size: 16px;">It was wonderful meeting you at the open house for:</p>
-    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #11998e; margin: 20px 0;">
-      <p style="margin: 0; font-size: 18px; font-weight: bold; color: #11998e;">${params.propertyAddress}</p>
-    </div>
-    <p style="font-size: 16px;">I'll be following up with you within the next 24 hours to answer any questions you might have and discuss next steps!</p>
-    <div style="background: #e8f5e9; padding: 20px; border-radius: 8px; margin: 25px 0;">
-      <p style="margin: 0; font-size: 16px;"><strong>In the meantime, feel free to reach out:</strong></p>
-    </div>
-    <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
-    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
-      <h3 style="margin-top: 0; color: #11998e;">Contact Me</h3>
-      <p style="margin: 5px 0; font-weight: bold; font-size: 16px;">${params.agentName}</p>
-      <p style="margin: 5px 0; color: #666;">📧 <a href="mailto:${params.agentEmail}" style="color: #11998e; text-decoration: none;">${params.agentEmail}</a></p>
-      <p style="margin: 5px 0; color: #666;">📱 <a href="tel:${params.agentPhone}" style="color: #11998e; text-decoration: none;">${params.agentPhone}</a></p>
-    </div>
-    <p style="font-size: 16px; margin-top: 30px; font-style: italic; color: #666;">"I'm here to help you find the perfect home. Let's make it happen together!"</p>
-  </div>
-</body>
-</html>
-  `;
 }
