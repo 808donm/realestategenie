@@ -22,6 +22,7 @@ export async function createGHLOpenHouseRecord(params: {
   price?: number;
 }) {
   try {
+    await logGHLTokenScopes(params.accessToken, params.locationId);
     const startedAt = Date.now();
     console.log('[GHL] Creating OpenHouse custom object...');
     console.log('[GHL] OpenHouse request started at:', new Date(startedAt).toISOString());
@@ -325,6 +326,7 @@ export async function createOrUpdateGHLContact(params: {
   customFields?: Record<string, string>;
 }) {
   try {
+    await logGHLTokenScopes(params.accessToken, params.locationId);
     const startedAt = Date.now();
     console.log('[GHL] Starting contact creation/update process...');
     console.log('[GHL] Location ID:', params.locationId);
@@ -480,6 +482,34 @@ export async function createOrUpdateGHLContact(params: {
     console.error('[GHL] Error creating/updating GHL contact:', error);
     console.error('[GHL] Error stack:', error.stack);
     throw error;
+  }
+}
+
+async function logGHLTokenScopes(accessToken: string, locationId: string) {
+  try {
+    const response = await fetch(
+      `https://services.leadconnectorhq.com/oauth/me?locationId=${locationId}`,
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+          'Version': '2021-07-28',
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('[GHL] Failed to fetch token scopes:', error);
+      return;
+    }
+
+    const data = await response.json();
+    const scopes = Array.isArray(data?.scopes) ? data.scopes.join(', ') : data?.scopes;
+    console.log('[GHL] Token scopes:', scopes || 'unknown');
+  } catch (error: any) {
+    console.error('[GHL] Failed to log token scopes:', error.message);
   }
 }
 
