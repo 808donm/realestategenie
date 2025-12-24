@@ -64,6 +64,7 @@ export async function GET() {
     if (intError) throw intError;
 
     const ghlIntegration = integrations?.find((i) => i.provider === "ghl");
+    const qboIntegration = integrations?.find((i) => i.provider === "qbo");
 
     return NextResponse.json({
       leads: {
@@ -82,6 +83,10 @@ export async function GET() {
         ghl: {
           connected: ghlIntegration?.status === "connected",
           lastUpdated: ghlIntegration?.updated_at || null,
+        },
+        qbo: {
+          connected: qboIntegration?.status === "connected",
+          lastUpdated: qboIntegration?.updated_at || null,
         },
       },
     });

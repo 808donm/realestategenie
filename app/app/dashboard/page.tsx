@@ -81,6 +81,25 @@ export default async function DashboardPage() {
         </Link>
       </div>
 
+      {/* Property Management Module */}
+      <Card className="border-primary bg-primary/5">
+        <CardContent className="py-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold mb-1">Property Management</h3>
+              <p className="text-sm text-muted-foreground">
+                Manage rental properties, leases, applications, and maintenance requests
+              </p>
+            </div>
+            <Link href="/app/pm">
+              <Button size="lg">
+                Go to PM
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Profile Status Alert */}
       {missing.length > 0 && (
         <Card className="border-warning bg-warning/5">
