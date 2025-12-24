@@ -2,7 +2,7 @@
 
 ## Product Overview
 
-The Real Estate Genie Property Management (PM) module is a **lightweight add-on** for independent agents and small agencies who moonlight as property managers. It is NOT a replacement for AppFolio or Buildium - it's a simpler, more affordable alternative for agents managing 10-20 units (townhomes, condos, single-family homes).
+The Real Estate Genie Property Management (PM) module is a **lightweight add-on** for independent agents and small agencies who moonlight as property managers. It is NOT a replacement for AppFolio or Buildium - it's a simpler, more affordable alternative for agencies managing 50-100 units across their team (townhomes, condos, single-family homes).
 
 ## Core Philosophy
 
@@ -24,7 +24,7 @@ The Real Estate Genie Property Management (PM) module is a **lightweight add-on*
 
 - Independent agents doing sales + some PM
 - Small agencies (non-branded)
-- Managing 10-20 units (not apartment complexes)
+- Managing 50-100 units across the agency (e.g., 10 agents × 10 units each)
 - Already using QuickBooks Online
 - Want speed, simplicity, affordability
 
@@ -281,12 +281,13 @@ ADD COLUMN pm_property_id UUID REFERENCES pm_properties(id) ON DELETE SET NULL;
 
 ## Scale Limits (v1)
 
-Designed for agents managing:
-- **10-20 units** (not 100+ apartment complexes)
-- **1-5 properties** (if multi-unit)
+Designed for agencies managing:
+- **50-100 units** across the agency (e.g., 10 agents managing 10 units each)
+- **Individual agents managing 10-20 units**
+- **10-50 properties** total
 - **Monthly rent invoicing** (not complex lease structures)
 
-If a customer needs more, they should use AppFolio/Buildium.
+If a customer needs large-scale apartment complex management (200+ units), they should use AppFolio/Buildium.
 
 ## QuickBooks Online Integration
 
