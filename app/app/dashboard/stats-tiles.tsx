@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, Home, TrendingUp, Zap } from "lucide-react";
+import { Users, Home, TrendingUp } from "lucide-react";
 
 type DashboardStats = {
   leads: {
@@ -22,11 +22,6 @@ type DashboardStats = {
     ghl: {
       connected: boolean;
       lastUpdated: string | null;
-    };
-    n8n: {
-      connected: boolean;
-      lastUpdated: string | null;
-      webhookSuccessRate: number | null;
     };
   };
 };
@@ -55,8 +50,8 @@ export default function StatsTiles() {
 
   if (loading) {
     return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {[...Array(4)].map((_, i) => (
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {[...Array(3)].map((_, i) => (
           <Card key={i}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <div className="h-4 w-24 bg-muted animate-pulse rounded" />
@@ -75,7 +70,7 @@ export default function StatsTiles() {
   if (!stats) return null;
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {/* Total Leads */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -139,39 +134,6 @@ export default function StatsTiles() {
                   : "0%",
               }}
             />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Integrations Status */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Integrations</CardTitle>
-          <Zap className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">
-            {(stats.integrations.ghl.connected ? 1 : 0) +
-              (stats.integrations.n8n.connected ? 1 : 0)}
-            /2
-          </div>
-          <p className="text-xs text-muted-foreground">Connected</p>
-          <div className="flex gap-2 mt-2">
-            {stats.integrations.ghl.connected && (
-              <Badge variant="success" className="text-xs">
-                GHL
-              </Badge>
-            )}
-            {stats.integrations.n8n.connected && (
-              <Badge variant="success" className="text-xs">
-                n8n
-              </Badge>
-            )}
-            {!stats.integrations.ghl.connected && !stats.integrations.n8n.connected && (
-              <Badge variant="secondary" className="text-xs">
-                None
-              </Badge>
-            )}
           </div>
         </CardContent>
       </Card>

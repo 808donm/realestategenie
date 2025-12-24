@@ -64,22 +64,6 @@ export async function GET() {
     if (intError) throw intError;
 
     const ghlIntegration = integrations?.find((i) => i.provider === "ghl");
-    const n8nIntegration = integrations?.find((i) => i.provider === "n8n");
-
-    // Get recent webhook logs for n8n health
-    const { data: recentWebhooks } = await supabase
-      .from("webhook_logs")
-      .select("status_code, created_at")
-      .eq("agent_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(10);
-
-    const webhookSuccessRate =
-      recentWebhooks && recentWebhooks.length > 0
-        ? (recentWebhooks.filter((w) => w.status_code && w.status_code >= 200 && w.status_code < 300).length /
-            recentWebhooks.length) *
-          100
-        : null;
 
     return NextResponse.json({
       leads: {
@@ -98,11 +82,6 @@ export async function GET() {
         ghl: {
           connected: ghlIntegration?.status === "connected",
           lastUpdated: ghlIntegration?.updated_at || null,
-        },
-        n8n: {
-          connected: n8nIntegration?.status === "connected",
-          lastUpdated: n8nIntegration?.updated_at || null,
-          webhookSuccessRate,
         },
       },
     });
