@@ -219,7 +219,6 @@ export async function syncLeadToGHL(leadId: string): Promise<{
               "custom_objects.openhouses.enddatetime": event.end_at,
               "custom_objects.openhouses.flyerurl": flyerUrl,
               "custom_objects.openhouses.agentid": lead.agent_id,
-              "custom_objects.openhouses.locationid": config.location_id,
               "custom_objects.openhouses.beds": event.beds?.toString() || "",
               "custom_objects.openhouses.baths": event.baths?.toString() || "",
               "custom_objects.openhouses.sqft": event.sqft?.toString() || "",
