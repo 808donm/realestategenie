@@ -1,4 +1,5 @@
 import { supabaseServer } from "@/lib/supabase/server";
+import { geocodeAddress } from "@/lib/geocoding";
 import IntakeForm from "./intake-form.client";
 import PropertyMap from "@/components/PropertyMapWrapper";
 
@@ -29,6 +30,14 @@ export default async function OpenHouseIntakePage({
       </div>
     );
   }
+
+  const geocodedLocation =
+    !event.latitude || !event.longitude
+      ? await geocodeAddress(event.address)
+      : null;
+  const resolvedLatitude = event.latitude ?? geocodedLocation?.latitude ?? null;
+  const resolvedLongitude =
+    event.longitude ?? geocodedLocation?.longitude ?? null;
 
   return (
     <div style={{ maxWidth: 720, margin: "40px auto", padding: 16 }}>
@@ -91,16 +100,18 @@ export default async function OpenHouseIntakePage({
       </p>
 
       {/* Property Location Map */}
-      {event.latitude && event.longitude && (
-        <div style={{ marginTop: 18 }}>
-          <PropertyMap
-            latitude={event.latitude}
-            longitude={event.longitude}
-            address={event.address}
-            className="h-[250px]"
-          />
-        </div>
-      )}
+      <div style={{ marginTop: 18 }}>
+        <PropertyMap
+          latitude={resolvedLatitude}
+          longitude={resolvedLongitude}
+          address={event.address}
+          googleMapsApiKey={
+            process.env.GOOGLE_MAPS_API_KEY ||
+            process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+          }
+          className="h-[250px]"
+        />
+      </div>
 
       <div style={{ marginTop: 18 }}>
         <IntakeForm eventId={event.id} />

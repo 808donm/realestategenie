@@ -7,6 +7,154 @@
  * Create OpenHouse custom object and link contact to it
  * This creates the proper relational structure in GHL for workflows to access
  */
+export async function createGHLOpenHouseRecord(params: {
+  locationId: string;
+  accessToken: string;
+  eventId: string;
+  address: string;
+  startDateTime: string;
+  endDateTime: string;
+  flyerUrl: string;
+  agentId: string;
+  beds?: number;
+  baths?: number;
+  sqft?: number;
+  price?: number;
+}) {
+  try {
+    const startedAt = Date.now();
+    console.log('[GHL] Creating OpenHouse custom object...');
+    console.log('[GHL] OpenHouse request started at:', new Date(startedAt).toISOString());
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      console.error('[GHL] OpenHouse aborting request after 20 seconds');
+      controller.abort();
+    }, 20000);
+
+    // Create OpenHouse custom object (using correct GHL API structure)
+    let openHouseResponse: Response;
+    const requestPayload = {
+      locationId: params.locationId,
+      properties: {
+        "custom_objects.openhouses.openhouseid": params.eventId,
+        "custom_objects.openhouses.address": params.address,
+        "custom_objects.openhouses.startdatetime": params.startDateTime,
+        "custom_objects.openhouses.enddatetime": params.endDateTime,
+        "custom_objects.openhouses.flyerurl": params.flyerUrl,
+        "custom_objects.openhouses.agentid": params.agentId,
+        "custom_objects.openhouses.beds": params.beds?.toString() || '',
+        "custom_objects.openhouses.baths": params.baths?.toString() || '',
+        "custom_objects.openhouses.sqft": params.sqft?.toString() || '',
+        "custom_objects.openhouses.price": params.price?.toString() || '',
+      },
+    };
+
+    console.log('[GHL] OpenHouse request payload:', JSON.stringify(requestPayload));
+
+    try {
+      openHouseResponse = await fetch(
+        `https://services.leadconnectorhq.com/objects/custom_objects.openhouses/records?locationId=${params.locationId}`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${params.accessToken}`,
+            'Content-Type': 'application/json',
+            'Version': '2021-07-28',
+          },
+          body: JSON.stringify(requestPayload),
+          signal: controller.signal,
+        }
+      );
+    } catch (error: any) {
+      clearTimeout(timeoutId);
+      if (error?.name === 'AbortError') {
+        console.error('[GHL] OpenHouse creation timed out after 20 seconds');
+        throw new Error('GHL_TIMEOUT: OpenHouse request exceeded 20 seconds');
+      }
+      console.error('[GHL] OpenHouse request failed:', error.message);
+      throw error;
+    }
+
+    clearTimeout(timeoutId);
+    console.log('[GHL] OpenHouse response status:', openHouseResponse.status);
+    console.log('[GHL] OpenHouse response time (ms):', Date.now() - startedAt);
+
+    const openHouseResponseText = await openHouseResponse.text();
+
+    if (!openHouseResponse.ok) {
+      console.error('[GHL] OpenHouse creation failed:', openHouseResponseText);
+      throw new Error(`Failed to create OpenHouse: ${openHouseResponseText}`);
+    }
+
+    console.log('[GHL] OpenHouse response body:', openHouseResponseText);
+    const openHouseData = JSON.parse(openHouseResponseText);
+    const openHouseRecordId = openHouseData.id;
+    console.log('[GHL] OpenHouse created:', openHouseRecordId);
+
+    return openHouseRecordId;
+  } catch (error: any) {
+    console.error('[GHL] Error creating OpenHouse:', error);
+    throw error;
+  }
+}
+
+export async function createGHLRegistrationRecord(params: {
+  locationId: string;
+  accessToken: string;
+  eventId: string;
+  contactId: string;
+  openHouseRecordId: string;
+}) {
+  try {
+    console.log('[GHL] Creating Registration to link contact to OpenHouse...');
+    const registrationResponse = await fetch(
+      `https://services.leadconnectorhq.com/objects/custom_objects.registrations/records?locationId=${params.locationId}`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${params.accessToken}`,
+          'Content-Type': 'application/json',
+          'Version': '2021-07-28',
+        },
+        body: JSON.stringify({
+          locationId: params.locationId,
+          properties: {
+            "custom_objects.registrations.registrationid": `reg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+            "custom_objects.registrations.contactid": params.contactId,
+            "custom_objects.registrations.openhouseid": params.eventId,
+            "custom_objects.registrations.registerdat": new Date().toISOString(),
+            "custom_objects.registrations.flyerstatus": 'pending',
+          },
+          relationships: [
+            {
+              relatedObjectId: params.contactId,
+              relationType: 'contact',
+            },
+            {
+              relatedObjectId: params.openHouseRecordId,
+              relationType: 'custom_objects.openhouses',
+            },
+          ],
+        }),
+      }
+    );
+
+    if (!registrationResponse.ok) {
+      const error = await registrationResponse.text();
+      console.error('[GHL] Registration creation failed:', error);
+      throw new Error(`Failed to create Registration: ${error}`);
+    }
+
+    const registrationData = await registrationResponse.json();
+    const registrationRecordId = registrationData?.id;
+    console.log('[GHL] Registration created:', registrationRecordId);
+    return registrationRecordId;
+  } catch (error: any) {
+    console.error('[GHL] Error creating Registration:', error);
+    throw error;
+  }
+}
+
 export async function createGHLOpenHouseAndLinkContact(params: {
   locationId: string;
   accessToken: string;
@@ -22,98 +170,30 @@ export async function createGHLOpenHouseAndLinkContact(params: {
   price?: number;
   contactId: string;
 }) {
-  try {
-    console.log('[GHL] Creating OpenHouse custom object...');
+  const openHouseRecordId = await createGHLOpenHouseRecord({
+    locationId: params.locationId,
+    accessToken: params.accessToken,
+    eventId: params.eventId,
+    address: params.address,
+    startDateTime: params.startDateTime,
+    endDateTime: params.endDateTime,
+    flyerUrl: params.flyerUrl,
+    agentId: params.agentId,
+    beds: params.beds,
+    baths: params.baths,
+    sqft: params.sqft,
+    price: params.price,
+  });
 
-    // Create OpenHouse custom object (using correct GHL API structure)
-    const openHouseResponse = await fetch(
-      `https://services.leadconnectorhq.com/objects/custom_objects.OpenHouses/records?locationId=${params.locationId}`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${params.accessToken}`,
-          'Content-Type': 'application/json',
-          'Version': '2021-07-28',
-        },
-        body: JSON.stringify({
-          properties: {
-            openHouseId: params.eventId,
-            address: params.address,
-            startDateTime: params.startDateTime,
-            endDateTime: params.endDateTime,
-            flyerUrl: params.flyerUrl,
-            agentId: params.agentId,
-            locationId: params.locationId,
-            beds: params.beds?.toString() || '',
-            bath: params.baths?.toString() || '', // Note: GHL uses singular 'bath' not 'baths'
-            sqft: params.sqft?.toString() || '',
-            price: params.price?.toString() || '',
-          },
-        }),
-      }
-    );
+  const registrationId = await createGHLRegistrationRecord({
+    locationId: params.locationId,
+    accessToken: params.accessToken,
+    eventId: params.eventId,
+    contactId: params.contactId,
+    openHouseRecordId,
+  });
 
-    if (!openHouseResponse.ok) {
-      const error = await openHouseResponse.text();
-      console.error('[GHL] OpenHouse creation failed:', error);
-      throw new Error(`Failed to create OpenHouse: ${error}`);
-    }
-
-    const openHouseData = await openHouseResponse.json();
-    const openHouseRecordId = openHouseData.id;
-    console.log('[GHL] OpenHouse created:', openHouseRecordId);
-
-    // Create Registration custom object linking contact to OpenHouse
-    console.log('[GHL] Creating Registration to link contact to OpenHouse...');
-    const registrationResponse = await fetch(
-      `https://services.leadconnectorhq.com/objects/custom_objects.Registrations/records?locationId=${params.locationId}`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${params.accessToken}`,
-          'Content-Type': 'application/json',
-          'Version': '2021-07-28',
-        },
-        body: JSON.stringify({
-          properties: {
-            registrationId: `reg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-            contactId: params.contactId,
-            openHouseId: openHouseRecordId,
-            registeredAt: new Date().toISOString(),
-            flyerStatus: 'pending',
-          },
-        }),
-      }
-    );
-
-    if (!registrationResponse.ok) {
-      const error = await registrationResponse.text();
-      console.error('[GHL] Registration creation failed:', error);
-      // Don't throw - we'll try to create associations anyway
-    }
-
-    const registrationData = await registrationResponse.json();
-    const registrationRecordId = registrationData?.id;
-    console.log('[GHL] Registration created:', registrationRecordId);
-
-    // Create associations (relationships) between records
-    // Note: This requires the association IDs to be set up in GHL first
-    if (registrationRecordId && openHouseRecordId) {
-      console.log('[GHL] Creating associations between Registration, OpenHouse, and Contact...');
-
-      // TODO: Get the correct associationId values from GHL
-      // These need to be fetched from: GET /associations/definitions
-      // For now, we'll log that associations need to be set up
-      console.log('[GHL] Note: Associations need to be created manually or via association API');
-      console.log('[GHL] - Registration → OpenHouse');
-      console.log('[GHL] - Registration → Contact');
-    }
-
-    return { openHouseId: openHouseRecordId, contactId: params.contactId, registrationId: registrationRecordId };
-  } catch (error: any) {
-    console.error('[GHL] Error creating OpenHouse and Registration:', error);
-    throw error;
-  }
+  return { openHouseId: openHouseRecordId, contactId: params.contactId, registrationId };
 }
 
 export interface GHLEmailParams {
@@ -245,6 +325,7 @@ export async function createOrUpdateGHLContact(params: {
   customFields?: Record<string, string>;
 }) {
   try {
+    const startedAt = Date.now();
     console.log('[GHL] Starting contact creation/update process...');
     console.log('[GHL] Location ID:', params.locationId);
     console.log('[GHL] Email:', params.email);
@@ -273,39 +354,64 @@ export async function createOrUpdateGHLContact(params: {
     console.log('[GHL] Contact payload:', JSON.stringify(contactPayload));
     console.log('[GHL] Sending create request...');
 
-    // Create a hard timeout promise that rejects after 5 seconds
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => {
-        reject(new Error('GHL_TIMEOUT: Request exceeded 5 seconds'));
-      }, 5000);
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      console.error('[GHL] Contact aborting request after 20 seconds');
+      controller.abort();
+    }, 20000);
 
-    // Create the fetch promise
-    const fetchPromise = fetch(
-      `https://services.leadconnectorhq.com/contacts/`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${params.accessToken}`,
-          'Content-Type': 'application/json',
-          'Version': '2021-07-28',
-        },
-        body: JSON.stringify(contactPayload),
-      }
-    );
+    const fetchPromise = fetch(`https://services.leadconnectorhq.com/contacts/`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${params.accessToken}`,
+        'Content-Type': 'application/json',
+        'Version': '2021-07-28',
+      },
+      body: JSON.stringify(contactPayload),
+      signal: controller.signal,
+    });
 
     // Race between fetch and timeout
     let createResponse;
     try {
-      console.log('[GHL] Waiting for response (5 second timeout)...');
-      createResponse = await Promise.race([fetchPromise, timeoutPromise]);
+      console.log('[GHL] Waiting for response (20 second timeout)...');
+      createResponse = await fetchPromise;
       console.log('[GHL] Create response received');
     } catch (error: any) {
-      console.error('[GHL] Request failed or timed out:', error.message);
+      clearTimeout(timeoutId);
+      if (error?.name === 'AbortError') {
+        console.error('[GHL] Request failed or timed out:', error.message);
+        const existingContact = await searchGHLContact({
+          locationId: params.locationId,
+          accessToken: params.accessToken,
+          email: params.email,
+          phone: params.phone,
+        });
+
+        if (existingContact?.id) {
+          if (params.tags && params.tags.length > 0) {
+            await addGHLTags({
+              contactId: existingContact.id,
+              locationId: params.locationId,
+              accessToken: params.accessToken,
+              tags: params.tags,
+            });
+          }
+          return { id: existingContact.id };
+        }
+
+        throw new Error('GHL_TIMEOUT: Request exceeded 20 seconds');
+      }
+
+      console.error('[GHL] Request failed:', error.message);
+      console.error('[GHL] Contact response time (ms):', Date.now() - startedAt);
       throw error;
     }
 
+    clearTimeout(timeoutId);
+
     console.log('[GHL] Create response status:', createResponse.status);
+    console.log('[GHL] Contact response time (ms):', Date.now() - startedAt);
 
     if (!createResponse.ok) {
       const errorText = await createResponse.text();
@@ -353,13 +459,69 @@ export async function createOrUpdateGHLContact(params: {
 
     const contactData = await createResponse.json();
     console.log('[GHL] Response data:', JSON.stringify(contactData));
-    console.log('[GHL] Created new GHL contact:', contactData.contact?.id || contactData.id);
-    return contactData.contact || contactData;
+    const resolvedContact = contactData.contact || contactData;
+    console.log('[GHL] Created new GHL contact:', resolvedContact?.id);
+
+    if (resolvedContact?.id && params.tags && params.tags.length > 0) {
+      try {
+        await addGHLTags({
+          contactId: resolvedContact.id,
+          locationId: params.locationId,
+          accessToken: params.accessToken,
+          tags: params.tags,
+        });
+      } catch (tagError) {
+        console.error('[GHL] Failed to add tags to contact:', tagError);
+      }
+    }
+
+    return resolvedContact;
   } catch (error: any) {
     console.error('[GHL] Error creating/updating GHL contact:', error);
     console.error('[GHL] Error stack:', error.stack);
     throw error;
   }
+}
+
+
+async function searchGHLContact(params: {
+  locationId: string;
+  accessToken: string;
+  email?: string;
+  phone?: string;
+}) {
+  const searchParams = new URLSearchParams();
+  if (params.email) {
+    searchParams.set('email', params.email);
+  }
+  if (params.phone) {
+    searchParams.set('phone', params.phone);
+  }
+
+  if (!searchParams.toString()) {
+    return null;
+  }
+
+  const response = await fetch(
+    `https://services.leadconnectorhq.com/contacts/search?${searchParams.toString()}`,
+    {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${params.accessToken}`,
+        'Content-Type': 'application/json',
+        'Version': '2021-07-28',
+      },
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.text();
+    console.error('[GHL] Contact search failed:', error);
+    return null;
+  }
+
+  const data = await response.json();
+  return data?.contacts?.[0] || null;
 }
 
 /**

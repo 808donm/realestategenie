@@ -49,8 +49,8 @@ export type GHLNote = {
 export type GHLCustomObjectRecord = {
   id?: string;
   locationId: string;
-  objectType: string; // "openHouse" or "registration"
-  data: Record<string, any>;
+  objectType: string; // e.g. "custom_objects.openhouses" or "custom_objects.registrations"
+  properties: Record<string, any>;
   relationships?: Array<{
     relatedObjectId: string;
     relationType: string;
@@ -206,7 +206,7 @@ export class GHLClient {
       method: "POST",
       body: JSON.stringify({
         locationId: record.locationId,
-        ...record.data,
+        properties: record.properties,
         relationships: record.relationships,
       }),
     });
