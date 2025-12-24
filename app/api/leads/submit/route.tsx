@@ -152,11 +152,14 @@ export async function POST(req: Request) {
             tags: ['OpenHouse', evt?.address || 'Property'], // Tag will trigger workflow
           });
 
-          console.log('GHL contact created successfully:', contact?.id);
+          const contactId = (contact as { id?: string })?.id;
+          console.log('GHL contact created successfully:', contactId);
+          console.log('GHL contact response:', JSON.stringify(contact));
 
           // Now create OpenHouse custom object and link via Registration
-          if (contact?.id) {
+          if (contactId) {
             try {
+              console.log('Creating GHL OpenHouse for contact:', contactId);
               await createGHLOpenHouseAndLinkContact({
                 locationId: ghlConfig.location_id,
                 accessToken: ghlConfig.access_token,
@@ -170,12 +173,14 @@ export async function POST(req: Request) {
                 baths: evt.baths,
                 sqft: evt.sqft,
                 price: evt.price,
-                contactId: contact.id,
+                contactId,
               });
               console.log('GHL OpenHouse and Registration created successfully');
             } catch (linkError: any) {
               console.error('Failed to create OpenHouse/Registration:', linkError.message);
             }
+          } else {
+            console.warn('GHL contact response missing id, skipping OpenHouse creation.');
           }
 
           console.log('Contact creation completed - GHL workflow will handle notifications');
