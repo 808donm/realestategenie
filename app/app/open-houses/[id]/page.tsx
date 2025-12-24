@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { supabaseServer } from "@/lib/supabase/server";
+import { geocodeAddress } from "@/lib/geocoding";
 import QRPanel from "./qr-panel";
 import PropertyMap from "@/components/PropertyMapWrapper";
 
@@ -27,6 +28,11 @@ export default async function OpenHouseDetail({
       </div>
     );
   }
+
+  const geocodedLocation =
+    !evt.latitude || !evt.longitude ? await geocodeAddress(evt.address) : null;
+  const resolvedLatitude = evt.latitude ?? geocodedLocation?.latitude ?? null;
+  const resolvedLongitude = evt.longitude ?? geocodedLocation?.longitude ?? null;
 
 async function setStatus(formData: FormData) {
   "use server";
@@ -121,25 +127,21 @@ async function setStatus(formData: FormData) {
       )}
 
       {/* Property Location Map */}
-      {evt.latitude && evt.longitude ? (
-        <div style={{ marginTop: 32 }}>
-          <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 12 }}>
-            Property Location
-          </h2>
-          <PropertyMap
-            latitude={evt.latitude}
-            longitude={evt.longitude}
-            address={evt.address}
-            className="h-[400px]"
-          />
-        </div>
-      ) : (
-        <div style={{ marginTop: 32, padding: 16, background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 8 }}>
-          <p style={{ margin: 0, fontSize: 14 }}>
-            <strong>Map not available:</strong> No coordinates found for this address. The geocoding service may have been unavailable when this open house was created.
-          </p>
-        </div>
-      )}
+      <div style={{ marginTop: 32 }}>
+        <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 12 }}>
+          Property Location
+        </h2>
+        <PropertyMap
+          latitude={resolvedLatitude}
+          longitude={resolvedLongitude}
+          address={evt.address}
+          googleMapsApiKey={
+            process.env.GOOGLE_MAPS_API_KEY ||
+            process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+          }
+          className="h-[400px]"
+        />
+      </div>
 
       <QRPanel eventId={evt.id} status={evt.status} />
     </div>

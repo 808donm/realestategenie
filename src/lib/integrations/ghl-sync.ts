@@ -211,18 +211,19 @@ export async function syncLeadToGHL(leadId: string): Promise<{
         try {
           const openHouseRecord = await client.createCustomObjectRecord({
             locationId: config.location_id,
-            objectType: "openHouse",
-            data: {
-              openHouseId: lead.event_id,
+            objectType: "custom_objects.openhouses",
+            properties: {
+              openhouseid: lead.event_id,
               address: propertyAddress,
-              startDateTime: event.start_at,
-              endDateTime: event.end_at,
-              flyerUrl,
-              agentId: lead.agent_id,
-              beds: event.beds,
-              baths: event.baths,
-              sqft: event.sqft,
-              price: event.price,
+              startdatetime: event.start_at,
+              enddatetime: event.end_at,
+              flyerurl: flyerUrl,
+              agentid: lead.agent_id,
+              locationid: config.location_id,
+              beds: event.beds?.toString() || "",
+              baths: event.baths?.toString() || "",
+              sqft: event.sqft?.toString() || "",
+              price: event.price?.toString() || "",
             },
           });
 
@@ -245,19 +246,27 @@ export async function syncLeadToGHL(leadId: string): Promise<{
       try {
         const registrationRecord = await client.createCustomObjectRecord({
           locationId: config.location_id,
-          objectType: "registration",
-          data: {
-            registrationId: `reg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-            contactId,
-            openHouseId: ghlOpenHouseId || lead.event_id,
-            registeredAt: new Date().toISOString(),
-            flyerStatus: "pending",
+          objectType: "custom_objects.registrations",
+          properties: {
+            registrationid: `reg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+            contactid: contactId,
+            openhouseid: lead.event_id,
+            registerdat: new Date().toISOString(),
+            flyerstatus: "pending",
           },
           relationships: [
             {
               relatedObjectId: contactId,
               relationType: "contact",
             },
+            ...(ghlOpenHouseId
+              ? [
+                  {
+                    relatedObjectId: ghlOpenHouseId,
+                    relationType: "custom_objects.openhouses",
+                  },
+                ]
+              : []),
           ],
         });
 
