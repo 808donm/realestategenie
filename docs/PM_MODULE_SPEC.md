@@ -119,7 +119,7 @@ Rental applications submitted via rental open house check-ins.
 - annual_income (NUMERIC)
 - current_address (TEXT)
 - move_in_date (DATE)
-- references (JSONB) -- [{name, phone, relationship}]
+- applicant_references (JSONB) -- [{name, phone, relationship}]
 - pets (JSONB) -- [{type, breed, weight}]
 - emergency_contact (JSONB) -- {name, phone, relationship}
 -

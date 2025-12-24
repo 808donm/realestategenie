@@ -115,7 +115,7 @@ CREATE TABLE IF NOT EXISTS pm_applications (
   annual_income NUMERIC(12,2),
   current_address TEXT,
   move_in_date DATE,
-  references JSONB, -- [{name, phone, relationship}]
+  applicant_references JSONB, -- [{name, phone, relationship}]
   pets JSONB, -- [{type, breed, weight}]
   emergency_contact JSONB, -- {name, phone, relationship}
 
