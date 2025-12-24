@@ -12,7 +12,7 @@ type IntegrationHealth = {
     connected: boolean;
     lastUpdated: string | null;
   };
-  qbo: {
+  qbo?: {
     connected: boolean;
     lastUpdated: string | null;
   };
@@ -139,20 +139,22 @@ export default function IntegrationHealth() {
           </div>
 
           {/* QuickBooks Online */}
-          <div className="flex items-center justify-between p-4 border rounded-lg">
-            <div className="flex items-center gap-3">
-              {getHealthIcon(health.qbo.connected)}
-              <div>
-                <div className="font-semibold">QuickBooks Online</div>
-                <div className="text-sm text-muted-foreground">
-                  {health.qbo.connected
-                    ? `Last sync: ${formatLastUpdated(health.qbo.lastUpdated)}`
-                    : "Not configured"}
+          {health.qbo && (
+            <div className="flex items-center justify-between p-4 border rounded-lg">
+              <div className="flex items-center gap-3">
+                {getHealthIcon(health.qbo.connected)}
+                <div>
+                  <div className="font-semibold">QuickBooks Online</div>
+                  <div className="text-sm text-muted-foreground">
+                    {health.qbo.connected
+                      ? `Last sync: ${formatLastUpdated(health.qbo.lastUpdated)}`
+                      : "Not configured"}
+                  </div>
                 </div>
               </div>
+              {getHealthStatus(health.qbo.connected)}
             </div>
-            {getHealthStatus(health.qbo.connected)}
-          </div>
+          )}
 
           {/* Call to Action */}
           {!health.ghl.connected && (
