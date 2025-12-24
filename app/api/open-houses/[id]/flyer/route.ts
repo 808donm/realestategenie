@@ -266,8 +266,21 @@ export async function GET(
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
     const margin = 15;
+    const footerHeight = 50; // Total space needed for footer
+    const maxContentY = pageHeight - footerHeight - 10; // Maximum Y position for content
 
-    // Header - Property Address
+    // Helper function to check if we need a new page
+    const needsNewPage = (currentY: number, requiredSpace: number): boolean => {
+      return currentY + requiredSpace > maxContentY;
+    };
+
+    // Helper function to add a new page and reset yPos
+    const addNewPage = (): number => {
+      pdf.addPage();
+      return margin + 10; // Start content a bit lower on subsequent pages
+    };
+
+    // Header - Property Address (Page 1 only)
     pdf.setFontSize(24);
     pdf.setFont("helvetica", "bold");
     pdf.text(event.address, margin, 25);
@@ -374,17 +387,37 @@ export async function GET(
       pdf.setFontSize(11);
       pdf.setFont("helvetica", "normal");
       const lines = pdf.splitTextToSize(event.listing_description, pageWidth - (margin * 2));
+      const descriptionHeight = lines.length * 5;
+
+      // Check if description would overflow
+      if (needsNewPage(yPos, descriptionHeight + 10)) {
+        yPos = addNewPage();
+      }
+
       pdf.text(lines, margin, yPos);
-      yPos += (lines.length * 5) + 5;
+      yPos += descriptionHeight + 5;
     }
 
     // Key Features with QR Code
     if (event.key_features && event.key_features.length > 0) {
       yPos += 5;
-      const featuresStartY = yPos;
-      const qrSize = 35; // QR code size in mm
-      const qrGap = 10; // Gap between text and QR code
+
+      // Estimate features height
+      const qrSize = 35;
+      const qrGap = 10;
       const textWidth = qrCodeData ? (pageWidth - (margin * 2) - qrSize - qrGap) : (pageWidth - (margin * 2));
+      let estimatedFeaturesHeight = 12; // Title
+      event.key_features.forEach((feature: string) => {
+        const lines = pdf.splitTextToSize(`• ${feature}`, textWidth);
+        estimatedFeaturesHeight += lines.length * 5;
+      });
+
+      // Check if features would overflow
+      if (needsNewPage(yPos, estimatedFeaturesHeight + 15)) {
+        yPos = addNewPage();
+      }
+
+      const featuresStartY = yPos;
 
       pdf.setFontSize(12);
       pdf.setFont("helvetica", "bold");
@@ -413,8 +446,14 @@ export async function GET(
       }
     } else if (qrCodeData) {
       // No features, but we have QR code - show it centered
-      yPos += 5;
       const qrSize = 35;
+
+      // Check if QR code would overflow
+      if (needsNewPage(yPos, qrSize + 13)) {
+        yPos = addNewPage();
+      }
+
+      yPos += 5;
       const qrX = margin + ((pageWidth - (margin * 2) - qrSize) / 2);
       pdf.addImage(qrCodeData, "PNG", qrX, yPos, qrSize, qrSize, undefined, "FAST");
 
@@ -429,37 +468,36 @@ export async function GET(
 
     // Open House Information - Compact Banner
     yPos += 8;
-
-    // Calculate footer height (need to reserve space)
-    const footerHeight = 50; // Total space needed for footer
-    const footerStartY = pageHeight - footerHeight;
     const bannerHeight = 18;
 
-    // Check if banner would overlap footer - if so, skip banner or adjust
-    if (yPos + bannerHeight + 10 < footerStartY) {
-      // Safe to draw banner
-      pdf.setDrawColor(0, 0, 255);
-      pdf.setFillColor(230, 240, 255);
-      pdf.roundedRect(margin, yPos, pageWidth - (margin * 2), bannerHeight, 3, 3, "FD");
-
-      // Open house text on one line
-      pdf.setTextColor(0, 0, 150);
-      pdf.setFontSize(11);
-      pdf.setFont("helvetica", "bold");
-      const startDate = new Date(event.start_at);
-      const endDate = new Date(event.end_at);
-      const openHouseText = `OPEN HOUSE: ${startDate.toLocaleDateString()} • ${startDate.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit"
-      })} - ${endDate.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit"
-      })}`;
-      pdf.text(openHouseText, margin + 5, yPos + 11);
-      pdf.setTextColor(0, 0, 0);
+    // Check if banner would overflow - if so, move to new page
+    if (needsNewPage(yPos, bannerHeight + 10)) {
+      yPos = addNewPage();
     }
 
-    // Agent Information (Bottom) - always at fixed position
+    // Draw banner
+    pdf.setDrawColor(0, 0, 255);
+    pdf.setFillColor(230, 240, 255);
+    pdf.roundedRect(margin, yPos, pageWidth - (margin * 2), bannerHeight, 3, 3, "FD");
+
+    // Open house text on one line
+    pdf.setTextColor(0, 0, 150);
+    pdf.setFontSize(11);
+    pdf.setFont("helvetica", "bold");
+    const startDate = new Date(event.start_at);
+    const endDate = new Date(event.end_at);
+    const openHouseText = `OPEN HOUSE: ${startDate.toLocaleDateString()} • ${startDate.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit"
+    })} - ${endDate.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit"
+    })}`;
+    pdf.text(openHouseText, margin + 5, yPos + 11);
+    pdf.setTextColor(0, 0, 0);
+
+    // Agent Information (Bottom) - always at fixed position on current page
+    const footerStartY = pageHeight - footerHeight;
     yPos = footerStartY;
     pdf.setDrawColor(200, 200, 200);
     pdf.line(margin, yPos, pageWidth - margin, yPos);

@@ -29,17 +29,31 @@ async function geocodeWithGoogle(address: string): Promise<GeocodingResult | nul
     url.searchParams.set("address", address);
     url.searchParams.set("key", apiKey);
 
-    const response = await fetch(url.toString());
+    const response = await fetch(url.toString(), {
+      signal: AbortSignal.timeout(15000) // 15 second timeout
+    });
 
     if (!response.ok) {
-      console.error("Google geocoding failed:", response.status, response.statusText);
+      console.error("Google geocoding HTTP error:", response.status, response.statusText);
       return null;
     }
 
     const data = await response.json();
 
-    if (data.status !== "OK" || !data.results || data.results.length === 0) {
-      console.warn("Google geocoding: No results for address:", address, "Status:", data.status);
+    if (data.status !== "OK") {
+      // Only log as warning for expected API issues, not full errors
+      if (data.status === "REQUEST_DENIED") {
+        console.warn("Google Geocoding API not available (REQUEST_DENIED). Enable Google Geocoding API in Google Cloud Console or check API key restrictions.");
+      } else if (data.status === "ZERO_RESULTS") {
+        console.log("Google geocoding: No results found for address:", address);
+      } else {
+        console.warn("Google geocoding status:", data.status, "for address:", address);
+      }
+      return null;
+    }
+
+    if (!data.results || data.results.length === 0) {
+      console.log("Google geocoding: No results for address:", address);
       return null;
     }
 
@@ -74,17 +88,18 @@ async function geocodeWithOSM(address: string): Promise<GeocodingResult | null> 
       headers: {
         "User-Agent": "RealEstateGenie/1.0",
       },
+      signal: AbortSignal.timeout(15000) // 15 second timeout
     });
 
     if (!response.ok) {
-      console.error("OSM geocoding failed:", response.status);
+      console.error("OSM geocoding HTTP error:", response.status, response.statusText);
       return null;
     }
 
     const data = await response.json();
 
     if (data.length === 0) {
-      console.warn("OSM geocoding: No results for address:", address);
+      console.log("OSM geocoding: No results found for address:", address);
       return null;
     }
 
@@ -120,19 +135,19 @@ export async function geocodeAddress(
   // Try Google Maps first (more reliable)
   const googleResult = await geocodeWithGoogle(address);
   if (googleResult) {
-    console.log("✓ Geocoded with Google Maps:", googleResult);
+    console.log("✓ Successfully geocoded with Google Maps");
     return googleResult;
   }
 
   // Fallback to OpenStreetMap
-  console.log("Falling back to OpenStreetMap...");
+  console.log("Google geocoding unavailable, trying OpenStreetMap...");
   const osmResult = await geocodeWithOSM(address);
   if (osmResult) {
-    console.log("✓ Geocoded with OpenStreetMap:", osmResult);
+    console.log("✓ Successfully geocoded with OpenStreetMap");
     return osmResult;
   }
 
-  console.error("❌ All geocoding services failed for address:", address);
+  console.warn("⚠️  Geocoding services could not locate this address. The open house will be saved without coordinates. The property map will not be available on the flyer.");
   return null;
 }
 
