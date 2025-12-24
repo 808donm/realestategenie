@@ -285,37 +285,59 @@ export async function createOrUpdateGHLContact(params: {
     console.log('[GHL] Contact payload:', JSON.stringify(contactPayload));
     console.log('[GHL] Sending create request...');
 
-    // Create a hard timeout promise that rejects after 20 seconds
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => {
-        reject(new Error('GHL_TIMEOUT: Request exceeded 20 seconds'));
-      }, 20000);
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, 20000);
 
-    // Create the fetch promise
-    const fetchPromise = fetch(
-      `https://services.leadconnectorhq.com/contacts/`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${params.accessToken}`,
-          'Content-Type': 'application/json',
-          'Version': '2021-07-28',
-        },
-        body: JSON.stringify(contactPayload),
-      }
-    );
+    const fetchPromise = fetch(`https://services.leadconnectorhq.com/contacts/`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${params.accessToken}`,
+        'Content-Type': 'application/json',
+        'Version': '2021-07-28',
+      },
+      body: JSON.stringify(contactPayload),
+      signal: controller.signal,
+    });
 
     // Race between fetch and timeout
     let createResponse;
     try {
       console.log('[GHL] Waiting for response (20 second timeout)...');
-      createResponse = await Promise.race([fetchPromise, timeoutPromise]);
+      createResponse = await fetchPromise;
       console.log('[GHL] Create response received');
     } catch (error: any) {
-      console.error('[GHL] Request failed or timed out:', error.message);
+      clearTimeout(timeoutId);
+      if (error?.name === 'AbortError') {
+        console.error('[GHL] Request failed or timed out:', error.message);
+        const existingContact = await searchGHLContact({
+          locationId: params.locationId,
+          accessToken: params.accessToken,
+          email: params.email,
+          phone: params.phone,
+        });
+
+        if (existingContact?.id) {
+          if (params.tags && params.tags.length > 0) {
+            await addGHLTags({
+              contactId: existingContact.id,
+              locationId: params.locationId,
+              accessToken: params.accessToken,
+              tags: params.tags,
+            });
+          }
+          return { id: existingContact.id };
+        }
+
+        throw new Error('GHL_TIMEOUT: Request exceeded 20 seconds');
+      }
+
+      console.error('[GHL] Request failed:', error.message);
       throw error;
     }
+
+    clearTimeout(timeoutId);
 
     console.log('[GHL] Create response status:', createResponse.status);
 
@@ -365,13 +387,68 @@ export async function createOrUpdateGHLContact(params: {
 
     const contactData = await createResponse.json();
     console.log('[GHL] Response data:', JSON.stringify(contactData));
-    console.log('[GHL] Created new GHL contact:', contactData.contact?.id || contactData.id);
-    return contactData.contact || contactData;
+    const resolvedContact = contactData.contact || contactData;
+    console.log('[GHL] Created new GHL contact:', resolvedContact?.id);
+
+    if (resolvedContact?.id && params.tags && params.tags.length > 0) {
+      try {
+        await addGHLTags({
+          contactId: resolvedContact.id,
+          locationId: params.locationId,
+          accessToken: params.accessToken,
+          tags: params.tags,
+        });
+      } catch (tagError) {
+        console.error('[GHL] Failed to add tags to contact:', tagError);
+      }
+    }
+
+    return resolvedContact;
   } catch (error: any) {
     console.error('[GHL] Error creating/updating GHL contact:', error);
     console.error('[GHL] Error stack:', error.stack);
     throw error;
   }
+}
+
+async function searchGHLContact(params: {
+  locationId: string;
+  accessToken: string;
+  email?: string;
+  phone?: string;
+}) {
+  const searchParams = new URLSearchParams();
+  if (params.email) {
+    searchParams.set('email', params.email);
+  }
+  if (params.phone) {
+    searchParams.set('phone', params.phone);
+  }
+
+  if (!searchParams.toString()) {
+    return null;
+  }
+
+  const response = await fetch(
+    `https://services.leadconnectorhq.com/contacts/search?${searchParams.toString()}`,
+    {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${params.accessToken}`,
+        'Content-Type': 'application/json',
+        'Version': '2021-07-28',
+      },
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.text();
+    console.error('[GHL] Contact search failed:', error);
+    return null;
+  }
+
+  const data = await response.json();
+  return data?.contacts?.[0] || null;
 }
 
 /**
