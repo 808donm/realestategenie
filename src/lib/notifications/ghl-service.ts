@@ -38,17 +38,17 @@ export async function createGHLOpenHouseAndLinkContact(params: {
         body: JSON.stringify({
           locationId: params.locationId,
           properties: {
-            openhouseid: params.eventId,
-            address: params.address,
-            startdatetime: params.startDateTime,
-            enddatetime: params.endDateTime,
-            flyerurl: params.flyerUrl,
-            agentid: params.agentId,
-            locationid: params.locationId,
-            beds: params.beds?.toString() || '',
-            baths: params.baths?.toString() || '',
-            sqft: params.sqft?.toString() || '',
-            price: params.price?.toString() || '',
+            "custom_objects.openhouses.openhouseid": params.eventId,
+            "custom_objects.openhouses.address": params.address,
+            "custom_objects.openhouses.startdatetime": params.startDateTime,
+            "custom_objects.openhouses.enddatetime": params.endDateTime,
+            "custom_objects.openhouses.flyerurl": params.flyerUrl,
+            "custom_objects.openhouses.agentid": params.agentId,
+            "custom_objects.openhouses.locationid": params.locationId,
+            "custom_objects.openhouses.beds": params.beds?.toString() || '',
+            "custom_objects.openhouses.baths": params.baths?.toString() || '',
+            "custom_objects.openhouses.sqft": params.sqft?.toString() || '',
+            "custom_objects.openhouses.price": params.price?.toString() || '',
           },
         }),
       }
@@ -78,11 +78,11 @@ export async function createGHLOpenHouseAndLinkContact(params: {
         body: JSON.stringify({
           locationId: params.locationId,
           properties: {
-            registrationid: `reg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-            contactid: params.contactId,
-            openhouseid: params.eventId,
-            registerdat: new Date().toISOString(),
-            flyerstatus: 'pending',
+            "custom_objects.registrations.registrationid": `reg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+            "custom_objects.registrations.contactid": params.contactId,
+            "custom_objects.registrations.openhouseid": params.eventId,
+            "custom_objects.registrations.registerdat": new Date().toISOString(),
+            "custom_objects.registrations.flyerstatus": 'pending',
           },
           relationships: [
             {
