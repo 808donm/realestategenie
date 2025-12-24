@@ -5,7 +5,7 @@ import { syncLeadToGHL } from "@/lib/integrations/ghl-sync";
 import { dispatchWebhook } from "@/lib/webhooks/dispatcher";
 import { sendCheckInConfirmation, sendGreetingEmail } from "@/lib/notifications/email-service";
 import { sendCheckInSMS, sendGreetingSMS } from "@/lib/notifications/sms-service";
-import { sendGHLEmail, sendGHLSMS, createOrUpdateGHLContact, getGHLPipelines, createGHLOpportunity, createGHLOpenHouseAndLinkContact } from "@/lib/notifications/ghl-service";
+import { sendGHLEmail, sendGHLSMS, createOrUpdateGHLContact, getGHLPipelines, createGHLOpportunity, createGHLRegistrationRecord, createGHLOpenHouseRecord } from "@/lib/notifications/ghl-service";
 import { getValidGHLConfig } from "@/lib/integrations/ghl-token-refresh";
 
 const admin = createClient(
@@ -141,6 +141,29 @@ export async function POST(req: Request) {
           const firstName = nameParts[0] || payload.name;
           const lastName = nameParts.slice(1).join(' ') || '';
 
+          let openHouseRecordId: string | null = null;
+
+          try {
+            console.log('Creating GHL OpenHouse custom object...');
+            openHouseRecordId = await createGHLOpenHouseRecord({
+              locationId: ghlConfig.location_id,
+              accessToken: ghlConfig.access_token,
+              eventId: eventId,
+              address: evt?.address || '',
+              startDateTime: evt.start_at,
+              endDateTime: evt.end_at,
+              flyerUrl,
+              agentId: evt.agent_id,
+              beds: evt.beds,
+              baths: evt.baths,
+              sqft: evt.sqft,
+              price: evt.price,
+            });
+            console.log('GHL OpenHouse created:', openHouseRecordId);
+          } catch (openHouseError: any) {
+            console.error('Failed to create GHL OpenHouse:', openHouseError.message);
+          }
+
           const contact = await createOrUpdateGHLContact({
             locationId: ghlConfig.location_id,
             accessToken: ghlConfig.access_token,
@@ -156,31 +179,25 @@ export async function POST(req: Request) {
           console.log('GHL contact created successfully:', contactId);
           console.log('GHL contact response:', JSON.stringify(contact));
 
-          // Now create OpenHouse custom object and link via Registration
-          if (contactId) {
+          // Now create Registration custom object linking contact to OpenHouse
+          if (contactId && openHouseRecordId) {
             try {
-              console.log('Creating GHL OpenHouse for contact:', contactId);
-              await createGHLOpenHouseAndLinkContact({
+              console.log('Creating GHL Registration for contact:', contactId);
+              await createGHLRegistrationRecord({
                 locationId: ghlConfig.location_id,
                 accessToken: ghlConfig.access_token,
-                eventId: eventId,
-                address: evt?.address || '',
-                startDateTime: evt.start_at,
-                endDateTime: evt.end_at,
-                flyerUrl,
-                agentId: evt.agent_id,
-                beds: evt.beds,
-                baths: evt.baths,
-                sqft: evt.sqft,
-                price: evt.price,
-                contactId,
+                eventId,
+                contactId: contactId,
+                openHouseRecordId,
               });
-              console.log('GHL OpenHouse and Registration created successfully');
+              console.log('GHL Registration created successfully');
             } catch (linkError: any) {
-              console.error('Failed to create OpenHouse/Registration:', linkError.message);
+              console.error('Failed to create Registration:', linkError.message);
             }
+          } else if (!openHouseRecordId) {
+            console.warn('Skipping Registration: OpenHouse record not created.');
           } else {
-            console.warn('GHL contact response missing id, skipping OpenHouse creation.');
+            console.warn('GHL contact response missing id, skipping Registration creation.');
           }
 
           console.log('Contact creation completed - GHL workflow will handle notifications');

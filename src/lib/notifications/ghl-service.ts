@@ -7,7 +7,7 @@
  * Create OpenHouse custom object and link contact to it
  * This creates the proper relational structure in GHL for workflows to access
  */
-export async function createGHLOpenHouseAndLinkContact(params: {
+export async function createGHLOpenHouseRecord(params: {
   locationId: string;
   accessToken: string;
   eventId: string;
@@ -20,7 +20,6 @@ export async function createGHLOpenHouseAndLinkContact(params: {
   baths?: number;
   sqft?: number;
   price?: number;
-  contactId: string;
 }) {
   try {
     console.log('[GHL] Creating OpenHouse custom object...');
@@ -64,7 +63,21 @@ export async function createGHLOpenHouseAndLinkContact(params: {
     const openHouseRecordId = openHouseData.id;
     console.log('[GHL] OpenHouse created:', openHouseRecordId);
 
-    // Create Registration custom object linking contact to OpenHouse
+    return openHouseRecordId;
+  } catch (error: any) {
+    console.error('[GHL] Error creating OpenHouse:', error);
+    throw error;
+  }
+}
+
+export async function createGHLRegistrationRecord(params: {
+  locationId: string;
+  accessToken: string;
+  eventId: string;
+  contactId: string;
+  openHouseRecordId: string;
+}) {
+  try {
     console.log('[GHL] Creating Registration to link contact to OpenHouse...');
     const registrationResponse = await fetch(
       `https://services.leadconnectorhq.com/objects/custom_objects.registrations/records?locationId=${params.locationId}`,
@@ -90,7 +103,7 @@ export async function createGHLOpenHouseAndLinkContact(params: {
               relationType: 'contact',
             },
             {
-              relatedObjectId: openHouseRecordId,
+              relatedObjectId: params.openHouseRecordId,
               relationType: 'custom_objects.openhouses',
             },
           ],
@@ -101,31 +114,58 @@ export async function createGHLOpenHouseAndLinkContact(params: {
     if (!registrationResponse.ok) {
       const error = await registrationResponse.text();
       console.error('[GHL] Registration creation failed:', error);
-      // Don't throw - we'll try to create associations anyway
+      throw new Error(`Failed to create Registration: ${error}`);
     }
 
     const registrationData = await registrationResponse.json();
     const registrationRecordId = registrationData?.id;
     console.log('[GHL] Registration created:', registrationRecordId);
-
-    // Create associations (relationships) between records
-    // Note: This requires the association IDs to be set up in GHL first
-    if (registrationRecordId && openHouseRecordId) {
-      console.log('[GHL] Creating associations between Registration, OpenHouse, and Contact...');
-
-      // TODO: Get the correct associationId values from GHL
-      // These need to be fetched from: GET /associations/definitions
-      // For now, we'll log that associations need to be set up
-      console.log('[GHL] Note: Associations need to be created manually or via association API');
-      console.log('[GHL] - Registration → OpenHouse');
-      console.log('[GHL] - Registration → Contact');
-    }
-
-    return { openHouseId: openHouseRecordId, contactId: params.contactId, registrationId: registrationRecordId };
+    return registrationRecordId;
   } catch (error: any) {
-    console.error('[GHL] Error creating OpenHouse and Registration:', error);
+    console.error('[GHL] Error creating Registration:', error);
     throw error;
   }
+}
+
+export async function createGHLOpenHouseAndLinkContact(params: {
+  locationId: string;
+  accessToken: string;
+  eventId: string;
+  address: string;
+  startDateTime: string;
+  endDateTime: string;
+  flyerUrl: string;
+  agentId: string;
+  beds?: number;
+  baths?: number;
+  sqft?: number;
+  price?: number;
+  contactId: string;
+}) {
+  const openHouseRecordId = await createGHLOpenHouseRecord({
+    locationId: params.locationId,
+    accessToken: params.accessToken,
+    eventId: params.eventId,
+    address: params.address,
+    startDateTime: params.startDateTime,
+    endDateTime: params.endDateTime,
+    flyerUrl: params.flyerUrl,
+    agentId: params.agentId,
+    beds: params.beds,
+    baths: params.baths,
+    sqft: params.sqft,
+    price: params.price,
+  });
+
+  const registrationId = await createGHLRegistrationRecord({
+    locationId: params.locationId,
+    accessToken: params.accessToken,
+    eventId: params.eventId,
+    contactId: params.contactId,
+    openHouseRecordId,
+  });
+
+  return { openHouseId: openHouseRecordId, contactId: params.contactId, registrationId };
 }
 
 export interface GHLEmailParams {
