@@ -148,11 +148,12 @@ export async function POST(req: Request) {
           try {
             console.log('Creating GHL OpenHouse custom object...');
             openHouseTimeoutId = setTimeout(() => {
-              console.warn('GHL OpenHouse request still pending after 20s');
+              console.error('GHL OpenHouse request still pending after 20s');
             }, 20000);
             openHouseLongTimeoutId = setTimeout(() => {
-              console.warn('GHL OpenHouse request still pending after 40s');
+              console.error('GHL OpenHouse request still pending after 40s');
             }, 40000);
+            console.log('GHL OpenHouse timeout warnings scheduled');
             openHouseRecordId = await createGHLOpenHouseRecord({
               locationId: ghlConfig.location_id,
               accessToken: ghlConfig.access_token,
