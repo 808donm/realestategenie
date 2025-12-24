@@ -319,6 +319,7 @@ export async function createOrUpdateGHLContact(params: {
   customFields?: Record<string, string>;
 }) {
   try {
+    const startedAt = Date.now();
     console.log('[GHL] Starting contact creation/update process...');
     console.log('[GHL] Location ID:', params.locationId);
     console.log('[GHL] Email:', params.email);
@@ -396,13 +397,14 @@ export async function createOrUpdateGHLContact(params: {
       }
 
       console.error('[GHL] Request failed:', error.message);
-      console.error('[GHL] OpenHouse response time (ms):', Date.now() - startedAt);
+      console.error('[GHL] Contact response time (ms):', Date.now() - startedAt);
       throw error;
     }
 
     clearTimeout(timeoutId);
 
     console.log('[GHL] Create response status:', createResponse.status);
+    console.log('[GHL] Contact response time (ms):', Date.now() - startedAt);
 
     if (!createResponse.ok) {
       const errorText = await createResponse.text();
