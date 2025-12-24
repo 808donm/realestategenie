@@ -23,35 +23,54 @@ export async function createGHLOpenHouseRecord(params: {
 }) {
   try {
     console.log('[GHL] Creating OpenHouse custom object...');
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, 20000);
 
     // Create OpenHouse custom object (using correct GHL API structure)
-    const openHouseResponse = await fetch(
-      `https://services.leadconnectorhq.com/objects/custom_objects.openhouses/records?locationId=${params.locationId}`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${params.accessToken}`,
-          'Content-Type': 'application/json',
-          'Version': '2021-07-28',
-        },
-        body: JSON.stringify({
-          locationId: params.locationId,
-          properties: {
-            "custom_objects.openhouses.openhouseid": params.eventId,
-            "custom_objects.openhouses.address": params.address,
-            "custom_objects.openhouses.startdatetime": params.startDateTime,
-            "custom_objects.openhouses.enddatetime": params.endDateTime,
-            "custom_objects.openhouses.flyerurl": params.flyerUrl,
-            "custom_objects.openhouses.agentid": params.agentId,
-            "custom_objects.openhouses.locationid": params.locationId,
-            "custom_objects.openhouses.beds": params.beds?.toString() || '',
-            "custom_objects.openhouses.baths": params.baths?.toString() || '',
-            "custom_objects.openhouses.sqft": params.sqft?.toString() || '',
-            "custom_objects.openhouses.price": params.price?.toString() || '',
+    let openHouseResponse: Response;
+    try {
+      openHouseResponse = await fetch(
+        `https://services.leadconnectorhq.com/objects/custom_objects.openhouses/records?locationId=${params.locationId}`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${params.accessToken}`,
+            'Content-Type': 'application/json',
+            'Version': '2021-07-28',
           },
-        }),
+          body: JSON.stringify({
+            locationId: params.locationId,
+            properties: {
+              "custom_objects.openhouses.openhouseid": params.eventId,
+              "custom_objects.openhouses.address": params.address,
+              "custom_objects.openhouses.startdatetime": params.startDateTime,
+              "custom_objects.openhouses.enddatetime": params.endDateTime,
+              "custom_objects.openhouses.flyerurl": params.flyerUrl,
+              "custom_objects.openhouses.agentid": params.agentId,
+              "custom_objects.openhouses.locationid": params.locationId,
+              "custom_objects.openhouses.beds": params.beds?.toString() || '',
+              "custom_objects.openhouses.baths": params.baths?.toString() || '',
+              "custom_objects.openhouses.sqft": params.sqft?.toString() || '',
+              "custom_objects.openhouses.price": params.price?.toString() || '',
+            },
+          }),
+          signal: controller.signal,
+        }
+      );
+    } catch (error: any) {
+      clearTimeout(timeoutId);
+      if (error?.name === 'AbortError') {
+        console.error('[GHL] OpenHouse creation timed out after 20 seconds');
+        throw new Error('GHL_TIMEOUT: OpenHouse request exceeded 20 seconds');
       }
-    );
+      console.error('[GHL] OpenHouse request failed:', error.message);
+      throw error;
+    }
+
+    clearTimeout(timeoutId);
+    console.log('[GHL] OpenHouse response status:', openHouseResponse.status);
 
     if (!openHouseResponse.ok) {
       const error = await openHouseResponse.text();
