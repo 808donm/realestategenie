@@ -285,11 +285,11 @@ export async function createOrUpdateGHLContact(params: {
     console.log('[GHL] Contact payload:', JSON.stringify(contactPayload));
     console.log('[GHL] Sending create request...');
 
-    // Create a hard timeout promise that rejects after 5 seconds
+    // Create a hard timeout promise that rejects after 20 seconds
     const timeoutPromise = new Promise<never>((_, reject) => {
       setTimeout(() => {
-        reject(new Error('GHL_TIMEOUT: Request exceeded 5 seconds'));
-      }, 5000);
+        reject(new Error('GHL_TIMEOUT: Request exceeded 20 seconds'));
+      }, 20000);
     });
 
     // Create the fetch promise
@@ -309,7 +309,7 @@ export async function createOrUpdateGHLContact(params: {
     // Race between fetch and timeout
     let createResponse;
     try {
-      console.log('[GHL] Waiting for response (5 second timeout)...');
+      console.log('[GHL] Waiting for response (20 second timeout)...');
       createResponse = await Promise.race([fetchPromise, timeoutPromise]);
       console.log('[GHL] Create response received');
     } catch (error: any) {
