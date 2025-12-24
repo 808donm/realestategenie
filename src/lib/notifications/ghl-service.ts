@@ -104,6 +104,10 @@ export async function createGHLRegistrationRecord(params: {
   eventId: string;
   contactId: string;
   openHouseRecordId: string;
+  agentName: string;
+  agencyName?: string;
+  address: string;
+  flyerUrl: string;
 }) {
   try {
     console.log('[GHL] Creating Registration to link contact to OpenHouse...');
@@ -124,6 +128,10 @@ export async function createGHLRegistrationRecord(params: {
             "custom_objects.registrations.openhouseid": params.eventId,
             "custom_objects.registrations.registerdat": new Date().toISOString(),
             "custom_objects.registrations.flyerstatus": 'pending',
+            "custom_objects.registrations.agentid": params.agentName,
+            "custom_objects.registrations.agencyid": params.agencyName || '',
+            "custom_objects.registrations.address": params.address,
+            "custom_objects.registrations.flyerurl": params.flyerUrl,
           },
           relationships: [
             {

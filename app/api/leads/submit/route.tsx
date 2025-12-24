@@ -51,7 +51,7 @@ export async function POST(req: Request) {
     // Get agent details for notifications
     const { data: agent, error: agentErr } = await admin
       .from("agents")
-      .select("display_name,email,phone_e164")
+      .select("display_name,email,phone_e164,agency_name")
       .eq("id", evt.agent_id)
       .single();
 
@@ -203,6 +203,10 @@ export async function POST(req: Request) {
                 eventId,
                 contactId: contactId,
                 openHouseRecordId,
+                agentName: agent?.display_name || 'Agent',
+                agencyName: agent?.agency_name,
+                address: evt?.address || '',
+                flyerUrl,
               });
               console.log('GHL Registration created successfully');
             } catch (linkError: any) {
