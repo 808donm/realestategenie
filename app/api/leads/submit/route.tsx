@@ -141,8 +141,7 @@ export async function POST(req: Request) {
           const firstName = nameParts[0] || payload.name;
           const lastName = nameParts.slice(1).join(' ') || '';
 
-          // Fire-and-forget contact creation - don't wait for response
-          createOrUpdateGHLContact({
+          const contact = await createOrUpdateGHLContact({
             locationId: ghlConfig.location_id,
             accessToken: ghlConfig.access_token,
             email: payload.email,
@@ -151,37 +150,35 @@ export async function POST(req: Request) {
             lastName,
             source: 'Open House',
             tags: ['OpenHouse', evt?.address || 'Property'], // Tag will trigger workflow
-          }).then(async (contact) => {
-            console.log('GHL contact created successfully:', contact?.id);
-
-            // Now create OpenHouse custom object and link via Registration
-            if (contact?.id) {
-              try {
-                await createGHLOpenHouseAndLinkContact({
-                  locationId: ghlConfig.location_id,
-                  accessToken: ghlConfig.access_token,
-                  eventId: eventId,
-                  address: evt?.address || '',
-                  startDateTime: evt.start_at,
-                  endDateTime: evt.end_at,
-                  flyerUrl,
-                  agentId: evt.agent_id,
-                  beds: evt.beds,
-                  baths: evt.baths,
-                  sqft: evt.sqft,
-                  price: evt.price,
-                  contactId: contact.id,
-                });
-                console.log('GHL OpenHouse and Registration created successfully');
-              } catch (linkError: any) {
-                console.error('Failed to create OpenHouse/Registration:', linkError.message);
-              }
-            }
-          }).catch((error) => {
-            console.error('GHL contact creation failed (non-blocking):', error.message);
           });
 
-          console.log('Contact creation initiated - GHL workflow will handle notifications');
+          console.log('GHL contact created successfully:', contact?.id);
+
+          // Now create OpenHouse custom object and link via Registration
+          if (contact?.id) {
+            try {
+              await createGHLOpenHouseAndLinkContact({
+                locationId: ghlConfig.location_id,
+                accessToken: ghlConfig.access_token,
+                eventId: eventId,
+                address: evt?.address || '',
+                startDateTime: evt.start_at,
+                endDateTime: evt.end_at,
+                flyerUrl,
+                agentId: evt.agent_id,
+                beds: evt.beds,
+                baths: evt.baths,
+                sqft: evt.sqft,
+                price: evt.price,
+                contactId: contact.id,
+              });
+              console.log('GHL OpenHouse and Registration created successfully');
+            } catch (linkError: any) {
+              console.error('Failed to create OpenHouse/Registration:', linkError.message);
+            }
+          }
+
+          console.log('Contact creation completed - GHL workflow will handle notifications');
           console.log('Contact will be tagged with: OpenHouse');
           console.log('Property address:', evt?.address);
 
