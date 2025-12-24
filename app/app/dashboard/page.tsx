@@ -8,6 +8,8 @@ import HeatScoreChart from "./heat-score-chart";
 import IntegrationHealth from "./integration-health";
 import ActivityFeed from "./activity-feed";
 
+export const dynamic = 'force-dynamic';
+
 export default async function DashboardPage() {
   const supabase = await supabaseServer();
   const { data: userData } = await supabase.auth.getUser();
