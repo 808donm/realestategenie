@@ -27,6 +27,7 @@ export async function createGHLOpenHouseRecord(params: {
     console.log('[GHL] OpenHouse request started at:', new Date(startedAt).toISOString());
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
+      console.error('[GHL] OpenHouse aborting request after 20 seconds');
       controller.abort();
     }, 20000);
 
@@ -350,6 +351,7 @@ export async function createOrUpdateGHLContact(params: {
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
+      console.error('[GHL] Contact aborting request after 20 seconds');
       controller.abort();
     }, 20000);
 
