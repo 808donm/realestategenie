@@ -59,7 +59,7 @@ export default async function PMWorkOrdersPage() {
                       <h3 className="font-semibold">{workOrder.title}</h3>
                       <Badge variant={
                         workOrder.status === 'completed' ? 'success' :
-                        workOrder.priority === 'emergency' ? 'destructive' :
+                        workOrder.priority === 'emergency' ? 'danger' :
                         workOrder.priority === 'high' ? 'warning' :
                         'default'
                       }>

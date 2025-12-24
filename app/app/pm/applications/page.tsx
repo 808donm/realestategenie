@@ -69,7 +69,7 @@ export default async function PMApplicationsPage() {
                   <div className="flex items-center gap-4">
                     <Badge variant={
                       app.status === 'approved' ? 'success' :
-                      app.status === 'rejected' ? 'destructive' :
+                      app.status === 'rejected' ? 'danger' :
                       'default'
                     }>
                       {app.status}
