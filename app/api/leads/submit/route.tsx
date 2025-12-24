@@ -142,9 +142,17 @@ export async function POST(req: Request) {
           const lastName = nameParts.slice(1).join(' ') || '';
 
           let openHouseRecordId: string | null = null;
+          let openHouseTimeoutId: ReturnType<typeof setTimeout> | null = null;
+          let openHouseLongTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
           try {
             console.log('Creating GHL OpenHouse custom object...');
+            openHouseTimeoutId = setTimeout(() => {
+              console.warn('GHL OpenHouse request still pending after 20s');
+            }, 20000);
+            openHouseLongTimeoutId = setTimeout(() => {
+              console.warn('GHL OpenHouse request still pending after 40s');
+            }, 40000);
             openHouseRecordId = await createGHLOpenHouseRecord({
               locationId: ghlConfig.location_id,
               accessToken: ghlConfig.access_token,
@@ -162,6 +170,13 @@ export async function POST(req: Request) {
             console.log('GHL OpenHouse created:', openHouseRecordId);
           } catch (openHouseError: any) {
             console.error('Failed to create GHL OpenHouse:', openHouseError.message);
+          } finally {
+            if (openHouseTimeoutId) {
+              clearTimeout(openHouseTimeoutId);
+            }
+            if (openHouseLongTimeoutId) {
+              clearTimeout(openHouseLongTimeoutId);
+            }
           }
 
           const contact = await createOrUpdateGHLContact({
