@@ -229,17 +229,13 @@ export async function POST(req: Request) {
       }
     };
 
+    await sendNotifications();
+
     // Trigger async integrations (non-blocking)
-    Promise.all([
-      // Send notifications
-      sendNotifications().catch((err) =>
-        console.error("Notification sending failed:", err)
-      ),
-      // Sync to GHL
+    void Promise.all([
       syncLeadToGHL(lead.id).catch((err) =>
         console.error("GHL sync failed:", err)
       ),
-      // Dispatch webhook for lead.submitted (for GHL workflows)
       dispatchWebhook(evt.agent_id, "lead.submitted", {
         lead_id: lead.id,
         event_id: eventId,
@@ -253,7 +249,6 @@ export async function POST(req: Request) {
         agent_phone: agent?.phone_e164 || '',
         payload,
       }).catch((err) => console.error("Webhook dispatch failed:", err)),
-      // If hot lead, dispatch lead.hot_scored webhook
       heatScore >= 80
         ? dispatchWebhook(evt.agent_id, "lead.hot_scored", {
             lead_id: lead.id,
@@ -263,7 +258,7 @@ export async function POST(req: Request) {
             payload,
           }).catch((err) => console.error("Hot lead webhook failed:", err))
         : Promise.resolve(),
-    ]).catch((err) => console.error("Integration errors:", err));
+    ]);
 
     return NextResponse.json({ ok: true, heat_score: heatScore });
   } catch (e: any) {
