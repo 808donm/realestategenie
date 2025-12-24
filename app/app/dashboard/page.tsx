@@ -83,6 +83,11 @@ export default async function DashboardPage() {
         </Link>
       </div>
 
+      {/* DEBUG: This should be visible */}
+      <div style={{ padding: '20px', background: '#ff0000', color: '#ffffff', fontSize: '24px', fontWeight: 'bold' }}>
+        DEBUG: PM SECTION SHOULD APPEAR BELOW
+      </div>
+
       {/* Property Management Module */}
       <Card className="border-primary bg-primary/5">
         <CardContent className="py-6">
