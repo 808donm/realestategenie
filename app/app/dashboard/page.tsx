@@ -88,7 +88,7 @@ export default async function DashboardPage() {
             <div>
               <h3 className="text-lg font-semibold mb-1">Property Management</h3>
               <p className="text-sm text-muted-foreground">
-                Manage rental properties, leases, applications, and maintenance requests
+                Manage rental properties, leases, applications, and maintenance
               </p>
             </div>
             <Link href="/app/pm">
