@@ -22,7 +22,9 @@ export async function createGHLOpenHouseRecord(params: {
   price?: number;
 }) {
   try {
+    const startedAt = Date.now();
     console.log('[GHL] Creating OpenHouse custom object...');
+    console.log('[GHL] OpenHouse request started at:', new Date(startedAt).toISOString());
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
       controller.abort();
@@ -71,6 +73,7 @@ export async function createGHLOpenHouseRecord(params: {
 
     clearTimeout(timeoutId);
     console.log('[GHL] OpenHouse response status:', openHouseResponse.status);
+    console.log('[GHL] OpenHouse response time (ms):', Date.now() - startedAt);
 
     if (!openHouseResponse.ok) {
       const error = await openHouseResponse.text();
@@ -393,6 +396,7 @@ export async function createOrUpdateGHLContact(params: {
       }
 
       console.error('[GHL] Request failed:', error.message);
+      console.error('[GHL] OpenHouse response time (ms):', Date.now() - startedAt);
       throw error;
     }
 
