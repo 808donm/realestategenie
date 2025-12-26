@@ -231,7 +231,8 @@ export default async function TenantDashboardPage() {
                   </div>
                 </div>
               </CardContent>
-            </Link>
+            </Card>
+          </Link>
 
           <Link href="/tenant/invoices">
             <Card className="hover:bg-gray-50 transition-colors cursor-pointer">
@@ -246,7 +247,8 @@ export default async function TenantDashboardPage() {
                   </div>
                 </div>
               </CardContent>
-            </Link>
+            </Card>
+          </Link>
         </div>
 
         {/* Lease Expiration Notice */}

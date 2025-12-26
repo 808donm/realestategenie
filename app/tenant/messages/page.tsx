@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { supabaseServer } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +9,7 @@ import MessageComposer from "./message-composer";
 import MessagesList from "./messages-list";
 
 export default async function TenantMessagesPage() {
-  const supabase = await createClient();
+  const supabase = await supabaseServer();
 
   // Get current tenant user
   const {

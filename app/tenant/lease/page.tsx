@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { supabaseServer } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +15,7 @@ import {
 import { redirect } from "next/navigation";
 
 export default async function TenantLeasePage() {
-  const supabase = await createClient();
+  const supabase = await supabaseServer();
 
   // Get current tenant user
   const {
