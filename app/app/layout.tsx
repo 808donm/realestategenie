@@ -19,8 +19,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   <Image
     src="/logo.png"
     alt="The Real Estate Genie"
-    width={44}
-    height={44}
+    width={120}
+    height={120}
     priority
     style={{ borderRadius: 6 }}
   />
