@@ -69,6 +69,44 @@ export type GHLEmailMessage = {
   html: string;
 };
 
+export type GHLContract = {
+  id?: string;
+  locationId: string;
+  title: string;
+  contactId: string;
+  templateId?: string; // Use template or custom document
+  customDocument?: {
+    fileUrl: string;
+    fileName: string;
+  };
+  fields?: Array<{
+    key: string;
+    value: string;
+  }>;
+  signers: Array<{
+    email: string;
+    name: string;
+    role: "tenant" | "landlord" | "custom";
+  }>;
+  status?: "draft" | "pending" | "signed" | "declined" | "expired";
+};
+
+export type GHLInvoice = {
+  id?: string;
+  locationId: string;
+  contactId: string;
+  title: string;
+  currency: string;
+  dueDate: string; // ISO date string
+  items: Array<{
+    name: string;
+    description?: string;
+    price: number;
+    quantity: number;
+  }>;
+  status?: "draft" | "sent" | "paid" | "void";
+};
+
 export class GHLClient {
   private accessToken: string;
   private baseUrl = "https://services.leadconnectorhq.com";
@@ -280,6 +318,98 @@ export class GHLClient {
         subject: email.subject,
         html: email.html,
       }),
+    });
+  }
+
+  /**
+   * Create a Contract (for e-signatures)
+   * GHL Contracts API supports both template-based and custom document contracts
+   */
+  async createContract(contract: GHLContract): Promise<{ id: string; contract: GHLContract }> {
+    const payload: any = {
+      locationId: contract.locationId,
+      title: contract.title,
+      contactId: contract.contactId,
+      signers: contract.signers,
+    };
+
+    // Use either template or custom document
+    if (contract.templateId) {
+      payload.templateId = contract.templateId;
+      payload.fields = contract.fields || [];
+    } else if (contract.customDocument) {
+      payload.customDocument = contract.customDocument;
+    }
+
+    return this.request<{ id: string; contract: GHLContract }>("/contracts/", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  /**
+   * Get contract by ID
+   */
+  async getContract(contractId: string): Promise<GHLContract> {
+    return this.request<GHLContract>(`/contracts/${contractId}`);
+  }
+
+  /**
+   * Send contract for signature
+   * This triggers the e-signature workflow in GHL
+   */
+  async sendContractForSignature(contractId: string): Promise<void> {
+    await this.request(`/contracts/${contractId}/send`, {
+      method: "POST",
+    });
+  }
+
+  /**
+   * Create an Invoice
+   * Used for rent billing and move-in charges
+   */
+  async createInvoice(invoice: GHLInvoice): Promise<{ id: string; invoice: GHLInvoice }> {
+    return this.request<{ id: string; invoice: GHLInvoice }>("/invoices/", {
+      method: "POST",
+      body: JSON.stringify({
+        locationId: invoice.locationId,
+        contactId: invoice.contactId,
+        title: invoice.title,
+        currency: invoice.currency,
+        dueDate: invoice.dueDate,
+        items: invoice.items,
+        status: invoice.status || "draft",
+      }),
+    });
+  }
+
+  /**
+   * Get invoice by ID
+   */
+  async getInvoice(invoiceId: string): Promise<GHLInvoice> {
+    return this.request<GHLInvoice>(`/invoices/${invoiceId}`);
+  }
+
+  /**
+   * Send invoice to contact
+   */
+  async sendInvoice(invoiceId: string): Promise<void> {
+    await this.request(`/invoices/${invoiceId}/send`, {
+      method: "POST",
+    });
+  }
+
+  /**
+   * Mark invoice as paid (manual payment recording)
+   */
+  async markInvoicePaid(invoiceId: string, paymentDetails?: {
+    paymentMethod?: string;
+    transactionId?: string;
+    note?: string;
+  }): Promise<void> {
+    await this.request(`/invoices/${invoiceId}/paid`, {
+      method: "POST",
+      body: JSON.stringify(paymentDetails || {}),
     });
   }
 }
