@@ -53,62 +53,79 @@
   - PayPal option
   - Payment form component
 
+### Part 3: Payment Processing (Stripe & PayPal)
+**Committed:** `799e11d`
+
+- ✅ Payment APIs
+  - `/api/tenant/payments/pay` - Process saved payment methods
+  - `/api/tenant/payments/create-checkout-session` - Stripe Checkout
+  - `/api/tenant/payments/create-paypal-order` - PayPal order creation
+  - `/api/tenant/payments/paypal-capture` - PayPal capture
+
+- ✅ Webhook handlers
+  - `/api/webhooks/stripe` - Stripe events (checkout completed, payment succeeded/failed)
+  - Marks GHL invoices as paid
+  - Updates payment status
+
+- ✅ Payment success page (`/tenant/invoices/[id]/success`)
+  - Payment confirmation
+  - Receipt display
+  - Next steps
+
+### Part 4: Work Order Submission & Tracking
+**Committed:** `cc3a7ef`
+
+- ✅ Work order submission (`/tenant/work-orders/new`)
+  - Title, description, category, priority
+  - Location (room/area)
+  - Tenant availability
+  - Photo upload (up to 5 photos, max 5MB each)
+  - Supabase Storage integration
+
+- ✅ Work orders list (`/tenant/work-orders`)
+  - Filter by status
+  - Sort by date
+  - Status badges
+  - Priority indicators
+
+- ✅ Work order APIs
+  - `GET /api/tenant/work-orders` - List work orders
+  - `POST /api/tenant/work-orders` - Create work order
+  - `POST /api/tenant/work-orders/upload-photo` - Photo upload
+
+### Part 5: Work Order Detail & Rating
+**Committed:** `8711700`
+
+- ✅ Work order detail page (`/tenant/work-orders/[id]`)
+  - Full request details
+  - Submitted photos
+  - Completion photos
+  - Status timeline
+  - Rating form (if completed)
+
+- ✅ Rating system
+  - 5-star rating component
+  - Optional feedback textarea
+  - `POST /api/tenant/work-orders/[id]/rate` - Submit rating
+  - Validation (1-5 stars, completed status, no duplicates)
+
+### Part 6: Lease Information Viewer
+**Status:** Just completed (pending commit)
+
+- ✅ Lease viewer page (`/tenant/lease`)
+  - Property address and unit details
+  - Lease dates (start, end, days remaining)
+  - Lease status badge
+  - Monthly rent and security deposit
+  - Rent due day
+  - Notice period requirements
+  - Move-out requirements display
+  - Download signed lease PDF button
+  - Lease expiration alert
+
 ---
 
 ## 🚧 In Progress / Pending
-
-### Payment Integration (Stripe & PayPal)
-
-**API Routes Needed:**
-
-```typescript
-// /api/tenant/payments/pay
-// Pay with saved payment method
-POST { payment_id, payment_method_id }
-→ Charge via Stripe or PayPal
-→ Update pm_rent_payments status
-→ Call GHL markInvoicePaid()
-→ Send receipt
-
-// /api/tenant/payments/create-checkout-session
-// Create Stripe Checkout session
-POST { payment_id }
-→ Create Stripe Checkout session
-→ Return checkout URL
-→ Handle success/cancel redirects
-
-// /api/tenant/payments/create-paypal-order
-// Create PayPal order
-POST { payment_id }
-→ Create PayPal order
-→ Return approval URL
-→ Handle capture after approval
-
-// /api/tenant/payments/webhooks/stripe
-// Handle Stripe webhooks
-POST { event from Stripe }
-→ checkout.session.completed
-→ payment_intent.succeeded
-→ Update payment status
-
-// /api/tenant/payments/webhooks/paypal
-// Handle PayPal webhooks
-POST { event from PayPal }
-→ PAYMENT.CAPTURE.COMPLETED
-→ Update payment status
-```
-
-**Environment Variables Needed:**
-```bash
-STRIPE_SECRET_KEY=sk_live_...
-STRIPE_PUBLISHABLE_KEY=pk_live_...
-STRIPE_WEBHOOK_SECRET=whsec_...
-
-PAYPAL_CLIENT_ID=...
-PAYPAL_CLIENT_SECRET=...
-PAYPAL_WEBHOOK_ID=...
-PAYPAL_MODE=live # or sandbox
-```
 
 ### Payment Methods Management
 
@@ -132,41 +149,6 @@ PAYPAL_MODE=live # or sandbox
 /api/tenant/payment-methods/[id]
 - PATCH: Update (set default, autopay)
 - DELETE: Remove method
-```
-
-### Work Orders
-
-**Pages Needed:**
-```
-/tenant/work-orders
-- List all work orders
-- Filter by status
-- View details
-
-/tenant/work-orders/new
-- Submit new work order
-- Upload photos (up to 5)
-- Select priority
-- Set availability
-
-/tenant/work-orders/[id]
-- View work order details
-- See status updates
-- View completion photos
-- Rate completed work (1-5 stars)
-- Add feedback
-```
-
-**API Routes:**
-```typescript
-/api/tenant/work-orders
-- GET: List work orders for tenant's lease
-- POST: Create new work order
-
-/api/tenant/work-orders/[id]
-- GET: Work order details
-- PATCH: Update (rate, feedback)
-- POST upload photos
 ```
 
 ### Messaging
@@ -194,20 +176,6 @@ PAYPAL_MODE=live # or sandbox
 - Handle inbound messages from GHL
 - Create pm_messages record
 - Notify tenant
-```
-
-### Lease Information
-
-**Pages Needed:**
-```
-/tenant/lease
-- Lease terms display
-- Property address
-- Lease dates
-- Rent amount
-- Security deposit
-- Download signed lease PDF
-- View move-out requirements
 ```
 
 ### Move-In Report
@@ -285,12 +253,12 @@ PAYPAL_MODE=live # or sandbox
 
 ### Immediate Priority (Core Functionality)
 
-- [ ] **Payment Processing APIs**
-  - [ ] `/api/tenant/payments/pay` (saved methods)
-  - [ ] `/api/tenant/payments/create-checkout-session` (Stripe)
-  - [ ] `/api/tenant/payments/create-paypal-order` (PayPal)
-  - [ ] Stripe webhook handler
-  - [ ] PayPal webhook handler
+- [x] **Payment Processing APIs**
+  - [x] `/api/tenant/payments/pay` (saved methods)
+  - [x] `/api/tenant/payments/create-checkout-session` (Stripe)
+  - [x] `/api/tenant/payments/create-paypal-order` (PayPal)
+  - [x] Stripe webhook handler
+  - [ ] PayPal webhook handler (can be added later)
 
 - [ ] **Payment Methods Management**
   - [ ] `/tenant/payment-methods` page
@@ -299,12 +267,12 @@ PAYPAL_MODE=live # or sandbox
   - [ ] Set default method
   - [ ] Delete method API
 
-- [ ] **Work Orders**
-  - [ ] `/tenant/work-orders/new` submission form
-  - [ ] Photo upload to Supabase Storage
-  - [ ] `/tenant/work-orders` list page
-  - [ ] `/tenant/work-orders/[id]` detail page
-  - [ ] Rating & feedback submission
+- [x] **Work Orders**
+  - [x] `/tenant/work-orders/new` submission form
+  - [x] Photo upload to Supabase Storage
+  - [x] `/tenant/work-orders` list page
+  - [x] `/tenant/work-orders/[id]` detail page
+  - [x] Rating & feedback submission
 
 ### Secondary Priority
 
@@ -314,10 +282,10 @@ PAYPAL_MODE=live # or sandbox
   - [ ] GHL sync (bidirectional)
   - [ ] File attachments
 
-- [ ] **Lease Information**
-  - [ ] `/tenant/lease` details page
-  - [ ] Download lease PDF
-  - [ ] Display all lease terms
+- [x] **Lease Information**
+  - [x] `/tenant/lease` details page
+  - [x] Download lease PDF
+  - [x] Display all lease terms
 
 ### Lower Priority (Can Be Phase 2)
 
@@ -505,4 +473,4 @@ Before deploying tenant portal to production:
 
 **Current Branch:** `claude/build-real-estate-app-013coc5XUu9DJFVmHDQ7PLoV`
 
-**Last Commit:** `edea378` - Tenant Portal Part 2: Dashboard & Payment UI
+**Last Commit:** `8711700` - Tenant Portal Part 5: Work Order Detail & Rating
