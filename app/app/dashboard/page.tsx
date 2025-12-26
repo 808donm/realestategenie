@@ -8,7 +8,6 @@ import HeatScoreChart from "./heat-score-chart";
 import IntegrationHealth from "./integration-health";
 import ActivityFeed from "./activity-feed";
 
-// Build version: 2024-12-26-v2 - Force cache invalidation
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
