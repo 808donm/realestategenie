@@ -143,7 +143,14 @@ export default function IntakeForm({ eventId }: { eventId: string }) {
           </label>
 
           <p style={{ marginTop: 10, fontSize: 12, opacity: 0.7 }}>
-            Message/data rates may apply. Reply STOP to opt out.
+            By checking these boxes, you consent to receive communications via email and/or SMS. Message/data rates may apply. Reply STOP to opt out. See our{" "}
+            <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: "#0066cc", textDecoration: "underline" }}>
+              Terms of Service
+            </a>
+            {" "}and{" "}
+            <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: "#0066cc", textDecoration: "underline" }}>
+              Privacy Policy
+            </a>.
           </p>
         </div>
 
