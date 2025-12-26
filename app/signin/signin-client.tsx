@@ -56,6 +56,9 @@ export default function SignInClient() {
             <CardTitle className="text-2xl">
               The Real Estate Genie<span className="text-sm align-super">™</span>
             </CardTitle>
+            <p className="mt-2 text-sm font-bold text-foreground">
+              Real Estate Deal And Property Management For The Independent Agent
+            </p>
             <CardDescription className="mt-2">
               Sign in to manage your open houses and leads
             </CardDescription>

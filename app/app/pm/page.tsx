@@ -13,22 +13,11 @@ export default async function PMOverviewPage() {
     return <div>Not signed in.</div>;
   }
 
-  // Get agent info to check if they have properties
-  const { data: agentData } = await supabase
-    .from("agents")
-    .select("id")
-    .eq("user_id", userData.user.id)
-    .single();
-
-  if (!agentData) {
-    return <div>Agent not found.</div>;
-  }
-
-  // Check if agent has any properties
+  // Check if agent has any properties (user.id = agent.id)
   const { data: properties } = await supabase
     .from("pm_properties")
     .select("id")
-    .eq("agent_id", agentData.id)
+    .eq("agent_id", userData.user.id)
     .limit(1);
 
   const hasProperties = properties && properties.length > 0;

@@ -23,18 +23,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get the agent's info
-    const { data: agentData } = await supabase
-      .from("agents")
-      .select("id")
-      .eq("user_id", user.id)
-      .single();
-
-    if (!agentData) {
-      return NextResponse.json({ error: "Agent not found" }, { status: 404 });
-    }
-
-    const agentId = agentData.id;
+    // Note: user.id is the same as agent.id (created via trigger)
+    const agentId = user.id;
 
     // Get current month/year
     const now = new Date();
@@ -45,7 +35,7 @@ export async function GET(request: NextRequest) {
     const { data: rentPayments } = await supabase
       .from("pm_rent_payments")
       .select("amount, status, late_fee_amount")
-      .eq("agent_id", user.id)
+      .eq("agent_id", agentId)
       .eq("month", currentMonth)
       .eq("year", currentYear);
 
@@ -58,7 +48,7 @@ export async function GET(request: NextRequest) {
     const { data: overduePayments } = await supabase
       .from("pm_rent_payments")
       .select("amount, late_fee_amount, lease_id")
-      .eq("agent_id", user.id)
+      .eq("agent_id", agentId)
       .eq("status", "overdue");
 
     const pastDueAmount = overduePayments?.reduce((sum, p) => sum + Number(p.amount) + Number(p.late_fee_amount || 0), 0) || 0;
@@ -75,7 +65,7 @@ export async function GET(request: NextRequest) {
     const { data: activeLeases } = await supabase
       .from("pm_leases")
       .select("id")
-      .eq("agent_id", user.id)
+      .eq("agent_id", agentId)
       .in("status", ["active", "month_to_month"])
       .lte("lease_start_date", now.toISOString())
       .or(`lease_end_date.gte.${now.toISOString()},status.eq.month_to_month`);
@@ -96,7 +86,7 @@ export async function GET(request: NextRequest) {
     const { data: terminatingLeases } = await supabase
       .from("pm_leases")
       .select("id, termination_date")
-      .eq("agent_id", user.id)
+      .eq("agent_id", agentId)
       .eq("status", "terminating")
       .not("termination_date", "is", null)
       .lte("termination_date", ninetyDaysFromNow.toISOString());
