@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
     // Process each overdue payment
     for (const payment of overduePayments || []) {
       try {
-        const lease = payment.pm_leases;
+        const lease = Array.isArray(payment.pm_leases) ? payment.pm_leases[0] : payment.pm_leases;
         const graceDays = lease?.late_fee_grace_days || DEFAULT_LATE_FEE_GRACE_DAYS;
 
         // Calculate days overdue
