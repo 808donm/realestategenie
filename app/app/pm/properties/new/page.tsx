@@ -45,11 +45,16 @@ export default function NewPropertyPage() {
     zip_postal_code: "",
     property_type: "single_family",
     units_count: "1",
+    bedrooms: "",
+    bathrooms: "",
+    square_feet: "",
+    description: "",
     monthly_rent: "",
     security_deposit: "",
     pet_deposit: "",
     pet_policy: "",
     amenities: "",
+    features: "",
     property_photo_url: "",
     status: "available",
   });
@@ -73,10 +78,14 @@ export default function NewPropertyPage() {
         body: JSON.stringify({
           ...formData,
           units_count: parseInt(formData.units_count),
+          bedrooms: formData.bedrooms ? parseInt(formData.bedrooms) : null,
+          bathrooms: formData.bathrooms ? parseFloat(formData.bathrooms) : null,
+          square_feet: formData.square_feet ? parseInt(formData.square_feet) : null,
           monthly_rent: formData.monthly_rent ? parseFloat(formData.monthly_rent) : null,
           security_deposit: formData.security_deposit ? parseFloat(formData.security_deposit) : null,
           pet_deposit: formData.pet_deposit ? parseFloat(formData.pet_deposit) : null,
-          amenities: formData.amenities ? formData.amenities.split(",").map(a => a.trim()) : [],
+          amenities: formData.amenities ? formData.amenities.split(",").map(a => a.trim()).filter(Boolean) : [],
+          features: formData.features ? formData.features.split(",").map(f => f.trim()).filter(Boolean) : [],
         }),
       });
 
@@ -262,6 +271,71 @@ export default function NewPropertyPage() {
               </div>
             </div>
 
+            {/* Property Specifications */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Property Specifications</h3>
+
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="space-y-2">
+                  <Label htmlFor="bedrooms">Bedrooms</Label>
+                  <Input
+                    id="bedrooms"
+                    type="number"
+                    min="0"
+                    placeholder="3"
+                    value={formData.bedrooms}
+                    onChange={(e) => handleChange("bedrooms", e.target.value)}
+                    disabled={loading}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="bathrooms">Bathrooms</Label>
+                  <Input
+                    id="bathrooms"
+                    type="number"
+                    min="0"
+                    step="0.5"
+                    placeholder="2.5"
+                    value={formData.bathrooms}
+                    onChange={(e) => handleChange("bathrooms", e.target.value)}
+                    disabled={loading}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Can include half baths (e.g., 2.5)
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="square_feet">Square Feet</Label>
+                  <Input
+                    id="square_feet"
+                    type="number"
+                    min="0"
+                    placeholder="1500"
+                    value={formData.square_feet}
+                    onChange={(e) => handleChange("square_feet", e.target.value)}
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Property Description</Label>
+                <Textarea
+                  id="description"
+                  rows={4}
+                  placeholder="Beautiful single-family home with modern amenities..."
+                  value={formData.description}
+                  onChange={(e) => handleChange("description", e.target.value)}
+                  disabled={loading}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Detailed description for rental listings and open houses
+                </p>
+              </div>
+            </div>
+
             {/* Financial Details */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Financial Details</h3>
@@ -334,13 +408,27 @@ export default function NewPropertyPage() {
                 <Label htmlFor="amenities">Amenities</Label>
                 <Input
                   id="amenities"
-                  placeholder="Dishwasher, AC, Parking, Washer/Dryer (comma-separated)"
+                  placeholder="Pool, Gym, Laundry Room, Parking (comma-separated)"
                   value={formData.amenities}
                   onChange={(e) => handleChange("amenities", e.target.value)}
                   disabled={loading}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Enter amenities separated by commas
+                  Building/complex amenities (e.g., Pool, Gym, Parking)
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="features">Features</Label>
+                <Input
+                  id="features"
+                  placeholder="Hardwood Floors, Central AC, Dishwasher, Garage (comma-separated)"
+                  value={formData.features}
+                  onChange={(e) => handleChange("features", e.target.value)}
+                  disabled={loading}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Property features (e.g., Hardwood Floors, Central AC, Dishwasher, Garage)
                 </p>
               </div>
             </div>
