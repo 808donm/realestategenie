@@ -46,8 +46,8 @@ export default function SignInClient() {
             <Image
               src="/logo.png"
               alt="The Real Estate Genie"
-              width={120}
-              height={120}
+              width={200}
+              height={200}
               priority
               className="rounded-lg"
             />
