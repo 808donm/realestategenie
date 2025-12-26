@@ -1,19 +1,20 @@
 -- Migration: Enhanced PM Leases Table for Full Lifecycle Management
 -- Adds fields for lease lifecycle, move-in/move-out, termination, and GHL contract integration
+-- Works with existing schema from migration 023
 
 -- Add new fields to pm_leases
 ALTER TABLE pm_leases
-  -- Lease type and status enhancements
+  -- Lease type (new field for fixed-term vs month-to-month)
   ADD COLUMN IF NOT EXISTS lease_type TEXT NOT NULL DEFAULT 'fixed-term',
-  ADD COLUMN IF NOT EXISTS lease_status TEXT NOT NULL DEFAULT 'pending-signature',
 
-  -- GHL Contract Integration
-  ADD COLUMN IF NOT EXISTS tenant_contact_id TEXT,
+  -- GHL Contract Integration (ghl_contact_id already exists, adding contract ID)
   ADD COLUMN IF NOT EXISTS ghl_contract_id TEXT,
 
-  -- Lease Documents
+  -- Lease Document Type (lease_document_url already exists)
   ADD COLUMN IF NOT EXISTS lease_document_type TEXT DEFAULT 'standard',
-  ADD COLUMN IF NOT EXISTS custom_lease_url TEXT,
+
+  -- Notice period (configurable 30/45/60 days)
+  ADD COLUMN IF NOT EXISTS notice_period_days INTEGER DEFAULT 30,
 
   -- Special Provisions (move-out requirements)
   ADD COLUMN IF NOT EXISTS requires_professional_carpet_cleaning BOOLEAN DEFAULT false,
@@ -21,7 +22,6 @@ ALTER TABLE pm_leases
   ADD COLUMN IF NOT EXISTS move_out_requirements JSONB,
 
   -- Lifecycle Tracking
-  ADD COLUMN IF NOT EXISTS signed_date TIMESTAMP,
   ADD COLUMN IF NOT EXISTS converted_to_mtm_date TIMESTAMP,
   ADD COLUMN IF NOT EXISTS renewal_status TEXT,
 
@@ -57,7 +57,28 @@ ALTER TABLE pm_leases
   -- Billing
   ADD COLUMN IF NOT EXISTS final_balance NUMERIC(10,2);
 
--- Add check constraints
+-- Update the existing status check constraint to include new statuses
+-- First drop the old constraint
+ALTER TABLE pm_leases DROP CONSTRAINT IF EXISTS pm_leases_status_check;
+
+-- Add updated constraint with new statuses for month-to-month and notice
+ALTER TABLE pm_leases
+ADD CONSTRAINT pm_leases_status_check
+CHECK (status IN (
+  'draft',
+  'pending_start',
+  'active',
+  'ending',
+  'ended',
+  'terminated',
+  -- New statuses for enhanced workflow
+  'pending-signature',
+  'active-fixed',
+  'active-month-to-month',
+  'notice-given'
+));
+
+-- Add check constraints for new fields
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -66,21 +87,6 @@ BEGIN
     ALTER TABLE pm_leases
     ADD CONSTRAINT pm_leases_lease_type_check
     CHECK (lease_type IN ('fixed-term', 'month-to-month'));
-  END IF;
-
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint WHERE conname = 'pm_leases_lease_status_check'
-  ) THEN
-    ALTER TABLE pm_leases
-    ADD CONSTRAINT pm_leases_lease_status_check
-    CHECK (lease_status IN (
-      'pending-signature',
-      'active-fixed',
-      'active-month-to-month',
-      'notice-given',
-      'ended',
-      'terminated'
-    ));
   END IF;
 
   IF NOT EXISTS (
@@ -98,15 +104,23 @@ BEGIN
     ADD CONSTRAINT pm_leases_document_type_check
     CHECK (lease_document_type IN ('standard', 'custom'));
   END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'pm_leases_renewal_status_check'
+  ) THEN
+    ALTER TABLE pm_leases
+    ADD CONSTRAINT pm_leases_renewal_status_check
+    CHECK (renewal_status IN ('expiring-soon', 'renewing', 'converting-mtm', 'not-renewing') OR renewal_status IS NULL);
+  END IF;
 END
 $$;
 
--- Add indexes for performance
+-- Add indexes for performance on new fields
 CREATE INDEX IF NOT EXISTS idx_pm_leases_ghl_contract ON pm_leases(ghl_contract_id);
-CREATE INDEX IF NOT EXISTS idx_pm_leases_lease_status ON pm_leases(lease_status);
-CREATE INDEX IF NOT EXISTS idx_pm_leases_end_date ON pm_leases(end_date) WHERE end_date IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_pm_leases_lease_type ON pm_leases(lease_type);
 CREATE INDEX IF NOT EXISTS idx_pm_leases_notice_date ON pm_leases(notice_date) WHERE notice_date IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_pm_leases_move_out_date ON pm_leases(move_out_date) WHERE move_out_date IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_pm_leases_renewal_status ON pm_leases(renewal_status) WHERE renewal_status IS NOT NULL;
 
 -- Add credit check fields to pm_applications
 ALTER TABLE pm_applications
@@ -134,12 +148,8 @@ CREATE INDEX IF NOT EXISTS idx_pm_applications_credit_check ON pm_applications(c
 ALTER TABLE pm_units
   ADD COLUMN IF NOT EXISTS last_tenant_move_out DATE;
 
--- Update RLS policies (already exist from previous migration, but ensure they cover new fields)
--- No changes needed - existing RLS policies on pm_leases, pm_applications, pm_units already cover all fields
-
--- Add helpful comments
+-- Add helpful comments on new columns
 COMMENT ON COLUMN pm_leases.lease_type IS 'Type of lease: fixed-term (1 year) or month-to-month';
-COMMENT ON COLUMN pm_leases.lease_status IS 'Current status of the lease in its lifecycle';
 COMMENT ON COLUMN pm_leases.ghl_contract_id IS 'GoHighLevel contract ID for e-signature integration';
 COMMENT ON COLUMN pm_leases.lease_document_type IS 'Standard template or custom uploaded lease';
 COMMENT ON COLUMN pm_leases.notice_period_days IS 'Required notice period (30/45/60 days) before move-out';
@@ -152,3 +162,7 @@ COMMENT ON COLUMN pm_leases.security_deposit_deductions IS 'JSON itemized list o
 COMMENT ON COLUMN pm_leases.termination_type IS 'Reason for early termination if applicable';
 COMMENT ON COLUMN pm_applications.credit_check_result IS 'Result of credit check: approved, declined, or pending';
 COMMENT ON COLUMN pm_units.last_tenant_move_out IS 'Date when last tenant moved out (for vacancy tracking)';
+
+-- Update existing data to use new lease_type field
+-- All existing leases are assumed to be fixed-term
+UPDATE pm_leases SET lease_type = 'fixed-term' WHERE lease_type IS NULL;
