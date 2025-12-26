@@ -13,7 +13,24 @@ export default async function NewOpenHousePage() {
   if (userData.user) {
     const { data } = await supabase
       .from("pm_properties")
-      .select("id, address, city, state_province, postal_code")
+      .select(`
+        id,
+        address,
+        city,
+        state_province,
+        zip_postal_code,
+        property_type,
+        bedrooms,
+        bathrooms,
+        square_feet,
+        monthly_rent,
+        security_deposit,
+        pet_policy,
+        description,
+        amenities,
+        features,
+        property_photo_url
+      `)
       .eq("agent_id", userData.user.id)
       .order("address");
     pmProperties = data || [];

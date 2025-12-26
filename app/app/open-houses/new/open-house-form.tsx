@@ -2,14 +2,27 @@
 
 import { useState } from "react";
 
+type PMProperty = {
+  id: string;
+  address: string;
+  city?: string;
+  state_province?: string;
+  zip_postal_code?: string;
+  property_type?: string;
+  bedrooms?: number;
+  bathrooms?: number;
+  square_feet?: number;
+  monthly_rent?: number;
+  security_deposit?: number;
+  pet_policy?: string;
+  description?: string;
+  amenities?: string[];
+  features?: string[];
+  property_photo_url?: string;
+};
+
 type OpenHouseFormProps = {
-  pmProperties: Array<{
-    id: string;
-    address: string;
-    city?: string;
-    state_province?: string;
-    postal_code?: string;
-  }>;
+  pmProperties: PMProperty[];
   startDefault: string;
   endDefault: string;
   onSubmit: (formData: FormData) => Promise<void>;
@@ -23,6 +36,7 @@ export default function OpenHouseForm({
 }: OpenHouseFormProps) {
   const [eventType, setEventType] = useState<"sales" | "rental" | "both">("sales");
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>("");
+  const [selectedProperty, setSelectedProperty] = useState<PMProperty | null>(null);
   const [address, setAddress] = useState<string>("");
 
   const handlePropertyChange = (propertyId: string) => {
@@ -31,13 +45,16 @@ export default function OpenHouseForm({
     if (propertyId) {
       const property = pmProperties.find((p) => p.id === propertyId);
       if (property) {
+        setSelectedProperty(property);
         // Build full address string
         let fullAddress = property.address;
         if (property.city) fullAddress += `, ${property.city}`;
         if (property.state_province) fullAddress += `, ${property.state_province}`;
-        if (property.postal_code) fullAddress += ` ${property.postal_code}`;
+        if (property.zip_postal_code) fullAddress += ` ${property.zip_postal_code}`;
         setAddress(fullAddress);
       }
+    } else {
+      setSelectedProperty(null);
     }
   };
 
@@ -122,6 +139,138 @@ export default function OpenHouseForm({
               </p>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Property Details Preview (when property is selected) */}
+      {selectedProperty && (
+        <div
+          style={{
+            padding: 16,
+            background: "#f8f9fa",
+            border: "1px solid #dee2e6",
+            borderRadius: 8,
+          }}
+        >
+          <div style={{ fontWeight: 700, marginBottom: 12, fontSize: 14 }}>
+            Selected Property Details
+          </div>
+
+          <div style={{ display: "grid", gap: 12 }}>
+            {/* Property Type & Specs */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 8 }}>
+              {selectedProperty.property_type && (
+                <div>
+                  <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 2 }}>Type</div>
+                  <div style={{ fontSize: 13, fontWeight: 600 }}>
+                    {selectedProperty.property_type.replace("_", " ").replace(/\b\w/g, l => l.toUpperCase())}
+                  </div>
+                </div>
+              )}
+              {selectedProperty.bedrooms && (
+                <div>
+                  <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 2 }}>Bedrooms</div>
+                  <div style={{ fontSize: 13, fontWeight: 600 }}>{selectedProperty.bedrooms}</div>
+                </div>
+              )}
+              {selectedProperty.bathrooms && (
+                <div>
+                  <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 2 }}>Bathrooms</div>
+                  <div style={{ fontSize: 13, fontWeight: 600 }}>{selectedProperty.bathrooms}</div>
+                </div>
+              )}
+              {selectedProperty.square_feet && (
+                <div>
+                  <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 2 }}>Sq Ft</div>
+                  <div style={{ fontSize: 13, fontWeight: 600 }}>{selectedProperty.square_feet.toLocaleString()}</div>
+                </div>
+              )}
+            </div>
+
+            {/* Rent & Deposits */}
+            {(selectedProperty.monthly_rent || selectedProperty.security_deposit) && (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 8 }}>
+                {selectedProperty.monthly_rent && (
+                  <div>
+                    <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 2 }}>Monthly Rent</div>
+                    <div style={{ fontSize: 13, fontWeight: 600 }}>
+                      ${selectedProperty.monthly_rent.toLocaleString()}
+                    </div>
+                  </div>
+                )}
+                {selectedProperty.security_deposit && (
+                  <div>
+                    <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 2 }}>Security Deposit</div>
+                    <div style={{ fontSize: 13, fontWeight: 600 }}>
+                      ${selectedProperty.security_deposit.toLocaleString()}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Description */}
+            {selectedProperty.description && (
+              <div>
+                <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 4 }}>Description</div>
+                <div style={{ fontSize: 13, lineHeight: 1.5 }}>{selectedProperty.description}</div>
+              </div>
+            )}
+
+            {/* Pet Policy */}
+            {selectedProperty.pet_policy && (
+              <div>
+                <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 4 }}>Pet Policy</div>
+                <div style={{ fontSize: 13 }}>{selectedProperty.pet_policy}</div>
+              </div>
+            )}
+
+            {/* Features */}
+            {selectedProperty.features && selectedProperty.features.length > 0 && (
+              <div>
+                <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 4 }}>Features</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {selectedProperty.features.map((feature, idx) => (
+                    <span
+                      key={idx}
+                      style={{
+                        fontSize: 12,
+                        padding: "4px 8px",
+                        background: "#fff",
+                        border: "1px solid #dee2e6",
+                        borderRadius: 4,
+                      }}
+                    >
+                      {feature}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Amenities */}
+            {selectedProperty.amenities && selectedProperty.amenities.length > 0 && (
+              <div>
+                <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 4 }}>Amenities</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {selectedProperty.amenities.map((amenity, idx) => (
+                    <span
+                      key={idx}
+                      style={{
+                        fontSize: 12,
+                        padding: "4px 8px",
+                        background: "#fff",
+                        border: "1px solid #dee2e6",
+                        borderRadius: 4,
+                      }}
+                    >
+                      {amenity}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
