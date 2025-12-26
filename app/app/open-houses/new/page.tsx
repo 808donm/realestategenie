@@ -11,29 +11,18 @@ export default async function NewOpenHousePage() {
   let pmProperties: any[] = [];
 
   if (userData.user) {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("pm_properties")
-      .select(`
-        id,
-        address,
-        city,
-        state_province,
-        zip_postal_code,
-        property_type,
-        bedrooms,
-        bathrooms,
-        square_feet,
-        monthly_rent,
-        security_deposit,
-        pet_policy,
-        description,
-        amenities,
-        features,
-        property_photo_url
-      `)
+      .select("*")
       .eq("agent_id", userData.user.id)
       .order("address");
+
+    if (error) {
+      console.error("Error fetching PM properties:", error);
+    }
+
     pmProperties = data || [];
+    console.log("PM Properties fetched:", pmProperties.length, "properties for user:", userData.user.id);
   }
 
   async function create(formData: FormData) {
