@@ -27,10 +27,12 @@ export default async function PMPropertiesPage() {
           <h2 className="text-2xl font-bold">Rental Properties</h2>
           <p className="text-muted-foreground">Manage your rental property portfolio</p>
         </div>
-        <Button size="lg" disabled>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Property (Coming Soon)
-        </Button>
+        <Link href="/app/pm/properties/new">
+          <Button size="lg">
+            <Plus className="mr-2 h-4 w-4" />
+            Add Property
+          </Button>
+        </Link>
       </div>
 
       {/* Properties List */}
@@ -50,10 +52,12 @@ export default async function PMPropertiesPage() {
             <p className="text-muted-foreground mb-6">
               Add your first rental property to start managing leases and applications
             </p>
-            <Button size="lg" disabled>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Your First Property (Coming Soon)
-            </Button>
+            <Link href="/app/pm/properties/new">
+              <Button size="lg">
+                <Plus className="mr-2 h-4 w-4" />
+                Add Your First Property
+              </Button>
+            </Link>
           </CardContent>
         </Card>
       ) : (
@@ -83,9 +87,11 @@ export default async function PMPropertiesPage() {
                   <span className="text-sm text-muted-foreground">Units</span>
                   <span className="font-semibold">{property.units_count}</span>
                 </div>
-                <Button variant="outline" className="w-full mt-2" disabled>
-                  View Details (Coming Soon)
-                </Button>
+                <Link href={`/app/pm/properties/${property.id}`}>
+                  <Button variant="outline" className="w-full mt-2">
+                    View Details
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
           ))}
