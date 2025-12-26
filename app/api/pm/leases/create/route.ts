@@ -42,19 +42,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get agent's GHL integration status
+    // Get agent's GHL integration status (optional)
     const { data: integration } = await supabase
       .from("integrations")
       .select("ghl_access_token, ghl_location_id")
       .eq("agent_id", userData.user.id)
       .single();
 
-    if (!integration?.ghl_access_token || !integration?.ghl_location_id) {
-      return NextResponse.json(
-        { error: "GoHighLevel integration required. Please connect your GHL account in Settings." },
-        { status: 400 }
-      );
-    }
+    const hasGHLIntegration = !!(integration?.ghl_access_token && integration?.ghl_location_id);
 
     // Get property data
     const { data: property } = await supabase
@@ -89,34 +84,33 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Agent profile not found" }, { status: 404 });
     }
 
-    // Initialize GHL client
-    const ghlClient = new GHLClient(integration.ghl_access_token);
-
-    // Create or find tenant in GHL
-    let tenantContactId: string;
-    try {
-      const searchResult = await ghlClient.searchContacts({ email: tenant_email });
-      if (searchResult.contacts && searchResult.contacts.length > 0) {
-        tenantContactId = searchResult.contacts[0].id!;
-      } else {
-        // Create new contact
-        const newContact = await ghlClient.createContact({
-          locationId: integration.ghl_location_id,
-          firstName: tenant_name.split(" ")[0],
-          lastName: tenant_name.split(" ").slice(1).join(" "),
-          name: tenant_name,
-          email: tenant_email,
-          phone: tenant_phone,
-          tags: ["tenant", "pm-module"],
-        });
-        tenantContactId = newContact.id!;
+    // Create or find tenant in GHL (if integration enabled)
+    let tenantContactId: string | null = null;
+    if (hasGHLIntegration) {
+      const ghlClient = new GHLClient(integration!.ghl_access_token!);
+      try {
+        const searchResult = await ghlClient.searchContacts({ email: tenant_email });
+        if (searchResult.contacts && searchResult.contacts.length > 0) {
+          tenantContactId = searchResult.contacts[0].id!;
+        } else {
+          // Create new contact
+          const newContact = await ghlClient.createContact({
+            locationId: integration!.ghl_location_id!,
+            firstName: tenant_name.split(" ")[0],
+            lastName: tenant_name.split(" ").slice(1).join(" "),
+            name: tenant_name,
+            email: tenant_email,
+            phone: tenant_phone,
+            tags: ["tenant", "pm-module"],
+          });
+          tenantContactId = newContact.id!;
+        }
+      } catch (ghlError) {
+        console.error("Error creating/finding tenant in GHL:", ghlError);
+        // Don't fail - just log and continue without GHL integration
+        console.warn("⚠️ GHL tenant creation failed, continuing without GHL");
+        tenantContactId = null;
       }
-    } catch (ghlError) {
-      console.error("Error creating/finding tenant in GHL:", ghlError);
-      return NextResponse.json(
-        { error: "Failed to create tenant contact in GoHighLevel" },
-        { status: 500 }
-      );
     }
 
     // Build move_out_requirements JSONB
@@ -188,50 +182,54 @@ export async function POST(request: NextRequest) {
       agent_email: agent.email,
     };
 
-    // Create GHL contract
+    // Create GHL contract (if integration enabled and tenant contact was created)
     let ghlContractId: string | null = null;
-    try {
-      // Get GHL template ID from environment (optional)
-      const ghlTemplateId = process.env.GHL_LEASE_TEMPLATE_ID;
+    if (hasGHLIntegration && tenantContactId) {
+      const ghlClient = new GHLClient(integration!.ghl_access_token!);
+      try {
+        // Get GHL template ID from environment (optional)
+        const ghlTemplateId = process.env.GHL_LEASE_TEMPLATE_ID;
 
-      // Prepare contract data
-      const contractData = prepareGHLContract(
-        leaseData,
-        integration.ghl_location_id,
-        tenantContactId,
-        ghlTemplateId
-      );
+        // Prepare contract data
+        const contractData = prepareGHLContract(
+          leaseData,
+          integration!.ghl_location_id!,
+          tenantContactId,
+          ghlTemplateId
+        );
 
-      // Create contract in GHL
-      const { id: contractId } = await ghlClient.createContract(contractData);
-      ghlContractId = contractId;
+        // Create contract in GHL
+        const { id: contractId } = await ghlClient.createContract(contractData);
+        ghlContractId = contractId;
 
-      // Send contract for signature
-      await ghlClient.sendContractForSignature(contractId);
+        // Send contract for signature
+        await ghlClient.sendContractForSignature(contractId);
 
-      // Update lease with GHL contract ID
-      await supabase
-        .from("pm_leases")
-        .update({ ghl_contract_id: contractId })
-        .eq("id", lease.id);
+        // Update lease with GHL contract ID
+        await supabase
+          .from("pm_leases")
+          .update({ ghl_contract_id: contractId })
+          .eq("id", lease.id);
 
-      console.log(`✅ GHL Contract created and sent: ${contractId}`);
-    } catch (ghlError) {
-      console.error("Error creating GHL contract:", ghlError);
-      // Don't fail the entire request - lease is created, just log the error
-      // Agent can manually send contract from lease detail page
-      console.warn("⚠️ Lease created but contract sending failed. Agent can resend manually.");
+        console.log(`✅ GHL Contract created and sent: ${contractId}`);
+      } catch (ghlError) {
+        console.error("Error creating GHL contract:", ghlError);
+        // Don't fail the entire request - lease is created, just log the error
+        // Agent can manually send contract from lease detail page
+        console.warn("⚠️ Lease created but contract sending failed. Agent can resend manually.");
+      }
     }
 
     return NextResponse.json({
       success: true,
+      lease_id: lease.id,
       lease: {
         ...lease,
         ghl_contract_id: ghlContractId,
       },
       message: ghlContractId
         ? "Lease created and contract sent for signature"
-        : "Lease created. Please resend contract manually from lease detail page.",
+        : "Lease created successfully.",
     });
   } catch (error) {
     console.error("Error in lease create route:", error);
