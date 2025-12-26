@@ -216,7 +216,7 @@ export default function PaymentMethodsList({
                 </Button>
 
                 <Button
-                  variant="destructive"
+                  variant="danger"
                   size="sm"
                   onClick={() => handleDelete(method.id)}
                   disabled={isLoading || method.is_default}

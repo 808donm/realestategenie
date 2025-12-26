@@ -191,7 +191,7 @@ export default async function TenantLeasePage() {
               <div className="flex items-center gap-2">
                 <p className="text-lg">{daysRemaining > 0 ? daysRemaining : 0} days</p>
                 {daysRemaining > 0 && (
-                  <Badge variant={daysRemaining <= 30 ? "destructive" : "secondary"}>
+                  <Badge variant={daysRemaining <= 30 ? "danger" : "secondary"}>
                     {daysRemaining <= 30 ? "Expiring Soon" : "Active"}
                   </Badge>
                 )}

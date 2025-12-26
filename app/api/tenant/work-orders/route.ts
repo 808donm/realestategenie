@@ -88,7 +88,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Lease not found" }, { status: 404 });
     }
 
-    const lease = tenantUser.pm_leases;
+    // Handle Supabase joins that may return arrays
+    const lease = Array.isArray(tenantUser.pm_leases)
+      ? tenantUser.pm_leases[0]
+      : tenantUser.pm_leases;
 
     // Create work order
     const { data: workOrder, error: createError } = await supabase

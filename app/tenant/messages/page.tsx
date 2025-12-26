@@ -46,19 +46,7 @@ export default async function TenantMessagesPage() {
   // Fetch all messages for this lease
   const { data: messages, error: messagesError } = await supabase
     .from("pm_messages")
-    .select(`
-      *,
-      from_user:auth.users!pm_messages_from_user_id_fkey(
-        id,
-        email,
-        user_metadata
-      ),
-      to_user:auth.users!pm_messages_to_user_id_fkey(
-        id,
-        email,
-        user_metadata
-      )
-    `)
+    .select("*")
     .eq("lease_id", lease.id)
     .order("created_at", { ascending: false });
 
@@ -89,7 +77,7 @@ export default async function TenantMessagesPage() {
             </p>
           </div>
           {unreadCount > 0 && (
-            <Badge variant="destructive" className="text-lg px-3 py-1">
+            <Badge variant="danger" className="text-lg px-3 py-1">
               {unreadCount} unread
             </Badge>
           )}

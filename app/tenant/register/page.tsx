@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
-export default function TenantRegisterPage() {
+function TenantRegisterForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const token = searchParams?.get("token");
@@ -172,5 +172,21 @@ export default function TenantRegisterPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function TenantRegisterPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Card className="w-full max-w-md">
+          <CardContent className="py-10">
+            <p className="text-center">Loading...</p>
+          </CardContent>
+        </Card>
+      </div>
+    }>
+      <TenantRegisterForm />
+    </Suspense>
   );
 }

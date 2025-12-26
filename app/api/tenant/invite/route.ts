@@ -166,9 +166,13 @@ export async function POST(request: NextRequest) {
       });
 
     // Send invitation email
-    const propertyAddress = lease.pm_units?.unit_number
-      ? `${lease.pm_properties?.address}, Unit ${lease.pm_units.unit_number}`
-      : lease.pm_properties?.address;
+    // Handle Supabase joins that may return arrays
+    const unit = Array.isArray(lease.pm_units) ? lease.pm_units[0] : lease.pm_units;
+    const property = Array.isArray(lease.pm_properties) ? lease.pm_properties[0] : lease.pm_properties;
+
+    const propertyAddress = unit?.unit_number
+      ? `${property?.address}, Unit ${unit.unit_number}`
+      : property?.address;
 
     const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL}/tenant/register?token=${invitationToken}`;
 

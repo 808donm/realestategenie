@@ -124,7 +124,7 @@ export default function MessagesList({
                     {getSenderName(msg)}
                   </span>
                   {isUnread && (
-                    <Badge variant="destructive" className="text-xs">
+                    <Badge variant="danger" className="text-xs">
                       New
                     </Badge>
                   )}

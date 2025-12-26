@@ -115,9 +115,13 @@ export async function POST(request: NextRequest) {
         const dueDateStr = dueDate.toISOString().split("T")[0];
 
         // Prepare invoice
-        const fullAddress = lease.pm_units?.unit_number
-          ? `${lease.pm_properties?.address}, Unit ${lease.pm_units.unit_number}`
-          : lease.pm_properties?.address || "Property";
+        // Handle Supabase joins that may return arrays
+        const unit = Array.isArray(lease.pm_units) ? lease.pm_units[0] : lease.pm_units;
+        const property = Array.isArray(lease.pm_properties) ? lease.pm_properties[0] : lease.pm_properties;
+
+        const fullAddress = unit?.unit_number
+          ? `${property?.address}, Unit ${unit.unit_number}`
+          : property?.address || "Property";
 
         const invoice = {
           locationId: integration.ghl_location_id,
