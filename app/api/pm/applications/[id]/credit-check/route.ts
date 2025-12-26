@@ -3,9 +3,10 @@ import { supabaseServer } from "@/lib/supabase/server";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = await supabaseServer();
     const { data: userData } = await supabase.auth.getUser();
 
@@ -24,7 +25,7 @@ export async function POST(
         credit_check_result: credit_check_result,
         updated_at: new Date().toISOString(),
       })
-      .eq("id", params.id)
+      .eq("id", id)
       .eq("agent_id", userData.user.id)
       .select()
       .single();
