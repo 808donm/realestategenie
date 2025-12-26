@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { supabaseServer } from "@/lib/supabase/server";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -51,36 +52,38 @@ export default async function PMApplicationsPage() {
       ) : (
         <div className="space-y-4">
           {applications?.map((app) => (
-            <Card key={app.id}>
-              <CardContent className="py-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-semibold">{app.applicant_name}</h3>
-                    <div className="text-sm text-muted-foreground mt-1">
-                      {app.applicant_email} • {app.applicant_phone}
-                    </div>
-                    {app.pm_properties && (
+            <Link key={app.id} href={`/app/pm/applications/${app.id}`}>
+              <Card className="hover:bg-muted/50 transition-colors cursor-pointer">
+                <CardContent className="py-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-semibold">{app.applicant_name}</h3>
                       <div className="text-sm text-muted-foreground mt-1">
-                        Property: {app.pm_properties.address}
-                        {app.pm_units && ` - Unit ${app.pm_units.unit_number}`}
+                        {app.applicant_email} • {app.applicant_phone}
                       </div>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <Badge variant={
-                      app.status === 'approved' ? 'success' :
-                      app.status === 'rejected' ? 'danger' :
-                      'default'
-                    }>
-                      {app.status}
-                    </Badge>
-                    <div className="text-sm text-muted-foreground">
-                      {new Date(app.created_at).toLocaleDateString()}
+                      {app.pm_properties && (
+                        <div className="text-sm text-muted-foreground mt-1">
+                          Property: {app.pm_properties.address}
+                          {app.pm_units && ` - Unit ${app.pm_units.unit_number}`}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <Badge variant={
+                        app.status === 'approved' ? 'success' :
+                        app.status === 'rejected' ? 'danger' :
+                        'default'
+                      }>
+                        {app.status}
+                      </Badge>
+                      <div className="text-sm text-muted-foreground">
+                        {new Date(app.created_at).toLocaleDateString()}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
       )}
