@@ -3,7 +3,13 @@
 import { useState } from "react";
 
 type OpenHouseFormProps = {
-  pmProperties: Array<{ id: string; address: string }>;
+  pmProperties: Array<{
+    id: string;
+    address: string;
+    city?: string;
+    state_province?: string;
+    postal_code?: string;
+  }>;
   startDefault: string;
   endDefault: string;
   onSubmit: (formData: FormData) => Promise<void>;
@@ -16,6 +22,24 @@ export default function OpenHouseForm({
   onSubmit,
 }: OpenHouseFormProps) {
   const [eventType, setEventType] = useState<"sales" | "rental" | "both">("sales");
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string>("");
+  const [address, setAddress] = useState<string>("");
+
+  const handlePropertyChange = (propertyId: string) => {
+    setSelectedPropertyId(propertyId);
+
+    if (propertyId) {
+      const property = pmProperties.find((p) => p.id === propertyId);
+      if (property) {
+        // Build full address string
+        let fullAddress = property.address;
+        if (property.city) fullAddress += `, ${property.city}`;
+        if (property.state_province) fullAddress += `, ${property.state_province}`;
+        if (property.postal_code) fullAddress += ` ${property.postal_code}`;
+        setAddress(fullAddress);
+      }
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -58,6 +82,8 @@ export default function OpenHouseForm({
             <>
               <select
                 name="pm_property_id"
+                value={selectedPropertyId}
+                onChange={(e) => handlePropertyChange(e.target.value)}
                 style={{ width: "100%", padding: 10 }}
                 required={eventType === "rental"}
               >
@@ -73,7 +99,9 @@ export default function OpenHouseForm({
                 ))}
               </select>
               <p style={{ fontSize: 11, opacity: 0.6, margin: "4px 0 0 0" }}>
-                Link this open house to a rental property for application tracking
+                {selectedPropertyId
+                  ? "Property address will auto-populate below"
+                  : "Link this open house to a rental property for application tracking"}
               </p>
             </>
           ) : (
@@ -101,12 +129,16 @@ export default function OpenHouseForm({
         <label style={{ display: "block", fontSize: 12, marginBottom: 6 }}>Address</label>
         <input
           name="address"
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
           style={{ width: "100%", padding: 10 }}
           placeholder="123 Main St, Honolulu, HI"
           required
         />
         <p style={{ fontSize: 11, opacity: 0.6, margin: "4px 0 0 0" }}>
-          We'll automatically geocode this address to show a map on your open house page.
+          {selectedPropertyId
+            ? "Auto-populated from selected rental property (editable)"
+            : "We'll automatically geocode this address to show a map on your open house page."}
         </p>
       </div>
 
