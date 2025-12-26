@@ -9,6 +9,7 @@ import IntegrationHealth from "./integration-health";
 import ActivityFeed from "./activity-feed";
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0; // Disable all caching
 
 export default async function DashboardPage() {
   const supabase = await supabaseServer();
