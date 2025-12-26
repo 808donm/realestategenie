@@ -178,6 +178,27 @@ export async function POST(request: NextRequest) {
         .eq("id", lease.pm_application_id);
     }
 
+    // Send tenant portal invitation
+    try {
+      const inviteResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_APP_URL}/api/tenant/invite`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ lease_id: lease.id }),
+        }
+      );
+
+      if (inviteResponse.ok) {
+        console.log(`✅ Tenant portal invitation sent for lease ${lease.id}`);
+      } else {
+        console.error("⚠️ Failed to send tenant invitation:", await inviteResponse.text());
+      }
+    } catch (inviteError) {
+      console.error("❌ Error sending tenant invitation:", inviteError);
+      // Don't fail the webhook - invitation can be resent manually
+    }
+
     return NextResponse.json({
       success: true,
       message: "Lease activated and first invoice sent",
