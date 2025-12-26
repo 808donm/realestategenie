@@ -2,7 +2,7 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Building2, FileText, FileSignature, Wrench } from "lucide-react";
+import { Building2, FileText, FileSignature, Wrench, DollarSign } from "lucide-react";
 
 export default async function PMOverviewPage() {
   const supabase = await supabaseServer();
@@ -139,6 +139,12 @@ export default async function PMOverviewPage() {
             <Button variant="outline">
               <Wrench className="mr-2 h-4 w-4" />
               View Work Orders
+            </Button>
+          </Link>
+          <Link href="/app/pm/payments">
+            <Button variant="outline">
+              <DollarSign className="mr-2 h-4 w-4" />
+              Rent Payments
             </Button>
           </Link>
         </CardContent>
