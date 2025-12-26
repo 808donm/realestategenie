@@ -1,6 +1,6 @@
 import { supabaseServer } from "@/lib/supabase/server";
 import { geocodeAddress } from "@/lib/geocoding";
-import IntakeForm from "./intake-form.client";
+import CheckInWrapper from "./check-in-wrapper.client";
 import PropertyMap from "@/components/PropertyMapWrapper";
 
 export default async function OpenHouseIntakePage({
@@ -114,7 +114,7 @@ export default async function OpenHouseIntakePage({
       </div>
 
       <div style={{ marginTop: 18 }}>
-        <IntakeForm
+        <CheckInWrapper
           eventId={event.id}
           eventType={(event.event_type as "sales" | "rental" | "both") || "sales"}
           pmPropertyId={event.pm_property_id || null}
