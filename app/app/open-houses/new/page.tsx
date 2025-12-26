@@ -1,9 +1,23 @@
 import { supabaseServer } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { geocodeAddress } from "@/lib/geocoding";
+import OpenHouseForm from "./open-house-form";
 
 export default async function NewOpenHousePage() {
   const supabase = await supabaseServer();
+
+  // Get user's PM properties for rental open houses
+  const { data: userData } = await supabase.auth.getUser();
+  let pmProperties: any[] = [];
+
+  if (userData.user) {
+    const { data } = await supabase
+      .from("pm_properties")
+      .select("id, address")
+      .eq("agent_id", userData.user.id)
+      .order("address");
+    pmProperties = data || [];
+  }
 
   async function create(formData: FormData) {
     "use server";
@@ -53,6 +67,8 @@ export default async function NewOpenHousePage() {
     const address = String(formData.get("address") || "").trim();
     const start_at = String(formData.get("start_at") || "");
     const end_at = String(formData.get("end_at") || "");
+    const event_type = String(formData.get("event_type") || "sales");
+    const pm_property_id = String(formData.get("pm_property_id") || "") || null;
 
     if (!address || !start_at || !end_at) {
       console.error("Missing required fields");
@@ -76,6 +92,8 @@ export default async function NewOpenHousePage() {
         details_page_enabled: true,
         latitude: geoResult?.latitude ?? null,
         longitude: geoResult?.longitude ?? null,
+        event_type,
+        pm_property_id,
       })
       .select("id")
       .single();
@@ -106,31 +124,12 @@ export default async function NewOpenHousePage() {
     <div style={{ maxWidth: 700 }}>
       <h1 style={{ fontSize: 28, fontWeight: 900, marginTop: 0 }}>New Open House</h1>
 
-      <form action={create} style={{ display: "grid", gap: 12, marginTop: 12 }}>
-        <div>
-          <label style={{ display: "block", fontSize: 12, marginBottom: 6 }}>Address</label>
-          <input name="address" style={{ width: "100%", padding: 10 }} placeholder="123 Main St, Honolulu, HI" required />
-          <p style={{ fontSize: 11, opacity: 0.6, margin: "4px 0 0 0" }}>
-            We'll automatically geocode this address to show a map on your open house page.
-          </p>
-        </div>
-
-        <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr" }}>
-          <div>
-            <label style={{ display: "block", fontSize: 12, marginBottom: 6 }}>Start</label>
-            <input name="start_at" type="datetime-local" defaultValue={toLocalInput(startDefault)} style={{ width: "100%", padding: 10 }} required />
-          </div>
-          <div>
-            <label style={{ display: "block", fontSize: 12, marginBottom: 6 }}>End</label>
-            <input name="end_at" type="datetime-local" defaultValue={toLocalInput(endDefault)} style={{ width: "100%", padding: 10 }} required />
-          </div>
-        </div>
-
-        <button style={{ padding: 12, fontWeight: 900 }}>Create</button>
-        <p style={{ margin: 0, opacity: 0.7, fontSize: 12 }}>
-          After creating, you’ll publish it and generate the QR check-in link.
-        </p>
-      </form>
+      <OpenHouseForm
+        pmProperties={pmProperties}
+        startDefault={toLocalInput(startDefault)}
+        endDefault={toLocalInput(endDefault)}
+        onSubmit={create}
+      />
     </div>
   );
 }

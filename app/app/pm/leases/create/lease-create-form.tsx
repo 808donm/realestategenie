@@ -29,6 +29,7 @@ export default function LeaseCreateForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [useCustomLease, setUseCustomLease] = useState(false);
   const [customLeaseUrl, setCustomLeaseUrl] = useState("");
+  const [leaseTerm, setLeaseTerm] = useState<"1" | "2" | "3" | "5" | "custom">("1");
 
   // Calculate default dates
   const today = new Date();
@@ -59,6 +60,34 @@ export default function LeaseCreateForm({
     requires_professional_house_cleaning: false,
     custom_requirements: "",
   });
+
+  // Calculate end date based on lease term
+  const calculateEndDate = (startDate: string, years: number): string => {
+    const start = new Date(startDate);
+    const end = new Date(start);
+    end.setFullYear(end.getFullYear() + years);
+    return end.toISOString().split("T")[0];
+  };
+
+  // Handle lease term change
+  const handleLeaseTermChange = (term: "1" | "2" | "3" | "5" | "custom") => {
+    setLeaseTerm(term);
+    if (term !== "custom") {
+      const years = parseInt(term);
+      const endDate = calculateEndDate(formData.lease_start_date, years);
+      setFormData({ ...formData, lease_end_date: endDate });
+    }
+  };
+
+  // Handle start date change - recalculate end date if not custom
+  const handleStartDateChange = (startDate: string) => {
+    const updates: any = { lease_start_date: startDate };
+    if (leaseTerm !== "custom") {
+      const years = parseInt(leaseTerm);
+      updates.lease_end_date = calculateEndDate(startDate, years);
+    }
+    setFormData({ ...formData, ...updates });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -204,6 +233,26 @@ export default function LeaseCreateForm({
           <CardTitle>Lease Terms</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2">
+          <div className="md:col-span-2">
+            <Label htmlFor="lease_term">Lease Term *</Label>
+            <select
+              id="lease_term"
+              required
+              value={leaseTerm}
+              onChange={(e) =>
+                handleLeaseTermChange(
+                  e.target.value as "1" | "2" | "3" | "5" | "custom"
+                )
+              }
+              className="w-full px-3 py-2 border rounded-md"
+            >
+              <option value="1">1 Year (Most Common)</option>
+              <option value="2">2 Years</option>
+              <option value="3">3 Years</option>
+              <option value="5">5 Years</option>
+              <option value="custom">Custom Dates</option>
+            </select>
+          </div>
           <div>
             <Label htmlFor="lease_start_date">Start Date *</Label>
             <Input
@@ -211,9 +260,7 @@ export default function LeaseCreateForm({
               type="date"
               required
               value={formData.lease_start_date}
-              onChange={(e) =>
-                setFormData({ ...formData, lease_start_date: e.target.value })
-              }
+              onChange={(e) => handleStartDateChange(e.target.value)}
             />
           </div>
           <div>
@@ -226,9 +273,13 @@ export default function LeaseCreateForm({
               onChange={(e) =>
                 setFormData({ ...formData, lease_end_date: e.target.value })
               }
+              disabled={leaseTerm !== "custom"}
+              className={leaseTerm !== "custom" ? "bg-muted" : ""}
             />
             <p className="text-xs text-muted-foreground mt-1">
-              Typically 1 year from start date
+              {leaseTerm !== "custom"
+                ? `Auto-calculated (${leaseTerm} year${leaseTerm !== "1" ? "s" : ""} from start date)`
+                : "Enter custom end date"}
             </p>
           </div>
           <div>
