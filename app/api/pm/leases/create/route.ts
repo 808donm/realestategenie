@@ -84,18 +84,129 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Agent profile not found" }, { status: 404 });
     }
 
-    // Create local tenant contact record
+    // Get or create tenant contact
+    let localContactId: string;
     let ghlContactId: string | null = null;
 
-    // If GHL integration enabled, create or find tenant in GHL
-    if (hasGHLIntegration) {
+    // If creating from application, check if contact already exists
+    if (pm_application_id) {
+      const { data: application } = await supabase
+        .from("pm_applications")
+        .select("pm_contact_id")
+        .eq("id", pm_application_id)
+        .single();
+
+      if (application?.pm_contact_id) {
+        // Use existing contact from application
+        localContactId = application.pm_contact_id;
+
+        // Get the contact to check for GHL ID
+        const { data: contact } = await supabase
+          .from("pm_contacts")
+          .select("ghl_contact_id")
+          .eq("id", localContactId)
+          .single();
+
+        ghlContactId = contact?.ghl_contact_id || null;
+
+        // Update contact with latest info if needed
+        await supabase
+          .from("pm_contacts")
+          .update({
+            full_name: tenant_name,
+            email: tenant_email,
+            phone: tenant_phone,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", localContactId);
+      } else {
+        // Application doesn't have a contact yet - this shouldn't happen for approved apps
+        // but we'll handle it anyway by creating one
+        const { data: newContact, error: contactError } = await supabase
+          .from("pm_contacts")
+          .insert({
+            agent_id: userData.user.id,
+            full_name: tenant_name,
+            email: tenant_email,
+            phone: tenant_phone,
+            contact_type: "tenant",
+          })
+          .select("id")
+          .single();
+
+        if (contactError) {
+          return NextResponse.json(
+            { error: "Failed to create tenant contact: " + contactError.message },
+            { status: 500 }
+          );
+        }
+
+        localContactId = newContact.id;
+
+        // Link contact back to application
+        await supabase
+          .from("pm_applications")
+          .update({ pm_contact_id: localContactId })
+          .eq("id", pm_application_id);
+      }
+    } else {
+      // Creating lease without application - find or create contact
+      const { data: existingContact } = await supabase
+        .from("pm_contacts")
+        .select("id, ghl_contact_id")
+        .eq("agent_id", userData.user.id)
+        .eq("email", tenant_email)
+        .eq("contact_type", "tenant")
+        .maybeSingle();
+
+      if (existingContact) {
+        localContactId = existingContact.id;
+        ghlContactId = existingContact.ghl_contact_id || null;
+
+        // Update the contact with latest info
+        await supabase
+          .from("pm_contacts")
+          .update({
+            full_name: tenant_name,
+            phone: tenant_phone,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", localContactId);
+      } else {
+        // Create new contact
+        const { data: newContact, error: contactError } = await supabase
+          .from("pm_contacts")
+          .insert({
+            agent_id: userData.user.id,
+            full_name: tenant_name,
+            email: tenant_email,
+            phone: tenant_phone,
+            contact_type: "tenant",
+          })
+          .select("id")
+          .single();
+
+        if (contactError) {
+          console.error("Error creating local contact:", contactError);
+          return NextResponse.json(
+            { error: "Failed to create tenant contact: " + contactError.message },
+            { status: 500 }
+          );
+        }
+
+        localContactId = newContact.id;
+      }
+    }
+
+    // If GHL integration enabled and no GHL contact exists yet, create one
+    if (hasGHLIntegration && !ghlContactId) {
       const ghlClient = new GHLClient(integration!.ghl_access_token!);
       try {
         const searchResult = await ghlClient.searchContacts({ email: tenant_email });
         if (searchResult.contacts && searchResult.contacts.length > 0) {
           ghlContactId = searchResult.contacts[0].id!;
         } else {
-          // Create new contact
+          // Create new contact in GHL
           const newContact = await ghlClient.createContact({
             locationId: integration!.ghl_location_id!,
             firstName: tenant_name.split(" ")[0],
@@ -107,62 +218,17 @@ export async function POST(request: NextRequest) {
           });
           ghlContactId = newContact.id!;
         }
+
+        // Update local contact with GHL ID
+        await supabase
+          .from("pm_contacts")
+          .update({ ghl_contact_id: ghlContactId })
+          .eq("id", localContactId);
       } catch (ghlError) {
         console.error("Error creating/finding tenant in GHL:", ghlError);
         console.warn("⚠️ GHL tenant creation failed, continuing without GHL");
         ghlContactId = null;
       }
-    }
-
-    // Create or find local contact record in pm_contacts
-    let localContactId: string;
-
-    // Try to find existing contact by email
-    const { data: existingContact } = await supabase
-      .from("pm_contacts")
-      .select("id")
-      .eq("agent_id", userData.user.id)
-      .eq("email", tenant_email)
-      .eq("contact_type", "tenant")
-      .single();
-
-    if (existingContact) {
-      localContactId = existingContact.id;
-
-      // Update the contact with latest info
-      await supabase
-        .from("pm_contacts")
-        .update({
-          full_name: tenant_name,
-          phone: tenant_phone,
-          ghl_contact_id: ghlContactId,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", localContactId);
-    } else {
-      // Create new contact
-      const { data: newContact, error: contactError } = await supabase
-        .from("pm_contacts")
-        .insert({
-          agent_id: userData.user.id,
-          full_name: tenant_name,
-          email: tenant_email,
-          phone: tenant_phone,
-          contact_type: "tenant",
-          ghl_contact_id: ghlContactId,
-        })
-        .select("id")
-        .single();
-
-      if (contactError) {
-        console.error("Error creating local contact:", contactError);
-        return NextResponse.json(
-          { error: "Failed to create tenant contact: " + contactError.message },
-          { status: 500 }
-        );
-      }
-
-      localContactId = newContact.id;
     }
 
     // Build move_out_requirements JSONB
