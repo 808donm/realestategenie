@@ -49,29 +49,35 @@ export async function POST(request: NextRequest) {
     }
 
     // Create lead submission first (for tracking and GHL sync)
-    const { data: leadSubmission, error: leadError } = await supabase
-      .from("lead_submissions")
-      .insert({
-        open_house_event_id: eventId,
-        name: applicationData.applicant_name,
-        email: applicationData.applicant_email,
-        phone_e164: applicationData.applicant_phone,
-        consent: {
-          sms: applicationData.consent_sms || false,
-          email: applicationData.consent_email || false,
-          captured_at: new Date().toISOString(),
-        },
-        source: "rental_application",
-      })
-      .select("id")
-      .single();
+    // This is optional - if it fails, we still create the application
+    let leadSubmissionId: string | null = null;
 
-    if (leadError) {
-      console.error("Error creating lead submission:", leadError);
-      return NextResponse.json(
-        { error: "Failed to create lead submission" },
-        { status: 500 }
-      );
+    try {
+      const { data: leadSubmission, error: leadError } = await supabase
+        .from("lead_submissions")
+        .insert({
+          open_house_event_id: eventId,
+          name: applicationData.applicant_name,
+          email: applicationData.applicant_email,
+          phone_e164: applicationData.applicant_phone,
+          consent: {
+            sms: applicationData.consent_sms || false,
+            email: applicationData.consent_email || false,
+            captured_at: new Date().toISOString(),
+          },
+          source: "rental_application",
+        })
+        .select("id")
+        .single();
+
+      if (!leadError && leadSubmission) {
+        leadSubmissionId = leadSubmission.id;
+        console.log("✅ Lead submission created:", leadSubmissionId);
+      } else {
+        console.warn("Could not create lead submission (non-fatal):", leadError?.message);
+      }
+    } catch (err: any) {
+      console.warn("Lead submission failed (continuing anyway):", err.message);
     }
 
     // Determine pm_property_id and pm_unit_id
@@ -85,7 +91,7 @@ export async function POST(request: NextRequest) {
         agent_id: event.agent_id,
         pm_property_id: propertyId,
         pm_unit_id: null, // Will be assigned later if needed
-        lead_submission_id: leadSubmission.id,
+        lead_submission_id: leadSubmissionId,
         applicant_name: applicationData.applicant_name,
         applicant_email: applicationData.applicant_email,
         applicant_phone: applicationData.applicant_phone,
