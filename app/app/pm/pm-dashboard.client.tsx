@@ -277,6 +277,12 @@ export default function PMDashboardClient() {
               Manage Properties
             </Button>
           </Link>
+          <Link href="/app/pm/showings">
+            <Button variant="outline">
+              <Calendar className="mr-2 h-4 w-4" />
+              Property Showings
+            </Button>
+          </Link>
           <Link href="/app/pm/applications">
             <Button variant="outline">
               <FileText className="mr-2 h-4 w-4" />
