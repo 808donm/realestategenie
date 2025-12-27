@@ -20,6 +20,13 @@ export default async function OpenHouseIntakePage({
     .eq("id", eventId)
     .single();
 
+  // Debug: Check the actual open house event table
+  const { data: debugEvent, error: debugError } = await supabase
+    .from("open_house_events")
+    .select("id, address, status, agent_id")
+    .eq("id", eventId)
+    .single();
+
   if (error || !event) {
     return (
       <div style={{ maxWidth: 720, margin: "40px auto", padding: 16 }}>
@@ -27,6 +34,29 @@ export default async function OpenHouseIntakePage({
         <p style={{ color: "crimson" }}>
           This open house is not available. (It may be unpublished or expired.)
         </p>
+
+        {/* Debug Info */}
+        <div style={{ marginTop: 20, padding: 16, background: "#f0f0f0", borderRadius: 8, fontSize: 12 }}>
+          <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>Debug Information:</h3>
+          <div><strong>Event ID:</strong> {eventId}</div>
+          <div><strong>View Error:</strong> {error?.message || "Event not found in view"}</div>
+          {debugEvent && (
+            <>
+              <div style={{ marginTop: 8 }}><strong>Event Status:</strong> {debugEvent.status}</div>
+              <div><strong>Event Address:</strong> {debugEvent.address}</div>
+              <div><strong>Agent ID:</strong> {debugEvent.agent_id}</div>
+              <div style={{ marginTop: 8, padding: 8, background: "#fff3cd", borderRadius: 4 }}>
+                ℹ️ The event exists but status is "{debugEvent.status}".
+                {debugEvent.status !== "published" && " Change status to 'published' to make it visible."}
+              </div>
+            </>
+          )}
+          {debugError && (
+            <div style={{ marginTop: 8, color: "crimson" }}>
+              <strong>Debug Error:</strong> {debugError.message}
+            </div>
+          )}
+        </div>
       </div>
     );
   }
