@@ -143,6 +143,15 @@ export default async function OpenHouseIntakePage({
         />
       </div>
 
+      {/* Debug: Show what we're getting from the database */}
+      {process.env.NODE_ENV === 'development' && (
+        <div style={{ marginTop: 18, padding: 12, background: "#f0f0f0", borderRadius: 8, fontSize: 12 }}>
+          <strong>Debug - Event Data:</strong>
+          <div>Agent Name: {event.display_name || "null"}</div>
+          <div>Brokerage Name: {event.brokerage_name || "null"}</div>
+        </div>
+      )}
+
       <div style={{ marginTop: 18 }}>
         <CheckInWrapper
           eventId={event.id}
