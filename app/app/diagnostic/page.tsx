@@ -1,7 +1,34 @@
 import { supabaseServer } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 
 export default async function DiagnosticPage() {
   const supabase = await supabaseServer();
+
+  async function fixAgentProfile() {
+    "use server";
+
+    const supabase = await supabaseServer();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return;
+    }
+
+    // Create agent record
+    await supabase.from("agents").upsert(
+      {
+        id: user.id,
+        email: user.email ?? null,
+        display_name: user.email ?? null,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "id" }
+    );
+
+    // Revalidate the diagnostic page to show updated status
+    revalidatePath("/app/diagnostic");
+  }
 
   const checks = {
     authenticated: false,
@@ -149,8 +176,26 @@ export default async function DiagnosticPage() {
             <div style={{ fontSize: 14, marginTop: 4 }}>
               {checks.agentProfile
                 ? "Your agent profile exists"
-                : "Agent profile not found - may be created after migration"}
+                : "Agent profile not found - this prevents open houses from appearing"}
             </div>
+            {!checks.agentProfile && checks.authenticated && (
+              <form action={fixAgentProfile} style={{ marginTop: 12 }}>
+                <button
+                  type="submit"
+                  style={{
+                    padding: "8px 16px",
+                    background: "#10b981",
+                    color: "white",
+                    border: "none",
+                    borderRadius: 6,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  🔧 Fix Agent Profile Now
+                </button>
+              </form>
+            )}
           </div>
         </div>
 
@@ -224,6 +269,15 @@ export default async function DiagnosticPage() {
               <p style={{ margin: "8px 0" }}>
                 Please sign in to continue using the app.
               </p>
+            ) : !checks.agentProfile ? (
+              <>
+                <p style={{ margin: "8px 0" }}>
+                  <strong>Your agent profile is missing.</strong> Click the "Fix Agent Profile Now" button above to create it automatically.
+                </p>
+                <p style={{ margin: "8px 0", fontSize: 12, opacity: 0.8 }}>
+                  After fixing, your published open houses will immediately become visible to visitors via QR code and direct links.
+                </p>
+              </>
             ) : (
               <p style={{ margin: "8px 0" }}>
                 ✅ All checks passed! You're ready to create open houses.
