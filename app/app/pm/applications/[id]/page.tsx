@@ -36,7 +36,7 @@ export default async function ApplicationDetailPage({
       ),
       lead_submissions (
         id,
-        submitted_at
+        created_at
       )
     `)
     .eq("id", id)
