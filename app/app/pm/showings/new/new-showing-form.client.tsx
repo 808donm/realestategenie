@@ -65,8 +65,8 @@ export default function NewShowingForm({ properties }: { properties: Property[] 
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to create showing");
+        const data = await response.json().catch(() => ({ error: "Unknown error" }));
+        throw new Error(data.error || `Failed to create showing (${response.status})`);
       }
 
       const { showing_id } = await response.json();
@@ -74,7 +74,8 @@ export default function NewShowingForm({ properties }: { properties: Property[] 
       // Redirect to showing detail page
       router.push(`/app/pm/showings/${showing_id}`);
     } catch (err: any) {
-      setError(err.message);
+      console.error("Error creating showing:", err);
+      setError(err.message || "Failed to create showing");
       setIsSubmitting(false);
     }
   };
