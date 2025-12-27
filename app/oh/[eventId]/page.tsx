@@ -15,7 +15,7 @@ export default async function OpenHouseIntakePage({
   const { data: event, error } = await supabase
     .from("public_open_house_event")
     .select(
-      "id,address,start_at,end_at,details_page_enabled,flyer_pdf_url,pdf_download_enabled,display_name,license_number,phone_e164,locations_served,photo_url,headshot_url,company_logo_url,latitude,longitude,event_type,pm_property_id"
+      "id,address,start_at,end_at,details_page_enabled,flyer_pdf_url,pdf_download_enabled,display_name,license_number,phone_e164,locations_served,photo_url,headshot_url,company_logo_url,latitude,longitude,event_type,pm_property_id,brokerage_name"
     )
     .eq("id", eventId)
     .single();
@@ -148,6 +148,8 @@ export default async function OpenHouseIntakePage({
           eventId={event.id}
           eventType={(event.event_type as "sales" | "rental" | "both") || "sales"}
           pmPropertyId={event.pm_property_id || null}
+          agentName={event.display_name || undefined}
+          brokerageName={event.brokerage_name || undefined}
         />
       </div>
     </div>
