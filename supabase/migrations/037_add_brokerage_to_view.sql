@@ -21,7 +21,7 @@ SELECT
   a.photo_url,
   a.headshot_url,
   a.company_logo_url,
-  a.brokerage_name
+  a.agency_name as brokerage_name
 FROM open_house_events ohe
 JOIN agents a ON ohe.agent_id = a.id
 WHERE ohe.status = 'published';
