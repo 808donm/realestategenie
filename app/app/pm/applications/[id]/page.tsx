@@ -10,8 +10,9 @@ import ApplicationActions from "./application-actions";
 export default async function ApplicationDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = await params;
   const supabase = await supabaseServer();
   const { data: userData } = await supabase.auth.getUser();
 
@@ -38,7 +39,7 @@ export default async function ApplicationDetailPage({
         submitted_at
       )
     `)
-    .eq("id", params.id)
+    .eq("id", id)
     .eq("agent_id", userData.user.id)
     .single();
 
