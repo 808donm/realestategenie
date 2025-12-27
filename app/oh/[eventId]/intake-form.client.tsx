@@ -152,6 +152,9 @@ export default function IntakeForm({ eventId }: { eventId: string }) {
               Privacy Policy
             </a>.
           </p>
+          <p style={{ marginTop: 8, fontSize: 12, fontWeight: 600, opacity: 0.8 }}>
+            We value your privacy and will never sell your information.
+          </p>
         </div>
 
         <div>
