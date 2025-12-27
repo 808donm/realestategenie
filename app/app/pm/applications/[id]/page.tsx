@@ -44,7 +44,29 @@ export default async function ApplicationDetailPage({
     .single();
 
   if (error || !application) {
-    notFound();
+    return (
+      <div className="space-y-4">
+        <h1 className="text-2xl font-bold text-destructive">Application Not Found</h1>
+        {error && (
+          <Card className="border-destructive">
+            <CardContent className="py-4">
+              <p className="text-sm text-destructive">Error: {error.message}</p>
+              <p className="text-xs text-muted-foreground mt-2">
+                Details: {JSON.stringify(error, null, 2)}
+              </p>
+            </CardContent>
+          </Card>
+        )}
+        <p className="text-muted-foreground">
+          {error
+            ? "There was an error loading this application. Please check the error details above."
+            : "This application does not exist or you don't have permission to view it."}
+        </p>
+        <Link href="/app/pm/applications">
+          <Button variant="outline">← Back to Applications</Button>
+        </Link>
+      </div>
+    );
   }
 
   const statusColors = {
