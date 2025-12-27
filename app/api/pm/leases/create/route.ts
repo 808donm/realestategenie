@@ -84,14 +84,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Agent profile not found" }, { status: 404 });
     }
 
-    // Create or find tenant in GHL (if integration enabled)
-    let tenantContactId: string | null = null;
+    // Create local tenant contact record
+    let ghlContactId: string | null = null;
+
+    // If GHL integration enabled, create or find tenant in GHL
     if (hasGHLIntegration) {
       const ghlClient = new GHLClient(integration!.ghl_access_token!);
       try {
         const searchResult = await ghlClient.searchContacts({ email: tenant_email });
         if (searchResult.contacts && searchResult.contacts.length > 0) {
-          tenantContactId = searchResult.contacts[0].id!;
+          ghlContactId = searchResult.contacts[0].id!;
         } else {
           // Create new contact
           const newContact = await ghlClient.createContact({
@@ -103,14 +105,64 @@ export async function POST(request: NextRequest) {
             phone: tenant_phone,
             tags: ["tenant", "pm-module"],
           });
-          tenantContactId = newContact.id!;
+          ghlContactId = newContact.id!;
         }
       } catch (ghlError) {
         console.error("Error creating/finding tenant in GHL:", ghlError);
-        // Don't fail - just log and continue without GHL integration
         console.warn("⚠️ GHL tenant creation failed, continuing without GHL");
-        tenantContactId = null;
+        ghlContactId = null;
       }
+    }
+
+    // Create or find local contact record in pm_contacts
+    let localContactId: string;
+
+    // Try to find existing contact by email
+    const { data: existingContact } = await supabase
+      .from("pm_contacts")
+      .select("id")
+      .eq("agent_id", userData.user.id)
+      .eq("email", tenant_email)
+      .eq("contact_type", "tenant")
+      .single();
+
+    if (existingContact) {
+      localContactId = existingContact.id;
+
+      // Update the contact with latest info
+      await supabase
+        .from("pm_contacts")
+        .update({
+          full_name: tenant_name,
+          phone: tenant_phone,
+          ghl_contact_id: ghlContactId,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", localContactId);
+    } else {
+      // Create new contact
+      const { data: newContact, error: contactError } = await supabase
+        .from("pm_contacts")
+        .insert({
+          agent_id: userData.user.id,
+          full_name: tenant_name,
+          email: tenant_email,
+          phone: tenant_phone,
+          contact_type: "tenant",
+          ghl_contact_id: ghlContactId,
+        })
+        .select("id")
+        .single();
+
+      if (contactError) {
+        console.error("Error creating local contact:", contactError);
+        return NextResponse.json(
+          { error: "Failed to create tenant contact: " + contactError.message },
+          { status: 500 }
+        );
+      }
+
+      localContactId = newContact.id;
     }
 
     // Build move_out_requirements JSONB
@@ -127,7 +179,7 @@ export async function POST(request: NextRequest) {
         pm_property_id,
         pm_unit_id: pm_unit_id || null,
         pm_application_id: pm_application_id || null,
-        tenant_contact_id: tenantContactId,
+        tenant_contact_id: localContactId,
         lease_type: "fixed-term",
         lease_start_date,
         lease_end_date,
@@ -182,9 +234,9 @@ export async function POST(request: NextRequest) {
       agent_email: agent.email,
     };
 
-    // Create GHL contract (if integration enabled and tenant contact was created)
+    // Create GHL contract (if integration enabled and GHL contact was created)
     let ghlContractId: string | null = null;
-    if (hasGHLIntegration && tenantContactId) {
+    if (hasGHLIntegration && ghlContactId) {
       const ghlClient = new GHLClient(integration!.ghl_access_token!);
       try {
         // Get GHL template ID from environment (optional)
@@ -194,7 +246,7 @@ export async function POST(request: NextRequest) {
         const contractData = prepareGHLContract(
           leaseData,
           integration!.ghl_location_id!,
-          tenantContactId,
+          ghlContactId,
           ghlTemplateId
         );
 
