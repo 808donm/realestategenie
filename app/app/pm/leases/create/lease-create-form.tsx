@@ -33,8 +33,9 @@ export default function LeaseCreateForm({
 
   // Calculate default dates
   const today = new Date();
-  const oneYearFromNow = new Date(today);
-  oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+  const startDate = application?.move_in_date ? new Date(application.move_in_date) : today;
+  const oneYearFromStart = new Date(startDate);
+  oneYearFromStart.setFullYear(oneYearFromStart.getFullYear() + 1);
 
   const [formData, setFormData] = useState({
     // Property/Unit
@@ -47,11 +48,11 @@ export default function LeaseCreateForm({
     tenant_phone: application?.applicant_phone || "",
 
     // Lease Terms
-    lease_start_date: today.toISOString().split("T")[0],
-    lease_end_date: oneYearFromNow.toISOString().split("T")[0],
-    monthly_rent: "",
-    security_deposit: "",
-    pet_deposit: "0",
+    lease_start_date: application?.move_in_date || today.toISOString().split("T")[0],
+    lease_end_date: oneYearFromStart.toISOString().split("T")[0],
+    monthly_rent: property?.monthly_rent?.toString() || "",
+    security_deposit: property?.monthly_rent?.toString() || "",
+    pet_deposit: (application?.pets && Array.isArray(application.pets) && application.pets.length > 0) ? "" : "0",
     rent_due_day: "1",
     notice_period_days: "30",
 
@@ -124,108 +125,143 @@ export default function LeaseCreateForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Property Selection */}
-      {!property && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Property</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="pm_property_id">Select Property *</Label>
-              <select
-                id="pm_property_id"
-                required
-                value={formData.pm_property_id}
-                onChange={(e) => {
-                  const selectedProperty = properties.find(
-                    (p) => p.id === e.target.value
-                  );
-                  setFormData({
-                    ...formData,
-                    pm_property_id: e.target.value,
-                    pm_unit_id: "", // Reset unit when property changes
-                  });
-                }}
-                className="w-full px-3 py-2 border rounded-md"
-              >
-                <option value="">Select a property...</option>
-                {properties.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.address}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {formData.pm_property_id && (
+      <Card>
+        <CardHeader>
+          <CardTitle>Property</CardTitle>
+          {property && (
+            <p className="text-sm text-muted-foreground mt-1">
+              From application for {property.address}
+            </p>
+          )}
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {property ? (
+            // Read-only display when property is pre-filled from application
+            <>
               <div>
-                <Label htmlFor="pm_unit_id">Unit (Optional)</Label>
+                <Label>Property Address</Label>
+                <div className="px-3 py-2 bg-muted rounded-md">
+                  {property.address}, {property.city}, {property.state_province}
+                </div>
+              </div>
+              {unit && (
+                <div>
+                  <Label>Unit</Label>
+                  <div className="px-3 py-2 bg-muted rounded-md">
+                    {unit.unit_number}
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            // Editable selects when creating lease without application
+            <>
+              <div>
+                <Label htmlFor="pm_property_id">Select Property *</Label>
                 <select
-                  id="pm_unit_id"
-                  value={formData.pm_unit_id}
-                  onChange={(e) =>
-                    setFormData({ ...formData, pm_unit_id: e.target.value })
-                  }
+                  id="pm_property_id"
+                  required
+                  value={formData.pm_property_id}
+                  onChange={(e) => {
+                    const selectedProperty = properties.find(
+                      (p) => p.id === e.target.value
+                    );
+                    setFormData({
+                      ...formData,
+                      pm_property_id: e.target.value,
+                      pm_unit_id: "", // Reset unit when property changes
+                    });
+                  }}
                   className="w-full px-3 py-2 border rounded-md"
                 >
-                  <option value="">Single-family / Whole property</option>
-                  {properties
-                    .find((p) => p.id === formData.pm_property_id)
-                    ?.pm_units?.map((u: any) => (
-                      <option key={u.id} value={u.id}>
-                        {u.unit_number}
-                      </option>
-                    ))}
+                  <option value="">Select a property...</option>
+                  {properties.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.address}
+                    </option>
+                  ))}
                 </select>
               </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+
+              {formData.pm_property_id && (
+                <div>
+                  <Label htmlFor="pm_unit_id">Unit (Optional)</Label>
+                  <select
+                    id="pm_unit_id"
+                    value={formData.pm_unit_id}
+                    onChange={(e) =>
+                      setFormData({ ...formData, pm_unit_id: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border rounded-md"
+                  >
+                    <option value="">Single-family / Whole property</option>
+                    {properties
+                      .find((p) => p.id === formData.pm_property_id)
+                      ?.pm_units?.map((u: any) => (
+                        <option key={u.id} value={u.id}>
+                          {u.unit_number}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Tenant Information */}
-      {!application && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Tenant Information</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-2">
-            <div>
-              <Label htmlFor="tenant_name">Tenant Name *</Label>
-              <Input
-                id="tenant_name"
-                required
-                value={formData.tenant_name}
-                onChange={(e) =>
-                  setFormData({ ...formData, tenant_name: e.target.value })
-                }
-              />
-            </div>
-            <div>
-              <Label htmlFor="tenant_email">Email</Label>
-              <Input
-                id="tenant_email"
-                type="email"
-                value={formData.tenant_email}
-                onChange={(e) =>
-                  setFormData({ ...formData, tenant_email: e.target.value })
-                }
-              />
-            </div>
-            <div>
-              <Label htmlFor="tenant_phone">Phone</Label>
-              <Input
-                id="tenant_phone"
-                type="tel"
-                value={formData.tenant_phone}
-                onChange={(e) =>
-                  setFormData({ ...formData, tenant_phone: e.target.value })
-                }
-              />
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <Card>
+        <CardHeader>
+          <CardTitle>Tenant Information</CardTitle>
+          {application && (
+            <p className="text-sm text-muted-foreground mt-1">
+              Pre-filled from application
+            </p>
+          )}
+        </CardHeader>
+        <CardContent className="grid gap-4 md:grid-cols-2">
+          <div>
+            <Label htmlFor="tenant_name">Tenant Name *</Label>
+            <Input
+              id="tenant_name"
+              required
+              value={formData.tenant_name}
+              onChange={(e) =>
+                setFormData({ ...formData, tenant_name: e.target.value })
+              }
+              readOnly={!!application}
+              className={application ? "bg-muted" : ""}
+            />
+          </div>
+          <div>
+            <Label htmlFor="tenant_email">Email</Label>
+            <Input
+              id="tenant_email"
+              type="email"
+              value={formData.tenant_email}
+              onChange={(e) =>
+                setFormData({ ...formData, tenant_email: e.target.value })
+              }
+              readOnly={!!application}
+              className={application ? "bg-muted" : ""}
+            />
+          </div>
+          <div>
+            <Label htmlFor="tenant_phone">Phone</Label>
+            <Input
+              id="tenant_phone"
+              type="tel"
+              value={formData.tenant_phone}
+              onChange={(e) =>
+                setFormData({ ...formData, tenant_phone: e.target.value })
+              }
+              readOnly={!!application}
+              className={application ? "bg-muted" : ""}
+            />
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Lease Terms */}
       <Card>
