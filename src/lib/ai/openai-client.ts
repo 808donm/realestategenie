@@ -50,7 +50,7 @@ export async function generateNeighborhoodProfile(
     system: systemPrompt,
     prompt: userPrompt,
     temperature: 0.7,
-    maxTokens: 2000,
+    // Note: maxTokens configuration handled by model defaults
   });
 
   if (!text) {
