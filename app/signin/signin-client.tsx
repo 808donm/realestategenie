@@ -66,14 +66,23 @@ export default function SignInClient() {
         </CardHeader>
 
         <CardContent className="space-y-4">
-          {/* Invitation Notice */}
-          <div className="p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
-            <p className="text-sm text-blue-900 dark:text-blue-100 font-medium">
-              ℹ️ Invitation Required for New Users
-            </p>
-            <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-              If you don't have an account yet, please check your email for an invitation link.
-              Only existing users can sign in below.
+          {/* Registration Notice */}
+          <div className="p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg space-y-3">
+            <div>
+              <p className="text-sm text-blue-900 dark:text-blue-100 font-medium">
+                Need an account?
+              </p>
+              <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                New users can register to get started with The Real Estate Genie.
+              </p>
+            </div>
+            <Link href="/register">
+              <Button variant="outline" className="w-full bg-white dark:bg-slate-800">
+                Register Here
+              </Button>
+            </Link>
+            <p className="text-xs text-blue-700 dark:text-blue-300">
+              Already have an invitation? Sign in below with your credentials.
             </p>
           </div>
 

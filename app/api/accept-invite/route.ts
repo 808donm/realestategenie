@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { logError } from "@/lib/error-logging";
+import { createGHLSubAccount } from "@/lib/integrations/ghl-sub-account";
 
 const admin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -185,6 +186,20 @@ export async function POST(request: NextRequest) {
         accepted_at: new Date().toISOString(),
       })
       .eq("id", invitationId);
+
+    // Create GHL sub-account for the new agent (non-blocking)
+    // This runs in the background and doesn't block the registration flow
+    createGHLSubAccount(authData.user.id)
+      .then((result) => {
+        if (result.success) {
+          console.log(`GHL sub-account created for ${email}: ${result.locationId}`);
+        } else {
+          console.warn(`GHL sub-account creation skipped for ${email}: ${result.error}`);
+        }
+      })
+      .catch((err) => {
+        console.error(`GHL sub-account creation failed for ${email}:`, err);
+      });
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

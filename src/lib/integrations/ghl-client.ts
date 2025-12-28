@@ -412,6 +412,65 @@ export class GHLClient {
       body: JSON.stringify(paymentDetails || {}),
     });
   }
+
+  /**
+   * Create a sub-account (location) in SaaS mode
+   * This creates a new location under the agency account
+   */
+  async createLocation(data: {
+    name: string;
+    email: string;
+    phone: string;
+    address?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    postalCode?: string;
+    website?: string;
+  }): Promise<{ id: string; location: any }> {
+    return this.request<{ id: string; location: any }>("/locations/", {
+      method: "POST",
+      body: JSON.stringify({
+        companyKey: process.env.GHL_COMPANY_ID, // Your agency company ID
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        address: data.address || "",
+        city: data.city || "",
+        state: data.state || "",
+        country: data.country || "US",
+        postalCode: data.postalCode || "",
+        website: data.website || "",
+      }),
+    });
+  }
+
+  /**
+   * Get location by ID
+   */
+  async getLocation(locationId: string): Promise<any> {
+    return this.request(`/locations/${locationId}`);
+  }
+
+  /**
+   * Update location details
+   */
+  async updateLocation(locationId: string, updates: Partial<{
+    name: string;
+    email: string;
+    phone: string;
+    address: string;
+    city: string;
+    state: string;
+    country: string;
+    postalCode: string;
+    website: string;
+  }>): Promise<any> {
+    return this.request(`/locations/${locationId}`, {
+      method: "PUT",
+      body: JSON.stringify(updates),
+    });
+  }
 }
 
 /**
