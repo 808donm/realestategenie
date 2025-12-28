@@ -1,20 +1,11 @@
-import OpenAI from "openai";
+import { openai } from "@ai-sdk/openai";
+import { generateText } from "ai";
 
-// Lazy initialize OpenAI client only when needed
-let openaiClient: OpenAI | null = null;
-
-export function getOpenAIClient(): OpenAI {
+// Validate API key is configured
+export function validateOpenAIKey(): void {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error("OPENAI_API_KEY is not configured. Add it to your environment variables.");
   }
-
-  if (!openaiClient) {
-    openaiClient = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
-  }
-
-  return openaiClient;
 }
 
 export interface NeighborhoodProfileRequest {
@@ -49,28 +40,24 @@ export interface NeighborhoodProfileResponse {
 export async function generateNeighborhoodProfile(
   request: NeighborhoodProfileRequest
 ): Promise<NeighborhoodProfileResponse> {
-  const openai = getOpenAIClient();
+  validateOpenAIKey();
 
   const systemPrompt = getComplianceSystemPrompt(request.country);
   const userPrompt = buildUserPrompt(request);
 
-  const completion = await openai.chat.completions.create({
-    model: "gpt-4-turbo-preview",
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userPrompt },
-    ],
-    response_format: { type: "json_object" },
+  const { text } = await generateText({
+    model: openai("gpt-4-turbo-preview"),
+    system: systemPrompt,
+    prompt: userPrompt,
     temperature: 0.7,
-    max_tokens: 2000,
+    maxTokens: 2000,
   });
 
-  const responseContent = completion.choices[0]?.message?.content;
-  if (!responseContent) {
-    throw new Error("No response from OpenAI");
+  if (!text) {
+    throw new Error("No response from AI model");
   }
 
-  return JSON.parse(responseContent) as NeighborhoodProfileResponse;
+  return JSON.parse(text) as NeighborhoodProfileResponse;
 }
 
 /**

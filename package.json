@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^3.0.1",
     "@ai-sdk/react": "^3.0.3",
     "@icons-pack/react-simple-icons": "^13.8.0",
     "@paypal/checkout-server-sdk": "^1.0.3",
