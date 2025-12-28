@@ -237,9 +237,15 @@ export async function POST(req: Request) {
 
     // Trigger async integrations (non-blocking)
     void Promise.all([
-      syncLeadToGHL(lead.id).catch((err) =>
-        console.error("GHL sync failed:", err)
-      ),
+      syncLeadToGHL(lead.id).catch((err) => {
+        console.error("❌ GHL sync failed:", err);
+        console.error("GHL sync error details:", {
+          message: err.message,
+          stack: err.stack,
+          leadId: lead.id,
+          agentId: evt.agent_id,
+        });
+      }),
       dispatchWebhook(evt.agent_id, "lead.submitted", {
         lead_id: lead.id,
         event_id: eventId,

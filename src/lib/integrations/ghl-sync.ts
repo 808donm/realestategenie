@@ -57,6 +57,7 @@ export async function syncLeadToGHL(leadId: string): Promise<{
   ghlOpportunityId?: string;
   error?: string;
 }> {
+  console.log("🔄 Starting GHL sync for lead:", leadId);
   try {
     // Fetch lead
     const { data: lead, error: leadError } = await supabaseAdmin
@@ -73,8 +74,11 @@ export async function syncLeadToGHL(leadId: string): Promise<{
     const config = await getValidGHLConfig(lead.agent_id);
 
     if (!config) {
+      console.error("❌ GHL not connected for agent:", lead.agent_id);
       throw new Error("GHL not connected for this agent");
     }
+
+    console.log("✅ GHL config retrieved, location_id:", config.location_id);
 
     const client = new GHLClient(config.access_token);
 
@@ -206,8 +210,11 @@ export async function syncLeadToGHL(leadId: string): Promise<{
       // Get or create OpenHouse Custom Object ID
       let ghlOpenHouseId = event?.ghl_custom_object_id;
 
-      if (!ghlOpenHouseId && event) {
+      if (ghlOpenHouseId) {
+        console.log("✅ OpenHouse custom object already exists in GHL:", ghlOpenHouseId);
+      } else if (event) {
         // Create OpenHouse Custom Object in GHL
+        console.log("🏠 Creating NEW OpenHouse custom object in GHL for event:", lead.event_id);
         try {
           const openHouseRecord = await client.createCustomObjectRecord({
             locationId: config.location_id,
@@ -243,6 +250,7 @@ export async function syncLeadToGHL(leadId: string): Promise<{
       }
 
       // Create Registration Custom Object in GHL
+      console.log("📝 Creating Registration custom object in GHL");
       try {
         const registrationRecord = await client.createCustomObjectRecord({
           locationId: config.location_id,
