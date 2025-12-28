@@ -36,16 +36,17 @@ export async function createGHLOpenHouseRecord(params: {
     const requestPayload = {
       locationId: params.locationId,
       properties: {
-        "custom_objects.openhouses.openhouseid": params.eventId,
-        "custom_objects.openhouses.address": params.address,
-        "custom_objects.openhouses.startdatetime": params.startDateTime,
-        "custom_objects.openhouses.enddatetime": params.endDateTime,
-        "custom_objects.openhouses.flyerurl": params.flyerUrl,
-        "custom_objects.openhouses.agentid": params.agentId,
-        "custom_objects.openhouses.beds": params.beds?.toString() || '',
-        "custom_objects.openhouses.baths": params.baths?.toString() || '',
-        "custom_objects.openhouses.sqft": params.sqft?.toString() || '',
-        "custom_objects.openhouses.price": params.price?.toString() || '',
+        // Property keys use internal field names WITHOUT the custom_objects.openhouses prefix
+        "openhouseid": params.eventId,
+        "address": params.address,
+        "startdatetime": params.startDateTime,
+        "enddatetime": params.endDateTime,
+        "flyerurl": params.flyerUrl,
+        "agentid": params.agentId,
+        "beds": params.beds?.toString() || '',
+        "baths": params.baths?.toString() || '',
+        "sqft": params.sqft?.toString() || '',
+        "price": params.price?.toString() || '',
       },
     };
 
@@ -123,15 +124,16 @@ export async function createGHLRegistrationRecord(params: {
         body: JSON.stringify({
           locationId: params.locationId,
           properties: {
-            "custom_objects.registrations.registrationid": `reg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-            "custom_objects.registrations.contactid": params.contactId,
-            "custom_objects.registrations.openhouseid": params.eventId,
-            "custom_objects.registrations.registerdat": new Date().toISOString(),
-            "custom_objects.registrations.flyerstatus": 'pending',
-            "custom_objects.registrations.agentid": params.agentName,
-            "custom_objects.registrations.agencyid": params.agencyName || '',
-            "custom_objects.registrations.address": params.address,
-            "custom_objects.registrations.flyerurl": params.flyerUrl,
+            // Property keys use internal field names WITHOUT the custom_objects.registrations prefix
+            "registrationid": `reg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+            "contactid": params.contactId,
+            "openhouseid": params.eventId,
+            "registerdat": new Date().toISOString(),
+            "flyerstatus": 'pending',
+            "agentid": params.agentName,
+            "agencyid": params.agencyName || '',
+            "address": params.address,
+            "flyerurl": params.flyerUrl,
           },
           relationships: [
             {
