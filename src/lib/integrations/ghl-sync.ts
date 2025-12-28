@@ -213,16 +213,17 @@ export async function syncLeadToGHL(leadId: string): Promise<{
             locationId: config.location_id,
             objectType: "custom_objects.openhouses",
             properties: {
-              "custom_objects.openhouses.openhouseid": lead.event_id,
-              "custom_objects.openhouses.address": propertyAddress,
-              "custom_objects.openhouses.startdatetime": event.start_at,
-              "custom_objects.openhouses.enddatetime": event.end_at,
-              "custom_objects.openhouses.flyerurl": flyerUrl,
-              "custom_objects.openhouses.agentid": lead.agent_id,
-              "custom_objects.openhouses.beds": event.beds?.toString() || "",
-              "custom_objects.openhouses.baths": event.baths?.toString() || "",
-              "custom_objects.openhouses.sqft": event.sqft?.toString() || "",
-              "custom_objects.openhouses.price": event.price?.toString() || "",
+              // Property keys use internal field names WITHOUT the custom_objects.openhouses prefix
+              "openhouseid": lead.event_id,
+              "address": propertyAddress,
+              "startdatetime": event.start_at,
+              "enddatetime": event.end_at,
+              "flyerurl": flyerUrl,
+              "agentid": lead.agent_id,
+              "beds": event.beds?.toString() || "",
+              "baths": event.baths?.toString() || "",
+              "sqft": event.sqft?.toString() || "",
+              "price": event.price?.toString() || "",
             },
           });
 
@@ -247,11 +248,12 @@ export async function syncLeadToGHL(leadId: string): Promise<{
           locationId: config.location_id,
           objectType: "custom_objects.registrations",
           properties: {
-            "custom_objects.registrations.registrationid": `reg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-            "custom_objects.registrations.contactid": contactId,
-            "custom_objects.registrations.openhouseid": lead.event_id,
-            "custom_objects.registrations.registerdat": new Date().toISOString(),
-            "custom_objects.registrations.flyerstatus": "pending",
+            // Property keys use internal field names WITHOUT the custom_objects.registrations prefix
+            "registrationid": `reg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+            "contactid": contactId,
+            "openhouseid": lead.event_id,
+            "registerdat": new Date().toISOString(),
+            "flyerstatus": "pending",
           },
           relationships: [
             {
