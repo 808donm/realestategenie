@@ -30,7 +30,12 @@ export async function GET(req: NextRequest) {
     "redirect_uri",
     `${process.env.NEXT_PUBLIC_APP_URL}/api/integrations/crm-callback`
   );
-  ghlAuthUrl.searchParams.append("scope", "contacts.write contacts.readonly opportunities.write opportunities.readonly locations.readonly");
+  // Request all necessary scopes for Real Estate Genie
+  // Added customObjects.write and customObjects.readonly for OpenHouse and Registration objects
+  ghlAuthUrl.searchParams.append(
+    "scope",
+    "contacts.write contacts.readonly opportunities.write opportunities.readonly locations.readonly customObjects.write customObjects.readonly"
+  );
   ghlAuthUrl.searchParams.append("state", state);
 
   // Redirect to GHL OAuth page

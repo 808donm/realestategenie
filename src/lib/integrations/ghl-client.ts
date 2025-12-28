@@ -136,6 +136,23 @@ export class GHLClient {
 
     if (!response.ok) {
       const error = await response.text();
+
+      // Enhanced error logging for debugging
+      console.error("[GHL API Error]", {
+        status: response.status,
+        statusText: response.statusText,
+        endpoint,
+        method: options.method || "GET",
+        error,
+      });
+
+      // Special logging for 401 scope errors
+      if (response.status === 401) {
+        console.error("[GHL 401 Error] Token not authorized for this scope");
+        console.error("[GHL 401 Error] Endpoint:", endpoint);
+        console.error("[GHL 401 Error] Make sure OAuth includes required scopes: customObjects.write customObjects.readonly");
+      }
+
       throw new Error(`GHL API Error (${response.status}): ${error}`);
     }
 
@@ -240,13 +257,25 @@ export class GHLClient {
    */
   async createCustomObjectRecord(record: GHLCustomObjectRecord): Promise<{ id: string }> {
     const endpoint = `/objects/${record.objectType}/records`;
+    const payload = {
+      locationId: record.locationId,
+      properties: record.properties,
+      relationships: record.relationships,
+    };
+
+    // Debug logging
+    console.log("[GHL Custom Object] Creating record:", {
+      endpoint,
+      objectType: record.objectType,
+      locationId: record.locationId,
+      propertiesCount: Object.keys(record.properties).length,
+      relationshipsCount: record.relationships?.length || 0,
+    });
+    console.log("[GHL Custom Object] Full payload:", JSON.stringify(payload, null, 2));
+
     return this.request<{ id: string }>(endpoint, {
       method: "POST",
-      body: JSON.stringify({
-        locationId: record.locationId,
-        properties: record.properties,
-        relationships: record.relationships,
-      }),
+      body: JSON.stringify(payload),
     });
   }
 
