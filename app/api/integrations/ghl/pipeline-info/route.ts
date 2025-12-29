@@ -20,16 +20,31 @@ export async function GET(req: NextRequest) {
   }
 
   // Get any connected GHL integration (using service role for simplicity)
-  const { data: integration, error } = await supabaseAdmin
+  const { data: integrations, error: queryError } = await supabaseAdmin
     .from("integrations")
-    .select("access_token, location_id")
-    .eq("provider", "ghl")
-    .eq("status", "connected")
-    .single();
+    .select("access_token, location_id, provider, status")
+    .eq("provider", "ghl");
 
-  if (error || !integration) {
+  console.log('[Pipeline Info] Query result:', { integrations, queryError });
+
+  if (queryError) {
+    return NextResponse.json({
+      error: `Database error: ${queryError.message}`
+    }, { status: 500 });
+  }
+
+  if (!integrations || integrations.length === 0) {
     return NextResponse.json({
       error: "No GHL integration found. Please connect GHL first."
+    }, { status: 400 });
+  }
+
+  // Use the first connected integration, or just the first one
+  const integration = integrations.find(i => i.status === 'connected') || integrations[0];
+
+  if (!integration.access_token) {
+    return NextResponse.json({
+      error: "GHL integration found but no access token available."
     }, { status: 400 });
   }
 
