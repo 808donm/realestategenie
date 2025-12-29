@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { calculateHeatScore } from "@/lib/lead-scoring";
 import { syncLeadToGHL } from "@/lib/integrations/ghl-sync";
 import { dispatchWebhook } from "@/lib/webhooks/dispatcher";
-import { createOrUpdateGHLContact, createGHLRegistrationRecord, createGHLOpenHouseRecord } from "@/lib/notifications/ghl-service";
+import { createOrUpdateGHLContact, createGHLRegistrationRecord, createGHLOpenHouseRecord, createGHLOpportunity } from "@/lib/notifications/ghl-service";
 import { getValidGHLConfig } from "@/lib/integrations/ghl-token-refresh";
 
 const admin = createClient(
@@ -205,6 +205,28 @@ export async function POST(req: Request) {
                 openHouseRecordId,
               });
               console.log('GHL Registration created successfully');
+
+              // Create Opportunity in pipeline if configured
+              if (ghlConfig.ghl_pipeline_id && ghlConfig.ghl_stage_warm) {
+                try {
+                  console.log('Creating GHL Opportunity in pipeline...');
+                  await createGHLOpportunity({
+                    locationId: ghlConfig.location_id,
+                    accessToken: ghlConfig.access_token,
+                    pipelineId: ghlConfig.ghl_pipeline_id,
+                    pipelineStageId: ghlConfig.ghl_stage_warm, // Default to warm stage
+                    contactId: contactId,
+                    name: `${payload.name} - ${evt?.address || 'Open House'}`,
+                    monetaryValue: evt?.price || 0,
+                    status: 'open',
+                  });
+                  console.log('GHL Opportunity created successfully');
+                } catch (oppError: any) {
+                  console.error('Failed to create Opportunity:', oppError.message);
+                }
+              } else {
+                console.log('No pipeline configured - skipping opportunity creation');
+              }
             } catch (linkError: any) {
               console.error('Failed to create Registration:', linkError.message);
             }

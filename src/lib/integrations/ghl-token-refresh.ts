@@ -21,6 +21,10 @@ export async function getValidGHLConfig(agentId: string): Promise<{
   access_token: string;
   location_id: string;
   refresh_token: string;
+  ghl_pipeline_id?: string;
+  ghl_stage_hot?: string;
+  ghl_stage_warm?: string;
+  ghl_stage_cold?: string;
 } | null> {
   try {
     // Fetch current integration

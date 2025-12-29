@@ -224,6 +224,60 @@ export async function createGHLRegistrationRecord(params: {
   }
 }
 
+export async function createGHLOpportunity(params: {
+  locationId: string;
+  accessToken: string;
+  pipelineId: string;
+  pipelineStageId: string;
+  contactId: string;
+  name: string;
+  monetaryValue?: number;
+  status?: 'open' | 'won' | 'lost' | 'abandoned';
+}) {
+  try {
+    console.log('[GHL] Creating Opportunity in pipeline...');
+    const opportunityResponse = await fetch(
+      `https://services.leadconnectorhq.com/opportunities/`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${params.accessToken}`,
+          'Content-Type': 'application/json',
+          'Version': '2021-07-28',
+        },
+        body: JSON.stringify({
+          locationId: params.locationId,
+          pipelineId: params.pipelineId,
+          pipelineStageId: params.pipelineStageId,
+          contactId: params.contactId,
+          name: params.name,
+          monetaryValue: params.monetaryValue || 0,
+          status: params.status || 'open',
+        }),
+      }
+    );
+
+    if (!opportunityResponse.ok) {
+      const error = await opportunityResponse.text();
+      console.error('[GHL] Opportunity creation failed:', error);
+      throw new Error(`Failed to create Opportunity: ${error}`);
+    }
+
+    const opportunityData = await opportunityResponse.json();
+    const opportunityId = opportunityData?.opportunity?.id;
+    console.log('[GHL] Opportunity created:', opportunityId);
+
+    if (!opportunityId) {
+      throw new Error('Opportunity created but ID not found in response');
+    }
+
+    return opportunityId;
+  } catch (error: any) {
+    console.error('[GHL] Error creating Opportunity:', error);
+    throw error;
+  }
+}
+
 export async function createGHLOpenHouseAndLinkContact(params: {
   locationId: string;
   accessToken: string;
