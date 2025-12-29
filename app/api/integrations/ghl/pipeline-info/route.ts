@@ -44,6 +44,7 @@ export async function GET(req: NextRequest) {
 
   // Extract access_token from config JSONB
   const accessToken = integration.config?.access_token;
+  const locationId = integration.config?.location_id;
 
   if (!accessToken) {
     return NextResponse.json({
@@ -52,9 +53,9 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // Fetch pipeline details from GHL
+    // Fetch all pipelines for the location
     const response = await fetch(
-      `https://services.leadconnectorhq.com/opportunities/pipelines/${pipelineId}`,
+      `https://services.leadconnectorhq.com/opportunities/pipelines?locationId=${locationId}`,
       {
         method: "GET",
         headers: {
@@ -72,18 +73,32 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const pipelineData = await response.json();
+    const data = await response.json();
+    const pipelines = data.pipelines || [];
+
+    // Find the specific pipeline
+    const pipeline = pipelines.find((p: any) => p.id === pipelineId);
+
+    if (!pipeline) {
+      return NextResponse.json({
+        error: `Pipeline ${pipelineId} not found`,
+        availablePipelines: pipelines.map((p: any) => ({
+          id: p.id,
+          name: p.name
+        }))
+      }, { status: 404 });
+    }
 
     // Extract stage information
-    const stages = pipelineData.stages?.map((stage: any) => ({
+    const stages = pipeline.stages?.map((stage: any) => ({
       id: stage.id,
       name: stage.name,
       position: stage.position,
     })) || [];
 
     return NextResponse.json({
-      pipelineId: pipelineData.id,
-      pipelineName: pipelineData.name,
+      pipelineId: pipeline.id,
+      pipelineName: pipeline.name,
       stages: stages,
       message: "Copy the stage IDs below and use them to update your integration",
     });
