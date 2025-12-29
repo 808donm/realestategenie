@@ -139,16 +139,8 @@ export async function createGHLRegistrationRecord(params: {
             "address": params.address,
             "flyerurl": params.flyerUrl,
           },
-          relationships: [
-            {
-              relatedObjectId: params.contactId,
-              relationType: 'contact',
-            },
-            {
-              relatedObjectId: params.openHouseRecordId,
-              relationType: 'custom_objects.openhouses',
-            },
-          ],
+          // Note: Relationships are tracked via contactid and openhouseid properties
+          // The separate relationships array is not supported in this API endpoint
         }),
       }
     );
