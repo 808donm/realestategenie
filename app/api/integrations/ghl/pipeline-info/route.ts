@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
   // Get any connected GHL integration (using service role for simplicity)
   const { data: integrations, error: queryError } = await supabaseAdmin
     .from("integrations")
-    .select("access_token, location_id, provider, status")
+    .select("access_token, ghl_location_id, provider, status")
     .eq("provider", "ghl");
 
   console.log('[Pipeline Info] Query result:', { integrations, queryError });
