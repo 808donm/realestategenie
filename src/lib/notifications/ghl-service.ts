@@ -197,10 +197,6 @@ export async function createGHLOpenHouseAndLinkContact(params: {
     eventId: params.eventId,
     contactId: params.contactId,
     openHouseRecordId,
-    agentName: params.agentName,
-    agencyName: params.agencyName,
-    address: params.address,
-    flyerUrl: params.flyerUrl,
   });
 
   return { openHouseId: openHouseRecordId, contactId: params.contactId, registrationId };
