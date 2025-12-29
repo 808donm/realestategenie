@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
   // Get any connected GHL integration (using service role for simplicity)
   const { data: integrations, error: queryError } = await supabaseAdmin
     .from("integrations")
-    .select("access_token, ghl_location_id, provider, status")
+    .select("config, provider, status")
     .eq("provider", "ghl");
 
   console.log('[Pipeline Info] Query result:', { integrations, queryError });
@@ -42,9 +42,12 @@ export async function GET(req: NextRequest) {
   // Use the first connected integration, or just the first one
   const integration = integrations.find(i => i.status === 'connected') || integrations[0];
 
-  if (!integration.access_token) {
+  // Extract access_token from config JSONB
+  const accessToken = integration.config?.access_token;
+
+  if (!accessToken) {
     return NextResponse.json({
-      error: "GHL integration found but no access token available."
+      error: "GHL integration found but no access token available in config."
     }, { status: 400 });
   }
 
@@ -55,7 +58,7 @@ export async function GET(req: NextRequest) {
       {
         method: "GET",
         headers: {
-          Authorization: `Bearer ${integration.access_token}`,
+          Authorization: `Bearer ${accessToken}`,
           Version: "2021-07-28",
         },
       }
