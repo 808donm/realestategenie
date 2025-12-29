@@ -109,10 +109,6 @@ export async function createGHLRegistrationRecord(params: {
   eventId: string;
   contactId: string;
   openHouseRecordId: string;
-  agentName: string;
-  agencyName?: string;
-  address: string;
-  flyerUrl: string;
 }) {
   try {
     console.log('[GHL] Creating Registration to link contact to OpenHouse...');
@@ -129,18 +125,15 @@ export async function createGHLRegistrationRecord(params: {
           locationId: params.locationId,
           properties: {
             // Property keys use internal field names WITHOUT the custom_objects.registrations prefix
+            // Only include fields that exist in the Registration schema
             "registrationid": `reg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
             "contactid": params.contactId,
             "openhouseid": params.eventId,
             "registerdat": new Date().toISOString(),
             "flyerstatus": 'pending',
-            "agentid": params.agentName,
-            "agencyid": params.agencyName || '',
-            "address": params.address,
-            "flyerurl": params.flyerUrl,
           },
           // Note: Relationships are tracked via contactid and openhouseid properties
-          // The separate relationships array is not supported in this API endpoint
+          // Agent info, address, and flyer URL are stored in the OpenHouse object
         }),
       }
     );

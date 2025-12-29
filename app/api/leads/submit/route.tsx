@@ -203,10 +203,6 @@ export async function POST(req: Request) {
                 eventId,
                 contactId: contactId,
                 openHouseRecordId,
-                agentName: agent?.display_name || 'Agent',
-                agencyName: agent?.agency_name,
-                address: evt?.address || '',
-                flyerUrl,
               });
               console.log('GHL Registration created successfully');
             } catch (linkError: any) {
