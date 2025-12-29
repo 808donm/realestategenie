@@ -64,6 +64,10 @@ export async function getValidGHLConfig(agentId: string): Promise<{
         access_token: config.access_token,
         location_id: config.location_id,
         refresh_token: config.refresh_token,
+        ghl_pipeline_id: config.ghl_pipeline_id,
+        ghl_stage_hot: config.ghl_stage_hot,
+        ghl_stage_warm: config.ghl_stage_warm,
+        ghl_stage_cold: config.ghl_stage_cold,
       };
     }
 
@@ -105,6 +109,10 @@ export async function getValidGHLConfig(agentId: string): Promise<{
       access_token: refreshedTokens.access_token,
       location_id: config.location_id,
       refresh_token: refreshedTokens.refresh_token,
+      ghl_pipeline_id: config.ghl_pipeline_id,
+      ghl_stage_hot: config.ghl_stage_hot,
+      ghl_stage_warm: config.ghl_stage_warm,
+      ghl_stage_cold: config.ghl_stage_cold,
     };
   } catch (error) {
     console.error("[Token Refresh] Error refreshing token:", error);

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { calculateHeatScore } from "@/lib/lead-scoring";
+import { calculateHeatScore, getHeatLevel } from "@/lib/lead-scoring";
 import { syncLeadToGHL } from "@/lib/integrations/ghl-sync";
 import { dispatchWebhook } from "@/lib/webhooks/dispatcher";
 import { createOrUpdateGHLContact, createGHLRegistrationRecord, createGHLOpenHouseRecord, createGHLOpportunity } from "@/lib/notifications/ghl-service";
@@ -207,20 +207,48 @@ export async function POST(req: Request) {
               console.log('GHL Registration created successfully');
 
               // Create Opportunity in pipeline if configured
-              if (ghlConfig.ghl_pipeline_id && ghlConfig.ghl_stage_warm) {
+              if (ghlConfig.ghl_pipeline_id) {
                 try {
                   console.log('Creating GHL Opportunity in pipeline...');
-                  await createGHLOpportunity({
-                    locationId: ghlConfig.location_id,
-                    accessToken: ghlConfig.access_token,
-                    pipelineId: ghlConfig.ghl_pipeline_id,
-                    pipelineStageId: ghlConfig.ghl_stage_warm, // Default to warm stage
-                    contactId: contactId,
-                    name: `${payload.name} - ${evt?.address || 'Open House'}`,
-                    monetaryValue: evt?.price || 0,
-                    status: 'open',
-                  });
-                  console.log('GHL Opportunity created successfully');
+
+                  // Use heat scoring to determine initial pipeline stage
+                  const heatLevel = getHeatLevel(heatScore);
+                  console.log(`Lead heat level: ${heatLevel} (score: ${heatScore})`);
+
+                  // Select stage ID based on heat level
+                  let stageId: string | undefined;
+                  if (heatLevel === 'hot' && ghlConfig.ghl_stage_hot) {
+                    stageId = ghlConfig.ghl_stage_hot;
+                    console.log('Using hot lead stage');
+                  } else if (heatLevel === 'warm' && ghlConfig.ghl_stage_warm) {
+                    stageId = ghlConfig.ghl_stage_warm;
+                    console.log('Using warm lead stage');
+                  } else if (heatLevel === 'cold' && ghlConfig.ghl_stage_cold) {
+                    stageId = ghlConfig.ghl_stage_cold;
+                    console.log('Using cold lead stage (New Lead)');
+                  }
+
+                  // Fallback to warm stage if specific stage not configured
+                  if (!stageId && ghlConfig.ghl_stage_warm) {
+                    stageId = ghlConfig.ghl_stage_warm;
+                    console.log('Stage not configured for heat level, falling back to warm stage');
+                  }
+
+                  if (stageId) {
+                    await createGHLOpportunity({
+                      locationId: ghlConfig.location_id,
+                      accessToken: ghlConfig.access_token,
+                      pipelineId: ghlConfig.ghl_pipeline_id,
+                      pipelineStageId: stageId,
+                      contactId: contactId,
+                      name: `${payload.name} - ${evt?.address || 'Open House'}`,
+                      monetaryValue: evt?.price || 0,
+                      status: 'open',
+                    });
+                    console.log(`GHL Opportunity created successfully in ${heatLevel} stage`);
+                  } else {
+                    console.log('No stage IDs configured - skipping opportunity creation');
+                  }
                 } catch (oppError: any) {
                   console.error('Failed to create Opportunity:', oppError.message);
                 }
