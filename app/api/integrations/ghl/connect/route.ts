@@ -31,10 +31,10 @@ export async function GET(req: NextRequest) {
     `${process.env.NEXT_PUBLIC_APP_URL}/api/integrations/crm-callback`
   );
   // Request all necessary scopes for Real Estate Genie
-  // Added customObjects.write and customObjects.readonly for OpenHouse and Registration objects
+  // Custom objects are managed under locations.write scope
   ghlAuthUrl.searchParams.append(
     "scope",
-    "contacts.write contacts.readonly opportunities.write opportunities.readonly locations.readonly customObjects.write customObjects.readonly"
+    "contacts.write contacts.readonly opportunities.write opportunities.readonly locations.write locations.readonly conversations.write conversations.readonly"
   );
   ghlAuthUrl.searchParams.append("state", state);
 
