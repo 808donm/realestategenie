@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
   // Objects scopes required for custom objects (OpenHouse and Registration)
   ghlAuthUrl.searchParams.append(
     "scope",
-    "contacts.write contacts.readonly opportunities.write opportunities.readonly locations.write locations.readonly conversations.write conversations.readonly objects.records.write objects.records.readonly objects.schemas.readonly"
+    "contacts.write contacts.readonly opportunities.write opportunities.readonly locations.readonly conversations.write conversations.readonly objects.record.write objects.record.read objects.schema.read"
   );
   ghlAuthUrl.searchParams.append("state", state);
 
