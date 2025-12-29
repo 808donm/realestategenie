@@ -20,19 +20,30 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "pipelineId required" }, { status: 400 });
   }
 
-  // Get any connected GHL integration agent
-  const { data: integration, error: queryError } = await supabaseAdmin
+  // Get any GHL integration
+  const { data: integrations, error: queryError } = await supabaseAdmin
     .from("integrations")
     .select("agent_id, provider, status")
-    .eq("provider", "ghl")
-    .eq("status", "connected")
-    .single();
+    .eq("provider", "ghl");
 
-  if (queryError || !integration) {
+  console.log('[Pipeline Info] Integrations found:', integrations);
+
+  if (queryError) {
     return NextResponse.json({
-      error: "No connected GHL integration found. Please connect GHL first."
+      error: `Database error: ${queryError.message}`
+    }, { status: 500 });
+  }
+
+  if (!integrations || integrations.length === 0) {
+    return NextResponse.json({
+      error: "No GHL integration found. Please connect GHL in the Integrations page first."
     }, { status: 400 });
   }
+
+  // Use first integration (prefer connected status)
+  const integration = integrations.find(i => i.status === 'connected') || integrations[0];
+
+  console.log('[Pipeline Info] Using integration:', integration);
 
   // Use token refresh function to get valid (possibly refreshed) token
   const ghlConfig = await getValidGHLConfig(integration.agent_id);
