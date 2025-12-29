@@ -54,7 +54,7 @@ export async function createGHLOpenHouseRecord(params: {
 
     try {
       openHouseResponse = await fetch(
-        `https://services.leadconnectorhq.com/objects/custom_objects.openhouses/records?locationId=${params.locationId}`,
+        `https://services.leadconnectorhq.com/objects/custom_objects.openhouses/records`,
         {
           method: 'POST',
           headers: {
@@ -113,7 +113,7 @@ export async function createGHLRegistrationRecord(params: {
   try {
     console.log('[GHL] Creating Registration to link contact to OpenHouse...');
     const registrationResponse = await fetch(
-      `https://services.leadconnectorhq.com/objects/custom_objects.registrations/records?locationId=${params.locationId}`,
+      `https://services.leadconnectorhq.com/objects/custom_objects.registrations/records`,
       {
         method: 'POST',
         headers: {
