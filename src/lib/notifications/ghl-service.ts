@@ -130,7 +130,7 @@ export async function createGHLRegistrationRecord(params: {
             "contactid": params.contactId,
             "openhouseid": params.eventId,
             "registerdat": new Date().toISOString(),
-            "flyerstatus": 'pending',
+            "flyerstatus": ['pending'], // Multi-select field requires array
           },
           // Note: Relationships are tracked via contactid and openhouseid properties
           // Agent info, address, and flyer URL are stored in the OpenHouse object

@@ -261,7 +261,7 @@ export async function syncLeadToGHL(leadId: string): Promise<{
             "contactid": contactId,
             "openhouseid": lead.event_id,
             "registerdat": new Date().toISOString(),
-            "flyerstatus": "pending",
+            "flyerstatus": ["pending"], // Multi-select field requires array
           },
           // Note: Relationships tracked via contactid and openhouseid properties
         });
