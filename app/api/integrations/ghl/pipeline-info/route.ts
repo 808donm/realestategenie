@@ -1,46 +1,36 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseServer } from "@/lib/supabase/server";
-import { getValidGHLConfig } from "@/lib/integrations/ghl-token-refresh";
+import { createClient } from "@supabase/supabase-js";
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { auth: { persistSession: false } }
+);
 
 /**
  * Get pipeline information including stages
  * GET /api/integrations/ghl/pipeline-info?pipelineId=xxx
  */
 export async function GET(req: NextRequest) {
-  const supabase = await supabaseServer();
-
-  // Verify user is authenticated
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  // Get user's agent profile
-  const { data: agent } = await supabase
-    .from("agents")
-    .select("id")
-    .eq("user_id", user.id)
-    .single();
-
-  if (!agent) {
-    return NextResponse.json({ error: "Agent profile not found" }, { status: 404 });
-  }
-
-  // Get GHL config
-  const ghlConfig = await getValidGHLConfig(agent.id);
-
-  if (!ghlConfig) {
-    return NextResponse.json({ error: "GHL not connected" }, { status: 400 });
-  }
-
   const { searchParams } = new URL(req.url);
   const pipelineId = searchParams.get("pipelineId");
 
   if (!pipelineId) {
     return NextResponse.json({ error: "pipelineId required" }, { status: 400 });
+  }
+
+  // Get any connected GHL integration (using service role for simplicity)
+  const { data: integration, error } = await supabaseAdmin
+    .from("integrations")
+    .select("access_token, location_id")
+    .eq("provider", "ghl")
+    .eq("status", "connected")
+    .single();
+
+  if (error || !integration) {
+    return NextResponse.json({
+      error: "No GHL integration found. Please connect GHL first."
+    }, { status: 400 });
   }
 
   try {
@@ -50,7 +40,7 @@ export async function GET(req: NextRequest) {
       {
         method: "GET",
         headers: {
-          Authorization: `Bearer ${ghlConfig.access_token}`,
+          Authorization: `Bearer ${integration.access_token}`,
           Version: "2021-07-28",
         },
       }
