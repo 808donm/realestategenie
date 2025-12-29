@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { calculateHeatScore, getHeatLevel } from "@/lib/lead-scoring";
 import { syncLeadToGHL } from "@/lib/integrations/ghl-sync";
 import { dispatchWebhook } from "@/lib/webhooks/dispatcher";
-import { createOrUpdateGHLContact, createGHLRegistrationRecord, createGHLOpenHouseRecord, createGHLOpportunity } from "@/lib/notifications/ghl-service";
+import { createOrUpdateGHLContact, createGHLRegistrationRecord, createGHLOpenHouseRecord, createGHLOpportunity, addGHLTags } from "@/lib/notifications/ghl-service";
 import { getValidGHLConfig } from "@/lib/integrations/ghl-token-refresh";
 
 const admin = createClient(
@@ -207,47 +207,43 @@ export async function POST(req: Request) {
               console.log('GHL Registration created successfully');
 
               // Create Opportunity in pipeline if configured
-              if (ghlConfig.ghl_pipeline_id) {
+              if (ghlConfig.ghl_pipeline_id && ghlConfig.ghl_new_lead_stage) {
                 try {
                   console.log('Creating GHL Opportunity in pipeline...');
 
-                  // Use heat scoring to determine initial pipeline stage
+                  // Calculate heat level for tagging
                   const heatLevel = getHeatLevel(heatScore);
                   console.log(`Lead heat level: ${heatLevel} (score: ${heatScore})`);
 
-                  // Select stage ID based on heat level
-                  let stageId: string | undefined;
-                  if (heatLevel === 'hot' && ghlConfig.ghl_stage_hot) {
-                    stageId = ghlConfig.ghl_stage_hot;
-                    console.log('Using hot lead stage');
-                  } else if (heatLevel === 'warm' && ghlConfig.ghl_stage_warm) {
-                    stageId = ghlConfig.ghl_stage_warm;
-                    console.log('Using warm lead stage');
-                  } else if (heatLevel === 'cold' && ghlConfig.ghl_stage_cold) {
-                    stageId = ghlConfig.ghl_stage_cold;
-                    console.log('Using cold lead stage (New Lead)');
-                  }
+                  // All leads start at "New Lead" stage
+                  await createGHLOpportunity({
+                    locationId: ghlConfig.location_id,
+                    accessToken: ghlConfig.access_token,
+                    pipelineId: ghlConfig.ghl_pipeline_id,
+                    pipelineStageId: ghlConfig.ghl_new_lead_stage,
+                    contactId: contactId,
+                    name: `${payload.name} - ${evt?.address || 'Open House'}`,
+                    monetaryValue: evt?.price || 0,
+                    status: 'open',
+                  });
+                  console.log('GHL Opportunity created successfully in New Lead stage');
 
-                  // Fallback to warm stage if specific stage not configured
-                  if (!stageId && ghlConfig.ghl_stage_warm) {
-                    stageId = ghlConfig.ghl_stage_warm;
-                    console.log('Stage not configured for heat level, falling back to warm stage');
-                  }
+                  // Add heat-based tag to contact
+                  try {
+                    const heatTag = heatLevel === 'hot' ? 'Hot Lead'
+                                  : heatLevel === 'warm' ? 'Warm Lead'
+                                  : 'Cold Lead';
 
-                  if (stageId) {
-                    await createGHLOpportunity({
+                    await addGHLTags({
+                      contactId: contactId,
                       locationId: ghlConfig.location_id,
                       accessToken: ghlConfig.access_token,
-                      pipelineId: ghlConfig.ghl_pipeline_id,
-                      pipelineStageId: stageId,
-                      contactId: contactId,
-                      name: `${payload.name} - ${evt?.address || 'Open House'}`,
-                      monetaryValue: evt?.price || 0,
-                      status: 'open',
+                      tags: [heatTag],
                     });
-                    console.log(`GHL Opportunity created successfully in ${heatLevel} stage`);
-                  } else {
-                    console.log('No stage IDs configured - skipping opportunity creation');
+                    console.log(`Added "${heatTag}" tag to contact based on heat score`);
+                  } catch (tagError: any) {
+                    console.error('Failed to add heat tag:', tagError.message);
+                    // Non-critical - continue even if tagging fails
                   }
                 } catch (oppError: any) {
                   console.error('Failed to create Opportunity:', oppError.message);
