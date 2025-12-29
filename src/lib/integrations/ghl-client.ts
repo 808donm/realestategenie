@@ -150,7 +150,7 @@ export class GHLClient {
       if (response.status === 401) {
         console.error("[GHL 401 Error] Token not authorized for this scope");
         console.error("[GHL 401 Error] Endpoint:", endpoint);
-        console.error("[GHL 401 Error] Make sure OAuth includes required scopes: objects.write objects.readonly");
+        console.error("[GHL 401 Error] Required scopes: objects/record.write objects/record.readonly objects/schema.readonly associations.write");
       }
 
       throw new Error(`GHL API Error (${response.status}): ${error}`);
