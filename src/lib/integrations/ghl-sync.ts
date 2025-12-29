@@ -263,20 +263,7 @@ export async function syncLeadToGHL(leadId: string): Promise<{
             "registerdat": new Date().toISOString(),
             "flyerstatus": "pending",
           },
-          relationships: [
-            {
-              relatedObjectId: contactId,
-              relationType: "contact",
-            },
-            ...(ghlOpenHouseId
-              ? [
-                  {
-                    relatedObjectId: ghlOpenHouseId,
-                    relationType: "custom_objects.openhouses",
-                  },
-                ]
-              : []),
-          ],
+          // Note: Relationships tracked via contactid and openhouseid properties
         });
 
         ghlRegistrationId = registrationRecord.id;
