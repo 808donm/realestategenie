@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { getValidGHLConfig } from "@/lib/integrations/ghl-token-refresh";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -19,38 +20,31 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "pipelineId required" }, { status: 400 });
   }
 
-  // Get any connected GHL integration (using service role for simplicity)
-  const { data: integrations, error: queryError } = await supabaseAdmin
+  // Get any connected GHL integration agent
+  const { data: integration, error: queryError } = await supabaseAdmin
     .from("integrations")
-    .select("config, provider, status")
-    .eq("provider", "ghl");
+    .select("agent_id, provider, status")
+    .eq("provider", "ghl")
+    .eq("status", "connected")
+    .single();
 
-  console.log('[Pipeline Info] Query result:', { integrations, queryError });
-
-  if (queryError) {
+  if (queryError || !integration) {
     return NextResponse.json({
-      error: `Database error: ${queryError.message}`
-    }, { status: 500 });
-  }
-
-  if (!integrations || integrations.length === 0) {
-    return NextResponse.json({
-      error: "No GHL integration found. Please connect GHL first."
+      error: "No connected GHL integration found. Please connect GHL first."
     }, { status: 400 });
   }
 
-  // Use the first connected integration, or just the first one
-  const integration = integrations.find(i => i.status === 'connected') || integrations[0];
+  // Use token refresh function to get valid (possibly refreshed) token
+  const ghlConfig = await getValidGHLConfig(integration.agent_id);
 
-  // Extract access_token from config JSONB
-  const accessToken = integration.config?.access_token;
-  const locationId = integration.config?.location_id;
-
-  if (!accessToken) {
+  if (!ghlConfig) {
     return NextResponse.json({
-      error: "GHL integration found but no access token available in config."
+      error: "Unable to get valid GHL credentials. Please reconnect GHL."
     }, { status: 400 });
   }
+
+  const accessToken = ghlConfig.access_token;
+  const locationId = ghlConfig.location_id;
 
   try {
     // Fetch all pipelines for the location
