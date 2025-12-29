@@ -89,8 +89,12 @@ export async function createGHLOpenHouseRecord(params: {
 
     console.log('[GHL] OpenHouse response body:', openHouseResponseText);
     const openHouseData = JSON.parse(openHouseResponseText);
-    const openHouseRecordId = openHouseData.id;
+    const openHouseRecordId = openHouseData.record?.id;
     console.log('[GHL] OpenHouse created:', openHouseRecordId);
+
+    if (!openHouseRecordId) {
+      throw new Error('OpenHouse created but ID not found in response');
+    }
 
     return openHouseRecordId;
   } catch (error: any) {
@@ -156,8 +160,13 @@ export async function createGHLRegistrationRecord(params: {
     }
 
     const registrationData = await registrationResponse.json();
-    const registrationRecordId = registrationData?.id;
+    const registrationRecordId = registrationData?.record?.id;
     console.log('[GHL] Registration created:', registrationRecordId);
+
+    if (!registrationRecordId) {
+      throw new Error('Registration created but ID not found in response');
+    }
+
     return registrationRecordId;
   } catch (error: any) {
     console.error('[GHL] Error creating Registration:', error);
