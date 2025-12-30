@@ -32,6 +32,7 @@ export async function POST(request: NextRequest) {
     }
 
     const apiKey = integration.config?.api_key;
+    const environment = integration.config?.environment || "production";
 
     if (!apiKey) {
       return NextResponse.json(
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Test connection
-    const client = new PandaDocClient(apiKey);
+    const client = new PandaDocClient(apiKey, environment);
     const isValid = await client.testConnection();
 
     if (!isValid) {

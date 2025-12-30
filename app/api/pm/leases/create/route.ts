@@ -357,7 +357,8 @@ export async function POST(request: NextRequest) {
 
     // Create PandaDoc document (if PandaDoc integration is enabled)
     if (usePandaDoc && hasPandaDocIntegration) {
-      const pandadocClient = new PandaDocClient(pandadocIntegration!.config.api_key!);
+      const pandadocEnvironment = pandadocIntegration!.config.environment || "production";
+      const pandadocClient = new PandaDocClient(pandadocIntegration!.config.api_key!, pandadocEnvironment);
       try {
         // Determine template ID: use specific template if provided, otherwise use default from integration
         const templateId = pandadoc_template_id || pandadocIntegration!.config.default_template_id;

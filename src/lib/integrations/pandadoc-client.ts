@@ -5,7 +5,8 @@
  * API Documentation: https://developers.pandadoc.com/reference/about
  */
 
-const PANDADOC_API_BASE = "https://api.pandadoc.com/public/v1";
+const PANDADOC_API_PRODUCTION = "https://api.pandadoc.com/public/v1";
+const PANDADOC_API_SANDBOX = "https://sandbox.pandadoc.com/public/v1";
 
 export interface PandaDocTemplate {
   id: string;
@@ -73,9 +74,11 @@ export interface CreateDocumentFromTemplateParams {
 
 export class PandaDocClient {
   private apiKey: string;
+  private apiBase: string;
 
-  constructor(apiKey: string) {
+  constructor(apiKey: string, environment: "production" | "sandbox" = "production") {
     this.apiKey = apiKey;
+    this.apiBase = environment === "sandbox" ? PANDADOC_API_SANDBOX : PANDADOC_API_PRODUCTION;
   }
 
   /**
@@ -85,7 +88,7 @@ export class PandaDocClient {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const url = `${PANDADOC_API_BASE}${endpoint}`;
+    const url = `${this.apiBase}${endpoint}`;
 
     const response = await fetch(url, {
       ...options,
@@ -181,7 +184,7 @@ export class PandaDocClient {
    * Download document as PDF
    */
   async downloadDocument(documentId: string): Promise<Blob> {
-    const url = `${PANDADOC_API_BASE}/documents/${documentId}/download`;
+    const url = `${this.apiBase}/documents/${documentId}/download`;
 
     const response = await fetch(url, {
       headers: {

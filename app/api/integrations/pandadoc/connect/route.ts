@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { api_key, default_template_id } = body;
+    const { api_key, default_template_id, environment } = body;
 
     if (!api_key) {
       return NextResponse.json(
@@ -27,13 +27,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Determine environment (sandbox or production)
+    const env = environment === "sandbox" ? "sandbox" : "production";
+
     // Test the API key
-    const client = new PandaDocClient(api_key);
+    const client = new PandaDocClient(api_key, env);
     const isValid = await client.testConnection();
 
     if (!isValid) {
       return NextResponse.json(
-        { error: "Invalid API key or connection failed" },
+        { error: "Invalid API key or connection failed. Make sure you're using the correct environment (sandbox/production)." },
         { status: 400 }
       );
     }
@@ -51,6 +54,7 @@ export async function POST(request: NextRequest) {
     // Prepare config
     const config: any = {
       api_key,
+      environment: env,
       templates,
     };
 

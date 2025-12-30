@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { FileSignature, CheckCircle2, AlertCircle, Loader2, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
@@ -23,6 +24,7 @@ export default function PandaDocIntegrationCard({ integration }: { integration: 
   const [showDialog, setShowDialog] = useState(false);
   const [apiKey, setApiKey] = useState("");
   const [defaultTemplateId, setDefaultTemplateId] = useState("");
+  const [useSandbox, setUseSandbox] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [testing, setTesting] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
@@ -30,6 +32,7 @@ export default function PandaDocIntegrationCard({ integration }: { integration: 
   const isConnected = integration?.status === "connected";
   const hasError = integration?.status === "error";
   const templates = integration?.config?.templates || [];
+  const environment = integration?.config?.environment || "production";
 
   const handleConnect = async () => {
     if (!apiKey.trim()) {
@@ -45,6 +48,7 @@ export default function PandaDocIntegrationCard({ integration }: { integration: 
         body: JSON.stringify({
           api_key: apiKey.trim(),
           default_template_id: defaultTemplateId.trim() || undefined,
+          environment: useSandbox ? "sandbox" : "production",
         }),
       });
 
@@ -169,6 +173,12 @@ export default function PandaDocIntegrationCard({ integration }: { integration: 
           {isConnected && templates.length > 0 && (
             <div className="space-y-2">
               <div className="text-sm">
+                <span className="text-muted-foreground">Environment:</span>{" "}
+                <Badge variant={environment === "sandbox" ? "warning" : "outline"} className="text-xs">
+                  {environment === "sandbox" ? "Sandbox (Test)" : "Production"}
+                </Badge>
+              </div>
+              <div className="text-sm">
                 <span className="text-muted-foreground">Templates:</span>{" "}
                 <code className="text-xs bg-muted px-1 py-0.5 rounded">
                   {templates.length} available
@@ -287,6 +297,21 @@ export default function PandaDocIntegrationCard({ integration }: { integration: 
               <p className="text-xs text-muted-foreground">
                 If set, this template will be used by default for new leases
               </p>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="sandbox"
+                checked={useSandbox}
+                onCheckedChange={(checked) => setUseSandbox(checked === true)}
+                disabled={connecting}
+              />
+              <Label
+                htmlFor="sandbox"
+                className="text-sm font-normal cursor-pointer"
+              >
+                Use Sandbox Environment (for testing)
+              </Label>
             </div>
           </div>
 
