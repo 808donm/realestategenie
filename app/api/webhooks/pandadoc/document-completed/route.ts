@@ -2,14 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 
 /**
- * PandaDoc Webhook Handler - Document Completed
+ * PandaDoc Webhook Handler - Document Events
  *
- * Triggered when a PandaDoc document is fully executed (all parties have signed)
- * This activates the lease and triggers follow-up actions
+ * Handles PandaDoc webhook events for lease documents:
+ * - document_state_changed: Document status changed
+ * - document_updated: Document was updated
+ * - recipient_completed: All recipients have signed
  *
- * PandaDoc Webhook Payload Example:
+ * PandaDoc Webhook Payload:
  * {
- *   "event": "document_completed",
+ *   "event": "recipient_completed",
  *   "data": {
  *     "id": "document_id",
  *     "status": "document.completed",
@@ -20,7 +22,8 @@ import { supabaseServer } from "@/lib/supabase/server";
  *       "lease_id": "...",
  *       "property_address": "...",
  *       "tenant_email": "..."
- *     }
+ *     },
+ *     "fields": [...]
  *   }
  * }
  *
@@ -31,26 +34,43 @@ export async function POST(request: NextRequest) {
   try {
     const payload = await request.json();
 
-    console.log("📨 PandaDoc Document Completed Webhook received:", payload);
+    console.log("📨 PandaDoc Webhook received:", {
+      event: payload.event,
+      documentId: payload.data?.id,
+      status: payload.data?.status,
+    });
 
     const { event, data } = payload;
 
-    // Validate webhook event type
-    if (event !== "document_completed") {
-      return NextResponse.json(
-        { error: "Invalid webhook event type" },
-        { status: 400 }
-      );
+    // Handle different webhook events
+    const validEvents = ["document_state_changed", "document_updated", "recipient_completed"];
+    if (!validEvents.includes(event)) {
+      console.log(`⚠️ Ignoring unhandled event: ${event}`);
+      return NextResponse.json({ success: true, message: "Event ignored" });
     }
 
     const documentId = data?.id;
+    const documentStatus = data?.status;
     const completedAt = data?.date_completed;
+    const metadata = data?.metadata;
 
     if (!documentId) {
       return NextResponse.json(
         { error: "Missing document ID in payload" },
         { status: 400 }
       );
+    }
+
+    // Only process if document is completed (all parties signed)
+    // PandaDoc status: "document.completed"
+    const isCompleted = documentStatus === "document.completed" || event === "recipient_completed";
+
+    if (!isCompleted) {
+      console.log(`ℹ️ Document ${documentId} not yet completed (status: ${documentStatus}), skipping activation`);
+      return NextResponse.json({
+        success: true,
+        message: "Document not yet completed",
+      });
     }
 
     const supabase = await supabaseServer();
