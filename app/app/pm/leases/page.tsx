@@ -2,6 +2,7 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { FileSignature } from "lucide-react";
+import Link from "next/link";
 
 export default async function PMLeasesPage() {
   const supabase = await supabaseServer();
@@ -51,41 +52,43 @@ export default async function PMLeasesPage() {
       ) : (
         <div className="space-y-4">
           {leases?.map((lease) => (
-            <Card key={lease.id}>
-              <CardContent className="py-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3">
-                      <h3 className="font-semibold">
-                        {lease.pm_properties?.address}
-                        {lease.pm_units && ` - Unit ${lease.pm_units.unit_number}`}
-                      </h3>
-                      <Badge variant={
-                        lease.status === 'active' ? 'success' :
-                        lease.status === 'ended' ? 'secondary' :
-                        'default'
-                      }>
-                        {lease.status}
+            <Link key={lease.id} href={`/app/pm/leases/${lease.id}`}>
+              <Card className="hover:bg-muted/50 transition-colors cursor-pointer">
+                <CardContent className="py-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3">
+                        <h3 className="font-semibold">
+                          {lease.pm_properties?.address}
+                          {lease.pm_units && ` - Unit ${lease.pm_units.unit_number}`}
+                        </h3>
+                        <Badge variant={
+                          lease.status === 'active' ? 'success' :
+                          lease.status === 'ended' ? 'secondary' :
+                          'default'
+                        }>
+                          {lease.status}
+                        </Badge>
+                      </div>
+                      <div className="text-sm text-muted-foreground mt-2 space-y-1">
+                        <div>
+                          Lease Period: {new Date(lease.lease_start_date).toLocaleDateString()} - {new Date(lease.lease_end_date).toLocaleDateString()}
+                        </div>
+                        <div>
+                          Monthly Rent: ${lease.monthly_rent?.toLocaleString()}
+                          {lease.rent_due_day && ` • Due: ${lease.rent_due_day}${lease.rent_due_day === 1 ? 'st' : lease.rent_due_day === 2 ? 'nd' : lease.rent_due_day === 3 ? 'rd' : 'th'} of month`}
+                        </div>
+                      </div>
+                    </div>
+                    {lease.auto_invoice_enabled && (
+                      <Badge variant="outline" className="ml-4">
+                        Auto-Invoice Enabled
                       </Badge>
-                    </div>
-                    <div className="text-sm text-muted-foreground mt-2 space-y-1">
-                      <div>
-                        Lease Period: {new Date(lease.lease_start_date).toLocaleDateString()} - {new Date(lease.lease_end_date).toLocaleDateString()}
-                      </div>
-                      <div>
-                        Monthly Rent: ${lease.monthly_rent?.toLocaleString()}
-                        {lease.rent_due_day && ` • Due: ${lease.rent_due_day}${lease.rent_due_day === 1 ? 'st' : lease.rent_due_day === 2 ? 'nd' : lease.rent_due_day === 3 ? 'rd' : 'th'} of month`}
-                      </div>
-                    </div>
+                    )}
                   </div>
-                  {lease.auto_invoice_enabled && (
-                    <Badge variant="outline" className="ml-4">
-                      Auto-Invoice Enabled
-                    </Badge>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
       )}
