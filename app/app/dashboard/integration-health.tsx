@@ -16,6 +16,10 @@ type IntegrationHealth = {
     connected: boolean;
     lastUpdated: string | null;
   };
+  pandadoc?: {
+    connected: boolean;
+    lastUpdated: string | null;
+  };
 };
 
 export default function IntegrationHealth() {
@@ -153,6 +157,24 @@ export default function IntegrationHealth() {
                 </div>
               </div>
               {getHealthStatus(health.qbo.connected)}
+            </div>
+          )}
+
+          {/* PandaDoc */}
+          {health.pandadoc && (
+            <div className="flex items-center justify-between p-4 border rounded-lg">
+              <div className="flex items-center gap-3">
+                {getHealthIcon(health.pandadoc.connected)}
+                <div>
+                  <div className="font-semibold">PandaDoc</div>
+                  <div className="text-sm text-muted-foreground">
+                    {health.pandadoc.connected
+                      ? `Last sync: ${formatLastUpdated(health.pandadoc.lastUpdated)}`
+                      : "Not configured"}
+                  </div>
+                </div>
+              </div>
+              {getHealthStatus(health.pandadoc.connected)}
             </div>
           )}
 

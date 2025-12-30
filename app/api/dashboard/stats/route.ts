@@ -65,6 +65,7 @@ export async function GET() {
 
     const ghlIntegration = integrations?.find((i) => i.provider === "ghl");
     const qboIntegration = integrations?.find((i) => i.provider === "qbo");
+    const pandadocIntegration = integrations?.find((i) => i.provider === "pandadoc");
 
     return NextResponse.json({
       leads: {
@@ -87,6 +88,10 @@ export async function GET() {
         qbo: {
           connected: qboIntegration?.status === "connected",
           lastUpdated: qboIntegration?.updated_at || null,
+        },
+        pandadoc: {
+          connected: pandadocIntegration?.status === "connected",
+          lastUpdated: pandadocIntegration?.updated_at || null,
         },
       },
     });
