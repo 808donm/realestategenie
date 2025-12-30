@@ -89,7 +89,7 @@ export default async function PropertyDetailPage({
       case "approved":
         return "success";
       case "rejected":
-        return "destructive";
+        return "danger";
       case "screening":
         return "default";
       case "withdrawn":
