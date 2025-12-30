@@ -30,6 +30,8 @@ export default function LeaseCreateForm({
   const [useCustomLease, setUseCustomLease] = useState(false);
   const [customLeaseUrl, setCustomLeaseUrl] = useState("");
   const [leaseTerm, setLeaseTerm] = useState<"1" | "2" | "3" | "5" | "custom">("1");
+  const [esignatureProvider, setEsignatureProvider] = useState<"auto" | "ghl" | "pandadoc">("auto");
+  const [pandadocTemplateId, setPandadocTemplateId] = useState("");
 
   // Calculate default dates
   const today = new Date();
@@ -104,6 +106,8 @@ export default function LeaseCreateForm({
           lease_document_type: useCustomLease ? "custom" : "standard",
           custom_lease_url: useCustomLease ? customLeaseUrl : null,
           agent_id: agentId,
+          esignature_provider: esignatureProvider === "auto" ? undefined : esignatureProvider,
+          pandadoc_template_id: esignatureProvider === "pandadoc" && pandadocTemplateId ? pandadocTemplateId : undefined,
         }),
       });
 
@@ -460,6 +464,51 @@ export default function LeaseCreateForm({
         </CardContent>
       </Card>
 
+      {/* E-Signature Provider */}
+      <Card>
+        <CardHeader>
+          <CardTitle>E-Signature Provider</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label htmlFor="esignature_provider">Select Provider *</Label>
+            <select
+              id="esignature_provider"
+              required
+              value={esignatureProvider}
+              onChange={(e) => setEsignatureProvider(e.target.value as "auto" | "ghl" | "pandadoc")}
+              className="w-full px-3 py-2 border rounded-md"
+            >
+              <option value="auto">Auto (use first available integration)</option>
+              <option value="ghl">GoHighLevel</option>
+              <option value="pandadoc">PandaDoc</option>
+            </select>
+            <p className="text-xs text-muted-foreground mt-1">
+              {esignatureProvider === "auto"
+                ? "System will automatically use PandaDoc if connected, otherwise GoHighLevel"
+                : esignatureProvider === "pandadoc"
+                ? "Professional e-signature with PandaDoc templates"
+                : "Standard GoHighLevel contract workflow"}
+            </p>
+          </div>
+
+          {esignatureProvider === "pandadoc" && (
+            <div>
+              <Label htmlFor="pandadoc_template_id">PandaDoc Template ID (Optional)</Label>
+              <Input
+                id="pandadoc_template_id"
+                placeholder="Leave empty to use default template"
+                value={pandadocTemplateId}
+                onChange={(e) => setPandadocTemplateId(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Use a specific template or leave empty to use your default template configured in integrations
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Lease Document */}
       <Card>
         <CardHeader>
@@ -484,7 +533,7 @@ export default function LeaseCreateForm({
           ) : (
             <div className="text-sm text-muted-foreground p-4 bg-muted/50 rounded-md">
               Standard lease template will be used. This will be generated and sent
-              for e-signature via GoHighLevel.
+              for e-signature via {esignatureProvider === "ghl" ? "GoHighLevel" : esignatureProvider === "pandadoc" ? "PandaDoc" : "your connected integration"}.
             </div>
           )}
         </CardContent>
