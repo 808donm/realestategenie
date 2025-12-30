@@ -97,6 +97,58 @@ export async function POST(request: NextRequest) {
 
     console.log(`✅ Payment ${payment.id} marked as paid`);
 
+    // Sync payment to QuickBooks if integrated
+    if (payment.qbo_invoice_id) {
+      try {
+        const { data: qboIntegration } = await supabase
+          .from("integrations")
+          .select("*")
+          .eq("agent_id", payment.agent_id)
+          .eq("provider", "qbo")
+          .eq("status", "connected")
+          .single();
+
+        if (qboIntegration?.config?.access_token) {
+          const { QBOClient, syncPaymentToQBO } = await import("@/lib/integrations/qbo-client");
+
+          const qboClient = new QBOClient({
+            access_token: qboIntegration.config.access_token,
+            refresh_token: qboIntegration.config.refresh_token,
+            realmId: qboIntegration.config.realmId,
+            expires_at: qboIntegration.config.expires_at,
+            refresh_expires_at: qboIntegration.config.refresh_expires_at,
+          });
+
+          // Get lease for QBO customer ID
+          const { data: lease } = await supabase
+            .from("pm_leases")
+            .select("qbo_customer_id")
+            .eq("id", payment.lease_id)
+            .single();
+
+          if (lease?.qbo_customer_id) {
+            const { qbo_payment_id } = await syncPaymentToQBO(qboClient, {
+              qbo_customer_id: lease.qbo_customer_id,
+              qbo_invoice_id: payment.qbo_invoice_id,
+              amount: payment.amount,
+              payment_date: paidAt ? new Date(paidAt).toISOString().split("T")[0] : undefined,
+            });
+
+            // Store QBO payment ID
+            await supabase
+              .from("pm_rent_payments")
+              .update({ qbo_payment_id })
+              .eq("id", payment.id);
+
+            console.log(`✅ Payment synced to QuickBooks: ${qbo_payment_id}`);
+          }
+        }
+      } catch (qboError) {
+        console.error("❌ Error syncing payment to QuickBooks:", qboError);
+        // Don't fail the webhook - QBO sync is optional
+      }
+    }
+
     // Send confirmation email to tenant (optional)
     // This could trigger a separate email service or GHL workflow
 

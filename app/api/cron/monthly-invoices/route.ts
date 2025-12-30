@@ -55,6 +55,7 @@ export async function POST(request: NextRequest) {
         lease_end_date,
         auto_invoice_enabled,
         status,
+        qbo_customer_id,
         pm_properties (address),
         pm_units (unit_number)
       `)
@@ -148,6 +149,56 @@ export async function POST(request: NextRequest) {
         // Send invoice to tenant
         await ghlClient.sendInvoice(ghlInvoiceId);
 
+        // Sync to QuickBooks if integrated
+        let qboInvoiceId: string | null = null;
+        const { data: qboIntegration } = await supabase
+          .from("integrations")
+          .select("*")
+          .eq("agent_id", lease.agent_id)
+          .eq("provider", "qbo")
+          .eq("status", "connected")
+          .single();
+
+        if (qboIntegration?.config?.access_token && lease.qbo_customer_id) {
+          try {
+            const { QBOClient, syncInvoiceToQBO } = await import("@/lib/integrations/qbo-client");
+
+            const qboClient = new QBOClient({
+              access_token: qboIntegration.config.access_token,
+              refresh_token: qboIntegration.config.refresh_token,
+              realmId: qboIntegration.config.realmId,
+              expires_at: qboIntegration.config.expires_at,
+              refresh_expires_at: qboIntegration.config.refresh_expires_at,
+            });
+
+            // Get tenant contact info for QBO
+            const { data: contact } = await supabase
+              .from("pm_contacts")
+              .select("*")
+              .eq("id", lease.tenant_contact_id)
+              .single();
+
+            if (contact) {
+              const { qbo_invoice_id } = await syncInvoiceToQBO(qboClient, {
+                tenant_name: contact.full_name || "",
+                tenant_email: contact.email || "",
+                tenant_phone: contact.phone,
+                property_address: fullAddress,
+                monthly_rent: lease.monthly_rent,
+                due_date: dueDateStr,
+                ghl_invoice_id: ghlInvoiceId,
+                invoice_type: "monthly_rent",
+              });
+
+              qboInvoiceId = qbo_invoice_id;
+              console.log(`✅ Invoice synced to QuickBooks: ${qbo_invoice_id}`);
+            }
+          } catch (qboError) {
+            console.error(`❌ Error syncing to QuickBooks for lease ${lease.id}:`, qboError);
+            // Don't fail the cron job - QBO sync is optional
+          }
+        }
+
         // Record payment in database
         const { error: insertError } = await supabase
           .from("pm_rent_payments")
@@ -161,6 +212,7 @@ export async function POST(request: NextRequest) {
             year: currentYear,
             status: "pending",
             ghl_invoice_id: ghlInvoiceId,
+            qbo_invoice_id: qboInvoiceId,
             invoice_sent_at: new Date().toISOString(),
           });
 

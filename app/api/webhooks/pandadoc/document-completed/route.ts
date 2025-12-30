@@ -226,6 +226,56 @@ export async function POST(request: NextRequest) {
 
           console.log(`✅ First month GHL invoice created and sent: ${invoiceId}`);
 
+          // Sync invoice to QuickBooks if integrated
+          const { data: qboIntegration } = await supabase
+            .from("integrations")
+            .select("*")
+            .eq("agent_id", lease.agent_id)
+            .eq("provider", "qbo")
+            .eq("status", "connected")
+            .single();
+
+          if (qboIntegration?.config?.access_token) {
+            try {
+              const { QBOClient, syncInvoiceToQBO } = await import("@/lib/integrations/qbo-client");
+
+              const qboClient = new QBOClient({
+                access_token: qboIntegration.config.access_token,
+                refresh_token: qboIntegration.config.refresh_token,
+                realmId: qboIntegration.config.realmId,
+                expires_at: qboIntegration.config.expires_at,
+                refresh_expires_at: qboIntegration.config.refresh_expires_at,
+              });
+
+              const { qbo_customer_id, qbo_invoice_id } = await syncInvoiceToQBO(qboClient, {
+                tenant_name: contact.full_name || "",
+                tenant_email: contact.email || "",
+                tenant_phone: contact.phone,
+                property_address: property?.address || "",
+                monthly_rent: lease.monthly_rent,
+                security_deposit: lease.security_deposit,
+                pet_deposit: lease.pet_deposit,
+                due_date: lease.lease_start_date,
+                ghl_invoice_id: invoiceId,
+                invoice_type: "move_in",
+              });
+
+              // Store QBO IDs in lease record
+              await supabase
+                .from("pm_leases")
+                .update({
+                  qbo_customer_id,
+                  qbo_invoice_id,
+                })
+                .eq("id", lease.id);
+
+              console.log(`✅ Invoice synced to QuickBooks: ${qbo_invoice_id}`);
+            } catch (qboError) {
+              console.error("❌ Error syncing to QuickBooks:", qboError);
+              // Don't fail the webhook - QBO sync is optional
+            }
+          }
+
           // Add note to contact
           await ghlClient.addNote({
             contactId: ghlContactId,
