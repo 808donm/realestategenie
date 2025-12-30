@@ -57,7 +57,23 @@ export async function generateNeighborhoodProfile(
     throw new Error("No response from AI model");
   }
 
-  return JSON.parse(text) as NeighborhoodProfileResponse;
+  // Extract JSON from response (handles both raw JSON and markdown code fences)
+  const jsonText = extractJSON(text);
+  return JSON.parse(jsonText) as NeighborhoodProfileResponse;
+}
+
+/**
+ * Extract JSON from AI response, handling markdown code fences
+ */
+function extractJSON(text: string): string {
+  // Remove markdown code fences if present
+  const codeBlockMatch = text.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
+  if (codeBlockMatch) {
+    return codeBlockMatch[1].trim();
+  }
+
+  // Return as-is if no code fences found
+  return text.trim();
 }
 
 /**
