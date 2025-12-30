@@ -5,7 +5,7 @@ import LeaseCreateForm from "./lease-create-form";
 export default async function LeaseCreatePage({
   searchParams,
 }: {
-  searchParams: { application_id?: string };
+  searchParams: Promise<{ application_id?: string }>;
 }) {
   const supabase = await supabaseServer();
   const { data: userData } = await supabase.auth.getUser();
@@ -14,12 +14,15 @@ export default async function LeaseCreatePage({
     redirect("/signin");
   }
 
+  // Await searchParams to get the query parameters
+  const resolvedSearchParams = await searchParams;
+
   let application = null;
   let property = null;
   let unit = null;
 
   // If creating from an application, load application data
-  if (searchParams.application_id) {
+  if (resolvedSearchParams.application_id) {
     const { data: appData } = await supabase
       .from("pm_applications")
       .select(`
@@ -27,7 +30,7 @@ export default async function LeaseCreatePage({
         pm_properties (*),
         pm_units (*)
       `)
-      .eq("id", searchParams.application_id)
+      .eq("id", resolvedSearchParams.application_id)
       .eq("agent_id", userData.user.id)
       .single();
 
@@ -44,6 +47,12 @@ export default async function LeaseCreatePage({
     // Supabase returns related data as arrays, extract first element
     property = Array.isArray(appData.pm_properties) ? appData.pm_properties[0] : appData.pm_properties;
     unit = Array.isArray(appData.pm_units) ? appData.pm_units[0] : appData.pm_units;
+
+    console.log('[Lease Create] Application loaded:', {
+      applicant_name: application.applicant_name,
+      property_address: property?.address,
+      unit_number: unit?.unit_number
+    });
   }
 
   // Load all properties for dropdown if not creating from application
