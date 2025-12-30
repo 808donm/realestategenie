@@ -3,10 +3,12 @@
  *
  * Handles document creation, template management, and signature workflows
  * API Documentation: https://developers.pandadoc.com/reference/about
+ *
+ * Note: PandaDoc uses the same API endpoint for both sandbox and production.
+ * The environment is determined by the API key itself (sandbox vs production key).
  */
 
-const PANDADOC_API_PRODUCTION = "https://api.pandadoc.com/public/v1";
-const PANDADOC_API_SANDBOX = "https://sandbox.pandadoc.com/public/v1";
+const PANDADOC_API_BASE = "https://api.pandadoc.com/public/v1";
 
 export interface PandaDocTemplate {
   id: string;
@@ -78,7 +80,9 @@ export class PandaDocClient {
 
   constructor(apiKey: string, environment: "production" | "sandbox" = "production") {
     this.apiKey = apiKey;
-    this.apiBase = environment === "sandbox" ? PANDADOC_API_SANDBOX : PANDADOC_API_PRODUCTION;
+    // PandaDoc uses the same API endpoint for both sandbox and production
+    // The environment is determined by the API key itself
+    this.apiBase = PANDADOC_API_BASE;
   }
 
   /**
