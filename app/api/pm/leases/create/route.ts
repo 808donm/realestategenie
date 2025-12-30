@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { GHLClient } from "@/lib/integrations/ghl-client";
 import { prepareGHLContract, prepareFirstMonthInvoice } from "@/lib/integrations/lease-to-ghl-contract";
+import { PandaDocClient } from "@/lib/integrations/pandadoc-client";
+import { preparePandaDocLease } from "@/lib/integrations/lease-to-pandadoc";
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,6 +34,8 @@ export async function POST(request: NextRequest) {
       custom_requirements,
       lease_document_type,
       custom_lease_url,
+      esignature_provider, // 'ghl', 'pandadoc', or null
+      pandadoc_template_id, // Optional: specific template for PandaDoc
     } = body;
 
     // Validate required fields
@@ -42,14 +46,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get agent's GHL integration status (optional)
-    const { data: integration } = await supabase
+    // Get agent's integrations (GHL and PandaDoc)
+    const { data: integrations } = await supabase
       .from("integrations")
-      .select("ghl_access_token, ghl_location_id")
-      .eq("agent_id", userData.user.id)
-      .single();
+      .select("*")
+      .eq("agent_id", userData.user.id);
 
-    const hasGHLIntegration = !!(integration?.ghl_access_token && integration?.ghl_location_id);
+    const ghlIntegration = integrations?.find((i) => i.provider === "ghl");
+    const pandadocIntegration = integrations?.find((i) => i.provider === "pandadoc");
+
+    const hasGHLIntegration = !!(ghlIntegration?.config?.ghl_access_token && ghlIntegration?.config?.ghl_location_id);
+    const hasPandaDocIntegration = !!(pandadocIntegration?.config?.api_key && pandadocIntegration?.status === "connected");
 
     // Get property data
     const { data: property } = await supabase
@@ -200,7 +207,7 @@ export async function POST(request: NextRequest) {
 
     // If GHL integration enabled and no GHL contact exists yet, create one
     if (hasGHLIntegration && !ghlContactId) {
-      const ghlClient = new GHLClient(integration!.ghl_access_token!);
+      const ghlClient = new GHLClient(ghlIntegration!.config.ghl_access_token!);
       try {
         const searchResult = await ghlClient.searchContacts({ email: tenant_email });
         if (searchResult.contacts && searchResult.contacts.length > 0) {
@@ -208,7 +215,7 @@ export async function POST(request: NextRequest) {
         } else {
           // Create new contact in GHL
           const newContact = await ghlClient.createContact({
-            locationId: integration!.ghl_location_id!,
+            locationId: ghlIntegration!.config.ghl_location_id!,
             firstName: tenant_name.split(" ")[0],
             lastName: tenant_name.split(" ").slice(1).join(" "),
             name: tenant_name,
@@ -302,8 +309,15 @@ export async function POST(request: NextRequest) {
 
     // Create GHL contract (if integration enabled and GHL contact was created)
     let ghlContractId: string | null = null;
-    if (hasGHLIntegration && ghlContactId) {
-      const ghlClient = new GHLClient(integration!.ghl_access_token!);
+    let pandadocDocumentId: string | null = null;
+    let pandadocDocumentUrl: string | null = null;
+
+    // Use PandaDoc if explicitly requested or if it's the only available provider
+    const usePandaDoc = esignature_provider === "pandadoc" || (!esignature_provider && hasPandaDocIntegration && !hasGHLIntegration);
+    const useGHL = esignature_provider === "ghl" || (!esignature_provider && hasGHLIntegration && !hasPandaDocIntegration) || (esignature_provider === "ghl" && hasGHLIntegration);
+
+    if (useGHL && hasGHLIntegration && ghlContactId) {
+      const ghlClient = new GHLClient(ghlIntegration!.config.ghl_access_token!);
       try {
         // Get GHL template ID from environment (optional)
         const ghlTemplateId = process.env.GHL_LEASE_TEMPLATE_ID;
@@ -311,7 +325,7 @@ export async function POST(request: NextRequest) {
         // Prepare contract data
         const contractData = prepareGHLContract(
           leaseData,
-          integration!.ghl_location_id!,
+          ghlIntegration!.config.ghl_location_id!,
           ghlContactId,
           ghlTemplateId
         );
@@ -326,7 +340,10 @@ export async function POST(request: NextRequest) {
         // Update lease with GHL contract ID
         await supabase
           .from("pm_leases")
-          .update({ ghl_contract_id: contractId })
+          .update({
+            ghl_contract_id: contractId,
+            esignature_provider: "ghl",
+          })
           .eq("id", lease.id);
 
         console.log(`✅ GHL Contract created and sent: ${contractId}`);
@@ -338,16 +355,80 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Create PandaDoc document (if PandaDoc integration is enabled)
+    if (usePandaDoc && hasPandaDocIntegration) {
+      const pandadocClient = new PandaDocClient(pandadocIntegration!.config.api_key!);
+      try {
+        // Determine template ID: use specific template if provided, otherwise use default from integration
+        const templateId = pandadoc_template_id || pandadocIntegration!.config.default_template_id;
+
+        if (!templateId) {
+          throw new Error("No PandaDoc template ID specified. Please set a default template or provide one.");
+        }
+
+        // Prepare document from lease data
+        const documentParams = preparePandaDocLease(leaseData, templateId, true);
+
+        // Create document
+        const document = await pandadocClient.createDocumentFromTemplate(documentParams);
+        pandadocDocumentId = document.id;
+
+        console.log(`✅ PandaDoc document created: ${pandadocDocumentId}`);
+
+        // Wait a moment for document to be ready (PandaDoc processes documents async)
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+
+        // Send for signature
+        await pandadocClient.sendDocument(pandadocDocumentId, {
+          subject: `Lease Agreement - ${leaseData.property_address}`,
+          message: "Please review and sign this lease agreement.",
+        });
+
+        // Get document link
+        try {
+          const linkData = await pandadocClient.createDocumentLink(pandadocDocumentId);
+          pandadocDocumentUrl = linkData.url;
+        } catch (linkError) {
+          console.warn("Could not create document link:", linkError);
+        }
+
+        // Update lease with PandaDoc document ID
+        await supabase
+          .from("pm_leases")
+          .update({
+            pandadoc_document_id: pandadocDocumentId,
+            pandadoc_document_url: pandadocDocumentUrl,
+            esignature_provider: "pandadoc",
+          })
+          .eq("id", lease.id);
+
+        console.log(`✅ PandaDoc document sent for signature: ${pandadocDocumentId}`);
+      } catch (pandadocError) {
+        console.error("Error creating PandaDoc document:", pandadocError);
+        // Don't fail the entire request - lease is created, just log the error
+        console.warn("⚠️ Lease created but PandaDoc document creation failed. Agent can create manually.");
+      }
+    }
+
+    // Determine success message based on which provider was used
+    let message = "Lease created successfully.";
+    if (ghlContractId) {
+      message = "Lease created and GHL contract sent for signature";
+    } else if (pandadocDocumentId) {
+      message = "Lease created and PandaDoc document sent for signature";
+    }
+
     return NextResponse.json({
       success: true,
       lease_id: lease.id,
       lease: {
         ...lease,
         ghl_contract_id: ghlContractId,
+        pandadoc_document_id: pandadocDocumentId,
+        pandadoc_document_url: pandadocDocumentUrl,
+        esignature_provider: ghlContractId ? "ghl" : pandadocDocumentId ? "pandadoc" : null,
       },
-      message: ghlContractId
-        ? "Lease created and contract sent for signature"
-        : "Lease created successfully.",
+      message,
     });
   } catch (error) {
     console.error("Error in lease create route:", error);
