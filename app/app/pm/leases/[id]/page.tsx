@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { ArrowLeft, FileSignature, Home, User, DollarSign, Calendar, FileText, ExternalLink } from "lucide-react";
 import { notFound } from "next/navigation";
+import TerminateLeaseDialog from "./terminate-lease-dialog";
 
 export default async function LeaseDetailPage({
   params,
@@ -44,7 +45,11 @@ export default async function LeaseDetailPage({
     switch (status) {
       case "active":
         return "success";
+      case "month_to_month":
+        return "default";
       case "pending_signature":
+        return "warning";
+      case "terminating":
         return "warning";
       case "ended":
         return "secondary";
@@ -97,9 +102,18 @@ export default async function LeaseDetailPage({
             </p>
           </div>
         </div>
-        <Badge variant={getStatusVariant(lease.status)} className="text-sm px-3 py-1">
-          {lease.status.replace('_', ' ').toUpperCase()}
-        </Badge>
+        <div className="flex items-center gap-3">
+          {(lease.status === "active" || lease.status === "month_to_month") && (
+            <TerminateLeaseDialog
+              leaseId={lease.id}
+              leaseEndDate={lease.lease_end_date}
+              noticePeriodDays={lease.notice_period_days}
+            />
+          )}
+          <Badge variant={getStatusVariant(lease.status)} className="text-sm px-3 py-1">
+            {lease.status.replace('_', ' ').toUpperCase()}
+          </Badge>
+        </div>
       </div>
 
       {/* Quick Stats */}
@@ -386,6 +400,36 @@ export default async function LeaseDetailPage({
                 <div className="text-sm whitespace-pre-wrap">{lease.custom_requirements}</div>
               </div>
             )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Termination Notice (if lease is terminating) */}
+      {lease.status === "terminating" && lease.termination_date && (
+        <Card className="border-yellow-500">
+          <CardHeader>
+            <CardTitle className="text-yellow-600">Termination Notice</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Notice Received</span>
+              <span className="font-semibold">
+                {formatDate(lease.termination_notice_date || lease.termination_date)}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Termination Date</span>
+              <span className="font-semibold">{formatDate(lease.termination_date)}</span>
+            </div>
+            {lease.termination_reason && (
+              <div>
+                <div className="text-sm text-muted-foreground mb-1">Reason</div>
+                <div className="text-sm">{lease.termination_reason}</div>
+              </div>
+            )}
+            <div className="pt-3 border-t">
+              <Badge variant="warning">Recurring invoices stopped</Badge>
+            </div>
           </CardContent>
         </Card>
       )}

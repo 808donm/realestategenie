@@ -39,7 +39,8 @@ export async function POST(request: NextRequest) {
     const currentMonth = today.getMonth() + 1;
     const currentYear = today.getFullYear();
 
-    // Get all active leases
+    // Get all active leases (including month-to-month)
+    // Exclude 'terminating' and 'ended' leases as they should not receive invoices
     const { data: activeLeases, error: leasesError } = await supabase
       .from("pm_leases")
       .select(`
@@ -53,10 +54,11 @@ export async function POST(request: NextRequest) {
         lease_start_date,
         lease_end_date,
         auto_invoice_enabled,
+        status,
         pm_properties (address),
         pm_units (unit_number)
       `)
-      .eq("status", "active")
+      .in("status", ["active", "month_to_month"])
       .eq("auto_invoice_enabled", true);
 
     if (leasesError) {
