@@ -30,7 +30,7 @@ export default function LeaseCreateForm({
   const [useCustomLease, setUseCustomLease] = useState(false);
   const [customLeaseUrl, setCustomLeaseUrl] = useState("");
   const [leaseTerm, setLeaseTerm] = useState<"1" | "2" | "3" | "5" | "custom">("1");
-  const [esignatureProvider, setEsignatureProvider] = useState<"auto" | "ghl" | "pandadoc">("auto");
+  const [esignatureProvider, setEsignatureProvider] = useState<"auto" | "pandadoc" | "docusign">("auto");
   const [pandadocTemplateId, setPandadocTemplateId] = useState("");
 
   // Calculate default dates
@@ -476,19 +476,19 @@ export default function LeaseCreateForm({
               id="esignature_provider"
               required
               value={esignatureProvider}
-              onChange={(e) => setEsignatureProvider(e.target.value as "auto" | "ghl" | "pandadoc")}
+              onChange={(e) => setEsignatureProvider(e.target.value as "auto" | "pandadoc" | "docusign")}
               className="w-full px-3 py-2 border rounded-md"
             >
               <option value="auto">Auto (use first available integration)</option>
-              <option value="ghl">GoHighLevel</option>
               <option value="pandadoc">PandaDoc</option>
+              <option value="docusign" disabled className="text-muted-foreground">DocuSign (Coming Soon)</option>
             </select>
             <p className="text-xs text-muted-foreground mt-1">
               {esignatureProvider === "auto"
-                ? "System will automatically use PandaDoc if connected, otherwise GoHighLevel"
+                ? "System will automatically use PandaDoc if connected"
                 : esignatureProvider === "pandadoc"
                 ? "Professional e-signature with PandaDoc templates"
-                : "Standard GoHighLevel contract workflow"}
+                : "DocuSign integration coming soon"}
             </p>
           </div>
 
@@ -533,7 +533,7 @@ export default function LeaseCreateForm({
           ) : (
             <div className="text-sm text-muted-foreground p-4 bg-muted/50 rounded-md">
               Standard lease template will be used. This will be generated and sent
-              for e-signature via {esignatureProvider === "ghl" ? "GoHighLevel" : esignatureProvider === "pandadoc" ? "PandaDoc" : "your connected integration"}.
+              for e-signature via {esignatureProvider === "pandadoc" ? "PandaDoc" : "your connected integration"}.
             </div>
           )}
         </CardContent>
