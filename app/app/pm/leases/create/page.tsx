@@ -41,8 +41,9 @@ export default async function LeaseCreatePage({
     }
 
     application = appData;
-    property = appData.pm_properties;
-    unit = appData.pm_units;
+    // Supabase returns related data as arrays, extract first element
+    property = Array.isArray(appData.pm_properties) ? appData.pm_properties[0] : appData.pm_properties;
+    unit = Array.isArray(appData.pm_units) ? appData.pm_units[0] : appData.pm_units;
   }
 
   // Load all properties for dropdown if not creating from application

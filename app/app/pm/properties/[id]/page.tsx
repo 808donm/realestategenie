@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import { ArrowLeft, Edit, MapPin, Building2, DollarSign, Home } from "lucide-react";
+import { ArrowLeft, Edit, MapPin, Building2, DollarSign, Home, FileText } from "lucide-react";
 import { notFound } from "next/navigation";
 
 export default async function PropertyDetailPage({
@@ -51,6 +51,13 @@ export default async function PropertyDetailPage({
     .order("created_at", { ascending: false })
     .limit(5);
 
+  // Get applications for this property
+  const { data: applications } = await supabase
+    .from("pm_applications")
+    .select("*")
+    .eq("pm_property_id", id)
+    .order("created_at", { ascending: false });
+
   const getStatusVariant = (status: string) => {
     switch (status) {
       case "available":
@@ -75,6 +82,21 @@ export default async function PropertyDetailPage({
       multi_unit: "Multi-Unit",
     };
     return types[type] || type;
+  };
+
+  const getApplicationStatusVariant = (status: string) => {
+    switch (status) {
+      case "approved":
+        return "success";
+      case "rejected":
+        return "destructive";
+      case "screening":
+        return "default";
+      case "withdrawn":
+        return "secondary";
+      default:
+        return "outline";
+    }
   };
 
   return (
@@ -221,6 +243,52 @@ export default async function PropertyDetailPage({
           </CardContent>
         </Card>
       </div>
+
+      {/* Applications for this Property */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Applications</CardTitle>
+            <Badge variant="outline">{applications?.length || 0} Total</Badge>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {applications && applications.length > 0 ? (
+            <div className="space-y-3">
+              {applications.map((application) => (
+                <Link
+                  key={application.id}
+                  href={`/app/pm/applications/${application.id}`}
+                  className="block"
+                >
+                  <div className="flex items-center justify-between border-b pb-3 last:border-0 last:pb-0 hover:bg-muted/50 rounded-lg p-3 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <div className="font-medium">{application.applicant_name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {application.applicant_email}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Applied: {new Date(application.created_at).toLocaleDateString()}
+                        </div>
+                      </div>
+                    </div>
+                    <Badge variant={getApplicationStatusVariant(application.status)}>
+                      {application.status}
+                    </Badge>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
+              <p>No applications yet for this property</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Recent Work Orders */}
       {workOrders && workOrders.length > 0 && (
