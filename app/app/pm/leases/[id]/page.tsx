@@ -444,7 +444,7 @@ export default async function LeaseDetailPage({
             <div className="flex items-center gap-2">
               <Badge variant="success">Enabled</Badge>
               <span className="text-sm text-muted-foreground">
-                Invoices will be automatically generated and sent via QuickBooks
+                Invoices will be automatically generated and sent via GoHighLevel
               </span>
             </div>
           </CardContent>
