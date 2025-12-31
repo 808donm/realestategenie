@@ -36,6 +36,18 @@ export async function POST(request: NextRequest) {
       custom_lease_url,
       esignature_provider, // 'ghl', 'pandadoc', or null
       pandadoc_template_id, // Optional: specific template for PandaDoc
+      // New lease fields for GHL Documents
+      subletting_allowed,
+      pets_allowed,
+      pet_count,
+      pet_types,
+      pet_weight_limit,
+      authorized_occupants,
+      late_fee_amount,
+      late_fee_type,
+      late_grace_days,
+      nsf_fee,
+      deposit_return_days,
     } = body;
 
     // Validate required fields
@@ -268,6 +280,18 @@ export async function POST(request: NextRequest) {
         requires_professional_carpet_cleaning,
         requires_professional_house_cleaning,
         move_out_requirements,
+        // New GHL Documents fields
+        subletting_allowed: subletting_allowed || false,
+        pets_allowed: pets_allowed || false,
+        pet_count: pet_count || 0,
+        pet_types: pet_types || null,
+        pet_weight_limit: pet_weight_limit || null,
+        authorized_occupants: authorized_occupants || null,
+        late_fee_amount: late_fee_amount || '$50.00',
+        late_fee_type: late_fee_type || 'per occurrence',
+        late_grace_days: late_grace_days || 5,
+        nsf_fee: nsf_fee || 35.00,
+        deposit_return_days: deposit_return_days || 60,
       })
       .select()
       .single();
@@ -316,42 +340,72 @@ export async function POST(request: NextRequest) {
     const usePandaDoc = esignature_provider === "pandadoc" || (!esignature_provider && hasPandaDocIntegration && !hasGHLIntegration);
     const useGHL = esignature_provider === "ghl" || (!esignature_provider && hasGHLIntegration && !hasPandaDocIntegration) || (esignature_provider === "ghl" && hasGHLIntegration);
 
-    if (useGHL && hasGHLIntegration && ghlContactId) {
-      const ghlClient = new GHLClient(ghlIntegration!.config.ghl_access_token!);
+    if (useGHL && hasGHLIntegration) {
       try {
-        // Get GHL template ID from environment (optional)
-        const ghlTemplateId = process.env.GHL_LEASE_TEMPLATE_ID;
+        // Use new GHL Documents client for "Upsert-then-Dispatch" pattern
+        const { sendLeaseViaGHL } = await import("@/lib/integrations/ghl-documents-client");
 
-        // Prepare contract data
-        const contractData = prepareGHLContract(
-          leaseData,
+        // Get property data with city and state
+        const { data: fullProperty } = await supabase
+          .from("pm_properties")
+          .select("address, city, state_province")
+          .eq("id", pm_property_id)
+          .single();
+
+        // Prepare landlord notice address
+        const landlordNoticeAddress = `${agent.display_name}\n${fullProperty?.address || property.address}\n${fullProperty?.city || ''}, ${fullProperty?.state_province || ''}`;
+
+        // Send lease via GHL Documents (Upsert-then-Dispatch)
+        const { contactId: ghlContactIdFromDocs } = await sendLeaseViaGHL(
+          ghlIntegration!.config.ghl_access_token!,
           ghlIntegration!.config.ghl_location_id!,
-          ghlContactId,
-          ghlTemplateId
+          tenant_email,
+          tenant_phone || '',
+          {
+            tenant_first_name: tenant_name.split(" ")[0] || tenant_name,
+            tenant_last_name: tenant_name.split(" ").slice(1).join(" ") || '',
+            property_address: unitNumber ? `${property.address}, Unit ${unitNumber}` : property.address,
+            property_city: fullProperty?.city || '',
+            property_state: fullProperty?.state_province || '',
+            start_date: lease_start_date,
+            end_date: lease_end_date,
+            monthly_rent: parseFloat(monthly_rent),
+            security_deposit: parseFloat(security_deposit),
+            pet_deposit: pet_deposit ? parseFloat(pet_deposit) : 0,
+            rent_due_day: parseInt(rent_due_day) || 1,
+            notice_period_days: parseInt(notice_period_days) || 30,
+            late_grace_days: late_grace_days || 5,
+            late_fee_amount: late_fee_amount || '$50.00',
+            late_fee_type: late_fee_type || 'per occurrence',
+            nsf_fee: nsf_fee || 35,
+            deposit_return_days: deposit_return_days || 60,
+            occupants: authorized_occupants || '',
+            subletting_allowed: subletting_allowed || false,
+            pets_allowed: pets_allowed || false,
+            pet_count: pet_count || 0,
+            pet_types: pet_types || '',
+            pet_weight_limit: pet_weight_limit || '',
+            landlord_notice_address: landlordNoticeAddress,
+          }
         );
 
-        // Create contract in GHL
-        const { id: contractId } = await ghlClient.createContract(contractData);
-        ghlContractId = contractId;
-
-        // Send contract for signature
-        await ghlClient.sendContractForSignature(contractId);
-
-        // Update lease with GHL contract ID
+        // Update lease with GHL contact ID
         await supabase
           .from("pm_leases")
           .update({
-            ghl_contract_id: contractId,
+            ghl_contact_id: ghlContactIdFromDocs,
             esignature_provider: "ghl",
           })
           .eq("id", lease.id);
 
-        console.log(`✅ GHL Contract created and sent: ${contractId}`);
+        console.log(`✅ GHL Documents workflow initiated. Contact updated with lease data and trigger tag added.`);
+        console.log(`   GHL workflow will detect tag and send document automatically.`);
+
       } catch (ghlError) {
-        console.error("Error creating GHL contract:", ghlError);
+        console.error("Error with GHL Documents workflow:", ghlError);
         // Don't fail the entire request - lease is created, just log the error
         // Agent can manually send contract from lease detail page
-        console.warn("⚠️ Lease created but contract sending failed. Agent can resend manually.");
+        console.warn("⚠️ Lease created but GHL Documents workflow failed. Agent can resend manually.");
       }
     }
 
@@ -413,8 +467,8 @@ export async function POST(request: NextRequest) {
 
     // Determine success message based on which provider was used
     let message = "Lease created successfully.";
-    if (ghlContractId) {
-      message = "Lease created and GHL contract sent for signature";
+    if (useGHL && hasGHLIntegration) {
+      message = "Lease created. GHL workflow will send document for signature automatically.";
     } else if (pandadocDocumentId) {
       message = "Lease created and PandaDoc document sent for signature";
     }
@@ -427,7 +481,7 @@ export async function POST(request: NextRequest) {
         ghl_contract_id: ghlContractId,
         pandadoc_document_id: pandadocDocumentId,
         pandadoc_document_url: pandadocDocumentUrl,
-        esignature_provider: ghlContractId ? "ghl" : pandadocDocumentId ? "pandadoc" : null,
+        esignature_provider: useGHL && hasGHLIntegration ? "ghl" : pandadocDocumentId ? "pandadoc" : null,
       },
       message,
     });
