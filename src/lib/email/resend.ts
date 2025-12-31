@@ -28,6 +28,17 @@ export interface SendVerificationCodeParams {
   expiresInMinutes: number;
 }
 
+export interface SendTenantInvitationParams {
+  to: string;
+  tenantName: string;
+  landlordName: string;
+  propertyAddress: string;
+  leaseStartDate: string;
+  monthlyRent: number;
+  inviteUrl: string;
+  expiresAt: Date;
+}
+
 export async function sendInvitationEmail(params: SendInvitationEmailParams) {
   const { to, invitationUrl, invitedBy, expiresAt } = params;
 
@@ -96,6 +107,58 @@ export async function sendVerificationCode(params: SendVerificationCodeParams) {
     return data;
   } catch (error: any) {
     console.error("Failed to send verification code:", error);
+    throw error;
+  }
+}
+
+export async function sendTenantInvitationEmail(params: SendTenantInvitationParams) {
+  const { to, tenantName, landlordName, propertyAddress, leaseStartDate, monthlyRent, inviteUrl, expiresAt } = params;
+
+  // Get Resend client (will throw if API key not configured)
+  const resend = getResendClient();
+
+  // Format expiration date
+  const expirationDate = new Date(expiresAt).toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: "Real Estate Genie <support@realestategenie.app>",
+      to: [to],
+      subject: `Welcome to Your Tenant Portal - ${propertyAddress}`,
+      html: getTenantInvitationEmailHtml({
+        tenantName,
+        landlordName,
+        propertyAddress,
+        leaseStartDate,
+        monthlyRent,
+        inviteUrl,
+        expirationDate,
+      }),
+      text: getTenantInvitationEmailText({
+        tenantName,
+        landlordName,
+        propertyAddress,
+        leaseStartDate,
+        monthlyRent,
+        inviteUrl,
+        expirationDate,
+      }),
+    });
+
+    if (error) {
+      console.error("Resend tenant invitation error:", error);
+      throw new Error(`Failed to send tenant invitation email: ${error.message}`);
+    }
+
+    console.log("Tenant invitation email sent successfully:", data?.id);
+    return data;
+  } catch (error: any) {
+    console.error("Failed to send tenant invitation email:", error);
     throw error;
   }
 }
@@ -357,6 +420,205 @@ If you didn't expect this invitation, you can safely ignore this email.
 
 © ${new Date().getFullYear()} Real Estate Genie. All rights reserved.
 Manage your open houses and leads like a pro.
+  `.trim();
+}
+
+function getTenantInvitationEmailHtml({
+  tenantName,
+  landlordName,
+  propertyAddress,
+  leaseStartDate,
+  monthlyRent,
+  inviteUrl,
+  expirationDate,
+}: {
+  tenantName: string;
+  landlordName: string;
+  propertyAddress: string;
+  leaseStartDate: string;
+  monthlyRent: number;
+  inviteUrl: string;
+  expirationDate: string;
+}) {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to Your Tenant Portal</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f9fafb;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f9fafb; padding: 40px 0;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden;">
+
+          <!-- Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 40px 30px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: 800;">
+                🏡 Welcome to Your New Home!
+              </h1>
+              <p style="margin: 10px 0 0; color: rgba(255,255,255,0.9); font-size: 16px;">
+                Your Tenant Portal is Ready
+              </p>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="padding: 40px;">
+              <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #374151;">
+                Hi ${tenantName},
+              </p>
+
+              <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #374151;">
+                Congratulations on your new lease! We're excited to have you as a tenant.
+              </p>
+
+              <!-- Property Details -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f3f4f6; border-radius: 8px; margin: 30px 0;">
+                <tr>
+                  <td style="padding: 20px;">
+                    <h3 style="margin: 0 0 15px; color: #667eea; font-size: 18px;">📍 Your Property</h3>
+                    <p style="margin: 0 0 10px; font-size: 16px; font-weight: bold; color: #1f2937;">
+                      ${propertyAddress}
+                    </p>
+                    <p style="margin: 0; font-size: 14px; color: #6b7280;">
+                      <strong>Lease Start:</strong> ${leaseStartDate}<br>
+                      <strong>Monthly Rent:</strong> $${monthlyRent.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}<br>
+                      <strong>Property Manager:</strong> ${landlordName}
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #374151;">
+                Your tenant portal is now ready! Click the button below to set up your password and access your account:
+              </p>
+
+              <!-- Features List -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin: 30px 0;">
+                <tr>
+                  <td style="padding: 15px; background-color: #f0fdf4; border-left: 4px solid #10b981; border-radius: 4px;">
+                    <p style="margin: 0; font-size: 15px; color: #065f46;">
+                      ✅ Pay rent online<br>
+                      ✅ View your lease agreement<br>
+                      ✅ Submit maintenance requests<br>
+                      ✅ Message your property manager<br>
+                      ✅ Track payment history
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- CTA Button -->
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center" style="padding: 10px 0 30px;">
+                    <a href="${inviteUrl}"
+                       style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px rgba(102, 126, 234, 0.3);">
+                      Set Up Your Account
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Alternative Link -->
+              <p style="margin: 0 0 20px; font-size: 14px; line-height: 1.6; color: #6b7280;">
+                If the button doesn't work, copy and paste this link into your browser:
+              </p>
+              <p style="margin: 0 0 30px; padding: 12px; background-color: #f3f4f6; border-radius: 6px; word-break: break-all; font-size: 13px; color: #4b5563; font-family: monospace;">
+                ${inviteUrl}
+              </p>
+
+              <!-- Expiration Notice -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #fef3c7; border-radius: 8px; border-left: 4px solid #f59e0b;">
+                <tr>
+                  <td style="padding: 16px 20px;">
+                    <p style="margin: 0; font-size: 14px; color: #92400e;">
+                      ⚠️ <strong>This invitation expires on ${expirationDate}.</strong>
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin: 30px 0 0; font-size: 14px; line-height: 1.6; color: #6b7280;">
+                Questions? Contact your property manager, ${landlordName}, for assistance.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f9fafb; padding: 30px 40px; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 0 0 10px; font-size: 12px; color: #6b7280; text-align: center;">
+                © ${new Date().getFullYear()} Real Estate Genie. All rights reserved.
+              </p>
+              <p style="margin: 0; font-size: 12px; color: #9ca3af; text-align: center;">
+                Modern property management made simple.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `.trim();
+}
+
+function getTenantInvitationEmailText({
+  tenantName,
+  landlordName,
+  propertyAddress,
+  leaseStartDate,
+  monthlyRent,
+  inviteUrl,
+  expirationDate,
+}: {
+  tenantName: string;
+  landlordName: string;
+  propertyAddress: string;
+  leaseStartDate: string;
+  monthlyRent: number;
+  inviteUrl: string;
+  expirationDate: string;
+}) {
+  return `
+The Real Estate Genie
+Welcome to Your New Home!
+
+Hi ${tenantName},
+
+Congratulations on your new lease! We're excited to have you as a tenant.
+
+YOUR PROPERTY
+${propertyAddress}
+Lease Start: ${leaseStartDate}
+Monthly Rent: $${monthlyRent.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+Property Manager: ${landlordName}
+
+Your tenant portal is now ready! Click the link below to set up your password and access your account:
+
+${inviteUrl}
+
+WITH YOUR TENANT PORTAL, YOU CAN:
+✅ Pay rent online
+✅ View your lease agreement
+✅ Submit maintenance requests
+✅ Message your property manager
+✅ Track payment history
+
+This invitation expires on ${expirationDate}.
+
+Questions? Contact your property manager, ${landlordName}, for assistance.
+
+© ${new Date().getFullYear()} Real Estate Genie. All rights reserved.
+Modern property management made simple.
   `.trim();
 }
 

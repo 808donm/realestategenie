@@ -176,28 +176,41 @@ export async function POST(request: NextRequest) {
 
     const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL}/tenant/register?token=${invitationToken}`;
 
-    // TODO: Use actual email service (SendGrid, AWS SES, etc.)
-    // For now, we'll log the invitation URL
-    console.log("📧 Tenant Invitation:");
-    console.log(`To: ${tenantEmail}`);
-    console.log(`Property: ${propertyAddress}`);
-    console.log(`Invite URL: ${inviteUrl}`);
+    // Get agent name for email
+    const { data: agent } = await supabase
+      .from("agents")
+      .select("display_name")
+      .eq("id", lease.agent_id)
+      .single();
 
-    // In production, send email via your email service:
-    /*
-    await sendEmail({
-      to: tenantEmail,
-      subject: `Welcome to ${propertyAddress} - Set Up Your Tenant Portal`,
-      template: 'tenant-invitation',
-      data: {
+    const landlordName = agent?.display_name || "Your Property Manager";
+
+    // Send invitation email via Resend
+    try {
+      const { sendTenantInvitationEmail } = await import("@/lib/email/resend");
+
+      await sendTenantInvitationEmail({
+        to: tenantEmail,
         tenantName,
+        landlordName,
         propertyAddress,
-        leaseStartDate: lease.lease_start_date,
+        leaseStartDate: new Date(lease.lease_start_date).toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        }),
         monthlyRent: lease.monthly_rent,
         inviteUrl,
-      }
-    });
-    */
+        expiresAt,
+      });
+
+      console.log(`✅ Tenant invitation email sent to ${tenantEmail}`);
+    } catch (emailError) {
+      console.error("❌ Failed to send tenant invitation email:", emailError);
+      // Log the URL for manual sending if email fails
+      console.log(`📧 Invitation URL (manual fallback): ${inviteUrl}`);
+      // Don't throw - we still want to return success if the account was created
+    }
 
     return NextResponse.json({
       success: true,
