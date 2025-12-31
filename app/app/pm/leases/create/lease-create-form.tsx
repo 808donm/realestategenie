@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select } from "@/components/ui/select";
 import CustomLeaseUpload from "./custom-lease-upload";
+import PandaDocEmbeddedForm from "./pandadoc-embedded-form";
 
 type LeaseCreateFormProps = {
   application: any;
@@ -16,6 +17,8 @@ type LeaseCreateFormProps = {
   unit: any;
   properties: any[];
   agentId: string;
+  agentName: string;
+  agentEmail: string;
 };
 
 export default function LeaseCreateForm({
@@ -24,14 +27,18 @@ export default function LeaseCreateForm({
   unit,
   properties,
   agentId,
+  agentName,
+  agentEmail,
 }: LeaseCreateFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [useCustomLease, setUseCustomLease] = useState(false);
   const [customLeaseUrl, setCustomLeaseUrl] = useState("");
   const [leaseTerm, setLeaseTerm] = useState<"1" | "2" | "3" | "5" | "custom">("1");
-  const [esignatureProvider, setEsignatureProvider] = useState<"auto" | "pandadoc" | "docusign">("auto");
+  const [esignatureProvider, setEsignatureProvider] = useState<"auto" | "pandadoc" | "docusign">("pandadoc");
   const [pandadocTemplateId, setPandadocTemplateId] = useState("");
+  const [showPandaDocForm, setShowPandaDocForm] = useState(false);
+  const [pendingLeaseData, setPendingLeaseData] = useState<any>(null);
 
   // Calculate default dates
   const today = new Date();
@@ -94,6 +101,15 @@ export default function LeaseCreateForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // If PandaDoc is selected, show embedded form first
+    if (esignatureProvider === "pandadoc" && !useCustomLease) {
+      setPendingLeaseData(formData);
+      setShowPandaDocForm(true);
+      return;
+    }
+
+    // Otherwise create lease directly (for custom leases or other providers)
     setIsSubmitting(true);
 
     try {
@@ -125,6 +141,129 @@ export default function LeaseCreateForm({
       setIsSubmitting(false);
     }
   };
+
+  const handlePandaDocCompleted = async (data: any) => {
+    console.log("PandaDoc form completed with data:", data);
+    setIsSubmitting(true);
+
+    try {
+      // Create the lease record with PandaDoc session data
+      const response = await fetch("/api/pm/leases/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...pendingLeaseData,
+          pm_application_id: application?.id || null,
+          lease_document_type: "standard",
+          agent_id: agentId,
+          esignature_provider: "pandadoc",
+          pandadoc_session_id: data.sessionId || data.id,
+          pandadoc_document_id: data.documentId,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to create lease");
+      }
+
+      const { lease } = await response.json();
+
+      // Redirect to lease detail page
+      router.push(`/app/pm/leases/${lease.id}`);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Error creating lease");
+      setIsSubmitting(false);
+      setShowPandaDocForm(false);
+    }
+  };
+
+  // If showing PandaDoc form, render it instead
+  if (showPandaDocForm && pendingLeaseData) {
+    // Prepare data for PandaDoc embedded form
+    const selectedProperty = property || properties.find((p) => p.id === pendingLeaseData.pm_property_id);
+    const selectedUnit = unit || selectedProperty?.pm_units?.find((u: any) => u.id === pendingLeaseData.pm_unit_id);
+
+    // Split tenant name
+    const tenantNameParts = pendingLeaseData.tenant_name.trim().split(" ");
+    const tenantFirstName = tenantNameParts[0] || "";
+    const tenantLastName = tenantNameParts.slice(1).join(" ") || "";
+
+    // Split agent name
+    const agentNameParts = agentName.trim().split(" ");
+    const landlordFirstName = agentNameParts[0] || "";
+    const landlordLastName = agentNameParts.slice(1).join(" ") || "";
+
+    // Format move-out requirements
+    const moveOutReqs: string[] = [];
+    if (pendingLeaseData.requires_professional_carpet_cleaning) {
+      moveOutReqs.push("Professional carpet cleaning is required upon move-out");
+    }
+    if (pendingLeaseData.requires_professional_house_cleaning) {
+      moveOutReqs.push("Professional house cleaning is required upon move-out");
+    }
+    if (pendingLeaseData.custom_requirements) {
+      moveOutReqs.push(pendingLeaseData.custom_requirements);
+    }
+    const moveOutRequirementsText = moveOutReqs.length > 0
+      ? moveOutReqs.join(". ")
+      : "Standard cleaning and maintenance upon move-out";
+
+    const pandadocData = {
+      contractDate: new Date().toLocaleDateString("en-US"),
+      landlordFirstName,
+      landlordLastName,
+      landlordEmail: agentEmail,
+      tenantFirstName,
+      tenantLastName,
+      tenantEmail: pendingLeaseData.tenant_email || "",
+      tenantPhone: pendingLeaseData.tenant_phone || "",
+      propertyStreetAddress: selectedProperty?.address || "",
+      propertyUnitNumber: selectedUnit?.unit_number || "N/A",
+      propertyCity: selectedProperty?.city || "",
+      propertyState: selectedProperty?.state_province || "",
+      propertyZipcode: selectedProperty?.zip_postal_code || "",
+      leaseStartDate: new Date(pendingLeaseData.lease_start_date).toLocaleDateString("en-US"),
+      leaseEndDate: new Date(pendingLeaseData.lease_end_date).toLocaleDateString("en-US"),
+      leaseMonthlyRent: `$${parseFloat(pendingLeaseData.monthly_rent).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      leaseRentDueDay: pendingLeaseData.rent_due_day.toString(),
+      leaseSecurityDeposit: `$${parseFloat(pendingLeaseData.security_deposit).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      leasePetDeposit: `$${parseFloat(pendingLeaseData.pet_deposit || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      leaseNoticePeriodDays: pendingLeaseData.notice_period_days.toString(),
+      leaseMoveOutRequirements: moveOutRequirementsText,
+    };
+
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Review and Sign Lease Agreement</CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              Please review the lease agreement below. Both landlord and tenant will need to sign.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <PandaDocEmbeddedForm
+              leaseData={pandadocData}
+              onCompleted={handlePandaDocCompleted}
+              height="800px"
+            />
+          </CardContent>
+        </Card>
+
+        <div className="flex gap-3 justify-end">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setShowPandaDocForm(false)}
+            disabled={isSubmitting}
+          >
+            Back to Form
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">

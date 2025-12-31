@@ -62,6 +62,13 @@ export default async function LeaseCreatePage({
     .eq("agent_id", userData.user.id)
     .order("address");
 
+  // Fetch agent data for PandaDoc embedded form
+  const { data: agent } = await supabase
+    .from("agents")
+    .select("display_name, email")
+    .eq("id", userData.user.id)
+    .single();
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div>
@@ -79,6 +86,8 @@ export default async function LeaseCreatePage({
         unit={unit}
         properties={properties || []}
         agentId={userData.user.id}
+        agentName={agent?.display_name || ""}
+        agentEmail={agent?.email || ""}
       />
     </div>
   );
