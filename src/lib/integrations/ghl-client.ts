@@ -194,7 +194,7 @@ export class GHLClient {
     if (query.email) params.append("email", query.email);
     if (query.phone) params.append("phone", query.phone);
 
-    return this.request<{ contacts: GHLContact[] }>(`/contacts/search?${params.toString()}`);
+    return this.request<{ contacts: GHLContact[] }>(`/contacts/?${params.toString()}`);
   }
 
   /**
