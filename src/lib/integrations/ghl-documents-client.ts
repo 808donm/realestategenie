@@ -163,7 +163,7 @@ export class GHLDocumentsClient {
       rent_due_day?: number;
       notice_period_days?: number;
       late_grace_days?: number;
-      late_fee_amount?: string;
+      late_fee_amount?: number;
       late_fee_type?: string;
       nsf_fee?: number;
       deposit_return_days?: number;
@@ -195,7 +195,7 @@ export class GHLDocumentsClient {
       lease_rent_due_day: (leaseData.rent_due_day || 1).toString(),
       lease_notice_days: (leaseData.notice_period_days || 30).toString(),
       lease_late_grace_days: (leaseData.late_grace_days || 5).toString(),
-      lease_late_fee_amount: leaseData.late_fee_amount || '$50.00',
+      lease_late_fee_amount: (leaseData.late_fee_amount || 50).toString(),
       lease_late_fee_type: leaseData.late_fee_type || 'per occurrence',
       lease_nsf_fee: (leaseData.nsf_fee || 35).toString(),
       lease_deposit_return_days: (leaseData.deposit_return_days || 60).toString(),

@@ -95,9 +95,9 @@ export const GHL_LEASE_CUSTOM_FIELDS: GHLCustomField[] = [
   {
     key: 'lease_late_fee_amount',
     name: 'Late Fee Amount',
-    type: 'TEXT',
-    default: '$50.00',
-    description: 'Late fee amount (e.g., "$50.00" or "5%")'
+    type: 'MONETARY',
+    default: '50.00',
+    description: 'Late fee dollar amount'
   },
   {
     key: 'lease_late_fee_type',
