@@ -171,6 +171,18 @@ export const GHL_LEASE_CUSTOM_FIELDS: GHLCustomField[] = [
     type: 'CHECKBOX',
     description: 'Whether tenant may sublet the property'
   },
+  {
+    key: 'lease_subletting_allowed_checkbox',
+    name: 'Subletting Allowed Checkbox',
+    type: 'TEXT',
+    description: 'Checkbox symbol for "Subletting Allowed" option (☑ if allowed, ☐ if not)'
+  },
+  {
+    key: 'lease_subletting_not_allowed_checkbox',
+    name: 'Subletting Not Allowed Checkbox',
+    type: 'TEXT',
+    description: 'Checkbox symbol for "Subletting Not Allowed" option (☐ if allowed, ☑ if not)'
+  },
 
   // ========================================
   // PET POLICY
@@ -180,6 +192,18 @@ export const GHL_LEASE_CUSTOM_FIELDS: GHLCustomField[] = [
     name: 'Pets Allowed',
     type: 'CHECKBOX',
     description: 'Whether pets are allowed on property'
+  },
+  {
+    key: 'lease_pets_allowed_checkbox',
+    name: 'Pets Allowed Checkbox',
+    type: 'TEXT',
+    description: 'Checkbox symbol for "Pets Allowed" option (☑ if allowed, ☐ if not)'
+  },
+  {
+    key: 'lease_pets_not_allowed_checkbox',
+    name: 'Pets Not Allowed Checkbox',
+    type: 'TEXT',
+    description: 'Checkbox symbol for "Pets Not Allowed" option (☐ if allowed, ☑ if not)'
   },
   {
     key: 'lease_pet_count',
@@ -238,9 +262,11 @@ export const GHL_LEASE_FIELD_GROUPS = {
   ],
   deposit: ['lease_security_deposit', 'lease_deposit_return_days'],
   occupants: ['lease_occupants'],
-  subletting: ['lease_subletting_allowed'],
+  subletting: ['lease_subletting_allowed', 'lease_subletting_allowed_checkbox', 'lease_subletting_not_allowed_checkbox'],
   pets: [
     'lease_pets_allowed',
+    'lease_pets_allowed_checkbox',
+    'lease_pets_not_allowed_checkbox',
     'lease_pet_count',
     'lease_pet_types',
     'lease_pet_weight_limit',
