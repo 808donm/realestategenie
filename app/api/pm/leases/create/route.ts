@@ -345,10 +345,10 @@ export async function POST(request: NextRequest) {
         // Use new GHL Documents client for "Upsert-then-Dispatch" pattern
         const { sendLeaseViaGHL } = await import("@/lib/integrations/ghl-documents-client");
 
-        // Get property data with city and state
+        // Get property data with city, state, and zip
         const { data: fullProperty } = await supabase
           .from("pm_properties")
-          .select("address, city, state_province")
+          .select("address, city, state_province, zip_postal_code")
           .eq("id", pm_property_id)
           .single();
 
@@ -367,6 +367,7 @@ export async function POST(request: NextRequest) {
             property_address: unitNumber ? `${property.address}, Unit ${unitNumber}` : property.address,
             property_city: fullProperty?.city || '',
             property_state: fullProperty?.state_province || '',
+            property_zipcode: fullProperty?.zip_postal_code || '',
             start_date: lease_start_date,
             end_date: lease_end_date,
             monthly_rent: parseFloat(monthly_rent),

@@ -154,6 +154,7 @@ export class GHLDocumentsClient {
       property_address: string;
       property_city: string;
       property_state: string;
+      property_zipcode: string;
       start_date: string;
       end_date: string;
       monthly_rent: number;
@@ -186,6 +187,7 @@ export class GHLDocumentsClient {
       lease_property_address: leaseData.property_address,
       lease_property_city: leaseData.property_city,
       lease_property_state: leaseData.property_state,
+      lease_property_zipcode: leaseData.property_zipcode,
       lease_start_date: leaseData.start_date,
       lease_end_date: leaseData.end_date,
       lease_monthly_rent: leaseData.monthly_rent.toString(),

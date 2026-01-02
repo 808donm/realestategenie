@@ -39,6 +39,12 @@ export const GHL_LEASE_CUSTOM_FIELDS: GHLCustomField[] = [
     type: 'TEXT',
     description: 'State where property is located'
   },
+  {
+    key: 'lease_property_zipcode',
+    name: 'Property Zip Code',
+    type: 'TEXT',
+    description: 'Zip code where property is located'
+  },
 
   // ========================================
   // LEASE TERM
@@ -204,7 +210,7 @@ export const GHL_LEASE_CUSTOM_FIELDS: GHLCustomField[] = [
  * Field groups for GHL UI organization
  */
 export const GHL_LEASE_FIELD_GROUPS = {
-  property: ['lease_property_address', 'lease_property_city', 'lease_property_state'],
+  property: ['lease_property_address', 'lease_property_city', 'lease_property_state', 'lease_property_zipcode'],
   term: ['lease_start_date', 'lease_end_date', 'lease_notice_days'],
   rent: [
     'lease_monthly_rent',
