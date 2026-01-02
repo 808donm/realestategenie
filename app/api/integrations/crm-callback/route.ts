@@ -83,13 +83,13 @@ export async function GET(req: NextRequest) {
         provider: "ghl",
         status: "connected",
         config: {
-          access_token,
-          refresh_token,
-          expires_in,
-          expires_at: new Date(Date.now() + (expires_in || 86400) * 1000).toISOString(),
-          location_id: locationId,
-          user_id: userId,
-          company_id: companyId,
+          ghl_access_token: access_token,
+          ghl_refresh_token: refresh_token,
+          ghl_expires_in: expires_in,
+          ghl_expires_at: new Date(Date.now() + (expires_in || 86400) * 1000).toISOString(),
+          ghl_location_id: locationId,
+          ghl_user_id: userId,
+          ghl_company_id: companyId,
         },
       }, {
         onConflict: "agent_id,provider",
@@ -109,7 +109,7 @@ export async function GET(req: NextRequest) {
     await supabase.from("audit_log").insert({
       agent_id: user.id,
       action: "integration.connected",
-      details: { provider: "ghl", location_id: locationId },
+      details: { provider: "ghl", ghl_location_id: locationId },
     });
 
     // Success - redirect to integrations page
