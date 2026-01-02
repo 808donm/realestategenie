@@ -340,9 +340,12 @@ export async function POST(request: NextRequest) {
     let pandadocDocumentId: string | null = null;
     let pandadocDocumentUrl: string | null = null;
 
-    // Use PandaDoc if explicitly requested or if it's the only available provider
-    const usePandaDoc = esignature_provider === "pandadoc" || (!esignature_provider && hasPandaDocIntegration && !hasGHLIntegration);
-    const useGHL = esignature_provider === "ghl" || (!esignature_provider && hasGHLIntegration && !hasPandaDocIntegration) || (esignature_provider === "ghl" && hasGHLIntegration);
+    // E-signature provider selection logic:
+    // 1. If explicitly set, use that provider
+    // 2. If not set, default to GHL (free) if available
+    // 3. Fallback to PandaDoc only if GHL not available
+    const useGHL = esignature_provider === "ghl" || (!esignature_provider && hasGHLIntegration);
+    const usePandaDoc = esignature_provider === "pandadoc" || (!esignature_provider && !hasGHLIntegration && hasPandaDocIntegration);
 
     if (useGHL && hasGHLIntegration) {
       try {
