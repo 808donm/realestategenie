@@ -93,19 +93,32 @@ export const GHL_LEASE_CUSTOM_FIELDS: GHLCustomField[] = [
     description: 'Days after due date before late fee applies'
   },
   {
-    key: 'lease_late_fee_amount',
-    name: 'Late Fee Amount',
-    type: 'MONETARY',
-    default: '50.00',
-    description: 'Late fee dollar amount'
+    key: 'lease_late_fee_is_percentage',
+    name: 'Late Fee Is Percentage',
+    type: 'CHECKBOX',
+    description: 'If checked, charge percentage of rent; if unchecked, charge fixed amount'
   },
   {
-    key: 'lease_late_fee_type',
-    name: 'Late Fee Type',
+    key: 'lease_late_fee_amount',
+    name: 'Late Fee Fixed Amount',
+    type: 'MONETARY',
+    default: '50.00',
+    description: 'Late fee fixed dollar amount (used when "Is Percentage" is unchecked)'
+  },
+  {
+    key: 'lease_late_fee_percentage',
+    name: 'Late Fee Percentage',
+    type: 'NUMERICAL',
+    default: '5',
+    description: 'Late fee as percentage of rent (e.g., "5" for 5%, used when "Is Percentage" is checked)'
+  },
+  {
+    key: 'lease_late_fee_frequency',
+    name: 'Late Fee Frequency',
     type: 'DROPDOWN',
-    options: ['per day', 'per occurrence'],
+    options: ['per occurrence', 'per day'],
     default: 'per occurrence',
-    description: 'How late fee is calculated'
+    description: 'How late fee accrues: once per late payment or daily while overdue'
   },
   {
     key: 'lease_nsf_fee',
@@ -216,8 +229,10 @@ export const GHL_LEASE_FIELD_GROUPS = {
     'lease_monthly_rent',
     'lease_rent_due_day',
     'lease_late_grace_days',
+    'lease_late_fee_is_percentage',
     'lease_late_fee_amount',
-    'lease_late_fee_type',
+    'lease_late_fee_percentage',
+    'lease_late_fee_frequency',
     'lease_nsf_fee',
     'lease_increase_notice',
   ],
