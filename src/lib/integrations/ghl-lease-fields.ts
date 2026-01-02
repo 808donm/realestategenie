@@ -99,16 +99,16 @@ export const GHL_LEASE_CUSTOM_FIELDS: GHLCustomField[] = [
     description: 'If checked, charge percentage of rent; if unchecked, charge fixed amount'
   },
   {
-    key: 'lease_late_fee_fixed_checkbox',
-    name: 'Late Fee Fixed Amount Checkbox',
+    key: 'lease_late_fee_type_fixed_checkbox',
+    name: 'Late Fee Type - Fixed Amount Checkbox',
     type: 'TEXT',
-    description: 'Checkbox symbol for fixed dollar amount option (☑ if fixed, ☐ if percentage)'
+    description: 'Checkbox symbol for fixed amount (☑ if fixed, ☐ if percentage)'
   },
   {
-    key: 'lease_late_fee_percentage_checkbox',
-    name: 'Late Fee Percentage Checkbox',
+    key: 'lease_late_fee_type_percentage_checkbox',
+    name: 'Late Fee Type - Percentage Checkbox',
     type: 'TEXT',
-    description: 'Checkbox symbol for percentage option (☐ if fixed, ☑ if percentage)'
+    description: 'Checkbox symbol for percentage (☐ if fixed, ☑ if percentage)'
   },
   {
     key: 'lease_late_fee_amount',
@@ -133,16 +133,16 @@ export const GHL_LEASE_CUSTOM_FIELDS: GHLCustomField[] = [
     description: 'How late fee accrues: once per late payment or daily while overdue'
   },
   {
-    key: 'lease_late_fee_per_occurrence_checkbox',
-    name: 'Late Fee Per Occurrence Checkbox',
+    key: 'lease_late_fee_frequency_occurrence_checkbox',
+    name: 'Late Fee Frequency - Per Occurrence Checkbox',
     type: 'TEXT',
-    description: 'Checkbox symbol for per occurrence option (☑ if per occurrence, ☐ if per day)'
+    description: 'Checkbox symbol for per occurrence (☑ if per occurrence, ☐ if per day)'
   },
   {
-    key: 'lease_late_fee_per_day_checkbox',
-    name: 'Late Fee Per Day Checkbox',
+    key: 'lease_late_fee_frequency_daily_checkbox',
+    name: 'Late Fee Frequency - Per Day Checkbox',
     type: 'TEXT',
-    description: 'Checkbox symbol for per day option (☐ if per occurrence, ☑ if per day)'
+    description: 'Checkbox symbol for per day (☐ if per occurrence, ☑ if per day)'
   },
   {
     key: 'lease_nsf_fee',
@@ -196,16 +196,16 @@ export const GHL_LEASE_CUSTOM_FIELDS: GHLCustomField[] = [
     description: 'Whether tenant may sublet the property'
   },
   {
-    key: 'lease_subletting_allowed_checkbox',
-    name: 'Subletting Allowed Checkbox',
+    key: 'lease_subletting_yes_checkbox',
+    name: 'Subletting Yes Checkbox',
     type: 'TEXT',
-    description: 'Checkbox symbol for "Subletting Allowed" option (☑ if allowed, ☐ if not)'
+    description: 'Checkbox symbol for Yes (☑ if allowed, ☐ if not allowed)'
   },
   {
-    key: 'lease_subletting_not_allowed_checkbox',
-    name: 'Subletting Not Allowed Checkbox',
+    key: 'lease_subletting_no_checkbox',
+    name: 'Subletting No Checkbox',
     type: 'TEXT',
-    description: 'Checkbox symbol for "Subletting Not Allowed" option (☐ if allowed, ☑ if not)'
+    description: 'Checkbox symbol for No (☐ if allowed, ☑ if not allowed)'
   },
 
   // ========================================
@@ -218,16 +218,16 @@ export const GHL_LEASE_CUSTOM_FIELDS: GHLCustomField[] = [
     description: 'Whether pets are allowed on property'
   },
   {
-    key: 'lease_pets_allowed_checkbox',
-    name: 'Pets Allowed Checkbox',
+    key: 'lease_pets_yes_checkbox',
+    name: 'Pets Yes Checkbox',
     type: 'TEXT',
-    description: 'Checkbox symbol for "Pets Allowed" option (☑ if allowed, ☐ if not)'
+    description: 'Checkbox symbol for Yes (☑ if allowed, ☐ if not allowed)'
   },
   {
-    key: 'lease_pets_not_allowed_checkbox',
-    name: 'Pets Not Allowed Checkbox',
+    key: 'lease_pets_no_checkbox',
+    name: 'Pets No Checkbox',
     type: 'TEXT',
-    description: 'Checkbox symbol for "Pets Not Allowed" option (☐ if allowed, ☑ if not)'
+    description: 'Checkbox symbol for No (☐ if allowed, ☑ if not allowed)'
   },
   {
     key: 'lease_pet_count',
@@ -278,23 +278,23 @@ export const GHL_LEASE_FIELD_GROUPS = {
     'lease_rent_due_day',
     'lease_late_grace_days',
     'lease_late_fee_is_percentage',
-    'lease_late_fee_fixed_checkbox',
-    'lease_late_fee_percentage_checkbox',
+    'lease_late_fee_type_fixed_checkbox',
+    'lease_late_fee_type_percentage_checkbox',
     'lease_late_fee_amount',
     'lease_late_fee_percentage',
     'lease_late_fee_frequency',
-    'lease_late_fee_per_occurrence_checkbox',
-    'lease_late_fee_per_day_checkbox',
+    'lease_late_fee_frequency_occurrence_checkbox',
+    'lease_late_fee_frequency_daily_checkbox',
     'lease_nsf_fee',
     'lease_increase_notice',
   ],
   deposit: ['lease_security_deposit', 'lease_deposit_return_days'],
   occupants: ['lease_occupants'],
-  subletting: ['lease_subletting_allowed', 'lease_subletting_allowed_checkbox', 'lease_subletting_not_allowed_checkbox'],
+  subletting: ['lease_subletting_allowed', 'lease_subletting_yes_checkbox', 'lease_subletting_no_checkbox'],
   pets: [
     'lease_pets_allowed',
-    'lease_pets_allowed_checkbox',
-    'lease_pets_not_allowed_checkbox',
+    'lease_pets_yes_checkbox',
+    'lease_pets_no_checkbox',
     'lease_pet_count',
     'lease_pet_types',
     'lease_pet_weight_limit',
