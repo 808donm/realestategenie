@@ -68,14 +68,24 @@ export class GHLDocumentsClient {
 
     const { customFields } = await response.json();
 
+    // Log the first field to understand structure
+    if (customFields && customFields.length > 0) {
+      console.log('🔍 First GHL custom field structure:', JSON.stringify(customFields[0], null, 2));
+      console.log('🔍 Available properties:', Object.keys(customFields[0]));
+    }
+
     // Map field keys to IDs
+    // GHL API might use different property names: key, fieldKey, field_key, or name
     const fieldMap: CustomFieldMap = {};
     customFields.forEach((field: any) => {
-      if (field.key) {
-        fieldMap[field.key] = field.id;
+      const fieldKey = field.key || field.fieldKey || field.field_key || field.name;
+      if (fieldKey) {
+        fieldMap[fieldKey] = field.id;
+        console.log(`📋 Mapped field: ${fieldKey} → ${field.id}`);
       }
     });
 
+    console.log(`✅ Built field map with ${Object.keys(fieldMap).length} fields`);
     return fieldMap;
   }
 

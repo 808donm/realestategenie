@@ -47,21 +47,30 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const { customFields } = await response.json();
+    const responseData = await response.json();
+    console.log("GHL API Raw Response:", JSON.stringify(responseData, null, 2));
+
+    const { customFields } = responseData;
 
     // Show ALL custom fields, not just lease_ ones
     const allGHLFields = customFields || [];
 
-    // Filter to only lease-related fields (starting with "lease_")
-    const ghlLeaseFields = allGHLFields.filter((f: any) =>
-      f.key && f.key.startsWith('lease_')
-    );
+    // Check what property names are available on the first field
+    console.log("First field keys:", allGHLFields[0] ? Object.keys(allGHLFields[0]) : "No fields");
+    console.log("First field full object:", JSON.stringify(allGHLFields[0], null, 2));
+
+    // Try multiple possible property names for the field key
+    const ghlLeaseFields = allGHLFields.filter((f: any) => {
+      // Check various possible property names for the field identifier
+      const fieldKey = f.key || f.fieldKey || f.field_key || f.name || '';
+      return fieldKey.startsWith('lease_');
+    });
 
     // Build expected field keys list
     const expectedKeys = GHL_LEASE_CUSTOM_FIELDS.map(f => f.key);
 
     // Build actual field keys list from GHL
-    const actualKeys = ghlLeaseFields.map((f: any) => f.key);
+    const actualKeys = ghlLeaseFields.map((f: any) => f.key || f.fieldKey || f.field_key || f.name);
 
     // Find missing and extra fields
     const missingInGHL = expectedKeys.filter(key => !actualKeys.includes(key));
@@ -70,12 +79,16 @@ export async function GET(request: NextRequest) {
 
     // Build detailed comparison
     const fieldComparison = GHL_LEASE_CUSTOM_FIELDS.map(expected => {
-      const actual = ghlLeaseFields.find((f: any) => f.key === expected.key);
+      const actual = ghlLeaseFields.find((f: any) => {
+        const fieldKey = f.key || f.fieldKey || f.field_key || f.name;
+        return fieldKey === expected.key;
+      });
       return {
         key: expected.key,
         expectedName: expected.name,
         expectedType: expected.type,
         actualName: actual?.name || null,
+        actualKey: actual?.key || actual?.fieldKey || actual?.field_key || null,
         actualType: actual?.dataType || null,
         actualId: actual?.id || null,
         status: actual ? '✅ Found' : '❌ Missing',
@@ -93,10 +106,14 @@ export async function GET(request: NextRequest) {
       },
       missingInGHL,
       extraInGHL: extraInGHL.map((key: string) => {
-        const field = ghlLeaseFields.find((f: any) => f.key === key);
+        const field = ghlLeaseFields.find((f: any) => {
+          const fieldKey = f.key || f.fieldKey || f.field_key || f.name;
+          return fieldKey === key;
+        });
         return {
           key,
           name: field?.name,
+          actualKey: field?.key || field?.fieldKey || field?.field_key,
           type: field?.dataType,
           id: field?.id,
         };
@@ -105,6 +122,8 @@ export async function GET(request: NextRequest) {
       allGHLLeaseFields: ghlLeaseFields.map((f: any) => ({
         id: f.id,
         key: f.key,
+        fieldKey: f.fieldKey,
+        field_key: f.field_key,
         name: f.name,
         type: f.dataType,
       })),
@@ -112,8 +131,12 @@ export async function GET(request: NextRequest) {
       allCustomFieldsInGHL: allGHLFields.map((f: any) => ({
         id: f.id,
         key: f.key,
+        fieldKey: f.fieldKey,
+        field_key: f.field_key,
         name: f.name,
         type: f.dataType,
+        // Show ALL properties for first 3 fields to understand structure
+        ...( allGHLFields.indexOf(f) < 3 ? { _raw: f } : {} ),
       })),
     }, { status: 200 });
   } catch (error: any) {
