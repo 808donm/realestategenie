@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { GHLClient } from "@/lib/integrations/ghl-client";
 
 /**
  * Rental Application Submission API
@@ -86,12 +87,13 @@ export async function POST(request: NextRequest) {
 
     // Create or find contact for the applicant
     let contactId: string | null = null;
+    let ghlContactId: string | null = null;
 
     try {
       // Check if contact already exists
       const { data: existingContact } = await supabase
         .from("pm_contacts")
-        .select("id")
+        .select("id, ghl_contact_id")
         .eq("agent_id", event.agent_id)
         .eq("email", applicationData.applicant_email)
         .eq("contact_type", "tenant")
@@ -99,6 +101,7 @@ export async function POST(request: NextRequest) {
 
       if (existingContact) {
         contactId = existingContact.id;
+        ghlContactId = existingContact.ghl_contact_id;
 
         // Update existing contact with latest info
         await supabase
@@ -134,6 +137,84 @@ export async function POST(request: NextRequest) {
       }
     } catch (err: any) {
       console.warn("Contact creation/update failed (continuing anyway):", err.message);
+    }
+
+    // Create contact in GHL for future lease creation
+    // This ensures the contact exists with custom fields when we need to create a lease
+    try {
+      // Get GHL integration
+      const { data: ghlIntegration } = await supabase
+        .from("integrations")
+        .select("*")
+        .eq("agent_id", event.agent_id)
+        .eq("provider", "ghl")
+        .eq("status", "connected")
+        .maybeSingle();
+
+      if (ghlIntegration?.config?.ghl_access_token && ghlIntegration?.config?.ghl_location_id) {
+        const ghlClient = new GHLClient(
+          ghlIntegration.config.ghl_access_token,
+          ghlIntegration.config.ghl_location_id
+        );
+
+        // Split name into first and last
+        const nameParts = applicationData.applicant_name.split(" ");
+        const firstName = nameParts[0] || "";
+        const lastName = nameParts.slice(1).join(" ") || "";
+
+        // Check if contact already exists in GHL
+        if (!ghlContactId) {
+          const searchResult = await ghlClient.searchContacts({
+            email: applicationData.applicant_email,
+          });
+
+          if (searchResult.contacts && searchResult.contacts.length > 0) {
+            ghlContactId = searchResult.contacts[0].id!;
+            console.log("✅ Found existing GHL contact:", ghlContactId);
+          }
+        }
+
+        if (ghlContactId) {
+          // Update existing GHL contact
+          await ghlClient.updateContact(ghlContactId, {
+            firstName,
+            lastName,
+            name: applicationData.applicant_name,
+            email: applicationData.applicant_email,
+            phone: applicationData.applicant_phone,
+            tags: ["rental-applicant"],
+          });
+          console.log("✅ Updated GHL contact:", ghlContactId);
+        } else {
+          // Create new GHL contact
+          const newGHLContact = await ghlClient.createContact({
+            locationId: ghlIntegration.config.ghl_location_id,
+            firstName,
+            lastName,
+            name: applicationData.applicant_name,
+            email: applicationData.applicant_email,
+            phone: applicationData.applicant_phone,
+            tags: ["rental-applicant"],
+            source: "Rental Application",
+          });
+          ghlContactId = newGHLContact.id!;
+          console.log("✅ Created GHL contact:", ghlContactId);
+        }
+
+        // Update pm_contact with ghl_contact_id
+        if (contactId && ghlContactId) {
+          await supabase
+            .from("pm_contacts")
+            .update({ ghl_contact_id: ghlContactId })
+            .eq("id", contactId);
+          console.log("✅ Linked pm_contact to GHL contact");
+        }
+      } else {
+        console.log("ℹ️ GHL integration not configured - skipping GHL contact creation");
+      }
+    } catch (ghlError: any) {
+      console.warn("GHL contact creation failed (non-fatal):", ghlError.message);
+      // Continue anyway - GHL contact creation is optional
     }
 
     // Create rental application
