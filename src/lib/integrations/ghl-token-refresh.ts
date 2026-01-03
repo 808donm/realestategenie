@@ -41,13 +41,13 @@ export async function getValidGHLConfig(agentId: string): Promise<{
 
     const config = integration.config as any;
 
-    if (!config.access_token || !config.refresh_token || !config.expires_at) {
+    if (!config.ghl_access_token || !config.ghl_refresh_token || !config.ghl_expires_at) {
       console.error("[Token Refresh] Invalid config - missing tokens or expiration");
       return null;
     }
 
     // Check if token is expired or about to expire (within 5 minutes)
-    const expiresAt = new Date(config.expires_at);
+    const expiresAt = new Date(config.ghl_expires_at);
     const now = new Date();
     const fiveMinutesFromNow = new Date(now.getTime() + 5 * 60 * 1000);
 
@@ -59,9 +59,9 @@ export async function getValidGHLConfig(agentId: string): Promise<{
     if (expiresAt > fiveMinutesFromNow) {
       console.log("[Token Refresh] Token is still valid, no refresh needed");
       return {
-        access_token: config.access_token,
-        location_id: config.location_id,
-        refresh_token: config.refresh_token,
+        access_token: config.ghl_access_token,
+        location_id: config.ghl_location_id,
+        refresh_token: config.ghl_refresh_token,
         ghl_pipeline_id: config.ghl_pipeline_id,
         ghl_new_lead_stage: config.ghl_new_lead_stage,
       };
@@ -70,7 +70,7 @@ export async function getValidGHLConfig(agentId: string): Promise<{
     // Token is expired or about to expire - refresh it
     console.log("[Token Refresh] Token expired or expiring soon, refreshing...");
 
-    const refreshedTokens = await refreshGHLToken(config.refresh_token);
+    const refreshedTokens = await refreshGHLToken(config.ghl_refresh_token);
 
     console.log("[Token Refresh] Successfully refreshed token");
 
@@ -80,10 +80,10 @@ export async function getValidGHLConfig(agentId: string): Promise<{
     // Update the database with new tokens
     const updatedConfig = {
       ...config,
-      access_token: refreshedTokens.access_token,
-      refresh_token: refreshedTokens.refresh_token,
-      expires_at: newExpiresAt.toISOString(),
-      expires_in: refreshedTokens.expires_in,
+      ghl_access_token: refreshedTokens.access_token,
+      ghl_refresh_token: refreshedTokens.refresh_token,
+      ghl_expires_at: newExpiresAt.toISOString(),
+      ghl_expires_in: refreshedTokens.expires_in,
     };
 
     const { error: updateError } = await supabaseAdmin
@@ -103,7 +103,7 @@ export async function getValidGHLConfig(agentId: string): Promise<{
 
     return {
       access_token: refreshedTokens.access_token,
-      location_id: config.location_id,
+      location_id: config.ghl_location_id,
       refresh_token: refreshedTokens.refresh_token,
       ghl_pipeline_id: config.ghl_pipeline_id,
       ghl_new_lead_stage: config.ghl_new_lead_stage,

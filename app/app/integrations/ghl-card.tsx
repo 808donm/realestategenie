@@ -125,7 +125,7 @@ export default function GHLIntegrationCard({ integration }: { integration: Integ
             <div className="text-sm">
               <span className="text-muted-foreground">Location ID:</span>{" "}
               <code className="text-xs bg-muted px-1 py-0.5 rounded">
-                {integration.config.location_id}
+                {integration.config.ghl_location_id}
               </code>
             </div>
             {integration.last_sync_at && (

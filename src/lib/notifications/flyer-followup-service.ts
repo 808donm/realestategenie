@@ -97,13 +97,13 @@ export async function sendAutomatedFlyerFollowup(
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${config.access_token}`,
+          Authorization: `Bearer ${config.ghl_access_token}`,
           "Content-Type": "application/json",
           Version: "2021-07-28",
         },
         body: JSON.stringify({
           type: "SMS",
-          locationId: config.location_id,
+          locationId: config.ghl_location_id,
           contactId: ghlContactId,
           message: thankYouMessage,
         }),
