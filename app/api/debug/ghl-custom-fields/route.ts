@@ -49,8 +49,11 @@ export async function GET(request: NextRequest) {
 
     const { customFields } = await response.json();
 
+    // Show ALL custom fields, not just lease_ ones
+    const allGHLFields = customFields || [];
+
     // Filter to only lease-related fields (starting with "lease_")
-    const ghlLeaseFields = customFields.filter((f: any) =>
+    const ghlLeaseFields = allGHLFields.filter((f: any) =>
       f.key && f.key.startsWith('lease_')
     );
 
@@ -83,6 +86,7 @@ export async function GET(request: NextRequest) {
       summary: {
         totalExpected: expectedKeys.length,
         totalInGHL: ghlLeaseFields.length,
+        totalAllFieldsInGHL: allGHLFields.length,
         matching: matchingFields.length,
         missing: missingInGHL.length,
         extra: extraInGHL.length,
@@ -99,6 +103,13 @@ export async function GET(request: NextRequest) {
       }),
       detailedComparison: fieldComparison,
       allGHLLeaseFields: ghlLeaseFields.map((f: any) => ({
+        id: f.id,
+        key: f.key,
+        name: f.name,
+        type: f.dataType,
+      })),
+      // NEW: Show all custom fields to help diagnose what's actually in GHL
+      allCustomFieldsInGHL: allGHLFields.map((f: any) => ({
         id: f.id,
         key: f.key,
         name: f.name,
