@@ -109,10 +109,12 @@ export type GHLInvoice = {
 
 export class GHLClient {
   private accessToken: string;
+  private locationId?: string;
   private baseUrl = "https://services.leadconnectorhq.com";
 
-  constructor(accessToken: string) {
+  constructor(accessToken: string, locationId?: string) {
     this.accessToken = accessToken;
+    this.locationId = locationId;
   }
 
   /**
@@ -191,6 +193,7 @@ export class GHLClient {
    */
   async searchContacts(query: { email?: string; phone?: string }): Promise<{ contacts: GHLContact[] }> {
     const params = new URLSearchParams();
+    if (this.locationId) params.append("locationId", this.locationId);
     if (query.email) params.append("email", query.email);
     if (query.phone) params.append("phone", query.phone);
 

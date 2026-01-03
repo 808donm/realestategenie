@@ -221,7 +221,10 @@ export async function POST(request: NextRequest) {
 
     // If GHL integration enabled and no GHL contact exists yet, create one
     if (hasGHLIntegration && !ghlContactId) {
-      const ghlClient = new GHLClient(ghlIntegration!.config.ghl_access_token!);
+      const ghlClient = new GHLClient(
+        ghlIntegration!.config.ghl_access_token!,
+        ghlIntegration!.config.ghl_location_id!
+      );
       try {
         const searchResult = await ghlClient.searchContacts({ email: tenant_email });
         if (searchResult.contacts && searchResult.contacts.length > 0) {
