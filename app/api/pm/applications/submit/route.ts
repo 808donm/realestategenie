@@ -84,6 +84,58 @@ export async function POST(request: NextRequest) {
     // If pmPropertyId is provided via form, use it; otherwise use event's pm_property_id
     const propertyId = applicationData.pm_property_id || event.pm_property_id;
 
+    // Create or find contact for the applicant
+    let contactId: string | null = null;
+
+    try {
+      // Check if contact already exists
+      const { data: existingContact } = await supabase
+        .from("pm_contacts")
+        .select("id")
+        .eq("agent_id", event.agent_id)
+        .eq("email", applicationData.applicant_email)
+        .eq("contact_type", "tenant")
+        .maybeSingle();
+
+      if (existingContact) {
+        contactId = existingContact.id;
+
+        // Update existing contact with latest info
+        await supabase
+          .from("pm_contacts")
+          .update({
+            full_name: applicationData.applicant_name,
+            phone: applicationData.applicant_phone,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", contactId);
+
+        console.log("✅ Updated existing contact:", contactId);
+      } else {
+        // Create new contact
+        const { data: newContact, error: contactError } = await supabase
+          .from("pm_contacts")
+          .insert({
+            agent_id: event.agent_id,
+            full_name: applicationData.applicant_name,
+            email: applicationData.applicant_email,
+            phone: applicationData.applicant_phone,
+            contact_type: "tenant",
+          })
+          .select("id")
+          .single();
+
+        if (!contactError && newContact) {
+          contactId = newContact.id;
+          console.log("✅ Created new contact:", contactId);
+        } else {
+          console.warn("Could not create contact (non-fatal):", contactError?.message);
+        }
+      }
+    } catch (err: any) {
+      console.warn("Contact creation/update failed (continuing anyway):", err.message);
+    }
+
     // Create rental application
     const { data: application, error: appError } = await supabase
       .from("pm_applications")
@@ -91,6 +143,7 @@ export async function POST(request: NextRequest) {
         agent_id: event.agent_id,
         pm_property_id: propertyId,
         pm_unit_id: null, // Will be assigned later if needed
+        pm_contact_id: contactId, // Link to contact
         lead_submission_id: leadSubmissionId,
         applicant_name: applicationData.applicant_name,
         applicant_email: applicationData.applicant_email,
