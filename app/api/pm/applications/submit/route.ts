@@ -57,16 +57,19 @@ export async function POST(request: NextRequest) {
       const { data: leadSubmission, error: leadError } = await supabase
         .from("lead_submissions")
         .insert({
-          open_house_event_id: eventId,
-          name: applicationData.applicant_name,
-          email: applicationData.applicant_email,
-          phone_e164: applicationData.applicant_phone,
+          event_id: eventId,
+          agent_id: event.agent_id,
+          payload: {
+            name: applicationData.applicant_name,
+            email: applicationData.applicant_email,
+            phone_e164: applicationData.applicant_phone,
+          },
+          heat_score: 50, // Default moderate interest for rental applications
           consent: {
             sms: applicationData.consent_sms || false,
             email: applicationData.consent_email || false,
             captured_at: new Date().toISOString(),
           },
-          source: "rental_application",
         })
         .select("id")
         .single();

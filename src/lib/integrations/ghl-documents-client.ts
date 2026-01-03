@@ -80,11 +80,11 @@ export class GHLDocumentsClient {
   }
 
   /**
-   * Search for existing contact by email using lookup endpoint
+   * Search for existing contact by email using query parameter
    */
   async searchContactByEmail(email: string): Promise<GHLContact | null> {
     const response = await fetch(
-      `${this.baseUrl}/contacts/lookup?locationId=${this.locationId}&email=${encodeURIComponent(email)}`,
+      `${this.baseUrl}/contacts?locationId=${this.locationId}&query=${encodeURIComponent(email)}`,
       {
         headers: this.getHeaders(),
       }

@@ -196,13 +196,13 @@ export class GHLClient {
       return { contacts: [] };
     }
 
-    // GHL API v2 uses /contacts/lookup for searching by email/phone
+    // GHL API v2 uses /contacts with query parameters for searching
     const params = new URLSearchParams();
     if (this.locationId) params.append("locationId", this.locationId);
-    if (query.email) params.append("email", query.email);
-    if (query.phone) params.append("phone", query.phone);
+    if (query.email) params.append("query", query.email); // GHL uses "query" parameter for email search
+    if (query.phone && !query.email) params.append("query", query.phone); // Use phone if no email
 
-    return this.request<{ contacts: GHLContact[] }>(`/contacts/lookup?${params.toString()}`);
+    return this.request<{ contacts: GHLContact[] }>(`/contacts?${params.toString()}`);
   }
 
   /**
