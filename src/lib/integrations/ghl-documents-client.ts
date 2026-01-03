@@ -231,9 +231,15 @@ export class GHLDocumentsClient {
       }
     }
 
+    // Format lease name: "Property Address + Start Date" (e.g., "133 Omao Street 01-03-26")
+    const startDate = new Date(leaseData.start_date);
+    const formattedDate = `${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}-${String(startDate.getFullYear()).slice(-2)}`;
+    const leaseName = `${leaseData.property_address} ${formattedDate}`;
+
     const contactPayload = {
       email,
       phone,
+      name: leaseName, // Set contact name to property address + start date
       firstName: leaseData.tenant_first_name,
       lastName: leaseData.tenant_last_name,
       customFields,
