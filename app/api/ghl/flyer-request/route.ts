@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
     }
 
     const config = integration.config as any;
-    const client = new GHLClient(config.access_token);
+    const client = new GHLClient(config.ghl_access_token, config.ghl_location_id);
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.realestategenie.app";
 
     // Filter out expired registrations (> 3 days old)

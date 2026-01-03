@@ -34,11 +34,11 @@ export async function POST(req: NextRequest) {
     }
 
     const config = integration.config as any;
-    const client = new GHLClient(config.access_token);
+    const client = new GHLClient(config.ghl_access_token, config.ghl_location_id);
 
     // Test by fetching pipelines for the connected location
     // This works with location-scoped tokens (unlike getLocations which needs agency token)
-    const pipelines = await client.getPipelines(config.location_id);
+    const pipelines = await client.getPipelines(config.ghl_location_id);
 
     // Update integration status (skip last_sync_at if column doesn't exist)
     const updateData: any = {
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      locationId: config.location_id,
+      locationId: config.ghl_location_id,
       pipelines: pipelines.pipelines?.length || 0,
       message: "GHL connection successful",
     });

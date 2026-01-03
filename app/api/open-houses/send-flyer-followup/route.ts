@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     }
 
     const config = integration.config as any;
-    const ghlClient = new GHLClient(config.access_token);
+    const ghlClient = new GHLClient(config.ghl_access_token, config.ghl_location_id);
 
     // Check if follow-up already sent for this lead/event combo
     const { data: existingFollowup } = await supabaseAdmin
@@ -128,13 +128,13 @@ export async function POST(request: NextRequest) {
         {
           method: "POST",
           headers: {
-            "Authorization": `Bearer ${config.access_token}`,
+            "Authorization": `Bearer ${config.ghl_access_token}`,
             "Content-Type": "application/json",
             "Version": "2021-07-28",
           },
           body: JSON.stringify({
             type: "SMS",
-            locationId: config.location_id,
+            locationId: config.ghl_location_id,
             contactId: lead.ghl_contact_id,
             message: thankYouMessage,
           }),

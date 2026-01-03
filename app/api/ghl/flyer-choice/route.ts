@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
 
       if (integration) {
         const config = integration.config as any;
-        client = new GHLClient(config.access_token);
+        client = new GHLClient(config.ghl_access_token, config.ghl_location_id);
       }
     }
 

@@ -62,13 +62,13 @@ export async function POST(request: NextRequest) {
     }
 
     const config = integration.config as any;
-    if (config.location_id !== locationId) {
+    if (config.ghl_location_id !== locationId) {
       console.log("Location ID mismatch");
       return NextResponse.json({ received: true });
     }
 
     const agentId = integration.agent_id;
-    const accessToken = config.access_token;
+    const accessToken = config.ghl_access_token;
 
     // Find pending follow-ups for this contact
     const { data: followups } = await supabaseAdmin
