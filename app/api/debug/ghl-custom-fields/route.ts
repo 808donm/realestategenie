@@ -60,9 +60,13 @@ export async function GET(request: NextRequest) {
     console.log("First field full object:", JSON.stringify(allGHLFields[0], null, 2));
 
     // Try multiple possible property names for the field key
+    // GHL uses fieldKey with "contact." prefix (e.g., "contact.lease_property_address")
     const ghlLeaseFields = allGHLFields.filter((f: any) => {
-      // Check various possible property names for the field identifier
-      const fieldKey = f.key || f.fieldKey || f.field_key || f.name || '';
+      const rawFieldKey = f.fieldKey || f.key || f.field_key || f.name || '';
+      // Strip "contact." prefix if present
+      const fieldKey = rawFieldKey.startsWith('contact.')
+        ? rawFieldKey.substring('contact.'.length)
+        : rawFieldKey;
       return fieldKey.startsWith('lease_');
     });
 
@@ -70,7 +74,13 @@ export async function GET(request: NextRequest) {
     const expectedKeys = GHL_LEASE_CUSTOM_FIELDS.map(f => f.key);
 
     // Build actual field keys list from GHL
-    const actualKeys = ghlLeaseFields.map((f: any) => f.key || f.fieldKey || f.field_key || f.name);
+    const actualKeys = ghlLeaseFields.map((f: any) => {
+      const rawFieldKey = f.fieldKey || f.key || f.field_key || f.name;
+      // Strip "contact." prefix if present
+      return rawFieldKey.startsWith('contact.')
+        ? rawFieldKey.substring('contact.'.length)
+        : rawFieldKey;
+    });
 
     // Find missing and extra fields
     const missingInGHL = expectedKeys.filter(key => !actualKeys.includes(key));
@@ -80,7 +90,10 @@ export async function GET(request: NextRequest) {
     // Build detailed comparison
     const fieldComparison = GHL_LEASE_CUSTOM_FIELDS.map(expected => {
       const actual = ghlLeaseFields.find((f: any) => {
-        const fieldKey = f.key || f.fieldKey || f.field_key || f.name;
+        const rawFieldKey = f.fieldKey || f.key || f.field_key || f.name;
+        const fieldKey = rawFieldKey.startsWith('contact.')
+          ? rawFieldKey.substring('contact.'.length)
+          : rawFieldKey;
         return fieldKey === expected.key;
       });
       return {
@@ -88,7 +101,10 @@ export async function GET(request: NextRequest) {
         expectedName: expected.name,
         expectedType: expected.type,
         actualName: actual?.name || null,
-        actualKey: actual?.key || actual?.fieldKey || actual?.field_key || null,
+        actualRawKey: actual?.fieldKey || actual?.key || actual?.field_key || null,
+        actualKey: actual?.fieldKey?.startsWith('contact.')
+          ? actual.fieldKey.substring('contact.'.length)
+          : (actual?.key || actual?.fieldKey || actual?.field_key || null),
         actualType: actual?.dataType || null,
         actualId: actual?.id || null,
         status: actual ? '✅ Found' : '❌ Missing',
@@ -107,26 +123,34 @@ export async function GET(request: NextRequest) {
       missingInGHL,
       extraInGHL: extraInGHL.map((key: string) => {
         const field = ghlLeaseFields.find((f: any) => {
-          const fieldKey = f.key || f.fieldKey || f.field_key || f.name;
+          const rawFieldKey = f.fieldKey || f.key || f.field_key || f.name;
+          const fieldKey = rawFieldKey.startsWith('contact.')
+            ? rawFieldKey.substring('contact.'.length)
+            : rawFieldKey;
           return fieldKey === key;
         });
         return {
           key,
           name: field?.name,
-          actualKey: field?.key || field?.fieldKey || field?.field_key,
+          actualRawKey: field?.fieldKey || field?.key || field?.field_key,
           type: field?.dataType,
           id: field?.id,
         };
       }),
       detailedComparison: fieldComparison,
-      allGHLLeaseFields: ghlLeaseFields.map((f: any) => ({
-        id: f.id,
-        key: f.key,
-        fieldKey: f.fieldKey,
-        field_key: f.field_key,
-        name: f.name,
-        type: f.dataType,
-      })),
+      allGHLLeaseFields: ghlLeaseFields.map((f: any) => {
+        const rawFieldKey = f.fieldKey || f.key || f.field_key || f.name;
+        const strippedKey = rawFieldKey.startsWith('contact.')
+          ? rawFieldKey.substring('contact.'.length)
+          : rawFieldKey;
+        return {
+          id: f.id,
+          rawFieldKey: f.fieldKey,
+          strippedKey,
+          name: f.name,
+          type: f.dataType,
+        };
+      }),
       // NEW: Show all custom fields to help diagnose what's actually in GHL
       allCustomFieldsInGHL: allGHLFields.map((f: any) => ({
         id: f.id,

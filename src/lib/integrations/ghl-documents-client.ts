@@ -75,13 +75,19 @@ export class GHLDocumentsClient {
     }
 
     // Map field keys to IDs
-    // GHL API might use different property names: key, fieldKey, field_key, or name
+    // GHL uses fieldKey property with "contact." prefix (e.g., "contact.lease_property_address")
     const fieldMap: CustomFieldMap = {};
     customFields.forEach((field: any) => {
-      const fieldKey = field.key || field.fieldKey || field.field_key || field.name;
-      if (fieldKey) {
+      // GHL fieldKey format: "contact.lease_property_address"
+      const rawFieldKey = field.fieldKey || field.key || field.field_key || field.name;
+      if (rawFieldKey) {
+        // Remove "contact." prefix if present to match our expected keys
+        const fieldKey = rawFieldKey.startsWith('contact.')
+          ? rawFieldKey.substring('contact.'.length)
+          : rawFieldKey;
+
         fieldMap[fieldKey] = field.id;
-        console.log(`📋 Mapped field: ${fieldKey} → ${field.id}`);
+        console.log(`📋 Mapped field: ${fieldKey} (raw: ${rawFieldKey}) → ${field.id}`);
       }
     });
 
