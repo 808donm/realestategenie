@@ -189,15 +189,20 @@ export class GHLClient {
   }
 
   /**
-   * Search for contact by email or phone
+   * Search for contact by email or phone using lookup endpoint
    */
   async searchContacts(query: { email?: string; phone?: string }): Promise<{ contacts: GHLContact[] }> {
+    if (!query.email && !query.phone) {
+      return { contacts: [] };
+    }
+
+    // GHL API v2 uses /contacts/lookup for searching by email/phone
     const params = new URLSearchParams();
     if (this.locationId) params.append("locationId", this.locationId);
     if (query.email) params.append("email", query.email);
     if (query.phone) params.append("phone", query.phone);
 
-    return this.request<{ contacts: GHLContact[] }>(`/contacts/?${params.toString()}`);
+    return this.request<{ contacts: GHLContact[] }>(`/contacts/lookup?${params.toString()}`);
   }
 
   /**
