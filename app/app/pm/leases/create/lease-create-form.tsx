@@ -714,9 +714,6 @@ export default function LeaseCreateForm({
               </div>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground pl-6">
-            Check if pets ARE allowed on the property
-          </p>
 
           {formData.pets_allowed && (
             <div className="grid gap-4 md:grid-cols-3 pl-6 pt-2">
@@ -781,9 +778,6 @@ export default function LeaseCreateForm({
               </div>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground pl-6">
-            Check if tenant may sublet the property to others
-          </p>
         </CardContent>
       </Card>
 
@@ -809,7 +803,7 @@ export default function LeaseCreateForm({
             <textarea
               id="authorized_occupants"
               rows={4}
-              placeholder="John Doe - (808) 555-1234&#10;Jane Smith - (808) 555-5678&#10;(One occupant per line with phone number)"
+              placeholder="John Doe - (808) 555-1234&#10;Jane Doe - (808) 555-5678"
               value={formData.authorized_occupants}
               onChange={(e) =>
                 setFormData({
