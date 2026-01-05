@@ -39,6 +39,7 @@ export default function LeaseCreateForm({
   const [pandadocTemplateId, setPandadocTemplateId] = useState("");
   const [showPandaDocForm, setShowPandaDocForm] = useState(false);
   const [pendingLeaseData, setPendingLeaseData] = useState<any>(null);
+  const [showConfirmation, setShowConfirmation] = useState(false);
 
   // Calculate default dates
   const today = new Date();
@@ -69,6 +70,27 @@ export default function LeaseCreateForm({
     requires_professional_carpet_cleaning: false,
     requires_professional_house_cleaning: false,
     custom_requirements: "",
+
+    // Pets and Subletting
+    pets_allowed: (application?.pets && Array.isArray(application.pets) && application.pets.length > 0) || false,
+    pet_count: (application?.pets && Array.isArray(application.pets)) ? application.pets.length : 0,
+    pet_types: "",
+    pet_weight_limit: "",
+    subletting_allowed: false,
+
+    // Occupants
+    authorized_occupants: "",
+
+    // Late Fees
+    late_fee_is_percentage: false,
+    late_fee_amount: "50.00",
+    late_fee_percentage: "5.00",
+    late_fee_frequency: "per occurrence",
+    late_grace_days: "5",
+
+    // Other Fees
+    nsf_fee: "35.00",
+    deposit_return_days: "60",
   });
 
   // Calculate end date based on lease term
@@ -99,8 +121,14 @@ export default function LeaseCreateForm({
     setFormData({ ...formData, ...updates });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // Show confirmation dialog
+    setShowConfirmation(true);
+  };
+
+  const handleSubmit = async () => {
+    setShowConfirmation(false);
 
     // If PandaDoc is selected, show embedded form first
     if (esignatureProvider === "pandadoc" && !useCustomLease) {
@@ -266,7 +294,7 @@ export default function LeaseCreateForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleFormSubmit} className="space-y-6">
       {/* Property Selection */}
       <Card>
         <CardHeader>
@@ -603,6 +631,255 @@ export default function LeaseCreateForm({
         </CardContent>
       </Card>
 
+      {/* Pets and Subletting */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Pets and Subletting</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="pets_allowed"
+              checked={formData.pets_allowed}
+              onCheckedChange={(checked) =>
+                setFormData({
+                  ...formData,
+                  pets_allowed: checked === true,
+                })
+              }
+            />
+            <Label htmlFor="pets_allowed" className="cursor-pointer">
+              Pets Allowed
+            </Label>
+          </div>
+
+          {formData.pets_allowed && (
+            <div className="grid gap-4 md:grid-cols-3 pl-6 pt-2">
+              <div>
+                <Label htmlFor="pet_count">Number of Pets</Label>
+                <Input
+                  id="pet_count"
+                  type="number"
+                  min="0"
+                  value={formData.pet_count}
+                  onChange={(e) =>
+                    setFormData({ ...formData, pet_count: parseInt(e.target.value) || 0 })
+                  }
+                />
+              </div>
+              <div>
+                <Label htmlFor="pet_types">Pet Types</Label>
+                <Input
+                  id="pet_types"
+                  placeholder="Dogs, Cats, etc."
+                  value={formData.pet_types}
+                  onChange={(e) =>
+                    setFormData({ ...formData, pet_types: e.target.value })
+                  }
+                />
+              </div>
+              <div>
+                <Label htmlFor="pet_weight_limit">Weight Limit</Label>
+                <Input
+                  id="pet_weight_limit"
+                  placeholder="50 lbs per pet"
+                  value={formData.pet_weight_limit}
+                  onChange={(e) =>
+                    setFormData({ ...formData, pet_weight_limit: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center space-x-2 pt-2">
+            <Checkbox
+              id="subletting_allowed"
+              checked={formData.subletting_allowed}
+              onCheckedChange={(checked) =>
+                setFormData({
+                  ...formData,
+                  subletting_allowed: checked === true,
+                })
+              }
+            />
+            <Label htmlFor="subletting_allowed" className="cursor-pointer">
+              Subletting Allowed
+            </Label>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Occupants and Late Fees */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Occupants and Late Fees</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label htmlFor="authorized_occupants">Authorized Occupants</Label>
+            <textarea
+              id="authorized_occupants"
+              rows={2}
+              placeholder="List all authorized occupants (names)"
+              value={formData.authorized_occupants}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  authorized_occupants: e.target.value,
+                })
+              }
+              className="w-full px-3 py-2 border rounded-md"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Names of all people authorized to occupy the property
+            </p>
+          </div>
+
+          <div className="border-t pt-4">
+            <h3 className="font-semibold mb-3">Late Fee Configuration</h3>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <Label htmlFor="late_fee_type">Late Fee Type *</Label>
+                <select
+                  id="late_fee_type"
+                  required
+                  value={formData.late_fee_is_percentage ? "percentage" : "flat"}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      late_fee_is_percentage: e.target.value === "percentage",
+                    })
+                  }
+                  className="w-full px-3 py-2 border rounded-md"
+                >
+                  <option value="flat">Flat Amount</option>
+                  <option value="percentage">Percentage of Rent</option>
+                </select>
+              </div>
+
+              <div>
+                <Label htmlFor="late_fee_occurrence">Late Fee Occurrence *</Label>
+                <select
+                  id="late_fee_occurrence"
+                  required
+                  value={formData.late_fee_frequency}
+                  onChange={(e) =>
+                    setFormData({ ...formData, late_fee_frequency: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border rounded-md"
+                >
+                  <option value="per occurrence">Per Occurrence (one-time)</option>
+                  <option value="per day">Per Day (daily)</option>
+                </select>
+              </div>
+
+              {formData.late_fee_is_percentage ? (
+                <div>
+                  <Label htmlFor="late_fee_percentage">Late Fee Percentage *</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="late_fee_percentage"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="100"
+                      required
+                      value={formData.late_fee_percentage}
+                      onChange={(e) =>
+                        setFormData({ ...formData, late_fee_percentage: e.target.value })
+                      }
+                    />
+                    <span className="text-sm">%</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Percentage of monthly rent (e.g., 5% of ${formData.monthly_rent || "0"})
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <Label htmlFor="late_fee_amount">Late Fee Amount *</Label>
+                  <Input
+                    id="late_fee_amount"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    required
+                    placeholder="50.00"
+                    value={formData.late_fee_amount}
+                    onChange={(e) =>
+                      setFormData({ ...formData, late_fee_amount: e.target.value })
+                    }
+                  />
+                </div>
+              )}
+
+              <div>
+                <Label htmlFor="late_grace_days">Grace Period (Days) *</Label>
+                <Input
+                  id="late_grace_days"
+                  type="number"
+                  min="0"
+                  required
+                  value={formData.late_grace_days}
+                  onChange={(e) =>
+                    setFormData({ ...formData, late_grace_days: e.target.value })
+                  }
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Days after due date before late fee applies
+                </p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Other Fees and Policies */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Other Fees and Policies</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4 md:grid-cols-2">
+          <div>
+            <Label htmlFor="nsf_fee">NSF (Returned Check) Fee *</Label>
+            <Input
+              id="nsf_fee"
+              type="number"
+              step="0.01"
+              min="0"
+              required
+              placeholder="35.00"
+              value={formData.nsf_fee}
+              onChange={(e) =>
+                setFormData({ ...formData, nsf_fee: e.target.value })
+              }
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Fee for insufficient funds / returned payments
+            </p>
+          </div>
+          <div>
+            <Label htmlFor="deposit_return_days">Security Deposit Return (Days) *</Label>
+            <Input
+              id="deposit_return_days"
+              type="number"
+              min="0"
+              required
+              placeholder="60"
+              value={formData.deposit_return_days}
+              onChange={(e) =>
+                setFormData({ ...formData, deposit_return_days: e.target.value })
+              }
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Days to return deposit after move-out (check your state law)
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* E-Signature Provider */}
       <Card>
         <CardHeader>
@@ -691,6 +968,56 @@ export default function LeaseCreateForm({
           {isSubmitting ? "Creating Lease..." : "Create Lease & Send for Signature"}
         </Button>
       </div>
+
+      {/* Confirmation Dialog */}
+      {showConfirmation && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onClick={() => setShowConfirmation(false)}
+        >
+          <Card
+            className="w-full max-w-md mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <CardHeader>
+              <CardTitle>Confirm Lease Creation</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm">
+                Have you filled in all the required form fields and reviewed the lease details?
+              </p>
+              <div className="bg-muted p-3 rounded-md text-sm space-y-1">
+                <p><strong>Tenant:</strong> {formData.tenant_name}</p>
+                <p><strong>Property:</strong> {property?.address || "Selected property"}</p>
+                <p><strong>Monthly Rent:</strong> ${formData.monthly_rent}</p>
+                <p><strong>Lease Term:</strong> {formData.lease_start_date} to {formData.lease_end_date}</p>
+                <p><strong>Pets Allowed:</strong> {formData.pets_allowed ? "Yes" : "No"}</p>
+                <p><strong>Subletting Allowed:</strong> {formData.subletting_allowed ? "Yes" : "No"}</p>
+                <p><strong>Late Fee Type:</strong> {formData.late_fee_is_percentage ? "Percentage" : "Flat Amount"}</p>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Once created, this lease will be sent for e-signature. Make sure all information is correct before proceeding.
+              </p>
+              <div className="flex gap-3 justify-end pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowConfirmation(false)}
+                >
+                  Review Form
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Creating..." : "Yes, Create Lease"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </form>
   );
 }
