@@ -629,13 +629,16 @@ export default function LeaseCreateForm({
             <Label htmlFor="carpet_cleaning" className="cursor-pointer">
               Require professional carpet cleaning upon move-out
             </Label>
-            <span className="text-xs text-muted-foreground ml-1" title="Check this box if professional carpet cleaning WILL BE required at move-out">
-              ℹ️
-            </span>
+            <div className="group relative inline-block">
+              <span className="inline-flex items-center justify-center w-4 h-4 text-xs rounded-full bg-gray-200 text-gray-600 cursor-help">
+                ℹ
+              </span>
+              <div className="invisible group-hover:visible absolute z-10 w-80 px-3 py-2 text-xs text-white bg-gray-900 rounded-lg shadow-lg -top-2 left-6 transform -translate-y-full">
+                Checking this box requires tenant to provide proof of professional carpet cleaning at move-out
+                <div className="absolute w-2 h-2 bg-gray-900 transform rotate-45 -bottom-1 left-2"></div>
+              </div>
+            </div>
           </div>
-          <p className="text-xs text-muted-foreground pl-6">
-            Checking this box requires tenant to provide proof of professional carpet cleaning at move-out
-          </p>
           <div className="flex items-center space-x-2">
             <Checkbox
               id="house_cleaning"
@@ -650,13 +653,16 @@ export default function LeaseCreateForm({
             <Label htmlFor="house_cleaning" className="cursor-pointer">
               Require professional house cleaning upon move-out
             </Label>
-            <span className="text-xs text-muted-foreground ml-1" title="Check this box if professional house cleaning WILL BE required at move-out">
-              ℹ️
-            </span>
+            <div className="group relative inline-block">
+              <span className="inline-flex items-center justify-center w-4 h-4 text-xs rounded-full bg-gray-200 text-gray-600 cursor-help">
+                ℹ
+              </span>
+              <div className="invisible group-hover:visible absolute z-10 w-80 px-3 py-2 text-xs text-white bg-gray-900 rounded-lg shadow-lg -top-2 left-6 transform -translate-y-full">
+                Checking this box requires tenant to provide proof of professional house cleaning at move-out
+                <div className="absolute w-2 h-2 bg-gray-900 transform rotate-45 -bottom-1 left-2"></div>
+              </div>
+            </div>
           </div>
-          <p className="text-xs text-muted-foreground pl-6">
-            Checking this box requires tenant to provide proof of professional house cleaning at move-out
-          </p>
           <div>
             <Label htmlFor="custom_requirements">
               Custom Requirements (Optional)
@@ -698,9 +704,15 @@ export default function LeaseCreateForm({
             <Label htmlFor="pets_allowed" className="cursor-pointer">
               Pets Allowed
             </Label>
-            <span className="text-xs text-muted-foreground ml-1" title="Check this box if pets ARE allowed on the property">
-              ℹ️
-            </span>
+            <div className="group relative inline-block">
+              <span className="inline-flex items-center justify-center w-4 h-4 text-xs rounded-full bg-gray-200 text-gray-600 cursor-help">
+                ℹ
+              </span>
+              <div className="invisible group-hover:visible absolute z-10 w-64 px-3 py-2 text-xs text-white bg-gray-900 rounded-lg shadow-lg -top-2 left-6 transform -translate-y-full">
+                Check this box if pets ARE allowed on the property
+                <div className="absolute w-2 h-2 bg-gray-900 transform rotate-45 -bottom-1 left-2"></div>
+              </div>
+            </div>
           </div>
           <p className="text-xs text-muted-foreground pl-6">
             Check if pets ARE allowed on the property
@@ -759,9 +771,15 @@ export default function LeaseCreateForm({
             <Label htmlFor="subletting_allowed" className="cursor-pointer">
               Subletting Allowed
             </Label>
-            <span className="text-xs text-muted-foreground ml-1" title="Check this box if subletting IS allowed">
-              ℹ️
-            </span>
+            <div className="group relative inline-block">
+              <span className="inline-flex items-center justify-center w-4 h-4 text-xs rounded-full bg-gray-200 text-gray-600 cursor-help">
+                ℹ
+              </span>
+              <div className="invisible group-hover:visible absolute z-10 w-64 px-3 py-2 text-xs text-white bg-gray-900 rounded-lg shadow-lg -top-2 left-6 transform -translate-y-full">
+                Check this box if subletting IS allowed
+                <div className="absolute w-2 h-2 bg-gray-900 transform rotate-45 -bottom-1 left-2"></div>
+              </div>
+            </div>
           </div>
           <p className="text-xs text-muted-foreground pl-6">
             Check if tenant may sublet the property to others
@@ -776,11 +794,17 @@ export default function LeaseCreateForm({
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <div className="flex items-center gap-1 mb-1">
+            <div className="flex items-center gap-2 mb-1">
               <Label htmlFor="authorized_occupants">Authorized Occupants</Label>
-              <span className="text-xs text-muted-foreground" title="Include occupant name and phone number, one occupant per line">
-                ℹ️
-              </span>
+              <div className="group relative inline-block">
+                <span className="inline-flex items-center justify-center w-4 h-4 text-xs rounded-full bg-gray-200 text-gray-600 cursor-help">
+                  ℹ
+                </span>
+                <div className="invisible group-hover:visible absolute z-10 w-64 px-3 py-2 text-xs text-white bg-gray-900 rounded-lg shadow-lg -top-2 left-6 transform -translate-y-full">
+                  Include occupant name and phone number, one occupant per line
+                  <div className="absolute w-2 h-2 bg-gray-900 transform rotate-45 -bottom-1 left-2"></div>
+                </div>
+              </div>
             </div>
             <textarea
               id="authorized_occupants"
