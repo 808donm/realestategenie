@@ -47,6 +47,7 @@ export async function GET(req: Request) {
 
     // Test associations.write scope by attempting to fetch associations
     // (We'll use GET which requires associations.readonly)
+    console.log('[Scope Test] Testing associations.readonly scope...');
     const testResponse = await fetch(
       `https://services.leadconnectorhq.com/associations/?locationId=${ghlConfig.location_id}&limit=1`,
       {
@@ -59,6 +60,8 @@ export async function GET(req: Request) {
       }
     );
 
+    const associationsResponseText = await testResponse.text();
+    console.log('[Scope Test] Associations response:', testResponse.status, associationsResponseText);
     const hasAssociationsRead = testResponse.status !== 401;
 
     // We can't directly test associations.write without creating one,
@@ -78,6 +81,7 @@ export async function GET(req: Request) {
     const hasContactsRead = testContactResponse.status !== 401;
 
     // Test conversations/message scope for email sending
+    console.log('[Scope Test] Testing conversations/message.readonly scope...');
     const testMessagesResponse = await fetch(
       `https://services.leadconnectorhq.com/conversations/messages?locationId=${ghlConfig.location_id}&limit=1`,
       {
@@ -90,6 +94,8 @@ export async function GET(req: Request) {
       }
     );
 
+    const messagesResponseText = await testMessagesResponse.text();
+    console.log('[Scope Test] Messages response:', testMessagesResponse.status, messagesResponseText);
     const hasMessagesRead = testMessagesResponse.status !== 401;
 
     const allScopesPresent = hasAssociationsRead && hasContactsRead && hasMessagesRead;
@@ -102,6 +108,16 @@ export async function GET(req: Request) {
         associationsRead: hasAssociationsRead ? "✅ Has access" : "❌ No access (401 Unauthorized)",
         contactsRead: hasContactsRead ? "✅ Has access" : "❌ No access (401 Unauthorized)",
         messagesRead: hasMessagesRead ? "✅ Has access (can send emails)" : "❌ No access (401 Unauthorized)",
+      },
+      rawResponses: {
+        associations: {
+          status: testResponse.status,
+          response: associationsResponseText.substring(0, 500),
+        },
+        messages: {
+          status: testMessagesResponse.status,
+          response: messagesResponseText.substring(0, 500),
+        },
       },
       requiredScopes: [
         "contacts.write",
