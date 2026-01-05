@@ -133,6 +133,12 @@ export async function POST(req: Request) {
       // Create contact and custom objects in GHL
       // Tag-based workflow will handle email/SMS notifications
       if (isGHLConnected && ghlConfig) {
+        console.log('========================================');
+        console.log('=== GHL INTEGRATION ACTIVE ===');
+        console.log('========================================');
+        console.log('Location ID:', ghlConfig.location_id);
+        console.log('Event ID:', eventId);
+        console.log('Address:', evt?.address);
         console.log('Creating GHL contact with workflow trigger tags...');
         try {
           const nameParts = payload.name.split(' ');
@@ -144,12 +150,13 @@ export async function POST(req: Request) {
           let openHouseLongTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
           try {
+            console.log('=== CREATING GHL OPENHOUSE ===');
             console.log('Creating GHL OpenHouse custom object...');
             openHouseTimeoutId = setTimeout(() => {
-              console.error('GHL OpenHouse request still pending after 20s');
+              console.error('⚠️ GHL OpenHouse request still pending after 20s');
             }, 20000);
             openHouseLongTimeoutId = setTimeout(() => {
-              console.error('GHL OpenHouse request still pending after 40s');
+              console.error('⚠️ GHL OpenHouse request still pending after 40s');
             }, 40000);
             console.log('GHL OpenHouse timeout warnings scheduled');
             openHouseRecordId = await createGHLOpenHouseRecord({
@@ -166,9 +173,14 @@ export async function POST(req: Request) {
               sqft: evt.sqft,
               price: evt.price,
             });
-            console.log('GHL OpenHouse created:', openHouseRecordId);
+            console.log('✅ GHL OpenHouse created successfully:', openHouseRecordId);
           } catch (openHouseError: any) {
-            console.error('Failed to create GHL OpenHouse:', openHouseError.message);
+            console.error('❌ CRITICAL: Failed to create GHL OpenHouse');
+            console.error('❌ Error message:', openHouseError.message);
+            console.error('❌ Error stack:', openHouseError.stack);
+            console.error('❌ This will prevent Registration creation');
+            console.error('❌ Recommendation: Verify "openhouses" custom object exists in GHL Settings > Custom Objects');
+            console.error('❌ Required fields: openhouseid, address, startdatetime, enddatetime, flyerUrl, agentId, beds, baths, sqft, price');
           } finally {
             if (openHouseTimeoutId) {
               clearTimeout(openHouseTimeoutId);
@@ -196,7 +208,9 @@ export async function POST(req: Request) {
           // Now create Registration custom object linking contact to OpenHouse
           if (contactId && openHouseRecordId) {
             try {
+              console.log('=== CREATING GHL REGISTRATION ===');
               console.log('Creating GHL Registration for contact:', contactId);
+              console.log('Linking to OpenHouse:', openHouseRecordId);
               await createGHLRegistrationRecord({
                 locationId: ghlConfig.location_id,
                 accessToken: ghlConfig.access_token,
@@ -204,8 +218,8 @@ export async function POST(req: Request) {
                 contactId: contactId,
                 openHouseRecordId,
               });
-              console.log('GHL Registration created successfully');
-              console.log('OpenHouse fields accessible in emails via {{registration.openHouses.fieldName}}');
+              console.log('✅ GHL Registration created successfully');
+              console.log('✅ OpenHouse fields accessible in emails via {{registration.openHouses.fieldName}}');
 
               // Create Opportunity in pipeline if configured
               if (ghlConfig.ghl_pipeline_id && ghlConfig.ghl_new_lead_stage) {
@@ -253,12 +267,23 @@ export async function POST(req: Request) {
                 console.log('No pipeline configured - skipping opportunity creation');
               }
             } catch (linkError: any) {
-              console.error('Failed to create Registration:', linkError.message);
+              console.error('❌ CRITICAL: Failed to create GHL Registration');
+              console.error('❌ Error message:', linkError.message);
+              console.error('❌ Error stack:', linkError.stack);
+              console.error('❌ Recommendation: Verify "registrations" custom object exists in GHL Settings > Custom Objects');
+              console.error('❌ Required fields: registrationid, contactid, openhouseid, registerdat, flyerstatus');
+              console.error('❌ Required associations: registrations → contact, registrations → openhouses');
             }
           } else if (!openHouseRecordId) {
-            console.warn('Skipping Registration: OpenHouse record not created.');
+            console.error('❌ CRITICAL: Skipping Registration creation - OpenHouse record was not created');
+            console.error('❌ Contact ID:', contactId);
+            console.error('❌ This means registrations will NOT appear in GHL');
+            console.error('❌ Check the OpenHouse error logs above for the root cause');
           } else {
-            console.warn('GHL contact response missing id, skipping Registration creation.');
+            console.error('❌ CRITICAL: Skipping Registration creation - Contact ID is missing');
+            console.error('❌ OpenHouse ID:', openHouseRecordId);
+            console.error('❌ This means registrations will NOT appear in GHL');
+            console.error('❌ Check the Contact creation logs above for the root cause');
           }
 
           console.log('Contact creation completed - GHL workflow will handle notifications');

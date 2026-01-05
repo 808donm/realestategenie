@@ -5,14 +5,17 @@
 The correct merge tags to use in your GHL email templates are:
 
 ```
-Download your property flyer: {{registration.openHouses.flyerUrl}}
+Download your property flyer: {{registration.openHouses.flyerurl}}
 
 Property Address: {{registration.openHouses.address}}
 
-Agent ID: {{registration.openHouses.agentId}}
+Agent ID: {{registration.openHouses.agentid}}
 ```
 
-These fields are accessed through the **association** between Registration and OpenHouse custom objects.
+**Important:** Field names are **case-sensitive** and must match exactly as defined in your GHL custom object:
+- `flyerurl` is all lowercase (not `flyerUrl`)
+- `agentid` is all lowercase (not `agentId`)
+- These fields are accessed through the **association** between Registration and OpenHouse custom objects
 
 ## Required GHL Custom Object Fields
 
@@ -23,13 +26,13 @@ The following fields must exist in your **OpenHouse** custom object in GHL:
 | Field Name | Internal Name | Type | Description |
 |------------|---------------|------|-------------|
 | Address | `address` | Text | Property address (e.g., "123 Main St, Honolulu, HI") |
-| Flyer URL | `flyerUrl` | Text | URL to download the property flyer PDF |
-| Agent ID | `agentId` | Text | Agent's unique ID in the system |
+| Flyer URL | `flyerurl` | Text | URL to download the property flyer PDF |
+| Agent ID | `agentid` | Text | Agent's unique ID in the system |
 
-**Important:** The internal field names must use the **exact casing** shown above:
+**Important:** The internal field names must use the **exact casing** shown above (all lowercase):
 - `address` (all lowercase)
-- `flyerUrl` (camelCase)
-- `agentId` (camelCase)
+- `flyerurl` (all lowercase, not camelCase)
+- `agentid` (all lowercase, not camelCase)
 
 ### How to Verify Fields in GHL
 
@@ -44,7 +47,7 @@ The following fields must exist in your **OpenHouse** custom object in GHL:
 <p>Thank you for visiting the open house at <strong>{{registration.openHouses.address}}</strong>!</p>
 
 <p>
-  <a href="{{registration.openHouses.flyerUrl}}" style="background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+  <a href="{{registration.openHouses.flyerurl}}" style="background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
     Download Property Fact Sheet
   </a>
 </p>
@@ -57,8 +60,8 @@ The following fields must exist in your **OpenHouse** custom object in GHL:
 1. **User checks in** at open house via QR code
 2. **System creates OpenHouse record** with all property details:
    - `address` - Property address
-   - `flyerUrl` - Full URL to download the PDF flyer
-   - `agentId` - Agent's unique ID
+   - `flyerurl` - Full URL to download the PDF flyer
+   - `agentid` - Agent's unique ID
    - Plus other fields (beds, baths, price, etc.)
 3. **System creates Registration record** linking the contact to the open house
 4. **System creates association** between Registration → OpenHouse
@@ -88,7 +91,7 @@ To verify the setup works:
 4. **Click the flyer URL** to ensure it downloads the PDF
 
 If fields show as blank:
-- Verify field names in OpenHouse object match exactly (case-sensitive): `address`, `flyerUrl`, `agentId`
+- Verify field names in OpenHouse object match exactly (case-sensitive): `address`, `flyerurl`, `agentid`
 - Check that both OpenHouse and Registration records were created (view in GHL custom objects)
 - Verify the association exists between Registration → OpenHouse
 - Ensure your workflow is triggered by Registration or Contact, not OpenHouse directly
@@ -99,7 +102,7 @@ If fields show as blank:
 **Cause**: Field names don't match exactly or association is missing
 
 **Fix**:
-- Verify OpenHouse custom object has fields with exact names: `address`, `flyerUrl`, `agentId` (case-sensitive)
+- Verify OpenHouse custom object has fields with exact names: `address`, `flyerurl`, `agentid` (case-sensitive, all lowercase)
 - Check that the association between Registration → OpenHouse exists in GHL
 - Test merge tag syntax: `{{registration.openHouses.address}}` (note the plural "openHouses")
 
@@ -123,8 +126,8 @@ The merge tags access OpenHouse fields through the Registration association:
 **Correct format:**
 ```
 {{registration.openHouses.address}}     ✅ Works
-{{registration.openHouses.flyerUrl}}    ✅ Works
-{{registration.openHouses.agentId}}     ✅ Works
+{{registration.openHouses.flyerurl}}    ✅ Works (lowercase)
+{{registration.openHouses.agentid}}     ✅ Works (lowercase)
 ```
 
 **Incorrect formats:**
@@ -132,6 +135,8 @@ The merge tags access OpenHouse fields through the Registration association:
 {{openhouse.address}}                   ❌ Missing registration context
 {{registration.openHouse.address}}      ❌ Singular "openHouse" (should be plural)
 {{registration.address}}                ❌ Field not on Registration object
+{{registration.openHouses.flyerUrl}}    ❌ Wrong casing (should be lowercase)
+{{registration.openHouses.agentId}}     ❌ Wrong casing (should be lowercase)
 ```
 
 Note: Use **plural** "openHouses" in the merge tag to access the associated OpenHouse object.
@@ -145,14 +150,14 @@ The application sends these field values when creating the OpenHouse custom obje
   locationId: params.locationId,
   properties: {
     "address": params.address,        // {{registration.openHouses.address}}
-    "flyerUrl": params.flyerUrl,      // {{registration.openHouses.flyerUrl}}
-    "agentId": params.agentId,        // {{registration.openHouses.agentId}}
+    "flyerurl": params.flyerUrl,      // {{registration.openHouses.flyerurl}}
+    "agentid": params.agentId,        // {{registration.openHouses.agentid}}
     // ... other fields
   }
 }
 ```
 
-The field names in the code **must match** the internal field names in your GHL OpenHouse custom object for the merge tags to work.
+The field names in the code **must match** the internal field names in your GHL OpenHouse custom object for the merge tags to work. All field names are lowercase to match GHL's field naming convention.
 
 ## Related Documentation
 

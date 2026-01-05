@@ -42,8 +42,8 @@ export async function createGHLOpenHouseRecord(params: {
         "address": params.address,              // {{registration.openHouses.address}}
         "startdatetime": params.startDateTime,
         "enddatetime": params.endDateTime,
-        "flyerUrl": params.flyerUrl,            // {{registration.openHouses.flyerUrl}}
-        "agentId": params.agentId,              // {{registration.openHouses.agentId}}
+        "flyerurl": params.flyerUrl,            // {{registration.openHouses.flyerurl}}
+        "agentid": params.agentId,              // {{registration.openHouses.agentid}}
         "beds": params.beds?.toString() || '',
         "baths": params.baths?.toString() || '',
         "sqft": params.sqft?.toString() || '',
