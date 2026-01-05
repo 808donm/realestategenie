@@ -350,7 +350,8 @@ export async function createGHLOpenHouseAndLinkContact(params: {
 export interface GHLEmailParams {
   locationId: string;
   accessToken: string;
-  to: string;
+  contactId: string; // GHL contact ID (required for conversations API)
+  to: string; // Email address (for logging/fallback)
   subject: string;
   html: string;
   from?: string;
@@ -366,10 +367,11 @@ export interface GHLSMSParams {
 /**
  * Send email via GHL
  * Uses the conversations/messages API with type=Email
+ * Requires contactId to link email to contact's conversation history
  */
 export async function sendGHLEmail(params: GHLEmailParams) {
   try {
-    console.log('[GHL] Attempting to send email to:', params.to);
+    console.log('[GHL] Attempting to send email to:', params.to, 'Contact ID:', params.contactId);
 
     const response = await fetch(
       `https://services.leadconnectorhq.com/conversations/messages`,
@@ -383,7 +385,7 @@ export async function sendGHLEmail(params: GHLEmailParams) {
         body: JSON.stringify({
           type: 'Email',
           locationId: params.locationId,
-          email: params.to,
+          contactId: params.contactId, // Required for GHL to track in conversations
           subject: params.subject,
           html: params.html,
         }),

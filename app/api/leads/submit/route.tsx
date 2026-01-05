@@ -280,6 +280,7 @@ export async function POST(req: Request) {
                 await sendGHLEmail({
                   locationId: ghlConfig.location_id,
                   accessToken: ghlConfig.access_token,
+                  contactId: contactId, // GHL contact ID for conversation tracking
                   to: payload.email,
                   subject: emailSubject,
                   html: emailHtml,
