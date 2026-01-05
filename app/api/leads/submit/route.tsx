@@ -64,8 +64,36 @@ export async function POST(req: Request) {
     const ghlConfig = await getValidGHLConfig(evt.agent_id);
     const isGHLConnected = ghlConfig !== null;
 
+    // Check for multiple visits to same open house (RED HOT indicator)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Start of today
+
+    const { data: previousVisits, error: visitCheckError } = await admin
+      .from("lead_submissions")
+      .select("id, created_at, heat_score")
+      .eq("event_id", eventId)
+      .gte("created_at", today.toISOString())
+      .or(`payload->>email.eq.${payload.email},payload->>phone_e164.eq.${payload.phone_e164}`);
+
+    const isReturnVisit = previousVisits && previousVisits.length > 0;
+    const visitCount = (previousVisits?.length || 0) + 1; // Including this visit
+
     // Calculate heat score
-    const heatScore = calculateHeatScore(payload);
+    let heatScore = calculateHeatScore(payload);
+    let isRedHot = false;
+
+    // BOOST SCORE for return visits - this is a VERY strong buying signal
+    if (isReturnVisit) {
+      console.log('🔥🔥🔥 RETURN VISIT DETECTED 🔥🔥🔥');
+      console.log(`Contact has visited this open house ${visitCount} times today!`);
+      console.log('Previous visits:', previousVisits?.map(v => ({ id: v.id, time: v.created_at, score: v.heat_score })));
+
+      // Set to maximum score - this person is RED HOT
+      heatScore = 100;
+      isRedHot = true;
+
+      console.log(`🚨 Heat score boosted to ${heatScore} (RED HOT) - Multiple visits indicate high interest!`);
+    }
 
     // Insert lead
     const { data: lead, error: insErr } = await admin
@@ -89,7 +117,13 @@ export async function POST(req: Request) {
       agent_id: evt.agent_id,
       event_id: eventId,
       action: "lead_submitted",
-      details: { source: "open_house_qr", heat_score: heatScore },
+      details: {
+        source: "open_house_qr",
+        heat_score: heatScore,
+        is_return_visit: isReturnVisit,
+        visit_count: visitCount,
+        red_hot: isRedHot,
+      },
     });
 
     // Prepare flyer URL and formatted dates for webhooks and notifications
@@ -190,6 +224,15 @@ export async function POST(req: Request) {
             }
           }
 
+          // Build tags array - add special tags for return visits
+          const contactTags = ['OpenHouse', evt?.address || 'Property'];
+          if (isReturnVisit) {
+            contactTags.push('Red Hot Lead');
+            contactTags.push('Multiple Visits');
+            contactTags.push(`Visited ${visitCount}x Today`);
+            console.log('🔥 Adding RED HOT tags:', contactTags);
+          }
+
           const contact = await createOrUpdateGHLContact({
             locationId: ghlConfig.location_id,
             accessToken: ghlConfig.access_token,
@@ -198,7 +241,7 @@ export async function POST(req: Request) {
             firstName,
             lastName,
             source: 'Open House',
-            tags: ['OpenHouse', evt?.address || 'Property'], // Tag will trigger workflow
+            tags: contactTags, // Tag will trigger workflow
           });
 
           const contactId = (contact as { id?: string })?.id;
@@ -227,8 +270,15 @@ export async function POST(req: Request) {
                   console.log('📧 Sending thank you email to:', payload.email);
                   const emailHtml = `
                     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                      <h2 style="color: #10b981;">Thank You for Visiting Our Open House!</h2>
+                      <h2 style="color: #10b981;">Thank You for Visiting Our Open House${isReturnVisit ? ' Again' : ''}!</h2>
                       <p>Hi ${payload.name.split(' ')[0]},</p>
+                      ${isReturnVisit ? `
+                        <div style="background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%); color: white; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
+                          <h3 style="margin: 0 0 10px 0; font-size: 24px;">🔥 We Noticed You're Back! 🔥</h3>
+                          <p style="margin: 0; font-size: 16px;">This is your <strong>visit #${visitCount}</strong> today. We love your enthusiasm!</p>
+                          <p style="margin: 10px 0 0 0; font-size: 14px;">Our team is ready to help you make this house your home. Let's talk!</p>
+                        </div>
+                      ` : ''}
                       <p>Thank you for visiting the open house at <strong>${evt?.address || 'our property'}</strong>!</p>
                       <p>We hope you enjoyed your visit. Here's your property information packet:</p>
                       <p style="text-align: center; margin: 30px 0;">
@@ -354,6 +404,27 @@ export async function POST(req: Request) {
     };
 
     await sendNotifications();
+
+    // URGENT: Notify agent immediately for RED HOT return visits
+    if (isReturnVisit && isRedHot) {
+      void dispatchWebhook(evt.agent_id, "lead.red_hot_return_visit", {
+        lead_id: lead.id,
+        event_id: eventId,
+        property_address: evt.address,
+        heat_score: heatScore,
+        visit_count: visitCount,
+        contact_name: payload.name,
+        contact_email: payload.email,
+        contact_phone: payload.phone_e164,
+        message: `🔥🔥🔥 RED HOT LEAD! ${payload.name} has visited ${evt.address} ${visitCount} times today! This indicates VERY high interest. Contact them immediately!`,
+        flyer_url: flyerUrl,
+        open_house_date: openHouseDate,
+        open_house_time: openHouseTime,
+        agent_name: agent?.display_name || '',
+        agent_email: agent?.email || '',
+        agent_phone: agent?.phone_e164 || '',
+      }).catch((err) => console.error("Red hot lead webhook failed:", err));
+    }
 
     // Trigger async integrations (non-blocking)
     void Promise.all([
