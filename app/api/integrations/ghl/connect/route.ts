@@ -37,10 +37,11 @@ export async function GET(req: NextRequest) {
   // - locations.* for location data and custom fields
   // - conversations.* for messaging
   // - objects/* for custom objects
+  // - associations.* for linking custom objects (REQUIRED for Registration → OpenHouse)
   // - invoices.* for invoice creation (GHL Documents integration)
   ghlAuthUrl.searchParams.append(
     "scope",
-    "contacts.write contacts.readonly opportunities.write opportunities.readonly locations.readonly locations/customFields.readonly locations/customFields.write conversations.write conversations.readonly objects/record.readonly objects/record.write objects/schema.readonly objects/schema.write invoices.write invoices.readonly"
+    "contacts.write contacts.readonly opportunities.write opportunities.readonly locations.readonly locations/customFields.readonly locations/customFields.write conversations.write conversations.readonly objects/record.readonly objects/record.write objects/schema.readonly objects/schema.write associations.write associations.readonly invoices.write invoices.readonly"
   );
   ghlAuthUrl.searchParams.append("state", state);
 
