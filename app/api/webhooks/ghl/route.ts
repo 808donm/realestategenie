@@ -26,15 +26,17 @@ export async function POST(req: Request) {
     console.log('[GHL Webhook] Full payload:', JSON.stringify(body, null, 2));
 
     // Store webhook event in database for audit trail
-    await admin.from('webhook_events').insert({
-      provider: 'ghl',
-      event_type: body.type,
-      payload: body,
-      received_at: new Date().toISOString(),
-    }).catch(err => {
+    try {
+      await admin.from('webhook_events').insert({
+        provider: 'ghl',
+        event_type: body.type,
+        payload: body,
+        received_at: new Date().toISOString(),
+      });
+    } catch (err: any) {
       // Table might not exist yet, just log
       console.log('[GHL Webhook] Could not store event (table may not exist):', err.message);
-    });
+    }
 
     // Handle different event types
     switch (body.type) {
