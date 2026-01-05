@@ -36,13 +36,14 @@ export async function createGHLOpenHouseRecord(params: {
     const requestPayload = {
       locationId: params.locationId,
       properties: {
-        // Property keys use internal field names WITHOUT the custom_objects.openhouses prefix
+        // Property keys must match GHL custom object field names exactly
+        // Accessed in emails via {{registration.openHouses.fieldName}}
         "openhouseid": params.eventId,
-        "address": params.address,
+        "address": params.address,              // {{registration.openHouses.address}}
         "startdatetime": params.startDateTime,
         "enddatetime": params.endDateTime,
-        "flyerurl": params.flyerUrl,
-        "agentid": params.agentId,
+        "flyerUrl": params.flyerUrl,            // {{registration.openHouses.flyerUrl}}
+        "agentId": params.agentId,              // {{registration.openHouses.agentId}}
         "beds": params.beds?.toString() || '',
         "baths": params.baths?.toString() || '',
         "sqft": params.sqft?.toString() || '',
@@ -109,35 +110,9 @@ export async function createGHLRegistrationRecord(params: {
   eventId: string;
   contactId: string;
   openHouseRecordId: string;
-  flyerUrl?: string;
-  address?: string;
-  agentId?: string;
 }) {
   try {
     console.log('[GHL] Creating Registration to link contact to OpenHouse...');
-    const properties: Record<string, any> = {
-      // Property keys use internal field names WITHOUT the custom_objects.registrations prefix
-      "registrationid": `reg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-      "contactid": params.contactId,
-      "openhouseid": params.eventId,
-      "registerdat": new Date().toISOString(),
-      "flyerstatus": ['pending'], // Multi-select field requires array
-    };
-
-    // Add OpenHouse data directly to Registration for email merge tags
-    // This ensures {{registration.openHouse_flyerUrl}} etc. work in emails
-    if (params.flyerUrl) {
-      properties["openhouse_flyerurl"] = params.flyerUrl;
-    }
-    if (params.address) {
-      properties["openhouse_address"] = params.address;
-    }
-    if (params.agentId) {
-      properties["openhouse_agentid"] = params.agentId;
-    }
-
-    console.log('[GHL] Registration properties:', JSON.stringify(properties));
-
     const registrationResponse = await fetch(
       `https://services.leadconnectorhq.com/objects/custom_objects.registrations/records`,
       {
@@ -149,7 +124,15 @@ export async function createGHLRegistrationRecord(params: {
         },
         body: JSON.stringify({
           locationId: params.locationId,
-          properties,
+          properties: {
+            // Property keys use internal field names WITHOUT the custom_objects.registrations prefix
+            "registrationid": `reg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+            "contactid": params.contactId,
+            "openhouseid": params.eventId,
+            "registerdat": new Date().toISOString(),
+            "flyerstatus": ['pending'], // Multi-select field requires array
+          },
+          // OpenHouse data is accessed via association: {{registration.openHouses.fieldName}}
         }),
       }
     );

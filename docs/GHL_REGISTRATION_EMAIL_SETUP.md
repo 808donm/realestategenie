@@ -1,59 +1,50 @@
 # GHL Registration Email Setup - Flyer URL and Property Details
 
-## Problem
-Email merge tags for property details were not showing up in emails sent from GHL workflows:
-- `{{registration.openHouse_address}}`
-- `{{registration.openHouse_flyerUrl}}`
-- `{{registration.openHouse_agentId}}`
+## Email Merge Tags
 
-## Root Cause
-These fields were only stored in the **OpenHouse** custom object, not in the **Registration** custom object. GHL email templates cannot reliably navigate associations between custom objects in merge tags.
+The correct merge tags to use in your GHL email templates are:
 
-## Solution
-The application now stores these fields **directly** in the Registration custom object, making them immediately accessible in email templates.
+```
+Download your property flyer: {{registration.openHouses.flyerUrl}}
+
+Property Address: {{registration.openHouses.address}}
+
+Agent ID: {{registration.openHouses.agentId}}
+```
+
+These fields are accessed through the **association** between Registration and OpenHouse custom objects.
 
 ## Required GHL Custom Object Fields
 
-### Registration Custom Object Fields
+### OpenHouse Custom Object Fields
 
-You need to add the following fields to your **Registration** custom object in GHL:
+The following fields must exist in your **OpenHouse** custom object in GHL:
 
 | Field Name | Internal Name | Type | Description |
 |------------|---------------|------|-------------|
-| OpenHouse Flyer URL | `openhouse_flyerurl` | Text | URL to download the property flyer PDF |
-| OpenHouse Address | `openhouse_address` | Text | Property address (e.g., "123 Main St, Honolulu, HI") |
-| OpenHouse Agent ID | `openhouse_agentid` | Text | Agent's unique ID in the system |
+| Address | `address` | Text | Property address (e.g., "123 Main St, Honolulu, HI") |
+| Flyer URL | `flyerUrl` | Text | URL to download the property flyer PDF |
+| Agent ID | `agentId` | Text | Agent's unique ID in the system |
 
-### How to Add Fields in GHL
+**Important:** The internal field names must use the **exact casing** shown above:
+- `address` (all lowercase)
+- `flyerUrl` (camelCase)
+- `agentId` (camelCase)
+
+### How to Verify Fields in GHL
 
 1. Go to **Settings → Custom Objects**
-2. Find your **Registrations** custom object
-3. Click **Edit** or **Add Field**
-4. For each field above:
-   - **Field Name**: Use the name from the "Field Name" column
-   - **Internal Name**: Use the exact name from the "Internal Name" column
-   - **Field Type**: Text
-   - Click **Save**
-
-## Email Merge Tags
-
-Once the fields are added, use these merge tags in your GHL email templates:
-
-```
-Download your property flyer: {{registration.openhouse_flyerurl}}
-
-Property Address: {{registration.openhouse_address}}
-
-Agent ID: {{registration.openhouse_agentid}}
-```
+2. Find your **OpenHouses** custom object
+3. Verify the internal field names match exactly (case-sensitive)
+4. If they don't match, edit the field and update the internal name
 
 ### Example Email Template
 
 ```html
-<p>Thank you for visiting the open house at <strong>{{registration.openhouse_address}}</strong>!</p>
+<p>Thank you for visiting the open house at <strong>{{registration.openHouses.address}}</strong>!</p>
 
 <p>
-  <a href="{{registration.openhouse_flyerurl}}" style="background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+  <a href="{{registration.openHouses.flyerUrl}}" style="background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
     Download Property Fact Sheet
   </a>
 </p>
@@ -64,14 +55,15 @@ Agent ID: {{registration.openhouse_agentid}}
 ## How It Works
 
 1. **User checks in** at open house via QR code
-2. **System creates OpenHouse record** with all property details
+2. **System creates OpenHouse record** with all property details:
+   - `address` - Property address
+   - `flyerUrl` - Full URL to download the PDF flyer
+   - `agentId` - Agent's unique ID
+   - Plus other fields (beds, baths, price, etc.)
 3. **System creates Registration record** linking the contact to the open house
-4. **Registration record includes**:
-   - `openhouse_flyerurl` - The full URL to download the PDF flyer
-   - `openhouse_address` - The property address
-   - `openhouse_agentid` - The agent's ID
+4. **System creates association** between Registration → OpenHouse
 5. **GHL workflow triggers** on the "OpenHouse" tag
-6. **Email template accesses** fields directly via `{{registration.field_name}}`
+6. **Email template accesses** OpenHouse fields via the association: `{{registration.openHouses.fieldName}}`
 
 ## Flyer URL Format
 
@@ -96,39 +88,71 @@ To verify the setup works:
 4. **Click the flyer URL** to ensure it downloads the PDF
 
 If fields show as blank:
-- Verify field names match exactly (case-sensitive)
-- Check that the Registration record was created (view in GHL custom objects)
-- Ensure your workflow is using the Registration object, not Contact
+- Verify field names in OpenHouse object match exactly (case-sensitive): `address`, `flyerUrl`, `agentId`
+- Check that both OpenHouse and Registration records were created (view in GHL custom objects)
+- Verify the association exists between Registration → OpenHouse
+- Ensure your workflow is triggered by Registration or Contact, not OpenHouse directly
 
 ## Troubleshooting
 
 ### Merge tags showing blank
-**Cause**: Field names don't match or fields don't exist in Registration object
-**Fix**: Double-check field internal names match exactly: `openhouse_flyerurl`, `openhouse_address`, `openhouse_agentid`
+**Cause**: Field names don't match exactly or association is missing
+
+**Fix**:
+- Verify OpenHouse custom object has fields with exact names: `address`, `flyerUrl`, `agentId` (case-sensitive)
+- Check that the association between Registration → OpenHouse exists in GHL
+- Test merge tag syntax: `{{registration.openHouses.address}}` (note the plural "openHouses")
 
 ### Flyer URL returns 404
 **Cause**: Event ID is invalid or event has been deleted
+
 **Fix**: Check that the open house event still exists in the database
 
 ### Association errors in GHL logs
-**Cause**: Normal - fields are now stored directly, associations are optional
-**Fix**: No action needed - associations are created but not required for email merge tags
+**Cause**: Association between Registration → OpenHouse is missing
 
-## Migration from Old Setup
+**Fix**:
+- Check that both custom objects exist in GHL
+- Verify the association is created (code creates it automatically)
+- You can manually create the association in GHL Settings → Custom Objects → Associations
 
-If you were previously relying on associations to access OpenHouse fields:
+## Correct Merge Tag Format
 
-**Old (unreliable):**
+The merge tags access OpenHouse fields through the Registration association:
+
+**Correct format:**
 ```
-{{openhouse.address}}  ❌ Doesn't work reliably
+{{registration.openHouses.address}}     ✅ Works
+{{registration.openHouses.flyerUrl}}    ✅ Works
+{{registration.openHouses.agentId}}     ✅ Works
 ```
 
-**New (reliable):**
+**Incorrect formats:**
 ```
-{{registration.openhouse_address}}  ✅ Works every time
+{{openhouse.address}}                   ❌ Missing registration context
+{{registration.openHouse.address}}      ❌ Singular "openHouse" (should be plural)
+{{registration.address}}                ❌ Field not on Registration object
 ```
 
-Update all your email templates to use the new `registration.openhouse_*` merge tags.
+Note: Use **plural** "openHouses" in the merge tag to access the associated OpenHouse object.
+
+## Code Implementation
+
+The application sends these field values when creating the OpenHouse custom object:
+
+```typescript
+{
+  locationId: params.locationId,
+  properties: {
+    "address": params.address,        // {{registration.openHouses.address}}
+    "flyerUrl": params.flyerUrl,      // {{registration.openHouses.flyerUrl}}
+    "agentId": params.agentId,        // {{registration.openHouses.agentId}}
+    // ... other fields
+  }
+}
+```
+
+The field names in the code **must match** the internal field names in your GHL OpenHouse custom object for the merge tags to work.
 
 ## Related Documentation
 

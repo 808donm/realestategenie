@@ -203,11 +203,9 @@ export async function POST(req: Request) {
                 eventId,
                 contactId: contactId,
                 openHouseRecordId,
-                flyerUrl,
-                address: evt?.address || '',
-                agentId: evt.agent_id,
               });
               console.log('GHL Registration created successfully');
+              console.log('OpenHouse fields accessible in emails via {{registration.openHouses.fieldName}}');
 
               // Create Opportunity in pipeline if configured
               if (ghlConfig.ghl_pipeline_id && ghlConfig.ghl_new_lead_stage) {
