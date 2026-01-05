@@ -74,6 +74,16 @@ export async function GET(req: NextRequest) {
     });
     const { access_token, refresh_token, expires_in, locationId, userId, companyId } = tokenData;
 
+    // Fetch existing integration to preserve pipeline settings
+    const { data: existingIntegration } = await supabase
+      .from("integrations")
+      .select("config")
+      .eq("agent_id", user.id)
+      .eq("provider", "ghl")
+      .single();
+
+    const existingConfig = (existingIntegration?.config as any) || {};
+
     // Store tokens in integrations table
     console.log("Storing GHL integration for user:", user.id);
     const { data: upsertData, error: upsertError } = await supabase
@@ -83,6 +93,10 @@ export async function GET(req: NextRequest) {
         provider: "ghl",
         status: "connected",
         config: {
+          // Preserve existing pipeline settings
+          ghl_pipeline_id: existingConfig.ghl_pipeline_id,
+          ghl_new_lead_stage: existingConfig.ghl_new_lead_stage,
+          // Update OAuth tokens
           ghl_access_token: access_token,
           ghl_refresh_token: refresh_token,
           ghl_expires_in: expires_in,
