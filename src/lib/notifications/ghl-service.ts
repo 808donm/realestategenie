@@ -109,9 +109,35 @@ export async function createGHLRegistrationRecord(params: {
   eventId: string;
   contactId: string;
   openHouseRecordId: string;
+  flyerUrl?: string;
+  address?: string;
+  agentId?: string;
 }) {
   try {
     console.log('[GHL] Creating Registration to link contact to OpenHouse...');
+    const properties: Record<string, any> = {
+      // Property keys use internal field names WITHOUT the custom_objects.registrations prefix
+      "registrationid": `reg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      "contactid": params.contactId,
+      "openhouseid": params.eventId,
+      "registerdat": new Date().toISOString(),
+      "flyerstatus": ['pending'], // Multi-select field requires array
+    };
+
+    // Add OpenHouse data directly to Registration for email merge tags
+    // This ensures {{registration.openHouse_flyerUrl}} etc. work in emails
+    if (params.flyerUrl) {
+      properties["openhouse_flyerurl"] = params.flyerUrl;
+    }
+    if (params.address) {
+      properties["openhouse_address"] = params.address;
+    }
+    if (params.agentId) {
+      properties["openhouse_agentid"] = params.agentId;
+    }
+
+    console.log('[GHL] Registration properties:', JSON.stringify(properties));
+
     const registrationResponse = await fetch(
       `https://services.leadconnectorhq.com/objects/custom_objects.registrations/records`,
       {
@@ -123,17 +149,7 @@ export async function createGHLRegistrationRecord(params: {
         },
         body: JSON.stringify({
           locationId: params.locationId,
-          properties: {
-            // Property keys use internal field names WITHOUT the custom_objects.registrations prefix
-            // Only include fields that exist in the Registration schema
-            "registrationid": `reg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-            "contactid": params.contactId,
-            "openhouseid": params.eventId,
-            "registerdat": new Date().toISOString(),
-            "flyerstatus": ['pending'], // Multi-select field requires array
-          },
-          // Note: Relationships are tracked via contactid and openhouseid properties
-          // Agent info, address, and flyer URL are stored in the OpenHouse object
+          properties,
         }),
       }
     );

@@ -203,6 +203,9 @@ export async function POST(req: Request) {
                 eventId,
                 contactId: contactId,
                 openHouseRecordId,
+                flyerUrl,
+                address: evt?.address || '',
+                agentId: evt.agent_id,
               });
               console.log('GHL Registration created successfully');
 
