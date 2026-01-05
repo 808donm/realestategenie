@@ -127,6 +127,41 @@ export default function LeaseCreateForm({
     setShowConfirmation(true);
   };
 
+  // Validate required fields and return list of missing fields
+  const validateFields = () => {
+    const missing: string[] = [];
+
+    if (!formData.tenant_name.trim()) missing.push("Tenant Name");
+    if (!formData.tenant_email.trim()) missing.push("Tenant Email");
+    if (!formData.monthly_rent || parseFloat(formData.monthly_rent) <= 0) missing.push("Monthly Rent");
+    if (!formData.security_deposit || parseFloat(formData.security_deposit) < 0) missing.push("Security Deposit");
+    if (!formData.lease_start_date) missing.push("Lease Start Date");
+    if (!formData.lease_end_date) missing.push("Lease End Date");
+
+    // Late fee validation
+    if (formData.late_fee_is_percentage) {
+      if (!formData.late_fee_percentage || parseFloat(formData.late_fee_percentage) <= 0) {
+        missing.push("Late Fee Percentage");
+      }
+    } else {
+      if (!formData.late_fee_amount || parseFloat(formData.late_fee_amount) <= 0) {
+        missing.push("Late Fee Amount");
+      }
+    }
+
+    if (!formData.late_grace_days || parseInt(formData.late_grace_days) < 0) missing.push("Late Grace Days");
+    if (!formData.nsf_fee || parseFloat(formData.nsf_fee) < 0) missing.push("NSF Fee");
+    if (!formData.deposit_return_days || parseInt(formData.deposit_return_days) <= 0) missing.push("Deposit Return Days");
+
+    // Conditional pet fields
+    if (formData.pets_allowed) {
+      if (!formData.pet_count || parseInt(formData.pet_count.toString()) <= 0) missing.push("Number of Pets");
+      if (!formData.pet_types.trim()) missing.push("Pet Types");
+    }
+
+    return missing;
+  };
+
   const handleSubmit = async () => {
     setShowConfirmation(false);
 
@@ -970,54 +1005,88 @@ export default function LeaseCreateForm({
       </div>
 
       {/* Confirmation Dialog */}
-      {showConfirmation && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-          onClick={() => setShowConfirmation(false)}
-        >
-          <Card
-            className="w-full max-w-md mx-4"
-            onClick={(e) => e.stopPropagation()}
+      {showConfirmation && (() => {
+        const missingFields = validateFields();
+        const hasErrors = missingFields.length > 0;
+
+        return (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            onClick={() => setShowConfirmation(false)}
           >
-            <CardHeader>
-              <CardTitle>Confirm Lease Creation</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm">
-                Have you filled in all the required form fields and reviewed the lease details?
-              </p>
-              <div className="bg-muted p-3 rounded-md text-sm space-y-1">
-                <p><strong>Tenant:</strong> {formData.tenant_name}</p>
-                <p><strong>Property:</strong> {property?.address || "Selected property"}</p>
-                <p><strong>Monthly Rent:</strong> ${formData.monthly_rent}</p>
-                <p><strong>Lease Term:</strong> {formData.lease_start_date} to {formData.lease_end_date}</p>
-                <p><strong>Pets Allowed:</strong> {formData.pets_allowed ? "Yes" : "No"}</p>
-                <p><strong>Subletting Allowed:</strong> {formData.subletting_allowed ? "Yes" : "No"}</p>
-                <p><strong>Late Fee Type:</strong> {formData.late_fee_is_percentage ? "Percentage" : "Flat Amount"}</p>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Once created, this lease will be sent for e-signature. Make sure all information is correct before proceeding.
-              </p>
-              <div className="flex gap-3 justify-end pt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowConfirmation(false)}
-                >
-                  Review Form
-                </Button>
-                <Button
-                  type="button"
-                  onClick={handleSubmit}
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? "Creating..." : "Yes, Create Lease"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+            <Card
+              className="w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <CardHeader>
+                <CardTitle>
+                  {hasErrors ? "⚠️ Missing Required Fields" : "✓ Confirm Lease Creation"}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {hasErrors ? (
+                  <>
+                    <div className="bg-red-50 border border-red-200 p-3 rounded-md">
+                      <p className="text-sm font-semibold text-red-800 mb-2">
+                        Please fill in the following required fields:
+                      </p>
+                      <ul className="list-disc list-inside text-sm text-red-700 space-y-1">
+                        {missingFields.map((field, idx) => (
+                          <li key={idx}>{field}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Scroll through the form and complete all required fields before creating the lease.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm font-medium text-green-700">
+                      ✓ All required fields are filled!
+                    </p>
+                    <p className="text-sm">
+                      Please review the lease details below before proceeding:
+                    </p>
+                    <div className="bg-muted p-3 rounded-md text-sm space-y-1">
+                      <p><strong>Tenant:</strong> {formData.tenant_name}</p>
+                      <p><strong>Property:</strong> {property?.address || "Selected property"}</p>
+                      <p><strong>Monthly Rent:</strong> ${formData.monthly_rent}</p>
+                      <p><strong>Lease Term:</strong> {formData.lease_start_date} to {formData.lease_end_date}</p>
+                      <p><strong>Security Deposit:</strong> ${formData.security_deposit}</p>
+                      <p><strong>Pets Allowed:</strong> {formData.pets_allowed ? `Yes (${formData.pet_count} ${formData.pet_types})` : "No"}</p>
+                      <p><strong>Subletting Allowed:</strong> {formData.subletting_allowed ? "Yes" : "No"}</p>
+                      <p><strong>Late Fee:</strong> {formData.late_fee_is_percentage ? `${formData.late_fee_percentage}% of rent` : `$${formData.late_fee_amount}`} ({formData.late_fee_frequency})</p>
+                      <p><strong>Grace Period:</strong> {formData.late_grace_days} days</p>
+                      <p><strong>NSF Fee:</strong> ${formData.nsf_fee}</p>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Once created, this lease will be sent for e-signature. Make sure all information is correct before proceeding.
+                    </p>
+                  </>
+                )}
+                <div className="flex gap-3 justify-end pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowConfirmation(false)}
+                  >
+                    {hasErrors ? "Back to Form" : "Review Form"}
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={isSubmitting || hasErrors}
+                    className={hasErrors ? "opacity-50 cursor-not-allowed" : ""}
+                  >
+                    {isSubmitting ? "Creating..." : hasErrors ? "Fix Missing Fields" : "Yes, Create Lease"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        );
+      })()}
     </form>
   );
 }
