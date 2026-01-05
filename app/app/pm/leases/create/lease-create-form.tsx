@@ -629,7 +629,13 @@ export default function LeaseCreateForm({
             <Label htmlFor="carpet_cleaning" className="cursor-pointer">
               Require professional carpet cleaning upon move-out
             </Label>
+            <span className="text-xs text-muted-foreground ml-1" title="Check this box if professional carpet cleaning WILL BE required at move-out">
+              ℹ️
+            </span>
           </div>
+          <p className="text-xs text-muted-foreground pl-6">
+            Checking this box requires tenant to provide proof of professional carpet cleaning at move-out
+          </p>
           <div className="flex items-center space-x-2">
             <Checkbox
               id="house_cleaning"
@@ -644,7 +650,13 @@ export default function LeaseCreateForm({
             <Label htmlFor="house_cleaning" className="cursor-pointer">
               Require professional house cleaning upon move-out
             </Label>
+            <span className="text-xs text-muted-foreground ml-1" title="Check this box if professional house cleaning WILL BE required at move-out">
+              ℹ️
+            </span>
           </div>
+          <p className="text-xs text-muted-foreground pl-6">
+            Checking this box requires tenant to provide proof of professional house cleaning at move-out
+          </p>
           <div>
             <Label htmlFor="custom_requirements">
               Custom Requirements (Optional)
@@ -686,7 +698,13 @@ export default function LeaseCreateForm({
             <Label htmlFor="pets_allowed" className="cursor-pointer">
               Pets Allowed
             </Label>
+            <span className="text-xs text-muted-foreground ml-1" title="Check this box if pets ARE allowed on the property">
+              ℹ️
+            </span>
           </div>
+          <p className="text-xs text-muted-foreground pl-6">
+            Check if pets ARE allowed on the property
+          </p>
 
           {formData.pets_allowed && (
             <div className="grid gap-4 md:grid-cols-3 pl-6 pt-2">
@@ -741,7 +759,13 @@ export default function LeaseCreateForm({
             <Label htmlFor="subletting_allowed" className="cursor-pointer">
               Subletting Allowed
             </Label>
+            <span className="text-xs text-muted-foreground ml-1" title="Check this box if subletting IS allowed">
+              ℹ️
+            </span>
           </div>
+          <p className="text-xs text-muted-foreground pl-6">
+            Check if tenant may sublet the property to others
+          </p>
         </CardContent>
       </Card>
 
@@ -752,11 +776,16 @@ export default function LeaseCreateForm({
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label htmlFor="authorized_occupants">Authorized Occupants</Label>
+            <div className="flex items-center gap-1 mb-1">
+              <Label htmlFor="authorized_occupants">Authorized Occupants</Label>
+              <span className="text-xs text-muted-foreground" title="Include occupant name and phone number, one occupant per line">
+                ℹ️
+              </span>
+            </div>
             <textarea
               id="authorized_occupants"
-              rows={2}
-              placeholder="List all authorized occupants (names)"
+              rows={4}
+              placeholder="John Doe - (808) 555-1234&#10;Jane Smith - (808) 555-5678&#10;(One occupant per line with phone number)"
               value={formData.authorized_occupants}
               onChange={(e) =>
                 setFormData({
@@ -767,7 +796,7 @@ export default function LeaseCreateForm({
               className="w-full px-3 py-2 border rounded-md"
             />
             <p className="text-xs text-muted-foreground mt-1">
-              Names of all people authorized to occupy the property
+              Include occupant name and phone number (one occupant per line)
             </p>
           </div>
 
