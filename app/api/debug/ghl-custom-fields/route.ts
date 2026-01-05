@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { GHL_LEASE_CUSTOM_FIELDS } from "@/lib/integrations/ghl-lease-fields";
+import { getValidGHLToken } from "@/lib/integrations/ghl-token-refresh";
 
 /**
  * Debug endpoint to compare expected vs actual GHL custom fields
@@ -15,24 +16,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get GHL integration
-    const { data: ghlIntegration } = await supabase
-      .from("integrations")
-      .select("*")
-      .eq("agent_id", userData.user.id)
-      .eq("provider", "ghl")
-      .single();
+    // Get GHL integration with token refresh
+    const ghlCredentials = await getValidGHLToken(userData.user.id);
 
-    if (!ghlIntegration?.config?.ghl_access_token || !ghlIntegration?.config?.ghl_location_id) {
-      return NextResponse.json({ error: "GHL not connected" }, { status: 400 });
+    if (!ghlCredentials?.access_token || !ghlCredentials?.location_id) {
+      return NextResponse.json({ error: "GHL not connected or token expired" }, { status: 400 });
     }
 
     // Fetch custom fields from GHL
     const response = await fetch(
-      `https://services.leadconnectorhq.com/locations/${ghlIntegration.config.ghl_location_id}/customFields`,
+      `https://services.leadconnectorhq.com/locations/${ghlCredentials.location_id}/customFields`,
       {
         headers: {
-          'Authorization': `Bearer ${ghlIntegration.config.ghl_access_token}`,
+          'Authorization': `Bearer ${ghlCredentials.access_token}`,
           'Content-Type': 'application/json',
           'Version': '2021-07-28',
         },
