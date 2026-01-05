@@ -41,13 +41,26 @@ export async function getValidGHLConfig(agentId: string): Promise<{
 
     const config = integration.config as any;
 
-    if (!config.ghl_access_token || !config.ghl_refresh_token || !config.ghl_expires_at) {
+    // Support both NEW format (ghl_ prefix) and OLD format (no prefix) for backwards compatibility
+    const accessToken = config.ghl_access_token || config.access_token;
+    const refreshToken = config.ghl_refresh_token || config.refresh_token;
+    const expiresAtStr = config.ghl_expires_at || config.expires_at;
+    const locationId = config.ghl_location_id || config.location_id;
+
+    if (!accessToken || !refreshToken || !expiresAtStr) {
       console.error("[Token Refresh] Invalid config - missing tokens or expiration");
+      console.error("[Token Refresh] Has ghl_access_token:", !!config.ghl_access_token);
+      console.error("[Token Refresh] Has access_token:", !!config.access_token);
+      console.error("[Token Refresh] Has ghl_refresh_token:", !!config.ghl_refresh_token);
+      console.error("[Token Refresh] Has refresh_token:", !!config.refresh_token);
+      console.error("[Token Refresh] Has ghl_expires_at:", !!config.ghl_expires_at);
+      console.error("[Token Refresh] Has expires_at:", !!config.expires_at);
+      console.error("[Token Refresh] Config keys:", Object.keys(config));
       return null;
     }
 
     // Check if token is expired or about to expire (within 5 minutes)
-    const expiresAt = new Date(config.ghl_expires_at);
+    const expiresAt = new Date(expiresAtStr);
     const now = new Date();
     const fiveMinutesFromNow = new Date(now.getTime() + 5 * 60 * 1000);
 
@@ -59,9 +72,9 @@ export async function getValidGHLConfig(agentId: string): Promise<{
     if (expiresAt > fiveMinutesFromNow) {
       console.log("[Token Refresh] Token is still valid, no refresh needed");
       return {
-        access_token: config.ghl_access_token,
-        location_id: config.ghl_location_id,
-        refresh_token: config.ghl_refresh_token,
+        access_token: accessToken,
+        location_id: locationId,
+        refresh_token: refreshToken,
         ghl_pipeline_id: config.ghl_pipeline_id,
         ghl_new_lead_stage: config.ghl_new_lead_stage,
       };
@@ -70,21 +83,36 @@ export async function getValidGHLConfig(agentId: string): Promise<{
     // Token is expired or about to expire - refresh it
     console.log("[Token Refresh] Token expired or expiring soon, refreshing...");
 
-    const refreshedTokens = await refreshGHLToken(config.ghl_refresh_token);
+    const refreshedTokens = await refreshGHLToken(refreshToken);
 
     console.log("[Token Refresh] Successfully refreshed token");
 
     // Calculate new expiration time
     const newExpiresAt = new Date(now.getTime() + refreshedTokens.expires_in * 1000);
 
-    // Update the database with new tokens
+    // Update the database with new tokens using NEW field names (ghl_ prefix)
     const updatedConfig = {
       ...config,
+      // Set new field names
       ghl_access_token: refreshedTokens.access_token,
       ghl_refresh_token: refreshedTokens.refresh_token,
       ghl_expires_at: newExpiresAt.toISOString(),
       ghl_expires_in: refreshedTokens.expires_in,
+      ghl_location_id: locationId, // Ensure location_id is also in new format
+      // Remove old field names if they exist
+      access_token: undefined,
+      refresh_token: undefined,
+      expires_at: undefined,
+      expires_in: undefined,
+      location_id: undefined,
     };
+
+    // Clean up undefined values
+    Object.keys(updatedConfig).forEach(key => {
+      if (updatedConfig[key] === undefined) {
+        delete updatedConfig[key];
+      }
+    });
 
     const { error: updateError } = await supabaseAdmin
       .from("integrations")
@@ -103,7 +131,7 @@ export async function getValidGHLConfig(agentId: string): Promise<{
 
     return {
       access_token: refreshedTokens.access_token,
-      location_id: config.ghl_location_id,
+      location_id: locationId,
       refresh_token: refreshedTokens.refresh_token,
       ghl_pipeline_id: config.ghl_pipeline_id,
       ghl_new_lead_stage: config.ghl_new_lead_stage,

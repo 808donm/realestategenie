@@ -74,7 +74,7 @@ export async function GET(req: NextRequest) {
     });
     const { access_token, refresh_token, expires_in, locationId, userId, companyId } = tokenData;
 
-    // Fetch existing integration to preserve pipeline settings
+    // Fetch existing integration to preserve pipeline settings ONLY
     const { data: existingIntegration } = await supabase
       .from("integrations")
       .select("config")
@@ -84,27 +84,39 @@ export async function GET(req: NextRequest) {
 
     const existingConfig = (existingIntegration?.config as any) || {};
 
-    // Store tokens in integrations table
+    // Store tokens in integrations table with NEW field names (ghl_ prefix)
+    // IMPORTANT: We explicitly set ONLY the new fields to avoid old field names persisting
     console.log("Storing GHL integration for user:", user.id);
+    const newConfig = {
+      // Preserve existing pipeline settings (if they use ghl_ prefix)
+      ghl_pipeline_id: existingConfig.ghl_pipeline_id || undefined,
+      ghl_new_lead_stage: existingConfig.ghl_new_lead_stage || undefined,
+      // Set OAuth tokens with ghl_ prefix (NEW FORMAT)
+      ghl_access_token: access_token,
+      ghl_refresh_token: refresh_token,
+      ghl_expires_in: expires_in,
+      ghl_expires_at: new Date(Date.now() + (expires_in || 86400) * 1000).toISOString(),
+      ghl_location_id: locationId,
+      ghl_user_id: userId,
+      ghl_company_id: companyId,
+    };
+
+    // Remove undefined values to keep config clean
+    Object.keys(newConfig).forEach(key => {
+      if (newConfig[key as keyof typeof newConfig] === undefined) {
+        delete newConfig[key as keyof typeof newConfig];
+      }
+    });
+
+    console.log("New GHL config keys:", Object.keys(newConfig));
+
     const { data: upsertData, error: upsertError } = await supabase
       .from("integrations")
       .upsert({
         agent_id: user.id,
         provider: "ghl",
         status: "connected",
-        config: {
-          // Preserve existing pipeline settings
-          ghl_pipeline_id: existingConfig.ghl_pipeline_id,
-          ghl_new_lead_stage: existingConfig.ghl_new_lead_stage,
-          // Update OAuth tokens
-          ghl_access_token: access_token,
-          ghl_refresh_token: refresh_token,
-          ghl_expires_in: expires_in,
-          ghl_expires_at: new Date(Date.now() + (expires_in || 86400) * 1000).toISOString(),
-          ghl_location_id: locationId,
-          ghl_user_id: userId,
-          ghl_company_id: companyId,
-        },
+        config: newConfig, // Use the clean config with only new field names
       }, {
         onConflict: "agent_id,provider",
       })
