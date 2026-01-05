@@ -17,10 +17,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   style={{ display: "flex", alignItems: "center", gap: 10, fontWeight: 900, textDecoration: "none" }}
 >
   <Image
-    src="/real-estate-genie-logo.png"
+    src="/logo.png"
     alt="The Real Estate Genie"
-    width={44}
-    height={44}
+    width={120}
+    height={120}
     priority
     style={{ borderRadius: 6 }}
   />
@@ -33,6 +33,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <NavLink href="/app/dashboard">Dashboard</NavLink>
             <NavLink href="/app/open-houses">Open Houses</NavLink>
             <NavLink href="/app/leads">Leads</NavLink>
+            <NavLink href="/app/neighborhood-profiles">Neighborhoods</NavLink>
+            <NavLink href="/app/integrations">Integrations</NavLink>
             <NavLink href="/app/settings/profile">Settings</NavLink>
           </nav>
 

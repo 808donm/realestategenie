@@ -28,13 +28,30 @@ export async function GET(req: NextRequest) {
   );
 
   if (code) {
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    console.log("[OAuth Callback] Exchanging code for session...");
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+
     if (error) {
+      console.error("[OAuth Callback] Exchange failed:", error);
       const signInUrl = new URL("/signin", url.origin);
+      signInUrl.searchParams.set("error", error.message);
       signInUrl.searchParams.set("redirect", redirect);
       return NextResponse.redirect(signInUrl);
     }
+
+    if (data?.session) {
+      console.log("[OAuth Callback] Session created successfully for user:", data.user?.email);
+      console.log("[OAuth Callback] Session expires at:", data.session.expires_at);
+      console.log("[OAuth Callback] Cookies being set:", res.cookies.getAll().map(c => c.name));
+    }
+  } else {
+    // If no code, redirect to signin with error
+    console.error("[OAuth Callback] No authorization code in callback");
+    const signInUrl = new URL("/signin", url.origin);
+    signInUrl.searchParams.set("error", "No authorization code received");
+    return NextResponse.redirect(signInUrl);
   }
 
+  console.log("[OAuth Callback] Redirecting to:", redirect);
   return res;
 }

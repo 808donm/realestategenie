@@ -1,0 +1,306 @@
+/**
+ * GHL Custom Fields Schema for Residential Leases
+ *
+ * This file defines all custom fields required in GoHighLevel for the
+ * Standard Residential Lease Agreement automation.
+ *
+ * SETUP: Create these fields once in GHL Settings → Custom Fields → Contact Fields
+ * Then create a snapshot to replicate to all agent sub-accounts.
+ */
+
+export interface GHLCustomField {
+  key: string;
+  name: string;
+  type: 'TEXT' | 'TEXTAREA' | 'DATE' | 'NUMERICAL' | 'MONETARY' | 'DROPDOWN' | 'CHECKBOX';
+  default?: string;
+  options?: string[];
+  description?: string;
+}
+
+export const GHL_LEASE_CUSTOM_FIELDS: GHLCustomField[] = [
+  // ========================================
+  // PROPERTY INFORMATION
+  // ========================================
+  {
+    key: 'lease_property_address',
+    name: 'Property Address',
+    type: 'TEXT',
+    description: 'Full property address including unit number'
+  },
+  {
+    key: 'lease_property_city',
+    name: 'Property City',
+    type: 'TEXT',
+    description: 'City where property is located'
+  },
+  {
+    key: 'lease_property_state',
+    name: 'Property State',
+    type: 'TEXT',
+    description: 'State where property is located'
+  },
+  {
+    key: 'lease_property_zipcode',
+    name: 'Property Zip Code',
+    type: 'TEXT',
+    description: 'Zip code where property is located'
+  },
+
+  // ========================================
+  // LEASE TERM
+  // ========================================
+  {
+    key: 'lease_start_date',
+    name: 'Lease Start Date',
+    type: 'DATE',
+    description: 'Date when lease term begins'
+  },
+  {
+    key: 'lease_end_date',
+    name: 'Lease End Date',
+    type: 'DATE',
+    description: 'Date when initial lease term ends'
+  },
+  {
+    key: 'lease_notice_days',
+    name: 'Termination Notice Days',
+    type: 'NUMERICAL',
+    default: '30',
+    description: 'Days notice required for month-to-month termination'
+  },
+
+  // ========================================
+  // RENT & PAYMENT TERMS
+  // ========================================
+  {
+    key: 'lease_monthly_rent',
+    name: 'Monthly Rent',
+    type: 'MONETARY',
+    description: 'Monthly rent amount'
+  },
+  {
+    key: 'lease_rent_due_day',
+    name: 'Rent Due Day',
+    type: 'NUMERICAL',
+    default: '1',
+    description: 'Day of month rent is due (1-31)'
+  },
+  {
+    key: 'lease_late_grace_days',
+    name: 'Late Fee Grace Period',
+    type: 'NUMERICAL',
+    default: '5',
+    description: 'Days after due date before late fee applies'
+  },
+  {
+    key: 'lease_late_fee_type_fixed',
+    name: 'Late Fee Type - Fixed Amount',
+    type: 'CHECKBOX',
+    description: 'Checkbox for fixed amount late fee type'
+  },
+  {
+    key: 'lease_late_fee_type_percentage',
+    name: 'Late Fee Type - Percentage',
+    type: 'CHECKBOX',
+    description: 'Checkbox for percentage late fee type'
+  },
+  {
+    key: 'lease_late_fee_amount',
+    name: 'Late Fee Fixed Amount',
+    type: 'MONETARY',
+    default: '50.00',
+    description: 'Late fee fixed dollar amount (used when "Is Percentage" is unchecked)'
+  },
+  {
+    key: 'lease_late_fee_percentage',
+    name: 'Late Fee Percentage',
+    type: 'NUMERICAL',
+    default: '5',
+    description: 'Late fee as percentage of rent (e.g., "5" for 5%, used when "Is Percentage" is checked)'
+  },
+  {
+    key: 'lease_late_fee_frequency_occurence',
+    name: 'Late Fee Frequency - Per Occurence',
+    type: 'CHECKBOX',
+    description: 'Checkbox for per occurrence late fee frequency'
+  },
+  {
+    key: 'lease_late_fee_frequency_daily',
+    name: 'Late Fee Frequency - Per Day',
+    type: 'CHECKBOX',
+    description: 'Checkbox for per day late fee frequency'
+  },
+  {
+    key: 'lease_nsf_fee',
+    name: 'NSF Check Fee',
+    type: 'MONETARY',
+    default: '35.00',
+    description: 'Fee for returned/insufficient funds check'
+  },
+  {
+    key: 'lease_increase_notice',
+    name: 'Rent Increase Notice Days',
+    type: 'NUMERICAL',
+    default: '30',
+    description: 'Days notice required for rent increase'
+  },
+
+  // ========================================
+  // SECURITY DEPOSIT
+  // ========================================
+  {
+    key: 'lease_security_deposit',
+    name: 'Security Deposit',
+    type: 'MONETARY',
+    description: 'Security deposit amount'
+  },
+  {
+    key: 'lease_deposit_return_days',
+    name: 'Deposit Return Days',
+    type: 'NUMERICAL',
+    default: '60',
+    description: 'Days to return security deposit after move-out (state-specific)'
+  },
+
+  // ========================================
+  // OCCUPANTS
+  // ========================================
+  {
+    key: 'lease_occupants',
+    name: 'Authorized Occupants',
+    type: 'TEXTAREA',
+    description: 'Full names of all authorized occupants (comma-separated)'
+  },
+
+  // ========================================
+  // SUBLETTING
+  // ========================================
+  {
+    key: 'lease_subletting_yes',
+    name: 'Subletting Yes',
+    type: 'CHECKBOX',
+    description: 'Checkbox for subletting allowed'
+  },
+  {
+    key: 'lease_subletting_no',
+    name: 'Subletting No',
+    type: 'CHECKBOX',
+    description: 'Checkbox for subletting not allowed'
+  },
+
+  // ========================================
+  // PET POLICY
+  // ========================================
+  {
+    key: 'lease_pets_yes',
+    name: 'Pets Yes',
+    type: 'CHECKBOX',
+    description: 'Checkbox for pets allowed'
+  },
+  {
+    key: 'lease_pets_no',
+    name: 'Pets No',
+    type: 'CHECKBOX',
+    description: 'Checkbox for pets not allowed'
+  },
+  {
+    key: 'lease_pet_count',
+    name: 'Number of Pets',
+    type: 'NUMERICAL',
+    default: '0',
+    description: 'Maximum number of pets allowed'
+  },
+  {
+    key: 'lease_pet_types',
+    name: 'Pet Types',
+    type: 'TEXT',
+    description: 'Allowed pet types (e.g., "Dogs, Cats")'
+  },
+  {
+    key: 'lease_pet_weight_limit',
+    name: 'Pet Weight Limit',
+    type: 'TEXT',
+    description: 'Maximum pet weight (e.g., "50 pounds")'
+  },
+  {
+    key: 'lease_pet_deposit',
+    name: 'Pet Deposit (per pet)',
+    type: 'MONETARY',
+    default: '0',
+    description: 'Deposit amount per pet'
+  },
+
+  // ========================================
+  // LANDLORD INFORMATION (for notices)
+  // ========================================
+  {
+    key: 'lease_landlord_notice_address',
+    name: 'Landlord Notice Address',
+    type: 'TEXTAREA',
+    description: 'Address where tenant should send notices to landlord'
+  },
+];
+
+/**
+ * Field groups for GHL UI organization
+ */
+export const GHL_LEASE_FIELD_GROUPS = {
+  property: ['lease_property_address', 'lease_property_city', 'lease_property_state', 'lease_property_zipcode'],
+  term: ['lease_start_date', 'lease_end_date', 'lease_notice_days'],
+  rent: [
+    'lease_monthly_rent',
+    'lease_rent_due_day',
+    'lease_late_grace_days',
+    'lease_late_fee_type_fixed',
+    'lease_late_fee_type_percentage',
+    'lease_late_fee_amount',
+    'lease_late_fee_percentage',
+    'lease_late_fee_frequency_occurence',
+    'lease_late_fee_frequency_daily',
+    'lease_nsf_fee',
+    'lease_increase_notice',
+  ],
+  deposit: ['lease_security_deposit', 'lease_deposit_return_days'],
+  occupants: ['lease_occupants'],
+  subletting: ['lease_subletting_yes', 'lease_subletting_no'],
+  pets: [
+    'lease_pets_yes',
+    'lease_pets_no',
+    'lease_pet_count',
+    'lease_pet_types',
+    'lease_pet_weight_limit',
+    'lease_pet_deposit',
+  ],
+  landlord: ['lease_landlord_notice_address'],
+};
+
+/**
+ * Helper to get field by key
+ */
+export function getLeaseField(key: string): GHLCustomField | undefined {
+  return GHL_LEASE_CUSTOM_FIELDS.find(field => field.key === key);
+}
+
+/**
+ * Helper to validate required fields are present
+ */
+export function validateRequiredLeaseFields(data: Record<string, any>): string[] {
+  const required = [
+    'lease_property_address',
+    'lease_start_date',
+    'lease_end_date',
+    'lease_monthly_rent',
+    'lease_security_deposit',
+  ];
+
+  const missing: string[] = [];
+
+  for (const key of required) {
+    if (!data[key] || data[key] === '') {
+      const field = getLeaseField(key);
+      missing.push(field?.name || key);
+    }
+  }
+
+  return missing;
+}

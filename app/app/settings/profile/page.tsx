@@ -12,7 +12,7 @@ export default async function ProfilePage() {
 
   const { data: agent, error } = await supabase
     .from("agents")
-    .select("id,email,display_name,license_number,phone_e164,locations_served,photo_url,landing_page")
+    .select("id,email,display_name,license_number,agency_name,phone_e164,locations_served,photo_url,landing_page,headshot_url,company_logo_url")
     .eq("id", userData.user.id)
     .single();
 

@@ -1,20 +1,24 @@
 import Link from "next/link";
+import Image from "next/image";
 import { supabaseServer } from "@/lib/supabase/server";
+import { geocodeAddress } from "@/lib/geocoding";
 import QRPanel from "./qr-panel";
+import PropertyMap from "@/components/PropertyMapWrapper";
 
 export default async function OpenHouseDetail({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = await params;
   const supabase = await supabaseServer();
 
   const { data: evt, error } = await supabase
     .from("open_house_events")
     .select(
-      "id,address,start_at,end_at,status,pdf_download_enabled,details_page_enabled"
+      "id,address,start_at,end_at,status,pdf_download_enabled,details_page_enabled,latitude,longitude,property_photo_url"
     )
-    .eq("id", params.id)
+    .eq("id", id)
     .single();
 
   if (error || !evt) {
@@ -25,15 +29,24 @@ export default async function OpenHouseDetail({
     );
   }
 
+  const geocodedLocation =
+    !evt.latitude || !evt.longitude ? await geocodeAddress(evt.address) : null;
+  const resolvedLatitude = evt.latitude ?? geocodedLocation?.latitude ?? null;
+  const resolvedLongitude = evt.longitude ?? geocodedLocation?.longitude ?? null;
+
 async function setStatus(formData: FormData) {
   "use server";
   const status = String(formData.get("status") || "");
   const supabase = await (await import("@/lib/supabase/server")).supabaseServer();
+  const { revalidatePath } = await import("next/cache");
 
   await supabase
     .from("open_house_events")
     .update({ status })
-    .eq("id", params.id);
+    .eq("id", id);
+
+  // Revalidate the page to show updated status
+  revalidatePath(`/app/open-houses/${id}`);
 }
 
   return (
@@ -60,10 +73,74 @@ async function setStatus(formData: FormData) {
        </form>
 
 
-        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           <Link href="/app/open-houses">Back to list</Link>
           <Link href={`/app/open-houses/${evt.id}/attendees`}>Attendees</Link>
+          <Link
+            href={`/app/open-houses/${evt.id}/edit`}
+            style={{
+              padding: "8px 12px",
+              background: "#10b981",
+              color: "white",
+              borderRadius: 6,
+              textDecoration: "none",
+              fontWeight: 600,
+              fontSize: 14,
+            }}
+          >
+            ✏️ Edit Property Details
+          </Link>
+          <a
+            href={`/api/open-houses/${evt.id}/flyer`}
+            download
+            style={{
+              padding: "8px 12px",
+              background: "#3b82f6",
+              color: "white",
+              borderRadius: 6,
+              textDecoration: "none",
+              fontWeight: 600,
+              fontSize: 14,
+            }}
+          >
+            📄 Download Flyer
+          </a>
         </div>
+      </div>
+
+      {/* Property Photo */}
+      {evt.property_photo_url && (
+        <div style={{ marginTop: 32 }}>
+          <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 12 }}>
+            Property Photo
+          </h2>
+          <div style={{ position: "relative", width: "100%", maxWidth: 800, height: 400, borderRadius: 8, overflow: "hidden" }}>
+            <Image
+              src={evt.property_photo_url}
+              alt={`Property at ${evt.address}`}
+              fill
+              style={{ objectFit: "cover" }}
+              priority
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Property Location Map */}
+      <div style={{ marginTop: 32 }}>
+        <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 12 }}>
+          Property Location
+        </h2>
+        <PropertyMap
+          latitude={resolvedLatitude}
+          longitude={resolvedLongitude}
+          address={evt.address}
+          googleMapsApiKey={
+            process.env.GOOGLE_MAPS_API_KEY ||
+            process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+          }
+          className="h-[400px]"
+        />
       </div>
 
       <QRPanel eventId={evt.id} status={evt.status} />
