@@ -39,6 +39,15 @@ export interface SendTenantInvitationParams {
   expiresAt: Date;
 }
 
+export interface SendOpenHouseEmailParams {
+  to: string;
+  name: string;
+  propertyAddress: string;
+  flyerUrl: string;
+  isReturnVisit?: boolean;
+  visitCount?: number;
+}
+
 export async function sendInvitationEmail(params: SendInvitationEmailParams) {
   const { to, invitationUrl, invitedBy, expiresAt } = params;
 
@@ -159,6 +168,42 @@ export async function sendTenantInvitationEmail(params: SendTenantInvitationPara
     return data;
   } catch (error: any) {
     console.error("Failed to send tenant invitation email:", error);
+    throw error;
+  }
+}
+
+export async function sendOpenHouseEmail(params: SendOpenHouseEmailParams) {
+  const { to, name, propertyAddress, flyerUrl, isReturnVisit, visitCount } = params;
+
+  // Get Resend client (will throw if API key not configured)
+  const resend = getResendClient();
+
+  const subject = isReturnVisit
+    ? `🔥 Welcome Back! ${propertyAddress}`
+    : `Thank You for Visiting ${propertyAddress}`;
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: "Real Estate Genie <support@realestategenie.app>",
+      to: [to],
+      subject,
+      html: isReturnVisit
+        ? getReturnVisitEmailHtml({ name, propertyAddress, flyerUrl, visitCount: visitCount || 2 })
+        : getFirstVisitEmailHtml({ name, propertyAddress, flyerUrl }),
+      text: isReturnVisit
+        ? getReturnVisitEmailText({ name, propertyAddress, flyerUrl, visitCount: visitCount || 2 })
+        : getFirstVisitEmailText({ name, propertyAddress, flyerUrl }),
+    });
+
+    if (error) {
+      console.error("Resend open house email error:", error);
+      throw new Error(`Failed to send open house email: ${error.message}`);
+    }
+
+    console.log("Open house email sent successfully via Resend:", data?.id);
+    return data;
+  } catch (error: any) {
+    console.error("Failed to send open house email via Resend:", error);
     throw error;
   }
 }
@@ -619,6 +664,286 @@ Questions? Contact your property manager, ${landlordName}, for assistance.
 
 © ${new Date().getFullYear()} Real Estate Genie. All rights reserved.
 Modern property management made simple.
+  `.trim();
+}
+
+function getFirstVisitEmailHtml({
+  name,
+  propertyAddress,
+  flyerUrl,
+}: {
+  name: string;
+  propertyAddress: string;
+  flyerUrl: string;
+}) {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thank You for Visiting</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f9fafb;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f9fafb; padding: 40px 0;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden;">
+
+          <!-- Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 40px 30px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 800;">
+                Thank You for Visiting!
+              </h1>
+              <p style="margin: 10px 0 0; color: rgba(255,255,255,0.9); font-size: 16px;">
+                ${propertyAddress}
+              </p>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="padding: 40px;">
+              <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #374151;">
+                Hi ${name},
+              </p>
+
+              <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #374151;">
+                Thank you for visiting our open house today at <strong>${propertyAddress}</strong>! We hope you enjoyed touring the property.
+              </p>
+
+              <p style="margin: 0 0 30px; font-size: 16px; line-height: 1.6; color: #374151;">
+                Download the property information sheet to review all the details:
+              </p>
+
+              <!-- CTA Button -->
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center" style="padding: 0 0 30px;">
+                    <a href="${flyerUrl}"
+                       style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);">
+                      📄 Download Property Fact Sheet
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #374151;">
+                If you have any questions or would like to schedule a private showing, please don't hesitate to reach out. We'd love to help you find your dream home!
+              </p>
+
+              <p style="margin: 20px 0 0; font-size: 16px; line-height: 1.6; color: #374151;">
+                Best regards,<br>
+                <strong>Your Real Estate Team</strong>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f9fafb; padding: 30px 40px; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 0 0 10px; font-size: 12px; color: #6b7280; text-align: center;">
+                © ${new Date().getFullYear()} Real Estate Genie. All rights reserved.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `.trim();
+}
+
+function getFirstVisitEmailText({
+  name,
+  propertyAddress,
+  flyerUrl,
+}: {
+  name: string;
+  propertyAddress: string;
+  flyerUrl: string;
+}) {
+  return `
+Thank You for Visiting!
+${propertyAddress}
+
+Hi ${name},
+
+Thank you for visiting our open house today at ${propertyAddress}! We hope you enjoyed touring the property.
+
+Download the property information sheet to review all the details:
+${flyerUrl}
+
+If you have any questions or would like to schedule a private showing, please don't hesitate to reach out. We'd love to help you find your dream home!
+
+Best regards,
+Your Real Estate Team
+
+© ${new Date().getFullYear()} Real Estate Genie. All rights reserved.
+  `.trim();
+}
+
+function getReturnVisitEmailHtml({
+  name,
+  propertyAddress,
+  flyerUrl,
+  visitCount,
+}: {
+  name: string;
+  propertyAddress: string;
+  flyerUrl: string;
+  visitCount: number;
+}) {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome Back!</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f9fafb;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f9fafb; padding: 40px 0;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden;">
+
+          <!-- RED HOT Header with Gradient -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #b91c1c 100%); padding: 40px 40px 30px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: 800;">
+                🔥 Welcome Back! 🔥
+              </h1>
+              <p style="margin: 10px 0 0; color: rgba(255,255,255,0.95); font-size: 18px; font-weight: 600;">
+                ${propertyAddress}
+              </p>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="padding: 40px;">
+              <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #374151;">
+                Hi ${name},
+              </p>
+
+              <!-- Hot Lead Badge -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 8px; border-left: 4px solid #f59e0b; margin: 0 0 30px;">
+                <tr>
+                  <td style="padding: 20px;">
+                    <p style="margin: 0; font-size: 16px; color: #92400e; font-weight: 600;">
+                      🔥 We noticed this is your ${visitCount === 2 ? '2nd' : visitCount === 3 ? '3rd' : visitCount + 'th'} visit today to ${propertyAddress}! We're excited about your interest in this property.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #374151;">
+                Your enthusiasm tells us you're seriously considering making this your new home. We'd love to help make that happen!
+              </p>
+
+              <p style="margin: 0 0 30px; font-size: 16px; line-height: 1.6; color: #374151;">
+                Here's the property information sheet for your review:
+              </p>
+
+              <!-- CTA Button -->
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center" style="padding: 0 0 30px;">
+                    <a href="${flyerUrl}"
+                       style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px rgba(239, 68, 68, 0.4);">
+                      📄 Download Property Fact Sheet
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Next Steps -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f0fdf4; border-radius: 8px; border-left: 4px solid #10b981;">
+                <tr>
+                  <td style="padding: 20px;">
+                    <p style="margin: 0 0 15px; font-size: 16px; color: #065f46; font-weight: 600;">
+                      Ready to take the next step?
+                    </p>
+                    <p style="margin: 0; font-size: 15px; line-height: 1.6; color: #065f46;">
+                      ✅ Schedule a private showing<br>
+                      ✅ Discuss financing options<br>
+                      ✅ Submit an offer<br>
+                      ✅ Get answers to any questions
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin: 30px 0 0; font-size: 16px; line-height: 1.6; color: #374151;">
+                We're here to help and will be reaching out shortly. Feel free to contact us anytime!
+              </p>
+
+              <p style="margin: 20px 0 0; font-size: 16px; line-height: 1.6; color: #374151;">
+                Best regards,<br>
+                <strong>Your Real Estate Team</strong>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f9fafb; padding: 30px 40px; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 0 0 10px; font-size: 12px; color: #6b7280; text-align: center;">
+                © ${new Date().getFullYear()} Real Estate Genie. All rights reserved.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `.trim();
+}
+
+function getReturnVisitEmailText({
+  name,
+  propertyAddress,
+  flyerUrl,
+  visitCount,
+}: {
+  name: string;
+  propertyAddress: string;
+  flyerUrl: string;
+  visitCount: number;
+}) {
+  return `
+🔥 Welcome Back! 🔥
+${propertyAddress}
+
+Hi ${name},
+
+We noticed this is your ${visitCount === 2 ? '2nd' : visitCount === 3 ? '3rd' : visitCount + 'th'} visit today to ${propertyAddress}! We're excited about your interest in this property.
+
+Your enthusiasm tells us you're seriously considering making this your new home. We'd love to help make that happen!
+
+Download the property information sheet:
+${flyerUrl}
+
+READY TO TAKE THE NEXT STEP?
+✅ Schedule a private showing
+✅ Discuss financing options
+✅ Submit an offer
+✅ Get answers to any questions
+
+We're here to help and will be reaching out shortly. Feel free to contact us anytime!
+
+Best regards,
+Your Real Estate Team
+
+© ${new Date().getFullYear()} Real Estate Genie. All rights reserved.
   `.trim();
 }
 

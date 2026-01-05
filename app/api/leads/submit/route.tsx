@@ -3,8 +3,9 @@ import { createClient } from "@supabase/supabase-js";
 import { calculateHeatScore, getHeatLevel } from "@/lib/lead-scoring";
 import { syncLeadToGHL } from "@/lib/integrations/ghl-sync";
 import { dispatchWebhook } from "@/lib/webhooks/dispatcher";
-import { createOrUpdateGHLContact, createGHLRegistrationRecord, createGHLOpenHouseRecord, createGHLOpportunity, addGHLTags } from "@/lib/notifications/ghl-service";
+import { createOrUpdateGHLContact, createGHLRegistrationRecord, createGHLOpenHouseRecord, createGHLOpportunity, addGHLTags, sendGHLEmail } from "@/lib/notifications/ghl-service";
 import { getValidGHLConfig } from "@/lib/integrations/ghl-token-refresh";
+import { sendOpenHouseEmail } from "@/lib/email/resend";
 
 const admin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -264,11 +265,46 @@ export async function POST(req: Request) {
               console.log('✅ GHL Registration created successfully');
               console.log('✅ OpenHouse fields accessible in emails via {{registration.openHouses.fieldName}}');
 
-              // NOTE: Emails are handled by GHL workflows based on tags
-              // First-time visitors: "OpenHouse" tag triggers standard thank you email
-              // Return visitors: "Multiple Visits" or "Red Hot Lead" tags trigger special follow-up
-              // Configure workflows in GHL to trigger on these tags
-              console.log('📧 Contact tagged for email workflow:', isReturnVisit ? 'Return Visit (Red Hot)' : 'First Visit');
+              // Send thank you email via GHL (for CRM history), fallback to Resend
+              try {
+                console.log('📧 Attempting to send email via GHL...');
+
+                const emailSubject = isReturnVisit
+                  ? `🔥 Welcome Back! ${evt.address}`
+                  : `Thank You for Visiting ${evt.address}`;
+
+                const emailHtml = isReturnVisit
+                  ? getReturnVisitEmailHtml(payload.name, evt.address, flyerUrl, visitCount)
+                  : getFirstVisitEmailHtml(payload.name, evt.address, flyerUrl);
+
+                await sendGHLEmail({
+                  locationId: ghlConfig.location_id,
+                  accessToken: ghlConfig.access_token,
+                  to: payload.email,
+                  subject: emailSubject,
+                  html: emailHtml,
+                });
+
+                console.log('✅ Email sent successfully via GHL (tracked in CRM)');
+              } catch (ghlEmailError: any) {
+                console.warn('⚠️ GHL email failed, falling back to Resend:', ghlEmailError.message);
+
+                // Fallback to Resend for reliability
+                try {
+                  await sendOpenHouseEmail({
+                    to: payload.email,
+                    name: payload.name,
+                    propertyAddress: evt.address,
+                    flyerUrl,
+                    isReturnVisit,
+                    visitCount,
+                  });
+                  console.log('✅ Email sent successfully via Resend (fallback)');
+                } catch (resendError: any) {
+                  console.error('❌ Both GHL and Resend email sending failed:', resendError.message);
+                  // Don't fail the whole registration if email fails
+                }
+              }
 
               // Create Opportunity in pipeline if configured
               if (ghlConfig.ghl_pipeline_id && ghlConfig.ghl_new_lead_stage) {
@@ -415,4 +451,120 @@ export async function POST(req: Request) {
       { status: 500 }
     );
   }
+}
+
+// Email template helpers for GHL email sending
+function getFirstVisitEmailHtml(name: string, propertyAddress: string, flyerUrl: string): string {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thank You for Visiting</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f9fafb;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f9fafb; padding: 40px 0;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden;">
+          <tr>
+            <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 40px 30px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 800;">Thank You for Visiting!</h1>
+              <p style="margin: 10px 0 0; color: rgba(255,255,255,0.9); font-size: 16px;">${propertyAddress}</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 40px;">
+              <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #374151;">Hi ${name},</p>
+              <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #374151;">Thank you for visiting our open house today at <strong>${propertyAddress}</strong>! We hope you enjoyed touring the property.</p>
+              <p style="margin: 0 0 30px; font-size: 16px; line-height: 1.6; color: #374151;">Download the property information sheet to review all the details:</p>
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center" style="padding: 0 0 30px;">
+                    <a href="${flyerUrl}" style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);">📄 Download Property Fact Sheet</a>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #374151;">If you have any questions or would like to schedule a private showing, please don't hesitate to reach out. We'd love to help you find your dream home!</p>
+              <p style="margin: 20px 0 0; font-size: 16px; line-height: 1.6; color: #374151;">Best regards,<br><strong>Your Real Estate Team</strong></p>
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color: #f9fafb; padding: 30px 40px; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 0 0 10px; font-size: 12px; color: #6b7280; text-align: center;">© ${new Date().getFullYear()} Real Estate Genie. All rights reserved.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `.trim();
+}
+
+function getReturnVisitEmailHtml(name: string, propertyAddress: string, flyerUrl: string, visitCount: number): string {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome Back!</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f9fafb;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f9fafb; padding: 40px 0;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden;">
+          <tr>
+            <td style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #b91c1c 100%); padding: 40px 40px 30px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: 800;">🔥 Welcome Back! 🔥</h1>
+              <p style="margin: 10px 0 0; color: rgba(255,255,255,0.95); font-size: 18px; font-weight: 600;">${propertyAddress}</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 40px;">
+              <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #374151;">Hi ${name},</p>
+              <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 8px; border-left: 4px solid #f59e0b; margin: 0 0 30px;">
+                <tr>
+                  <td style="padding: 20px;">
+                    <p style="margin: 0; font-size: 16px; color: #92400e; font-weight: 600;">🔥 We noticed this is your ${visitCount === 2 ? '2nd' : visitCount === 3 ? '3rd' : visitCount + 'th'} visit today to ${propertyAddress}! We're excited about your interest in this property.</p>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #374151;">Your enthusiasm tells us you're seriously considering making this your new home. We'd love to help make that happen!</p>
+              <p style="margin: 0 0 30px; font-size: 16px; line-height: 1.6; color: #374151;">Here's the property information sheet for your review:</p>
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center" style="padding: 0 0 30px;">
+                    <a href="${flyerUrl}" style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px rgba(239, 68, 68, 0.4);">📄 Download Property Fact Sheet</a>
+                  </td>
+                </tr>
+              </table>
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f0fdf4; border-radius: 8px; border-left: 4px solid #10b981;">
+                <tr>
+                  <td style="padding: 20px;">
+                    <p style="margin: 0 0 15px; font-size: 16px; color: #065f46; font-weight: 600;">Ready to take the next step?</p>
+                    <p style="margin: 0; font-size: 15px; line-height: 1.6; color: #065f46;">✅ Schedule a private showing<br>✅ Discuss financing options<br>✅ Submit an offer<br>✅ Get answers to any questions</p>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin: 30px 0 0; font-size: 16px; line-height: 1.6; color: #374151;">We're here to help and will be reaching out shortly. Feel free to contact us anytime!</p>
+              <p style="margin: 20px 0 0; font-size: 16px; line-height: 1.6; color: #374151;">Best regards,<br><strong>Your Real Estate Team</strong></p>
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color: #f9fafb; padding: 30px 40px; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 0 0 10px; font-size: 12px; color: #6b7280; text-align: center;">© ${new Date().getFullYear()} Real Estate Genie. All rights reserved.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `.trim();
 }
