@@ -14,6 +14,7 @@ const supabaseAdmin = createClient(
 export type WebhookEventType =
   | "lead.submitted"
   | "lead.hot_scored"
+  | "lead.red_hot_return_visit"
   | "open_house.published"
   | "open_house.ended"
   | "consent.captured"
