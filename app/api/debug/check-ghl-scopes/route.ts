@@ -77,6 +77,23 @@ export async function GET(req: Request) {
 
     const hasContactsRead = testContactResponse.status !== 401;
 
+    // Test conversations/message scope for email sending
+    const testMessagesResponse = await fetch(
+      `https://services.leadconnectorhq.com/conversations/messages?locationId=${ghlConfig.location_id}&limit=1`,
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${ghlConfig.access_token}`,
+          'Content-Type': 'application/json',
+          'Version': '2021-07-28',
+        },
+      }
+    );
+
+    const hasMessagesRead = testMessagesResponse.status !== 401;
+
+    const allScopesPresent = hasAssociationsRead && hasContactsRead && hasMessagesRead;
+
     return NextResponse.json({
       success: true,
       agentId,
@@ -84,40 +101,50 @@ export async function GET(req: Request) {
       tokenChecks: {
         associationsRead: hasAssociationsRead ? "✅ Has access" : "❌ No access (401 Unauthorized)",
         contactsRead: hasContactsRead ? "✅ Has access" : "❌ No access (401 Unauthorized)",
+        messagesRead: hasMessagesRead ? "✅ Has access (can send emails)" : "❌ No access (401 Unauthorized)",
       },
       requiredScopes: [
         "contacts.write",
         "contacts.readonly",
-        "customObjects.write",
-        "customObjects.readonly",
+        "objects/record.write",
+        "objects/record.readonly",
         "associations.write ⬅️ REQUIRED for Registration → OpenHouse linking",
         "associations.readonly",
-        "conversations.write (for emails/SMS)",
+        "conversations.write ⬅️ REQUIRED for email sending",
+        "conversations.readonly",
+        "conversations/message.write ⬅️ REQUIRED for email sending",
+        "conversations/message.readonly",
         "opportunities.write (for pipeline)",
       ],
       diagnosis: {
         hasAssociationsAccess: hasAssociationsRead,
         canCreateAssociations: hasAssociationsRead ? "Likely yes (has read access)" : "❌ No - missing associations.readonly/write scopes",
+        hasMessagesAccess: hasMessagesRead,
+        canSendEmails: hasMessagesRead ? "✅ Yes (has messages access)" : "❌ No - missing conversations/message scopes",
+        overallStatus: allScopesPresent ? "✅ All critical scopes present" : "⚠️ Some scopes missing",
       },
-      recommendations: hasAssociationsRead ? [
-        "✅ Token appears to have association access",
-        "If associations are still failing with 401, add associations.write scope in GHL Developer Portal",
-        "Then reconnect the integration at /app/integrations",
+      recommendations: allScopesPresent ? [
+        "✅ Token has all tested scopes!",
+        "If you're still seeing 401 errors:",
+        "  - Check that scopes are added in GHL Marketplace settings",
+        "  - Try disconnecting and reconnecting at /app/integrations",
       ] : [
-        "❌ Token missing associations.readonly scope",
-        "❌ Also likely missing associations.write scope",
-        "🔧 Fix: Add these scopes in GHL Developer Portal → Your App → Settings → Scopes",
-        "   - associations.readonly",
-        "   - associations.write",
-        "🔄 Then reconnect the integration at /app/integrations",
-      ],
-      nextSteps: [
-        "1. Go to https://marketplace.gohighlevel.com/",
-        "2. Navigate to Apps → Your OAuth App → Settings → Scopes",
-        "3. Add 'associations.write' and 'associations.readonly' scopes",
-        "4. Save changes",
-        "5. Disconnect and reconnect GHL integration at /app/integrations",
-        "6. Test by registering for an open house again",
+        !hasAssociationsRead && "❌ Missing associations scopes (needed for linking registrations)",
+        !hasMessagesRead && "❌ Missing conversations/message scopes (needed for email sending)",
+        "🔧 Fix: The OAuth code already requests these scopes, but your current token doesn't have them",
+        "🔄 Solution: Disconnect and reconnect GHL at /app/integrations to get a new token with all scopes",
+      ].filter(Boolean),
+      nextSteps: !allScopesPresent ? [
+        "1. Verify scopes are enabled in GHL Marketplace: https://marketplace.gohighlevel.com/",
+        "   Apps → Your OAuth App → Settings → Scopes",
+        "   Enable: associations.write, associations.readonly, conversations/message.write, conversations/message.readonly",
+        "2. Go to /app/integrations in your app",
+        "3. Disconnect GHL integration",
+        "4. Reconnect GHL integration (this creates a new token with the scopes)",
+        "5. Test by registering for an open house",
+      ] : [
+        "✅ Your token has all required scopes!",
+        "If issues persist, check application logs for specific API errors",
       ],
     });
   } catch (error: any) {
