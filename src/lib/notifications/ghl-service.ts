@@ -85,6 +85,33 @@ export async function createGHLOpenHouseRecord(params: {
 
     if (!openHouseResponse.ok) {
       console.error('[GHL] OpenHouse creation failed:', openHouseResponseText);
+
+      // Handle duplicate OpenHouse record - this is expected when multiple people register for the same event
+      if (openHouseResponse.status === 400) {
+        try {
+          const errorData = JSON.parse(openHouseResponseText);
+
+          // Check if this is a duplicate record error
+          const isDuplicate = errorData.errors?.some((err: any) =>
+            err.errorCode === 'primary_property_conflict' ||
+            err.errorCode === 'duplicate_record'
+          );
+
+          if (isDuplicate) {
+            // Extract the existing record ID from the error
+            const conflictingRecordId = errorData.errors?.[0]?.conflictingRecordId;
+
+            if (conflictingRecordId) {
+              console.log('[GHL] OpenHouse already exists (this is normal for multiple registrants)');
+              console.log('[GHL] Using existing OpenHouse record:', conflictingRecordId);
+              return conflictingRecordId;
+            }
+          }
+        } catch (parseError) {
+          console.error('[GHL] Failed to parse duplicate error response');
+        }
+      }
+
       throw new Error(`Failed to create OpenHouse: ${openHouseResponseText}`);
     }
 
