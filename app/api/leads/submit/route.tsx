@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { calculateHeatScore, getHeatLevel } from "@/lib/lead-scoring";
 import { syncLeadToGHL } from "@/lib/integrations/ghl-sync";
 import { dispatchWebhook } from "@/lib/webhooks/dispatcher";
-import { createOrUpdateGHLContact, createGHLRegistrationRecord, createGHLOpenHouseRecord, createGHLOpportunity, addGHLTags, sendGHLEmail } from "@/lib/notifications/ghl-service";
+import { createOrUpdateGHLContact, createGHLRegistrationRecord, createGHLOpenHouseRecord, createGHLOpportunity, addGHLTags } from "@/lib/notifications/ghl-service";
 import { getValidGHLConfig } from "@/lib/integrations/ghl-token-refresh";
 
 const admin = createClient(
@@ -264,64 +264,11 @@ export async function POST(req: Request) {
               console.log('✅ GHL Registration created successfully');
               console.log('✅ OpenHouse fields accessible in emails via {{registration.openHouses.fieldName}}');
 
-              // Send thank you email directly (bypasses workflow to support returning contacts)
-              if (payload.consent?.email) {
-                try {
-                  console.log('📧 Sending thank you email to:', payload.email);
-                  const emailHtml = `
-                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                      <h2 style="color: #10b981;">Thank You for Visiting Our Open House${isReturnVisit ? ' Again' : ''}!</h2>
-                      <p>Hi ${payload.name.split(' ')[0]},</p>
-                      ${isReturnVisit ? `
-                        <div style="background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%); color: white; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
-                          <h3 style="margin: 0 0 10px 0; font-size: 24px;">🔥 We Noticed You're Back! 🔥</h3>
-                          <p style="margin: 0; font-size: 16px;">This is your <strong>visit #${visitCount}</strong> today. We love your enthusiasm!</p>
-                          <p style="margin: 10px 0 0 0; font-size: 14px;">Our team is ready to help you make this house your home. Let's talk!</p>
-                        </div>
-                      ` : ''}
-                      <p>Thank you for visiting the open house at <strong>${evt?.address || 'our property'}</strong>!</p>
-                      <p>We hope you enjoyed your visit. Here's your property information packet:</p>
-                      <p style="text-align: center; margin: 30px 0;">
-                        <a href="${flyerUrl}" style="background: #10b981; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
-                          📄 Download Property Fact Sheet
-                        </a>
-                      </p>
-                      <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                        <h3 style="margin-top: 0; color: #1f2937;">Property Details</h3>
-                        <p style="margin: 8px 0;"><strong>Address:</strong> ${evt?.address || 'N/A'}</p>
-                        ${evt?.beds ? `<p style="margin: 8px 0;"><strong>Bedrooms:</strong> ${evt.beds}</p>` : ''}
-                        ${evt?.baths ? `<p style="margin: 8px 0;"><strong>Bathrooms:</strong> ${evt.baths}</p>` : ''}
-                        ${evt?.sqft ? `<p style="margin: 8px 0;"><strong>Square Feet:</strong> ${evt.sqft.toLocaleString()} sq ft</p>` : ''}
-                        ${evt?.price ? `<p style="margin: 8px 0;"><strong>Price:</strong> $${evt.price.toLocaleString()}</p>` : ''}
-                      </div>
-                      <p>If you have any questions or would like to schedule a private showing, please don't hesitate to reach out!</p>
-                      ${agent ? `
-                        <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #e5e7eb;">
-                          <p style="margin: 5px 0;"><strong>${agent.display_name}</strong></p>
-                          ${agent.agency_name ? `<p style="margin: 5px 0;">${agent.agency_name}</p>` : ''}
-                          ${agent.email ? `<p style="margin: 5px 0;">📧 ${agent.email}</p>` : ''}
-                          ${agent.phone_e164 ? `<p style="margin: 5px 0;">📱 ${agent.phone_e164}</p>` : ''}
-                        </div>
-                      ` : ''}
-                    </div>
-                  `;
-
-                  await sendGHLEmail({
-                    locationId: ghlConfig.location_id,
-                    accessToken: ghlConfig.access_token,
-                    to: payload.email,
-                    subject: `Thank You for Visiting ${evt?.address || 'Our Open House'}!`,
-                    html: emailHtml,
-                  });
-
-                  console.log('✅ Thank you email sent successfully');
-                } catch (emailError: any) {
-                  console.error('❌ Failed to send thank you email:', emailError.message);
-                  // Non-critical - continue even if email fails
-                }
-              } else {
-                console.log('⏭️ Skipping email - no email consent from contact');
-              }
+              // NOTE: Emails are handled by GHL workflows based on tags
+              // First-time visitors: "OpenHouse" tag triggers standard thank you email
+              // Return visitors: "Multiple Visits" or "Red Hot Lead" tags trigger special follow-up
+              // Configure workflows in GHL to trigger on these tags
+              console.log('📧 Contact tagged for email workflow:', isReturnVisit ? 'Return Visit (Red Hot)' : 'First Visit');
 
               // Create Opportunity in pipeline if configured
               if (ghlConfig.ghl_pipeline_id && ghlConfig.ghl_new_lead_stage) {
