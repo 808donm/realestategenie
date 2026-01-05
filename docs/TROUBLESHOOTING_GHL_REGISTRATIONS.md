@@ -102,24 +102,54 @@ If you're running locally:
 3. Ensure the integration status shows "Connected"
 4. Verify the access token hasn't expired (the system auto-refreshes, but check if there are any refresh errors)
 
-### Issue 4: API Token Permissions
+### Issue 4: Missing Associations Scope (MOST COMMON)
+
+**Symptoms:**
+- OpenHouse and Registration records ARE created successfully
+- Email merge tags show blank values
+- Logs show: `Failed to create Contact association (non-critical): The token is not authorized for this scope`
+- Logs show: `Failed to create OpenHouse association (non-critical): The token is not authorized for this scope`
+
+**Root Cause:**
+The GHL OAuth token is missing the `associations.write` scope, which is required to link Registration → OpenHouse.
+
+**Solution:**
+1. Go to **GHL Developer Portal**: https://marketplace.gohighlevel.com/
+2. Click **Apps** → Select your OAuth app
+3. Go to **Settings** → **Scopes**
+4. Add these scopes (if not already present):
+   - ✅ `contacts.write`
+   - ✅ `contacts.readonly`
+   - ✅ `customObjects.write`
+   - ✅ `customObjects.readonly`
+   - ✅ **`associations.write`** ⬅️ **Required!**
+   - ✅ **`associations.readonly`** ⬅️ **Required!**
+   - ✅ `conversations.write` (for emails/SMS)
+   - ✅ `opportunities.write` (for pipeline)
+
+5. Click **Save**
+6. **Important:** Users must reconnect their integration:
+   - Go to Real Estate Genie → Integrations
+   - Disconnect GHL
+   - Reconnect GHL (this will request new scopes)
+
+7. Test by registering for an open house again
+
+**Verify Fix:**
+```bash
+curl https://www.realestategenie.app/api/debug/check-ghl-scopes?agentId=YOUR_AGENT_ID
+```
+
+### Issue 5: Other API Token Permissions
 
 **Symptoms:**
 - Logs show: `401 Unauthorized` or `403 Forbidden`
 - OpenHouse or Registration creation fails with permission errors
 
 **Solution:**
-1. In GHL, go to **Settings → API**
-2. Find your API key/OAuth app
-3. Ensure these permissions are enabled:
-   - `contacts.write`
-   - `conversations.write` (for emails/SMS)
-   - `opportunities.write` (for pipeline)
-   - `customObjects.write` (for OpenHouse and Registration objects)
+Ensure ALL required scopes are enabled in your GHL OAuth app (see Issue 4 above for complete list)
 
-4. If you changed permissions, you may need to reconnect the integration in Real Estate Genie
-
-### Issue 5: Field Name Casing Issues
+### Issue 6: Field Name Casing Issues
 
 **Symptoms:**
 - Objects are created but email merge tags show blank values
