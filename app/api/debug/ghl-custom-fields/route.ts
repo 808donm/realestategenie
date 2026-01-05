@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { GHL_LEASE_CUSTOM_FIELDS } from "@/lib/integrations/ghl-lease-fields";
-import { getValidGHLToken } from "@/lib/integrations/ghl-token-refresh";
+import { getValidGHLConfig } from "@/lib/integrations/ghl-token-refresh";
 
 /**
  * Debug endpoint to compare expected vs actual GHL custom fields
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get GHL integration with token refresh
-    const ghlCredentials = await getValidGHLToken(userData.user.id);
+    const ghlCredentials = await getValidGHLConfig(userData.user.id);
 
     if (!ghlCredentials?.access_token || !ghlCredentials?.location_id) {
       return NextResponse.json({ error: "GHL not connected or token expired" }, { status: 400 });
