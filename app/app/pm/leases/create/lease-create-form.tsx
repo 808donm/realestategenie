@@ -803,7 +803,7 @@ export default function LeaseCreateForm({
             <textarea
               id="authorized_occupants"
               rows={4}
-              placeholder="John Doe - (808) 555-1234&#10;Jane Doe - (808) 555-5678"
+              placeholder={`John Doe - (808) 555-1234\nJane Doe - (808) 555-5678`}
               value={formData.authorized_occupants}
               onChange={(e) =>
                 setFormData({
