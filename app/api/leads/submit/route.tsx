@@ -76,7 +76,7 @@ export async function POST(req: Request) {
       .gte("created_at", today.toISOString())
       .or(`payload->>email.eq.${payload.email},payload->>phone_e164.eq.${payload.phone_e164}`);
 
-    const isReturnVisit = previousVisits && previousVisits.length > 0;
+    const isReturnVisit = !!(previousVisits && previousVisits.length > 0);
     const visitCount = (previousVisits?.length || 0) + 1; // Including this visit
 
     // Calculate heat score
