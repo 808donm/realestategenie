@@ -184,7 +184,7 @@ export async function createGHLRegistrationRecord(params: {
     // Associate Registration → Contact
     try {
       const contactAssocResponse = await fetch(
-        `https://services.leadconnectorhq.com/objects/custom_objects.registrations/records/${registrationRecordId}/associations`,
+        `https://services.leadconnectorhq.com/associations/relations`,
         {
           method: 'POST',
           headers: {
@@ -194,8 +194,10 @@ export async function createGHLRegistrationRecord(params: {
           },
           body: JSON.stringify({
             locationId: params.locationId,
-            recordId: params.contactId,
-            objectType: 'contact',
+            firstObjectKey: 'custom_objects.registrations',
+            firstObjectId: registrationRecordId,
+            secondObjectKey: 'contact',
+            secondObjectId: params.contactId,
           }),
         }
       );
@@ -213,7 +215,7 @@ export async function createGHLRegistrationRecord(params: {
     // Associate Registration → OpenHouse
     try {
       const openHouseAssocResponse = await fetch(
-        `https://services.leadconnectorhq.com/objects/custom_objects.registrations/records/${registrationRecordId}/associations`,
+        `https://services.leadconnectorhq.com/associations/relations`,
         {
           method: 'POST',
           headers: {
@@ -223,8 +225,10 @@ export async function createGHLRegistrationRecord(params: {
           },
           body: JSON.stringify({
             locationId: params.locationId,
-            recordId: params.openHouseRecordId,
-            objectType: 'custom_objects.openhouses',
+            firstObjectKey: 'custom_objects.registrations',
+            firstObjectId: registrationRecordId,
+            secondObjectKey: 'custom_objects.openhouses',
+            secondObjectId: params.openHouseRecordId,
           }),
         }
       );
