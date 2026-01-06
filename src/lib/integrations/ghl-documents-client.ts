@@ -328,15 +328,13 @@ export class GHLDocumentsClient {
     // Search for existing contact
     const existingContact = await this.searchContactByEmail(email);
 
-    // Format lease name: "Property Address + Start Date"
-    const startDate = new Date(leaseData.start_date);
-    const formattedDate = `${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}-${String(startDate.getFullYear()).slice(-2)}`;
-    const leaseName = `${leaseData.property_address} ${formattedDate}`;
+    // Use tenant's full name as contact name
+    const contactName = `${leaseData.tenant_first_name} ${leaseData.tenant_last_name}`;
 
     const contactPayload = {
       email,
       phone,
-      name: leaseName,
+      name: contactName,
       firstName: leaseData.tenant_first_name,
       lastName: leaseData.tenant_last_name,
     };
@@ -451,22 +449,22 @@ export async function sendLeaseViaGHLDirect(
     lease_rent_due_day: (leaseData.rent_due_day || 1).toString(),
     lease_notice_days: (leaseData.notice_period_days || 30).toString(),
     lease_late_grace_days: (leaseData.late_grace_days || 5).toString(),
-    // Checkbox fields must be "true" or "false" strings, not "Yes"/"No"
-    lease_late_fee_type_fixed: (!leaseData.late_fee_is_percentage).toString(),
-    lease_late_fee_type_percentage: (!!leaseData.late_fee_is_percentage).toString(),
+    // Checkbox fields use specific text values configured in GHL
+    lease_late_fee_type_fixed: leaseData.late_fee_is_percentage ? '' : 'fixed',
+    lease_late_fee_type_percentage: leaseData.late_fee_is_percentage ? 'percentage' : '',
     lease_late_fee_amount: (leaseData.late_fee_amount || 50).toString(),
     lease_late_fee_percentage: (leaseData.late_fee_percentage || 5).toString(),
-    lease_late_fee_frequency_occurence: ((leaseData.late_fee_frequency || 'per occurrence') === 'per occurrence').toString(),
-    lease_late_fee_frequency_daily: ((leaseData.late_fee_frequency || 'per occurrence') === 'per day').toString(),
+    lease_late_fee_frequency_occurence: (leaseData.late_fee_frequency || 'per occurrence') === 'per occurrence' ? 'occurrence' : '',
+    lease_late_fee_frequency_daily: (leaseData.late_fee_frequency || 'per occurrence') === 'per day' ? 'daily' : '',
     lease_nsf_fee: (leaseData.nsf_fee || 35).toString(),
     lease_deposit_return_days: (leaseData.deposit_return_days || 60).toString(),
     lease_occupants: leaseData.occupants || '',
-    lease_subletting_yes: (!!leaseData.subletting_allowed).toString(),
-    lease_subletting_no: (!leaseData.subletting_allowed).toString(),
-    lease_subletting_allowed: (!!leaseData.subletting_allowed).toString(), // Template uses this field
-    lease_pets_yes: (!!leaseData.pets_allowed).toString(),
-    lease_pets_no: (!leaseData.pets_allowed).toString(),
-    lease_pets_allowed: (!!leaseData.pets_allowed).toString(), // Template uses this field
+    lease_subletting_yes: leaseData.subletting_allowed ? 'yes' : '',
+    lease_subletting_no: leaseData.subletting_allowed ? '' : 'no',
+    lease_subletting_allowed: leaseData.subletting_allowed ? 'yes' : 'no', // Template uses this field
+    lease_pets_yes: leaseData.pets_allowed ? 'pets allowed' : '',
+    lease_pets_no: leaseData.pets_allowed ? '' : 'pets not allowed',
+    lease_pets_allowed: leaseData.pets_allowed ? 'pets allowed' : 'pets not allowed', // Template uses this field
     lease_pet_count: (leaseData.pet_count || 0).toString(),
     lease_pet_types: leaseData.pet_types || '',
     lease_pet_weight_limit: leaseData.pet_weight_limit || '',
