@@ -425,7 +425,19 @@ export async function sendLeaseViaGHLDirect(
 
   console.log(`✅ Contact ${isNewContact ? 'created' : 'updated'} in GHL: ${contact.id}`);
 
-  // Step 2: Update contact with all lease data as custom fields
+  // Step 2: Update contact's standard address fields with property address
+  // Template uses {{contact.address}}, {{contact.city}}, {{contact.state}}
+  // We'll use the property address as the tenant's mailing address
+  await ghlClient.updateContact(contact.id, {
+    address1: leaseData.property_address,
+    city: leaseData.property_city,
+    state: leaseData.property_state,
+    postalCode: leaseData.property_zipcode,
+  });
+
+  console.log(`✅ Contact address updated with property address`);
+
+  // Step 3: Update contact with all lease data as custom fields
   // Template merge fields use {{contact.lease_property_address}} format with underscores
   const customFieldsToUpdate: Record<string, string> = {
     lease_property_address: leaseData.property_address,
@@ -488,10 +500,13 @@ export async function sendLeaseViaGHLDirect(
 
   // Step 4: Create and send document from template
   // Template will auto-populate from contact's custom fields
+  const recipientName = `${leaseData.tenant_first_name} ${leaseData.tenant_last_name}`;
   const { documentId, document, url } = await ghlClient.sendDocumentTemplate({
     templateId,
     contactId: contact.id,
     documentName,
+    recipientEmail: tenantEmail,
+    recipientName,
     medium: 'link', // Get signing URL in response
   });
 
