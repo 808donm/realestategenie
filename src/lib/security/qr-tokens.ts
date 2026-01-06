@@ -10,10 +10,22 @@ import crypto from 'crypto';
  * - Don't require database storage (stateless)
  */
 
-const SECRET_KEY = process.env.QR_TOKEN_SECRET || process.env.NEXTAUTH_SECRET || 'fallback-secret-key-change-this';
+// Use QR_TOKEN_SECRET if available, otherwise fall back to NEXTAUTH_SECRET
+// In production, QR_TOKEN_SECRET should be set for dedicated QR code security
+const SECRET_KEY = process.env.QR_TOKEN_SECRET || process.env.NEXTAUTH_SECRET;
 
-if (!process.env.QR_TOKEN_SECRET && !process.env.NEXTAUTH_SECRET) {
-  console.warn('⚠️ QR_TOKEN_SECRET not set. Using fallback. Set QR_TOKEN_SECRET in .env for production!');
+if (!SECRET_KEY) {
+  throw new Error(
+    'QR_TOKEN_SECRET or NEXTAUTH_SECRET must be set in environment variables. ' +
+    'Generate a secure random string: openssl rand -base64 32'
+  );
+}
+
+// Warn once in development if using NEXTAUTH_SECRET instead of dedicated QR_TOKEN_SECRET
+let hasWarned = false;
+if (!process.env.QR_TOKEN_SECRET && process.env.NEXTAUTH_SECRET && !hasWarned && process.env.NODE_ENV !== 'production') {
+  hasWarned = true;
+  console.warn('💡 Using NEXTAUTH_SECRET for QR tokens. Consider setting QR_TOKEN_SECRET for better security isolation.');
 }
 
 export interface QRTokenPayload {
