@@ -15,7 +15,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Find and update integration
+    console.log('[PandaDoc] Disconnecting for user:', userData.user.id);
+
+    // First, check if integration exists
+    const { data: existing } = await supabase
+      .from("integrations")
+      .select("id")
+      .eq("agent_id", userData.user.id)
+      .eq("provider", "pandadoc")
+      .maybeSingle();
+
+    if (!existing) {
+      console.log('[PandaDoc] No integration found, nothing to disconnect');
+      return NextResponse.json({
+        success: true,
+        message: "No PandaDoc integration found to disconnect",
+      });
+    }
+
+    console.log('[PandaDoc] Found integration:', existing.id);
+
+    // Update integration to disconnected state
     const { error } = await supabase
       .from("integrations")
       .update({
@@ -24,25 +44,26 @@ export async function POST(request: NextRequest) {
         last_error: null,
         updated_at: new Date().toISOString(),
       })
-      .eq("agent_id", userData.user.id)
-      .eq("provider", "pandadoc");
+      .eq("id", existing.id);
 
     if (error) {
-      console.error("Error disconnecting PandaDoc:", error);
+      console.error("[PandaDoc] Error disconnecting:", error);
       return NextResponse.json(
-        { error: "Failed to disconnect" },
+        { error: `Failed to disconnect: ${error.message}` },
         { status: 500 }
       );
     }
+
+    console.log('[PandaDoc] Successfully disconnected');
 
     return NextResponse.json({
       success: true,
       message: "PandaDoc disconnected successfully",
     });
-  } catch (error) {
-    console.error("Error in PandaDoc disconnect:", error);
+  } catch (error: any) {
+    console.error("[PandaDoc] Error in disconnect:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: `Internal server error: ${error.message}` },
       { status: 500 }
     );
   }
