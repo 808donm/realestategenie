@@ -170,11 +170,15 @@ export default function PropertyDetailsForm({ eventId, initialData }: PropertyDe
               id="price"
               type="number"
               min="0"
+              max="999999999"
               step="1000"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
               placeholder="500000"
             />
+            <p className="text-xs text-muted-foreground mt-1">
+              Enter price without commas (e.g., 1250000 for $1,250,000)
+            </p>
           </div>
         </CardContent>
       </Card>

@@ -44,6 +44,17 @@ export async function PATCH(
       key_features,
     } = body;
 
+    console.log('[Property Details] Update request:', {
+      eventId: id,
+      beds,
+      baths,
+      sqft,
+      price,
+      priceType: typeof price,
+      hasDescription: !!listing_description,
+      featuresCount: key_features?.length || 0,
+    });
+
     // Update property details
     const { error: updateError } = await supabase
       .from("open_house_events")
