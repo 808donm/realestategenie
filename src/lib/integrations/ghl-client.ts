@@ -544,6 +544,14 @@ export class GHLClient {
   }
 
   /**
+   * Get a specific template by ID
+   * Used to validate template exists and is accessible
+   */
+  async getTemplate(templateId: string): Promise<any> {
+    return this.request(`/proposals/templates/${templateId}`);
+  }
+
+  /**
    * Send a document/contract from a template
    * Uses GHL API v2 /proposals/templates/send endpoint
    *

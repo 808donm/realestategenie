@@ -328,13 +328,10 @@ export class GHLDocumentsClient {
     // Search for existing contact
     const existingContact = await this.searchContactByEmail(email);
 
-    // Use tenant's full name as contact name
-    const contactName = `${leaseData.tenant_first_name} ${leaseData.tenant_last_name}`;
-
+    // Don't set name manually - GHL auto-generates it from firstName + lastName
     const contactPayload = {
       email,
       phone,
-      name: contactName,
       firstName: leaseData.tenant_first_name,
       lastName: leaseData.tenant_last_name,
     };
@@ -510,6 +507,22 @@ export async function sendLeaseViaGHLDirect(
     console.log(`Custom Fields:`, JSON.stringify(verifyContact.customFields, null, 2));
   }
   console.log(`=== END CONTACT STATE ===`);
+
+  // Validate template exists and is accessible
+  console.log(`🔍 Validating template access...`);
+  console.log(`Template ID: ${templateId}`);
+  console.log(`Location ID: ${ghlLocationId}`);
+  console.log(`User ID: ${ghlUserId}`);
+
+  try {
+    const template = await ghlClient.getTemplate(templateId);
+    console.log(`✅ Template found:`, template.name || template.title || 'Unknown');
+    console.log(`Template details:`, JSON.stringify(template, null, 2));
+  } catch (error: any) {
+    console.error(`❌ Failed to fetch template:`, error.message);
+    console.error(`This may indicate the template doesn't exist, is not accessible with current permissions, or the template ID is incorrect.`);
+    throw new Error(`Template validation failed: ${error.message}`);
+  }
 
   // Step 3: Generate document name: "123 Main St-2026-01-06"
   const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
