@@ -492,6 +492,25 @@ export async function sendLeaseViaGHLDirect(
   console.log(`⏳ Waiting 2 seconds for GHL to process contact updates...`);
   await new Promise(resolve => setTimeout(resolve, 2000));
 
+  // Fetch the contact to verify what GHL has stored
+  console.log(`🔍 Fetching contact from GHL to verify updates...`);
+  const verifyContact = await ghlClient.getContact(contact.id);
+  console.log(`=== CONTACT STATE IN GHL ===`);
+  console.log(`Name: ${verifyContact.name}`);
+  console.log(`First Name: ${verifyContact.firstName}`);
+  console.log(`Last Name: ${verifyContact.lastName}`);
+  console.log(`Email: ${verifyContact.email}`);
+  console.log(`Phone: ${verifyContact.phone}`);
+  console.log(`Address: ${verifyContact.address1}`);
+  console.log(`City: ${verifyContact.city}`);
+  console.log(`State: ${verifyContact.state}`);
+  console.log(`Postal Code: ${verifyContact.postalCode}`);
+  console.log(`Custom Fields Count: ${verifyContact.customFields ? Object.keys(verifyContact.customFields).length : 0}`);
+  if (verifyContact.customFields && typeof verifyContact.customFields === 'object') {
+    console.log(`Custom Fields:`, JSON.stringify(verifyContact.customFields, null, 2));
+  }
+  console.log(`=== END CONTACT STATE ===`);
+
   // Step 3: Generate document name: "123 Main St-2026-01-06"
   const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
   const documentName = `${propertyAddress}-${today}`;
