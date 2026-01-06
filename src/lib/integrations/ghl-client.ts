@@ -189,27 +189,30 @@ export class GHLClient {
    * Create a new contact
    */
   async createContact(contact: GHLContact): Promise<GHLContact> {
-    return this.request<GHLContact>("/contacts/", {
+    const response = await this.request<{ contact: GHLContact }>("/contacts/", {
       method: "POST",
       body: JSON.stringify(contact),
     });
+    return response.contact;
   }
 
   /**
    * Update an existing contact
    */
   async updateContact(contactId: string, updates: Partial<GHLContact>): Promise<GHLContact> {
-    return this.request<GHLContact>(`/contacts/${contactId}`, {
+    const response = await this.request<{ contact: GHLContact }>(`/contacts/${contactId}`, {
       method: "PUT",
       body: JSON.stringify(updates),
     });
+    return response.contact;
   }
 
   /**
    * Get contact by ID
    */
   async getContact(contactId: string): Promise<GHLContact> {
-    return this.request<GHLContact>(`/contacts/${contactId}`);
+    const response = await this.request<{ contact: GHLContact }>(`/contacts/${contactId}`);
+    return response.contact;
   }
 
   /**
