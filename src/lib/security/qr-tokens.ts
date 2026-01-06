@@ -12,26 +12,31 @@ import crypto from 'crypto';
 
 // Use QR_TOKEN_SECRET if available, otherwise fall back to NEXTAUTH_SECRET
 // In production, QR_TOKEN_SECRET should be set for dedicated QR code security
-function getSecretKey(): string {
-  const secret = process.env.QR_TOKEN_SECRET || process.env.NEXTAUTH_SECRET;
+let SECRET_KEY: string | null = null;
+let hasWarned = false;
 
-  if (!secret) {
-    throw new Error(
-      'QR_TOKEN_SECRET or NEXTAUTH_SECRET must be set in environment variables. ' +
-      'Generate a secure random string: openssl rand -base64 32'
-    );
+function getSecretKey(): string {
+  // Lazy initialization - only get secret when actually needed (not at module load time)
+  if (SECRET_KEY === null) {
+    const secret = process.env.QR_TOKEN_SECRET || process.env.NEXTAUTH_SECRET;
+
+    if (!secret) {
+      throw new Error(
+        'QR_TOKEN_SECRET or NEXTAUTH_SECRET must be set in environment variables. ' +
+        'Generate a secure random string: openssl rand -base64 32'
+      );
+    }
+
+    SECRET_KEY = secret;
+
+    // Warn once in development if using NEXTAUTH_SECRET instead of dedicated QR_TOKEN_SECRET
+    if (!process.env.QR_TOKEN_SECRET && process.env.NEXTAUTH_SECRET && !hasWarned && process.env.NODE_ENV !== 'production') {
+      hasWarned = true;
+      console.warn('💡 Using NEXTAUTH_SECRET for QR tokens. Consider setting QR_TOKEN_SECRET for better security isolation.');
+    }
   }
 
-  return secret;
-}
-
-const SECRET_KEY = getSecretKey();
-
-// Warn once in development if using NEXTAUTH_SECRET instead of dedicated QR_TOKEN_SECRET
-let hasWarned = false;
-if (!process.env.QR_TOKEN_SECRET && process.env.NEXTAUTH_SECRET && !hasWarned && process.env.NODE_ENV !== 'production') {
-  hasWarned = true;
-  console.warn('💡 Using NEXTAUTH_SECRET for QR tokens. Consider setting QR_TOKEN_SECRET for better security isolation.');
+  return SECRET_KEY;
 }
 
 export interface QRTokenPayload {
@@ -62,7 +67,7 @@ export function generateQRToken(eventId: string, validityHours: number = 72): st
 
   // Generate HMAC signature
   const signature = crypto
-    .createHmac('sha256', SECRET_KEY)
+    .createHmac('sha256', getSecretKey())
     .update(payloadString)
     .digest('base64url'); // base64url is URL-safe (no +, /, =)
 
@@ -102,7 +107,7 @@ export function validateQRToken(token: string): {
 
     // Verify signature
     const expectedSignature = crypto
-      .createHmac('sha256', SECRET_KEY)
+      .createHmac('sha256', getSecretKey())
       .update(payloadString)
       .digest('base64url');
 
