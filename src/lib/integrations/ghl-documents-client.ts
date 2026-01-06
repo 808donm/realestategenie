@@ -461,9 +461,16 @@ export async function sendLeaseViaGHLDirect(
 
   console.log(`📋 Updating contact with ${Object.keys(customFieldsToUpdate).length} custom fields`);
 
+  // Convert custom fields object to array format required by GHL API
+  // GHL expects: [{ key: "field_name", value: "field_value" }, ...]
+  const customFieldsArray = Object.entries(customFieldsToUpdate).map(([key, value]) => ({
+    key,
+    value,
+  }));
+
   // Update the contact with all lease custom fields
   await ghlClient.updateContact(contact.id, {
-    customFields: customFieldsToUpdate,
+    customFields: customFieldsArray,
   });
 
   console.log(`✅ Contact custom fields updated with lease data`);

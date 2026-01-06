@@ -15,7 +15,7 @@ export type GHLContact = {
   phone?: string;
   tags?: string[];
   source?: string;
-  customFields?: Record<string, string>;
+  customFields?: Array<{ key: string; value: string }> | Record<string, string>;
 };
 
 export type GHLOpportunity = {
