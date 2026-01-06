@@ -67,11 +67,45 @@ export async function GET(req: NextRequest) {
     }
 
     const tokenData = await tokenResponse.json();
-    console.log("GHL token exchange successful:", {
-      hasAccessToken: !!tokenData.access_token,
-      hasRefreshToken: !!tokenData.refresh_token,
-      locationId: tokenData.locationId,
-    });
+
+    // DETAILED LOGGING to debug location ID issue
+    console.log("========================================");
+    console.log("GHL TOKEN RESPONSE - FULL DETAILS");
+    console.log("========================================");
+    console.log("Location ID from GHL:", tokenData.locationId);
+    console.log("User ID from GHL:", tokenData.userId);
+    console.log("Company ID from GHL:", tokenData.companyId);
+    console.log("Token type:", tokenData.token_type);
+    console.log("Expires in:", tokenData.expires_in);
+    console.log("Has access token:", !!tokenData.access_token);
+    console.log("Has refresh token:", !!tokenData.refresh_token);
+
+    // Decode JWT to see scopes and auth details
+    if (tokenData.access_token) {
+      try {
+        const tokenParts = tokenData.access_token.split('.');
+        if (tokenParts.length === 3) {
+          const payload = JSON.parse(Buffer.from(tokenParts[1], 'base64').toString());
+          console.log("JWT Payload authClass:", payload.authClass);
+          console.log("JWT Payload authClassId:", payload.authClassId);
+          console.log("JWT Payload primaryAuthClassId:", payload.primaryAuthClassId);
+          console.log("JWT Payload scopes:", payload.oauthMeta?.scopes || []);
+          console.log("JWT Payload scope count:", payload.oauthMeta?.scopes?.length || 0);
+          console.log("JWT Payload client:", payload.oauthMeta?.client);
+
+          // Check if authClassId matches the expected sub-account location
+          if (payload.authClassId !== tokenData.locationId) {
+            console.warn("⚠️ WARNING: JWT authClassId differs from tokenData.locationId!");
+            console.warn("JWT authClassId:", payload.authClassId);
+            console.warn("tokenData.locationId:", tokenData.locationId);
+          }
+        }
+      } catch (decodeError) {
+        console.log("Could not decode JWT:", decodeError);
+      }
+    }
+    console.log("========================================");
+
     const { access_token, refresh_token, expires_in, locationId, userId, companyId } = tokenData;
 
     // Fetch existing integration to preserve pipeline settings ONLY
