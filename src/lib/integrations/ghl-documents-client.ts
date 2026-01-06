@@ -404,7 +404,7 @@ export async function sendLeaseViaGHLDirect(
   tenantPhone: string | null,
   propertyAddress: string,
   leaseData: Parameters<GHLDocumentsClient['upsertContactWithLeaseData']>[2]
-): Promise<{ contactId: string; documentId: string; isNewContact: boolean }> {
+): Promise<{ contactId: string; documentId: string; documentUrl?: string; isNewContact: boolean }> {
   const client = new GHLDocumentsClient(ghlAccessToken, ghlLocationId);
   const ghlClient = new GHLClient(ghlAccessToken, ghlLocationId);
 
