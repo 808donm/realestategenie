@@ -13,6 +13,11 @@ export type GHLContact = {
   name?: string;
   email?: string;
   phone?: string;
+  address1?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  country?: string;
   tags?: string[];
   source?: string;
   customFields?: Array<{ key: string; value: string }> | Record<string, string>;
