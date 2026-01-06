@@ -25,6 +25,8 @@ export async function getValidGHLConfig(agentId: string): Promise<{
   ghl_new_lead_stage?: string;
 } | null> {
   try {
+    console.log("[Token Refresh] Fetching GHL integration for agent_id:", agentId);
+
     // Fetch current integration
     const { data: integration, error } = await supabaseAdmin
       .from("integrations")
@@ -36,8 +38,16 @@ export async function getValidGHLConfig(agentId: string): Promise<{
 
     if (error || !integration) {
       console.error("[Token Refresh] No GHL integration found for agent:", agentId);
+      console.error("[Token Refresh] Error:", error);
       return null;
     }
+
+    console.log("[Token Refresh] Found integration:", {
+      id: integration.id,
+      agentId: integration.agent_id,
+      createdAt: integration.created_at,
+      updatedAt: integration.updated_at,
+    });
 
     const config = integration.config as any;
 
@@ -46,6 +56,13 @@ export async function getValidGHLConfig(agentId: string): Promise<{
     const refreshToken = config.ghl_refresh_token || config.refresh_token;
     const expiresAtStr = config.ghl_expires_at || config.expires_at;
     const locationId = config.ghl_location_id || config.location_id;
+
+    console.log("[Token Refresh] Config details:", {
+      locationId,
+      hasAccessToken: !!accessToken,
+      tokenPrefix: accessToken?.substring(0, 20) + '...',
+      expiresAt: expiresAtStr,
+    });
 
     if (!accessToken || !refreshToken || !expiresAtStr) {
       console.error("[Token Refresh] Invalid config - missing tokens or expiration");

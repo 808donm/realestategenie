@@ -62,8 +62,21 @@ export async function POST(req: Request) {
     }
 
     // Get GHL integration credentials if connected (automatically refreshes token if expired)
+    console.log('[Registration] Fetching GHL config for agent_id:', evt.agent_id);
     const ghlConfig = await getValidGHLConfig(evt.agent_id);
     const isGHLConnected = ghlConfig !== null;
+
+    if (isGHLConnected) {
+      console.log('[Registration] GHL integration found:', {
+        agentId: evt.agent_id,
+        locationId: ghlConfig.location_id,
+        hasAccessToken: !!ghlConfig.access_token,
+        tokenPrefix: ghlConfig.access_token?.substring(0, 20) + '...',
+        hasPipelineConfig: !!(ghlConfig.ghl_pipeline_id && ghlConfig.ghl_new_lead_stage),
+      });
+    } else {
+      console.log('[Registration] No GHL integration found for agent:', evt.agent_id);
+    }
 
     // Check for multiple visits to same open house (RED HOT indicator)
     const today = new Date();
