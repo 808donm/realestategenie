@@ -119,13 +119,12 @@ export async function GET(req: NextRequest) {
     const existingConfig = (existingIntegration?.config as any) || {};
 
     // Store tokens in integrations table with NEW field names (ghl_ prefix)
-    // IMPORTANT: We explicitly set ONLY the new fields to avoid old field names persisting
+    // IMPORTANT: Preserve ALL existing config values, only update OAuth tokens
     console.log("Storing GHL integration for user:", user.id);
     const newConfig = {
-      // Preserve existing pipeline settings (if they use ghl_ prefix)
-      ghl_pipeline_id: existingConfig.ghl_pipeline_id || undefined,
-      ghl_new_lead_stage: existingConfig.ghl_new_lead_stage || undefined,
-      // Set OAuth tokens with ghl_ prefix (NEW FORMAT)
+      // Preserve ALL existing config values (pipeline settings, template IDs, etc.)
+      ...existingConfig,
+      // Update OAuth tokens with new values (these will overwrite old tokens)
       ghl_access_token: access_token,
       ghl_refresh_token: refresh_token,
       ghl_expires_in: expires_in,
