@@ -517,81 +517,67 @@ export class GHLClient {
   }
 
   /**
-   * Send a document from a template
-   * Creates and sends a document in one API call
+   * Send a document/contract from a template
+   * Uses GHL API v2 /proposals/templates/send endpoint
+   *
+   * Reference: https://help.gohighlevel.com/support/solutions/articles/155000006323
    *
    * @param templateId - The template ID to use
    * @param contactId - The contact to send to
    * @param documentName - Name for the document (e.g., "123 Main St-2026-01-06")
-   * @param mergeFields - Custom fields to populate in the template
+   * @param mergeFields - Custom fields to populate in the template (must match template field keys)
+   * @param medium - Delivery method: "email" (sends automatically) or "link" (returns URL)
    */
   async sendDocumentTemplate(params: {
     templateId: string;
     contactId: string;
     documentName: string;
     mergeFields?: Record<string, any>;
-  }): Promise<{ documentId: string; document: any }> {
-    const payload = {
-      altId: params.templateId,
-      altType: "template",
-      contactId: params.contactId,
-      name: params.documentName,
-      customData: params.mergeFields || {},
-    };
-
-    console.log('[GHL] Sending document from template:', {
-      templateId: params.templateId,
-      contactId: params.contactId,
-      documentName: params.documentName,
-      fieldsCount: Object.keys(params.mergeFields || {}).length,
-    });
-
-    // Try multiple possible endpoints
-    const endpoints = [
-      '/documents/',
-      '/templates/send',
-      '/documents/send',
-    ];
-
-    let lastError: any = null;
-
-    for (const endpoint of endpoints) {
-      try {
-        console.log(`[GHL] Trying endpoint: ${endpoint}`);
-        const result = await this.request<{ documentId: string; document: any }>(endpoint, {
-          method: 'POST',
-          body: JSON.stringify(payload),
-        });
-        console.log(`[GHL] ✅ Success with endpoint: ${endpoint}`);
-        return result;
-      } catch (error: any) {
-        console.log(`[GHL] ❌ Failed with ${endpoint}: ${error.message}`);
-        lastError = error;
-
-        // If we get a 400, try different payload structure
-        if (error.message.includes('400')) {
-          console.log('[GHL] Trying alternative payload structure...');
-          try {
-            const altPayload = {
-              templateId: params.templateId,
-              contactId: params.contactId,
-              title: params.documentName,
-              fields: params.mergeFields || {},
-            };
-            const result = await this.request<{ documentId: string; document: any }>(endpoint, {
-              method: 'POST',
-              body: JSON.stringify(altPayload),
-            });
-            console.log(`[GHL] ✅ Success with alternative payload on ${endpoint}`);
-            return result;
-          } catch (altError) {
-            console.log(`[GHL] Alternative payload also failed`);
-          }
-        }
-      }
+    medium?: "email" | "link";
+  }): Promise<{ documentId: string; document: any; url?: string }> {
+    // Validate location ID is set
+    if (!this.locationId) {
+      throw new Error('Location ID is required for document creation. Initialize GHLClient with locationId.');
     }
 
-    throw lastError || new Error('All document creation endpoints failed');
+    // Build payload according to GHL API v2 specification
+    const payload = {
+      templateId: params.templateId,
+      locationId: this.locationId,
+      contactId: params.contactId,
+      medium: params.medium || "link", // Default to "link" to get URL in response
+      customValues: params.mergeFields || {},
+    };
+
+    console.log('[GHL] Sending contract/document from template:', {
+      endpoint: '/proposals/templates/send',
+      templateId: params.templateId,
+      contactId: params.contactId,
+      locationId: this.locationId,
+      documentName: params.documentName,
+      medium: payload.medium,
+      customValuesCount: Object.keys(payload.customValues).length,
+    });
+
+    // Use the correct GHL API v2 endpoint for sending templates
+    const result = await this.request<{ documentId: string; document: any; url?: string; link?: string }>(
+      '/proposals/templates/send',
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }
+    );
+
+    console.log(`[GHL] ✅ Document created successfully:`, {
+      documentId: result.documentId || result.document?.id,
+      url: result.url || result.link,
+    });
+
+    return {
+      documentId: result.documentId || result.document?.id,
+      document: result.document || result,
+      url: result.url || result.link,
+    };
   }
 
   /**

@@ -424,13 +424,10 @@ export async function sendLeaseViaGHLDirect(
 
   console.log(`✅ Contact ${isNewContact ? 'created' : 'updated'} in GHL: ${contact.id}`);
 
-  // Step 2: Get field map for merge fields
-  const fieldMap = await client.getCustomFieldMap();
-
-  // Step 3: Build merge fields object for template
-  const customFields: Array<{ id: string; value: string }> = [];
-
-  const fieldMappings: Record<string, any> = {
+  // Step 2: Build custom values for template merge fields
+  // NOTE: For /proposals/templates/send, customValues uses template placeholder keys,
+  // NOT GHL custom field IDs. The keys must match {{custom_values.key_name}} in the template.
+  const customValues: Record<string, any> = {
     lease_property_address: leaseData.property_address,
     lease_property_city: leaseData.property_city,
     lease_property_state: leaseData.property_state,
@@ -462,19 +459,9 @@ export async function sendLeaseViaGHLDirect(
     lease_landlord_notice_address: leaseData.landlord_notice_address || '',
   };
 
-  // Map to GHL field IDs
-  for (const [key, value] of Object.entries(fieldMappings)) {
-    const fieldId = fieldMap[key];
-    if (fieldId && value !== undefined && value !== null) {
-      customFields.push({ id: fieldId, value: value });
-    } else if (!fieldId) {
-      console.warn(`⚠️ Custom field not found in GHL: ${key}`);
-    }
-  }
+  console.log(`📋 Prepared ${Object.keys(customValues).length} custom values for template`);
 
-  console.log(`📋 Mapped ${customFields.length} custom fields for template`);
-
-  // Step 4: Generate document name: "123 Main St-2026-01-06"
+  // Step 3: Generate document name: "123 Main St-2026-01-06"
   const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
   const documentName = `${propertyAddress}-${today}`;
 
@@ -482,23 +469,25 @@ export async function sendLeaseViaGHLDirect(
   console.log(`📋 Using template: ${templateId}`);
   console.log(`📧 Sending to contact: ${contact.id}`);
 
-  // Step 5: Create and send document from template
-  const { documentId, document } = await ghlClient.sendDocumentTemplate({
+  // Step 4: Create and send document from template
+  const { documentId, document, url } = await ghlClient.sendDocumentTemplate({
     templateId,
     contactId: contact.id,
     documentName,
-    mergeFields: customFields.reduce((acc, field) => {
-      acc[field.id] = field.value;
-      return acc;
-    }, {} as Record<string, string>),
+    mergeFields: customValues,
+    medium: 'link', // Get signing URL in response
   });
 
   console.log(`✅ Document created and sent: ${documentId}`);
   console.log(`✅ Document name: ${documentName}`);
+  if (url) {
+    console.log(`✅ Signing URL: ${url}`);
+  }
 
   return {
     contactId: contact.id,
     documentId,
+    documentUrl: url,
     isNewContact,
   };
 }

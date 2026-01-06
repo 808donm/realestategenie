@@ -402,7 +402,7 @@ export async function POST(request: NextRequest) {
 
           const { sendLeaseViaGHLDirect } = await import("@/lib/integrations/ghl-documents-client");
 
-          const { contactId: ghlContactIdFromDocs, documentId } = await sendLeaseViaGHLDirect(
+          const { contactId: ghlContactIdFromDocs, documentId, documentUrl } = await sendLeaseViaGHLDirect(
             ghlIntegration!.config.ghl_access_token!,
             ghlIntegration!.config.ghl_location_id!,
             ghlTemplateId,
@@ -412,18 +412,22 @@ export async function POST(request: NextRequest) {
             leaseDataPayload
           );
 
-          // Update lease with GHL contact ID and document ID
+          // Update lease with GHL contact ID, document ID, and signing URL
           await supabase
             .from("pm_leases")
             .update({
               ghl_contact_id: ghlContactIdFromDocs,
               ghl_document_id: documentId,
               esignature_provider: "ghl",
+              esignature_url: documentUrl || null,
             })
             .eq("id", lease.id);
 
           console.log(`✅ GHL document created directly via API: ${documentId}`);
           console.log(`✅ Document sent to contact: ${ghlContactIdFromDocs}`);
+          if (documentUrl) {
+            console.log(`✅ Signing URL: ${documentUrl}`);
+          }
 
         } else {
           // LEGACY: Use workflow trigger pattern (for backwards compatibility)
