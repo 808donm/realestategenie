@@ -183,6 +183,18 @@ export async function createGHLRegistrationRecord(params: {
 
     // Associate Registration → Contact
     try {
+      const contactAssocPayload = {
+        locationId: params.locationId,
+        firstObjectKey: 'custom_objects.registrations',
+        firstObjectId: registrationRecordId,
+        secondObjectKey: 'contact',
+        secondObjectId: params.contactId,
+      };
+
+      console.log('[GHL] Creating Contact association with payload:', JSON.stringify(contactAssocPayload));
+      console.log('[GHL] Location ID:', params.locationId);
+      console.log('[GHL] Token prefix:', params.accessToken.substring(0, 20) + '...');
+
       const contactAssocResponse = await fetch(
         `https://services.leadconnectorhq.com/associations/relations`,
         {
@@ -192,28 +204,40 @@ export async function createGHLRegistrationRecord(params: {
             'Content-Type': 'application/json',
             'Version': '2021-07-28',
           },
-          body: JSON.stringify({
-            locationId: params.locationId,
-            firstObjectKey: 'custom_objects.registrations',
-            firstObjectId: registrationRecordId,
-            secondObjectKey: 'contact',
-            secondObjectId: params.contactId,
-          }),
+          body: JSON.stringify(contactAssocPayload),
         }
       );
 
+      console.log('[GHL] Association response status:', contactAssocResponse.status);
+      console.log('[GHL] Association response headers:', Object.fromEntries(contactAssocResponse.headers.entries()));
+
       if (contactAssocResponse.ok) {
-        console.log('[GHL] Association created: Registration → Contact');
+        const responseData = await contactAssocResponse.json();
+        console.log('[GHL] Association created successfully:', responseData);
+        console.log('[GHL] ✅ Association created: Registration → Contact');
       } else {
         const error = await contactAssocResponse.text();
-        console.warn('[GHL] Failed to create Contact association (non-critical):', error);
+        console.warn('[GHL] ❌ Failed to create Contact association (non-critical):', error);
+        console.warn('[GHL] Response status:', contactAssocResponse.status);
+        console.warn('[GHL] Response headers:', Object.fromEntries(contactAssocResponse.headers.entries()));
       }
     } catch (assocError: any) {
       console.warn('[GHL] Contact association error (non-critical):', assocError.message);
+      console.warn('[GHL] Error stack:', assocError.stack);
     }
 
     // Associate Registration → OpenHouse
     try {
+      const openHouseAssocPayload = {
+        locationId: params.locationId,
+        firstObjectKey: 'custom_objects.registrations',
+        firstObjectId: registrationRecordId,
+        secondObjectKey: 'custom_objects.openhouses',
+        secondObjectId: params.openHouseRecordId,
+      };
+
+      console.log('[GHL] Creating OpenHouse association with payload:', JSON.stringify(openHouseAssocPayload));
+
       const openHouseAssocResponse = await fetch(
         `https://services.leadconnectorhq.com/associations/relations`,
         {
@@ -223,24 +247,24 @@ export async function createGHLRegistrationRecord(params: {
             'Content-Type': 'application/json',
             'Version': '2021-07-28',
           },
-          body: JSON.stringify({
-            locationId: params.locationId,
-            firstObjectKey: 'custom_objects.registrations',
-            firstObjectId: registrationRecordId,
-            secondObjectKey: 'custom_objects.openhouses',
-            secondObjectId: params.openHouseRecordId,
-          }),
+          body: JSON.stringify(openHouseAssocPayload),
         }
       );
 
+      console.log('[GHL] OpenHouse Association response status:', openHouseAssocResponse.status);
+
       if (openHouseAssocResponse.ok) {
-        console.log('[GHL] Association created: Registration → OpenHouse');
+        const responseData = await openHouseAssocResponse.json();
+        console.log('[GHL] OpenHouse Association created successfully:', responseData);
+        console.log('[GHL] ✅ Association created: Registration → OpenHouse');
       } else {
         const error = await openHouseAssocResponse.text();
-        console.warn('[GHL] Failed to create OpenHouse association (non-critical):', error);
+        console.warn('[GHL] ❌ Failed to create OpenHouse association (non-critical):', error);
+        console.warn('[GHL] Response status:', openHouseAssocResponse.status);
       }
     } catch (assocError: any) {
       console.warn('[GHL] OpenHouse association error (non-critical):', assocError.message);
+      console.warn('[GHL] Error stack:', assocError.stack);
     }
 
     return registrationRecordId;
