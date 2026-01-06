@@ -2,10 +2,9 @@
 
 ## Why This Is Needed
 
-The GHL OAuth integration now requests additional scopes for document/contract creation:
-- `documents_contracts_templates/sendlink.write` - Send documents from templates
-- `documents_contracts_templates/list.readonly` - List available templates
-- `documents_contracts/list.readonly` - View created documents
+The GHL OAuth integration now requests additional scopes for proposal/contract creation:
+- `proposals.write` - Create and send proposals/contracts from templates
+- `proposals.readonly` - List available templates and view created documents
 
 Your existing OAuth token doesn't have these scopes, which is why you're getting the 401 error:
 ```
@@ -66,7 +65,7 @@ The complete list of scopes being requested:
 - **Custom Objects**: `objects/record.readonly`, `objects/record.write`, `objects/schema.readonly`, `objects/schema.write`
 - **Associations**: `associations.write`, `associations.readonly`
 - **Invoices**: `invoices.write`, `invoices.readonly`
-- **Documents & Templates** (NEW): `documents_contracts_templates/sendlink.write`, `documents_contracts_templates/list.readonly`, `documents_contracts/list.readonly`
+- **Proposals** (NEW): `proposals.write`, `proposals.readonly`
 
 ## Troubleshooting
 
