@@ -556,8 +556,6 @@ export class GHLClient {
     templateId: string;
     contactId: string;
     documentName: string;
-    recipientEmail: string;
-    recipientName: string;
     mergeFields?: Record<string, any>;
     medium?: "email" | "link";
   }): Promise<{ documentId: string; document: any; url?: string }> {
@@ -570,22 +568,16 @@ export class GHLClient {
     }
 
     // Build payload according to GHL API v2 specification per official documentation
-    // Required fields: templateId, locationId, contactId, userId, medium, recipients
+    // Required fields: templateId, locationId, contactId, userId, medium
     // NOTE: Template merge fields are populated from contact custom fields, not from payload
     // The contact must have custom fields set BEFORE sending the template
+    // GHL uses the contactId to determine recipient - no separate recipients array needed
     const payload: any = {
       templateId: params.templateId,
       locationId: this.locationId,
       contactId: params.contactId,
       userId: this.userId, // Required despite not being in docs - API validation requires it
       medium: params.medium || "link",
-      recipients: [
-        {
-          email: params.recipientEmail,
-          name: params.recipientName,
-          role: "signer",
-        },
-      ],
     };
 
     console.log('[GHL] ========================================');

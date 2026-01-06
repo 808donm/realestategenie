@@ -500,13 +500,11 @@ export async function sendLeaseViaGHLDirect(
 
   // Step 4: Create and send document from template
   // Template will auto-populate from contact's custom fields
-  const recipientName = `${leaseData.tenant_first_name} ${leaseData.tenant_last_name}`;
+  // GHL uses contactId to determine recipient automatically
   const { documentId, document, url } = await ghlClient.sendDocumentTemplate({
     templateId,
     contactId: contact.id,
     documentName,
-    recipientEmail: tenantEmail,
-    recipientName,
     medium: 'link', // Get signing URL in response
   });
 
