@@ -141,21 +141,38 @@ export class GHLClient {
     if (!response.ok) {
       const error = await response.text();
 
-      // Enhanced error logging for debugging
-      console.error("[GHL API Error]", {
-        status: response.status,
-        statusText: response.statusText,
-        endpoint,
-        method: options.method || "GET",
-        error,
-      });
+      console.error('[GHL] ========================================');
+      console.error('[GHL] ❌ API ERROR');
+      console.error('[GHL] ========================================');
+      console.error('[GHL] Status:', response.status, response.statusText);
+      console.error('[GHL] Endpoint:', options.method || 'GET', endpoint);
+      console.error('[GHL] URL:', url);
+      console.error('[GHL] === COMPLETE ERROR RESPONSE ===');
+      console.error(error);
+      console.error('[GHL] === END ERROR RESPONSE ===');
+
+      // Try to parse and display structured error if JSON
+      try {
+        const errorJson = JSON.parse(error);
+        console.error('[GHL] === PARSED ERROR ===');
+        console.error(JSON.stringify(errorJson, null, 2));
+        console.error('[GHL] === END PARSED ERROR ===');
+      } catch (e) {
+        // Not JSON, already logged as text above
+      }
 
       // Special logging for 401 scope errors
       if (response.status === 401) {
-        console.error("[GHL 401 Error] Token not authorized for this scope");
-        console.error("[GHL 401 Error] Endpoint:", endpoint);
-        console.error("[GHL 401 Error] Required scopes: objects/record.write objects/record.readonly objects/schema.readonly associations.write");
+        console.error("[GHL] ⚠️  Token not authorized for this scope");
+        console.error("[GHL] Required scopes for this endpoint may be missing");
       }
+
+      // Special logging for 400/422 validation errors
+      if (response.status === 400 || response.status === 422) {
+        console.error('[GHL] ⚠️  Validation error - check payload structure above');
+      }
+
+      console.error('[GHL] ========================================');
 
       throw new Error(`GHL API Error (${response.status}): ${error}`);
     }
@@ -555,14 +572,17 @@ export class GHLClient {
       medium: params.medium || "link",
     };
 
-    console.log('[GHL] Sending contract/document from template:', {
-      endpoint: '/proposals/templates/send',
-      templateId: params.templateId,
-      contactId: params.contactId,
-      locationId: this.locationId,
-      documentName: params.documentName,
-      medium: payload.medium,
-    });
+    console.log('[GHL] ========================================');
+    console.log('[GHL] SENDING DOCUMENT TEMPLATE');
+    console.log('[GHL] ========================================');
+    console.log('[GHL] Endpoint: POST /proposals/templates/send');
+    console.log('[GHL] Document Name:', params.documentName);
+    console.log('[GHL] Merge Fields:', params.mergeFields);
+    console.log('[GHL] === COMPLETE REQUEST PAYLOAD ===');
+    console.log(JSON.stringify(payload, null, 2));
+    console.log('[GHL] === END REQUEST PAYLOAD ===');
+    console.log('[GHL] Payload size:', JSON.stringify(payload).length, 'bytes');
+    console.log('[GHL] ========================================');
 
     // Use the correct GHL API v2 endpoint for sending templates
     const result = await this.request<{ documentId: string; document: any; url?: string; link?: string }>(
@@ -573,10 +593,15 @@ export class GHLClient {
       }
     );
 
-    console.log(`[GHL] ✅ Document created successfully:`, {
-      documentId: result.documentId || result.document?.id,
-      url: result.url || result.link,
-    });
+    console.log('[GHL] ========================================');
+    console.log('[GHL] ✅ DOCUMENT CREATED SUCCESSFULLY');
+    console.log('[GHL] ========================================');
+    console.log('[GHL] === COMPLETE RESPONSE ===');
+    console.log(JSON.stringify(result, null, 2));
+    console.log('[GHL] === END RESPONSE ===');
+    console.log('[GHL] Document ID:', result.documentId || result.document?.id);
+    console.log('[GHL] Document URL:', result.url || result.link);
+    console.log('[GHL] ========================================');
 
     return {
       documentId: result.documentId || result.document?.id,
