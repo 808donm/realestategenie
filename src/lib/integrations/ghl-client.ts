@@ -532,10 +532,11 @@ export class GHLClient {
     mergeFields?: Record<string, any>;
   }): Promise<{ documentId: string; document: any }> {
     const payload = {
-      templateId: params.templateId,
+      altId: params.templateId,
+      altType: "template",
       contactId: params.contactId,
       name: params.documentName,
-      customFields: params.mergeFields || {},
+      customData: params.mergeFields || {},
     };
 
     console.log('[GHL] Sending document from template:', {
@@ -545,10 +546,52 @@ export class GHLClient {
       fieldsCount: Object.keys(params.mergeFields || {}).length,
     });
 
-    return this.request<{ documentId: string; document: any }>('/documents/templates/send', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
+    // Try multiple possible endpoints
+    const endpoints = [
+      '/documents/',
+      '/templates/send',
+      '/documents/send',
+    ];
+
+    let lastError: any = null;
+
+    for (const endpoint of endpoints) {
+      try {
+        console.log(`[GHL] Trying endpoint: ${endpoint}`);
+        const result = await this.request<{ documentId: string; document: any }>(endpoint, {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+        console.log(`[GHL] ✅ Success with endpoint: ${endpoint}`);
+        return result;
+      } catch (error: any) {
+        console.log(`[GHL] ❌ Failed with ${endpoint}: ${error.message}`);
+        lastError = error;
+
+        // If we get a 400, try different payload structure
+        if (error.message.includes('400')) {
+          console.log('[GHL] Trying alternative payload structure...');
+          try {
+            const altPayload = {
+              templateId: params.templateId,
+              contactId: params.contactId,
+              title: params.documentName,
+              fields: params.mergeFields || {},
+            };
+            const result = await this.request<{ documentId: string; document: any }>(endpoint, {
+              method: 'POST',
+              body: JSON.stringify(altPayload),
+            });
+            console.log(`[GHL] ✅ Success with alternative payload on ${endpoint}`);
+            return result;
+          } catch (altError) {
+            console.log(`[GHL] Alternative payload also failed`);
+          }
+        }
+      }
+    }
+
+    throw lastError || new Error('All document creation endpoints failed');
   }
 
   /**
