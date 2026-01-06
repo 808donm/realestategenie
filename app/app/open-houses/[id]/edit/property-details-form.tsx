@@ -171,7 +171,7 @@ export default function PropertyDetailsForm({ eventId, initialData }: PropertyDe
               type="number"
               min="0"
               max="999999999"
-              step="1000"
+              step="1"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
               placeholder="500000"
