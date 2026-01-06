@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { GHLClient } from "@/lib/integrations/ghl-client";
+import { validateQRToken } from "@/lib/security/qr-tokens";
 
 /**
  * Rental Application Submission API
@@ -17,7 +18,7 @@ const supabase = createClient(
 
 export async function POST(request: NextRequest) {
   try {
-    const { eventId, applicationData } = await request.json();
+    const { eventId, applicationData, accessToken } = await request.json();
 
     if (!eventId || !applicationData) {
       return NextResponse.json(
@@ -25,6 +26,35 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // SECURITY: Validate QR code access token
+    if (!accessToken) {
+      console.warn('[Rental Application Submit] Blocked: No access token provided');
+      return NextResponse.json(
+        { error: "Access denied. Please scan the QR code at the open house to submit an application." },
+        { status: 403 }
+      );
+    }
+
+    const tokenValidation = validateQRToken(accessToken);
+    if (!tokenValidation.valid) {
+      console.warn('[Rental Application Submit] Blocked: Invalid token -', tokenValidation.error);
+      return NextResponse.json(
+        { error: `Invalid access token: ${tokenValidation.error}` },
+        { status: 403 }
+      );
+    }
+
+    // Verify token is for THIS event
+    if (tokenValidation.payload?.eventId !== eventId) {
+      console.warn('[Rental Application Submit] Blocked: Token event mismatch');
+      return NextResponse.json(
+        { error: "Access token is for a different open house" },
+        { status: 403 }
+      );
+    }
+
+    console.log('[Rental Application Submit] ✅ Access token validated for event:', eventId);
 
     // Get the open house event details
     const { data: event, error: eventError } = await supabase

@@ -26,9 +26,10 @@ type IntakeFormProps = {
   eventId: string;
   agentName?: string;
   brokerageName?: string;
+  accessToken: string;
 };
 
-export default function IntakeForm({ eventId, agentName, brokerageName }: IntakeFormProps) {
+export default function IntakeForm({ eventId, agentName, brokerageName, accessToken }: IntakeFormProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phoneInput, setPhoneInput] = useState("");
@@ -85,7 +86,7 @@ export default function IntakeForm({ eventId, agentName, brokerageName }: Intake
     const r = await fetch("/api/leads/submit", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ eventId, payload }),
+      body: JSON.stringify({ eventId, payload, accessToken }),
     });
 
     const j = await r.json().catch(() => ({}));

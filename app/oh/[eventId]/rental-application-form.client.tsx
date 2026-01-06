@@ -23,9 +23,11 @@ type EmploymentStatus = "employed" | "self_employed" | "retired" | "unemployed" 
 export default function RentalApplicationForm({
   eventId,
   pmPropertyId,
+  accessToken,
 }: {
   eventId: string;
   pmPropertyId: string | null;
+  accessToken: string;
 }) {
   // Basic Info
   const [name, setName] = useState("");
@@ -175,7 +177,7 @@ export default function RentalApplicationForm({
     const r = await fetch("/api/pm/applications/submit", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ eventId, applicationData }),
+      body: JSON.stringify({ eventId, applicationData, accessToken }),
     });
 
     const j = await r.json().catch(() => ({}));
