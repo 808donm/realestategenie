@@ -394,7 +394,10 @@ export async function POST(request: NextRequest) {
         };
 
         // Check if template ID is configured (use direct API) or workflow-based
+        console.log('🔍 GHL Integration config keys:', Object.keys(ghlIntegration!.config || {}));
+        console.log('🔍 Full GHL config:', JSON.stringify(ghlIntegration!.config, null, 2));
         const ghlTemplateId = ghlIntegration!.config.ghl_lease_template_id;
+        console.log('🔍 Template ID from config:', ghlTemplateId);
 
         if (ghlTemplateId) {
           // NEW: Use direct document creation API
