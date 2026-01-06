@@ -444,21 +444,22 @@ export async function sendLeaseViaGHLDirect(
     lease_rent_due_day: (leaseData.rent_due_day || 1).toString(),
     lease_notice_days: (leaseData.notice_period_days || 30).toString(),
     lease_late_grace_days: (leaseData.late_grace_days || 5).toString(),
-    lease_late_fee_type_fixed: leaseData.late_fee_is_percentage ? 'No' : 'Yes',
-    lease_late_fee_type_percentage: leaseData.late_fee_is_percentage ? 'Yes' : 'No',
+    // Checkbox fields must be "true" or "false" strings, not "Yes"/"No"
+    lease_late_fee_type_fixed: (!leaseData.late_fee_is_percentage).toString(),
+    lease_late_fee_type_percentage: (!!leaseData.late_fee_is_percentage).toString(),
     lease_late_fee_amount: (leaseData.late_fee_amount || 50).toString(),
     lease_late_fee_percentage: (leaseData.late_fee_percentage || 5).toString(),
-    lease_late_fee_frequency_occurence: (leaseData.late_fee_frequency || 'per occurrence') === 'per occurrence' ? 'Yes' : 'No',
-    lease_late_fee_frequency_daily: (leaseData.late_fee_frequency || 'per occurrence') === 'per day' ? 'Yes' : 'No',
+    lease_late_fee_frequency_occurence: ((leaseData.late_fee_frequency || 'per occurrence') === 'per occurrence').toString(),
+    lease_late_fee_frequency_daily: ((leaseData.late_fee_frequency || 'per occurrence') === 'per day').toString(),
     lease_nsf_fee: (leaseData.nsf_fee || 35).toString(),
     lease_deposit_return_days: (leaseData.deposit_return_days || 60).toString(),
     lease_occupants: leaseData.occupants || '',
-    lease_subletting_yes: leaseData.subletting_allowed ? 'Yes' : 'No',
-    lease_subletting_no: leaseData.subletting_allowed ? 'No' : 'Yes',
-    lease_subletting_allowed: leaseData.subletting_allowed ? 'Yes' : 'No', // Template uses this field
-    lease_pets_yes: leaseData.pets_allowed ? 'Yes' : 'No',
-    lease_pets_no: leaseData.pets_allowed ? 'No' : 'Yes',
-    lease_pets_allowed: leaseData.pets_allowed ? 'Yes' : 'No', // Template uses this field
+    lease_subletting_yes: (!!leaseData.subletting_allowed).toString(),
+    lease_subletting_no: (!leaseData.subletting_allowed).toString(),
+    lease_subletting_allowed: (!!leaseData.subletting_allowed).toString(), // Template uses this field
+    lease_pets_yes: (!!leaseData.pets_allowed).toString(),
+    lease_pets_no: (!leaseData.pets_allowed).toString(),
+    lease_pets_allowed: (!!leaseData.pets_allowed).toString(), // Template uses this field
     lease_pet_count: (leaseData.pet_count || 0).toString(),
     lease_pet_types: leaseData.pet_types || '',
     lease_pet_weight_limit: leaseData.pet_weight_limit || '',
