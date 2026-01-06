@@ -39,10 +39,10 @@ export async function GET(req: NextRequest) {
   // - objects/* for custom objects
   // - associations.* for linking custom objects (REQUIRED for Registration → OpenHouse)
   // - invoices.* for invoice creation (GHL Documents integration)
-  // - documents_contracts.* for lease contract creation via templates
+  // - documents_contracts/* for lease contract creation via templates (note: camelCase sendLink)
   ghlAuthUrl.searchParams.append(
     "scope",
-    "contacts.write contacts.readonly opportunities.write opportunities.readonly locations.readonly locations/customFields.readonly locations/customFields.write conversations.write conversations.readonly conversations/message.readonly conversations/message.write objects/record.readonly objects/record.write objects/schema.readonly objects/schema.write associations.write associations.readonly invoices.write invoices.readonly documents_contracts.write documents_contracts.readonly"
+    "contacts.write contacts.readonly opportunities.write opportunities.readonly locations.readonly locations/customFields.readonly locations/customFields.write conversations.write conversations.readonly conversations/message.readonly conversations/message.write objects/record.readonly objects/record.write objects/schema.readonly objects/schema.write associations.write associations.readonly invoices.write invoices.readonly documents_contracts/sendLink.write documents_contracts_template/sendLink.write"
   );
   ghlAuthUrl.searchParams.append("state", state);
 
