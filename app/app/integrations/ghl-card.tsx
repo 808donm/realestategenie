@@ -4,7 +4,9 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, CheckCircle2, XCircle, AlertCircle, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ExternalLink, CheckCircle2, XCircle, AlertCircle, Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
 
 type Integration = {
@@ -19,6 +21,10 @@ type Integration = {
 export default function GHLIntegrationCard({ integration }: { integration: Integration }) {
   const [testing, setTesting] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
+  const [leaseTemplateId, setLeaseTemplateId] = useState(
+    integration?.config?.ghl_lease_template_id || ""
+  );
+  const [savingTemplate, setSavingTemplate] = useState(false);
 
   const isConnected = integration?.status === "connected";
   const hasError = integration?.status === "error";
@@ -83,6 +89,35 @@ export default function GHLIntegrationCard({ integration }: { integration: Integ
     }
   };
 
+  const handleSaveLeaseTemplate = async () => {
+    setSavingTemplate(true);
+    try {
+      const response = await fetch("/api/integrations/ghl/config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ghl_lease_template_id: leaseTemplateId.trim() || null,
+        }),
+      });
+
+      if (response.ok) {
+        toast.success("Lease template ID saved");
+        window.location.reload();
+      } else {
+        const data = await response.json();
+        toast.error("Failed to save template ID", {
+          description: data.error,
+        });
+      }
+    } catch (error: any) {
+      toast.error("Failed to save", {
+        description: error.message,
+      });
+    } finally {
+      setSavingTemplate(false);
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -133,6 +168,47 @@ export default function GHLIntegrationCard({ integration }: { integration: Integ
                 Last synced: {new Date(integration.last_sync_at).toLocaleString()}
               </div>
             )}
+          </div>
+        )}
+
+        {isConnected && (
+          <div className="space-y-3 pt-4 border-t">
+            <div className="space-y-2">
+              <Label htmlFor="lease-template-id" className="text-sm font-medium">
+                Lease Template ID (Optional)
+              </Label>
+              <div className="flex gap-2">
+                <Input
+                  id="lease-template-id"
+                  type="text"
+                  placeholder="Enter template ID from GHL"
+                  value={leaseTemplateId}
+                  onChange={(e) => setLeaseTemplateId(e.target.value)}
+                  className="flex-1"
+                />
+                <Button
+                  onClick={handleSaveLeaseTemplate}
+                  disabled={savingTemplate}
+                  size="sm"
+                >
+                  {savingTemplate ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4" />
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Configure your GHL lease template for automatic document creation. Find your template
+                ID: Go to Marketing → Documents & Contracts → Click your lease template → Copy the ID
+                from the URL (e.g., /templates/<strong>abc123xyz</strong>)
+              </p>
+              {integration?.config?.ghl_lease_template_id && (
+                <div className="text-xs text-green-600 dark:text-green-400">
+                  ✓ Template configured: {integration.config.ghl_lease_template_id}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
