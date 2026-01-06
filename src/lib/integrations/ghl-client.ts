@@ -564,6 +564,7 @@ export class GHLClient {
 
     // Build payload according to GHL API v2 specification per official documentation
     // Required fields: templateId, locationId, contactId, userId, medium
+    // Optional: customValues for template merge fields (keys must match template placeholders)
     const payload: any = {
       templateId: params.templateId,
       locationId: this.locationId,
@@ -571,6 +572,12 @@ export class GHLClient {
       userId: this.userId, // Required despite not being in docs - API validation requires it
       medium: params.medium || "link",
     };
+
+    // Add customValues if merge fields are provided
+    // These populate template placeholders like {{custom_values.lease_property_address}}
+    if (params.mergeFields && Object.keys(params.mergeFields).length > 0) {
+      payload.customValues = params.mergeFields;
+    }
 
     console.log('[GHL] ========================================');
     console.log('[GHL] SENDING DOCUMENT TEMPLATE');
