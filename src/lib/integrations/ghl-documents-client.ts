@@ -488,6 +488,10 @@ export async function sendLeaseViaGHLDirect(
 
   console.log(`✅ Contact custom fields updated with lease data`);
 
+  // Wait for GHL to process/index the contact updates before sending template
+  console.log(`⏳ Waiting 2 seconds for GHL to process contact updates...`);
+  await new Promise(resolve => setTimeout(resolve, 2000));
+
   // Step 3: Generate document name: "123 Main St-2026-01-06"
   const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
   const documentName = `${propertyAddress}-${today}`;
