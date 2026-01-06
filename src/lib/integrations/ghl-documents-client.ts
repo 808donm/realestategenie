@@ -461,10 +461,10 @@ export async function sendLeaseViaGHLDirect(
     lease_occupants: leaseData.occupants || '',
     lease_subletting_yes: leaseData.subletting_allowed ? 'yes' : '',
     lease_subletting_no: leaseData.subletting_allowed ? '' : 'no',
-    lease_subletting_allowed: leaseData.subletting_allowed ? 'yes' : 'no', // Template uses this field
+    lease_subletting_allowed: leaseData.subletting_allowed ? 'Yes' : 'No', // Template uses this field
     lease_pets_yes: leaseData.pets_allowed ? 'pets allowed' : '',
     lease_pets_no: leaseData.pets_allowed ? '' : 'pets not allowed',
-    lease_pets_allowed: leaseData.pets_allowed ? 'pets allowed' : 'pets not allowed', // Template uses this field
+    lease_pets_allowed: leaseData.pets_allowed ? 'Yes' : 'No', // Template uses this field
     lease_pet_count: (leaseData.pet_count || 0).toString(),
     lease_pet_types: leaseData.pet_types || '',
     lease_pet_weight_limit: leaseData.pet_weight_limit || '',
