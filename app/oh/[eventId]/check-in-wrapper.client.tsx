@@ -12,23 +12,25 @@ export default function CheckInWrapper({
   pmPropertyId,
   agentName,
   brokerageName,
+  accessToken,
 }: {
   eventId: string;
   eventType: EventType;
   pmPropertyId: string | null;
   agentName?: string;
   brokerageName?: string;
+  accessToken: string;
 }) {
   const [userChoice, setUserChoice] = useState<"sales" | "rental" | null>(null);
 
   // For "rental" events, always show rental application form
   if (eventType === "rental") {
-    return <RentalApplicationForm eventId={eventId} pmPropertyId={pmPropertyId} />;
+    return <RentalApplicationForm eventId={eventId} pmPropertyId={pmPropertyId} accessToken={accessToken} />;
   }
 
   // For "sales" events, always show traditional intake form
   if (eventType === "sales") {
-    return <IntakeForm eventId={eventId} agentName={agentName} brokerageName={brokerageName} />;
+    return <IntakeForm eventId={eventId} agentName={agentName} brokerageName={brokerageName} accessToken={accessToken} />;
   }
 
   // For "both" events, let user choose
@@ -106,7 +108,7 @@ export default function CheckInWrapper({
           >
             ← Back to selection
           </button>
-          <RentalApplicationForm eventId={eventId} pmPropertyId={pmPropertyId} />
+          <RentalApplicationForm eventId={eventId} pmPropertyId={pmPropertyId} accessToken={accessToken} />
         </div>
       );
     }
@@ -127,11 +129,11 @@ export default function CheckInWrapper({
         >
           ← Back to selection
         </button>
-        <IntakeForm eventId={eventId} agentName={agentName} brokerageName={brokerageName} />
+        <IntakeForm eventId={eventId} agentName={agentName} brokerageName={brokerageName} accessToken={accessToken} />
       </div>
     );
   }
 
   // Fallback to sales form
-  return <IntakeForm eventId={eventId} agentName={agentName} brokerageName={brokerageName} />;
+  return <IntakeForm eventId={eventId} agentName={agentName} brokerageName={brokerageName} accessToken={accessToken} />;
 }

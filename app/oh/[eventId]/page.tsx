@@ -2,14 +2,85 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { geocodeAddress } from "@/lib/geocoding";
 import CheckInWrapper from "./check-in-wrapper.client";
 import PropertyMap from "@/components/PropertyMapWrapper";
+import { validateQRToken } from "@/lib/security/qr-tokens";
 
 export default async function OpenHouseIntakePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ eventId: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const { eventId } = await params;
+  const search = await searchParams;
+  const token = typeof search.token === 'string' ? search.token : undefined;
   const supabase = await supabaseServer();
+
+  // SECURITY: Validate QR code access token
+  // This prevents unauthorized access to the registration page
+  if (!token) {
+    return (
+      <div style={{ maxWidth: 720, margin: "40px auto", padding: 16 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: "crimson" }}>Access Denied</h1>
+        <p style={{ marginTop: 12 }}>
+          This open house registration page requires a valid access token.
+        </p>
+        <p style={{ marginTop: 8, opacity: 0.75 }}>
+          Please scan the QR code at the open house entrance to access this page.
+        </p>
+        <div style={{ marginTop: 24, padding: 16, background: "#f0f0f0", borderRadius: 8 }}>
+          <strong>🔒 Security Notice:</strong>
+          <p style={{ marginTop: 8, fontSize: 14 }}>
+            This page is protected to ensure that only attendees at the physical
+            open house can register. If you're at the open house, please scan
+            the QR code provided by the agent.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Validate the token
+  const tokenValidation = validateQRToken(token);
+  if (!tokenValidation.valid) {
+    return (
+      <div style={{ maxWidth: 720, margin: "40px auto", padding: 16 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: "crimson" }}>Invalid Access Token</h1>
+        <p style={{ marginTop: 12 }}>
+          {tokenValidation.error || 'The access token is invalid or has expired.'}
+        </p>
+        <p style={{ marginTop: 8, opacity: 0.75 }}>
+          Please scan the QR code again at the open house entrance.
+        </p>
+        <div style={{ marginTop: 24, padding: 16, background: "#fff3cd", borderRadius: 8 }}>
+          <strong>⚠️ Common Issues:</strong>
+          <ul style={{ marginTop: 8, fontSize: 14, paddingLeft: 20 }}>
+            <li>The QR code link may have expired (typically valid for 72 hours)</li>
+            <li>The link may have been modified or corrupted</li>
+            <li>You may have scanned an old QR code</li>
+          </ul>
+          <p style={{ marginTop: 12, fontSize: 14 }}>
+            If you're at the open house, please ask the agent for a fresh QR code.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Verify the token is for THIS event
+  if (tokenValidation.payload?.eventId !== eventId) {
+    return (
+      <div style={{ maxWidth: 720, margin: "40px auto", padding: 16 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: "crimson" }}>Wrong Event</h1>
+        <p style={{ marginTop: 12 }}>
+          This access token is for a different open house event.
+        </p>
+        <p style={{ marginTop: 8, opacity: 0.75 }}>
+          Please scan the QR code for this specific open house.
+        </p>
+      </div>
+    );
+  }
 
   // Read from the public VIEW (published events only)
   const { data: event, error } = await supabase
@@ -159,6 +230,7 @@ export default async function OpenHouseIntakePage({
           pmPropertyId={event.pm_property_id || null}
           agentName={event.display_name || undefined}
           brokerageName={event.brokerage_name || undefined}
+          accessToken={token}
         />
       </div>
     </div>

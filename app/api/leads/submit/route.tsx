@@ -6,6 +6,7 @@ import { dispatchWebhook } from "@/lib/webhooks/dispatcher";
 import { createOrUpdateGHLContact, createGHLRegistrationRecord, createGHLOpenHouseRecord, createGHLOpportunity, addGHLTags, sendGHLEmail } from "@/lib/notifications/ghl-service";
 import { getValidGHLConfig } from "@/lib/integrations/ghl-token-refresh";
 import { sendOpenHouseEmail } from "@/lib/email/resend";
+import { validateQRToken } from "@/lib/security/qr-tokens";
 
 const admin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -18,6 +19,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const eventId = String(body?.eventId || "");
     const payload = body?.payload;
+    const accessToken = body?.accessToken; // QR code access token
 
     if (!eventId) {
       return NextResponse.json({ error: "Missing eventId" }, { status: 400 });
@@ -25,6 +27,35 @@ export async function POST(req: Request) {
     if (!payload || typeof payload !== "object") {
       return NextResponse.json({ error: "Missing payload" }, { status: 400 });
     }
+
+    // SECURITY: Validate QR code access token
+    if (!accessToken) {
+      console.warn('[Lead Submit] Blocked: No access token provided');
+      return NextResponse.json(
+        { error: "Access denied. Please scan the QR code at the open house to register." },
+        { status: 403 }
+      );
+    }
+
+    const tokenValidation = validateQRToken(accessToken);
+    if (!tokenValidation.valid) {
+      console.warn('[Lead Submit] Blocked: Invalid token -', tokenValidation.error);
+      return NextResponse.json(
+        { error: `Invalid access token: ${tokenValidation.error}` },
+        { status: 403 }
+      );
+    }
+
+    // Verify token is for THIS event
+    if (tokenValidation.payload?.eventId !== eventId) {
+      console.warn('[Lead Submit] Blocked: Token event mismatch');
+      return NextResponse.json(
+        { error: "Access token is for a different open house" },
+        { status: 403 }
+      );
+    }
+
+    console.log('[Lead Submit] ✅ Access token validated for event:', eventId);
 
     // Validate event exists + is published (use the view for published-only)
     const { data: published, error: pubErr } = await admin
