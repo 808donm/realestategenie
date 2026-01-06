@@ -405,6 +405,7 @@ export async function POST(request: NextRequest) {
           const { contactId: ghlContactIdFromDocs, documentId, documentUrl } = await sendLeaseViaGHLDirect(
             ghlIntegration!.config.ghl_access_token!,
             ghlIntegration!.config.ghl_location_id!,
+            ghlIntegration!.config.ghl_user_id!,
             ghlTemplateId,
             tenant_email,
             tenant_phone || null,

@@ -110,11 +110,13 @@ export type GHLInvoice = {
 export class GHLClient {
   private accessToken: string;
   private locationId?: string;
+  private userId?: string;
   private baseUrl = "https://services.leadconnectorhq.com";
 
-  constructor(accessToken: string, locationId?: string) {
+  constructor(accessToken: string, locationId?: string, userId?: string) {
     this.accessToken = accessToken;
     this.locationId = locationId;
+    this.userId = userId;
   }
 
   /**
@@ -539,14 +541,17 @@ export class GHLClient {
     if (!this.locationId) {
       throw new Error('Location ID is required for document creation. Initialize GHLClient with locationId.');
     }
+    if (!this.userId) {
+      throw new Error('User ID is required for document creation. Initialize GHLClient with userId.');
+    }
 
     // Build payload according to GHL API v2 specification per official documentation
-    // Required fields: templateId, locationId, contactId, medium
-    // Optional: customValues (for transaction-specific data injection)
+    // Required fields: templateId, locationId, contactId, userId, medium
     const payload: any = {
       templateId: params.templateId,
       locationId: this.locationId,
       contactId: params.contactId,
+      userId: this.userId, // Required despite not being in docs - API validation requires it
       medium: params.medium || "link",
     };
 
