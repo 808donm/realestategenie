@@ -551,6 +551,7 @@ export class GHLClient {
       locationId: this.locationId,
       contactId: params.contactId,
       userId: this.userId, // Required by GHL API
+      name: params.documentName, // Document name/title
       medium: params.medium || "link", // Default to "link" to get URL in response
     };
 
