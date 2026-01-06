@@ -508,6 +508,56 @@ export class GHLClient {
       body: JSON.stringify(updates),
     });
   }
+
+  /**
+   * List document templates for a location
+   */
+  async listDocumentTemplates(locationId: string): Promise<{ templates: any[] }> {
+    return this.request<{ templates: any[] }>(`/locations/${locationId}/templates`);
+  }
+
+  /**
+   * Send a document from a template
+   * Creates and sends a document in one API call
+   *
+   * @param templateId - The template ID to use
+   * @param contactId - The contact to send to
+   * @param documentName - Name for the document (e.g., "123 Main St-2026-01-06")
+   * @param mergeFields - Custom fields to populate in the template
+   */
+  async sendDocumentTemplate(params: {
+    templateId: string;
+    contactId: string;
+    documentName: string;
+    mergeFields?: Record<string, any>;
+  }): Promise<{ documentId: string; document: any }> {
+    const payload = {
+      templateId: params.templateId,
+      contactId: params.contactId,
+      name: params.documentName,
+      customFields: params.mergeFields || {},
+    };
+
+    console.log('[GHL] Sending document from template:', {
+      templateId: params.templateId,
+      contactId: params.contactId,
+      documentName: params.documentName,
+      fieldsCount: Object.keys(params.mergeFields || {}).length,
+    });
+
+    return this.request<{ documentId: string; document: any }>('/documents/templates/send', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  /**
+   * Get custom fields for a location
+   * Returns all custom fields configured in GHL
+   */
+  async getCustomFields(locationId: string): Promise<{ customFields: any[] }> {
+    return this.request<{ customFields: any[] }>(`/locations/${locationId}/customFields`);
+  }
 }
 
 /**

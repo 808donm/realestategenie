@@ -10,6 +10,8 @@
  * Reference: https://highlevel.stoplight.io/docs/integrations/
  */
 
+import { GHLClient } from './ghl-client';
+
 interface GHLContact {
   id: string;
   email: string;
@@ -308,11 +310,52 @@ export class GHLDocumentsClient {
       throw new Error(`Failed to remove tag: ${JSON.stringify(error)}`);
     }
   }
+
+  /**
+   * Upsert contact WITHOUT trigger tag (for direct document creation)
+   * Creates or updates contact with basic info only
+   */
+  async upsertContact(
+    email: string,
+    phone: string | undefined,
+    leaseData: {
+      tenant_first_name: string;
+      tenant_last_name: string;
+      property_address: string;
+      start_date: string;
+    }
+  ): Promise<{ contact: GHLContact; isNewContact: boolean }> {
+    // Search for existing contact
+    const existingContact = await this.searchContactByEmail(email);
+
+    // Format lease name: "Property Address + Start Date"
+    const startDate = new Date(leaseData.start_date);
+    const formattedDate = `${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}-${String(startDate.getFullYear()).slice(-2)}`;
+    const leaseName = `${leaseData.property_address} ${formattedDate}`;
+
+    const contactPayload = {
+      email,
+      phone,
+      name: leaseName,
+      firstName: leaseData.tenant_first_name,
+      lastName: leaseData.tenant_last_name,
+    };
+
+    if (existingContact) {
+      // Update existing contact
+      const updated = await this.updateContact(existingContact.id, contactPayload);
+      return { contact: updated, isNewContact: false };
+    } else {
+      // Create new contact
+      const created = await this.createContact(contactPayload);
+      return { contact: created, isNewContact: true };
+    }
+  }
 }
 
 /**
  * Helper function for lease automation
- * Orchestrates the complete "Upsert-then-Dispatch" flow
+ * Orchestrates the complete "Upsert-then-Dispatch" flow (workflow-based)
  */
 export async function sendLeaseViaGHL(
   ghlAccessToken: string,
@@ -338,4 +381,124 @@ export async function sendLeaseViaGHL(
   console.log(`✅ Trigger tag added - GHL workflow will send lease document`);
 
   return { contactId: contact.id, isNewContact };
+}
+
+/**
+ * Send lease via GHL using direct document creation (NEW METHOD)
+ * Creates document from template and sends it directly via API
+ *
+ * @param ghlAccessToken - GHL access token
+ * @param ghlLocationId - GHL location ID
+ * @param templateId - GHL document template ID
+ * @param tenantEmail - Tenant email address
+ * @param tenantPhone - Tenant phone number (optional)
+ * @param propertyAddress - Property street address for document naming
+ * @param leaseData - Lease data to populate in template
+ * @returns Contact ID and document ID
+ */
+export async function sendLeaseViaGHLDirect(
+  ghlAccessToken: string,
+  ghlLocationId: string,
+  templateId: string,
+  tenantEmail: string,
+  tenantPhone: string | null,
+  propertyAddress: string,
+  leaseData: Parameters<GHLDocumentsClient['upsertContactWithLeaseData']>[2]
+): Promise<{ contactId: string; documentId: string; isNewContact: boolean }> {
+  const client = new GHLDocumentsClient(ghlAccessToken, ghlLocationId);
+  const ghlClient = new GHLClient(ghlAccessToken, ghlLocationId);
+
+  console.log('📄 Starting direct lease document creation...');
+
+  // Step 1: Upsert contact (without trigger tag)
+  const { contact, isNewContact } = await client.upsertContact(
+    tenantEmail,
+    tenantPhone || undefined,
+    {
+      tenant_first_name: leaseData.tenant_first_name,
+      tenant_last_name: leaseData.tenant_last_name,
+      property_address: leaseData.property_address,
+      start_date: leaseData.start_date,
+    }
+  );
+
+  console.log(`✅ Contact ${isNewContact ? 'created' : 'updated'} in GHL: ${contact.id}`);
+
+  // Step 2: Get field map for merge fields
+  const fieldMap = await client.getCustomFieldMap();
+
+  // Step 3: Build merge fields object for template
+  const customFields: Array<{ id: string; value: string }> = [];
+
+  const fieldMappings: Record<string, any> = {
+    lease_property_address: leaseData.property_address,
+    lease_property_city: leaseData.property_city,
+    lease_property_state: leaseData.property_state,
+    lease_property_zipcode: leaseData.property_zipcode,
+    lease_start_date: leaseData.start_date,
+    lease_end_date: leaseData.end_date,
+    lease_monthly_rent: leaseData.monthly_rent.toString(),
+    lease_security_deposit: leaseData.security_deposit.toString(),
+    lease_rent_due_day: (leaseData.rent_due_day || 1).toString(),
+    lease_notice_days: (leaseData.notice_period_days || 30).toString(),
+    lease_late_grace_days: (leaseData.late_grace_days || 5).toString(),
+    lease_late_fee_type_fixed: leaseData.late_fee_is_percentage ? 'No' : 'Yes',
+    lease_late_fee_type_percentage: leaseData.late_fee_is_percentage ? 'Yes' : 'No',
+    lease_late_fee_amount: (leaseData.late_fee_amount || 50).toString(),
+    lease_late_fee_percentage: (leaseData.late_fee_percentage || 5).toString(),
+    lease_late_fee_frequency_occurence: (leaseData.late_fee_frequency || 'per occurrence') === 'per occurrence' ? 'Yes' : 'No',
+    lease_late_fee_frequency_daily: (leaseData.late_fee_frequency || 'per occurrence') === 'per day' ? 'Yes' : 'No',
+    lease_nsf_fee: (leaseData.nsf_fee || 35).toString(),
+    lease_deposit_return_days: (leaseData.deposit_return_days || 60).toString(),
+    lease_occupants: leaseData.occupants || '',
+    lease_subletting_yes: leaseData.subletting_allowed ? 'Yes' : 'No',
+    lease_subletting_no: leaseData.subletting_allowed ? 'No' : 'Yes',
+    lease_pets_yes: leaseData.pets_allowed ? 'Yes' : 'No',
+    lease_pets_no: leaseData.pets_allowed ? 'No' : 'Yes',
+    lease_pet_count: (leaseData.pet_count || 0).toString(),
+    lease_pet_types: leaseData.pet_types || '',
+    lease_pet_weight_limit: leaseData.pet_weight_limit || '',
+    lease_pet_deposit: (leaseData.pet_deposit || 0).toString(),
+    lease_landlord_notice_address: leaseData.landlord_notice_address || '',
+  };
+
+  // Map to GHL field IDs
+  for (const [key, value] of Object.entries(fieldMappings)) {
+    const fieldId = fieldMap[key];
+    if (fieldId && value !== undefined && value !== null) {
+      customFields.push({ id: fieldId, value: value });
+    } else if (!fieldId) {
+      console.warn(`⚠️ Custom field not found in GHL: ${key}`);
+    }
+  }
+
+  console.log(`📋 Mapped ${customFields.length} custom fields for template`);
+
+  // Step 4: Generate document name: "123 Main St-2026-01-06"
+  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  const documentName = `${propertyAddress}-${today}`;
+
+  console.log(`📄 Creating document: "${documentName}"`);
+  console.log(`📋 Using template: ${templateId}`);
+  console.log(`📧 Sending to contact: ${contact.id}`);
+
+  // Step 5: Create and send document from template
+  const { documentId, document } = await ghlClient.sendDocumentTemplate({
+    templateId,
+    contactId: contact.id,
+    documentName,
+    mergeFields: customFields.reduce((acc, field) => {
+      acc[field.id] = field.value;
+      return acc;
+    }, {} as Record<string, string>),
+  });
+
+  console.log(`✅ Document created and sent: ${documentId}`);
+  console.log(`✅ Document name: ${documentName}`);
+
+  return {
+    contactId: contact.id,
+    documentId,
+    isNewContact,
+  };
 }

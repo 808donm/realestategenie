@@ -352,9 +352,6 @@ export async function POST(request: NextRequest) {
 
     if (useGHL && hasGHLIntegration) {
       try {
-        // Use new GHL Documents client for "Upsert-then-Dispatch" pattern
-        const { sendLeaseViaGHL } = await import("@/lib/integrations/ghl-documents-client");
-
         // Get property data with city, state, and zip
         const { data: fullProperty } = await supabase
           .from("pm_properties")
@@ -365,60 +362,102 @@ export async function POST(request: NextRequest) {
         // Prepare landlord notice address
         const landlordNoticeAddress = `${agent.display_name}\n${fullProperty?.address || property.address}\n${fullProperty?.city || ''}, ${fullProperty?.state_province || ''}`;
 
-        // Send lease via GHL Documents (Upsert-then-Dispatch)
-        const { contactId: ghlContactIdFromDocs } = await sendLeaseViaGHL(
-          ghlIntegration!.config.ghl_access_token!,
-          ghlIntegration!.config.ghl_location_id!,
-          tenant_email,
-          tenant_phone || '',
-          {
-            tenant_first_name: tenant_name.split(" ")[0] || tenant_name,
-            tenant_last_name: tenant_name.split(" ").slice(1).join(" ") || '',
-            property_address: unitNumber ? `${property.address}, Unit ${unitNumber}` : property.address,
-            property_city: fullProperty?.city || '',
-            property_state: fullProperty?.state_province || '',
-            property_zipcode: fullProperty?.zip_postal_code || '',
-            start_date: lease_start_date,
-            end_date: lease_end_date,
-            monthly_rent: parseFloat(monthly_rent),
-            security_deposit: parseFloat(security_deposit),
-            pet_deposit: pet_deposit ? parseFloat(pet_deposit) : 0,
-            rent_due_day: parseInt(rent_due_day) || 1,
-            notice_period_days: parseInt(notice_period_days) || 30,
-            late_grace_days: late_grace_days || 5,
-            late_fee_is_percentage: late_fee_is_percentage || false,
-            late_fee_amount: late_fee_amount ? parseFloat(late_fee_amount) : 50,
-            late_fee_percentage: late_fee_percentage ? parseFloat(late_fee_percentage) : 5,
-            late_fee_frequency: late_fee_frequency || 'per occurrence',
-            nsf_fee: nsf_fee || 35,
-            deposit_return_days: deposit_return_days || 60,
-            occupants: authorized_occupants || '',
-            subletting_allowed: subletting_allowed || false,
-            pets_allowed: pets_allowed || false,
-            pet_count: pet_count || 0,
-            pet_types: pet_types || '',
-            pet_weight_limit: pet_weight_limit || '',
-            landlord_notice_address: landlordNoticeAddress,
-          }
-        );
+        // Prepare lease data
+        const leaseDataPayload = {
+          tenant_first_name: tenant_name.split(" ")[0] || tenant_name,
+          tenant_last_name: tenant_name.split(" ").slice(1).join(" ") || '',
+          property_address: unitNumber ? `${property.address}, Unit ${unitNumber}` : property.address,
+          property_city: fullProperty?.city || '',
+          property_state: fullProperty?.state_province || '',
+          property_zipcode: fullProperty?.zip_postal_code || '',
+          start_date: lease_start_date,
+          end_date: lease_end_date,
+          monthly_rent: parseFloat(monthly_rent),
+          security_deposit: parseFloat(security_deposit),
+          pet_deposit: pet_deposit ? parseFloat(pet_deposit) : 0,
+          rent_due_day: parseInt(rent_due_day) || 1,
+          notice_period_days: parseInt(notice_period_days) || 30,
+          late_grace_days: late_grace_days || 5,
+          late_fee_is_percentage: late_fee_is_percentage || false,
+          late_fee_amount: late_fee_amount ? parseFloat(late_fee_amount) : 50,
+          late_fee_percentage: late_fee_percentage ? parseFloat(late_fee_percentage) : 5,
+          late_fee_frequency: late_fee_frequency || 'per occurrence',
+          nsf_fee: nsf_fee || 35,
+          deposit_return_days: deposit_return_days || 60,
+          occupants: authorized_occupants || '',
+          subletting_allowed: subletting_allowed || false,
+          pets_allowed: pets_allowed || false,
+          pet_count: pet_count || 0,
+          pet_types: pet_types || '',
+          pet_weight_limit: pet_weight_limit || '',
+          landlord_notice_address: landlordNoticeAddress,
+        };
 
-        // Update lease with GHL contact ID
-        await supabase
-          .from("pm_leases")
-          .update({
-            ghl_contact_id: ghlContactIdFromDocs,
-            esignature_provider: "ghl",
-          })
-          .eq("id", lease.id);
+        // Check if template ID is configured (use direct API) or workflow-based
+        const ghlTemplateId = ghlIntegration!.config.ghl_lease_template_id;
 
-        console.log(`✅ GHL Documents workflow initiated. Contact updated with lease data and trigger tag added.`);
-        console.log(`   GHL workflow will detect tag and send document automatically.`);
+        if (ghlTemplateId) {
+          // NEW: Use direct document creation API
+          console.log(`📄 Using direct GHL document creation with template: ${ghlTemplateId}`);
+
+          const { sendLeaseViaGHLDirect } = await import("@/lib/integrations/ghl-documents-client");
+
+          const { contactId: ghlContactIdFromDocs, documentId } = await sendLeaseViaGHLDirect(
+            ghlIntegration!.config.ghl_access_token!,
+            ghlIntegration!.config.ghl_location_id!,
+            ghlTemplateId,
+            tenant_email,
+            tenant_phone || null,
+            fullProperty?.address || property.address,
+            leaseDataPayload
+          );
+
+          // Update lease with GHL contact ID and document ID
+          await supabase
+            .from("pm_leases")
+            .update({
+              ghl_contact_id: ghlContactIdFromDocs,
+              ghl_document_id: documentId,
+              esignature_provider: "ghl",
+            })
+            .eq("id", lease.id);
+
+          console.log(`✅ GHL document created directly via API: ${documentId}`);
+          console.log(`✅ Document sent to contact: ${ghlContactIdFromDocs}`);
+
+        } else {
+          // LEGACY: Use workflow trigger pattern (for backwards compatibility)
+          console.log(`⚠️ No template ID configured - using legacy workflow trigger pattern`);
+          console.log(`💡 TIP: Add "ghl_lease_template_id" to integration config for direct document creation`);
+
+          const { sendLeaseViaGHL } = await import("@/lib/integrations/ghl-documents-client");
+
+          const { contactId: ghlContactIdFromDocs } = await sendLeaseViaGHL(
+            ghlIntegration!.config.ghl_access_token!,
+            ghlIntegration!.config.ghl_location_id!,
+            tenant_email,
+            tenant_phone || '',
+            leaseDataPayload
+          );
+
+          // Update lease with GHL contact ID
+          await supabase
+            .from("pm_leases")
+            .update({
+              ghl_contact_id: ghlContactIdFromDocs,
+              esignature_provider: "ghl",
+            })
+            .eq("id", lease.id);
+
+          console.log(`✅ GHL Documents workflow initiated. Contact updated with lease data and trigger tag added.`);
+          console.log(`   GHL workflow will detect tag and send document automatically.`);
+        }
 
       } catch (ghlError) {
-        console.error("Error with GHL Documents workflow:", ghlError);
+        console.error("Error with GHL Documents:", ghlError);
         // Don't fail the entire request - lease is created, just log the error
         // Agent can manually send contract from lease detail page
-        console.warn("⚠️ Lease created but GHL Documents workflow failed. Agent can resend manually.");
+        console.warn("⚠️ Lease created but GHL Documents failed. Agent can resend manually.");
       }
     }
 
