@@ -181,10 +181,11 @@ export async function createGHLRegistrationRecord(params: {
     // Create associations to enable relationship navigation in GHL
     console.log('[GHL] Creating associations for Registration...');
 
-    // Associate Registration → Contact
+    // Associate Registration → Contact (using "Registrant" label)
     try {
       const contactAssocPayload = {
         locationId: params.locationId,
+        associationLabel: 'Registrant', // The label configured in Registrations object
         firstObjectKey: 'custom_objects.registrations',
         firstObjectId: registrationRecordId,
         secondObjectKey: 'contact',
@@ -192,6 +193,7 @@ export async function createGHLRegistrationRecord(params: {
       };
 
       console.log('[GHL] Creating Contact association with payload:', JSON.stringify(contactAssocPayload));
+      console.log('[GHL] Using association label: "Registrant"');
       console.log('[GHL] Location ID:', params.locationId);
       console.log('[GHL] Token prefix:', params.accessToken.substring(0, 20) + '...');
 
@@ -226,10 +228,11 @@ export async function createGHLRegistrationRecord(params: {
       console.warn('[GHL] Error stack:', assocError.stack);
     }
 
-    // Associate Registration → OpenHouse
+    // Associate Registration → OpenHouse (using "Open House" label)
     try {
       const openHouseAssocPayload = {
         locationId: params.locationId,
+        associationLabel: 'Open House', // The label configured in Registrations object
         firstObjectKey: 'custom_objects.registrations',
         firstObjectId: registrationRecordId,
         secondObjectKey: 'custom_objects.openhouses',
@@ -237,6 +240,7 @@ export async function createGHLRegistrationRecord(params: {
       };
 
       console.log('[GHL] Creating OpenHouse association with payload:', JSON.stringify(openHouseAssocPayload));
+      console.log('[GHL] Using association label: "Open House"');
 
       const openHouseAssocResponse = await fetch(
         `https://services.leadconnectorhq.com/associations/relations`,
