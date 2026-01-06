@@ -546,12 +546,12 @@ export class GHLClient {
     }
 
     // Build payload according to GHL API v2 specification
+    // NOTE: GHL API only accepts these specific fields - no name, no customValues
     const payload = {
       templateId: params.templateId,
       locationId: this.locationId,
       contactId: params.contactId,
       userId: this.userId, // Required by GHL API
-      name: params.documentName, // Document name/title
       medium: params.medium || "link", // Default to "link" to get URL in response
     };
 
