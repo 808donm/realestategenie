@@ -425,10 +425,9 @@ export async function sendLeaseViaGHLDirect(
 
   console.log(`✅ Contact ${isNewContact ? 'created' : 'updated'} in GHL: ${contact.id}`);
 
-  // Step 2: Build custom values for template merge fields
-  // NOTE: For /proposals/templates/send, customValues uses template placeholder keys,
-  // NOT GHL custom field IDs. The keys must match {{custom_values.key_name}} in the template.
-  const customValues: Record<string, any> = {
+  // Step 2: Update contact with all lease data as custom fields
+  // Template will populate merge fields from contact custom fields like {{contact.custom_field.lease_property_address}}
+  const customFieldsToUpdate: Record<string, string> = {
     lease_property_address: leaseData.property_address,
     lease_property_city: leaseData.property_city,
     lease_property_state: leaseData.property_state,
@@ -460,7 +459,14 @@ export async function sendLeaseViaGHLDirect(
     lease_landlord_notice_address: leaseData.landlord_notice_address || '',
   };
 
-  console.log(`📋 Prepared ${Object.keys(customValues).length} custom values for template`);
+  console.log(`📋 Updating contact with ${Object.keys(customFieldsToUpdate).length} custom fields`);
+
+  // Update the contact with all lease custom fields
+  await ghlClient.updateContact(contact.id, {
+    customFields: customFieldsToUpdate,
+  });
+
+  console.log(`✅ Contact custom fields updated with lease data`);
 
   // Step 3: Generate document name: "123 Main St-2026-01-06"
   const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
@@ -471,11 +477,11 @@ export async function sendLeaseViaGHLDirect(
   console.log(`📧 Sending to contact: ${contact.id}`);
 
   // Step 4: Create and send document from template
+  // Template will auto-populate from contact's custom fields
   const { documentId, document, url } = await ghlClient.sendDocumentTemplate({
     templateId,
     contactId: contact.id,
     documentName,
-    mergeFields: customValues,
     medium: 'link', // Get signing URL in response
   });
 
