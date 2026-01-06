@@ -110,11 +110,13 @@ export type GHLInvoice = {
 export class GHLClient {
   private accessToken: string;
   private locationId?: string;
+  private userId?: string;
   private baseUrl = "https://services.leadconnectorhq.com";
 
-  constructor(accessToken: string, locationId?: string) {
+  constructor(accessToken: string, locationId?: string, userId?: string) {
     this.accessToken = accessToken;
     this.locationId = locationId;
+    this.userId = userId;
   }
 
   /**
@@ -535,9 +537,12 @@ export class GHLClient {
     mergeFields?: Record<string, any>;
     medium?: "email" | "link";
   }): Promise<{ documentId: string; document: any; url?: string }> {
-    // Validate location ID is set
+    // Validate required fields
     if (!this.locationId) {
       throw new Error('Location ID is required for document creation. Initialize GHLClient with locationId.');
+    }
+    if (!this.userId) {
+      throw new Error('User ID is required for document creation. Initialize GHLClient with userId.');
     }
 
     // Build payload according to GHL API v2 specification
@@ -545,8 +550,8 @@ export class GHLClient {
       templateId: params.templateId,
       locationId: this.locationId,
       contactId: params.contactId,
+      userId: this.userId, // Required by GHL API
       medium: params.medium || "link", // Default to "link" to get URL in response
-      customValues: params.mergeFields || {},
     };
 
     console.log('[GHL] Sending contract/document from template:', {
@@ -554,9 +559,9 @@ export class GHLClient {
       templateId: params.templateId,
       contactId: params.contactId,
       locationId: this.locationId,
+      userId: this.userId,
       documentName: params.documentName,
       medium: payload.medium,
-      customValuesCount: Object.keys(payload.customValues).length,
     });
 
     // Use the correct GHL API v2 endpoint for sending templates

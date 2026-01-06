@@ -399,6 +399,7 @@ export async function sendLeaseViaGHL(
 export async function sendLeaseViaGHLDirect(
   ghlAccessToken: string,
   ghlLocationId: string,
+  ghlUserId: string,
   templateId: string,
   tenantEmail: string,
   tenantPhone: string | null,
@@ -406,7 +407,7 @@ export async function sendLeaseViaGHLDirect(
   leaseData: Parameters<GHLDocumentsClient['upsertContactWithLeaseData']>[2]
 ): Promise<{ contactId: string; documentId: string; documentUrl?: string; isNewContact: boolean }> {
   const client = new GHLDocumentsClient(ghlAccessToken, ghlLocationId);
-  const ghlClient = new GHLClient(ghlAccessToken, ghlLocationId);
+  const ghlClient = new GHLClient(ghlAccessToken, ghlLocationId, ghlUserId);
 
   console.log('📄 Starting direct lease document creation...');
 
