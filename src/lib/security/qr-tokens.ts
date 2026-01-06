@@ -12,14 +12,20 @@ import crypto from 'crypto';
 
 // Use QR_TOKEN_SECRET if available, otherwise fall back to NEXTAUTH_SECRET
 // In production, QR_TOKEN_SECRET should be set for dedicated QR code security
-const SECRET_KEY = process.env.QR_TOKEN_SECRET || process.env.NEXTAUTH_SECRET;
+function getSecretKey(): string {
+  const secret = process.env.QR_TOKEN_SECRET || process.env.NEXTAUTH_SECRET;
 
-if (!SECRET_KEY) {
-  throw new Error(
-    'QR_TOKEN_SECRET or NEXTAUTH_SECRET must be set in environment variables. ' +
-    'Generate a secure random string: openssl rand -base64 32'
-  );
+  if (!secret) {
+    throw new Error(
+      'QR_TOKEN_SECRET or NEXTAUTH_SECRET must be set in environment variables. ' +
+      'Generate a secure random string: openssl rand -base64 32'
+    );
+  }
+
+  return secret;
 }
+
+const SECRET_KEY = getSecretKey();
 
 // Warn once in development if using NEXTAUTH_SECRET instead of dedicated QR_TOKEN_SECRET
 let hasWarned = false;
