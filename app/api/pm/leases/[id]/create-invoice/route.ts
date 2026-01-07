@@ -83,6 +83,15 @@ export async function POST(
       ghlIntegration.config.ghl_location_id
     );
 
+    // Ensure we have a contact ID
+    const tenantContactId = lease.ghl_contact_id || lease.tenant_contact_id;
+    if (!tenantContactId) {
+      return NextResponse.json(
+        { error: "No tenant contact ID found. Please send tenant invitation first to create the GHL contact." },
+        { status: 400 }
+      );
+    }
+
     // Get property address
     const property = Array.isArray(lease.pm_properties) ? lease.pm_properties[0] : lease.pm_properties;
     const unit = Array.isArray(lease.pm_units) ? lease.pm_units[0] : lease.pm_units;
@@ -121,7 +130,7 @@ export async function POST(
 
     const { id: paymentLinkId, url: paymentUrl } = await ghlClient.createPaymentLink({
       locationId: ghlIntegration.config.ghl_location_id,
-      contactId: lease.ghl_contact_id || lease.tenant_contact_id,
+      contactId: tenantContactId,
       amount: totalAmount,
       name: `Move-In Charges - ${propertyAddress}`,
       description: `Payment for move-in charges: ${itemsList}. Due: ${new Date(lease.lease_start_date).toLocaleDateString()}`,
@@ -164,7 +173,7 @@ export async function POST(
     // Send payment link to tenant via GHL email
     try {
       await ghlClient.sendEmail({
-        contactId: lease.ghl_contact_id || lease.tenant_contact_id,
+        contactId: tenantContactId,
         subject: `Move-In Payment Required - ${propertyAddress}`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">

@@ -71,28 +71,75 @@ export async function POST(request: NextRequest) {
     const ghlAccessToken = integration.config.ghl_access_token;
     const ghlLocationId = integration.config.ghl_location_id;
 
-    // Fetch tenant contact from GHL
-    const ghlResponse = await fetch(
-      `https://services.leadconnectorhq.com/contacts/${lease.tenant_contact_id}`,
-      {
-        headers: {
-          Authorization: `Bearer ${ghlAccessToken}`,
-          Version: "2021-07-28",
-        },
-      }
-    );
+    const { GHLClient } = await import("@/lib/integrations/ghl-client");
+    const ghlClient = new GHLClient(ghlAccessToken, ghlLocationId);
 
-    if (!ghlResponse.ok) {
-      return NextResponse.json(
-        { error: "Failed to fetch tenant contact from GHL" },
-        { status: 500 }
-      );
+    let contact;
+    let tenantEmail: string;
+    let tenantPhone: string | null = null;
+    let tenantName: string;
+    let contactId: string;
+
+    // Try to get tenant contact from GHL
+    if (lease.ghl_contact_id || lease.tenant_contact_id) {
+      try {
+        contact = await ghlClient.getContact(lease.ghl_contact_id || lease.tenant_contact_id);
+        tenantEmail = contact.email!;
+        tenantPhone = contact.phone || null;
+        tenantName = contact.name || `${contact.firstName} ${contact.lastName}`;
+        contactId = contact.id!;
+      } catch (error) {
+        console.error("Failed to fetch contact from GHL:", error);
+        // Contact ID is set but contact doesn't exist - will create new one below
+        contact = null;
+      }
     }
 
-    const { contact } = await ghlResponse.json();
-    const tenantEmail = contact.email;
-    const tenantPhone = contact.phone;
-    const tenantName = contact.name || `${contact.firstName} ${contact.lastName}`;
+    // If no contact exists, get tenant info from lease or application and create contact
+    if (!contact) {
+      // Get application data if available
+      const { data: application } = await supabase
+        .from("pm_applications")
+        .select("applicant_name, applicant_email, applicant_phone")
+        .eq("id", lease.pm_application_id!)
+        .single();
+
+      tenantEmail = lease.tenant_email || application?.applicant_email;
+      tenantPhone = lease.tenant_phone || application?.applicant_phone || null;
+      tenantName = lease.tenant_name || application?.applicant_name || tenantEmail;
+
+      if (!tenantEmail) {
+        return NextResponse.json(
+          { error: "No tenant email found. Please set tenant email on the lease." },
+          { status: 400 }
+        );
+      }
+
+      // Create contact in GHL
+      console.log(`Creating GHL contact for tenant: ${tenantEmail}`);
+      contact = await ghlClient.createContact({
+        locationId: ghlLocationId,
+        email: tenantEmail,
+        phone: tenantPhone || undefined,
+        name: tenantName,
+        tags: ["tenant"],
+      });
+
+      contactId = contact.id!;
+
+      // Update lease with contact ID
+      await supabase
+        .from("pm_leases")
+        .update({
+          ghl_contact_id: contactId,
+          tenant_email: tenantEmail,
+          tenant_name: tenantName,
+          tenant_phone: tenantPhone,
+        })
+        .eq("id", lease_id);
+
+      console.log(`✅ Created GHL contact ${contactId} and updated lease`);
+    }
 
     if (!tenantEmail) {
       return NextResponse.json(
@@ -258,7 +305,7 @@ export async function POST(request: NextRequest) {
 
       // Send email via GHL using the proper API
       const { messageId } = await ghlClient.sendEmail({
-        contactId: lease.tenant_contact_id,
+        contactId: contactId,
         subject: `Welcome to Your Tenant Portal - ${propertyAddress}`,
         html: emailHtml,
       });
