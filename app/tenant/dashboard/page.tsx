@@ -2,6 +2,7 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { DollarSign, Wrench, FileText, MessageSquare, Calendar } from "lucide-react";
 import TenantNav from "../components/tenant-nav";
