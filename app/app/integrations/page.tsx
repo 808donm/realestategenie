@@ -1,7 +1,6 @@
 import { supabaseServer } from "@/lib/supabase/server";
 import GHLIntegrationCard from "./ghl-card";
 import QBOIntegrationCard from "./qbo-card";
-import PandaDocIntegrationCard from "./pandadoc-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import IntegrationsNotifications from "./notifications";
 
@@ -24,7 +23,6 @@ export default async function IntegrationsPage() {
 
   const ghlIntegration = integrations?.find((i) => i.provider === "ghl");
   const qboIntegration = integrations?.find((i) => i.provider === "qbo");
-  const pandadocIntegration = integrations?.find((i) => i.provider === "pandadoc");
 
   return (
     <div className="space-y-6">
@@ -40,7 +38,6 @@ export default async function IntegrationsPage() {
       <div className="grid gap-6 md:grid-cols-2">
         <GHLIntegrationCard integration={ghlIntegration} />
         <QBOIntegrationCard integration={qboIntegration} />
-        <PandaDocIntegrationCard integration={pandadocIntegration} />
       </div>
 
       <Card>
