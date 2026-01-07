@@ -53,26 +53,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get tenant contact info from GHL
+    // Get tenant contact info and GHL integration
     const { data: integration } = await supabase
       .from("integrations")
-      .select("ghl_access_token")
+      .select("config")
       .eq("agent_id", lease.agent_id)
+      .eq("provider", "ghl")
       .single();
 
-    if (!integration?.ghl_access_token) {
+    if (!integration?.config?.ghl_access_token) {
       return NextResponse.json(
         { error: "GHL integration not found" },
         { status: 500 }
       );
     }
 
+    const ghlAccessToken = integration.config.ghl_access_token;
+    const ghlLocationId = integration.config.ghl_location_id;
+
     // Fetch tenant contact from GHL
     const ghlResponse = await fetch(
       `https://services.leadconnectorhq.com/contacts/${lease.tenant_contact_id}`,
       {
         headers: {
-          Authorization: `Bearer ${integration.ghl_access_token}`,
+          Authorization: `Bearer ${ghlAccessToken}`,
           Version: "2021-07-28",
         },
       }
@@ -176,35 +180,106 @@ export async function POST(request: NextRequest) {
 
     const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL}/tenant/register?token=${invitationToken}`;
 
-    // Get agent name for email
+    // Get agent name and email for email
     const { data: agent } = await supabase
       .from("agents")
-      .select("display_name")
+      .select("display_name, email")
       .eq("id", lease.agent_id)
       .single();
 
     const landlordName = agent?.display_name || "Your Property Manager";
 
-    // Send invitation email via Resend
+    // Send invitation email via GHL
     try {
-      const { sendTenantInvitationEmail } = await import("@/lib/email/resend");
-
-      await sendTenantInvitationEmail({
-        to: tenantEmail,
-        tenantName,
-        landlordName,
-        propertyAddress,
-        leaseStartDate: new Date(lease.lease_start_date).toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        }),
-        monthlyRent: lease.monthly_rent,
-        inviteUrl,
-        expiresAt,
+      const leaseStartDate = new Date(lease.lease_start_date).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
       });
 
-      console.log(`✅ Tenant invitation email sent to ${tenantEmail}`);
+      const emailHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background-color: #4F46E5; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+    .content { background-color: #f9fafb; padding: 30px; border: 1px solid #e5e7eb; }
+    .button { display: inline-block; background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
+    .details { background-color: white; padding: 15px; border-radius: 6px; margin: 20px 0; }
+    .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Welcome to Your Tenant Portal!</h1>
+    </div>
+    <div class="content">
+      <p>Hi ${tenantName},</p>
+
+      <p>${landlordName} has invited you to access your tenant portal for <strong>${propertyAddress}</strong>.</p>
+
+      <div class="details">
+        <p><strong>Lease Start Date:</strong> ${leaseStartDate}</p>
+        <p><strong>Monthly Rent:</strong> $${lease.monthly_rent?.toLocaleString()}</p>
+      </div>
+
+      <p>With your tenant portal, you can:</p>
+      <ul>
+        <li>Pay rent online</li>
+        <li>Submit maintenance requests</li>
+        <li>View your lease documents</li>
+        <li>Message your property manager</li>
+        <li>Track your payment history</li>
+      </ul>
+
+      <p style="text-align: center;">
+        <a href="${inviteUrl}" class="button">Set Up Your Account</a>
+      </p>
+
+      <p style="font-size: 14px; color: #6b7280;">
+        This invitation link will expire on ${expiresAt.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}.
+        If you need a new invitation, please contact your property manager.
+      </p>
+    </div>
+    <div class="footer">
+      <p>This email was sent by ${landlordName}</p>
+      <p>If you have any questions, please reply to this email.</p>
+    </div>
+  </div>
+</body>
+</html>
+      `;
+
+      // Send email via GHL
+      const emailResponse = await fetch(
+        `https://services.leadconnectorhq.com/conversations/messages/email`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${ghlAccessToken}`,
+            "Content-Type": "application/json",
+            Version: "2021-07-28",
+          },
+          body: JSON.stringify({
+            locationId: ghlLocationId,
+            contactId: lease.tenant_contact_id,
+            subject: `Welcome to Your Tenant Portal - ${propertyAddress}`,
+            html: emailHtml,
+            emailFrom: agent?.email || undefined,
+          }),
+        }
+      );
+
+      if (!emailResponse.ok) {
+        const errorData = await emailResponse.json();
+        console.error("❌ Failed to send email via GHL:", errorData);
+        throw new Error("GHL email API failed");
+      }
+
+      console.log(`✅ Tenant invitation email sent to ${tenantEmail} via GHL`);
     } catch (emailError) {
       console.error("❌ Failed to send tenant invitation email:", emailError);
       // Log the URL for manual sending if email fails
