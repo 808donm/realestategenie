@@ -178,49 +178,180 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if tenant user already exists
+    // Check if tenant user already exists for this lease
     const { data: existingTenant } = await supabase
       .from("tenant_users")
-      .select("id")
+      .select("id, invitation_token")
       .eq("lease_id", lease_id)
-      .single();
+      .maybeSingle();
 
     if (existingTenant) {
-      return NextResponse.json(
-        { error: "Tenant invitation already sent for this lease" },
-        { status: 400 }
-      );
+      console.log(`✅ Tenant user already exists for lease ${lease_id}, resending invitation`);
+
+      // Generate new invitation token
+      const invitationToken = randomBytes(32).toString("hex");
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7);
+
+      // Update invitation token
+      await supabase
+        .from("tenant_users")
+        .update({
+          invitation_token: invitationToken,
+          invitation_expires_at: expiresAt.toISOString(),
+          invited_at: new Date().toISOString(),
+        })
+        .eq("id", existingTenant.id);
+
+      // Continue to send email below with new token
+      const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL}/tenant/register?token=${invitationToken}`;
+
+      // Get property info for email
+      const unit = Array.isArray(lease.pm_units) ? lease.pm_units[0] : lease.pm_units;
+      const property = Array.isArray(lease.pm_properties) ? lease.pm_properties[0] : lease.pm_properties;
+      const propertyAddress = unit?.unit_number
+        ? `${property?.address}, Unit ${unit.unit_number}`
+        : property?.address;
+
+      // Get agent info
+      const { data: agent } = await supabase
+        .from("agents")
+        .select("display_name, email")
+        .eq("id", lease.agent_id)
+        .single();
+
+      const landlordName = agent?.display_name || "Your Property Manager";
+
+      // Send email (code below)
+      const emailHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background-color: #f8f9fa; padding: 30px; border-radius: 10px;">
+    <h1 style="color: #2563eb; margin-top: 0;">Welcome to Your Tenant Portal</h1>
+
+    <p>Hello ${tenantName},</p>
+
+    <p>You've been invited to access your tenant portal for:</p>
+    <p style="font-size: 18px; font-weight: bold; color: #1e40af; margin: 20px 0;">
+      ${propertyAddress}
+    </p>
+
+    <p>Your tenant portal allows you to:</p>
+    <ul style="margin: 20px 0;">
+      <li>Pay rent online securely</li>
+      <li>Submit maintenance requests</li>
+      <li>View your lease agreement and documents</li>
+      <li>Message ${landlordName} directly</li>
+      <li>Track payment history</li>
+    </ul>
+
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="${inviteUrl}"
+         style="background-color: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+        Create Your Account
+      </a>
+    </div>
+
+    <p style="color: #666; font-size: 14px; margin-top: 30px;">
+      This invitation expires in 7 days. If you have any questions, please contact ${landlordName}.
+    </p>
+
+    <p style="color: #999; font-size: 12px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
+      If you're having trouble clicking the button, copy and paste this link into your browser:<br>
+      <span style="word-break: break-all;">${inviteUrl}</span>
+    </p>
+  </div>
+</body>
+</html>
+      `;
+
+      try {
+        const { GHLClient } = await import("@/lib/integrations/ghl-client");
+        const ghlClient = new GHLClient(ghlAccessToken, ghlLocationId);
+
+        const { messageId } = await ghlClient.sendEmail({
+          contactId: contactId,
+          subject: `Welcome to Your Tenant Portal - ${propertyAddress}`,
+          html: emailHtml,
+        });
+
+        console.log(`✅ Tenant invitation email resent to ${tenantEmail} via GHL (messageId: ${messageId})`);
+
+        return NextResponse.json({
+          success: true,
+          message: "Tenant invitation resent successfully",
+        });
+      } catch (emailError) {
+        console.error("❌ Failed to send tenant invitation email:", emailError);
+        return NextResponse.json(
+          { error: "Failed to send invitation email" },
+          { status: 500 }
+        );
+      }
     }
+
+    // Check if auth user exists with this email
+    let authUserId: string;
+    const { data: existingAuthUsers } = await supabase.auth.admin.listUsers();
+    const existingAuthUser = existingAuthUsers?.users?.find(u => u.email === tenantEmail);
 
     // Generate invitation token
     const invitationToken = randomBytes(32).toString("hex");
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7); // Valid for 7 days
 
-    // Create auth user (will need to set password on first login)
-    const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
-      email: tenantEmail,
-      email_confirm: true,
-      user_metadata: {
-        role: "tenant",
-        name: tenantName,
-        lease_id: lease_id,
-      },
-    });
+    if (existingAuthUser) {
+      // Check if this user is already a tenant for another lease
+      const { data: otherTenantRecord } = await supabase
+        .from("tenant_users")
+        .select("lease_id")
+        .eq("id", existingAuthUser.id)
+        .maybeSingle();
 
-    if (authError || !authUser.user) {
-      console.error("Error creating auth user:", authError);
-      return NextResponse.json(
-        { error: "Failed to create tenant account" },
-        { status: 500 }
-      );
+      if (otherTenantRecord && otherTenantRecord.lease_id !== lease_id) {
+        console.error(`❌ Auth user exists for email ${tenantEmail} but is already a tenant for a different lease`);
+        return NextResponse.json(
+          { error: "This email is already registered as a tenant for another property" },
+          { status: 400 }
+        );
+      }
+
+      authUserId = existingAuthUser.id;
+      console.log(`✅ Using existing auth user: ${authUserId}`);
+    } else {
+      // Create new auth user
+      const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
+        email: tenantEmail,
+        email_confirm: true,
+        user_metadata: {
+          role: "tenant",
+          name: tenantName,
+          lease_id: lease_id,
+        },
+      });
+
+      if (authError || !authUser.user) {
+        console.error("Error creating auth user:", authError);
+        return NextResponse.json(
+          { error: "Failed to create tenant account" },
+          { status: 500 }
+        );
+      }
+
+      authUserId = authUser.user.id;
+      console.log(`✅ Created new auth user: ${authUserId}`);
     }
 
     // Create tenant user record
     const { error: tenantError } = await supabase
       .from("tenant_users")
       .insert({
-        id: authUser.user.id,
+        id: authUserId,
         lease_id: lease_id,
         email: tenantEmail,
         phone: tenantPhone,
@@ -231,8 +362,10 @@ export async function POST(request: NextRequest) {
 
     if (tenantError) {
       console.error("Error creating tenant user:", tenantError);
-      // Rollback: delete auth user
-      await supabase.auth.admin.deleteUser(authUser.user.id);
+      // Only rollback if we created a new auth user
+      if (!existingAuthUser) {
+        await supabase.auth.admin.deleteUser(authUserId);
+      }
       return NextResponse.json(
         { error: "Failed to create tenant record" },
         { status: 500 }
@@ -243,8 +376,10 @@ export async function POST(request: NextRequest) {
     await supabase
       .from("tenant_notification_preferences")
       .insert({
-        tenant_user_id: authUser.user.id,
-      });
+        tenant_user_id: authUserId,
+      })
+      .onConflict("tenant_user_id")
+      .ignoreDuplicates();
 
     // Send invitation email
     // Handle Supabase joins that may return arrays
