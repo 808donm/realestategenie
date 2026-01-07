@@ -94,28 +94,69 @@ export async function POST(request: NextRequest) {
           user_email: invitation.email
         });
 
+        console.log(`🔍 SQL lookup result:`, sqlResult);
+
         if (sqlResult && sqlResult.length > 0) {
-          authUserId = sqlResult[0].id;
-          authUserEmail = sqlResult[0].email;
+          const existingUser = sqlResult[0];
+          authUserId = existingUser.id;
+          authUserEmail = existingUser.email;
           console.log(`✅ Found existing auth user: ${authUserId}`);
+          console.log(`   - Deleted at: ${existingUser.deleted_at || 'not deleted'}`);
+          console.log(`   - Confirmed at: ${existingUser.confirmed_at || 'not confirmed'}`);
 
-          // Update the existing user's password
-          const { error: updateError } = await supabase.auth.admin.updateUserById(
-            authUserId,
-            { password: password }
-          );
+          // If user was soft-deleted, try to delete permanently first
+          if (existingUser.deleted_at) {
+            console.log(`⚠️ User was soft-deleted, attempting permanent deletion...`);
+            const { error: deleteError } = await supabase.auth.admin.deleteUser(authUserId);
+            if (deleteError) {
+              console.error("Failed to permanently delete user:", deleteError);
+            } else {
+              console.log(`✅ Permanently deleted old user, will retry creation`);
 
-          if (updateError) {
-            console.error("Error updating password:", updateError);
-            return NextResponse.json(
-              { error: "Failed to set password. Please contact support." },
-              { status: 500 }
+              // Retry creating the user after deletion
+              const { data: retryUser, error: retryError } = await supabase.auth.admin.createUser({
+                email: invitation.email,
+                password: password,
+                email_confirm: true,
+                user_metadata: {
+                  role: "tenant",
+                  name: invitation.tenant_name,
+                  lease_id: invitation.lease_id,
+                },
+              });
+
+              if (retryError || !retryUser.user) {
+                console.error("Retry creation also failed:", retryError);
+                return NextResponse.json(
+                  { error: "Failed to create account. Please contact support." },
+                  { status: 500 }
+                );
+              }
+
+              authUserId = retryUser.user.id;
+              authUserEmail = retryUser.user.email!;
+              console.log(`✅ Successfully created user after deletion: ${authUserId}`);
+            }
+          } else {
+            // User exists and is not deleted, update password
+            const { error: updateError } = await supabase.auth.admin.updateUserById(
+              authUserId,
+              { password: password }
             );
-          }
 
-          console.log(`✅ Updated password for existing user`);
+            if (updateError) {
+              console.error("Error updating password:", updateError);
+              return NextResponse.json(
+                { error: "Failed to set password. Please contact support." },
+                { status: 500 }
+              );
+            }
+
+            console.log(`✅ Updated password for existing user`);
+          }
         } else {
-          console.error("❌ Auth user creation failed and user not found");
+          console.error("❌ Auth user creation failed and user not found in database");
+          console.error("   This suggests a database constraint or trigger is preventing user creation");
           return NextResponse.json(
             { error: "Failed to create account. Please contact support." },
             { status: 500 }
