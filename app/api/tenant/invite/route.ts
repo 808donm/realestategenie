@@ -487,7 +487,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: "Tenant invitation sent",
-      tenant_user_id: authUser.user.id,
+      tenant_user_id: authUserId,
       invite_url: inviteUrl, // Only for testing, remove in production
     });
   } catch (error) {
