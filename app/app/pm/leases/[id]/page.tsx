@@ -7,6 +7,7 @@ import { ArrowLeft, FileSignature, Home, User, DollarSign, Calendar, FileText, E
 import { notFound } from "next/navigation";
 import TerminateLeaseDialog from "./terminate-lease-dialog";
 import SendInvitationButton from "./send-invitation-button";
+import UpdateLeaseStatusButton from "./update-lease-status-button";
 
 export default async function LeaseDetailPage({
   params,
@@ -116,9 +117,10 @@ export default async function LeaseDetailPage({
               noticePeriodDays={lease.notice_period_days}
             />
           )}
-          <Badge variant={getStatusVariant(lease.status)} className="text-sm px-3 py-1">
-            {lease.status.replace('_', ' ').toUpperCase()}
-          </Badge>
+          <UpdateLeaseStatusButton
+            leaseId={lease.id}
+            currentStatus={lease.status}
+          />
         </div>
       </div>
 
