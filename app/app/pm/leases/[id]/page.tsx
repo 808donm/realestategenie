@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowLeft, FileSignature, Home, User, DollarSign, Calendar, FileText, ExternalLink } from "lucide-react";
 import { notFound } from "next/navigation";
 import TerminateLeaseDialog from "./terminate-lease-dialog";
+import SendInvitationButton from "./send-invitation-button";
 
 export default async function LeaseDetailPage({
   params,
@@ -103,6 +104,11 @@ export default async function LeaseDetailPage({
           </div>
         </div>
         <div className="flex items-center gap-3">
+          <SendInvitationButton
+            leaseId={lease.id}
+            tenantEmail={lease.tenant_email}
+            leaseStatus={lease.status}
+          />
           {(lease.status === "active" || lease.status === "month_to_month") && (
             <TerminateLeaseDialog
               leaseId={lease.id}
