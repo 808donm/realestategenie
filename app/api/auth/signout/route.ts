@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { supabaseServer } from "@/lib/supabase/server";
 
 /**
  * Sign Out API
  * Signs out the current user and redirects to login
  */
 export async function POST(request: NextRequest) {
-  const supabase = await createClient();
+  const supabase = await supabaseServer();
 
   // Sign out the user
   await supabase.auth.signOut();
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   // Support GET for simple link-based logout
-  const supabase = await createClient();
+  const supabase = await supabaseServer();
   await supabase.auth.signOut();
   return NextResponse.redirect(new URL("/tenant/login", request.url));
 }
