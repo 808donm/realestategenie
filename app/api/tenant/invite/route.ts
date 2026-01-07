@@ -191,6 +191,9 @@ export async function POST(request: NextRequest) {
 
     // Send invitation email via GHL
     try {
+      const { GHLClient } = await import("@/lib/integrations/ghl-client");
+      const ghlClient = new GHLClient(ghlAccessToken, ghlLocationId);
+
       const leaseStartDate = new Date(lease.lease_start_date).toLocaleDateString("en-US", {
         year: "numeric",
         month: "long",
@@ -253,33 +256,14 @@ export async function POST(request: NextRequest) {
 </html>
       `;
 
-      // Send email via GHL
-      const emailResponse = await fetch(
-        `https://services.leadconnectorhq.com/conversations/messages/email`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${ghlAccessToken}`,
-            "Content-Type": "application/json",
-            Version: "2021-07-28",
-          },
-          body: JSON.stringify({
-            locationId: ghlLocationId,
-            contactId: lease.tenant_contact_id,
-            subject: `Welcome to Your Tenant Portal - ${propertyAddress}`,
-            html: emailHtml,
-            emailFrom: agent?.email || undefined,
-          }),
-        }
-      );
+      // Send email via GHL using the proper API
+      const { messageId } = await ghlClient.sendEmail({
+        contactId: lease.tenant_contact_id,
+        subject: `Welcome to Your Tenant Portal - ${propertyAddress}`,
+        html: emailHtml,
+      });
 
-      if (!emailResponse.ok) {
-        const errorData = await emailResponse.json();
-        console.error("❌ Failed to send email via GHL:", errorData);
-        throw new Error("GHL email API failed");
-      }
-
-      console.log(`✅ Tenant invitation email sent to ${tenantEmail} via GHL`);
+      console.log(`✅ Tenant invitation email sent to ${tenantEmail} via GHL (messageId: ${messageId})`);
     } catch (emailError) {
       console.error("❌ Failed to send tenant invitation email:", emailError);
       // Log the URL for manual sending if email fails
