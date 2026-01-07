@@ -372,14 +372,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create default notification preferences
+    // Create default notification preferences (ignore if already exists)
     await supabase
       .from("tenant_notification_preferences")
-      .insert({
+      .upsert({
         tenant_user_id: authUserId,
-      })
-      .onConflict("tenant_user_id")
-      .ignoreDuplicates();
+      }, {
+        onConflict: "tenant_user_id",
+        ignoreDuplicates: true,
+      });
 
     // Send invitation email
     // Handle Supabase joins that may return arrays
