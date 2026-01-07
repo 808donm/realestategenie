@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import RatingForm from "./rating-form";
+import TenantNav from "../../components/tenant-nav";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -75,13 +76,15 @@ export default async function WorkOrderDetailPage({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
+      <TenantNav />
+
+      {/* Page Header */}
       <div className="bg-white border-b">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
             <Link href="/tenant/work-orders">
               <Button variant="ghost" size="sm">
-                ← Back to Requests
+                ← Back
               </Button>
             </Link>
             <div className="flex-1">

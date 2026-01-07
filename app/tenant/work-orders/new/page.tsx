@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Link from "next/link";
 import { Upload, X } from "lucide-react";
+import TenantNav from "../../components/tenant-nav";
 
 export default function NewWorkOrderPage() {
   const router = useRouter();
@@ -110,11 +111,13 @@ export default function NewWorkOrderPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
+      <TenantNav />
+
+      {/* Page Header */}
       <div className="bg-white border-b">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
-            <Link href="/tenant/dashboard">
+            <Link href="/tenant/work-orders">
               <Button variant="ghost" size="sm">
                 ← Back
               </Button>

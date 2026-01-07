@@ -1,10 +1,10 @@
 import { supabaseServer } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { DollarSign, Wrench, FileText, MessageSquare, Calendar } from "lucide-react";
+import TenantNav from "../components/tenant-nav";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -115,20 +115,13 @@ export default async function TenantDashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
+      <TenantNav />
+
+      {/* Page Header */}
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold">Tenant Portal</h1>
-              <p className="text-muted-foreground">{fullAddress}</p>
-            </div>
-            <form action="/api/auth/signout" method="post">
-              <Button variant="outline" size="sm">
-                Sign Out
-              </Button>
-            </form>
-          </div>
+          <h1 className="text-2xl font-bold">Dashboard</h1>
+          <p className="text-muted-foreground">{fullAddress}</p>
         </div>
       </div>
 
