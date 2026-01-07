@@ -319,6 +319,7 @@ export async function POST(request: NextRequest) {
         // For ANY auth creation error, try to find existing user
         // (The error might be "Database error" if user already exists)
         console.log(`ℹ️ Auth user creation failed for ${tenantEmail}: ${authError.message}`);
+        console.log(`ℹ️ Auth error code: ${authError.code}, status: ${authError.status}`);
         console.log(`ℹ️ Attempting to find existing auth user by email...`);
 
         // Try multiple methods to find existing user
@@ -330,26 +331,55 @@ export async function POST(request: NextRequest) {
             user_email: tenantEmail
           });
 
+          console.log(`🔍 RPC query result:`, { sqlResult, sqlError });
+
           if (!sqlError && sqlResult && sqlResult.length > 0) {
             existingAuthUser = { id: sqlResult[0].id, email: sqlResult[0].email };
             console.log(`✅ Found existing auth user via SQL: ${existingAuthUser.id}`);
+          } else {
+            console.log(`ℹ️ RPC returned no results or error:`, sqlError);
           }
-        } catch (sqlErr) {
-          console.log(`ℹ️ RPC method not available, trying listUsers...`);
+        } catch (sqlErr: any) {
+          console.log(`⚠️ RPC call failed:`, sqlErr.message);
         }
 
         // Method 2: List all users and search (paginated, might miss users)
         if (!existingAuthUser) {
-          const { data: existingAuthUsers } = await supabase.auth.admin.listUsers();
+          const { data: existingAuthUsers, error: listError } = await supabase.auth.admin.listUsers();
+          console.log(`🔍 listUsers result: found ${existingAuthUsers?.users?.length || 0} users, error:`, listError);
+
           existingAuthUser = existingAuthUsers?.users?.find(u => u.email?.toLowerCase() === tenantEmail.toLowerCase());
 
           if (existingAuthUser) {
             console.log(`✅ Found existing auth user via listUsers: ${existingAuthUser.id}`);
+          } else {
+            console.log(`❌ User ${tenantEmail} not found in listUsers results`);
+          }
+        }
+
+        // Method 3: Check if there's a tenant_users record pointing to a user ID
+        if (!existingAuthUser) {
+          console.log(`🔍 Checking tenant_users table for email: ${tenantEmail}`);
+          const { data: tenantUserByEmail, error: tenantUserError } = await supabase
+            .from("tenant_users")
+            .select("id, email, lease_id")
+            .eq("email", tenantEmail)
+            .maybeSingle();
+
+          console.log(`🔍 tenant_users lookup result:`, { tenantUserByEmail, tenantUserError });
+
+          if (tenantUserByEmail) {
+            existingAuthUser = { id: tenantUserByEmail.id, email: tenantUserByEmail.email };
+            console.log(`✅ Found auth user ID from tenant_users: ${existingAuthUser.id}`);
           }
         }
 
         if (!existingAuthUser) {
-          // User doesn't exist, so the error was something else
+          // User doesn't exist, so the error was something else - log full details
+          console.error(`❌ Failed to create auth user and no existing user found`);
+          console.error(`📧 Email attempted: ${tenantEmail}`);
+          console.error(`🔍 Tried: RPC query, listUsers, tenant_users lookup - all failed`);
+          console.error(`⚠️ Original auth error:`, authError);
           throw new Error(`Failed to create auth user and no existing user found: ${authError.message}`);
         }
 
