@@ -45,15 +45,16 @@ export async function POST(request: NextRequest) {
         lease_start_date,
         lease_end_date,
         monthly_rent,
-        pm_properties (address),
-        pm_units (unit_number)
+        pm_properties!left (address),
+        pm_units!left (unit_number)
       `)
       .eq("id", lease_id)
       .single();
 
     if (leaseError || !lease) {
+      console.error("Failed to fetch lease:", leaseError);
       return NextResponse.json(
-        { error: "Lease not found" },
+        { error: `Lease not found: ${leaseError?.message || 'Unknown error'}` },
         { status: 404 }
       );
     }
