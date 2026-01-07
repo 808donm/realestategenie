@@ -95,7 +95,7 @@ export default async function TenantDashboardPage() {
   const { data: workOrders } = await supabase
     .from("pm_work_orders")
     .select("id, title, status, priority, created_at")
-    .eq("lease_id", lease.id)
+    .eq("pm_lease_id", lease.id)
     .in("status", ["new", "assigned", "in_progress"])
     .order("created_at", { ascending: false })
     .limit(5);

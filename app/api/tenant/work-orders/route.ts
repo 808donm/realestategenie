@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     const { data: workOrders, error } = await supabase
       .from("pm_work_orders")
       .select("*")
-      .eq("lease_id", tenantUser.lease_id)
+      .eq("pm_lease_id", tenantUser.lease_id)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
         agent_id: lease.agent_id,
         pm_property_id: lease.pm_property_id,
         pm_unit_id: lease.pm_unit_id,
-        lease_id: lease.id,
+        pm_lease_id: lease.id,
         title,
         description,
         category: category || "other",
