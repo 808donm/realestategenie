@@ -316,39 +316,37 @@ export async function POST(request: NextRequest) {
       });
 
       if (authError) {
-        // Check if error is due to user already existing
-        if (authError.message?.includes('already') || authError.message?.includes('duplicate') || authError.code === 'user_already_exists') {
-          console.log(`ℹ️ Auth user already exists for ${tenantEmail}, looking up existing user`);
+        // For ANY auth creation error, try to find existing user
+        // (The error might be "Database error" if user already exists)
+        console.log(`ℹ️ Auth user creation failed for ${tenantEmail}: ${authError.message}`);
+        console.log(`ℹ️ Attempting to find existing auth user...`);
 
-          // Find existing user by email
-          const { data: existingAuthUsers } = await supabase.auth.admin.listUsers();
-          const existingAuthUser = existingAuthUsers?.users?.find(u => u.email?.toLowerCase() === tenantEmail.toLowerCase());
+        // Find existing user by email
+        const { data: existingAuthUsers } = await supabase.auth.admin.listUsers();
+        const existingAuthUser = existingAuthUsers?.users?.find(u => u.email?.toLowerCase() === tenantEmail.toLowerCase());
 
-          if (!existingAuthUser) {
-            throw new Error(`Auth user exists but could not be found: ${authError.message}`);
-          }
-
-          // Check if this user is already a tenant for another lease
-          const { data: otherTenantRecord } = await supabase
-            .from("tenant_users")
-            .select("lease_id")
-            .eq("id", existingAuthUser.id)
-            .maybeSingle();
-
-          if (otherTenantRecord && otherTenantRecord.lease_id !== lease_id) {
-            console.error(`❌ Auth user exists for email ${tenantEmail} but is already a tenant for a different lease`);
-            return NextResponse.json(
-              { error: "This email is already registered as a tenant for another property" },
-              { status: 400 }
-            );
-          }
-
-          authUserId = existingAuthUser.id;
-          console.log(`✅ Using existing auth user: ${authUserId}`);
-        } else {
-          // Different error, throw it
-          throw authError;
+        if (!existingAuthUser) {
+          // User doesn't exist, so the error was something else
+          throw new Error(`Failed to create auth user and no existing user found: ${authError.message}`);
         }
+
+        // Check if this user is already a tenant for another lease
+        const { data: otherTenantRecord } = await supabase
+          .from("tenant_users")
+          .select("lease_id")
+          .eq("id", existingAuthUser.id)
+          .maybeSingle();
+
+        if (otherTenantRecord && otherTenantRecord.lease_id !== lease_id) {
+          console.error(`❌ Auth user exists for email ${tenantEmail} but is already a tenant for a different lease`);
+          return NextResponse.json(
+            { error: "This email is already registered as a tenant for another property" },
+            { status: 400 }
+          );
+        }
+
+        authUserId = existingAuthUser.id;
+        console.log(`✅ Using existing auth user: ${authUserId}`);
       } else if (authUser.user) {
         authUserId = authUser.user.id;
         createdNewAuthUser = true;
