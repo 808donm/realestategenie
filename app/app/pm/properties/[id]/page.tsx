@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { ArrowLeft, Edit, MapPin, Building2, DollarSign, Home, FileText } from "lucide-react";
 import { notFound } from "next/navigation";
+import UpdateStatusButton from "./update-status-button";
 
 export default async function PropertyDetailPage({
   params,
@@ -116,12 +117,18 @@ export default async function PropertyDetailPage({
             </p>
           </div>
         </div>
-        <Link href={`/app/pm/properties/${id}/edit`}>
-          <Button>
-            <Edit className="mr-2 h-4 w-4" />
-            Edit Property
-          </Button>
-        </Link>
+        <div className="flex items-center gap-3">
+          <UpdateStatusButton
+            propertyId={property.id}
+            currentStatus={property.status}
+          />
+          <Link href={`/app/pm/properties/${id}/edit`}>
+            <Button>
+              <Edit className="mr-2 h-4 w-4" />
+              Edit Property
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Property Photo */}
