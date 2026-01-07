@@ -80,10 +80,10 @@ export async function POST(request: NextRequest) {
     const ghlClient = new GHLClient(ghlAccessToken, ghlLocationId);
 
     let contact;
-    let tenantEmail: string;
+    let tenantEmail: string = '';
     let tenantPhone: string | null = null;
-    let tenantName: string;
-    let contactId: string;
+    let tenantName: string = '';
+    let contactId: string = '';
 
     // Try to get tenant contact from GHL
     if (lease.ghl_contact_id || lease.tenant_contact_id) {
