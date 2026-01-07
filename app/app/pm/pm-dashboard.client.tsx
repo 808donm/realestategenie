@@ -104,6 +104,19 @@ export default function PMDashboardClient() {
 
   return (
     <div className="space-y-6">
+      {/* Header with Refresh Button */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold">Property Management Dashboard</h1>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={fetchDashboardData}
+          disabled={isLoading}
+        >
+          {isLoading ? "Refreshing..." : "Refresh"}
+        </Button>
+      </div>
+
       {/* Main Dashboard Tiles - 6 tiles in 3x2 grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {/* Tile 1: Rent Collected (This Month) */}

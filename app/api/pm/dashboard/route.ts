@@ -42,22 +42,37 @@ export async function GET(request: NextRequest) {
     const tenantsLate = new Set(overduePayments?.map(p => p.lease_id) || []).size;
 
     // 3. OCCUPANCY
+    // Count total units across all properties
     const { data: properties } = await supabase
       .from("pm_properties")
-      .select("id, units_count")
+      .select("id, units_count, status")
       .eq("agent_id", agentId);
 
     const totalUnits = properties?.reduce((sum, p) => sum + (p.units_count || 1), 0) || 0;
 
-    const { data: activeLeases } = await supabase
-      .from("pm_leases")
+    // Count occupied units from properties and individual units
+    const { data: rentedProperties } = await supabase
+      .from("pm_properties")
+      .select("id, units_count")
+      .eq("agent_id", agentId)
+      .eq("status", "rented");
+
+    const { data: rentedUnits } = await supabase
+      .from("pm_units")
       .select("id")
       .eq("agent_id", agentId)
-      .in("status", ["active", "month_to_month"])
-      .lte("lease_start_date", now.toISOString())
-      .or(`lease_end_date.gte.${now.toISOString()},status.eq.month_to_month`);
+      .eq("status", "rented");
 
-    const occupiedUnits = activeLeases?.length || 0;
+    // For single-family homes marked as rented
+    const occupiedFromProperties = rentedProperties?.reduce((sum, p) => {
+      // Only count single-unit properties (multi-unit tracking is handled by pm_units)
+      return p.units_count === 1 ? sum + 1 : sum;
+    }, 0) || 0;
+
+    // For multi-unit properties (individual unit tracking)
+    const occupiedFromUnits = rentedUnits?.length || 0;
+
+    const occupiedUnits = occupiedFromProperties + occupiedFromUnits;
     const vacancyRate = totalUnits > 0 ? ((totalUnits - occupiedUnits) / totalUnits) * 100 : 0;
 
     // 4. LEASES TERMINATING SOON (only those with termination notice)
