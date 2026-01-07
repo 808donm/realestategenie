@@ -295,36 +295,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Check if auth user exists with this email
-    let authUserId: string;
-    const { data: existingAuthUsers } = await supabase.auth.admin.listUsers();
-    const existingAuthUser = existingAuthUsers?.users?.find(u => u.email === tenantEmail);
-
     // Generate invitation token
     const invitationToken = randomBytes(32).toString("hex");
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7); // Valid for 7 days
 
-    if (existingAuthUser) {
-      // Check if this user is already a tenant for another lease
-      const { data: otherTenantRecord } = await supabase
-        .from("tenant_users")
-        .select("lease_id")
-        .eq("id", existingAuthUser.id)
-        .maybeSingle();
+    // Try to create auth user, or use existing if creation fails
+    let authUserId: string;
+    let createdNewAuthUser = false;
 
-      if (otherTenantRecord && otherTenantRecord.lease_id !== lease_id) {
-        console.error(`❌ Auth user exists for email ${tenantEmail} but is already a tenant for a different lease`);
-        return NextResponse.json(
-          { error: "This email is already registered as a tenant for another property" },
-          { status: 400 }
-        );
-      }
-
-      authUserId = existingAuthUser.id;
-      console.log(`✅ Using existing auth user: ${authUserId}`);
-    } else {
-      // Create new auth user
+    try {
       const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
         email: tenantEmail,
         email_confirm: true,
@@ -335,16 +315,53 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      if (authError || !authUser.user) {
-        console.error("Error creating auth user:", authError);
-        return NextResponse.json(
-          { error: "Failed to create tenant account" },
-          { status: 500 }
-        );
-      }
+      if (authError) {
+        // Check if error is due to user already existing
+        if (authError.message?.includes('already') || authError.message?.includes('duplicate') || authError.code === 'user_already_exists') {
+          console.log(`ℹ️ Auth user already exists for ${tenantEmail}, looking up existing user`);
 
-      authUserId = authUser.user.id;
-      console.log(`✅ Created new auth user: ${authUserId}`);
+          // Find existing user by email
+          const { data: existingAuthUsers } = await supabase.auth.admin.listUsers();
+          const existingAuthUser = existingAuthUsers?.users?.find(u => u.email?.toLowerCase() === tenantEmail.toLowerCase());
+
+          if (!existingAuthUser) {
+            throw new Error(`Auth user exists but could not be found: ${authError.message}`);
+          }
+
+          // Check if this user is already a tenant for another lease
+          const { data: otherTenantRecord } = await supabase
+            .from("tenant_users")
+            .select("lease_id")
+            .eq("id", existingAuthUser.id)
+            .maybeSingle();
+
+          if (otherTenantRecord && otherTenantRecord.lease_id !== lease_id) {
+            console.error(`❌ Auth user exists for email ${tenantEmail} but is already a tenant for a different lease`);
+            return NextResponse.json(
+              { error: "This email is already registered as a tenant for another property" },
+              { status: 400 }
+            );
+          }
+
+          authUserId = existingAuthUser.id;
+          console.log(`✅ Using existing auth user: ${authUserId}`);
+        } else {
+          // Different error, throw it
+          throw authError;
+        }
+      } else if (authUser.user) {
+        authUserId = authUser.user.id;
+        createdNewAuthUser = true;
+        console.log(`✅ Created new auth user: ${authUserId}`);
+      } else {
+        throw new Error('Failed to create auth user: no user returned');
+      }
+    } catch (err) {
+      console.error("Error with auth user:", err);
+      return NextResponse.json(
+        { error: "Failed to create or find tenant account" },
+        { status: 500 }
+      );
     }
 
     // Create tenant user record
@@ -363,7 +380,7 @@ export async function POST(request: NextRequest) {
     if (tenantError) {
       console.error("Error creating tenant user:", tenantError);
       // Only rollback if we created a new auth user
-      if (!existingAuthUser) {
+      if (createdNewAuthUser) {
         await supabase.auth.admin.deleteUser(authUserId);
       }
       return NextResponse.json(
