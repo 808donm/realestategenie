@@ -47,7 +47,7 @@ export default async function WorkOrderDetailPage({
     .eq("id", userData.user.id)
     .single();
 
-  if (!tenantUser || tenantUser.lease_id !== workOrder.lease_id) {
+  if (!tenantUser || tenantUser.lease_id !== workOrder.pm_lease_id) {
     redirect("/tenant/work-orders");
   }
 

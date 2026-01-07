@@ -31,7 +31,7 @@ export default async function WorkOrdersPage() {
   const { data: workOrders } = await supabase
     .from("pm_work_orders")
     .select("*")
-    .eq("lease_id", tenantUser.lease_id)
+    .eq("pm_lease_id", tenantUser.lease_id)
     .order("created_at", { ascending: false });
 
   const statusColors = {
@@ -43,8 +43,9 @@ export default async function WorkOrdersPage() {
   };
 
   const priorityColors = {
-    normal: "bg-gray-100 text-gray-800",
-    urgent: "bg-orange-100 text-orange-800",
+    low: "bg-gray-100 text-gray-800",
+    medium: "bg-blue-100 text-blue-800",
+    high: "bg-orange-100 text-orange-800",
     emergency: "bg-red-100 text-red-800",
   };
 
