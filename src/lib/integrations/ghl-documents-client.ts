@@ -422,7 +422,6 @@ export async function sendLeaseViaGHLDirect(
 
   // Step 2: Update contact's standard address fields with property address
   // Template uses {{contact.address}}, {{contact.city}}, {{contact.state}}
-  // We'll use the property address as the tenant's mailing address
   await ghlClient.updateContact(contact.id, {
     address1: leaseData.property_address,
     city: leaseData.property_city,
@@ -433,7 +432,6 @@ export async function sendLeaseViaGHLDirect(
   console.log(`✅ Contact address updated with property address`);
 
   // Step 3: Update contact with all lease data as custom fields
-  // Template merge fields use {{contact.lease_property_address}} format with underscores
   const customFieldsToUpdate: Record<string, string> = {
     lease_property_address: leaseData.property_address,
     lease_property_city: leaseData.property_city,
@@ -458,10 +456,6 @@ export async function sendLeaseViaGHLDirect(
     lease_occupants: leaseData.occupants || '',
     lease_subletting_yes: leaseData.subletting_allowed ? 'yes' : '',
     lease_subletting_no: leaseData.subletting_allowed ? '' : 'no',
-    lease_subletting_allowed: leaseData.subletting_allowed ? 'Yes' : 'No', // Template uses this field
-    lease_pets_yes: leaseData.pets_allowed ? 'pets allowed' : '',
-    lease_pets_no: leaseData.pets_allowed ? '' : 'pets not allowed',
-    lease_pets_allowed: leaseData.pets_allowed ? 'Yes' : 'No', // Template uses this field
     lease_pet_count: (leaseData.pet_count || 0).toString(),
     lease_pet_types: leaseData.pet_types || '',
     lease_pet_weight_limit: leaseData.pet_weight_limit || '',
@@ -472,13 +466,11 @@ export async function sendLeaseViaGHLDirect(
   console.log(`📋 Updating contact with ${Object.keys(customFieldsToUpdate).length} custom fields`);
 
   // Convert custom fields object to array format required by GHL API
-  // GHL expects: [{ key: "field_name", value: "field_value" }, ...]
   const customFieldsArray = Object.entries(customFieldsToUpdate).map(([key, value]) => ({
     key,
     value,
   }));
 
-  // Update the contact with all lease custom fields (name already set from upsertContact)
   await ghlClient.updateContact(contact.id, {
     customFields: customFieldsArray,
   });
@@ -508,23 +500,6 @@ export async function sendLeaseViaGHLDirect(
   }
   console.log(`=== END CONTACT STATE ===`);
 
-  // Validate template exists and is accessible
-  console.log(`🔍 Validating template access...`);
-  console.log(`Template ID: ${templateId}`);
-  console.log(`Location ID: ${ghlLocationId}`);
-  console.log(`User ID: ${ghlUserId}`);
-
-  try {
-    const template = await ghlClient.getTemplate(templateId);
-    console.log(`✅ Template found:`, template.name || template.title || 'Unknown');
-    console.log(`Template details:`, JSON.stringify(template, null, 2));
-  } catch (error: any) {
-    console.error(`❌ Failed to fetch template:`, error.message);
-    console.error(`This may indicate the template doesn't exist, is not accessible with current permissions, or the template ID is incorrect.`);
-    throw new Error(`Template validation failed: ${error.message}`);
-  }
-
-  // Step 3: Generate document name: "123 Main St-2026-01-06"
   const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
   const documentName = `${propertyAddress}-${today}`;
 
@@ -532,9 +507,6 @@ export async function sendLeaseViaGHLDirect(
   console.log(`📋 Using template: ${templateId}`);
   console.log(`📧 Sending to contact: ${contact.id}`);
 
-  // Step 4: Create and send document from template
-  // Template will auto-populate from contact's custom fields
-  // GHL uses contactId to determine recipient automatically
   const { documentId, document, url } = await ghlClient.sendDocumentTemplate({
     templateId,
     contactId: contact.id,
