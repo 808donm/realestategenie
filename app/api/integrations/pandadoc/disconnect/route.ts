@@ -41,7 +41,6 @@ export async function POST(request: NextRequest) {
       .update({
         config: {},
         status: "disconnected",
-        last_error: null,
         updated_at: new Date().toISOString(),
       })
       .eq("id", existing.id);
