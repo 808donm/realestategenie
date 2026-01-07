@@ -24,7 +24,7 @@ export default async function TenantDashboardPage() {
   }
 
   // Get tenant user record
-  const { data: tenantUser } = await supabase
+  const { data: tenantUser, error: tenantUserError } = await supabase
     .from("tenant_users")
     .select(`
       *,
@@ -41,6 +41,13 @@ export default async function TenantDashboardPage() {
     `)
     .eq("id", userData.user.id)
     .single();
+
+  // Debug logging
+  if (tenantUserError) {
+    console.error("Error fetching tenant user:", tenantUserError);
+  }
+  console.log("Tenant user data:", tenantUser);
+  console.log("User ID:", userData.user.id);
 
   if (!tenantUser || !tenantUser.pm_leases) {
     return (
