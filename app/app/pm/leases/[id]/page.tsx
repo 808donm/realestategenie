@@ -247,22 +247,46 @@ export default async function LeaseDetailPage({
           <CardContent className="space-y-3">
             <div>
               <div className="text-sm text-muted-foreground">Name</div>
-              <div className="font-medium">{lease.tenant_name}</div>
+              <div className="font-medium">
+                {lease.tenant_name || application?.applicant_name || 'N/A'}
+              </div>
             </div>
-            {lease.tenant_email && (
+            {(lease.tenant_email || application?.applicant_email) && (
               <div>
                 <div className="text-sm text-muted-foreground">Email</div>
-                <div className="text-sm">{lease.tenant_email}</div>
+                <div className="text-sm">{lease.tenant_email || application?.applicant_email}</div>
               </div>
             )}
-            {lease.tenant_phone && (
+            {(lease.tenant_phone || application?.applicant_phone) && (
               <div>
                 <div className="text-sm text-muted-foreground">Phone</div>
-                <div className="text-sm">{lease.tenant_phone}</div>
+                <div className="text-sm">{lease.tenant_phone || application?.applicant_phone}</div>
+              </div>
+            )}
+            {application?.emergency_contact && (
+              <div className="pt-3 border-t">
+                <div className="text-sm font-semibold text-muted-foreground mb-2">Emergency Contact</div>
+                <div className="space-y-1">
+                  <div>
+                    <span className="text-sm font-medium">
+                      {application.emergency_contact.name}
+                    </span>
+                    {application.emergency_contact.relationship && (
+                      <span className="text-xs text-muted-foreground ml-2">
+                        ({application.emergency_contact.relationship})
+                      </span>
+                    )}
+                  </div>
+                  {application.emergency_contact.phone && (
+                    <div className="text-sm text-muted-foreground">
+                      {application.emergency_contact.phone}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
             {lease.ghl_contact_id && (
-              <div>
+              <div className="pt-2">
                 <Badge variant="outline" className="text-xs">
                   <FileSignature className="h-3 w-3 mr-1" />
                   GHL Contact Linked
