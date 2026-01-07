@@ -164,15 +164,15 @@ export default async function TenantInvoicesPage() {
                               Late fee: ${payment.late_fee_amount.toFixed(2)}
                             </div>
                           )}
-                          {payment.ghl_invoice_id && (
+                          {(payment.ghl_payment_url || payment.ghl_invoice_id) && (
                             <div className="text-sm text-blue-600 mt-1">
                               <a
-                                href={`https://payments.msgsndr.com/invoice/${payment.ghl_invoice_id}`}
+                                href={payment.ghl_payment_url || `https://payments.msgsndr.com/invoice/${payment.ghl_invoice_id}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="hover:underline"
                               >
-                                View Invoice →
+                                View Payment →
                               </a>
                             </div>
                           )}
@@ -186,9 +186,9 @@ export default async function TenantInvoicesPage() {
                           </Badge>
                           {payment.status === "pending" || payment.status === "overdue" ? (
                             <>
-                              {payment.ghl_invoice_id ? (
+                              {(payment.ghl_payment_url || payment.ghl_invoice_id) ? (
                                 <a
-                                  href={`https://payments.msgsndr.com/invoice/${payment.ghl_invoice_id}`}
+                                  href={payment.ghl_payment_url || `https://payments.msgsndr.com/invoice/${payment.ghl_invoice_id}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                 >

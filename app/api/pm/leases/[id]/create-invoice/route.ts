@@ -116,20 +116,18 @@ export async function POST(
 
     const totalAmount = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
-    // Create invoice in GHL
-    const { id: invoiceId } = await ghlClient.createInvoice({
+    // Create payment link in GHL (simpler alternative to invoices)
+    const itemsList = items.map(item => `${item.name}: $${item.price.toLocaleString()}`).join(', ');
+
+    const { id: paymentLinkId, url: paymentUrl } = await ghlClient.createPaymentLink({
       locationId: ghlIntegration.config.ghl_location_id,
       contactId: lease.ghl_contact_id || lease.tenant_contact_id,
-      title: `Move-In Charges - ${propertyAddress}`,
-      currency: "USD",
-      dueDate: lease.lease_start_date,
-      items,
+      amount: totalAmount,
+      name: `Move-In Charges - ${propertyAddress}`,
+      description: `Payment for move-in charges: ${itemsList}. Due: ${new Date(lease.lease_start_date).toLocaleDateString()}`,
     });
 
-    console.log(`✅ Move-in invoice created in GHL: ${invoiceId}`);
-
-    // Send the invoice to the tenant
-    await ghlClient.sendInvoice(invoiceId);
+    console.log(`✅ Move-in payment link created in GHL: ${paymentLinkId}`);
 
     // Create or update rent payment record
     if (existingPayment) {
@@ -137,7 +135,8 @@ export async function POST(
       await supabase
         .from("pm_rent_payments")
         .update({
-          ghl_invoice_id: invoiceId,
+          ghl_invoice_id: paymentLinkId,
+          ghl_payment_url: paymentUrl,
           amount: totalAmount,
           updated_at: new Date().toISOString(),
         })
@@ -155,16 +154,50 @@ export async function POST(
           due_date: lease.lease_start_date,
           status: "pending",
           payment_type: "move_in",
-          ghl_invoice_id: invoiceId,
+          ghl_invoice_id: paymentLinkId,
+          ghl_payment_url: paymentUrl,
         });
     }
 
     console.log(`✅ Rent payment record created/updated for lease ${id}`);
 
+    // Send payment link to tenant via GHL email
+    try {
+      await ghlClient.sendEmail({
+        contactId: lease.ghl_contact_id || lease.tenant_contact_id,
+        subject: `Move-In Payment Required - ${propertyAddress}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2>Move-In Charges Ready</h2>
+            <p>Your move-in charges for ${propertyAddress} are ready for payment.</p>
+            <div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              ${items.map(item => `<div style="display: flex; justify-content: space-between; margin: 10px 0;">
+                <span>${item.name}</span>
+                <strong>$${item.price.toLocaleString()}</strong>
+              </div>`).join('')}
+              <div style="border-top: 2px solid #ddd; margin-top: 15px; padding-top: 15px; display: flex; justify-content: space-between;">
+                <strong>Total Due:</strong>
+                <strong style="font-size: 1.2em;">$${totalAmount.toLocaleString()}</strong>
+              </div>
+            </div>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${paymentUrl}" style="background: #4F46E5; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">Pay Now with PayPal</a>
+            </div>
+            <p style="color: #666; font-size: 14px;">Payment is due by ${new Date(lease.lease_start_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}.</p>
+          </div>
+        `,
+      });
+      console.log(`✅ Payment link email sent to tenant`);
+    } catch (emailError) {
+      console.error("⚠️ Failed to send payment link email:", emailError);
+      // Don't fail the request - payment link is created
+    }
+
     return NextResponse.json({
       success: true,
-      message: "Move-in invoice created successfully",
-      ghl_invoice_id: invoiceId,
+      message: "Move-in payment link created successfully",
+      ghl_invoice_id: paymentLinkId,
+      payment_url: paymentUrl,
       amount: totalAmount,
     });
   } catch (error) {

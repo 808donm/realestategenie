@@ -478,6 +478,30 @@ export class GHLClient {
   }
 
   /**
+   * Create a Payment Link (Alternative to Invoices)
+   * Creates a direct payment link that can be shared with contacts
+   * Works with PayPal and other payment methods configured in GHL
+   */
+  async createPaymentLink(paymentLink: {
+    locationId: string;
+    contactId: string;
+    amount: number;
+    name: string;
+    description?: string;
+  }): Promise<{ id: string; url: string; paymentLink: any }> {
+    return this.request<{ id: string; url: string; paymentLink: any }>("/payments/custom-provider/link", {
+      method: "POST",
+      body: JSON.stringify({
+        locationId: paymentLink.locationId,
+        contactId: paymentLink.contactId,
+        amount: paymentLink.amount,
+        name: paymentLink.name,
+        description: paymentLink.description,
+      }),
+    });
+  }
+
+  /**
    * Create a sub-account (location) in SaaS mode
    * This creates a new location under the agency account
    */
