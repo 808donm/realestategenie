@@ -100,6 +100,23 @@ export async function POST(request: NextRequest) {
 
     console.log(`✅ Lease ${lease.id} marked as active (signed)`);
 
+    // Mark property or unit as rented
+    if (lease.pm_unit_id) {
+      // Mark the specific unit as rented
+      await supabase
+        .from("pm_units")
+        .update({ status: "rented" })
+        .eq("id", lease.pm_unit_id);
+      console.log(`✅ Unit ${lease.pm_unit_id} marked as rented`);
+    } else if (lease.pm_property_id) {
+      // Mark the property as rented (for single-family homes)
+      await supabase
+        .from("pm_properties")
+        .update({ status: "rented" })
+        .eq("id", lease.pm_property_id);
+      console.log(`✅ Property ${lease.pm_property_id} marked as rented`);
+    }
+
     // Trigger tenant portal invitation
     try {
       const inviteResponse = await fetch(

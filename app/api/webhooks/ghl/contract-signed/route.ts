@@ -108,6 +108,42 @@ export async function POST(request: NextRequest) {
 
     console.log(`✅ Lease ${lease.id} activated`);
 
+    // Mark property or unit as rented
+    if (lease.pm_unit_id) {
+      // Mark the specific unit as rented
+      await supabase
+        .from("pm_units")
+        .update({ status: "rented" })
+        .eq("id", lease.pm_unit_id);
+      console.log(`✅ Unit ${lease.pm_unit_id} marked as rented`);
+    } else if (lease.pm_property_id) {
+      // Mark the property as rented (for single-family homes)
+      await supabase
+        .from("pm_properties")
+        .update({ status: "rented" })
+        .eq("id", lease.pm_property_id);
+      console.log(`✅ Property ${lease.pm_property_id} marked as rented`);
+    }
+
+    // Fetch the signed contract document URL from GHL
+    try {
+      const contract = await ghlClient.getContract(contractId);
+      if (contract) {
+        // GHL contracts may have various URL fields - check the actual response
+        // Store the contract URL in the lease
+        await supabase
+          .from("pm_leases")
+          .update({
+            ghl_contract_url: contract.id ? `https://app.gohighlevel.com/v2/location/${integration.ghl_location_id}/contracts/${contract.id}` : null,
+          })
+          .eq("id", lease.id);
+        console.log(`✅ Contract URL stored for lease ${lease.id}`);
+      }
+    } catch (contractError) {
+      console.error("⚠️ Could not fetch contract details:", contractError);
+      // Don't fail - this is optional
+    }
+
     // Create first month's invoice (move-in charges)
     try {
       const invoiceData = prepareFirstMonthInvoice(

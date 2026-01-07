@@ -36,12 +36,12 @@ export default async function PropertyDetailPage({
     .select("*")
     .eq("pm_property_id", id);
 
-  // Get active leases for this property
+  // Get all leases for this property (active, pending, etc.)
   const { data: leases } = await supabase
     .from("pm_leases")
-    .select("*")
+    .select("*, pm_units(unit_number)")
     .eq("pm_property_id", id)
-    .eq("status", "active");
+    .order("created_at", { ascending: false });
 
   // Get work orders for this property
   const { data: workOrders } = await supabase
@@ -171,7 +171,7 @@ export default async function PropertyDetailPage({
           <CardContent>
             <div className="text-2xl font-bold">{property.units_count}</div>
             <p className="text-xs text-muted-foreground">
-              {leases?.length || 0} active lease{leases?.length === 1 ? "" : "s"}
+              {leases?.filter(l => l.status === 'active').length || 0} active lease{leases?.filter(l => l.status === 'active').length === 1 ? "" : "s"}
             </p>
           </CardContent>
         </Card>
@@ -243,6 +243,82 @@ export default async function PropertyDetailPage({
           </CardContent>
         </Card>
       </div>
+
+      {/* Active Leases */}
+      {leases && leases.length > 0 && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Leases</CardTitle>
+              <Badge variant="outline">{leases.length} Total</Badge>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {leases.map((lease) => {
+                const unit = Array.isArray(lease.pm_units) ? lease.pm_units[0] : lease.pm_units;
+
+                return (
+                  <Link
+                    key={lease.id}
+                    href={`/app/pm/leases/${lease.id}`}
+                    className="block"
+                  >
+                    <div className="flex items-center justify-between border-b pb-3 last:border-0 last:pb-0 hover:bg-muted/50 rounded-lg p-3 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <div className="font-medium">{lease.tenant_name}</div>
+                          {unit && (
+                            <div className="text-xs text-muted-foreground">
+                              Unit {unit.unit_number}
+                            </div>
+                          )}
+                          <div className="text-sm text-muted-foreground">
+                            {new Date(lease.lease_start_date).toLocaleDateString()} - {new Date(lease.lease_end_date).toLocaleDateString()}
+                          </div>
+                          <div className="flex gap-2 mt-1">
+                            {(lease.ghl_contract_url || lease.ghl_document_url) && (
+                              <a
+                                href={lease.ghl_contract_url || lease.ghl_document_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+                              >
+                                <FileText className="h-3 w-3" />
+                                View Signed Lease
+                              </a>
+                            )}
+                            {lease.custom_lease_url && (
+                              <a
+                                href={lease.custom_lease_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+                              >
+                                <FileText className="h-3 w-3" />
+                                Custom Lease
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-semibold">${lease.monthly_rent?.toLocaleString()}/mo</div>
+                        <Badge variant={lease.status === "active" ? "success" : "default"}>
+                          {lease.status.replace('_', ' ')}
+                        </Badge>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Applications for this Property */}
       <Card>
