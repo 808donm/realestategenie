@@ -121,17 +121,41 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Create contact in GHL
+      // Create contact in GHL or use existing if duplicate
       console.log(`Creating GHL contact for tenant: ${tenantEmail}`);
-      contact = await ghlClient.createContact({
-        locationId: ghlLocationId,
-        email: tenantEmail,
-        phone: tenantPhone || undefined,
-        name: tenantName,
-        tags: ["tenant"],
-      });
+      try {
+        contact = await ghlClient.createContact({
+          locationId: ghlLocationId,
+          email: tenantEmail,
+          phone: tenantPhone || undefined,
+          name: tenantName,
+          tags: ["tenant"],
+        });
 
-      contactId = contact.id!;
+        contactId = contact.id!;
+        console.log(`✅ Created new GHL contact ${contactId}`);
+      } catch (createError: any) {
+        // Check if it's a duplicate contact error
+        if (createError.message?.includes('duplicated contacts') || createError.message?.includes('duplicate')) {
+          // Extract contact ID from error response
+          // GHL returns: {"meta":{"contactId":"qI2df57vN9E9zEBfjQRk",...}}
+          const errorMatch = createError.message.match(/"contactId":"([^"]+)"/);
+          if (errorMatch && errorMatch[1]) {
+            contactId = errorMatch[1];
+            console.log(`✅ Using existing GHL contact ${contactId} (duplicate found)`);
+
+            // Fetch the existing contact to get full details
+            contact = await ghlClient.getContact(contactId);
+            tenantEmail = contact.email!;
+            tenantPhone = contact.phone || null;
+            tenantName = contact.name || `${contact.firstName} ${contact.lastName}`;
+          } else {
+            throw createError;
+          }
+        } else {
+          throw createError;
+        }
+      }
 
       // Update lease with contact ID
       await supabase
@@ -144,7 +168,7 @@ export async function POST(request: NextRequest) {
         })
         .eq("id", lease_id);
 
-      console.log(`✅ Created GHL contact ${contactId} and updated lease`);
+      console.log(`✅ Updated lease with GHL contact ${contactId}`);
     }
 
     if (!tenantEmail) {
