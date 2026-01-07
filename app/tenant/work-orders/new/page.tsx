@@ -20,8 +20,8 @@ export default function NewWorkOrderPage() {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    category: "other",
-    priority: "normal",
+    category: "general",
+    priority: "medium",
     location: "",
     tenant_availability: "",
   });
@@ -191,9 +191,9 @@ export default function NewWorkOrderPage() {
                     <option value="electrical">Electrical</option>
                     <option value="hvac">HVAC (Heating/Cooling)</option>
                     <option value="appliance">Appliance</option>
-                    <option value="structural">Structural</option>
                     <option value="pest">Pest Control</option>
-                    <option value="other">Other</option>
+                    <option value="general">General/Other</option>
+                    <option value="emergency">Emergency</option>
                   </select>
                 </div>
 
@@ -206,8 +206,9 @@ export default function NewWorkOrderPage() {
                     className="w-full border rounded-md px-3 py-2"
                     disabled={loading}
                   >
-                    <option value="normal">Normal</option>
-                    <option value="urgent">Urgent</option>
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
                     <option value="emergency">Emergency</option>
                   </select>
                   <p className="text-xs text-muted-foreground">
