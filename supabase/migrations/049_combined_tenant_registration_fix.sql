@@ -1,7 +1,9 @@
 -- Combined migration: Create tenant_invitations table and fix auth trigger
 -- Run this single migration to fix tenant registration
 
--- Step 1: Create get_auth_user_by_email function (if not exists)
+-- Step 1: Drop and recreate get_auth_user_by_email function
+DROP FUNCTION IF EXISTS get_auth_user_by_email(TEXT);
+
 CREATE OR REPLACE FUNCTION get_auth_user_by_email(user_email TEXT)
 RETURNS TABLE (id UUID, email TEXT, deleted_at TIMESTAMPTZ, confirmed_at TIMESTAMPTZ)
 LANGUAGE sql
