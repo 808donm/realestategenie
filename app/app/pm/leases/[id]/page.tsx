@@ -107,7 +107,7 @@ export default async function LeaseDetailPage({
         <div className="flex items-center gap-3">
           <SendInvitationButton
             leaseId={lease.id}
-            tenantEmail={lease.tenant_email}
+            tenantEmail={lease.tenant_email || application?.applicant_email || null}
             leaseStatus={lease.status}
           />
           {(lease.status === "active" || lease.status === "month_to_month") && (
