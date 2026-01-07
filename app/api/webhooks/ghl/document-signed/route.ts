@@ -88,14 +88,23 @@ export async function POST(request: NextRequest) {
 
     console.log(`✅ Found lease: ${lease.id}`);
 
+    // Prepare update data
+    const updateData: any = {
+      status: "active",
+      signed_at: new Date().toISOString(),
+      ghl_document_url: document_url || null,
+    };
+
+    // If lease doesn't have ghl_contact_id yet, set it now
+    if (!lease.ghl_contact_id && contact_id) {
+      updateData.ghl_contact_id = contact_id;
+      console.log(`✅ Setting ghl_contact_id on lease: ${contact_id}`);
+    }
+
     // Update lease status to active
     await supabase
       .from("pm_leases")
-      .update({
-        status: "active",
-        signed_at: new Date().toISOString(),
-        ghl_document_url: document_url || null,
-      })
+      .update(updateData)
       .eq("id", lease.id);
 
     console.log(`✅ Lease ${lease.id} marked as active (signed)`);

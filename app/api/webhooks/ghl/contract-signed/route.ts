@@ -89,13 +89,22 @@ export async function POST(request: NextRequest) {
 
     const ghlClient = new GHLClient(integration.ghl_access_token);
 
+    // Prepare update data
+    const updateData: any = {
+      status: "active",
+      contract_signed_at: signedAt || new Date().toISOString(),
+    };
+
+    // If lease doesn't have ghl_contact_id yet, set it now
+    if (!lease.ghl_contact_id && contactId) {
+      updateData.ghl_contact_id = contactId;
+      console.log(`✅ Setting ghl_contact_id on lease: ${contactId}`);
+    }
+
     // Update lease status to active
     const { error: updateError } = await supabase
       .from("pm_leases")
-      .update({
-        status: "active",
-        contract_signed_at: signedAt || new Date().toISOString(),
-      })
+      .update(updateData)
       .eq("id", lease.id);
 
     if (updateError) {

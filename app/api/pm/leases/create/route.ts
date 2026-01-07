@@ -261,7 +261,7 @@ export async function POST(request: NextRequest) {
       move_out_requirements.custom = custom_requirements;
     }
 
-    // Create lease record first (without GHL contract ID)
+    // Create lease record with GHL contact ID if available
     const { data: lease, error: leaseError } = await supabase
       .from("pm_leases")
       .insert({
@@ -270,6 +270,10 @@ export async function POST(request: NextRequest) {
         pm_unit_id: pm_unit_id || null,
         pm_application_id: pm_application_id || null,
         tenant_contact_id: localContactId,
+        ghl_contact_id: ghlContactId, // Set GHL contact ID from the start
+        tenant_name,
+        tenant_email,
+        tenant_phone,
         lease_type: "fixed-term",
         lease_start_date,
         lease_end_date,
