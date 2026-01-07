@@ -69,6 +69,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Create auth user NOW (during registration)
+    let authUserId: string;
+    let authUserEmail: string;
+
     const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
       email: invitation.email,
       password: password,
@@ -80,42 +83,104 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    if (authError || !authUser.user) {
-      console.error("Error creating auth user:", authError);
+    if (authError) {
+      // User might already exist from previous failed attempt
+      console.log(`⚠️ Auth user creation failed: ${authError.message}`);
+      console.log(`🔍 Attempting to find existing auth user for ${invitation.email}...`);
+
+      // Try to find existing user
+      try {
+        const { data: sqlResult } = await supabase.rpc('get_auth_user_by_email', {
+          user_email: invitation.email
+        });
+
+        if (sqlResult && sqlResult.length > 0) {
+          authUserId = sqlResult[0].id;
+          authUserEmail = sqlResult[0].email;
+          console.log(`✅ Found existing auth user: ${authUserId}`);
+
+          // Update the existing user's password
+          const { error: updateError } = await supabase.auth.admin.updateUserById(
+            authUserId,
+            { password: password }
+          );
+
+          if (updateError) {
+            console.error("Error updating password:", updateError);
+            return NextResponse.json(
+              { error: "Failed to set password. Please contact support." },
+              { status: 500 }
+            );
+          }
+
+          console.log(`✅ Updated password for existing user`);
+        } else {
+          console.error("❌ Auth user creation failed and user not found");
+          return NextResponse.json(
+            { error: "Failed to create account. Please contact support." },
+            { status: 500 }
+          );
+        }
+      } catch (lookupErr) {
+        console.error("Error looking up existing user:", lookupErr);
+        return NextResponse.json(
+          { error: "Failed to create account. Please contact support." },
+          { status: 500 }
+        );
+      }
+    } else if (authUser.user) {
+      authUserId = authUser.user.id;
+      authUserEmail = authUser.user.email!;
+      console.log(`✅ Created new auth user for tenant: ${authUserId}`);
+    } else {
+      console.error("❌ No auth user returned");
       return NextResponse.json(
-        { error: "Failed to create account. Please try again or contact support." },
+        { error: "Failed to create account. Please try again." },
         { status: 500 }
       );
     }
 
-    console.log(`✅ Created auth user for tenant: ${authUser.user.id}`);
-
-    // Create tenant_users record
-    const { error: tenantUserError } = await supabase
+    // Check if tenant_users record already exists (from previous failed attempt)
+    const { data: existingTenantUser } = await supabase
       .from("tenant_users")
-      .insert({
-        id: authUser.user.id,
-        lease_id: invitation.lease_id,
-        email: invitation.email,
-        phone: invitation.phone,
-        registered_at: new Date().toISOString(),
-      });
+      .select("id")
+      .eq("id", authUserId)
+      .maybeSingle();
 
-    if (tenantUserError) {
-      console.error("Error creating tenant user:", tenantUserError);
-      // Rollback: delete auth user
-      await supabase.auth.admin.deleteUser(authUser.user.id);
-      return NextResponse.json(
-        { error: "Failed to complete registration" },
-        { status: 500 }
-      );
+    if (!existingTenantUser) {
+      // Create tenant_users record
+      const { error: tenantUserError } = await supabase
+        .from("tenant_users")
+        .insert({
+          id: authUserId,
+          lease_id: invitation.lease_id,
+          email: invitation.email,
+          phone: invitation.phone,
+          registered_at: new Date().toISOString(),
+        });
+
+      if (tenantUserError) {
+        console.error("Error creating tenant user:", tenantUserError);
+        // Only rollback if we just created the auth user
+        if (!authError) {
+          await supabase.auth.admin.deleteUser(authUserId);
+        }
+        return NextResponse.json(
+          { error: "Failed to complete registration" },
+          { status: 500 }
+        );
+      }
+
+      console.log(`✅ Created tenant_users record`);
+    } else {
+      console.log(`✅ tenant_users record already exists`);
     }
 
-    // Create default notification preferences
+    // Create default notification preferences (upsert to handle duplicates)
     await supabase
       .from("tenant_notification_preferences")
       .upsert({
-        tenant_user_id: authUser.user.id,
+        tenant_user_id: authUserId,
       }, {
         onConflict: "tenant_user_id",
         ignoreDuplicates: true,
@@ -126,7 +191,7 @@ export async function POST(request: NextRequest) {
       .from("tenant_invitations")
       .update({
         registered_at: new Date().toISOString(),
-        auth_user_id: authUser.user.id,
+        auth_user_id: authUserId,
         invitation_token: null, // Invalidate token after use
       })
       .eq("id", invitation.id);
