@@ -58,8 +58,8 @@ export default function SendInvitationButton({
     }
   };
 
-  // Only show button if lease is active and tenant has email
-  if (leaseStatus !== "active" || !tenantEmail) {
+  // Only show button if tenant has email
+  if (!tenantEmail) {
     return null;
   }
 
