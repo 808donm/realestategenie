@@ -178,277 +178,56 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if tenant user already exists for this lease
-    const { data: existingTenant } = await supabase
-      .from("tenant_users")
-      .select("id, invitation_token")
-      .eq("lease_id", lease_id)
-      .maybeSingle();
-
-    if (existingTenant) {
-      console.log(`✅ Tenant user already exists for lease ${lease_id}, resending invitation`);
-
-      // Generate new invitation token
-      const invitationToken = randomBytes(32).toString("hex");
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 7);
-
-      // Update invitation token
-      await supabase
-        .from("tenant_users")
-        .update({
-          invitation_token: invitationToken,
-          invitation_expires_at: expiresAt.toISOString(),
-          invited_at: new Date().toISOString(),
-        })
-        .eq("id", existingTenant.id);
-
-      // Continue to send email below with new token
-      const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL}/tenant/register?token=${invitationToken}`;
-
-      // Get property info for email
-      const unit = Array.isArray(lease.pm_units) ? lease.pm_units[0] : lease.pm_units;
-      const property = Array.isArray(lease.pm_properties) ? lease.pm_properties[0] : lease.pm_properties;
-      const propertyAddress = unit?.unit_number
-        ? `${property?.address}, Unit ${unit.unit_number}`
-        : property?.address;
-
-      // Get agent info
-      const { data: agent } = await supabase
-        .from("agents")
-        .select("display_name, email")
-        .eq("id", lease.agent_id)
-        .single();
-
-      const landlordName = agent?.display_name || "Your Property Manager";
-
-      // Send email (code below)
-      const emailHtml = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div style="background-color: #f8f9fa; padding: 30px; border-radius: 10px;">
-    <h1 style="color: #2563eb; margin-top: 0;">Welcome to Your Tenant Portal</h1>
-
-    <p>Hello ${tenantName},</p>
-
-    <p>You've been invited to access your tenant portal for:</p>
-    <p style="font-size: 18px; font-weight: bold; color: #1e40af; margin: 20px 0;">
-      ${propertyAddress}
-    </p>
-
-    <p>Your tenant portal allows you to:</p>
-    <ul style="margin: 20px 0;">
-      <li>Pay rent online securely</li>
-      <li>Submit maintenance requests</li>
-      <li>View your lease agreement and documents</li>
-      <li>Message ${landlordName} directly</li>
-      <li>Track payment history</li>
-    </ul>
-
-    <div style="text-align: center; margin: 30px 0;">
-      <a href="${inviteUrl}"
-         style="background-color: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
-        Create Your Account
-      </a>
-    </div>
-
-    <p style="color: #666; font-size: 14px; margin-top: 30px;">
-      This invitation expires in 7 days. If you have any questions, please contact ${landlordName}.
-    </p>
-
-    <p style="color: #999; font-size: 12px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
-      If you're having trouble clicking the button, copy and paste this link into your browser:<br>
-      <span style="word-break: break-all;">${inviteUrl}</span>
-    </p>
-  </div>
-</body>
-</html>
-      `;
-
-      try {
-        const { GHLClient } = await import("@/lib/integrations/ghl-client");
-        const ghlClient = new GHLClient(ghlAccessToken, ghlLocationId);
-
-        const { messageId } = await ghlClient.sendEmail({
-          contactId: contactId,
-          subject: `Welcome to Your Tenant Portal - ${propertyAddress}`,
-          html: emailHtml,
-        });
-
-        console.log(`✅ Tenant invitation email resent to ${tenantEmail} via GHL (messageId: ${messageId})`);
-
-        return NextResponse.json({
-          success: true,
-          message: "Tenant invitation resent successfully",
-        });
-      } catch (emailError) {
-        console.error("❌ Failed to send tenant invitation email:", emailError);
-        return NextResponse.json(
-          { error: "Failed to send invitation email" },
-          { status: 500 }
-        );
-      }
-    }
-
     // Generate invitation token
     const invitationToken = randomBytes(32).toString("hex");
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7); // Valid for 7 days
 
-    // Try to create auth user, or use existing if creation fails
-    let authUserId: string;
-    let createdNewAuthUser = false;
+    // Check if invitation already exists for this lease
+    const { data: existingInvitation } = await supabase
+      .from("tenant_invitations")
+      .select("id, email, invitation_token")
+      .eq("lease_id", lease_id)
+      .maybeSingle();
 
-    try {
-      const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
-        email: tenantEmail,
-        email_confirm: true,
-        user_metadata: {
-          role: "tenant",
-          name: tenantName,
+    if (existingInvitation) {
+      console.log(`✅ Invitation already exists for lease ${lease_id}, updating token`);
+
+      // Update with new token
+      await supabase
+        .from("tenant_invitations")
+        .update({
+          invitation_token: invitationToken,
+          invitation_expires_at: expiresAt.toISOString(),
+          invited_at: new Date().toISOString(),
+          email: tenantEmail,
+          tenant_name: tenantName,
+          phone: tenantPhone,
+        })
+        .eq("id", existingInvitation.id);
+    } else {
+      console.log(`✅ Creating new invitation for lease ${lease_id}`);
+
+      // Create new invitation record (no auth user required yet)
+      const { error: inviteError } = await supabase
+        .from("tenant_invitations")
+        .insert({
           lease_id: lease_id,
-        },
-      });
+          email: tenantEmail,
+          tenant_name: tenantName,
+          phone: tenantPhone,
+          invitation_token: invitationToken,
+          invitation_expires_at: expiresAt.toISOString(),
+        });
 
-      if (authError) {
-        // For ANY auth creation error, try to find existing user
-        // (The error might be "Database error" if user already exists)
-        console.log(`ℹ️ Auth user creation failed for ${tenantEmail}: ${authError.message}`);
-        console.log(`ℹ️ Auth error code: ${authError.code}, status: ${authError.status}`);
-        console.log(`ℹ️ Attempting to find existing auth user by email...`);
-
-        // Try multiple methods to find existing user
-        let existingAuthUser = null;
-
-        // Method 1: Direct query to auth.users table via SQL
-        try {
-          const { data: sqlResult, error: sqlError } = await supabase.rpc('get_auth_user_by_email', {
-            user_email: tenantEmail
-          });
-
-          console.log(`🔍 RPC query result:`, { sqlResult, sqlError });
-
-          if (!sqlError && sqlResult && sqlResult.length > 0) {
-            existingAuthUser = { id: sqlResult[0].id, email: sqlResult[0].email };
-            console.log(`✅ Found existing auth user via SQL: ${existingAuthUser.id}`);
-          } else {
-            console.log(`ℹ️ RPC returned no results or error:`, sqlError);
-          }
-        } catch (sqlErr: any) {
-          console.log(`⚠️ RPC call failed:`, sqlErr.message);
-        }
-
-        // Method 2: List all users and search (paginated, might miss users)
-        if (!existingAuthUser) {
-          const { data: existingAuthUsers, error: listError } = await supabase.auth.admin.listUsers();
-          console.log(`🔍 listUsers result: found ${existingAuthUsers?.users?.length || 0} users, error:`, listError);
-
-          existingAuthUser = existingAuthUsers?.users?.find(u => u.email?.toLowerCase() === tenantEmail.toLowerCase());
-
-          if (existingAuthUser) {
-            console.log(`✅ Found existing auth user via listUsers: ${existingAuthUser.id}`);
-          } else {
-            console.log(`❌ User ${tenantEmail} not found in listUsers results`);
-          }
-        }
-
-        // Method 3: Check if there's a tenant_users record pointing to a user ID
-        if (!existingAuthUser) {
-          console.log(`🔍 Checking tenant_users table for email: ${tenantEmail}`);
-          const { data: tenantUserByEmail, error: tenantUserError } = await supabase
-            .from("tenant_users")
-            .select("id, email, lease_id")
-            .eq("email", tenantEmail)
-            .maybeSingle();
-
-          console.log(`🔍 tenant_users lookup result:`, { tenantUserByEmail, tenantUserError });
-
-          if (tenantUserByEmail) {
-            existingAuthUser = { id: tenantUserByEmail.id, email: tenantUserByEmail.email };
-            console.log(`✅ Found auth user ID from tenant_users: ${existingAuthUser.id}`);
-          }
-        }
-
-        if (!existingAuthUser) {
-          // User doesn't exist, so the error was something else - log full details
-          console.error(`❌ Failed to create auth user and no existing user found`);
-          console.error(`📧 Email attempted: ${tenantEmail}`);
-          console.error(`🔍 Tried: RPC query, listUsers, tenant_users lookup - all failed`);
-          console.error(`⚠️ Original auth error:`, authError);
-          throw new Error(`Failed to create auth user and no existing user found: ${authError.message}`);
-        }
-
-        // Check if this user is already a tenant for another lease
-        const { data: otherTenantRecord } = await supabase
-          .from("tenant_users")
-          .select("lease_id")
-          .eq("id", existingAuthUser.id)
-          .maybeSingle();
-
-        if (otherTenantRecord && otherTenantRecord.lease_id !== lease_id) {
-          console.error(`❌ Auth user exists for email ${tenantEmail} but is already a tenant for a different lease`);
-          return NextResponse.json(
-            { error: "This email is already registered as a tenant for another property" },
-            { status: 400 }
-          );
-        }
-
-        authUserId = existingAuthUser.id;
-        console.log(`✅ Using existing auth user: ${authUserId}`);
-      } else if (authUser.user) {
-        authUserId = authUser.user.id;
-        createdNewAuthUser = true;
-        console.log(`✅ Created new auth user: ${authUserId}`);
-      } else {
-        throw new Error('Failed to create auth user: no user returned');
+      if (inviteError) {
+        console.error("Error creating invitation:", inviteError);
+        return NextResponse.json(
+          { error: "Failed to create invitation" },
+          { status: 500 }
+        );
       }
-    } catch (err) {
-      console.error("Error with auth user:", err);
-      return NextResponse.json(
-        { error: "Failed to create or find tenant account" },
-        { status: 500 }
-      );
     }
-
-    // Create tenant user record
-    const { error: tenantError } = await supabase
-      .from("tenant_users")
-      .insert({
-        id: authUserId,
-        lease_id: lease_id,
-        email: tenantEmail,
-        phone: tenantPhone,
-        invited_at: new Date().toISOString(),
-        invitation_token: invitationToken,
-        invitation_expires_at: expiresAt.toISOString(),
-      });
-
-    if (tenantError) {
-      console.error("Error creating tenant user:", tenantError);
-      // Only rollback if we created a new auth user
-      if (createdNewAuthUser) {
-        await supabase.auth.admin.deleteUser(authUserId);
-      }
-      return NextResponse.json(
-        { error: "Failed to create tenant record" },
-        { status: 500 }
-      );
-    }
-
-    // Create default notification preferences (ignore if already exists)
-    await supabase
-      .from("tenant_notification_preferences")
-      .upsert({
-        tenant_user_id: authUserId,
-      }, {
-        onConflict: "tenant_user_id",
-        ignoreDuplicates: true,
-      });
 
     // Send invitation email
     // Handle Supabase joins that may return arrays
@@ -549,13 +328,12 @@ export async function POST(request: NextRequest) {
       console.error("❌ Failed to send tenant invitation email:", emailError);
       // Log the URL for manual sending if email fails
       console.log(`📧 Invitation URL (manual fallback): ${inviteUrl}`);
-      // Don't throw - we still want to return success if the account was created
+      // Don't throw - invitation record was created
     }
 
     return NextResponse.json({
       success: true,
-      message: "Tenant invitation sent",
-      tenant_user_id: authUserId,
+      message: "Tenant invitation sent successfully",
       invite_url: inviteUrl, // Only for testing, remove in production
     });
   } catch (error) {
