@@ -164,6 +164,18 @@ export default async function TenantInvoicesPage() {
                               Late fee: ${payment.late_fee_amount.toFixed(2)}
                             </div>
                           )}
+                          {payment.ghl_invoice_id && (
+                            <div className="text-sm text-blue-600 mt-1">
+                              <a
+                                href={`https://payments.msgsndr.com/invoice/${payment.ghl_invoice_id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="hover:underline"
+                              >
+                                View Invoice →
+                              </a>
+                            </div>
+                          )}
                         </div>
                         <div className="text-right">
                           <div className="text-lg font-bold">
@@ -173,11 +185,25 @@ export default async function TenantInvoicesPage() {
                             {payment.status.toUpperCase()}
                           </Badge>
                           {payment.status === "pending" || payment.status === "overdue" ? (
-                            <Link href={`/tenant/invoices/${payment.id}/pay`}>
-                              <Button size="sm" className="mt-2 w-full">
-                                Pay Now
-                              </Button>
-                            </Link>
+                            <>
+                              {payment.ghl_invoice_id ? (
+                                <a
+                                  href={`https://payments.msgsndr.com/invoice/${payment.ghl_invoice_id}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  <Button size="sm" className="mt-2 w-full">
+                                    Pay via PayPal →
+                                  </Button>
+                                </a>
+                              ) : (
+                                <Link href={`/tenant/invoices/${payment.id}/pay`}>
+                                  <Button size="sm" className="mt-2 w-full">
+                                    Pay Now
+                                  </Button>
+                                </Link>
+                              )}
+                            </>
                           ) : null}
                         </div>
                       </div>

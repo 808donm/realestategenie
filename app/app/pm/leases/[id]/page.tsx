@@ -8,6 +8,7 @@ import { notFound } from "next/navigation";
 import TerminateLeaseDialog from "./terminate-lease-dialog";
 import SendInvitationButton from "./send-invitation-button";
 import UpdateLeaseStatusButton from "./update-lease-status-button";
+import CreateInvoiceButton from "./create-invoice-button";
 
 export default async function LeaseDetailPage({
   params,
@@ -105,6 +106,13 @@ export default async function LeaseDetailPage({
           </div>
         </div>
         <div className="flex items-center gap-3">
+          <CreateInvoiceButton
+            leaseId={lease.id}
+            leaseStatus={lease.status}
+            monthlyRent={lease.monthly_rent}
+            securityDeposit={lease.security_deposit}
+            petDeposit={lease.pet_deposit}
+          />
           <SendInvitationButton
             leaseId={lease.id}
             tenantEmail={lease.tenant_email || application?.applicant_email || null}
