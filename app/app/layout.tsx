@@ -8,6 +8,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const { data } = await supabase.auth.getUser();
   const email = data.user?.email ?? "";
 
+  // Get user role
+  const { data: agent } = await supabase
+    .from("agents")
+    .select("role")
+    .eq("id", data.user?.id)
+    .single();
+
+  const userRole = agent?.role || "agent";
+
   return (
     <div className="min-h-screen bg-[#fafafa]">
       <header className="bg-white border-b border-gray-200">
@@ -41,6 +50,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           {/* Navigation - Responsive Grid */}
           <nav className="grid grid-cols-2 sm:grid-cols-3 md:flex md:flex-wrap gap-2 md:gap-3">
             <NavLink href="/app/dashboard">Dashboard</NavLink>
+            {(userRole === "broker" || userRole === "admin") && (
+              <NavLink href="/app/broker">Broker Dashboard</NavLink>
+            )}
+            {userRole === "team_lead" && (
+              <NavLink href="/app/team-lead">Team Dashboard</NavLink>
+            )}
             <NavLink href="/app/open-houses">Open Houses</NavLink>
             <NavLink href="/app/leads">Leads</NavLink>
             <NavLink href="/app/neighborhood-profiles">Neighborhoods</NavLink>
