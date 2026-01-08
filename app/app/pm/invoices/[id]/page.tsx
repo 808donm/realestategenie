@@ -43,6 +43,12 @@ export default async function PMInvoiceDetailPage({
     .eq("agent_id", userData.user.id)
     .single();
 
+  if (error) {
+    console.error("Error fetching invoice:", error);
+    console.error("Invoice ID:", id);
+    console.error("Agent ID:", userData.user.id);
+  }
+
   if (error || !payment) {
     notFound();
   }
