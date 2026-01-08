@@ -28,20 +28,20 @@ export async function POST(request: NextRequest) {
     // Verify tenant has access to this invoice
     const { data: tenantUser } = await supabase
       .from("tenant_users")
-      .select("pm_leases (id)")
+      .select("lease_id")
       .eq("id", user.id)
       .single();
 
-    if (!tenantUser) {
+    if (!tenantUser?.lease_id) {
       return NextResponse.json({ error: "Not a tenant user" }, { status: 403 });
     }
 
     // Get invoice and verify ownership
     const { data: invoice, error: invoiceError } = await supabase
       .from("pm_rent_payments")
-      .select("*, pm_leases (agent_id)")
+      .select("*, pm_leases!inner (agent_id)")
       .eq("id", invoice_id)
-      .eq("lease_id", tenantUser.pm_leases.id)
+      .eq("lease_id", tenantUser.lease_id)
       .single();
 
     if (invoiceError || !invoice) {
@@ -53,10 +53,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Get agent's PayPal integration
+    const leaseData = Array.isArray(invoice.pm_leases) ? invoice.pm_leases[0] : invoice.pm_leases;
     const { data: paypalIntegration } = await supabase
       .from("integrations")
       .select("config")
-      .eq("agent_id", invoice.pm_leases.agent_id)
+      .eq("agent_id", leaseData.agent_id)
       .eq("provider", "paypal")
       .eq("status", "connected")
       .single();
