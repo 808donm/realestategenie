@@ -102,7 +102,7 @@ export default async function TenantPaymentPage({
             <CardTitle className="flex items-center justify-between">
               <span>Invoice Details</span>
               {isOverdue && (
-                <Badge variant="destructive">Overdue</Badge>
+                <Badge variant="danger">Overdue</Badge>
               )}
             </CardTitle>
           </CardHeader>
