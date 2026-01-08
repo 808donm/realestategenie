@@ -169,24 +169,38 @@ export async function POST(
 
     const totalAmount = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
-    // Create invoice in GHL
-    const { id: ghlInvoiceId, invoice } = await ghlClient.createInvoice({
-      locationId: ghlIntegration.config.ghl_location_id,
-      contactId: tenantContactId,
-      title: `Move-In Charges - ${fullAddress}`,
-      currency: "USD",
-      dueDate: lease.lease_start_date,
-      items: items,
-    });
+    // Try to create invoice in GHL (optional - may be blocked by GHL account settings)
+    let ghlInvoiceId = null;
+    let paymentUrl = `${process.env.NEXT_PUBLIC_APP_URL}/tenant/invoices`; // Default to tenant portal
 
-    console.log(`✅ GHL Invoice created: ${ghlInvoiceId}`);
+    try {
+      const { id: invoiceId } = await ghlClient.createInvoice({
+        locationId: ghlIntegration.config.ghl_location_id,
+        contactId: tenantContactId,
+        title: `Move-In Charges - ${fullAddress}`,
+        currency: "USD",
+        dueDate: lease.lease_start_date,
+        items: items,
+      });
 
-    // Send the invoice to the tenant
-    await ghlClient.sendInvoice(ghlInvoiceId);
-    console.log(`✅ Invoice sent to tenant via GHL`);
+      ghlInvoiceId = invoiceId;
+      console.log(`✅ GHL Invoice created: ${ghlInvoiceId}`);
 
-    // GHL invoice URL format
-    const paymentUrl = `https://payments.msgsndr.com/invoice/${ghlInvoiceId}`;
+      // Send the invoice to the tenant
+      await ghlClient.sendInvoice(ghlInvoiceId);
+      console.log(`✅ Invoice sent to tenant via GHL`);
+
+      // GHL invoice URL format
+      paymentUrl = `https://payments.msgsndr.com/invoice/${ghlInvoiceId}`;
+    } catch (ghlError: any) {
+      // GHL Invoice API blocked (403) - continue without it
+      console.warn("⚠️ GHL Invoice creation failed (this is expected if Invoice API is not enabled):", ghlError.message);
+      console.log("📧 Will send invoice notification via email instead");
+
+      // Invoice will be accessible via tenant portal
+      ghlInvoiceId = null;
+      paymentUrl = `${process.env.NEXT_PUBLIC_APP_URL}/tenant/invoices`;
+    }
 
     // Create or update rent payment record
     if (existingPayment) {
@@ -284,6 +298,54 @@ export async function POST(
     } catch (qboError) {
       console.error("⚠️ Error syncing to QuickBooks:", qboError);
       // Don't fail the request - invoice is created even if QBO sync fails
+    }
+
+    // Send email notification to tenant (if GHL invoice creation failed)
+    if (!ghlInvoiceId && lease.tenant_email) {
+      try {
+        console.log("📧 Sending move-in invoice notification email to tenant...");
+
+        const itemsList = items.map(item =>
+          `<li>${item.name}: $${item.price.toFixed(2)}</li>`
+        ).join('');
+
+        const emailHtml = `
+          <h2>Move-In Invoice - ${fullAddress}</h2>
+          <p>Dear ${lease.tenant_name},</p>
+          <p>Your move-in invoice is now available.</p>
+
+          <h3>Invoice Details:</h3>
+          <ul>
+            <li><strong>Property:</strong> ${fullAddress}</li>
+            <li><strong>Move-In Date:</strong> ${new Date(lease.lease_start_date).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</li>
+          </ul>
+
+          <h3>Charges:</h3>
+          <ul>
+            ${itemsList}
+          </ul>
+          <p><strong>Total Amount Due:</strong> $${totalAmount.toFixed(2)}</p>
+
+          <p><a href="${paymentUrl}" style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">View Invoice & Pay</a></p>
+
+          <p>Please log in to your tenant portal to view invoice details and submit payment.</p>
+
+          <p>If you have any questions, please contact your property manager.</p>
+
+          <p>Best regards,<br>Property Management</p>
+        `;
+
+        await ghlClient.sendEmail({
+          contactId: tenantContactId,
+          subject: `Move-In Invoice - ${fullAddress}`,
+          html: emailHtml,
+        });
+
+        console.log("✅ Email notification sent to tenant");
+      } catch (emailError) {
+        console.error("⚠️ Failed to send email notification:", emailError);
+        // Don't fail the request - invoice is still created
+      }
     }
 
     return NextResponse.json({
