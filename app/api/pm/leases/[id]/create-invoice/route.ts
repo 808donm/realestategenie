@@ -97,6 +97,7 @@ export async function POST(
     const property = Array.isArray(lease.pm_properties) ? lease.pm_properties[0] : lease.pm_properties;
     const unit = Array.isArray(lease.pm_units) ? lease.pm_units[0] : lease.pm_units;
     const propertyAddress = property?.address || "Property";
+    const fullAddress = unit ? `${propertyAddress}, Unit ${unit.unit_number}` : propertyAddress;
 
     // Calculate invoice amount
     const items = [
