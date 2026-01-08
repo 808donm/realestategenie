@@ -286,7 +286,7 @@ export interface GHLInvoiceData {
   security_deposit?: number;
   pet_deposit?: number;
   due_date: string;
-  ghl_invoice_id: string;
+  ghl_invoice_id: string | null; // Optional - may be null if GHL Invoice API is not available
   invoice_type: "move_in" | "monthly_rent";
 }
 
@@ -383,14 +383,17 @@ export async function syncInvoiceToQBO(
     Line: lines,
     DueDate: invoiceData.due_date,
     TxnDate: new Date().toISOString().split("T")[0],
-    CustomField: [
-      {
-        DefinitionId: "1",
-        Name: "GHL Invoice ID",
-        Type: "StringType",
-        StringValue: invoiceData.ghl_invoice_id,
-      },
-    ],
+    // Only include GHL Invoice ID custom field if available
+    ...(invoiceData.ghl_invoice_id && {
+      CustomField: [
+        {
+          DefinitionId: "1",
+          Name: "GHL Invoice ID",
+          Type: "StringType",
+          StringValue: invoiceData.ghl_invoice_id,
+        },
+      ],
+    }),
   });
 
   console.log(`✅ QBO Invoice created: ${invoice.Id} for ${invoiceData.property_address}`);
