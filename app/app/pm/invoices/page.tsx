@@ -175,9 +175,10 @@ export default async function PMInvoicesPage() {
                 const totalAmount = parseFloat(payment.amount.toString()) + parseFloat((payment.late_fee_amount || 0).toString());
 
                 return (
-                  <div
+                  <Link
                     key={payment.id}
-                    className={`p-4 border rounded-lg ${
+                    href={`/app/pm/invoices/${payment.id}`}
+                    className={`block p-4 border rounded-lg hover:border-blue-300 hover:shadow-md transition-all cursor-pointer ${
                       isOverdue ? "border-red-200 bg-red-50" : ""
                     }`}
                   >
@@ -239,7 +240,7 @@ export default async function PMInvoicesPage() {
                         </Badge>
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 );
               })}
             </div>
