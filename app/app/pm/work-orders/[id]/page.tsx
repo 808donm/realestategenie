@@ -117,16 +117,20 @@ export default async function PMWorkOrderDetailPage({
           )}
 
           {/* Notes */}
-          {workOrder.notes && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Notes</CardTitle>
-              </CardHeader>
-              <CardContent>
+          <Card>
+            <CardHeader>
+              <CardTitle>Notes</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {workOrder.notes ? (
                 <p className="whitespace-pre-wrap text-sm">{workOrder.notes}</p>
-              </CardContent>
-            </Card>
-          )}
+              ) : (
+                <p className="text-muted-foreground text-sm italic">
+                  No notes yet. Add notes using the form below to communicate with the tenant.
+                </p>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Update Form */}
           <WorkOrderUpdateForm workOrder={workOrder} />
