@@ -54,7 +54,10 @@ export async function POST(request: NextRequest) {
 
     // Get agent's PayPal integration
     const leaseData = Array.isArray(invoice.pm_leases) ? invoice.pm_leases[0] : invoice.pm_leases;
-    const { data: paypalIntegration } = await supabase
+
+    console.log("Looking for PayPal integration for agent_id:", leaseData?.agent_id);
+
+    const { data: paypalIntegration, error: integrationError } = await supabase
       .from("integrations")
       .select("config")
       .eq("agent_id", leaseData.agent_id)
@@ -62,9 +65,25 @@ export async function POST(request: NextRequest) {
       .eq("status", "connected")
       .single();
 
+    console.log("PayPal integration found:", !!paypalIntegration, "Error:", integrationError);
+
     if (!paypalIntegration?.config) {
+      // Debug: Check if ANY PayPal integration exists for this agent
+      const { data: allIntegrations } = await supabase
+        .from("integrations")
+        .select("provider, status")
+        .eq("agent_id", leaseData.agent_id);
+
+      console.log("All integrations for agent:", allIntegrations);
+
       return NextResponse.json(
-        { error: "PayPal not configured. Please contact your property manager." },
+        {
+          error: "PayPal not configured. Please contact your property manager.",
+          debug: {
+            agent_id: leaseData.agent_id,
+            available_integrations: allIntegrations,
+          }
+        },
         { status: 400 }
       );
     }
