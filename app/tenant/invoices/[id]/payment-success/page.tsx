@@ -71,7 +71,7 @@ export default async function PaymentSuccessPage({
             </CardContent>
           </Card>
         </div>
-      </div>
+      </>
     );
   }
 
@@ -189,7 +189,7 @@ export default async function PaymentSuccessPage({
             </CardContent>
           </Card>
         </div>
-      </div>
+      </>
     );
   } catch (error) {
     console.error("Payment capture error:", error);
@@ -209,7 +209,7 @@ export default async function PaymentSuccessPage({
             </CardContent>
           </Card>
         </div>
-      </div>
+      </>
     );
   }
 }
