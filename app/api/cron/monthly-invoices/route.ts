@@ -191,7 +191,7 @@ export async function POST(request: NextRequest) {
         const invoice = {
           locationId: integration.ghl_location_id,
           contactId: lease.tenant_contact_id,
-          title: `Rent - ${fullAddress} - ${today.toLocaleDateString("en-US", { month: "long", year: "numeric" })}`,
+          title: `Rent - ${fullAddress} - ${now.toLocaleDateString("en-US", { month: "long", year: "numeric" })}`,
           currency: "USD",
           dueDate: dueDateStr,
           items: [
