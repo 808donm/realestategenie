@@ -14,6 +14,7 @@ import {
   Mail,
   Phone,
 } from "lucide-react";
+import ActivateLeaseButton from "./activate-lease-button";
 
 export default async function LeaseDetailPage({
   params,
@@ -368,7 +369,7 @@ export default async function LeaseDetailPage({
         <CardContent>
           <div className="flex flex-wrap gap-3">
             {lease.status === "pending-signature" && (
-              <Button variant="default">Activate Lease</Button>
+              <ActivateLeaseButton leaseId={lease.id} />
             )}
             {lease.status === "active" && (
               <>
