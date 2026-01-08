@@ -35,7 +35,7 @@ export default async function PMInvoiceDetailPage({
         monthly_rent,
         lease_start_date,
         lease_end_date,
-        pm_properties (address, city, state_province, postal_code),
+        pm_properties (address, city, state_province, zip_postal_code),
         pm_units (unit_number)
       )
     `)
@@ -150,7 +150,7 @@ export default async function PMInvoiceDetailPage({
                 <div>
                   <div className="text-sm text-muted-foreground">City, State ZIP</div>
                   <div className="font-medium">
-                    {property.city}, {property.state_province} {property.postal_code}
+                    {property.city}, {property.state_province} {property.zip_postal_code}
                   </div>
                 </div>
               )}
