@@ -2,19 +2,25 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { GHLClient } from "@/lib/integrations/ghl-client";
 import { QBOClient, syncInvoiceToQBO } from "@/lib/integrations/qbo-client";
+import { revalidatePath } from "next/cache";
 
 /**
- * Create Move-In Invoice for Lease
+ * Create Monthly Rent Invoice
  *
- * POST /api/pm/leases/:id/create-invoice
- * Creates the first month invoice (move-in charges) in GHL
+ * POST /api/pm/invoices/create-monthly
+ * Creates a monthly rent invoice with GHL payment link and QBO sync
  */
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest) {
   try {
-    const { id } = await params;
+    const body = await request.json();
+    const { lease_id, month, year } = body;
+
+    if (!lease_id || !month || !year) {
+      return NextResponse.json(
+        { error: "Missing required fields: lease_id, month, year" },
+        { status: 400 }
+      );
+    }
 
     const supabase = await supabaseServer();
     const { data: { user } } = await supabase.auth.getUser();
@@ -31,10 +37,10 @@ export async function POST(
       .from("pm_leases")
       .select(`
         *,
-        pm_properties (address),
-        pm_units (unit_number)
+        pm_properties (id, address, city, state_province),
+        pm_units (id, unit_number)
       `)
-      .eq("id", id)
+      .eq("id", lease_id)
       .eq("agent_id", user.id)
       .single();
 
@@ -45,19 +51,21 @@ export async function POST(
       );
     }
 
-    // Check if invoice already exists
+    // Check if invoice already exists for this month
     const { data: existingPayment } = await supabase
       .from("pm_rent_payments")
-      .select("id, ghl_invoice_id")
-      .eq("lease_id", id)
-      .eq("payment_type", "move_in")
+      .select("id, ghl_invoice_id, status")
+      .eq("lease_id", lease_id)
+      .eq("month", month)
+      .eq("year", year)
       .single();
 
-    if (existingPayment?.ghl_invoice_id) {
+    if (existingPayment) {
       return NextResponse.json(
         {
-          error: "Move-in invoice already exists",
-          ghl_invoice_id: existingPayment.ghl_invoice_id
+          error: `Invoice already exists for ${new Date(year, month - 1).toLocaleDateString("en-US", { month: "long", year: "numeric" })}`,
+          invoice_id: existingPayment.id,
+          status: existingPayment.status
         },
         { status: 400 }
       );
@@ -97,79 +105,56 @@ export async function POST(
     const property = Array.isArray(lease.pm_properties) ? lease.pm_properties[0] : lease.pm_properties;
     const unit = Array.isArray(lease.pm_units) ? lease.pm_units[0] : lease.pm_units;
     const propertyAddress = property?.address || "Property";
+    const fullAddress = unit ? `${propertyAddress}, Unit ${unit.unit_number}` : propertyAddress;
 
-    // Calculate invoice amount
-    const items = [
-      {
-        name: "First Month Rent",
-        description: `Rent for ${propertyAddress}${unit ? ` - Unit ${unit.unit_number}` : ""}`,
-        price: parseFloat(lease.monthly_rent.toString()),
-        quantity: 1,
-      },
-      {
-        name: "Security Deposit",
-        description: "Refundable security deposit",
-        price: parseFloat(lease.security_deposit.toString()),
-        quantity: 1,
-      },
-    ];
+    // Calculate due date (using rent_due_day from lease, or 1st of month as default)
+    const dueDay = lease.rent_due_day || 1;
+    const dueDate = new Date(year, month - 1, dueDay);
 
-    // Add pet deposit if applicable
-    if (lease.pet_deposit && parseFloat(lease.pet_deposit.toString()) > 0) {
-      items.push({
-        name: "Pet Deposit",
-        description: "Refundable pet deposit",
-        price: parseFloat(lease.pet_deposit.toString()),
-        quantity: 1,
-      });
-    }
-
-    const totalAmount = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-
-    // Create payment link in GHL (simpler alternative to invoices)
-    const itemsList = items.map(item => `${item.name}: $${item.price.toLocaleString()}`).join(', ');
+    // Create payment link in GHL
+    const monthName = new Date(year, month - 1).toLocaleDateString("en-US", {
+      month: "long",
+      year: "numeric",
+    });
 
     const { id: paymentLinkId, url: paymentUrl } = await ghlClient.createPaymentLink({
       locationId: ghlIntegration.config.ghl_location_id,
       contactId: tenantContactId,
-      amount: totalAmount,
-      name: `Move-In Charges - ${propertyAddress}`,
-      description: `Payment for move-in charges: ${itemsList}. Due: ${new Date(lease.lease_start_date).toLocaleDateString()}`,
+      amount: parseFloat(lease.monthly_rent.toString()),
+      name: `${monthName} Rent - ${fullAddress}`,
+      description: `Monthly rent payment for ${fullAddress}. Due: ${dueDate.toLocaleDateString()}`,
     });
 
-    console.log(`✅ Move-in payment link created in GHL: ${paymentLinkId}`);
+    console.log(`✅ Monthly rent payment link created in GHL: ${paymentLinkId}`);
 
-    // Create or update rent payment record
-    if (existingPayment) {
-      // Update existing record
-      await supabase
-        .from("pm_rent_payments")
-        .update({
-          ghl_invoice_id: paymentLinkId,
-          ghl_payment_url: paymentUrl,
-          amount: totalAmount,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", existingPayment.id);
-    } else {
-      // Create new record
-      await supabase
-        .from("pm_rent_payments")
-        .insert({
-          lease_id: id,
-          agent_id: user.id,
-          month: new Date(lease.lease_start_date).getMonth() + 1,
-          year: new Date(lease.lease_start_date).getFullYear(),
-          amount: totalAmount,
-          due_date: lease.lease_start_date,
-          status: "pending",
-          payment_type: "move_in",
-          ghl_invoice_id: paymentLinkId,
-          ghl_payment_url: paymentUrl,
-        });
+    // Create rent payment record
+    const { data: newPayment, error: insertError } = await supabase
+      .from("pm_rent_payments")
+      .insert({
+        lease_id: lease_id,
+        agent_id: user.id,
+        tenant_contact_id: tenantContactId,
+        month: month,
+        year: year,
+        amount: lease.monthly_rent,
+        due_date: dueDate.toISOString().split("T")[0],
+        status: "pending",
+        payment_type: "monthly",
+        ghl_invoice_id: paymentLinkId,
+        ghl_payment_url: paymentUrl,
+      })
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error("Error creating rent payment record:", insertError);
+      return NextResponse.json(
+        { error: "Failed to create payment record", details: insertError.message },
+        { status: 500 }
+      );
     }
 
-    console.log(`✅ Rent payment record created/updated for lease ${id}`);
+    console.log(`✅ Rent payment record created for lease ${lease_id}`);
 
     // Sync to QuickBooks if integrated
     let qboInvoiceId = null;
@@ -199,34 +184,27 @@ export async function POST(
           tenant_phone: lease.tenant_phone,
           property_address: fullAddress,
           monthly_rent: parseFloat(lease.monthly_rent.toString()),
-          security_deposit: parseFloat(lease.security_deposit.toString()),
-          pet_deposit: lease.pet_deposit ? parseFloat(lease.pet_deposit.toString()) : 0,
-          due_date: lease.lease_start_date,
+          security_deposit: 0,
+          pet_deposit: 0,
+          due_date: dueDate.toISOString().split("T")[0],
           ghl_invoice_id: paymentLinkId,
-          invoice_type: "move_in",
+          invoice_type: "monthly",
         });
 
         // Update payment record with QBO IDs
-        const paymentId = existingPayment?.id || (await supabase
+        await supabase
           .from("pm_rent_payments")
-          .select("id")
-          .eq("lease_id", id)
-          .eq("payment_type", "move_in")
-          .single()).data?.id;
-
-        if (paymentId) {
-          await supabase
-            .from("pm_rent_payments")
-            .update({ qbo_invoice_id: qbo_invoice_id })
-            .eq("id", paymentId);
-        }
+          .update({
+            qbo_invoice_id: qbo_invoice_id,
+          })
+          .eq("id", newPayment.id);
 
         // Update lease with QBO customer ID if not set
         if (!lease.qbo_customer_id) {
           await supabase
             .from("pm_leases")
             .update({ qbo_customer_id })
-            .eq("id", id);
+            .eq("id", lease_id);
         }
 
         qboInvoiceId = qbo_invoice_id;
@@ -241,25 +219,25 @@ export async function POST(
     try {
       await ghlClient.sendEmail({
         contactId: tenantContactId,
-        subject: `Move-In Payment Required - ${propertyAddress}`,
+        subject: `${monthName} Rent Payment - ${fullAddress}`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2>Move-In Charges Ready</h2>
-            <p>Your move-in charges for ${propertyAddress} are ready for payment.</p>
+            <h2>${monthName} Rent Payment</h2>
+            <p>Your rent payment for ${fullAddress} is now due.</p>
             <div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              ${items.map(item => `<div style="display: flex; justify-content: space-between; margin: 10px 0;">
-                <span>${item.name}</span>
-                <strong>$${item.price.toLocaleString()}</strong>
-              </div>`).join('')}
+              <div style="display: flex; justify-content: space-between; margin: 10px 0;">
+                <span>Monthly Rent</span>
+                <strong>$${lease.monthly_rent.toLocaleString()}</strong>
+              </div>
               <div style="border-top: 2px solid #ddd; margin-top: 15px; padding-top: 15px; display: flex; justify-content: space-between;">
                 <strong>Total Due:</strong>
-                <strong style="font-size: 1.2em;">$${totalAmount.toLocaleString()}</strong>
+                <strong style="font-size: 1.2em;">$${lease.monthly_rent.toLocaleString()}</strong>
               </div>
             </div>
             <div style="text-align: center; margin: 30px 0;">
               <a href="${paymentUrl}" style="background: #4F46E5; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">Pay Now with PayPal</a>
             </div>
-            <p style="color: #666; font-size: 14px;">Payment is due by ${new Date(lease.lease_start_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}.</p>
+            <p style="color: #666; font-size: 14px;">Payment is due by ${dueDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}.</p>
           </div>
         `,
       });
@@ -269,16 +247,20 @@ export async function POST(
       // Don't fail the request - payment link is created
     }
 
+    // Revalidate invoices page
+    revalidatePath("/app/pm/invoices");
+
     return NextResponse.json({
       success: true,
-      message: "Move-in payment link created successfully",
+      message: "Monthly rent invoice created successfully",
+      invoice_id: newPayment.id,
       ghl_invoice_id: paymentLinkId,
       payment_url: paymentUrl,
       qbo_invoice_id: qboInvoiceId,
-      amount: totalAmount,
+      amount: lease.monthly_rent,
     });
   } catch (error) {
-    console.error("Error creating move-in invoice:", error);
+    console.error("Error creating monthly invoice:", error);
     return NextResponse.json(
       {
         error: "Failed to create invoice",
