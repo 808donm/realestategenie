@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
       amount: parseFloat(amount.toString()),
       reference_id: invoice_id,
       description: description || `Invoice ${invoice_id}`,
-      return_url: `${process.env.NEXT_PUBLIC_APP_URL}/tenant/invoices/${invoice_id}/payment-success?token={token}`,
+      return_url: `${process.env.NEXT_PUBLIC_APP_URL}/tenant/invoices/${invoice_id}/payment-success`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/tenant/invoices/${invoice_id}/pay?cancelled=true`,
     });
 
