@@ -2,20 +2,34 @@ import Image from "next/image";
 import Link from "next/link";
 import { supabaseServer } from "@/lib/supabase/server";
 import SignOutButton from "./dashboard/signout-button";
+import UsageWarningBanner from "./components/usage-warning-banner";
+import { getSubscriptionStatus, getSuggestedUpgradePlan } from "@/lib/subscriptions/utils";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await supabaseServer();
   const { data } = await supabase.auth.getUser();
   const email = data.user?.email ?? "";
+  const userId = data.user?.id;
 
   // Get user role
   const { data: agent } = await supabase
     .from("agents")
     .select("role")
-    .eq("id", data.user?.id)
+    .eq("id", userId)
     .single();
 
   const userRole = agent?.role || "agent";
+
+  // Get subscription status for usage warnings
+  let subscriptionStatus = null;
+  let suggestedPlan = null;
+
+  if (userId) {
+    subscriptionStatus = await getSubscriptionStatus(userId);
+    if (subscriptionStatus?.plan) {
+      suggestedPlan = await getSuggestedUpgradePlan(subscriptionStatus.plan.id);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[#fafafa]">
@@ -72,6 +86,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </div>
         </div>
       </header>
+
+      {/* Usage Warning Banners */}
+      {subscriptionStatus && subscriptionStatus.hasActiveAlerts && (
+        <UsageWarningBanner
+          alerts={subscriptionStatus.alerts}
+          plan={subscriptionStatus.plan}
+          suggestedPlan={suggestedPlan}
+        />
+      )}
 
       <main>
         <div style={{ maxWidth: 1100, margin: "0 auto", padding: "20px 18px" }}>

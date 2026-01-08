@@ -1,10 +1,13 @@
 import { requireAdmin } from "@/lib/auth/admin-check";
 import { supabaseServer } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import AdminUsageBanner from "../components/admin-usage-banner";
 
 export default async function AdminOverviewPage() {
   await requireAdmin();
 
   const supabase = await supabaseServer();
+  const adminSupabase = await supabaseAdmin();
 
   // Get statistics with error handling
   const results = await Promise.all([
@@ -27,6 +30,16 @@ export default async function AdminOverviewPage() {
       .from("error_logs")
       .select("*", { count: "exact", head: true })
       .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
+    adminSupabase
+      .from("usage_alerts")
+      .select("*", { count: "exact", head: true })
+      .eq("is_resolved", false)
+      .eq("alert_type", "critical_100"),
+    adminSupabase
+      .from("usage_alerts")
+      .select("*", { count: "exact", head: true })
+      .eq("is_resolved", false)
+      .eq("alert_type", "warning_70"),
   ]);
 
   const totalUsers = results[0].count ?? 0;
@@ -36,6 +49,39 @@ export default async function AdminOverviewPage() {
   const totalOpenHouses = results[4].count ?? 0;
   const totalLeads = results[5].count ?? 0;
   const recentErrors = results[6].count ?? 0;
+  const criticalAlerts = results[7].count ?? 0;
+  const warningAlerts = results[8].count ?? 0;
+
+  // Get agents with critical alerts for sales opportunities
+  const { data: criticalAlertsData } = await adminSupabase
+    .from("usage_alerts")
+    .select(`
+      agent_id,
+      resource_type,
+      agents (
+        email,
+        display_name,
+        agent_subscriptions (
+          subscription_plans (name)
+        )
+      )
+    `)
+    .eq("is_resolved", false)
+    .eq("alert_type", "critical_100")
+    .limit(5);
+
+  const salesOpportunities = new Map<string, { agent: any; resources: string[] }>();
+  criticalAlertsData?.forEach(alert => {
+    const existing = salesOpportunities.get(alert.agent_id);
+    if (existing) {
+      existing.resources.push(alert.resource_type);
+    } else {
+      salesOpportunities.set(alert.agent_id, {
+        agent: alert.agents,
+        resources: [alert.resource_type]
+      });
+    }
+  });
 
   return (
     <div>
@@ -47,6 +93,28 @@ export default async function AdminOverviewPage() {
           Real Estate Genie system statistics
         </p>
       </div>
+
+      {/* Sales Opportunities */}
+      {salesOpportunities.size > 0 && (
+        <div style={{ marginBottom: 32 }}>
+          <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 16 }}>
+            🚨 Sales Opportunities
+          </h2>
+          {Array.from(salesOpportunities.entries()).map(([agentId, data]) => {
+            const planName = data.agent?.agent_subscriptions?.[0]?.subscription_plans?.name || "Unknown Plan";
+            return (
+              <AdminUsageBanner
+                key={agentId}
+                agentName={data.agent?.display_name || data.agent?.email}
+                agentEmail={data.agent?.email}
+                agentId={agentId}
+                exceededResources={data.resources}
+                planName={planName}
+              />
+            );
+          })}
+        </div>
+      )}
 
       <div
         style={{
@@ -69,15 +137,15 @@ export default async function AdminOverviewPage() {
           color="#10b981"
         />
         <StatCard
-          title="Disabled Users"
-          value={disabledUsers || 0}
-          icon="🚫"
+          title="Critical Alerts"
+          value={criticalAlerts || 0}
+          icon="🚨"
           color="#ef4444"
         />
         <StatCard
-          title="Pending Invites"
-          value={pendingInvites || 0}
-          icon="📧"
+          title="Warning Alerts"
+          value={warningAlerts || 0}
+          icon="⚠️"
           color="#f59e0b"
         />
         <StatCard
@@ -107,6 +175,15 @@ export default async function AdminOverviewPage() {
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
           <QuickActionButton href="/app/admin/users">
             Manage Users
+          </QuickActionButton>
+          <QuickActionButton href="/app/admin/subscriptions">
+            Manage Subscriptions
+          </QuickActionButton>
+          <QuickActionButton href="/app/admin/plans">
+            Manage Plans
+          </QuickActionButton>
+          <QuickActionButton href="/app/admin/features">
+            Manage Features
           </QuickActionButton>
           <QuickActionButton href="/app/admin/invitations">
             Send Invitation
