@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { GHLClient } from "@/lib/integrations/ghl-client";
+import { getCurrentRent } from "@/lib/invoicing/recurring-invoices";
 
 /**
  * Monthly Rent Invoice Automation
@@ -47,6 +48,7 @@ export async function POST(request: NextRequest) {
         id,
         agent_id,
         tenant_contact_id,
+        tenant_name,
         pm_property_id,
         pm_unit_id,
         monthly_rent,
@@ -56,6 +58,7 @@ export async function POST(request: NextRequest) {
         auto_invoice_enabled,
         status,
         qbo_customer_id,
+        rent_increase_history,
         pm_properties (address),
         pm_units (unit_number)
       `)
@@ -117,6 +120,11 @@ export async function POST(request: NextRequest) {
         const dueDate = new Date(currentYear, currentMonth - 1, lease.rent_due_day);
         const dueDateStr = dueDate.toISOString().split("T")[0];
 
+        // Calculate current rent amount (handles rent increases)
+        const currentRent = getCurrentRent(lease as any, dueDate);
+
+        console.log(`💰 Lease ${lease.id} - Base rent: $${lease.monthly_rent}, Current rent: $${currentRent}`);
+
         // Prepare invoice
         // Handle Supabase joins that may return arrays
         const unit = Array.isArray(lease.pm_units) ? lease.pm_units[0] : lease.pm_units;
@@ -136,7 +144,7 @@ export async function POST(request: NextRequest) {
             {
               name: "Monthly Rent",
               description: `Rent for ${fullAddress}`,
-              price: lease.monthly_rent,
+              price: currentRent,
               quantity: 1,
             },
           ],
@@ -184,7 +192,7 @@ export async function POST(request: NextRequest) {
                 tenant_email: contact.email || "",
                 tenant_phone: contact.phone,
                 property_address: fullAddress,
-                monthly_rent: lease.monthly_rent,
+                monthly_rent: currentRent,
                 due_date: dueDateStr,
                 ghl_invoice_id: ghlInvoiceId,
                 invoice_type: "monthly_rent",
@@ -204,16 +212,14 @@ export async function POST(request: NextRequest) {
           .from("pm_rent_payments")
           .insert({
             lease_id: lease.id,
-            agent_id: lease.agent_id,
-            tenant_contact_id: lease.tenant_contact_id,
-            amount: lease.monthly_rent,
+            amount: currentRent,
             due_date: dueDateStr,
             month: currentMonth,
             year: currentYear,
             status: "pending",
+            payment_type: "monthly",
             ghl_invoice_id: ghlInvoiceId,
             qbo_invoice_id: qboInvoiceId,
-            invoice_sent_at: new Date().toISOString(),
           });
 
         if (insertError) {
