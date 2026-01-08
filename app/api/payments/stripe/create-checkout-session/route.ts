@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { createStripeClient } from "@/lib/integrations/stripe-client";
 
 /**
@@ -52,12 +53,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invoice already paid" }, { status: 400 });
     }
 
-    // Get agent's Stripe integration
+    // Get agent's Stripe integration (using admin client to bypass RLS)
     const leaseData = Array.isArray(invoice.pm_leases) ? invoice.pm_leases[0] : invoice.pm_leases;
 
     console.log("Looking for Stripe integration for agent_id:", leaseData?.agent_id);
 
-    const { data: stripeIntegration, error: integrationError } = await supabase
+    const { data: stripeIntegration, error: integrationError } = await supabaseAdmin
       .from("integrations")
       .select("config")
       .eq("agent_id", leaseData.agent_id)
@@ -68,22 +69,8 @@ export async function POST(request: NextRequest) {
     console.log("Stripe integration found:", !!stripeIntegration, "Error:", integrationError);
 
     if (!stripeIntegration?.config) {
-      // Debug: Check if ANY Stripe integration exists for this agent
-      const { data: allIntegrations } = await supabase
-        .from("integrations")
-        .select("provider, status")
-        .eq("agent_id", leaseData.agent_id);
-
-      console.log("All integrations for agent:", allIntegrations);
-
       return NextResponse.json(
-        {
-          error: "Stripe not configured. Please contact your property manager.",
-          debug: {
-            agent_id: leaseData.agent_id,
-            available_integrations: allIntegrations,
-          }
-        },
+        { error: "Stripe not configured. Please contact your property manager." },
         { status: 400 }
       );
     }
