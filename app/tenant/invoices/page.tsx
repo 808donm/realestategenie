@@ -158,10 +158,10 @@ export default async function TenantInvoicesPage() {
                               Late fee: ${payment.late_fee_amount.toFixed(2)}
                             </div>
                           )}
-                          {(payment.ghl_payment_url || payment.ghl_invoice_id) && (
+                          {payment.ghl_invoice_id && payment.ghl_payment_url && !payment.ghl_payment_url.includes('/tenant/invoices') && (
                             <div className="text-sm text-blue-600 mt-1">
                               <a
-                                href={payment.ghl_payment_url || `https://payments.msgsndr.com/invoice/${payment.ghl_invoice_id}`}
+                                href={payment.ghl_payment_url}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="hover:underline"
@@ -180,9 +180,9 @@ export default async function TenantInvoicesPage() {
                           </Badge>
                           {payment.status === "pending" || payment.status === "overdue" ? (
                             <>
-                              {(payment.ghl_payment_url || payment.ghl_invoice_id) ? (
+                              {payment.ghl_invoice_id && payment.ghl_payment_url && !payment.ghl_payment_url.includes('/tenant/invoices') ? (
                                 <a
-                                  href={payment.ghl_payment_url || `https://payments.msgsndr.com/invoice/${payment.ghl_invoice_id}`}
+                                  href={payment.ghl_payment_url}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                 >
@@ -191,11 +191,9 @@ export default async function TenantInvoicesPage() {
                                   </Button>
                                 </a>
                               ) : (
-                                <Link href={`/tenant/invoices/${payment.id}/pay`}>
-                                  <Button size="sm" className="mt-2 w-full">
-                                    Pay Now
-                                  </Button>
-                                </Link>
+                                <Button size="sm" className="mt-2 w-full" disabled>
+                                  Payment Processing Setup Required
+                                </Button>
                               )}
                             </>
                           ) : null}

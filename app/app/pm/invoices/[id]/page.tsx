@@ -12,8 +12,9 @@ export const revalidate = 0;
 export default async function PMInvoiceDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = await params;
   const supabase = await supabaseServer();
   const { data: userData } = await supabase.auth.getUser();
 
@@ -38,7 +39,7 @@ export default async function PMInvoiceDetailPage({
         pm_units (unit_number)
       )
     `)
-    .eq("id", params.id)
+    .eq("id", id)
     .eq("agent_id", userData.user.id)
     .single();
 
