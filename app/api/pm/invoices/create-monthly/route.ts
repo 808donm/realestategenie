@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
-import { GHLClient } from "@/lib/integrations/ghl-client";
+import { GHLClient, refreshGHLToken } from "@/lib/integrations/ghl-client";
 import { QBOClient, syncInvoiceToQBO } from "@/lib/integrations/qbo-client";
 import { revalidatePath } from "next/cache";
 
@@ -82,13 +82,55 @@ export async function POST(request: NextRequest) {
 
     if (!ghlIntegration?.config?.ghl_access_token) {
       return NextResponse.json(
-        { error: "GHL integration not found or not connected" },
+        { error: "GHL integration not found or not connected. Please reconnect GHL in Settings → Integrations." },
         { status: 400 }
       );
     }
 
+    // Check if token needs refresh (if expires_at is in the past)
+    let accessToken = ghlIntegration.config.ghl_access_token;
+    const expiresAt = ghlIntegration.config.expires_at;
+
+    if (expiresAt && new Date(expiresAt) < new Date()) {
+      console.log("🔄 GHL token expired, refreshing...");
+
+      if (!ghlIntegration.config.ghl_refresh_token) {
+        return NextResponse.json(
+          { error: "GHL token expired and no refresh token available. Please reconnect GHL in Settings → Integrations." },
+          { status: 401 }
+        );
+      }
+
+      try {
+        const refreshed = await refreshGHLToken(ghlIntegration.config.ghl_refresh_token);
+        accessToken = refreshed.access_token;
+
+        // Update integration with new tokens
+        await supabase
+          .from("integrations")
+          .update({
+            config: {
+              ...ghlIntegration.config,
+              ghl_access_token: refreshed.access_token,
+              ghl_refresh_token: refreshed.refresh_token,
+              expires_at: new Date(Date.now() + refreshed.expires_in * 1000).toISOString(),
+            },
+          })
+          .eq("agent_id", user.id)
+          .eq("provider", "ghl");
+
+        console.log("✅ GHL token refreshed successfully");
+      } catch (refreshError) {
+        console.error("❌ Failed to refresh GHL token:", refreshError);
+        return NextResponse.json(
+          { error: "Failed to refresh GHL token. Please reconnect GHL in Settings → Integrations." },
+          { status: 401 }
+        );
+      }
+    }
+
     const ghlClient = new GHLClient(
-      ghlIntegration.config.ghl_access_token,
+      accessToken,
       ghlIntegration.config.ghl_location_id
     );
 
