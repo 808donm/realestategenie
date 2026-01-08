@@ -109,7 +109,7 @@ export default async function PaymentSuccessPage({
       paymentId = session.payment_intent;
 
       // Update invoice as paid (using admin client to bypass RLS)
-      await supabaseAdmin
+      const { data: updateResult, error: updateError } = await supabaseAdmin
         .from("pm_rent_payments")
         .update({
           status: "paid",
@@ -117,9 +117,15 @@ export default async function PaymentSuccessPage({
           payment_method: "stripe",
           stripe_payment_intent_id: session.payment_intent,
         })
-        .eq("id", id);
+        .eq("id", id)
+        .select();
 
-      console.log("✅ Stripe payment captured and invoice updated:", id);
+      if (updateError) {
+        console.error("❌ Error updating invoice:", updateError);
+        throw new Error(`Failed to update invoice: ${updateError.message}`);
+      }
+
+      console.log("✅ Stripe payment captured and invoice updated:", id, updateResult);
     } else if (isPayPalPayment && token) {
       // Handle PayPal payment (using admin client to bypass RLS)
       const leaseData = Array.isArray(invoice.pm_leases) ? invoice.pm_leases[0] : invoice.pm_leases;
@@ -142,7 +148,7 @@ export default async function PaymentSuccessPage({
       paymentId = capturedOrder.id;
 
       // Update invoice as paid (using admin client to bypass RLS)
-      await supabaseAdmin
+      const { data: updateResult, error: updateError } = await supabaseAdmin
         .from("pm_rent_payments")
         .update({
           status: "paid",
@@ -150,9 +156,15 @@ export default async function PaymentSuccessPage({
           payment_method: "paypal",
           paypal_payment_id: capturedOrder.id,
         })
-        .eq("id", id);
+        .eq("id", id)
+        .select();
 
-      console.log("✅ PayPal payment captured and invoice updated:", id);
+      if (updateError) {
+        console.error("❌ Error updating invoice:", updateError);
+        throw new Error(`Failed to update invoice: ${updateError.message}`);
+      }
+
+      console.log("✅ PayPal payment captured and invoice updated:", id, updateResult);
     }
 
     return (
