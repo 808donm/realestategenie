@@ -108,8 +108,8 @@ export default async function PaymentSuccessPage({
 
       paymentId = session.payment_intent;
 
-      // Update invoice as paid
-      await supabase
+      // Update invoice as paid (using admin client to bypass RLS)
+      await supabaseAdmin
         .from("pm_rent_payments")
         .update({
           status: "paid",
@@ -141,8 +141,8 @@ export default async function PaymentSuccessPage({
       const capturedOrder = await paypalClient.captureOrder(token);
       paymentId = capturedOrder.id;
 
-      // Update invoice as paid
-      await supabase
+      // Update invoice as paid (using admin client to bypass RLS)
+      await supabaseAdmin
         .from("pm_rent_payments")
         .update({
           status: "paid",
