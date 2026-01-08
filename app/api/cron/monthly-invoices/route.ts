@@ -4,17 +4,20 @@ import { GHLClient } from "@/lib/integrations/ghl-client";
 import { getCurrentRent } from "@/lib/invoicing/recurring-invoices";
 
 /**
- * Monthly Rent Invoice Automation
+ * Monthly Rent Invoice Automation (Timezone-Aware)
  *
- * Cron job that runs on the 1st of every month to create rent invoices
- * for all active leases.
+ * Runs HOURLY to generate invoices at midnight in each agent's timezone.
+ * This ensures invoices are generated on the 1st of the month at the correct local time.
+ *
+ * How it works:
+ * - Runs every hour at :00
+ * - Checks which agents are currently at midnight on the 1st in their timezone
+ * - Generates invoices only for those agents
+ * - Prevents duplicate invoices by checking existing records
  *
  * Setup in Vercel:
- * - Add cron schedule in vercel.json
- * - Or use external cron service (cron-job.org, EasyCron, etc.)
- *
- * Trigger manually: POST /api/cron/monthly-invoices
- * Required header: Authorization: Bearer [CRON_SECRET]
+ * - Schedule: "0 * * * *" (every hour)
+ * - Required header: Authorization: Bearer [CRON_SECRET]
  */
 
 // Use service role for cron jobs (bypasses RLS)
@@ -34,14 +37,64 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.log("🔄 Starting monthly invoice generation...");
+    console.log("🔄 Starting timezone-aware monthly invoice generation...");
 
-    const today = new Date();
-    const currentMonth = today.getMonth() + 1;
-    const currentYear = today.getFullYear();
+    const now = new Date();
+    const currentUTCHour = now.getUTCHours();
 
-    // Get all active leases (including month-to-month)
-    // Exclude 'terminating' and 'ended' leases as they should not receive invoices
+    console.log(`Current UTC time: ${now.toISOString()}, UTC Hour: ${currentUTCHour}`);
+
+    // Get all agents with their timezones
+    const { data: agentsData, error: agentsError } = await supabase
+      .from("agents")
+      .select("id, timezone");
+
+    if (agentsError) {
+      console.error("Error fetching agents:", agentsError);
+      return NextResponse.json(
+        { error: "Failed to fetch agents" },
+        { status: 500 }
+      );
+    }
+
+    // Determine which agents are at midnight (hour 0) on the 1st of the month in their timezone
+    const agentsAtTargetTime: string[] = [];
+
+    for (const agent of agentsData || []) {
+      const timezone = agent.timezone || 'America/New_York';
+
+      try {
+        // Get current time in agent's timezone
+        const localTime = new Date(now.toLocaleString('en-US', { timeZone: timezone }));
+        const localHour = localTime.getHours();
+        const localDay = localTime.getDate();
+
+        // Check if it's midnight (hour 0) on the 1st day of the month
+        if (localHour === 0 && localDay === 1) {
+          agentsAtTargetTime.push(agent.id);
+          console.log(`✅ Agent ${agent.id} is at midnight on the 1st (${timezone})`);
+        }
+      } catch (error) {
+        console.error(`Invalid timezone for agent ${agent.id}: ${timezone}`);
+      }
+    }
+
+    if (agentsAtTargetTime.length === 0) {
+      console.log("⏭️  No agents at target time (midnight on 1st) - skipping this hour");
+      return NextResponse.json({
+        success: true,
+        message: "No agents at target time",
+        agentsProcessed: 0,
+      });
+    }
+
+    console.log(`📊 Found ${agentsAtTargetTime.length} agents at midnight on the 1st`);
+
+    // Now get the current month/year in UTC (for record keeping)
+    const currentMonth = now.getUTCMonth() + 1;
+    const currentYear = now.getUTCFullYear();
+
+    // Get all active leases for agents at target time
     const { data: activeLeases, error: leasesError } = await supabase
       .from("pm_leases")
       .select(`
@@ -63,7 +116,8 @@ export async function POST(request: NextRequest) {
         pm_units (unit_number)
       `)
       .in("status", ["active", "month_to_month"])
-      .eq("auto_invoice_enabled", true);
+      .eq("auto_invoice_enabled", true)
+      .in("agent_id", agentsAtTargetTime);
 
     if (leasesError) {
       console.error("Error fetching leases:", leasesError);
