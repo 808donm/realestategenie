@@ -65,7 +65,8 @@ export async function GET() {
 
     const ghlIntegration = integrations?.find((i) => i.provider === "ghl");
     const qboIntegration = integrations?.find((i) => i.provider === "qbo");
-    const pandadocIntegration = integrations?.find((i) => i.provider === "pandadoc");
+    const paypalIntegration = integrations?.find((i) => i.provider === "paypal");
+    const stripeIntegration = integrations?.find((i) => i.provider === "stripe");
 
     return NextResponse.json({
       leads: {
@@ -89,9 +90,13 @@ export async function GET() {
           connected: qboIntegration?.status === "connected",
           lastUpdated: qboIntegration?.updated_at || null,
         },
-        pandadoc: {
-          connected: pandadocIntegration?.status === "connected",
-          lastUpdated: pandadocIntegration?.updated_at || null,
+        paypal: {
+          connected: paypalIntegration?.status === "connected",
+          lastUpdated: paypalIntegration?.updated_at || null,
+        },
+        stripe: {
+          connected: stripeIntegration?.status === "connected",
+          lastUpdated: stripeIntegration?.updated_at || null,
         },
       },
     });

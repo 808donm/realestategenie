@@ -16,7 +16,11 @@ type IntegrationHealth = {
     connected: boolean;
     lastUpdated: string | null;
   };
-  pandadoc?: {
+  paypal?: {
+    connected: boolean;
+    lastUpdated: string | null;
+  };
+  stripe?: {
     connected: boolean;
     lastUpdated: string | null;
   };
@@ -160,21 +164,39 @@ export default function IntegrationHealth() {
             </div>
           )}
 
-          {/* PandaDoc */}
-          {health.pandadoc && (
+          {/* PayPal */}
+          {health.paypal && (
             <div className="flex items-center justify-between p-4 border rounded-lg">
               <div className="flex items-center gap-3">
-                {getHealthIcon(health.pandadoc.connected)}
+                {getHealthIcon(health.paypal.connected)}
                 <div>
-                  <div className="font-semibold">PandaDoc</div>
+                  <div className="font-semibold">PayPal</div>
                   <div className="text-sm text-muted-foreground">
-                    {health.pandadoc.connected
-                      ? `Last sync: ${formatLastUpdated(health.pandadoc.lastUpdated)}`
+                    {health.paypal.connected
+                      ? `Last sync: ${formatLastUpdated(health.paypal.lastUpdated)}`
                       : "Not configured"}
                   </div>
                 </div>
               </div>
-              {getHealthStatus(health.pandadoc.connected)}
+              {getHealthStatus(health.paypal.connected)}
+            </div>
+          )}
+
+          {/* Stripe */}
+          {health.stripe && (
+            <div className="flex items-center justify-between p-4 border rounded-lg">
+              <div className="flex items-center gap-3">
+                {getHealthIcon(health.stripe.connected)}
+                <div>
+                  <div className="font-semibold">Stripe</div>
+                  <div className="text-sm text-muted-foreground">
+                    {health.stripe.connected
+                      ? `Last sync: ${formatLastUpdated(health.stripe.lastUpdated)}`
+                      : "Not configured"}
+                  </div>
+                </div>
+              </div>
+              {getHealthStatus(health.stripe.connected)}
             </div>
           )}
 
