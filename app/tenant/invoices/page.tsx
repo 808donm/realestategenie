@@ -179,23 +179,11 @@ export default async function TenantInvoicesPage() {
                             {payment.status.toUpperCase()}
                           </Badge>
                           {payment.status === "pending" || payment.status === "overdue" ? (
-                            <>
-                              {payment.ghl_invoice_id && payment.ghl_payment_url && !payment.ghl_payment_url.includes('/tenant/invoices') ? (
-                                <a
-                                  href={payment.ghl_payment_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  <Button size="sm" className="mt-2 w-full">
-                                    Pay via PayPal →
-                                  </Button>
-                                </a>
-                              ) : (
-                                <Button size="sm" className="mt-2 w-full" disabled>
-                                  Payment Processing Setup Required
-                                </Button>
-                              )}
-                            </>
+                            <Link href={`/tenant/invoices/${payment.id}/pay`}>
+                              <Button size="sm" className="mt-2 w-full">
+                                Pay Now →
+                              </Button>
+                            </Link>
                           ) : null}
                         </div>
                       </div>
