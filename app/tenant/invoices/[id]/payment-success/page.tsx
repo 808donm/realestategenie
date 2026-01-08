@@ -1,4 +1,5 @@
 import { supabaseServer } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -82,11 +83,12 @@ export default async function PaymentSuccessPage({
     let paymentAmount = invoice.amount;
 
     if (isStripePayment && session_id) {
-      // Handle Stripe payment
-      const { data: stripeIntegration } = await supabase
+      // Handle Stripe payment (using admin client to bypass RLS)
+      const leaseData = Array.isArray(invoice.pm_leases) ? invoice.pm_leases[0] : invoice.pm_leases;
+      const { data: stripeIntegration } = await supabaseAdmin
         .from("integrations")
         .select("config")
-        .eq("agent_id", invoice.pm_leases.agent_id)
+        .eq("agent_id", leaseData.agent_id)
         .eq("provider", "stripe")
         .eq("status", "connected")
         .single();
@@ -119,11 +121,12 @@ export default async function PaymentSuccessPage({
 
       console.log("✅ Stripe payment captured and invoice updated:", id);
     } else if (isPayPalPayment && token) {
-      // Handle PayPal payment
-      const { data: paypalIntegration } = await supabase
+      // Handle PayPal payment (using admin client to bypass RLS)
+      const leaseData = Array.isArray(invoice.pm_leases) ? invoice.pm_leases[0] : invoice.pm_leases;
+      const { data: paypalIntegration } = await supabaseAdmin
         .from("integrations")
         .select("config")
-        .eq("agent_id", invoice.pm_leases.agent_id)
+        .eq("agent_id", leaseData.agent_id)
         .eq("provider", "paypal")
         .eq("status", "connected")
         .single();
