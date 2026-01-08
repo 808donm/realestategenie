@@ -111,21 +111,36 @@ export async function POST(request: NextRequest) {
     const dueDay = lease.rent_due_day || 1;
     const dueDate = new Date(year, month - 1, dueDay);
 
-    // Create payment link in GHL
+    // Create invoice in GHL
     const monthName = new Date(year, month - 1).toLocaleDateString("en-US", {
       month: "long",
       year: "numeric",
     });
 
-    const { id: paymentLinkId, url: paymentUrl } = await ghlClient.createPaymentLink({
+    const { id: ghlInvoiceId, invoice } = await ghlClient.createInvoice({
       locationId: ghlIntegration.config.ghl_location_id,
       contactId: tenantContactId,
-      amount: parseFloat(lease.monthly_rent.toString()),
-      name: `${monthName} Rent - ${fullAddress}`,
-      description: `Monthly rent payment for ${fullAddress}. Due: ${dueDate.toLocaleDateString()}`,
+      title: `${monthName} Rent - ${fullAddress}`,
+      currency: "USD",
+      dueDate: dueDate.toISOString().split("T")[0],
+      items: [
+        {
+          name: "Monthly Rent",
+          description: `Rent for ${fullAddress}`,
+          price: parseFloat(lease.monthly_rent.toString()),
+          quantity: 1,
+        },
+      ],
     });
 
-    console.log(`✅ Monthly rent payment link created in GHL: ${paymentLinkId}`);
+    console.log(`✅ GHL Invoice created: ${ghlInvoiceId}`);
+
+    // Send the invoice to the tenant
+    await ghlClient.sendInvoice(ghlInvoiceId);
+    console.log(`✅ Invoice sent to tenant via GHL`);
+
+    // GHL invoice URL format
+    const paymentUrl = `https://payments.msgsndr.com/invoice/${ghlInvoiceId}`;
 
     // Create rent payment record
     const { data: newPayment, error: insertError } = await supabase
@@ -140,7 +155,7 @@ export async function POST(request: NextRequest) {
         due_date: dueDate.toISOString().split("T")[0],
         status: "pending",
         payment_type: "monthly",
-        ghl_invoice_id: paymentLinkId,
+        ghl_invoice_id: ghlInvoiceId,
         ghl_payment_url: paymentUrl,
       })
       .select()
@@ -187,7 +202,7 @@ export async function POST(request: NextRequest) {
           security_deposit: 0,
           pet_deposit: 0,
           due_date: dueDate.toISOString().split("T")[0],
-          ghl_invoice_id: paymentLinkId,
+          ghl_invoice_id: ghlInvoiceId,
           invoice_type: "monthly_rent",
         });
 
@@ -215,38 +230,6 @@ export async function POST(request: NextRequest) {
       // Don't fail the request - invoice is created even if QBO sync fails
     }
 
-    // Send payment link to tenant via GHL email
-    try {
-      await ghlClient.sendEmail({
-        contactId: tenantContactId,
-        subject: `${monthName} Rent Payment - ${fullAddress}`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2>${monthName} Rent Payment</h2>
-            <p>Your rent payment for ${fullAddress} is now due.</p>
-            <div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <div style="display: flex; justify-content: space-between; margin: 10px 0;">
-                <span>Monthly Rent</span>
-                <strong>$${lease.monthly_rent.toLocaleString()}</strong>
-              </div>
-              <div style="border-top: 2px solid #ddd; margin-top: 15px; padding-top: 15px; display: flex; justify-content: space-between;">
-                <strong>Total Due:</strong>
-                <strong style="font-size: 1.2em;">$${lease.monthly_rent.toLocaleString()}</strong>
-              </div>
-            </div>
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${paymentUrl}" style="background: #4F46E5; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">Pay Now with PayPal</a>
-            </div>
-            <p style="color: #666; font-size: 14px;">Payment is due by ${dueDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}.</p>
-          </div>
-        `,
-      });
-      console.log(`✅ Payment link email sent to tenant`);
-    } catch (emailError) {
-      console.error("⚠️ Failed to send payment link email:", emailError);
-      // Don't fail the request - payment link is created
-    }
-
     // Revalidate invoices page
     revalidatePath("/app/pm/invoices");
 
@@ -254,7 +237,7 @@ export async function POST(request: NextRequest) {
       success: true,
       message: "Monthly rent invoice created successfully",
       invoice_id: newPayment.id,
-      ghl_invoice_id: paymentLinkId,
+      ghl_invoice_id: ghlInvoiceId,
       payment_url: paymentUrl,
       qbo_invoice_id: qboInvoiceId,
       amount: lease.monthly_rent,
