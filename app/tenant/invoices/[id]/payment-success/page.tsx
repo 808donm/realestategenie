@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
-import TenantNav from "@/app/tenant/components/tenant-nav";
+import TenantNav from "../../../components/tenant-nav";
 import { createPayPalClient } from "@/lib/integrations/paypal-client";
 
 export const dynamic = "force-dynamic";

@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowLeft, CreditCard } from "lucide-react";
-import TenantNav from "@/app/tenant/components/tenant-nav";
+import TenantNav from "../../../components/tenant-nav";
 import PayPalPaymentButton from "./paypal-payment-button";
 
 export const dynamic = "force-dynamic";
@@ -38,7 +38,7 @@ export default async function TenantPaymentPage({
   // Get invoice details
   const { data: payment, error } = await supabase
     .from("pm_rent_payments")
-    .select(\`
+    .select(`
       *,
       pm_leases (
         id,
@@ -46,7 +46,7 @@ export default async function TenantPaymentPage({
         pm_properties (address, city, state_province),
         pm_units (unit_number)
       )
-    \`)
+    `)
     .eq("id", id)
     .eq("lease_id", tenantUser.pm_leases.id)
     .single();
@@ -64,7 +64,7 @@ export default async function TenantPaymentPage({
   const property = Array.isArray(lease?.pm_properties) ? lease.pm_properties[0] : lease?.pm_properties;
   const unit = Array.isArray(lease?.pm_units) ? lease.pm_units[0] : lease?.pm_units;
   const propertyAddress = property?.address || "Property";
-  const fullAddress = unit ? \`\${propertyAddress}, Unit \${unit.unit_number}\` : propertyAddress;
+  const fullAddress = unit ? `${propertyAddress}, Unit ${unit.unit_number}` : propertyAddress;
 
   const dueDate = new Date(payment.due_date);
   const isOverdue = payment.status === "pending" && dueDate < new Date();
@@ -131,7 +131,7 @@ export default async function TenantPaymentPage({
 
             <div>
               <div className="text-sm text-muted-foreground">Due Date</div>
-              <div className={\`font-medium \${isOverdue ? "text-red-600" : ""}\`}>
+              <div className={`font-medium ${isOverdue ? "text-red-600" : ""}`}>
                 {dueDate.toLocaleDateString("en-US", {
                   month: "long",
                   day: "numeric",
@@ -144,17 +144,17 @@ export default async function TenantPaymentPage({
             <div className="border-t pt-4 space-y-2">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Rent Amount</span>
-                <span className="font-medium">\${parseFloat(payment.amount.toString()).toFixed(2)}</span>
+                <span className="font-medium">${parseFloat(payment.amount.toString()).toFixed(2)}</span>
               </div>
               {payment.late_fee_amount && payment.late_fee_amount > 0 && (
                 <div className="flex justify-between text-red-600">
                   <span>Late Fee</span>
-                  <span className="font-medium">\${parseFloat(payment.late_fee_amount.toString()).toFixed(2)}</span>
+                  <span className="font-medium">${parseFloat(payment.late_fee_amount.toString()).toFixed(2)}</span>
                 </div>
               )}
               <div className="flex justify-between text-lg font-bold border-t pt-2">
                 <span>Total Due</span>
-                <span>\${totalAmount.toFixed(2)}</span>
+                <span>${totalAmount.toFixed(2)}</span>
               </div>
             </div>
           </CardContent>
@@ -172,7 +172,7 @@ export default async function TenantPaymentPage({
             <PayPalPaymentButton
               invoiceId={payment.id}
               amount={totalAmount}
-              description={\`\${paymentTypeLabels[payment.payment_type as keyof typeof paymentTypeLabels]} - \${fullAddress}\`}
+              description={`${paymentTypeLabels[payment.payment_type as keyof typeof paymentTypeLabels]} - ${fullAddress}`}
             />
           </CardContent>
         </Card>
