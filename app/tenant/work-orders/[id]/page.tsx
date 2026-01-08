@@ -262,6 +262,23 @@ export default async function WorkOrderDetailPage({
           </CardContent>
         </Card>
 
+        {/* Notes from Property Manager */}
+        {workOrder.notes && (
+          <Card className="border-blue-200 bg-blue-50">
+            <CardHeader>
+              <CardTitle className="text-blue-900">Notes from Property Manager</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="whitespace-pre-wrap text-sm text-blue-900">{workOrder.notes}</p>
+              {workOrder.updated_at !== workOrder.created_at && (
+                <div className="text-xs text-blue-700 mt-3 pt-3 border-t border-blue-200">
+                  Last updated: {new Date(workOrder.updated_at).toLocaleString()}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Rating Form */}
         {canRate && (
           <Card>

@@ -116,6 +116,18 @@ export default async function PMWorkOrderDetailPage({
             </Card>
           )}
 
+          {/* Notes */}
+          {workOrder.notes && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Notes</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="whitespace-pre-wrap text-sm">{workOrder.notes}</p>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Update Form */}
           <WorkOrderUpdateForm workOrder={workOrder} />
         </div>
