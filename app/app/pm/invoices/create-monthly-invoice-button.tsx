@@ -23,8 +23,8 @@ interface Lease {
   monthly_rent: number;
   ghl_contact_id?: string;
   tenant_contact_id?: string;
-  pm_properties?: { address: string };
-  pm_units?: { unit_number: string };
+  pm_properties?: { address: string }[] | { address: string };
+  pm_units?: { unit_number: string }[] | { unit_number: string };
 }
 
 interface CreateMonthlyInvoiceButtonProps {
@@ -86,8 +86,12 @@ export default function CreateMonthlyInvoiceButton({ leases }: CreateMonthlyInvo
   };
 
   const getPropertyAddress = (lease: Lease) => {
-    const property = lease.pm_properties;
-    const unit = lease.pm_units;
+    const property = Array.isArray(lease.pm_properties)
+      ? lease.pm_properties[0]
+      : lease.pm_properties;
+    const unit = Array.isArray(lease.pm_units)
+      ? lease.pm_units[0]
+      : lease.pm_units;
     if (!property) return "Unknown Property";
     return unit ? `${property.address}, Unit ${unit.unit_number}` : property.address;
   };
