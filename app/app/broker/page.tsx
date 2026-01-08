@@ -16,6 +16,7 @@ import {
   Flame,
   ThermometerSun,
 } from "lucide-react";
+import { checkFeatureAccess } from "@/lib/subscriptions/server-utils";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -37,6 +38,12 @@ export default async function BrokerDashboardPage() {
 
   if (!agent || (agent.role !== "broker" && agent.role !== "admin")) {
     redirect("/app/dashboard");
+  }
+
+  // Check if user has access to broker dashboard feature
+  const hasBrokerDashboard = await checkFeatureAccess("broker-dashboard");
+  if (!hasBrokerDashboard) {
+    redirect("/app/billing?feature=broker-dashboard");
   }
 
   // Get all agents under this broker
