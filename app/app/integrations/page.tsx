@@ -2,6 +2,7 @@ import { supabaseServer } from "@/lib/supabase/server";
 import GHLIntegrationCard from "./ghl-card";
 import QBOIntegrationCard from "./qbo-card";
 import PayPalIntegrationCard from "./paypal-card";
+import StripeIntegrationCard from "./stripe-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import IntegrationsNotifications from "./notifications";
 
@@ -25,6 +26,7 @@ export default async function IntegrationsPage() {
   const ghlIntegration = integrations?.find((i) => i.provider === "ghl");
   const qboIntegration = integrations?.find((i) => i.provider === "qbo");
   const paypalIntegration = integrations?.find((i) => i.provider === "paypal");
+  const stripeIntegration = integrations?.find((i) => i.provider === "stripe");
 
   return (
     <div className="space-y-6">
@@ -41,6 +43,7 @@ export default async function IntegrationsPage() {
         <GHLIntegrationCard integration={ghlIntegration} />
         <QBOIntegrationCard integration={qboIntegration} />
         <PayPalIntegrationCard integration={paypalIntegration} />
+        <StripeIntegrationCard integration={stripeIntegration} />
       </div>
 
       <Card>

@@ -7,6 +7,7 @@ import Link from "next/link";
 import { ArrowLeft, CreditCard } from "lucide-react";
 import TenantNav from "../../../components/tenant-nav";
 import PayPalPaymentButton from "./paypal-payment-button";
+import StripePaymentButton from "./stripe-payment-button";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -165,10 +166,29 @@ export default async function TenantPaymentPage({
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CreditCard className="h-5 w-5" />
-              Payment Method
+              Payment Methods
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-3">
+            <div className="text-sm text-muted-foreground mb-4">
+              Choose your preferred payment method:
+            </div>
+
+            <StripePaymentButton
+              invoiceId={payment.id}
+              amount={totalAmount}
+              description={`${paymentTypeLabels[payment.payment_type as keyof typeof paymentTypeLabels]} - ${fullAddress}`}
+            />
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">Or</span>
+              </div>
+            </div>
+
             <PayPalPaymentButton
               invoiceId={payment.id}
               amount={totalAmount}
@@ -179,7 +199,7 @@ export default async function TenantPaymentPage({
 
         {/* Security Notice */}
         <div className="text-sm text-muted-foreground text-center">
-          <p>🔒 Your payment is processed securely through PayPal</p>
+          <p>🔒 Your payment is processed securely</p>
         </div>
       </div>
     </div>

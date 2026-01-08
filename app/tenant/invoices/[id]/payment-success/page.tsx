@@ -6,6 +6,7 @@ import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
 import TenantNav from "../../../components/tenant-nav";
 import { createPayPalClient } from "@/lib/integrations/paypal-client";
+import { createStripeClient } from "@/lib/integrations/stripe-client";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -15,13 +16,17 @@ export default async function PaymentSuccessPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ token?: string }>;
+  searchParams: Promise<{ token?: string; session_id?: string; payment_type?: string }>;
 }) {
   const { id } = await params;
-  const { token } = await searchParams;
+  const { token, session_id, payment_type } = await searchParams;
 
-  if (!token) {
-    redirect(`/tenant/invoices/${id}/pay?error=no_token`);
+  // Determine payment method
+  const isStripePayment = payment_type === "stripe" || session_id;
+  const isPayPalPayment = token;
+
+  if (!isStripePayment && !isPayPalPayment) {
+    redirect(`/tenant/invoices/${id}/pay?error=no_payment_data`);
   }
 
   const supabase = await supabaseServer();
@@ -43,7 +48,8 @@ export default async function PaymentSuccessPage({
   }
 
   // If already processed, show success
-  if (invoice.status === "paid" && invoice.paypal_payment_id) {
+  if (invoice.status === "paid" && (invoice.paypal_payment_id || invoice.stripe_payment_intent_id)) {
+    const paymentId = invoice.paypal_payment_id || invoice.stripe_payment_intent_id;
     return (
       <div className="min-h-screen bg-gray-50">
         <TenantNav />
@@ -58,7 +64,7 @@ export default async function PaymentSuccessPage({
             <CardContent className="space-y-4">
               <p>Your payment has been processed successfully.</p>
               <p className="text-sm text-muted-foreground">
-                Payment ID: {invoice.paypal_payment_id}
+                Payment ID: {paymentId}
               </p>
               <Link href="/tenant/invoices">
                 <Button className="w-full">View All Invoices</Button>
@@ -72,36 +78,79 @@ export default async function PaymentSuccessPage({
 
   // Capture the payment
   try {
-    // Get agent's PayPal integration
-    const { data: paypalIntegration } = await supabase
-      .from("integrations")
-      .select("config")
-      .eq("agent_id", invoice.pm_leases.agent_id)
-      .eq("provider", "paypal")
-      .eq("status", "connected")
-      .single();
+    let paymentId = "";
+    let paymentAmount = invoice.amount;
 
-    if (!paypalIntegration?.config) {
-      throw new Error("PayPal not configured");
+    if (isStripePayment && session_id) {
+      // Handle Stripe payment
+      const { data: stripeIntegration } = await supabase
+        .from("integrations")
+        .select("config")
+        .eq("agent_id", invoice.pm_leases.agent_id)
+        .eq("provider", "stripe")
+        .eq("status", "connected")
+        .single();
+
+      if (!stripeIntegration?.config) {
+        throw new Error("Stripe not configured");
+      }
+
+      const stripeClient = createStripeClient(stripeIntegration.config);
+
+      // Retrieve the session to confirm payment
+      const session = await stripeClient.getCheckoutSession(session_id);
+
+      if (session.payment_status !== "paid") {
+        throw new Error("Payment not completed");
+      }
+
+      paymentId = session.payment_intent;
+
+      // Update invoice as paid
+      await supabase
+        .from("pm_rent_payments")
+        .update({
+          status: "paid",
+          paid_at: new Date().toISOString(),
+          payment_method: "stripe",
+          stripe_payment_intent_id: session.payment_intent,
+        })
+        .eq("id", id);
+
+      console.log("✅ Stripe payment captured and invoice updated:", id);
+    } else if (isPayPalPayment && token) {
+      // Handle PayPal payment
+      const { data: paypalIntegration } = await supabase
+        .from("integrations")
+        .select("config")
+        .eq("agent_id", invoice.pm_leases.agent_id)
+        .eq("provider", "paypal")
+        .eq("status", "connected")
+        .single();
+
+      if (!paypalIntegration?.config) {
+        throw new Error("PayPal not configured");
+      }
+
+      const paypalClient = createPayPalClient(paypalIntegration.config);
+
+      // Capture the order
+      const capturedOrder = await paypalClient.captureOrder(token);
+      paymentId = capturedOrder.id;
+
+      // Update invoice as paid
+      await supabase
+        .from("pm_rent_payments")
+        .update({
+          status: "paid",
+          paid_at: new Date().toISOString(),
+          payment_method: "paypal",
+          paypal_payment_id: capturedOrder.id,
+        })
+        .eq("id", id);
+
+      console.log("✅ PayPal payment captured and invoice updated:", id);
     }
-
-    const paypalClient = createPayPalClient(paypalIntegration.config);
-
-    // Capture the order
-    const capturedOrder = await paypalClient.captureOrder(token);
-
-    // Update invoice as paid
-    await supabase
-      .from("pm_rent_payments")
-      .update({
-        status: "paid",
-        paid_at: new Date().toISOString(),
-        payment_method: "paypal",
-        paypal_payment_id: capturedOrder.id,
-      })
-      .eq("id", id);
-
-    console.log("✅ Payment captured and invoice updated:", id);
 
     return (
       <div className="min-h-screen bg-gray-50">
@@ -115,9 +164,9 @@ export default async function PaymentSuccessPage({
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p>Your payment of ${parseFloat(invoice.amount.toString()).toFixed(2)} has been processed successfully.</p>
+              <p>Your payment of ${parseFloat(paymentAmount.toString()).toFixed(2)} has been processed successfully.</p>
               <p className="text-sm text-muted-foreground">
-                Payment ID: {capturedOrder.id}
+                Payment ID: {paymentId}
               </p>
               <p className="text-sm text-muted-foreground">
                 Thank you for your payment. You will receive a confirmation email shortly.
