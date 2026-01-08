@@ -188,7 +188,7 @@ export async function POST(request: NextRequest) {
           pet_deposit: 0,
           due_date: dueDate.toISOString().split("T")[0],
           ghl_invoice_id: paymentLinkId,
-          invoice_type: "monthly",
+          invoice_type: "monthly_rent",
         });
 
         // Update payment record with QBO IDs
