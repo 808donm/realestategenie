@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
+import { revalidatePath } from "next/cache";
 
 /**
  * PM Work Order Update API
@@ -67,6 +68,12 @@ export async function PATCH(
       console.error("Error updating work order:", updateError);
       return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
+
+    // Revalidate relevant pages to clear cache
+    revalidatePath(`/app/pm/work-orders/${id}`);
+    revalidatePath("/app/pm/work-orders");
+    revalidatePath("/tenant/work-orders");
+    revalidatePath(`/tenant/work-orders/${id}`);
 
     return NextResponse.json({
       success: true,

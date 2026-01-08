@@ -50,7 +50,14 @@ export default function WorkOrderUpdateForm({ workOrder }: WorkOrderUpdateFormPr
       }
 
       setSuccess("Work order updated successfully!");
+
+      // Force a full refresh of the page data
       router.refresh();
+
+      // Small delay to let the cache revalidation complete, then refresh again
+      setTimeout(() => {
+        router.refresh();
+      }, 500);
     } catch (err) {
       setError("An error occurred. Please try again.");
     } finally {
