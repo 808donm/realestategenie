@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import RatingForm from "./rating-form";
-import TenantNav from "../../components/tenant-nav";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -75,8 +74,7 @@ export default async function WorkOrderDetailPage({
   const canRate = workOrder.status === "completed" && !workOrder.tenant_rating;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <TenantNav />
+    <>
 
       {/* Page Header */}
       <div className="bg-white border-b">
@@ -315,6 +313,6 @@ export default async function WorkOrderDetailPage({
           </Card>
         )}
       </div>
-    </div>
+    </>
   );
 }

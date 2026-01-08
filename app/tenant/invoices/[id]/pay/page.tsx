@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowLeft, CreditCard } from "lucide-react";
-import TenantNav from "../../../components/tenant-nav";
 import PayPalPaymentButton from "./paypal-payment-button";
 import StripePaymentButton from "./stripe-payment-button";
 
@@ -79,8 +78,7 @@ export default async function TenantPaymentPage({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <TenantNav />
+    <>
 
       <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
         {/* Back Button */}
@@ -202,6 +200,6 @@ export default async function TenantPaymentPage({
           <p>🔒 Your payment is processed securely</p>
         </div>
       </div>
-    </div>
+    </>
   );
 }

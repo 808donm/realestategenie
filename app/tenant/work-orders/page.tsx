@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import TenantNav from "../components/tenant-nav";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -57,8 +56,7 @@ export default async function WorkOrdersPage() {
   const completedCount = workOrders?.filter((wo) => wo.status === "completed").length || 0;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <TenantNav />
+    <>
 
       {/* Page Header */}
       <div className="bg-white border-b">
@@ -159,6 +157,6 @@ export default async function WorkOrdersPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </>
   );
 }

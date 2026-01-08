@@ -10,7 +10,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Link from "next/link";
 import { Upload, X } from "lucide-react";
-import TenantNav from "../../components/tenant-nav";
 
 export default function NewWorkOrderPage() {
   const router = useRouter();
@@ -110,8 +109,7 @@ export default function NewWorkOrderPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <TenantNav />
+    <>
 
       {/* Page Header */}
       <div className="bg-white border-b">
@@ -319,6 +317,6 @@ export default function NewWorkOrderPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </>
   );
 }

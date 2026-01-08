@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { DollarSign, Wrench, FileText, MessageSquare, Calendar } from "lucide-react";
-import TenantNav from "../components/tenant-nav";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -115,9 +114,7 @@ export default async function TenantDashboardPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <TenantNav />
-
+    <>
       {/* Page Header */}
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 py-4">
@@ -349,6 +346,6 @@ export default async function TenantDashboardPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </>
   );
 }

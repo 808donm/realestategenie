@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
-import TenantNav from "../../../components/tenant-nav";
 import { createPayPalClient } from "@/lib/integrations/paypal-client";
 import { createStripeClient } from "@/lib/integrations/stripe-client";
 
@@ -52,8 +51,7 @@ export default async function PaymentSuccessPage({
   if (invoice.status === "paid" && (invoice.paypal_payment_id || invoice.stripe_payment_intent_id)) {
     const paymentId = invoice.paypal_payment_id || invoice.stripe_payment_intent_id;
     return (
-      <div className="min-h-screen bg-gray-50">
-        <TenantNav />
+      <>
         <div className="max-w-2xl mx-auto px-4 py-12">
           <Card>
             <CardHeader>
@@ -168,8 +166,7 @@ export default async function PaymentSuccessPage({
     }
 
     return (
-      <div className="min-h-screen bg-gray-50">
-        <TenantNav />
+      <>
         <div className="max-w-2xl mx-auto px-4 py-12">
           <Card>
             <CardHeader>
@@ -198,8 +195,7 @@ export default async function PaymentSuccessPage({
     console.error("Payment capture error:", error);
 
     return (
-      <div className="min-h-screen bg-gray-50">
-        <TenantNav />
+      <>
         <div className="max-w-2xl mx-auto px-4 py-12">
           <Card>
             <CardHeader>
