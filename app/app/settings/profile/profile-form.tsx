@@ -35,6 +35,7 @@ type Agent = {
   headshot_url: string | null;
   company_logo_url: string | null;
   agency_name: string | null;
+  timezone: string | null;
 };
 
 export default function ProfileForm({ agent }: { agent: Agent }) {
@@ -47,6 +48,7 @@ export default function ProfileForm({ agent }: { agent: Agent }) {
   const [locationsCsv, setLocationsCsv] = useState(
     (agent.locations_served ?? []).join(", ")
   );
+  const [timezone, setTimezone] = useState(agent.timezone ?? "America/New_York");
 
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -198,6 +200,7 @@ export default function ProfileForm({ agent }: { agent: Agent }) {
         agency_name: agencyName.trim() || null,
         phone_e164: normalizedPhone,
         locations_served: locations,
+        timezone: timezone,
         updated_at: new Date().toISOString(),
       })
       .eq("id", agent.id);
@@ -342,6 +345,28 @@ export default function ProfileForm({ agent }: { agent: Agent }) {
             placeholder="Honolulu, Kailua, Kapolei"
             style={{ width: "100%", padding: 10 }}
           />
+        </div>
+
+        <div>
+          <label style={{ display: "block", fontSize: 12, marginBottom: 6, fontWeight: 600 }}>
+            Timezone
+          </label>
+          <select
+            value={timezone}
+            onChange={(e) => setTimezone(e.target.value)}
+            style={{ width: "100%", padding: 10, borderRadius: 6, border: "1px solid #d1d5db" }}
+          >
+            <option value="America/New_York">Eastern Time (ET)</option>
+            <option value="America/Chicago">Central Time (CT)</option>
+            <option value="America/Denver">Mountain Time (MT)</option>
+            <option value="America/Phoenix">Mountain Time - Arizona (no DST)</option>
+            <option value="America/Los_Angeles">Pacific Time (PT)</option>
+            <option value="America/Anchorage">Alaska Time (AKT)</option>
+            <option value="Pacific/Honolulu">Hawaii-Aleutian Time (HST)</option>
+          </select>
+          <p style={{ fontSize: 11, opacity: 0.6, margin: "6px 0 0 0" }}>
+            Your timezone is used to generate monthly rent invoices at midnight on the 1st of each month in your local time
+          </p>
         </div>
 
         <button
