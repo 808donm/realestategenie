@@ -5,7 +5,7 @@ import Link from "next/link";
 export default async function AdminPlansPage() {
   await requireAdmin();
 
-  const adminSupabase = await supabaseAdmin();
+  const adminSupabase = supabaseAdmin;
 
   // Get all plans with subscriber counts
   const { data: plans } = await adminSupabase

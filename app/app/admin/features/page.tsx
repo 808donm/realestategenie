@@ -5,7 +5,7 @@ import Link from "next/link";
 export default async function AdminFeaturesPage() {
   await requireAdmin();
 
-  const adminSupabase = await supabaseAdmin();
+  const adminSupabase = supabaseAdmin;
 
   // Get all features and plans
   const [{ data: features }, { data: plans }] = await Promise.all([

@@ -7,7 +7,7 @@ export default async function AdminOverviewPage() {
   await requireAdmin();
 
   const supabase = await supabaseServer();
-  const adminSupabase = await supabaseAdmin();
+  const adminSupabase = supabaseAdmin;
 
   // Get statistics with error handling
   const results = await Promise.all([

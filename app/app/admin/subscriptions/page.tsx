@@ -5,7 +5,7 @@ import Link from "next/link";
 export default async function AdminSubscriptionsPage() {
   await requireAdmin();
 
-  const adminSupabase = await supabaseAdmin();
+  const adminSupabase = supabaseAdmin;
 
   // Get all agents with their subscription details
   const { data: agents } = await adminSupabase

@@ -22,10 +22,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const supabase = await supabaseAdmin();
-
     // Get all agents with active subscriptions
-    const { data: agents, error: agentsError } = await supabase
+    const { data: agents, error: agentsError } = await supabaseAdmin
       .from("agents")
       .select(`
         id,
@@ -68,7 +66,7 @@ export async function GET(request: NextRequest) {
 
     // Get count of new unprocessed alerts (created in last hour)
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-    const { count: newAlerts } = await supabase
+    const { count: newAlerts } = await supabaseAdmin
       .from("usage_alerts")
       .select("*", { count: "exact", head: true })
       .gte("created_at", oneHourAgo)

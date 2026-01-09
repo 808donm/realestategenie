@@ -52,10 +52,8 @@ function calculateUsageStatus(current: number, limit: number): UsageStatus {
  * Get current usage for an agent
  */
 export async function getAgentUsage(agentId: string): Promise<AgentUsage | null> {
-  const supabase = await supabaseAdmin();
-
   // Try to get existing usage record
-  let { data: usage } = await supabase
+  let { data: usage } = await supabaseAdmin
     .from("agent_usage")
     .select("*")
     .eq("agent_id", agentId)
@@ -67,14 +65,14 @@ export async function getAgentUsage(agentId: string): Promise<AgentUsage | null>
 
   if (isStale) {
     // Call the calculate function
-    const { data: calculated } = await supabase
+    const { data: calculated } = await supabaseAdmin
       .rpc("calculate_agent_usage", { agent_uuid: agentId });
 
     if (calculated && calculated.length > 0) {
       const calc = calculated[0];
 
       // Upsert the usage record
-      const { data: upserted } = await supabase
+      const { data: upserted } = await supabaseAdmin
         .from("agent_usage")
         .upsert({
           agent_id: agentId,
@@ -145,9 +143,7 @@ export async function getSubscriptionStatus(agentId: string): Promise<Subscripti
  * Check if user has access to a specific feature
  */
 export async function hasFeatureAccess(agentId: string, featureSlug: string): Promise<boolean> {
-  const supabase = await supabaseAdmin();
-
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .rpc("has_feature_access", {
       agent_uuid: agentId,
       feature_slug: featureSlug
@@ -224,12 +220,10 @@ export async function createUsageAlert(
   limitCount: number,
   usagePercentage: number
 ): Promise<UsageAlert | null> {
-  const supabase = await supabaseAdmin();
-
   // Check if alert already exists for this resource in the last 24 hours
   const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-  const { data: existing } = await supabase
+  const { data: existing } = await supabaseAdmin
     .from("usage_alerts")
     .select("*")
     .eq("agent_id", agentId)
@@ -245,7 +239,7 @@ export async function createUsageAlert(
   }
 
   // Create new alert
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from("usage_alerts")
     .insert({
       agent_id: agentId,
@@ -309,9 +303,7 @@ export async function checkUsageAndCreateAlerts(agentId: string): Promise<void> 
  * Resolve an alert
  */
 export async function resolveUsageAlert(alertId: string): Promise<void> {
-  const supabase = await supabaseAdmin();
-
-  await supabase
+  await supabaseAdmin
     .from("usage_alerts")
     .update({
       is_resolved: true,
@@ -324,9 +316,7 @@ export async function resolveUsageAlert(alertId: string): Promise<void> {
  * Mark alert email as sent
  */
 export async function markAlertEmailSent(alertId: string): Promise<void> {
-  const supabase = await supabaseAdmin();
-
-  await supabase
+  await supabaseAdmin
     .from("usage_alerts")
     .update({
       email_sent: true,

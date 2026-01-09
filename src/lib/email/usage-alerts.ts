@@ -243,10 +243,8 @@ export async function processPendingUsageAlerts(): Promise<{
   sent: number;
   errors: number;
 }> {
-  const supabase = await supabaseAdmin();
-
   // Get all unresolved alerts that haven't had emails sent
-  const { data: pendingAlerts } = await supabase
+  const { data: pendingAlerts } = await supabaseAdmin
     .from("usage_alerts")
     .select(`
       *,
@@ -286,7 +284,7 @@ export async function processPendingUsageAlerts(): Promise<{
       // Get suggested upgrade plan
       let suggestedPlan = null;
       if (plan.tier_level < 5) {
-        const { data: nextPlan } = await supabase
+        const { data: nextPlan } = await supabaseAdmin
           .from("subscription_plans")
           .select("*")
           .eq("is_active", true)
