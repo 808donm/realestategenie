@@ -253,7 +253,7 @@ export async function processPendingUsageAlerts(): Promise<{
         display_name,
         agent_subscriptions!inner (
           subscription_plan_id,
-          subscription_plans (*)
+          subscription_plans:subscription_plan_id (*)
         )
       )
     `)

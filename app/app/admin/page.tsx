@@ -62,7 +62,7 @@ export default async function AdminOverviewPage() {
         email,
         display_name,
         agent_subscriptions (
-          subscription_plans (name)
+          subscription_plans:subscription_plan_id (name)
         )
       )
     `)

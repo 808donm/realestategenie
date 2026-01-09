@@ -23,7 +23,7 @@ export default async function AdminSubscriptionsPage() {
         billing_cycle,
         current_period_end,
         subscription_plan_id,
-        subscription_plans (
+        subscription_plans:subscription_plan_id (
           id,
           name,
           slug,
