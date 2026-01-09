@@ -81,7 +81,7 @@ BEGIN
     (
       SELECT COUNT(DISTINCT l.tenant_id)::INTEGER
       FROM pm_leases l
-      INNER JOIN pm_properties p ON p.id = l.property_id
+      INNER JOIN pm_properties p ON p.id = l.pm_property_id
       INNER JOIN account_members am2 ON am2.agent_id = p.agent_id
       WHERE am2.account_id = account_uuid
         AND am2.is_active = true
