@@ -2,13 +2,47 @@ import { requireAdmin } from "@/lib/auth/admin-check";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import Link from "next/link";
 
+// Type definitions for the complex query
+type SubscriptionPlan = {
+  id: string;
+  name: string;
+  slug: string;
+  max_agents: number;
+  max_properties: number;
+  max_tenants: number;
+};
+
+type AgentSubscription = {
+  id: string;
+  status: string;
+  monthly_price: number;
+  billing_cycle: string;
+  current_period_end: string;
+  subscription_plan_id: string;
+  subscription_plans: SubscriptionPlan;
+};
+
+type AgentWithSubscription = {
+  id: string;
+  email: string;
+  display_name: string | null;
+  role: string;
+  is_active: boolean;
+  agent_subscriptions: AgentSubscription[];
+  agent_usage: Array<{
+    current_agents: number;
+    current_properties: number;
+    current_tenants: number;
+  }>;
+};
+
 export default async function AdminSubscriptionsPage() {
   await requireAdmin();
 
   const adminSupabase = supabaseAdmin;
 
   // Get all agents with their subscription details
-  const { data: agents } = await adminSupabase
+  const { data: agentsData } = await adminSupabase
     .from("agents")
     .select(`
       id,
@@ -39,6 +73,9 @@ export default async function AdminSubscriptionsPage() {
       )
     `)
     .order("created_at", { ascending: false });
+
+  // Cast to proper type
+  const agents = agentsData as AgentWithSubscription[] | null;
 
   // Get all available plans
   const { data: plans } = await adminSupabase
