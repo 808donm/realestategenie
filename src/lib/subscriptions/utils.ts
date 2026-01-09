@@ -24,7 +24,7 @@ export async function getAgentSubscriptionPlan(agentId: string): Promise<Subscri
     return null;
   }
 
-  return data.subscription_plans as SubscriptionPlan;
+  return data.subscription_plans as unknown as SubscriptionPlan;
 }
 
 /**
