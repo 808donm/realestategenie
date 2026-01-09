@@ -1,6 +1,7 @@
 import { requireAdmin } from "@/lib/auth/admin-check";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import Link from "next/link";
+import FeaturesManager from "./features-manager";
 
 export default async function AdminFeaturesPage() {
   await requireAdmin();
@@ -12,12 +13,13 @@ export default async function AdminFeaturesPage() {
     adminSupabase
       .from("features")
       .select("*")
-      .order("category", { ascending: true }),
+      .order("category", { ascending: true })
+      .order("name", { ascending: true }),
     adminSupabase
       .from("subscription_plans")
       .select("id, name, slug, tier_level")
       .eq("is_active", true)
-      .order("tier_level", { ascending: true })
+      .order("tier_level", { ascending: true }),
   ]);
 
   // Get all plan-feature mappings
@@ -27,7 +29,7 @@ export default async function AdminFeaturesPage() {
 
   // Create a map for quick lookup
   const featureMap = new Map<string, Set<string>>();
-  planFeatures?.forEach(pf => {
+  planFeatures?.forEach((pf) => {
     if (!featureMap.has(pf.feature_id)) {
       featureMap.set(pf.feature_id, new Set());
     }
@@ -36,35 +38,13 @@ export default async function AdminFeaturesPage() {
     }
   });
 
-  // Group features by category
-  type Feature = NonNullable<typeof features>[number];
-  const groupedFeatures = features?.reduce((acc, feature) => {
-    const category = feature.category || 'Other';
-    if (!acc[category]) {
-      acc[category] = [];
-    }
-    acc[category].push(feature);
-    return acc;
-  }, {} as Record<string, Feature[]>);
-
-  const categoryLabels: Record<string, string> = {
-    core: 'Core Features',
-    payments: 'Payment Processing',
-    marketing: 'Marketing & Sales',
-    integrations: 'Integrations',
-    team: 'Team Management',
-    analytics: 'Analytics & Reporting',
-    enterprise: 'Enterprise Features',
-    support: 'Support & Services'
-  };
-
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold mb-2">Feature Management</h1>
           <p className="text-gray-600">
-            Control which features are available in each plan
+            Add, edit, and manage features available across subscription plans
           </p>
         </div>
         <Link
@@ -75,107 +55,11 @@ export default async function AdminFeaturesPage() {
         </Link>
       </div>
 
-      {/* Feature Matrix */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-10">
-                  Feature
-                </th>
-                {plans?.map((plan) => (
-                  <th
-                    key={plan.id}
-                    className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    {plan.name}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {groupedFeatures && (Object.entries(groupedFeatures) as [string, Feature[]][]).map(([category, categoryFeatures]) => (
-                <>
-                  {/* Category Header */}
-                  <tr key={`category-${category}`} className="bg-gray-100">
-                    <td
-                      colSpan={plans ? plans.length + 1 : 1}
-                      className="px-6 py-3 text-sm font-bold text-gray-700 sticky left-0 bg-gray-100"
-                    >
-                      {categoryLabels[category] || category}
-                    </td>
-                  </tr>
-
-                  {/* Features in this category */}
-                  {categoryFeatures.map((feature) => {
-                    const enabledPlans = featureMap.get(feature.id) || new Set();
-
-                    return (
-                      <tr key={feature.id}>
-                        <td className="px-6 py-4 whitespace-nowrap sticky left-0 bg-white">
-                          <div className="text-sm font-medium text-gray-900">
-                            {feature.name}
-                          </div>
-                          {feature.description && (
-                            <div className="text-xs text-gray-500 mt-1">
-                              {feature.description}
-                            </div>
-                          )}
-                        </td>
-                        {plans?.map((plan) => {
-                          const isEnabled = enabledPlans.has(plan.id);
-
-                          return (
-                            <td
-                              key={plan.id}
-                              className="px-6 py-4 text-center"
-                            >
-                              {isEnabled ? (
-                                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-100">
-                                  <svg
-                                    className="w-4 h-4 text-green-600"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M5 13l4 4L19 7"
-                                    />
-                                  </svg>
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100">
-                                  <svg
-                                    className="w-4 h-4 text-gray-400"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M6 18L18 6M6 6l12 12"
-                                    />
-                                  </svg>
-                                </span>
-                              )}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    );
-                  })}
-                </>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <FeaturesManager
+        initialFeatures={features || []}
+        plans={plans || []}
+        featureMap={featureMap}
+      />
 
       {/* Legend */}
       <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -197,8 +81,8 @@ export default async function AdminFeaturesPage() {
             <p className="font-semibold mb-1">About Feature Management</p>
             <p>
               This matrix shows which features are enabled for each subscription plan.
-              Features are automatically made available to users based on their active subscription.
-              Lower-tier features are typically greyed out (not removed) for users on higher plans to encourage upgrades.
+              Click "Edit" to modify feature details, or "Add New Feature" to create additional features.
+              To control which plans have access to each feature, visit the individual plan's feature management page.
             </p>
           </div>
         </div>
