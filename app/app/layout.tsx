@@ -21,6 +21,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const userRole = agent?.role || "agent";
 
+  // Check if user is account owner or admin
+  const { data: accountMember } = await supabase
+    .from("account_members")
+    .select("account_role")
+    .eq("agent_id", userId)
+    .eq("is_active", true)
+    .single();
+
+  const isAccountAdmin = accountMember?.account_role === "owner" || accountMember?.account_role === "admin";
+
   // Get subscription status for usage warnings
   let subscriptionStatus = null;
   let suggestedPlan = null;
@@ -85,6 +95,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <NavLink href="/app/integrations">Integrations</NavLink>
             <NavLink href="/app/billing">Billing</NavLink>
             <NavLink href="/app/settings/profile">Settings</NavLink>
+            {isAccountAdmin && (
+              <NavLink href="/app/team">Team</NavLink>
+            )}
             {userRole === "admin" && (
               <NavLink href="/app/admin">Admin</NavLink>
             )}
