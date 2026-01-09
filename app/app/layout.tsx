@@ -4,6 +4,7 @@ import { supabaseServer } from "@/lib/supabase/server";
 import SignOutButton from "./dashboard/signout-button";
 import UsageWarningBanner from "./components/usage-warning-banner";
 import { getSubscriptionStatus, getSuggestedUpgradePlan } from "@/lib/subscriptions/utils";
+import { checkFeatureAccess } from "@/lib/subscriptions/server-utils";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await supabaseServer();
@@ -30,6 +31,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       suggestedPlan = await getSuggestedUpgradePlan(subscriptionStatus.plan.id);
     }
   }
+
+  // Check broker dashboard access
+  const hasBrokerDashboard = await checkFeatureAccess("broker-dashboard");
 
   return (
     <div className="min-h-screen bg-[#fafafa]">
@@ -64,9 +68,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           {/* Navigation - Responsive Grid */}
           <nav className="grid grid-cols-2 sm:grid-cols-3 md:flex md:flex-wrap gap-2 md:gap-3">
             <NavLink href="/app/dashboard">Dashboard</NavLink>
-            {(userRole === "broker" || userRole === "admin") && (
-              <NavLink href="/app/broker">Broker Dashboard</NavLink>
-            )}
+            <NavLink
+              href="/app/broker"
+              disabled={!hasBrokerDashboard}
+              title={!hasBrokerDashboard ? "Upgrade to Brokerage Growth to unlock" : undefined}
+            >
+              Broker Dashboard
+            </NavLink>
             {userRole === "team_lead" && (
               <NavLink href="/app/team-lead">Team Dashboard</NavLink>
             )}
@@ -108,11 +116,33 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   );
 }
 
-function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
+function NavLink({
+  href,
+  children,
+  disabled = false,
+  title,
+}: {
+  href: string;
+  children: React.ReactNode;
+  disabled?: boolean;
+  title?: string;
+}) {
+  if (disabled) {
+    return (
+      <span
+        className="no-underline font-bold py-2 px-3 border border-gray-200 rounded-xl bg-gray-100 text-center text-sm md:text-base text-gray-400 cursor-not-allowed opacity-60"
+        title={title}
+      >
+        {children}
+      </span>
+    );
+  }
+
   return (
     <Link
       href={href}
       className="no-underline font-bold py-2 px-3 border border-gray-200 rounded-xl bg-white text-center text-sm md:text-base hover:bg-gray-50 transition-colors"
+      title={title}
     >
       {children}
     </Link>
