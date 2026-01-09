@@ -95,7 +95,7 @@ export default async function AdminFeaturesPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {groupedFeatures && Object.entries(groupedFeatures).map(([category, categoryFeatures]: [string, Feature[]]) => (
+              {groupedFeatures && (Object.entries(groupedFeatures) as [string, Feature[]][]).map(([category, categoryFeatures]) => (
                 <>
                   {/* Category Header */}
                   <tr key={`category-${category}`} className="bg-gray-100">
