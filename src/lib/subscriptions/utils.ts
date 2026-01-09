@@ -14,7 +14,7 @@ export async function getAgentSubscriptionPlan(agentId: string): Promise<Subscri
     .from("agent_subscriptions")
     .select(`
       subscription_plan_id,
-      subscription_plans (*)
+      subscription_plans:subscription_plan_id (*)
     `)
     .eq("agent_id", agentId)
     .eq("status", "active")
