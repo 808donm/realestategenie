@@ -79,7 +79,7 @@ BEGIN
     ) AS properties_count,
     -- Count unique active tenants across all account properties
     (
-      SELECT COUNT(DISTINCT l.tenant_id)::INTEGER
+      SELECT COUNT(DISTINCT l.tenant_contact_id)::INTEGER
       FROM pm_leases l
       INNER JOIN pm_properties p ON p.id = l.pm_property_id
       INNER JOIN account_members am2 ON am2.agent_id = p.agent_id
