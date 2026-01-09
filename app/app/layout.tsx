@@ -77,6 +77,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <NavLink href="/app/integrations">Integrations</NavLink>
             <NavLink href="/app/billing">Billing</NavLink>
             <NavLink href="/app/settings/profile">Settings</NavLink>
+            {userRole === "admin" && (
+              <NavLink href="/app/admin">Admin</NavLink>
+            )}
           </nav>
 
           {/* Email and Sign Out - Mobile */}
