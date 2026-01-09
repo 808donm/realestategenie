@@ -203,7 +203,7 @@ END $$;
 DO $$
 DECLARE
   account_record RECORD;
-  office_id UUID;
+  new_office_id UUID;
   plan_record RECORD;
 BEGIN
   -- Create default office for accounts that can have offices (Brokerage Growth+)
@@ -234,11 +234,11 @@ BEGIN
         NOW(),
         NOW()
       )
-      RETURNING id INTO office_id;
+      RETURNING id INTO new_office_id;
 
       -- Assign all account members to this office
       UPDATE account_members
-      SET office_id = office_id
+      SET office_id = new_office_id
       WHERE account_id = account_record.id
         AND office_id IS NULL;
 
