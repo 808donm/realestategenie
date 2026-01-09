@@ -7,13 +7,10 @@ export default async function AdminPlansPage() {
 
   const adminSupabase = supabaseAdmin;
 
-  // Get all plans with subscriber counts
+  // Get all plans
   const { data: plans } = await adminSupabase
     .from("subscription_plans")
-    .select(`
-      *,
-      agent_subscriptions (count)
-    `)
+    .select("*")
     .order("tier_level", { ascending: true });
 
   return (
@@ -36,8 +33,6 @@ export default async function AdminPlansPage() {
       {/* Plans Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {plans?.map((plan) => {
-          const subscriberCount = plan.agent_subscriptions?.[0]?.count || 0;
-
           return (
             <div
               key={plan.id}
@@ -49,7 +44,7 @@ export default async function AdminPlansPage() {
                   <div>
                     <h3 className="text-xl font-bold text-white">{plan.name}</h3>
                     <p className="text-blue-100 text-sm mt-1">
-                      Tier {plan.tier_level} • {subscriberCount} subscriber{subscriberCount !== 1 ? 's' : ''}
+                      Tier {plan.tier_level}
                     </p>
                   </div>
                   {plan.is_custom && (
@@ -65,26 +60,43 @@ export default async function AdminPlansPage() {
                 {/* Description */}
                 <p className="text-gray-600 mb-4">{plan.description}</p>
 
-                {/* Pricing */}
-                <div className="mb-6">
-                  <div className="text-sm text-gray-500 mb-2">Pricing</div>
-                  <div className="flex items-baseline gap-4">
-                    <div>
-                      <span className="text-3xl font-bold text-gray-900">
-                        ${plan.monthly_price}
-                      </span>
-                      <span className="text-gray-500">/month</span>
-                    </div>
-                    {plan.annual_price && (
-                      <div>
-                        <span className="text-xl font-semibold text-gray-700">
-                          ${plan.annual_price}
-                        </span>
-                        <span className="text-gray-500">/year</span>
-                      </div>
-                    )}
+                {/* Pricing or Contact Sales */}
+                {plan.tier_level === 5 ? (
+                  <div className="mb-6">
+                    <div className="text-sm text-gray-500 mb-2">Pricing</div>
+                    <a
+                      href="https://strategy.aiprofitandgrowth.com"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-purple-700 transition-colors"
+                    >
+                      Contact Sales
+                    </a>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Schedule a consultation to discuss custom pricing
+                    </p>
                   </div>
-                </div>
+                ) : (
+                  <div className="mb-6">
+                    <div className="text-sm text-gray-500 mb-2">Pricing</div>
+                    <div className="flex items-baseline gap-4">
+                      <div>
+                        <span className="text-3xl font-bold text-gray-900">
+                          ${plan.monthly_price}
+                        </span>
+                        <span className="text-gray-500">/month</span>
+                      </div>
+                      {plan.annual_price && (
+                        <div>
+                          <span className="text-xl font-semibold text-gray-700">
+                            ${plan.annual_price}
+                          </span>
+                          <span className="text-gray-500">/year</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* Limits */}
                 <div className="space-y-3 mb-6">
