@@ -31,7 +31,7 @@ INSERT INTO features (name, slug, description, category) VALUES
   ('Brokerage Admin & Compliance Controls', 'brokerage-admin-compliance', 'Administrative and compliance management tools', 'enterprise'),
   ('Central Billing & Reporting', 'central-billing-reporting', 'Centralized billing and comprehensive reporting', 'analytics'),
   ('Branded Tenant Portal', 'branded-tenant-portal', 'White-labeled tenant portal with custom branding', 'enterprise'),
-  ('Broker-Level Dashboards', 'broker-dashboards', 'Executive dashboards for broker oversight', 'analytics'),
+  ('Broker Dashboard', 'broker-dashboard', 'Comprehensive broker analytics and oversight', 'analytics'),
   ('Onboarding Support', 'onboarding-support', 'Dedicated onboarding assistance', 'support'),
 
 -- Brokerage Scale features (additive)
@@ -83,7 +83,7 @@ DECLARE
   brokerage_admin_id UUID;
   central_billing_id UUID;
   branded_portal_id UUID;
-  broker_dashboards_id UUID;
+  broker_dashboard_id UUID;
   onboarding_support_id UUID;
 
   -- Brokerage Scale features
@@ -127,7 +127,7 @@ BEGIN
   SELECT id INTO brokerage_admin_id FROM features WHERE slug = 'brokerage-admin-compliance';
   SELECT id INTO central_billing_id FROM features WHERE slug = 'central-billing-reporting';
   SELECT id INTO branded_portal_id FROM features WHERE slug = 'branded-tenant-portal';
-  SELECT id INTO broker_dashboards_id FROM features WHERE slug = 'broker-dashboards';
+  SELECT id INTO broker_dashboard_id FROM features WHERE slug = 'broker-dashboard';
   SELECT id INTO onboarding_support_id FROM features WHERE slug = 'onboarding-support';
 
   -- Get feature IDs - Brokerage Scale
@@ -191,7 +191,7 @@ BEGIN
     (broker_growth_id, brokerage_admin_id, true),
     (broker_growth_id, central_billing_id, true),
     (broker_growth_id, branded_portal_id, true),
-    (broker_growth_id, broker_dashboards_id, true),
+    (broker_growth_id, broker_dashboard_id, true),
     (broker_growth_id, onboarding_support_id, true);
 
   -- Brokerage Scale (Tier 4) - Includes Solo + Team + Brokerage + Scale features
@@ -214,7 +214,7 @@ BEGIN
     (broker_scale_id, brokerage_admin_id, true),
     (broker_scale_id, central_billing_id, true),
     (broker_scale_id, branded_portal_id, true),
-    (broker_scale_id, broker_dashboards_id, true),
+    (broker_scale_id, broker_dashboard_id, true),
     (broker_scale_id, onboarding_support_id, true),
     -- Brokerage Scale features
     (broker_scale_id, priority_support_id, true),
@@ -242,7 +242,7 @@ BEGIN
     (enterprise_id, brokerage_admin_id, true),
     (enterprise_id, central_billing_id, true),
     (enterprise_id, branded_portal_id, true),
-    (enterprise_id, broker_dashboards_id, true),
+    (enterprise_id, broker_dashboard_id, true),
     (enterprise_id, onboarding_support_id, true),
     -- Brokerage Scale features
     (enterprise_id, priority_support_id, true),
