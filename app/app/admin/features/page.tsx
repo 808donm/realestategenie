@@ -37,6 +37,7 @@ export default async function AdminFeaturesPage() {
   });
 
   // Group features by category
+  type Feature = NonNullable<typeof features>[number];
   const groupedFeatures = features?.reduce((acc, feature) => {
     const category = feature.category || 'Other';
     if (!acc[category]) {
@@ -44,7 +45,7 @@ export default async function AdminFeaturesPage() {
     }
     acc[category].push(feature);
     return acc;
-  }, {} as Record<string, typeof features>);
+  }, {} as Record<string, Feature[]>);
 
   const categoryLabels: Record<string, string> = {
     core: 'Core Features',
@@ -94,7 +95,7 @@ export default async function AdminFeaturesPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {groupedFeatures && Object.entries(groupedFeatures).map(([category, categoryFeatures]) => (
+              {groupedFeatures && Object.entries(groupedFeatures).map(([category, categoryFeatures]: [string, Feature[]]) => (
                 <>
                   {/* Category Header */}
                   <tr key={`category-${category}`} className="bg-gray-100">
@@ -107,7 +108,7 @@ export default async function AdminFeaturesPage() {
                   </tr>
 
                   {/* Features in this category */}
-                  {categoryFeatures?.map((feature) => {
+                  {categoryFeatures.map((feature) => {
                     const enabledPlans = featureMap.get(feature.id) || new Set();
 
                     return (
