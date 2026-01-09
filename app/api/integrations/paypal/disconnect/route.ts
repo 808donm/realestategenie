@@ -1,43 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
-/**
- * Disconnect PayPal Integration
- * POST /api/integrations/paypal/disconnect
- */
 export async function POST(request: NextRequest) {
   try {
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: userData } = await supabase.auth.getUser();
 
-    if (!user) {
+    if (!userData.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Delete PayPal integration
-    const { error } = await supabase
-      .from("integrations")
-      .delete()
-      .eq("agent_id", user.id)
-      .eq("provider", "paypal");
+    // Update connection status to disconnected
+    const { error: updateError } = await supabaseAdmin
+      .from("integration_connections")
+      .update({
+        connection_status: "disconnected",
+        disconnected_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("agent_id", userData.user.id)
+      .eq("integration_type", "paypal");
 
-    if (error) {
-      console.error("PayPal disconnect error:", error);
-      return NextResponse.json(
-        { error: "Failed to disconnect PayPal" },
-        { status: 500 }
-      );
+    if (updateError) {
+      console.error("Error disconnecting PayPal:", updateError);
+      return NextResponse.json({ error: "Failed to disconnect" }, { status: 500 });
     }
 
-    return NextResponse.json({
-      success: true,
-      message: "PayPal disconnected successfully",
-    });
+    return NextResponse.json({ message: "PayPal disconnected successfully" });
   } catch (error) {
     console.error("PayPal disconnect error:", error);
-    return NextResponse.json(
-      { error: "Failed to disconnect PayPal" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

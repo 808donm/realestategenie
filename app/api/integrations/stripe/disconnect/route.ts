@@ -1,43 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
-/**
- * Disconnect Stripe Integration
- * POST /api/integrations/stripe/disconnect
- */
 export async function POST(request: NextRequest) {
   try {
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: userData } = await supabase.auth.getUser();
 
-    if (!user) {
+    if (!userData.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Delete Stripe integration
-    const { error } = await supabase
-      .from("integrations")
-      .delete()
-      .eq("agent_id", user.id)
-      .eq("provider", "stripe");
+    // Update connection status to disconnected
+    const { error: updateError } = await supabaseAdmin
+      .from("integration_connections")
+      .update({
+        connection_status: "disconnected",
+        disconnected_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("agent_id", userData.user.id)
+      .eq("integration_type", "stripe");
 
-    if (error) {
-      console.error("Stripe disconnect error:", error);
-      return NextResponse.json(
-        { error: "Failed to disconnect Stripe" },
-        { status: 500 }
-      );
+    if (updateError) {
+      console.error("Error disconnecting Stripe:", updateError);
+      return NextResponse.json({ error: "Failed to disconnect" }, { status: 500 });
     }
 
-    return NextResponse.json({
-      success: true,
-      message: "Stripe disconnected successfully",
-    });
+    return NextResponse.json({ message: "Stripe disconnected successfully" });
   } catch (error) {
     console.error("Stripe disconnect error:", error);
-    return NextResponse.json(
-      { error: "Failed to disconnect Stripe" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
