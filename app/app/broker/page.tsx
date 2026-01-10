@@ -65,17 +65,17 @@ export default async function BrokerDashboardPage() {
     .in("agent_id", agentIds);
 
   const totalProperties = properties?.length || 0;
-  const totalUnits =
-    properties?.reduce((sum, p) => sum + (p.units_count || 1), 0) || 0;
 
-  // Get all units
+  // Get all units - use actual units table for accurate counts
   const { data: units } = await supabase
     .from("pm_units")
-    .select("id, status")
+    .select("id, status, pm_property_id")
     .in("agent_id", agentIds);
 
+  const totalUnits = units?.length || 0;
   const unitsOccupied = units?.filter((u) => u.status === "rented").length || 0;
   const unitsVacant = units?.filter((u) => u.status === "available").length || 0;
+  const unitsInMaintenance = units?.filter((u) => u.status === "maintenance").length || 0;
   const occupancyRate = totalUnits > 0 ? (unitsOccupied / totalUnits) * 100 : 0;
 
   // Active leases
