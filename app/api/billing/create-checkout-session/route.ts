@@ -79,7 +79,6 @@ export async function POST(request: NextRequest) {
         },
         product_data: {
           name: selectedPlan.name,
-          description: selectedPlan.description || `${selectedPlan.name} subscription`,
           metadata: {
             plan_id: selectedPlan.id,
             tier_level: selectedPlan.tier_level.toString(),
