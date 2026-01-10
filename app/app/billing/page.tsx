@@ -177,23 +177,51 @@ export default async function BillingPage({ searchParams }: PageProps) {
                 <div className="grid gap-3 md:grid-cols-2">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Agents</span>
-                    <span className="font-medium">{subscription.subscription_plans.agents_limit}</span>
+                    <span className="font-medium">
+                      {subscription.subscription_plans.max_agents === 999999
+                        ? "Unlimited"
+                        : subscription.subscription_plans.max_agents}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Assistants</span>
-                    <span className="font-medium">{subscription.subscription_plans.assistants_limit}</span>
+                    <span className="font-medium">
+                      {subscription.subscription_plans.max_assistants === 999999
+                        ? "Unlimited"
+                        : subscription.subscription_plans.max_assistants}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Administrators</span>
+                    <span className="font-medium">
+                      {subscription.subscription_plans.max_administrators === 999999
+                        ? "Unlimited"
+                        : subscription.subscription_plans.max_administrators}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Offices</span>
-                    <span className="font-medium">{subscription.subscription_plans.offices_limit}</span>
+                    <span className="font-medium">
+                      {subscription.subscription_plans.max_offices === 999999
+                        ? "Unlimited"
+                        : subscription.subscription_plans.max_offices}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Properties</span>
-                    <span className="font-medium">{subscription.subscription_plans.properties_limit}</span>
+                    <span className="font-medium">
+                      {subscription.subscription_plans.max_properties === 999999
+                        ? "Unlimited"
+                        : subscription.subscription_plans.max_properties}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Tenants</span>
-                    <span className="font-medium">{subscription.subscription_plans.tenants_limit}</span>
+                    <span className="font-medium">
+                      {subscription.subscription_plans.max_tenants === 999999
+                        ? "Unlimited"
+                        : subscription.subscription_plans.max_tenants}
+                    </span>
                   </div>
                 </div>
               </div>
