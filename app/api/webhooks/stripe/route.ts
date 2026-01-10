@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
     }
 
-    console.log(\`Received Stripe webhook: \${event.type}\`);
+    console.log(`Received Stripe webhook: ${event.type}`);
 
     // Handle the event
     switch (event.type) {
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
         break;
 
       default:
-        console.log(\`Unhandled event type: \${event.type}\`);
+        console.log(`Unhandled event type: ${event.type}`);
     }
 
     return NextResponse.json({ received: true });
@@ -125,7 +125,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       .insert(subscriptionData);
   }
 
-  console.log(\`Subscription activated for agent \${agentId} on plan \${plan.name}\`);
+  console.log(`Subscription activated for agent ${agentId} on plan ${plan.name}`);
 }
 
 async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
@@ -153,7 +153,7 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
     .eq("agent_id", agentId)
     .eq("stripe_subscription_id", subscription.id);
 
-  console.log(\`Subscription updated for agent \${agentId}: \${status}\`);
+  console.log(`Subscription updated for agent ${agentId}: ${status}`);
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
@@ -174,7 +174,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     .eq("agent_id", agentId)
     .eq("stripe_subscription_id", subscription.id);
 
-  console.log(\`Subscription canceled for agent \${agentId}\`);
+  console.log(`Subscription canceled for agent ${agentId}`);
 }
 
 async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
@@ -193,7 +193,7 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
     })
     .eq("stripe_subscription_id", subscriptionId);
 
-  console.log(\`Invoice paid successfully: \${invoiceId}\`);
+  console.log(`Invoice paid successfully: ${invoiceId}`);
 }
 
 async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
@@ -211,7 +211,7 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
     })
     .eq("stripe_subscription_id", subscriptionId);
 
-  console.log(\`Invoice payment failed: \${invoice.id}\`);
+  console.log(`Invoice payment failed: ${invoice.id}`);
 }
 
 function mapStripeStatus(stripeStatus: Stripe.Subscription.Status): string {
