@@ -137,8 +137,19 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
   }
 
   const status = subscription.status;
-  const currentPeriodEnd = new Date(subscription.current_period_end * 1000);
-  const currentPeriodStart = new Date(subscription.current_period_start * 1000);
+
+  // In Stripe API 2025-12-15.clover, period dates are in billing_cycle_anchor
+  const subAny = subscription as any;
+  const currentPeriodEnd = subAny.current_period_end
+    ? new Date(subAny.current_period_end * 1000)
+    : subAny.current_billing_cycle_end_at
+    ? new Date(subAny.current_billing_cycle_end_at)
+    : new Date();
+  const currentPeriodStart = subAny.current_period_start
+    ? new Date(subAny.current_period_start * 1000)
+    : subAny.current_billing_cycle_start_at
+    ? new Date(subAny.current_billing_cycle_start_at)
+    : new Date();
 
   await supabaseAdmin
     .from("agent_subscriptions")
