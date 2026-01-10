@@ -28,7 +28,7 @@ export default async function BillingPage({ searchParams }: PageProps) {
   // Get agent's subscription
   const { data: subscription } = await supabase
     .from("agent_subscriptions")
-    .select("*")
+    .select("*, subscription_plans(*)")
     .eq("agent_id", userData.user.id)
     .single();
 
@@ -131,13 +131,13 @@ export default async function BillingPage({ searchParams }: PageProps) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {subscription ? (
+          {subscription && subscription.subscription_plans ? (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
                   <div className="flex items-center gap-2 mb-2">
-                    <Badge className={planColors[subscription.plan_type as keyof typeof planColors]}>
-                      {planNames[subscription.plan_type as keyof typeof planNames]}
+                    <Badge className="bg-blue-600 text-white">
+                      {subscription.subscription_plans.name}
                     </Badge>
                     <Badge className={statusColors[subscription.status as keyof typeof statusColors]}>
                       {subscription.status.replace("_", " ").toUpperCase()}
@@ -149,6 +149,11 @@ export default async function BillingPage({ searchParams }: PageProps) {
                       /{subscription.billing_cycle}
                     </span>
                   </p>
+                  {subscription.subscription_plans.description && (
+                    <p className="text-sm text-muted-foreground mt-2">
+                      {subscription.subscription_plans.description}
+                    </p>
+                  )}
                 </div>
                 <div className="text-right">
                   {subscription.next_billing_date && (
@@ -166,7 +171,34 @@ export default async function BillingPage({ searchParams }: PageProps) {
                 </div>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
+              {/* Plan Features */}
+              <div className="border-t pt-4">
+                <p className="text-sm font-semibold mb-3">Plan Limits</p>
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Agents</span>
+                    <span className="font-medium">{subscription.subscription_plans.agents_limit}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Assistants</span>
+                    <span className="font-medium">{subscription.subscription_plans.assistants_limit}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Offices</span>
+                    <span className="font-medium">{subscription.subscription_plans.offices_limit}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Properties</span>
+                    <span className="font-medium">{subscription.subscription_plans.properties_limit}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Tenants</span>
+                    <span className="font-medium">{subscription.subscription_plans.tenants_limit}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2 border-t pt-4">
                 <div>
                   <p className="text-sm text-muted-foreground">Billing Period</p>
                   <p className="font-medium">
@@ -186,9 +218,9 @@ export default async function BillingPage({ searchParams }: PageProps) {
 
               <div className="flex gap-3 pt-4">
                 <Link href="/app/billing/upgrade">
-                  <Button variant="default">Upgrade Plan</Button>
+                  <Button variant="default">Change Plan</Button>
                 </Link>
-                {subscription.plan_type !== "free" && (
+                {subscription.subscription_plans.monthly_price > 0 && (
                   <Link href="/app/billing/payment-methods">
                     <Button variant="outline">Manage Payment Methods</Button>
                   </Link>
