@@ -1,40 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import Stripe from "stripe";
 
-/**
- * Stripe Webhook Handler
- *
- * Handles Stripe webhook events for payment processing
- * Events: checkout.session.completed, payment_intent.succeeded
- *
- * POST /api/webhooks/stripe
- */
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: "2024-11-20.acacia",
+});
 
-// Use service role to bypass RLS
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
 export async function POST(request: NextRequest) {
   try {
-    const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
-    // Get the signature from headers
+    const body = await request.text();
     const signature = request.headers.get("stripe-signature");
 
     if (!signature) {
       return NextResponse.json({ error: "No signature" }, { status: 400 });
     }
 
-    // Get raw body
-    const body = await request.text();
-
-    let event;
-
     // Verify webhook signature
+    let event: Stripe.Event;
     try {
       event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
     } catch (err: any) {
@@ -42,112 +26,205 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
     }
 
-    console.log("Stripe webhook event:", event.type);
+    console.log(\`Received Stripe webhook: \${event.type}\`);
 
-    // Handle different event types
+    // Handle the event
     switch (event.type) {
-      case "checkout.session.completed": {
-        const session = event.data.object;
-        const paymentId = session.metadata?.payment_id;
-
-        if (!paymentId) {
-          console.error("No payment_id in session metadata");
-          break;
-        }
-
-        // Get payment details
-        const { data: payment } = await supabase
-          .from("pm_rent_payments")
-          .select("*, pm_leases(agent_id)")
-          .eq("id", paymentId)
-          .single();
-
-        if (!payment) {
-          console.error("Payment not found:", paymentId);
-          break;
-        }
-
-        // Update payment status
-        const { error: updateError } = await supabase
-          .from("pm_rent_payments")
-          .update({
-            status: "paid",
-            paid_at: new Date().toISOString(),
-            payment_method: "stripe",
-            payment_reference: session.payment_intent,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", paymentId);
-
-        if (updateError) {
-          console.error("Error updating payment:", updateError);
-          break;
-        }
-
-        console.log(`✅ Payment ${paymentId} marked as paid via Stripe Checkout`);
-
-        // Mark invoice as paid in GHL
-        try {
-          if (payment.ghl_invoice_id) {
-            const { data: integration } = await supabase
-              .from("integrations")
-              .select("ghl_access_token")
-              .eq("agent_id", payment.pm_leases.agent_id)
-              .single();
-
-            if (integration?.ghl_access_token) {
-              const { GHLClient } = require("@/lib/integrations/ghl-client");
-              const ghlClient = new GHLClient(integration.ghl_access_token);
-
-              await ghlClient.markInvoicePaid(payment.ghl_invoice_id, {
-                paymentMethod: "stripe",
-                transactionId: session.payment_intent,
-              });
-
-              console.log(`✅ GHL invoice ${payment.ghl_invoice_id} marked as paid`);
-            }
-          }
-        } catch (ghlError) {
-          console.error("Error updating GHL invoice:", ghlError);
-        }
-
+      case "checkout.session.completed":
+        await handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session);
         break;
-      }
 
-      case "payment_intent.succeeded": {
-        // Handle direct payment intent success (for saved payment methods)
-        const paymentIntent = event.data.object;
-        const paymentId = paymentIntent.metadata?.payment_id;
-
-        if (paymentId) {
-          console.log(`✅ Payment Intent succeeded for payment ${paymentId}`);
-        }
-
+      case "customer.subscription.created":
+      case "customer.subscription.updated":
+        await handleSubscriptionUpdate(event.data.object as Stripe.Subscription);
         break;
-      }
 
-      case "payment_intent.payment_failed": {
-        const paymentIntent = event.data.object;
-        const paymentId = paymentIntent.metadata?.payment_id;
-
-        if (paymentId) {
-          console.log(`❌ Payment Intent failed for payment ${paymentId}`);
-          // Could add logic to notify tenant of failed payment
-        }
-
+      case "customer.subscription.deleted":
+        await handleSubscriptionDeleted(event.data.object as Stripe.Subscription);
         break;
-      }
+
+      case "invoice.payment_succeeded":
+        await handleInvoicePaymentSucceeded(event.data.object as Stripe.Invoice);
+        break;
+
+      case "invoice.payment_failed":
+        await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice);
+        break;
 
       default:
-        console.log(`Unhandled event type: ${event.type}`);
+        console.log(\`Unhandled event type: \${event.type}\`);
     }
 
     return NextResponse.json({ received: true });
-  } catch (error) {
-    console.error("Error processing Stripe webhook:", error);
+  } catch (error: any) {
+    console.error("Webhook error:", error);
     return NextResponse.json(
-      { error: "Webhook processing failed", details: error instanceof Error ? error.message : "Unknown error" },
+      { error: error.message || "Webhook handler failed" },
       { status: 500 }
     );
   }
+}
+
+async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
+  const agentId = session.metadata?.agent_id;
+  const planId = session.metadata?.plan_id;
+
+  if (!agentId || !planId) {
+    console.error("Missing metadata in checkout session");
+    return;
+  }
+
+  const customerId = session.customer as string;
+  const subscriptionId = session.subscription as string;
+
+  // Get plan details
+  const { data: plan } = await supabaseAdmin
+    .from("subscription_plans")
+    .select("*")
+    .eq("id", planId)
+    .single();
+
+  if (!plan) {
+    console.error("Plan not found:", planId);
+    return;
+  }
+
+  // Get or create subscription record
+  const { data: existingSubscription } = await supabaseAdmin
+    .from("agent_subscriptions")
+    .select("id")
+    .eq("agent_id", agentId)
+    .single();
+
+  const subscriptionData = {
+    agent_id: agentId,
+    subscription_plan_id: planId,
+    status: "active" as const,
+    monthly_price: plan.monthly_price,
+    billing_cycle: "monthly" as const,
+    stripe_customer_id: customerId,
+    stripe_subscription_id: subscriptionId,
+    current_period_start: new Date().toISOString(),
+    current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
+    next_billing_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+  };
+
+  if (existingSubscription) {
+    // Update existing subscription
+    await supabaseAdmin
+      .from("agent_subscriptions")
+      .update({
+        ...subscriptionData,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", existingSubscription.id);
+  } else {
+    // Create new subscription
+    await supabaseAdmin
+      .from("agent_subscriptions")
+      .insert(subscriptionData);
+  }
+
+  console.log(\`Subscription activated for agent \${agentId} on plan \${plan.name}\`);
+}
+
+async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
+  const agentId = subscription.metadata?.agent_id;
+
+  if (!agentId) {
+    console.error("Missing agent_id in subscription metadata");
+    return;
+  }
+
+  const status = subscription.status;
+  const currentPeriodEnd = new Date(subscription.current_period_end * 1000);
+  const currentPeriodStart = new Date(subscription.current_period_start * 1000);
+
+  await supabaseAdmin
+    .from("agent_subscriptions")
+    .update({
+      status: mapStripeStatus(status),
+      stripe_subscription_id: subscription.id,
+      current_period_start: currentPeriodStart.toISOString(),
+      current_period_end: currentPeriodEnd.toISOString(),
+      next_billing_date: currentPeriodEnd.toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("agent_id", agentId)
+    .eq("stripe_subscription_id", subscription.id);
+
+  console.log(\`Subscription updated for agent \${agentId}: \${status}\`);
+}
+
+async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
+  const agentId = subscription.metadata?.agent_id;
+
+  if (!agentId) {
+    console.error("Missing agent_id in subscription metadata");
+    return;
+  }
+
+  await supabaseAdmin
+    .from("agent_subscriptions")
+    .update({
+      status: "canceled",
+      canceled_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("agent_id", agentId)
+    .eq("stripe_subscription_id", subscription.id);
+
+  console.log(\`Subscription canceled for agent \${agentId}\`);
+}
+
+async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
+  const subscriptionId = invoice.subscription as string;
+  const invoiceId = invoice.id;
+
+  if (!subscriptionId) return;
+
+  // Update latest invoice ID
+  await supabaseAdmin
+    .from("agent_subscriptions")
+    .update({
+      stripe_latest_invoice_id: invoiceId,
+      status: "active",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("stripe_subscription_id", subscriptionId);
+
+  console.log(\`Invoice paid successfully: \${invoiceId}\`);
+}
+
+async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
+  const subscriptionId = invoice.subscription as string;
+
+  if (!subscriptionId) return;
+
+  // Mark subscription as past_due
+  await supabaseAdmin
+    .from("agent_subscriptions")
+    .update({
+      status: "past_due",
+      stripe_latest_invoice_id: invoice.id,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("stripe_subscription_id", subscriptionId);
+
+  console.log(\`Invoice payment failed: \${invoice.id}\`);
+}
+
+function mapStripeStatus(stripeStatus: Stripe.Subscription.Status): string {
+  const statusMap: Record<string, string> = {
+    active: "active",
+    past_due: "past_due",
+    unpaid: "past_due",
+    canceled: "canceled",
+    incomplete: "pending",
+    incomplete_expired: "canceled",
+    trialing: "active",
+    paused: "paused",
+  };
+
+  return statusMap[stripeStatus] || "active";
 }

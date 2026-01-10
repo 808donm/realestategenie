@@ -7,12 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Check, ArrowRight, AlertCircle, CreditCard, Calendar, DollarSign } from "lucide-react";
+import CheckoutButton from "./checkout-button";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 type PageProps = {
-  searchParams: Promise<{ plan?: string }>;
+  searchParams: Promise<{ plan?: string; canceled?: string }>;
 };
 
 export default async function CheckoutPage({ searchParams }: PageProps) {
@@ -26,6 +27,7 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
   const user = userData.user;
   const params = await searchParams;
   const planId = params.plan;
+  const showCanceled = params.canceled === "true";
 
   if (!planId) {
     redirect("/app/billing/upgrade");
@@ -107,6 +109,24 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
           Review your plan change and confirm
         </p>
       </div>
+
+      {/* Canceled Notification */}
+      {showCanceled && (
+        <Card className="bg-yellow-50 border-yellow-200">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-yellow-900">
+                <p className="font-semibold mb-1">Checkout Canceled</p>
+                <p>
+                  You canceled the checkout process. No changes were made to your subscription.
+                  You can try again by clicking the checkout button below.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Plan Details */}
@@ -293,12 +313,7 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
 
               {/* Action Buttons */}
               <div className="space-y-3 pt-4">
-                <Link href="mailto:billing@realestategenie.app?subject=Plan Change Request" className="block">
-                  <Button className="w-full" size="lg">
-                    <CreditCard className="mr-2 h-4 w-4" />
-                    Contact Billing to Complete
-                  </Button>
-                </Link>
+                <CheckoutButton planId={planId} />
 
                 <Link href="/app/billing/upgrade">
                   <Button variant="outline" className="w-full">
@@ -308,15 +323,15 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
               </div>
 
               {/* Notice */}
-              <Card className="bg-blue-50 border-blue-200">
+              <Card className="bg-green-50 border-green-200">
                 <CardContent className="p-4">
                   <div className="flex items-start gap-3">
-                    <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                    <div className="text-sm text-blue-900">
-                      <p className="font-semibold mb-1">Payment Integration Coming Soon</p>
+                    <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm text-green-900">
+                      <p className="font-semibold mb-1">Secure Payment via Stripe</p>
                       <p className="text-xs">
-                        Click the button above to contact our billing team. They'll process your
-                        plan change and send you a payment link.
+                        You'll be redirected to Stripe's secure checkout to complete your payment.
+                        Your subscription will activate automatically.
                       </p>
                     </div>
                   </div>

@@ -4,18 +4,26 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { CreditCard, FileText, DollarSign, Calendar, CheckCircle } from "lucide-react";
+import { CreditCard, FileText, DollarSign, Calendar, CheckCircle, Check, XCircle } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export default async function BillingPage() {
+type PageProps = {
+  searchParams: Promise<{ success?: string; session_id?: string; canceled?: string }>;
+};
+
+export default async function BillingPage({ searchParams }: PageProps) {
   const supabase = await supabaseServer();
   const { data: userData } = await supabase.auth.getUser();
 
   if (!userData.user) {
     redirect("/login");
   }
+
+  const params = await searchParams;
+  const showSuccess = params.success === "true";
+  const showCanceled = params.canceled === "true";
 
   // Get agent's subscription
   const { data: subscription } = await supabase
@@ -77,6 +85,42 @@ export default async function BillingPage() {
         <h2 className="text-2xl font-bold">Billing & Subscription</h2>
         <p className="text-muted-foreground">Manage your subscription and view billing history</p>
       </div>
+
+      {/* Success Notification */}
+      {showSuccess && (
+        <Card className="bg-green-50 border-green-200">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-green-900">
+                <p className="font-semibold mb-1">Payment Successful!</p>
+                <p>
+                  Your subscription has been activated. You now have access to all features of your plan.
+                  Your subscription will renew automatically each billing period.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Canceled Notification */}
+      {showCanceled && (
+        <Card className="bg-yellow-50 border-yellow-200">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <XCircle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-yellow-900">
+                <p className="font-semibold mb-1">Checkout Canceled</p>
+                <p>
+                  You canceled the checkout process. No charges were made to your account.
+                  You can try again anytime by selecting a plan below.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Current Subscription */}
       <Card>
