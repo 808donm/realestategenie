@@ -101,7 +101,7 @@ export default function PayPalOAuthCard({ connection }: { connection: Integratio
             </Badge>
           )}
           {hasError && (
-            <Badge variant="destructive" className="gap-1">
+            <Badge variant="danger" className="gap-1">
               <AlertCircle className="w-3 h-3" />
               Error
             </Badge>
