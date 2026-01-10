@@ -73,19 +73,22 @@ export default async function BrokerDashboardPage() {
     .in("agent_id", agentIds);
 
   const totalUnits = units?.length || 0;
-  const unitsOccupied = units?.filter((u) => u.status === "rented").length || 0;
-  const unitsVacant = units?.filter((u) => u.status === "available").length || 0;
-  const unitsInMaintenance = units?.filter((u) => u.status === "maintenance").length || 0;
-  const occupancyRate = totalUnits > 0 ? (unitsOccupied / totalUnits) * 100 : 0;
 
-  // Active leases
+  // Active leases (currently active, not future leases)
   const { data: activeLeases } = await supabase
     .from("pm_leases")
-    .select("id, lease_end_date, lease_start_date, monthly_rent")
+    .select("id, lease_end_date, lease_start_date, monthly_rent, pm_unit_id")
     .in("agent_id", agentIds)
     .in("status", ["active", "month_to_month"]);
 
   const totalActiveLeases = activeLeases?.length || 0;
+
+  // Calculate occupancy based on active leases, not unit status
+  // A unit is occupied if it has an active lease
+  const occupiedUnitIds = new Set(activeLeases?.map((l) => l.pm_unit_id).filter(Boolean) || []);
+  const unitsOccupied = occupiedUnitIds.size;
+  const unitsVacant = totalUnits - unitsOccupied;
+  const occupancyRate = totalUnits > 0 ? (unitsOccupied / totalUnits) * 100 : 0;
 
   // Leases terminating (next 60 days)
   const sixtyDaysFromNow = new Date();
