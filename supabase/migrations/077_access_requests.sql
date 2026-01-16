@@ -37,45 +37,8 @@ CREATE INDEX idx_access_requests_email ON access_requests(email);
 -- Add RLS policies
 ALTER TABLE access_requests ENABLE ROW LEVEL SECURITY;
 
--- Admins can view all requests
-CREATE POLICY "Admins can view all access requests"
-  ON access_requests
-  FOR SELECT
-  TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM agents
-      WHERE agents.user_id = auth.uid()
-      AND agents.role = 'admin'
-    )
-  );
-
--- Admins can update requests
-CREATE POLICY "Admins can update access requests"
-  ON access_requests
-  FOR UPDATE
-  TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM agents
-      WHERE agents.user_id = auth.uid()
-      AND agents.role = 'admin'
-    )
-  )
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM agents
-      WHERE agents.user_id = auth.uid()
-      AND agents.role = 'admin'
-    )
-  );
-
--- Anyone can insert (public registration form)
-CREATE POLICY "Anyone can create access requests"
-  ON access_requests
-  FOR INSERT
-  TO anon, authenticated
-  WITH CHECK (true);
+-- Service role can do everything (admin endpoints use service role key)
+-- No need for complex RLS policies since this table is accessed via admin client
 
 -- Add trigger to update updated_at
 CREATE TRIGGER update_access_requests_updated_at
