@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { sendAccessRequestNotification } from "@/lib/email/resend";
 import { logError } from "@/lib/error-logging";
 
 const admin = createClient(
@@ -110,6 +109,9 @@ export async function POST(request: NextRequest) {
     const adminEmail = process.env.ADMIN_EMAIL || "support@realestategenie.app";
 
     try {
+      // Dynamic import to avoid build-time initialization
+      const { sendAccessRequestNotification } = await import("@/lib/email/resend");
+
       await sendAccessRequestNotification({
         to: adminEmail,
         applicantName: fullName,
