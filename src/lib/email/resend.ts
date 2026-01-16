@@ -48,6 +48,16 @@ export interface SendOpenHouseEmailParams {
   visitCount?: number;
 }
 
+export interface SendAccessRequestNotificationParams {
+  to: string;
+  applicantName: string;
+  applicantEmail: string;
+  applicantPhone: string;
+  company?: string;
+  message?: string;
+  requestId: string;
+}
+
 export async function sendInvitationEmail(params: SendInvitationEmailParams) {
   const { to, invitationUrl, invitedBy, expiresAt } = params;
 
@@ -204,6 +214,48 @@ export async function sendOpenHouseEmail(params: SendOpenHouseEmailParams) {
     return data;
   } catch (error: any) {
     console.error("Failed to send open house email via Resend:", error);
+    throw error;
+  }
+}
+
+export async function sendAccessRequestNotification(params: SendAccessRequestNotificationParams) {
+  const { to, applicantName, applicantEmail, applicantPhone, company, message, requestId } = params;
+
+  // Get Resend client (will throw if API key not configured)
+  const resend = getResendClient();
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: "Real Estate Genie <support@realestategenie.app>",
+      to: [to],
+      subject: `🎯 New Access Request from ${applicantName}`,
+      html: getAccessRequestNotificationHtml({
+        applicantName,
+        applicantEmail,
+        applicantPhone,
+        company,
+        message,
+        requestId,
+      }),
+      text: getAccessRequestNotificationText({
+        applicantName,
+        applicantEmail,
+        applicantPhone,
+        company,
+        message,
+        requestId,
+      }),
+    });
+
+    if (error) {
+      console.error("Resend access request notification error:", error);
+      throw new Error(`Failed to send access request notification: ${error.message}`);
+    }
+
+    console.log("Access request notification sent successfully:", data?.id);
+    return data;
+  } catch (error: any) {
+    console.error("Failed to send access request notification:", error);
     throw error;
   }
 }
@@ -942,6 +994,168 @@ We're here to help and will be reaching out shortly. Feel free to contact us any
 
 Best regards,
 Your Real Estate Team
+
+© ${new Date().getFullYear()} Real Estate Genie. All rights reserved.
+  `.trim();
+}
+
+function getAccessRequestNotificationHtml({
+  applicantName,
+  applicantEmail,
+  applicantPhone,
+  company,
+  message,
+  requestId,
+}: {
+  applicantName: string;
+  applicantEmail: string;
+  applicantPhone: string;
+  company?: string;
+  message?: string;
+  requestId: string;
+}) {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://realestategenie.app";
+  const reviewUrl = `${appUrl}/app/admin/access-requests`;
+
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Access Request</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f9fafb;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f9fafb; padding: 40px 0;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden;">
+
+          <!-- Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 40px 30px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 800;">
+                🎯 New Access Request
+              </h1>
+              <p style="margin: 10px 0 0; color: rgba(255,255,255,0.9); font-size: 16px;">
+                Someone wants to join Real Estate Genie
+              </p>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="padding: 40px;">
+              <p style="margin: 0 0 30px; font-size: 16px; line-height: 1.6; color: #374151;">
+                A new user has submitted an access request. Here are their details:
+              </p>
+
+              <!-- Applicant Details -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f3f4f6; border-radius: 8px; margin: 0 0 30px;">
+                <tr>
+                  <td style="padding: 24px;">
+                    <h3 style="margin: 0 0 16px; color: #667eea; font-size: 18px;">Applicant Information</h3>
+                    <p style="margin: 0 0 10px; font-size: 15px; color: #1f2937;">
+                      <strong>Name:</strong> ${applicantName}
+                    </p>
+                    <p style="margin: 0 0 10px; font-size: 15px; color: #1f2937;">
+                      <strong>Email:</strong> <a href="mailto:${applicantEmail}" style="color: #667eea; text-decoration: none;">${applicantEmail}</a>
+                    </p>
+                    <p style="margin: 0 0 10px; font-size: 15px; color: #1f2937;">
+                      <strong>Phone:</strong> <a href="tel:${applicantPhone}" style="color: #667eea; text-decoration: none;">${applicantPhone}</a>
+                    </p>
+                    ${company ? `<p style="margin: 0 0 10px; font-size: 15px; color: #1f2937;">
+                      <strong>Company:</strong> ${company}
+                    </p>` : ''}
+                    <p style="margin: 0; font-size: 13px; color: #6b7280;">
+                      <strong>Request ID:</strong> ${requestId}
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              ${message ? `
+              <!-- Message -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f0fdf4; border-radius: 8px; border-left: 4px solid #10b981; margin: 0 0 30px;">
+                <tr>
+                  <td style="padding: 20px;">
+                    <h3 style="margin: 0 0 12px; color: #065f46; font-size: 16px;">Their Message:</h3>
+                    <p style="margin: 0; font-size: 15px; line-height: 1.6; color: #065f46; white-space: pre-wrap;">
+                      ${message}
+                    </p>
+                  </td>
+                </tr>
+              </table>
+              ` : ''}
+
+              <!-- CTA Button -->
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center" style="padding: 10px 0 30px;">
+                    <a href="${reviewUrl}"
+                       style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px rgba(102, 126, 234, 0.3);">
+                      Review Application
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #6b7280; text-align: center;">
+                Or copy and paste this link into your browser:<br>
+                <span style="font-family: monospace; font-size: 12px;">${reviewUrl}</span>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f9fafb; padding: 30px 40px; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 0; font-size: 12px; color: #6b7280; text-align: center;">
+                © ${new Date().getFullYear()} Real Estate Genie. All rights reserved.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `.trim();
+}
+
+function getAccessRequestNotificationText({
+  applicantName,
+  applicantEmail,
+  applicantPhone,
+  company,
+  message,
+  requestId,
+}: {
+  applicantName: string;
+  applicantEmail: string;
+  applicantPhone: string;
+  company?: string;
+  message?: string;
+  requestId: string;
+}) {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://realestategenie.app";
+  const reviewUrl = `${appUrl}/app/admin/access-requests`;
+
+  return `
+🎯 NEW ACCESS REQUEST
+
+A new user has submitted an access request.
+
+APPLICANT INFORMATION:
+Name: ${applicantName}
+Email: ${applicantEmail}
+Phone: ${applicantPhone}
+${company ? `Company: ${company}\n` : ''}Request ID: ${requestId}
+
+${message ? `THEIR MESSAGE:\n${message}\n\n` : ''}Review and approve this application:
+${reviewUrl}
 
 © ${new Date().getFullYear()} Real Estate Genie. All rights reserved.
   `.trim();

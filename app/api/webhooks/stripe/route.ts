@@ -78,6 +78,15 @@ export async function POST(request: NextRequest) {
 }
 
 async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
+  const accessRequestId = session.metadata?.access_request_id;
+
+  // Check if this is a new user registration payment (from access request approval)
+  if (accessRequestId) {
+    await handleNewUserRegistrationPayment(session, accessRequestId);
+    return;
+  }
+
+  // Otherwise, this is an existing user subscription (original flow)
   const agentId = session.metadata?.agent_id;
   const planId = session.metadata?.plan_id;
 
@@ -138,6 +147,77 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
   }
 
   console.log(`Subscription activated for agent ${agentId} on plan ${plan.name}`);
+}
+
+async function handleNewUserRegistrationPayment(session: Stripe.Checkout.Session, accessRequestId: string) {
+  console.log(`Processing new user registration payment for access request ${accessRequestId}`);
+
+  // Get the access request
+  const { data: accessRequest, error: fetchError } = await supabaseAdmin
+    .from("access_requests")
+    .select("*")
+    .eq("id", accessRequestId)
+    .single();
+
+  if (fetchError || !accessRequest) {
+    console.error("Access request not found:", accessRequestId);
+    return;
+  }
+
+  // Generate secure token for invitation
+  const crypto = await import("crypto");
+  const token = crypto.randomBytes(32).toString("hex");
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
+
+  // Create user invitation
+  const { data: invitation, error: inviteError } = await supabaseAdmin
+    .from("user_invitations")
+    .insert({
+      email: accessRequest.email,
+      token,
+      status: "pending",
+      expires_at: expiresAt.toISOString(),
+      invited_by: null, // Admin-initiated
+    })
+    .select()
+    .single();
+
+  if (inviteError || !invitation) {
+    console.error("Failed to create invitation:", inviteError);
+    return;
+  }
+
+  // Update access request
+  await supabaseAdmin
+    .from("access_requests")
+    .update({
+      status: "completed",
+      invitation_id: invitation.id,
+      paid_at: new Date().toISOString(),
+    })
+    .eq("id", accessRequestId);
+
+  // Send invitation email
+  try {
+    const { sendInvitationEmail } = await import("@/lib/email/resend");
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://realestategenie.app";
+    const invitationUrl = `${appUrl}/accept-invite/${invitation.id}?token=${token}`;
+
+    await sendInvitationEmail({
+      to: accessRequest.email,
+      invitationUrl,
+      invitedBy: "Real Estate Genie Team",
+      expiresAt,
+    });
+
+    console.log(`Invitation email sent to ${accessRequest.email}`);
+  } catch (emailError) {
+    console.error("Failed to send invitation email:", emailError);
+    // Don't fail the webhook - invitation is created, user can be manually notified
+  }
+
+  console.log(`New user registration completed for ${accessRequest.email}`);
 }
 
 async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
