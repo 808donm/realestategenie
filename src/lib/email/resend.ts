@@ -1,14 +1,14 @@
-import { Resend } from "resend";
-
 // Lazy initialize Resend client only when needed
-let resendClient: Resend | null = null;
+let resendClient: any = null;
 
-function getResendClient(): Resend {
+async function getResendClient(): Promise<any> {
   if (!process.env.RESEND_API_KEY) {
     throw new Error("RESEND_API_KEY is not configured. Add it to your environment variables.");
   }
 
   if (!resendClient) {
+    // Dynamic import to prevent build-time initialization
+    const { Resend } = await import("resend");
     resendClient = new Resend(process.env.RESEND_API_KEY);
   }
 
@@ -62,7 +62,7 @@ export async function sendInvitationEmail(params: SendInvitationEmailParams) {
   const { to, invitationUrl, invitedBy, expiresAt } = params;
 
   // Get Resend client (will throw if API key not configured)
-  const resend = getResendClient();
+  const resend = await getResendClient();
 
   // Format expiration date
   const expirationDate = new Date(expiresAt).toLocaleDateString("en-US", {
@@ -106,7 +106,7 @@ export async function sendVerificationCode(params: SendVerificationCodeParams) {
   const { to, code, expiresInMinutes } = params;
 
   // Get Resend client (will throw if API key not configured)
-  const resend = getResendClient();
+  const resend = await getResendClient();
 
   try {
     const { data, error } = await resend.emails.send({
@@ -134,7 +134,7 @@ export async function sendTenantInvitationEmail(params: SendTenantInvitationPara
   const { to, tenantName, landlordName, propertyAddress, leaseStartDate, monthlyRent, inviteUrl, expiresAt } = params;
 
   // Get Resend client (will throw if API key not configured)
-  const resend = getResendClient();
+  const resend = await getResendClient();
 
   // Format expiration date
   const expirationDate = new Date(expiresAt).toLocaleDateString("en-US", {
@@ -186,7 +186,7 @@ export async function sendOpenHouseEmail(params: SendOpenHouseEmailParams) {
   const { to, name, propertyAddress, flyerUrl, isReturnVisit, visitCount } = params;
 
   // Get Resend client (will throw if API key not configured)
-  const resend = getResendClient();
+  const resend = await getResendClient();
 
   const subject = isReturnVisit
     ? `🔥 Welcome Back! ${propertyAddress}`
@@ -222,7 +222,7 @@ export async function sendAccessRequestNotification(params: SendAccessRequestNot
   const { to, applicantName, applicantEmail, applicantPhone, company, message, requestId } = params;
 
   // Get Resend client (will throw if API key not configured)
-  const resend = getResendClient();
+  const resend = await getResendClient();
 
   try {
     const { data, error } = await resend.emails.send({
