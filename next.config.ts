@@ -9,6 +9,9 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // Prevent Resend from being bundled - keep it as external module
+  // This prevents build-time initialization errors
+  serverExternalPackages: ["resend"],
 };
 
 export default nextConfig;
