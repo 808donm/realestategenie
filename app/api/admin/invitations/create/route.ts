@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { createClient } from "@supabase/supabase-js";
 import { logError } from "@/lib/error-logging";
-import { sendInvitationEmail } from "@/lib/email/resend";
 import crypto from "crypto";
 
 // Force dynamic rendering for API routes
@@ -111,6 +110,9 @@ export async function POST(request: NextRequest) {
 
     // Send invitation email via Resend
     try {
+      // Dynamic import to prevent build-time module loading
+      const { sendInvitationEmail } = await import("@/lib/email/resend");
+
       await sendInvitationEmail({
         to: email,
         invitationUrl: inviteUrl,

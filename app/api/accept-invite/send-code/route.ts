@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { sendVerificationCode } from "@/lib/email/resend";
 import { logError } from "@/lib/error-logging";
 import crypto from "crypto";
 
@@ -89,6 +88,9 @@ export async function POST(request: NextRequest) {
 
     // Send verification code via email
     try {
+      // Dynamic import to prevent build-time module loading
+      const { sendVerificationCode } = await import("@/lib/email/resend");
+
       await sendVerificationCode({
         to: invitation.email,
         code: verificationCode,

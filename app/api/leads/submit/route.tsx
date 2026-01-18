@@ -5,7 +5,6 @@ import { syncLeadToGHL } from "@/lib/integrations/ghl-sync";
 import { dispatchWebhook } from "@/lib/webhooks/dispatcher";
 import { createOrUpdateGHLContact, createGHLRegistrationRecord, createGHLOpenHouseRecord, createGHLOpportunity, addGHLTags, sendGHLEmail } from "@/lib/notifications/ghl-service";
 import { getValidGHLConfig } from "@/lib/integrations/ghl-token-refresh";
-import { sendOpenHouseEmail } from "@/lib/email/resend";
 import { validateQRToken } from "@/lib/security/qr-tokens";
 
 // Force dynamic rendering for API routes
@@ -339,6 +338,9 @@ export async function POST(req: Request) {
 
                 // Fallback to Resend for reliability
                 try {
+                  // Dynamic import to prevent build-time module loading
+                  const { sendOpenHouseEmail } = await import("@/lib/email/resend");
+
                   await sendOpenHouseEmail({
                     to: payload.email,
                     name: payload.name,
