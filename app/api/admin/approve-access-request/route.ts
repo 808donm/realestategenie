@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get the access request
-    const { data: accessRequest, error: fetchError} = await getAdmin()
+    const { data: accessRequest, error: fetchError } = await getAdmin()
       .from("access_requests")
       .select("*")
       .eq("id", requestId)
@@ -78,7 +78,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (accessRequest.status !== "pending") {
+    // Type assertion to help TypeScript understand the shape
+    const request = accessRequest as any;
+
+    if (request.status !== "pending") {
       return NextResponse.json(
         { error: "This request has already been processed" },
         { status: 400 }
@@ -105,8 +108,8 @@ export async function POST(request: NextRequest) {
     const session = await getStripe().checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "subscription",
-      customer_email: accessRequest.email,
-      client_reference_id: accessRequest.id, // Store access request ID
+      customer_email: request.email,
+      client_reference_id: request.id, // Store access request ID
       line_items: [
         {
           price: plans.stripe_price_id,
@@ -116,9 +119,9 @@ export async function POST(request: NextRequest) {
       success_url: `${appUrl}/app?subscription=success`,
       cancel_url: `${appUrl}/register?subscription=cancelled`,
       metadata: {
-        access_request_id: accessRequest.id,
-        applicant_email: accessRequest.email,
-        applicant_name: accessRequest.full_name,
+        access_request_id: request.id,
+        applicant_email: request.email,
+        applicant_name: request.full_name,
       },
     });
 
