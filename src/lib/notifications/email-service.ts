@@ -1,8 +1,20 @@
-import { Resend } from 'resend';
+// Lazy initialize Resend client only when needed
+let resendClient: any = null;
 
-const resend = process.env.RESEND_API_KEY
-  ? new Resend(process.env.RESEND_API_KEY)
-  : null;
+async function getResendClient(): Promise<any> {
+  if (!process.env.RESEND_API_KEY) {
+    console.warn('RESEND_API_KEY not configured, skipping email');
+    return null;
+  }
+
+  if (!resendClient) {
+    // Dynamic import to prevent build-time initialization
+    const { Resend } = await import('resend');
+    resendClient = new Resend(process.env.RESEND_API_KEY);
+  }
+
+  return resendClient;
+}
 
 export interface CheckInConfirmationParams {
   to: string;
@@ -26,8 +38,9 @@ export interface GreetingEmailParams {
 }
 
 export async function sendCheckInConfirmation(params: CheckInConfirmationParams) {
+  const resend = await getResendClient();
+
   if (!resend) {
-    console.warn('Resend not configured, skipping email');
     return null;
   }
 
@@ -52,8 +65,9 @@ export async function sendCheckInConfirmation(params: CheckInConfirmationParams)
 }
 
 export async function sendGreetingEmail(params: GreetingEmailParams) {
+  const resend = await getResendClient();
+
   if (!resend) {
-    console.warn('Resend not configured, skipping email');
     return null;
   }
 
