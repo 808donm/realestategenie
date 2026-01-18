@@ -129,8 +129,8 @@ export async function POST(request: NextRequest) {
     });
 
     // Update access request
-    await getAdmin()
-      .from("access_requests")
+    await (getAdmin()
+      .from("access_requests") as any)
       .update({
         status: "approved",
         admin_notes: adminNotes || null,
