@@ -4,18 +4,33 @@ import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { logError } from "@/lib/error-logging";
 import Stripe from "stripe";
 
-// Force dynamic rendering for API routes
+// Force dynamic rendering and Node.js runtime
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
-const admin = createAdminClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+// Lazy initialization to prevent build-time evaluation
+let admin: ReturnType<typeof createAdminClient> | null = null;
+let stripe: Stripe | null = null;
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-12-15.clover",
-});
+function getAdmin() {
+  if (!admin) {
+    admin = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { persistSession: false } }
+    );
+  }
+  return admin;
+}
+
+function getStripe() {
+  if (!stripe) {
+    stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+      apiVersion: "2025-12-15.clover",
+    });
+  }
+  return stripe;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -50,7 +65,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get the access request
-    const { data: accessRequest, error: fetchError } = await admin
+    const { data: accessRequest, error: fetchError} = await getAdmin()
       .from("access_requests")
       .select("*")
       .eq("id", requestId)
@@ -71,7 +86,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get the default subscription plan (you can modify this to let admin choose)
-    const { data: plans } = await admin
+    const { data: plans } = await getAdmin()
       .from("subscription_plans")
       .select("*")
       .eq("name", "Pro")
@@ -87,7 +102,7 @@ export async function POST(request: NextRequest) {
     // Create Stripe checkout session
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://realestategenie.app";
 
-    const session = await stripe.checkout.sessions.create({
+    const session = await getStripe().checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "subscription",
       customer_email: accessRequest.email,
@@ -108,7 +123,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Update access request
-    await admin
+    await getAdmin()
       .from("access_requests")
       .update({
         status: "approved",
