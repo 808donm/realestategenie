@@ -102,6 +102,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Type assertion to help TypeScript understand the shape
+    const plan = plans as any;
+
     // Create Stripe checkout session
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://realestategenie.app";
 
@@ -112,7 +115,7 @@ export async function POST(request: NextRequest) {
       client_reference_id: accessReq.id, // Store access request ID
       line_items: [
         {
-          price: plans.stripe_price_id,
+          price: plan.stripe_price_id,
           quantity: 1,
         },
       ],
