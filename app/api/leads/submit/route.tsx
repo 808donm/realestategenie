@@ -8,6 +8,9 @@ import { getValidGHLConfig } from "@/lib/integrations/ghl-token-refresh";
 import { sendOpenHouseEmail } from "@/lib/email/resend";
 import { validateQRToken } from "@/lib/security/qr-tokens";
 
+// Force dynamic rendering for API routes
+export const dynamic = 'force-dynamic';
+
 const admin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
