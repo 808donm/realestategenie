@@ -34,11 +34,14 @@ export async function GET(request: NextRequest) {
     }
 
     // Use admin client to check role (bypasses RLS)
-    const { data: agent } = await getAdmin()
+    const { data: agentData } = await getAdmin()
       .from("agents")
       .select("id, role")
       .eq("user_id", user.id)
       .single();
+
+    // Type assertion for Supabase query result
+    const agent = agentData as any;
 
     if (!agent || agent.role !== "admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
