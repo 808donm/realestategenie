@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = await supabaseServer();
 
-    // Check if user is authenticated and is an admin
+    // Check if user is authenticated
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -33,7 +33,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data: agent } = await supabase
+    // Use admin client to check role (bypasses RLS)
+    const { data: agent } = await getAdmin()
       .from("agents")
       .select("id, role")
       .eq("user_id", user.id)
