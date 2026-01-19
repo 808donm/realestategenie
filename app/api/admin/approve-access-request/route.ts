@@ -55,11 +55,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const { requestId, adminNotes } = await request.json();
+    const { requestId, planId, adminNotes } = await request.json();
 
     if (!requestId) {
       return NextResponse.json(
         { error: "Request ID is required" },
+        { status: 400 }
+      );
+    }
+
+    if (!planId) {
+      return NextResponse.json(
+        { error: "Plan ID is required" },
         { status: 400 }
       );
     }
@@ -88,11 +95,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get the default subscription plan (you can modify this to let admin choose)
+    // Get the selected subscription plan
     const { data: plans } = await getAdmin()
       .from("subscription_plans")
       .select("*")
-      .eq("name", "Pro")
+      .eq("id", planId)
       .single();
 
     if (!plans) {

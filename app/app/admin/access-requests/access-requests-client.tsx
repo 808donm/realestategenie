@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +13,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface AccessRequest {
   id: string;
@@ -27,6 +34,16 @@ interface AccessRequest {
   created_at: string;
 }
 
+interface SubscriptionPlan {
+  id: string;
+  name: string;
+  monthly_price: number;
+  tier_level: number;
+  max_agents: number;
+  max_properties: number;
+  max_tenants: number;
+}
+
 export default function AccessRequestsClient({
   initialRequests,
 }: {
@@ -39,6 +56,29 @@ export default function AccessRequestsClient({
   const [adminNotes, setAdminNotes] = useState("");
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<"all" | "pending" | "approved" | "rejected">("pending");
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
+  const [selectedPlan, setSelectedPlan] = useState<string>("");
+  const [loadingPlans, setLoadingPlans] = useState(false);
+
+  // Fetch subscription plans when component mounts
+  useEffect(() => {
+    fetchPlans();
+  }, []);
+
+  const fetchPlans = async () => {
+    setLoadingPlans(true);
+    try {
+      const response = await fetch("/api/admin/subscription-plans");
+      if (response.ok) {
+        const data = await response.json();
+        setPlans(data.plans || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch plans:", error);
+    } finally {
+      setLoadingPlans(false);
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "danger" | "outline"> = {
@@ -67,6 +107,11 @@ export default function AccessRequestsClient({
   const handleApprove = async () => {
     if (!selectedRequest) return;
 
+    if (!selectedPlan) {
+      alert("Please select a subscription plan");
+      return;
+    }
+
     setLoading(true);
     try {
       const response = await fetch("/api/admin/approve-access-request", {
@@ -74,6 +119,7 @@ export default function AccessRequestsClient({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           requestId: selectedRequest.id,
+          planId: selectedPlan,
           adminNotes,
         }),
       });
@@ -94,12 +140,33 @@ export default function AccessRequestsClient({
         )
       );
 
-      alert(`Request approved! Sending user to payment page...`);
+      // Show payment link to admin
+      const planName = plans.find((p) => p.id === selectedPlan)?.name || "Selected plan";
+
+      // Copy to clipboard
+      try {
+        await navigator.clipboard.writeText(checkoutUrl);
+        alert(
+          `✅ Request approved!\n\n` +
+          `📋 Payment link copied to clipboard!\n\n` +
+          `📧 Send this to ${selectedRequest.email}:\n${checkoutUrl}\n\n` +
+          `Plan: ${planName}\n\n` +
+          `After they pay, they'll automatically receive an invitation.`
+        );
+      } catch {
+        alert(
+          `✅ Request approved!\n\n` +
+          `📧 Send this payment link to ${selectedRequest.email}:\n\n${checkoutUrl}\n\n` +
+          `Plan: ${planName}\n\n` +
+          `After they pay, they'll automatically receive an invitation.`
+        );
+      }
 
       // Close dialog
       setShowDialog(false);
       setAdminNotes("");
       setSelectedRequest(null);
+      setSelectedPlan("");
     } catch (error: any) {
       alert(error.message || "Failed to approve request");
     } finally {
@@ -152,6 +219,7 @@ export default function AccessRequestsClient({
     setSelectedRequest(request);
     setDialogType(type);
     setAdminNotes(request.admin_notes || "");
+    setSelectedPlan(""); // Reset plan selection
     setShowDialog(true);
   };
 
@@ -340,6 +408,47 @@ export default function AccessRequestsClient({
                   </div>
                 )}
 
+                {dialogType === "approve" && (
+                  <div>
+                    <Label htmlFor="planSelect">Select Subscription Plan *</Label>
+                    <Select value={selectedPlan} onValueChange={setSelectedPlan}>
+                      <SelectTrigger className="mt-2">
+                        <SelectValue placeholder="Choose a plan..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {loadingPlans ? (
+                          <SelectItem value="loading" disabled>
+                            Loading plans...
+                          </SelectItem>
+                        ) : plans.length === 0 ? (
+                          <SelectItem value="none" disabled>
+                            No plans available
+                          </SelectItem>
+                        ) : (
+                          plans.map((plan) => (
+                            <SelectItem key={plan.id} value={plan.id}>
+                              {plan.name} - ${plan.monthly_price}/mo
+                              {plan.max_agents === 999999 ? " (Unlimited)" : ` (${plan.max_agents} agents, ${plan.max_properties} properties)`}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                    {selectedPlan && plans.find((p) => p.id === selectedPlan) && (
+                      <div className="mt-2 p-3 bg-muted rounded-lg text-sm">
+                        <p className="font-medium">
+                          {plans.find((p) => p.id === selectedPlan)?.name}
+                        </p>
+                        <p className="text-muted-foreground mt-1">
+                          {plans.find((p) => p.id === selectedPlan)?.max_agents === 999999
+                            ? "Unlimited agents, properties, and tenants"
+                            : `Up to ${plans.find((p) => p.id === selectedPlan)?.max_agents} agents, ${plans.find((p) => p.id === selectedPlan)?.max_properties} properties, ${plans.find((p) => p.id === selectedPlan)?.max_tenants} tenants`}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {dialogType !== "details" && (
                   <div>
                     <Label htmlFor="adminNotes">
@@ -362,8 +471,9 @@ export default function AccessRequestsClient({
                       <strong>What happens next:</strong>
                     </p>
                     <ol className="text-sm text-blue-800 mt-2 space-y-1 list-decimal list-inside">
-                      <li>User receives email with Stripe payment link</li>
-                      <li>After payment, user gets invitation to create account</li>
+                      <li>System generates Stripe payment link for selected plan</li>
+                      <li>You send the payment link to the user</li>
+                      <li>After payment, user automatically receives invitation</li>
                       <li>User completes registration and can access the platform</li>
                     </ol>
                   </div>
