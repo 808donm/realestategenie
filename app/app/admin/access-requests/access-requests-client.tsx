@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -52,13 +53,18 @@ export default function AccessRequestsClient({
   const [requests, setRequests] = useState<AccessRequest[]>(initialRequests);
   const [selectedRequest, setSelectedRequest] = useState<AccessRequest | null>(null);
   const [showDialog, setShowDialog] = useState(false);
-  const [dialogType, setDialogType] = useState<"approve" | "reject" | "details">("details");
+  const [dialogType, setDialogType] = useState<"approve" | "reject" | "details" | "send-invitation">("details");
   const [adminNotes, setAdminNotes] = useState("");
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<"all" | "pending" | "approved" | "rejected">("pending");
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<string>("");
   const [loadingPlans, setLoadingPlans] = useState(false);
+
+  // New invitation form state
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteFullName, setInviteFullName] = useState("");
+  const [invitePhone, setInvitePhone] = useState("");
 
   // Fetch subscription plans when component mounts
   useEffect(() => {
@@ -215,11 +221,94 @@ export default function AccessRequestsClient({
     }
   };
 
-  const openDialog = (request: AccessRequest, type: "approve" | "reject" | "details") => {
+  const handleSendInvitation = async () => {
+    if (!inviteEmail || !inviteFullName) {
+      alert("Please provide email and full name");
+      return;
+    }
+
+    if (!selectedPlan) {
+      alert("Please select a subscription plan");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch("/api/admin/send-paid-invitation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: inviteEmail,
+          fullName: inviteFullName,
+          phone: invitePhone,
+          planId: selectedPlan,
+          adminNotes,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to send invitation");
+      }
+
+      const { checkoutUrl } = await response.json();
+
+      // Show payment link to admin
+      const planName = plans.find((p) => p.id === selectedPlan)?.name || "Selected plan";
+
+      // Copy to clipboard
+      try {
+        await navigator.clipboard.writeText(checkoutUrl);
+        alert(
+          `✅ Invitation created!\n\n` +
+          `📋 Payment link copied to clipboard!\n\n` +
+          `📧 Send this to ${inviteEmail}:\n${checkoutUrl}\n\n` +
+          `Plan: ${planName}\n\n` +
+          `After they pay, they'll automatically receive an invitation to create their account.`
+        );
+      } catch {
+        alert(
+          `✅ Invitation created!\n\n` +
+          `📧 Send this payment link to ${inviteEmail}:\n\n${checkoutUrl}\n\n` +
+          `Plan: ${planName}\n\n` +
+          `After they pay, they'll automatically receive an invitation to create their account.`
+        );
+      }
+
+      // Refresh the requests list to show the new invitation
+      window.location.reload();
+
+      // Close dialog
+      setShowDialog(false);
+      setInviteEmail("");
+      setInviteFullName("");
+      setInvitePhone("");
+      setAdminNotes("");
+      setSelectedPlan("");
+    } catch (error: any) {
+      alert(error.message || "Failed to send invitation");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openDialog = (request: AccessRequest | null, type: "approve" | "reject" | "details" | "send-invitation") => {
     setSelectedRequest(request);
     setDialogType(type);
-    setAdminNotes(request.admin_notes || "");
+    if (request) {
+      setAdminNotes(request.admin_notes || "");
+    } else {
+      setAdminNotes("");
+    }
     setSelectedPlan(""); // Reset plan selection
+
+    // Reset invitation form fields
+    if (type === "send-invitation") {
+      setInviteEmail("");
+      setInviteFullName("");
+      setInvitePhone("");
+    }
+
     setShowDialog(true);
   };
 
@@ -230,6 +319,19 @@ export default function AccessRequestsClient({
 
   return (
     <>
+      <div className="mb-6">
+        <Button
+          onClick={() => openDialog(null, "send-invitation")}
+          className="bg-blue-600 hover:bg-blue-700 mb-4"
+          size="lg"
+        >
+          + Send Paid Invitation
+        </Button>
+        <p className="text-sm text-muted-foreground mb-6">
+          Directly invite someone to subscribe without requiring them to submit an access request first
+        </p>
+      </div>
+
       <div className="mb-6 flex gap-2">
         <Button
           variant={filter === "pending" ? "default" : "outline"}
@@ -362,15 +464,120 @@ export default function AccessRequestsClient({
                 ? "Approve Access Request"
                 : dialogType === "reject"
                 ? "Reject Access Request"
+                : dialogType === "send-invitation"
+                ? "Send Paid Invitation"
                 : "Request Details"}
             </DialogTitle>
             <DialogDescription>
-              {selectedRequest?.full_name} - {selectedRequest?.email}
+              {dialogType === "send-invitation"
+                ? "Invite someone to subscribe with payment required upfront"
+                : `${selectedRequest?.full_name} - ${selectedRequest?.email}`}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
-            {selectedRequest && (
+            {dialogType === "send-invitation" ? (
+              <>
+                <div>
+                  <Label htmlFor="inviteEmail">Email Address *</Label>
+                  <Input
+                    id="inviteEmail"
+                    type="email"
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                    placeholder="user@example.com"
+                    className="mt-2"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="inviteFullName">Full Name *</Label>
+                  <Input
+                    id="inviteFullName"
+                    type="text"
+                    value={inviteFullName}
+                    onChange={(e) => setInviteFullName(e.target.value)}
+                    placeholder="John Doe"
+                    className="mt-2"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="invitePhone">Phone Number (Optional)</Label>
+                  <Input
+                    id="invitePhone"
+                    type="tel"
+                    value={invitePhone}
+                    onChange={(e) => setInvitePhone(e.target.value)}
+                    placeholder="+1 (555) 123-4567"
+                    className="mt-2"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="planSelect">Select Subscription Plan *</Label>
+                  <Select value={selectedPlan} onValueChange={setSelectedPlan}>
+                    <SelectTrigger className="mt-2">
+                      <SelectValue placeholder="Choose a plan..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {loadingPlans ? (
+                        <SelectItem value="loading" disabled>
+                          Loading plans...
+                        </SelectItem>
+                      ) : plans.length === 0 ? (
+                        <SelectItem value="none" disabled>
+                          No plans available
+                        </SelectItem>
+                      ) : (
+                        plans.map((plan) => (
+                          <SelectItem key={plan.id} value={plan.id}>
+                            {plan.name} - ${plan.monthly_price}/mo
+                            {plan.max_agents === 999999 ? " (Unlimited)" : ` (${plan.max_agents} agents, ${plan.max_properties} properties)`}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                  {selectedPlan && plans.find((p) => p.id === selectedPlan) && (
+                    <div className="mt-2 p-3 bg-muted rounded-lg text-sm">
+                      <p className="font-medium">
+                        {plans.find((p) => p.id === selectedPlan)?.name}
+                      </p>
+                      <p className="text-muted-foreground mt-1">
+                        {plans.find((p) => p.id === selectedPlan)?.max_agents === 999999
+                          ? "Unlimited agents, properties, and tenants"
+                          : `Up to ${plans.find((p) => p.id === selectedPlan)?.max_agents} agents, ${plans.find((p) => p.id === selectedPlan)?.max_properties} properties, ${plans.find((p) => p.id === selectedPlan)?.max_tenants} tenants`}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="adminNotes">Admin Notes (Optional)</Label>
+                  <Textarea
+                    id="adminNotes"
+                    value={adminNotes}
+                    onChange={(e) => setAdminNotes(e.target.value)}
+                    placeholder="Add any internal notes..."
+                    rows={3}
+                    className="mt-2"
+                  />
+                </div>
+
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-900">
+                    <strong>What happens next:</strong>
+                  </p>
+                  <ol className="text-sm text-blue-800 mt-2 space-y-1 list-decimal list-inside">
+                    <li>System generates Stripe payment link for selected plan</li>
+                    <li>You send the payment link to the user</li>
+                    <li>After payment, user automatically receives invitation</li>
+                    <li>User completes registration and can access the platform</li>
+                  </ol>
+                </div>
+              </>
+            ) : selectedRequest && (
               <>
                 <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
                   <div>
@@ -501,6 +708,15 @@ export default function AccessRequestsClient({
                   disabled={loading}
                 >
                   {loading ? "Rejecting..." : "Reject Application"}
+                </Button>
+              )}
+              {dialogType === "send-invitation" && (
+                <Button
+                  onClick={handleSendInvitation}
+                  disabled={loading}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  {loading ? "Generating Link..." : "Generate Payment Link"}
                 </Button>
               )}
             </div>
