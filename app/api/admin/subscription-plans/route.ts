@@ -30,22 +30,40 @@ export async function GET(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (!user) {
+      console.error("No user found in session");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    console.log("User authenticated:", user.id);
+
     // Use admin client to check role (bypasses RLS)
-    const { data: agentData } = await getAdmin()
+    const { data: agentData, error: agentError } = await getAdmin()
       .from("agents")
       .select("id, role")
       .eq("user_id", user.id)
       .single();
 
+    console.log("Agent query result:", { agentData, agentError });
+
     // Type assertion for Supabase query result
     const agent = agentData as any;
 
-    if (!agent || agent.role !== "admin") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (agentError) {
+      console.error("Error fetching agent:", agentError);
+      return NextResponse.json({ error: "Failed to verify admin access" }, { status: 500 });
     }
+
+    if (!agent) {
+      console.error("No agent found for user:", user.id);
+      return NextResponse.json({ error: "Forbidden - No agent record" }, { status: 403 });
+    }
+
+    if (agent.role !== "admin") {
+      console.error("User is not admin, role:", agent.role);
+      return NextResponse.json({ error: "Forbidden - Not admin" }, { status: 403 });
+    }
+
+    console.log("Admin verified, fetching plans...");
 
     // Fetch all active subscription plans
     const { data: plans, error } = await getAdmin()
@@ -63,6 +81,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    console.log("Plans fetched successfully:", plans?.length);
     return NextResponse.json({ plans: plans || [] });
   } catch (error: any) {
     console.error("Error in subscription-plans API:", error);
