@@ -78,12 +78,21 @@ export default function AccessRequestsClient({
     setLoadingPlans(true);
     try {
       const response = await fetch("/api/admin/subscription-plans");
+      console.log("Plans API response status:", response.status);
+
       if (response.ok) {
         const data = await response.json();
+        console.log("Plans API response data:", data);
+        console.log("Plans array:", data.plans);
         setPlans(data.plans || []);
+      } else {
+        const errorData = await response.json();
+        console.error("Plans API error:", response.status, errorData);
+        alert(`Failed to load plans: ${errorData.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error("Failed to fetch plans:", error);
+      alert(`Failed to fetch plans: ${error}`);
     } finally {
       setLoadingPlans(false);
     }
