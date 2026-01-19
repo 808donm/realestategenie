@@ -37,10 +37,11 @@ export async function GET(request: NextRequest) {
     console.log("User authenticated:", user.id);
 
     // Use admin client to check role (bypasses RLS)
+    // Note: agents.id IS the user_id (it references auth.users(id))
     const { data: agentData, error: agentError } = await getAdmin()
       .from("agents")
       .select("id, role")
-      .eq("user_id", user.id)
+      .eq("id", user.id)  // Changed from user_id to id
       .single();
 
     console.log("Agent query result:", { agentData, agentError });
