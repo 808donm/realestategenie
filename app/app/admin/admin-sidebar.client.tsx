@@ -31,6 +31,9 @@ export default function AdminSidebar() {
         <NavLink href="/app/admin/users" active={pathname === "/app/admin/users"}>
           👥 Users
         </NavLink>
+        <NavLink href="/app/admin/access-requests" active={pathname === "/app/admin/access-requests"}>
+          📋 Access Requests
+        </NavLink>
         <NavLink href="/app/admin/invitations" active={pathname === "/app/admin/invitations"}>
           📧 Invitations
         </NavLink>

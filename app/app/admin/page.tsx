@@ -24,6 +24,10 @@ export default async function AdminOverviewPage() {
       .from("user_invitations")
       .select("*", { count: "exact", head: true })
       .eq("status", "pending"),
+    adminSupabase
+      .from("access_requests")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "pending"),
     supabase.from("open_house_events").select("*", { count: "exact", head: true }),
     supabase.from("lead_submissions").select("*", { count: "exact", head: true }),
     supabase
@@ -46,11 +50,12 @@ export default async function AdminOverviewPage() {
   const activeUsers = results[1].count ?? 0;
   const disabledUsers = results[2].count ?? 0;
   const pendingInvites = results[3].count ?? 0;
-  const totalOpenHouses = results[4].count ?? 0;
-  const totalLeads = results[5].count ?? 0;
-  const recentErrors = results[6].count ?? 0;
-  const criticalAlerts = results[7].count ?? 0;
-  const warningAlerts = results[8].count ?? 0;
+  const pendingAccessRequests = results[4].count ?? 0;
+  const totalOpenHouses = results[5].count ?? 0;
+  const totalLeads = results[6].count ?? 0;
+  const recentErrors = results[7].count ?? 0;
+  const criticalAlerts = results[8].count ?? 0;
+  const warningAlerts = results[9].count ?? 0;
 
   // Get agents with critical alerts for sales opportunities
   const { data: criticalAlertsData } = await adminSupabase
@@ -137,6 +142,12 @@ export default async function AdminOverviewPage() {
           color="#10b981"
         />
         <StatCard
+          title="Access Requests"
+          value={pendingAccessRequests || 0}
+          icon="📋"
+          color={pendingAccessRequests && pendingAccessRequests > 0 ? "#f59e0b" : "#10b981"}
+        />
+        <StatCard
           title="Critical Alerts"
           value={criticalAlerts || 0}
           icon="🚨"
@@ -175,6 +186,9 @@ export default async function AdminOverviewPage() {
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
           <QuickActionButton href="/app/admin/users">
             Manage Users
+          </QuickActionButton>
+          <QuickActionButton href="/app/admin/access-requests">
+            Access Requests
           </QuickActionButton>
           <QuickActionButton href="/app/admin/subscriptions">
             Manage Subscriptions
