@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 interface AccessRequest {
   id: string;
@@ -39,6 +40,7 @@ interface SubscriptionPlan {
   id: string;
   name: string;
   monthly_price: number;
+  annual_price: number;
   tier_level: number;
   max_agents: number;
   max_properties: number;
@@ -60,6 +62,7 @@ export default function AccessRequestsClient({
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<string>("");
   const [loadingPlans, setLoadingPlans] = useState(false);
+  const [billingFrequency, setBillingFrequency] = useState<"monthly" | "yearly">("monthly");
 
   // New invitation form state
   const [inviteEmail, setInviteEmail] = useState("");
@@ -126,6 +129,7 @@ export default function AccessRequestsClient({
         body: JSON.stringify({
           requestId: selectedRequest.id,
           planId: selectedPlan,
+          billingFrequency,
           adminNotes,
         }),
       });
@@ -242,6 +246,7 @@ export default function AccessRequestsClient({
           fullName: inviteFullName,
           phone: invitePhone,
           planId: selectedPlan,
+          billingFrequency,
           adminNotes,
         }),
       });
@@ -301,6 +306,7 @@ export default function AccessRequestsClient({
       setAdminNotes("");
     }
     setSelectedPlan(""); // Reset plan selection
+    setBillingFrequency("monthly"); // Reset billing frequency
 
     // Reset invitation form fields
     if (type === "send-invitation") {
@@ -532,7 +538,7 @@ export default function AccessRequestsClient({
                       ) : (
                         plans.map((plan) => (
                           <SelectItem key={plan.id} value={plan.id}>
-                            {plan.name} - ${plan.monthly_price}/mo
+                            {plan.name} - ${plan.monthly_price}/mo or ${plan.annual_price}/yr
                             {plan.max_agents === 999999 ? " (Unlimited)" : ` (${plan.max_agents} agents, ${plan.max_properties} properties)`}
                           </SelectItem>
                         ))
@@ -551,6 +557,37 @@ export default function AccessRequestsClient({
                       </p>
                     </div>
                   )}
+                </div>
+
+                <div>
+                  <Label>Billing Frequency *</Label>
+                  <RadioGroup value={billingFrequency} onValueChange={(value: "monthly" | "yearly") => setBillingFrequency(value)} className="mt-2">
+                    <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted cursor-pointer">
+                      <RadioGroupItem value="monthly" id="invite-monthly" />
+                      <Label htmlFor="invite-monthly" className="flex-1 cursor-pointer">
+                        <div className="font-medium">Monthly Billing</div>
+                        {selectedPlan && plans.find((p) => p.id === selectedPlan) && (
+                          <div className="text-sm text-muted-foreground">
+                            ${plans.find((p) => p.id === selectedPlan)?.monthly_price}/month
+                          </div>
+                        )}
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted cursor-pointer">
+                      <RadioGroupItem value="yearly" id="invite-yearly" />
+                      <Label htmlFor="invite-yearly" className="flex-1 cursor-pointer">
+                        <div className="font-medium">Yearly Billing</div>
+                        {selectedPlan && plans.find((p) => p.id === selectedPlan) && (
+                          <div className="text-sm text-muted-foreground">
+                            ${plans.find((p) => p.id === selectedPlan)?.annual_price}/year
+                            <span className="ml-1 text-green-600 font-medium">
+                              (Save ${(plans.find((p) => p.id === selectedPlan)!.monthly_price * 12 - plans.find((p) => p.id === selectedPlan)!.annual_price).toFixed(0)})
+                            </span>
+                          </div>
+                        )}
+                      </Label>
+                    </div>
+                  </RadioGroup>
                 </div>
 
                 <div>
@@ -616,44 +653,77 @@ export default function AccessRequestsClient({
                 )}
 
                 {dialogType === "approve" && (
-                  <div>
-                    <Label htmlFor="planSelect">Select Subscription Plan *</Label>
-                    <Select value={selectedPlan} onValueChange={setSelectedPlan}>
-                      <SelectTrigger className="mt-2">
-                        <SelectValue placeholder="Choose a plan..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {loadingPlans ? (
-                          <SelectItem value="loading" disabled>
-                            Loading plans...
-                          </SelectItem>
-                        ) : plans.length === 0 ? (
-                          <SelectItem value="none" disabled>
-                            No plans available
-                          </SelectItem>
-                        ) : (
-                          plans.map((plan) => (
-                            <SelectItem key={plan.id} value={plan.id}>
-                              {plan.name} - ${plan.monthly_price}/mo
-                              {plan.max_agents === 999999 ? " (Unlimited)" : ` (${plan.max_agents} agents, ${plan.max_properties} properties)`}
+                  <>
+                    <div>
+                      <Label htmlFor="planSelect">Select Subscription Plan *</Label>
+                      <Select value={selectedPlan} onValueChange={setSelectedPlan}>
+                        <SelectTrigger className="mt-2">
+                          <SelectValue placeholder="Choose a plan..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {loadingPlans ? (
+                            <SelectItem value="loading" disabled>
+                              Loading plans...
                             </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
-                    {selectedPlan && plans.find((p) => p.id === selectedPlan) && (
-                      <div className="mt-2 p-3 bg-muted rounded-lg text-sm">
-                        <p className="font-medium">
-                          {plans.find((p) => p.id === selectedPlan)?.name}
-                        </p>
-                        <p className="text-muted-foreground mt-1">
-                          {plans.find((p) => p.id === selectedPlan)?.max_agents === 999999
-                            ? "Unlimited agents, properties, and tenants"
-                            : `Up to ${plans.find((p) => p.id === selectedPlan)?.max_agents} agents, ${plans.find((p) => p.id === selectedPlan)?.max_properties} properties, ${plans.find((p) => p.id === selectedPlan)?.max_tenants} tenants`}
-                        </p>
-                      </div>
-                    )}
-                  </div>
+                          ) : plans.length === 0 ? (
+                            <SelectItem value="none" disabled>
+                              No plans available
+                            </SelectItem>
+                          ) : (
+                            plans.map((plan) => (
+                              <SelectItem key={plan.id} value={plan.id}>
+                                {plan.name} - ${plan.monthly_price}/mo or ${plan.annual_price}/yr
+                                {plan.max_agents === 999999 ? " (Unlimited)" : ` (${plan.max_agents} agents, ${plan.max_properties} properties)`}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                      {selectedPlan && plans.find((p) => p.id === selectedPlan) && (
+                        <div className="mt-2 p-3 bg-muted rounded-lg text-sm">
+                          <p className="font-medium">
+                            {plans.find((p) => p.id === selectedPlan)?.name}
+                          </p>
+                          <p className="text-muted-foreground mt-1">
+                            {plans.find((p) => p.id === selectedPlan)?.max_agents === 999999
+                              ? "Unlimited agents, properties, and tenants"
+                              : `Up to ${plans.find((p) => p.id === selectedPlan)?.max_agents} agents, ${plans.find((p) => p.id === selectedPlan)?.max_properties} properties, ${plans.find((p) => p.id === selectedPlan)?.max_tenants} tenants`}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <Label>Billing Frequency *</Label>
+                      <RadioGroup value={billingFrequency} onValueChange={(value: "monthly" | "yearly") => setBillingFrequency(value)} className="mt-2">
+                        <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted cursor-pointer">
+                          <RadioGroupItem value="monthly" id="approve-monthly" />
+                          <Label htmlFor="approve-monthly" className="flex-1 cursor-pointer">
+                            <div className="font-medium">Monthly Billing</div>
+                            {selectedPlan && plans.find((p) => p.id === selectedPlan) && (
+                              <div className="text-sm text-muted-foreground">
+                                ${plans.find((p) => p.id === selectedPlan)?.monthly_price}/month
+                              </div>
+                            )}
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted cursor-pointer">
+                          <RadioGroupItem value="yearly" id="approve-yearly" />
+                          <Label htmlFor="approve-yearly" className="flex-1 cursor-pointer">
+                            <div className="font-medium">Yearly Billing</div>
+                            {selectedPlan && plans.find((p) => p.id === selectedPlan) && (
+                              <div className="text-sm text-muted-foreground">
+                                ${plans.find((p) => p.id === selectedPlan)?.annual_price}/year
+                                <span className="ml-1 text-green-600 font-medium">
+                                  (Save ${(plans.find((p) => p.id === selectedPlan)!.monthly_price * 12 - plans.find((p) => p.id === selectedPlan)!.annual_price).toFixed(0)})
+                                </span>
+                              </div>
+                            )}
+                          </Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
+                  </>
                 )}
 
                 {dialogType !== "details" && (

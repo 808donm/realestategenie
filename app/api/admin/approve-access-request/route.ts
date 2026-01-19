@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const { requestId, planId, adminNotes } = await request.json();
+    const { requestId, planId, billingFrequency, adminNotes } = await request.json();
 
     if (!requestId) {
       return NextResponse.json(
@@ -67,6 +67,13 @@ export async function POST(request: NextRequest) {
     if (!planId) {
       return NextResponse.json(
         { error: "Plan ID is required" },
+        { status: 400 }
+      );
+    }
+
+    if (!billingFrequency || !["monthly", "yearly"].includes(billingFrequency)) {
+      return NextResponse.json(
+        { error: "Valid billing frequency is required (monthly or yearly)" },
         { status: 400 }
       );
     }
@@ -112,6 +119,18 @@ export async function POST(request: NextRequest) {
     // Type assertion to help TypeScript understand the shape
     const plan = plans as any;
 
+    // Select the appropriate Stripe price ID based on billing frequency
+    const stripePriceId = billingFrequency === "yearly"
+      ? plan.stripe_yearly_price_id
+      : plan.stripe_price_id;
+
+    if (!stripePriceId) {
+      return NextResponse.json(
+        { error: `Stripe price ID not configured for ${billingFrequency} billing on this plan` },
+        { status: 500 }
+      );
+    }
+
     // Create Stripe checkout session
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://realestategenie.app";
 
@@ -122,7 +141,7 @@ export async function POST(request: NextRequest) {
       client_reference_id: accessReq.id, // Store access request ID
       line_items: [
         {
-          price: plan.stripe_price_id,
+          price: stripePriceId,
           quantity: 1,
         },
       ],
@@ -132,6 +151,7 @@ export async function POST(request: NextRequest) {
         access_request_id: accessReq.id,
         applicant_email: accessReq.email,
         applicant_name: accessReq.full_name,
+        billing_frequency: billingFrequency,
       },
     });
 
@@ -157,6 +177,8 @@ export async function POST(request: NextRequest) {
         name: accessReq.full_name,
         planName: plan.name,
         monthlyPrice: plan.monthly_price,
+        annualPrice: plan.annual_price,
+        billingFrequency,
         paymentUrl: session.url!,
         planDetails: {
           maxAgents: plan.max_agents,

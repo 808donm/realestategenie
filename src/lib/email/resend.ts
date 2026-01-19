@@ -1169,6 +1169,8 @@ export interface SendPaymentLinkParams {
   name: string;
   planName: string;
   monthlyPrice: number;
+  annualPrice: number;
+  billingFrequency: "monthly" | "yearly";
   paymentUrl: string;
   planDetails: {
     maxAgents: number;
@@ -1178,7 +1180,7 @@ export interface SendPaymentLinkParams {
 }
 
 export async function sendPaymentLinkEmail(params: SendPaymentLinkParams) {
-  const { to, name, planName, monthlyPrice, paymentUrl, planDetails } = params;
+  const { to, name, planName, monthlyPrice, annualPrice, billingFrequency, paymentUrl, planDetails } = params;
 
   const resend = await getResendClient();
 
@@ -1186,8 +1188,8 @@ export async function sendPaymentLinkEmail(params: SendPaymentLinkParams) {
     from: "Real Estate Genie <support@realestategenie.app>",
     to: [to],
     subject: `Complete Your Subscription - ${planName} Plan`,
-    html: getPaymentLinkHtml({ name, planName, monthlyPrice, paymentUrl, planDetails }),
-    text: getPaymentLinkText({ name, planName, monthlyPrice, paymentUrl, planDetails }),
+    html: getPaymentLinkHtml({ name, planName, monthlyPrice, annualPrice, billingFrequency, paymentUrl, planDetails }),
+    text: getPaymentLinkText({ name, planName, monthlyPrice, annualPrice, billingFrequency, paymentUrl, planDetails }),
   });
 
   if (error) {
@@ -1203,12 +1205,16 @@ function getPaymentLinkHtml({
   name,
   planName,
   monthlyPrice,
+  annualPrice,
+  billingFrequency,
   paymentUrl,
   planDetails,
 }: {
   name: string;
   planName: string;
   monthlyPrice: number;
+  annualPrice: number;
+  billingFrequency: "monthly" | "yearly";
   paymentUrl: string;
   planDetails: {
     maxAgents: number;
@@ -1217,6 +1223,9 @@ function getPaymentLinkHtml({
   };
 }) {
   const isUnlimited = planDetails.maxAgents === 999999;
+  const displayPrice = billingFrequency === "yearly" ? annualPrice : monthlyPrice;
+  const displayInterval = billingFrequency === "yearly" ? "year" : "month";
+  const savings = billingFrequency === "yearly" ? (monthlyPrice * 12 - annualPrice).toFixed(0) : null;
 
   return `
 <!DOCTYPE html>
@@ -1249,9 +1258,10 @@ function getPaymentLinkHtml({
 
               <div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 2px solid #0ea5e9; border-radius: 12px; padding: 24px; margin: 30px 0;">
                 <h2 style="margin: 0 0 16px; font-size: 24px; color: #0c4a6e; font-weight: 700;">${planName}</h2>
-                <p style="margin: 0 0 20px; font-size: 32px; color: #0369a1; font-weight: 800;">
-                  $${monthlyPrice}<span style="font-size: 18px; font-weight: 400; color: #64748b;">/month</span>
+                <p style="margin: 0 0 8px; font-size: 32px; color: #0369a1; font-weight: 800;">
+                  $${displayPrice}<span style="font-size: 18px; font-weight: 400; color: #64748b;">/${displayInterval}</span>
                 </p>
+                ${savings ? `<p style="margin: 0 0 20px; font-size: 14px; color: #10b981; font-weight: 600;">Save $${savings} with annual billing!</p>` : '<div style="margin-bottom: 20px;"></div>'}
 
                 <div style="border-top: 1px solid #bae6fd; padding-top: 16px; margin-top: 16px;">
                   <p style="margin: 0 0 12px; font-size: 14px; font-weight: 600; color: #0c4a6e;">Plan includes:</p>
@@ -1321,12 +1331,16 @@ function getPaymentLinkText({
   name,
   planName,
   monthlyPrice,
+  annualPrice,
+  billingFrequency,
   paymentUrl,
   planDetails,
 }: {
   name: string;
   planName: string;
   monthlyPrice: number;
+  annualPrice: number;
+  billingFrequency: "monthly" | "yearly";
   paymentUrl: string;
   planDetails: {
     maxAgents: number;
@@ -1335,6 +1349,9 @@ function getPaymentLinkText({
   };
 }) {
   const isUnlimited = planDetails.maxAgents === 999999;
+  const displayPrice = billingFrequency === "yearly" ? annualPrice : monthlyPrice;
+  const displayInterval = billingFrequency === "yearly" ? "year" : "month";
+  const savings = billingFrequency === "yearly" ? (monthlyPrice * 12 - annualPrice).toFixed(0) : null;
 
   return `
 Welcome to Real Estate Genie!
@@ -1344,7 +1361,7 @@ Hi ${name},
 You've been approved to join Real Estate Genie! Complete your payment to activate your account and start using the platform.
 
 YOUR PLAN: ${planName}
-Price: $${monthlyPrice}/month
+Price: $${displayPrice}/${displayInterval}${savings ? ` (Save $${savings} with annual billing!)` : ''}
 
 Plan includes:
 ${isUnlimited ? `

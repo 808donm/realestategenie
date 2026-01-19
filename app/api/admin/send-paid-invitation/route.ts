@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const { email, fullName, phone, planId, adminNotes } = await request.json();
+    const { email, fullName, phone, planId, billingFrequency, adminNotes } = await request.json();
 
     if (!email) {
       return NextResponse.json(
@@ -74,6 +74,13 @@ export async function POST(request: NextRequest) {
     if (!planId) {
       return NextResponse.json(
         { error: "Plan ID is required" },
+        { status: 400 }
+      );
+    }
+
+    if (!billingFrequency || !["monthly", "yearly"].includes(billingFrequency)) {
+      return NextResponse.json(
+        { error: "Valid billing frequency is required (monthly or yearly)" },
         { status: 400 }
       );
     }
@@ -124,6 +131,18 @@ export async function POST(request: NextRequest) {
     // Type assertion to help TypeScript understand the shape
     const plan = plans as any;
 
+    // Select the appropriate Stripe price ID based on billing frequency
+    const stripePriceId = billingFrequency === "yearly"
+      ? plan.stripe_yearly_price_id
+      : plan.stripe_price_id;
+
+    if (!stripePriceId) {
+      return NextResponse.json(
+        { error: `Stripe price ID not configured for ${billingFrequency} billing on this plan` },
+        { status: 500 }
+      );
+    }
+
     // Create an access request record (pre-approved by admin)
     const { data: accessRequest, error: createError } = await (getAdmin()
       .from("access_requests") as any)
@@ -160,7 +179,7 @@ export async function POST(request: NextRequest) {
       client_reference_id: accessRequest.id,
       line_items: [
         {
-          price: plan.stripe_price_id,
+          price: stripePriceId,
           quantity: 1,
         },
       ],
@@ -170,6 +189,7 @@ export async function POST(request: NextRequest) {
         access_request_id: accessRequest.id,
         applicant_email: email,
         applicant_name: fullName,
+        billing_frequency: billingFrequency,
       },
     });
 
@@ -190,6 +210,8 @@ export async function POST(request: NextRequest) {
         name: fullName,
         planName: plan.name,
         monthlyPrice: plan.monthly_price,
+        annualPrice: plan.annual_price,
+        billingFrequency,
         paymentUrl: session.url!,
         planDetails: {
           maxAgents: plan.max_agents,
