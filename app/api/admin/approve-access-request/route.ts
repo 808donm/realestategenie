@@ -148,13 +148,40 @@ export async function POST(request: NextRequest) {
       })
       .eq("id", requestId);
 
-    // TODO: Send email to user with payment link
-    // You can add email notification here if desired
+    // Send payment link email to user
+    try {
+      const { sendPaymentLinkEmail } = await import("@/lib/email/resend");
 
-    return NextResponse.json({
-      success: true,
-      checkoutUrl: session.url,
-    });
+      await sendPaymentLinkEmail({
+        to: accessReq.email,
+        name: accessReq.full_name,
+        planName: plan.name,
+        monthlyPrice: plan.monthly_price,
+        paymentUrl: session.url!,
+        planDetails: {
+          maxAgents: plan.max_agents,
+          maxProperties: plan.max_properties,
+          maxTenants: plan.max_tenants,
+        },
+      });
+
+      console.log(`Payment link email sent to ${accessReq.email}`);
+
+      return NextResponse.json({
+        success: true,
+        checkoutUrl: session.url,
+        emailSent: true,
+      });
+    } catch (emailError: any) {
+      console.error("Failed to send payment link email:", emailError);
+      // Don't fail the approval - return success but indicate email wasn't sent
+      return NextResponse.json({
+        success: true,
+        checkoutUrl: session.url,
+        emailSent: false,
+        warning: "Approval successful but email could not be sent. Please share the payment link manually.",
+      });
+    }
   } catch (error: any) {
     console.error("Error approving access request:", error);
     await logError({

@@ -181,11 +181,42 @@ export async function POST(request: NextRequest) {
       })
       .eq("id", accessRequest.id);
 
-    return NextResponse.json({
-      success: true,
-      checkoutUrl: session.url,
-      accessRequestId: accessRequest.id,
-    });
+    // Send payment link email to user
+    try {
+      const { sendPaymentLinkEmail } = await import("@/lib/email/resend");
+
+      await sendPaymentLinkEmail({
+        to: email,
+        name: fullName,
+        planName: plan.name,
+        monthlyPrice: plan.monthly_price,
+        paymentUrl: session.url!,
+        planDetails: {
+          maxAgents: plan.max_agents,
+          maxProperties: plan.max_properties,
+          maxTenants: plan.max_tenants,
+        },
+      });
+
+      console.log(`Payment link email sent to ${email}`);
+
+      return NextResponse.json({
+        success: true,
+        checkoutUrl: session.url,
+        accessRequestId: accessRequest.id,
+        emailSent: true,
+      });
+    } catch (emailError: any) {
+      console.error("Failed to send payment link email:", emailError);
+      // Don't fail the invitation - return success but indicate email wasn't sent
+      return NextResponse.json({
+        success: true,
+        checkoutUrl: session.url,
+        accessRequestId: accessRequest.id,
+        emailSent: false,
+        warning: "Invitation created but email could not be sent. Please share the payment link manually.",
+      });
+    }
   } catch (error: any) {
     console.error("Error sending paid invitation:", error);
     await logError({

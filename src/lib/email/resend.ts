@@ -1161,3 +1161,217 @@ ${reviewUrl}
   `.trim();
 }
 
+
+// Payment Link Email
+
+export interface SendPaymentLinkParams {
+  to: string;
+  name: string;
+  planName: string;
+  monthlyPrice: number;
+  paymentUrl: string;
+  planDetails: {
+    maxAgents: number;
+    maxProperties: number;
+    maxTenants: number;
+  };
+}
+
+export async function sendPaymentLinkEmail(params: SendPaymentLinkParams) {
+  const { to, name, planName, monthlyPrice, paymentUrl, planDetails } = params;
+
+  const resend = await getResendClient();
+
+  const { data, error } = await resend.emails.send({
+    from: "Real Estate Genie <support@realestategenie.app>",
+    to: [to],
+    subject: `Complete Your Subscription - ${planName} Plan`,
+    html: getPaymentLinkHtml({ name, planName, monthlyPrice, paymentUrl, planDetails }),
+    text: getPaymentLinkText({ name, planName, monthlyPrice, paymentUrl, planDetails }),
+  });
+
+  if (error) {
+    console.error("Failed to send payment link email:", error);
+    throw error;
+  }
+
+  console.log("Payment link email sent successfully:", data);
+  return data;
+}
+
+function getPaymentLinkHtml({
+  name,
+  planName,
+  monthlyPrice,
+  paymentUrl,
+  planDetails,
+}: {
+  name: string;
+  planName: string;
+  monthlyPrice: number;
+  paymentUrl: string;
+  planDetails: {
+    maxAgents: number;
+    maxProperties: number;
+    maxTenants: number;
+  };
+}) {
+  const isUnlimited = planDetails.maxAgents === 999999;
+
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Complete Your Subscription</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f9fafb;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f9fafb; padding: 40px 0;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden;">
+
+          <tr>
+            <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 40px 30px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 800;">Welcome to Real Estate Genie!</h1>
+              <p style="margin: 10px 0 0; color: rgba(255,255,255,0.9); font-size: 16px;">Complete your subscription to get started</p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding: 40px;">
+              <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #374151;">Hi ${name},</p>
+
+              <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #374151;">
+                You've been approved to join Real Estate Genie! Complete your payment to activate your account and start using the platform.
+              </p>
+
+              <div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 2px solid #0ea5e9; border-radius: 12px; padding: 24px; margin: 30px 0;">
+                <h2 style="margin: 0 0 16px; font-size: 24px; color: #0c4a6e; font-weight: 700;">${planName}</h2>
+                <p style="margin: 0 0 20px; font-size: 32px; color: #0369a1; font-weight: 800;">
+                  $${monthlyPrice}<span style="font-size: 18px; font-weight: 400; color: #64748b;">/month</span>
+                </p>
+
+                <div style="border-top: 1px solid #bae6fd; padding-top: 16px; margin-top: 16px;">
+                  <p style="margin: 0 0 12px; font-size: 14px; font-weight: 600; color: #0c4a6e;">Plan includes:</p>
+                  ${isUnlimited ? `
+                    <p style="margin: 0 0 8px; font-size: 14px; color: #475569;">✓ <strong>Unlimited</strong> team members</p>
+                    <p style="margin: 0 0 8px; font-size: 14px; color: #475569;">✓ <strong>Unlimited</strong> properties</p>
+                    <p style="margin: 0 0 8px; font-size: 14px; color: #475569;">✓ <strong>Unlimited</strong> tenants</p>
+                  ` : `
+                    <p style="margin: 0 0 8px; font-size: 14px; color: #475569;">✓ Up to <strong>${planDetails.maxAgents}</strong> team members</p>
+                    <p style="margin: 0 0 8px; font-size: 14px; color: #475569;">✓ Up to <strong>${planDetails.maxProperties}</strong> properties</p>
+                    <p style="margin: 0 0 8px; font-size: 14px; color: #475569;">✓ Up to <strong>${planDetails.maxTenants}</strong> tenants</p>
+                  `}
+                  <p style="margin: 0 0 8px; font-size: 14px; color: #475569;">✓ Open house management</p>
+                  <p style="margin: 0 0 8px; font-size: 14px; color: #475569;">✓ Lead tracking & scoring</p>
+                  <p style="margin: 0 0 8px; font-size: 14px; color: #475569;">✓ GHL integration</p>
+                  <p style="margin: 0; font-size: 14px; color: #475569;">✓ Priority support</p>
+                </div>
+              </div>
+
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin: 30px 0;">
+                <tr>
+                  <td align="center">
+                    <a href="${paymentUrl}" style="display: inline-block; padding: 16px 48px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 18px; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);">
+                      Complete Payment
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin: 20px 0 0; font-size: 14px; line-height: 1.6; color: #6b7280; text-align: center;">
+                Or copy and paste this link into your browser:<br>
+                <span style="font-family: monospace; font-size: 12px; color: #3b82f6;">${paymentUrl}</span>
+              </p>
+
+              <div style="background-color: #f0fdf4; border-left: 4px solid #10b981; border-radius: 8px; padding: 20px; margin: 30px 0 20px;">
+                <p style="margin: 0 0 12px; font-size: 16px; font-weight: 600; color: #065f46;">What happens next:</p>
+                <p style="margin: 0 0 8px; font-size: 14px; color: #047857;">1. Complete your payment securely via Stripe</p>
+                <p style="margin: 0 0 8px; font-size: 14px; color: #047857;">2. Receive your account invitation email</p>
+                <p style="margin: 0 0 8px; font-size: 14px; color: #047857;">3. Set up your account and password</p>
+                <p style="margin: 0; font-size: 14px; color: #047857;">4. Start managing your properties!</p>
+              </div>
+
+              <p style="margin: 0 0 10px; font-size: 14px; color: #6b7280;">
+                Have questions? Reply to this email or contact us at <a href="mailto:support@realestategenie.app" style="color: #3b82f6; text-decoration: none;">support@realestategenie.app</a>
+              </p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="background-color: #f9fafb; padding: 30px 40px; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 0; font-size: 12px; color: #6b7280; text-align: center;">
+                © ${new Date().getFullYear()} Real Estate Genie. All rights reserved.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `.trim();
+}
+
+function getPaymentLinkText({
+  name,
+  planName,
+  monthlyPrice,
+  paymentUrl,
+  planDetails,
+}: {
+  name: string;
+  planName: string;
+  monthlyPrice: number;
+  paymentUrl: string;
+  planDetails: {
+    maxAgents: number;
+    maxProperties: number;
+    maxTenants: number;
+  };
+}) {
+  const isUnlimited = planDetails.maxAgents === 999999;
+
+  return `
+Welcome to Real Estate Genie!
+
+Hi ${name},
+
+You've been approved to join Real Estate Genie! Complete your payment to activate your account and start using the platform.
+
+YOUR PLAN: ${planName}
+Price: $${monthlyPrice}/month
+
+Plan includes:
+${isUnlimited ? `
+- Unlimited team members
+- Unlimited properties
+- Unlimited tenants
+` : `
+- Up to ${planDetails.maxAgents} team members
+- Up to ${planDetails.maxProperties} properties
+- Up to ${planDetails.maxTenants} tenants
+`}
+- Open house management
+- Lead tracking & scoring
+- GHL integration
+- Priority support
+
+COMPLETE YOUR PAYMENT:
+${paymentUrl}
+
+WHAT HAPPENS NEXT:
+1. Complete your payment securely via Stripe
+2. Receive your account invitation email
+3. Set up your account and password
+4. Start managing your properties!
+
+Have questions? Reply to this email or contact us at support@realestategenie.app
+
+© ${new Date().getFullYear()} Real Estate Genie. All rights reserved.
+  `.trim();
+}
