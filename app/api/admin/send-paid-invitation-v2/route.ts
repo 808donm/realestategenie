@@ -217,7 +217,6 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    console.log("About to update access request with Stripe session ID");
     // Update access request with Stripe session ID
     await (getAdmin()
       .from("access_requests") as any)
@@ -225,7 +224,6 @@ export async function POST(request: NextRequest) {
         stripe_checkout_session_id: session.id,
       })
       .eq("id", accessRequest.id);
-    console.log("Access request updated successfully");
 
     // TEMPORARY: Skip email sending to unblock payment link generation
     // TODO: Fix Resend API initialization issue and re-enable
