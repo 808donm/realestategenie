@@ -80,6 +80,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { email, fullName, phone, planId, billingFrequency, adminNotes } = await request.json();
+    console.log("Request body parsed successfully");
 
     if (!email) {
       return NextResponse.json(
@@ -108,6 +109,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+    console.log("Input validation passed");
 
     // Check if user already exists
     const { data: existingAgent } = await (getAdmin()
@@ -122,6 +124,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+    console.log("No existing agent found - proceeding");
 
     // Check if there's already a pending access request for this email
     const { data: existingRequest } = await (getAdmin()
@@ -137,6 +140,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+    console.log("No existing access request found - proceeding");
 
     // Get the selected subscription plan
     const { data: plans } = await getAdmin()
@@ -151,6 +155,7 @@ export async function POST(request: NextRequest) {
         { status: 404 }
       );
     }
+    console.log("Subscription plan found successfully");
 
     // Type assertion to help TypeScript understand the shape
     const plan = plans as any;
@@ -166,6 +171,7 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+    console.log("Stripe price ID found - about to create access request");
 
     // Create an access request record (pre-approved by admin)
     const { data: accessRequest, error: createError } = await (getAdmin()
@@ -192,6 +198,7 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+    console.log("Access request created successfully - about to create Stripe session");
 
     // Create Stripe checkout session
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://realestategenie.app";
@@ -216,6 +223,7 @@ export async function POST(request: NextRequest) {
         billing_frequency: billingFrequency,
       },
     });
+    console.log("Stripe session created successfully:", session.id);
 
     console.log("About to update access request with Stripe session ID");
     // Update access request with Stripe session ID
