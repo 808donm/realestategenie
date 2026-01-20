@@ -1,3 +1,8 @@
+// Log environment variable status at module load time
+console.log("=== Resend Module Loaded ===");
+console.log("RESEND_API_KEY available at module load:", !!process.env.RESEND_API_KEY);
+console.log("RESEND_API_KEY length at module load:", process.env.RESEND_API_KEY?.length || 0);
+
 // Lazy initialize Resend client only when needed
 let resendClient: any = null;
 
@@ -1190,10 +1195,21 @@ export interface SendPaymentLinkParams {
 }
 
 export async function sendPaymentLinkEmail(params: SendPaymentLinkParams) {
+  console.log("sendPaymentLinkEmail called with params:", { to: params.to, name: params.name, planName: params.planName });
+
   const { to, name, planName, monthlyPrice, annualPrice, billingFrequency, paymentUrl, planDetails } = params;
 
-  const resend = await getResendClient();
+  console.log("About to call getResendClient()");
+  let resend;
+  try {
+    resend = await getResendClient();
+    console.log("getResendClient() returned successfully");
+  } catch (error) {
+    console.error("Error in getResendClient():", error);
+    throw error;
+  }
 
+  console.log("About to call resend.emails.send()");
   const { data, error } = await resend.emails.send({
     from: "Real Estate Genie <support@realestategenie.app>",
     to: [to],

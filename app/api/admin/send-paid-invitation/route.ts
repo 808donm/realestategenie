@@ -219,8 +219,11 @@ export async function POST(request: NextRequest) {
       .eq("id", accessRequest.id);
 
     // Send payment link email to user
+    console.log("About to import and send payment link email...");
     try {
+      console.log("Importing sendPaymentLinkEmail from resend module...");
       const { sendPaymentLinkEmail } = await import("@/lib/email/resend");
+      console.log("Import successful, calling sendPaymentLinkEmail...");
 
       await sendPaymentLinkEmail({
         to: email,
@@ -246,7 +249,9 @@ export async function POST(request: NextRequest) {
         emailSent: true,
       });
     } catch (emailError: any) {
-      console.error("Failed to send payment link email:", emailError);
+      console.error("Failed to send payment link email - Full error:", emailError);
+      console.error("Error message:", emailError.message);
+      console.error("Error stack:", emailError.stack);
       // Don't fail the invitation - return success but indicate email wasn't sent
       return NextResponse.json({
         success: true,
