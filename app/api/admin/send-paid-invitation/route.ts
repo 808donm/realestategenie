@@ -42,9 +42,18 @@ function getAdmin() {
 
 function getStripe() {
   if (!stripe) {
-    stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+    console.log("Initializing Stripe client...");
+    const stripeKey = process.env.STRIPE_SECRET_KEY;
+    console.log("Stripe key exists:", !!stripeKey);
+
+    if (!stripeKey) {
+      throw new Error("STRIPE_SECRET_KEY not configured");
+    }
+
+    stripe = new Stripe(stripeKey, {
       apiVersion: "2025-12-15.clover",
     });
+    console.log("Stripe client initialized successfully");
   }
   return stripe;
 }
