@@ -2,14 +2,24 @@
 let resendClient: any = null;
 
 async function getResendClient(): Promise<any> {
-  if (!process.env.RESEND_API_KEY) {
+  const apiKey = process.env.RESEND_API_KEY;
+
+  console.log("getResendClient called");
+  console.log("RESEND_API_KEY exists:", !!apiKey);
+  console.log("RESEND_API_KEY length:", apiKey?.length || 0);
+  console.log("RESEND_API_KEY first 10 chars:", apiKey?.substring(0, 10) || "undefined");
+
+  if (!apiKey) {
     throw new Error("RESEND_API_KEY is not configured. Add it to your environment variables.");
   }
 
   if (!resendClient) {
+    console.log("Initializing new Resend client with key length:", apiKey.length);
     // Dynamic import to prevent build-time initialization
     const { Resend } = await import("resend");
-    resendClient = new Resend(process.env.RESEND_API_KEY);
+    console.log("Resend class imported successfully");
+    resendClient = new Resend(apiKey);
+    console.log("Resend client created successfully");
   }
 
   return resendClient;
