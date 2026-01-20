@@ -7,6 +7,7 @@ import Stripe from "stripe";
 // Force dynamic rendering and Node.js runtime
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+// NOTE: Email sending is temporarily disabled - see bottom of file
 
 // Lazy initialization to prevent build-time evaluation
 let admin: ReturnType<typeof createAdminClient> | null = null;
