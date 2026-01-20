@@ -45,13 +45,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data: agent } = await supabase
+    // Use admin client to check role (bypasses RLS)
+    // Note: agents.id IS the user_id (it references auth.users(id))
+    const { data: agent } = await getAdmin()
       .from("agents")
       .select("id, role")
-      .eq("user_id", user.id)
+      .eq("id", user.id)  // Changed from user_id to id
       .single();
 
-    if (!agent || agent.role !== "admin") {
+    if (!agent || (agent as any).role !== "admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
