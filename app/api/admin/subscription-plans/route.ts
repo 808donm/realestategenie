@@ -11,11 +11,24 @@ let admin: ReturnType<typeof createAdminClient> | null = null;
 
 function getAdmin() {
   if (!admin) {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    console.log("Creating admin client...");
+    console.log("Supabase URL exists:", !!supabaseUrl);
+    console.log("Service Role Key exists:", !!serviceRoleKey);
+    console.log("Service Role Key length:", serviceRoleKey?.length || 0);
+
+    if (!supabaseUrl || !serviceRoleKey) {
+      throw new Error("Missing Supabase credentials");
+    }
+
     admin = createAdminClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      supabaseUrl,
+      serviceRoleKey,
       { auth: { persistSession: false } }
     );
+    console.log("Admin client created successfully");
   }
   return admin;
 }
