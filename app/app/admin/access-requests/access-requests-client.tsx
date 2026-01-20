@@ -234,6 +234,37 @@ export default function AccessRequestsClient({
     }
   };
 
+  const handleDelete = async (request: AccessRequest) => {
+    if (!confirm(`Are you sure you want to permanently delete the access request from ${request.full_name}? This action cannot be undone.`)) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch("/api/admin/delete-access-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          requestId: request.id,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to delete request");
+      }
+
+      // Remove from local state
+      setRequests(requests.filter((r) => r.id !== request.id));
+
+      alert("Request deleted successfully");
+    } catch (error: any) {
+      alert(error.message || "Failed to delete request");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSendInvitation = async () => {
     if (!inviteEmail || !inviteFullName) {
       alert("Please provide email and full name");
@@ -463,6 +494,13 @@ export default function AccessRequestsClient({
                     onClick={() => openDialog(request, "details")}
                   >
                     View Details
+                  </Button>
+                  <Button
+                    variant="danger"
+                    onClick={() => handleDelete(request)}
+                    disabled={loading}
+                  >
+                    Delete
                   </Button>
                 </div>
               </CardContent>
