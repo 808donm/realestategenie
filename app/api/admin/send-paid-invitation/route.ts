@@ -4,10 +4,13 @@ import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { logError } from "@/lib/error-logging";
 import Stripe from "stripe";
 
-// Force dynamic rendering and Node.js runtime
+// Force dynamic rendering and Node.js runtime - DO NOT CACHE
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+export const revalidate = 0; // Never cache this route
 // NOTE: Email sending is temporarily disabled - see bottom of file
+
+const API_VERSION = "v2-email-disabled"; // Used to verify correct version is deployed
 
 // Lazy initialization to prevent build-time evaluation
 let admin: ReturnType<typeof createAdminClient> | null = null;
@@ -47,6 +50,9 @@ function getStripe() {
 }
 
 export async function POST(request: NextRequest) {
+  console.log(`=== send-paid-invitation API ${API_VERSION} ===`);
+  console.log("Email sending is DISABLED in this version");
+
   try {
     const supabase = await supabaseServer();
 
