@@ -47,13 +47,15 @@ export async function POST(request: NextRequest) {
 
     // Use admin client to check role (bypasses RLS)
     // Note: agents.id IS the user_id (it references auth.users(id))
-    const { data: agent } = await getAdmin()
+    const { data: agentData } = await getAdmin()
       .from("agents")
       .select("id, role")
       .eq("id", user.id)  // Changed from user_id to id
       .single();
 
-    if (!agent || (agent as any).role !== "admin") {
+    const agent = agentData as any;
+
+    if (!agent || agent.role !== "admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
