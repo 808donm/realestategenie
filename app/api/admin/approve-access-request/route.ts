@@ -148,10 +148,43 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get admin's Stripe integration from database
+    console.log("Fetching Stripe integration for admin:", agent.id);
+    const { data: stripeIntegration, error: stripeIntError } = await getAdmin()
+      .from("integrations")
+      .select("config")
+      .eq("agent_id", agent.id)
+      .eq("provider", "stripe")
+      .eq("status", "connected")
+      .single();
+
+    console.log("Stripe integration found:", !!stripeIntegration, "Error:", stripeIntError);
+
+    if (!stripeIntegration?.config) {
+      return NextResponse.json(
+        { error: "Stripe not connected. Please connect your Stripe account in the Integrations page." },
+        { status: 400 }
+      );
+    }
+
+    const stripeConfig = stripeIntegration.config as any;
+    if (!stripeConfig.stripe_secret_key) {
+      return NextResponse.json(
+        { error: "Stripe secret key not found in integration config." },
+        { status: 400 }
+      );
+    }
+
+    console.log("Initializing Stripe client with credentials from database");
+    const stripe = new Stripe(stripeConfig.stripe_secret_key, {
+      apiVersion: "2025-12-15.clover",
+    });
+    console.log("Stripe client initialized successfully");
+
     // Create Stripe checkout session
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://realestategenie.app";
 
-    const session = await getStripe().checkout.sessions.create({
+    const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "subscription",
       customer_email: accessReq.email,
