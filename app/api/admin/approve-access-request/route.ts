@@ -220,17 +220,47 @@ export async function POST(request: NextRequest) {
       })
       .eq("id", requestId);
 
-    // TEMPORARY: Skip email sending to unblock payment link generation
-    // TODO: Fix Resend API initialization issue and re-enable
-    console.log("Email sending temporarily disabled");
-    console.log(`Payment link created successfully: ${session.url}`);
+    // Send payment link email to user
+    console.log("About to send payment link email via Resend...");
+    try {
+      const { sendPaymentLinkEmail } = await import("@/lib/email/resend");
 
-    return NextResponse.json({
-      success: true,
-      checkoutUrl: session.url,
-      emailSent: false,
-      note: "Payment link generated successfully. Email functionality temporarily disabled - please send the link manually.",
-    });
+      await sendPaymentLinkEmail({
+        to: accessReq.email,
+        name: accessReq.full_name,
+        planName: plan.name,
+        monthlyPrice: plan.monthly_price,
+        annualPrice: plan.annual_price,
+        billingFrequency,
+        paymentUrl: session.url!,
+        planDetails: {
+          maxAgents: plan.max_agents,
+          maxProperties: plan.max_properties,
+          maxTenants: plan.max_tenants,
+        },
+      });
+
+      console.log(`Payment link email sent successfully to ${accessReq.email}`);
+
+      return NextResponse.json({
+        success: true,
+        checkoutUrl: session.url,
+        emailSent: true,
+      });
+    } catch (emailError: any) {
+      console.error("Failed to send payment link email:", emailError);
+      console.error("Error message:", emailError.message);
+      console.error("Error stack:", emailError.stack);
+
+      // Email failed, but payment link was created - return success with warning
+      return NextResponse.json({
+        success: true,
+        checkoutUrl: session.url,
+        emailSent: false,
+        warning: "Approval successful but email failed to send. Please share the payment link manually.",
+        emailError: emailError.message,
+      });
+    }
   } catch (error: any) {
     console.error("Error approving access request:", error);
     await logError({
