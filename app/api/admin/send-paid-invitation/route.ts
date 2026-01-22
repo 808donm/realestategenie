@@ -211,13 +211,15 @@ export async function POST(request: NextRequest) {
 
     // Get admin's Stripe integration from database
     console.log("Fetching Stripe integration for admin:", agent.id);
-    const { data: stripeIntegration, error: stripeIntError } = await getAdmin()
+    const { data: stripeIntegrationData, error: stripeIntError } = await getAdmin()
       .from("integrations")
       .select("config")
       .eq("agent_id", agent.id)
       .eq("provider", "stripe")
       .eq("status", "connected")
       .single();
+
+    const stripeIntegration = stripeIntegrationData as any;
 
     console.log("Stripe integration found:", !!stripeIntegration, "Error:", stripeIntError);
 
