@@ -670,6 +670,15 @@ export async function refreshGHLToken(refreshToken: string): Promise<{
   refresh_token: string;
   expires_in: number;
 }> {
+  console.log('[GHL Token Refresh] ========================================');
+  console.log('[GHL Token Refresh] Attempting to refresh access token');
+  console.log('[GHL Token Refresh] ========================================');
+  console.log('[GHL Token Refresh] Endpoint: POST https://services.leadconnectorhq.com/oauth/token');
+  console.log('[GHL Token Refresh] Has GHL_CLIENT_ID:', !!process.env.GHL_CLIENT_ID);
+  console.log('[GHL Token Refresh] Has GHL_CLIENT_SECRET:', !!process.env.GHL_CLIENT_SECRET);
+  console.log('[GHL Token Refresh] Has refresh_token:', !!refreshToken);
+  console.log('[GHL Token Refresh] Refresh token prefix:', refreshToken?.substring(0, 20) + '...');
+
   const response = await fetch("https://services.leadconnectorhq.com/oauth/token", {
     method: "POST",
     headers: {
@@ -684,8 +693,40 @@ export async function refreshGHLToken(refreshToken: string): Promise<{
   });
 
   if (!response.ok) {
-    throw new Error("Failed to refresh GHL token");
+    const errorText = await response.text();
+
+    console.error('[GHL Token Refresh] ========================================');
+    console.error('[GHL Token Refresh] ❌ TOKEN REFRESH FAILED');
+    console.error('[GHL Token Refresh] ========================================');
+    console.error('[GHL Token Refresh] Status:', response.status, response.statusText);
+    console.error('[GHL Token Refresh] === COMPLETE ERROR RESPONSE ===');
+    console.error(errorText);
+    console.error('[GHL Token Refresh] === END ERROR RESPONSE ===');
+
+    // Try to parse and display structured error if JSON
+    try {
+      const errorJson = JSON.parse(errorText);
+      console.error('[GHL Token Refresh] === PARSED ERROR ===');
+      console.error(JSON.stringify(errorJson, null, 2));
+      console.error('[GHL Token Refresh] === END PARSED ERROR ===');
+    } catch (e) {
+      // Not JSON, already logged as text above
+    }
+
+    console.error('[GHL Token Refresh] ========================================');
+
+    throw new Error(`Failed to refresh GHL token: ${response.status} ${response.statusText} - ${errorText}`);
   }
 
-  return response.json();
+  const result = await response.json();
+
+  console.log('[GHL Token Refresh] ========================================');
+  console.log('[GHL Token Refresh] ✅ TOKEN REFRESH SUCCESSFUL');
+  console.log('[GHL Token Refresh] ========================================');
+  console.log('[GHL Token Refresh] New token expires in:', result.expires_in, 'seconds');
+  console.log('[GHL Token Refresh] Has new access_token:', !!result.access_token);
+  console.log('[GHL Token Refresh] Has new refresh_token:', !!result.refresh_token);
+  console.log('[GHL Token Refresh] ========================================');
+
+  return result;
 }
