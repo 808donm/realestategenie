@@ -201,7 +201,11 @@ export default function PipelineStageBreakdown() {
         </div>
       </CardHeader>
       <CardContent>
-        {pipelineData.stages.length === 0 ? (
+        {!pipelineData ? (
+          <div className="text-center py-12 text-muted-foreground">
+            <p>Loading pipeline data...</p>
+          </div>
+        ) : pipelineData.stages.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             <p>No stages found in this pipeline</p>
           </div>
