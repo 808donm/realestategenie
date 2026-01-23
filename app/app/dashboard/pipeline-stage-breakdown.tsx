@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
 type Opportunity = {
@@ -31,20 +32,68 @@ type PipelineData = {
   totalValue: number;
 };
 
+type PipelineOption = {
+  id: string;
+  name: string;
+};
+
 export default function PipelineStageBreakdown() {
   const [pipelineData, setPipelineData] = useState<PipelineData | null>(null);
+  const [availablePipelines, setAvailablePipelines] = useState<PipelineOption[]>([]);
+  const [selectedPipelineId, setSelectedPipelineId] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedStages, setExpandedStages] = useState<Set<string>>(new Set());
 
+  // Fetch available pipelines on mount
   useEffect(() => {
-    fetchPipelineData();
+    fetchAvailablePipelines();
   }, []);
 
-  const fetchPipelineData = async () => {
+  // Fetch pipeline data when selection changes
+  useEffect(() => {
+    if (selectedPipelineId) {
+      fetchPipelineData(selectedPipelineId);
+    }
+  }, [selectedPipelineId]);
+
+  const fetchAvailablePipelines = async () => {
     try {
-      // Fetch pipeline breakdown for Real Estate Pipeline (yGkdoIRAz83GmWQ74HOw)
-      const response = await fetch(`/api/ghl/pipeline-breakdown`);
+      const response = await fetch(`/api/ghl/pipelines`);
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch pipelines");
+      }
+
+      const data = await response.json();
+      setAvailablePipelines(data.pipelines);
+
+      // Get stored preference or default to Real Estate Pipeline
+      const storedPipelineId = localStorage.getItem("selectedPipelineId");
+      const defaultPipeline = storedPipelineId || "yGkdoIRAz83GmWQ74HOw";
+
+      // Check if the stored/default pipeline exists in the list
+      const pipelineExists = data.pipelines.some((p: PipelineOption) => p.id === defaultPipeline);
+
+      if (pipelineExists) {
+        setSelectedPipelineId(defaultPipeline);
+      } else if (data.pipelines.length > 0) {
+        // Fall back to first pipeline if default not found
+        setSelectedPipelineId(data.pipelines[0].id);
+      }
+    } catch (error: any) {
+      console.error("Failed to fetch pipelines:", error);
+      setError(error.message);
+      setLoading(false);
+    }
+  };
+
+  const fetchPipelineData = async (pipelineId: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch(`/api/ghl/pipeline-breakdown?pipelineId=${pipelineId}`);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -59,6 +108,12 @@ export default function PipelineStageBreakdown() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePipelineChange = (pipelineId: string) => {
+    setSelectedPipelineId(pipelineId);
+    // Store preference in localStorage
+    localStorage.setItem("selectedPipelineId", pipelineId);
   };
 
   const toggleStage = (stageId: string) => {
@@ -113,18 +168,36 @@ export default function PipelineStageBreakdown() {
     );
   }
 
-  if (!pipelineData) return null;
+  if (!pipelineData && !loading && !error) return null;
 
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>{pipelineData.pipelineName}</CardTitle>
-            <CardDescription>
-              {pipelineData.totalOpportunities} opportunities • {formatCurrency(pipelineData.totalValue)} total value
-            </CardDescription>
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex-1">
+            <CardTitle>Pipeline Overview</CardTitle>
+            {pipelineData && (
+              <CardDescription>
+                {pipelineData.totalOpportunities} opportunities • {formatCurrency(pipelineData.totalValue)} total value
+              </CardDescription>
+            )}
           </div>
+          {availablePipelines.length > 0 && (
+            <div className="w-64">
+              <Select value={selectedPipelineId} onValueChange={handlePipelineChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select pipeline" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availablePipelines.map((pipeline) => (
+                    <SelectItem key={pipeline.id} value={pipeline.id}>
+                      {pipeline.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
       </CardHeader>
       <CardContent>
