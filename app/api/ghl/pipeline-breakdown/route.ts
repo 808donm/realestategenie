@@ -5,7 +5,9 @@ import { GHLClient } from "@/lib/integrations/ghl-client";
 
 /**
  * Get pipeline breakdown with stages and opportunities
- * GET /api/ghl/pipeline-breakdown?pipelineName=Real+Estate+Pipeline
+ * GET /api/ghl/pipeline-breakdown?pipelineId=yGkdoIRAz83GmWQ74HOw
+ *
+ * Defaults to the Real Estate Pipeline (ID: yGkdoIRAz83GmWQ74HOw)
  */
 export async function GET(req: NextRequest) {
   try {
@@ -17,7 +19,8 @@ export async function GET(req: NextRequest) {
     }
 
     const { searchParams } = new URL(req.url);
-    const pipelineName = searchParams.get("pipelineName") || "Real Estate Pipeline";
+    // Use the specific Real Estate Pipeline ID
+    const pipelineId = searchParams.get("pipelineId") || "yGkdoIRAz83GmWQ74HOw";
 
     // Get GHL integration for this agent
     const { data: integration, error: integrationError } = await supabase
@@ -46,16 +49,16 @@ export async function GET(req: NextRequest) {
 
     const client = new GHLClient(ghlConfig.access_token, ghlConfig.location_id);
 
-    // Fetch all pipelines
+    // Fetch all pipelines to get the pipeline details
     const { pipelines } = await client.getPipelines(ghlConfig.location_id);
 
-    // Find the specified pipeline
-    const pipeline = pipelines.find(p => p.name === pipelineName);
+    // Find the specified pipeline by ID
+    const pipeline = pipelines.find(p => p.id === pipelineId);
 
     if (!pipeline) {
       return NextResponse.json({
-        error: `Pipeline "${pipelineName}" not found`,
-        availablePipelines: pipelines.map(p => p.name)
+        error: `Pipeline with ID "${pipelineId}" not found`,
+        availablePipelines: pipelines.map(p => ({ id: p.id, name: p.name }))
       }, { status: 404 });
     }
 

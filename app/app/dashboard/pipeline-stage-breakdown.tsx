@@ -43,8 +43,8 @@ export default function PipelineStageBreakdown() {
 
   const fetchPipelineData = async () => {
     try {
-      // Fetch pipeline breakdown
-      const response = await fetch(`/api/ghl/pipeline-breakdown?pipelineName=Real Estate Pipeline`);
+      // Fetch pipeline breakdown for Real Estate Pipeline (yGkdoIRAz83GmWQ74HOw)
+      const response = await fetch(`/api/ghl/pipeline-breakdown`);
 
       if (!response.ok) {
         const errorData = await response.json();
