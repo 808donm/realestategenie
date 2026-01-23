@@ -7,6 +7,7 @@ import StatsTiles from "./stats-tiles";
 import HeatScoreChart from "./heat-score-chart";
 import IntegrationHealth from "./integration-health";
 import ActivityFeed from "./activity-feed";
+import PipelineStageBreakdown from "./pipeline-stage-breakdown";
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -124,6 +125,9 @@ export default async function DashboardPage() {
         {/* Integration Health */}
         <IntegrationHealth />
       </div>
+
+      {/* Pipeline Stage Breakdown */}
+      <PipelineStageBreakdown />
 
       {/* Activity Feed */}
       <ActivityFeed />

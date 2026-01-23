@@ -270,6 +270,37 @@ export class GHLClient {
   }
 
   /**
+   * Search opportunities by location, pipeline, or stage
+   * Uses GHL opportunities search API with filters
+   */
+  async searchOpportunities(params: {
+    locationId: string;
+    pipelineId?: string;
+    pipelineStageId?: string;
+    status?: "open" | "won" | "lost" | "abandoned";
+    limit?: number;
+  }): Promise<{ opportunities: any[] }> {
+    const queryParams = new URLSearchParams({
+      location_id: params.locationId,
+    });
+
+    if (params.pipelineId) {
+      queryParams.append("pipelineId", params.pipelineId);
+    }
+    if (params.pipelineStageId) {
+      queryParams.append("pipelineStageId", params.pipelineStageId);
+    }
+    if (params.status) {
+      queryParams.append("status", params.status);
+    }
+    if (params.limit) {
+      queryParams.append("limit", params.limit.toString());
+    }
+
+    return this.request<{ opportunities: any[] }>(`/opportunities/search?${queryParams.toString()}`);
+  }
+
+  /**
    * Add a note to a contact
    */
   async addNote(note: GHLNote): Promise<void> {
