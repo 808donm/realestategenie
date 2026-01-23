@@ -715,7 +715,24 @@ export async function refreshGHLToken(refreshToken: string): Promise<{
   });
 
   if (!response.ok) {
-    throw new Error("Failed to refresh GHL token");
+    const errorText = await response.text();
+    console.error('[GHL Token Refresh] ========================================');
+    console.error('[GHL Token Refresh] ❌ REFRESH FAILED');
+    console.error('[GHL Token Refresh] ========================================');
+    console.error('[GHL Token Refresh] Status:', response.status, response.statusText);
+    console.error('[GHL Token Refresh] Error Response:', errorText);
+    console.error('[GHL Token Refresh] Has CLIENT_ID:', !!process.env.GHL_CLIENT_ID);
+    console.error('[GHL Token Refresh] Has CLIENT_SECRET:', !!process.env.GHL_CLIENT_SECRET);
+    console.error('[GHL Token Refresh] Refresh Token Prefix:', refreshToken.substring(0, 20) + '...');
+    console.error('[GHL Token Refresh] ========================================');
+
+    // Try to parse error as JSON for more details
+    try {
+      const errorJson = JSON.parse(errorText);
+      throw new Error(`Failed to refresh GHL token: ${errorJson.error || errorJson.message || response.statusText}`);
+    } catch {
+      throw new Error(`Failed to refresh GHL token: ${response.status} ${response.statusText}`);
+    }
   }
 
   return response.json();
