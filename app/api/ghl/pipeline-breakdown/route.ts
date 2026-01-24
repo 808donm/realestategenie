@@ -65,10 +65,19 @@ export async function GET(req: NextRequest) {
     // Sort stages by position
     const sortedStages = [...pipeline.stages].sort((a, b) => a.position - b.position);
 
+    console.log('[Pipeline Breakdown] ========================================');
+    console.log('[Pipeline Breakdown] Fetching opportunities for pipeline:', pipeline.name);
+    console.log('[Pipeline Breakdown] Pipeline ID:', pipeline.id);
+    console.log('[Pipeline Breakdown] Number of stages:', sortedStages.length);
+    console.log('[Pipeline Breakdown] Stages:', sortedStages.map(s => `${s.name} (${s.id})`));
+    console.log('[Pipeline Breakdown] ========================================');
+
     // Fetch opportunities for each stage
     const stagesWithOpportunities = await Promise.all(
       sortedStages.map(async (stage) => {
         try {
+          console.log(`[Pipeline Breakdown] Fetching opportunities for stage: ${stage.name} (${stage.id})`);
+
           const { opportunities } = await client.searchOpportunities({
             locationId: ghlConfig.location_id,
             pipelineId: pipeline.id,
@@ -76,6 +85,8 @@ export async function GET(req: NextRequest) {
             status: "open", // Only show open opportunities
             limit: 100, // Limit to 100 opportunities per stage
           });
+
+          console.log(`[Pipeline Breakdown] Stage "${stage.name}" returned ${opportunities?.length || 0} opportunities`);
 
           // Extract relevant opportunity data
           const formattedOpportunities = opportunities.map((opp: any) => ({

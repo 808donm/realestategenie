@@ -271,7 +271,8 @@ export class GHLClient {
 
   /**
    * Search opportunities by location, pipeline, or stage
-   * Uses GHL opportunities search API with filters
+   * Note: GHL API doesn't support filtering by pipeline/stage in the search endpoint
+   * We fetch all opportunities and filter client-side
    */
   async searchOpportunities(params: {
     locationId: string;
@@ -280,24 +281,66 @@ export class GHLClient {
     status?: "open" | "won" | "lost" | "abandoned";
     limit?: number;
   }): Promise<{ opportunities: any[] }> {
+    // GHL opportunities/search endpoint only accepts: location_id, startAfter, startAfterId, limit, query
     const queryParams = new URLSearchParams({
       location_id: params.locationId,
     });
 
-    if (params.pipelineId) {
-      queryParams.append("pipelineId", params.pipelineId);
-    }
-    if (params.pipelineStageId) {
-      queryParams.append("pipelineStageId", params.pipelineStageId);
-    }
-    if (params.status) {
-      queryParams.append("status", params.status);
-    }
     if (params.limit) {
       queryParams.append("limit", params.limit.toString());
     }
 
-    return this.request<{ opportunities: any[] }>(`/opportunities/search?${queryParams.toString()}`);
+    const endpoint = `/opportunities/search?${queryParams.toString()}`;
+
+    console.log('[GHL] ========================================');
+    console.log('[GHL] FETCHING ALL OPPORTUNITIES');
+    console.log('[GHL] ========================================');
+    console.log('[GHL] Endpoint:', endpoint);
+    console.log('[GHL] Will filter client-side for:', {
+      pipelineId: params.pipelineId,
+      pipelineStageId: params.pipelineStageId,
+      status: params.status,
+    });
+    console.log('[GHL] ========================================');
+
+    const result = await this.request<{ opportunities: any[] }>(endpoint);
+
+    console.log('[GHL] Fetched opportunities:', result.opportunities?.length || 0);
+
+    // Filter client-side by pipeline, stage, and status
+    let filteredOpportunities = result.opportunities || [];
+
+    if (params.pipelineId) {
+      filteredOpportunities = filteredOpportunities.filter(
+        (opp: any) => opp.pipelineId === params.pipelineId
+      );
+      console.log('[GHL] After pipeline filter:', filteredOpportunities.length);
+    }
+
+    if (params.pipelineStageId) {
+      filteredOpportunities = filteredOpportunities.filter(
+        (opp: any) => opp.pipelineStageId === params.pipelineStageId
+      );
+      console.log('[GHL] After stage filter:', filteredOpportunities.length);
+    }
+
+    if (params.status) {
+      filteredOpportunities = filteredOpportunities.filter(
+        (opp: any) => opp.status === params.status
+      );
+      console.log('[GHL] After status filter:', filteredOpportunities.length);
+    }
+
+    console.log('[GHL] ========================================');
+    console.log('[GHL] FINAL RESULTS');
+    console.log('[GHL] ========================================');
+    console.log('[GHL] Filtered opportunities:', filteredOpportunities.length);
+    if (filteredOpportunities.length > 0) {
+      console.log('[GHL] First opportunity sample:', JSON.stringify(filteredOpportunities[0], null, 2));
+    }
+    console.log('[GHL] ========================================');
+
+    return { opportunities: filteredOpportunities };
   }
 
   /**
