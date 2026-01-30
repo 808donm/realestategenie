@@ -71,6 +71,34 @@ function formatPercent(value: number): string {
   return `${value.toFixed(2)}%`;
 }
 
+function getVerdict(analysis: PropertyAnalysis): string {
+  const score =
+    (analysis.capRate >= 5 ? 1 : 0) +
+    (analysis.cashOnCash >= 8 ? 1 : 0) +
+    (analysis.irr >= 12 ? 1 : 0) +
+    (analysis.annualCashFlow > 0 ? 1 : 0);
+
+  if (score >= 4) return "Strong Buy";
+  if (score >= 3) return "Good Investment";
+  if (score >= 2) return "Moderate";
+  if (score >= 1) return "Weak";
+  return "Pass";
+}
+
+function getVerdictColor(analysis: PropertyAnalysis): { bg: string; border: string; text: string } {
+  const score =
+    (analysis.capRate >= 5 ? 1 : 0) +
+    (analysis.cashOnCash >= 8 ? 1 : 0) +
+    (analysis.irr >= 12 ? 1 : 0) +
+    (analysis.annualCashFlow > 0 ? 1 : 0);
+
+  if (score >= 4) return { bg: "#dcfce7", border: "#16a34a", text: "#15803d" };
+  if (score >= 3) return { bg: "#d1fae5", border: "#10b981", text: "#047857" };
+  if (score >= 2) return { bg: "#fef9c3", border: "#ca8a04", text: "#a16207" };
+  if (score >= 1) return { bg: "#fee2e2", border: "#f87171", text: "#b91c1c" };
+  return { bg: "#fecaca", border: "#dc2626", text: "#991b1b" };
+}
+
 export default function InvestmentAnalyzerClient({ savedProperties }: Props) {
   const [propertyName, setPropertyName] = useState("");
   const [propertyAddress, setPropertyAddress] = useState("");
@@ -641,22 +669,69 @@ export default function InvestmentAnalyzerClient({ savedProperties }: Props) {
 
       {/* Right Column: Results */}
       <div>
+        {/* Investment Verdict */}
+        <div
+          style={{
+            marginBottom: 20,
+            padding: 20,
+            borderRadius: 12,
+            background: getVerdictColor(analysis).bg,
+            border: `2px solid ${getVerdictColor(analysis).border}`,
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 4 }}>Investment Verdict</div>
+              <div style={{ fontSize: 28, fontWeight: 900, color: getVerdictColor(analysis).text }}>
+                {getVerdict(analysis)}
+              </div>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: 12, opacity: 0.8 }}>Monthly Cash Flow</div>
+              <div
+                style={{
+                  fontSize: 24,
+                  fontWeight: 800,
+                  color: analysis.annualCashFlow >= 0 ? "#16a34a" : "#dc2626",
+                }}
+              >
+                {formatCurrency(analysis.annualCashFlow / 12)}
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Key Metrics */}
         <div style={{ marginBottom: 20, padding: 20, border: "2px solid #000", borderRadius: 12, background: "#fafafa" }}>
-          <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 800 }}>Key Metrics</h3>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-            <MetricCard
-              label="Cap Rate"
-              value={formatPercent(analysis.capRate)}
-              description="NOI / Purchase Price"
-              good={analysis.capRate >= 5}
-            />
-            <MetricCard
-              label="Cash-on-Cash"
-              value={formatPercent(analysis.cashOnCash)}
-              description="Annual Cash Flow / Investment"
-              good={analysis.cashOnCash >= 8}
-            />
+          <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 800 }}>Key Investment Metrics</h3>
+
+          {/* Primary Metrics - Large Display */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 16 }}>
+            <div style={{ padding: 16, background: "#fff", borderRadius: 8, border: "1px solid #e6e6e6", textAlign: "center" }}>
+              <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 4, textTransform: "uppercase" }}>NOI</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: analysis.noi >= 0 ? "#16a34a" : "#dc2626" }}>
+                {formatCurrency(analysis.noi)}
+              </div>
+              <div style={{ fontSize: 10, opacity: 0.5 }}>Net Operating Income</div>
+            </div>
+            <div style={{ padding: 16, background: "#fff", borderRadius: 8, border: "1px solid #e6e6e6", textAlign: "center" }}>
+              <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 4, textTransform: "uppercase" }}>Cap Rate</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: analysis.capRate >= 5 ? "#16a34a" : analysis.capRate >= 3 ? "#ca8a04" : "#dc2626" }}>
+                {formatPercent(analysis.capRate)}
+              </div>
+              <div style={{ fontSize: 10, opacity: 0.5 }}>NOI / Price</div>
+            </div>
+            <div style={{ padding: 16, background: "#fff", borderRadius: 8, border: "1px solid #e6e6e6", textAlign: "center" }}>
+              <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 4, textTransform: "uppercase" }}>Cash-on-Cash</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: analysis.cashOnCash >= 8 ? "#16a34a" : analysis.cashOnCash >= 4 ? "#ca8a04" : "#dc2626" }}>
+                {formatPercent(analysis.cashOnCash)}
+              </div>
+              <div style={{ fontSize: 10, opacity: 0.5 }}>Cash Flow / Invested</div>
+            </div>
+          </div>
+
+          {/* Secondary Metrics */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <MetricCard
               label="IRR"
               value={formatPercent(analysis.irr)}
@@ -669,6 +744,32 @@ export default function InvestmentAnalyzerClient({ savedProperties }: Props) {
               description={`Over ${input.holdingPeriodYears} years`}
               good={analysis.totalROI >= 50}
             />
+          </div>
+
+          {/* Quick Stats Bar */}
+          <div style={{ marginTop: 16, padding: 12, background: "#fff", borderRadius: 8, border: "1px solid #e6e6e6" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 8, textAlign: "center", fontSize: 12 }}>
+              <div>
+                <div style={{ opacity: 0.6 }}>Annual Cash Flow</div>
+                <div style={{ fontWeight: 700, color: analysis.annualCashFlow >= 0 ? "#16a34a" : "#dc2626" }}>
+                  {formatCurrency(analysis.annualCashFlow)}
+                </div>
+              </div>
+              <div>
+                <div style={{ opacity: 0.6 }}>Total Investment</div>
+                <div style={{ fontWeight: 700 }}>{formatCurrency(analysis.totalInvestment)}</div>
+              </div>
+              <div>
+                <div style={{ opacity: 0.6 }}>Monthly Mortgage</div>
+                <div style={{ fontWeight: 700 }}>{formatCurrency(analysis.monthlyMortgage)}</div>
+              </div>
+              <div>
+                <div style={{ opacity: 0.6 }}>Total Profit</div>
+                <div style={{ fontWeight: 700, color: analysis.totalProfit >= 0 ? "#16a34a" : "#dc2626" }}>
+                  {formatCurrency(analysis.totalProfit)}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
