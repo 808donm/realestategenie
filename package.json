@@ -48,6 +48,7 @@
     "stripe": "^20.1.0",
     "tailwind-merge": "^3.4.0",
     "twilio": "^5.10.7",
+    "xlsx": "^0.18.5",
     "zod": "^4.2.1"
   },
   "devDependencies": {

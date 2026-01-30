@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { supabaseBrowser } from "@/lib/supabase/browser";
+import * as XLSX from "xlsx";
 import {
   PropertyInput,
   PropertyAnalysis,
@@ -185,6 +186,160 @@ export default function InvestmentAnalyzerClient({ savedProperties }: Props) {
     setPropertyAddress("");
     setInput(defaultInput);
     setMessage("");
+  };
+
+  const exportToExcel = () => {
+    const wb = XLSX.utils.book_new();
+
+    // Sheet 1: Property Summary
+    const summaryData = [
+      ["Investment Property Analysis Report"],
+      ["Generated", new Date().toLocaleString()],
+      [],
+      ["PROPERTY INFORMATION"],
+      ["Property Name", propertyName || "Untitled Property"],
+      ["Address", propertyAddress || "N/A"],
+      [],
+      ["PURCHASE DETAILS"],
+      ["Purchase Price", input.purchasePrice],
+      ["Closing Costs", input.closingCosts],
+      ["Renovation Costs", input.renovationCosts],
+      ["Down Payment %", `${input.downPaymentPercent}%`],
+      ["Down Payment Amount", analysis.downPayment],
+      ["Loan Amount", analysis.loanAmount],
+      ["Loan Interest Rate", `${input.loanInterestRate}%`],
+      ["Loan Term (Years)", input.loanTermYears],
+      ["Total Cash Invested", analysis.totalInvestment],
+      [],
+      ["INCOME"],
+      ["Monthly Rent", input.monthlyRent],
+      ["Other Monthly Income", input.otherMonthlyIncome],
+      ["Vacancy Rate", `${input.vacancyRatePercent}%`],
+      ["Gross Annual Income", analysis.grossAnnualIncome],
+      ["Effective Gross Income", analysis.effectiveGrossIncome],
+      [],
+      ["OPERATING EXPENSES"],
+      ["Property Tax (Annual)", input.propertyTaxAnnual],
+      ["Insurance (Annual)", input.insuranceAnnual],
+      ["HOA (Monthly)", input.hoaMonthly],
+      ["Maintenance (% of Rent)", `${input.maintenancePercent}%`],
+      ["Property Management (% of Rent)", `${input.propertyMgmtPercent}%`],
+      ["Other Monthly Expenses", input.otherMonthlyExpenses],
+      ["Total Operating Expenses", analysis.annualOperatingExpenses],
+      [],
+      ["KEY METRICS"],
+      ["Net Operating Income (NOI)", analysis.noi],
+      ["Monthly Mortgage (P&I)", analysis.monthlyMortgage],
+      ["Annual Debt Service", analysis.annualDebtService],
+      ["Annual Cash Flow", analysis.annualCashFlow],
+      ["Monthly Cash Flow", analysis.annualCashFlow / 12],
+      [],
+      ["Cap Rate", `${analysis.capRate.toFixed(2)}%`],
+      ["Cash-on-Cash Return", `${analysis.cashOnCash.toFixed(2)}%`],
+      ["IRR", `${analysis.irr.toFixed(2)}%`],
+      ["Total ROI", `${analysis.totalROI.toFixed(2)}%`],
+      [],
+      ["EXIT ANALYSIS"],
+      ["Holding Period (Years)", input.holdingPeriodYears],
+      ["Annual Appreciation", `${input.annualAppreciationPercent}%`],
+      ["Annual Rent Increase", `${input.annualRentIncreasePercent}%`],
+      ["Projected Sale Price", analysis.projectedSalePrice],
+      ["Total Cash Flow Received", analysis.totalCashFlow],
+      ["Net Sale Proceeds", analysis.projectedEquity],
+      ["Total Profit", analysis.totalProfit],
+    ];
+
+    const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+
+    // Set column widths
+    summarySheet["!cols"] = [{ wch: 30 }, { wch: 20 }];
+
+    XLSX.utils.book_append_sheet(wb, summarySheet, "Summary");
+
+    // Sheet 2: Year-by-Year Projections
+    const projectionsData = [
+      ["Year-by-Year Projections"],
+      [],
+      [
+        "Year",
+        "Gross Income",
+        "Operating Expenses",
+        "NOI",
+        "Debt Service",
+        "Cash Flow",
+        "Property Value",
+        "Loan Balance",
+        "Equity",
+        "Cumulative Cash Flow",
+      ],
+      ...analysis.yearlyProjections.map((year) => [
+        year.year,
+        year.grossIncome,
+        year.operatingExpenses,
+        year.noi,
+        year.debtService,
+        year.cashFlow,
+        year.propertyValue,
+        year.loanBalance,
+        year.equity,
+        year.cumulativeCashFlow,
+      ]),
+    ];
+
+    const projectionsSheet = XLSX.utils.aoa_to_sheet(projectionsData);
+    projectionsSheet["!cols"] = [
+      { wch: 8 },
+      { wch: 15 },
+      { wch: 18 },
+      { wch: 15 },
+      { wch: 15 },
+      { wch: 15 },
+      { wch: 15 },
+      { wch: 15 },
+      { wch: 15 },
+      { wch: 20 },
+    ];
+
+    XLSX.utils.book_append_sheet(wb, projectionsSheet, "Projections");
+
+    // Sheet 3: Cash Flow Analysis
+    const cashFlowData = [
+      ["Annual Cash Flow Analysis (Year 1)"],
+      [],
+      ["INCOME"],
+      ["Gross Annual Income", analysis.grossAnnualIncome],
+      ["Less: Vacancy", -(analysis.grossAnnualIncome - analysis.effectiveGrossIncome)],
+      ["Effective Gross Income", analysis.effectiveGrossIncome],
+      [],
+      ["OPERATING EXPENSES"],
+      ["Property Taxes", input.propertyTaxAnnual],
+      ["Insurance", input.insuranceAnnual],
+      ["HOA Fees", input.hoaMonthly * 12],
+      ["Maintenance", input.monthlyRent * 12 * (input.maintenancePercent / 100)],
+      ["Property Management", input.monthlyRent * 12 * (input.propertyMgmtPercent / 100)],
+      ["Other Expenses", input.otherMonthlyExpenses * 12],
+      ["Total Operating Expenses", analysis.annualOperatingExpenses],
+      [],
+      ["NET OPERATING INCOME (NOI)", analysis.noi],
+      [],
+      ["DEBT SERVICE"],
+      ["Annual Mortgage Payments", analysis.annualDebtService],
+      [],
+      ["CASH FLOW"],
+      ["Annual Cash Flow", analysis.annualCashFlow],
+      ["Monthly Cash Flow", analysis.annualCashFlow / 12],
+    ];
+
+    const cashFlowSheet = XLSX.utils.aoa_to_sheet(cashFlowData);
+    cashFlowSheet["!cols"] = [{ wch: 30 }, { wch: 20 }];
+
+    XLSX.utils.book_append_sheet(wb, cashFlowSheet, "Cash Flow");
+
+    // Generate filename
+    const fileName = `${propertyName || "Investment_Analysis"}_${new Date().toISOString().split("T")[0]}.xlsx`;
+
+    // Download the file
+    XLSX.writeFile(wb, fileName);
   };
 
   return (
@@ -458,13 +613,27 @@ export default function InvestmentAnalyzerClient({ savedProperties }: Props) {
         </div>
 
         {/* Save Button */}
-        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
           <button
             onClick={saveProperty}
             disabled={saving}
             style={{ padding: "12px 24px", fontWeight: 700 }}
           >
             {saving ? "Saving..." : selectedPropertyId ? "Update Property" : "Save Property"}
+          </button>
+          <button
+            onClick={exportToExcel}
+            style={{
+              padding: "12px 24px",
+              fontWeight: 700,
+              background: "#16a34a",
+              color: "#fff",
+              border: "none",
+              borderRadius: 6,
+              cursor: "pointer",
+            }}
+          >
+            Export to Excel
           </button>
           {message && <span style={{ fontSize: 14, color: message.includes("Error") ? "red" : "green" }}>{message}</span>}
         </div>
