@@ -80,6 +80,9 @@ export default async function DashboardPage() {
         <Link href="/app/leads">
           <Button variant="outline">View Leads</Button>
         </Link>
+        <Link href="/app/analyzers">
+          <Button variant="outline">Investment Analyzers</Button>
+        </Link>
         <Link href="/app/integrations">
           <Button variant="outline">Integrations</Button>
         </Link>
