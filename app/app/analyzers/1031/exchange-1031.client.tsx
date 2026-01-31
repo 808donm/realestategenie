@@ -203,7 +203,17 @@ export default function Exchange1031Client({ savedExchanges, investmentPropertie
     setMessage("");
 
     const supabase = supabaseBrowser();
+
+    // Get current user ID for RLS
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setMessage("Error: Not authenticated");
+      setSaving(false);
+      return;
+    }
+
     const exchangeData = {
+      agent_id: user.id,
       name: exchangeName,
       status: timeline.status === "completed" ? "completed" : "active",
       relinquished_property_address: relinquishedAddress,

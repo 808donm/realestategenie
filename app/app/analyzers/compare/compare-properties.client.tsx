@@ -130,7 +130,17 @@ export default function ComparePropertiesClient({ savedProperties, savedComparis
     setMessage("");
 
     const supabase = supabaseBrowser();
+
+    // Get current user ID for RLS
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setMessage("Error: Not authenticated");
+      setSaving(false);
+      return;
+    }
+
     const { error } = await supabase.from("property_comparisons").insert({
+      agent_id: user.id,
       name: comparisonName,
       comparison_type: "investment",
       property_ids: selectedPropertyIds,

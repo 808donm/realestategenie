@@ -152,7 +152,17 @@ export default function InvestmentAnalyzerClient({ savedProperties }: Props) {
     setMessage("");
 
     const supabase = supabaseBrowser();
+
+    // Get current user ID for RLS
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setMessage("Error: Not authenticated");
+      setSaving(false);
+      return;
+    }
+
     const propertyData = {
+      agent_id: user.id,
       name: propertyName,
       address: propertyAddress,
       purchase_price: input.purchasePrice,
