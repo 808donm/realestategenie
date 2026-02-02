@@ -200,6 +200,24 @@ export default function IntegrationHealth() {
             </div>
           )}
 
+          {/* MLS / IDX Integration - Coming Soon */}
+          <div className="flex items-center justify-between p-4 border rounded-lg opacity-50 bg-muted/30">
+            <div className="flex items-center gap-3">
+              <div className="h-5 w-5 rounded-full border-2 border-muted-foreground/40 flex items-center justify-center">
+                <span className="text-[8px] font-bold text-muted-foreground/60">MLS</span>
+              </div>
+              <div>
+                <div className="font-semibold text-muted-foreground">MLS / IDX Feed</div>
+                <div className="text-sm text-muted-foreground">
+                  Property listings & search
+                </div>
+              </div>
+            </div>
+            <Badge variant="outline" className="text-muted-foreground border-muted-foreground/40">
+              Coming Soon
+            </Badge>
+          </div>
+
           {/* Call to Action */}
           {!health.ghl.connected && (
             <div className="flex items-start gap-2 p-4 bg-warning/10 border border-warning/20 rounded-lg">
