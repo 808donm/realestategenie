@@ -40,7 +40,34 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const settings = await request.json();
+    const rawSettings = await request.json();
+
+    // Only include valid database columns - strip out id, created_at, updated_at, etc.
+    const settings = {
+      template_id: rawSettings.template_id,
+      logo_url: rawSettings.logo_url,
+      primary_color: rawSettings.primary_color,
+      secondary_color: rawSettings.secondary_color,
+      font_family: rawSettings.font_family,
+      show_price: rawSettings.show_price,
+      show_bedrooms: rawSettings.show_bedrooms,
+      show_bathrooms: rawSettings.show_bathrooms,
+      show_square_feet: rawSettings.show_square_feet,
+      show_lot_size: rawSettings.show_lot_size,
+      show_year_built: rawSettings.show_year_built,
+      show_property_type: rawSettings.show_property_type,
+      show_mls_number: rawSettings.show_mls_number,
+      header_style: rawSettings.header_style,
+      footer_style: rawSettings.footer_style,
+      image_layout: rawSettings.image_layout,
+      show_agent_photo: rawSettings.show_agent_photo,
+      show_agent_phone: rawSettings.show_agent_phone,
+      show_agent_email: rawSettings.show_agent_email,
+      show_agent_website: rawSettings.show_agent_website,
+      show_qr_code: rawSettings.show_qr_code,
+      custom_tagline: rawSettings.custom_tagline,
+      custom_footer_text: rawSettings.custom_footer_text,
+    };
 
     // Check if settings already exist
     const { data: existing } = await supabase
@@ -55,11 +82,7 @@ export async function POST(request: NextRequest) {
       // Update existing settings
       result = await supabase
         .from("flyer_template_settings")
-        .update({
-          ...settings,
-          agent_id: userData.user.id,
-          updated_at: new Date().toISOString(),
-        })
+        .update(settings)
         .eq("agent_id", userData.user.id)
         .select()
         .single();

@@ -11,7 +11,7 @@ import BrandSettings from "./brand-settings";
 import PropertyFields from "./property-fields";
 import LayoutOptions from "./layout-options";
 import TemplatePreview from "./template-preview";
-import { DEFAULT_TEMPLATE_SETTINGS, type TemplateSettings } from "@/lib/flyer-templates";
+import { DEFAULT_TEMPLATE_SETTINGS, FLYER_TEMPLATES, type TemplateSettings } from "@/lib/flyer-templates";
 
 type Props = {
   initialSettings: any;
@@ -35,6 +35,26 @@ export default function TemplateCustomizer({ initialSettings, agentInfo }: Props
 
   const updateSettings = (updates: Partial<TemplateSettings>) => {
     setSettings((prev) => ({ ...prev, ...updates }));
+  };
+
+  // Apply template defaults when selecting a new template
+  const handleTemplateSelect = (templateId: string) => {
+    const template = FLYER_TEMPLATES.find((t) => t.id === templateId);
+    if (template) {
+      setSettings((prev) => ({
+        ...prev,
+        template_id: templateId,
+        primary_color: template.defaultSettings.primaryColor,
+        secondary_color: template.defaultSettings.secondaryColor,
+        font_family: template.defaultSettings.fontFamily,
+        header_style: template.defaultSettings.headerStyle,
+        footer_style: template.defaultSettings.footerStyle,
+        image_layout: template.defaultSettings.imageLayout,
+        show_price: template.defaultSettings.showPrice,
+        show_agent_photo: template.defaultSettings.showAgentPhoto,
+        show_qr_code: template.defaultSettings.showQrCode,
+      }));
+    }
   };
 
   const handleSave = async () => {
@@ -111,7 +131,7 @@ export default function TemplateCustomizer({ initialSettings, agentInfo }: Props
             {activeStep === 0 && (
               <TemplateSelector
                 selectedTemplate={settings.template_id}
-                onSelect={(templateId) => updateSettings({ template_id: templateId })}
+                onSelect={handleTemplateSelect}
               />
             )}
 

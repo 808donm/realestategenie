@@ -10,6 +10,12 @@ export type FlyerTemplate = {
     headerStyle: "centered" | "left" | "split";
     footerStyle: "contact" | "qr" | "minimal";
     imageLayout: "hero" | "grid" | "side";
+    primaryColor: string;
+    secondaryColor: string;
+    fontFamily: string;
+    showPrice: boolean;
+    showAgentPhoto: boolean;
+    showQrCode: boolean;
   };
 };
 
@@ -17,61 +23,91 @@ export const FLYER_TEMPLATES: FlyerTemplate[] = [
   {
     id: "modern",
     name: "Modern Elegance",
-    description: "Clean, contemporary design with bold typography and ample white space",
+    description: "Clean, contemporary design with bold typography, centered layout, and large hero images. Perfect for showcasing stunning properties.",
     thumbnail: "/templates/modern-thumb.png",
     category: "Contemporary",
     defaultSettings: {
       headerStyle: "centered",
       footerStyle: "contact",
       imageLayout: "hero",
+      primaryColor: "#1e40af", // Deep blue
+      secondaryColor: "#64748b", // Slate gray
+      fontFamily: "inter",
+      showPrice: true,
+      showAgentPhoto: true,
+      showQrCode: false,
     },
   },
   {
     id: "classic",
     name: "Classic Professional",
-    description: "Traditional layout with serif fonts and elegant borders",
+    description: "Traditional, timeless layout with elegant serif fonts, split header design, and multi-image grid. Ideal for established agents and luxury markets.",
     thumbnail: "/templates/classic-thumb.png",
     category: "Traditional",
     defaultSettings: {
       headerStyle: "split",
       footerStyle: "contact",
       imageLayout: "grid",
+      primaryColor: "#7c2d12", // Rich brown/burgundy
+      secondaryColor: "#78716c", // Warm gray
+      fontFamily: "playfair",
+      showPrice: true,
+      showAgentPhoto: true,
+      showQrCode: false,
     },
   },
   {
     id: "minimal",
     name: "Minimalist",
-    description: "Simple, clean design focusing on the property imagery",
+    description: "Ultra-clean design with maximum white space, left-aligned text, and focus on property photography. Less is more approach for modern buyers.",
     thumbnail: "/templates/minimal-thumb.png",
     category: "Contemporary",
     defaultSettings: {
       headerStyle: "left",
       footerStyle: "minimal",
       imageLayout: "hero",
+      primaryColor: "#1f2937", // Charcoal
+      secondaryColor: "#9ca3af", // Light gray
+      fontFamily: "montserrat",
+      showPrice: true,
+      showAgentPhoto: false,
+      showQrCode: false,
     },
   },
   {
     id: "luxury",
     name: "Luxury Estate",
-    description: "Sophisticated design with premium feel, perfect for high-end properties",
+    description: "Premium design with gold accents, centered elegant typography, side-by-side image layout, and QR code for digital integration. For high-end properties.",
     thumbnail: "/templates/luxury-thumb.png",
     category: "Premium",
     defaultSettings: {
       headerStyle: "centered",
       footerStyle: "qr",
       imageLayout: "side",
+      primaryColor: "#854d0e", // Gold/amber
+      secondaryColor: "#44403c", // Dark stone
+      fontFamily: "playfair",
+      showPrice: false, // Luxury often hides price
+      showAgentPhoto: true,
+      showQrCode: true,
     },
   },
   {
     id: "bold",
     name: "Bold Impact",
-    description: "Eye-catching design with vibrant colors and modern layout",
+    description: "High-contrast design with vibrant colors, dynamic split layout, and multi-image grid. Attention-grabbing for competitive markets and quick sales.",
     thumbnail: "/templates/bold-thumb.png",
     category: "Contemporary",
     defaultSettings: {
       headerStyle: "split",
       footerStyle: "contact",
       imageLayout: "grid",
+      primaryColor: "#dc2626", // Vibrant red
+      secondaryColor: "#1f2937", // Dark charcoal
+      fontFamily: "roboto",
+      showPrice: true,
+      showAgentPhoto: true,
+      showQrCode: false,
     },
   },
 ];
