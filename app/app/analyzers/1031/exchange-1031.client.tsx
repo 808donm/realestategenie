@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { supabaseBrowser } from "@/lib/supabase/browser";
+import * as XLSX from "xlsx";
 import {
   calculateTimeline,
   calculateTaxAnalysis,
@@ -278,6 +279,142 @@ export default function Exchange1031Client({ savedExchanges, investmentPropertie
     setReplacementMortgage(0);
     setReplacementClosingCosts(0);
     setMessage("");
+  };
+
+  const exportToExcel = () => {
+    const wb = XLSX.utils.book_new();
+
+    // Sheet 1: Exchange Summary
+    const summaryData = [
+      ["1031 Exchange Analysis Report"],
+      ["Generated", new Date().toLocaleString()],
+      [],
+      ["EXCHANGE INFORMATION"],
+      ["Exchange Name", exchangeName || "Untitled Exchange"],
+      ["Status", timeline.status.replace(/_/g, " ").toUpperCase()],
+      [],
+      ["RELINQUISHED PROPERTY (Property Being Sold)"],
+      ["Address", relinquishedAddress || "N/A"],
+      ["Sale Price", salePrice],
+      ["Selling Costs", sellingCosts],
+      ["Original Basis", originalBasis],
+      ["Accumulated Depreciation", accumulatedDepreciation],
+      ["Existing Mortgage", existingMortgage],
+      ["Sale Close Date", saleCloseDate],
+      [],
+      ["TIMELINE"],
+      ["Sale Close Date", formatDate(timeline.saleCloseDate)],
+      ["45-Day Identification Deadline", formatDate(timeline.identificationDeadline)],
+      ["Days Until Identification", timeline.identificationExpired ? "EXPIRED" : timeline.daysUntilIdentification],
+      ["180-Day Exchange Deadline", formatDate(timeline.exchangeDeadline)],
+      ["Days Until Exchange", timeline.exchangeExpired ? "EXPIRED" : timeline.daysUntilExchange],
+      [],
+      ["TAX ANALYSIS"],
+      ["Adjusted Basis", taxAnalysis.adjustedBasis],
+      ["Realized Gain", taxAnalysis.realizedGain],
+      ["Capital Gain", taxAnalysis.capitalGain],
+      ["Depreciation Recapture", taxAnalysis.depreciationRecapture],
+      [],
+      ["TAX RATES"],
+      ["Federal Capital Gains Rate", `${federalRate}%`],
+      ["State Tax Rate", `${stateRate}%`],
+      ["Depreciation Recapture Rate", `${recaptureRate}%`],
+      ["Net Investment Income Tax", `${niitRate}%`],
+      [],
+      ["TAX WITHOUT 1031 EXCHANGE"],
+      ["Federal Capital Gains Tax", taxAnalysis.federalCapitalGainsTax],
+      ["State Capital Gains Tax", taxAnalysis.stateCapitalGainsTax],
+      ["Depreciation Recapture Tax", taxAnalysis.depreciationRecaptureTax],
+      ["Net Investment Income Tax", taxAnalysis.netInvestmentIncomeTax],
+      ["Total Tax Without Exchange", taxAnalysis.totalTaxWithoutExchange],
+      [],
+      ["TAX WITH 1031 EXCHANGE"],
+      ["Cash Boot", taxAnalysis.cashBoot],
+      ["Mortgage Boot", taxAnalysis.mortgageBoot],
+      ["Total Boot (Taxable)", taxAnalysis.totalBoot],
+      ["Tax on Boot", taxAnalysis.taxWithExchange],
+      [],
+      ["TAX SAVINGS"],
+      ["Tax Savings from 1031 Exchange", taxAnalysis.taxSavings],
+      ["Deferred Gain", taxAnalysis.deferredGain],
+      [],
+      ["REPLACEMENT REQUIREMENTS (for Full Deferral)"],
+      ["Minimum Purchase Price", requirements.minimumPurchasePrice],
+      ["Minimum Equity to Reinvest", requirements.minimumEquity],
+      ["Minimum Debt to Replace", requirements.minimumDebt],
+      ["Net Equity from Sale", requirements.netEquityFromSale],
+    ];
+
+    if (replacementPurchasePrice > 0) {
+      summaryData.push(
+        [],
+        ["SELECTED REPLACEMENT PROPERTY"],
+        ["Purchase Price", replacementPurchasePrice],
+        ["New Mortgage", replacementMortgage],
+        ["Closing Costs", replacementClosingCosts],
+        ["New Property Basis", taxAnalysis.newPropertyBasis]
+      );
+    }
+
+    const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+    summarySheet["!cols"] = [{ wch: 35 }, { wch: 25 }];
+    XLSX.utils.book_append_sheet(wb, summarySheet, "Summary");
+
+    // Sheet 2: Identified Properties
+    if (identifiedProperties.length > 0) {
+      const propertiesData = [
+        ["Identified Replacement Properties"],
+        ["(Must be identified within 45 days of sale)"],
+        [],
+        ["#", "Address", "Estimated Value", "Meets Min Price", "Notes"],
+        ...identifiedProperties.map((prop, index) => [
+          index + 1,
+          prop.address,
+          prop.estimatedValue,
+          prop.estimatedValue >= requirements.minimumPurchasePrice ? "Yes" : "No",
+          prop.notes || "",
+        ]),
+        [],
+        ["Three Property Rule Status", threePropertyValidation.valid ? "VALID" : "INVALID"],
+        ["Message", threePropertyValidation.message],
+      ];
+
+      const propertiesSheet = XLSX.utils.aoa_to_sheet(propertiesData);
+      propertiesSheet["!cols"] = [{ wch: 5 }, { wch: 40 }, { wch: 18 }, { wch: 15 }, { wch: 30 }];
+      XLSX.utils.book_append_sheet(wb, propertiesSheet, "Identified Properties");
+    }
+
+    // Sheet 3: Tax Comparison
+    const comparisonData = [
+      ["Tax Comparison: With vs Without 1031 Exchange"],
+      [],
+      ["Scenario", "Without Exchange", "With Exchange", "Difference"],
+      ["Federal Capital Gains", taxAnalysis.federalCapitalGainsTax, taxAnalysis.totalBoot > 0 ? (taxAnalysis.taxWithExchange * 0.4) : 0, taxAnalysis.federalCapitalGainsTax - (taxAnalysis.totalBoot > 0 ? (taxAnalysis.taxWithExchange * 0.4) : 0)],
+      ["State Taxes", taxAnalysis.stateCapitalGainsTax, taxAnalysis.totalBoot > 0 ? (taxAnalysis.taxWithExchange * 0.2) : 0, taxAnalysis.stateCapitalGainsTax - (taxAnalysis.totalBoot > 0 ? (taxAnalysis.taxWithExchange * 0.2) : 0)],
+      ["Depreciation Recapture", taxAnalysis.depreciationRecaptureTax, taxAnalysis.totalBoot > 0 ? (taxAnalysis.taxWithExchange * 0.3) : 0, taxAnalysis.depreciationRecaptureTax - (taxAnalysis.totalBoot > 0 ? (taxAnalysis.taxWithExchange * 0.3) : 0)],
+      ["NIIT", taxAnalysis.netInvestmentIncomeTax, taxAnalysis.totalBoot > 0 ? (taxAnalysis.taxWithExchange * 0.1) : 0, taxAnalysis.netInvestmentIncomeTax - (taxAnalysis.totalBoot > 0 ? (taxAnalysis.taxWithExchange * 0.1) : 0)],
+      [],
+      ["TOTAL TAX", taxAnalysis.totalTaxWithoutExchange, taxAnalysis.taxWithExchange, taxAnalysis.taxSavings],
+      [],
+      ["TAX SAVINGS", "", "", taxAnalysis.taxSavings],
+      [],
+      [],
+      ["IMPORTANT NOTES:"],
+      ["1. This analysis is for informational purposes only and should not be considered tax advice."],
+      ["2. Consult with a qualified tax professional and 1031 exchange intermediary."],
+      ["3. All deadlines are strict - missing them may disqualify the exchange."],
+      ["4. Like-kind property rules must be followed for valid exchanges."],
+    ];
+
+    const comparisonSheet = XLSX.utils.aoa_to_sheet(comparisonData);
+    comparisonSheet["!cols"] = [{ wch: 25 }, { wch: 20 }, { wch: 20 }, { wch: 20 }];
+    XLSX.utils.book_append_sheet(wb, comparisonSheet, "Tax Comparison");
+
+    // Generate filename
+    const fileName = `1031_Exchange_${exchangeName || "Analysis"}_${new Date().toISOString().split("T")[0]}.xlsx`;
+
+    // Download the file
+    XLSX.writeFile(wb, fileName);
   };
 
   const getStatusColor = (status: TimelineStatus["status"]) => {
@@ -575,9 +712,23 @@ export default function Exchange1031Client({ savedExchanges, investmentPropertie
         </div>
 
         {/* Save Button */}
-        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
           <button onClick={saveExchange} disabled={saving} style={{ padding: "12px 24px", fontWeight: 700 }}>
             {saving ? "Saving..." : selectedExchangeId ? "Update Exchange" : "Save Exchange"}
+          </button>
+          <button
+            onClick={exportToExcel}
+            style={{
+              padding: "12px 24px",
+              fontWeight: 700,
+              background: "#16a34a",
+              color: "#fff",
+              border: "none",
+              borderRadius: 6,
+              cursor: "pointer",
+            }}
+          >
+            Export to Excel
           </button>
           {message && (
             <span style={{ fontSize: 14, color: message.includes("Error") ? "red" : "green" }}>{message}</span>
