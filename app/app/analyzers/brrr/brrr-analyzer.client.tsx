@@ -240,7 +240,7 @@ export default function BRRRAnalyzerClient({ savedAnalyses }: BRRRAnalyzerClient
       ["Refinance Interest Rate", `${formData.refinanceInterestRate}%`],
       ["Loan Term (Years)", formData.refinanceLoanTermYears],
       ["Refinance Closing Costs", formData.refinanceClosingCosts],
-      ["Monthly Mortgage Payment", analysis.refinanceMonthlyPayment],
+      ["Monthly Mortgage Payment", analysis.monthlyMortgageAfterRefi],
       [],
       ["CASH RECOVERY AT REFINANCE"],
       ["Total Cash Invested", analysis.totalCashInvested],
