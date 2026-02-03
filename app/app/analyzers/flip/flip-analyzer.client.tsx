@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import * as XLSX from "xlsx";
 import { analyzeFlip, getFlipVerdict, calculateFlipMAO, estimateRehabCosts, FlipInput } from "@/lib/calculators/flip";
 
 interface SavedAnalysis {
@@ -188,6 +189,160 @@ export default function FlipAnalyzerClient({ savedAnalyses }: FlipAnalyzerClient
     } catch {
       setSaveMessage({ type: "error", text: "Error loading analysis" });
     }
+  };
+
+  const exportToExcel = () => {
+    const wb = XLSX.utils.book_new();
+
+    // Sheet 1: Flip Summary
+    const summaryData = [
+      ["House Flip Analysis Report"],
+      ["Generated", new Date().toLocaleString()],
+      [],
+      ["PROPERTY INFORMATION"],
+      ["Property Name", formData.name || "Untitled Property"],
+      ["Address", formData.address || "N/A"],
+      ["Square Feet", formData.squareFeet],
+      [],
+      ["PURCHASE"],
+      ["Purchase Price", formData.purchasePrice],
+      ["Closing Costs", formData.purchaseClosingCosts],
+      ["Total Purchase Cost", analysis.totalPurchaseCost],
+      [],
+      ["70% RULE ANALYSIS"],
+      ["After Repair Value (ARV)", formData.afterRepairValue],
+      ["70% of ARV", formData.afterRepairValue * 0.7],
+      ["Less: Renovation Costs", formData.renovationCosts],
+      ["Max Purchase (70% Rule)", analysis.maxPurchaseAt70],
+      ["Meets 70% Rule", analysis.meetsRule70 ? "YES" : "No"],
+      [],
+      ["MAX ALLOWABLE OFFER (MAO)"],
+      ["Target Profit (15%)", maoCalc.targetProfit],
+      ["MAO", maoCalc.mao],
+      [],
+      ["FINANCING"],
+      ["Using Financing", formData.useFinancing ? "Yes" : "No (Cash)"],
+    ];
+
+    if (formData.useFinancing) {
+      summaryData.push(
+        ["Loan-to-Value", `${formData.loanToValuePercent}%`],
+        ["Loan Amount", formData.purchasePrice * (formData.loanToValuePercent / 100)],
+        ["Interest Rate", `${formData.loanInterestRate}%`],
+        ["Points", `${formData.loanPoints}%`],
+        ["Points Cost", analysis.loanPointsCost],
+        ["Interest During Hold", analysis.interestCostsDuringHold],
+        ["Down Payment Required", analysis.totalCashRequired]
+      );
+    }
+
+    summaryData.push(
+      [],
+      ["RENOVATION"],
+      ["Base Renovation Costs", formData.renovationCosts],
+      ["Contingency", `${formData.contingencyPercent}%`],
+      ["Contingency Amount", formData.renovationCosts * (formData.contingencyPercent / 100)],
+      ["Permits", formData.permitsCosts],
+      ["Staging", formData.stagingCosts],
+      ["Total Renovation Cost", analysis.totalRenovationCost],
+      [],
+      ["HOLDING PERIOD"],
+      ["Duration (Months)", formData.holdingPeriodMonths],
+      ["Property Tax / Month", formData.propertyTaxMonthly],
+      ["Insurance / Month", formData.insuranceMonthly],
+      ["Utilities / Month", formData.utilitiesMonthly],
+      ["Other Costs / Month", formData.otherHoldingCostsMonthly],
+      ["Total Holding Costs", analysis.totalHoldingCosts],
+      [],
+      ["SALE"],
+      ["After Repair Value (ARV)", formData.afterRepairValue],
+      ["Selling Costs", `${formData.sellingCostsPercent}%`],
+      ["Selling Costs Amount", analysis.sellingCosts],
+      ["Net Sale Proceeds", formData.afterRepairValue - analysis.sellingCosts],
+      [],
+      ["COST SUMMARY"],
+      ["Total Purchase Cost", analysis.totalPurchaseCost],
+      ["Total Renovation Cost", analysis.totalRenovationCost],
+      ["Total Holding Costs", analysis.totalHoldingCosts],
+      ["Total Selling Costs", analysis.sellingCosts],
+      ["All-In Cost", analysis.allInCost],
+      [],
+      ["PROFIT ANALYSIS"],
+      ["Gross Profit", analysis.grossProfit],
+      ["Net Profit", analysis.netProfit],
+      ["Profit Margin", `${analysis.profitMargin.toFixed(2)}%`],
+      ["Profit Per Month", analysis.profitPerMonth],
+      [],
+      ["RETURN ON INVESTMENT"],
+      ["ROI on Cash Invested", `${analysis.roiOnCash.toFixed(2)}%`],
+      ["ROI on Total Cost", `${analysis.roiOnTotalCost.toFixed(2)}%`],
+      ["Annualized ROI", `${analysis.annualizedROI.toFixed(2)}%`],
+      [],
+      ["BREAK-EVEN ANALYSIS"],
+      ["Break-Even Sale Price", analysis.breakEvenSalePrice],
+      ["Safety Margin", `${analysis.safetyMargin.toFixed(2)}%`],
+      [],
+      ["DEAL SCORE"],
+      ["Score", `${analysis.dealScore.toFixed(1)} / 5`],
+      ["Verdict", verdict.verdict]
+    );
+
+    const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+    summarySheet["!cols"] = [{ wch: 30 }, { wch: 20 }];
+    XLSX.utils.book_append_sheet(wb, summarySheet, "Flip Summary");
+
+    // Sheet 2: Monthly Breakdown
+    const monthlyData = [
+      ["Monthly Cash Flow Breakdown"],
+      [],
+      ["Month", "Holding Costs", formData.useFinancing ? "Interest" : "", "Cumulative Costs"],
+    ];
+
+    const monthlyHoldingCost = formData.propertyTaxMonthly + formData.insuranceMonthly +
+      formData.utilitiesMonthly + formData.otherHoldingCostsMonthly;
+    const monthlyInterest = formData.useFinancing ?
+      (formData.purchasePrice * (formData.loanToValuePercent / 100) * (formData.loanInterestRate / 100) / 12) : 0;
+
+    let cumulative = 0;
+    for (let i = 1; i <= formData.holdingPeriodMonths; i++) {
+      cumulative += monthlyHoldingCost + monthlyInterest;
+      monthlyData.push([
+        i,
+        monthlyHoldingCost,
+        formData.useFinancing ? monthlyInterest : "",
+        cumulative,
+      ]);
+    }
+
+    const monthlySheet = XLSX.utils.aoa_to_sheet(monthlyData);
+    monthlySheet["!cols"] = [{ wch: 10 }, { wch: 15 }, { wch: 15 }, { wch: 18 }];
+    XLSX.utils.book_append_sheet(wb, monthlySheet, "Monthly Breakdown");
+
+    // Sheet 3: Rehab Estimate Reference
+    const rehabData = [
+      ["Rehab Cost Estimator Reference"],
+      [],
+      ["Based on", `${formData.squareFeet} sqft`],
+      [],
+      ["Rehab Level", "Low ($/sqft)", "High ($/sqft)", "Low Total", "High Total", "Mid Total"],
+      ["Cosmetic", "$15", "$35", formData.squareFeet * 15, formData.squareFeet * 35, formData.squareFeet * 25],
+      ["Moderate", "$30", "$60", formData.squareFeet * 30, formData.squareFeet * 60, formData.squareFeet * 45],
+      ["Major", "$50", "$100", formData.squareFeet * 50, formData.squareFeet * 100, formData.squareFeet * 75],
+      ["Gut Rehab", "$80", "$175", formData.squareFeet * 80, formData.squareFeet * 175, formData.squareFeet * 127.5],
+      [],
+      ["Current Rehab Budget", formData.renovationCosts],
+      ["Cost Per Sqft", (formData.renovationCosts / formData.squareFeet).toFixed(2)],
+    ];
+
+    const rehabSheet = XLSX.utils.aoa_to_sheet(rehabData);
+    rehabSheet["!cols"] = [{ wch: 15 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }];
+    XLSX.utils.book_append_sheet(wb, rehabSheet, "Rehab Reference");
+
+    // Generate filename
+    const fileName = `Flip_${formData.name || "Analysis"}_${new Date().toISOString().split("T")[0]}.xlsx`;
+
+    // Download the file
+    XLSX.writeFile(wb, fileName);
   };
 
   const inputStyle = {
@@ -618,7 +773,7 @@ export default function FlipAnalyzerClient({ savedAnalyses }: FlipAnalyzerClient
               </div>
             </div>
 
-            {/* Save Button */}
+            {/* Save and Export Buttons */}
             <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
               <button
                 onClick={handleSave}
@@ -635,6 +790,20 @@ export default function FlipAnalyzerClient({ savedAnalyses }: FlipAnalyzerClient
                 }}
               >
                 {saving ? "Saving..." : "Save Analysis"}
+              </button>
+              <button
+                onClick={exportToExcel}
+                style={{
+                  padding: "12px 24px",
+                  background: "#16a34a",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 6,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Export to Excel
               </button>
               {saveMessage && (
                 <span

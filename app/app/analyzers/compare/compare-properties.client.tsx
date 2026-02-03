@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import * as XLSX from "xlsx";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import {
   PropertyInput,
@@ -165,6 +166,118 @@ export default function ComparePropertiesClient({ savedProperties, savedComparis
     return { bg: "#f5f5f5", text: "#000", label: `#${rank}` };
   };
 
+  const exportToExcel = () => {
+    if (comparisons.length < 2) return;
+
+    const wb = XLSX.utils.book_new();
+
+    // Sheet 1: Comparison Summary
+    const summaryData: (string | number)[][] = [
+      ["Property Comparison Report"],
+      ["Generated", new Date().toLocaleString()],
+      ["Comparison Name", comparisonName || "Untitled Comparison"],
+      [],
+      ["PROPERTY RANKINGS (Best to Worst)"],
+      [],
+    ];
+
+    // Header row
+    const headerRow = ["Metric", ...comparisons.map((c) => c.propertyName)];
+    summaryData.push(headerRow);
+
+    // Data rows
+    summaryData.push(["Rank", ...comparisons.map((_, i) => `#${i + 1}`)]);
+    summaryData.push(["Purchase Price", ...comparisons.map((c) => c.analysis.totalInvestment)]);
+    summaryData.push(["Monthly Rent", ...comparisons.map((c) => {
+      const prop = savedProperties.find(p => p.id === c.propertyId);
+      return prop ? prop.monthly_rent : 0;
+    })]);
+    summaryData.push(["Monthly Cash Flow", ...comparisons.map((c) => c.analysis.annualCashFlow / 12)]);
+    summaryData.push(["Annual Cash Flow", ...comparisons.map((c) => c.analysis.annualCashFlow)]);
+    summaryData.push(["NOI", ...comparisons.map((c) => c.analysis.noi)]);
+    summaryData.push(["Cap Rate", ...comparisons.map((c) => `${c.analysis.capRate.toFixed(2)}%`)]);
+    summaryData.push(["Cash-on-Cash", ...comparisons.map((c) => `${c.analysis.cashOnCash.toFixed(2)}%`)]);
+    summaryData.push(["IRR", ...comparisons.map((c) => `${c.analysis.irr.toFixed(2)}%`)]);
+    summaryData.push(["Total ROI", ...comparisons.map((c) => `${c.analysis.totalROI.toFixed(2)}%`)]);
+    summaryData.push(["Total Profit", ...comparisons.map((c) => c.analysis.totalProfit)]);
+    summaryData.push(["Projected Sale Price", ...comparisons.map((c) => c.analysis.projectedSalePrice)]);
+
+    const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+    summarySheet["!cols"] = [
+      { wch: 20 },
+      ...comparisons.map(() => ({ wch: 18 })),
+    ];
+    XLSX.utils.book_append_sheet(wb, summarySheet, "Comparison");
+
+    // Sheet 2: Detailed Analysis per property
+    comparisons.forEach((comp, index) => {
+      const prop = savedProperties.find((p) => p.id === comp.propertyId);
+      if (!prop) return;
+
+      const detailData = [
+        [`Property ${index + 1}: ${comp.propertyName}`],
+        ["Address", prop.address || "N/A"],
+        [],
+        ["PURCHASE"],
+        ["Purchase Price", prop.purchase_price],
+        ["Closing Costs", prop.closing_costs],
+        ["Renovation Costs", prop.renovation_costs],
+        ["Down Payment %", `${prop.down_payment_percent}%`],
+        ["Total Investment", comp.analysis.totalInvestment],
+        [],
+        ["FINANCING"],
+        ["Loan Amount", comp.analysis.loanAmount],
+        ["Interest Rate", `${prop.loan_interest_rate}%`],
+        ["Loan Term", `${prop.loan_term_years} years`],
+        ["Monthly Mortgage", comp.analysis.monthlyMortgage],
+        [],
+        ["INCOME"],
+        ["Monthly Rent", prop.monthly_rent],
+        ["Other Income", prop.other_monthly_income],
+        ["Vacancy Rate", `${prop.vacancy_rate_percent}%`],
+        ["Gross Annual Income", comp.analysis.grossAnnualIncome],
+        ["Effective Gross Income", comp.analysis.effectiveGrossIncome],
+        [],
+        ["EXPENSES"],
+        ["Property Tax (Annual)", prop.property_tax_annual],
+        ["Insurance (Annual)", prop.insurance_annual],
+        ["HOA (Monthly)", prop.hoa_monthly],
+        ["Maintenance %", `${prop.maintenance_percent}%`],
+        ["Property Mgmt %", `${prop.property_mgmt_percent}%`],
+        ["Operating Expenses", comp.analysis.annualOperatingExpenses],
+        [],
+        ["RETURNS"],
+        ["NOI", comp.analysis.noi],
+        ["Annual Cash Flow", comp.analysis.annualCashFlow],
+        ["Monthly Cash Flow", comp.analysis.annualCashFlow / 12],
+        ["Cap Rate", `${comp.analysis.capRate.toFixed(2)}%`],
+        ["Cash-on-Cash", `${comp.analysis.cashOnCash.toFixed(2)}%`],
+        ["IRR", `${comp.analysis.irr.toFixed(2)}%`],
+        ["Total ROI", `${comp.analysis.totalROI.toFixed(2)}%`],
+        [],
+        ["PROJECTIONS"],
+        ["Holding Period", `${prop.holding_period_years} years`],
+        ["Appreciation", `${prop.annual_appreciation_percent}%/year`],
+        ["Rent Increase", `${prop.annual_rent_increase_percent}%/year`],
+        ["Projected Sale Price", comp.analysis.projectedSalePrice],
+        ["Total Cash Flow", comp.analysis.totalCashFlow],
+        ["Total Profit", comp.analysis.totalProfit],
+      ];
+
+      const detailSheet = XLSX.utils.aoa_to_sheet(detailData);
+      detailSheet["!cols"] = [{ wch: 25 }, { wch: 18 }];
+      // Truncate sheet name if too long
+      const sheetName = comp.propertyName.slice(0, 28) || `Property ${index + 1}`;
+      XLSX.utils.book_append_sheet(wb, detailSheet, sheetName);
+    });
+
+    // Generate filename
+    const fileName = `Comparison_${comparisonName || "Properties"}_${new Date().toISOString().split("T")[0]}.xlsx`;
+
+    // Download the file
+    XLSX.writeFile(wb, fileName);
+  };
+
   if (savedProperties.length === 0) {
     return (
       <div style={{ padding: 40, textAlign: "center", border: "1px solid #e6e6e6", borderRadius: 12 }}>
@@ -266,6 +379,21 @@ export default function ComparePropertiesClient({ savedProperties, savedComparis
           style={{ padding: "10px 20px", fontWeight: 700 }}
         >
           {saving ? "Saving..." : "Save Comparison"}
+        </button>
+        <button
+          onClick={exportToExcel}
+          disabled={comparisons.length < 2}
+          style={{
+            padding: "10px 20px",
+            fontWeight: 700,
+            background: comparisons.length >= 2 ? "#16a34a" : "#ccc",
+            color: "#fff",
+            border: "none",
+            borderRadius: 4,
+            cursor: comparisons.length >= 2 ? "pointer" : "not-allowed",
+          }}
+        >
+          Export to Excel
         </button>
         {message && (
           <span style={{ fontSize: 14, color: message.includes("Error") ? "red" : "green" }}>

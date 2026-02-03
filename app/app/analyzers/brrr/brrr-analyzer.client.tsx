@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import * as XLSX from "xlsx";
 import { analyzeBRRR, getBRRRVerdict, calculate70PercentRule, BRRRInput } from "@/lib/calculators/brrr";
 
 interface SavedAnalysis {
@@ -200,6 +201,136 @@ export default function BRRRAnalyzerClient({ savedAnalyses }: BRRRAnalyzerClient
     } catch {
       setSaveMessage({ type: "error", text: "Error loading analysis" });
     }
+  };
+
+  const exportToExcel = () => {
+    const wb = XLSX.utils.book_new();
+
+    // Sheet 1: BRRR Summary
+    const summaryData = [
+      ["BRRR Strategy Analysis Report"],
+      ["Generated", new Date().toLocaleString()],
+      [],
+      ["PROPERTY INFORMATION"],
+      ["Property Name", formData.name || "Untitled Property"],
+      ["Address", formData.address || "N/A"],
+      ["Number of Units", formData.numberOfUnits],
+      [],
+      ["PHASE 1: BUY"],
+      ["Purchase Price", formData.purchasePrice],
+      ["Closing Costs", formData.purchaseClosingCosts],
+      ["Initial Loan LTV", `${formData.initialLoanPercent}%`],
+      ["Hard Money Rate", `${formData.initialInterestRate}%`],
+      ["Down Payment Required", analysis.totalCashInvested - formData.renovationCosts - formData.purchaseClosingCosts],
+      [],
+      ["PHASE 2: RENOVATE"],
+      ["Renovation Costs", formData.renovationCosts],
+      ["Renovation Time (Months)", formData.renovationTimeMonths],
+      ["Monthly Holding Costs", formData.holdingCostsDuringReno],
+      ["Total Holding Costs During Reno", formData.holdingCostsDuringReno * formData.renovationTimeMonths],
+      [],
+      ["AFTER REPAIR VALUE (ARV)"],
+      ["ARV", formData.afterRepairValue],
+      ["70% Rule Max Purchase", maxPurchase70],
+      ["Meets 70% Rule", formData.purchasePrice <= maxPurchase70 ? "Yes" : "No"],
+      [],
+      ["PHASE 3: REFINANCE"],
+      ["Refinance LTV", `${formData.refinanceLTV}%`],
+      ["New Loan Amount", analysis.refinanceLoanAmount],
+      ["Refinance Interest Rate", `${formData.refinanceInterestRate}%`],
+      ["Loan Term (Years)", formData.refinanceLoanTermYears],
+      ["Refinance Closing Costs", formData.refinanceClosingCosts],
+      ["Monthly Mortgage Payment", analysis.refinanceMonthlyPayment],
+      [],
+      ["CASH RECOVERY AT REFINANCE"],
+      ["Total Cash Invested", analysis.totalCashInvested],
+      ["Cash Out at Refinance", analysis.cashOutAtRefinance],
+      ["Cash Left in Deal", analysis.cashLeftInDeal],
+      ["Equity Captured", analysis.equityCaptured],
+      ["Infinite Return?", analysis.isInfiniteReturn ? "YES" : "No"],
+      [],
+      ["PHASE 4: RENT"],
+      ["Monthly Rent" + (formData.numberOfUnits > 1 ? " (per unit)" : ""), formData.monthlyRent],
+      ["Total Monthly Rent", formData.monthlyRent * formData.numberOfUnits],
+      ["Other Monthly Income", formData.otherMonthlyIncome],
+      ["Vacancy Rate", `${formData.vacancyRatePercent}%`],
+      ["Annual Property Tax", formData.propertyTaxAnnual],
+      ["Annual Insurance", formData.insuranceAnnual],
+      ["Maintenance", `${formData.maintenancePercent}%`],
+      ["Property Management", `${formData.propertyMgmtPercent}%`],
+      ["Other Monthly Expenses", formData.otherMonthlyExpenses],
+      [],
+      ["RENTAL RETURNS"],
+      ["Net Operating Income (NOI)", analysis.noi],
+      ["Monthly Cash Flow", analysis.monthlyCashFlow],
+      ["Annual Cash Flow", analysis.annualCashFlow],
+      ["Cap Rate", `${analysis.capRate.toFixed(2)}%`],
+      ["Cash-on-Cash Return", isFinite(analysis.cashOnCashReturn) ? `${analysis.cashOnCashReturn.toFixed(2)}%` : "Infinite"],
+      [],
+      ["DEAL SCORE"],
+      ["Score", `${analysis.dealScore.toFixed(1)} / 5`],
+      ["Verdict", verdict.verdict],
+    ];
+
+    const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+    summarySheet["!cols"] = [{ wch: 35 }, { wch: 20 }];
+    XLSX.utils.book_append_sheet(wb, summarySheet, "BRRR Summary");
+
+    // Sheet 2: Year-by-Year Projections
+    if (analysis.yearlyProjections.length > 0) {
+      const projectionsData = [
+        ["Year-by-Year Projections"],
+        [],
+        ["Year", "Cash Flow", "Property Value", "Equity", "Cumulative Cash Flow"],
+        ...analysis.yearlyProjections.map((year) => [
+          year.year,
+          year.cashFlow,
+          year.propertyValue,
+          year.equity,
+          year.cumulativeCashFlow,
+        ]),
+      ];
+
+      const projectionsSheet = XLSX.utils.aoa_to_sheet(projectionsData);
+      projectionsSheet["!cols"] = [
+        { wch: 8 },
+        { wch: 15 },
+        { wch: 15 },
+        { wch: 15 },
+        { wch: 20 },
+      ];
+      XLSX.utils.book_append_sheet(wb, projectionsSheet, "Projections");
+    }
+
+    // Sheet 3: Exit Analysis
+    const exitData = [
+      ["Exit Analysis"],
+      [],
+      ["ASSUMPTIONS"],
+      ["Holding Period (Years)", formData.holdingPeriodYears],
+      ["Annual Appreciation", `${formData.annualAppreciationPercent}%`],
+      ["Annual Rent Increase", `${formData.annualRentIncreasePercent}%`],
+      [],
+      ["PROJECTED EXIT"],
+      ["Projected Sale Price", analysis.projectedSalePrice],
+      ["Total Cash Flow Received", analysis.totalCashFlow],
+      ["Total Profit", analysis.totalProfit],
+      [],
+      ["MULTI-FAMILY METRICS"],
+      ["Number of Units", formData.numberOfUnits],
+      ["Price Per Unit", analysis.pricePerUnit],
+      ["Rent Per Unit", formData.monthlyRent],
+    ];
+
+    const exitSheet = XLSX.utils.aoa_to_sheet(exitData);
+    exitSheet["!cols"] = [{ wch: 30 }, { wch: 20 }];
+    XLSX.utils.book_append_sheet(wb, exitSheet, "Exit Analysis");
+
+    // Generate filename
+    const fileName = `BRRR_${formData.name || "Analysis"}_${new Date().toISOString().split("T")[0]}.xlsx`;
+
+    // Download the file
+    XLSX.writeFile(wb, fileName);
   };
 
   const inputStyle = {
@@ -636,7 +767,7 @@ export default function BRRRAnalyzerClient({ savedAnalyses }: BRRRAnalyzerClient
               </div>
             </div>
 
-            {/* Save Button */}
+            {/* Save and Export Buttons */}
             <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
               <button
                 onClick={handleSave}
@@ -653,6 +784,20 @@ export default function BRRRAnalyzerClient({ savedAnalyses }: BRRRAnalyzerClient
                 }}
               >
                 {saving ? "Saving..." : "Save Analysis"}
+              </button>
+              <button
+                onClick={exportToExcel}
+                style={{
+                  padding: "12px 24px",
+                  background: "#16a34a",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 6,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Export to Excel
               </button>
               {saveMessage && (
                 <span
