@@ -267,7 +267,7 @@ export default function ComparePropertiesClient({ savedProperties, savedComparis
       const detailSheet = XLSX.utils.aoa_to_sheet(detailData);
       detailSheet["!cols"] = [{ wch: 25 }, { wch: 18 }];
       // Truncate sheet name if too long
-      const sheetName = comp.propertyName.slice(0, 28) || `Property ${index + 1}`;
+      const sheetName = comp.name.slice(0, 28) || `Property ${index + 1}`;
       XLSX.utils.book_append_sheet(wb, detailSheet, sheetName);
     });
 
