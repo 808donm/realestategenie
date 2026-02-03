@@ -182,7 +182,7 @@ export default function ComparePropertiesClient({ savedProperties, savedComparis
     ];
 
     // Header row
-    const headerRow = ["Metric", ...comparisons.map((c) => c.propertyName)];
+    const headerRow = ["Metric", ...comparisons.map((c) => c.name)];
     summaryData.push(headerRow);
 
     // Data rows
