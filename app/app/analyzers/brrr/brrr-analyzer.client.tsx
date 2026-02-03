@@ -313,7 +313,7 @@ export default function BRRRAnalyzerClient({ savedAnalyses }: BRRRAnalyzerClient
       [],
       ["PROJECTED EXIT"],
       ["Projected Sale Price", analysis.projectedSalePrice],
-      ["Total Cash Flow Received", analysis.totalCashFlow],
+      ["Total Cash Flow Received", analysis.yearlyProjections.length > 0 ? analysis.yearlyProjections[analysis.yearlyProjections.length - 1].cumulativeCashFlow : 0],
       ["Total Profit", analysis.totalProfit],
       [],
       ["MULTI-FAMILY METRICS"],
