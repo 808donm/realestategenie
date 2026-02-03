@@ -215,7 +215,7 @@ export default function ComparePropertiesClient({ savedProperties, savedComparis
       if (!prop) return;
 
       const detailData = [
-        [`Property ${index + 1}: ${comp.propertyName}`],
+        [`Property ${index + 1}: ${comp.name}`],
         ["Address", prop.address || "N/A"],
         [],
         ["PURCHASE"],
