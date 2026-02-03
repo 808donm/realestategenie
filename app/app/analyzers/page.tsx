@@ -24,6 +24,16 @@ export default async function AnalyzersPage() {
     .from("property_comparisons")
     .select("*", { count: "exact", head: true });
 
+  const { count: brrrCount } = await supabase
+    .from("brrr_analyses")
+    .select("*", { count: "exact", head: true })
+    .eq("is_active", true);
+
+  const { count: flipCount } = await supabase
+    .from("flip_analyses")
+    .select("*", { count: "exact", head: true })
+    .eq("is_active", true);
+
   return (
     <div style={{ maxWidth: 900 }}>
       <h1 style={{ fontSize: 28, fontWeight: 900, marginTop: 0, marginBottom: 8 }}>
@@ -92,6 +102,66 @@ export default async function AnalyzersPage() {
           </div>
         </Link>
 
+        {/* BRRR Strategy Card */}
+        <Link
+          href="/app/analyzers/brrr"
+          style={{
+            padding: 24,
+            border: "1px solid #e6e6e6",
+            borderRadius: 12,
+            textDecoration: "none",
+            color: "inherit",
+            display: "block",
+            transition: "border-color 0.2s",
+            background: "linear-gradient(135deg, #f0f9ff 0%, #ffffff 100%)",
+          }}
+        >
+          <div style={{ fontSize: 32, marginBottom: 12 }}>🏗️</div>
+          <h2 style={{ margin: "0 0 8px 0", fontSize: 20, fontWeight: 800 }}>
+            BRRR Strategy Analyzer
+          </h2>
+          <p style={{ margin: "0 0 16px 0", opacity: 0.7, fontSize: 14 }}>
+            Buy, Renovate, Refinance, Rent. Analyze deals for infinite returns and cash-out refinancing.
+            Supports multi-family properties.
+          </p>
+          <div style={{ display: "flex", gap: 16, fontSize: 13 }}>
+            <div>
+              <span style={{ fontWeight: 700 }}>{brrrCount || 0}</span>{" "}
+              <span style={{ opacity: 0.7 }}>saved analyses</span>
+            </div>
+          </div>
+        </Link>
+
+        {/* House Flip Card */}
+        <Link
+          href="/app/analyzers/flip"
+          style={{
+            padding: 24,
+            border: "1px solid #e6e6e6",
+            borderRadius: 12,
+            textDecoration: "none",
+            color: "inherit",
+            display: "block",
+            transition: "border-color 0.2s",
+            background: "linear-gradient(135deg, #fff7ed 0%, #ffffff 100%)",
+          }}
+        >
+          <div style={{ fontSize: 32, marginBottom: 12 }}>🔨</div>
+          <h2 style={{ margin: "0 0 8px 0", fontSize: 20, fontWeight: 800 }}>
+            House Flip Analyzer
+          </h2>
+          <p style={{ margin: "0 0 16px 0", opacity: 0.7, fontSize: 14 }}>
+            Fix and flip calculator with 70% rule, ROI projections, and rehab cost estimator.
+            Includes financing options.
+          </p>
+          <div style={{ display: "flex", gap: 16, fontSize: 13 }}>
+            <div>
+              <span style={{ fontWeight: 700 }}>{flipCount || 0}</span>{" "}
+              <span style={{ opacity: 0.7 }}>saved analyses</span>
+            </div>
+          </div>
+        </Link>
+
         {/* Compare Properties Card */}
         <Link
           href="/app/analyzers/compare"
@@ -139,16 +209,16 @@ export default async function AnalyzersPage() {
             description="The discount rate that makes NPV of all cash flows equal zero. Best measure of overall return."
           />
           <FeatureItem
-            title="Total ROI"
-            description="Total profit (cash flow + appreciation + equity) divided by initial investment over holding period."
+            title="Infinite Returns (BRRR)"
+            description="When cash-out refinance recovers all invested capital, leaving zero cash in the deal."
+          />
+          <FeatureItem
+            title="70% Rule (Flips)"
+            description="Max purchase = 70% of ARV minus repairs. Classic rule for profitable flip deals."
           />
           <FeatureItem
             title="1031 Tax Savings"
             description="Calculate deferred capital gains and depreciation recapture taxes through like-kind exchanges."
-          />
-          <FeatureItem
-            title="Timeline Tracking"
-            description="Track critical 45-day identification and 180-day exchange deadlines for 1031 exchanges."
           />
         </div>
       </div>
