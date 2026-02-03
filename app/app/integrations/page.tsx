@@ -89,6 +89,73 @@ export default async function IntegrationsPage() {
         )}
       </div>
 
+      {/* MLS / IDX Integrations - Coming Soon */}
+      <Card className="opacity-60">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <span>MLS / IDX Integrations</span>
+            <span className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded-full font-normal">
+              Coming Soon
+            </span>
+          </CardTitle>
+          <CardDescription>
+            Connect to MLS data feeds for property listings, 1031 exchange searches, and market analysis
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4 md:grid-cols-3">
+          <div className="p-4 border rounded-lg bg-muted/20">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="h-8 w-8 rounded bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+                <span className="text-white text-xs font-bold">RC</span>
+              </div>
+              <h3 className="font-semibold text-muted-foreground">RealtyCandy</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mb-3">
+              IDX plugin for property search and listings display on your website
+            </p>
+            <button
+              disabled
+              className="w-full py-2 px-4 border rounded-md text-sm font-medium text-muted-foreground bg-muted/50 cursor-not-allowed"
+            >
+              Connect
+            </button>
+          </div>
+          <div className="p-4 border rounded-lg bg-muted/20">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="h-8 w-8 rounded bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center">
+                <span className="text-white text-xs font-bold">IDX</span>
+              </div>
+              <h3 className="font-semibold text-muted-foreground">IDX Broker</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mb-3">
+              Full-featured IDX solution with advanced search and lead capture
+            </p>
+            <button
+              disabled
+              className="w-full py-2 px-4 border rounded-md text-sm font-medium text-muted-foreground bg-muted/50 cursor-not-allowed"
+            >
+              Connect
+            </button>
+          </div>
+          <div className="p-4 border rounded-lg bg-muted/20">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="h-8 w-8 rounded bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
+                <span className="text-white text-xs font-bold">OSI</span>
+              </div>
+              <h3 className="font-semibold text-muted-foreground">OSI IDX Broker</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mb-3">
+              Open source IDX integration with flexible customization options
+            </p>
+            <button
+              disabled
+              className="w-full py-2 px-4 border rounded-md text-sm font-medium text-muted-foreground bg-muted/50 cursor-not-allowed"
+            >
+              Connect
+            </button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
