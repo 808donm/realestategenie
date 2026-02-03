@@ -292,7 +292,7 @@ export default function FlipAnalyzerClient({ savedAnalyses }: FlipAnalyzerClient
     XLSX.utils.book_append_sheet(wb, summarySheet, "Flip Summary");
 
     // Sheet 2: Monthly Breakdown
-    const monthlyData = [
+    const monthlyData: (string | number)[][] = [
       ["Monthly Cash Flow Breakdown"],
       [],
       ["Month", "Holding Costs", formData.useFinancing ? "Interest" : "", "Cumulative Costs"],
