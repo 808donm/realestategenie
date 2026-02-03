@@ -77,6 +77,20 @@ async function setStatus(formData: FormData) {
           <Link href="/app/open-houses">Back to list</Link>
           <Link href={`/app/open-houses/${evt.id}/attendees`}>Attendees</Link>
           <Link
+            href={`/app/open-houses/${evt.id}/scorecard`}
+            style={{
+              padding: "8px 12px",
+              background: "#8b5cf6",
+              color: "white",
+              borderRadius: 6,
+              textDecoration: "none",
+              fontWeight: 600,
+              fontSize: 14,
+            }}
+          >
+            Scorecard
+          </Link>
+          <Link
             href={`/app/open-houses/${evt.id}/edit`}
             style={{
               padding: "8px 12px",
