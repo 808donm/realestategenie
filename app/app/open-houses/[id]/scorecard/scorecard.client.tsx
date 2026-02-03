@@ -22,9 +22,10 @@ interface Lead {
 interface ScorecardClientProps {
   eventId: string;
   leads: Lead[];
+  contactTrackingEnabled?: boolean;
 }
 
-export default function ScorecardClient({ eventId, leads: initialLeads }: ScorecardClientProps) {
+export default function ScorecardClient({ eventId, leads: initialLeads, contactTrackingEnabled = true }: ScorecardClientProps) {
   const [leads, setLeads] = useState<Lead[]>(initialLeads);
   const [updating, setUpdating] = useState<string | null>(null);
   const [error, setError] = useState("");

@@ -26,18 +26,47 @@ export default async function OpenHouseScorecardPage({
   }
 
   // Get all leads for this event with contact info
-  const { data: leads, error: leadsErr } = await supabase
+  // Try with contact columns first, fall back to basic columns if they don't exist
+  let leads;
+  let contactTrackingEnabled = true;
+
+  const { data: leadsWithContact, error: leadsErr } = await supabase
     .from("lead_submissions")
     .select("id,created_at,payload,contacted_at,contact_method,contact_notes")
     .eq("event_id", id)
     .order("created_at", { ascending: true });
 
-  if (leadsErr) {
+  if (leadsErr?.message?.includes("contacted_at") || leadsErr?.message?.includes("does not exist")) {
+    // Contact columns don't exist yet, fetch without them
+    contactTrackingEnabled = false;
+    const { data: basicLeads, error: basicErr } = await supabase
+      .from("lead_submissions")
+      .select("id,created_at,payload")
+      .eq("event_id", id)
+      .order("created_at", { ascending: true });
+
+    if (basicErr) {
+      return (
+        <div style={{ padding: 24, color: "crimson" }}>
+          Error loading leads: {basicErr.message}
+        </div>
+      );
+    }
+    // Add null contact fields to match expected shape
+    leads = (basicLeads ?? []).map(l => ({
+      ...l,
+      contacted_at: null,
+      contact_method: null,
+      contact_notes: null,
+    }));
+  } else if (leadsErr) {
     return (
       <div style={{ padding: 24, color: "crimson" }}>
         Error loading leads: {leadsErr.message}
       </div>
     );
+  } else {
+    leads = leadsWithContact;
   }
 
   return (
@@ -65,7 +94,7 @@ export default async function OpenHouseScorecardPage({
         </div>
       </div>
 
-      <ScorecardClient eventId={id} leads={leads ?? []} />
+      <ScorecardClient eventId={id} leads={leads ?? []} contactTrackingEnabled={contactTrackingEnabled} />
     </div>
   );
 }
