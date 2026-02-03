@@ -217,7 +217,7 @@ export default function FlipAnalyzerClient({ savedAnalyses }: FlipAnalyzerClient
       ["Meets 70% Rule", analysis.meetsRule70 ? "YES" : "No"],
       [],
       ["MAX ALLOWABLE OFFER (MAO)"],
-      ["Target Profit (15%)", maoCalc.targetProfit],
+      ["Target Profit (15%)", maoCalc.breakdown.desiredProfit],
       ["MAO", maoCalc.mao],
       [],
       ["FINANCING"],
