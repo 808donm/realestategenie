@@ -190,6 +190,35 @@ export default async function AnalyzersPage() {
             </div>
           </div>
         </Link>
+
+        {/* Mortgage Calculator Card */}
+        <Link
+          href="/app/analyzers/mortgage"
+          style={{
+            padding: 24,
+            border: "1px solid #e6e6e6",
+            borderRadius: 12,
+            textDecoration: "none",
+            color: "inherit",
+            display: "block",
+            transition: "border-color 0.2s",
+            background: "linear-gradient(135deg, #ecfdf5 0%, #ffffff 100%)",
+          }}
+        >
+          <div style={{ fontSize: 32, marginBottom: 12 }}>🏦</div>
+          <h2 style={{ margin: "0 0 8px 0", fontSize: 20, fontWeight: 800 }}>
+            Mortgage Calculator
+          </h2>
+          <p style={{ margin: "0 0 16px 0", opacity: 0.7, fontSize: 14 }}>
+            Calculate monthly payments with P&I, taxes, insurance, HOA, and PMI.
+            Includes amortization schedule and loan comparison.
+          </p>
+          <div style={{ display: "flex", gap: 16, fontSize: 13 }}>
+            <div>
+              <span style={{ opacity: 0.7 }}>PITI breakdown • Excel export</span>
+            </div>
+          </div>
+        </Link>
       </div>
 
       {/* Feature Overview */}
@@ -219,6 +248,10 @@ export default async function AnalyzersPage() {
           <FeatureItem
             title="1031 Tax Savings"
             description="Calculate deferred capital gains and depreciation recapture taxes through like-kind exchanges."
+          />
+          <FeatureItem
+            title="PITI (Mortgage)"
+            description="Principal, Interest, Taxes, Insurance plus HOA and PMI. Full monthly payment breakdown."
           />
         </div>
       </div>
