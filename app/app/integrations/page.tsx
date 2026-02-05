@@ -5,6 +5,7 @@ import PayPalOAuthCard from "./paypal-card-oauth";
 import StripeOAuthCard from "./stripe-card-oauth";
 import PayPalIntegrationCard from "./paypal-card";
 import StripeIntegrationCard from "./stripe-card";
+import TrestleIntegrationCard from "./trestle-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import IntegrationsNotifications from "./notifications";
 
@@ -88,6 +89,9 @@ export default async function IntegrationsPage() {
           </>
         )}
       </div>
+
+      {/* Trestle MLS Integration */}
+      <TrestleIntegrationCard integration={null} />
 
       {/* MLS / IDX Integrations - Coming Soon */}
       <Card className="opacity-60">
