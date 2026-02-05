@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { GHLClient, type GHLContact } from "@/lib/integrations/ghl-client";
-import { refreshGHLToken } from "@/lib/integrations/ghl-token-refresh";
+import { getValidGHLConfig } from "@/lib/integrations/ghl-token-refresh";
 
 // GET - Fetch contacts from GHL
 export async function GET(request: NextRequest) {
@@ -18,38 +18,20 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search") || "";
     const limit = parseInt(searchParams.get("limit") || "100");
 
-    // Get GHL integration
-    const { data: integration, error: integrationError } = await supabase
-      .from("integrations")
-      .select("*")
-      .eq("agent_id", user.id)
-      .eq("provider", "ghl")
-      .single();
+    // Get valid GHL config (handles token refresh automatically)
+    const ghlConfig = await getValidGHLConfig(user.id);
 
-    if (integrationError || !integration) {
+    if (!ghlConfig) {
       return NextResponse.json(
         { error: "GHL integration not found. Please connect GoHighLevel first." },
         { status: 404 }
       );
     }
 
-    // Refresh token if needed
-    const refreshedIntegration = await refreshGHLToken(integration, supabase);
-    const config = refreshedIntegration.config as Record<string, string>;
-
-    if (!config.ghl_access_token || !config.ghl_location_id) {
-      return NextResponse.json(
-        { error: "GHL not properly configured" },
-        { status: 400 }
-      );
-    }
-
-    const client = new GHLClient(config.ghl_access_token, config.ghl_location_id);
-
     // Fetch contacts from GHL
     // GHL API: GET /contacts with locationId and optional query
     const params = new URLSearchParams();
-    params.append("locationId", config.ghl_location_id);
+    params.append("locationId", ghlConfig.location_id);
     params.append("limit", limit.toString());
     if (search) {
       params.append("query", search);
@@ -60,7 +42,7 @@ export async function GET(request: NextRequest) {
       {
         method: "GET",
         headers: {
-          Authorization: `Bearer ${config.ghl_access_token}`,
+          Authorization: `Bearer ${ghlConfig.access_token}`,
           "Content-Type": "application/json",
           Version: "2021-07-28",
         },
@@ -116,37 +98,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get GHL integration
-    const { data: integration, error: integrationError } = await supabase
-      .from("integrations")
-      .select("*")
-      .eq("agent_id", user.id)
-      .eq("provider", "ghl")
-      .single();
+    // Get valid GHL config (handles token refresh automatically)
+    const ghlConfig = await getValidGHLConfig(user.id);
 
-    if (integrationError || !integration) {
+    if (!ghlConfig) {
       return NextResponse.json(
         { error: "GHL integration not found. Please connect GoHighLevel first." },
         { status: 404 }
       );
     }
 
-    // Refresh token if needed
-    const refreshedIntegration = await refreshGHLToken(integration, supabase);
-    const config = refreshedIntegration.config as Record<string, string>;
-
-    if (!config.ghl_access_token || !config.ghl_location_id) {
-      return NextResponse.json(
-        { error: "GHL not properly configured" },
-        { status: 400 }
-      );
-    }
-
-    const client = new GHLClient(config.ghl_access_token, config.ghl_location_id);
+    const client = new GHLClient(ghlConfig.access_token, ghlConfig.location_id);
 
     // Create contact in GHL
     const newContact: GHLContact = {
-      locationId: config.ghl_location_id,
+      locationId: ghlConfig.location_id,
       firstName,
       lastName,
       email,
