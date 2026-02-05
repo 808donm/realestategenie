@@ -156,6 +156,60 @@ export default async function IntegrationsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* MLS Direct API - Coming Soon */}
+      <Card className="opacity-60">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <div className="h-10 w-10 rounded bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center">
+              <span className="text-white text-sm font-bold">MLS</span>
+            </div>
+            <span>MLS Direct API</span>
+            <span className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded-full font-normal">
+              Coming Soon
+            </span>
+          </CardTitle>
+          <CardDescription>
+            Direct connection to MLS databases for real-time property data, market analytics, and automated listing updates
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="p-3 border rounded-lg bg-muted/20">
+                <h4 className="font-medium text-muted-foreground text-sm">Real-Time Listings</h4>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Access live property data directly from MLS feeds
+                </p>
+              </div>
+              <div className="p-3 border rounded-lg bg-muted/20">
+                <h4 className="font-medium text-muted-foreground text-sm">Market Analytics</h4>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Comps, price history, and neighborhood trends
+                </p>
+              </div>
+              <div className="p-3 border rounded-lg bg-muted/20">
+                <h4 className="font-medium text-muted-foreground text-sm">Auto-Sync Listings</h4>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Automatically update your open house properties
+                </p>
+              </div>
+              <div className="p-3 border rounded-lg bg-muted/20">
+                <h4 className="font-medium text-muted-foreground text-sm">1031 Exchange Search</h4>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Find replacement properties matching exchange criteria
+                </p>
+              </div>
+            </div>
+            <button
+              disabled
+              className="w-full py-2 px-4 border rounded-md text-sm font-medium text-muted-foreground bg-muted/50 cursor-not-allowed"
+            >
+              Connect MLS API
+            </button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
