@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
+import AttachToContact from "@/components/attach-to-contact";
 import { calculateCommissionSplit, type CommissionSplitInput } from "@/lib/calculators/commissionsplit";
 
 export default function CommissionSplitClient() {
@@ -133,6 +134,36 @@ export default function CommissionSplitClient() {
     doc.text(`Generated on ${new Date().toLocaleDateString()} - RealEstateGenie`, pw / 2, footerY, { align: "center" });
     doc.save(`Commission_Split_${inputs.salePrice}.pdf`);
   };
+
+  const generateFile = useCallback((format: "pdf" | "xlsx"): Blob => {
+    if (format === "xlsx") {
+      const wb = XLSX.utils.book_new();
+      const data: (string | number)[][] = [
+        ["COMMISSION SPLIT"], [],
+        ["Sale Price", inputs.salePrice], ["Commission %", `${inputs.commissionPercent}%`],
+        ["Gross Commission", analysis.grossCommission],
+        ["Split", `${inputs.agentSplitPercent}/${100 - inputs.agentSplitPercent}`],
+        ["Brokerage Share", analysis.brokerageShare],
+        ["Team Override", analysis.teamOverrideAmount],
+        ["Fees", analysis.totalFees],
+        ["Agent Net", analysis.agentNet], ["Brokerage Gross", analysis.brokerageGross],
+      ];
+      const sheet = XLSX.utils.aoa_to_sheet(data);
+      XLSX.utils.book_append_sheet(wb, sheet, "Commission Split");
+      const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+      return new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    }
+    const doc = new jsPDF();
+    const pw = doc.internal.pageSize.getWidth();
+    let y = 20;
+    doc.setFontSize(18); doc.setFont("helvetica", "bold");
+    doc.text("Commission Split Summary", pw / 2, y, { align: "center" }); y += 14;
+    doc.setFontSize(10); doc.setFont("helvetica", "normal");
+    [["Sale Price:", fmt(inputs.salePrice)], ["Gross Commission:", fmt(analysis.grossCommission)],
+     ["Agent Net:", fmt(analysis.agentNet)], ["Brokerage Gross:", fmt(analysis.brokerageGross)]
+    ].forEach(([l, v]) => { doc.text(l, 25, y); doc.text(v, pw - 25, y, { align: "right" }); y += 7; });
+    return new Blob([doc.output("arraybuffer")], { type: "application/pdf" });
+  }, [inputs, analysis, fmt]);
 
   const inputStyle: React.CSSProperties = { width: "100%", padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 16 };
   const labelStyle: React.CSSProperties = { display: "block", fontSize: 13, fontWeight: 600, marginBottom: 6 };
@@ -374,6 +405,10 @@ export default function CommissionSplitClient() {
           <button onClick={exportToPDF} style={{ flex: 1, padding: "12px 20px", background: "#dc2626", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer" }}>
             Export PDF
           </button>
+        </div>
+        {/* Attach to GHL Contact */}
+        <div style={{ marginTop: 12 }}>
+          <AttachToContact generateFile={generateFile} reportTitle="Commission Split" />
         </div>
       </div>
     </div>

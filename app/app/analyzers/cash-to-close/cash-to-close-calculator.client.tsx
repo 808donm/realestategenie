@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
+import AttachToContact from "@/components/attach-to-contact";
 import { calculateCashToClose, type CashToCloseInput } from "@/lib/calculators/cashtoclose";
 
 export default function CashToCloseCalculatorClient() {
@@ -196,6 +197,40 @@ export default function CashToCloseCalculatorClient() {
 
     doc.save(`Buyer_Cash_To_Close_${inputs.purchasePrice}.pdf`);
   };
+
+  // Generate file as Blob for attach-to-contact
+  const generateFile = useCallback((format: "pdf" | "xlsx"): Blob => {
+    if (format === "xlsx") {
+      const wb = XLSX.utils.book_new();
+      const data: (string | number)[][] = [
+        ["BUYER CASH-TO-CLOSE ESTIMATE"], [],
+        ["Purchase Price", inputs.purchasePrice], ["Down Payment", analysis.downPayment],
+        ["Closing Costs", analysis.closingCosts], ["Total Prepaids", analysis.totalPrepaids],
+        ["Gross Cash Needed", analysis.grossCashNeeded],
+        ["Less: Credits", analysis.totalCredits],
+        ["ESTIMATED CASH TO CLOSE", analysis.estimatedCashToClose],
+        ["Low Estimate", analysis.lowEstimate], ["High Estimate", analysis.highEstimate],
+      ];
+      const sheet = XLSX.utils.aoa_to_sheet(data);
+      XLSX.utils.book_append_sheet(wb, sheet, "Cash to Close");
+      const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+      return new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    }
+    const doc = new jsPDF();
+    const pw = doc.internal.pageSize.getWidth();
+    let y = 20;
+    doc.setFontSize(18); doc.setFont("helvetica", "bold");
+    doc.text("Buyer Cash-to-Close Estimate", pw / 2, y, { align: "center" }); y += 14;
+    doc.setFontSize(10); doc.setFont("helvetica", "normal");
+    [["Purchase Price:", fmt(inputs.purchasePrice)], ["Down Payment:", fmt(analysis.downPayment)],
+     ["Closing Costs:", fmt(analysis.closingCosts)], ["Prepaids:", fmt(analysis.totalPrepaids)],
+     ["Gross Needed:", fmt(analysis.grossCashNeeded)], ["Credits:", `-${fmt(analysis.totalCredits)}`]
+    ].forEach(([l, v]) => { doc.text(l, 25, y); doc.text(v, pw - 25, y, { align: "right" }); y += 7; });
+    y += 4; doc.setLineWidth(1); doc.line(20, y, pw - 20, y); y += 10;
+    doc.setFontSize(14); doc.setFont("helvetica", "bold");
+    doc.text("Cash to Close:", 20, y); doc.text(fmt(analysis.estimatedCashToClose), pw - 20, y, { align: "right" });
+    return new Blob([doc.output("arraybuffer")], { type: "application/pdf" });
+  }, [inputs, analysis, fmt]);
 
   const inputStyle: React.CSSProperties = {
     width: "100%",
@@ -635,6 +670,10 @@ export default function CashToCloseCalculatorClient() {
           >
             Export PDF
           </button>
+        </div>
+        {/* Attach to GHL Contact */}
+        <div style={{ marginTop: 12 }}>
+          <AttachToContact generateFile={generateFile} reportTitle="Buyer Cash-to-Close Estimate" />
         </div>
       </div>
     </div>

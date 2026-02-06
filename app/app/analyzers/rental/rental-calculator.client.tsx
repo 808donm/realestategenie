@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
+import AttachToContact from "@/components/attach-to-contact";
 import { calculateRental, type RentalInput } from "@/lib/calculators/rental";
 
 export default function RentalCalculatorClient() {
@@ -124,6 +125,36 @@ export default function RentalCalculatorClient() {
     doc.text(`Generated on ${new Date().toLocaleDateString()} - RealEstateGenie`, pw / 2, footerY, { align: "center" });
     doc.save(`Rental_Analysis_${inputs.purchasePrice}.pdf`);
   };
+
+  const generateFile = useCallback((format: "pdf" | "xlsx"): Blob => {
+    if (format === "xlsx") {
+      const wb = XLSX.utils.book_new();
+      const data: (string | number)[][] = [
+        ["RENTAL ANALYSIS"], [],
+        ["Purchase Price", inputs.purchasePrice], ["Monthly Rent", inputs.monthlyRent],
+        ["NOI (Annual)", analysis.noi], ["Cap Rate", `${analysis.capRate.toFixed(2)}%`],
+        ["Monthly Cash Flow", analysis.monthlyCashFlow],
+        ["Cash-on-Cash", `${analysis.cashOnCash.toFixed(2)}%`],
+        ["DSCR", analysis.dscr.toFixed(2)],
+      ];
+      const sheet = XLSX.utils.aoa_to_sheet(data);
+      XLSX.utils.book_append_sheet(wb, sheet, "Rental Analysis");
+      const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+      return new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    }
+    const doc = new jsPDF();
+    const pw = doc.internal.pageSize.getWidth();
+    let y = 20;
+    doc.setFontSize(18); doc.setFont("helvetica", "bold");
+    doc.text("Rental Property Analysis", pw / 2, y, { align: "center" }); y += 14;
+    doc.setFontSize(10); doc.setFont("helvetica", "normal");
+    [["Purchase Price:", fmt(inputs.purchasePrice)], ["Monthly Rent:", fmt(inputs.monthlyRent)],
+     ["NOI:", fmt(analysis.noi)], ["Cap Rate:", `${analysis.capRate.toFixed(2)}%`],
+     ["Cash Flow:", fmtDecimal(analysis.monthlyCashFlow)], ["Cash-on-Cash:", `${analysis.cashOnCash.toFixed(2)}%`],
+     ["DSCR:", `${analysis.dscr.toFixed(2)} - ${analysis.dscrVerdict}`]
+    ].forEach(([l, v]) => { doc.text(l, 25, y); doc.text(v, pw - 25, y, { align: "right" }); y += 7; });
+    return new Blob([doc.output("arraybuffer")], { type: "application/pdf" });
+  }, [inputs, analysis, fmt, fmtDecimal]);
 
   const inputStyle: React.CSSProperties = { width: "100%", padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 16 };
   const labelStyle: React.CSSProperties = { display: "block", fontSize: 13, fontWeight: 600, marginBottom: 6 };
@@ -389,6 +420,10 @@ export default function RentalCalculatorClient() {
           <button onClick={exportToPDF} style={{ flex: 1, padding: "12px 20px", background: "#dc2626", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer" }}>
             Export PDF
           </button>
+        </div>
+        {/* Attach to GHL Contact */}
+        <div style={{ marginTop: 12 }}>
+          <AttachToContact generateFile={generateFile} reportTitle="Rental Property Analysis" />
         </div>
       </div>
     </div>

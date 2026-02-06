@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
+import AttachToContact from "@/components/attach-to-contact";
 import {
   calculateNetSheet,
   DEFAULT_CLOSING_COST_ITEMS,
@@ -100,6 +101,32 @@ export default function NetSheetCalculatorClient() {
 
     XLSX.writeFile(wb, `Seller_Net_Sheet_${inputs.salePrice}.xlsx`);
   };
+
+  // Build Excel workbook as Blob (for attach-to-contact)
+  const buildExcelBlob = useCallback((): Blob => {
+    const wb = XLSX.utils.book_new();
+    const summaryData: (string | number)[][] = [
+      ["SELLER NET SHEET SUMMARY"], [],
+      ["SALE DETAILS"], ["Sale Price", analysis.salePrice], [],
+      ["DEDUCTIONS"],
+      ["Listing Agent Commission", analysis.listingAgentCommission],
+      ["Buyer Agent Commission", analysis.buyerAgentCommission],
+      ["Total Commission", analysis.totalCommission], [],
+      ["CLOSING COSTS"],
+    ];
+    analysis.closingCostBreakdown.forEach((item) => summaryData.push([item.label, item.amount]));
+    summaryData.push(["Total Closing Costs", analysis.totalClosingCosts], [],
+      ["OTHER DEDUCTIONS"], ["Mortgage Payoff", analysis.mortgagePayoff],
+      ["Repairs / Credits", analysis.repairsCredits], ["Seller Concessions", analysis.sellerConcessions],
+      ["Additional Payoffs", analysis.additionalPayoffs], [],
+      ["TOTAL DEDUCTIONS", analysis.totalDeductions], [],
+      ["ESTIMATED SELLER PROCEEDS", analysis.estimatedProceeds],
+      ["Proceeds as % of Sale Price", `${analysis.proceedsPercent.toFixed(1)}%`]);
+    const sheet = XLSX.utils.aoa_to_sheet(summaryData);
+    XLSX.utils.book_append_sheet(wb, sheet, "Net Sheet");
+    const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    return new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  }, [analysis]);
 
   // Export to PDF
   const exportToPDF = () => {
@@ -221,6 +248,36 @@ export default function NetSheetCalculatorClient() {
 
     doc.save(`Seller_Net_Sheet_${inputs.salePrice}.pdf`);
   };
+
+  // Generate file as Blob for attach-to-contact
+  const generateFile = useCallback((format: "pdf" | "xlsx"): Blob => {
+    if (format === "xlsx") return buildExcelBlob();
+    // PDF blob
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    let y = 20;
+    doc.setFontSize(20); doc.setFont("helvetica", "bold");
+    doc.text("Seller Net Sheet", pageWidth / 2, y, { align: "center" }); y += 12;
+    doc.setFontSize(10); doc.setFont("helvetica", "normal");
+    doc.text(`Generated ${new Date().toLocaleDateString()}`, pageWidth / 2, y, { align: "center" }); y += 16;
+    doc.setFontSize(14); doc.setFont("helvetica", "bold");
+    doc.text("Sale Price", 20, y); doc.text(fmt(analysis.salePrice), pageWidth - 20, y, { align: "right" }); y += 10;
+    doc.setLineWidth(0.5); doc.line(20, y, pageWidth - 20, y); y += 10;
+    doc.setFontSize(10); doc.setFont("helvetica", "normal");
+    const items: [string, string][] = [
+      ["Mortgage Payoff", fmt(analysis.mortgagePayoff)],
+      ["Total Commission", fmt(analysis.totalCommission)],
+      ["Closing Costs", fmt(analysis.totalClosingCosts)],
+    ];
+    if (analysis.repairsCredits > 0) items.push(["Repairs / Credits", fmt(analysis.repairsCredits)]);
+    if (analysis.sellerConcessions > 0) items.push(["Seller Concessions", fmt(analysis.sellerConcessions)]);
+    if (analysis.additionalPayoffs > 0) items.push(["Additional Payoffs", fmt(analysis.additionalPayoffs)]);
+    items.forEach(([l, v]) => { doc.text(l, 25, y); doc.text(`-${v}`, pageWidth - 25, y, { align: "right" }); y += 6; });
+    y += 6; doc.setLineWidth(1); doc.line(20, y, pageWidth - 20, y); y += 10;
+    doc.setFontSize(14); doc.setFont("helvetica", "bold");
+    doc.text("Estimated Seller Proceeds", 20, y); doc.text(fmt(analysis.estimatedProceeds), pageWidth - 20, y, { align: "right" });
+    return new Blob([doc.output("arraybuffer")], { type: "application/pdf" });
+  }, [analysis, buildExcelBlob, fmt]);
 
   const inputStyle: React.CSSProperties = {
     width: "100%",
@@ -701,6 +758,11 @@ export default function NetSheetCalculatorClient() {
           >
             Export PDF
           </button>
+        </div>
+
+        {/* Attach to GHL Contact */}
+        <div style={{ marginTop: 12 }}>
+          <AttachToContact generateFile={generateFile} reportTitle="Seller Net Sheet" />
         </div>
       </div>
     </div>

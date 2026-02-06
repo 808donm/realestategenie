@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
+import AttachToContact from "@/components/attach-to-contact";
 import { calculateQuickFlip, type QuickFlipInput } from "@/lib/calculators/quickflip";
 
 export default function QuickFlipClient() {
@@ -107,6 +108,34 @@ export default function QuickFlipClient() {
     doc.text(`Generated on ${new Date().toLocaleDateString()} - RealEstateGenie`, pw / 2, footerY, { align: "center" });
     doc.save(`Quick_Flip_Analysis_${inputs.arv}.pdf`);
   };
+
+  const generateFile = useCallback((format: "pdf" | "xlsx"): Blob => {
+    if (format === "xlsx") {
+      const wb = XLSX.utils.book_new();
+      const data: (string | number)[][] = [
+        ["QUICK FLIP ANALYSIS"], [],
+        ["ARV", inputs.arv], ["Purchase Price", inputs.purchasePrice], ["Rehab", inputs.rehabCost],
+        ["Total Investment", analysis.totalInvestment], ["Net Profit", analysis.netProfit],
+        ["ROI", `${analysis.roi.toFixed(1)}%`], ["MAO (70%)", analysis.mao70],
+        ["Deal Score", `${analysis.dealScore}/5 - ${analysis.verdict}`],
+      ];
+      const sheet = XLSX.utils.aoa_to_sheet(data);
+      XLSX.utils.book_append_sheet(wb, sheet, "Quick Flip");
+      const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+      return new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    }
+    const doc = new jsPDF();
+    const pw = doc.internal.pageSize.getWidth();
+    let y = 20;
+    doc.setFontSize(18); doc.setFont("helvetica", "bold");
+    doc.text("Quick Flip Deal Analysis", pw / 2, y, { align: "center" }); y += 14;
+    doc.setFontSize(10); doc.setFont("helvetica", "normal");
+    [["ARV:", fmt(inputs.arv)], ["Purchase:", fmt(inputs.purchasePrice)], ["Net Profit:", fmt(analysis.netProfit)],
+     ["ROI:", `${analysis.roi.toFixed(1)}%`], ["MAO (70%):", fmt(analysis.mao70)],
+     ["Verdict:", `${analysis.dealScore}/5 - ${analysis.verdict}`]
+    ].forEach(([l, v]) => { doc.text(l, 25, y); doc.text(v, pw - 25, y, { align: "right" }); y += 7; });
+    return new Blob([doc.output("arraybuffer")], { type: "application/pdf" });
+  }, [inputs, analysis, fmt]);
 
   const inputStyle: React.CSSProperties = { width: "100%", padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 16 };
   const labelStyle: React.CSSProperties = { display: "block", fontSize: 13, fontWeight: 600, marginBottom: 6 };
@@ -284,6 +313,10 @@ export default function QuickFlipClient() {
           <button onClick={exportToPDF} style={{ flex: 1, padding: "12px 20px", background: "#dc2626", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer" }}>
             Export PDF
           </button>
+        </div>
+        {/* Attach to GHL Contact */}
+        <div style={{ marginTop: 12 }}>
+          <AttachToContact generateFile={generateFile} reportTitle="Quick Flip Analysis" />
         </div>
       </div>
     </div>

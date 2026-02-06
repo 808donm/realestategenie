@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
+import AttachToContact from "@/components/attach-to-contact";
 import { calculateWholesaleMao, type WholesaleMaoInput } from "@/lib/calculators/wholesalemao";
 
 export default function WholesaleMaoClient() {
@@ -107,6 +108,33 @@ export default function WholesaleMaoClient() {
     doc.text(`Generated on ${new Date().toLocaleDateString()} - RealEstateGenie`, pw / 2, footerY, { align: "center" });
     doc.save(`Wholesale_MAO_${inputs.arv}.pdf`);
   };
+
+  const generateFile = useCallback((format: "pdf" | "xlsx"): Blob => {
+    if (format === "xlsx") {
+      const wb = XLSX.utils.book_new();
+      const data: (string | number)[][] = [
+        ["WHOLESALE MAO"], [],
+        ["ARV", inputs.arv], ["Repairs", inputs.repairEstimate],
+        ["Investor Margin", `${inputs.investorMarginPercent}%`],
+        ["Assignment Fee", inputs.assignmentFee], ["MAO", analysis.mao],
+        ["Low Offer", analysis.lowOffer], ["Target", analysis.midOffer], ["High Offer", analysis.highOffer],
+      ];
+      const sheet = XLSX.utils.aoa_to_sheet(data);
+      XLSX.utils.book_append_sheet(wb, sheet, "Wholesale MAO");
+      const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+      return new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    }
+    const doc = new jsPDF();
+    const pw = doc.internal.pageSize.getWidth();
+    let y = 20;
+    doc.setFontSize(18); doc.setFont("helvetica", "bold");
+    doc.text("Wholesale MAO Analysis", pw / 2, y, { align: "center" }); y += 14;
+    doc.setFontSize(10); doc.setFont("helvetica", "normal");
+    [["ARV:", fmt(inputs.arv)], ["Repairs:", fmt(inputs.repairEstimate)],
+     ["MAO:", fmt(analysis.mao)], ["Offer Range:", `${fmt(analysis.lowOffer)} - ${fmt(analysis.highOffer)}`]
+    ].forEach(([l, v]) => { doc.text(l, 25, y); doc.text(v, pw - 25, y, { align: "right" }); y += 7; });
+    return new Blob([doc.output("arraybuffer")], { type: "application/pdf" });
+  }, [inputs, analysis, fmt]);
 
   const inputStyle: React.CSSProperties = { width: "100%", padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 16 };
   const labelStyle: React.CSSProperties = { display: "block", fontSize: 13, fontWeight: 600, marginBottom: 6 };
@@ -260,6 +288,10 @@ export default function WholesaleMaoClient() {
           <button onClick={exportToPDF} style={{ flex: 1, padding: "12px 20px", background: "#dc2626", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer" }}>
             Export PDF
           </button>
+        </div>
+        {/* Attach to GHL Contact */}
+        <div style={{ marginTop: 12 }}>
+          <AttachToContact generateFile={generateFile} reportTitle="Wholesale MAO Analysis" />
         </div>
       </div>
     </div>
