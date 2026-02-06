@@ -277,6 +277,122 @@ export default async function AnalyzersPage() {
             </div>
           </div>
         </Link>
+
+        {/* Commission Split Card */}
+        <Link
+          href="/app/analyzers/commission-split"
+          style={{
+            padding: 24,
+            border: "1px solid #e6e6e6",
+            borderRadius: 12,
+            textDecoration: "none",
+            color: "inherit",
+            display: "block",
+            transition: "border-color 0.2s",
+            background: "linear-gradient(135deg, #dbeafe 0%, #ffffff 100%)",
+          }}
+        >
+          <div style={{ fontSize: 32, marginBottom: 12 }}>🤝</div>
+          <h2 style={{ margin: "0 0 8px 0", fontSize: 20, fontWeight: 800 }}>
+            Commission Split Calculator
+          </h2>
+          <p style={{ margin: "0 0 16px 0", opacity: 0.7, fontSize: 14 }}>
+            Calculate agent net and brokerage gross after splits, caps, transaction fees,
+            and team overrides.
+          </p>
+          <div style={{ display: "flex", gap: 16, fontSize: 13 }}>
+            <div>
+              <span style={{ opacity: 0.7 }}>Cap tracking • Split presets</span>
+            </div>
+          </div>
+        </Link>
+
+        {/* Quick Flip Card */}
+        <Link
+          href="/app/analyzers/quick-flip"
+          style={{
+            padding: 24,
+            border: "1px solid #e6e6e6",
+            borderRadius: 12,
+            textDecoration: "none",
+            color: "inherit",
+            display: "block",
+            transition: "border-color 0.2s",
+            background: "linear-gradient(135deg, #ffedd5 0%, #ffffff 100%)",
+          }}
+        >
+          <div style={{ fontSize: 32, marginBottom: 12 }}>⚡</div>
+          <h2 style={{ margin: "0 0 8px 0", fontSize: 20, fontWeight: 800 }}>
+            Quick Flip Analyzer
+          </h2>
+          <p style={{ margin: "0 0 16px 0", opacity: 0.7, fontSize: 14 }}>
+            Fast flip deal analysis with profit, ROI, 70% rule MAO, and deal scoring.
+            All costs in one view.
+          </p>
+          <div style={{ display: "flex", gap: 16, fontSize: 13 }}>
+            <div>
+              <span style={{ opacity: 0.7 }}>Deal score • 70% rule check</span>
+            </div>
+          </div>
+        </Link>
+
+        {/* Wholesale MAO Card */}
+        <Link
+          href="/app/analyzers/wholesale-mao"
+          style={{
+            padding: 24,
+            border: "1px solid #e6e6e6",
+            borderRadius: 12,
+            textDecoration: "none",
+            color: "inherit",
+            display: "block",
+            transition: "border-color 0.2s",
+            background: "linear-gradient(135deg, #fef9c3 0%, #ffffff 100%)",
+          }}
+        >
+          <div style={{ fontSize: 32, marginBottom: 12 }}>📋</div>
+          <h2 style={{ margin: "0 0 8px 0", fontSize: 20, fontWeight: 800 }}>
+            Wholesale MAO Calculator
+          </h2>
+          <p style={{ margin: "0 0 16px 0", opacity: 0.7, fontSize: 14 }}>
+            Calculate maximum allowable offer and suggested offer range for wholesale
+            deals with investor margin analysis.
+          </p>
+          <div style={{ display: "flex", gap: 16, fontSize: 13 }}>
+            <div>
+              <span style={{ opacity: 0.7 }}>Offer range • Investor ROI</span>
+            </div>
+          </div>
+        </Link>
+
+        {/* Rental Calculator Card */}
+        <Link
+          href="/app/analyzers/rental"
+          style={{
+            padding: 24,
+            border: "1px solid #e6e6e6",
+            borderRadius: 12,
+            textDecoration: "none",
+            color: "inherit",
+            display: "block",
+            transition: "border-color 0.2s",
+            background: "linear-gradient(135deg, #d1fae5 0%, #ffffff 100%)",
+          }}
+        >
+          <div style={{ fontSize: 32, marginBottom: 12 }}>🏠</div>
+          <h2 style={{ margin: "0 0 8px 0", fontSize: 20, fontWeight: 800 }}>
+            Rental Property Calculator
+          </h2>
+          <p style={{ margin: "0 0 16px 0", opacity: 0.7, fontSize: 14 }}>
+            Quick rental analysis with NOI, cap rate, cash-on-cash return, DSCR, and
+            monthly cash flow breakdown.
+          </p>
+          <div style={{ display: "flex", gap: 16, fontSize: 13 }}>
+            <div>
+              <span style={{ opacity: 0.7 }}>DSCR • Cash flow • GRM</span>
+            </div>
+          </div>
+        </Link>
       </div>
 
       {/* Feature Overview */}
@@ -318,6 +434,18 @@ export default async function AnalyzersPage() {
           <FeatureItem
             title="Cash-to-Close"
             description="Total cash a buyer needs at closing: down payment, closing costs, prepaids, and escrows minus credits."
+          />
+          <FeatureItem
+            title="Commission Split"
+            description="Agent net after brokerage split, cap, transaction fees, and team overrides. Tracks progress toward annual cap."
+          />
+          <FeatureItem
+            title="Wholesale MAO"
+            description="Maximum allowable offer for wholesale deals factoring investor margin, repairs, and assignment fee."
+          />
+          <FeatureItem
+            title="DSCR (Rentals)"
+            description="Debt Service Coverage Ratio: NOI divided by annual debt service. Lenders typically require 1.25+."
           />
         </div>
       </div>
