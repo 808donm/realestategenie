@@ -19,6 +19,7 @@ export default function PMLayout({ children }: { children: React.ReactNode }) {
         <PMNavLink href="/app/pm/leases">Leases</PMNavLink>
         <PMNavLink href="/app/pm/work-orders">Work Orders</PMNavLink>
         <PMNavLink href="/app/pm/invoices">Invoices</PMNavLink>
+        <PMNavLink href="/app/pm/reports">Reports</PMNavLink>
       </nav>
 
       {/* PM Content */}
