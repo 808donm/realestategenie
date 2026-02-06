@@ -219,6 +219,64 @@ export default async function AnalyzersPage() {
             </div>
           </div>
         </Link>
+
+        {/* Seller Net Sheet Card */}
+        <Link
+          href="/app/analyzers/net-sheet"
+          style={{
+            padding: 24,
+            border: "1px solid #e6e6e6",
+            borderRadius: 12,
+            textDecoration: "none",
+            color: "inherit",
+            display: "block",
+            transition: "border-color 0.2s",
+            background: "linear-gradient(135deg, #fef3c7 0%, #ffffff 100%)",
+          }}
+        >
+          <div style={{ fontSize: 32, marginBottom: 12 }}>💰</div>
+          <h2 style={{ margin: "0 0 8px 0", fontSize: 20, fontWeight: 800 }}>
+            Seller Net Sheet
+          </h2>
+          <p style={{ margin: "0 0 16px 0", opacity: 0.7, fontSize: 14 }}>
+            Estimate seller proceeds after commissions, closing costs, mortgage payoff,
+            and concessions. PDF and Excel export.
+          </p>
+          <div style={{ display: "flex", gap: 16, fontSize: 13 }}>
+            <div>
+              <span style={{ opacity: 0.7 }}>Proceeds estimate • Itemized costs</span>
+            </div>
+          </div>
+        </Link>
+
+        {/* Buyer Cash-to-Close Card */}
+        <Link
+          href="/app/analyzers/cash-to-close"
+          style={{
+            padding: 24,
+            border: "1px solid #e6e6e6",
+            borderRadius: 12,
+            textDecoration: "none",
+            color: "inherit",
+            display: "block",
+            transition: "border-color 0.2s",
+            background: "linear-gradient(135deg, #ede9fe 0%, #ffffff 100%)",
+          }}
+        >
+          <div style={{ fontSize: 32, marginBottom: 12 }}>🔑</div>
+          <h2 style={{ margin: "0 0 8px 0", fontSize: 20, fontWeight: 800 }}>
+            Buyer Cash-to-Close
+          </h2>
+          <p style={{ margin: "0 0 16px 0", opacity: 0.7, fontSize: 14 }}>
+            Estimate total cash needed at closing including down payment, closing costs,
+            prepaids, escrows, and credits.
+          </p>
+          <div style={{ display: "flex", gap: 16, fontSize: 13 }}>
+            <div>
+              <span style={{ opacity: 0.7 }}>Range estimates • PDF export</span>
+            </div>
+          </div>
+        </Link>
       </div>
 
       {/* Feature Overview */}
@@ -252,6 +310,14 @@ export default async function AnalyzersPage() {
           <FeatureItem
             title="PITI (Mortgage)"
             description="Principal, Interest, Taxes, Insurance plus HOA and PMI. Full monthly payment breakdown."
+          />
+          <FeatureItem
+            title="Seller Net Proceeds"
+            description="Sale price minus all deductions: mortgage payoff, commissions, closing costs, and concessions."
+          />
+          <FeatureItem
+            title="Cash-to-Close"
+            description="Total cash a buyer needs at closing: down payment, closing costs, prepaids, and escrows minus credits."
           />
         </div>
       </div>
