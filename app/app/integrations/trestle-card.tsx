@@ -21,6 +21,9 @@ type Integration = {
 
 export default function TrestleIntegrationCard({ integration }: { integration: Integration }) {
   const [showDialog, setShowDialog] = useState(false);
+  const [authMethod, setAuthMethod] = useState<"basic" | "oauth2">("basic");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [clientId, setClientId] = useState("");
   const [clientSecret, setClientSecret] = useState("");
   const [apiUrl, setApiUrl] = useState("");
@@ -33,21 +36,40 @@ export default function TrestleIntegrationCard({ integration }: { integration: I
   const totalListings = integration?.config?.total_listings || 0;
 
   const handleConnect = async () => {
-    if (!clientId.trim() || !clientSecret.trim()) {
+    if (!apiUrl.trim()) {
+      toast.error("Please enter the WebAPI URL");
+      return;
+    }
+
+    if (authMethod === "basic" && (!username.trim() || !password.trim())) {
+      toast.error("Please enter both username and password");
+      return;
+    }
+
+    if (authMethod === "oauth2" && (!clientId.trim() || !clientSecret.trim())) {
       toast.error("Please enter both Client ID and Client Secret");
       return;
     }
 
     setConnecting(true);
     try {
+      const payload: Record<string, string> = {
+        api_url: apiUrl.trim(),
+        auth_method: authMethod,
+      };
+
+      if (authMethod === "basic") {
+        payload.username = username.trim();
+        payload.password = password.trim();
+      } else {
+        payload.client_id = clientId.trim();
+        payload.client_secret = clientSecret.trim();
+      }
+
       const response = await fetch("/api/integrations/trestle/connect", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          client_id: clientId.trim(),
-          client_secret: clientSecret.trim(),
-          api_url: apiUrl.trim() || undefined,
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
@@ -57,6 +79,8 @@ export default function TrestleIntegrationCard({ integration }: { integration: I
           description: `Access to ${data.totalListings?.toLocaleString() || 0} listings`,
         });
         setShowDialog(false);
+        setUsername("");
+        setPassword("");
         setClientId("");
         setClientSecret("");
         setApiUrl("");
@@ -296,56 +320,118 @@ export default function TrestleIntegrationCard({ integration }: { integration: I
 
       {/* Connection Dialog */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Connect Trestle (CoreLogic MLS)</DialogTitle>
             <DialogDescription>
-              Enter your Trestle API credentials to enable MLS property data access.
-              You can get these from your Trestle account manager.
+              Enter your Trestle WebAPI URL and credentials to enable MLS property data access.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
+            {/* WebAPI URL - Required */}
             <div className="space-y-2">
-              <Label htmlFor="client-id">Client ID *</Label>
-              <Input
-                id="client-id"
-                placeholder="Enter your Trestle Client ID"
-                value={clientId}
-                onChange={(e) => setClientId(e.target.value)}
-                disabled={connecting}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="client-secret">Client Secret *</Label>
-              <Input
-                id="client-secret"
-                type="password"
-                placeholder="Enter your Trestle Client Secret"
-                value={clientSecret}
-                onChange={(e) => setClientSecret(e.target.value)}
-                disabled={connecting}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="api-url">API URL (Optional)</Label>
+              <Label htmlFor="api-url">WebAPI URL *</Label>
               <Input
                 id="api-url"
-                placeholder="https://api-prod.corelogic.com"
+                placeholder="https://api-trestle.corelogic.com/trestle/odata"
                 value={apiUrl}
                 onChange={(e) => setApiUrl(e.target.value)}
                 disabled={connecting}
               />
               <p className="text-xs text-muted-foreground">
-                Leave blank to use the default production URL
+                The full WebAPI endpoint URL provided by Trestle
               </p>
             </div>
 
+            {/* Auth Method Toggle */}
+            <div className="space-y-2">
+              <Label>Authentication Method</Label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setAuthMethod("basic")}
+                  disabled={connecting}
+                  className={`flex-1 py-2 px-3 rounded-lg border text-sm font-medium transition-colors ${
+                    authMethod === "basic"
+                      ? "bg-teal-50 border-teal-500 text-teal-700"
+                      : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  Username & Password
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAuthMethod("oauth2")}
+                  disabled={connecting}
+                  className={`flex-1 py-2 px-3 rounded-lg border text-sm font-medium transition-colors ${
+                    authMethod === "oauth2"
+                      ? "bg-teal-50 border-teal-500 text-teal-700"
+                      : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  OAuth2 Credentials
+                </button>
+              </div>
+            </div>
+
+            {/* Basic Auth Fields */}
+            {authMethod === "basic" && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="username">Username *</Label>
+                  <Input
+                    id="username"
+                    placeholder="Enter your Trestle username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    disabled={connecting}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password *</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="Enter your Trestle password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={connecting}
+                  />
+                </div>
+              </>
+            )}
+
+            {/* OAuth2 Fields */}
+            {authMethod === "oauth2" && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="client-id">Client ID *</Label>
+                  <Input
+                    id="client-id"
+                    placeholder="Enter your Trestle Client ID"
+                    value={clientId}
+                    onChange={(e) => setClientId(e.target.value)}
+                    disabled={connecting}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="client-secret">Client Secret *</Label>
+                  <Input
+                    id="client-secret"
+                    type="password"
+                    placeholder="Enter your Trestle Client Secret"
+                    value={clientSecret}
+                    onChange={(e) => setClientSecret(e.target.value)}
+                    disabled={connecting}
+                  />
+                </div>
+              </>
+            )}
+
             <div className="p-3 bg-muted/50 rounded-lg text-xs text-muted-foreground">
               <strong>Note:</strong> Trestle credentials are provided by CoreLogic through your MLS
-              subscription. Contact your MLS or Trestle account manager to obtain API access.
+              subscription. Contact your MLS or Trestle account manager if you need help.
             </div>
           </div>
 
@@ -354,6 +440,8 @@ export default function TrestleIntegrationCard({ integration }: { integration: I
               variant="outline"
               onClick={() => {
                 setShowDialog(false);
+                setUsername("");
+                setPassword("");
                 setClientId("");
                 setClientSecret("");
                 setApiUrl("");

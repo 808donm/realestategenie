@@ -4,12 +4,15 @@
  * Handles property listings, agent rosters, and media via RESO Web API
  * API Documentation: https://trestle.corelogic.com/docs
  *
- * Authentication: OAuth2 Client Credentials Flow
+ * Authentication Methods:
+ * 1. OAuth2 Client Credentials Flow (client_id + client_secret)
+ * 2. Basic Auth (username + password)
+ * 3. Bearer Token (pre-obtained token)
+ *
  * Data Standard: RESO Data Dictionary 2.0
  */
 
-const TRESTLE_TOKEN_URL = "https://api-prod.corelogic.com/trestle/oidc/connect/token";
-const TRESTLE_API_BASE = process.env.TRESTLE_API_URL || "https://api-prod.corelogic.com";
+const DEFAULT_TOKEN_URL = "https://api-prod.corelogic.com/trestle/oidc/connect/token";
 
 export interface TrestleTokenResponse {
   access_token: string;
@@ -130,37 +133,75 @@ export interface TrestleQueryParams {
   $expand?: string;
 }
 
+export type TrestleAuthMethod = "oauth2" | "basic" | "bearer";
+
+export interface TrestleAuthConfig {
+  method: TrestleAuthMethod;
+  // For OAuth2 Client Credentials
+  clientId?: string;
+  clientSecret?: string;
+  tokenUrl?: string;
+  // For Basic Auth
+  username?: string;
+  password?: string;
+  // For Bearer Token
+  bearerToken?: string;
+  // API Base URL (the WebAPI address)
+  apiUrl: string;
+}
+
 export class TrestleClient {
-  private clientId: string;
-  private clientSecret: string;
-  private apiBase: string;
+  private authConfig: TrestleAuthConfig;
   private accessToken: string | null = null;
   private tokenExpiry: Date | null = null;
 
-  constructor(clientId: string, clientSecret: string, apiBase?: string) {
-    this.clientId = clientId;
-    this.clientSecret = clientSecret;
-    this.apiBase = apiBase || TRESTLE_API_BASE;
+  constructor(config: TrestleAuthConfig) {
+    this.authConfig = config;
+  }
+
+  /**
+   * Get authorization header based on auth method
+   */
+  private async getAuthHeader(): Promise<string> {
+    switch (this.authConfig.method) {
+      case "basic":
+        // Basic Auth: base64 encode username:password
+        const credentials = `${this.authConfig.username}:${this.authConfig.password}`;
+        const encoded = Buffer.from(credentials).toString("base64");
+        return `Basic ${encoded}`;
+
+      case "bearer":
+        // Pre-provided bearer token
+        return `Bearer ${this.authConfig.bearerToken}`;
+
+      case "oauth2":
+      default:
+        // OAuth2 Client Credentials flow
+        const token = await this.getOAuth2Token();
+        return `Bearer ${token}`;
+    }
   }
 
   /**
    * Get OAuth2 access token using client credentials
    */
-  private async getAccessToken(): Promise<string> {
+  private async getOAuth2Token(): Promise<string> {
     // Return cached token if still valid
     if (this.accessToken && this.tokenExpiry && new Date() < this.tokenExpiry) {
       return this.accessToken;
     }
 
-    const response = await fetch(TRESTLE_TOKEN_URL, {
+    const tokenUrl = this.authConfig.tokenUrl || DEFAULT_TOKEN_URL;
+
+    const response = await fetch(tokenUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: new URLSearchParams({
         grant_type: "client_credentials",
-        client_id: this.clientId,
-        client_secret: this.clientSecret,
+        client_id: this.authConfig.clientId || "",
+        client_secret: this.authConfig.clientSecret || "",
         scope: "api",
       }),
     });
@@ -186,13 +227,22 @@ export class TrestleClient {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const token = await this.getAccessToken();
-    const url = `${this.apiBase}/trestle/odata${endpoint}`;
+    const authHeader = await this.getAuthHeader();
+
+    // Build URL - handle different API URL formats
+    let baseUrl = this.authConfig.apiUrl.replace(/\/$/, ""); // Remove trailing slash
+
+    // If the URL doesn't include /odata, append it
+    if (!baseUrl.includes("/odata")) {
+      baseUrl = `${baseUrl}/odata`;
+    }
+
+    const url = `${baseUrl}${endpoint}`;
 
     const response = await fetch(url, {
       ...options,
       headers: {
-        "Authorization": `Bearer ${token}`,
+        "Authorization": authHeader,
         "Accept": "application/json",
         ...options.headers,
       },
@@ -436,8 +486,8 @@ export class TrestleClient {
    */
   async testConnection(): Promise<{ success: boolean; message?: string; data?: any }> {
     try {
-      // First test OAuth token
-      await this.getAccessToken();
+      // First test authentication
+      await this.getAuthHeader();
 
       // Then test API access with a simple query
       const result = await this.getProperties({ $top: 1, $count: true });
@@ -462,12 +512,16 @@ export class TrestleClient {
    * Get API metadata (schema information)
    */
   async getMetadata(): Promise<string> {
-    const token = await this.getAccessToken();
-    const url = `${this.apiBase}/trestle/odata/$metadata`;
+    const authHeader = await this.getAuthHeader();
 
-    const response = await fetch(url, {
+    let baseUrl = this.authConfig.apiUrl.replace(/\/$/, "");
+    if (!baseUrl.includes("/odata")) {
+      baseUrl = `${baseUrl}/odata`;
+    }
+
+    const response = await fetch(`${baseUrl}/$metadata`, {
       headers: {
-        "Authorization": `Bearer ${token}`,
+        "Authorization": authHeader,
         "Accept": "application/xml",
       },
     });
@@ -482,15 +536,44 @@ export class TrestleClient {
 
 /**
  * Helper to create a Trestle client from stored config
+ * Supports multiple authentication methods
  */
 export function createTrestleClient(config: {
-  client_id: string;
-  client_secret: string;
-  api_url?: string;
+  // Auth method
+  auth_method?: TrestleAuthMethod;
+  // OAuth2 credentials
+  client_id?: string;
+  client_secret?: string;
+  token_url?: string;
+  // Basic Auth credentials
+  username?: string;
+  password?: string;
+  // Bearer token
+  bearer_token?: string;
+  // API URL (required)
+  api_url: string;
 }): TrestleClient {
-  return new TrestleClient(
-    config.client_id,
-    config.client_secret,
-    config.api_url
-  );
+  // Determine auth method from provided credentials
+  let method: TrestleAuthMethod = config.auth_method || "basic";
+
+  if (!config.auth_method) {
+    if (config.username && config.password) {
+      method = "basic";
+    } else if (config.client_id && config.client_secret) {
+      method = "oauth2";
+    } else if (config.bearer_token) {
+      method = "bearer";
+    }
+  }
+
+  return new TrestleClient({
+    method,
+    clientId: config.client_id,
+    clientSecret: config.client_secret,
+    tokenUrl: config.token_url,
+    username: config.username,
+    password: config.password,
+    bearerToken: config.bearer_token,
+    apiUrl: config.api_url,
+  });
 }
