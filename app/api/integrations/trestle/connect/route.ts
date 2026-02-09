@@ -98,8 +98,11 @@ export async function POST(request: NextRequest) {
       config.bearer_token = bearer_token;
     }
 
-    // Use RPC to bypass PostgREST schema cache issues with CHECK constraints
-    const { error: dbError } = await supabaseAdmin.rpc(
+    // Save integration: try RPC first, fall back to direct upsert
+    let dbError: any = null;
+
+    // Primary: use RPC function (bypasses PostgREST schema cache issues)
+    const { error: rpcError } = await supabaseAdmin.rpc(
       "upsert_trestle_integration",
       {
         p_agent_id: userData.user.id,
@@ -108,10 +111,43 @@ export async function POST(request: NextRequest) {
       }
     );
 
+    if (rpcError) {
+      console.warn("RPC upsert failed, trying direct approach:", rpcError.code);
+
+      // Fallback: check for existing record and update, or insert new
+      const { data: existing } = await supabaseAdmin
+        .from("integrations")
+        .select("id")
+        .eq("agent_id", userData.user.id)
+        .eq("provider", "trestle")
+        .maybeSingle();
+
+      if (existing) {
+        const { error } = await supabaseAdmin
+          .from("integrations")
+          .update({ config, status: "connected" })
+          .eq("id", existing.id);
+        dbError = error;
+      } else {
+        const { error } = await supabaseAdmin
+          .from("integrations")
+          .insert({
+            agent_id: userData.user.id,
+            provider: "trestle",
+            config,
+            status: "connected",
+          });
+        dbError = error;
+      }
+    }
+
     if (dbError) {
       console.error("Error saving Trestle integration:", dbError);
+      const hint = dbError.code === "23514"
+        ? " Please restart your Supabase project (Dashboard > Settings > General > Restart) to reload the schema cache."
+        : "";
       return NextResponse.json(
-        { error: "Failed to save integration: " + dbError.message },
+        { error: "Failed to save integration: " + dbError.message + hint },
         { status: 500 }
       );
     }
