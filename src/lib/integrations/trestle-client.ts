@@ -205,6 +205,8 @@ export class TrestleClient {
     }
 
     const tokenUrl = this.deriveTokenUrl();
+    console.log(`[Trestle] Requesting OAuth2 token from: ${tokenUrl}`);
+    console.log(`[Trestle] Client ID: ${this.authConfig.clientId?.substring(0, 20)}...`);
 
     const response = await fetch(tokenUrl, {
       method: "POST",
@@ -221,7 +223,7 @@ export class TrestleClient {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Trestle OAuth Error (${response.status}):`, errorText);
+      console.error(`[Trestle] OAuth token request FAILED (${response.status}):`, errorText);
       throw new Error(`Trestle authentication failed: ${response.status} - ${errorText}`);
     }
 
@@ -230,6 +232,7 @@ export class TrestleClient {
     // Set expiry 5 minutes before actual expiry for safety
     this.tokenExpiry = new Date(Date.now() + (data.expires_in - 300) * 1000);
 
+    console.log(`[Trestle] OAuth token obtained successfully (expires in ${data.expires_in}s)`);
     return this.accessToken;
   }
 
@@ -251,6 +254,7 @@ export class TrestleClient {
     }
 
     const url = `${baseUrl}${endpoint}`;
+    console.log(`[Trestle] API request: ${url}`);
 
     const response = await fetch(url, {
       ...options,
@@ -263,7 +267,7 @@ export class TrestleClient {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Trestle API Error (${response.status}):`, errorText);
+      console.error(`[Trestle] API request FAILED (${response.status}) for ${url}:`, errorText);
       throw new Error(`Trestle API error: ${response.status} - ${errorText}`);
     }
 
@@ -499,8 +503,11 @@ export class TrestleClient {
    */
   async testConnection(): Promise<{ success: boolean; message?: string; data?: any }> {
     try {
+      console.log(`[Trestle] Testing connection (method: ${this.authConfig.method}, apiUrl: ${this.authConfig.apiUrl})`);
+
       // First test authentication
-      await this.getAuthHeader();
+      const authHeader = await this.getAuthHeader();
+      console.log(`[Trestle] Auth header obtained: ${authHeader.substring(0, 15)}...`);
 
       // Then test API access with a simple query
       const result = await this.getProperties({ $top: 1, $count: true });
@@ -513,7 +520,7 @@ export class TrestleClient {
         },
       };
     } catch (error) {
-      console.error("Trestle connection test failed:", error);
+      console.error("[Trestle] Connection test failed:", error);
       return {
         success: false,
         message: error instanceof Error ? error.message : "Connection failed",
