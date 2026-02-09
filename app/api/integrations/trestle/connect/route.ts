@@ -108,8 +108,6 @@ export async function POST(request: NextRequest) {
           config,
           status: "connected",
           last_sync_at: new Date().toISOString(),
-          last_error: null,
-          updated_at: new Date().toISOString(),
         },
         { onConflict: "agent_id,provider" }
       );
