@@ -471,7 +471,7 @@ COMMENT ON COLUMN open_house_events.consent_version IS 'Version number for track
 CREATE TABLE IF NOT EXISTS integrations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   agent_id UUID REFERENCES agents(id) ON DELETE CASCADE NOT NULL,
-  provider TEXT NOT NULL CHECK (provider IN ('ghl', 'n8n', 'idx')),
+  provider TEXT NOT NULL CHECK (provider IN ('ghl', 'n8n', 'idx', 'qbo', 'pandadoc', 'docusign', 'paypal', 'stripe', 'trestle')),
   status TEXT DEFAULT 'disconnected' CHECK (status IN ('connected', 'disconnected', 'error')),
   config JSONB DEFAULT '{}'::jsonb, -- OAuth tokens, webhook URLs, API keys
   last_sync_at TIMESTAMPTZ,
@@ -561,7 +561,12 @@ CREATE POLICY "Agents can delete own integration mappings"
     )
   );
 
-COMMENT ON TABLE integrations IS 'OAuth connections and API configurations for third-party integrations';
+-- Ensure provider check constraint includes all supported providers (migrations 040, 061, 080)
+ALTER TABLE integrations DROP CONSTRAINT IF EXISTS integrations_provider_check;
+ALTER TABLE integrations ADD CONSTRAINT integrations_provider_check
+  CHECK (provider IN ('ghl', 'n8n', 'idx', 'qbo', 'pandadoc', 'docusign', 'paypal', 'stripe', 'trestle'));
+
+COMMENT ON TABLE integrations IS 'OAuth connections and API configurations for third-party integrations (GHL, n8n, QuickBooks, PandaDoc, DocuSign, Trestle, etc.)';
 COMMENT ON TABLE integration_mappings IS 'Per-event mappings for GHL pipelines, stages, and other integration-specific settings';
 -- Webhook Event Logs
 -- Tracks all webhook deliveries to n8n and other systems

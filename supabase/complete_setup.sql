@@ -156,7 +156,7 @@ CREATE TABLE IF NOT EXISTS team_members (
 CREATE TABLE IF NOT EXISTS integrations (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   agent_id UUID NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
-  provider TEXT NOT NULL CHECK (provider IN ('ghl', 'n8n', 'idx')),
+  provider TEXT NOT NULL CHECK (provider IN ('ghl', 'n8n', 'idx', 'qbo', 'pandadoc', 'docusign', 'paypal', 'stripe', 'trestle')),
   status TEXT NOT NULL DEFAULT 'disconnected' CHECK (status IN ('connected', 'disconnected', 'error')),
   access_token TEXT,
   refresh_token TEXT,
@@ -178,6 +178,11 @@ CREATE TABLE IF NOT EXISTS integration_mappings (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE(integration_id, mapping_type, mapping_key)
 );
+
+-- Ensure provider check constraint includes all supported providers (migrations 040, 061, 080)
+ALTER TABLE integrations DROP CONSTRAINT IF EXISTS integrations_provider_check;
+ALTER TABLE integrations ADD CONSTRAINT integrations_provider_check
+  CHECK (provider IN ('ghl', 'n8n', 'idx', 'qbo', 'pandadoc', 'docusign', 'paypal', 'stripe', 'trestle'));
 
 -- =============================================================================
 -- STEP 6: CREATE WEBHOOK LOGS TABLE (migration 007)
