@@ -98,19 +98,15 @@ export async function POST(request: NextRequest) {
       config.bearer_token = bearer_token;
     }
 
-    // Upsert integration using admin client (bypasses RLS, matches Stripe/PayPal pattern)
-    const { error: dbError } = await supabaseAdmin
-      .from("integrations")
-      .upsert(
-        {
-          agent_id: userData.user.id,
-          provider: "trestle",
-          config,
-          status: "connected",
-          last_sync_at: new Date().toISOString(),
-        },
-        { onConflict: "agent_id,provider" }
-      );
+    // Use RPC to bypass PostgREST schema cache issues with CHECK constraints
+    const { error: dbError } = await supabaseAdmin.rpc(
+      "upsert_trestle_integration",
+      {
+        p_agent_id: userData.user.id,
+        p_config: config,
+        p_last_sync_at: new Date().toISOString(),
+      }
+    );
 
     if (dbError) {
       console.error("Error saving Trestle integration:", dbError);
