@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { createTrestleClient } from "@/lib/integrations/trestle-client";
 
 /**
@@ -16,8 +17,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get the integration
-    const { data: integration, error: fetchError } = await supabase
+    // Get the integration using admin client
+    const { data: integration, error: fetchError } = await supabaseAdmin
       .from("integrations")
       .select("*")
       .eq("agent_id", userData.user.id)
@@ -52,7 +53,7 @@ export async function GET(request: NextRequest) {
 
     if (!testResult.success) {
       // Update integration status to error
-      await supabase
+      await supabaseAdmin
         .from("integrations")
         .update({
           status: "error",
@@ -68,7 +69,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Update last sync time
-    await supabase
+    await supabaseAdmin
       .from("integrations")
       .update({
         status: "connected",

@@ -11,3 +11,6 @@ ADD CONSTRAINT integrations_provider_check
 CHECK (provider IN ('ghl', 'n8n', 'idx', 'qbo', 'pandadoc', 'docusign', 'paypal', 'stripe', 'trestle'));
 
 COMMENT ON TABLE integrations IS 'OAuth connections and API configurations for third-party integrations (GHL, n8n, QuickBooks, PandaDoc, DocuSign, Trestle, etc.)';
+
+-- Reload PostgREST schema cache so the updated constraint is recognized immediately
+NOTIFY pgrst, 'reload schema';

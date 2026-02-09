@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { TrestleClient, TrestleAuthMethod } from "@/lib/integrations/trestle-client";
 
 /**
@@ -97,53 +98,28 @@ export async function POST(request: NextRequest) {
       config.bearer_token = bearer_token;
     }
 
-    // Check if integration already exists
-    const { data: existing } = await supabase
+    // Upsert integration using admin client (bypasses RLS, matches Stripe/PayPal pattern)
+    const { error: dbError } = await supabaseAdmin
       .from("integrations")
-      .select("id")
-      .eq("agent_id", userData.user.id)
-      .eq("provider", "trestle")
-      .maybeSingle();
-
-    if (existing) {
-      // Update existing integration
-      const { error: updateError } = await supabase
-        .from("integrations")
-        .update({
-          config,
-          status: "connected",
-          last_sync_at: new Date().toISOString(),
-          last_error: null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", existing.id);
-
-      if (updateError) {
-        console.error("Error updating Trestle integration:", updateError);
-        return NextResponse.json(
-          { error: "Failed to update integration" },
-          { status: 500 }
-        );
-      }
-    } else {
-      // Create new integration
-      const { error: insertError } = await supabase
-        .from("integrations")
-        .insert({
+      .upsert(
+        {
           agent_id: userData.user.id,
           provider: "trestle",
           config,
           status: "connected",
           last_sync_at: new Date().toISOString(),
-        });
+          last_error: null,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "agent_id,provider" }
+      );
 
-      if (insertError) {
-        console.error("Error creating Trestle integration:", insertError);
-        return NextResponse.json(
-          { error: "Failed to create integration" },
-          { status: 500 }
-        );
-      }
+    if (dbError) {
+      console.error("Error saving Trestle integration:", dbError);
+      return NextResponse.json(
+        { error: "Failed to save integration: " + dbError.message },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({

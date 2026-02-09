@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 /**
  * Disconnect Trestle Integration
@@ -15,8 +16,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Update integration to disconnected state
-    const { error: updateError } = await supabase
+    // Update integration to disconnected state using admin client
+    const { error: updateError } = await supabaseAdmin
       .from("integrations")
       .update({
         status: "disconnected",
