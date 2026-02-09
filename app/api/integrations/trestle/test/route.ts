@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    if (integration.status !== "connected" || !integration.config?.client_id) {
+    if (integration.status !== "connected" || !integration.config?.api_url) {
       return NextResponse.json({
         connected: false,
         message: "Trestle credentials not configured",

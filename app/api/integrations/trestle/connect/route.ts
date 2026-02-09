@@ -29,6 +29,7 @@ export async function POST(request: NextRequest) {
       client_secret,
       bearer_token,
       api_url,
+      token_url,
     } = body;
 
     // Validate required fields
@@ -64,6 +65,7 @@ export async function POST(request: NextRequest) {
       clientSecret: client_secret,
       bearerToken: bearer_token,
       apiUrl: api_url,
+      tokenUrl: token_url,
     });
 
     const testResult = await client.testConnection();
@@ -90,6 +92,7 @@ export async function POST(request: NextRequest) {
     } else if (method === "oauth2") {
       config.client_id = client_id;
       config.client_secret = client_secret;
+      if (token_url) config.token_url = token_url;
     } else if (method === "bearer") {
       config.bearer_token = bearer_token;
     }

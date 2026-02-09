@@ -1,8 +1,8 @@
 /**
- * Trestle (CoreLogic) MLS API Client
+ * Trestle (Cotality / CoreLogic) MLS API Client
  *
  * Handles property listings, agent rosters, and media via RESO Web API
- * API Documentation: https://trestle.corelogic.com/docs
+ * API Documentation: https://trestle-documentation.corelogic.com/
  *
  * Authentication Methods:
  * 1. OAuth2 Client Credentials Flow (client_id + client_secret)
@@ -12,7 +12,7 @@
  * Data Standard: RESO Data Dictionary 2.0
  */
 
-const DEFAULT_TOKEN_URL = "https://api-prod.corelogic.com/trestle/oidc/connect/token";
+const DEFAULT_TOKEN_URL = "https://api.cotality.com/trestle/oidc/connect/token";
 
 export interface TrestleTokenResponse {
   access_token: string;
@@ -183,6 +183,19 @@ export class TrestleClient {
   }
 
   /**
+   * Derive token URL from the API URL when no explicit token URL is configured.
+   * e.g. https://api.cotality.com/trestle/odata -> https://api.cotality.com/trestle/oidc/connect/token
+   */
+  private deriveTokenUrl(): string {
+    if (this.authConfig.tokenUrl) return this.authConfig.tokenUrl;
+
+    const apiUrl = this.authConfig.apiUrl.replace(/\/$/, "");
+    // Strip /odata suffix to get the base trestle path, then append the OIDC token path
+    const base = apiUrl.replace(/\/odata$/, "");
+    return `${base}/oidc/connect/token`;
+  }
+
+  /**
    * Get OAuth2 access token using client credentials
    */
   private async getOAuth2Token(): Promise<string> {
@@ -191,7 +204,7 @@ export class TrestleClient {
       return this.accessToken;
     }
 
-    const tokenUrl = this.authConfig.tokenUrl || DEFAULT_TOKEN_URL;
+    const tokenUrl = this.deriveTokenUrl();
 
     const response = await fetch(tokenUrl, {
       method: "POST",

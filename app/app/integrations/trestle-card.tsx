@@ -21,12 +21,12 @@ type Integration = {
 
 export default function TrestleIntegrationCard({ integration }: { integration: Integration }) {
   const [showDialog, setShowDialog] = useState(false);
-  const [authMethod, setAuthMethod] = useState<"basic" | "oauth2">("basic");
+  const [authMethod, setAuthMethod] = useState<"basic" | "oauth2">("oauth2");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [clientId, setClientId] = useState("");
   const [clientSecret, setClientSecret] = useState("");
-  const [apiUrl, setApiUrl] = useState("");
+  const [apiUrl, setApiUrl] = useState("https://api.cotality.com/trestle/odata");
   const [connecting, setConnecting] = useState(false);
   const [testing, setTesting] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
@@ -307,12 +307,12 @@ export default function TrestleIntegrationCard({ integration }: { integration: I
           <div className="text-xs text-muted-foreground flex items-center gap-1">
             <ExternalLink className="w-3 h-3" />
             <a
-              href="https://trestle.corelogic.com"
+              href="https://trestle-documentation.corelogic.com/"
               target="_blank"
               rel="noopener noreferrer"
               className="underline hover:text-foreground"
             >
-              Learn more about Trestle API
+              Trestle API Documentation
             </a>
           </div>
         </CardContent>
@@ -334,7 +334,7 @@ export default function TrestleIntegrationCard({ integration }: { integration: I
               <Label htmlFor="api-url">WebAPI URL *</Label>
               <Input
                 id="api-url"
-                placeholder="https://api-trestle.corelogic.com/trestle/odata"
+                placeholder="https://api.cotality.com/trestle/odata"
                 value={apiUrl}
                 onChange={(e) => setApiUrl(e.target.value)}
                 disabled={connecting}
