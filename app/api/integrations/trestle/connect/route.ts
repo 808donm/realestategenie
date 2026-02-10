@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
-import { supabaseAdmin } from "@/lib/supabase/admin";
+import { getDirectDb } from "@/lib/supabase/db";
 import { TrestleClient, TrestleAuthMethod } from "@/lib/integrations/trestle-client";
 
 /**
@@ -98,56 +98,22 @@ export async function POST(request: NextRequest) {
       config.bearer_token = bearer_token;
     }
 
-    // Save integration: try RPC first, fall back to direct upsert
-    let dbError: any = null;
-
-    // Primary: use RPC function (bypasses PostgREST schema cache issues)
-    const { error: rpcError } = await supabaseAdmin.rpc(
-      "upsert_trestle_integration",
-      {
-        p_agent_id: userData.user.id,
-        p_config: config,
-        p_last_sync_at: new Date().toISOString(),
-      }
-    );
-
-    if (rpcError) {
-      console.warn("RPC upsert failed, trying direct approach:", rpcError.code);
-
-      // Fallback: check for existing record and update, or insert new
-      const { data: existing } = await supabaseAdmin
-        .from("integrations")
-        .select("id")
-        .eq("agent_id", userData.user.id)
-        .eq("provider", "trestle")
-        .maybeSingle();
-
-      if (existing) {
-        const { error } = await supabaseAdmin
-          .from("integrations")
-          .update({ config, status: "connected" })
-          .eq("id", existing.id);
-        dbError = error;
-      } else {
-        const { error } = await supabaseAdmin
-          .from("integrations")
-          .insert({
-            agent_id: userData.user.id,
-            provider: "trestle",
-            config,
-            status: "connected",
-          });
-        dbError = error;
-      }
-    }
-
-    if (dbError) {
+    // Save integration using direct SQL (bypasses PostgREST entirely)
+    try {
+      const sql = getDirectDb();
+      await sql`
+        INSERT INTO integrations (agent_id, provider, config, status, last_sync_at)
+        VALUES (${userData.user.id}, 'trestle', ${JSON.stringify(config)}::jsonb, 'connected', NOW())
+        ON CONFLICT (agent_id, provider)
+        DO UPDATE SET
+          config = EXCLUDED.config,
+          status = EXCLUDED.status,
+          last_sync_at = EXCLUDED.last_sync_at
+      `;
+    } catch (dbError: any) {
       console.error("Error saving Trestle integration:", dbError);
-      const hint = dbError.code === "23514"
-        ? " Please restart your Supabase project (Dashboard > Settings > General > Restart) to reload the schema cache."
-        : "";
       return NextResponse.json(
-        { error: "Failed to save integration: " + dbError.message + hint },
+        { error: "Failed to save integration: " + (dbError.message || "Database error") },
         { status: 500 }
       );
     }
