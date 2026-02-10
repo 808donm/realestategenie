@@ -257,9 +257,13 @@ export default function MLSClient() {
     setContacts([]);
   };
 
+  // Contact search error
+  const [contactError, setContactError] = useState("");
+
   // Fetch contacts for send modal
   const fetchContacts = async (search: string) => {
     setIsLoadingContacts(true);
+    setContactError("");
     try {
       const params = new URLSearchParams();
       if (search) params.append("search", search);
@@ -268,11 +272,13 @@ export default function MLSClient() {
       const response = await fetch(`/api/contacts?${params.toString()}`);
       const data = await response.json();
 
-      if (response.ok) {
-        setContacts(data.contacts || []);
+      if (!response.ok) {
+        setContactError(data.error || "Failed to load contacts");
+        return;
       }
-    } catch {
-      // Silently handle - contacts will just be empty
+      setContacts(data.contacts || []);
+    } catch (err) {
+      setContactError(err instanceof Error ? err.message : "Failed to load contacts");
     } finally {
       setIsLoadingContacts(false);
     }
@@ -1242,12 +1248,22 @@ export default function MLSClient() {
               />
             </div>
 
+            {/* Contact error */}
+            {contactError && (
+              <div style={{
+                padding: 12, background: "#fee2e2", color: "#dc2626",
+                borderRadius: 8, marginBottom: 12, fontSize: 13,
+              }}>
+                {contactError}
+              </div>
+            )}
+
             {/* Contacts list */}
             {isLoadingContacts ? (
               <div style={{ textAlign: "center", padding: 20, color: "#6b7280", fontSize: 14 }}>
                 Loading contacts...
               </div>
-            ) : contacts.length === 0 ? (
+            ) : contacts.length === 0 && !contactError ? (
               <div style={{ textAlign: "center", padding: 20, color: "#6b7280", fontSize: 14 }}>
                 {contactSearch
                   ? "No contacts found. Try a different search."

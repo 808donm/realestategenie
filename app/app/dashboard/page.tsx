@@ -11,7 +11,7 @@ export const revalidate = 0;
 const dashboardCards = [
   { title: "Total Leads", href: "/app/leads" },
   { title: "Open Houses", href: "/app/open-houses" },
-  { title: "Pipeline", href: "/app/reports/pipeline-velocity" },
+  { title: "Pipeline", href: "/app/pipeline" },
   { title: "Reports", href: "/app/reports" },
   { title: "Analyzers", href: "/app/analyzers" },
   { title: "MLS", href: "/app/mls" },
