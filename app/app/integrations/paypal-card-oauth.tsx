@@ -95,7 +95,7 @@ export default function PayPalOAuthCard({ connection }: { connection: Integratio
             </div>
           </div>
           {isConnected && (
-            <Badge variant="default" className="gap-1 bg-green-600">
+            <Badge variant="success" className="gap-1">
               <CheckCircle2 className="w-3 h-3" />
               Connected
             </Badge>

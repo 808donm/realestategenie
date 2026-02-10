@@ -3,7 +3,6 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import SignOutButton from "./signout-button";
-import ActivityFeed from "./activity-feed";
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -88,17 +87,14 @@ export default async function DashboardPage() {
       <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
         {dashboardCards.map((card) => (
           <Link key={card.title} href={card.href} className="block">
-            <Card className="h-full cursor-pointer transition-all hover:shadow-md hover:border-primary/40">
-              <CardContent className="flex items-center justify-center p-8">
+            <Card className="h-full aspect-square cursor-pointer transition-all hover:shadow-md hover:border-primary/40">
+              <CardContent className="flex items-center justify-center h-full p-4">
                 <span className="text-lg font-semibold text-center">{card.title}</span>
               </CardContent>
             </Card>
           </Link>
         ))}
       </div>
-
-      {/* Activity Feed */}
-      <ActivityFeed />
     </div>
   );
 }
