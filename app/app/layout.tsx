@@ -16,11 +16,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // Get user role
   const { data: agent } = await supabase
     .from("agents")
-    .select("role")
+    .select("role, display_name")
     .eq("id", userId)
     .single();
 
   const userRole = agent?.role || "agent";
+  const displayName = agent?.display_name?.trim() || email;
 
   // Check if user is account owner or admin
   const { data: accountMember } = await supabase
@@ -76,7 +77,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
             {/* Email and Sign Out - Desktop */}
             <div className="hidden md:flex gap-3 items-center">
-              <span className="text-xs opacity-75">{email}</span>
+              <span className="text-xs opacity-75">{displayName}</span>
               <SignOutButton />
             </div>
           </div>
@@ -94,6 +95,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             {userRole === "team_lead" && (
               <NavLink href="/app/team-lead">Team Dashboard</NavLink>
             )}
+            <NavLink href="/app/mls">MLS</NavLink>
+            <NavLink href="/app/pipeline">Pipeline</NavLink>
             <NavLink href="/app/open-houses">Open Houses</NavLink>
             <NavLink href="/app/leads">Leads</NavLink>
             <NavLink href="/app/contacts">Contacts</NavLink>
@@ -117,7 +120,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <div className="md:hidden mt-4 pt-4 border-t border-gray-100 space-y-3">
             <ContactSearch />
             <div className="flex gap-3 items-center justify-end">
-              <span className="text-xs opacity-75">{email}</span>
+              <span className="text-xs opacity-75">{displayName}</span>
               <SignOutButton />
             </div>
           </div>

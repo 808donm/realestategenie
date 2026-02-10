@@ -83,7 +83,7 @@ export default function TrestleIntegrationCard({ integration }: { integration: I
         setPassword("");
         setClientId("");
         setClientSecret("");
-        setApiUrl("");
+        setApiUrl("https://api.cotality.com/trestle/odata");
         window.location.reload();
       } else {
         toast.error("Connection failed", {
@@ -444,7 +444,7 @@ export default function TrestleIntegrationCard({ integration }: { integration: I
                 setPassword("");
                 setClientId("");
                 setClientSecret("");
-                setApiUrl("");
+                setApiUrl("https://api.cotality.com/trestle/odata");
               }}
               disabled={connecting}
             >

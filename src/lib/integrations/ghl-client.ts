@@ -354,6 +354,30 @@ export class GHLClient {
   }
 
   /**
+   * Get notes for a contact
+   */
+  async getNotes(contactId: string): Promise<{ notes: any[] }> {
+    return this.request<{ notes: any[] }>(`/contacts/${contactId}/notes`);
+  }
+
+  /**
+   * Get conversations for a contact
+   */
+  async getConversations(contactId: string): Promise<{ conversations: any[] }> {
+    const params = new URLSearchParams();
+    if (this.locationId) params.append("locationId", this.locationId);
+    params.append("contactId", contactId);
+    return this.request<{ conversations: any[] }>(`/conversations/search?${params.toString()}`);
+  }
+
+  /**
+   * Get messages in a conversation
+   */
+  async getConversationMessages(conversationId: string): Promise<{ messages: any[] }> {
+    return this.request<{ messages: any[] }>(`/conversations/${conversationId}/messages`);
+  }
+
+  /**
    * Get location info (to verify access token)
    */
   async getLocations(): Promise<{ locations: any[] }> {
