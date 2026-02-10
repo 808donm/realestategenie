@@ -19,7 +19,7 @@ export function getDirectDb() {
       idle_timeout: 20,
       connect_timeout: 10,
       prepare: false, // Required for Supabase transaction pooler
-      ssl: "require",
+      ssl: { rejectUnauthorized: false },
     });
   }
 
