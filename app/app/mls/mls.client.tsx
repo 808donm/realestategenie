@@ -132,7 +132,7 @@ export default function MLSClient() {
       setIsLoadingLatest(true);
       setLatestError("");
       try {
-        const response = await fetch("/api/mls/search?status=Active&limit=6");
+        const response = await fetch("/api/mls/search?status=Active,Pending,Closed&limit=6");
         const data = await response.json();
         if (!response.ok) {
           setLatestError(data.error || "Failed to load latest listings");
