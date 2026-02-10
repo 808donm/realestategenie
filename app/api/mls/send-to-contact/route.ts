@@ -48,6 +48,11 @@ export async function POST(request: NextRequest) {
       .filter(Boolean)
       .join(", ");
 
+    // Build link to the property in the app
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.realestategenie.app";
+    const listingKey = property.ListingKey || property.ListingId;
+    const propertyLink = `${appUrl}/app/mls?listing=${encodeURIComponent(listingKey)}`;
+
     const noteBody = [
       `--- MLS Listing Shared ---`,
       ``,
@@ -60,6 +65,8 @@ export async function POST(request: NextRequest) {
       property.BathroomsTotalInteger ? `Baths: ${property.BathroomsTotalInteger}` : null,
       property.LivingArea ? `Sq Ft: ${property.LivingArea.toLocaleString()}` : null,
       property.YearBuilt ? `Year Built: ${property.YearBuilt}` : null,
+      ``,
+      `View Listing: ${propertyLink}`,
       ``,
       property.PublicRemarks ? `Remarks: ${property.PublicRemarks.substring(0, 500)}` : null,
       ``,

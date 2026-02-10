@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 
 interface TrestleMedia {
   MediaKey: string;
@@ -58,6 +59,8 @@ const PROPERTY_TYPES = [
 ] as const;
 
 export default function MLSClient() {
+  const searchParams = useSearchParams();
+
   // Search state
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
@@ -91,6 +94,32 @@ export default function MLSClient() {
   const [isLoadingContacts, setIsLoadingContacts] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [sendResult, setSendResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  // Open property detail from ?listing= URL param (used in shared links)
+  useEffect(() => {
+    const listingKey = searchParams.get("listing");
+    if (!listingKey) return;
+
+    const fetchListing = async () => {
+      try {
+        const response = await fetch("/api/integrations/trestle/properties", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ listingKey, includeMedia: true }),
+        });
+        const data = await response.json();
+        if (response.ok && data.property) {
+          const property = data.property as Property;
+          if (data.media) property.Media = data.media;
+          setSelectedProperty(property);
+        }
+      } catch {
+        // Silently fail - user can still search manually
+      }
+    };
+
+    fetchListing();
+  }, [searchParams]);
 
   // Debounce search query
   useEffect(() => {
