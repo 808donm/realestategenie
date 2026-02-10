@@ -3,18 +3,19 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import SignOutButton from "./signout-button";
+import { Users, Home, GitBranch, BarChart3, Calculator, Building2, Contact } from "lucide-react";
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 const dashboardCards = [
-  { title: "Total Leads", href: "/app/leads" },
-  { title: "Open Houses", href: "/app/open-houses" },
-  { title: "Pipeline", href: "/app/pipeline" },
-  { title: "Reports", href: "/app/reports" },
-  { title: "Analyzers", href: "/app/analyzers" },
-  { title: "MLS", href: "/app/mls" },
-  { title: "Contacts", href: "/app/contacts" },
+  { title: "Total Leads", href: "/app/leads", icon: Users },
+  { title: "Open Houses", href: "/app/open-houses", icon: Home },
+  { title: "Pipeline", href: "/app/pipeline", icon: GitBranch },
+  { title: "Reports", href: "/app/reports", icon: BarChart3 },
+  { title: "Analyzers", href: "/app/analyzers", icon: Calculator },
+  { title: "MLS", href: "/app/mls", icon: Building2 },
+  { title: "Contacts", href: "/app/contacts", icon: Contact },
 ];
 
 export default async function DashboardPage() {
@@ -85,15 +86,19 @@ export default async function DashboardPage() {
 
       {/* Dashboard Cards Grid */}
       <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
-        {dashboardCards.map((card) => (
-          <Link key={card.title} href={card.href} className="block">
-            <Card className="h-full aspect-square cursor-pointer transition-all hover:shadow-md hover:border-primary/40">
-              <CardContent className="flex items-center justify-center h-full p-4">
-                <span className="text-lg font-semibold text-center">{card.title}</span>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
+        {dashboardCards.map((card) => {
+          const Icon = card.icon;
+          return (
+            <Link key={card.title} href={card.href} className="block">
+              <Card className="h-full aspect-square cursor-pointer transition-all hover:shadow-md hover:border-primary/40">
+                <CardContent className="flex flex-col items-center justify-center h-full p-4 gap-3">
+                  <Icon className="w-8 h-8 text-primary" />
+                  <span className="text-lg font-semibold text-center">{card.title}</span>
+                </CardContent>
+              </Card>
+            </Link>
+          );
+        })}
       </div>
     </div>
   );
