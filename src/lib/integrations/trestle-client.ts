@@ -336,11 +336,13 @@ export class TrestleClient {
     }
 
     if (options.city) {
-      filters.push(`City eq '${options.city}'`);
+      // Case-insensitive partial match using OData contains + tolower
+      filters.push(`contains(tolower(City), '${options.city.toLowerCase()}')`);
     }
 
     if (options.postalCode) {
-      filters.push(`PostalCode eq '${options.postalCode}'`);
+      // Postal codes support startswith for partial zip matching
+      filters.push(`startswith(PostalCode, '${options.postalCode}')`);
     }
 
     if (options.minPrice !== undefined) {

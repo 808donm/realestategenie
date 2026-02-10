@@ -72,6 +72,16 @@ export async function GET(request: NextRequest) {
 
     const client = createTrestleClient(config);
 
+    // If no location filter is provided, add a recency filter so the query
+    // isn't too broad (Trestle returns 0 results for overly broad queries)
+    const hasLocationFilter = !!(searchCity || searchPostalCode);
+    let modifiedSince: Date | undefined;
+    if (!hasLocationFilter) {
+      const daysBack = new Date();
+      daysBack.setDate(daysBack.getDate() - 7);
+      modifiedSince = daysBack;
+    }
+
     const result = await client.searchProperties({
       status,
       city: searchCity,
@@ -81,6 +91,7 @@ export async function GET(request: NextRequest) {
       minBeds,
       minBaths,
       propertyType,
+      modifiedSince,
       limit,
       offset,
       includeMedia: true,
