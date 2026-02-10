@@ -86,6 +86,7 @@ export default function MLSClient() {
   // Latest listings state
   const [latestProperties, setLatestProperties] = useState<Property[]>([]);
   const [isLoadingLatest, setIsLoadingLatest] = useState(true);
+  const [latestError, setLatestError] = useState("");
 
   // Detail modal state
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
@@ -129,14 +130,19 @@ export default function MLSClient() {
   useEffect(() => {
     const fetchLatest = async () => {
       setIsLoadingLatest(true);
+      setLatestError("");
       try {
         const response = await fetch("/api/mls/search?status=Active&limit=6");
         const data = await response.json();
-        if (response.ok && data.properties) {
+        if (!response.ok) {
+          setLatestError(data.error || "Failed to load latest listings");
+          return;
+        }
+        if (data.properties) {
           setLatestProperties(data.properties);
         }
-      } catch {
-        // Not critical - page still works with search
+      } catch (err) {
+        setLatestError(err instanceof Error ? err.message : "Failed to load latest listings");
       } finally {
         setIsLoadingLatest(false);
       }
@@ -520,6 +526,20 @@ export default function MLSClient() {
       {/* Latest Listings - shown before user searches */}
       {!isLoading && !hasSearched && (
         <div>
+          {latestError && (
+            <div
+              style={{
+                padding: 16,
+                background: "#fef3c7",
+                color: "#92400e",
+                borderRadius: 8,
+                marginBottom: 16,
+                fontSize: 14,
+              }}
+            >
+              {latestError}
+            </div>
+          )}
           {isLoadingLatest ? (
             <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>
               Loading latest listings...

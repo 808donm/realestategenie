@@ -72,25 +72,31 @@ export async function GET(request: NextRequest) {
 
     const client = createTrestleClient(config);
 
-    // When no location filter is provided (e.g. "latest listings" on page load),
-    // skip $count to avoid Trestle's broad-query protection (>5000 results = 0 returned).
-    // We rely on $top + $orderby to get the most recent results.
+    // Trestle returns 0 results when a query's filter matches >5,000 records,
+    // regardless of $top. When no location filter is provided (e.g. "latest listings"
+    // on page load), we must narrow with additional filters and skip $count.
     const hasLocationFilter = !!(searchCity || searchPostalCode);
+
+    // For the "latest listings" case (no location/price/beds filters), narrow the query
+    // so it stays under Trestle's 5,000-record threshold for ad-hoc queries.
+    const isLatestQuery = !hasLocationFilter && !minPrice && !maxPrice && !minBeds && !minBaths && !propertyType;
 
     const result = await client.searchProperties({
       status,
       city: searchCity,
       postalCode: searchPostalCode,
-      minPrice,
+      minPrice: isLatestQuery ? 1 : minPrice,
       maxPrice,
       minBeds,
       minBaths,
-      propertyType,
+      propertyType: isLatestQuery && !propertyType ? "Residential" : propertyType,
       limit,
       offset,
       includeMedia: true,
       skipCount: !hasLocationFilter,
     });
+
+    console.log("[MLS Search] Results returned:", result.value?.length, "count:", result["@odata.count"]);
 
     return NextResponse.json({
       properties: result.value,
