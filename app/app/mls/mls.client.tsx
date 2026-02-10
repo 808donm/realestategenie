@@ -97,7 +97,8 @@ export default function MLSClient() {
   const [contacts, setContacts] = useState<GHLContact[]>([]);
   const [contactSearch, setContactSearch] = useState("");
   const [isLoadingContacts, setIsLoadingContacts] = useState(false);
-  const [isSending, setIsSending] = useState(false);
+  const [sendingContactId, setSendingContactId] = useState("");
+  const [sendMode, setSendMode] = useState<"email" | "attach">("attach");
   const [sendResult, setSendResult] = useState<{ success: boolean; message: string } | null>(null);
 
   // Open property detail from ?listing= URL param (used in shared links)
@@ -249,8 +250,9 @@ export default function MLSClient() {
   };
 
   // Open send-to-contact modal
-  const openSendModal = (property: Property) => {
+  const openSendModal = (property: Property, mode: "email" | "attach") => {
     setSendProperty(property);
+    setSendMode(mode);
     setShowSendModal(true);
     setSendResult(null);
     setContactSearch("");
@@ -296,7 +298,7 @@ export default function MLSClient() {
   // Send property to contact
   const sendToContact = async (contactId: string) => {
     if (!sendProperty) return;
-    setIsSending(true);
+    setSendingContactId(contactId);
     setSendResult(null);
 
     try {
@@ -306,6 +308,7 @@ export default function MLSClient() {
         body: JSON.stringify({
           contactId,
           property: sendProperty,
+          mode: sendMode,
         }),
       });
 
@@ -315,14 +318,19 @@ export default function MLSClient() {
         throw new Error(data.error || "Failed to send");
       }
 
-      setSendResult({ success: true, message: "Listing sent to contact successfully!" });
+      setSendResult({
+        success: true,
+        message: sendMode === "email"
+          ? "Listing emailed to contact successfully!"
+          : "Listing attached to contact successfully!",
+      });
     } catch (err) {
       setSendResult({
         success: false,
-        message: err instanceof Error ? err.message : "Failed to send listing",
+        message: err instanceof Error ? err.message : "Failed to process listing",
       });
     } finally {
-      setIsSending(false);
+      setSendingContactId("");
     }
   };
 
@@ -1104,7 +1112,7 @@ export default function MLSClient() {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    openSendModal(selectedProperty);
+                    openSendModal(selectedProperty, "email");
                   }}
                   style={{
                     padding: "10px 20px",
@@ -1122,7 +1130,7 @@ export default function MLSClient() {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    openSendModal(selectedProperty);
+                    openSendModal(selectedProperty, "attach");
                   }}
                   style={{
                     padding: "10px 20px",
@@ -1135,7 +1143,7 @@ export default function MLSClient() {
                     flex: 1,
                   }}
                 >
-                  Add to GHL Contact
+                  Attach to Contact
                 </button>
               </div>
             </div>
@@ -1178,7 +1186,9 @@ export default function MLSClient() {
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <h3 style={{ fontSize: 18, fontWeight: 700 }}>Send Listing to Contact</h3>
+              <h3 style={{ fontSize: 18, fontWeight: 700 }}>
+                {sendMode === "email" ? "Send Listing to Contact" : "Attach Listing to Contact"}
+              </h3>
               <button
                 onClick={() => {
                   setShowSendModal(false);
@@ -1267,7 +1277,9 @@ export default function MLSClient() {
               <div style={{ textAlign: "center", padding: 20, color: "#6b7280", fontSize: 14 }}>
                 {contactSearch
                   ? "No contacts found. Try a different search."
-                  : "Search for a contact to send this listing to."}
+                  : sendMode === "email"
+                    ? "Search for a contact to send this listing to."
+                    : "Search for a contact to attach this listing to."}
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -1294,21 +1306,23 @@ export default function MLSClient() {
                     </div>
                     <button
                       onClick={() => sendToContact(contact.id)}
-                      disabled={isSending}
+                      disabled={sendingContactId !== ""}
                       style={{
                         padding: "6px 14px",
-                        background: "#3b82f6",
+                        background: sendMode === "email" ? "#3b82f6" : "#10b981",
                         color: "#fff",
                         border: "none",
                         borderRadius: 6,
                         fontSize: 13,
                         fontWeight: 600,
-                        cursor: isSending ? "wait" : "pointer",
-                        opacity: isSending ? 0.7 : 1,
+                        cursor: sendingContactId !== "" ? "wait" : "pointer",
+                        opacity: sendingContactId !== "" ? 0.7 : 1,
                         flexShrink: 0,
                       }}
                     >
-                      {isSending ? "Sending..." : "Send"}
+                      {sendingContactId === contact.id
+                        ? (sendMode === "email" ? "Sending..." : "Attaching...")
+                        : (sendMode === "email" ? "Send" : "Attach")}
                     </button>
                   </div>
                 ))}
