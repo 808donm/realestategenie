@@ -53,7 +53,7 @@ export default async function DashboardPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground mt-1">
-            Welcome back, <code className="text-sm">{user.email}</code>
+            Welcome back, {profile.display_name?.trim() || user.email}
           </p>
         </div>
         <SignOutButton />
