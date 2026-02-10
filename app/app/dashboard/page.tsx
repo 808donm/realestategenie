@@ -3,14 +3,20 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import SignOutButton from "./signout-button";
-import StatsTiles from "./stats-tiles";
-import HeatScoreChart from "./heat-score-chart";
-import IntegrationHealth from "./integration-health";
 import ActivityFeed from "./activity-feed";
-import PipelineStageBreakdown from "./pipeline-stage-breakdown";
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
+
+const dashboardCards = [
+  { title: "Total Leads", href: "/app/leads" },
+  { title: "Open Houses", href: "/app/open-houses" },
+  { title: "Pipeline", href: "/app/reports/pipeline-velocity" },
+  { title: "Reports", href: "/app/reports" },
+  { title: "Analyzers", href: "/app/analyzers" },
+  { title: "MLS", href: "/app/mls" },
+  { title: "Contacts", href: "/app/contacts" },
+];
 
 export default async function DashboardPage() {
   const supabase = await supabaseServer();
@@ -38,23 +44,8 @@ export default async function DashboardPage() {
   const missing: string[] = [];
   if (!profile.display_name?.trim()) missing.push("name");
   if (!profile.phone_e164) missing.push("phone");
-  // license + locations are optional MVP, but still nice to nudge
   if (!profile.license_number) missing.push("license");
   if (!profile.locations_served || profile.locations_served.length === 0) missing.push("locations");
-
-  // Recent open houses
-  const { data: openHouses } = await supabase
-    .from("open_house_events")
-    .select("id,address,start_at,status")
-    .order("start_at", { ascending: false })
-    .limit(5);
-
-  // Recent leads
-  const { data: leads } = await supabase
-    .from("lead_submissions")
-    .select("id,event_id,created_at,payload")
-    .order("created_at", { ascending: false })
-    .limit(5);
 
   return (
     <div className="space-y-6">
@@ -67,30 +58,6 @@ export default async function DashboardPage() {
           </p>
         </div>
         <SignOutButton />
-      </div>
-
-      {/* Quick Actions */}
-      <div className="flex gap-3 flex-wrap">
-        <Link href="/app/open-houses/new">
-          <Button>+ New Open House</Button>
-        </Link>
-        <Link href="/app/open-houses">
-          <Button variant="outline">View Open Houses</Button>
-        </Link>
-        <Link href="/app/leads">
-          <Button variant="outline">View Leads</Button>
-        </Link>
-        <Link href="/app/analyzers">
-          <Button variant="outline">Investment Analyzers</Button>
-        </Link>
-        <Link href="/app/integrations">
-          <Button variant="outline">Integrations</Button>
-        </Link>
-        <Link href="/app/pm">
-          <Button variant="default" size="lg" style={{ background: '#0070f3', color: 'white' }}>
-            🏢 Property Management (PM Module)
-          </Button>
-        </Link>
       </div>
 
       {/* Profile Status Alert */}
@@ -117,59 +84,21 @@ export default async function DashboardPage() {
         </Card>
       )}
 
-      {/* Stats Tiles */}
-      <StatsTiles />
-
-      {/* Main Dashboard Grid */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Heat Score Chart */}
-        <HeatScoreChart />
-
-        {/* Integration Health */}
-        <IntegrationHealth />
+      {/* Dashboard Cards Grid */}
+      <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+        {dashboardCards.map((card) => (
+          <Link key={card.title} href={card.href} className="block">
+            <Card className="h-full cursor-pointer transition-all hover:shadow-md hover:border-primary/40">
+              <CardContent className="flex items-center justify-center p-8">
+                <span className="text-lg font-semibold text-center">{card.title}</span>
+              </CardContent>
+            </Card>
+          </Link>
+        ))}
       </div>
-
-      {/* Pipeline Stage Breakdown */}
-      <PipelineStageBreakdown />
 
       {/* Activity Feed */}
       <ActivityFeed />
-
-      {/* Recent Open Houses */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Recent Open Houses</CardTitle>
-            <Link href="/app/open-houses">
-              <Button variant="outline" size="sm">
-                See All
-              </Button>
-            </Link>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {(!openHouses || openHouses.length === 0) ? (
-            <p className="text-center py-8 text-muted-foreground">
-              No open houses yet. Create one to get started!
-            </p>
-          ) : (
-            <div className="space-y-3">
-              {openHouses.map((e) => (
-                <Link
-                  key={e.id}
-                  href={`/app/open-houses/${e.id}`}
-                  className="block p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                >
-                  <div className="font-semibold">{e.address}</div>
-                  <div className="text-sm text-muted-foreground mt-1">
-                    {new Date(e.start_at).toLocaleString()} • <strong>{e.status}</strong>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
     </div>
   );
 }
