@@ -13,6 +13,7 @@
  */
 
 const DEFAULT_TOKEN_URL = "https://api.cotality.com/trestle/oidc/connect/token";
+const DEFAULT_API_URL = "https://api.cotality.com/trestle/odata";
 
 export interface TrestleTokenResponse {
   access_token: string;
@@ -188,6 +189,7 @@ export class TrestleClient {
    */
   private deriveTokenUrl(): string {
     if (this.authConfig.tokenUrl) return this.authConfig.tokenUrl;
+    if (!this.authConfig.apiUrl) return DEFAULT_TOKEN_URL;
 
     const apiUrl = this.authConfig.apiUrl.replace(/\/$/, "");
     // Strip /odata suffix to get the base trestle path, then append the OIDC token path
@@ -246,7 +248,8 @@ export class TrestleClient {
     const authHeader = await this.getAuthHeader();
 
     // Build URL - handle different API URL formats
-    let baseUrl = this.authConfig.apiUrl.replace(/\/$/, ""); // Remove trailing slash
+    const rawUrl = this.authConfig.apiUrl || DEFAULT_API_URL;
+    let baseUrl = rawUrl.replace(/\/$/, ""); // Remove trailing slash
 
     // If the URL doesn't include /odata, append it
     if (!baseUrl.includes("/odata")) {
@@ -534,7 +537,8 @@ export class TrestleClient {
   async getMetadata(): Promise<string> {
     const authHeader = await this.getAuthHeader();
 
-    let baseUrl = this.authConfig.apiUrl.replace(/\/$/, "");
+    const rawUrl = this.authConfig.apiUrl || DEFAULT_API_URL;
+    let baseUrl = rawUrl.replace(/\/$/, "");
     if (!baseUrl.includes("/odata")) {
       baseUrl = `${baseUrl}/odata`;
     }
@@ -570,8 +574,8 @@ export function createTrestleClient(config: {
   password?: string;
   // Bearer token
   bearer_token?: string;
-  // API URL (required)
-  api_url: string;
+  // API URL
+  api_url?: string;
 }): TrestleClient {
   // Determine auth method from provided credentials
   let method: TrestleAuthMethod = config.auth_method || "basic";
@@ -586,6 +590,9 @@ export function createTrestleClient(config: {
     }
   }
 
+  // Fall back to env var or default Cotality API URL
+  const apiUrl = config.api_url || process.env.TRESTLE_API_URL || DEFAULT_API_URL;
+
   return new TrestleClient({
     method,
     clientId: config.client_id,
@@ -594,6 +601,6 @@ export function createTrestleClient(config: {
     username: config.username,
     password: config.password,
     bearerToken: config.bearer_token,
-    apiUrl: config.api_url,
+    apiUrl,
   });
 }
