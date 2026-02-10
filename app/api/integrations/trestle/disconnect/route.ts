@@ -21,9 +21,7 @@ export async function POST(request: NextRequest) {
       .from("integrations")
       .update({
         status: "disconnected",
-        config: {}, // Clear credentials
-        last_error: null,
-        updated_at: new Date().toISOString(),
+        config: {},
       })
       .eq("agent_id", userData.user.id)
       .eq("provider", "trestle");

@@ -57,8 +57,6 @@ export async function GET(request: NextRequest) {
         .from("integrations")
         .update({
           status: "error",
-          last_error: testResult.message,
-          updated_at: new Date().toISOString(),
         })
         .eq("id", integration.id);
 
@@ -74,8 +72,6 @@ export async function GET(request: NextRequest) {
       .update({
         status: "connected",
         last_sync_at: new Date().toISOString(),
-        last_error: null,
-        updated_at: new Date().toISOString(),
       })
       .eq("id", integration.id);
 

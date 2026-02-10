@@ -60,6 +60,13 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    console.log("[MLS Search] Integration config keys:", Object.keys(integration.config));
+    console.log("[MLS Search] auth_method:", integration.config.auth_method);
+    console.log("[MLS Search] api_url:", integration.config.api_url);
+    console.log("[MLS Search] has client_id:", !!integration.config.client_id);
+    console.log("[MLS Search] has client_secret:", !!integration.config.client_secret);
+    console.log("[MLS Search] has username:", !!integration.config.username);
+
     const client = createTrestleClient(integration.config);
 
     const result = await client.searchProperties({
