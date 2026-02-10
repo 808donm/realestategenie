@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
+import AddListingForm from "./add-listing";
 
 interface TrestleMedia {
   MediaKey: string;
@@ -91,6 +92,13 @@ export default function MLSClient() {
   // Detail modal state
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
 
+  // Add listing state
+  const [showAddListing, setShowAddListing] = useState(false);
+  const [editListing, setEditListing] = useState<Record<string, unknown> | null>(null);
+  const [myListings, setMyListings] = useState<Record<string, unknown>[]>([]);
+  const [isLoadingMyListings, setIsLoadingMyListings] = useState(true);
+  const [activeTab, setActiveTab] = useState<"mls" | "my-listings">("mls");
+
   // Send to contact state
   const [showSendModal, setShowSendModal] = useState(false);
   const [sendProperty, setSendProperty] = useState<Property | null>(null);
@@ -151,6 +159,26 @@ export default function MLSClient() {
 
     fetchLatest();
   }, []);
+
+  // Fetch user's own listings
+  const fetchMyListings = useCallback(async () => {
+    setIsLoadingMyListings(true);
+    try {
+      const response = await fetch("/api/mls/listings?limit=50");
+      const data = await response.json();
+      if (response.ok && data.listings) {
+        setMyListings(data.listings);
+      }
+    } catch {
+      // Silently fail
+    } finally {
+      setIsLoadingMyListings(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchMyListings();
+  }, [fetchMyListings]);
 
   // Debounce search query
   useEffect(() => {
@@ -244,6 +272,12 @@ export default function MLSClient() {
         return { bg: "#fef3c7", text: "#d97706" };
       case "Closed":
         return { bg: "#e0e7ff", text: "#4f46e5" };
+      case "Draft":
+        return { bg: "#f3f4f6", text: "#6b7280" };
+      case "Withdrawn":
+      case "Expired":
+      case "Canceled":
+        return { bg: "#fee2e2", text: "#dc2626" };
       default:
         return { bg: "#f3f4f6", text: "#6b7280" };
     }
@@ -345,8 +379,105 @@ export default function MLSClient() {
   const totalPages = Math.ceil(totalCount / limit);
   const currentPage = Math.floor(offset / limit) + 1;
 
+  // Helper for my listings
+  const getMyListingAddress = (l: Record<string, unknown>) => {
+    if (l.unparsed_address) return l.unparsed_address as string;
+    return [l.street_number, l.street_name, l.street_suffix].filter(Boolean).join(" ");
+  };
+
+  const getMyListingPhoto = (l: Record<string, unknown>) => {
+    const photoArr = l.photos as { url: string; order: number }[] | undefined;
+    if (photoArr && photoArr.length > 0) {
+      const sorted = [...photoArr].sort((a, b) => (a.order || 0) - (b.order || 0));
+      return sorted[0].url;
+    }
+    return null;
+  };
+
+  const handleDeleteListing = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this listing?")) return;
+    try {
+      const response = await fetch(`/api/mls/listings/${id}`, { method: "DELETE" });
+      if (response.ok) {
+        fetchMyListings();
+      }
+    } catch {
+      // Silently fail
+    }
+  };
+
   return (
     <div>
+      {/* Tab Navigation + Add Listing Button */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <div style={{ display: "flex", gap: 0 }}>
+          <button
+            onClick={() => setActiveTab("mls")}
+            style={{
+              padding: "10px 24px",
+              fontSize: 14,
+              fontWeight: 600,
+              color: activeTab === "mls" ? "#3b82f6" : "#6b7280",
+              background: "transparent",
+              border: "none",
+              borderBottom: activeTab === "mls" ? "2px solid #3b82f6" : "2px solid transparent",
+              cursor: "pointer",
+            }}
+          >
+            MLS Search
+          </button>
+          <button
+            onClick={() => setActiveTab("my-listings")}
+            style={{
+              padding: "10px 24px",
+              fontSize: 14,
+              fontWeight: 600,
+              color: activeTab === "my-listings" ? "#3b82f6" : "#6b7280",
+              background: "transparent",
+              border: "none",
+              borderBottom: activeTab === "my-listings" ? "2px solid #3b82f6" : "2px solid transparent",
+              cursor: "pointer",
+            }}
+          >
+            My Listings
+            {myListings.length > 0 && (
+              <span
+                style={{
+                  marginLeft: 8,
+                  padding: "2px 8px",
+                  background: "#e5e7eb",
+                  borderRadius: 10,
+                  fontSize: 12,
+                }}
+              >
+                {myListings.length}
+              </span>
+            )}
+          </button>
+        </div>
+        <button
+          onClick={() => {
+            setEditListing(null);
+            setShowAddListing(true);
+          }}
+          style={{
+            padding: "10px 20px",
+            background: "#3b82f6",
+            color: "#fff",
+            border: "none",
+            borderRadius: 8,
+            fontWeight: 600,
+            cursor: "pointer",
+            fontSize: 14,
+          }}
+        >
+          + Add Listing
+        </button>
+      </div>
+
+      {/* MLS Search Tab */}
+      {activeTab === "mls" && (
+        <>
       {/* Search Bar */}
       <form onSubmit={handleSearch} style={{ marginBottom: 16 }}>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -864,6 +995,197 @@ export default function MLSClient() {
             Next
           </button>
         </div>
+      )}
+
+        </>
+      )}
+
+      {/* My Listings Tab */}
+      {activeTab === "my-listings" && (
+        <div>
+          {isLoadingMyListings ? (
+            <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>
+              Loading your listings...
+            </div>
+          ) : myListings.length === 0 ? (
+            <div
+              style={{
+                textAlign: "center",
+                padding: 60,
+                background: "#f9fafb",
+                borderRadius: 12,
+                color: "#6b7280",
+              }}
+            >
+              <p style={{ fontSize: 18, fontWeight: 600, marginBottom: 8, color: "#374151" }}>
+                No Listings Yet
+              </p>
+              <p style={{ fontSize: 14, maxWidth: 400, margin: "0 auto", marginBottom: 20 }}>
+                Create your first listing to manage your properties directly from the app.
+              </p>
+              <button
+                onClick={() => {
+                  setEditListing(null);
+                  setShowAddListing(true);
+                }}
+                style={{
+                  padding: "10px 24px",
+                  background: "#3b82f6",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 8,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                + Add Your First Listing
+              </button>
+            </div>
+          ) : (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+                gap: 16,
+              }}
+            >
+              {myListings.map((listing) => {
+                const photoUrl = getMyListingPhoto(listing);
+                const statusColor = getStatusColor(listing.status as string);
+                const address = getMyListingAddress(listing);
+
+                return (
+                  <div
+                    key={listing.id as string}
+                    style={{
+                      background: "#fff",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: 12,
+                      overflow: "hidden",
+                      transition: "box-shadow 0.2s",
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "none")}
+                  >
+                    <div
+                      style={{
+                        height: 180,
+                        background: photoUrl ? `url(${photoUrl}) center/cover` : "#e5e7eb",
+                        position: "relative",
+                      }}
+                    >
+                      {!photoUrl && (
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            height: "100%",
+                            color: "#9ca3af",
+                            fontSize: 14,
+                          }}
+                        >
+                          No Photo
+                        </div>
+                      )}
+                      <span
+                        style={{
+                          position: "absolute",
+                          top: 10,
+                          left: 10,
+                          padding: "4px 10px",
+                          background: statusColor.bg,
+                          color: statusColor.text,
+                          borderRadius: 6,
+                          fontSize: 12,
+                          fontWeight: 600,
+                        }}
+                      >
+                        {listing.status as string}
+                      </span>
+                    </div>
+                    <div style={{ padding: 16 }}>
+                      <div style={{ fontSize: 20, fontWeight: 700, color: "#111827", marginBottom: 4 }}>
+                        {formatPrice(listing.list_price as number)}
+                      </div>
+                      <div style={{ fontSize: 14, fontWeight: 500, color: "#374151", marginBottom: 4 }}>
+                        {address || "Address not set"}
+                      </div>
+                      <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 10 }}>
+                        {listing.city as string}, {listing.state_or_province as string} {listing.postal_code as string}
+                      </div>
+                      <div style={{ display: "flex", gap: 12, fontSize: 13, color: "#6b7280", marginBottom: 12 }}>
+                        {listing.bedrooms_total != null && (
+                          <span><strong>{listing.bedrooms_total as number}</strong> bed</span>
+                        )}
+                        {listing.bathrooms_total != null && (
+                          <span><strong>{listing.bathrooms_total as number}</strong> bath</span>
+                        )}
+                        {listing.living_area != null && (
+                          <span><strong>{(listing.living_area as number).toLocaleString()}</strong> sqft</span>
+                        )}
+                      </div>
+
+                      {/* Action buttons */}
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button
+                          onClick={() => {
+                            setEditListing(listing);
+                            setShowAddListing(true);
+                          }}
+                          style={{
+                            flex: 1,
+                            padding: "8px 12px",
+                            background: "#3b82f6",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: 6,
+                            fontSize: 13,
+                            fontWeight: 600,
+                            cursor: "pointer",
+                          }}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteListing(listing.id as string)}
+                          style={{
+                            padding: "8px 12px",
+                            background: "#fff",
+                            color: "#dc2626",
+                            border: "1px solid #fca5a5",
+                            borderRadius: 6,
+                            fontSize: 13,
+                            fontWeight: 600,
+                            cursor: "pointer",
+                          }}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Add Listing Form */}
+      {showAddListing && (
+        <AddListingForm
+          onClose={() => {
+            setShowAddListing(false);
+            setEditListing(null);
+          }}
+          onSuccess={() => {
+            setShowAddListing(false);
+            setEditListing(null);
+            fetchMyListings();
+          }}
+          editListing={editListing}
+        />
       )}
 
       {/* Property Detail Modal */}
