@@ -83,6 +83,10 @@ export default function MLSClient() {
   const [offset, setOffset] = useState(0);
   const limit = 25;
 
+  // Latest listings state
+  const [latestProperties, setLatestProperties] = useState<Property[]>([]);
+  const [isLoadingLatest, setIsLoadingLatest] = useState(true);
+
   // Detail modal state
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
 
@@ -120,6 +124,26 @@ export default function MLSClient() {
 
     fetchListing();
   }, [searchParams]);
+
+  // Fetch 6 latest listings on mount
+  useEffect(() => {
+    const fetchLatest = async () => {
+      setIsLoadingLatest(true);
+      try {
+        const response = await fetch("/api/mls/search?status=Active&limit=6");
+        const data = await response.json();
+        if (response.ok && data.properties) {
+          setLatestProperties(data.properties);
+        }
+      } catch {
+        // Not critical - page still works with search
+      } finally {
+        setIsLoadingLatest(false);
+      }
+    };
+
+    fetchLatest();
+  }, []);
 
   // Debounce search query
   useEffect(() => {
@@ -493,25 +517,133 @@ export default function MLSClient() {
         </div>
       )}
 
-      {/* Empty state - before search */}
+      {/* Latest Listings - shown before user searches */}
       {!isLoading && !hasSearched && (
-        <div
-          style={{
-            textAlign: "center",
-            padding: 60,
-            background: "#f9fafb",
-            borderRadius: 12,
-            color: "#6b7280",
-          }}
-        >
-          <div style={{ fontSize: 48, marginBottom: 12 }}>&#x1F3E0;</div>
-          <p style={{ fontSize: 18, fontWeight: 600, marginBottom: 8, color: "#374151" }}>
-            Search the MLS
-          </p>
-          <p style={{ fontSize: 14, maxWidth: 400, margin: "0 auto" }}>
-            Enter a city name or zip code above to search for property listings.
-            Use filters to narrow your results by price, beds, baths, and more.
-          </p>
+        <div>
+          {isLoadingLatest ? (
+            <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>
+              Loading latest listings...
+            </div>
+          ) : latestProperties.length > 0 ? (
+            <>
+              <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 14, color: "#374151" }}>
+                Latest Listings
+              </h2>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+                  gap: 16,
+                }}
+              >
+                {latestProperties.map((property) => {
+                  const photoUrl = getPhotoUrl(property);
+                  const statusColor = getStatusColor(property.StandardStatus);
+                  const address = getAddress(property);
+
+                  return (
+                    <div
+                      key={property.ListingKey}
+                      style={{
+                        background: "#fff",
+                        border: "1px solid #e5e7eb",
+                        borderRadius: 12,
+                        overflow: "hidden",
+                        cursor: "pointer",
+                        transition: "box-shadow 0.2s",
+                      }}
+                      onClick={() => setSelectedProperty(property)}
+                      onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "none")}
+                    >
+                      <div
+                        style={{
+                          height: 200,
+                          background: photoUrl ? `url(${photoUrl}) center/cover` : "#e5e7eb",
+                          position: "relative",
+                        }}
+                      >
+                        {!photoUrl && (
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              height: "100%",
+                              color: "#9ca3af",
+                              fontSize: 14,
+                            }}
+                          >
+                            No Photo Available
+                          </div>
+                        )}
+                        <span
+                          style={{
+                            position: "absolute",
+                            top: 10,
+                            left: 10,
+                            padding: "4px 10px",
+                            background: statusColor.bg,
+                            color: statusColor.text,
+                            borderRadius: 6,
+                            fontSize: 12,
+                            fontWeight: 600,
+                          }}
+                        >
+                          {property.StandardStatus}
+                        </span>
+                      </div>
+                      <div style={{ padding: 16 }}>
+                        <div style={{ fontSize: 22, fontWeight: 700, color: "#111827", marginBottom: 4 }}>
+                          {formatPrice(property.ListPrice)}
+                        </div>
+                        <div style={{ fontSize: 14, fontWeight: 500, color: "#374151", marginBottom: 4 }}>
+                          {address || "Address not available"}
+                        </div>
+                        <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 10 }}>
+                          {property.City}, {property.StateOrProvince} {property.PostalCode}
+                        </div>
+                        <div style={{ display: "flex", gap: 12, fontSize: 13, color: "#6b7280" }}>
+                          {property.BedroomsTotal != null && (
+                            <span><strong>{property.BedroomsTotal}</strong> bed</span>
+                          )}
+                          {property.BathroomsTotalInteger != null && (
+                            <span><strong>{property.BathroomsTotalInteger}</strong> bath</span>
+                          )}
+                          {property.LivingArea != null && (
+                            <span><strong>{property.LivingArea.toLocaleString()}</strong> sqft</span>
+                          )}
+                          {property.YearBuilt != null && <span>Built {property.YearBuilt}</span>}
+                        </div>
+                        <div style={{ marginTop: 10, fontSize: 11, color: "#9ca3af" }}>
+                          MLS# {property.ListingId || property.ListingKey}
+                          {property.PropertyType && ` | ${property.PropertyType}`}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            <div
+              style={{
+                textAlign: "center",
+                padding: 60,
+                background: "#f9fafb",
+                borderRadius: 12,
+                color: "#6b7280",
+              }}
+            >
+              <p style={{ fontSize: 18, fontWeight: 600, marginBottom: 8, color: "#374151" }}>
+                Search the MLS
+              </p>
+              <p style={{ fontSize: 14, maxWidth: 400, margin: "0 auto" }}>
+                Enter a city name or zip code above to search for property listings.
+                Use filters to narrow your results by price, beds, baths, and more.
+              </p>
+            </div>
+          )}
         </div>
       )}
 
