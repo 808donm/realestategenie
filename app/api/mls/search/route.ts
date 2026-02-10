@@ -72,15 +72,10 @@ export async function GET(request: NextRequest) {
 
     const client = createTrestleClient(config);
 
-    // If no location filter is provided, add a recency filter so the query
-    // isn't too broad (Trestle returns 0 results for overly broad queries)
+    // When no location filter is provided (e.g. "latest listings" on page load),
+    // skip $count to avoid Trestle's broad-query protection (>5000 results = 0 returned).
+    // We rely on $top + $orderby to get the most recent results.
     const hasLocationFilter = !!(searchCity || searchPostalCode);
-    let modifiedSince: Date | undefined;
-    if (!hasLocationFilter) {
-      const daysBack = new Date();
-      daysBack.setDate(daysBack.getDate() - 7);
-      modifiedSince = daysBack;
-    }
 
     const result = await client.searchProperties({
       status,
@@ -91,10 +86,10 @@ export async function GET(request: NextRequest) {
       minBeds,
       minBaths,
       propertyType,
-      modifiedSince,
       limit,
       offset,
       includeMedia: true,
+      skipCount: !hasLocationFilter,
     });
 
     return NextResponse.json({

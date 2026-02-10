@@ -327,6 +327,7 @@ export class TrestleClient {
     limit?: number;
     offset?: number;
     includeMedia?: boolean;
+    skipCount?: boolean;
   }): Promise<ODataResponse<TrestleProperty>> {
     const filters: string[] = [];
 
@@ -374,7 +375,7 @@ export class TrestleClient {
       $orderby: "ModificationTimestamp desc",
       $top: options.limit || 25,
       $skip: options.offset || 0,
-      $count: true,
+      $count: options.skipCount ? undefined : true,
     };
 
     if (options.includeMedia) {
