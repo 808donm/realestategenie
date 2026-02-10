@@ -32,6 +32,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Ensure config is parsed as an object (direct SQL may store it as a JSON string)
+    const config =
+      typeof integration.config === "string"
+        ? JSON.parse(integration.config)
+        : integration.config;
+
     // Parse search parameters
     const searchParams = request.nextUrl.searchParams;
     const query = searchParams.get("q") || "";
@@ -60,14 +66,11 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    console.log("[MLS Search] Integration config keys:", Object.keys(integration.config));
-    console.log("[MLS Search] auth_method:", integration.config.auth_method);
-    console.log("[MLS Search] api_url:", integration.config.api_url);
-    console.log("[MLS Search] has client_id:", !!integration.config.client_id);
-    console.log("[MLS Search] has client_secret:", !!integration.config.client_secret);
-    console.log("[MLS Search] has username:", !!integration.config.username);
+    console.log("[MLS Search] auth_method:", config.auth_method);
+    console.log("[MLS Search] api_url:", config.api_url);
+    console.log("[MLS Search] has credentials:", !!(config.client_id || config.username));
 
-    const client = createTrestleClient(integration.config);
+    const client = createTrestleClient(config);
 
     const result = await client.searchProperties({
       status,

@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
       const sql = getDirectDb();
       await sql`
         INSERT INTO integrations (agent_id, provider, config, status, last_sync_at)
-        VALUES (${userData.user.id}, 'trestle', ${JSON.stringify(config)}::jsonb, 'connected', NOW())
+        VALUES (${userData.user.id}, 'trestle', ${sql.json(config)}, 'connected', NOW())
         ON CONFLICT (agent_id, provider)
         DO UPDATE SET
           config = EXCLUDED.config,
