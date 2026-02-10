@@ -1,4 +1,5 @@
 // Pre-designed flyer templates for open house customization
+// Based on professional real estate flyer designs
 
 export type FlyerTemplate = {
   id: string;
@@ -21,89 +22,94 @@ export type FlyerTemplate = {
 
 export const FLYER_TEMPLATES: FlyerTemplate[] = [
   {
-    id: "modern",
-    name: "Modern Elegance",
-    description: "Clean, contemporary design with bold typography, centered layout, and large hero images. Perfect for showcasing stunning properties.",
-    thumbnail: "/templates/modern-thumb.png",
+    id: "modern-living",
+    name: "Modern Living",
+    description:
+      "Sleek dark header with cream background. Features bold 'OPEN HOUSE' banner, large hero image, and clean property details. Perfect for contemporary homes.",
+    thumbnail: "/templates/modern-living-thumb.png",
     category: "Contemporary",
     defaultSettings: {
       headerStyle: "centered",
       footerStyle: "contact",
       imageLayout: "hero",
-      primaryColor: "#1e40af", // Deep blue
-      secondaryColor: "#64748b", // Slate gray
-      fontFamily: "inter",
-      showPrice: true,
-      showAgentPhoto: true,
-      showQrCode: false,
-    },
-  },
-  {
-    id: "classic",
-    name: "Classic Professional",
-    description: "Traditional, timeless layout with elegant serif fonts, split header design, and multi-image grid. Ideal for established agents and luxury markets.",
-    thumbnail: "/templates/classic-thumb.png",
-    category: "Traditional",
-    defaultSettings: {
-      headerStyle: "split",
-      footerStyle: "contact",
-      imageLayout: "grid",
-      primaryColor: "#7c2d12", // Rich brown/burgundy
-      secondaryColor: "#78716c", // Warm gray
-      fontFamily: "playfair",
-      showPrice: true,
-      showAgentPhoto: true,
-      showQrCode: false,
-    },
-  },
-  {
-    id: "minimal",
-    name: "Minimalist",
-    description: "Ultra-clean design with maximum white space, left-aligned text, and focus on property photography. Less is more approach for modern buyers.",
-    thumbnail: "/templates/minimal-thumb.png",
-    category: "Contemporary",
-    defaultSettings: {
-      headerStyle: "left",
-      footerStyle: "minimal",
-      imageLayout: "hero",
-      primaryColor: "#1f2937", // Charcoal
-      secondaryColor: "#9ca3af", // Light gray
+      primaryColor: "#0f172a", // Dark navy/slate
+      secondaryColor: "#d4a853", // Gold accent
       fontFamily: "montserrat",
       showPrice: true,
-      showAgentPhoto: false,
+      showAgentPhoto: true,
       showQrCode: false,
     },
   },
   {
-    id: "luxury",
-    name: "Luxury Estate",
-    description: "Premium design with gold accents, centered elegant typography, side-by-side image layout, and QR code for digital integration. For high-end properties.",
-    thumbnail: "/templates/luxury-thumb.png",
-    category: "Premium",
+    id: "blue-horizon",
+    name: "Blue Horizon",
+    description:
+      "Vibrant blue header with prominent 'OPEN HOUSE' text, large property photo, and organized details section. Eye-catching design for maximum curb appeal.",
+    thumbnail: "/templates/blue-horizon-thumb.png",
+    category: "Contemporary",
     defaultSettings: {
       headerStyle: "centered",
-      footerStyle: "qr",
-      imageLayout: "side",
-      primaryColor: "#854d0e", // Gold/amber
-      secondaryColor: "#44403c", // Dark stone
-      fontFamily: "playfair",
-      showPrice: false, // Luxury often hides price
+      footerStyle: "contact",
+      imageLayout: "hero",
+      primaryColor: "#1e3a5f", // Deep blue
+      secondaryColor: "#e8edf2", // Light blue-gray
+      fontFamily: "inter",
+      showPrice: true,
       showAgentPhoto: true,
       showQrCode: true,
     },
   },
   {
-    id: "bold",
-    name: "Bold Impact",
-    description: "High-contrast design with vibrant colors, dynamic split layout, and multi-image grid. Attention-grabbing for competitive markets and quick sales.",
-    thumbnail: "/templates/bold-thumb.png",
+    id: "golden-elegance",
+    name: "Golden Elegance",
+    description:
+      "Luxurious cream and gold design with elegant serif typography and geometric accent lines. Features 'YOUR DREAM HOME AWAITS' tagline. Ideal for upscale listings.",
+    thumbnail: "/templates/golden-elegance-thumb.png",
+    category: "Premium",
+    defaultSettings: {
+      headerStyle: "centered",
+      footerStyle: "qr",
+      imageLayout: "side",
+      primaryColor: "#b8860b", // Dark goldenrod
+      secondaryColor: "#2c2c2c", // Near-black
+      fontFamily: "playfair",
+      showPrice: true,
+      showAgentPhoto: true,
+      showQrCode: true,
+    },
+  },
+  {
+    id: "warm-welcome",
+    name: "Warm Welcome",
+    description:
+      "Rich dark brown header with warm tones throughout. Agent-focused layout with prominent photo and contact details. Great for building personal brand.",
+    thumbnail: "/templates/warm-welcome-thumb.png",
+    category: "Traditional",
+    defaultSettings: {
+      headerStyle: "split",
+      footerStyle: "contact",
+      imageLayout: "hero",
+      primaryColor: "#3e2723", // Dark espresso brown
+      secondaryColor: "#8d6e63", // Warm medium brown
+      fontFamily: "playfair",
+      showPrice: true,
+      showAgentPhoto: true,
+      showQrCode: false,
+    },
+  },
+  {
+    id: "bold-statement",
+    name: "Bold Statement",
+    description:
+      "Attention-grabbing design with dark navy background, decorative geometric dot patterns, and bold sans-serif typography. Maximum impact for competitive markets.",
+    thumbnail: "/templates/bold-statement-thumb.png",
     category: "Contemporary",
     defaultSettings: {
       headerStyle: "split",
       footerStyle: "contact",
       imageLayout: "grid",
-      primaryColor: "#dc2626", // Vibrant red
-      secondaryColor: "#1f2937", // Dark charcoal
+      primaryColor: "#1a1a2e", // Dark navy
+      secondaryColor: "#e94560", // Accent coral/red
       fontFamily: "roboto",
       showPrice: true,
       showAgentPhoto: true,
@@ -121,11 +127,11 @@ export const FONT_OPTIONS = [
 ];
 
 export const COLOR_PRESETS = [
-  { name: "Navy Blue", primary: "#1e40af", secondary: "#64748b" },
-  { name: "Forest Green", primary: "#047857", secondary: "#6b7280" },
-  { name: "Burgundy", primary: "#991b1b", secondary: "#78716c" },
-  { name: "Royal Purple", primary: "#7c3aed", secondary: "#71717a" },
-  { name: "Teal", primary: "#0f766e", secondary: "#6b7280" },
+  { name: "Dark Navy", primary: "#0f172a", secondary: "#d4a853" },
+  { name: "Deep Blue", primary: "#1e3a5f", secondary: "#e8edf2" },
+  { name: "Golden", primary: "#b8860b", secondary: "#2c2c2c" },
+  { name: "Espresso", primary: "#3e2723", secondary: "#8d6e63" },
+  { name: "Midnight", primary: "#1a1a2e", secondary: "#e94560" },
   { name: "Charcoal", primary: "#1f2937", secondary: "#9ca3af" },
 ];
 
@@ -156,11 +162,11 @@ export type TemplateSettings = {
 };
 
 export const DEFAULT_TEMPLATE_SETTINGS: TemplateSettings = {
-  template_id: "modern",
+  template_id: "modern-living",
   logo_url: null,
-  primary_color: "#1e40af",
-  secondary_color: "#64748b",
-  font_family: "inter",
+  primary_color: "#0f172a",
+  secondary_color: "#d4a853",
+  font_family: "montserrat",
   show_price: true,
   show_bedrooms: true,
   show_bathrooms: true,
