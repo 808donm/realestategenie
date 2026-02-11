@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { supabaseServer } from "@/lib/supabase/server";
+import DeleteOpenHouseButton from "./delete-button.client";
 
 export default async function OpenHousesIndex() {
   const supabase = await supabaseServer();
@@ -29,12 +30,14 @@ export default async function OpenHousesIndex() {
             style={{ textDecoration: "none", color: "inherit" }}
           >
             <div style={{
+              position: "relative",
               background: "#fff",
               border: "1px solid #e5e7eb",
               borderRadius: 14,
               overflow: "hidden",
               transition: "box-shadow 0.15s",
             }}>
+              <DeleteOpenHouseButton eventId={e.id} />
               {/* Property Photo */}
               {e.property_photo_url ? (
                 <div style={{ position: "relative", width: "100%", height: 180 }}>
