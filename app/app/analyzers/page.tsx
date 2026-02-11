@@ -37,10 +37,10 @@ export default async function AnalyzersPage() {
   return (
     <div style={{ maxWidth: 900 }}>
       <h1 style={{ fontSize: 28, fontWeight: 900, marginTop: 0, marginBottom: 8 }}>
-        Investment Analyzers
+        Calculators
       </h1>
       <p style={{ margin: "0 0 24px 0", opacity: 0.7 }}>
-        Tools to analyze investment properties and 1031 exchanges
+        Real Estate Calculators
       </p>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 20 }}>
