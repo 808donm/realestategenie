@@ -7,11 +7,11 @@ export default async function LeadsPage() {
 
   const { data: leads, error } = await supabase
     .from("lead_submissions")
-    .select("id,event_id,created_at,payload")
+    .select("id,event_id,created_at,payload,heat_score")
     .order("created_at", { ascending: false })
-    .limit(100);
+    .limit(200);
 
-  // Pull event addresses for display (simple N+1 avoidance: fetch all unique event ids)
+  // Pull event addresses for display
   const eventIds = Array.from(new Set((leads ?? []).map((l) => l.event_id)));
   const { data: events } = await supabase
     .from("open_house_events")

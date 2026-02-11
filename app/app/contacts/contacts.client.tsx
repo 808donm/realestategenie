@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 
 interface Contact {
   id: string;
@@ -18,6 +19,7 @@ interface Contact {
 }
 
 export default function ContactsClient() {
+  const router = useRouter();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -367,6 +369,7 @@ export default function ContactsClient() {
                 {groupedContacts[letter].map((contact) => (
                   <div
                     key={contact.id}
+                    onClick={() => router.push(`/app/contacts/${contact.id}`)}
                     style={{
                       padding: 16,
                       background: "#fff",
@@ -377,6 +380,16 @@ export default function ContactsClient() {
                       alignItems: "center",
                       flexWrap: "wrap",
                       gap: 12,
+                      cursor: "pointer",
+                      transition: "box-shadow 0.15s, border-color 0.15s",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = "#3b82f6";
+                      e.currentTarget.style.boxShadow = "0 1px 4px rgba(59,130,246,0.15)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = "#e5e7eb";
+                      e.currentTarget.style.boxShadow = "none";
                     }}
                   >
                     <div style={{ minWidth: 200 }}>
@@ -385,14 +398,14 @@ export default function ContactsClient() {
                       </div>
                       {contact.email && (
                         <div style={{ fontSize: 13, color: "#6b7280", marginTop: 2 }}>
-                          <a href={`mailto:${contact.email}`} style={{ color: "#3b82f6" }}>
+                          <a href={`mailto:${contact.email}`} onClick={(e) => e.stopPropagation()} style={{ color: "#3b82f6" }}>
                             {contact.email}
                           </a>
                         </div>
                       )}
                       {contact.phone && (
                         <div style={{ fontSize: 13, color: "#6b7280", marginTop: 2 }}>
-                          <a href={`tel:${contact.phone}`} style={{ color: "#3b82f6" }}>
+                          <a href={`tel:${contact.phone}`} onClick={(e) => e.stopPropagation()} style={{ color: "#3b82f6" }}>
                             {contact.phone}
                           </a>
                         </div>

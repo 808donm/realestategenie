@@ -11,7 +11,7 @@ type Props = {
 };
 
 // Mini template preview component showing actual layout structure
-function TemplatePreviewMini({ templateId, primaryColor }: { templateId: string; primaryColor: string }) {
+function TemplatePreviewMini({ templateId, primaryColor, secondaryColor }: { templateId: string; primaryColor: string; secondaryColor?: string }) {
   // Modern: Centered header, hero image, clean layout
   if (templateId === "modern") {
     return (
@@ -34,6 +34,7 @@ function TemplatePreviewMini({ templateId, primaryColor }: { templateId: string;
             <div className="w-full h-0.5 bg-gray-300 rounded" />
             <div className="w-2/3 h-0.5 bg-gray-200 rounded" />
           </div>
+          <div className="w-3 h-3 bg-gray-300 rounded" />
         </div>
       </div>
     );
@@ -70,6 +71,7 @@ function TemplatePreviewMini({ templateId, primaryColor }: { templateId: string;
           <div className="flex-1 space-y-0.5">
             <div className="w-full h-0.5 bg-gray-300 rounded" />
           </div>
+          <div className="w-3 h-3 bg-gray-300 rounded" />
         </div>
       </div>
     );
@@ -87,8 +89,9 @@ function TemplatePreviewMini({ templateId, primaryColor }: { templateId: string;
           <div className="w-1/2 h-2 rounded" style={{ backgroundColor: primaryColor }} />
           <div className="w-1/3 h-1 bg-gray-200 rounded" />
         </div>
-        <div className="h-3 flex items-center justify-start px-2 text-[6px] text-gray-400">
+        <div className="h-3 flex items-center justify-between px-2">
           <div className="w-1/3 h-0.5 bg-gray-200 rounded" />
+          <div className="w-2.5 h-2.5 bg-gray-200 rounded" />
         </div>
       </div>
     );
@@ -145,6 +148,129 @@ function TemplatePreviewMini({ templateId, primaryColor }: { templateId: string;
             <div className="w-full h-0.5 bg-white/80 rounded" />
             <div className="w-2/3 h-0.5 bg-white/60 rounded" />
           </div>
+          <div className="w-3 h-3 bg-white/40 rounded" />
+        </div>
+      </div>
+    );
+  }
+
+  // Just Listed: Coral banner, hero photo, price overlay, QR in footer
+  if (templateId === "just-listed") {
+    return (
+      <div className="w-full h-full bg-white flex flex-col">
+        <div className="h-7 flex flex-col items-center justify-center" style={{ backgroundColor: primaryColor }}>
+          <div className="w-5 h-0.5 bg-white/50 rounded mb-0.5" />
+          <div className="w-12 h-1.5 bg-white/90 rounded" />
+        </div>
+        <div className="flex-1 bg-gradient-to-br from-gray-200 to-gray-300 m-0 relative">
+          <div className="absolute bottom-1 right-1 w-6 h-2 rounded" style={{ backgroundColor: primaryColor }}>
+            <div className="w-4 h-0.5 bg-white/80 rounded mx-auto mt-0.5" />
+          </div>
+        </div>
+        <div className="p-1 space-y-0.5">
+          <div className="w-2/3 h-1.5 rounded" style={{ backgroundColor: primaryColor }} />
+          <div className="w-1/2 h-0.5 bg-gray-300 rounded" />
+          <div className="flex justify-around py-0.5 rounded" style={{ backgroundColor: `${primaryColor}10` }}>
+            <div className="w-2 h-2 bg-gray-200 rounded" />
+            <div className="w-2 h-2 bg-gray-200 rounded" />
+            <div className="w-2 h-2 bg-gray-200 rounded" />
+          </div>
+        </div>
+        <div className="h-4 flex items-center gap-1 px-1" style={{ backgroundColor: secondaryColor || "#2d3436" }}>
+          <div className="w-3 h-3 rounded-full bg-white/30" />
+          <div className="flex-1 space-y-0.5">
+            <div className="w-full h-0.5 bg-white/70 rounded" />
+            <div className="w-2/3 h-0.5 bg-white/50 rounded" />
+          </div>
+          <div className="w-3 h-3 bg-white rounded" />
+        </div>
+      </div>
+    );
+  }
+
+  // Showcase: Dark full-bleed image, overlay text, gold accents
+  if (templateId === "showcase") {
+    return (
+      <div className="w-full h-full bg-white flex flex-col">
+        <div className="flex-[3] bg-gradient-to-b from-gray-600 to-gray-900 relative">
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+          <div className="absolute top-1 left-1 w-5 h-1.5 rounded text-[4px]" style={{ backgroundColor: secondaryColor || "#e2b04a" }} />
+          <div className="absolute bottom-1.5 left-1.5 space-y-0.5">
+            <div className="w-10 h-1.5 bg-white/90 rounded" />
+            <div className="w-6 h-0.5 bg-white/50 rounded" />
+            <div className="w-8 h-1 rounded" style={{ backgroundColor: secondaryColor || "#e2b04a" }} />
+          </div>
+        </div>
+        <div className="flex h-4 border-b" style={{ borderColor: `${secondaryColor || "#e2b04a"}40` }}>
+          <div className="flex-1 flex items-center justify-center border-r" style={{ borderColor: `${secondaryColor || "#e2b04a"}20` }}>
+            <div className="w-2 h-1.5 rounded" style={{ backgroundColor: primaryColor }} />
+          </div>
+          <div className="flex-1 flex items-center justify-center border-r" style={{ borderColor: `${secondaryColor || "#e2b04a"}20` }}>
+            <div className="w-2 h-1.5 rounded" style={{ backgroundColor: primaryColor }} />
+          </div>
+          <div className="flex-1 flex items-center justify-center border-r" style={{ borderColor: `${secondaryColor || "#e2b04a"}20` }}>
+            <div className="w-2 h-1.5 rounded" style={{ backgroundColor: primaryColor }} />
+          </div>
+          <div className="flex-1 flex items-center justify-center">
+            <div className="w-2 h-1.5 rounded" style={{ backgroundColor: primaryColor }} />
+          </div>
+        </div>
+        <div className="flex-1 p-1 space-y-0.5">
+          <div className="flex items-center gap-0.5">
+            <div className="w-1 h-1 rounded" style={{ backgroundColor: secondaryColor || "#e2b04a" }} />
+            <div className="w-8 h-0.5 rounded" style={{ backgroundColor: secondaryColor || "#e2b04a" }} />
+          </div>
+          <div className="flex gap-0.5">
+            <div className="w-4 h-1 rounded" style={{ backgroundColor: primaryColor }} />
+            <div className="w-4 h-1 rounded" style={{ backgroundColor: primaryColor }} />
+          </div>
+        </div>
+        <div className="h-4 flex items-center gap-1 px-1" style={{ backgroundColor: primaryColor }}>
+          <div className="w-3 h-3 rounded-full bg-white/20 border" style={{ borderColor: secondaryColor || "#e2b04a" }} />
+          <div className="flex-1 space-y-0.5">
+            <div className="w-full h-0.5 bg-white/70 rounded" />
+            <div className="w-2/3 h-0.5 bg-white/50 rounded" />
+          </div>
+          <div className="w-3 h-3 bg-white rounded" />
+        </div>
+      </div>
+    );
+  }
+
+  // Spotlight: Sidebar accent, split photos, magazine style
+  if (templateId === "spotlight") {
+    return (
+      <div className="w-full h-full bg-white flex">
+        <div className="w-1 shrink-0" style={{ backgroundColor: primaryColor }} />
+        <div className="flex-1 flex flex-col">
+          <div className="h-5 flex items-center justify-between px-1" style={{ backgroundColor: primaryColor }}>
+            <div className="w-10 h-1 bg-white/80 rounded" />
+            <div className="w-4 h-0.5 bg-white/60 rounded" />
+          </div>
+          <div className="flex-1 grid grid-cols-5 gap-0.5 p-0.5">
+            <div className="col-span-3 bg-gray-200 rounded-l" />
+            <div className="col-span-2 flex flex-col gap-0.5">
+              <div className="flex-1 bg-gray-300 rounded-tr" />
+              <div className="flex-1 bg-gray-200 rounded-br" />
+            </div>
+          </div>
+          <div className="px-1 py-1 space-y-0.5">
+            <div className="flex items-center justify-between">
+              <div className="w-1/2 h-1.5 rounded" style={{ backgroundColor: secondaryColor || "#334155" }} />
+              <div className="w-1/4 h-1.5 rounded" style={{ backgroundColor: primaryColor }} />
+            </div>
+            <div className="grid grid-cols-2 gap-0.5">
+              <div className="h-1.5 rounded" style={{ backgroundColor: `${primaryColor}10` }} />
+              <div className="h-1.5 rounded" style={{ backgroundColor: `${primaryColor}10` }} />
+            </div>
+          </div>
+          <div className="h-4 border-t flex items-center gap-1 px-1" style={{ borderColor: `${primaryColor}30` }}>
+            <div className="w-3 h-3 rounded-full bg-gray-300" />
+            <div className="flex-1 space-y-0.5">
+              <div className="w-full h-0.5 bg-gray-300 rounded" />
+            </div>
+            <div className="w-3 h-3 bg-gray-200 rounded border" style={{ borderColor: primaryColor }} />
+          </div>
         </div>
       </div>
     );
@@ -186,6 +312,7 @@ export default function TemplateSelector({ selectedTemplate, onSelect }: Props) 
                   <TemplatePreviewMini
                     templateId={template.id}
                     primaryColor={template.defaultSettings.primaryColor}
+                    secondaryColor={template.defaultSettings.secondaryColor}
                   />
                 </div>
 

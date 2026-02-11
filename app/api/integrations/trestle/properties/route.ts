@@ -31,7 +31,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (integration.status !== "connected" || !integration.config?.client_id) {
+    // Ensure config is parsed as an object (direct SQL may store it as a JSON string)
+    const config =
+      typeof integration.config === "string"
+        ? JSON.parse(integration.config)
+        : integration.config;
+
+    if (integration.status !== "connected" || !(config.client_id || config.username)) {
       return NextResponse.json(
         { error: "Trestle is not connected" },
         { status: 400 }
@@ -53,7 +59,7 @@ export async function GET(request: NextRequest) {
     const includeMedia = searchParams.get("includeMedia") === "true";
 
     // Create client and fetch properties
-    const client = createTrestleClient(integration.config);
+    const client = createTrestleClient(config);
 
     const result = await client.searchProperties({
       status,
@@ -131,7 +137,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (integration.status !== "connected" || !integration.config?.client_id) {
+    const postConfig =
+      typeof integration.config === "string"
+        ? JSON.parse(integration.config)
+        : integration.config;
+
+    if (integration.status !== "connected" || !(postConfig.client_id || postConfig.username)) {
       return NextResponse.json(
         { error: "Trestle is not connected" },
         { status: 400 }
@@ -139,7 +150,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create client and fetch property
-    const client = createTrestleClient(integration.config);
+    const client = createTrestleClient(postConfig);
     const property = await client.getProperty(listingKey);
 
     // Optionally fetch media

@@ -35,7 +35,7 @@ export const FLYER_TEMPLATES: FlyerTemplate[] = [
       fontFamily: "inter",
       showPrice: true,
       showAgentPhoto: true,
-      showQrCode: false,
+      showQrCode: true,
     },
   },
   {
@@ -53,7 +53,7 @@ export const FLYER_TEMPLATES: FlyerTemplate[] = [
       fontFamily: "playfair",
       showPrice: true,
       showAgentPhoto: true,
-      showQrCode: false,
+      showQrCode: true,
     },
   },
   {
@@ -71,7 +71,7 @@ export const FLYER_TEMPLATES: FlyerTemplate[] = [
       fontFamily: "montserrat",
       showPrice: true,
       showAgentPhoto: false,
-      showQrCode: false,
+      showQrCode: true,
     },
   },
   {
@@ -107,7 +107,61 @@ export const FLYER_TEMPLATES: FlyerTemplate[] = [
       fontFamily: "roboto",
       showPrice: true,
       showAgentPhoto: true,
-      showQrCode: false,
+      showQrCode: true,
+    },
+  },
+  {
+    id: "just-listed",
+    name: "Just Listed",
+    description: "Eye-catching 'Just Listed' banner with warm coral accents, large hero photo, and prominent QR code. Great for new listings and generating buzz.",
+    thumbnail: "/templates/just-listed-thumb.png",
+    category: "Marketing",
+    defaultSettings: {
+      headerStyle: "centered",
+      footerStyle: "contact",
+      imageLayout: "hero",
+      primaryColor: "#e85d3a", // Coral/orange
+      secondaryColor: "#2d3436", // Dark charcoal
+      fontFamily: "montserrat",
+      showPrice: true,
+      showAgentPhoto: true,
+      showQrCode: true,
+    },
+  },
+  {
+    id: "showcase",
+    name: "Showcase",
+    description: "Dark, sophisticated design with a full-bleed property image, overlay text, and clean info cards. Perfect for high-end listings and social media sharing.",
+    thumbnail: "/templates/showcase-thumb.png",
+    category: "Premium",
+    defaultSettings: {
+      headerStyle: "left",
+      footerStyle: "contact",
+      imageLayout: "hero",
+      primaryColor: "#1a1a2e", // Deep navy
+      secondaryColor: "#e2b04a", // Gold accent
+      fontFamily: "playfair",
+      showPrice: true,
+      showAgentPhoto: true,
+      showQrCode: true,
+    },
+  },
+  {
+    id: "spotlight",
+    name: "Property Spotlight",
+    description: "Magazine-style layout with a sidebar color accent, large feature photo, and detailed property breakdown. Includes prominent QR code for instant digital access.",
+    thumbnail: "/templates/spotlight-thumb.png",
+    category: "Contemporary",
+    defaultSettings: {
+      headerStyle: "split",
+      footerStyle: "contact",
+      imageLayout: "side",
+      primaryColor: "#0d9488", // Teal
+      secondaryColor: "#334155", // Slate
+      fontFamily: "inter",
+      showPrice: true,
+      showAgentPhoto: true,
+      showQrCode: true,
     },
   },
 ];
@@ -176,7 +230,7 @@ export const DEFAULT_TEMPLATE_SETTINGS: TemplateSettings = {
   show_agent_phone: true,
   show_agent_email: true,
   show_agent_website: true,
-  show_qr_code: false,
+  show_qr_code: true,
   custom_tagline: null,
   custom_footer_text: null,
 };

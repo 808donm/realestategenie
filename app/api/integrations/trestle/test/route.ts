@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { createTrestleClient } from "@/lib/integrations/trestle-client";
 
 /**
@@ -16,8 +17,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get the integration
-    const { data: integration, error: fetchError } = await supabase
+    // Get the integration using admin client
+    const { data: integration, error: fetchError } = await supabaseAdmin
       .from("integrations")
       .select("*")
       .eq("agent_id", userData.user.id)
@@ -39,7 +40,13 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    if (integration.status !== "connected" || !integration.config?.api_url) {
+    // Ensure config is parsed as an object (direct SQL may store it as a JSON string)
+    const config =
+      typeof integration.config === "string"
+        ? JSON.parse(integration.config)
+        : integration.config;
+
+    if (integration.status !== "connected" || !config.api_url) {
       return NextResponse.json({
         connected: false,
         message: "Trestle credentials not configured",
@@ -47,17 +54,15 @@ export async function GET(request: NextRequest) {
     }
 
     // Test the connection
-    const client = createTrestleClient(integration.config);
+    const client = createTrestleClient(config);
     const testResult = await client.testConnection();
 
     if (!testResult.success) {
       // Update integration status to error
-      await supabase
+      await supabaseAdmin
         .from("integrations")
         .update({
           status: "error",
-          last_error: testResult.message,
-          updated_at: new Date().toISOString(),
         })
         .eq("id", integration.id);
 
@@ -68,13 +73,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Update last sync time
-    await supabase
+    await supabaseAdmin
       .from("integrations")
       .update({
         status: "connected",
         last_sync_at: new Date().toISOString(),
-        last_error: null,
-        updated_at: new Date().toISOString(),
       })
       .eq("id", integration.id);
 
