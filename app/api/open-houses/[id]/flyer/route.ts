@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import jsPDF from "jspdf";
 import sizeOf from "image-size";
 import QRCode from "qrcode";
+import { FLYER_TEMPLATES } from "@/lib/flyer-templates";
 
 // Use admin client to bypass RLS - flyer is public for anyone with the link
 const admin = createClient(
@@ -37,7 +38,8 @@ export async function GET(
         latitude,
         longitude,
         agent_id,
-        status
+        status,
+        flyer_template_id
       `)
       .eq("id", id)
       .single();
@@ -57,6 +59,23 @@ export async function GET(
         error: "This open house is not published yet",
       }, { status: 403 });
     }
+
+    // Resolve flyer template settings
+    const templateId = event.flyer_template_id || "modern";
+    const template = FLYER_TEMPLATES.find(t => t.id === templateId) || FLYER_TEMPLATES[0];
+    const tSettings = template.defaultSettings;
+
+    // Parse template primary color to RGB for PDF rendering
+    const hexToRGB = (hex: string) => {
+      const h = hex.replace("#", "");
+      return {
+        r: parseInt(h.substring(0, 2), 16),
+        g: parseInt(h.substring(2, 4), 16),
+        b: parseInt(h.substring(4, 6), 16),
+      };
+    };
+    const primaryRGB = hexToRGB(tSettings.primaryColor);
+    const secondaryRGB = hexToRGB(tSettings.secondaryColor);
 
     // Get agent details using admin client
     const { data: agent } = await admin
@@ -283,7 +302,9 @@ export async function GET(
     // Header - Property Address (Page 1 only)
     pdf.setFontSize(24);
     pdf.setFont("helvetica", "bold");
+    pdf.setTextColor(primaryRGB.r, primaryRGB.g, primaryRGB.b);
     pdf.text(event.address, margin, 25);
+    pdf.setTextColor(0, 0, 0);
 
     let yPos = 35;
 
@@ -362,7 +383,7 @@ export async function GET(
     if (event.price) {
       pdf.setFontSize(20);
       pdf.setFont("helvetica", "bold");
-      pdf.setTextColor(0, 100, 0);
+      pdf.setTextColor(primaryRGB.r, primaryRGB.g, primaryRGB.b);
       pdf.text(`$${event.price.toLocaleString()}`, margin, yPos);
       pdf.setTextColor(0, 0, 0);
       yPos += 10;
@@ -475,13 +496,18 @@ export async function GET(
       yPos = addNewPage();
     }
 
-    // Draw banner
-    pdf.setDrawColor(0, 0, 255);
-    pdf.setFillColor(230, 240, 255);
+    // Draw banner using template colors
+    pdf.setDrawColor(primaryRGB.r, primaryRGB.g, primaryRGB.b);
+    // Lighten primary color for background
+    pdf.setFillColor(
+      Math.min(255, primaryRGB.r + 180),
+      Math.min(255, primaryRGB.g + 180),
+      Math.min(255, primaryRGB.b + 180)
+    );
     pdf.roundedRect(margin, yPos, pageWidth - (margin * 2), bannerHeight, 3, 3, "FD");
 
     // Open house text on one line
-    pdf.setTextColor(0, 0, 150);
+    pdf.setTextColor(primaryRGB.r, primaryRGB.g, primaryRGB.b);
     pdf.setFontSize(11);
     pdf.setFont("helvetica", "bold");
     const startDate = new Date(event.start_at);

@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { calculateHeatScore, getHeatLevel } from "@/lib/lead-scoring";
 import { syncLeadToGHL } from "@/lib/integrations/ghl-sync";
 import { dispatchWebhook } from "@/lib/webhooks/dispatcher";
-import { createOrUpdateGHLContact, createGHLRegistrationRecord, createGHLOpenHouseRecord, createGHLOpportunity, addGHLTags, sendGHLEmail } from "@/lib/notifications/ghl-service";
+import { createOrUpdateGHLContact, createGHLRegistrationRecord, createGHLOpenHouseRecord, createGHLOpportunity, addGHLTags, sendGHLEmail, setGHLContactDND, addGHLContactNote } from "@/lib/notifications/ghl-service";
 import { getValidGHLConfig } from "@/lib/integrations/ghl-token-refresh";
 import { validateQRToken } from "@/lib/security/qr-tokens";
 
@@ -294,6 +294,40 @@ export async function POST(req: Request) {
           const contactId = (contact as { id?: string })?.id;
           console.log('GHL contact created successfully:', contactId);
           console.log('GHL contact response:', JSON.stringify(contact));
+
+          // If attendee is represented by a realtor, set DND and add note
+          if (contactId && payload.representation === 'yes') {
+            try {
+              console.log('[Registration] Attendee is represented - setting DND on all channels');
+              await setGHLContactDND({
+                contactId,
+                locationId: ghlConfig.location_id,
+                accessToken: ghlConfig.access_token,
+                dndEnabled: true,
+              });
+              console.log('[Registration] DND set successfully for represented attendee');
+            } catch (dndError: any) {
+              console.error('[Registration] Failed to set DND (non-critical):', dndError.message);
+            }
+
+            // Add realtor name as a note on the contact
+            const realtorName = payload.realtor_name || '';
+            const noteBody = realtorName
+              ? `Represented by realtor: ${realtorName}. DND enabled on all channels.`
+              : `Attendee indicated they are represented by a realtor. DND enabled on all channels.`;
+
+            try {
+              await addGHLContactNote({
+                contactId,
+                locationId: ghlConfig.location_id,
+                accessToken: ghlConfig.access_token,
+                body: noteBody,
+              });
+              console.log('[Registration] Realtor representation note added');
+            } catch (noteError: any) {
+              console.error('[Registration] Failed to add realtor note (non-critical):', noteError.message);
+            }
+          }
 
           // Now create Registration custom object linking contact to OpenHouse
           if (contactId && openHouseRecordId) {

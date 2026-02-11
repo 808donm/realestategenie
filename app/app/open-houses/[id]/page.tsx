@@ -4,6 +4,7 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { geocodeAddress } from "@/lib/geocoding";
 import QRPanel from "./qr-panel";
 import PropertyMap from "@/components/PropertyMapWrapper";
+import FlyerTemplatePicker from "./flyer-template-picker.client";
 
 export default async function OpenHouseDetail({
   params,
@@ -16,7 +17,7 @@ export default async function OpenHouseDetail({
   const { data: evt, error } = await supabase
     .from("open_house_events")
     .select(
-      "id,address,start_at,end_at,status,pdf_download_enabled,details_page_enabled,latitude,longitude,property_photo_url"
+      "id,address,start_at,end_at,status,pdf_download_enabled,details_page_enabled,latitude,longitude,property_photo_url,flyer_template_id"
     )
     .eq("id", id)
     .single();
@@ -156,6 +157,12 @@ async function setStatus(formData: FormData) {
           className="h-[400px]"
         />
       </div>
+
+      {/* Flyer Template Selection */}
+      <FlyerTemplatePicker
+        eventId={evt.id}
+        currentTemplateId={evt.flyer_template_id || "modern"}
+      />
 
       <QRPanel eventId={evt.id} status={evt.status} />
     </div>

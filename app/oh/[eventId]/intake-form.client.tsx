@@ -38,6 +38,7 @@ export default function IntakeForm({ eventId, agentName, brokerageName, accessTo
   const [consentEmail, setConsentEmail] = useState(false);
 
   const [representation, setRepresentation] = useState<Representation>("unsure");
+  const [realtorName, setRealtorName] = useState("");
   const [wantsAgentReachOut, setWantsAgentReachOut] = useState(true);
 
   const [timeline, setTimeline] = useState<Timeline>("0-3 months");
@@ -75,6 +76,7 @@ export default function IntakeForm({ eventId, agentName, brokerageName, accessTo
         captured_at: new Date().toISOString(),
       },
       representation,
+      realtor_name: representation === "yes" ? realtorName.trim() : "",
       wants_agent_reach_out: representation === "no" ? wantsAgentReachOut : false,
       timeline,
       financing,
@@ -201,8 +203,17 @@ export default function IntakeForm({ eventId, agentName, brokerageName, accessTo
         )}
 
         {representation === "yes" && (
-          <div style={{ padding: 12, border: "1px solid #ddd", borderRadius: 12, opacity: 0.9 }}>
-            <strong>Note:</strong> If you’re represented, please coordinate offers and next steps through your agent.
+          <div style={{ padding: 12, border: "1px solid #ddd", borderRadius: 12 }}>
+            <strong>Note:</strong> If you're represented, please coordinate offers and next steps through your agent.
+            <div style={{ marginTop: 10 }}>
+              <label style={{ display: "block", fontSize: 12, marginBottom: 6 }}>Realtor's Name</label>
+              <input
+                value={realtorName}
+                onChange={(e) => setRealtorName(e.target.value)}
+                placeholder="Enter your realtor's name"
+                style={{ width: "100%", padding: 10 }}
+              />
+            </div>
           </div>
         )}
 

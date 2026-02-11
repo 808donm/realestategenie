@@ -746,6 +746,101 @@ export async function addGHLTags(params: {
 }
 
 /**
+ * Set DND (Do Not Disturb) on all channels for a GHL contact
+ * Used when an attendee indicates they are represented by a realtor
+ */
+export async function setGHLContactDND(params: {
+  contactId: string;
+  locationId: string;
+  accessToken: string;
+  dndEnabled: boolean;
+}) {
+  try {
+    console.log(`[GHL] Setting DND ${params.dndEnabled ? 'ON' : 'OFF'} for contact:`, params.contactId);
+
+    const dndSettings = {
+      Email: { status: params.dndEnabled ? 'active' : 'inactive' as const, message: 'Represented by a realtor', code: '' },
+      SMS: { status: params.dndEnabled ? 'active' : 'inactive' as const, message: 'Represented by a realtor', code: '' },
+      Call: { status: params.dndEnabled ? 'active' : 'inactive' as const, message: 'Represented by a realtor', code: '' },
+      GMB: { status: params.dndEnabled ? 'active' : 'inactive' as const, message: 'Represented by a realtor', code: '' },
+      FB: { status: params.dndEnabled ? 'active' : 'inactive' as const, message: 'Represented by a realtor', code: '' },
+      WhatsApp: { status: params.dndEnabled ? 'active' : 'inactive' as const, message: 'Represented by a realtor', code: '' },
+    };
+
+    const response = await fetch(
+      `https://services.leadconnectorhq.com/contacts/${params.contactId}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${params.accessToken}`,
+          'Content-Type': 'application/json',
+          'Version': '2021-07-28',
+        },
+        body: JSON.stringify({
+          dnd: true,
+          dndSettings,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('[GHL] DND update failed:', error);
+      throw new Error(`GHL DND update failed: ${error}`);
+    }
+
+    const data = await response.json();
+    console.log(`[GHL] DND set to ${params.dndEnabled ? 'ON' : 'OFF'} for all channels`);
+    return data;
+  } catch (error) {
+    console.error('[GHL] Error setting DND:', error);
+    throw error;
+  }
+}
+
+/**
+ * Add a note to a GHL contact
+ */
+export async function addGHLContactNote(params: {
+  contactId: string;
+  locationId: string;
+  accessToken: string;
+  body: string;
+}) {
+  try {
+    console.log('[GHL] Adding note to contact:', params.contactId);
+
+    const response = await fetch(
+      `https://services.leadconnectorhq.com/contacts/${params.contactId}/notes`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${params.accessToken}`,
+          'Content-Type': 'application/json',
+          'Version': '2021-07-28',
+        },
+        body: JSON.stringify({
+          body: params.body,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('[GHL] Add note failed:', error);
+      throw new Error(`GHL add note failed: ${error}`);
+    }
+
+    const data = await response.json();
+    console.log('[GHL] Note added successfully');
+    return data;
+  } catch (error) {
+    console.error('[GHL] Error adding note:', error);
+    throw error;
+  }
+}
+
+/**
  * Get pipelines for a location
  */
 export async function getGHLPipelines(params: {
