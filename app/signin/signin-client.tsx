@@ -1,34 +1,26 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/browser";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import OAuthButtons from "./oauth-buttons";
-
 
 export default function SignInClient() {
   const supabase = supabaseBrowser();
   const params = useSearchParams();
   const redirectTo = params.get("redirect") || "/app/dashboard";
+  const oauthError = params.get("error");
 
   const [email, setEmail] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
-  const [err, setErr] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(oauthError);
   const [loading, setLoading] = useState(false);
-
-  async function signInWithGoogle() {
-    setErr(null);
-    setLoading(true);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${location.origin}/auth/callback?redirect=${encodeURIComponent(redirectTo)}`,
-      },
-    });
-    setLoading(false);
-    if (error) setErr(error.message);
-  }
 
   async function sendMagicLink(e: React.FormEvent) {
     e.preventDefault();
@@ -47,54 +39,106 @@ export default function SignInClient() {
   }
 
   return (
-    <div style={{ maxWidth: 420, margin: "64px auto", padding: 16 }}>
-      <h1 style={{ fontSize: 28, fontWeight: 700 }}>Sign in</h1>
+    <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center space-y-4">
+          <div className="flex justify-center">
+            <Image
+              src="/logo.png"
+              alt="The Real Estate Genie"
+              width={200}
+              height={200}
+              priority
+              className="rounded-lg"
+            />
+          </div>
+          <div>
+            <CardTitle className="text-2xl">
+              The Real Estate Genie<span className="text-sm align-super">™</span>
+            </CardTitle>
+            <p className="mt-2 text-sm font-bold text-foreground">
+              Real Estate Deal And Property Management For The Independent Agent
+            </p>
+            <CardDescription className="mt-2">
+              Sign in to manage your open houses and leads
+            </CardDescription>
+          </div>
+        </CardHeader>
 
-     <div style={{ display: "grid", placeItems: "center", marginBottom: 18 }}>
-  <Image
-    src="/real-estate-genie-logo.png"
-    alt="The Real Estate Genie"
-    width={250}
-    height={250}
-    priority
-  />
-  <div style={{ marginTop: 10, fontSize: 22, fontWeight: 900 }}>
-    The Real Estate Genie<span style={{ fontSize: 14, verticalAlign: "super" }}>™</span>
-  </div>
-</div>
+        <CardContent className="space-y-4">
+          {/* Registration Notice */}
+          <div className="p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg space-y-3">
+            <div>
+              <p className="text-sm text-blue-900 dark:text-blue-100 font-medium">
+                Need an account?
+              </p>
+              <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                New users can register to get started with The Real Estate Genie.
+              </p>
+            </div>
+            <Link href="/register">
+              <Button variant="outline" className="w-full bg-white dark:bg-slate-800">
+                Register Here
+              </Button>
+            </Link>
+            <p className="text-xs text-blue-700 dark:text-blue-300">
+              Already have an invitation? Sign in below with your credentials.
+            </p>
+          </div>
 
-      <OAuthButtons />
-<div style={{ margin: "14px 0", textAlign: "center", opacity: 0.6, fontSize: 12 }}>or</div>
-{/* existing email/password form */}
+          <OAuthButtons />
 
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2 text-muted-foreground">Or continue with email</span>
+            </div>
+          </div>
 
-      <div style={{ margin: "16px 0", textAlign: "center", opacity: 0.7 }}>or</div>
+          <form onSubmit={sendMagicLink} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email address</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="you@domain.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={loading}
+              />
+            </div>
 
-      <form onSubmit={sendMagicLink}>
-        <label style={{ display: "block", fontSize: 12, marginBottom: 6 }}>Email</label>
-        <input
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@domain.com"
-          type="email"
-          required
-          style={{ width: "100%", padding: 10 }}
-        />
-        <button
-          type="submit"
-          disabled={loading}
-          style={{ width: "100%", padding: 12, marginTop: 12 }}
-        >
-          Send sign-in link
-        </button>
-      </form>
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Sending..." : "Send sign-in link"}
+            </Button>
+          </form>
 
-      {err && <p style={{ color: "crimson", marginTop: 12 }}>{err}</p>}
-      {msg && <p style={{ color: "green", marginTop: 12 }}>{msg}</p>}
+          {err && (
+            <div className="p-3 text-sm text-danger bg-danger/10 border border-danger/20 rounded-lg">
+              {err}
+            </div>
+          )}
+          {msg && (
+            <div className="p-3 text-sm text-success bg-success/10 border border-success/20 rounded-lg">
+              {msg}
+            </div>
+          )}
 
-      <p style={{ marginTop: 20, fontSize: 12, opacity: 0.75 }}>
-        Redirect after login: <code>{redirectTo}</code>
-      </p>
+          <p className="text-xs text-center text-muted-foreground">
+            By signing in, you agree to our{" "}
+            <Link href="/terms" className="text-primary hover:underline">
+              Terms of Service
+            </Link>{" "}
+            and{" "}
+            <Link href="/privacy" className="text-primary hover:underline">
+              Privacy Policy
+            </Link>
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -22,7 +22,14 @@ type Representation = "yes" | "no" | "unsure";
 type Timeline = "0-3 months" | "3-6 months" | "6+ months" | "just browsing";
 type Financing = "pre-approved" | "cash" | "need lender" | "not sure";
 
-export default function IntakeForm({ eventId }: { eventId: string }) {
+type IntakeFormProps = {
+  eventId: string;
+  agentName?: string;
+  brokerageName?: string;
+  accessToken: string;
+};
+
+export default function IntakeForm({ eventId, agentName, brokerageName, accessToken }: IntakeFormProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phoneInput, setPhoneInput] = useState("");
@@ -31,6 +38,7 @@ export default function IntakeForm({ eventId }: { eventId: string }) {
   const [consentEmail, setConsentEmail] = useState(false);
 
   const [representation, setRepresentation] = useState<Representation>("unsure");
+  const [realtorName, setRealtorName] = useState("");
   const [wantsAgentReachOut, setWantsAgentReachOut] = useState(true);
 
   const [timeline, setTimeline] = useState<Timeline>("0-3 months");
@@ -68,6 +76,7 @@ export default function IntakeForm({ eventId }: { eventId: string }) {
         captured_at: new Date().toISOString(),
       },
       representation,
+      realtor_name: representation === "yes" ? realtorName.trim() : "",
       wants_agent_reach_out: representation === "no" ? wantsAgentReachOut : false,
       timeline,
       financing,
@@ -79,7 +88,7 @@ export default function IntakeForm({ eventId }: { eventId: string }) {
     const r = await fetch("/api/leads/submit", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ eventId, payload }),
+      body: JSON.stringify({ eventId, payload, accessToken }),
     });
 
     const j = await r.json().catch(() => ({}));
@@ -91,7 +100,8 @@ export default function IntakeForm({ eventId }: { eventId: string }) {
       return;
     }
 
-    setMsg("Thanks! You’re checked in.");
+    // Redirect to thank you page
+    window.location.href = `/oh/${eventId}/thank-you`;
   }
 
   return (
@@ -138,11 +148,28 @@ export default function IntakeForm({ eventId }: { eventId: string }) {
 
           <label style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 8 }}>
             <input type="checkbox" checked={consentSms} onChange={(e) => setConsentSms(e.target.checked)} />
-            <span style={{ fontSize: 14 }}>I agree to receive SMS messages about listings and follow-up.</span>
+            <span style={{ fontSize: 14 }}>
+              I agree to receive SMS messages relating to this open house listing and follow-up relating to this listing.
+            </span>
           </label>
 
           <p style={{ marginTop: 10, fontSize: 12, opacity: 0.7 }}>
-            Message/data rates may apply. Reply STOP to opt out.
+            By checking these boxes, you consent to receive communications via email and/or SMS from{" "}
+            {agentName && <strong>{agentName}</strong>}
+            {agentName && brokerageName && " at "}
+            {brokerageName && <strong>{brokerageName}</strong>}
+            {!agentName && !brokerageName && "the listing agent"}
+            . Message/data rates may apply. Reply STOP to opt out or HELP for support. See our{" "}
+            <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: "#0066cc", textDecoration: "underline" }}>
+              Terms of Service
+            </a>
+            {" "}and{" "}
+            <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: "#0066cc", textDecoration: "underline" }}>
+              Privacy Policy
+            </a>.
+          </p>
+          <p style={{ marginTop: 8, fontSize: 12, fontWeight: 600, opacity: 0.8 }}>
+            We value your privacy and will never sell your information.
           </p>
         </div>
 
@@ -176,8 +203,17 @@ export default function IntakeForm({ eventId }: { eventId: string }) {
         )}
 
         {representation === "yes" && (
-          <div style={{ padding: 12, border: "1px solid #ddd", borderRadius: 12, opacity: 0.9 }}>
-            <strong>Note:</strong> If you’re represented, please coordinate offers and next steps through your agent.
+          <div style={{ padding: 12, border: "1px solid #ddd", borderRadius: 12 }}>
+            <strong>Note:</strong> If you're represented, please coordinate offers and next steps through your agent.
+            <div style={{ marginTop: 10 }}>
+              <label style={{ display: "block", fontSize: 12, marginBottom: 6 }}>Realtor's Name</label>
+              <input
+                value={realtorName}
+                onChange={(e) => setRealtorName(e.target.value)}
+                placeholder="Enter your realtor's name"
+                style={{ width: "100%", padding: 10 }}
+              />
+            </div>
           </div>
         )}
 

@@ -1,6 +1,22 @@
 import Link from "next/link";
 import { supabaseServer } from "@/lib/supabase/server";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import SignOutButton from "./signout-button";
+import { Users, Home, GitBranch, BarChart3, Calculator, Building2, Contact } from "lucide-react";
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+const dashboardCards = [
+  { title: "Total Leads", href: "/app/leads", icon: Users },
+  { title: "Open Houses", href: "/app/open-houses", icon: Home },
+  { title: "Pipeline", href: "/app/pipeline", icon: GitBranch },
+  { title: "Reports", href: "/app/reports", icon: BarChart3 },
+  { title: "Analyzers", href: "/app/analyzers", icon: Calculator },
+  { title: "MLS", href: "/app/mls", icon: Building2 },
+  { title: "Contacts", href: "/app/contacts", icon: Contact },
+];
 
 export default async function DashboardPage() {
   const supabase = await supabaseServer();
@@ -28,135 +44,62 @@ export default async function DashboardPage() {
   const missing: string[] = [];
   if (!profile.display_name?.trim()) missing.push("name");
   if (!profile.phone_e164) missing.push("phone");
-  // license + locations are optional MVP, but still nice to nudge
   if (!profile.license_number) missing.push("license");
   if (!profile.locations_served || profile.locations_served.length === 0) missing.push("locations");
 
-  // Recent open houses
-  const { data: openHouses } = await supabase
-    .from("open_house_events")
-    .select("id,address,start_at,status")
-    .order("start_at", { ascending: false })
-    .limit(5);
-
-  // Recent leads
-  const { data: leads } = await supabase
-    .from("lead_submissions")
-    .select("id,event_id,created_at,payload")
-    .order("created_at", { ascending: false })
-    .limit(5);
-
   return (
-    <div style={{ maxWidth: 980, margin: "40px auto", padding: 16 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
         <div>
-          <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>
-            Dashboard
-          </h1>
-          <p style={{ marginTop: 6, opacity: 0.75 }}>
-            Signed in as <code>{user.email}</code>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground mt-1">
+            Welcome back, {profile.display_name?.trim() || user.email}
           </p>
         </div>
         <SignOutButton />
       </div>
 
-      {/* Quick actions */}
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 18 }}>
-        <Link href="/app/open-houses/new" style={btnStyle}>+ New Open House</Link>
-        <Link href="/app/open-houses" style={btnStyle}>View Open Houses</Link>
-        <Link href="/app/settings/profile" style={btnStyle}>Edit Profile</Link>
-        <Link href="/app/settings/security" style={btnStyle}>Security (MFA)</Link>
-      </div>
-
-      {/* Profile status */}
-      <div style={{ marginTop: 18, padding: 16, border: "1px solid #ddd", borderRadius: 14 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
-          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>Profile status</h2>
-          <Link href="/app/settings/profile">Update</Link>
-        </div>
-
-        {missing.length === 0 ? (
-          <p style={{ marginTop: 10, color: "green" }}>✅ Profile looks complete.</p>
-        ) : (
-          <div style={{ marginTop: 10 }}>
-            <p style={{ margin: 0 }}>
-              ⚠️ You’re missing: <strong>{missing.join(", ")}</strong>
+      {/* Profile Status Alert */}
+      {missing.length > 0 && (
+        <Card className="border-warning bg-warning/5">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">Complete Your Profile</CardTitle>
+              <Link href="/app/settings/profile">
+                <Button variant="outline" size="sm">
+                  Update Profile
+                </Button>
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm">
+              You're missing: <strong>{missing.join(", ")}</strong>
             </p>
-            <p style={{ marginTop: 8, opacity: 0.75 }}>
-              Your attendee pages look more legit when name + phone + license are filled in.
+            <p className="text-sm text-muted-foreground mt-1">
+              Your attendee pages look more professional when your profile is complete.
             </p>
-          </div>
-        )}
-      </div>
+          </CardContent>
+        </Card>
+      )}
 
-      {/* Open houses */}
-      <div style={{ marginTop: 18, padding: 16, border: "1px solid #ddd", borderRadius: 14 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
-          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>Recent open houses</h2>
-          <Link href="/app/open-houses">See all</Link>
-        </div>
-
-        <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
-          {(openHouses ?? []).map((e) => (
-            <Link
-              key={e.id}
-              href={`/app/open-houses/${e.id}`}
-              style={{ padding: 12, border: "1px solid #eee", borderRadius: 12, display: "block" }}
-            >
-              <div style={{ fontWeight: 800 }}>{e.address}</div>
-              <div style={{ fontSize: 12, opacity: 0.75 }}>
-                {new Date(e.start_at).toLocaleString()} • <strong>{e.status}</strong>
-              </div>
+      {/* Dashboard Cards Grid */}
+      <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+        {dashboardCards.map((card) => {
+          const Icon = card.icon;
+          return (
+            <Link key={card.title} href={card.href} className="block">
+              <Card className="h-full aspect-square cursor-pointer transition-all hover:shadow-md hover:border-primary/40">
+                <CardContent className="flex flex-col items-center justify-center h-full p-4 gap-3">
+                  <Icon className="w-8 h-8 text-primary" />
+                  <span className="text-lg font-semibold text-center">{card.title}</span>
+                </CardContent>
+              </Card>
             </Link>
-          ))}
-          {(!openHouses || openHouses.length === 0) && (
-            <p style={{ opacity: 0.7, margin: 0 }}>
-              No open houses yet. Create one and generate a QR code.
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* Leads */}
-      <div style={{ marginTop: 18, padding: 16, border: "1px solid #ddd", borderRadius: 14 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
-          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>Recent check-ins</h2>
-        </div>
-
-        <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
-          {(leads ?? []).map((l) => {
-            const p: any = l.payload ?? {};
-            return (
-              <div key={l.id} style={{ padding: 12, border: "1px solid #eee", borderRadius: 12 }}>
-                <div style={{ fontWeight: 800 }}>
-                  {p.name || "Lead"}{" "}
-                  <span style={{ fontWeight: 400, opacity: 0.7 }}>
-                    • {new Date(l.created_at).toLocaleString()}
-                  </span>
-                </div>
-                <div style={{ fontSize: 12, opacity: 0.8 }}>
-                  {p.email ? <code>{p.email}</code> : null}{" "}
-                  {p.phone_e164 ? <>• <code>{p.phone_e164}</code></> : null}
-                </div>
-              </div>
-            );
-          })}
-          {(!leads || leads.length === 0) && (
-            <p style={{ opacity: 0.7, margin: 0 }}>
-              No attendee check-ins yet. Publish an open house and scan the QR code.
-            </p>
-          )}
-        </div>
+          );
+        })}
       </div>
     </div>
   );
 }
-
-const btnStyle: React.CSSProperties = {
-  padding: "10px 12px",
-  border: "1px solid #ddd",
-  borderRadius: 12,
-  textDecoration: "none",
-  display: "inline-block",
-  fontWeight: 700,
-};

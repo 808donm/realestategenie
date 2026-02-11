@@ -12,9 +12,16 @@ export async function supabaseServer() {
         getAll() {
           return cookieStore.getAll();
         },
-        setAll() {
-          // IMPORTANT: Server Components cannot set cookies.
-          // Cookie refresh must happen in proxy.ts (or route handlers / server actions).
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch {
+            // The `setAll` method was called from a Server Component.
+            // This can be ignored if you have middleware refreshing
+            // user sessions.
+          }
         },
       },
     }

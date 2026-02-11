@@ -1,0 +1,349 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+import { randomBytes } from "crypto";
+
+/**
+ * Tenant Invitation API
+ *
+ * Creates a tenant user account and sends invitation email
+ * Triggered when a lease is activated (contract signed)
+ *
+ * POST /api/tenant/invite
+ * Body: { lease_id: string }
+ */
+
+// Use service role for creating tenant users
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { auth: { persistSession: false } }
+);
+
+export async function POST(request: NextRequest) {
+  try {
+    const { lease_id } = await request.json();
+
+    if (!lease_id) {
+      return NextResponse.json(
+        { error: "lease_id is required" },
+        { status: 400 }
+      );
+    }
+
+    // Get lease details
+    const { data: lease, error: leaseError } = await supabase
+      .from("pm_leases")
+      .select(`
+        id,
+        agent_id,
+        tenant_contact_id,
+        ghl_contact_id,
+        tenant_name,
+        tenant_email,
+        tenant_phone,
+        pm_application_id,
+        lease_start_date,
+        lease_end_date,
+        monthly_rent,
+        pm_properties!left (address),
+        pm_units!left (unit_number)
+      `)
+      .eq("id", lease_id)
+      .single();
+
+    if (leaseError || !lease) {
+      console.error("Failed to fetch lease:", leaseError);
+      return NextResponse.json(
+        { error: `Lease not found: ${leaseError?.message || 'Unknown error'}` },
+        { status: 404 }
+      );
+    }
+
+    // Get tenant contact info and GHL integration
+    const { data: integration } = await supabase
+      .from("integrations")
+      .select("config")
+      .eq("agent_id", lease.agent_id)
+      .eq("provider", "ghl")
+      .single();
+
+    if (!integration?.config?.ghl_access_token) {
+      return NextResponse.json(
+        { error: "GHL integration not found" },
+        { status: 500 }
+      );
+    }
+
+    const ghlAccessToken = integration.config.ghl_access_token;
+    const ghlLocationId = integration.config.ghl_location_id;
+
+    const { GHLClient } = await import("@/lib/integrations/ghl-client");
+    const ghlClient = new GHLClient(ghlAccessToken, ghlLocationId);
+
+    let contact;
+    let tenantEmail: string = '';
+    let tenantPhone: string | null = null;
+    let tenantName: string = '';
+    let contactId: string = '';
+
+    // Try to get tenant contact from GHL
+    if (lease.ghl_contact_id || lease.tenant_contact_id) {
+      try {
+        contact = await ghlClient.getContact(lease.ghl_contact_id || lease.tenant_contact_id);
+        tenantEmail = contact.email!;
+        tenantPhone = contact.phone || null;
+        tenantName = contact.name || `${contact.firstName} ${contact.lastName}`;
+        contactId = contact.id!;
+      } catch (error) {
+        console.error("Failed to fetch contact from GHL:", error);
+        // Contact ID is set but contact doesn't exist - will create new one below
+        contact = null;
+      }
+    }
+
+    // If no contact exists, get tenant info from lease or application and create contact
+    if (!contact) {
+      // Get application data if available
+      const { data: application } = await supabase
+        .from("pm_applications")
+        .select("applicant_name, applicant_email, applicant_phone")
+        .eq("id", lease.pm_application_id!)
+        .single();
+
+      tenantEmail = lease.tenant_email || application?.applicant_email;
+      tenantPhone = lease.tenant_phone || application?.applicant_phone || null;
+      tenantName = lease.tenant_name || application?.applicant_name || tenantEmail;
+
+      if (!tenantEmail) {
+        return NextResponse.json(
+          { error: "No tenant email found. Please set tenant email on the lease." },
+          { status: 400 }
+        );
+      }
+
+      // Create contact in GHL or use existing if duplicate
+      console.log(`Creating GHL contact for tenant: ${tenantEmail}`);
+      try {
+        contact = await ghlClient.createContact({
+          locationId: ghlLocationId,
+          email: tenantEmail,
+          phone: tenantPhone || undefined,
+          name: tenantName,
+          tags: ["tenant"],
+        });
+
+        contactId = contact.id!;
+        console.log(`✅ Created new GHL contact ${contactId}`);
+      } catch (createError: any) {
+        // Check if it's a duplicate contact error
+        if (createError.message?.includes('duplicated contacts') || createError.message?.includes('duplicate')) {
+          // Extract contact ID from error response
+          // GHL returns: {"meta":{"contactId":"qI2df57vN9E9zEBfjQRk",...}}
+          const errorMatch = createError.message.match(/"contactId":"([^"]+)"/);
+          if (errorMatch && errorMatch[1]) {
+            contactId = errorMatch[1];
+            console.log(`✅ Using existing GHL contact ${contactId} (duplicate found)`);
+
+            // Fetch the existing contact to get full details
+            contact = await ghlClient.getContact(contactId);
+            tenantEmail = contact.email!;
+            tenantPhone = contact.phone || null;
+            tenantName = contact.name || `${contact.firstName} ${contact.lastName}`;
+          } else {
+            throw createError;
+          }
+        } else {
+          throw createError;
+        }
+      }
+
+      // Update lease with contact ID
+      await supabase
+        .from("pm_leases")
+        .update({
+          ghl_contact_id: contactId,
+          tenant_email: tenantEmail,
+          tenant_name: tenantName,
+          tenant_phone: tenantPhone,
+        })
+        .eq("id", lease_id);
+
+      console.log(`✅ Updated lease with GHL contact ${contactId}`);
+    }
+
+    if (!tenantEmail) {
+      return NextResponse.json(
+        { error: "Tenant contact has no email address" },
+        { status: 400 }
+      );
+    }
+
+    // Generate invitation token
+    const invitationToken = randomBytes(32).toString("hex");
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7); // Valid for 7 days
+
+    // Check if invitation already exists for this lease
+    const { data: existingInvitation } = await supabase
+      .from("tenant_invitations")
+      .select("id, email, invitation_token")
+      .eq("lease_id", lease_id)
+      .maybeSingle();
+
+    if (existingInvitation) {
+      console.log(`✅ Invitation already exists for lease ${lease_id}, updating token`);
+
+      // Update with new token
+      await supabase
+        .from("tenant_invitations")
+        .update({
+          invitation_token: invitationToken,
+          invitation_expires_at: expiresAt.toISOString(),
+          invited_at: new Date().toISOString(),
+          email: tenantEmail,
+          tenant_name: tenantName,
+          phone: tenantPhone,
+        })
+        .eq("id", existingInvitation.id);
+    } else {
+      console.log(`✅ Creating new invitation for lease ${lease_id}`);
+
+      // Create new invitation record (no auth user required yet)
+      const { error: inviteError } = await supabase
+        .from("tenant_invitations")
+        .insert({
+          lease_id: lease_id,
+          email: tenantEmail,
+          tenant_name: tenantName,
+          phone: tenantPhone,
+          invitation_token: invitationToken,
+          invitation_expires_at: expiresAt.toISOString(),
+        });
+
+      if (inviteError) {
+        console.error("Error creating invitation:", inviteError);
+        return NextResponse.json(
+          { error: "Failed to create invitation" },
+          { status: 500 }
+        );
+      }
+    }
+
+    // Send invitation email
+    // Handle Supabase joins that may return arrays
+    const unit = Array.isArray(lease.pm_units) ? lease.pm_units[0] : lease.pm_units;
+    const property = Array.isArray(lease.pm_properties) ? lease.pm_properties[0] : lease.pm_properties;
+
+    const propertyAddress = unit?.unit_number
+      ? `${property?.address}, Unit ${unit.unit_number}`
+      : property?.address;
+
+    const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL}/tenant/register?token=${invitationToken}`;
+
+    // Get agent name and email for email
+    const { data: agent } = await supabase
+      .from("agents")
+      .select("display_name, email")
+      .eq("id", lease.agent_id)
+      .single();
+
+    const landlordName = agent?.display_name || "Your Property Manager";
+
+    // Send invitation email via GHL
+    try {
+      const { GHLClient } = await import("@/lib/integrations/ghl-client");
+      const ghlClient = new GHLClient(ghlAccessToken, ghlLocationId);
+
+      const leaseStartDate = new Date(lease.lease_start_date).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+
+      const emailHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background-color: #4F46E5; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+    .content { background-color: #f9fafb; padding: 30px; border: 1px solid #e5e7eb; }
+    .button { display: inline-block; background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
+    .details { background-color: white; padding: 15px; border-radius: 6px; margin: 20px 0; }
+    .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Welcome to Your Tenant Portal!</h1>
+    </div>
+    <div class="content">
+      <p>Hi ${tenantName},</p>
+
+      <p>${landlordName} has invited you to access your tenant portal for <strong>${propertyAddress}</strong>.</p>
+
+      <div class="details">
+        <p><strong>Lease Start Date:</strong> ${leaseStartDate}</p>
+        <p><strong>Monthly Rent:</strong> $${lease.monthly_rent?.toLocaleString()}</p>
+      </div>
+
+      <p>With your tenant portal, you can:</p>
+      <ul>
+        <li>Pay rent online</li>
+        <li>Submit maintenance requests</li>
+        <li>View your lease documents</li>
+        <li>Message your property manager</li>
+        <li>Track your payment history</li>
+      </ul>
+
+      <p style="text-align: center;">
+        <a href="${inviteUrl}" class="button">Set Up Your Account</a>
+      </p>
+
+      <p style="font-size: 14px; color: #6b7280;">
+        This invitation link will expire on ${expiresAt.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}.
+        If you need a new invitation, please contact your property manager.
+      </p>
+    </div>
+    <div class="footer">
+      <p>This email was sent by ${landlordName}</p>
+      <p>If you have any questions, please reply to this email.</p>
+    </div>
+  </div>
+</body>
+</html>
+      `;
+
+      // Send email via GHL using the proper API
+      const { messageId } = await ghlClient.sendEmail({
+        contactId: contactId,
+        subject: `Welcome to Your Tenant Portal - ${propertyAddress}`,
+        html: emailHtml,
+      });
+
+      console.log(`✅ Tenant invitation email sent to ${tenantEmail} via GHL (messageId: ${messageId})`);
+    } catch (emailError) {
+      console.error("❌ Failed to send tenant invitation email:", emailError);
+      // Log the URL for manual sending if email fails
+      console.log(`📧 Invitation URL (manual fallback): ${inviteUrl}`);
+      // Don't throw - invitation record was created
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: "Tenant invitation sent successfully",
+      invite_url: inviteUrl, // Only for testing, remove in production
+    });
+  } catch (error) {
+    console.error("Error in tenant invite route:", error);
+    return NextResponse.json(
+      {
+        error: "Internal server error",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 }
+    );
+  }
+}

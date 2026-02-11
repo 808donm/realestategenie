@@ -13,16 +13,43 @@ export default function QRPanel({
   const [origin, setOrigin] = useState<string>("");
   const [dataUrl, setDataUrl] = useState<string>("");
   const [msg, setMsg] = useState<string>("");
+  const [secureToken, setSecureToken] = useState<string>("");
+  const [tokenLoading, setTokenLoading] = useState<boolean>(true);
 
   useEffect(() => {
     // Avoid SSR issues: only read window in effect
     setOrigin(window.location.origin);
   }, []);
 
-  const checkInUrl = useMemo(() => {
-    if (!origin) return "";
-    return `${origin}/oh/${eventId}`;
+  // Fetch secure QR token from API
+  useEffect(() => {
+    if (!origin) return;
+
+    async function fetchToken() {
+      try {
+        const response = await fetch(`/api/open-houses/${eventId}/qr-token`);
+        if (response.ok) {
+          const data = await response.json();
+          setSecureToken(data.token);
+        } else {
+          console.error('Failed to fetch QR token');
+          setMsg('⚠️ Failed to generate secure QR code');
+        }
+      } catch (error) {
+        console.error('Error fetching QR token:', error);
+        setMsg('⚠️ Error generating secure QR code');
+      } finally {
+        setTokenLoading(false);
+      }
+    }
+
+    fetchToken();
   }, [origin, eventId]);
+
+  const checkInUrl = useMemo(() => {
+    if (!origin || !secureToken) return "";
+    return `${origin}/oh/${eventId}?token=${secureToken}`;
+  }, [origin, eventId, secureToken]);
 
   useEffect(() => {
     let alive = true;
