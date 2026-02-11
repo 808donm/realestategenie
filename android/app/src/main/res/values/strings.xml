@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">RealEstateGenie</string>
+    <string name="title_activity_main">RealEstateGenie</string>
+    <string name="package_name">app.realestategenie.mobile</string>
+    <string name="custom_url_scheme">app.realestategenie.mobile</string>
+</resources>

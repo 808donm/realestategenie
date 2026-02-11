@@ -1,5 +1,6 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Toaster } from "@/components/ui/toaster";
+import CapacitorInit from "@/components/capacitor-init";
 import "./globals.css";
 
 // Using system fonts due to Google Fonts network restrictions
@@ -10,6 +11,12 @@ export const metadata: Metadata = {
   description: "AI-powered open house management and lead capture for real estate agents",
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -18,6 +25,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="antialiased font-sans">
+        <CapacitorInit />
         {children}
         <Toaster />
       </body>
