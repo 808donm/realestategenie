@@ -13,7 +13,7 @@ const dashboardCards = [
   { title: "Open Houses", href: "/app/open-houses", icon: Home },
   { title: "Pipeline", href: "/app/pipeline", icon: GitBranch },
   { title: "Reports", href: "/app/reports", icon: BarChart3 },
-  { title: "Analyzers", href: "/app/analyzers", icon: Calculator },
+  { title: "Calculators", href: "/app/analyzers", icon: Calculator },
   { title: "MLS", href: "/app/mls", icon: Building2 },
   { title: "Contacts", href: "/app/contacts", icon: Contact },
 ];
