@@ -6,7 +6,8 @@ export default async function OpenHousesIndex() {
 
   const { data: events, error } = await supabase
     .from("open_house_events")
-    .select("id,address,start_at,end_at,status")
+    .select("id,address,start_at,end_at,status,event_type")
+    .neq("event_type", "rental")
     .order("start_at", { ascending: false })
     .limit(50);
 

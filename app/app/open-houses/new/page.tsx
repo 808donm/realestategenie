@@ -4,27 +4,6 @@ import { geocodeAddress } from "@/lib/geocoding";
 import OpenHouseForm from "./open-house-form";
 
 export default async function NewOpenHousePage() {
-  const supabase = await supabaseServer();
-
-  // Get user's PM properties for rental open houses
-  const { data: userData } = await supabase.auth.getUser();
-  let pmProperties: any[] = [];
-
-  if (userData.user) {
-    const { data, error } = await supabase
-      .from("pm_properties")
-      .select("*")
-      .eq("agent_id", userData.user.id)
-      .order("address");
-
-    if (error) {
-      console.error("Error fetching PM properties:", error);
-    }
-
-    pmProperties = data || [];
-    console.log("PM Properties fetched:", pmProperties.length, "properties for user:", userData.user.id);
-  }
-
   async function create(formData: FormData) {
     "use server";
 
@@ -73,8 +52,6 @@ export default async function NewOpenHousePage() {
     const address = String(formData.get("address") || "").trim();
     const start_at = String(formData.get("start_at") || "");
     const end_at = String(formData.get("end_at") || "");
-    const event_type = String(formData.get("event_type") || "sales");
-    const pm_property_id = String(formData.get("pm_property_id") || "") || null;
 
     if (!address || !start_at || !end_at) {
       console.error("Missing required fields");
@@ -98,8 +75,8 @@ export default async function NewOpenHousePage() {
         details_page_enabled: true,
         latitude: geoResult?.latitude ?? null,
         longitude: geoResult?.longitude ?? null,
-        event_type,
-        pm_property_id,
+        event_type: "sales",
+        pm_property_id: null,
       })
       .select("id")
       .single();
@@ -131,7 +108,6 @@ export default async function NewOpenHousePage() {
       <h1 style={{ fontSize: 28, fontWeight: 900, marginTop: 0 }}>New Open House</h1>
 
       <OpenHouseForm
-        pmProperties={pmProperties}
         startDefault={toLocalInput(startDefault)}
         endDefault={toLocalInput(endDefault)}
         onSubmit={create}
