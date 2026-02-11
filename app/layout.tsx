@@ -7,7 +7,7 @@ import "./globals.css";
 // Replace with Geist fonts when environment allows
 
 export const metadata: Metadata = {
-  title: "The Real Estate Genie™ - Open House Management",
+  title: "The Real Estate Genie™ - The Real Estate Operating System",
   description: "AI-powered open house management and lead capture for real estate agents",
 };
 
