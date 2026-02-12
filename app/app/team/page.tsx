@@ -262,27 +262,15 @@ export default async function TeamManagementPage() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Administrators</CardTitle>
+              <CardTitle className="text-sm font-medium">Site Admins</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {usage.current_administrators} / {usage.administrators_limit}
-              </div>
-              <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
-                <div
-                  className={`h-2 rounded-full ${
-                    usage.administrators_critical
-                      ? "bg-red-600"
-                      : usage.administrators_warning
-                      ? "bg-yellow-500"
-                      : "bg-green-600"
-                  }`}
-                  style={{ width: `${Math.min(100, usage.administrators_usage_pct)}%` }}
-                />
+                {(usage.current_administrators || 0) + 1} / {(usage.administrators_limit || 0) + 1}
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                {usage.administrators_available} {usage.administrators_available === 1 ? "seat" : "seats"} available
+                1 owner + {usage.current_administrators || 0} of {usage.administrators_limit || 0} additional admin {usage.administrators_limit === 1 ? "seat" : "seats"}
               </p>
             </CardContent>
           </Card>
