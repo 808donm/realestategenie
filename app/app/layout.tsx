@@ -32,6 +32,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     .single();
 
   const isAccountAdmin = accountMember?.account_role === "owner" || accountMember?.account_role === "admin";
+  const hasNoAccount = !accountMember;
 
   // Get subscription status for usage warnings
   let subscriptionStatus = null;
@@ -102,7 +103,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <NavLink href="/app/integrations">Integrations</NavLink>
             <NavLink href="/app/billing">Billing</NavLink>
             <NavLink href="/app/settings/profile">Settings</NavLink>
-            {isAccountAdmin && (
+            {(isAccountAdmin || hasNoAccount) && (
               <NavLink href="/app/team">Team</NavLink>
             )}
             {userRole === "admin" && (

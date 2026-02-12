@@ -1,4 +1,5 @@
 import { supabaseServer } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, UserPlus, Building2, AlertCircle } from "lucide-react";
@@ -62,12 +63,72 @@ export default async function TeamManagementPage() {
   }
 
   // Check if user is account owner or admin
-  const { data: accountMember } = await supabase
+  let { data: accountMember } = await supabase
     .from("account_members")
     .select("account_id, account_role")
     .eq("agent_id", userData.user.id)
     .eq("is_active", true)
     .single();
+
+  // Bootstrap: if user has no account, create one and make them the owner
+  if (!accountMember) {
+    const agent = await supabase
+      .from("agents")
+      .select("display_name, email")
+      .eq("id", userData.user.id)
+      .single();
+
+    const accountName = agent.data?.display_name?.trim()
+      ? `${agent.data.display_name.trim()}'s Team`
+      : "My Team";
+
+    // Use admin client to bypass RLS for initial account creation
+    const { data: newAccount, error: accountError } = await supabaseAdmin
+      .from("accounts")
+      .insert({
+        name: accountName,
+        owner_id: userData.user.id,
+        billing_email: agent.data?.email || userData.user.email || "",
+      })
+      .select("id")
+      .single();
+
+    if (accountError || !newAccount) {
+      console.error("Failed to create account:", accountError);
+      return (
+        <div style={{ padding: 24, color: "crimson" }}>
+          Failed to set up your team account. Please try again.
+        </div>
+      );
+    }
+
+    const { error: memberError } = await supabaseAdmin
+      .from("account_members")
+      .insert({
+        account_id: newAccount.id,
+        agent_id: userData.user.id,
+        account_role: "owner",
+      });
+
+    if (memberError) {
+      console.error("Failed to create account member:", memberError);
+      return (
+        <div style={{ padding: 24, color: "crimson" }}>
+          Failed to set up your team membership. Please try again.
+        </div>
+      );
+    }
+
+    // Re-fetch the account member record
+    const { data: refreshed } = await supabase
+      .from("account_members")
+      .select("account_id, account_role")
+      .eq("agent_id", userData.user.id)
+      .eq("is_active", true)
+      .single();
+
+    accountMember = refreshed;
+  }
 
   if (!accountMember || (accountMember.account_role !== "owner" && accountMember.account_role !== "admin")) {
     redirect("/app/dashboard");
