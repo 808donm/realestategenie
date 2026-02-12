@@ -128,12 +128,6 @@ export default async function TeamManagementPage() {
       );
     }
 
-    // Grant platform admin to the account owner
-    await supabaseAdmin
-      .from("agents")
-      .update({ is_admin: true })
-      .eq("id", userData.user.id);
-
     // Set directly — we just created these, no need to re-fetch through RLS
     accountMember = { account_id: newAccount.id, account_role: "owner" };
   }
