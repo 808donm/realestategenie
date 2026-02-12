@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, UserPlus, Building2, AlertCircle } from "lucide-react";
 import TeamMembersList from "./team-members-list";
 import InviteMemberButton from "./invite-member-button";
+import CreateMemberButton from "./create-member-button";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -82,6 +83,13 @@ export default async function TeamManagementPage() {
       ? `${agent.data.display_name.trim()}'s Team`
       : "My Team";
 
+    // Look up default subscription plan (Brokerage Growth — 10 agents, 5 assistants, 1 admin)
+    const { data: defaultPlan } = await supabaseAdmin
+      .from("subscription_plans")
+      .select("id")
+      .eq("slug", "brokerage-growth")
+      .single();
+
     // Use admin client to bypass RLS for initial account creation
     const { data: newAccount, error: accountError } = await supabaseAdmin
       .from("accounts")
@@ -89,6 +97,7 @@ export default async function TeamManagementPage() {
         name: accountName,
         owner_id: userData.user.id,
         billing_email: agent.data?.email || userData.user.email || "",
+        subscription_plan_id: defaultPlan?.id || null,
       })
       .select("id")
       .single();
@@ -180,11 +189,18 @@ export default async function TeamManagementPage() {
           <h1 className="text-3xl font-bold">Team Management</h1>
           <p className="text-gray-500 mt-1">Manage your team members, roles, and permissions</p>
         </div>
-        <InviteMemberButton
-          accountId={accountId}
-          usage={usage}
-          offices={offices || []}
-        />
+        <div className="flex gap-2">
+          <CreateMemberButton
+            accountId={accountId}
+            usage={usage}
+            offices={offices || []}
+          />
+          <InviteMemberButton
+            accountId={accountId}
+            usage={usage}
+            offices={offices || []}
+          />
+        </div>
       </div>
 
       {/* Usage Overview Cards */}

@@ -18,6 +18,8 @@ export default function SignInClient() {
   const oauthError = params.get("error");
 
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [signInMode, setSignInMode] = useState<"magic" | "password">("magic");
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(oauthError);
   const [loading, setLoading] = useState(false);
@@ -36,6 +38,23 @@ export default function SignInClient() {
     setLoading(false);
     if (error) setErr(error.message);
     else setMsg("Check your email for the sign-in link.");
+  }
+
+  async function signInWithPassword(e: React.FormEvent) {
+    e.preventDefault();
+    setErr(null);
+    setMsg(null);
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    setLoading(false);
+    if (error) {
+      setErr(error.message);
+    } else {
+      window.location.href = redirectTo;
+    }
   }
 
   return (
@@ -97,24 +116,76 @@ export default function SignInClient() {
             </div>
           </div>
 
-          <form onSubmit={sendMagicLink} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email address</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@domain.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                disabled={loading}
-              />
-            </div>
-
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Sending..." : "Send sign-in link"}
+          {/* Toggle between magic link and password */}
+          <div className="flex gap-2 justify-center">
+            <Button
+              variant={signInMode === "magic" ? "default" : "outline"}
+              size="sm"
+              onClick={() => { setSignInMode("magic"); setErr(null); setMsg(null); }}
+            >
+              Magic Link
             </Button>
-          </form>
+            <Button
+              variant={signInMode === "password" ? "default" : "outline"}
+              size="sm"
+              onClick={() => { setSignInMode("password"); setErr(null); setMsg(null); }}
+            >
+              Password
+            </Button>
+          </div>
+
+          {signInMode === "magic" ? (
+            <form onSubmit={sendMagicLink} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email address</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="you@domain.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  disabled={loading}
+                />
+              </div>
+
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Sending..." : "Send sign-in link"}
+              </Button>
+            </form>
+          ) : (
+            <form onSubmit={signInWithPassword} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email-pw">Email address</Label>
+                <Input
+                  id="email-pw"
+                  type="email"
+                  placeholder="you@domain.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  disabled={loading}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={loading}
+                />
+              </div>
+
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Signing in..." : "Sign in"}
+              </Button>
+            </form>
+          )}
 
           {err && (
             <div className="p-3 text-sm text-danger bg-danger/10 border border-danger/20 rounded-lg">
