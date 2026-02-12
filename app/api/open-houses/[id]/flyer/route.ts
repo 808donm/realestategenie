@@ -21,7 +21,10 @@ export async function GET(
 
     // Get open house event details using admin client (bypasses RLS)
     // The flyer is publicly accessible to anyone with the link
-    const { data: event, error } = await admin
+    // Try with flyer_template_id; fall back without it if column doesn't exist yet
+    let event: any = null;
+
+    const result = await admin
       .from("open_house_events")
       .select(`
         id,
@@ -44,13 +47,35 @@ export async function GET(
       .eq("id", id)
       .single();
 
-    if (error || !event) {
-      console.error("Event query error:", error);
+    if (result.error && result.error.message?.includes("flyer_template_id")) {
+      const fallback = await admin
+        .from("open_house_events")
+        .select(`
+          id, address, start_at, end_at, beds, baths, sqft, price,
+          key_features, listing_description, property_photo_url,
+          latitude, longitude, agent_id, status
+        `)
+        .eq("id", id)
+        .single();
+
+      if (fallback.error || !fallback.data) {
+        console.error("Event query error:", fallback.error);
+        return NextResponse.json({
+          error: "Open house not found",
+          details: fallback.error?.message,
+          eventId: id
+        }, { status: 404 });
+      }
+      event = { ...fallback.data, flyer_template_id: null };
+    } else if (result.error || !result.data) {
+      console.error("Event query error:", result.error);
       return NextResponse.json({
         error: "Open house not found",
-        details: error?.message,
+        details: result.error?.message,
         eventId: id
       }, { status: 404 });
+    } else {
+      event = result.data;
     }
 
     // Only allow downloading flyers for published events

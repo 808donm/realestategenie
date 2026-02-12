@@ -14,7 +14,11 @@ export default async function OpenHouseDetail({
   const { id } = await params;
   const supabase = await supabaseServer();
 
-  const { data: evt, error } = await supabase
+  // Try with flyer_template_id first; fall back without it if column doesn't exist yet
+  let evt: any = null;
+  let loadError: any = null;
+
+  const result = await supabase
     .from("open_house_events")
     .select(
       "id,address,start_at,end_at,status,pdf_download_enabled,details_page_enabled,latitude,longitude,property_photo_url,flyer_template_id"
@@ -22,10 +26,27 @@ export default async function OpenHouseDetail({
     .eq("id", id)
     .single();
 
-  if (error || !evt) {
+  if (result.error && result.error.message?.includes("flyer_template_id")) {
+    // Column doesn't exist yet — retry without it
+    const fallback = await supabase
+      .from("open_house_events")
+      .select(
+        "id,address,start_at,end_at,status,pdf_download_enabled,details_page_enabled,latitude,longitude,property_photo_url"
+      )
+      .eq("id", id)
+      .single();
+
+    evt = fallback.data ? { ...fallback.data, flyer_template_id: null } : null;
+    loadError = fallback.error;
+  } else {
+    evt = result.data;
+    loadError = result.error;
+  }
+
+  if (loadError || !evt) {
     return (
       <div style={{ padding: 24, color: "crimson" }}>
-        {error?.message ?? "Open house not found"}
+        {loadError?.message ?? "Open house not found"}
       </div>
     );
   }
