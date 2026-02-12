@@ -11,15 +11,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if user is account owner or admin
-    const { data: accountMember } = await supabase
+    // Check if user is account owner or admin (use admin client to bypass RLS)
+    const { data: accountMembers } = await supabaseAdmin
       .from("account_members")
       .select("account_id, account_role")
       .eq("agent_id", userData.user.id)
       .eq("is_active", true)
-      .single();
+      .in("account_role", ["owner", "admin"])
+      .limit(1);
 
-    if (!accountMember || (accountMember.account_role !== "owner" && accountMember.account_role !== "admin")) {
+    const accountMember = accountMembers?.[0] ?? null;
+
+    if (!accountMember) {
       return NextResponse.json({ error: "Admin access required" }, { status: 403 });
     }
 

@@ -12,14 +12,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user is account owner or admin
-    const { data: accountMember } = await supabaseAdmin
+    const { data: accountMembers, error: memberErr } = await supabaseAdmin
       .from("account_members")
       .select("account_id, account_role")
       .eq("agent_id", userData.user.id)
       .eq("is_active", true)
-      .single();
+      .in("account_role", ["owner", "admin"])
+      .limit(1);
 
-    if (!accountMember || (accountMember.account_role !== "owner" && accountMember.account_role !== "admin")) {
+    const accountMember = accountMembers?.[0] ?? null;
+
+    if (!accountMember) {
+      console.error("Admin check failed:", memberErr, "user:", userData.user.id);
       return NextResponse.json({ error: "Admin access required" }, { status: 403 });
     }
 

@@ -63,13 +63,15 @@ export default async function TeamManagementPage() {
     redirect("/login");
   }
 
-  // Check if user is account owner or admin
-  let { data: accountMember } = await supabase
+  // Check if user is account owner or admin (use admin client to bypass RLS)
+  const { data: existingMembers } = await supabaseAdmin
     .from("account_members")
     .select("account_id, account_role")
     .eq("agent_id", userData.user.id)
     .eq("is_active", true)
-    .single();
+    .limit(1);
+
+  let accountMember = existingMembers?.[0] ?? null;
 
   // Bootstrap: if user has no account, create one and make them the owner
   if (!accountMember) {
