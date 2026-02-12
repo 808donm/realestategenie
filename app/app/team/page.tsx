@@ -119,15 +119,8 @@ export default async function TeamManagementPage() {
       );
     }
 
-    // Re-fetch the account member record
-    const { data: refreshed } = await supabase
-      .from("account_members")
-      .select("account_id, account_role")
-      .eq("agent_id", userData.user.id)
-      .eq("is_active", true)
-      .single();
-
-    accountMember = refreshed;
+    // Set directly — we just created these, no need to re-fetch through RLS
+    accountMember = { account_id: newAccount.id, account_role: "owner" };
   }
 
   if (!accountMember || (accountMember.account_role !== "owner" && accountMember.account_role !== "admin")) {
@@ -136,15 +129,19 @@ export default async function TeamManagementPage() {
 
   const accountId = accountMember.account_id;
 
+  // Use admin client for data queries — RLS self-referential policies on
+  // account_members can block reads for freshly bootstrapped accounts.
+  const db = supabaseAdmin;
+
   // Get account usage status
-  const { data: usageStatus } = await supabase
+  const { data: usageStatus } = await db
     .from("account_usage_status")
     .select("*")
     .eq("account_id", accountId)
     .single();
 
   // Get all account members
-  const { data: members } = await supabase
+  const { data: members } = await db
     .from("account_members")
     .select(`
       id,
@@ -166,7 +163,7 @@ export default async function TeamManagementPage() {
     .order("joined_at", { ascending: true });
 
   // Get offices for dropdown
-  const { data: offices } = await supabase
+  const { data: offices } = await db
     .from("offices")
     .select("id, name")
     .eq("account_id", accountId)
