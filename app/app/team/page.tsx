@@ -144,6 +144,33 @@ export default async function TeamManagementPage() {
   // account_members can block reads for freshly bootstrapped accounts.
   const db = supabaseAdmin;
 
+  // Ensure the account has a subscription plan and usage row.
+  // These can be missing if the bootstrap ran before migrations were applied,
+  // or if triggers didn't fire.
+  const { data: account } = await db
+    .from("accounts")
+    .select("subscription_plan_id")
+    .eq("id", accountId)
+    .single();
+
+  if (!account?.subscription_plan_id) {
+    const { data: defaultPlan } = await db
+      .from("subscription_plans")
+      .select("id")
+      .eq("slug", "brokerage-growth")
+      .single();
+
+    if (defaultPlan) {
+      await db
+        .from("accounts")
+        .update({ subscription_plan_id: defaultPlan.id })
+        .eq("id", accountId);
+    }
+  }
+
+  // Force-refresh usage counts so the view has data
+  await db.rpc("update_account_usage", { account_uuid: accountId });
+
   // Get account usage status
   const { data: usageStatus } = await db
     .from("account_usage_status")
