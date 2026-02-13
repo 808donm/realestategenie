@@ -4,13 +4,18 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { CreditCard, FileText, DollarSign, Calendar, CheckCircle, Check, XCircle } from "lucide-react";
+import { CreditCard, FileText, DollarSign, Calendar, CheckCircle, Check, XCircle, Home } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 type PageProps = {
-  searchParams: Promise<{ success?: string; session_id?: string; canceled?: string }>;
+  searchParams: Promise<{
+    success?: string;
+    session_id?: string;
+    canceled?: string;
+    pm_addon?: string;
+  }>;
 };
 
 export default async function BillingPage({ searchParams }: PageProps) {
@@ -24,6 +29,8 @@ export default async function BillingPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const showSuccess = params.success === "true";
   const showCanceled = params.canceled === "true";
+  const showPmAddonSuccess = params.pm_addon === "success";
+  const showPmAddonCanceled = params.pm_addon === "canceled";
 
   // Get agent's subscription
   const { data: subscription } = await supabase
@@ -47,6 +54,14 @@ export default async function BillingPage({ searchParams }: PageProps) {
     .eq("agent_id", userData.user.id)
     .order("payment_date", { ascending: false })
     .limit(10);
+
+  // Get PM addon subscription
+  const { data: pmAddon } = await supabase
+    .from("pm_addon_subscriptions")
+    .select("*, pm_addon_plans(*)")
+    .eq("agent_id", userData.user.id)
+    .eq("status", "active")
+    .maybeSingle();
 
   // Calculate stats
   const totalPaid = payments
@@ -115,6 +130,42 @@ export default async function BillingPage({ searchParams }: PageProps) {
                 <p>
                   You canceled the checkout process. No charges were made to your account.
                   You can try again anytime by selecting a plan below.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* PM Addon Success */}
+      {showPmAddonSuccess && (
+        <Card className="bg-green-50 border-green-200">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-green-900">
+                <p className="font-semibold mb-1">PM Add-on Activated!</p>
+                <p>
+                  Your Property Management add-on is now active. Your property and tenant limits
+                  have been upgraded.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* PM Addon Canceled */}
+      {showPmAddonCanceled && (
+        <Card className="bg-yellow-50 border-yellow-200">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <XCircle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-yellow-900">
+                <p className="font-semibold mb-1">PM Add-on Checkout Canceled</p>
+                <p>
+                  You canceled the PM add-on checkout. No charges were made.
+                  You can add a PM plan anytime from the add-ons page.
                 </p>
               </div>
             </div>
@@ -260,6 +311,68 @@ export default async function BillingPage({ searchParams }: PageProps) {
               <p className="text-muted-foreground mb-4">No active subscription</p>
               <Link href="/app/billing/upgrade">
                 <Button>Choose a Plan</Button>
+              </Link>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Property Management Add-on */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Home className="h-5 w-5" />
+              Property Management Add-on
+            </CardTitle>
+            <Link href="/app/billing/addons">
+              <Button variant={pmAddon ? "outline" : "default"} size="sm">
+                {pmAddon ? "Change Add-on" : "Browse PM Plans"}
+              </Button>
+            </Link>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {pmAddon && pmAddon.pm_addon_plans ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Badge className="bg-green-100 text-green-800">Active</Badge>
+                <span className="font-semibold">{pmAddon.pm_addon_plans.name}</span>
+                <span className="text-muted-foreground">
+                  - ${parseFloat(pmAddon.pm_addon_plans.monthly_price.toString()).toFixed(2)}/mo
+                </span>
+              </div>
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Properties</span>
+                  <span className="font-medium">{pmAddon.pm_addon_plans.max_properties}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Tenants</span>
+                  <span className="font-medium">{pmAddon.pm_addon_plans.max_tenants}</span>
+                </div>
+              </div>
+              {pmAddon.next_billing_date && (
+                <p className="text-xs text-muted-foreground">
+                  Next billing: {new Date(pmAddon.next_billing_date).toLocaleDateString("en-US", {
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-4">
+              <p className="text-muted-foreground text-sm mb-3">
+                Your base plan includes{" "}
+                {subscription?.subscription_plans?.max_properties ?? 0} properties and{" "}
+                {subscription?.subscription_plans?.max_tenants ?? 0} tenants. Need more capacity?
+              </p>
+              <Link href="/app/billing/addons">
+                <Button variant="outline" size="sm">
+                  View PM Add-on Plans
+                </Button>
               </Link>
             </div>
           )}
