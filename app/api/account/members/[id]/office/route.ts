@@ -15,8 +15,9 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get current user's account membership
-    const { data: currentMember } = await supabase
+    // Get current user's account membership (use admin client to bypass
+    // self-referential RLS policies on account_members)
+    const { data: currentMember } = await supabaseAdmin
       .from("account_members")
       .select("account_id, account_role")
       .eq("agent_id", userData.user.id)
