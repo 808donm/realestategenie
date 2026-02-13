@@ -139,7 +139,7 @@ CREATE POLICY pm_addon_plans_view_all
 -- PART 4: SEED PM ADD-ON PLANS
 -- =============================================================================
 
-INSERT INTO pm_addon_plans (name, slug, description, monthly_price, max_properties, max_tenants, stripe_product_id, tier_level)
+INSERT INTO pm_addon_plans (name, slug, description, monthly_price, max_properties, max_tenants, stripe_product_id, stripe_price_id, tier_level)
 VALUES
   (
     'PM Solo',
@@ -149,6 +149,7 @@ VALUES
     25,
     125,
     'prod_Ty5wtSQl4DquSi',
+    'price_1T09kdDx8srgWVliZTXKfkTU',
     1
   ),
   (
@@ -159,6 +160,7 @@ VALUES
     50,
     250,
     'prod_Ty5xxphzzdGzIs',
+    'price_1T09lVDx8srgWVlifMGPrMuD',
     2
   ),
   (
@@ -169,6 +171,7 @@ VALUES
     100,
     500,
     'prod_Ty5zpkPbBRH7Lz',
+    'price_1T09n7Dx8srgWVliIApVsWZ4',
     3
   ),
   (
@@ -179,6 +182,7 @@ VALUES
     150,
     750,
     'prod_Ty5z73klz9t5vG',
+    'price_1T09nyDx8srgWVlifo1C7znG',
     4
   )
 ON CONFLICT (slug) DO UPDATE SET
@@ -187,6 +191,7 @@ ON CONFLICT (slug) DO UPDATE SET
   max_properties = EXCLUDED.max_properties,
   max_tenants = EXCLUDED.max_tenants,
   stripe_product_id = EXCLUDED.stripe_product_id,
+  stripe_price_id = EXCLUDED.stripe_price_id,
   tier_level = EXCLUDED.tier_level;
 
 
