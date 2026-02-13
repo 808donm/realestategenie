@@ -395,7 +395,9 @@ COMMENT ON FUNCTION public.can_add_tenant IS 'Checks if agent can add another te
 -- PART 9: UPDATE subscription_plan_limits VIEW
 -- =============================================================================
 
-CREATE OR REPLACE VIEW subscription_plan_limits AS
+DROP VIEW IF EXISTS subscription_plan_limits;
+
+CREATE VIEW subscription_plan_limits AS
 SELECT
   id,
   name,
@@ -415,5 +417,8 @@ SELECT
   (max_agents + COALESCE(max_staff, 0)) AS total_seats
 FROM public.subscription_plans
 WHERE is_active = true;
+
+-- Restore security_invoker setting from earlier migration
+ALTER VIEW subscription_plan_limits SET (security_invoker = true);
 
 COMMENT ON VIEW subscription_plan_limits IS 'Plan limits view including new staff and PM baseline limits';
