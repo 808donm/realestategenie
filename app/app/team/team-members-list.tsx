@@ -10,7 +10,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Trash2, Shield, User, UserCheck, UserCog } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Trash2, Shield, User, UserCheck, UserCog, KeyRound, Copy, Check, AlertCircle } from "lucide-react";
 
 type TeamMember = {
   id: string;
@@ -45,6 +54,69 @@ export default function TeamMembersList({
   offices: Office[];
 }) {
   const [loading, setLoading] = useState<string | null>(null);
+  const [resetTarget, setResetTarget] = useState<TeamMember | null>(null);
+  const [resetPassword, setResetPassword] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
+  const [resetSuccess, setResetSuccess] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const generatePassword = () => {
+    const chars = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    const special = "!@#$%&*";
+    let pw = "";
+    for (let i = 0; i < 10; i++) {
+      pw += chars[Math.floor(Math.random() * chars.length)];
+    }
+    pw += special[Math.floor(Math.random() * special.length)];
+    setResetPassword(pw);
+  };
+
+  const handleResetPassword = async () => {
+    if (!resetTarget || !resetPassword) return;
+    if (resetPassword.length < 8) {
+      setResetError("Password must be at least 8 characters");
+      return;
+    }
+
+    setResetLoading(true);
+    setResetError(null);
+    try {
+      const response = await fetch(`/api/account/members/${resetTarget.id}/reset-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: resetPassword }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        setResetError(data.error || "Failed to reset password");
+        return;
+      }
+
+      setResetSuccess(true);
+    } catch {
+      setResetError("Failed to reset password");
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  const copyCredentials = async () => {
+    if (!resetTarget) return;
+    const text = `Email: ${resetTarget.agents.email}\nNew Password: ${resetPassword}\n\nPlease sign in and change your password.`;
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const closeResetDialog = () => {
+    setResetTarget(null);
+    setResetPassword("");
+    setResetError(null);
+    setResetSuccess(false);
+    setCopied(false);
+  };
 
   const getRoleIcon = (role: string) => {
     switch (role) {
@@ -243,6 +315,19 @@ export default function TeamMembersList({
                     <Button
                       variant="ghost"
                       size="sm"
+                      title="Reset password"
+                      onClick={() => {
+                        setResetTarget(member);
+                        generatePassword();
+                      }}
+                      disabled={loading === member.id}
+                    >
+                      <KeyRound className="h-4 w-4 text-amber-600" />
+                    </Button>
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => handleRemoveMember(member.id, member.agents.email)}
                       disabled={loading === member.id}
                     >
@@ -259,6 +344,86 @@ export default function TeamMembersList({
           ))}
         </div>
       )}
+      {/* Reset Password Dialog */}
+      <Dialog open={!!resetTarget} onOpenChange={(v) => !v && closeResetDialog()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+            <DialogDescription>
+              Set a new temporary password for{" "}
+              <span className="font-semibold">
+                {resetTarget?.agents.display_name || resetTarget?.agents.email}
+              </span>
+              . They will be required to change it on next login.
+            </DialogDescription>
+          </DialogHeader>
+
+          {resetSuccess ? (
+            <div className="space-y-4 mt-4">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <p className="text-sm font-semibold text-green-900">Password reset successfully!</p>
+                <p className="text-sm text-green-800 mt-2">Share the new credentials with the team member:</p>
+                <div className="mt-3 bg-white border rounded-lg p-3 font-mono text-sm">
+                  <p><span className="text-gray-500">Email:</span> {resetTarget?.agents.email}</p>
+                  <p><span className="text-gray-500">Password:</span> {resetPassword}</p>
+                </div>
+                <p className="text-xs text-green-700 mt-2">
+                  They will be required to change their password on next login.
+                </p>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={copyCredentials}>
+                  {copied ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
+                  {copied ? "Copied!" : "Copy Credentials"}
+                </Button>
+                <Button onClick={closeResetDialog}>Done</Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4 mt-4">
+              <div className="space-y-2">
+                <Label htmlFor="reset-password">New Temporary Password</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="reset-password"
+                    type="text"
+                    placeholder="Min 8 characters"
+                    value={resetPassword}
+                    onChange={(e) => setResetPassword(e.target.value)}
+                    minLength={8}
+                    disabled={resetLoading}
+                  />
+                  <Button type="button" variant="outline" onClick={generatePassword} disabled={resetLoading}>
+                    Generate
+                  </Button>
+                </div>
+                <p className="text-xs text-gray-500">
+                  The member will be required to change this on next login.
+                </p>
+              </div>
+
+              {resetError && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 text-red-600 mt-0.5" />
+                  <p className="text-sm text-red-800">{resetError}</p>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-4">
+                <Button variant="outline" onClick={closeResetDialog} disabled={resetLoading}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleResetPassword}
+                  disabled={resetLoading || resetPassword.length < 8}
+                >
+                  {resetLoading ? "Resetting..." : "Reset Password"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
