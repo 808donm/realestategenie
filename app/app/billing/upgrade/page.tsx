@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Check, ArrowRight, Crown, Zap, Building2, Users, Home, UserCheck } from "lucide-react";
+import { Check, ArrowRight, Crown, Zap, Building2, Users, Home, UserCheck, Warehouse } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -46,6 +46,21 @@ export default async function UpgradePage() {
       )
     `)
     .eq("is_enabled", true);
+
+  // Get PM addon plans
+  const { data: pmPlans } = await supabaseAdmin
+    .from("pm_addon_plans")
+    .select("*")
+    .eq("is_active", true)
+    .order("tier_level", { ascending: true });
+
+  // Get current PM addon (if any)
+  const { data: currentPmAddon } = await supabaseAdmin
+    .from("pm_addon_subscriptions")
+    .select("pm_addon_plan_id")
+    .eq("agent_id", user.id)
+    .eq("status", "active")
+    .maybeSingle();
 
   // Group features by plan
   const featuresByPlan = new Map<string, any[]>();
@@ -245,6 +260,77 @@ export default async function UpgradePage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Property Management Add-ons */}
+      {pmPlans && pmPlans.length > 0 && (
+        <div className="max-w-7xl mx-auto space-y-6">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-2">Property Management Add-ons</h2>
+            <p className="text-muted-foreground">
+              All plans include base PM capacity (10 properties, 50 tenants). Need more? Add a PM plan.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {pmPlans.map((pm) => {
+              const isCurrentAddon = currentPmAddon?.pm_addon_plan_id === pm.id;
+              const pmIcons: Record<number, any> = { 1: Home, 2: Building2, 3: Warehouse, 4: Users };
+              const pmGradients: Record<number, string> = {
+                1: "from-emerald-500 to-emerald-600",
+                2: "from-teal-500 to-teal-600",
+                3: "from-cyan-500 to-cyan-600",
+                4: "from-blue-500 to-blue-600",
+              };
+              const Icon = pmIcons[pm.tier_level] || Home;
+              const gradient = pmGradients[pm.tier_level] || "from-gray-500 to-gray-600";
+
+              return (
+                <Card
+                  key={pm.id}
+                  className={`relative ${isCurrentAddon ? "ring-2 ring-green-500" : ""}`}
+                >
+                  <CardHeader className={`bg-gradient-to-r ${gradient} text-white rounded-t-lg py-4`}>
+                    <div className="flex items-center justify-between">
+                      <Icon className="h-6 w-6" />
+                      {isCurrentAddon && (
+                        <Badge variant="secondary" className="bg-white/20 text-white text-xs">
+                          Active
+                        </Badge>
+                      )}
+                    </div>
+                    <CardTitle className="text-lg mt-2">{pm.name}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    <div className="flex items-baseline gap-1 mb-3">
+                      <span className="text-2xl font-bold">${pm.monthly_price}</span>
+                      <span className="text-muted-foreground text-sm">/mo</span>
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Properties</span>
+                        <span className="font-semibold">{pm.max_properties}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Tenants</span>
+                        <span className="font-semibold">{pm.max_tenants}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          <div className="text-center">
+            <Link href="/app/billing/addons">
+              <Button size="lg" variant="outline">
+                View PM Add-on Details
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* FAQ Section */}
       <div className="max-w-3xl mx-auto space-y-4">

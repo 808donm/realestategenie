@@ -295,9 +295,15 @@ export default async function BillingPage({ searchParams }: PageProps) {
                 )}
               </div>
 
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-3 pt-4 flex-wrap">
                 <Link href="/app/billing/upgrade">
                   <Button variant="default">Change Plan</Button>
+                </Link>
+                <Link href="/app/billing/addons">
+                  <Button variant="outline" className="border-emerald-300 text-emerald-700 hover:bg-emerald-50">
+                    <Home className="mr-2 h-4 w-4" />
+                    {pmAddon ? "Manage PM Add-on" : "Add PM Plan"}
+                  </Button>
                 </Link>
                 {subscription.subscription_plans.monthly_price > 0 && (
                   <Link href="/app/billing/payment-methods">
