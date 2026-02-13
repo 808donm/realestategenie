@@ -65,7 +65,7 @@ export default function TeamMembersList({
     const chars = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     const special = "!@#$%&*";
     let pw = "";
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 14; i++) {
       pw += chars[Math.floor(Math.random() * chars.length)];
     }
     pw += special[Math.floor(Math.random() * special.length)];
@@ -74,8 +74,8 @@ export default function TeamMembersList({
 
   const handleResetPassword = async () => {
     if (!resetTarget || !resetPassword) return;
-    if (resetPassword.length < 8) {
-      setResetError("Password must be at least 8 characters");
+    if (resetPassword.length < 12) {
+      setResetError("Password must be at least 12 characters");
       return;
     }
 
@@ -387,10 +387,10 @@ export default function TeamMembersList({
                   <Input
                     id="reset-password"
                     type="text"
-                    placeholder="Min 8 characters"
+                    placeholder="Min 12 characters"
                     value={resetPassword}
                     onChange={(e) => setResetPassword(e.target.value)}
-                    minLength={8}
+                    minLength={12}
                     disabled={resetLoading}
                   />
                   <Button type="button" variant="outline" onClick={generatePassword} disabled={resetLoading}>
@@ -415,7 +415,7 @@ export default function TeamMembersList({
                 </Button>
                 <Button
                   onClick={handleResetPassword}
-                  disabled={resetLoading || resetPassword.length < 8}
+                  disabled={resetLoading || resetPassword.length < 12}
                 >
                   {resetLoading ? "Resetting..." : "Reset Password"}
                 </Button>

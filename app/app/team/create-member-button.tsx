@@ -70,7 +70,7 @@ export default function CreateMemberButton({
     const chars = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     const special = "!@#$%&*";
     let pw = "";
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 14; i++) {
       pw += chars[Math.floor(Math.random() * chars.length)];
     }
     pw += special[Math.floor(Math.random() * special.length)];
@@ -94,8 +94,8 @@ export default function CreateMemberButton({
       return;
     }
 
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters");
+    if (password.length < 12) {
+      setError("Password must be at least 12 characters");
       return;
     }
 
@@ -252,11 +252,11 @@ export default function CreateMemberButton({
                 <Input
                   id="create-password"
                   type="text"
-                  placeholder="Min 8 characters"
+                  placeholder="Min 12 characters"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  minLength={8}
+                  minLength={12}
                   disabled={loading}
                 />
                 <Button type="button" variant="outline" onClick={generatePassword} disabled={loading}>

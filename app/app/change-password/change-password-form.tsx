@@ -19,8 +19,8 @@ export default function ChangePasswordForm() {
     e.preventDefault();
     setError(null);
 
-    if (newPassword.length < 8) {
-      setError("Password must be at least 8 characters");
+    if (newPassword.length < 12) {
+      setError("Password must be at least 12 characters");
       return;
     }
 
@@ -66,11 +66,11 @@ export default function ChangePasswordForm() {
             <Input
               id="new-password"
               type="password"
-              placeholder="At least 8 characters"
+              placeholder="At least 12 characters"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               required
-              minLength={8}
+              minLength={12}
               disabled={loading}
             />
           </div>
@@ -84,7 +84,7 @@ export default function ChangePasswordForm() {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
-              minLength={8}
+              minLength={12}
               disabled={loading}
             />
           </div>

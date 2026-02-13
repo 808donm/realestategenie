@@ -30,8 +30,8 @@ function TenantRegisterForm() {
     setError("");
 
     // Validation
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters long");
+    if (password.length < 12) {
+      setError("Password must be at least 12 characters long");
       return;
     }
 
@@ -133,11 +133,11 @@ function TenantRegisterForm() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
                 required
-                minLength={8}
+                minLength={12}
                 disabled={loading}
               />
               <p className="text-xs text-muted-foreground">
-                Must be at least 8 characters long
+                Must be at least 12 characters long
               </p>
             </div>
 
@@ -150,7 +150,7 @@ function TenantRegisterForm() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Confirm your password"
                 required
-                minLength={8}
+                minLength={12}
                 disabled={loading}
               />
             </div>

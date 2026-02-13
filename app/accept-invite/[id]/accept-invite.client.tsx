@@ -31,8 +31,8 @@ export default function AcceptInviteClient({
       return;
     }
 
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters");
+    if (password.length < 12) {
+      setError("Password must be at least 12 characters");
       return;
     }
 
@@ -255,8 +255,8 @@ export default function AcceptInviteClient({
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                minLength={8}
-                placeholder="At least 8 characters"
+                minLength={12}
+                placeholder="At least 12 characters"
                 style={{
                   width: "100%",
                   padding: "12px 16px",
@@ -276,7 +276,7 @@ export default function AcceptInviteClient({
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                minLength={8}
+                minLength={12}
                 placeholder="Re-enter your password"
                 style={{
                   width: "100%",
