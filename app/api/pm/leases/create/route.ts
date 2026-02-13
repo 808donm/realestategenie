@@ -4,6 +4,7 @@ import { GHLClient } from "@/lib/integrations/ghl-client";
 import { prepareGHLContract, prepareFirstMonthInvoice } from "@/lib/integrations/lease-to-ghl-contract";
 import { PandaDocClient } from "@/lib/integrations/pandadoc-client";
 import { preparePandaDocLease } from "@/lib/integrations/lease-to-pandadoc";
+import { assertCanAddTenant } from "@/lib/subscriptions/server-utils";
 
 export async function POST(request: NextRequest) {
   try {
@@ -51,6 +52,16 @@ export async function POST(request: NextRequest) {
       nsf_fee,
       deposit_return_days,
     } = body;
+
+    // Check PM tenant limit before allowing lease creation
+    try {
+      await assertCanAddTenant(userData.user.id);
+    } catch (limitError: any) {
+      return NextResponse.json(
+        { error: limitError.message, code: "TENANT_LIMIT_REACHED" },
+        { status: 403 }
+      );
+    }
 
     // Validate required fields
     if (!pm_property_id || !tenant_name || !tenant_email || !lease_start_date || !lease_end_date || !monthly_rent || !security_deposit) {

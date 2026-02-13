@@ -22,11 +22,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { plan_id } = await request.json();
+    const { plan_id, billing_cycle } = await request.json();
 
     if (!plan_id) {
       return NextResponse.json({ error: "Plan ID is required" }, { status: 400 });
     }
+
+    const isYearly = billing_cycle === "yearly";
 
     // Get the selected plan
     const { data: selectedPlan } = await supabaseAdmin
@@ -71,32 +73,53 @@ export async function POST(request: NextRequest) {
       customerId = customer.id;
     }
 
-    // Create or get Stripe price ID for the plan
-    // First check if plan already has a Stripe price ID
-    let priceId = selectedPlan.stripe_price_id;
+    // Resolve the Stripe price ID
+    // Priority: 1) Cached price ID  2) Look up from product ID  3) Create new price
+    let priceId = isYearly ? selectedPlan.stripe_yearly_price_id : selectedPlan.stripe_price_id;
 
     if (!priceId) {
-      // Create Stripe price for this plan
+      // Try to look up price from the Stripe product ID
+      const productId = isYearly
+        ? selectedPlan.stripe_yearly_product_id
+        : selectedPlan.stripe_monthly_product_id;
+
+      if (productId) {
+        const prices = await stripe.prices.list({
+          product: productId,
+          active: true,
+          type: "recurring",
+          limit: 1,
+        });
+        if (prices.data.length > 0) {
+          priceId = prices.data[0].id;
+          // Cache the resolved price ID
+          const updateField = isYearly ? "stripe_yearly_price_id" : "stripe_price_id";
+          await supabaseAdmin
+            .from("subscription_plans")
+            .update({ [updateField]: priceId })
+            .eq("id", plan_id);
+        }
+      }
+    }
+
+    if (!priceId) {
+      // Fallback: create a new price (legacy behavior)
       const price = await stripe.prices.create({
         currency: "usd",
-        unit_amount: Math.round(selectedPlan.monthly_price * 100), // Convert to cents
-        recurring: {
-          interval: "month",
-        },
+        unit_amount: Math.round(
+          (isYearly ? (selectedPlan.annual_price || selectedPlan.monthly_price * 12) : selectedPlan.monthly_price) * 100
+        ),
+        recurring: { interval: isYearly ? "year" : "month" },
         product_data: {
           name: selectedPlan.name,
-          metadata: {
-            plan_id: selectedPlan.id,
-            tier_level: selectedPlan.tier_level.toString(),
-          },
+          metadata: { plan_id: selectedPlan.id, tier_level: selectedPlan.tier_level.toString() },
         },
       });
       priceId = price.id;
-
-      // Save the price ID to the plan for future use
+      const updateField = isYearly ? "stripe_yearly_price_id" : "stripe_price_id";
       await supabaseAdmin
         .from("subscription_plans")
-        .update({ stripe_price_id: priceId })
+        .update({ [updateField]: priceId })
         .eq("id", plan_id);
     }
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
+import { assertCanAddProperty } from "@/lib/subscriptions/server-utils";
 
 /**
  * PM Properties API
@@ -63,6 +64,16 @@ export async function POST(request: NextRequest) {
       property_photo_url,
       status,
     } = body;
+
+    // Check PM property limit before allowing creation
+    try {
+      await assertCanAddProperty(user.id);
+    } catch (limitError: any) {
+      return NextResponse.json(
+        { error: limitError.message, code: "PROPERTY_LIMIT_REACHED" },
+        { status: 403 }
+      );
+    }
 
     // Validation
     if (!address || !city || !state_province) {

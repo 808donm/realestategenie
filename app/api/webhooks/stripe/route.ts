@@ -86,6 +86,12 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
     return;
   }
 
+  // Check if this is a PM add-on subscription
+  if (session.metadata?.type === "pm_addon") {
+    await handlePmAddonCheckout(session);
+    return;
+  }
+
   // Otherwise, this is an existing user subscription (original flow)
   const agentId = session.metadata?.agent_id;
   const planId = session.metadata?.plan_id;
@@ -117,17 +123,22 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
     .eq("agent_id", agentId)
     .single();
 
+  // Determine billing cycle from metadata or Stripe subscription interval
+  const billingFrequency = session.metadata?.billing_frequency;
+  const isYearly = billingFrequency === "yearly";
+  const periodDays = isYearly ? 365 : 30;
+
   const subscriptionData = {
     agent_id: agentId,
     subscription_plan_id: planId,
     status: "active" as const,
-    monthly_price: plan.monthly_price,
-    billing_cycle: "monthly" as const,
+    monthly_price: isYearly ? plan.annual_price || plan.monthly_price : plan.monthly_price,
+    billing_cycle: (isYearly ? "annual" : "monthly") as string,
     stripe_customer_id: customerId,
     stripe_subscription_id: subscriptionId,
     current_period_start: new Date().toISOString(),
-    current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
-    next_billing_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    current_period_end: new Date(Date.now() + periodDays * 24 * 60 * 60 * 1000).toISOString(),
+    next_billing_date: new Date(Date.now() + periodDays * 24 * 60 * 60 * 1000).toISOString(),
   };
 
   if (existingSubscription) {
@@ -220,11 +231,74 @@ async function handleNewUserRegistrationPayment(session: Stripe.Checkout.Session
   console.log(`New user registration completed for ${accessRequest.email}`);
 }
 
+async function handlePmAddonCheckout(session: Stripe.Checkout.Session) {
+  const agentId = session.metadata?.agent_id;
+  const pmAddonPlanId = session.metadata?.pm_addon_plan_id;
+  const existingAddonId = session.metadata?.existing_addon_id;
+
+  if (!agentId || !pmAddonPlanId) {
+    console.error("Missing metadata in PM add-on checkout session");
+    return;
+  }
+
+  const customerId = session.customer as string;
+  const subscriptionId = session.subscription as string;
+
+  // Get the agent's account_id if they have one
+  const { data: accountMember } = await supabaseAdmin
+    .from("account_members")
+    .select("account_id")
+    .eq("agent_id", agentId)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  const addonData = {
+    agent_id: agentId,
+    account_id: accountMember?.account_id || null,
+    pm_addon_plan_id: pmAddonPlanId,
+    stripe_customer_id: customerId,
+    stripe_subscription_id: subscriptionId,
+    status: "active" as const,
+    current_period_start: new Date().toISOString().split("T")[0],
+    current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+    next_billing_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+  };
+
+  if (existingAddonId) {
+    // Update existing add-on (plan upgrade/downgrade)
+    await supabaseAdmin
+      .from("pm_addon_subscriptions")
+      .update({ ...addonData, updated_at: new Date().toISOString() })
+      .eq("id", existingAddonId);
+  } else {
+    // Upsert: handles both new and replacement (unique on agent_id)
+    await supabaseAdmin
+      .from("pm_addon_subscriptions")
+      .upsert(addonData, { onConflict: "agent_id" });
+  }
+
+  console.log(`PM add-on subscription activated for agent ${agentId} on plan ${pmAddonPlanId}`);
+}
+
 async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
   const agentId = subscription.metadata?.agent_id;
 
   if (!agentId) {
     console.error("Missing agent_id in subscription metadata");
+    return;
+  }
+
+  // Check if this is a PM add-on subscription
+  if (subscription.metadata?.type === "pm_addon") {
+    const status = mapStripeStatus(subscription.status);
+    await supabaseAdmin
+      .from("pm_addon_subscriptions")
+      .update({
+        status,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("stripe_subscription_id", subscription.id);
+    console.log(`PM add-on subscription updated for agent ${agentId}: ${status}`);
     return;
   }
 
@@ -264,6 +338,20 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
 
   if (!agentId) {
     console.error("Missing agent_id in subscription metadata");
+    return;
+  }
+
+  // Check if this is a PM add-on subscription
+  if (subscription.metadata?.type === "pm_addon") {
+    await supabaseAdmin
+      .from("pm_addon_subscriptions")
+      .update({
+        status: "canceled",
+        canceled_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("stripe_subscription_id", subscription.id);
+    console.log(`PM add-on subscription canceled for agent ${agentId}`);
     return;
   }
 
