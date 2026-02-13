@@ -16,15 +16,19 @@ export async function PATCH(
     }
 
     // Get current user's account membership (use admin client to bypass
-    // self-referential RLS policies on account_members)
-    const { data: currentMember } = await supabaseAdmin
+    // self-referential RLS policies on account_members; use .limit(1)
+    // instead of .single() because a user may belong to multiple accounts)
+    const { data: currentMembers } = await supabaseAdmin
       .from("account_members")
       .select("account_id, account_role")
       .eq("agent_id", userData.user.id)
       .eq("is_active", true)
-      .single();
+      .in("account_role", ["owner", "admin"])
+      .limit(1);
 
-    if (!currentMember || (currentMember.account_role !== "owner" && currentMember.account_role !== "admin")) {
+    const currentMember = currentMembers?.[0] ?? null;
+
+    if (!currentMember) {
       return NextResponse.json({ error: "Admin access required" }, { status: 403 });
     }
 
