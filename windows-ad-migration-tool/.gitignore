@@ -1,0 +1,35 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.vs/
+*.DotSettings.user
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Logs and exports
+logs/
+exports/
+*.log
+
+# Sensitive files
+*.pfx
+*.key
+credentials.json
+appsettings.Development.json
+
+# OS
+Thumbs.db
+.DS_Store

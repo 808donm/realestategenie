@@ -1,0 +1,37 @@
+{
+  "Name": "Example Migration Plan",
+  "CreatedAt": "2026-02-21T00:00:00Z",
+  "SourceDomain": {
+    "DomainController": "dc01.source.local",
+    "DomainName": "source.local",
+    "UseSSL": false
+  },
+  "TargetDomain": {
+    "DomainController": "dc01.target.local",
+    "DomainName": "target.local",
+    "UseSSL": true
+  },
+  "Options": {
+    "MigratePasswords": false,
+    "MigrateSIDHistory": false,
+    "MigrateGroupMemberships": true,
+    "MigrateUserProfiles": false,
+    "DisableSourceAccounts": false,
+    "BatchSize": 50,
+    "RetryAttempts": 3,
+    "TimeoutSeconds": 30
+  },
+  "OUMappings": [
+    {
+      "SourceOU": "OU=Users,DC=source,DC=local",
+      "TargetOU": "OU=MigratedUsers,DC=target,DC=local"
+    },
+    {
+      "SourceOU": "OU=Groups,DC=source,DC=local",
+      "TargetOU": "OU=MigratedGroups,DC=target,DC=local"
+    }
+  ],
+  "SelectedUserDNs": [],
+  "SelectedGroupDNs": [],
+  "ConflictResolution": "Skip"
+}

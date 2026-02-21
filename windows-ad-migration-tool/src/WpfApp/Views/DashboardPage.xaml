@@ -1,0 +1,47 @@
+<Page x:Class="ADMigrationTool.Views.DashboardPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      Title="Dashboard">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="8">
+            <TextBlock Text="Migration Dashboard" FontSize="20" FontWeight="Bold" Margin="0,0,0,16" />
+
+            <!-- Quick Status Cards -->
+            <WrapPanel>
+                <Border Style="{StaticResource CardStyle}" Width="200" Margin="0,0,12,12">
+                    <StackPanel>
+                        <TextBlock Text="Users to Migrate" FontSize="12" Foreground="Gray" />
+                        <TextBlock x:Name="UserCount" Text="0" FontSize="32" FontWeight="Bold" Foreground="#1a237e" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource CardStyle}" Width="200" Margin="0,0,12,12">
+                    <StackPanel>
+                        <TextBlock Text="Groups to Migrate" FontSize="12" Foreground="Gray" />
+                        <TextBlock x:Name="GroupCount" Text="0" FontSize="32" FontWeight="Bold" Foreground="#1a237e" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource CardStyle}" Width="200" Margin="0,0,12,12">
+                    <StackPanel>
+                        <TextBlock Text="Migration Status" FontSize="12" Foreground="Gray" />
+                        <TextBlock x:Name="MigrationStatus" Text="Not Started" FontSize="18" FontWeight="Bold" Foreground="#ff6f00" />
+                    </StackPanel>
+                </Border>
+            </WrapPanel>
+
+            <!-- Recent Activity -->
+            <TextBlock Text="Recent Activity" FontSize="16" FontWeight="SemiBold" Margin="0,16,0,8" />
+            <Border Background="#fafafa" CornerRadius="4" Padding="12" BorderBrush="#e0e0e0" BorderThickness="1">
+                <ListView x:Name="ActivityList" BorderThickness="0" Background="Transparent">
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Header="Time" Width="150" DisplayMemberBinding="{Binding Timestamp}" />
+                            <GridViewColumn Header="Action" Width="200" DisplayMemberBinding="{Binding Action}" />
+                            <GridViewColumn Header="Details" Width="300" DisplayMemberBinding="{Binding Details}" />
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

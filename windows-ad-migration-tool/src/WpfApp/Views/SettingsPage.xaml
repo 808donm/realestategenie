@@ -1,0 +1,63 @@
+<Page x:Class="ADMigrationTool.Views.SettingsPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      Title="Settings">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="8" MaxWidth="600" HorizontalAlignment="Left">
+            <TextBlock Text="Settings" FontSize="20" FontWeight="Bold" Margin="0,0,0,16" />
+
+            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,12">
+                <StackPanel>
+                    <TextBlock Text="Logging" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8" />
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <TextBlock Text="Log Level:" VerticalAlignment="Center" Margin="0,0,8,0" />
+                        <ComboBox x:Name="LogLevel" Width="150" SelectedIndex="1">
+                            <ComboBoxItem Content="Debug" />
+                            <ComboBoxItem Content="Information" />
+                            <ComboBoxItem Content="Warning" />
+                            <ComboBoxItem Content="Error" />
+                        </ComboBox>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <TextBlock Text="Log Directory:" VerticalAlignment="Center" Margin="0,0,8,0" />
+                        <TextBox x:Name="LogDirectory" Width="300" Padding="4" Text=".\logs" />
+                        <Button Content="Browse" Padding="8,4" Margin="4,0,0,0" Click="BrowseLogDir_Click" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,12">
+                <StackPanel>
+                    <TextBlock Text="Migration Defaults" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8" />
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <TextBlock Text="Batch Size:" VerticalAlignment="Center" Margin="0,0,8,0" />
+                        <TextBox x:Name="BatchSize" Width="80" Padding="4" Text="50" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <TextBlock Text="Retry Attempts:" VerticalAlignment="Center" Margin="0,0,8,0" />
+                        <TextBox x:Name="RetryAttempts" Width="80" Padding="4" Text="3" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <TextBlock Text="Timeout (seconds):" VerticalAlignment="Center" Margin="0,0,8,0" />
+                        <TextBox x:Name="TimeoutSeconds" Width="80" Padding="4" Text="30" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,12">
+                <StackPanel>
+                    <TextBlock Text="PowerShell Integration" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8" />
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <TextBlock Text="Scripts Path:" VerticalAlignment="Center" Margin="0,0,8,0" />
+                        <TextBox x:Name="ScriptsPath" Width="300" Padding="4" Text=".\PowerShell\Scripts" />
+                        <Button Content="Browse" Padding="8,4" Margin="4,0,0,0" Click="BrowseScriptsDir_Click" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Button Content="Save Settings" Padding="16,8" HorizontalAlignment="Left"
+                    Click="SaveSettings_Click" Style="{StaticResource PrimaryButtonStyle}" />
+        </StackPanel>
+    </ScrollViewer>
+</Page>

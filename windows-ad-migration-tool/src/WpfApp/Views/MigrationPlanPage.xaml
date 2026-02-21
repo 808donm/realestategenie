@@ -1,0 +1,71 @@
+<Page x:Class="ADMigrationTool.Views.MigrationPlanPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      Title="Migration Plan">
+
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Migration Plan" FontSize="20" FontWeight="Bold" Margin="0,0,0,16" />
+
+        <ScrollViewer Grid.Row="1">
+            <StackPanel>
+                <!-- Migration Options -->
+                <Border Style="{StaticResource CardStyle}" Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock Text="Migration Options" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8" />
+
+                        <CheckBox x:Name="MigratePasswords" Content="Migrate passwords (requires PES)" Margin="0,0,0,6" />
+                        <CheckBox x:Name="MigrateSIDHistory" Content="Migrate SID history" Margin="0,0,0,6" />
+                        <CheckBox x:Name="MigrateGroupMemberships" Content="Migrate group memberships" IsChecked="True" Margin="0,0,0,6" />
+                        <CheckBox x:Name="MigrateUserProfiles" Content="Migrate user profiles" Margin="0,0,0,6" />
+                        <CheckBox x:Name="DisableSourceAccounts" Content="Disable source accounts after migration" Margin="0,0,0,6" />
+                        <CheckBox x:Name="CreateMappingFile" Content="Generate OU mapping file" IsChecked="True" Margin="0,0,0,6" />
+                    </StackPanel>
+                </Border>
+
+                <!-- OU Mapping -->
+                <Border Style="{StaticResource CardStyle}" Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock Text="OU Mapping" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8" />
+                        <TextBlock Text="Map source OUs to target OUs for migrated objects." Foreground="Gray" Margin="0,0,0,8" />
+                        <DataGrid x:Name="OUMappingGrid" AutoGenerateColumns="False" Height="200">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Source OU" Binding="{Binding SourceOU}" Width="*" />
+                                <DataGridTextColumn Header="Target OU" Binding="{Binding TargetOU}" Width="*" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                        <Button Content="Auto-Map OUs" Padding="12,6" Margin="0,8,0,0"
+                                HorizontalAlignment="Left" Click="AutoMapOUs_Click" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Conflict Resolution -->
+                <Border Style="{StaticResource CardStyle}" Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock Text="Conflict Resolution" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8" />
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <TextBlock Text="When a user already exists in target:" VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <ComboBox x:Name="ConflictResolution" Width="200" SelectedIndex="0">
+                                <ComboBoxItem Content="Skip" />
+                                <ComboBoxItem Content="Merge attributes" />
+                                <ComboBoxItem Content="Replace" />
+                                <ComboBoxItem Content="Rename and create" />
+                            </ComboBox>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button Content="Validate Plan" Padding="16,8" Margin="0,0,8,0" Click="ValidatePlan_Click" />
+            <Button Content="Save Plan" Padding="16,8" Margin="0,0,8,0" Click="SavePlan_Click" />
+            <Button Content="Load Plan" Padding="16,8" Click="LoadPlan_Click" />
+        </StackPanel>
+    </Grid>
+</Page>
