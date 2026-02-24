@@ -428,7 +428,7 @@ export async function POST(req: Request) {
                 const heatLevel = getHeatLevel(heatScore);
                 console.log(`Lead heat level: ${heatLevel} (score: ${heatScore})`);
 
-                await createGHLOpportunity({
+                const opportunityId = await createGHLOpportunity({
                   locationId: ghlConfig.location_id,
                   accessToken: ghlConfig.access_token,
                   pipelineId: ghlConfig.ghl_pipeline_id,
@@ -438,7 +438,20 @@ export async function POST(req: Request) {
                   monetaryValue: evt?.price || 0,
                   status: 'open',
                 });
-                console.log('✅ GHL Opportunity created successfully in New Lead stage');
+                console.log('✅ GHL Opportunity created successfully:', opportunityId);
+
+                // Store the opportunity ID back on the lead record
+                if (opportunityId) {
+                  await admin
+                    .from("lead_submissions")
+                    .update({
+                      ghl_opportunity_id: opportunityId,
+                      ghl_contact_id: contactId,
+                      pushed_to_ghl: true,
+                    })
+                    .eq("id", lead.id);
+                  console.log('✅ Opportunity ID saved to lead_submissions');
+                }
 
                 try {
                   const heatTag = heatLevel === 'hot' ? 'Hot Lead'

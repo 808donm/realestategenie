@@ -306,10 +306,13 @@ export async function syncLeadToGHL(leadId: string): Promise<{
       .eq("event_id", lead.event_id)
       .single();
 
-    let opportunityId: string | undefined;
+    let opportunityId: string | undefined = lead.ghl_opportunity_id || undefined;
 
-    // Create opportunity if mapping exists
-    if (mapping && mapping.ghl_pipeline_id) {
+    // Create opportunity if mapping exists and one wasn't already created
+    // (the inline notification path in the submit route may have already created one)
+    if (opportunityId) {
+      console.log("Opportunity already exists for this lead:", opportunityId, "- skipping creation");
+    } else if (mapping && mapping.ghl_pipeline_id) {
       const heatLevel = getHeatLevel(lead.heat_score);
       const stageId =
         heatLevel === "hot"
