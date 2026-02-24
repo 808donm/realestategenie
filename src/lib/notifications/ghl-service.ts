@@ -597,36 +597,33 @@ export async function createOrUpdateGHLContact(params: {
         const errorData = JSON.parse(errorText);
         console.log('[GHL] Parsed error data:', JSON.stringify(errorData));
 
-        if (errorData.statusCode === 422 || errorData.statusCode === 400) {
-          // Check for duplicate contact in various error formats
-          const existingContactId = errorData.meta?.contactId || errorData.contactId || errorData.contact?.id;
+        // Check for duplicate contact in various error formats (don't gate on statusCode)
+        const existingContactId = errorData.meta?.contactId || errorData.contactId || errorData.contact?.id;
 
-          if (existingContactId) {
-            console.log('[GHL] Contact already exists, using existing contact ID:', existingContactId);
+        if (existingContactId) {
+          console.log('[GHL] Contact already exists, using existing contact ID:', existingContactId);
 
-            // Add tags to existing contact if provided
-            if (params.tags && params.tags.length > 0) {
-              try {
-                console.log('[GHL] Adding tags to existing contact...');
-                await addGHLTags({
-                  contactId: existingContactId,
-                  locationId: params.locationId,
-                  accessToken: params.accessToken,
-                  tags: params.tags,
-                });
-                console.log('[GHL] Tags added successfully');
-              } catch (tagError) {
-                console.error('[GHL] Failed to add tags, but continuing:', tagError);
-              }
+          // Add tags to existing contact if provided
+          if (params.tags && params.tags.length > 0) {
+            try {
+              console.log('[GHL] Adding tags to existing contact...');
+              await addGHLTags({
+                contactId: existingContactId,
+                locationId: params.locationId,
+                accessToken: params.accessToken,
+                tags: params.tags,
+              });
+              console.log('[GHL] Tags added successfully');
+            } catch (tagError) {
+              console.error('[GHL] Failed to add tags, but continuing:', tagError);
             }
-
-            // Return the existing contact
-            return { id: existingContactId };
           }
+
+          // Return the existing contact
+          return { id: existingContactId };
         }
       } catch (parseError) {
         console.error('[GHL] Failed to parse error response:', parseError);
-        // If we can't parse the error, continue with the original error
       }
 
       throw new Error(`GHL contact creation failed: ${errorText}`);

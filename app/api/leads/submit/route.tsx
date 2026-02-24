@@ -280,20 +280,52 @@ export async function POST(req: Request) {
             console.log('🔥 Adding RED HOT tags:', contactTags);
           }
 
-          const contact = await createOrUpdateGHLContact({
-            locationId: ghlConfig.location_id,
-            accessToken: ghlConfig.access_token,
-            email: payload.email,
-            phone: payload.phone_e164,
-            firstName,
-            lastName,
-            source: 'Open House',
-            tags: contactTags, // Tag will trigger workflow
-          });
+          let contactId: string | undefined;
+          try {
+            const contact = await createOrUpdateGHLContact({
+              locationId: ghlConfig.location_id,
+              accessToken: ghlConfig.access_token,
+              email: payload.email,
+              phone: payload.phone_e164,
+              firstName,
+              lastName,
+              source: 'Open House',
+              tags: contactTags, // Tag will trigger workflow
+            });
 
-          const contactId = (contact as { id?: string })?.id;
-          console.log('GHL contact created successfully:', contactId);
-          console.log('GHL contact response:', JSON.stringify(contact));
+            contactId = (contact as { id?: string })?.id;
+            console.log('GHL contact created successfully:', contactId);
+            console.log('GHL contact response:', JSON.stringify(contact));
+          } catch (contactError: any) {
+            console.error('❌ GHL contact creation failed:', contactError.message);
+            console.error('❌ Will attempt to search for existing contact as fallback');
+
+            // Fallback: search for existing contact by email/phone
+            try {
+              const { default: searchFallback } = await import("@/lib/notifications/ghl-service").then(m => ({ default: m }));
+              const searchResponse = await fetch(
+                `https://services.leadconnectorhq.com/contacts/search/duplicate?locationId=${ghlConfig.location_id}&email=${encodeURIComponent(payload.email)}`,
+                {
+                  method: 'GET',
+                  headers: {
+                    'Authorization': `Bearer ${ghlConfig.access_token}`,
+                    'Content-Type': 'application/json',
+                    'Version': '2021-07-28',
+                  },
+                }
+              );
+
+              if (searchResponse.ok) {
+                const searchData = await searchResponse.json();
+                contactId = searchData?.contact?.id;
+                if (contactId) {
+                  console.log('✅ Found existing contact via fallback search:', contactId);
+                }
+              }
+            } catch (searchError: any) {
+              console.error('❌ Fallback contact search also failed:', searchError.message);
+            }
+          }
 
           // If attendee is represented by a realtor, set DND and add note
           if (contactId && payload.representation === 'yes') {
