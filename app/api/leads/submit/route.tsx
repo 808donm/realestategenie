@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { calculateHeatScore, getHeatLevel } from "@/lib/lead-scoring";
 import { syncLeadToGHL } from "@/lib/integrations/ghl-sync";
 import { dispatchWebhook } from "@/lib/webhooks/dispatcher";
-import { createOrUpdateGHLContact, createGHLRegistrationRecord, createGHLOpenHouseRecord, createGHLOpportunity, addGHLTags, sendGHLEmail, setGHLContactDND, addGHLContactNote } from "@/lib/notifications/ghl-service";
+import { createOrUpdateGHLContact, createGHLRegistrationRecord, createGHLOpenHouseRecord, createGHLOpportunity, addGHLTags, sendGHLEmail, sendGHLSMS, setGHLContactDND, addGHLContactNote } from "@/lib/notifications/ghl-service";
 import { getValidGHLConfig } from "@/lib/integrations/ghl-token-refresh";
 import { validateQRToken } from "@/lib/security/qr-tokens";
 
@@ -329,7 +329,8 @@ export async function POST(req: Request) {
             }
           }
 
-          // Now create Registration custom object linking contact to OpenHouse
+          // Create Registration custom object linking contact to OpenHouse
+          // (requires both contactId AND openHouseRecordId)
           if (contactId && openHouseRecordId) {
             try {
               console.log('=== CREATING GHL REGISTRATION ===');
@@ -344,115 +345,123 @@ export async function POST(req: Request) {
               });
               console.log('✅ GHL Registration created successfully');
               console.log('✅ OpenHouse fields accessible in emails via {{registration.openHouses.fieldName}}');
+            } catch (linkError: any) {
+              console.error('❌ Failed to create GHL Registration (non-blocking):', linkError.message);
+              console.error('❌ Recommendation: Verify "registrations" custom object exists in GHL Settings > Custom Objects');
+            }
+          } else {
+            console.warn('⚠️ Skipping Registration custom object:', !openHouseRecordId ? 'OpenHouse record missing' : 'Contact ID missing');
+          }
 
-              // Send thank you email via GHL (for CRM history), fallback to Resend
+          // Send thank you email (only needs contactId)
+          if (contactId) {
+            try {
+              console.log('📧 Attempting to send email via GHL...');
+
+              const emailSubject = isReturnVisit
+                ? `🔥 Welcome Back! ${evt.address}`
+                : `Thank You for Visiting ${evt.address}`;
+
+              const emailHtml = isReturnVisit
+                ? getReturnVisitEmailHtml(payload.name, evt.address, flyerUrl, visitCount)
+                : getFirstVisitEmailHtml(payload.name, evt.address, flyerUrl);
+
+              await sendGHLEmail({
+                locationId: ghlConfig.location_id,
+                accessToken: ghlConfig.access_token,
+                contactId: contactId,
+                to: payload.email,
+                subject: emailSubject,
+                html: emailHtml,
+              });
+
+              console.log('✅ Email sent successfully via GHL (tracked in CRM)');
+            } catch (ghlEmailError: any) {
+              console.warn('⚠️ GHL email failed, falling back to Resend:', ghlEmailError.message);
+
               try {
-                console.log('📧 Attempting to send email via GHL...');
+                const { sendOpenHouseEmail } = await import("@/lib/email/resend");
 
-                const emailSubject = isReturnVisit
-                  ? `🔥 Welcome Back! ${evt.address}`
-                  : `Thank You for Visiting ${evt.address}`;
+                await sendOpenHouseEmail({
+                  to: payload.email,
+                  name: payload.name,
+                  propertyAddress: evt.address,
+                  flyerUrl,
+                  isReturnVisit,
+                  visitCount,
+                });
+                console.log('✅ Email sent successfully via Resend (fallback)');
+              } catch (resendError: any) {
+                console.error('❌ Both GHL and Resend email sending failed:', resendError.message);
+              }
+            }
 
-                const emailHtml = isReturnVisit
-                  ? getReturnVisitEmailHtml(payload.name, evt.address, flyerUrl, visitCount)
-                  : getFirstVisitEmailHtml(payload.name, evt.address, flyerUrl);
+            // Send SMS if attendee consented
+            if (payload.consent?.sms) {
+              try {
+                console.log('📱 Attempting to send SMS via GHL...');
 
-                await sendGHLEmail({
+                const smsMessage = isReturnVisit
+                  ? `Welcome back to ${evt.address}! 🔥 We noticed you're really interested in this property. Reply YES for the property fact sheet, or let us know if you'd like to schedule a private showing!`
+                  : `Thanks for visiting ${evt.address} today! 🏡 Reply YES for the property fact sheet. Questions? Just reply to this message and we'll get back to you!`;
+
+                await sendGHLSMS({
                   locationId: ghlConfig.location_id,
                   accessToken: ghlConfig.access_token,
-                  contactId: contactId, // GHL contact ID for conversation tracking
-                  to: payload.email,
-                  subject: emailSubject,
-                  html: emailHtml,
+                  to: contactId,
+                  message: smsMessage,
                 });
 
-                console.log('✅ Email sent successfully via GHL (tracked in CRM)');
-              } catch (ghlEmailError: any) {
-                console.warn('⚠️ GHL email failed, falling back to Resend:', ghlEmailError.message);
-
-                // Fallback to Resend for reliability
-                try {
-                  // Dynamic import to prevent build-time module loading
-                  const { sendOpenHouseEmail } = await import("@/lib/email/resend");
-
-                  await sendOpenHouseEmail({
-                    to: payload.email,
-                    name: payload.name,
-                    propertyAddress: evt.address,
-                    flyerUrl,
-                    isReturnVisit,
-                    visitCount,
-                  });
-                  console.log('✅ Email sent successfully via Resend (fallback)');
-                } catch (resendError: any) {
-                  console.error('❌ Both GHL and Resend email sending failed:', resendError.message);
-                  // Don't fail the whole registration if email fails
-                }
+                console.log('✅ SMS sent successfully via GHL');
+              } catch (smsError: any) {
+                console.error('⚠️ SMS send failed (non-blocking):', smsError.message);
               }
+            } else {
+              console.log('📱 SMS skipped - no SMS consent from attendee');
+            }
 
-              // Create Opportunity in pipeline if configured
-              if (ghlConfig.ghl_pipeline_id && ghlConfig.ghl_new_lead_stage) {
+            // Create Opportunity in pipeline if configured
+            if (ghlConfig.ghl_pipeline_id && ghlConfig.ghl_new_lead_stage) {
+              try {
+                console.log('Creating GHL Opportunity in pipeline...');
+
+                const heatLevel = getHeatLevel(heatScore);
+                console.log(`Lead heat level: ${heatLevel} (score: ${heatScore})`);
+
+                await createGHLOpportunity({
+                  locationId: ghlConfig.location_id,
+                  accessToken: ghlConfig.access_token,
+                  pipelineId: ghlConfig.ghl_pipeline_id,
+                  pipelineStageId: ghlConfig.ghl_new_lead_stage,
+                  contactId: contactId,
+                  name: `${payload.name} - ${evt?.address || 'Open House'}`,
+                  monetaryValue: evt?.price || 0,
+                  status: 'open',
+                });
+                console.log('✅ GHL Opportunity created successfully in New Lead stage');
+
                 try {
-                  console.log('Creating GHL Opportunity in pipeline...');
+                  const heatTag = heatLevel === 'hot' ? 'Hot Lead'
+                                : heatLevel === 'warm' ? 'Warm Lead'
+                                : 'Cold Lead';
 
-                  // Calculate heat level for tagging
-                  const heatLevel = getHeatLevel(heatScore);
-                  console.log(`Lead heat level: ${heatLevel} (score: ${heatScore})`);
-
-                  // All leads start at "New Lead" stage
-                  await createGHLOpportunity({
+                  await addGHLTags({
+                    contactId: contactId,
                     locationId: ghlConfig.location_id,
                     accessToken: ghlConfig.access_token,
-                    pipelineId: ghlConfig.ghl_pipeline_id,
-                    pipelineStageId: ghlConfig.ghl_new_lead_stage,
-                    contactId: contactId,
-                    name: `${payload.name} - ${evt?.address || 'Open House'}`,
-                    monetaryValue: evt?.price || 0,
-                    status: 'open',
+                    tags: [heatTag],
                   });
-                  console.log('GHL Opportunity created successfully in New Lead stage');
-
-                  // Add heat-based tag to contact
-                  try {
-                    const heatTag = heatLevel === 'hot' ? 'Hot Lead'
-                                  : heatLevel === 'warm' ? 'Warm Lead'
-                                  : 'Cold Lead';
-
-                    await addGHLTags({
-                      contactId: contactId,
-                      locationId: ghlConfig.location_id,
-                      accessToken: ghlConfig.access_token,
-                      tags: [heatTag],
-                    });
-                    console.log(`Added "${heatTag}" tag to contact based on heat score`);
-                  } catch (tagError: any) {
-                    console.error('Failed to add heat tag:', tagError.message);
-                    // Non-critical - continue even if tagging fails
-                  }
-                } catch (oppError: any) {
-                  console.error('Failed to create Opportunity:', oppError.message);
+                  console.log(`Added "${heatTag}" tag to contact based on heat score`);
+                } catch (tagError: any) {
+                  console.error('Failed to add heat tag:', tagError.message);
                 }
-              } else {
-                console.log('No pipeline configured - skipping opportunity creation');
+              } catch (oppError: any) {
+                console.error('❌ Failed to create Opportunity:', oppError.message);
               }
-            } catch (linkError: any) {
-              console.error('❌ CRITICAL: Failed to create GHL Registration');
-              console.error('❌ Error message:', linkError.message);
-              console.error('❌ Error stack:', linkError.stack);
-              console.error('❌ Recommendation: Verify "registrations" custom object exists in GHL Settings > Custom Objects');
-              console.error('❌ Required fields: registrationid, contactid, openhouseid, registerdat, flyerstatus');
-              console.error('❌ Required associations: registrations → contact, registrations → openhouses');
+            } else {
+              console.log('⚠️ No pipeline configured - skipping opportunity creation');
+              console.log('   Set ghl_pipeline_id and ghl_new_lead_stage in integration config to enable');
             }
-          } else if (!openHouseRecordId) {
-            console.error('❌ CRITICAL: Skipping Registration creation - OpenHouse record was not created');
-            console.error('❌ Contact ID:', contactId);
-            console.error('❌ This means registrations will NOT appear in GHL');
-            console.error('❌ Check the OpenHouse error logs above for the root cause');
-          } else {
-            console.error('❌ CRITICAL: Skipping Registration creation - Contact ID is missing');
-            console.error('❌ OpenHouse ID:', openHouseRecordId);
-            console.error('❌ This means registrations will NOT appear in GHL');
-            console.error('❌ Check the Contact creation logs above for the root cause');
           }
 
           console.log('Contact creation completed - GHL workflow will handle notifications');
