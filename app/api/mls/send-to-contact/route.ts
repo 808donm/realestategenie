@@ -49,7 +49,11 @@ export async function POST(request: NextRequest) {
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.realestategenie.app";
     const listingKey = property.ListingKey || property.ListingId;
-    const propertyLink = `${appUrl}/app/mls?listing=${encodeURIComponent(listingKey)}`;
+
+    // Use the actual MLS listing URL if available from Trestle data,
+    // otherwise use our public listing page (no auth required)
+    const propertyLink = property.ListingURL
+      || `${appUrl}/listing/${encodeURIComponent(listingKey)}?a=${encodeURIComponent(userData.user.id)}`;
     const propertyName = fullAddress || `MLS# ${listingKey}`;
 
     if (mode === "email") {

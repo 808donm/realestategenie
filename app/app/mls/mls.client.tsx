@@ -39,6 +39,8 @@ interface Property {
   ModificationTimestamp: string;
   PhotosCount?: number;
   Media?: TrestleMedia[];
+  ListingURL?: string;
+  VirtualTourURLUnbranded?: string;
 }
 
 interface GHLContact {

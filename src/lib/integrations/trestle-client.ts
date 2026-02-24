@@ -64,6 +64,8 @@ export interface TrestleProperty {
   ModificationTimestamp: string;
   PhotosCount?: number;
   Media?: TrestleMedia[];
+  ListingURL?: string;
+  VirtualTourURLUnbranded?: string;
 }
 
 export interface TrestleMedia {
