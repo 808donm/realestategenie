@@ -80,7 +80,7 @@ export async function syncLeadToGHL(leadId: string): Promise<{
 
     console.log("✅ GHL config retrieved, location_id:", config.location_id);
 
-    const client = new GHLClient(config.access_token);
+    const client = new GHLClient(config.access_token, config.location_id);
 
     // Get integration record for metadata updates
     const { data: integration, error: integrationError } = await supabaseAdmin
