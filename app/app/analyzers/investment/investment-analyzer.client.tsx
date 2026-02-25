@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import AttachToContact from "@/components/attach-to-contact";
 import {
   PropertyInput,
   PropertyAnalysis,
@@ -238,6 +240,58 @@ export default function InvestmentAnalyzerClient({ savedProperties }: Props) {
     setInput(defaultInput);
     setMessage("");
   };
+
+  const generateFile = useCallback((format: "pdf" | "xlsx"): Blob => {
+    if (format === "xlsx") {
+      const wb = XLSX.utils.book_new();
+      const data: (string | number)[][] = [
+        ["INVESTMENT PROPERTY ANALYSIS"], [],
+        ["Property", propertyName || "Untitled"],
+        ["Address", propertyAddress || "N/A"],
+        [],
+        ["Purchase Price", input.purchasePrice],
+        ["Down Payment", analysis.downPayment],
+        ["Loan Amount", analysis.loanAmount],
+        [],
+        ["NOI", analysis.noi],
+        ["Cap Rate", `${analysis.capRate.toFixed(2)}%`],
+        ["Cash-on-Cash Return", `${analysis.cashOnCash.toFixed(2)}%`],
+        ["IRR", `${analysis.irr.toFixed(2)}%`],
+        ["Total ROI", `${analysis.totalROI.toFixed(2)}%`],
+        [],
+        ["Monthly Cash Flow", analysis.annualCashFlow / 12],
+        ["Annual Cash Flow", analysis.annualCashFlow],
+        ["Total Profit", analysis.totalProfit],
+      ];
+      const sheet = XLSX.utils.aoa_to_sheet(data);
+      XLSX.utils.book_append_sheet(wb, sheet, "Investment Summary");
+      const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+      return new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    }
+    const doc = new jsPDF();
+    const pw = doc.internal.pageSize.getWidth();
+    let y = 20;
+    doc.setFontSize(18); doc.setFont("helvetica", "bold");
+    doc.text("Investment Property Analysis", pw / 2, y, { align: "center" }); y += 14;
+    doc.setFontSize(10); doc.setFont("helvetica", "normal");
+    [
+      ["Property:", propertyName || "Untitled"],
+      ["Purchase Price:", formatCurrency(input.purchasePrice)],
+      ["Down Payment:", formatCurrency(analysis.downPayment)],
+      ["Loan Amount:", formatCurrency(analysis.loanAmount)],
+      ["", ""],
+      ["NOI:", formatCurrency(analysis.noi)],
+      ["Cap Rate:", formatPercent(analysis.capRate)],
+      ["Cash-on-Cash:", formatPercent(analysis.cashOnCash)],
+      ["IRR:", formatPercent(analysis.irr)],
+      ["Total ROI:", formatPercent(analysis.totalROI)],
+      ["", ""],
+      ["Monthly Cash Flow:", formatCurrency(analysis.annualCashFlow / 12)],
+      ["Annual Cash Flow:", formatCurrency(analysis.annualCashFlow)],
+      ["Total Profit:", formatCurrency(analysis.totalProfit)],
+    ].forEach(([l, v]) => { doc.text(l, 25, y); doc.text(v, pw - 25, y, { align: "right" }); y += 7; });
+    return new Blob([doc.output("arraybuffer")], { type: "application/pdf" });
+  }, [propertyName, propertyAddress, input, analysis]);
 
   const exportToExcel = () => {
     const wb = XLSX.utils.book_new();
@@ -689,6 +743,9 @@ export default function InvestmentAnalyzerClient({ savedProperties }: Props) {
             Export to Excel
           </button>
           {message && <span style={{ fontSize: 14, color: message.includes("Error") ? "red" : "green" }}>{message}</span>}
+        </div>
+        <div style={{ marginTop: 12 }}>
+          <AttachToContact generateFile={generateFile} reportTitle="Investment Property Analysis" />
         </div>
       </div>
 

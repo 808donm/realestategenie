@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
+import AttachToContact from "@/components/attach-to-contact";
 import MLSImport, { type MLSPropertyData } from "@/components/mls-import";
 
 interface MortgageInputs {
@@ -492,6 +493,56 @@ export default function MortgageCalculatorClient() {
   const fmt = (n: number) => n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
   const fmtDecimal = (n: number) => n.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+  const generateFile = useCallback((format: "pdf" | "xlsx"): Blob => {
+    if (format === "xlsx") {
+      const wb = XLSX.utils.book_new();
+      const data: (string | number)[][] = [
+        ["MORTGAGE CALCULATOR SUMMARY"], [],
+        ["Purchase Price", inputs.purchasePrice],
+        ["Down Payment", `${inputs.downPaymentAmount} (${calculation.downPaymentPercent.toFixed(1)}%)`],
+        ["Loan Amount", calculation.loanAmount],
+        ["Interest Rate", `${inputs.interestRate}%`],
+        ["Loan Term", `${inputs.loanTermYears} years`],
+        [],
+        ["MONTHLY PAYMENT BREAKDOWN"],
+        ["Principal & Interest", calculation.monthlyPI],
+        ["Property Tax", calculation.monthlyTax],
+        ["Insurance", calculation.monthlyInsurance],
+        ["PMI", calculation.monthlyPMI],
+        ["HOA", calculation.monthlyHOA],
+        ["TOTAL", calculation.totalMonthly],
+        [],
+        ["Total Interest Paid", calculation.totalInterestPaid],
+        ["Total Cost of Loan", calculation.loanAmount + calculation.totalInterestPaid],
+      ];
+      const sheet = XLSX.utils.aoa_to_sheet(data);
+      XLSX.utils.book_append_sheet(wb, sheet, "Mortgage Summary");
+      const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+      return new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    }
+    const doc = new jsPDF();
+    const pw = doc.internal.pageSize.getWidth();
+    let y = 20;
+    doc.setFontSize(18); doc.setFont("helvetica", "bold");
+    doc.text("Mortgage Calculator Summary", pw / 2, y, { align: "center" }); y += 14;
+    doc.setFontSize(10); doc.setFont("helvetica", "normal");
+    [
+      ["Purchase Price:", fmt(inputs.purchasePrice)],
+      ["Down Payment:", `${fmt(inputs.downPaymentAmount)} (${calculation.downPaymentPercent.toFixed(1)}%)`],
+      ["Loan Amount:", fmt(calculation.loanAmount)],
+      ["Interest Rate:", `${inputs.interestRate}%`],
+      ["Loan Term:", `${inputs.loanTermYears} years`],
+      ["", ""],
+      ["Principal & Interest:", fmtDecimal(calculation.monthlyPI)],
+      ["Property Tax:", fmtDecimal(calculation.monthlyTax)],
+      ["Insurance:", fmtDecimal(calculation.monthlyInsurance)],
+      ["Total Monthly:", fmtDecimal(calculation.totalMonthly)],
+      ["", ""],
+      ["Total Interest Paid:", fmt(calculation.totalInterestPaid)],
+    ].forEach(([l, v]) => { doc.text(l, 25, y); doc.text(v, pw - 25, y, { align: "right" }); y += 7; });
+    return new Blob([doc.output("arraybuffer")], { type: "application/pdf" });
+  }, [inputs, calculation, fmt, fmtDecimal]);
+
   return (
     <div>
       <MLSImport onImport={handleMLSImport} />
@@ -834,6 +885,9 @@ export default function MortgageCalculatorClient() {
             >
               Export PDF Summary
             </button>
+          </div>
+          <div style={{ marginTop: 12 }}>
+            <AttachToContact generateFile={generateFile} reportTitle="Mortgage Calculator Summary" />
           </div>
         </div>
       </div>

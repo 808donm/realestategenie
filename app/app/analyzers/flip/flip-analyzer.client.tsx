@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import AttachToContact from "@/components/attach-to-contact";
 import { analyzeFlip, getFlipVerdict, calculateFlipMAO, estimateRehabCosts, FlipInput } from "@/lib/calculators/flip";
 import MLSImport, { type MLSPropertyData } from "@/components/mls-import";
 
@@ -358,6 +360,58 @@ export default function FlipAnalyzerClient({ savedAnalyses }: FlipAnalyzerClient
     // Download the file
     XLSX.writeFile(wb, fileName);
   };
+
+  const generateFile = useCallback((format: "pdf" | "xlsx"): Blob => {
+    if (format === "xlsx") {
+      const wb = XLSX.utils.book_new();
+      const data: (string | number)[][] = [
+        ["FLIP ANALYSIS"], [],
+        ["Property", formData.name || "Untitled"],
+        ["Address", formData.address || "N/A"],
+        [],
+        ["Purchase Price", formData.purchasePrice],
+        ["Renovation Costs", formData.renovationCosts],
+        ["After Repair Value", formData.afterRepairValue],
+        ["All-In Cost", analysis.allInCost],
+        [],
+        ["Gross Profit", analysis.grossProfit],
+        ["Net Profit", analysis.netProfit],
+        ["Profit Margin", `${analysis.profitMargin.toFixed(2)}%`],
+        ["ROI on Cash", `${analysis.roiOnCash.toFixed(2)}%`],
+        ["Annualized ROI", `${analysis.annualizedROI.toFixed(2)}%`],
+        ["Meets 70% Rule", analysis.meetsRule70 ? "YES" : "No"],
+        ["Deal Score", `${analysis.dealScore.toFixed(1)} / 5`],
+      ];
+      const sheet = XLSX.utils.aoa_to_sheet(data);
+      XLSX.utils.book_append_sheet(wb, sheet, "Flip Summary");
+      const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+      return new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    }
+    const doc = new jsPDF();
+    const pw = doc.internal.pageSize.getWidth();
+    let y = 20;
+    doc.setFontSize(18); doc.setFont("helvetica", "bold");
+    doc.text("House Flip Analysis", pw / 2, y, { align: "center" }); y += 14;
+    doc.setFontSize(10); doc.setFont("helvetica", "normal");
+    [
+      ["Property:", formData.name || "Untitled"],
+      ["Purchase Price:", formatCurrency(formData.purchasePrice)],
+      ["Renovation:", formatCurrency(formData.renovationCosts)],
+      ["ARV:", formatCurrency(formData.afterRepairValue)],
+      ["All-In Cost:", formatCurrency(analysis.allInCost)],
+      ["", ""],
+      ["Gross Profit:", formatCurrency(analysis.grossProfit)],
+      ["Net Profit:", formatCurrency(analysis.netProfit)],
+      ["Profit Margin:", formatPercent(analysis.profitMargin)],
+      ["ROI on Cash:", formatPercent(analysis.roiOnCash)],
+      ["Annualized ROI:", formatPercent(analysis.annualizedROI)],
+      ["", ""],
+      ["Meets 70% Rule:", analysis.meetsRule70 ? "YES" : "No"],
+      ["Deal Score:", `${analysis.dealScore.toFixed(1)} / 5`],
+      ["Verdict:", verdict.verdict],
+    ].forEach(([l, v]) => { doc.text(l, 25, y); doc.text(v, pw - 25, y, { align: "right" }); y += 7; });
+    return new Blob([doc.output("arraybuffer")], { type: "application/pdf" });
+  }, [formData, analysis, verdict]);
 
   const inputStyle = {
     width: "100%",
@@ -831,6 +885,9 @@ export default function FlipAnalyzerClient({ savedAnalyses }: FlipAnalyzerClient
                   {saveMessage.text}
                 </span>
               )}
+            </div>
+            <div style={{ marginTop: 12 }}>
+              <AttachToContact generateFile={generateFile} reportTitle="Flip Analysis" />
             </div>
           </div>
 

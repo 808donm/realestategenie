@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import AttachToContact from "@/components/attach-to-contact";
 import { analyzeBRRR, getBRRRVerdict, calculate70PercentRule, BRRRInput } from "@/lib/calculators/brrr";
 import MLSImport, { type MLSPropertyData } from "@/components/mls-import";
 
@@ -346,6 +348,61 @@ export default function BRRRAnalyzerClient({ savedAnalyses }: BRRRAnalyzerClient
     // Download the file
     XLSX.writeFile(wb, fileName);
   };
+
+  const generateFile = useCallback((format: "pdf" | "xlsx"): Blob => {
+    if (format === "xlsx") {
+      const wb = XLSX.utils.book_new();
+      const data: (string | number)[][] = [
+        ["BRRR STRATEGY ANALYSIS"], [],
+        ["Property", formData.name || "Untitled"],
+        ["Address", formData.address || "N/A"],
+        [],
+        ["Purchase Price", formData.purchasePrice],
+        ["Renovation Costs", formData.renovationCosts],
+        ["After Repair Value", formData.afterRepairValue],
+        [],
+        ["Total Cash Invested", analysis.totalCashInvested],
+        ["Cash Out at Refinance", analysis.cashOutAtRefinance],
+        ["Cash Left in Deal", analysis.cashLeftInDeal],
+        ["Equity Captured", analysis.equityCaptured],
+        ["Infinite Return?", analysis.isInfiniteReturn ? "YES" : "No"],
+        [],
+        ["Monthly Cash Flow", analysis.monthlyCashFlow],
+        ["Annual Cash Flow", analysis.annualCashFlow],
+        ["Cap Rate", `${analysis.capRate.toFixed(2)}%`],
+        ["Cash-on-Cash Return", isFinite(analysis.cashOnCashReturn) ? `${analysis.cashOnCashReturn.toFixed(2)}%` : "Infinite"],
+        ["Deal Score", `${analysis.dealScore.toFixed(1)} / 5`],
+      ];
+      const sheet = XLSX.utils.aoa_to_sheet(data);
+      XLSX.utils.book_append_sheet(wb, sheet, "BRRR Summary");
+      const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+      return new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    }
+    const doc = new jsPDF();
+    const pw = doc.internal.pageSize.getWidth();
+    let y = 20;
+    doc.setFontSize(18); doc.setFont("helvetica", "bold");
+    doc.text("BRRR Strategy Analysis", pw / 2, y, { align: "center" }); y += 14;
+    doc.setFontSize(10); doc.setFont("helvetica", "normal");
+    [
+      ["Property:", formData.name || "Untitled"],
+      ["Purchase Price:", formatCurrency(formData.purchasePrice)],
+      ["Renovation:", formatCurrency(formData.renovationCosts)],
+      ["ARV:", formatCurrency(formData.afterRepairValue)],
+      ["", ""],
+      ["Total Cash Invested:", formatCurrency(analysis.totalCashInvested)],
+      ["Cash Out at Refi:", formatCurrency(analysis.cashOutAtRefinance)],
+      ["Cash Left in Deal:", formatCurrency(analysis.cashLeftInDeal)],
+      ["Infinite Return:", analysis.isInfiniteReturn ? "YES" : "No"],
+      ["", ""],
+      ["Monthly Cash Flow:", formatCurrency(analysis.monthlyCashFlow)],
+      ["Annual Cash Flow:", formatCurrency(analysis.annualCashFlow)],
+      ["Cap Rate:", formatPercent(analysis.capRate)],
+      ["Cash-on-Cash:", isFinite(analysis.cashOnCashReturn) ? formatPercent(analysis.cashOnCashReturn) : "Infinite"],
+      ["Deal Score:", `${analysis.dealScore.toFixed(1)} / 5`],
+    ].forEach(([l, v]) => { doc.text(l, 25, y); doc.text(v, pw - 25, y, { align: "right" }); y += 7; });
+    return new Blob([doc.output("arraybuffer")], { type: "application/pdf" });
+  }, [formData, analysis, verdict]);
 
   const inputStyle = {
     width: "100%",
@@ -825,6 +882,9 @@ export default function BRRRAnalyzerClient({ savedAnalyses }: BRRRAnalyzerClient
                   {saveMessage.text}
                 </span>
               )}
+            </div>
+            <div style={{ marginTop: 12 }}>
+              <AttachToContact generateFile={generateFile} reportTitle="BRRR Strategy Analysis" />
             </div>
           </div>
 
