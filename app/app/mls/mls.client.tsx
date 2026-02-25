@@ -146,6 +146,129 @@ export default function MLSClient() {
   const [descError, setDescError] = useState("");
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
 
+  // Social Media Marketing Generator state
+  const [showSocialGen, setShowSocialGen] = useState(false);
+  const [socialForm, setSocialForm] = useState({
+    postType: "just_listed" as "just_listed" | "open_house" | "price_reduced" | "just_sold",
+    propertyType: "Single Family Residential",
+    bedrooms: "",
+    bathrooms: "",
+    sqft: "",
+    yearBuilt: "",
+    lotSize: "",
+    architecturalStyle: "",
+    additionalNotes: "",
+    address: "",
+    city: "",
+    stateOrProvince: "",
+    price: "",
+    openHouseDate: "",
+    openHouseTime: "",
+  });
+  const [socialFeatures, setSocialFeatures] = useState<string[]>([]);
+  const [socialLoading, setSocialLoading] = useState(false);
+  const [socialResults, setSocialResults] = useState<{
+    platforms: {
+      platform: string;
+      caption: string;
+      hashtags: string[];
+      staticImageText: { headline: string; subtext: string; cta: string };
+      videoScripts: {
+        concept: string;
+        style: string;
+        hook: string;
+        shots: { direction: string; spokenLine: string; textOverlay: string; toneCue: string }[];
+        suggestedAudio: string;
+        ending: string;
+      }[];
+    }[];
+  } | null>(null);
+  const [socialError, setSocialError] = useState("");
+  const [activeSocialPlatform, setActiveSocialPlatform] = useState(0);
+  const [activeVideoScript, setActiveVideoScript] = useState(0);
+  const [socialCopied, setSocialCopied] = useState("");
+
+  // Generate social media content
+  const generateSocialContent = async () => {
+    if (!socialForm.bedrooms || !socialForm.bathrooms || !socialForm.sqft) {
+      setSocialError("Please fill in bedrooms, bathrooms, and square footage.");
+      return;
+    }
+    setSocialLoading(true);
+    setSocialError("");
+    setSocialResults(null);
+    setActiveSocialPlatform(0);
+    setActiveVideoScript(0);
+    try {
+      const res = await fetch("/api/mls/generate-social", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          postType: socialForm.postType,
+          propertyType: socialForm.propertyType,
+          bedrooms: Number(socialForm.bedrooms),
+          bathrooms: Number(socialForm.bathrooms),
+          sqft: Number(socialForm.sqft),
+          yearBuilt: socialForm.yearBuilt ? Number(socialForm.yearBuilt) : undefined,
+          lotSize: socialForm.lotSize || undefined,
+          architecturalStyle: socialForm.architecturalStyle || undefined,
+          features: socialFeatures.length > 0 ? socialFeatures : undefined,
+          additionalNotes: socialForm.additionalNotes || undefined,
+          address: socialForm.address || undefined,
+          city: socialForm.city || undefined,
+          stateOrProvince: socialForm.stateOrProvince || undefined,
+          price: socialForm.price ? Number(socialForm.price) : undefined,
+          openHouseDate: socialForm.openHouseDate || undefined,
+          openHouseTime: socialForm.openHouseTime || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setSocialError(data.error || "Failed to generate social media content.");
+      } else {
+        setSocialResults({ platforms: data.platforms });
+      }
+    } catch (err: any) {
+      setSocialError(err.message || "Something went wrong.");
+    } finally {
+      setSocialLoading(false);
+    }
+  };
+
+  // Pre-fill social form from a property
+  const prefillSocialFromProperty = (property: Property) => {
+    setSocialForm({
+      postType: property.StandardStatus === "Closed" ? "just_sold" : "just_listed",
+      propertyType: property.PropertyType || "Single Family Residential",
+      bedrooms: property.BedroomsTotal?.toString() || "",
+      bathrooms: property.BathroomsTotalInteger?.toString() || "",
+      sqft: property.LivingArea?.toString() || "",
+      yearBuilt: property.YearBuilt?.toString() || "",
+      lotSize: property.LotSizeArea ? `${property.LotSizeArea} sqft` : "",
+      architecturalStyle: "",
+      additionalNotes: "",
+      address: getAddress(property),
+      city: property.City || "",
+      stateOrProvince: property.StateOrProvince || "",
+      price: property.ListPrice?.toString() || "",
+      openHouseDate: "",
+      openHouseTime: "",
+    });
+    setSocialFeatures([]);
+    setSocialResults(null);
+    setSocialError("");
+    setShowSocialGen(true);
+    setSelectedProperty(null);
+    setActiveTab("my-listings");
+  };
+
+  // Copy social content helper
+  const copySocialText = (text: string, key: string) => {
+    navigator.clipboard.writeText(text);
+    setSocialCopied(key);
+    setTimeout(() => setSocialCopied(""), 2000);
+  };
+
   // Send to contact state
   const [showSendModal, setShowSendModal] = useState(false);
   const [sendProperty, setSendProperty] = useState<Property | null>(null);
@@ -1361,6 +1484,616 @@ export default function MLSClient() {
             )}
           </div>
 
+          {/* AI Social Media Marketing Generator */}
+          <div
+            style={{
+              background: showSocialGen ? "#fff" : "linear-gradient(135deg, #fdf2f8 0%, #fce7f3 50%, #f5f3ff 100%)",
+              border: showSocialGen ? "2px solid #ec4899" : "1px solid #e5e7eb",
+              borderRadius: 12,
+              padding: showSocialGen ? 24 : 20,
+              marginBottom: 24,
+            }}
+          >
+            {!showSocialGen ? (
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+                <div>
+                  <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 700, color: "#374151" }}>
+                    AI Social Media Marketing Generator
+                  </h3>
+                  <p style={{ margin: 0, fontSize: 13, color: "#6b7280" }}>
+                    Generate platform-optimized posts for Facebook, Instagram, LinkedIn &amp; TikTok with video scripts.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowSocialGen(true)}
+                  style={{
+                    padding: "10px 24px",
+                    background: "linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 8,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    fontSize: 14,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  Generate Marketing
+                </button>
+              </div>
+            ) : (
+              <>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                  <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#374151" }}>
+                    Social Media Marketing Generator
+                  </h3>
+                  <button
+                    onClick={() => { setShowSocialGen(false); setSocialResults(null); setSocialError(""); }}
+                    style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "#6b7280" }}
+                  >
+                    &times;
+                  </button>
+                </div>
+
+                {/* Compliance notice */}
+                <div style={{
+                  padding: "10px 14px",
+                  background: "#f0fdf4",
+                  border: "1px solid #bbf7d0",
+                  borderRadius: 8,
+                  marginBottom: 20,
+                  fontSize: 12,
+                  color: "#166534",
+                  lineHeight: 1.5,
+                }}>
+                  All generated content is Fair Housing Act compliant. Always review before posting.
+                </div>
+
+                {/* Post Type Selection */}
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 8, color: "#374151" }}>
+                    Post Type <span style={{ color: "#ef4444" }}>*</span>
+                  </label>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {([
+                      { value: "just_listed", label: "Just Listed", color: "#10b981" },
+                      { value: "open_house", label: "Open House", color: "#3b82f6" },
+                      { value: "price_reduced", label: "Price Reduced", color: "#f59e0b" },
+                      { value: "just_sold", label: "Just Sold", color: "#8b5cf6" },
+                    ] as const).map((type) => (
+                      <button
+                        key={type.value}
+                        onClick={() => setSocialForm({ ...socialForm, postType: type.value })}
+                        style={{
+                          padding: "8px 16px",
+                          border: socialForm.postType === type.value ? `2px solid ${type.color}` : "1px solid #d1d5db",
+                          borderRadius: 8,
+                          background: socialForm.postType === type.value ? `${type.color}15` : "#fff",
+                          color: socialForm.postType === type.value ? type.color : "#6b7280",
+                          fontWeight: 600,
+                          fontSize: 13,
+                          cursor: "pointer",
+                        }}
+                      >
+                        {type.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Property Details Form */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 16 }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                      Property Type <span style={{ color: "#ef4444" }}>*</span>
+                    </label>
+                    <select
+                      value={socialForm.propertyType}
+                      onChange={(e) => setSocialForm({ ...socialForm, propertyType: e.target.value })}
+                      style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
+                    >
+                      <option>Single Family Residential</option>
+                      <option>Condo</option>
+                      <option>Townhouse</option>
+                      <option>Multi-Family</option>
+                      <option>Land</option>
+                      <option>Commercial</option>
+                      <option>Farm / Ranch</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                      Bedrooms <span style={{ color: "#ef4444" }}>*</span>
+                    </label>
+                    <input
+                      type="number" min="0" placeholder="3"
+                      value={socialForm.bedrooms}
+                      onChange={(e) => setSocialForm({ ...socialForm, bedrooms: e.target.value })}
+                      style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, boxSizing: "border-box" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                      Bathrooms <span style={{ color: "#ef4444" }}>*</span>
+                    </label>
+                    <input
+                      type="number" min="0" step="0.5" placeholder="2"
+                      value={socialForm.bathrooms}
+                      onChange={(e) => setSocialForm({ ...socialForm, bathrooms: e.target.value })}
+                      style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, boxSizing: "border-box" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                      Square Feet <span style={{ color: "#ef4444" }}>*</span>
+                    </label>
+                    <input
+                      type="number" min="0" placeholder="2000"
+                      value={socialForm.sqft}
+                      onChange={(e) => setSocialForm({ ...socialForm, sqft: e.target.value })}
+                      style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, boxSizing: "border-box" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                      Address
+                    </label>
+                    <input
+                      type="text" placeholder="123 Main St"
+                      value={socialForm.address}
+                      onChange={(e) => setSocialForm({ ...socialForm, address: e.target.value })}
+                      style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, boxSizing: "border-box" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                      City
+                    </label>
+                    <input
+                      type="text" placeholder="Austin"
+                      value={socialForm.city}
+                      onChange={(e) => setSocialForm({ ...socialForm, city: e.target.value })}
+                      style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, boxSizing: "border-box" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                      State
+                    </label>
+                    <input
+                      type="text" placeholder="TX"
+                      value={socialForm.stateOrProvince}
+                      onChange={(e) => setSocialForm({ ...socialForm, stateOrProvince: e.target.value })}
+                      style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, boxSizing: "border-box" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                      List Price
+                    </label>
+                    <input
+                      type="number" min="0" placeholder="450000"
+                      value={socialForm.price}
+                      onChange={(e) => setSocialForm({ ...socialForm, price: e.target.value })}
+                      style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, boxSizing: "border-box" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                      Year Built
+                    </label>
+                    <input
+                      type="number" min="1800" max="2030" placeholder="2005"
+                      value={socialForm.yearBuilt}
+                      onChange={(e) => setSocialForm({ ...socialForm, yearBuilt: e.target.value })}
+                      style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, boxSizing: "border-box" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                      Lot Size
+                    </label>
+                    <input
+                      type="text" placeholder="0.25 acres"
+                      value={socialForm.lotSize}
+                      onChange={(e) => setSocialForm({ ...socialForm, lotSize: e.target.value })}
+                      style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, boxSizing: "border-box" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                      Architectural Style
+                    </label>
+                    <select
+                      value={socialForm.architecturalStyle}
+                      onChange={(e) => setSocialForm({ ...socialForm, architecturalStyle: e.target.value })}
+                      style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
+                    >
+                      <option value="">Not specified</option>
+                      <option>Ranch</option>
+                      <option>Colonial</option>
+                      <option>Cape Cod</option>
+                      <option>Craftsman</option>
+                      <option>Contemporary</option>
+                      <option>Mid-Century Modern</option>
+                      <option>Victorian</option>
+                      <option>Tudor</option>
+                      <option>Mediterranean</option>
+                      <option>Spanish</option>
+                      <option>Farmhouse</option>
+                      <option>Split Level</option>
+                      <option>A-Frame</option>
+                      <option>Log Home</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Open House fields */}
+                {socialForm.postType === "open_house" && (
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                        Open House Date
+                      </label>
+                      <input
+                        type="date"
+                        value={socialForm.openHouseDate}
+                        onChange={(e) => setSocialForm({ ...socialForm, openHouseDate: e.target.value })}
+                        style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, boxSizing: "border-box" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                        Open House Time
+                      </label>
+                      <input
+                        type="text" placeholder="1:00 PM - 4:00 PM"
+                        value={socialForm.openHouseTime}
+                        onChange={(e) => setSocialForm({ ...socialForm, openHouseTime: e.target.value })}
+                        style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, boxSizing: "border-box" }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Feature checkboxes */}
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 8, color: "#374151" }}>
+                    Key Features (check all that apply)
+                  </label>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 6 }}>
+                    {PROPERTY_FEATURES.map((feature) => (
+                      <label
+                        key={feature}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                          fontSize: 13,
+                          color: "#374151",
+                          cursor: "pointer",
+                          padding: "4px 0",
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={socialFeatures.includes(feature)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSocialFeatures([...socialFeatures, feature]);
+                            } else {
+                              setSocialFeatures(socialFeatures.filter((f) => f !== feature));
+                            }
+                          }}
+                          style={{ width: 16, height: 16, accentColor: "#ec4899" }}
+                        />
+                        {feature}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Additional notes */}
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                    Additional Notes (optional)
+                  </label>
+                  <textarea
+                    value={socialForm.additionalNotes}
+                    onChange={(e) => setSocialForm({ ...socialForm, additionalNotes: e.target.value })}
+                    placeholder="E.g., highlight the kitchen renovation, mention the sunset views from the primary suite..."
+                    rows={2}
+                    style={{
+                      width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6,
+                      fontSize: 14, resize: "vertical", fontFamily: "inherit", boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+
+                {/* Generate button */}
+                <button
+                  onClick={generateSocialContent}
+                  disabled={socialLoading}
+                  style={{
+                    width: "100%",
+                    padding: "12px 24px",
+                    background: socialLoading
+                      ? "#d1d5db"
+                      : "linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 8,
+                    fontWeight: 600,
+                    cursor: socialLoading ? "wait" : "pointer",
+                    fontSize: 15,
+                    marginBottom: socialResults || socialError ? 20 : 0,
+                  }}
+                >
+                  {socialLoading ? "Generating content for 4 platforms..." : "Generate Social Media Content"}
+                </button>
+
+                {/* Error */}
+                {socialError && (
+                  <div style={{
+                    padding: 12, background: "#fee2e2", color: "#dc2626",
+                    borderRadius: 8, marginBottom: 16, fontSize: 14,
+                  }}>
+                    {socialError}
+                  </div>
+                )}
+
+                {/* Results */}
+                {socialResults && socialResults.platforms.length > 0 && (
+                  <div>
+                    {/* Platform tabs */}
+                    <div style={{ display: "flex", gap: 0, marginBottom: 16, borderBottom: "1px solid #e5e7eb" }}>
+                      {socialResults.platforms.map((platform, idx) => {
+                        const platformColors: Record<string, string> = {
+                          facebook: "#1877F2",
+                          instagram: "#E4405F",
+                          linkedin: "#0A66C2",
+                          tiktok: "#000000",
+                        };
+                        const color = platformColors[platform.platform.toLowerCase()] || "#6b7280";
+                        return (
+                          <button
+                            key={platform.platform}
+                            onClick={() => { setActiveSocialPlatform(idx); setActiveVideoScript(0); }}
+                            style={{
+                              padding: "10px 18px",
+                              fontSize: 13,
+                              fontWeight: 600,
+                              color: activeSocialPlatform === idx ? color : "#6b7280",
+                              background: "transparent",
+                              border: "none",
+                              borderBottom: activeSocialPlatform === idx ? `2px solid ${color}` : "2px solid transparent",
+                              cursor: "pointer",
+                              textTransform: "capitalize",
+                            }}
+                          >
+                            {platform.platform}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {(() => {
+                      const platform = socialResults.platforms[activeSocialPlatform];
+                      if (!platform) return null;
+                      const pKey = platform.platform;
+
+                      return (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                          {/* Caption */}
+                          <div style={{ border: "1px solid #e5e7eb", borderRadius: 10, overflow: "hidden" }}>
+                            <div style={{
+                              display: "flex", justifyContent: "space-between", alignItems: "center",
+                              padding: "10px 16px", background: "#f9fafb",
+                            }}>
+                              <span style={{ fontSize: 13, fontWeight: 700, color: "#374151" }}>Caption</span>
+                              <button
+                                onClick={() => copySocialText(platform.caption + "\n\n" + platform.hashtags.map(h => `#${h}`).join(" "), `${pKey}-caption`)}
+                                style={{
+                                  padding: "5px 14px",
+                                  background: socialCopied === `${pKey}-caption` ? "#10b981" : "#fff",
+                                  color: socialCopied === `${pKey}-caption` ? "#fff" : "#374151",
+                                  border: socialCopied === `${pKey}-caption` ? "none" : "1px solid #d1d5db",
+                                  borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer",
+                                }}
+                              >
+                                {socialCopied === `${pKey}-caption` ? "Copied!" : "Copy"}
+                              </button>
+                            </div>
+                            <div style={{ padding: 16, fontSize: 14, lineHeight: 1.7, color: "#374151" }}>
+                              {platform.caption}
+                            </div>
+                            <div style={{ padding: "0 16px 16px", display: "flex", flexWrap: "wrap", gap: 6 }}>
+                              {platform.hashtags.map((tag) => (
+                                <span key={tag} style={{
+                                  padding: "3px 10px", background: "#eff6ff", color: "#2563eb",
+                                  borderRadius: 12, fontSize: 12, fontWeight: 500,
+                                }}>
+                                  #{tag}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Static Image Text */}
+                          <div style={{ border: "1px solid #e5e7eb", borderRadius: 10, overflow: "hidden" }}>
+                            <div style={{
+                              display: "flex", justifyContent: "space-between", alignItems: "center",
+                              padding: "10px 16px", background: "#f9fafb",
+                            }}>
+                              <span style={{ fontSize: 13, fontWeight: 700, color: "#374151" }}>Static Image Text</span>
+                              <button
+                                onClick={() => copySocialText(
+                                  `${platform.staticImageText.headline}\n${platform.staticImageText.subtext}\n${platform.staticImageText.cta}`,
+                                  `${pKey}-image`
+                                )}
+                                style={{
+                                  padding: "5px 14px",
+                                  background: socialCopied === `${pKey}-image` ? "#10b981" : "#fff",
+                                  color: socialCopied === `${pKey}-image` ? "#fff" : "#374151",
+                                  border: socialCopied === `${pKey}-image` ? "none" : "1px solid #d1d5db",
+                                  borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer",
+                                }}
+                              >
+                                {socialCopied === `${pKey}-image` ? "Copied!" : "Copy"}
+                              </button>
+                            </div>
+                            <div style={{ padding: 16 }}>
+                              <div style={{ fontSize: 20, fontWeight: 700, color: "#111827", marginBottom: 6 }}>
+                                {platform.staticImageText.headline}
+                              </div>
+                              <div style={{ fontSize: 14, color: "#6b7280", marginBottom: 8 }}>
+                                {platform.staticImageText.subtext}
+                              </div>
+                              <div style={{
+                                display: "inline-block", padding: "6px 16px",
+                                background: "#3b82f6", color: "#fff", borderRadius: 6,
+                                fontSize: 13, fontWeight: 600,
+                              }}>
+                                {platform.staticImageText.cta}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Video Scripts */}
+                          <div style={{ border: "1px solid #e5e7eb", borderRadius: 10, overflow: "hidden" }}>
+                            <div style={{ padding: "10px 16px", background: "#f9fafb" }}>
+                              <span style={{ fontSize: 13, fontWeight: 700, color: "#374151" }}>Video Scripts</span>
+                            </div>
+                            {/* Script tabs */}
+                            <div style={{ display: "flex", gap: 0, borderBottom: "1px solid #e5e7eb" }}>
+                              {platform.videoScripts.map((script, sIdx) => (
+                                <button
+                                  key={sIdx}
+                                  onClick={() => setActiveVideoScript(sIdx)}
+                                  style={{
+                                    padding: "8px 14px",
+                                    fontSize: 12,
+                                    fontWeight: 600,
+                                    color: activeVideoScript === sIdx ? "#8b5cf6" : "#6b7280",
+                                    background: activeVideoScript === sIdx ? "#f5f3ff" : "transparent",
+                                    border: "none",
+                                    borderBottom: activeVideoScript === sIdx ? "2px solid #8b5cf6" : "2px solid transparent",
+                                    cursor: "pointer",
+                                    flex: 1,
+                                  }}
+                                >
+                                  {script.style === "traditional" ? "Traditional" : `Creative ${sIdx}`}: {script.concept.length > 20 ? script.concept.substring(0, 20) + "..." : script.concept}
+                                </button>
+                              ))}
+                            </div>
+
+                            {(() => {
+                              const script = platform.videoScripts[activeVideoScript];
+                              if (!script) return null;
+                              const scriptKey = `${pKey}-script-${activeVideoScript}`;
+
+                              const scriptText = [
+                                `CONCEPT: ${script.concept} (${script.style})`,
+                                `HOOK: ${script.hook}`,
+                                ``,
+                                ...script.shots.map((s, i) =>
+                                  `SHOT ${i + 1}:\n  Camera: ${s.direction}\n  Say: ${s.spokenLine || "(silent)"}\n  Text Overlay: ${s.textOverlay || "(none)"}\n  Tone: ${s.toneCue}`
+                                ),
+                                ``,
+                                `AUDIO: ${script.suggestedAudio}`,
+                                `ENDING: ${script.ending}`,
+                              ].join("\n");
+
+                              return (
+                                <div style={{ padding: 16 }}>
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                                    <div>
+                                      <span style={{
+                                        display: "inline-block", padding: "3px 10px", borderRadius: 12, fontSize: 11, fontWeight: 600,
+                                        background: script.style === "traditional" ? "#dbeafe" : "#fce7f3",
+                                        color: script.style === "traditional" ? "#1d4ed8" : "#be185d",
+                                        marginRight: 8,
+                                      }}>
+                                        {script.style === "traditional" ? "Traditional" : "Creative"}
+                                      </span>
+                                      <span style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}>
+                                        {script.concept}
+                                      </span>
+                                    </div>
+                                    <button
+                                      onClick={() => copySocialText(scriptText, scriptKey)}
+                                      style={{
+                                        padding: "5px 14px",
+                                        background: socialCopied === scriptKey ? "#10b981" : "#fff",
+                                        color: socialCopied === scriptKey ? "#fff" : "#374151",
+                                        border: socialCopied === scriptKey ? "none" : "1px solid #d1d5db",
+                                        borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer",
+                                      }}
+                                    >
+                                      {socialCopied === scriptKey ? "Copied!" : "Copy Script"}
+                                    </button>
+                                  </div>
+
+                                  {/* Hook */}
+                                  <div style={{
+                                    padding: "10px 14px", background: "#fef3c7", borderRadius: 8,
+                                    marginBottom: 12, fontSize: 13, color: "#92400e",
+                                  }}>
+                                    <strong>Hook (first 2 sec):</strong> {script.hook}
+                                  </div>
+
+                                  {/* Shots */}
+                                  <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+                                    {script.shots.map((shot, shotIdx) => (
+                                      <div key={shotIdx} style={{
+                                        padding: 12, background: "#f9fafb", borderRadius: 8,
+                                        borderLeft: "3px solid #8b5cf6",
+                                      }}>
+                                        <div style={{ fontSize: 11, fontWeight: 700, color: "#8b5cf6", marginBottom: 6 }}>
+                                          SHOT {shotIdx + 1}
+                                        </div>
+                                        <div style={{ fontSize: 13, color: "#374151", marginBottom: 4 }}>
+                                          <strong>Camera:</strong> {shot.direction}
+                                        </div>
+                                        {shot.spokenLine && (
+                                          <div style={{ fontSize: 13, color: "#374151", marginBottom: 4 }}>
+                                            <strong>Say:</strong> &ldquo;{shot.spokenLine}&rdquo;
+                                            {shot.toneCue && (
+                                              <span style={{ color: "#6b7280", fontStyle: "italic" }}> {shot.toneCue}</span>
+                                            )}
+                                          </div>
+                                        )}
+                                        {shot.textOverlay && (
+                                          <div style={{ fontSize: 13, color: "#374151" }}>
+                                            <strong>Text Overlay:</strong> {shot.textOverlay}
+                                          </div>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+
+                                  {/* Audio + Ending */}
+                                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                                    <div style={{ padding: 10, background: "#eff6ff", borderRadius: 8, fontSize: 12, color: "#1e40af" }}>
+                                      <strong>Audio:</strong> {script.suggestedAudio}
+                                    </div>
+                                    <div style={{ padding: 10, background: "#f0fdf4", borderRadius: 8, fontSize: 12, color: "#166534" }}>
+                                      <strong>Ending:</strong> {script.ending}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
           {/* Existing Listings Grid */}
           {isLoadingMyListings ? (
             <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>
@@ -1754,6 +2487,24 @@ export default function MLSClient() {
                   }}
                 >
                   Attach to Contact
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    prefillSocialFromProperty(selectedProperty);
+                  }}
+                  style={{
+                    padding: "10px 20px",
+                    background: "linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 8,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    flex: 1,
+                  }}
+                >
+                  Generate Marketing
                 </button>
               </div>
             </div>
