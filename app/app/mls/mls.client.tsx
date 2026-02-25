@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
-import AddListingForm from "./add-listing";
 
 interface TrestleMedia {
   MediaKey: string;
@@ -61,6 +60,36 @@ const PROPERTY_TYPES = [
   "Farm",
 ] as const;
 
+const PROPERTY_FEATURES = [
+  "Updated Kitchen",
+  "Granite/Quartz Countertops",
+  "Stainless Steel Appliances",
+  "Hardwood Floors",
+  "Open Floor Plan",
+  "Primary Suite",
+  "Fireplace",
+  "Vaulted Ceilings",
+  "Crown Molding",
+  "New Roof",
+  "New HVAC",
+  "Energy Efficient",
+  "Smart Home Features",
+  "Pool",
+  "Spa / Hot Tub",
+  "Covered Patio / Deck",
+  "Outdoor Kitchen",
+  "Fenced Yard",
+  "2-Car Garage",
+  "3-Car Garage",
+  "RV Parking",
+  "Mountain Views",
+  "Water Views",
+  "Corner Lot",
+  "Cul-de-Sac",
+  "Gated Community",
+  "HOA Amenities",
+] as const;
+
 export default function MLSClient() {
   const searchParams = useSearchParams();
 
@@ -94,12 +123,28 @@ export default function MLSClient() {
   // Detail modal state
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
 
-  // Add listing state
-  const [showAddListing, setShowAddListing] = useState(false);
-  const [editListing, setEditListing] = useState<Record<string, unknown> | null>(null);
+  // Listings state
   const [myListings, setMyListings] = useState<Record<string, unknown>[]>([]);
   const [isLoadingMyListings, setIsLoadingMyListings] = useState(true);
   const [activeTab, setActiveTab] = useState<"mls" | "my-listings">("mls");
+
+  // AI Description Generator state
+  const [showDescGen, setShowDescGen] = useState(false);
+  const [descForm, setDescForm] = useState({
+    propertyType: "Single Family Residential",
+    bedrooms: "",
+    bathrooms: "",
+    sqft: "",
+    yearBuilt: "",
+    lotSize: "",
+    architecturalStyle: "",
+    additionalNotes: "",
+  });
+  const [descFeatures, setDescFeatures] = useState<string[]>([]);
+  const [descLoading, setDescLoading] = useState(false);
+  const [descResults, setDescResults] = useState<{ tone: string; label: string; description: string }[] | null>(null);
+  const [descError, setDescError] = useState("");
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
 
   // Send to contact state
   const [showSendModal, setShowSendModal] = useState(false);
@@ -396,84 +441,53 @@ export default function MLSClient() {
     return null;
   };
 
-  const handleDeleteListing = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this listing?")) return;
-    try {
-      const response = await fetch(`/api/mls/listings/${id}`, { method: "DELETE" });
-      if (response.ok) {
-        fetchMyListings();
-      }
-    } catch {
-      // Silently fail
-    }
-  };
 
   return (
     <div>
       {/* Tab Navigation + Add Listing Button */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <div style={{ display: "flex", gap: 0 }}>
-          <button
-            onClick={() => setActiveTab("mls")}
-            style={{
-              padding: "10px 24px",
-              fontSize: 14,
-              fontWeight: 600,
-              color: activeTab === "mls" ? "#3b82f6" : "#6b7280",
-              background: "transparent",
-              border: "none",
-              borderBottom: activeTab === "mls" ? "2px solid #3b82f6" : "2px solid transparent",
-              cursor: "pointer",
-            }}
-          >
-            MLS Search
-          </button>
-          <button
-            onClick={() => setActiveTab("my-listings")}
-            style={{
-              padding: "10px 24px",
-              fontSize: 14,
-              fontWeight: 600,
-              color: activeTab === "my-listings" ? "#3b82f6" : "#6b7280",
-              background: "transparent",
-              border: "none",
-              borderBottom: activeTab === "my-listings" ? "2px solid #3b82f6" : "2px solid transparent",
-              cursor: "pointer",
-            }}
-          >
-            My Listings
-            {myListings.length > 0 && (
-              <span
-                style={{
-                  marginLeft: 8,
-                  padding: "2px 8px",
-                  background: "#e5e7eb",
-                  borderRadius: 10,
-                  fontSize: 12,
-                }}
-              >
-                {myListings.length}
-              </span>
-            )}
-          </button>
-        </div>
+      <div style={{ display: "flex", gap: 0, marginBottom: 16 }}>
         <button
-          onClick={() => {
-            setEditListing(null);
-            setShowAddListing(true);
-          }}
+          onClick={() => setActiveTab("mls")}
           style={{
-            padding: "10px 20px",
-            background: "#3b82f6",
-            color: "#fff",
-            border: "none",
-            borderRadius: 8,
-            fontWeight: 600,
-            cursor: "pointer",
+            padding: "10px 24px",
             fontSize: 14,
+            fontWeight: 600,
+            color: activeTab === "mls" ? "#3b82f6" : "#6b7280",
+            background: "transparent",
+            border: "none",
+            borderBottom: activeTab === "mls" ? "2px solid #3b82f6" : "2px solid transparent",
+            cursor: "pointer",
           }}
         >
-          + Add Listing
+          MLS Search
+        </button>
+        <button
+          onClick={() => setActiveTab("my-listings")}
+          style={{
+            padding: "10px 24px",
+            fontSize: 14,
+            fontWeight: 600,
+            color: activeTab === "my-listings" ? "#3b82f6" : "#6b7280",
+            background: "transparent",
+            border: "none",
+            borderBottom: activeTab === "my-listings" ? "2px solid #3b82f6" : "2px solid transparent",
+            cursor: "pointer",
+          }}
+        >
+          My Listings
+          {myListings.length > 0 && (
+            <span
+              style={{
+                marginLeft: 8,
+                padding: "2px 8px",
+                background: "#e5e7eb",
+                borderRadius: 10,
+                fontSize: 12,
+              }}
+            >
+              {myListings.length}
+            </span>
+          )}
         </button>
       </div>
 
@@ -1005,6 +1019,349 @@ export default function MLSClient() {
       {/* My Listings Tab */}
       {activeTab === "my-listings" && (
         <div>
+          {/* AI Listing Description Generator */}
+          <div
+            style={{
+              background: showDescGen ? "#fff" : "linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)",
+              border: showDescGen ? "2px solid #8b5cf6" : "1px solid #e5e7eb",
+              borderRadius: 12,
+              padding: showDescGen ? 24 : 20,
+              marginBottom: 24,
+            }}
+          >
+            {!showDescGen ? (
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+                <div>
+                  <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 700, color: "#374151" }}>
+                    AI Listing Description Generator
+                  </h3>
+                  <p style={{ margin: 0, fontSize: 13, color: "#6b7280" }}>
+                    Enter property details and get 3 ready-to-use, Fair Housing compliant descriptions.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowDescGen(true)}
+                  style={{
+                    padding: "10px 24px",
+                    background: "#8b5cf6",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 8,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    fontSize: 14,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  Generate Description
+                </button>
+              </div>
+            ) : (
+              <>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                  <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#374151" }}>
+                    Generate Listing Description
+                  </h3>
+                  <button
+                    onClick={() => { setShowDescGen(false); setDescResults(null); setDescError(""); }}
+                    style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "#6b7280" }}
+                  >
+                    &times;
+                  </button>
+                </div>
+
+                {/* Compliance notice */}
+                <div style={{
+                  padding: "10px 14px",
+                  background: "#f0fdf4",
+                  border: "1px solid #bbf7d0",
+                  borderRadius: 8,
+                  marginBottom: 20,
+                  fontSize: 12,
+                  color: "#166534",
+                  lineHeight: 1.5,
+                }}>
+                  All generated descriptions are NAR and Fair Housing Act compliant. Always review before posting to your MLS.
+                </div>
+
+                {/* Form */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 16 }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                      Property Type <span style={{ color: "#ef4444" }}>*</span>
+                    </label>
+                    <select
+                      value={descForm.propertyType}
+                      onChange={(e) => setDescForm({ ...descForm, propertyType: e.target.value })}
+                      style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
+                    >
+                      <option>Single Family Residential</option>
+                      <option>Condo</option>
+                      <option>Townhouse</option>
+                      <option>Multi-Family</option>
+                      <option>Land</option>
+                      <option>Commercial</option>
+                      <option>Farm / Ranch</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                      Bedrooms <span style={{ color: "#ef4444" }}>*</span>
+                    </label>
+                    <input
+                      type="number" min="0" placeholder="3"
+                      value={descForm.bedrooms}
+                      onChange={(e) => setDescForm({ ...descForm, bedrooms: e.target.value })}
+                      style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, boxSizing: "border-box" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                      Bathrooms <span style={{ color: "#ef4444" }}>*</span>
+                    </label>
+                    <input
+                      type="number" min="0" step="0.5" placeholder="2"
+                      value={descForm.bathrooms}
+                      onChange={(e) => setDescForm({ ...descForm, bathrooms: e.target.value })}
+                      style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, boxSizing: "border-box" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                      Square Feet <span style={{ color: "#ef4444" }}>*</span>
+                    </label>
+                    <input
+                      type="number" min="0" placeholder="2000"
+                      value={descForm.sqft}
+                      onChange={(e) => setDescForm({ ...descForm, sqft: e.target.value })}
+                      style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, boxSizing: "border-box" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                      Year Built
+                    </label>
+                    <input
+                      type="number" min="1800" max="2030" placeholder="2005"
+                      value={descForm.yearBuilt}
+                      onChange={(e) => setDescForm({ ...descForm, yearBuilt: e.target.value })}
+                      style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, boxSizing: "border-box" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374141" }}>
+                      Lot Size
+                    </label>
+                    <input
+                      type="text" placeholder="0.25 acres"
+                      value={descForm.lotSize}
+                      onChange={(e) => setDescForm({ ...descForm, lotSize: e.target.value })}
+                      style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, boxSizing: "border-box" }}
+                    />
+                  </div>
+                  <div style={{ gridColumn: "1 / -1" }}>
+                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                      Architectural Style
+                    </label>
+                    <select
+                      value={descForm.architecturalStyle}
+                      onChange={(e) => setDescForm({ ...descForm, architecturalStyle: e.target.value })}
+                      style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
+                    >
+                      <option value="">Not specified</option>
+                      <option>Ranch</option>
+                      <option>Colonial</option>
+                      <option>Cape Cod</option>
+                      <option>Craftsman</option>
+                      <option>Contemporary</option>
+                      <option>Mid-Century Modern</option>
+                      <option>Victorian</option>
+                      <option>Tudor</option>
+                      <option>Mediterranean</option>
+                      <option>Spanish</option>
+                      <option>Farmhouse</option>
+                      <option>Split Level</option>
+                      <option>A-Frame</option>
+                      <option>Log Home</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Feature checkboxes */}
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 8, color: "#374151" }}>
+                    Key Features (check all that apply)
+                  </label>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 6 }}>
+                    {PROPERTY_FEATURES.map((feature) => (
+                      <label
+                        key={feature}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                          fontSize: 13,
+                          color: "#374151",
+                          cursor: "pointer",
+                          padding: "4px 0",
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={descFeatures.includes(feature)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setDescFeatures([...descFeatures, feature]);
+                            } else {
+                              setDescFeatures(descFeatures.filter((f) => f !== feature));
+                            }
+                          }}
+                          style={{ width: 16, height: 16, accentColor: "#8b5cf6" }}
+                        />
+                        {feature}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Additional notes */}
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                    Additional Notes (optional)
+                  </label>
+                  <textarea
+                    value={descForm.additionalNotes}
+                    onChange={(e) => setDescForm({ ...descForm, additionalNotes: e.target.value })}
+                    placeholder="E.g., recently renovated kitchen, new HVAC, backs up to greenbelt, corner lot..."
+                    rows={2}
+                    style={{
+                      width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6,
+                      fontSize: 14, resize: "vertical", fontFamily: "inherit", boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+
+                {/* Generate button */}
+                <button
+                  onClick={async () => {
+                    if (!descForm.bedrooms || !descForm.bathrooms || !descForm.sqft) {
+                      setDescError("Please fill in bedrooms, bathrooms, and square footage.");
+                      return;
+                    }
+                    setDescLoading(true);
+                    setDescError("");
+                    setDescResults(null);
+                    setCopiedIdx(null);
+                    try {
+                      const res = await fetch("/api/mls/generate-description", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          propertyType: descForm.propertyType,
+                          bedrooms: Number(descForm.bedrooms),
+                          bathrooms: Number(descForm.bathrooms),
+                          sqft: Number(descForm.sqft),
+                          yearBuilt: descForm.yearBuilt ? Number(descForm.yearBuilt) : undefined,
+                          lotSize: descForm.lotSize || undefined,
+                          architecturalStyle: descForm.architecturalStyle || undefined,
+                          features: descFeatures.length > 0 ? descFeatures : undefined,
+                          additionalNotes: descForm.additionalNotes || undefined,
+                        }),
+                      });
+                      const data = await res.json();
+                      if (!res.ok || !data.success) {
+                        setDescError(data.error || "Failed to generate descriptions.");
+                      } else {
+                        setDescResults(data.descriptions);
+                      }
+                    } catch (err: any) {
+                      setDescError(err.message || "Something went wrong.");
+                    } finally {
+                      setDescLoading(false);
+                    }
+                  }}
+                  disabled={descLoading}
+                  style={{
+                    width: "100%",
+                    padding: "12px 24px",
+                    background: descLoading ? "#a78bfa" : "#8b5cf6",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 8,
+                    fontWeight: 600,
+                    cursor: descLoading ? "wait" : "pointer",
+                    fontSize: 15,
+                    marginBottom: descResults || descError ? 20 : 0,
+                  }}
+                >
+                  {descLoading ? "Generating descriptions..." : "Generate Descriptions"}
+                </button>
+
+                {/* Error */}
+                {descError && (
+                  <div style={{
+                    padding: 12, background: "#fee2e2", color: "#dc2626",
+                    borderRadius: 8, marginBottom: 16, fontSize: 14,
+                  }}>
+                    {descError}
+                  </div>
+                )}
+
+                {/* Results */}
+                {descResults && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                    {descResults.map((variant, idx) => (
+                      <div
+                        key={variant.tone}
+                        style={{
+                          border: "1px solid #e5e7eb",
+                          borderRadius: 10,
+                          overflow: "hidden",
+                        }}
+                      >
+                        <div style={{
+                          display: "flex", justifyContent: "space-between", alignItems: "center",
+                          padding: "10px 16px",
+                          background: idx === 0 ? "#eff6ff" : idx === 1 ? "#fef3c7" : "#f5f3ff",
+                        }}>
+                          <span style={{
+                            fontSize: 13, fontWeight: 700,
+                            color: idx === 0 ? "#1d4ed8" : idx === 1 ? "#b45309" : "#7c3aed",
+                          }}>
+                            {variant.label}
+                          </span>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(variant.description);
+                              setCopiedIdx(idx);
+                              setTimeout(() => setCopiedIdx(null), 2000);
+                            }}
+                            style={{
+                              padding: "5px 14px",
+                              background: copiedIdx === idx ? "#10b981" : "#fff",
+                              color: copiedIdx === idx ? "#fff" : "#374151",
+                              border: copiedIdx === idx ? "none" : "1px solid #d1d5db",
+                              borderRadius: 6,
+                              fontSize: 12,
+                              fontWeight: 600,
+                              cursor: "pointer",
+                            }}
+                          >
+                            {copiedIdx === idx ? "Copied!" : "Copy"}
+                          </button>
+                        </div>
+                        <div style={{ padding: 16, fontSize: 14, lineHeight: 1.7, color: "#374151" }}>
+                          {variant.description}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Existing Listings Grid */}
           {isLoadingMyListings ? (
             <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>
               Loading your listings...
@@ -1022,26 +1379,9 @@ export default function MLSClient() {
               <p style={{ fontSize: 18, fontWeight: 600, marginBottom: 8, color: "#374151" }}>
                 No Listings Yet
               </p>
-              <p style={{ fontSize: 14, maxWidth: 400, margin: "0 auto", marginBottom: 20 }}>
-                Create your first listing to manage your properties directly from the app.
+              <p style={{ fontSize: 14, maxWidth: 400, margin: "0 auto" }}>
+                Your listings from the MLS will appear here.
               </p>
-              <button
-                onClick={() => {
-                  setEditListing(null);
-                  setShowAddListing(true);
-                }}
-                style={{
-                  padding: "10px 24px",
-                  background: "#3b82f6",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 8,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
-              >
-                + Add Your First Listing
-              </button>
             </div>
           ) : (
             <div
@@ -1116,7 +1456,7 @@ export default function MLSClient() {
                       <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 10 }}>
                         {listing.city as string}, {listing.state_or_province as string} {listing.postal_code as string}
                       </div>
-                      <div style={{ display: "flex", gap: 12, fontSize: 13, color: "#6b7280", marginBottom: 12 }}>
+                      <div style={{ display: "flex", gap: 12, fontSize: 13, color: "#6b7280" }}>
                         {listing.bedrooms_total != null && (
                           <span><strong>{listing.bedrooms_total as number}</strong> bed</span>
                         )}
@@ -1127,44 +1467,6 @@ export default function MLSClient() {
                           <span><strong>{(listing.living_area as number).toLocaleString()}</strong> sqft</span>
                         )}
                       </div>
-
-                      {/* Action buttons */}
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <button
-                          onClick={() => {
-                            setEditListing(listing);
-                            setShowAddListing(true);
-                          }}
-                          style={{
-                            flex: 1,
-                            padding: "8px 12px",
-                            background: "#3b82f6",
-                            color: "#fff",
-                            border: "none",
-                            borderRadius: 6,
-                            fontSize: 13,
-                            fontWeight: 600,
-                            cursor: "pointer",
-                          }}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDeleteListing(listing.id as string)}
-                          style={{
-                            padding: "8px 12px",
-                            background: "#fff",
-                            color: "#dc2626",
-                            border: "1px solid #fca5a5",
-                            borderRadius: 6,
-                            fontSize: 13,
-                            fontWeight: 600,
-                            cursor: "pointer",
-                          }}
-                        >
-                          Delete
-                        </button>
-                      </div>
                     </div>
                   </div>
                 );
@@ -1172,22 +1474,6 @@ export default function MLSClient() {
             </div>
           )}
         </div>
-      )}
-
-      {/* Add Listing Form */}
-      {showAddListing && (
-        <AddListingForm
-          onClose={() => {
-            setShowAddListing(false);
-            setEditListing(null);
-          }}
-          onSuccess={() => {
-            setShowAddListing(false);
-            setEditListing(null);
-            fetchMyListings();
-          }}
-          editListing={editListing}
-        />
       )}
 
       {/* Property Detail Modal */}
