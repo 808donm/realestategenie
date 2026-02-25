@@ -171,6 +171,7 @@ export async function syncLeadToGHL(leadId: string): Promise<{
         must_haves: payload.must_haves || "",
 
         // Agent info for email
+        agent_name: agent?.display_name || "",
         agent_license: agent?.license_number || "",
       },
     };
