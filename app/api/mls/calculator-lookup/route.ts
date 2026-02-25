@@ -99,13 +99,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "No listings found matching that address" }, { status: 404 });
     }
 
-    // Build address
+    // Build display address
     const addressParts = [
       property.StreetNumber,
       property.StreetName,
       property.StreetSuffix,
     ].filter(Boolean);
-    const address = property.UnparsedAddress ||
+    const displayAddress = property.UnparsedAddress ||
       `${addressParts.join(" ")}, ${property.City}, ${property.StateOrProvince} ${property.PostalCode}`;
 
     // Estimate annual property tax from TaxAnnualAmount or ListPrice
@@ -119,7 +119,7 @@ export async function GET(request: NextRequest) {
       property: {
         listingKey: property.ListingKey,
         listingId: property.ListingId,
-        address,
+        address: displayAddress,
         listPrice: property.ListPrice || 0,
         livingArea: property.LivingArea || 0,
         bedrooms: property.BedroomsTotal || 0,
