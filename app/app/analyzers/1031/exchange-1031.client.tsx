@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import * as XLSX from "xlsx";
+import MLSImport, { type MLSPropertyData } from "@/components/mls-import";
 import {
   calculateTimeline,
   calculateTaxAnalysis,
@@ -95,6 +96,11 @@ export default function Exchange1031Client({ savedExchanges, investmentPropertie
 
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+
+  const handleMLSImport = (p: MLSPropertyData) => {
+    setRelinquishedAddress(p.address);
+    setSalePrice(p.listPrice);
+  };
 
   // Calculate timeline
   const timeline = useMemo<TimelineStatus>(() => {
@@ -436,6 +442,8 @@ export default function Exchange1031Client({ savedExchanges, investmentPropertie
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
       {/* Left Column: Inputs */}
       <div>
+        <MLSImport onImport={handleMLSImport} />
+
         {/* Saved Exchanges */}
         {savedExchanges.length > 0 && (
           <div style={{ marginBottom: 20, padding: 16, border: "1px solid #e6e6e6", borderRadius: 12 }}>

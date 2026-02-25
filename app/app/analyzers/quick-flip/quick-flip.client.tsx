@@ -5,6 +5,7 @@ import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import AttachToContact from "@/components/attach-to-contact";
 import { calculateQuickFlip, type QuickFlipInput } from "@/lib/calculators/quickflip";
+import MLSImport, { type MLSPropertyData } from "@/components/mls-import";
 
 export default function QuickFlipClient() {
   const [inputs, setInputs] = useState<QuickFlipInput>({
@@ -20,6 +21,14 @@ export default function QuickFlipClient() {
 
   const handleChange = (field: keyof QuickFlipInput, value: number) => {
     setInputs((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleMLSImport = (p: MLSPropertyData) => {
+    setInputs((prev) => ({
+      ...prev,
+      arv: p.listPrice,
+      purchasePrice: Math.round(p.listPrice * 0.7),
+    }));
   };
 
   const fmt = (n: number) =>
@@ -144,6 +153,8 @@ export default function QuickFlipClient() {
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
       {/* Inputs */}
       <div>
+        <MLSImport onImport={handleMLSImport} />
+
         <div style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 20 }}>
           <h2 style={{ margin: "0 0 20px 0", fontSize: 18, fontWeight: 700 }}>Deal Numbers</h2>
 

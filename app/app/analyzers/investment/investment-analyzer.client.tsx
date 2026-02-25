@@ -8,6 +8,7 @@ import {
   PropertyAnalysis,
   analyzeProperty,
 } from "@/lib/calculators/investment";
+import MLSImport, { type MLSPropertyData } from "@/components/mls-import";
 
 interface SavedProperty {
   id: string;
@@ -114,6 +115,18 @@ export default function InvestmentAnalyzerClient({ savedProperties }: Props) {
     value: PropertyInput[K]
   ) => {
     setInput((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleMLSImport = (p: MLSPropertyData) => {
+    setPropertyName(p.address);
+    setPropertyAddress(p.address);
+    setInput((prev) => ({
+      ...prev,
+      purchasePrice: p.listPrice,
+      propertyTaxAnnual: p.taxAnnual,
+      insuranceAnnual: p.insuranceAnnual,
+      hoaMonthly: p.associationFee || 0,
+    }));
   };
 
   const loadProperty = (property: SavedProperty) => {
@@ -384,6 +397,8 @@ export default function InvestmentAnalyzerClient({ savedProperties }: Props) {
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
       {/* Left Column: Inputs */}
       <div>
+        <MLSImport onImport={handleMLSImport} />
+
         {/* Saved Properties */}
         {savedProperties.length > 0 && (
           <div style={{ marginBottom: 20, padding: 16, border: "1px solid #e6e6e6", borderRadius: 12 }}>

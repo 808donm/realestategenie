@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback } from "react";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import AttachToContact from "@/components/attach-to-contact";
+import MLSImport, { type MLSPropertyData } from "@/components/mls-import";
 import {
   calculateNetSheet,
   DEFAULT_CLOSING_COST_ITEMS,
@@ -31,6 +32,10 @@ export default function NetSheetCalculatorClient() {
 
   const handleChange = (field: keyof NetSheetInput, value: number | string | boolean) => {
     setInputs((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleMLSImport = (p: MLSPropertyData) => {
+    setInputs((prev) => ({ ...prev, salePrice: p.listPrice }));
   };
 
   const handleClosingCostItemChange = (index: number, field: "label" | "amount", value: string | number) => {
@@ -298,6 +303,8 @@ export default function NetSheetCalculatorClient() {
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
       {/* Input Form */}
       <div>
+        <MLSImport onImport={handleMLSImport} />
+
         {/* Sale Price */}
         <div style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 20 }}>
           <h2 style={{ margin: "0 0 20px 0", fontSize: 18, fontWeight: 700 }}>Sale Details</h2>

@@ -5,6 +5,7 @@ import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import AttachToContact from "@/components/attach-to-contact";
 import { calculateRental, type RentalInput } from "@/lib/calculators/rental";
+import MLSImport, { type MLSPropertyData } from "@/components/mls-import";
 
 export default function RentalCalculatorClient() {
   const [inputs, setInputs] = useState<RentalInput>({
@@ -26,6 +27,16 @@ export default function RentalCalculatorClient() {
 
   const handleChange = (field: keyof RentalInput, value: number) => {
     setInputs((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleMLSImport = (p: MLSPropertyData) => {
+    setInputs((prev) => ({
+      ...prev,
+      purchasePrice: p.listPrice,
+      propertyTaxAnnual: p.taxAnnual,
+      insuranceAnnual: p.insuranceAnnual,
+      hoaMonthly: p.associationFee || 0,
+    }));
   };
 
   const fmt = (n: number) =>
@@ -163,6 +174,8 @@ export default function RentalCalculatorClient() {
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
       {/* Inputs */}
       <div>
+        <MLSImport onImport={handleMLSImport} />
+
         {/* Property & Financing */}
         <div style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 20 }}>
           <h2 style={{ margin: "0 0 20px 0", fontSize: 18, fontWeight: 700 }}>Property & Financing</h2>

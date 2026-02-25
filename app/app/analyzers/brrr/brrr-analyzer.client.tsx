@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import * as XLSX from "xlsx";
 import { analyzeBRRR, getBRRRVerdict, calculate70PercentRule, BRRRInput } from "@/lib/calculators/brrr";
+import MLSImport, { type MLSPropertyData } from "@/components/mls-import";
 
 interface SavedAnalysis {
   id: string;
@@ -85,6 +86,19 @@ export default function BRRRAnalyzerClient({ savedAnalyses }: BRRRAnalyzerClient
 
   const handleInputChange = (field: string, value: number | string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleMLSImport = (p: MLSPropertyData) => {
+    setFormData((prev) => ({
+      ...prev,
+      name: `BRRR - ${p.address}`,
+      address: p.address,
+      numberOfUnits: p.numberOfUnits || 1,
+      purchasePrice: p.listPrice,
+      afterRepairValue: Math.round(p.listPrice * 1.2),
+      propertyTaxAnnual: p.taxAnnual,
+      insuranceAnnual: p.insuranceAnnual,
+    }));
   };
 
   // Calculate analysis
@@ -389,6 +403,8 @@ export default function BRRRAnalyzerClient({ savedAnalyses }: BRRRAnalyzerClient
           Saved Analyses ({savedAnalyses.length})
         </button>
       </div>
+
+      <MLSImport onImport={handleMLSImport} />
 
       {activeTab === "saved" ? (
         <div>

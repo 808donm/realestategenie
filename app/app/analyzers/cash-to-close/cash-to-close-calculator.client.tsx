@@ -5,6 +5,7 @@ import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import AttachToContact from "@/components/attach-to-contact";
 import { calculateCashToClose, type CashToCloseInput } from "@/lib/calculators/cashtoclose";
+import MLSImport, { type MLSPropertyData } from "@/components/mls-import";
 
 export default function CashToCloseCalculatorClient() {
   const [inputs, setInputs] = useState<CashToCloseInput>({
@@ -22,6 +23,12 @@ export default function CashToCloseCalculatorClient() {
     loanAmount: 320000,
     interestRate: 6.5,
   });
+
+  const handleMLSImport = (p: MLSPropertyData) => {
+    handleChange("purchasePrice", p.listPrice);
+    handleChange("propertyTaxAnnual", p.taxAnnual);
+    handleChange("insuranceAnnual", p.insuranceAnnual);
+  };
 
   // Keep loan amount in sync with purchase price and down payment
   const handleChange = (field: keyof CashToCloseInput, value: number) => {
@@ -251,6 +258,8 @@ export default function CashToCloseCalculatorClient() {
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
       {/* Input Form */}
       <div>
+        <MLSImport onImport={handleMLSImport} />
+
         {/* Purchase Details */}
         <div style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 20 }}>
           <h2 style={{ margin: "0 0 20px 0", fontSize: 18, fontWeight: 700 }}>Purchase Details</h2>

@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
+import MLSImport, { type MLSPropertyData } from "@/components/mls-import";
 
 interface MortgageInputs {
   purchasePrice: number;
@@ -69,6 +70,13 @@ export default function MortgageCalculatorClient() {
     includePmi: false,
     pmiRate: 0.5,
   });
+
+  const handleMLSImport = (p: MLSPropertyData) => {
+    handleInputChange("purchasePrice", p.listPrice);
+    handleInputChange("propertyTaxAnnual", p.taxAnnual);
+    handleInputChange("insuranceAnnual", p.insuranceAnnual);
+    handleInputChange("hoaMonthly", p.associationFee || 0);
+  };
 
   // Update down payment when purchase price or percentage changes
   const handleInputChange = (field: keyof MortgageInputs, value: number | boolean) => {
@@ -486,6 +494,8 @@ export default function MortgageCalculatorClient() {
 
   return (
     <div>
+      <MLSImport onImport={handleMLSImport} />
+
       {/* Tab Navigation */}
       <div style={{ display: "flex", gap: 0, marginBottom: 24, borderBottom: "2px solid #e5e7eb" }}>
         <button

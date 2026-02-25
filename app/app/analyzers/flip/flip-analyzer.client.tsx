@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import * as XLSX from "xlsx";
 import { analyzeFlip, getFlipVerdict, calculateFlipMAO, estimateRehabCosts, FlipInput } from "@/lib/calculators/flip";
+import MLSImport, { type MLSPropertyData } from "@/components/mls-import";
 
 interface SavedAnalysis {
   id: string;
@@ -79,6 +80,19 @@ export default function FlipAnalyzerClient({ savedAnalyses }: FlipAnalyzerClient
 
   const handleInputChange = (field: string, value: number | string | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleMLSImport = (p: MLSPropertyData) => {
+    setFormData((prev) => ({
+      ...prev,
+      name: `Flip - ${p.address}`,
+      address: p.address,
+      squareFeet: p.livingArea || prev.squareFeet,
+      purchasePrice: p.listPrice,
+      afterRepairValue: Math.round(p.listPrice * 1.3),
+      propertyTaxMonthly: Math.round(p.taxAnnual / 12),
+      insuranceMonthly: Math.round(p.insuranceAnnual / 12),
+    }));
   };
 
   // Calculate analysis
@@ -370,6 +384,8 @@ export default function FlipAnalyzerClient({ savedAnalyses }: FlipAnalyzerClient
 
   return (
     <div>
+      <MLSImport onImport={handleMLSImport} />
+
       {/* Tabs */}
       <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
         <button
