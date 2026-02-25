@@ -52,6 +52,19 @@ export interface AgentBriefingData {
 
   /** Tax reserve reminder (gross commission this month) */
   monthlyGrossCommission: number;
+
+  /** MLS listing matches for pipeline leads (populated when Trestle is connected) */
+  mlsMatches: {
+    leadName: string;
+    leadId: string;
+    matchCount: number;
+    topMatch: {
+      address: string;
+      listPrice: number;
+      matchScore: number;
+      matchReasons: string[];
+    } | null;
+  }[];
 }
 
 export async function aggregateAgentData(
@@ -156,6 +169,44 @@ export async function aggregateAgentData(
     .sort((a, b) => b.count - a.count)
     .slice(0, 5);
 
+  // MLS lead-listing matches (from lead_listing_matches table if available)
+  const mlsMatches: AgentBriefingData["mlsMatches"] = [];
+  const { data: recentMatches } = await supabase
+    .from("lead_listing_matches")
+    .select("lead_id, address, list_price, match_score, match_reasons")
+    .eq("agent_id", agentId)
+    .eq("status", "new")
+    .order("match_score", { ascending: false })
+    .limit(50);
+
+  if (recentMatches && recentMatches.length > 0) {
+    // Group by lead
+    const matchesByLead = new Map<string, typeof recentMatches>();
+    recentMatches.forEach((m) => {
+      const arr = matchesByLead.get(m.lead_id) || [];
+      arr.push(m);
+      matchesByLead.set(m.lead_id, arr);
+    });
+
+    matchesByLead.forEach((matches, leadId) => {
+      const lead = (leads || []).find((l) => l.id === leadId);
+      const top = matches[0];
+      mlsMatches.push({
+        leadName: lead?.payload?.name || "Unknown",
+        leadId,
+        matchCount: matches.length,
+        topMatch: top
+          ? {
+              address: top.address,
+              listPrice: top.list_price,
+              matchScore: top.match_score,
+              matchReasons: top.match_reasons || [],
+            }
+          : null,
+      });
+    });
+  }
+
   return {
     agentName: agent.display_name || agent.email,
     agentEmail: agent.email,
@@ -168,6 +219,7 @@ export async function aggregateAgentData(
     },
     leadSourceBreakdown,
     monthlyGrossCommission: 0, // Populated when QBO is connected
+    mlsMatches,
   };
 }
 

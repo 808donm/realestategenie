@@ -1,17 +1,17 @@
-import MLSClient from "./mls.client";
+import MLSPageTabs from "./mls-page-tabs.client";
 
 export const metadata = {
-  title: "MLS Search | The Real Estate Genie",
+  title: "MLS Tools | The Real Estate Genie",
 };
 
 export default function MLSPage() {
   return (
     <div>
-      <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 4 }}>MLS Search</h1>
+      <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 4 }}>MLS Tools</h1>
       <p style={{ color: "#6b7280", marginBottom: 24 }}>
-        Search property listings from the MLS and share them with your clients.
+        Search listings, generate CMAs, match leads to properties, and sync open houses.
       </p>
-      <MLSClient />
+      <MLSPageTabs />
     </div>
   );
 }

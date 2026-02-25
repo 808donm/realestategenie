@@ -119,6 +119,18 @@ export interface TrestleOpenHouse {
   ModificationTimestamp: string;
 }
 
+export interface TrestlePropertyUnitType {
+  UnitTypeKey?: string;
+  UnitTypeType?: string;
+  UnitTypeBedsTotal?: number;
+  UnitTypeBathsTotal?: number;
+  UnitTypeActualRent?: number;
+  UnitTypeProFormaRent?: number;
+  UnitTypeTotalRent?: number;
+  UnitTypeGarageSpaces?: number;
+  UnitTypeDescription?: string;
+}
+
 export interface ODataResponse<T> {
   "@odata.context"?: string;
   "@odata.count"?: number;
@@ -504,6 +516,27 @@ export class TrestleClient {
     };
 
     return this.getOpenHouses(params);
+  }
+
+  /**
+   * Search properties by MLS Listing ID (not ListingKey)
+   */
+  async searchByListingId(listingId: string): Promise<TrestleProperty | null> {
+    const result = await this.getProperties({
+      $filter: `ListingId eq '${listingId}'`,
+      $top: 1,
+      $expand: "Media",
+    });
+    return result.value.length > 0 ? result.value[0] : null;
+  }
+
+  /**
+   * Get property unit types (for multi-family investment analysis)
+   */
+  async getPropertyUnits(listingKey: string): Promise<ODataResponse<TrestlePropertyUnitType>> {
+    return this.request<ODataResponse<TrestlePropertyUnitType>>(
+      `/PropertyUnitTypes?$filter=ListingKey eq '${listingKey}'`
+    );
   }
 
   /**

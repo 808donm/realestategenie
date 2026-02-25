@@ -71,7 +71,16 @@ ${speedSummary}
 TOP LEAD SOURCES:
 ${data.leadSourceBreakdown.map((s) => `${s.source}: ${s.count} leads`).join(", ") || "No data."}
 
-Generate the 3 highest-revenue-impact priorities for today.`,
+MLS LISTING MATCHES FOR YOUR LEADS:
+${data.mlsMatches.length > 0
+  ? data.mlsMatches.map((m) =>
+      `- ${m.leadName}: ${m.matchCount} new listing${m.matchCount !== 1 ? "s" : ""} match their criteria${
+        m.topMatch ? ` (top: ${m.topMatch.address} at $${m.topMatch.listPrice.toLocaleString()}, ${m.topMatch.matchScore}% match)` : ""
+      }`
+    ).join("\n")
+  : "No MLS matches (Trestle not connected or no matching listings)."}
+
+Generate the 3 highest-revenue-impact priorities for today. If there are MLS matches, one priority should be about sending matched listings to the appropriate leads — this is a high-conversion activity.`,
     temperature: 0.7,
   });
 
