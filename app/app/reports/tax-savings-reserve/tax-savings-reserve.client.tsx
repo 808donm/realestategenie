@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import jsPDF from "jspdf";
 
@@ -11,7 +11,7 @@ interface MonthlyData {
   marketingBudget: number;
 }
 
-const SAMPLE_MONTHLY_DATA: MonthlyData[] = [
+const FALLBACK_DATA: MonthlyData[] = [
   { month: "2025-01", grossCommission: 18500, businessExpenses: 3200, marketingBudget: 1800 },
   { month: "2025-02", grossCommission: 12000, businessExpenses: 2900, marketingBudget: 1500 },
   { month: "2025-03", grossCommission: 24800, businessExpenses: 3400, marketingBudget: 2200 },
@@ -37,11 +37,30 @@ const MONTH_NAMES = [
 export default function TaxSavingsReserveClient() {
   const [selectedMonth, setSelectedMonth] = useState("2025-10");
   const [taxRate, setTaxRate] = useState(0.275);
-  const [useSampleData] = useState(true);
+  const [monthlyData, setMonthlyData] = useState<MonthlyData[]>(FALLBACK_DATA);
+  const [isLive, setIsLive] = useState(false);
+
+  const fetchData = useCallback(async () => {
+    try {
+      const res = await fetch("/api/reports/tax-savings-reserve");
+      if (!res.ok) throw new Error("API request failed");
+      const json: MonthlyData[] = await res.json();
+      if (Array.isArray(json) && json.length > 0) {
+        setMonthlyData(json);
+        setIsLive(true);
+      }
+    } catch {
+      // Keep fallback data
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const monthData = useMemo(() => {
-    return SAMPLE_MONTHLY_DATA.find((m) => m.month === selectedMonth) || SAMPLE_MONTHLY_DATA[0];
-  }, [selectedMonth]);
+    return monthlyData.find((m) => m.month === selectedMonth) || monthlyData[0];
+  }, [selectedMonth, monthlyData]);
 
   const computed = useMemo(() => {
     const taxReserveLow = monthData.grossCommission * TAX_RATE_LOW;
@@ -53,15 +72,15 @@ export default function TaxSavingsReserveClient() {
   }, [monthData, taxRate]);
 
   const ytd = useMemo(() => {
-    const selectedIdx = SAMPLE_MONTHLY_DATA.findIndex((m) => m.month === selectedMonth);
-    const ytdData = SAMPLE_MONTHLY_DATA.slice(0, selectedIdx + 1);
+    const selectedIdx = monthlyData.findIndex((m) => m.month === selectedMonth);
+    const ytdData = monthlyData.slice(0, selectedIdx + 1);
     const grossCommission = ytdData.reduce((sum, m) => sum + m.grossCommission, 0);
     const businessExpenses = ytdData.reduce((sum, m) => sum + m.businessExpenses, 0);
     const marketingBudget = ytdData.reduce((sum, m) => sum + m.marketingBudget, 0);
     const taxReserve = grossCommission * taxRate;
     const netTakeHome = grossCommission - taxReserve - businessExpenses - marketingBudget;
     return { grossCommission, businessExpenses, marketingBudget, taxReserve, netTakeHome, months: ytdData.length };
-  }, [selectedMonth, taxRate]);
+  }, [selectedMonth, taxRate, monthlyData]);
 
   const breakdownSegments = useMemo(() => {
     if (monthData.grossCommission === 0) return [];
@@ -163,7 +182,14 @@ export default function TaxSavingsReserveClient() {
   return (
     <div>
       {/* Integration Notice */}
-      {useSampleData && (
+      {isLive ? (
+        <div style={{ padding: 16, background: "#ecfdf5", border: "1px solid #a7f3d0", borderRadius: 10, marginBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <strong style={{ fontSize: 14 }}>Live Data</strong>
+            <span style={{ fontSize: 13, opacity: 0.8, marginLeft: 8 }}>Showing real income data from your integrations.</span>
+          </div>
+        </div>
+      ) : (
         <div style={{ padding: 16, background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10, marginBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <strong style={{ fontSize: 14 }}>Sample Data</strong>
@@ -184,7 +210,7 @@ export default function TaxSavingsReserveClient() {
             onChange={(e) => setSelectedMonth(e.target.value)}
             style={{ padding: "8px 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, fontWeight: 600, background: "#fff", cursor: "pointer" }}
           >
-            {SAMPLE_MONTHLY_DATA.map((m) => (
+            {monthlyData.map((m) => (
               <option key={m.month} value={m.month}>{getMonthLabel(m.month)}</option>
             ))}
           </select>
@@ -328,8 +354,8 @@ export default function TaxSavingsReserveClient() {
         {/* Monthly bar chart */}
         <h4 style={{ margin: "0 0 12px 0", fontSize: 14, fontWeight: 700 }}>Monthly Gross Commission</h4>
         <div style={{ display: "flex", gap: 4, alignItems: "flex-end", height: 120 }}>
-          {SAMPLE_MONTHLY_DATA.map((m) => {
-            const maxGross = Math.max(...SAMPLE_MONTHLY_DATA.map((d) => d.grossCommission));
+          {monthlyData.map((m) => {
+            const maxGross = Math.max(...monthlyData.map((d) => d.grossCommission));
             const heightPct = maxGross > 0 ? (m.grossCommission / maxGross) * 100 : 0;
             const isSelected = m.month === selectedMonth;
             const monthNum = parseInt(m.month.split("-")[1]);
