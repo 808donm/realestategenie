@@ -52,6 +52,10 @@ export default function LocalPipelineClient() {
   // Lead detail drawer
   const [selectedLead, setSelectedLead] = useState<PipelineLead | null>(null);
 
+  // Draft follow-up email
+  const [draftEmail, setDraftEmail] = useState<{ subject: string; body: string } | null>(null);
+  const [isDrafting, setIsDrafting] = useState(false);
+
   const fetchPipeline = useCallback(async () => {
     try {
       const res = await fetch("/api/leads/pipeline");
@@ -117,6 +121,24 @@ export default function LocalPipelineClient() {
       // Silently fail
     } finally {
       setMovingLeadId(null);
+    }
+  };
+
+  const handleDraftFollowUp = async (leadId: string) => {
+    setIsDrafting(true);
+    setDraftEmail(null);
+    try {
+      const res = await fetch(`/api/leads/${leadId}/draft-followup`, {
+        method: "POST",
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setDraftEmail(data);
+      }
+    } catch {
+      // Failed to draft
+    } finally {
+      setIsDrafting(false);
     }
   };
 
@@ -470,7 +492,10 @@ export default function LocalPipelineClient() {
             overflowY: "auto",
           }}
           onClick={(e) => {
-            if (e.target === e.currentTarget) setSelectedLead(null);
+            if (e.target === e.currentTarget) {
+              setSelectedLead(null);
+              setDraftEmail(null);
+            }
           }}
         >
           <div
@@ -510,7 +535,10 @@ export default function LocalPipelineClient() {
                   </p>
                 </div>
                 <button
-                  onClick={() => setSelectedLead(null)}
+                  onClick={() => {
+                    setSelectedLead(null);
+                    setDraftEmail(null);
+                  }}
                   style={{
                     padding: "6px 12px",
                     border: "1px solid #d1d5db",
@@ -633,6 +661,114 @@ export default function LocalPipelineClient() {
                     {new Date(selectedLead.createdAt).toLocaleDateString()}
                   </div>
                 </div>
+              </div>
+
+              {/* Draft Follow-Up Email */}
+              <div style={{ marginBottom: 20 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    marginBottom: 8,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: "#374151",
+                    }}
+                  >
+                    Follow-Up Email
+                  </div>
+                  <button
+                    onClick={() => handleDraftFollowUp(selectedLead.id)}
+                    disabled={isDrafting}
+                    style={{
+                      padding: "4px 12px",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      border: "1px solid #6366f1",
+                      borderRadius: 6,
+                      background: isDrafting ? "#e5e7eb" : "#6366f1",
+                      color: isDrafting ? "#9ca3af" : "#fff",
+                      cursor: isDrafting ? "not-allowed" : "pointer",
+                    }}
+                  >
+                    {isDrafting ? "Drafting..." : "Draft Email"}
+                  </button>
+                </div>
+
+                {draftEmail && (
+                  <div
+                    style={{
+                      background: "#f9fafb",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: 8,
+                      padding: 14,
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: 12,
+                        color: "#6b7280",
+                        fontWeight: 600,
+                        marginBottom: 4,
+                      }}
+                    >
+                      Subject
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 600,
+                        color: "#111827",
+                        marginBottom: 12,
+                      }}
+                    >
+                      {draftEmail.subject}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        color: "#6b7280",
+                        fontWeight: 600,
+                        marginBottom: 4,
+                      }}
+                    >
+                      Body
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 13,
+                        lineHeight: 1.6,
+                        color: "#374151",
+                        whiteSpace: "pre-wrap",
+                      }}
+                    >
+                      {draftEmail.body}
+                    </div>
+                    {selectedLead.email && (
+                      <a
+                        href={`mailto:${selectedLead.email}?subject=${encodeURIComponent(draftEmail.subject)}&body=${encodeURIComponent(draftEmail.body)}`}
+                        style={{
+                          display: "inline-block",
+                          marginTop: 12,
+                          padding: "6px 16px",
+                          fontSize: 13,
+                          fontWeight: 600,
+                          background: "#059669",
+                          color: "#fff",
+                          borderRadius: 6,
+                          textDecoration: "none",
+                        }}
+                      >
+                        Open in Email Client
+                      </a>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Move to Stage */}
