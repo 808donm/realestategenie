@@ -48,6 +48,9 @@ export default function GHLIntegrationCard({ integration }: { integration: Integ
   const [selectedStageId, setSelectedStageId] = useState(
     integration?.config?.ghl_new_lead_stage || ""
   );
+  const [selectedContactedStageId, setSelectedContactedStageId] = useState(
+    integration?.config?.ghl_contacted_stage || ""
+  );
   const [savingPipeline, setSavingPipeline] = useState(false);
 
   const isConnected = integration?.status === "connected";
@@ -174,7 +177,7 @@ export default function GHLIntegrationCard({ integration }: { integration: Integ
 
   const handleSavePipeline = async () => {
     if (!selectedPipelineId || !selectedStageId) {
-      toast.error("Please select both a pipeline and a stage");
+      toast.error("Please select both a pipeline and a new lead stage");
       return;
     }
 
@@ -186,6 +189,7 @@ export default function GHLIntegrationCard({ integration }: { integration: Integ
         body: JSON.stringify({
           ghl_pipeline_id: selectedPipelineId,
           ghl_new_lead_stage: selectedStageId,
+          ghl_contacted_stage: selectedContactedStageId || null,
         }),
       });
 
@@ -213,8 +217,13 @@ export default function GHLIntegrationCard({ integration }: { integration: Integ
   const handlePipelineChange = (pipelineId: string) => {
     setSelectedPipelineId(pipelineId);
     const pipeline = pipelines.find((p) => p.id === pipelineId);
-    if (pipeline && !pipeline.stages.find((s) => s.id === selectedStageId)) {
-      setSelectedStageId("");
+    if (pipeline) {
+      if (!pipeline.stages.find((s) => s.id === selectedStageId)) {
+        setSelectedStageId("");
+      }
+      if (!pipeline.stages.find((s) => s.id === selectedContactedStageId)) {
+        setSelectedContactedStageId("");
+      }
     }
   };
 
@@ -350,6 +359,31 @@ export default function GHLIntegrationCard({ integration }: { integration: Integ
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+                )}
+
+                {selectedPipeline && selectedStageId && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="contacted-stage-select" className="text-xs text-muted-foreground">
+                      Initial Contact Stage (Optional)
+                    </Label>
+                    <Select value={selectedContactedStageId} onValueChange={setSelectedContactedStageId}>
+                      <SelectTrigger id="contacted-stage-select">
+                        <SelectValue placeholder="Move here after email/SMS sent" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {selectedPipeline.stages
+                          .filter((s) => s.id !== selectedStageId)
+                          .map((stage) => (
+                            <SelectItem key={stage.id} value={stage.id}>
+                              {stage.name}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Leads auto-move to this stage after email and SMS are sent.
+                    </p>
                   </div>
                 )}
 

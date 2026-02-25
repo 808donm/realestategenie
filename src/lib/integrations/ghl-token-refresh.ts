@@ -23,6 +23,7 @@ export async function getValidGHLConfig(agentId: string): Promise<{
   refresh_token: string;
   ghl_pipeline_id?: string;
   ghl_new_lead_stage?: string;
+  ghl_contacted_stage?: string;
 } | null> {
   try {
     console.log("[Token Refresh] Fetching GHL integration for agent_id:", agentId);
@@ -94,6 +95,7 @@ export async function getValidGHLConfig(agentId: string): Promise<{
         refresh_token: refreshToken,
         ghl_pipeline_id: config.ghl_pipeline_id,
         ghl_new_lead_stage: config.ghl_new_lead_stage,
+        ghl_contacted_stage: config.ghl_contacted_stage,
       };
     }
 

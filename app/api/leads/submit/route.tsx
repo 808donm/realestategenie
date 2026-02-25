@@ -386,6 +386,9 @@ export async function POST(req: Request) {
           }
 
           // Send thank you email (only needs contactId)
+          let emailSent = false;
+          let smsSent = false;
+
           if (contactId) {
             try {
               console.log('📧 Attempting to send email via GHL...');
@@ -407,6 +410,7 @@ export async function POST(req: Request) {
                 html: emailHtml,
               });
 
+              emailSent = true;
               console.log('✅ Email sent successfully via GHL (tracked in CRM)');
             } catch (ghlEmailError: any) {
               console.warn('⚠️ GHL email failed, falling back to Resend:', ghlEmailError.message);
@@ -422,6 +426,7 @@ export async function POST(req: Request) {
                   isReturnVisit,
                   visitCount,
                 });
+                emailSent = true;
                 console.log('✅ Email sent successfully via Resend (fallback)');
               } catch (resendError: any) {
                 console.error('❌ Both GHL and Resend email sending failed:', resendError.message);
@@ -444,6 +449,7 @@ export async function POST(req: Request) {
                   message: smsMessage,
                 });
 
+                smsSent = true;
                 console.log('✅ SMS sent successfully via GHL');
               } catch (smsError: any) {
                 console.error('⚠️ SMS send failed (non-blocking):', smsError.message);
@@ -499,6 +505,23 @@ export async function POST(req: Request) {
                   console.log(`Added "${heatTag}" tag to contact based on heat score`);
                 } catch (tagError: any) {
                   console.error('Failed to add heat tag:', tagError.message);
+                }
+
+                // Move opportunity to "Initial Contact" stage if email/SMS were sent
+                // and the contacted stage is configured
+                const contacted = emailSent && (smsSent || !payload.consent?.sms);
+                if (contacted && ghlConfig.ghl_contacted_stage && opportunityId) {
+                  try {
+                    console.log('📋 Moving opportunity to Initial Contact stage...');
+                    const client = new (await import("@/lib/integrations/ghl-client")).GHLClient(
+                      ghlConfig.access_token,
+                      ghlConfig.location_id
+                    );
+                    await client.updateOpportunityStage(opportunityId, ghlConfig.ghl_contacted_stage);
+                    console.log('✅ Opportunity moved to Initial Contact stage');
+                  } catch (stageError: any) {
+                    console.error('⚠️ Failed to advance opportunity stage:', stageError.message);
+                  }
                 }
               } catch (oppError: any) {
                 console.error('❌ Failed to create Opportunity:', oppError.message);
