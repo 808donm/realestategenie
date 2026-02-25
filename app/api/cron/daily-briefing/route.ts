@@ -14,14 +14,11 @@ import {
 /**
  * Daily AI Briefing Cron Job
  *
- * Runs hourly. At 6:00 AM in each agent's local timezone it:
- *   1. Aggregates report data for the agent
- *   2. Feeds it to the AI to produce top-3 priorities
- *   3. Sends a briefing email via Resend
+ * Runs once daily at 16:00 UTC (6:00 AM HST).
+ * When clients span multiple time zones, switch to hourly ("0 * * * *")
+ * so each agent receives their briefing at 6 AM local.
  *
- * Team leads and brokers receive their own tailored version.
- *
- * Vercel cron schedule: "0 * * * *" (every hour at :00)
+ * Vercel cron schedule: "0 16 * * *"
  * Required header: Authorization: Bearer [CRON_SECRET]
  */
 
@@ -62,28 +59,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Determine which agents are at 6:00 AM local time right now
-    const targetAgentIds: string[] = [];
+    // ── Timezone-aware targeting ──────────────────────────────────
+    // Currently running once daily at 16:00 UTC (6 AM HST), so we
+    // process every agent. When clients span multiple time zones,
+    // switch the cron to hourly ("0 * * * *") and uncomment the
+    // timezone filter below so each agent is only processed when
+    // their local clock hits 6 AM.
+    // ──────────────────────────────────────────────────────────────
+    const targetAgentIds: string[] = allAgents.map((a) => a.id);
 
-    for (const agent of allAgents) {
-      const tz = agent.timezone || "America/New_York";
-      try {
-        const localTime = new Date(
-          now.toLocaleString("en-US", { timeZone: tz })
-        );
-        if (localTime.getHours() === 6) {
-          targetAgentIds.push(agent.id);
-        }
-      } catch {
-        // Invalid timezone, skip
-      }
-    }
+    // FUTURE: uncomment for multi-timezone hourly mode
+    // const targetAgentIds: string[] = [];
+    // for (const agent of allAgents) {
+    //   const tz = agent.timezone || "Pacific/Honolulu";
+    //   try {
+    //     const localTime = new Date(
+    //       now.toLocaleString("en-US", { timeZone: tz })
+    //     );
+    //     if (localTime.getHours() === 6) {
+    //       targetAgentIds.push(agent.id);
+    //     }
+    //   } catch {
+    //     // Invalid timezone, skip
+    //   }
+    // }
 
     if (targetAgentIds.length === 0) {
-      console.log("No agents at 6 AM right now — skipping.");
+      console.log("No agents to process — skipping.");
       return NextResponse.json({
         success: true,
-        message: "No agents at 6 AM target time",
+        message: "No agents to process",
         ...results,
         timestamp: now.toISOString(),
       });
