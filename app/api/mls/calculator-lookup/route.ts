@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { getTrestleClient } from "@/lib/mls/trestle-helpers";
+import type { TrestleProperty } from "@/lib/integrations/trestle-client";
 
 /**
  * GET /api/mls/calculator-lookup?mlsNumber=xxx
@@ -27,8 +28,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Trestle MLS not connected" }, { status: 400 });
     }
 
-    let property = null;
-    let addressResults: typeof property[] = [];
+    let property: TrestleProperty | null = null;
+    let addressResults: TrestleProperty[] = [];
 
     if (mlsNumber?.trim()) {
       // MLS Number lookup: try ListingId first, fall back to ListingKey
@@ -82,7 +83,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         success: true,
         multiple: true,
-        results: addressResults.map((p: any) => {
+        results: addressResults.map((p) => {
           const addrParts = [p.StreetNumber, p.StreetName, p.StreetSuffix].filter(Boolean);
           return {
             listingKey: p.ListingKey,

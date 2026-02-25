@@ -66,6 +66,9 @@ export interface TrestleProperty {
   Media?: TrestleMedia[];
   ListingURL?: string;
   VirtualTourURLUnbranded?: string;
+  TaxAnnualAmount?: number;
+  AssociationFee?: number;
+  NumberOfUnitsTotal?: number;
 }
 
 export interface TrestleMedia {
