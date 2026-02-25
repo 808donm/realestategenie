@@ -354,13 +354,15 @@ Consent: ${payload.consent?.sms ? "SMS ✓" : ""} ${payload.consent?.email ? "Em
       body: noteBody,
     });
 
-    // Update lead_submissions with GHL sync status
+    // Update lead_submissions with GHL sync status and advance pipeline stage
+    // Syncing to GHL represents initial contact with the lead
     await supabaseAdmin
       .from("lead_submissions")
       .update({
         pushed_to_ghl: true,
         ghl_contact_id: contactId,
         ghl_opportunity_id: opportunityId,
+        pipeline_stage: "initial_contact",
         updated_at: new Date().toISOString(),
       })
       .eq("id", leadId);
