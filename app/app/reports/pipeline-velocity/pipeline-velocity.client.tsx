@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import jsPDF from "jspdf";
 
@@ -20,7 +20,7 @@ interface StuckDeal {
   value: number;
 }
 
-const SAMPLE_STAGES: PipelineStage[] = [
+const FALLBACK_STAGES: PipelineStage[] = [
   { name: "New Lead", avgDays: 1.2, currentCount: 47, conversionToNext: 68 },
   { name: "Contacted", avgDays: 3.5, currentCount: 32, conversionToNext: 52 },
   { name: "Showing", avgDays: 8.2, currentCount: 18, conversionToNext: 44 },
@@ -28,7 +28,7 @@ const SAMPLE_STAGES: PipelineStage[] = [
   { name: "Closed", avgDays: 0, currentCount: 53, conversionToNext: 100 },
 ];
 
-const SAMPLE_STUCK_DEALS: StuckDeal[] = [
+const FALLBACK_STUCK_DEALS: StuckDeal[] = [
   { name: "Sarah Johnson", stage: "Contacted", daysInStage: 12, avgForStage: 3.5, source: "Zillow", value: 425000 },
   { name: "Michael Chen", stage: "Showing", daysInStage: 22, avgForStage: 8.2, source: "Google Ads", value: 380000 },
   { name: "Emily Rodriguez", stage: "Contacted", daysInStage: 9, avgForStage: 3.5, source: "Facebook", value: 295000 },
@@ -47,10 +47,28 @@ const DATE_RANGES = [
 
 export default function PipelineVelocityClient() {
   const [dateRange, setDateRange] = useState("90d");
-  const [useSampleData] = useState(true);
+  const [stages, setStages] = useState<PipelineStage[]>(FALLBACK_STAGES);
+  const [stuckDeals, setStuckDeals] = useState<StuckDeal[]>(FALLBACK_STUCK_DEALS);
+  const [isLive, setIsLive] = useState(false);
 
-  const stages = useMemo(() => SAMPLE_STAGES, []);
-  const stuckDeals = useMemo(() => SAMPLE_STUCK_DEALS, []);
+  const fetchData = useCallback(async () => {
+    try {
+      const res = await fetch("/api/reports/pipeline-velocity");
+      if (!res.ok) throw new Error("API request failed");
+      const json: { stages: PipelineStage[]; stuckDeals: StuckDeal[] } = await res.json();
+      if (json.stages && json.stages.length > 0) {
+        setStages(json.stages);
+        setStuckDeals(json.stuckDeals || []);
+        setIsLive(true);
+      }
+    } catch {
+      // Keep fallback data
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const bottleneckStage = useMemo(() => {
     const nonClosed = stages.filter((s) => s.name !== "Closed");
@@ -156,7 +174,14 @@ export default function PipelineVelocityClient() {
   return (
     <div>
       {/* Integration Notice */}
-      {useSampleData && (
+      {isLive ? (
+        <div style={{ padding: 16, background: "#ecfdf5", border: "1px solid #a7f3d0", borderRadius: 10, marginBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <strong style={{ fontSize: 14 }}>Live Data</strong>
+            <span style={{ fontSize: 13, opacity: 0.8, marginLeft: 8 }}>Showing real pipeline data from your integrations.</span>
+          </div>
+        </div>
+      ) : (
         <div style={{ padding: 16, background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10, marginBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <strong style={{ fontSize: 14 }}>Sample Data</strong>

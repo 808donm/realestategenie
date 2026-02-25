@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import jsPDF from "jspdf";
 
@@ -20,7 +20,7 @@ interface AgentRow {
   commissionEarned: number;
 }
 
-const SAMPLE_DATA: AgentRow[] = [
+const FALLBACK_DATA: AgentRow[] = [
   { name: "Sarah Mitchell", closings: 6, callsMade: 312, smsSent: 580, showingsBooked: 28, totalVolume: 2340000, commissionEarned: 70200 },
   { name: "James Carter", closings: 4, callsMade: 245, smsSent: 410, showingsBooked: 19, totalVolume: 1520000, commissionEarned: 45600 },
   { name: "Maria Lopez", closings: 5, callsMade: 189, smsSent: 320, showingsBooked: 22, totalVolume: 1975000, commissionEarned: 59250 },
@@ -40,6 +40,26 @@ export default function AgentLeaderboardClient() {
   const [period, setPeriod] = useState<Period>("this_month");
   const [sortKey, setSortKey] = useState<SortKey>("closings");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [data, setData] = useState<AgentRow[]>(FALLBACK_DATA);
+  const [isLive, setIsLive] = useState(false);
+
+  const fetchData = useCallback(async () => {
+    try {
+      const res = await fetch("/api/reports/agent-leaderboard");
+      if (!res.ok) throw new Error("API request failed");
+      const json: AgentRow[] = await res.json();
+      if (Array.isArray(json) && json.length > 0) {
+        setData(json);
+        setIsLive(true);
+      }
+    } catch {
+      // Fall back to sample data (already set as initial state)
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -51,7 +71,7 @@ export default function AgentLeaderboardClient() {
   };
 
   const sorted = useMemo(() => {
-    return [...SAMPLE_DATA].sort((a, b) => {
+    return [...data].sort((a, b) => {
       const aVal = a[sortKey];
       const bVal = b[sortKey];
       if (typeof aVal === "string" && typeof bVal === "string") {
@@ -59,17 +79,17 @@ export default function AgentLeaderboardClient() {
       }
       return sortDir === "asc" ? (aVal as number) - (bVal as number) : (bVal as number) - (aVal as number);
     });
-  }, [sortKey, sortDir]);
+  }, [data, sortKey, sortDir]);
 
-  const topProducer = useMemo(() => [...SAMPLE_DATA].sort((a, b) => b.totalVolume - a.totalVolume)[0], []);
-  const mostActive = useMemo(() => [...SAMPLE_DATA].sort((a, b) => (b.callsMade + b.smsSent) - (a.callsMade + a.smsSent))[0], []);
+  const topProducer = useMemo(() => [...data].sort((a, b) => b.totalVolume - a.totalVolume)[0], [data]);
+  const mostActive = useMemo(() => [...data].sort((a, b) => (b.callsMade + b.smsSent) - (a.callsMade + a.smsSent))[0], [data]);
   const highestConversion = useMemo(() => {
-    return [...SAMPLE_DATA].sort((a, b) => {
+    return [...data].sort((a, b) => {
       const rateA = a.showingsBooked > 0 ? a.closings / a.showingsBooked : 0;
       const rateB = b.showingsBooked > 0 ? b.closings / b.showingsBooked : 0;
       return rateB - rateA;
     })[0];
-  }, []);
+  }, [data]);
 
   const exportPDF = () => {
     const doc = new jsPDF();
@@ -134,8 +154,8 @@ export default function AgentLeaderboardClient() {
     <div>
       {/* Integration Notice */}
       <div style={{
-        background: "#eff6ff",
-        border: "1px solid #bfdbfe",
+        background: isLive ? "#f0fdf4" : "#eff6ff",
+        border: isLive ? "1px solid #bbf7d0" : "1px solid #bfdbfe",
         borderRadius: 8,
         padding: "12px 16px",
         marginBottom: 20,
@@ -145,11 +165,17 @@ export default function AgentLeaderboardClient() {
         fontSize: 13,
       }}>
         <span>
-          <strong>Sample Data</strong> -- Connect your GHL integration to see live data.
+          {isLive ? (
+            <><strong>Live Data</strong> -- Showing live data from your GHL integration.</>
+          ) : (
+            <><strong>Sample Data</strong> -- Connect your GHL integration to see live data.</>
+          )}
         </span>
-        <Link href="/app/integrations" style={{ color: "#2563eb", fontWeight: 600, textDecoration: "none" }}>
-          Connect GHL &rarr;
-        </Link>
+        {!isLive && (
+          <Link href="/app/integrations" style={{ color: "#2563eb", fontWeight: 600, textDecoration: "none" }}>
+            Connect GHL &rarr;
+          </Link>
+        )}
       </div>
 
       {/* Period Selector + Export */}

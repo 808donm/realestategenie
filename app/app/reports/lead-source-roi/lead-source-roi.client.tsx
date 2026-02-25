@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import jsPDF from "jspdf";
 
@@ -12,7 +12,7 @@ interface LeadSource {
   revenue: number;
 }
 
-const SAMPLE_DATA: LeadSource[] = [
+const FALLBACK_DATA: LeadSource[] = [
   { name: "Zillow", leads: 124, closings: 8, totalSpend: 4200, revenue: 52000 },
   { name: "Realtor.com", leads: 98, closings: 5, totalSpend: 3100, revenue: 31500 },
   { name: "Referral", leads: 34, closings: 12, totalSpend: 600, revenue: 89000 },
@@ -33,17 +33,36 @@ const DATE_RANGES = [
 
 export default function LeadSourceROIClient() {
   const [dateRange, setDateRange] = useState("12m");
-  const [useSampleData] = useState(true);
+  const [data, setData] = useState<LeadSource[]>(FALLBACK_DATA);
+  const [isLive, setIsLive] = useState(false);
+
+  const fetchData = useCallback(async () => {
+    try {
+      const res = await fetch("/api/reports/lead-source-roi");
+      if (!res.ok) throw new Error("API request failed");
+      const json: LeadSource[] = await res.json();
+      if (Array.isArray(json) && json.length > 0) {
+        setData(json);
+        setIsLive(true);
+      }
+    } catch {
+      // Keep fallback data
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const sources = useMemo(() => {
-    return SAMPLE_DATA.map((s) => {
+    return data.map((s) => {
       const conversionRate = s.leads > 0 ? (s.closings / s.leads) * 100 : 0;
       const costPerLead = s.leads > 0 ? s.totalSpend / s.leads : 0;
       const costPerClosing = s.closings > 0 ? s.totalSpend / s.closings : 0;
       const roi = s.totalSpend > 0 ? ((s.revenue - s.totalSpend) / s.totalSpend) * 100 : 0;
       return { ...s, conversionRate, costPerLead, costPerClosing, roi };
     });
-  }, []);
+  }, [data]);
 
   const bestConversion = useMemo(() => {
     return sources.reduce((best, s) => (s.conversionRate > best.conversionRate ? s : best), sources[0]);
@@ -148,7 +167,14 @@ export default function LeadSourceROIClient() {
   return (
     <div>
       {/* Integration Notice */}
-      {useSampleData && (
+      {isLive ? (
+        <div style={{ padding: 16, background: "#ecfdf5", border: "1px solid #a7f3d0", borderRadius: 10, marginBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <strong style={{ fontSize: 14 }}>Live Data</strong>
+            <span style={{ fontSize: 13, opacity: 0.8, marginLeft: 8 }}>Showing real lead source ROI from your integrations.</span>
+          </div>
+        </div>
+      ) : (
         <div style={{ padding: 16, background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10, marginBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <strong style={{ fontSize: 14 }}>Sample Data</strong>

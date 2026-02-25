@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import jsPDF from "jspdf";
 
@@ -16,8 +16,8 @@ interface Brokerage {
   isYours: boolean;
 }
 
-/* ---------- sample data by zip ---------- */
-const DATA: Record<string, Brokerage[]> = {
+/* ---------- fallback sample data by zip ---------- */
+const FALLBACK_DATA: Record<string, Brokerage[]> = {
   "90210": [
     { name: "Luxury Estates Group", transactions: 48, volume: 128400000, isYours: false },
     { name: "Beverly Hills Realty", transactions: 41, volume: 112300000, isYours: false },
@@ -56,13 +56,35 @@ const DATA: Record<string, Brokerage[]> = {
   ],
 };
 
-const ZIP_CODES = Object.keys(DATA);
-
 /* ---------- component ---------- */
 export default function BrokerageMarketShareClient() {
-  const [zip, setZip] = useState<string>(ZIP_CODES[0]);
+  const [data, setData] = useState<Record<string, Brokerage[]>>(FALLBACK_DATA);
+  const [isLive, setIsLive] = useState(false);
 
-  const raw = DATA[zip] ?? [];
+  const fetchData = useCallback(async () => {
+    try {
+      const res = await fetch("/api/reports/brokerage-market-share");
+      if (!res.ok) throw new Error("API error");
+      const json: Record<string, Brokerage[]> = await res.json();
+      const hasData = Object.keys(json).length > 0 &&
+        Object.values(json).some((arr) => arr.length > 0);
+      if (hasData) {
+        setData(json);
+        setIsLive(true);
+      }
+    } catch {
+      // keep fallback data
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const ZIP_CODES = useMemo(() => Object.keys(data), [data]);
+  const [zip, setZip] = useState<string>(Object.keys(FALLBACK_DATA)[0]);
+
+  const raw = data[zip] ?? [];
   const totalTx = raw.reduce((s, b) => s + b.transactions, 0);
   const totalVol = raw.reduce((s, b) => s + b.volume, 0);
 
@@ -124,11 +146,16 @@ export default function BrokerageMarketShareClient() {
   return (
     <div>
       {/* integration banner */}
-      <div style={{ background: "#FFF8E1", border: "1px solid #FFE082", borderRadius: 10, padding: "12px 18px", marginBottom: 24, display: "flex", alignItems: "center", gap: 10 }}>
-        <span style={{ fontSize: 18 }}>&#9888;</span>
+      <div style={{ background: isLive ? "#E8F5E9" : "#FFF8E1", border: `1px solid ${isLive ? "#A5D6A7" : "#FFE082"}`, borderRadius: 10, padding: "12px 18px", marginBottom: 24, display: "flex", alignItems: "center", gap: 10 }}>
+        <span style={{ fontSize: 18 }}>{isLive ? "\u2705" : "\u26A0"}</span>
         <span style={{ fontSize: 14 }}>
-          This report uses <strong>sample data</strong>. Connect your MLS/Trestle feed to see actual market share data.{" "}
-          <Link href="/app/integrations" style={{ color: "#1565C0", fontWeight: 600 }}>Set up integrations &rarr;</Link>
+          {isLive ? (
+            <>This report is showing <strong>live data</strong> from your connected integrations.</>
+          ) : (
+            <>This report uses <strong>sample data</strong>. Connect your MLS/Trestle feed to see actual market share data.{" "}
+              <Link href="/app/integrations" style={{ color: "#1565C0", fontWeight: 600 }}>Set up integrations &rarr;</Link>
+            </>
+          )}
         </span>
       </div>
 

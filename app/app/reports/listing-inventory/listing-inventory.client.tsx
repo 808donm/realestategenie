@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import jsPDF from "jspdf";
 
@@ -16,7 +16,7 @@ interface Listing {
   listingAgent: string;
 }
 
-const SAMPLE_DATA: Listing[] = [
+const FALLBACK_DATA: Listing[] = [
   { address: "1234 Oak Ridge Dr", listPrice: 449900, dom: 8, status: "Active", listingAgent: "Sarah Mitchell" },
   { address: "567 Maple Ave #202", listPrice: 319000, dom: 14, status: "Active", listingAgent: "James Carter" },
   { address: "890 Pine Valley Ct", listPrice: 599000, dom: 28, status: "Active - Price Reduced", listingAgent: "Ashley Brown" },
@@ -38,18 +38,38 @@ const PERIOD_LABELS: Record<Period, string> = {
 
 export default function ListingInventoryClient() {
   const [period, setPeriod] = useState<Period>("active");
+  const [data, setData] = useState<Listing[]>(FALLBACK_DATA);
+  const [isLive, setIsLive] = useState(false);
 
-  const activeListings = SAMPLE_DATA.filter((l) => l.status !== "Pending");
+  const fetchData = useCallback(async () => {
+    try {
+      const res = await fetch("/api/reports/listing-inventory");
+      if (!res.ok) throw new Error("API request failed");
+      const json: Listing[] = await res.json();
+      if (Array.isArray(json) && json.length > 0) {
+        setData(json);
+        setIsLive(true);
+      }
+    } catch {
+      // Fall back to sample data (already set as initial state)
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const activeListings = data.filter((l) => l.status !== "Pending");
   const totalActive = activeListings.length;
   const avgDom = useMemo(() => {
     if (activeListings.length === 0) return 0;
     return activeListings.reduce((s, l) => s + l.dom, 0) / activeListings.length;
-  }, []);
+  }, [data]);
   const listings21Plus = activeListings.filter((l) => l.dom >= 21).length;
   const avgListPrice = useMemo(() => {
     if (activeListings.length === 0) return 0;
     return activeListings.reduce((s, l) => s + l.listPrice, 0) / activeListings.length;
-  }, []);
+  }, [data]);
 
   // DOM distribution buckets
   const domBuckets = useMemo(() => {
@@ -60,12 +80,12 @@ export default function ListingInventoryClient() {
       { label: "22-30", min: 22, max: 30, count: 0, color: "#f97316" },
       { label: "31+", min: 31, max: Infinity, count: 0, color: "#ef4444" },
     ];
-    SAMPLE_DATA.forEach((l) => {
+    data.forEach((l) => {
       const bucket = buckets.find((b) => l.dom >= b.min && l.dom <= b.max);
       if (bucket) bucket.count++;
     });
     return buckets;
-  }, []);
+  }, [data]);
   const maxBucketCount = Math.max(...domBuckets.map((b) => b.count), 1);
 
   const rowBg = (listing: Listing, index: number): string => {
@@ -100,7 +120,7 @@ export default function ListingInventoryClient() {
     headers.forEach((h, i) => doc.text(h, colX[i], y));
     doc.setFont("helvetica", "normal");
 
-    SAMPLE_DATA.forEach((listing) => {
+    data.forEach((listing) => {
       y += 8;
       if (y > 280) { doc.addPage(); y = 20; }
       const addr = listing.address.length > 26 ? listing.address.substring(0, 26) + "..." : listing.address;
@@ -125,8 +145,8 @@ export default function ListingInventoryClient() {
     <div>
       {/* Integration Notice */}
       <div style={{
-        background: "#eff6ff",
-        border: "1px solid #bfdbfe",
+        background: isLive ? "#f0fdf4" : "#eff6ff",
+        border: isLive ? "1px solid #bbf7d0" : "1px solid #bfdbfe",
         borderRadius: 8,
         padding: "12px 16px",
         marginBottom: 20,
@@ -136,11 +156,17 @@ export default function ListingInventoryClient() {
         fontSize: 13,
       }}>
         <span>
-          <strong>Sample Data</strong> -- Connect your MLS/Trestle integration to see live data.
+          {isLive ? (
+            <><strong>Live Data</strong> -- Showing live data from your MLS/Trestle integration.</>
+          ) : (
+            <><strong>Sample Data</strong> -- Connect your MLS/Trestle integration to see live data.</>
+          )}
         </span>
-        <Link href="/app/integrations" style={{ color: "#2563eb", fontWeight: 600, textDecoration: "none" }}>
-          Connect MLS &rarr;
-        </Link>
+        {!isLive && (
+          <Link href="/app/integrations" style={{ color: "#2563eb", fontWeight: 600, textDecoration: "none" }}>
+            Connect MLS &rarr;
+          </Link>
+        )}
       </div>
 
       {/* Period Selector + Export */}
@@ -257,7 +283,7 @@ export default function ListingInventoryClient() {
             </tr>
           </thead>
           <tbody>
-            {SAMPLE_DATA.map((listing, i) => (
+            {data.map((listing, i) => (
               <tr
                 key={listing.address}
                 style={{

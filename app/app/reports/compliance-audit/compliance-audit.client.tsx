@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import jsPDF from "jspdf";
 
@@ -17,8 +17,8 @@ interface AuditEvent {
   status: Status;
 }
 
-/* ---------- sample data ---------- */
-const EVENTS: AuditEvent[] = [
+/* ---------- fallback sample data ---------- */
+const FALLBACK_DATA: AuditEvent[] = [
   { id: 1, date: "2025-12-18", eventType: "Document Signed", property: "742 Evergreen Terrace", agent: "Sarah Chen", status: "Complete" },
   { id: 2, date: "2025-12-18", eventType: "ID Verified", property: "742 Evergreen Terrace", agent: "Sarah Chen", status: "Complete" },
   { id: 3, date: "2025-12-17", eventType: "Wire Instructions Sent", property: "1600 Pennsylvania Ave", agent: "James Rivera", status: "Pending" },
@@ -43,7 +43,6 @@ const EVENTS: AuditEvent[] = [
 
 const EVENT_TYPES: EventType[] = ["Document Signed", "ID Verified", "Wire Instructions Sent", "Disclosure Submitted"];
 const STATUSES: Status[] = ["Complete", "Pending", "Missing"];
-const AGENTS = Array.from(new Set(EVENTS.map((e) => e.agent))).sort();
 
 /* ---------- status badge colors ---------- */
 const statusColor: Record<Status, { bg: string; color: string }> = {
@@ -54,25 +53,47 @@ const statusColor: Record<Status, { bg: string; color: string }> = {
 
 /* ---------- component ---------- */
 export default function ComplianceAuditClient() {
+  const [events, setEvents] = useState<AuditEvent[]>(FALLBACK_DATA);
+  const [isLive, setIsLive] = useState(false);
   const [filterType, setFilterType] = useState<EventType | "All">("All");
   const [filterAgent, setFilterAgent] = useState<string>("All");
   const [filterStatus, setFilterStatus] = useState<Status | "All">("All");
 
+  const fetchData = useCallback(async () => {
+    try {
+      const res = await fetch("/api/reports/compliance-audit");
+      if (!res.ok) throw new Error("API error");
+      const json: AuditEvent[] = await res.json();
+      if (Array.isArray(json) && json.length > 0) {
+        setEvents(json);
+        setIsLive(true);
+      }
+    } catch {
+      // keep fallback data
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const AGENTS = useMemo(() => Array.from(new Set(events.map((e) => e.agent))).sort(), [events]);
+
   const filtered = useMemo(() => {
-    return EVENTS.filter((e) => {
+    return events.filter((e) => {
       if (filterType !== "All" && e.eventType !== filterType) return false;
       if (filterAgent !== "All" && e.agent !== filterAgent) return false;
       if (filterStatus !== "All" && e.status !== filterStatus) return false;
       return true;
     });
-  }, [filterType, filterAgent, filterStatus]);
+  }, [events, filterType, filterAgent, filterStatus]);
 
   /* summary stats */
-  const totalEvents = EVENTS.length;
-  const completeCount = EVENTS.filter((e) => e.status === "Complete").length;
+  const totalEvents = events.length;
+  const completeCount = events.filter((e) => e.status === "Complete").length;
   const completePct = totalEvents > 0 ? (completeCount / totalEvents) * 100 : 0;
-  const pendingCount = EVENTS.filter((e) => e.status === "Pending").length;
-  const missingCount = EVENTS.filter((e) => e.status === "Missing").length;
+  const pendingCount = events.filter((e) => e.status === "Pending").length;
+  const missingCount = events.filter((e) => e.status === "Missing").length;
 
   /* PDF export */
   const exportPDF = () => {
@@ -126,11 +147,16 @@ export default function ComplianceAuditClient() {
   return (
     <div>
       {/* integration banner */}
-      <div style={{ background: "#FFF8E1", border: "1px solid #FFE082", borderRadius: 10, padding: "12px 18px", marginBottom: 24, display: "flex", alignItems: "center", gap: 10 }}>
-        <span style={{ fontSize: 18 }}>&#9888;</span>
+      <div style={{ background: isLive ? "#E8F5E9" : "#FFF8E1", border: `1px solid ${isLive ? "#A5D6A7" : "#FFE082"}`, borderRadius: 10, padding: "12px 18px", marginBottom: 24, display: "flex", alignItems: "center", gap: 10 }}>
+        <span style={{ fontSize: 18 }}>{isLive ? "\u2705" : "\u26A0"}</span>
         <span style={{ fontSize: 14 }}>
-          This report uses <strong>sample data</strong>. Connect GHL and configure your brokerage to see live compliance events.{" "}
-          <Link href="/app/integrations" style={{ color: "#1565C0", fontWeight: 600 }}>Set up integrations &rarr;</Link>
+          {isLive ? (
+            <>This report is showing <strong>live data</strong> from your connected integrations.</>
+          ) : (
+            <>This report uses <strong>sample data</strong>. Connect GHL and configure your brokerage to see live compliance events.{" "}
+              <Link href="/app/integrations" style={{ color: "#1565C0", fontWeight: 600 }}>Set up integrations &rarr;</Link>
+            </>
+          )}
         </span>
       </div>
 

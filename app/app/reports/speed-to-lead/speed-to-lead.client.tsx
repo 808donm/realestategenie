@@ -1,10 +1,22 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import jsPDF from "jspdf";
 import Link from "next/link";
 
-const SAMPLE_DATA = {
+interface SpeedToLeadData {
+  avgResponseMin: number;
+  medianResponseMin: number;
+  under5min: number;
+  under15min: number;
+  under1hr: number;
+  over1hr: number;
+  totalLeads: number;
+  noResponse24hr: number;
+  hourlyBreakdown: { hour: string; avg: number; count: number }[];
+}
+
+const FALLBACK_DATA: SpeedToLeadData = {
   avgResponseMin: 47,
   medianResponseMin: 22,
   under5min: 18,
@@ -27,7 +39,26 @@ const SAMPLE_DATA = {
 
 export default function SpeedToLeadClient() {
   const [period, setPeriod] = useState("30d");
-  const data = SAMPLE_DATA;
+  const [data, setData] = useState<SpeedToLeadData>(FALLBACK_DATA);
+  const [isLive, setIsLive] = useState(false);
+
+  const fetchData = useCallback(async () => {
+    try {
+      const res = await fetch("/api/reports/speed-to-lead");
+      if (!res.ok) throw new Error("API request failed");
+      const json: SpeedToLeadData = await res.json();
+      if (json && json.totalLeads !== undefined && json.totalLeads > 0) {
+        setData(json);
+        setIsLive(true);
+      }
+    } catch {
+      // Keep fallback data
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const grade = useMemo(() => {
     if (data.avgResponseMin <= 5) return { letter: "A", color: "#059669", label: "Excellent" };
@@ -64,9 +95,15 @@ export default function SpeedToLeadClient() {
   return (
     <div>
       {/* Integration Notice */}
-      <div style={{ padding: 12, background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, marginBottom: 20, fontSize: 13 }}>
-        Showing sample data. <Link href="/app/integrations" style={{ color: "#3b82f6", fontWeight: 600 }}>Connect GHL</Link> to see live response metrics.
-      </div>
+      {isLive ? (
+        <div style={{ padding: 12, background: "#ecfdf5", border: "1px solid #a7f3d0", borderRadius: 8, marginBottom: 20, fontSize: 13 }}>
+          Showing live data from your integrations. <Link href="/app/integrations" style={{ color: "#059669", fontWeight: 600 }}>Manage Integrations</Link>
+        </div>
+      ) : (
+        <div style={{ padding: 12, background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, marginBottom: 20, fontSize: 13 }}>
+          Showing sample data. <Link href="/app/integrations" style={{ color: "#3b82f6", fontWeight: 600 }}>Connect GHL</Link> to see live response metrics.
+        </div>
+      )}
 
       {/* Period Filter */}
       <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>

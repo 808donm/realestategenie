@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import jsPDF from "jspdf";
 
@@ -18,7 +18,7 @@ interface Deal {
   closeDate: string;
 }
 
-const SAMPLE_DATA: Deal[] = [
+const FALLBACK_DATA: Deal[] = [
   { propertyAddress: "1234 Oak Ridge Dr", salePrice: 425000, commission: 12750, agentName: "Sarah Mitchell", agentSplitPct: 70, closeDate: "2025-01-15" },
   { propertyAddress: "567 Maple Ave #202", salePrice: 310000, commission: 9300, agentName: "James Carter", agentSplitPct: 65, closeDate: "2025-01-18" },
   { propertyAddress: "890 Pine Valley Ct", salePrice: 575000, commission: 17250, agentName: "Ashley Brown", agentSplitPct: 75, closeDate: "2025-01-22" },
@@ -38,26 +38,46 @@ const PERIOD_LABELS: Record<Period, string> = {
 
 export default function TeamCommissionSplitClient() {
   const [period, setPeriod] = useState<Period>("this_quarter");
+  const [data, setData] = useState<Deal[]>(FALLBACK_DATA);
+  const [isLive, setIsLive] = useState(false);
+
+  const fetchData = useCallback(async () => {
+    try {
+      const res = await fetch("/api/reports/team-commission-split");
+      if (!res.ok) throw new Error("API request failed");
+      const json: Deal[] = await res.json();
+      if (Array.isArray(json) && json.length > 0) {
+        setData(json);
+        setIsLive(true);
+      }
+    } catch {
+      // Fall back to sample data (already set as initial state)
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const agentPortion = (deal: Deal) => deal.commission * (deal.agentSplitPct / 100);
   const housePortion = (deal: Deal) => deal.commission - agentPortion(deal);
 
   const totals = useMemo(() => {
-    const totalComm = SAMPLE_DATA.reduce((s, d) => s + d.commission, 0);
-    const totalAgent = SAMPLE_DATA.reduce((s, d) => s + agentPortion(d), 0);
-    const totalHouse = SAMPLE_DATA.reduce((s, d) => s + housePortion(d), 0);
+    const totalComm = data.reduce((s, d) => s + d.commission, 0);
+    const totalAgent = data.reduce((s, d) => s + agentPortion(d), 0);
+    const totalHouse = data.reduce((s, d) => s + housePortion(d), 0);
     const housePct = totalComm > 0 ? (totalHouse / totalComm) * 100 : 0;
     return { totalComm, totalAgent, totalHouse, housePct };
-  }, []);
+  }, [data]);
 
   const topAgentByVolume = useMemo(() => {
     const agentTotals: Record<string, number> = {};
-    SAMPLE_DATA.forEach((d) => {
+    data.forEach((d) => {
       agentTotals[d.agentName] = (agentTotals[d.agentName] || 0) + d.commission;
     });
     const sorted = Object.entries(agentTotals).sort((a, b) => b[1] - a[1]);
     return sorted.length > 0 ? { name: sorted[0][0], total: sorted[0][1] } : null;
-  }, []);
+  }, [data]);
 
   const exportPDF = () => {
     const doc = new jsPDF();
@@ -82,7 +102,7 @@ export default function TeamCommissionSplitClient() {
     headers.forEach((h, i) => doc.text(h, colX[i], y));
     doc.setFont("helvetica", "normal");
 
-    SAMPLE_DATA.forEach((deal) => {
+    data.forEach((deal) => {
       y += 7;
       if (y > 280) { doc.addPage(); y = 20; }
       const addr = deal.propertyAddress.length > 22 ? deal.propertyAddress.substring(0, 22) + "..." : deal.propertyAddress;
@@ -102,8 +122,8 @@ export default function TeamCommissionSplitClient() {
     <div>
       {/* Integration Notice */}
       <div style={{
-        background: "#eff6ff",
-        border: "1px solid #bfdbfe",
+        background: isLive ? "#f0fdf4" : "#eff6ff",
+        border: isLive ? "1px solid #bbf7d0" : "1px solid #bfdbfe",
         borderRadius: 8,
         padding: "12px 16px",
         marginBottom: 20,
@@ -113,11 +133,17 @@ export default function TeamCommissionSplitClient() {
         fontSize: 13,
       }}>
         <span>
-          <strong>Sample Data</strong> -- Connect your QuickBooks Online integration to see live data.
+          {isLive ? (
+            <><strong>Live Data</strong> -- Showing live data from your QuickBooks Online integration.</>
+          ) : (
+            <><strong>Sample Data</strong> -- Connect your QuickBooks Online integration to see live data.</>
+          )}
         </span>
-        <Link href="/app/integrations" style={{ color: "#2563eb", fontWeight: 600, textDecoration: "none" }}>
-          Connect QBO &rarr;
-        </Link>
+        {!isLive && (
+          <Link href="/app/integrations" style={{ color: "#2563eb", fontWeight: 600, textDecoration: "none" }}>
+            Connect QBO &rarr;
+          </Link>
+        )}
       </div>
 
       {/* Period Selector + Export */}
@@ -214,7 +240,7 @@ export default function TeamCommissionSplitClient() {
             </tr>
           </thead>
           <tbody>
-            {SAMPLE_DATA.map((deal, i) => (
+            {data.map((deal, i) => (
               <tr key={deal.propertyAddress} style={{ background: i % 2 === 0 ? "#fff" : "#fafafa" }}>
                 <td style={{ padding: "10px 12px", fontSize: 13, borderBottom: "1px solid #f3f4f6" }}>
                   <strong>{deal.propertyAddress}</strong>
@@ -244,10 +270,10 @@ export default function TeamCommissionSplitClient() {
           <tfoot>
             <tr style={{ background: "#f9fafb", fontWeight: 700 }}>
               <td style={{ padding: "12px 12px", fontSize: 13, borderTop: "2px solid #e5e7eb" }}>
-                Totals ({SAMPLE_DATA.length} deals)
+                Totals ({data.length} deals)
               </td>
               <td style={{ padding: "12px 12px", textAlign: "right", fontSize: 13, borderTop: "2px solid #e5e7eb" }}>
-                {fmt.format(SAMPLE_DATA.reduce((s, d) => s + d.salePrice, 0))}
+                {fmt.format(data.reduce((s, d) => s + d.salePrice, 0))}
               </td>
               <td style={{ padding: "12px 12px", textAlign: "right", fontSize: 13, borderTop: "2px solid #e5e7eb" }}>
                 {fmtPrecise.format(totals.totalComm)}

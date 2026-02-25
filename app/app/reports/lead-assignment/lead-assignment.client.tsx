@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import jsPDF from "jspdf";
 
@@ -14,7 +14,7 @@ interface AgentAssignment {
   avgResponseTime: number; // minutes
 }
 
-const SAMPLE_DATA: AgentAssignment[] = [
+const FALLBACK_DATA: AgentAssignment[] = [
   { name: "Sarah Mitchell", leadsReceived: 42, leadsContacted: 38, leadsConverted: 8, avgResponseTime: 4.2 },
   { name: "James Carter", leadsReceived: 35, leadsContacted: 30, leadsConverted: 5, avgResponseTime: 7.8 },
   { name: "Maria Lopez", leadsReceived: 28, leadsContacted: 26, leadsConverted: 6, avgResponseTime: 3.1 },
@@ -32,14 +32,34 @@ const PERIOD_LABELS: Record<Period, string> = {
 
 export default function LeadAssignmentClient() {
   const [period, setPeriod] = useState<Period>("this_month");
+  const [data, setData] = useState<AgentAssignment[]>(FALLBACK_DATA);
+  const [isLive, setIsLive] = useState(false);
 
-  const totalLeads = useMemo(() => SAMPLE_DATA.reduce((s, a) => s + a.leadsReceived, 0), []);
-  const avgLeads = totalLeads / SAMPLE_DATA.length;
-  const maxLeads = Math.max(...SAMPLE_DATA.map((a) => a.leadsReceived));
+  const fetchData = useCallback(async () => {
+    try {
+      const res = await fetch("/api/reports/lead-assignment");
+      if (!res.ok) throw new Error("API request failed");
+      const json: AgentAssignment[] = await res.json();
+      if (Array.isArray(json) && json.length > 0) {
+        setData(json);
+        setIsLive(true);
+      }
+    } catch {
+      // Fall back to sample data (already set as initial state)
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const totalLeads = useMemo(() => data.reduce((s, a) => s + a.leadsReceived, 0), [data]);
+  const avgLeads = totalLeads / data.length;
+  const maxLeads = Math.max(...data.map((a) => a.leadsReceived));
 
   const fairnessIssues = useMemo(() => {
     const threshold = avgLeads * 0.25;
-    return SAMPLE_DATA.filter(
+    return data.filter(
       (a) => Math.abs(a.leadsReceived - avgLeads) > threshold
     ).map((a) => ({
       name: a.name,
@@ -47,15 +67,15 @@ export default function LeadAssignmentClient() {
       deviation: a.leadsReceived - avgLeads,
       direction: a.leadsReceived > avgLeads ? "over" : "under",
     }));
-  }, []);
+  }, [data, avgLeads]);
 
   const topConverter = useMemo(() => {
-    return [...SAMPLE_DATA].sort((a, b) => {
+    return [...data].sort((a, b) => {
       const rateA = a.leadsReceived > 0 ? a.leadsConverted / a.leadsReceived : 0;
       const rateB = b.leadsReceived > 0 ? b.leadsConverted / b.leadsReceived : 0;
       return rateB - rateA;
     })[0];
-  }, []);
+  }, [data]);
 
   const conversionRate = (a: AgentAssignment) =>
     a.leadsReceived > 0 ? ((a.leadsConverted / a.leadsReceived) * 100).toFixed(1) : "0.0";
@@ -92,7 +112,7 @@ export default function LeadAssignmentClient() {
     headers.forEach((h, i) => doc.text(h, colX[i], y));
     doc.setFont("helvetica", "normal");
 
-    SAMPLE_DATA.forEach((row) => {
+    data.forEach((row) => {
       y += 8;
       if (y > 280) { doc.addPage(); y = 20; }
       doc.text(row.name, colX[0], y);
@@ -117,8 +137,8 @@ export default function LeadAssignmentClient() {
     <div>
       {/* Integration Notice */}
       <div style={{
-        background: "#eff6ff",
-        border: "1px solid #bfdbfe",
+        background: isLive ? "#f0fdf4" : "#eff6ff",
+        border: isLive ? "1px solid #bbf7d0" : "1px solid #bfdbfe",
         borderRadius: 8,
         padding: "12px 16px",
         marginBottom: 20,
@@ -128,11 +148,17 @@ export default function LeadAssignmentClient() {
         fontSize: 13,
       }}>
         <span>
-          <strong>Sample Data</strong> -- Connect your GHL integration to see live data.
+          {isLive ? (
+            <><strong>Live Data</strong> -- Showing live data from your GHL integration.</>
+          ) : (
+            <><strong>Sample Data</strong> -- Connect your GHL integration to see live data.</>
+          )}
         </span>
-        <Link href="/app/integrations" style={{ color: "#2563eb", fontWeight: 600, textDecoration: "none" }}>
-          Connect GHL &rarr;
-        </Link>
+        {!isLive && (
+          <Link href="/app/integrations" style={{ color: "#2563eb", fontWeight: 600, textDecoration: "none" }}>
+            Connect GHL &rarr;
+          </Link>
+        )}
       </div>
 
       {/* Period Selector + Export */}
@@ -178,7 +204,7 @@ export default function LeadAssignmentClient() {
       <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20, marginBottom: 20 }}>
         <h3 style={{ margin: "0 0 16px 0", fontSize: 15, fontWeight: 700 }}>Lead Distribution</h3>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {SAMPLE_DATA.map((agent) => (
+          {data.map((agent) => (
             <div key={agent.name} style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <div style={{ width: 120, fontSize: 13, fontWeight: 600, flexShrink: 0 }}>{agent.name.split(" ")[0]}</div>
               <div style={{ flex: 1, background: "#f3f4f6", borderRadius: 4, height: 24, position: "relative" }}>
@@ -240,7 +266,7 @@ export default function LeadAssignmentClient() {
             </tr>
           </thead>
           <tbody>
-            {SAMPLE_DATA.map((row, i) => (
+            {data.map((row, i) => (
               <tr key={row.name} style={{ background: i % 2 === 0 ? "#fff" : "#fafafa" }}>
                 <td style={{ padding: "10px 12px", fontSize: 13, borderBottom: "1px solid #f3f4f6" }}>
                   <strong>{row.name}</strong>

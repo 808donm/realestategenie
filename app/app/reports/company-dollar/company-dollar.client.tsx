@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import jsPDF from "jspdf";
 
@@ -8,7 +8,7 @@ import jsPDF from "jspdf";
 const fmt = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 const pct = (n: number) => `${n.toFixed(1)}%`;
 
-/* ---------- sample data ---------- */
+/* ---------- types ---------- */
 type Period = "this_quarter" | "this_year" | "last_year";
 
 interface MonthRow {
@@ -20,7 +20,8 @@ interface MonthRow {
   companyDollar: number;
 }
 
-const DATA: Record<Period, MonthRow[]> = {
+/* ---------- fallback sample data ---------- */
+const FALLBACK_DATA: Record<Period, MonthRow[]> = {
   this_quarter: [
     { month: "Oct 2025", grossRevenue: 187500, agentSplits: 131250, fees: 8400, opEx: 18200, companyDollar: 29650 },
     { month: "Nov 2025", grossRevenue: 162300, agentSplits: 113610, fees: 7200, opEx: 17800, companyDollar: 23690 },
@@ -65,7 +66,32 @@ const PERIOD_LABELS: Record<Period, string> = {
 /* ---------- component ---------- */
 export default function CompanyDollarClient() {
   const [period, setPeriod] = useState<Period>("this_year");
-  const rows = DATA[period];
+  const [data, setData] = useState<Record<Period, MonthRow[]>>(FALLBACK_DATA);
+  const [isLive, setIsLive] = useState(false);
+
+  const fetchData = useCallback(async () => {
+    try {
+      const res = await fetch("/api/reports/company-dollar");
+      if (!res.ok) throw new Error("API error");
+      const json: Record<Period, MonthRow[]> = await res.json();
+      const hasData =
+        json.this_quarter?.length > 0 ||
+        json.this_year?.length > 0 ||
+        json.last_year?.length > 0;
+      if (hasData) {
+        setData(json);
+        setIsLive(true);
+      }
+    } catch {
+      // keep fallback data
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const rows = data[period];
 
   /* derived stats */
   const ytdCompanyDollar = rows.reduce((s, r) => s + r.companyDollar, 0);
@@ -127,11 +153,16 @@ export default function CompanyDollarClient() {
   return (
     <div>
       {/* integration banner */}
-      <div style={{ background: "#FFF8E1", border: "1px solid #FFE082", borderRadius: 10, padding: "12px 18px", marginBottom: 24, display: "flex", alignItems: "center", gap: 10 }}>
-        <span style={{ fontSize: 18 }}>&#9888;</span>
+      <div style={{ background: isLive ? "#E8F5E9" : "#FFF8E1", border: `1px solid ${isLive ? "#A5D6A7" : "#FFE082"}`, borderRadius: 10, padding: "12px 18px", marginBottom: 24, display: "flex", alignItems: "center", gap: 10 }}>
+        <span style={{ fontSize: 18 }}>{isLive ? "\u2705" : "\u26A0"}</span>
         <span style={{ fontSize: 14 }}>
-          This report uses <strong>sample data</strong>. Connect your QuickBooks Online account to see real numbers.{" "}
-          <Link href="/app/integrations" style={{ color: "#1565C0", fontWeight: 600 }}>Set up integrations &rarr;</Link>
+          {isLive ? (
+            <>This report is showing <strong>live data</strong> from your connected integrations.</>
+          ) : (
+            <>This report uses <strong>sample data</strong>. Connect your QuickBooks Online account to see real numbers.{" "}
+              <Link href="/app/integrations" style={{ color: "#1565C0", fontWeight: 600 }}>Set up integrations &rarr;</Link>
+            </>
+          )}
         </span>
       </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import jsPDF from "jspdf";
 
@@ -37,8 +37,8 @@ const riskColor: Record<RiskLevel, { bg: string; color: string }> = {
 
 const RISK_ORDER: Record<RiskLevel, number> = { Critical: 0, High: 1, Medium: 2, Low: 3 };
 
-/* ---------- sample data ---------- */
-const AGENTS: AgentRisk[] = [
+/* ---------- fallback sample data ---------- */
+const FALLBACK_DATA: AgentRisk[] = [
   { name: "Sarah Chen",     currentScore: 88, previousScore: 91, logins: 24, calls: 38, emails: 62, dealsStarted: 3 },
   { name: "James Rivera",   currentScore: 72, previousScore: 84, logins: 18, calls: 22, emails: 41, dealsStarted: 2 },
   { name: "Maria Lopez",    currentScore: 94, previousScore: 90, logins: 28, calls: 45, emails: 78, dealsStarted: 4 },
@@ -55,15 +55,35 @@ const AGENTS: AgentRisk[] = [
 
 /* ---------- component ---------- */
 export default function AgentRetentionRiskClient() {
+  const [agents, setAgents] = useState<AgentRisk[]>(FALLBACK_DATA);
+  const [isLive, setIsLive] = useState(false);
   const [sortBy, setSortBy] = useState<"risk" | "name" | "score" | "change">("risk");
 
+  const fetchData = useCallback(async () => {
+    try {
+      const res = await fetch("/api/reports/agent-retention-risk");
+      if (!res.ok) throw new Error("API error");
+      const json: AgentRisk[] = await res.json();
+      if (Array.isArray(json) && json.length > 0) {
+        setAgents(json);
+        setIsLive(true);
+      }
+    } catch {
+      // keep fallback data
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
   const enriched = useMemo(() => {
-    return AGENTS.map((a) => ({
+    return agents.map((a) => ({
       ...a,
       change: changePct(a.currentScore, a.previousScore),
       risk: riskLevel(a.currentScore, a.previousScore),
     }));
-  }, []);
+  }, [agents]);
 
   const sorted = useMemo(() => {
     const copy = [...enriched];
@@ -143,11 +163,16 @@ export default function AgentRetentionRiskClient() {
   return (
     <div>
       {/* integration banner */}
-      <div style={{ background: "#FFF8E1", border: "1px solid #FFE082", borderRadius: 10, padding: "12px 18px", marginBottom: 24, display: "flex", alignItems: "center", gap: 10 }}>
-        <span style={{ fontSize: 18 }}>&#9888;</span>
+      <div style={{ background: isLive ? "#E8F5E9" : "#FFF8E1", border: `1px solid ${isLive ? "#A5D6A7" : "#FFE082"}`, borderRadius: 10, padding: "12px 18px", marginBottom: 24, display: "flex", alignItems: "center", gap: 10 }}>
+        <span style={{ fontSize: 18 }}>{isLive ? "\u2705" : "\u26A0"}</span>
         <span style={{ fontSize: 14 }}>
-          This report uses <strong>sample data</strong>. Connect your GHL account to track real agent activity signals.{" "}
-          <Link href="/app/integrations" style={{ color: "#1565C0", fontWeight: 600 }}>Set up integrations &rarr;</Link>
+          {isLive ? (
+            <>This report is showing <strong>live data</strong> from your connected integrations.</>
+          ) : (
+            <>This report uses <strong>sample data</strong>. Connect your GHL account to track real agent activity signals.{" "}
+              <Link href="/app/integrations" style={{ color: "#1565C0", fontWeight: 600 }}>Set up integrations &rarr;</Link>
+            </>
+          )}
         </span>
       </div>
 
