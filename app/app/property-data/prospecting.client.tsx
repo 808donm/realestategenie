@@ -43,6 +43,28 @@ const PROPERTY_TYPES = [
   { value: "MOBILE", label: "Mobile Home" },
 ];
 
+/**
+ * Detect absentee ownership from ATTOM property data.
+ * ATTOM uses several fields with varying formats:
+ *  - summary.absenteeInd: "ABSENTEE OWNER", "A", "OWNER OCCUPIED", "O", etc.
+ *  - owner.absenteeOwnerStatus: "Absentee", "Owner Occupied", etc.
+ *  - owner.ownerOccupied: "Y" / "N"
+ */
+function isAbsenteeOwner(p: AttomProperty): boolean {
+  const ind = (p.summary?.absenteeInd || "").toUpperCase();
+  const status = (p.owner?.absenteeOwnerStatus || "").toUpperCase();
+  const occupied = (p.owner?.ownerOccupied || "").toUpperCase();
+
+  // absenteeInd: "ABSENTEE OWNER", "ABSENTEE", or single-char "A"
+  if (ind.includes("ABSENTEE") || ind === "A") return true;
+  // absenteeOwnerStatus: "Absentee", "Absentee Owner", etc.
+  if (status.includes("ABSENTEE")) return true;
+  // ownerOccupied: "N" means not owner-occupied (= absentee)
+  if (occupied === "N") return true;
+
+  return false;
+}
+
 // ── Investor grouping helpers ──────────────────────────────────────────────
 
 interface InvestorGroup {
@@ -127,6 +149,42 @@ export default function Prospecting() {
   const [selectedProperty, setSelectedProperty] = useState<AttomProperty | null>(null);
   const [expandedInvestor, setExpandedInvestor] = useState<string | null>(null);
 
+  /**
+   * Fetch a single page of ATTOM results with the current mode's filters.
+   */
+  const fetchPage = async (pageNum: number) => {
+    const params = new URLSearchParams();
+    params.set("postalcode", zip.trim());
+    params.set("propertytype", propertyType);
+    params.set("page", String(pageNum));
+    params.set("pagesize", String(pageSize));
+
+    if (mode === "absentee" || mode === "equity" || mode === "investor") {
+      params.set("endpoint", "expanded");
+    }
+    if (mode === "equity") {
+      if (maxYearBuilt) params.set("maxYearBuilt", maxYearBuilt);
+      if (minAvmValue) params.set("minavmvalue", minAvmValue);
+    }
+    if (mode === "foreclosure") {
+      params.set("endpoint", "expanded");
+    }
+    if (mode === "radius") {
+      params.set("endpoint", "salesnapshot");
+      params.set("startSaleSearchDate", startDate);
+      params.set("endSaleSearchDate", endDate);
+    }
+
+    const res = await fetch(`/api/integrations/attom/property?${params.toString()}`);
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.error || "Failed to fetch data");
+    }
+
+    return data;
+  };
+
   const handleSearch = async (pageNum = 1) => {
     if (!zip.trim()) {
       setError("Enter a zip code.");
@@ -139,54 +197,44 @@ export default function Prospecting() {
     setInvestorGroups([]);
 
     try {
-      const params = new URLSearchParams();
-      params.set("postalcode", zip.trim());
-      params.set("propertytype", propertyType);
-      params.set("page", String(pageNum));
-      params.set("pagesize", String(pageSize));
+      // For modes that require client-side filtering (absentee, foreclosure),
+      // fetch multiple pages to accumulate enough matching results.
+      // ATTOM doesn't support server-side absentee/foreclosure filtering, so
+      // we scan up to 3 pages (150 records) and collect the matches.
+      const needsClientFilter = mode === "absentee" || mode === "foreclosure";
 
-      if (mode === "absentee" || mode === "equity" || mode === "investor") {
-        params.set("endpoint", "expanded");
-      }
-      if (mode === "equity") {
-        if (maxYearBuilt) params.set("maxYearBuilt", maxYearBuilt);
-        if (minAvmValue) params.set("minavmvalue", minAvmValue);
-      }
-      if (mode === "foreclosure") {
-        // Use expanded profile which includes foreclosure data
-        params.set("endpoint", "expanded");
-      }
-      if (mode === "radius") {
-        params.set("endpoint", "salesnapshot");
-        params.set("startSaleSearchDate", startDate);
-        params.set("endSaleSearchDate", endDate);
+      if (needsClientFilter) {
+        let allMatches: AttomProperty[] = [];
+        let totalScanned = 0;
+        const maxPages = 3;
+
+        for (let pg = 1; pg <= maxPages; pg++) {
+          const data = await fetchPage(pg);
+          const raw: AttomProperty[] = data.property || [];
+          if (raw.length === 0) break;
+          totalScanned += raw.length;
+
+          const matches = mode === "absentee"
+            ? raw.filter(isAbsenteeOwner)
+            : raw.filter(
+                (p) => p.foreclosure && (p.foreclosure.actionType || p.foreclosure.filingDate || p.foreclosure.auctionDate)
+              );
+
+          allMatches = allMatches.concat(matches);
+
+          // Stop early if we have enough or if ATTOM returned fewer than a full page
+          if (allMatches.length >= pageSize || raw.length < pageSize) break;
+        }
+
+        setResults(allMatches);
+        setTotalCount(allMatches.length);
+        setHasSearched(true);
+        return;
       }
 
-      const res = await fetch(`/api/integrations/attom/property?${params.toString()}`);
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to fetch data");
-      }
-
+      // Standard fetch for non-filtered modes
+      const data = await fetchPage(pageNum);
       let properties: AttomProperty[] = data.property || [];
-
-      // Client-side filter for absentee owners
-      if (mode === "absentee") {
-        properties = properties.filter(
-          (p) =>
-            p.summary?.absenteeInd === "O" ||
-            p.owner?.absenteeOwnerStatus === "Absentee" ||
-            p.owner?.ownerOccupied === "N"
-        );
-      }
-
-      // Client-side filter for foreclosure
-      if (mode === "foreclosure") {
-        properties = properties.filter(
-          (p) => p.foreclosure && (p.foreclosure.actionType || p.foreclosure.filingDate || p.foreclosure.auctionDate)
-        );
-      }
 
       // For investor mode, group by owner
       if (mode === "investor") {
@@ -199,19 +247,9 @@ export default function Prospecting() {
 
       setResults(properties);
       if (mode !== "investor") {
-        setTotalCount(
-          mode === "absentee" || mode === "foreclosure"
-            ? properties.length
-            : (data.status?.total || properties.length)
-        );
+        setTotalCount(data.status?.total || properties.length);
       }
       setHasSearched(true);
-
-      // For radius farming, also fetch surrounding properties for neighbor data
-      if (mode === "radius" && properties.length > 0) {
-        // Enrich with neighbor context — the sale results are already the "just sold" properties
-        // Agents can click each one to see full details
-      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Search failed");
       setResults([]);
@@ -269,7 +307,7 @@ export default function Prospecting() {
     const avmLow = prop.avm?.amount?.low;
     const lastSale = prop.sale?.amount?.saleAmt || prop.sale?.amount?.salePrice;
     const owner = prop.owner?.owner1?.fullName;
-    const absentee = prop.summary?.absenteeInd === "O" || prop.owner?.absenteeOwnerStatus === "Absentee";
+    const absentee = isAbsenteeOwner(prop);
     const equity = avmVal && lastSale ? avmVal - lastSale : null;
     const equityPct = avmVal && lastSale ? ((avmVal - lastSale) / avmVal) * 100 : null;
     const sqft = prop.building?.size?.livingSize || prop.building?.size?.universalSize || prop.building?.size?.bldgSize;
