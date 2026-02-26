@@ -320,8 +320,6 @@ export default function MLSClient() {
 
     if (!addr || !city) return;
 
-    const fullAddress = [addr, city, state, zip].filter(Boolean).join(", ");
-
     let cancelled = false;
     setAttomLoading(true);
     setAttomData(null);
@@ -331,7 +329,8 @@ export default function MLSClient() {
       try {
         const params = new URLSearchParams();
         params.set("endpoint", "expanded");
-        params.set("address", fullAddress);
+        if (addr) params.set("address1", addr);
+        if (city && state) params.set("address2", `${city}, ${state}`);
 
         const res = await fetch(`/api/integrations/attom/property?${params.toString()}`);
         const data = await res.json();
