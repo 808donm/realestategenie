@@ -4,7 +4,7 @@
 CREATE TABLE IF NOT EXISTS integrations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   agent_id UUID REFERENCES agents(id) ON DELETE CASCADE NOT NULL,
-  provider TEXT NOT NULL CHECK (provider IN ('ghl', 'n8n', 'idx', 'qbo', 'pandadoc', 'docusign', 'paypal', 'stripe', 'trestle')),
+  provider TEXT NOT NULL CHECK (provider IN ('ghl', 'n8n', 'idx', 'qbo', 'pandadoc', 'docusign', 'paypal', 'stripe', 'trestle', 'attom')),
   status TEXT DEFAULT 'disconnected' CHECK (status IN ('connected', 'disconnected', 'error')),
   config JSONB DEFAULT '{}'::jsonb, -- OAuth tokens, webhook URLs, API keys
   last_sync_at TIMESTAMPTZ,

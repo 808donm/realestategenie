@@ -179,10 +179,10 @@ CREATE TABLE IF NOT EXISTS integration_mappings (
   UNIQUE(integration_id, mapping_type, mapping_key)
 );
 
--- Ensure provider check constraint includes all supported providers (migrations 040, 061, 080)
+-- Ensure provider check constraint includes all supported providers (migrations 040, 061, 080, 20260226)
 ALTER TABLE integrations DROP CONSTRAINT IF EXISTS integrations_provider_check;
 ALTER TABLE integrations ADD CONSTRAINT integrations_provider_check
-  CHECK (provider IN ('ghl', 'n8n', 'idx', 'qbo', 'pandadoc', 'docusign', 'paypal', 'stripe', 'trestle'));
+  CHECK (provider IN ('ghl', 'n8n', 'idx', 'qbo', 'pandadoc', 'docusign', 'paypal', 'stripe', 'trestle', 'attom'));
 
 -- =============================================================================
 -- STEP 6: CREATE WEBHOOK LOGS TABLE (migration 007)
