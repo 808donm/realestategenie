@@ -274,6 +274,11 @@ export default function MLSClient() {
   const [attomLoading, setAttomLoading] = useState(false);
   const [attomError, setAttomError] = useState("");
 
+  // ATTOM neighborhood profile state
+  const [neighborhoodData, setNeighborhoodData] = useState<Record<string, any> | null>(null);
+  const [neighborhoodLoading, setNeighborhoodLoading] = useState(false);
+  const [neighborhoodError, setNeighborhoodError] = useState("");
+
   // Send to contact state
   const [showSendModal, setShowSendModal] = useState(false);
   const [sendProperty, setSendProperty] = useState<Property | null>(null);
@@ -289,6 +294,8 @@ export default function MLSClient() {
     if (!selectedProperty) {
       setAttomData(null);
       setAttomError("");
+      setNeighborhoodData(null);
+      setNeighborhoodError("");
       return;
     }
 
@@ -336,6 +343,55 @@ export default function MLSClient() {
     };
 
     fetchAttom();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedProperty]);
+
+  // Auto-fetch ATTOM neighborhood data when a property is selected
+  useEffect(() => {
+    if (!selectedProperty) return;
+
+    const addr = getAddress(selectedProperty);
+    const city = selectedProperty.City;
+    const state = selectedProperty.StateOrProvince;
+    const zip = selectedProperty.PostalCode;
+
+    if (!zip && !city) return;
+
+    let cancelled = false;
+    setNeighborhoodLoading(true);
+    setNeighborhoodData(null);
+    setNeighborhoodError("");
+
+    const fetchNeighborhood = async () => {
+      try {
+        const params = new URLSearchParams();
+        params.set("endpoint", "neighborhood");
+
+        // Build address parts for the ATTOM area endpoints
+        if (addr) params.set("address1", addr);
+        if (city && state) params.set("address2", `${city}, ${state}`);
+        if (zip) params.set("postalcode", zip);
+
+        const res = await fetch(`/api/integrations/attom/property?${params.toString()}`);
+        const data = await res.json();
+
+        if (cancelled) return;
+
+        if (!res.ok) {
+          setNeighborhoodError(data.error || "Neighborhood lookup failed");
+          return;
+        }
+
+        setNeighborhoodData(data);
+      } catch {
+        if (!cancelled) setNeighborhoodError("Could not load neighborhood data");
+      } finally {
+        if (!cancelled) setNeighborhoodLoading(false);
+      }
+    };
+
+    fetchNeighborhood();
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedProperty]);
@@ -2606,6 +2662,168 @@ export default function MLSClient() {
                         </>
                       )}
                     </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Neighborhood Profile (ATTOM) */}
+              <div style={{ marginBottom: 20 }}>
+                <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 10, color: "#374151", display: "flex", alignItems: "center", gap: 8 }}>
+                  Neighborhood Profile
+                  {neighborhoodLoading && <span style={{ fontSize: 12, color: "#9ca3af", fontWeight: 400 }}>Loading...</span>}
+                </h4>
+
+                {neighborhoodError && (
+                  <div style={{ padding: 10, background: "#f9fafb", borderRadius: 8, fontSize: 13, color: "#9ca3af" }}>
+                    {neighborhoodError}
+                  </div>
+                )}
+
+                {neighborhoodData && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    {/* Community Stats Cards */}
+                    {neighborhoodData.community && (() => {
+                      // Community data can be nested under different shapes — normalize
+                      const c = neighborhoodData.community?.community?.[0] || neighborhoodData.community?.area?.[0] || neighborhoodData.community;
+                      if (!c) return null;
+
+                      return (
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 8 }}>
+                          {c.medianHouseholdIncome != null && (
+                            <div style={{ padding: "10px 12px", background: "#ecfdf5", borderRadius: 8, textAlign: "center" }}>
+                              <div style={{ fontSize: 10, color: "#059669", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Median Income</div>
+                              <div style={{ fontSize: 16, fontWeight: 700, color: "#059669" }}>${Number(c.medianHouseholdIncome).toLocaleString()}</div>
+                            </div>
+                          )}
+                          {c.medianHomePrice != null && (
+                            <div style={{ padding: "10px 12px", background: "#eff6ff", borderRadius: 8, textAlign: "center" }}>
+                              <div style={{ fontSize: 10, color: "#3b82f6", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Median Home</div>
+                              <div style={{ fontSize: 16, fontWeight: 700, color: "#3b82f6" }}>${Number(c.medianHomePrice).toLocaleString()}</div>
+                            </div>
+                          )}
+                          {c.houseAppreciationRate != null && (
+                            <div style={{ padding: "10px 12px", background: c.houseAppreciationRate >= 0 ? "#fefce8" : "#fef2f2", borderRadius: 8, textAlign: "center" }}>
+                              <div style={{ fontSize: 10, color: c.houseAppreciationRate >= 0 ? "#a16207" : "#dc2626", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Appreciation</div>
+                              <div style={{ fontSize: 16, fontWeight: 700, color: c.houseAppreciationRate >= 0 ? "#a16207" : "#dc2626" }}>{c.houseAppreciationRate >= 0 ? "+" : ""}{c.houseAppreciationRate}%</div>
+                            </div>
+                          )}
+                          {c.affordabilityIndex != null && (
+                            <div style={{ padding: "10px 12px", background: "#f5f3ff", borderRadius: 8, textAlign: "center" }}>
+                              <div style={{ fontSize: 10, color: "#7c3aed", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Affordability</div>
+                              <div style={{ fontSize: 16, fontWeight: 700, color: "#7c3aed" }}>{c.affordabilityIndex}</div>
+                            </div>
+                          )}
+                          {(c.walkScore || c.transitScore || c.bikeScore) && (
+                            <div style={{ padding: "10px 12px", background: "#f0fdf4", borderRadius: 8, textAlign: "center" }}>
+                              <div style={{ fontSize: 10, color: "#15803d", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Walk / Transit / Bike</div>
+                              <div style={{ fontSize: 16, fontWeight: 700, color: "#15803d" }}>
+                                {[c.walkScore, c.transitScore, c.bikeScore].filter(Boolean).join(" / ")}
+                              </div>
+                            </div>
+                          )}
+                          {c.crimeIndex != null && (
+                            <div style={{ padding: "10px 12px", background: "#fef2f2", borderRadius: 8, textAlign: "center" }}>
+                              <div style={{ fontSize: 10, color: "#dc2626", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Crime Index</div>
+                              <div style={{ fontSize: 16, fontWeight: 700, color: "#dc2626" }}>{c.crimeIndex}</div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+
+                    {/* Demographics row */}
+                    {neighborhoodData.community && (() => {
+                      const c = neighborhoodData.community?.community?.[0] || neighborhoodData.community?.area?.[0] || neighborhoodData.community;
+                      if (!c) return null;
+                      const hasDemo = c.population || c.medianAge || c.ownerOccupiedPct || c.commuteTime;
+                      if (!hasDemo) return null;
+
+                      return (
+                        <div style={{ display: "grid", gridTemplateColumns: "140px 1fr", gap: "4px 12px", fontSize: 13, lineHeight: 1.5 }}>
+                          {c.population != null && (
+                            <>
+                              <span style={{ fontWeight: 600, color: "#374151" }}>Population:</span>
+                              <span style={{ color: "#6b7280" }}>
+                                {Number(c.population).toLocaleString()}
+                                {c.populationGrowth != null ? ` (${c.populationGrowth >= 0 ? "+" : ""}${c.populationGrowth}% growth)` : ""}
+                              </span>
+                            </>
+                          )}
+                          {c.medianAge != null && (
+                            <>
+                              <span style={{ fontWeight: 600, color: "#374151" }}>Median Age:</span>
+                              <span style={{ color: "#6b7280" }}>{c.medianAge}</span>
+                            </>
+                          )}
+                          {c.ownerOccupiedPct != null && (
+                            <>
+                              <span style={{ fontWeight: 600, color: "#374151" }}>Owner Occupied:</span>
+                              <span style={{ color: "#6b7280" }}>{c.ownerOccupiedPct}%{c.renterOccupiedPct != null ? ` / ${c.renterOccupiedPct}% renter` : ""}</span>
+                            </>
+                          )}
+                          {c.commuteTime != null && (
+                            <>
+                              <span style={{ fontWeight: 600, color: "#374151" }}>Avg Commute:</span>
+                              <span style={{ color: "#6b7280" }}>{c.commuteTime} min</span>
+                            </>
+                          )}
+                          {c.employmentGrowthRate != null && (
+                            <>
+                              <span style={{ fontWeight: 600, color: "#374151" }}>Job Growth:</span>
+                              <span style={{ color: "#6b7280" }}>{c.employmentGrowthRate >= 0 ? "+" : ""}{c.employmentGrowthRate}%</span>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })()}
+
+                    {/* Schools */}
+                    {neighborhoodData.schools && (() => {
+                      const schools = neighborhoodData.schools?.school || neighborhoodData.schools?.schools || [];
+                      if (!Array.isArray(schools) || schools.length === 0) return null;
+
+                      return (
+                        <div>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6 }}>Nearby Schools</div>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                            {schools.slice(0, 5).map((s: any, i: number) => (
+                              <div
+                                key={i}
+                                style={{
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  alignItems: "center",
+                                  padding: "6px 10px",
+                                  background: "#f9fafb",
+                                  borderRadius: 6,
+                                  fontSize: 12,
+                                }}
+                              >
+                                <div style={{ display: "flex", flexDirection: "column" }}>
+                                  <span style={{ fontWeight: 600, color: "#374151" }}>{s.schoolName || s.InstitutionName || s.name}</span>
+                                  <span style={{ color: "#9ca3af", fontSize: 11 }}>
+                                    {[s.schoolType || s.type, s.gradeRange || s.Grades].filter(Boolean).join(" · ")}
+                                    {s.distance != null ? ` · ${s.distance} mi` : ""}
+                                  </span>
+                                </div>
+                                {(s.rating || s.GreatSchoolsRating) != null && (
+                                  <div style={{
+                                    padding: "2px 8px",
+                                    borderRadius: 12,
+                                    background: (s.rating || s.GreatSchoolsRating) >= 7 ? "#dcfce7" : (s.rating || s.GreatSchoolsRating) >= 4 ? "#fef3c7" : "#fee2e2",
+                                    color: (s.rating || s.GreatSchoolsRating) >= 7 ? "#16a34a" : (s.rating || s.GreatSchoolsRating) >= 4 ? "#d97706" : "#dc2626",
+                                    fontWeight: 700,
+                                    fontSize: 11,
+                                  }}>
+                                    {s.rating || s.GreatSchoolsRating}/10
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
               </div>

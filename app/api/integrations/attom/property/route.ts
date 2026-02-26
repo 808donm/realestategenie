@@ -41,7 +41,8 @@ async function getAttomClient(): Promise<AttomClient> {
  * - latitude + longitude + radius  (radius search)
  * - attomid              (direct lookup by ATTOM ID)
  * - endpoint: "detail" | "profile" | "expanded" | "snapshot" | "assessment" |
- *             "sale" | "saleshistory" | "avm" | "allevents" (default: "expanded")
+ *             "sale" | "saleshistory" | "avm" | "allevents" |
+ *             "community" | "schools" | "poi" | "neighborhood" (default: "expanded")
  * - propertytype         (SFR, APARTMENT, CONDO, etc.)
  * - page, pagesize       (pagination)
  */
@@ -120,6 +121,18 @@ export async function GET(request: NextRequest) {
         break;
       case "allevents":
         result = await client.getAllEvents(params);
+        break;
+      case "community":
+        result = await client.getCommunityProfile(params);
+        break;
+      case "schools":
+        result = await client.getSchoolSearch(params);
+        break;
+      case "poi":
+        result = await client.getPOISearch(params);
+        break;
+      case "neighborhood":
+        result = await client.getNeighborhoodProfile(params);
         break;
       default:
         result = await client.getPropertyExpandedProfile(params);

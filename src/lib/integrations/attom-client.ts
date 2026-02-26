@@ -213,6 +213,50 @@ export interface AttomForeclosure {
   startingBid?: number;
 }
 
+// ── Community / Neighborhood types ──────────────────────────────────────────
+
+export interface AttomCommunity {
+  affordabilityIndex?: number;
+  medianHouseholdIncome?: number;
+  medianHomePrice?: number;
+  houseAppreciationRate?: number;
+  avgSchoolRating?: number;
+  crimeIndex?: number;
+  crimeRisk?: string;
+  employmentGrowthRate?: number;
+  populationGrowth?: number;
+  population?: number;
+  populationDensity?: number;
+  medianAge?: number;
+  ownerOccupiedPct?: number;
+  renterOccupiedPct?: number;
+  walkScore?: number;
+  bikeScore?: number;
+  transitScore?: number;
+  commuteTime?: number;
+  communityName?: string;
+  geoIdV4?: string;
+}
+
+export interface AttomSchool {
+  schoolName?: string;
+  schoolType?: string; // Public, Private, Charter
+  gradeRange?: string;
+  rating?: number;
+  distance?: number;
+  enrollment?: number;
+  studentTeacherRatio?: number;
+  address?: AttomAddress;
+}
+
+export interface AttomPOI {
+  name?: string;
+  type?: string;
+  distance?: number;
+  latitude?: number;
+  longitude?: number;
+}
+
 export interface AttomPropertyDetail {
   identifier?: {
     Id?: number;
@@ -586,6 +630,77 @@ export class AttomClient {
       pagesize: options.pagesize || 50,
       page: options.page || 1,
     });
+  }
+
+  // ── Community / Neighborhood Endpoints ──────────────────────────────────
+
+  /**
+   * Get community profile by GeoID or lat/long
+   * Returns demographics, affordability, appreciation, crime index, etc.
+   */
+  async getCommunityProfile(
+    params: AttomSearchParams
+  ): Promise<any> {
+    return this.request("/area/community/profile", this.buildParams(params));
+  }
+
+  /**
+   * Get schools near a property by address, lat/long, or GeoID
+   */
+  async getSchoolSearch(
+    params: AttomSearchParams
+  ): Promise<any> {
+    return this.request("/school/search", this.buildParams(params));
+  }
+
+  /**
+   * Get points of interest near a property
+   */
+  async getPOISearch(
+    params: AttomSearchParams
+  ): Promise<any> {
+    return this.request("/poi/search", this.buildParams(params));
+  }
+
+  /**
+   * Convenience: fetch a full neighborhood profile for a given address
+   * Combines community data, school search, and POI in parallel
+   */
+  async getNeighborhoodProfile(options: {
+    address1?: string;
+    address2?: string;
+    latitude?: number;
+    longitude?: number;
+    postalcode?: string;
+    geoidv4?: string;
+    radius?: number;
+  }): Promise<{
+    community: any;
+    schools: any;
+    poi: any;
+  }> {
+    const params: AttomSearchParams = {
+      address1: options.address1,
+      address2: options.address2,
+      latitude: options.latitude,
+      longitude: options.longitude,
+      postalcode: options.postalcode,
+      geoidv4: options.geoidv4,
+      radius: options.radius || 1,
+      pagesize: 10,
+    };
+
+    const [community, schools, poi] = await Promise.allSettled([
+      this.getCommunityProfile(params),
+      this.getSchoolSearch(params),
+      this.getPOISearch(params),
+    ]);
+
+    return {
+      community: community.status === "fulfilled" ? community.value : null,
+      schools: schools.status === "fulfilled" ? schools.value : null,
+      poi: poi.status === "fulfilled" ? poi.value : null,
+    };
   }
 
   // ── Connection Test ─────────────────────────────────────────────────────
