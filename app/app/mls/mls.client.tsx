@@ -269,6 +269,11 @@ export default function MLSClient() {
     setTimeout(() => setSocialCopied(""), 2000);
   };
 
+  // ATTOM property enrichment state
+  const [attomData, setAttomData] = useState<Record<string, any> | null>(null);
+  const [attomLoading, setAttomLoading] = useState(false);
+  const [attomError, setAttomError] = useState("");
+
   // Send to contact state
   const [showSendModal, setShowSendModal] = useState(false);
   const [sendProperty, setSendProperty] = useState<Property | null>(null);
@@ -278,6 +283,62 @@ export default function MLSClient() {
   const [sendingContactId, setSendingContactId] = useState("");
   const [sendMode, setSendMode] = useState<"email" | "attach">("attach");
   const [sendResult, setSendResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  // Auto-fetch ATTOM data when a property is selected
+  useEffect(() => {
+    if (!selectedProperty) {
+      setAttomData(null);
+      setAttomError("");
+      return;
+    }
+
+    const addr = getAddress(selectedProperty);
+    const city = selectedProperty.City;
+    const state = selectedProperty.StateOrProvince;
+    const zip = selectedProperty.PostalCode;
+
+    if (!addr || !city) return;
+
+    const fullAddress = [addr, city, state, zip].filter(Boolean).join(", ");
+
+    let cancelled = false;
+    setAttomLoading(true);
+    setAttomData(null);
+    setAttomError("");
+
+    const fetchAttom = async () => {
+      try {
+        const params = new URLSearchParams();
+        params.set("endpoint", "expanded");
+        params.set("address", fullAddress);
+
+        const res = await fetch(`/api/integrations/attom/property?${params.toString()}`);
+        const data = await res.json();
+
+        if (cancelled) return;
+
+        if (!res.ok) {
+          setAttomError(data.error || "ATTOM lookup failed");
+          return;
+        }
+
+        const prop = data.property?.[0];
+        if (prop) {
+          setAttomData(prop);
+        } else {
+          setAttomError("No ATTOM record found for this address");
+        }
+      } catch {
+        if (!cancelled) setAttomError("Could not connect to ATTOM");
+      } finally {
+        if (!cancelled) setAttomLoading(false);
+      }
+    };
+
+    fetchAttom();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedProperty]);
 
   // Open property detail from ?listing= URL param (used in shared links)
   useEffect(() => {
@@ -2441,6 +2502,113 @@ export default function MLSClient() {
                   </div>
                 </div>
               )}
+
+              {/* ATTOM Property Data */}
+              <div style={{ marginBottom: 20 }}>
+                <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 10, color: "#374151", display: "flex", alignItems: "center", gap: 8 }}>
+                  Property Intelligence (ATTOM)
+                  {attomLoading && <span style={{ fontSize: 12, color: "#9ca3af", fontWeight: 400 }}>Loading...</span>}
+                </h4>
+
+                {attomError && (
+                  <div style={{ padding: 10, background: "#f9fafb", borderRadius: 8, fontSize: 13, color: "#9ca3af" }}>
+                    {attomError}
+                  </div>
+                )}
+
+                {attomData && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    {/* Value Cards */}
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8 }}>
+                      {attomData.avm?.amount?.value != null && (
+                        <div style={{ padding: "10px 12px", background: "#ecfdf5", borderRadius: 8, textAlign: "center" }}>
+                          <div style={{ fontSize: 10, color: "#059669", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>AVM Value</div>
+                          <div style={{ fontSize: 17, fontWeight: 700, color: "#059669" }}>${attomData.avm.amount.value.toLocaleString()}</div>
+                          {attomData.avm.amount.low != null && attomData.avm.amount.high != null && (
+                            <div style={{ fontSize: 10, color: "#6b7280" }}>${attomData.avm.amount.low.toLocaleString()} – ${attomData.avm.amount.high.toLocaleString()}</div>
+                          )}
+                        </div>
+                      )}
+                      {(attomData.sale?.amount?.saleAmt || attomData.sale?.amount?.salePrice) != null && (
+                        <div style={{ padding: "10px 12px", background: "#eff6ff", borderRadius: 8, textAlign: "center" }}>
+                          <div style={{ fontSize: 10, color: "#3b82f6", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Last Sale</div>
+                          <div style={{ fontSize: 17, fontWeight: 700, color: "#3b82f6" }}>
+                            ${(attomData.sale.amount.saleAmt || attomData.sale.amount.salePrice).toLocaleString()}
+                          </div>
+                          {attomData.sale.amount.saleTransDate && (
+                            <div style={{ fontSize: 10, color: "#6b7280" }}>{attomData.sale.amount.saleTransDate}</div>
+                          )}
+                        </div>
+                      )}
+                      {attomData.assessment?.assessed?.assdTtlValue != null && (
+                        <div style={{ padding: "10px 12px", background: "#f5f3ff", borderRadius: 8, textAlign: "center" }}>
+                          <div style={{ fontSize: 10, color: "#7c3aed", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Assessed</div>
+                          <div style={{ fontSize: 17, fontWeight: 700, color: "#7c3aed" }}>${attomData.assessment.assessed.assdTtlValue.toLocaleString()}</div>
+                          {attomData.assessment.tax?.taxAmt != null && (
+                            <div style={{ fontSize: 10, color: "#6b7280" }}>Tax: ${attomData.assessment.tax.taxAmt.toLocaleString()}/yr</div>
+                          )}
+                        </div>
+                      )}
+                      {attomData.avm?.amount?.value != null && (attomData.sale?.amount?.saleAmt || attomData.sale?.amount?.salePrice) != null && (() => {
+                        const equity = attomData.avm.amount.value - (attomData.sale.amount.saleAmt || attomData.sale.amount.salePrice);
+                        return (
+                          <div style={{ padding: "10px 12px", background: equity > 0 ? "#fefce8" : "#fef2f2", borderRadius: 8, textAlign: "center" }}>
+                            <div style={{ fontSize: 10, color: equity > 0 ? "#a16207" : "#dc2626", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Est. Equity</div>
+                            <div style={{ fontSize: 17, fontWeight: 700, color: equity > 0 ? "#a16207" : "#dc2626" }}>
+                              {equity > 0 ? "+" : ""}${equity.toLocaleString()}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+
+                    {/* Owner & Mortgage Details */}
+                    <div style={{ display: "grid", gridTemplateColumns: "140px 1fr", gap: "6px 12px", fontSize: 13, lineHeight: 1.5 }}>
+                      {attomData.owner?.owner1?.fullName && (
+                        <>
+                          <span style={{ fontWeight: 600, color: "#374151" }}>Owner:</span>
+                          <span style={{ color: "#6b7280" }}>
+                            {attomData.owner.owner1.fullName}
+                            {(attomData.summary?.absenteeInd === "O" || attomData.owner?.absenteeOwnerStatus === "Absentee") && (
+                              <span style={{ marginLeft: 6, padding: "1px 6px", background: "#fef3c7", color: "#92400e", borderRadius: 8, fontSize: 10, fontWeight: 600 }}>Absentee</span>
+                            )}
+                          </span>
+                        </>
+                      )}
+                      {attomData.owner?.mailingAddressOneLine && (
+                        <>
+                          <span style={{ fontWeight: 600, color: "#374151" }}>Mailing Addr:</span>
+                          <span style={{ color: "#6b7280" }}>{attomData.owner.mailingAddressOneLine}</span>
+                        </>
+                      )}
+                      {attomData.mortgage?.amount != null && (
+                        <>
+                          <span style={{ fontWeight: 600, color: "#374151" }}>Mortgage:</span>
+                          <span style={{ color: "#6b7280" }}>
+                            ${attomData.mortgage.amount.toLocaleString()}
+                            {attomData.mortgage.lender?.fullName ? ` (${attomData.mortgage.lender.fullName})` : ""}
+                          </span>
+                        </>
+                      )}
+                      {attomData.assessment?.tax?.taxAmt != null && attomData.assessment?.tax?.taxYear != null && (
+                        <>
+                          <span style={{ fontWeight: 600, color: "#374151" }}>Annual Tax:</span>
+                          <span style={{ color: "#6b7280" }}>${attomData.assessment.tax.taxAmt.toLocaleString()} ({attomData.assessment.tax.taxYear})</span>
+                        </>
+                      )}
+                      {attomData.foreclosure?.actionType && (
+                        <>
+                          <span style={{ fontWeight: 600, color: "#dc2626" }}>Foreclosure:</span>
+                          <span style={{ color: "#dc2626" }}>
+                            {attomData.foreclosure.actionType}
+                            {attomData.foreclosure.auctionDate ? ` — Auction ${attomData.foreclosure.auctionDate}` : ""}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
 
               {/* Action Buttons */}
               <div
