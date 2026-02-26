@@ -2649,7 +2649,7 @@ export default function MLSClient() {
               {/* ATTOM Property Data */}
               <div style={{ marginBottom: 20 }}>
                 <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 10, color: "#374151", display: "flex", alignItems: "center", gap: 8 }}>
-                  Property Intelligence (ATTOM)
+                  Property Intelligence
                   {attomLoading && <span style={{ fontSize: 12, color: "#9ca3af", fontWeight: 400 }}>Loading...</span>}
                 </h4>
 
