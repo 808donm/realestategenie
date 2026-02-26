@@ -342,10 +342,16 @@ export default function MLSClient() {
           return;
         }
 
+        console.log("[ATTOM] Raw response keys:", Object.keys(data));
+        console.log("[ATTOM] property array length:", data.property?.length);
         const prop = data.property?.[0];
         if (prop) {
+          console.log("[ATTOM] Property keys:", Object.keys(prop));
+          console.log("[ATTOM] Owner data:", JSON.stringify(prop.owner, null, 2));
+          console.log("[ATTOM] Mortgage data:", JSON.stringify(prop.mortgage, null, 2));
           setAttomData(prop);
         } else {
+          console.log("[ATTOM] No property found in response:", JSON.stringify(data).substring(0, 500));
           setAttomError("No ATTOM record found for this address");
         }
       } catch {
@@ -2647,9 +2653,15 @@ export default function MLSClient() {
                   {attomLoading && <span style={{ fontSize: 12, color: "#9ca3af", fontWeight: 400 }}>Loading...</span>}
                 </h4>
 
-                {attomError && (
+                {attomError && !attomData && (
                   <div style={{ padding: 10, background: "#f9fafb", borderRadius: 8, fontSize: 13, color: "#9ca3af" }}>
                     {attomError}
+                  </div>
+                )}
+
+                {!attomData && !attomLoading && !attomError && (
+                  <div style={{ padding: 10, background: "#f9fafb", borderRadius: 8, fontSize: 13, color: "#9ca3af" }}>
+                    No ATTOM data available for this address
                   </div>
                 )}
 
@@ -2699,40 +2711,49 @@ export default function MLSClient() {
                       })()}
                     </div>
 
-                    {/* Owner & Mortgage Details */}
+                    {/* Owner & Mortgage Details — always show with fallbacks */}
                     <div style={{ display: "grid", gridTemplateColumns: "140px 1fr", gap: "6px 12px", fontSize: 13, lineHeight: 1.5 }}>
-                      {attomData.owner?.owner1?.fullName && (
+                      <span style={{ fontWeight: 600, color: "#374151" }}>Owner:</span>
+                      <span style={{ color: "#6b7280" }}>
+                        {attomData.owner?.owner1?.fullName || attomData.owner?.owner1?.lastName || "Not available"}
+                        {(attomData.summary?.absenteeInd === "O" || attomData.owner?.absenteeOwnerStatus === "Absentee") && (
+                          <span style={{ marginLeft: 6, padding: "1px 6px", background: "#fef3c7", color: "#92400e", borderRadius: 8, fontSize: 10, fontWeight: 600 }}>Absentee</span>
+                        )}
+                      </span>
+
+                      <span style={{ fontWeight: 600, color: "#374151" }}>Owner Occupied:</span>
+                      <span style={{ color: "#6b7280" }}>
+                        {attomData.owner?.ownerOccupied || attomData.summary?.absenteeInd === "O" ? "No (Absentee)" : attomData.summary?.absenteeInd === "A" ? "Yes" : "Not available"}
+                      </span>
+
+                      <span style={{ fontWeight: 600, color: "#374151" }}>Mailing Addr:</span>
+                      <span style={{ color: "#6b7280" }}>
+                        {attomData.owner?.mailingAddressOneLine || "Same as property"}
+                      </span>
+
+                      <span style={{ fontWeight: 600, color: "#374151" }}>Mortgage:</span>
+                      <span style={{ color: "#6b7280" }}>
+                        {attomData.mortgage?.amount != null
+                          ? `$${attomData.mortgage.amount.toLocaleString()}${attomData.mortgage.lender?.fullName ? ` (${attomData.mortgage.lender.fullName})` : ""}`
+                          : "Not available"}
+                      </span>
+
+                      {attomData.mortgage?.interestRateType && (
                         <>
-                          <span style={{ fontWeight: 600, color: "#374151" }}>Owner:</span>
+                          <span style={{ fontWeight: 600, color: "#374151" }}>Loan Type:</span>
                           <span style={{ color: "#6b7280" }}>
-                            {attomData.owner.owner1.fullName}
-                            {(attomData.summary?.absenteeInd === "O" || attomData.owner?.absenteeOwnerStatus === "Absentee") && (
-                              <span style={{ marginLeft: 6, padding: "1px 6px", background: "#fef3c7", color: "#92400e", borderRadius: 8, fontSize: 10, fontWeight: 600 }}>Absentee</span>
-                            )}
+                            {[attomData.mortgage.loanType, attomData.mortgage.interestRateType, attomData.mortgage.term].filter(Boolean).join(" · ")}
                           </span>
                         </>
                       )}
-                      {attomData.owner?.mailingAddressOneLine && (
-                        <>
-                          <span style={{ fontWeight: 600, color: "#374151" }}>Mailing Addr:</span>
-                          <span style={{ color: "#6b7280" }}>{attomData.owner.mailingAddressOneLine}</span>
-                        </>
-                      )}
-                      {attomData.mortgage?.amount != null && (
-                        <>
-                          <span style={{ fontWeight: 600, color: "#374151" }}>Mortgage:</span>
-                          <span style={{ color: "#6b7280" }}>
-                            ${attomData.mortgage.amount.toLocaleString()}
-                            {attomData.mortgage.lender?.fullName ? ` (${attomData.mortgage.lender.fullName})` : ""}
-                          </span>
-                        </>
-                      )}
-                      {attomData.assessment?.tax?.taxAmt != null && attomData.assessment?.tax?.taxYear != null && (
-                        <>
-                          <span style={{ fontWeight: 600, color: "#374151" }}>Annual Tax:</span>
-                          <span style={{ color: "#6b7280" }}>${attomData.assessment.tax.taxAmt.toLocaleString()} ({attomData.assessment.tax.taxYear})</span>
-                        </>
-                      )}
+
+                      <span style={{ fontWeight: 600, color: "#374151" }}>Annual Tax:</span>
+                      <span style={{ color: "#6b7280" }}>
+                        {attomData.assessment?.tax?.taxAmt != null
+                          ? `$${attomData.assessment.tax.taxAmt.toLocaleString()}${attomData.assessment.tax.taxYear ? ` (${attomData.assessment.tax.taxYear})` : ""}`
+                          : "Not available"}
+                      </span>
+
                       {attomData.foreclosure?.actionType && (
                         <>
                           <span style={{ fontWeight: 600, color: "#dc2626" }}>Foreclosure:</span>
