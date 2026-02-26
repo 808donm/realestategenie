@@ -171,7 +171,7 @@ export default function Prospecting() {
   const [propertyType, setPropertyType] = useState("SFR");
 
   // Equity-specific
-  const [maxYearBuilt, setMaxYearBuilt] = useState("2005");
+  const [minYearsOwned, setMinYearsOwned] = useState("10");
   const [minAvmValue, setMinAvmValue] = useState("");
 
   // Radius farming / foreclosure / sales date range
@@ -211,7 +211,6 @@ export default function Prospecting() {
       params.set("endpoint", "expanded");
     }
     if (mode === "equity") {
-      if (maxYearBuilt) params.set("maxYearBuilt", maxYearBuilt);
       if (minAvmValue) params.set("minavmvalue", minAvmValue);
     }
     if (mode === "foreclosure") {
@@ -247,9 +246,9 @@ export default function Prospecting() {
     try {
       // Modes that require client-side filtering or multi-page accumulation.
       // ATTOM's expandedprofile doesn't support server-side filtering for
-      // absentee status, distress signals, or multi-property owner grouping,
-      // so we scan multiple pages and filter/group locally.
-      const needsMultiPage = mode === "absentee" || mode === "foreclosure" || mode === "investor";
+      // absentee status, distress signals, owner tenure, or multi-property
+      // owner grouping, so we scan multiple pages and filter/group locally.
+      const needsMultiPage = mode === "absentee" || mode === "foreclosure" || mode === "investor" || mode === "equity";
 
       if (needsMultiPage) {
         let allRaw: AttomProperty[] = [];
@@ -282,6 +281,44 @@ export default function Prospecting() {
           setResults(matches);
           setTotalCount(matches.length);
           setInvestorGroups([]);
+        } else if (mode === "equity") {
+          // Filter by owner tenure using saleTransDate — the year the property
+          // was BUILT (maxYearBuilt) says nothing about how long the current
+          // owner has held it. We use the last sale date to identify long-tenure
+          // owners who have built up significant equity through appreciation.
+          const minYears = parseInt(minYearsOwned, 10) || 10;
+          const cutoffDate = new Date();
+          cutoffDate.setFullYear(cutoffDate.getFullYear() - minYears);
+
+          const matches = allRaw.filter((p) => {
+            // Must have a sale date to determine tenure
+            const saleDateStr = p.sale?.amount?.saleTransDate || p.sale?.amount?.saleRecDate;
+            if (!saleDateStr) return false;
+            const saleDate = new Date(saleDateStr);
+            if (isNaN(saleDate.getTime())) return false;
+            // Owner must have purchased before the cutoff
+            if (saleDate > cutoffDate) return false;
+            // Must have AVM data to estimate equity
+            const avmVal = p.avm?.amount?.value;
+            if (!avmVal || avmVal <= 0) return false;
+            // Must have positive equity (AVM > purchase price)
+            const purchasePrice = p.sale?.amount?.saleAmt || p.sale?.amount?.salePrice || 0;
+            if (purchasePrice > 0 && avmVal <= purchasePrice) return false;
+            return true;
+          });
+
+          // Sort by estimated equity descending (highest equity first)
+          matches.sort((a, b) => {
+            const aAvm = a.avm?.amount?.value || 0;
+            const aSale = a.sale?.amount?.saleAmt || a.sale?.amount?.salePrice || 0;
+            const bAvm = b.avm?.amount?.value || 0;
+            const bSale = b.sale?.amount?.saleAmt || b.sale?.amount?.salePrice || 0;
+            return (bAvm - bSale) - (aAvm - aSale);
+          });
+
+          setResults(matches);
+          setTotalCount(matches.length);
+          setInvestorGroups([]);
         } else {
           // Investor mode: group across all fetched pages
           const groups = groupByOwner(allRaw);
@@ -294,7 +331,7 @@ export default function Prospecting() {
         return;
       }
 
-      // Standard fetch for non-filtered modes (equity, radius)
+      // Standard fetch for non-filtered modes (radius)
       const data = await fetchPage(pageNum);
       const properties: AttomProperty[] = data.property || [];
 
@@ -362,6 +399,11 @@ export default function Prospecting() {
     const absentee = isAbsenteeOwner(prop);
     const equity = avmVal && lastSale ? avmVal - lastSale : null;
     const equityPct = avmVal && lastSale ? ((avmVal - lastSale) / avmVal) * 100 : null;
+    const saleDateStr = prop.sale?.amount?.saleTransDate || prop.sale?.amount?.saleRecDate;
+    const saleDate = saleDateStr ? new Date(saleDateStr) : null;
+    const yearsOwned = saleDate && !isNaN(saleDate.getTime())
+      ? Math.floor((Date.now() - saleDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+      : null;
     const sqft = prop.building?.size?.livingSize || prop.building?.size?.universalSize || prop.building?.size?.bldgSize;
     const beds = prop.building?.rooms?.beds;
     const baths = prop.building?.rooms?.bathsFull ?? prop.building?.rooms?.bathsTotal;
@@ -409,6 +451,34 @@ export default function Prospecting() {
                     (Mail: {prop.owner.mailingAddressOneLine})
                   </span>
                 )}
+              </div>
+            )}
+
+            {/* Equity mode — tenure and purchase info */}
+            {mode === "equity" && yearsOwned != null && (
+              <div style={{ marginTop: 6, padding: "6px 10px", background: "#f0fdf4", borderRadius: 6, fontSize: 12 }}>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+                  <span style={{
+                    padding: "1px 8px",
+                    background: yearsOwned >= 20 ? "#059669" : yearsOwned >= 15 ? "#10b981" : "#34d399",
+                    color: "#fff", borderRadius: 10, fontSize: 11, fontWeight: 700,
+                  }}>
+                    Owned {yearsOwned} years
+                  </span>
+                  {saleDateStr && (
+                    <span style={{ color: "#6b7280" }}>
+                      Purchased: {saleDate!.toLocaleDateString("en-US", { month: "short", year: "numeric" })}
+                    </span>
+                  )}
+                  {lastSale != null && (
+                    <span style={{ color: "#6b7280" }}>for {fmt(lastSale)}</span>
+                  )}
+                  {equity != null && equity > 0 && (
+                    <span style={{ color: "#059669", fontWeight: 600 }}>
+                      Est. appreciation: +{fmt(equity)}
+                    </span>
+                  )}
+                </div>
               </div>
             )}
 
@@ -525,10 +595,16 @@ export default function Prospecting() {
                 </div>
               </div>
             )}
-            {(mode === "absentee" || mode === "equity") && lastSale != null && (
+            {mode === "absentee" && lastSale != null && (
               <div>
                 <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>Last Sale</div>
                 <div style={{ fontWeight: 600, fontSize: 14 }}>{fmt(lastSale)}</div>
+              </div>
+            )}
+            {mode === "equity" && yearsOwned != null && (
+              <div>
+                <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>Tenure</div>
+                <div style={{ fontWeight: 700, fontSize: 15, color: yearsOwned >= 20 ? "#059669" : "#10b981" }}>{yearsOwned} yrs</div>
               </div>
             )}
             {taxAmt != null && (mode === "investor" || mode === "equity") && (
@@ -672,12 +748,12 @@ export default function Prospecting() {
           {mode === "equity" && (
             <>
               <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 4 }}>Built Before</label>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 4 }}>Min Years Owned</label>
                 <input
                   type="number"
-                  value={maxYearBuilt}
-                  onChange={(e) => setMaxYearBuilt(e.target.value)}
-                  placeholder="e.g. 2005"
+                  value={minYearsOwned}
+                  onChange={(e) => setMinYearsOwned(e.target.value)}
+                  placeholder="e.g. 10"
                   style={{ width: 100, padding: "8px 12px", fontSize: 14, border: "1px solid #d1d5db", borderRadius: 6 }}
                 />
               </div>
@@ -737,7 +813,11 @@ export default function Prospecting() {
       )}
 
       {isLoading && (
-        <div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>Searching ATTOM records...</div>
+        <div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>
+          {(mode === "absentee" || mode === "foreclosure" || mode === "investor" || mode === "equity")
+            ? "Scanning ATTOM records (multiple pages)..."
+            : "Searching ATTOM records..."}
+        </div>
       )}
 
       {!isLoading && hasSearched && results.length === 0 && (
@@ -823,7 +903,7 @@ export default function Prospecting() {
           </div>
           <div style={{ fontSize: 13, maxWidth: 500, margin: "0 auto" }}>
             {mode === "absentee" && "Search for non-owner-occupied properties by zip code. These owners are managing properties remotely and may be motivated to sell."}
-            {mode === "equity" && "Search for properties owned 15+ years with significant built-up equity. Ideal for \"unlock your equity\" listing campaigns."}
+            {mode === "equity" && "Search for long-tenure homeowners based on their purchase date. Owners who bought 10+ years ago have built significant equity through appreciation — ideal for \"unlock your equity\" listing campaigns."}
             {mode === "foreclosure" && "Find properties with underwater mortgages, high loan-to-value ratios, or declining assessments. These owners may be under financial pressure and open to selling."}
             {mode === "radius" && "Find recent sales in a zip code. Use the data to build \"Your Neighbor's Home Just Sold for $X\" prospecting campaigns with real comparable data."}
             {mode === "investor" && "Identify multi-property owners in a zip code. Find \"tired landlords\" with high tax burdens and aging properties who may want to sell."}
