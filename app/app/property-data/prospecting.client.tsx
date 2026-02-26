@@ -65,6 +65,54 @@ function isAbsenteeOwner(p: AttomProperty): boolean {
   return false;
 }
 
+/**
+ * Detect financial distress signals from ATTOM expanded profile data.
+ *
+ * The expandedprofile endpoint does NOT return the `foreclosure` object —
+ * that data lives in dedicated ATTOM endpoints (preforeclosure/detail,
+ * saleshistory/expandedhistory) which don't support area-based searches.
+ *
+ * Instead we identify distress from mortgage/AVM/assessment data that IS returned:
+ *  - Underwater: mortgage balance exceeds AVM value
+ *  - High LTV: mortgage >= 80% of AVM (at-risk)
+ *  - Assessment drop: market value below assessed total (tax pressure)
+ */
+interface DistressSignals {
+  isDistressed: boolean;
+  isUnderwater: boolean;
+  highLtv: boolean;
+  ltvPct: number | null;
+  mortgageAmount: number | null;
+  avmValue: number | null;
+  assessmentDrop: boolean;
+}
+
+function getDistressSignals(p: AttomProperty): DistressSignals {
+  const mortgageAmount = p.mortgage?.amount ?? null;
+  const avmValue = p.avm?.amount?.value ?? null;
+  const assdTotal = p.assessment?.assessed?.assdTtlValue ?? null;
+  const mktTotal = p.assessment?.market?.mktTtlValue ?? null;
+
+  let ltvPct: number | null = null;
+  let isUnderwater = false;
+  let highLtv = false;
+
+  if (mortgageAmount != null && avmValue != null && avmValue > 0) {
+    ltvPct = (mortgageAmount / avmValue) * 100;
+    isUnderwater = mortgageAmount > avmValue;
+    highLtv = ltvPct >= 80;
+  }
+
+  // Assessment drop: market value less than 90% of assessed value → tax overpayment pressure
+  const assessmentDrop = (mktTotal != null && assdTotal != null && assdTotal > 0)
+    ? mktTotal < assdTotal * 0.9
+    : false;
+
+  const isDistressed = isUnderwater || highLtv || assessmentDrop;
+
+  return { isDistressed, isUnderwater, highLtv, ltvPct, mortgageAmount, avmValue, assessmentDrop };
+}
+
 // ── Investor grouping helpers ──────────────────────────────────────────────
 
 interface InvestorGroup {
@@ -197,58 +245,62 @@ export default function Prospecting() {
     setInvestorGroups([]);
 
     try {
-      // For modes that require client-side filtering (absentee, foreclosure),
-      // fetch multiple pages to accumulate enough matching results.
-      // ATTOM doesn't support server-side absentee/foreclosure filtering, so
-      // we scan up to 3 pages (150 records) and collect the matches.
-      const needsClientFilter = mode === "absentee" || mode === "foreclosure";
+      // Modes that require client-side filtering or multi-page accumulation.
+      // ATTOM's expandedprofile doesn't support server-side filtering for
+      // absentee status, distress signals, or multi-property owner grouping,
+      // so we scan multiple pages and filter/group locally.
+      const needsMultiPage = mode === "absentee" || mode === "foreclosure" || mode === "investor";
 
-      if (needsClientFilter) {
-        let allMatches: AttomProperty[] = [];
-        let totalScanned = 0;
+      if (needsMultiPage) {
+        let allRaw: AttomProperty[] = [];
         const maxPages = 3;
 
         for (let pg = 1; pg <= maxPages; pg++) {
           const data = await fetchPage(pg);
           const raw: AttomProperty[] = data.property || [];
           if (raw.length === 0) break;
-          totalScanned += raw.length;
-
-          const matches = mode === "absentee"
-            ? raw.filter(isAbsenteeOwner)
-            : raw.filter(
-                (p) => p.foreclosure && (p.foreclosure.actionType || p.foreclosure.filingDate || p.foreclosure.auctionDate)
-              );
-
-          allMatches = allMatches.concat(matches);
-
-          // Stop early if we have enough or if ATTOM returned fewer than a full page
-          if (allMatches.length >= pageSize || raw.length < pageSize) break;
+          allRaw = allRaw.concat(raw);
+          // Stop if ATTOM returned fewer than a full page (no more data)
+          if (raw.length < pageSize) break;
         }
 
-        setResults(allMatches);
-        setTotalCount(allMatches.length);
+        if (mode === "absentee") {
+          const matches = allRaw.filter(isAbsenteeOwner);
+          setResults(matches);
+          setTotalCount(matches.length);
+          setInvestorGroups([]);
+        } else if (mode === "foreclosure") {
+          // Detect distress from mortgage/AVM/assessment data
+          const matches = allRaw.filter((p) => getDistressSignals(p).isDistressed);
+          // Sort: underwater first, then by LTV descending
+          matches.sort((a, b) => {
+            const sa = getDistressSignals(a);
+            const sb = getDistressSignals(b);
+            if (sa.isUnderwater !== sb.isUnderwater) return sa.isUnderwater ? -1 : 1;
+            return (sb.ltvPct ?? 0) - (sa.ltvPct ?? 0);
+          });
+          setResults(matches);
+          setTotalCount(matches.length);
+          setInvestorGroups([]);
+        } else {
+          // Investor mode: group across all fetched pages
+          const groups = groupByOwner(allRaw);
+          setInvestorGroups(groups);
+          setTotalCount(groups.length);
+          setResults(allRaw);
+        }
+
         setHasSearched(true);
         return;
       }
 
-      // Standard fetch for non-filtered modes
+      // Standard fetch for non-filtered modes (equity, radius)
       const data = await fetchPage(pageNum);
-      let properties: AttomProperty[] = data.property || [];
+      const properties: AttomProperty[] = data.property || [];
 
-      // For investor mode, group by owner
-      if (mode === "investor") {
-        const groups = groupByOwner(properties);
-        setInvestorGroups(groups);
-        setTotalCount(groups.length);
-      } else {
-        setInvestorGroups([]);
-      }
-
+      setInvestorGroups([]);
       setResults(properties);
-      if (mode !== "investor") {
-        setTotalCount(data.status?.total || properties.length);
-      }
+      setTotalCount(data.status?.total || properties.length);
       setHasSearched(true);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Search failed");
@@ -281,8 +333,8 @@ export default function Prospecting() {
     },
     {
       id: "foreclosure",
-      label: "Pre-Foreclosure",
-      desc: "Properties entering the foreclosure process — NOD, auction scheduling, distressed owners who need help.",
+      label: "Distressed / Pre-Foreclosure",
+      desc: "Underwater mortgages, high LTV, and assessment drops — owners under financial pressure who may need to sell.",
       color: "#dc2626",
     },
     {
@@ -315,6 +367,7 @@ export default function Prospecting() {
     const baths = prop.building?.rooms?.bathsFull ?? prop.building?.rooms?.bathsTotal;
     const yearBuilt = prop.building?.summary?.yearBuilt;
     const taxAmt = prop.assessment?.tax?.taxAmt;
+    const distress = mode === "foreclosure" ? getDistressSignals(prop) : null;
 
     return (
       <div
@@ -359,38 +412,50 @@ export default function Prospecting() {
               </div>
             )}
 
-            {/* Foreclosure-specific info */}
-            {mode === "foreclosure" && prop.foreclosure && (
+            {/* Distressed / Pre-Foreclosure info */}
+            {mode === "foreclosure" && distress && distress.isDistressed && (
               <div style={{ marginTop: 6, padding: "6px 10px", background: "#fef2f2", borderRadius: 6, fontSize: 12 }}>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
-                  {prop.foreclosure.actionType && (
-                    <span><strong>Type:</strong> {prop.foreclosure.actionType}</span>
-                  )}
-                  {prop.foreclosure.filingDate && (
-                    <span><strong>Filed:</strong> {prop.foreclosure.filingDate}</span>
-                  )}
-                  {prop.foreclosure.auctionDate && (
-                    <span style={{ color: "#dc2626", fontWeight: 600 }}>
-                      <strong>Auction:</strong> {prop.foreclosure.auctionDate}
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 2 }}>
+                  {distress.isUnderwater && (
+                    <span style={{ padding: "1px 8px", background: "#dc2626", color: "#fff", borderRadius: 10, fontSize: 11, fontWeight: 700 }}>
+                      Underwater
                     </span>
                   )}
-                  {prop.foreclosure.auctionLocation && (
-                    <span><strong>Location:</strong> {prop.foreclosure.auctionLocation}</span>
+                  {distress.highLtv && !distress.isUnderwater && (
+                    <span style={{ padding: "1px 8px", background: "#f59e0b", color: "#fff", borderRadius: 10, fontSize: 11, fontWeight: 700 }}>
+                      High LTV
+                    </span>
+                  )}
+                  {distress.assessmentDrop && (
+                    <span style={{ padding: "1px 8px", background: "#7c3aed", color: "#fff", borderRadius: 10, fontSize: 11, fontWeight: 700 }}>
+                      Assessment Drop
+                    </span>
+                  )}
+                  {absentee && (
+                    <span style={{ padding: "1px 8px", background: "#fef3c7", color: "#92400e", borderRadius: 10, fontSize: 11, fontWeight: 600 }}>
+                      Absentee
+                    </span>
                   )}
                 </div>
-                {(prop.foreclosure.defaultAmount || prop.foreclosure.originalLoanAmount) && (
-                  <div style={{ marginTop: 4, display: "flex", gap: 12 }}>
-                    {prop.foreclosure.defaultAmount && (
-                      <span><strong>Default:</strong> {fmt(prop.foreclosure.defaultAmount)}</span>
-                    )}
-                    {prop.foreclosure.originalLoanAmount && (
-                      <span><strong>Orig. Loan:</strong> {fmt(prop.foreclosure.originalLoanAmount)}</span>
-                    )}
-                  </div>
-                )}
-                {avmVal != null && prop.foreclosure.defaultAmount != null && avmVal > prop.foreclosure.defaultAmount && (
-                  <div style={{ marginTop: 4, color: "#059669", fontWeight: 600, fontSize: 11 }}>
-                    Potential equity: {fmt(avmVal - prop.foreclosure.defaultAmount)} (AVM exceeds default)
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 4 }}>
+                  {distress.mortgageAmount != null && (
+                    <span><strong>Mortgage:</strong> {fmt(distress.mortgageAmount)}</span>
+                  )}
+                  {distress.avmValue != null && (
+                    <span><strong>AVM:</strong> {fmt(distress.avmValue)}</span>
+                  )}
+                  {distress.ltvPct != null && (
+                    <span style={{ color: distress.ltvPct >= 100 ? "#dc2626" : distress.ltvPct >= 80 ? "#d97706" : "#374151", fontWeight: 600 }}>
+                      <strong>LTV:</strong> {distress.ltvPct.toFixed(0)}%
+                    </span>
+                  )}
+                  {prop.mortgage?.lender?.fullName && (
+                    <span><strong>Lender:</strong> {prop.mortgage.lender.fullName}</span>
+                  )}
+                </div>
+                {distress.isUnderwater && distress.mortgageAmount != null && distress.avmValue != null && (
+                  <div style={{ marginTop: 4, color: "#dc2626", fontWeight: 600, fontSize: 11 }}>
+                    Negative equity: {fmt(distress.mortgageAmount - distress.avmValue)} (mortgage exceeds AVM)
                   </div>
                 )}
               </div>
@@ -427,10 +492,18 @@ export default function Prospecting() {
                 )}
               </div>
             )}
-            {mode === "foreclosure" && avmVal != null && (
+            {mode === "foreclosure" && distress?.ltvPct != null && (
               <div>
-                <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>AVM</div>
-                <div style={{ fontWeight: 700, fontSize: 15, color: "#059669" }}>{fmt(avmVal)}</div>
+                <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>LTV</div>
+                <div style={{ fontWeight: 700, fontSize: 15, color: distress.ltvPct >= 100 ? "#dc2626" : distress.ltvPct >= 80 ? "#d97706" : "#059669" }}>
+                  {distress.ltvPct.toFixed(0)}%
+                </div>
+              </div>
+            )}
+            {mode === "foreclosure" && distress?.mortgageAmount != null && (
+              <div>
+                <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>Mortgage</div>
+                <div style={{ fontWeight: 600, fontSize: 14 }}>{fmt(distress.mortgageAmount)}</div>
               </div>
             )}
             {(mode === "absentee" || mode === "equity") && avmVal != null && (
@@ -744,14 +817,14 @@ export default function Prospecting() {
           <div style={{ fontWeight: 600, marginBottom: 4 }}>
             {mode === "absentee" && "Find Absentee Owners"}
             {mode === "equity" && "Find High-Equity / Likely Sellers"}
-            {mode === "foreclosure" && "Find Pre-Foreclosure Properties"}
+            {mode === "foreclosure" && "Find Distressed Properties"}
             {mode === "radius" && "Just Sold Radius Farming"}
             {mode === "investor" && "Find Investor Portfolios"}
           </div>
           <div style={{ fontSize: 13, maxWidth: 500, margin: "0 auto" }}>
             {mode === "absentee" && "Search for non-owner-occupied properties by zip code. These owners are managing properties remotely and may be motivated to sell."}
             {mode === "equity" && "Search for properties owned 15+ years with significant built-up equity. Ideal for \"unlock your equity\" listing campaigns."}
-            {mode === "foreclosure" && "Find properties entering the foreclosure process — from Notice of Default through auction scheduling. Reach owners before the auction date."}
+            {mode === "foreclosure" && "Find properties with underwater mortgages, high loan-to-value ratios, or declining assessments. These owners may be under financial pressure and open to selling."}
             {mode === "radius" && "Find recent sales in a zip code. Use the data to build \"Your Neighbor's Home Just Sold for $X\" prospecting campaigns with real comparable data."}
             {mode === "investor" && "Identify multi-property owners in a zip code. Find \"tired landlords\" with high tax burdens and aging properties who may want to sell."}
           </div>
