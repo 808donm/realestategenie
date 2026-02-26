@@ -1,4 +1,5 @@
 import { supabaseServer } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import GHLIntegrationCard from "./ghl-card";
 import QBOIntegrationCard from "./qbo-card";
 import PayPalOAuthCard from "./paypal-card-oauth";
@@ -6,6 +7,7 @@ import StripeOAuthCard from "./stripe-card-oauth";
 import PayPalIntegrationCard from "./paypal-card";
 import StripeIntegrationCard from "./stripe-card";
 import TrestleIntegrationCard from "./trestle-card";
+import AttomIntegrationCard from "./attom-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import IntegrationsNotifications from "./notifications";
 
@@ -40,6 +42,15 @@ export default async function IntegrationsPage() {
   const stripeIntegration = integrations?.find((i) => i.provider === "stripe");
   const paypalIntegration = integrations?.find((i) => i.provider === "paypal");
   const trestleIntegration = integrations?.find((i) => i.provider === "trestle");
+
+  // ATTOM is platform-wide — find any connected ATTOM integration across all agents
+  const { data: attomIntegrations } = await supabaseAdmin
+    .from("integrations")
+    .select("*")
+    .eq("provider", "attom")
+    .limit(1);
+
+  const attomIntegration = attomIntegrations?.[0] || null;
 
   // Fetch new OAuth-based connections (for regular agents)
   const { data: connections } = await supabase
@@ -91,8 +102,11 @@ export default async function IntegrationsPage() {
         )}
       </div>
 
-      {/* Trestle MLS Integration */}
-      <TrestleIntegrationCard integration={trestleIntegration || null} />
+      {/* MLS & Property Data Integrations */}
+      <div className="grid gap-6 md:grid-cols-2">
+        <TrestleIntegrationCard integration={trestleIntegration || null} />
+        <AttomIntegrationCard integration={attomIntegration} isPlatformAdmin={isPlatformAdmin} />
+      </div>
 
       {/* Coming Soon Integrations */}
       <div className="grid gap-6 md:grid-cols-2">
