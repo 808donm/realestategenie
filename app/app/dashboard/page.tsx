@@ -3,7 +3,7 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import SignOutButton from "./signout-button";
-import { Users, Home, GitBranch, BarChart3, Calculator, Building2, Contact } from "lucide-react";
+import { Users, Home, GitBranch, BarChart3, Calculator, Building2, Contact, Search } from "lucide-react";
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -15,6 +15,7 @@ const dashboardCards = [
   { title: "Reports", href: "/app/reports", icon: BarChart3 },
   { title: "Calculators", href: "/app/analyzers", icon: Calculator },
   { title: "MLS", href: "/app/mls", icon: Building2 },
+  { title: "Prospecting", href: "/app/prospecting", icon: Search },
   { title: "Contacts", href: "/app/contacts", icon: Contact },
 ];
 

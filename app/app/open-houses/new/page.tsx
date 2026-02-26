@@ -60,24 +60,56 @@ export default async function NewOpenHousePage() {
 
     console.log("Creating open house with agent_id:", user.id);
 
-    // Geocode the address to get coordinates
-    const geoResult = await geocodeAddress(address);
+    // Check if MLS fields were provided (from MLS lookup)
+    const mlsLatitude = formData.get("latitude");
+    const mlsLongitude = formData.get("longitude");
+    const hasMlsCoords = mlsLatitude && mlsLongitude;
+
+    // Only geocode if MLS didn't provide coordinates
+    const geoResult = hasMlsCoords ? null : await geocodeAddress(address);
+
+    // Extract optional MLS fields
+    const beds = formData.get("beds") ? Number(formData.get("beds")) : null;
+    const baths = formData.get("baths") ? Number(formData.get("baths")) : null;
+    const sqft = formData.get("sqft") ? Number(formData.get("sqft")) : null;
+    const price = formData.get("price") ? Number(formData.get("price")) : null;
+    const listing_description = formData.get("listing_description") ? String(formData.get("listing_description")) : null;
+    const key_features_raw = formData.get("key_features") ? String(formData.get("key_features")) : null;
+    const key_features = key_features_raw ? JSON.parse(key_features_raw) : null;
+    const property_photo_url = formData.get("property_photo_url") ? String(formData.get("property_photo_url")) : null;
+    const mls_listing_key = formData.get("mls_listing_key") ? String(formData.get("mls_listing_key")) : null;
+    const mls_listing_id = formData.get("mls_listing_id") ? String(formData.get("mls_listing_id")) : null;
+    const mls_source = formData.get("mls_source") ? String(formData.get("mls_source")) : null;
+
+    const insertData: Record<string, any> = {
+      agent_id: user.id,
+      address,
+      start_at,
+      end_at,
+      status: "draft",
+      pdf_download_enabled: false,
+      details_page_enabled: true,
+      latitude: hasMlsCoords ? Number(mlsLatitude) : (geoResult?.latitude ?? null),
+      longitude: hasMlsCoords ? Number(mlsLongitude) : (geoResult?.longitude ?? null),
+      event_type: "sales",
+      pm_property_id: null,
+    };
+
+    // Add MLS-sourced fields if present
+    if (beds != null) insertData.beds = beds;
+    if (baths != null) insertData.baths = baths;
+    if (sqft != null) insertData.sqft = sqft;
+    if (price != null) insertData.price = price;
+    if (listing_description) insertData.listing_description = listing_description;
+    if (key_features) insertData.key_features = key_features;
+    if (property_photo_url) insertData.property_photo_url = property_photo_url;
+    if (mls_listing_key) insertData.mls_listing_key = mls_listing_key;
+    if (mls_listing_id) insertData.mls_listing_id = mls_listing_id;
+    if (mls_source) insertData.mls_source = mls_source;
 
     const { data, error } = await supabase
       .from("open_house_events")
-      .insert({
-        agent_id: user.id,
-        address,
-        start_at,
-        end_at,
-        status: "draft",
-        pdf_download_enabled: false,
-        details_page_enabled: true,
-        latitude: geoResult?.latitude ?? null,
-        longitude: geoResult?.longitude ?? null,
-        event_type: "sales",
-        pm_property_id: null,
-      })
+      .insert(insertData)
       .select("id")
       .single();
 

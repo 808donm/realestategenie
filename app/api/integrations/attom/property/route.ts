@@ -187,6 +187,11 @@ export async function GET(request: NextRequest) {
         result = await client.getNeighborhoodBoundary(params);
         break;
 
+      // ── Sale Snapshot (recent sales in area) ─────────────────────────
+      case "salesnapshot":
+        result = await client.getSaleSnapshot(params);
+        break;
+
       // ── Sales Trends & Analytics ───────────────────────────────────────
       case "salestrend":
         result = await client.getSalesTrend(params);
