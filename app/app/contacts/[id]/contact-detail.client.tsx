@@ -50,7 +50,13 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
-  const [activeTab, setActiveTab] = useState<"details" | "notes" | "conversations">("details");
+  const [activeTab, setActiveTab] = useState<"details" | "notes" | "conversations" | "property">("details");
+
+  // ATTOM property enrichment state
+  const [propertyData, setPropertyData] = useState<Record<string, any> | null>(null);
+  const [propertyLoading, setPropertyLoading] = useState(false);
+  const [propertyError, setPropertyError] = useState("");
+  const [propertySearched, setPropertySearched] = useState(false);
 
   useEffect(() => {
     async function fetchContact() {
@@ -130,10 +136,37 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
     .filter(Boolean)
     .join(", ");
 
+  const hasAddress = !!(contact.address1 && (contact.city || contact.postalCode));
+
+  const lookupProperty = async () => {
+    if (!contact.address1) return;
+    setPropertyLoading(true);
+    setPropertyError("");
+    try {
+      const addrParts = [contact.address1, contact.city, contact.state, contact.postalCode].filter(Boolean);
+      const params = new URLSearchParams();
+      params.set("endpoint", "expanded");
+      params.set("address", addrParts.join(", "));
+      const res = await fetch(`/api/integrations/attom/property?${params.toString()}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Property lookup failed");
+      const prop = data.property?.[0];
+      if (!prop) throw new Error("No property found at this address");
+      setPropertyData(prop);
+      setPropertySearched(true);
+    } catch (err: unknown) {
+      setPropertyError(err instanceof Error ? err.message : "Lookup failed");
+      setPropertySearched(true);
+    } finally {
+      setPropertyLoading(false);
+    }
+  };
+
   const tabs: { key: typeof activeTab; label: string; count?: number }[] = [
     { key: "details", label: "Details" },
     { key: "notes", label: "Notes", count: notes.length },
     { key: "conversations", label: "Messages", count: conversations.length },
+    { key: "property", label: "Property" },
   ];
 
   return (
@@ -327,6 +360,142 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
           )}
         </div>
       )}
+
+      {/* Property Tab */}
+      {activeTab === "property" && (
+        <div>
+          {!hasAddress && !propertySearched && (
+            <div style={{ padding: 32, textAlign: "center", color: "#6b7280", background: "#f9fafb", borderRadius: 12 }}>
+              <div style={{ marginBottom: 8, fontWeight: 600 }}>No address on file</div>
+              <div style={{ fontSize: 13 }}>Add an address to this contact in GoHighLevel to look up their property data.</div>
+            </div>
+          )}
+
+          {hasAddress && !propertySearched && !propertyLoading && (
+            <div style={{ padding: 32, textAlign: "center", background: "#f9fafb", borderRadius: 12 }}>
+              <div style={{ fontSize: 14, color: "#374151", marginBottom: 4, fontWeight: 600 }}>
+                Look up property data for this contact
+              </div>
+              <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 16 }}>
+                {location}
+              </div>
+              <button
+                onClick={lookupProperty}
+                style={{
+                  padding: "10px 24px", background: "#3b82f6", color: "#fff", borderRadius: 8, border: "none",
+                  fontWeight: 600, fontSize: 14, cursor: "pointer",
+                }}
+              >
+                Look Up Property
+              </button>
+            </div>
+          )}
+
+          {propertyLoading && (
+            <div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>Looking up property data...</div>
+          )}
+
+          {propertyError && (
+            <div style={{ padding: 16, background: "#fee2e2", color: "#dc2626", borderRadius: 8, marginBottom: 16, fontSize: 14 }}>
+              {propertyError}
+              {hasAddress && (
+                <button
+                  onClick={lookupProperty}
+                  style={{ marginLeft: 12, padding: "4px 12px", background: "#dc2626", color: "#fff", borderRadius: 6, border: "none", fontSize: 12, cursor: "pointer" }}
+                >
+                  Retry
+                </button>
+              )}
+            </div>
+          )}
+
+          {propertyData && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {/* Value Cards */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+                {propertyData.avm?.amount?.value != null && (
+                  <div style={{ padding: 16, background: "#ecfdf5", borderRadius: 10, textAlign: "center" }}>
+                    <div style={{ fontSize: 11, color: "#059669", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>AVM Value</div>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: "#059669" }}>${propertyData.avm.amount.value.toLocaleString()}</div>
+                    {propertyData.avm.amount.low != null && propertyData.avm.amount.high != null && (
+                      <div style={{ fontSize: 11, color: "#6b7280" }}>${propertyData.avm.amount.low.toLocaleString()} – ${propertyData.avm.amount.high.toLocaleString()}</div>
+                    )}
+                  </div>
+                )}
+                {(propertyData.sale?.amount?.saleAmt || propertyData.sale?.amount?.salePrice) != null && (
+                  <div style={{ padding: 16, background: "#eff6ff", borderRadius: 10, textAlign: "center" }}>
+                    <div style={{ fontSize: 11, color: "#3b82f6", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Last Sale</div>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: "#3b82f6" }}>
+                      ${(propertyData.sale.amount.saleAmt || propertyData.sale.amount.salePrice).toLocaleString()}
+                    </div>
+                    {propertyData.sale.amount.saleTransDate && (
+                      <div style={{ fontSize: 11, color: "#6b7280" }}>{propertyData.sale.amount.saleTransDate}</div>
+                    )}
+                  </div>
+                )}
+                {propertyData.assessment?.assessed?.assdTtlValue != null && (
+                  <div style={{ padding: 16, background: "#f5f3ff", borderRadius: 10, textAlign: "center" }}>
+                    <div style={{ fontSize: 11, color: "#7c3aed", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Assessed Value</div>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: "#7c3aed" }}>${propertyData.assessment.assessed.assdTtlValue.toLocaleString()}</div>
+                    {propertyData.assessment.tax?.taxAmt != null && (
+                      <div style={{ fontSize: 11, color: "#6b7280" }}>Tax: ${propertyData.assessment.tax.taxAmt.toLocaleString()}/yr</div>
+                    )}
+                  </div>
+                )}
+                {propertyData.avm?.amount?.value != null && (propertyData.sale?.amount?.saleAmt || propertyData.sale?.amount?.salePrice) != null && (
+                  <div style={{ padding: 16, background: "#fefce8", borderRadius: 10, textAlign: "center" }}>
+                    <div style={{ fontSize: 11, color: "#a16207", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Est. Equity</div>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: "#a16207" }}>
+                      ${(propertyData.avm.amount.value - (propertyData.sale.amount.saleAmt || propertyData.sale.amount.salePrice)).toLocaleString()}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Property Details */}
+              <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20 }}>
+                <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: "#374151" }}>Property Details</h3>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "8px 20px" }}>
+                  <PropertyField label="Address" value={propertyData.address?.oneLine} />
+                  <PropertyField label="Type" value={propertyData.summary?.propertyType || propertyData.summary?.propType} />
+                  <PropertyField label="Beds" value={propertyData.building?.rooms?.beds} />
+                  <PropertyField label="Baths" value={propertyData.building?.rooms?.bathsFull ?? propertyData.building?.rooms?.bathsTotal} />
+                  <PropertyField label="Sqft" value={propertyData.building?.size?.livingSize || propertyData.building?.size?.universalSize ? `${(propertyData.building.size.livingSize || propertyData.building.size.universalSize).toLocaleString()}` : undefined} />
+                  <PropertyField label="Year Built" value={propertyData.building?.summary?.yearBuilt || propertyData.summary?.yearBuilt} />
+                  <PropertyField label="Lot Size" value={propertyData.lot?.lotSize2 ? `${propertyData.lot.lotSize2.toFixed(2)} acres` : propertyData.lot?.lotSize1 ? `${propertyData.lot.lotSize1.toLocaleString()} sqft` : undefined} />
+                  <PropertyField label="Stories" value={propertyData.building?.summary?.storyDesc || propertyData.building?.summary?.levels} />
+                </div>
+              </div>
+
+              {/* Ownership */}
+              {propertyData.owner && (
+                <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20 }}>
+                  <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: "#374151" }}>Ownership</h3>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "8px 20px" }}>
+                    <PropertyField label="Owner" value={propertyData.owner.owner1?.fullName} />
+                    {propertyData.owner.owner2?.fullName && <PropertyField label="Owner 2" value={propertyData.owner.owner2.fullName} />}
+                    <PropertyField label="Absentee" value={propertyData.owner.absenteeOwnerStatus || (propertyData.summary?.absenteeInd === "O" ? "Yes" : propertyData.summary?.absenteeInd === "S" ? "No" : undefined)} />
+                    <PropertyField label="Mailing Address" value={propertyData.owner.mailingAddressOneLine} />
+                  </div>
+                </div>
+              )}
+
+              {/* Mortgage */}
+              {propertyData.mortgage?.amount != null && (
+                <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20 }}>
+                  <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: "#374151" }}>Mortgage</h3>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "8px 20px" }}>
+                    <PropertyField label="Loan Amount" value={`$${propertyData.mortgage.amount.toLocaleString()}`} />
+                    <PropertyField label="Lender" value={propertyData.mortgage.lender?.fullName} />
+                    <PropertyField label="Loan Type" value={propertyData.mortgage.loanType} />
+                    <PropertyField label="Term" value={propertyData.mortgage.term} />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -341,6 +510,16 @@ function InfoField({ label, value, href }: { label: string; value?: string; href
       ) : (
         <div style={{ fontSize: 14, color: "#111827" }}>{value}</div>
       )}
+    </div>
+  );
+}
+
+function PropertyField({ label, value }: { label: string; value?: string | number | null }) {
+  if (value == null || value === "") return null;
+  return (
+    <div>
+      <div style={{ fontSize: 11, fontWeight: 500, color: "#9ca3af", textTransform: "uppercase", letterSpacing: 0.5 }}>{label}</div>
+      <div style={{ fontSize: 14, color: "#111827", fontWeight: 500 }}>{value}</div>
     </div>
   );
 }
