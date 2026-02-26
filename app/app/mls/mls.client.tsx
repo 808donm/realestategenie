@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Fragment } from "react";
 import { useSearchParams } from "next/navigation";
 
 interface TrestleMedia {
@@ -288,6 +288,14 @@ export default function MLSClient() {
   const [permitsLoading, setPermitsLoading] = useState(false);
   const [salesTrendData, setSalesTrendData] = useState<Record<string, any> | null>(null);
   const [salesTrendLoading, setSalesTrendLoading] = useState(false);
+  const [salesHistoryData, setSalesHistoryData] = useState<Record<string, any> | null>(null);
+  const [salesHistoryLoading, setSalesHistoryLoading] = useState(false);
+  const [salesCompsData, setSalesCompsData] = useState<Record<string, any> | null>(null);
+  const [salesCompsLoading, setSalesCompsLoading] = useState(false);
+  const [poiData, setPoiData] = useState<Record<string, any> | null>(null);
+  const [poiLoading, setPoiLoading] = useState(false);
+  const [assessHistoryData, setAssessHistoryData] = useState<Record<string, any> | null>(null);
+  const [assessHistoryLoading, setAssessHistoryLoading] = useState(false);
 
   // Send to contact state
   const [showSendModal, setShowSendModal] = useState(false);
@@ -310,6 +318,10 @@ export default function MLSClient() {
       setRentalAvmData(null);
       setPermitsData(null);
       setSalesTrendData(null);
+      setSalesHistoryData(null);
+      setSalesCompsData(null);
+      setPoiData(null);
+      setAssessHistoryData(null);
       return;
     }
 
@@ -478,6 +490,47 @@ export default function MLSClient() {
         .catch(() => {})
         .finally(() => { if (!cancelled) setSalesTrendLoading(false); });
     }
+
+    // Fetch sales history (all past transactions for this property)
+    setSalesHistoryLoading(true);
+    setSalesHistoryData(null);
+    fetch(`/api/integrations/attom/property?${buildParams("saleshistoryexpanded").toString()}`)
+      .then((r) => r.json())
+      .then((data) => { if (!cancelled) setSalesHistoryData(data); })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setSalesHistoryLoading(false); });
+
+    // Fetch nearby sales comps (radius search by lat/lng or zip)
+    setSalesCompsLoading(true);
+    setSalesCompsData(null);
+    const compsParams = new URLSearchParams();
+    compsParams.set("endpoint", "sale");
+    if (zip) compsParams.set("postalcode", zip);
+    compsParams.set("pagesize", "10");
+    compsParams.set("orderby", "distance");
+    fetch(`/api/integrations/attom/property?${compsParams.toString()}`)
+      .then((r) => r.json())
+      .then((data) => { if (!cancelled) setSalesCompsData(data); })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setSalesCompsLoading(false); });
+
+    // Fetch POI / nearby amenities
+    setPoiLoading(true);
+    setPoiData(null);
+    fetch(`/api/integrations/attom/property?${buildParams("poi").toString()}`)
+      .then((r) => r.json())
+      .then((data) => { if (!cancelled) setPoiData(data); })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setPoiLoading(false); });
+
+    // Fetch assessment history
+    setAssessHistoryLoading(true);
+    setAssessHistoryData(null);
+    fetch(`/api/integrations/attom/property?${buildParams("assessmenthistory").toString()}`)
+      .then((r) => r.json())
+      .then((data) => { if (!cancelled) setAssessHistoryData(data); })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setAssessHistoryLoading(false); });
 
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -2676,6 +2729,11 @@ export default function MLSClient() {
                           {attomData.avm.amount.low != null && attomData.avm.amount.high != null && (
                             <div style={{ fontSize: 10, color: "#6b7280" }}>${attomData.avm.amount.low.toLocaleString()} – ${attomData.avm.amount.high.toLocaleString()}</div>
                           )}
+                          {attomData.avm.amount.scr != null && (
+                            <div style={{ fontSize: 10, marginTop: 2, color: attomData.avm.amount.scr >= 70 ? "#059669" : attomData.avm.amount.scr >= 40 ? "#d97706" : "#dc2626", fontWeight: 600 }}>
+                              Confidence: {attomData.avm.amount.scr}/100
+                            </div>
+                          )}
                         </div>
                       )}
                       {(attomData.sale?.amount?.saleAmt || attomData.sale?.amount?.salePrice) != null && (
@@ -2764,6 +2822,87 @@ export default function MLSClient() {
                         </>
                       )}
                     </div>
+
+                    {/* Mortgage Maturity / ARM Reset Warning */}
+                    {attomData.mortgage && (() => {
+                      const mtg = attomData.mortgage;
+                      const isArm = mtg.interestRateType?.toLowerCase()?.includes("adjust") || mtg.interestRateType?.toLowerCase()?.includes("arm") || mtg.interestRateType?.toLowerCase()?.includes("variable");
+                      const dueDate = mtg.dueDate;
+                      const dueSoon = dueDate && (() => {
+                        const due = new Date(dueDate);
+                        const now = new Date();
+                        const diffYears = (due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24 * 365);
+                        return diffYears > 0 && diffYears <= 3;
+                      })();
+
+                      if (!isArm && !dueSoon) return null;
+
+                      return (
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                          {isArm && (
+                            <div style={{ padding: "4px 10px", background: "#fef3c7", borderRadius: 6, fontSize: 11, fontWeight: 600, color: "#92400e" }}>
+                              ARM / Adjustable Rate
+                            </div>
+                          )}
+                          {dueSoon && dueDate && (
+                            <div style={{ padding: "4px 10px", background: "#fee2e2", borderRadius: 6, fontSize: 11, fontWeight: 600, color: "#dc2626" }}>
+                              Mortgage Due: {dueDate}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+
+                    {/* Construction & Building Details */}
+                    {(attomData.building || attomData.lot || attomData.utilities) && (() => {
+                      const b = attomData.building;
+                      const lot = attomData.lot;
+                      const util = attomData.utilities;
+                      const summary = b?.summary;
+                      const construction = b?.construction;
+                      const size = b?.size;
+
+                      const details = [
+                        { label: "Property Type", value: attomData.summary?.propType || attomData.summary?.propertyType },
+                        { label: "Year Built", value: summary?.yearBuilt },
+                        { label: "Effective Year", value: summary?.yearBuiltEffective && summary.yearBuiltEffective !== summary?.yearBuilt ? summary.yearBuiltEffective : null },
+                        { label: "Living Sqft", value: size?.livingSize ? `${Number(size.livingSize).toLocaleString()} sqft` : null },
+                        { label: "Total Sqft", value: size?.universalSize && size.universalSize !== size?.livingSize ? `${Number(size.universalSize).toLocaleString()} sqft` : null },
+                        { label: "Lot Size", value: lot?.lotSize2 ? `${Number(lot.lotSize2).toLocaleString()} sqft` : lot?.lotSize1 ? `${lot.lotSize1} acres` : null },
+                        { label: "Stories", value: summary?.levels || summary?.storyDesc },
+                        { label: "Style", value: summary?.archStyle },
+                        { label: "Quality", value: summary?.quality },
+                        { label: "Construction", value: construction?.constructionType },
+                        { label: "Foundation", value: construction?.foundationType },
+                        { label: "Roof", value: [construction?.roofCover, construction?.roofShape].filter(Boolean).join(" / ") || null },
+                        { label: "Walls", value: construction?.wallType },
+                        { label: "Heating", value: [util?.heatingType, util?.heatingFuel].filter(Boolean).join(" / ") || null },
+                        { label: "Cooling", value: util?.coolingType },
+                        { label: "Sewer", value: util?.sewerType },
+                        { label: "Water", value: util?.waterType },
+                        { label: "Pool", value: lot?.poolInd === "Y" ? (lot?.poolType || "Yes") : null },
+                        { label: "Zoning", value: lot?.siteZoningIdent },
+                        { label: "Garage", value: b?.parking?.garageType || (b?.parking?.prkgSpaces ? `${b.parking.prkgSpaces} spaces` : null) },
+                        { label: "Fireplace", value: b?.interior?.fplcCount ? `${b.interior.fplcCount}${b.interior.fplcType ? ` (${b.interior.fplcType})` : ""}` : null },
+                        { label: "Basement", value: b?.interior?.bsmtType ? `${b.interior.bsmtType}${b.interior.bsmtSize ? ` (${b.interior.bsmtSize} sqft)` : ""}` : null },
+                      ].filter((d) => d.value != null && d.value !== "" && d.value !== "0");
+
+                      if (details.length === 0) return null;
+
+                      return (
+                        <div>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6 }}>Construction &amp; Building</div>
+                          <div style={{ display: "grid", gridTemplateColumns: "130px 1fr", gap: "4px 12px", fontSize: 12, lineHeight: 1.5 }}>
+                            {details.map((d) => (
+                              <Fragment key={d.label}>
+                                <span style={{ fontWeight: 600, color: "#6b7280" }}>{d.label}:</span>
+                                <span style={{ color: "#374151" }}>{d.value}</span>
+                              </Fragment>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
               </div>
@@ -3180,6 +3319,295 @@ export default function MLSClient() {
                   <div style={{ padding: 10, background: "#f9fafb", borderRadius: 8, fontSize: 13, color: "#9ca3af" }}>No building permits on record</div>
                 )}
               </div>
+
+              {/* Sales History Timeline */}
+              <div style={{ marginBottom: 20 }}>
+                <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 10, color: "#374151", display: "flex", alignItems: "center", gap: 8 }}>
+                  Sales History
+                  {salesHistoryLoading && <span style={{ fontSize: 12, color: "#9ca3af", fontWeight: 400 }}>Loading...</span>}
+                </h4>
+                {salesHistoryData && (() => {
+                  const props = salesHistoryData?.property || [];
+                  // Each property entry can have sale info; also check for salesHistory array
+                  const sales: any[] = [];
+                  for (const p of props) {
+                    if (p.saleHistory && Array.isArray(p.saleHistory)) {
+                      sales.push(...p.saleHistory);
+                    } else if (p.sale?.amount) {
+                      sales.push(p.sale);
+                    }
+                  }
+
+                  if (sales.length === 0) return (
+                    <div style={{ padding: 10, background: "#f9fafb", borderRadius: 8, fontSize: 13, color: "#9ca3af" }}>No sales history on record</div>
+                  );
+
+                  return (
+                    <div style={{ position: "relative", paddingLeft: 16 }}>
+                      {/* Timeline line */}
+                      <div style={{ position: "absolute", left: 5, top: 4, bottom: 4, width: 2, background: "#e5e7eb" }} />
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        {sales.slice(0, 8).map((s: any, i: number) => {
+                          const amt = s.amount?.saleAmt || s.amount?.salePrice || s.saleAmt || s.salePrice;
+                          const date = s.amount?.saleTransDate || s.amount?.saleRecDate || s.saleTransDate || s.saleRecDate;
+                          const docType = s.amount?.saleDocType || s.saleDocType;
+                          const transType = s.amount?.saleTransType || s.saleTransType;
+                          return (
+                            <div key={i} style={{ position: "relative", paddingLeft: 14 }}>
+                              <div style={{ position: "absolute", left: -12, top: 6, width: 8, height: 8, borderRadius: "50%", background: i === 0 ? "#3b82f6" : "#d1d5db" }} />
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", fontSize: 12 }}>
+                                <div>
+                                  <span style={{ fontWeight: 600, color: "#374151" }}>{date || "Unknown date"}</span>
+                                  {(docType || transType) && (
+                                    <span style={{ color: "#9ca3af", marginLeft: 6, fontSize: 11 }}>{docType || transType}</span>
+                                  )}
+                                </div>
+                                {amt != null && (
+                                  <span style={{ fontWeight: 700, color: "#3b82f6", whiteSpace: "nowrap" }}>${Number(amt).toLocaleString()}</span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
+                {!salesHistoryData && !salesHistoryLoading && (
+                  <div style={{ padding: 10, background: "#f9fafb", borderRadius: 8, fontSize: 13, color: "#9ca3af" }}>No sales history on record</div>
+                )}
+              </div>
+
+              {/* Assessment History */}
+              <div style={{ marginBottom: 20 }}>
+                <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 10, color: "#374151", display: "flex", alignItems: "center", gap: 8 }}>
+                  Assessment History
+                  {assessHistoryLoading && <span style={{ fontSize: 12, color: "#9ca3af", fontWeight: 400 }}>Loading...</span>}
+                </h4>
+                {assessHistoryData && (() => {
+                  const props = assessHistoryData?.property || [];
+                  const assessments: any[] = [];
+                  for (const p of props) {
+                    if (p.assessmentHistory && Array.isArray(p.assessmentHistory)) {
+                      assessments.push(...p.assessmentHistory);
+                    } else if (p.assessment) {
+                      assessments.push(p.assessment);
+                    }
+                  }
+
+                  if (assessments.length === 0) return (
+                    <div style={{ padding: 10, background: "#f9fafb", borderRadius: 8, fontSize: 13, color: "#9ca3af" }}>No assessment history available</div>
+                  );
+
+                  // Sort by tax year descending
+                  const sorted = [...assessments].sort((a, b) => (b.tax?.taxYear || 0) - (a.tax?.taxYear || 0));
+
+                  return (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "60px 1fr 1fr 1fr", gap: 4, fontSize: 10, fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 8px" }}>
+                        <span>Year</span>
+                        <span style={{ textAlign: "right" }}>Assessed</span>
+                        <span style={{ textAlign: "right" }}>Market</span>
+                        <span style={{ textAlign: "right" }}>Tax</span>
+                      </div>
+                      {sorted.slice(0, 6).map((a: any, i: number) => {
+                        const year = a.tax?.taxYear;
+                        const assessed = a.assessed?.assdTtlValue;
+                        const market = a.market?.mktTtlValue;
+                        const tax = a.tax?.taxAmt;
+                        const prevAssessed = sorted[i + 1]?.assessed?.assdTtlValue;
+                        const change = assessed && prevAssessed ? ((assessed - prevAssessed) / prevAssessed * 100) : null;
+
+                        return (
+                          <div key={i} style={{ display: "grid", gridTemplateColumns: "60px 1fr 1fr 1fr", gap: 4, padding: "6px 8px", background: i % 2 === 0 ? "#f9fafb" : "transparent", borderRadius: 4, fontSize: 12 }}>
+                            <span style={{ fontWeight: 600, color: "#374151" }}>{year || "—"}</span>
+                            <span style={{ textAlign: "right", color: "#374151" }}>
+                              {assessed != null ? `$${Number(assessed).toLocaleString()}` : "—"}
+                              {change != null && (
+                                <span style={{ fontSize: 10, marginLeft: 4, color: change >= 0 ? "#16a34a" : "#dc2626" }}>
+                                  {change >= 0 ? "+" : ""}{change.toFixed(1)}%
+                                </span>
+                              )}
+                            </span>
+                            <span style={{ textAlign: "right", color: "#6b7280" }}>{market != null ? `$${Number(market).toLocaleString()}` : "—"}</span>
+                            <span style={{ textAlign: "right", color: "#6b7280" }}>{tax != null ? `$${Number(tax).toLocaleString()}` : "—"}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+                {!assessHistoryData && !assessHistoryLoading && (
+                  <div style={{ padding: 10, background: "#f9fafb", borderRadius: 8, fontSize: 13, color: "#9ca3af" }}>No assessment history available</div>
+                )}
+              </div>
+
+              {/* Nearby Sales Comps */}
+              <div style={{ marginBottom: 20 }}>
+                <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 10, color: "#374151", display: "flex", alignItems: "center", gap: 8 }}>
+                  Nearby Sales (Comps)
+                  {salesCompsLoading && <span style={{ fontSize: 12, color: "#9ca3af", fontWeight: 400 }}>Loading...</span>}
+                </h4>
+                {salesCompsData && (() => {
+                  const props = salesCompsData?.property || [];
+                  if (props.length === 0) return (
+                    <div style={{ padding: 10, background: "#f9fafb", borderRadius: 8, fontSize: 13, color: "#9ca3af" }}>No nearby sales found</div>
+                  );
+
+                  return (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                      {props.slice(0, 6).map((p: any, i: number) => {
+                        const addr = p.address?.oneLine || p.address?.line1 || "Unknown address";
+                        const saleAmt = p.sale?.amount?.saleAmt || p.sale?.amount?.salePrice;
+                        const saleDate = p.sale?.amount?.saleTransDate || p.sale?.amount?.saleRecDate;
+                        const beds = p.building?.rooms?.beds;
+                        const baths = p.building?.rooms?.bathsTotal;
+                        const sqft = p.building?.size?.livingSize || p.building?.size?.universalSize;
+                        const dist = p.location?.distance;
+
+                        return (
+                          <div key={i} style={{ padding: "8px 10px", background: "#f9fafb", borderRadius: 6, fontSize: 12 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                              <span style={{ fontWeight: 600, color: "#374151", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{addr}</span>
+                              {saleAmt != null && (
+                                <span style={{ fontWeight: 700, color: "#3b82f6", marginLeft: 8, whiteSpace: "nowrap" }}>${Number(saleAmt).toLocaleString()}</span>
+                              )}
+                            </div>
+                            <div style={{ color: "#9ca3af", fontSize: 11, marginTop: 2 }}>
+                              {[
+                                saleDate,
+                                beds != null ? `${beds}bd` : null,
+                                baths != null ? `${baths}ba` : null,
+                                sqft != null ? `${Number(sqft).toLocaleString()} sqft` : null,
+                                dist != null ? `${dist} mi` : null,
+                              ].filter(Boolean).join(" · ")}
+                              {sqft && saleAmt ? ` · $${Math.round(saleAmt / sqft)}/sqft` : ""}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+                {!salesCompsData && !salesCompsLoading && (
+                  <div style={{ padding: 10, background: "#f9fafb", borderRadius: 8, fontSize: 13, color: "#9ca3af" }}>No nearby sales found</div>
+                )}
+              </div>
+
+              {/* POI / Nearby Amenities */}
+              <div style={{ marginBottom: 20 }}>
+                <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 10, color: "#374151", display: "flex", alignItems: "center", gap: 8 }}>
+                  Nearby Amenities
+                  {poiLoading && <span style={{ fontSize: 12, color: "#9ca3af", fontWeight: 400 }}>Loading...</span>}
+                </h4>
+                {poiData && (() => {
+                  // POI can come under various shapes
+                  const pois = poiData?.poi || poiData?.POI || poiData?.property?.[0]?.poi || [];
+                  const list = Array.isArray(pois) ? pois : [];
+
+                  if (list.length === 0) return (
+                    <div style={{ padding: 10, background: "#f9fafb", borderRadius: 8, fontSize: 13, color: "#9ca3af" }}>No amenity data available</div>
+                  );
+
+                  // Group by category
+                  const groups: Record<string, any[]> = {};
+                  for (const p of list) {
+                    const cat = p.type || p.businessCategory || p.category || "Other";
+                    if (!groups[cat]) groups[cat] = [];
+                    groups[cat].push(p);
+                  }
+
+                  const categoryColors: Record<string, string> = {
+                    RESTAURANTS: "#ea580c", SHOPPING: "#7c3aed", BANKS: "#059669",
+                    GROCERY: "#16a34a", HEALTHCARE: "#dc2626", EDUCATION: "#3b82f6",
+                    ENTERTAINMENT: "#d946ef", PARKS: "#15803d",
+                  };
+
+                  return (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {Object.entries(groups).slice(0, 6).map(([cat, items]) => (
+                        <div key={cat}>
+                          <div style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: categoryColors[cat.toUpperCase()] || "#6b7280", marginBottom: 3 }}>{cat}</div>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                            {items.slice(0, 4).map((p: any, i: number) => (
+                              <div key={i} style={{ padding: "3px 8px", background: "#f3f4f6", borderRadius: 4, fontSize: 11, color: "#374151" }}>
+                                {p.name || p.businessName || cat}
+                                {p.distance != null && <span style={{ color: "#9ca3af", marginLeft: 4 }}>{p.distance} mi</span>}
+                              </div>
+                            ))}
+                            {items.length > 4 && (
+                              <div style={{ padding: "3px 8px", fontSize: 11, color: "#9ca3af" }}>+{items.length - 4} more</div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+                {!poiData && !poiLoading && (
+                  <div style={{ padding: 10, background: "#f9fafb", borderRadius: 8, fontSize: 13, color: "#9ca3af" }}>No amenity data available</div>
+                )}
+              </div>
+
+              {/* Crime Breakdown */}
+              {neighborhoodData?.community && (() => {
+                const c = neighborhoodData.community?.community?.[0] || neighborhoodData.community?.area?.[0] || neighborhoodData.community;
+                if (!c) return null;
+
+                const crimes = [
+                  { key: "cocrmcyburg", label: "Burglary" },
+                  { key: "cocrmcylarceny", label: "Larceny" },
+                  { key: "cocrmcymvtheft", label: "Motor Vehicle Theft" },
+                  { key: "cocrmcyaslt", label: "Assault" },
+                  { key: "cocrmcyrob", label: "Robbery" },
+                  { key: "cocrmcyrape", label: "Sexual Assault" },
+                  { key: "cocrmcymurder", label: "Murder" },
+                  // Alternative field names
+                  { key: "crimeIndex", label: "Overall Crime" },
+                  { key: "burglaryIndex", label: "Burglary" },
+                  { key: "larcenyIndex", label: "Larceny" },
+                  { key: "assaultIndex", label: "Assault" },
+                  { key: "robberyIndex", label: "Robbery" },
+                  { key: "vehicleTheftIndex", label: "Vehicle Theft" },
+                ].filter((cr) => c[cr.key] != null);
+
+                // Deduplicate by label
+                const seen = new Set<string>();
+                const unique = crimes.filter((cr) => {
+                  if (seen.has(cr.label)) return false;
+                  seen.add(cr.label);
+                  return true;
+                });
+
+                // Need at least 2 specific crime indices to show breakdown (don't just repeat the overall)
+                if (unique.length < 2) return null;
+
+                const getCrimeColor = (score: number) => {
+                  if (score <= 50) return { bg: "#dcfce7", text: "#16a34a" };
+                  if (score <= 100) return { bg: "#fef3c7", text: "#d97706" };
+                  if (score <= 200) return { bg: "#fed7aa", text: "#ea580c" };
+                  return { bg: "#fee2e2", text: "#dc2626" };
+                };
+
+                return (
+                  <div style={{ marginBottom: 20 }}>
+                    <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 10, color: "#374151" }}>Crime Index Breakdown</h4>
+                    <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 6 }}>Index: 100 = national average. Lower is safer.</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 6 }}>
+                      {unique.map((cr) => {
+                        const score = Number(c[cr.key]);
+                        const color = getCrimeColor(score);
+                        return (
+                          <div key={cr.key} style={{ padding: "8px 10px", background: color.bg, borderRadius: 8, textAlign: "center" }}>
+                            <div style={{ fontSize: 10, color: color.text, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>{cr.label}</div>
+                            <div style={{ fontSize: 16, fontWeight: 700, color: color.text }}>{score}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Action Buttons */}
               <div
