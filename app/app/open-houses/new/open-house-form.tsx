@@ -38,6 +38,20 @@ interface MlsLookupResult {
   };
 }
 
+interface AddressCandidate {
+  listingKey: string;
+  listingId: string;
+  address: string;
+  status: string;
+  price: number | null;
+  beds: number | null;
+  baths: number | null;
+  sqft: number | null;
+  photoUrl: string | null;
+}
+
+type SearchMode = "mls" | "address";
+
 export default function OpenHouseForm({
   startDefault,
   endDefault,
@@ -48,56 +62,77 @@ export default function OpenHouseForm({
   const [error, setError] = useState<string | null>(null);
 
   // MLS lookup state
+  const [searchMode, setSearchMode] = useState<SearchMode>("mls");
   const [mlsNumber, setMlsNumber] = useState("");
+  const [addressQuery, setAddressQuery] = useState("");
   const [mlsLoading, setMlsLoading] = useState(false);
   const [mlsError, setMlsError] = useState<string | null>(null);
   const [mlsResult, setMlsResult] = useState<MlsLookupResult | null>(null);
 
+  // Multiple address match candidates
+  const [candidates, setCandidates] = useState<AddressCandidate[]>([]);
+  const [selectingCandidate, setSelectingCandidate] = useState(false);
+
   // Hidden fields populated from MLS
   const [mlsFields, setMlsFields] = useState<Record<string, string>>({});
 
+  const applyMlsResult = (data: MlsLookupResult) => {
+    setMlsResult(data);
+    setCandidates([]);
+    setAddress(data.mappedFields.address || "");
+
+    const fields: Record<string, string> = {};
+    const m = data.mappedFields;
+    if (m.beds != null) fields.beds = String(m.beds);
+    if (m.baths != null) fields.baths = String(m.baths);
+    if (m.sqft != null) fields.sqft = String(m.sqft);
+    if (m.price != null) fields.price = String(m.price);
+    if (m.listing_description) fields.listing_description = m.listing_description;
+    if (m.key_features?.length) fields.key_features = JSON.stringify(m.key_features);
+    if (m.property_photo_url) fields.property_photo_url = m.property_photo_url;
+    if (m.latitude != null) fields.latitude = String(m.latitude);
+    if (m.longitude != null) fields.longitude = String(m.longitude);
+    if (m.mls_listing_key) fields.mls_listing_key = m.mls_listing_key;
+    if (m.mls_listing_id) fields.mls_listing_id = m.mls_listing_id;
+    if (m.mls_source) fields.mls_source = m.mls_source;
+    setMlsFields(fields);
+  };
+
   const handleMlsLookup = async () => {
-    if (!mlsNumber.trim()) {
-      setMlsError("Enter an MLS number.");
+    const query = searchMode === "mls" ? mlsNumber.trim() : addressQuery.trim();
+    if (!query) {
+      setMlsError(searchMode === "mls" ? "Enter an MLS number." : "Enter an address to search.");
       return;
     }
 
     setMlsLoading(true);
     setMlsError(null);
     setMlsResult(null);
+    setCandidates([]);
 
     try {
+      const body = searchMode === "mls"
+        ? { mlsNumber: query }
+        : { address: query };
+
       const res = await fetch("/api/mls/lookup-listing", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mlsNumber: mlsNumber.trim() }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || "Listing not found");
+        throw new Error(data.error || "Not found");
       }
 
-      setMlsResult(data);
-      // Auto-fill the address
-      setAddress(data.mappedFields.address || "");
+      // Multiple matches — show candidates for the user to pick
+      if (data.multiple && data.candidates) {
+        setCandidates(data.candidates);
+        return;
+      }
 
-      // Store all MLS fields as hidden form values
-      const fields: Record<string, string> = {};
-      const m = data.mappedFields;
-      if (m.beds != null) fields.beds = String(m.beds);
-      if (m.baths != null) fields.baths = String(m.baths);
-      if (m.sqft != null) fields.sqft = String(m.sqft);
-      if (m.price != null) fields.price = String(m.price);
-      if (m.listing_description) fields.listing_description = m.listing_description;
-      if (m.key_features?.length) fields.key_features = JSON.stringify(m.key_features);
-      if (m.property_photo_url) fields.property_photo_url = m.property_photo_url;
-      if (m.latitude != null) fields.latitude = String(m.latitude);
-      if (m.longitude != null) fields.longitude = String(m.longitude);
-      if (m.mls_listing_key) fields.mls_listing_key = m.mls_listing_key;
-      if (m.mls_listing_id) fields.mls_listing_id = m.mls_listing_id;
-      if (m.mls_source) fields.mls_source = m.mls_source;
-      setMlsFields(fields);
+      applyMlsResult(data);
     } catch (err: any) {
       setMlsError(err?.message || "Failed to look up listing");
     } finally {
@@ -105,11 +140,37 @@ export default function OpenHouseForm({
     }
   };
 
+  const handleSelectCandidate = async (candidate: AddressCandidate) => {
+    setSelectingCandidate(true);
+    setMlsError(null);
+
+    try {
+      const res = await fetch("/api/mls/lookup-listing", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ listingKey: candidate.listingKey }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to load listing details");
+      }
+
+      applyMlsResult(data);
+    } catch (err: any) {
+      setMlsError(err?.message || "Failed to load listing details");
+    } finally {
+      setSelectingCandidate(false);
+    }
+  };
+
   const clearMls = () => {
     setMlsResult(null);
     setMlsFields({});
     setMlsNumber("");
+    setAddressQuery("");
     setMlsError(null);
+    setCandidates([]);
     setAddress("");
   };
 
@@ -127,6 +188,10 @@ export default function OpenHouseForm({
   };
 
   const fmt = (n: number) => `$${n.toLocaleString()}`;
+  const inputValue = searchMode === "mls" ? mlsNumber : addressQuery;
+  const setInputValue = searchMode === "mls" ? setMlsNumber : setAddressQuery;
+  const hasInput = inputValue.trim().length > 0;
+  const isLocked = !!mlsResult || candidates.length > 0;
 
   return (
     <form onSubmit={handleSubmit} style={{ display: "grid", gap: 12, marginTop: 12 }}>
@@ -149,18 +214,57 @@ export default function OpenHouseForm({
           Import from MLS
         </div>
         <p style={{ fontSize: 12, color: "#6b7280", margin: "0 0 10px 0" }}>
-          Enter an MLS number to auto-fill property details — address, beds, baths, price, photos, and description.
+          Look up a listing by MLS number or address to auto-fill property details.
         </p>
+
+        {/* Search mode toggle */}
+        {!isLocked && (
+          <div style={{ display: "flex", gap: 0, marginBottom: 10 }}>
+            <button
+              type="button"
+              onClick={() => { setSearchMode("mls"); setMlsError(null); }}
+              style={{
+                padding: "6px 16px",
+                fontSize: 12,
+                fontWeight: 600,
+                border: "1px solid #d1d5db",
+                borderRight: "none",
+                borderRadius: "6px 0 0 6px",
+                background: searchMode === "mls" ? "#0284c7" : "#fff",
+                color: searchMode === "mls" ? "#fff" : "#374151",
+                cursor: "pointer",
+              }}
+            >
+              MLS Number
+            </button>
+            <button
+              type="button"
+              onClick={() => { setSearchMode("address"); setMlsError(null); }}
+              style={{
+                padding: "6px 16px",
+                fontSize: 12,
+                fontWeight: 600,
+                border: "1px solid #d1d5db",
+                borderRadius: "0 6px 6px 0",
+                background: searchMode === "address" ? "#0284c7" : "#fff",
+                color: searchMode === "address" ? "#fff" : "#374151",
+                cursor: "pointer",
+              }}
+            >
+              Address
+            </button>
+          </div>
+        )}
 
         <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
           <div style={{ flex: 1 }}>
             <input
               type="text"
-              value={mlsNumber}
-              onChange={(e) => setMlsNumber(e.target.value)}
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleMlsLookup(); } }}
-              placeholder="e.g. H12345678"
-              disabled={mlsLoading || submitting || !!mlsResult}
+              placeholder={searchMode === "mls" ? "e.g. H12345678" : "e.g. 123 Main St, Honolulu"}
+              disabled={mlsLoading || submitting || isLocked}
               style={{
                 width: "100%",
                 padding: "9px 12px",
@@ -171,11 +275,11 @@ export default function OpenHouseForm({
               }}
             />
           </div>
-          {!mlsResult ? (
+          {!isLocked ? (
             <button
               type="button"
               onClick={handleMlsLookup}
-              disabled={mlsLoading || !mlsNumber.trim()}
+              disabled={mlsLoading || !hasInput}
               style={{
                 padding: "9px 18px",
                 fontWeight: 600,
@@ -184,18 +288,18 @@ export default function OpenHouseForm({
                 color: "#fff",
                 border: "none",
                 borderRadius: 6,
-                cursor: mlsLoading || !mlsNumber.trim() ? "not-allowed" : "pointer",
-                opacity: mlsLoading || !mlsNumber.trim() ? 0.6 : 1,
+                cursor: mlsLoading || !hasInput ? "not-allowed" : "pointer",
+                opacity: mlsLoading || !hasInput ? 0.6 : 1,
                 whiteSpace: "nowrap",
               }}
             >
-              {mlsLoading ? "Looking up..." : "Look Up"}
+              {mlsLoading ? "Searching..." : searchMode === "mls" ? "Look Up" : "Search"}
             </button>
           ) : (
             <button
               type="button"
               onClick={clearMls}
-              disabled={submitting}
+              disabled={submitting || selectingCandidate}
               style={{
                 padding: "9px 18px",
                 fontWeight: 600,
@@ -217,7 +321,77 @@ export default function OpenHouseForm({
           <p style={{ margin: "8px 0 0 0", color: "#dc2626", fontSize: 12, fontWeight: 600 }}>{mlsError}</p>
         )}
 
-        {/* MLS Preview Card */}
+        {/* Address search — multiple results to pick from */}
+        {candidates.length > 0 && !mlsResult && (
+          <div style={{ marginTop: 12 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 8 }}>
+              {candidates.length} listing{candidates.length === 1 ? "" : "s"} found — select one:
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {candidates.map((c) => (
+                <button
+                  key={c.listingKey}
+                  type="button"
+                  disabled={selectingCandidate}
+                  onClick={() => handleSelectCandidate(c)}
+                  style={{
+                    display: "flex",
+                    gap: 10,
+                    alignItems: "center",
+                    padding: 10,
+                    background: "#fff",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: 8,
+                    cursor: selectingCandidate ? "wait" : "pointer",
+                    textAlign: "left",
+                    opacity: selectingCandidate ? 0.6 : 1,
+                    transition: "border-color 0.15s",
+                  }}
+                  onMouseEnter={(e) => { if (!selectingCandidate) e.currentTarget.style.borderColor = "#93c5fd"; }}
+                  onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#e5e7eb")}
+                >
+                  {c.photoUrl && (
+                    <img
+                      src={c.photoUrl}
+                      alt=""
+                      style={{
+                        width: 56,
+                        height: 42,
+                        objectFit: "cover",
+                        borderRadius: 4,
+                        border: "1px solid #e5e7eb",
+                        flexShrink: 0,
+                      }}
+                    />
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 1 }}>{c.address}</div>
+                    <div style={{ fontSize: 11, color: "#6b7280" }}>
+                      {[
+                        c.beds != null ? `${c.beds} bed` : null,
+                        c.baths != null ? `${c.baths} bath` : null,
+                        c.sqft ? `${c.sqft.toLocaleString()} sqft` : null,
+                        c.price ? `$${c.price.toLocaleString()}` : null,
+                      ].filter(Boolean).join(" · ")}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: "right", flexShrink: 0 }}>
+                    <div style={{ fontSize: 10, color: "#9ca3af" }}>MLS# {c.listingId}</div>
+                    <div style={{
+                      fontSize: 10,
+                      fontWeight: 600,
+                      color: c.status === "Active" ? "#059669" : c.status === "Pending" ? "#d97706" : "#6b7280",
+                    }}>
+                      {c.status}
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* MLS Preview Card — selected listing */}
         {mlsResult && (
           <div style={{
             marginTop: 12,
