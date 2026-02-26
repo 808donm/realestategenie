@@ -257,6 +257,91 @@ export interface AttomPOI {
   longitude?: number;
 }
 
+// ── Building Permits types ──────────────────────────────────────────────────
+
+export interface AttomBuildingPermit {
+  effectiveDate?: string;
+  permitNumber?: string;
+  status?: string;
+  type?: string;
+  subType?: string;
+  description?: string;
+  jobValue?: number;
+  homeOwnerName?: string;
+  contractorName?: string;
+  businessName?: string;
+}
+
+// ── Hazard & Climate Risk types ────────────────────────────────────────────
+
+export interface AttomHazardRisk {
+  earthquakeRisk?: { riskScore?: number; riskDescription?: string };
+  floodRisk?: { riskScore?: number; riskDescription?: string; floodZone?: string; femaFloodZone?: string };
+  wildfireRisk?: { riskScore?: number; riskDescription?: string };
+  windRisk?: { riskScore?: number; riskDescription?: string };
+  hailRisk?: { riskScore?: number; riskDescription?: string };
+  tornadoRisk?: { riskScore?: number; riskDescription?: string };
+  hurricaneRisk?: { riskScore?: number; riskDescription?: string };
+  sinkHoleRisk?: { riskScore?: number; riskDescription?: string };
+  noiseScore?: number;
+  overallRisk?: { riskScore?: number; riskDescription?: string };
+}
+
+export interface AttomClimateRisk {
+  droughtRisk?: { riskScore?: number; riskDescription?: string };
+  heatRisk?: { riskScore?: number; riskDescription?: string };
+  stormRisk?: { riskScore?: number; riskDescription?: string };
+  floodRisk?: { riskScore?: number; riskDescription?: string };
+  fireRisk?: { riskScore?: number; riskDescription?: string };
+  overallClimateRisk?: { riskScore?: number; riskDescription?: string };
+}
+
+// ── Rental AVM types ───────────────────────────────────────────────────────
+
+export interface AttomRentalAvm {
+  rentAmount?: number;
+  rentLow?: number;
+  rentHigh?: number;
+  rentRange?: number;
+  fsd?: number;
+  eventDate?: string;
+}
+
+// ── Boundary types ─────────────────────────────────────────────────────────
+
+export interface AttomBoundary {
+  type?: string;
+  name?: string;
+  geoIdV4?: string;
+  wktGeometry?: string;
+  geoJson?: Record<string, any>;
+  centroid?: { latitude?: number; longitude?: number };
+}
+
+// ── Sales Trend / Analytics types ──────────────────────────────────────────
+
+export interface AttomSalesTrend {
+  dateRange?: { startDate?: string; endDate?: string };
+  medianSalePrice?: number;
+  avgSalePrice?: number;
+  salesCount?: number;
+  medianDaysOnMarket?: number;
+  avgPricePerSqFt?: number;
+  priceChangePercent?: number;
+  inventoryCount?: number;
+  monthsOfSupply?: number;
+  newListingsCount?: number;
+}
+
+export interface AttomIBuyerTrend {
+  dateRange?: { startDate?: string; endDate?: string };
+  iBuyerSalesCount?: number;
+  iBuyerSalesPercent?: number;
+  iBuyerMedianPrice?: number;
+  iBuyerAvgDiscount?: number;
+  topIBuyers?: Array<{ name?: string; salesCount?: number; marketShare?: number }>;
+}
+
 export interface AttomPropertyDetail {
   identifier?: {
     Id?: number;
@@ -700,6 +785,192 @@ export class AttomClient {
       community: community.status === "fulfilled" ? community.value : null,
       schools: schools.status === "fulfilled" ? schools.value : null,
       poi: poi.status === "fulfilled" ? poi.value : null,
+    };
+  }
+
+  // ── Building Permits ───────────────────────────────────────────────────
+
+  /**
+   * Get building permit history for a property
+   * Shows recent renovations, additions, and development activity
+   */
+  async getBuildingPermits(
+    params: AttomSearchParams
+  ): Promise<any> {
+    return this.request("/buildingpermits/detail", this.buildParams(params));
+  }
+
+  // ── Hazard & Climate Risk ─────────────────────────────────────────────
+
+  /**
+   * Get natural hazard risk data for a property
+   * Includes earthquake, flood, wildfire, wind, hail, tornado, hurricane, sinkhole
+   */
+  async getNaturalHazard(
+    params: AttomSearchParams
+  ): Promise<any> {
+    return this.request("/property/detailwithschools", this.buildParams(params));
+  }
+
+  /**
+   * Get comprehensive hazard risk scores
+   * Returns risk scores for multiple hazard types
+   */
+  async getHazardRisk(
+    params: AttomSearchParams
+  ): Promise<any> {
+    return this.request("/hazardrisk/detail", this.buildParams(params));
+  }
+
+  /**
+   * Get climate change risk assessment for a property
+   * Returns drought, heat, storm, flood, fire risk projections
+   */
+  async getClimateRisk(
+    params: AttomSearchParams
+  ): Promise<any> {
+    return this.request("/climaterisk/detail", this.buildParams(params));
+  }
+
+  // ── Rental AVM ────────────────────────────────────────────────────────
+
+  /**
+   * Get rental AVM (Automated Valuation Model) for a property
+   * Returns estimated rental value with high/low range
+   */
+  async getRentalAvm(
+    params: AttomSearchParams
+  ): Promise<any> {
+    return this.request("/avm/rental/detail", this.buildParams(params));
+  }
+
+  // ── Recorder / Deed Endpoints ─────────────────────────────────────────
+
+  /**
+   * Get recorder deed details for a property
+   * Includes grantor/grantee, deed type, document number
+   */
+  async getRecorderDeed(
+    params: AttomSearchParams
+  ): Promise<any> {
+    return this.request("/recorder/deed", this.buildParams(params));
+  }
+
+  // ── Boundary Endpoints ────────────────────────────────────────────────
+
+  /**
+   * Get parcel boundary data for a property
+   * Returns polygon/geometry data for property parcel
+   */
+  async getParcelBoundary(
+    params: AttomSearchParams
+  ): Promise<any> {
+    return this.request("/boundary/parcel", this.buildParams(params));
+  }
+
+  /**
+   * Get school district boundaries
+   * Returns geometry for school district zones
+   */
+  async getSchoolBoundary(
+    params: AttomSearchParams
+  ): Promise<any> {
+    return this.request("/boundary/school", this.buildParams(params));
+  }
+
+  /**
+   * Get neighborhood boundaries
+   * Returns geometry for neighborhood/subdivision zones
+   */
+  async getNeighborhoodBoundary(
+    params: AttomSearchParams
+  ): Promise<any> {
+    return this.request("/boundary/neighborhood", this.buildParams(params));
+  }
+
+  // ── Sales Trends & Analytics ──────────────────────────────────────────
+
+  /**
+   * Get sales trend data for an area
+   * Returns median price, volume, days on market, price/sqft trends
+   */
+  async getSalesTrend(
+    params: AttomSearchParams
+  ): Promise<any> {
+    return this.request("/salestrend/snapshot", this.buildParams(params));
+  }
+
+  /**
+   * Get iBuyer activity trends for an area
+   * Shows iBuyer market share, volume, and top players
+   */
+  async getIBuyerTrends(
+    params: AttomSearchParams
+  ): Promise<any> {
+    return this.request("/salestrend/ibuyer", this.buildParams(params));
+  }
+
+  /**
+   * Convenience: fetch comprehensive risk profile for a property
+   * Combines hazard risk, climate risk, and flood zone data in parallel
+   */
+  async getRiskProfile(options: {
+    address1?: string;
+    address2?: string;
+    attomid?: number;
+    postalcode?: string;
+  }): Promise<{
+    hazard: any;
+    climate: any;
+  }> {
+    const params: AttomSearchParams = {
+      address1: options.address1,
+      address2: options.address2,
+      attomid: options.attomid,
+      postalcode: options.postalcode,
+    };
+
+    const [hazard, climate] = await Promise.allSettled([
+      this.getHazardRisk(params),
+      this.getClimateRisk(params),
+    ]);
+
+    return {
+      hazard: hazard.status === "fulfilled" ? hazard.value : null,
+      climate: climate.status === "fulfilled" ? climate.value : null,
+    };
+  }
+
+  /**
+   * Convenience: fetch full market analytics for an area
+   * Combines sales trends and iBuyer data in parallel
+   */
+  async getMarketAnalytics(options: {
+    postalcode?: string;
+    geoidv4?: string;
+    latitude?: number;
+    longitude?: number;
+    radius?: number;
+  }): Promise<{
+    salesTrend: any;
+    iBuyer: any;
+  }> {
+    const params: AttomSearchParams = {
+      postalcode: options.postalcode,
+      geoidv4: options.geoidv4,
+      latitude: options.latitude,
+      longitude: options.longitude,
+      radius: options.radius,
+    };
+
+    const [salesTrend, iBuyer] = await Promise.allSettled([
+      this.getSalesTrend(params),
+      this.getIBuyerTrends(params),
+    ]);
+
+    return {
+      salesTrend: salesTrend.status === "fulfilled" ? salesTrend.value : null,
+      iBuyer: iBuyer.status === "fulfilled" ? iBuyer.value : null,
     };
   }
 

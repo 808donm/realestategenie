@@ -41,8 +41,12 @@ async function getAttomClient(): Promise<AttomClient> {
  * - latitude + longitude + radius  (radius search)
  * - attomid              (direct lookup by ATTOM ID)
  * - endpoint: "detail" | "profile" | "expanded" | "snapshot" | "assessment" |
- *             "sale" | "saleshistory" | "avm" | "allevents" |
- *             "community" | "schools" | "poi" | "neighborhood" (default: "expanded")
+ *             "assessmenthistory" | "sale" | "saleshistory" | "saleshistoryexpanded" |
+ *             "avm" | "attomavm" | "rentalavm" | "allevents" |
+ *             "community" | "schools" | "poi" | "neighborhood" |
+ *             "buildingpermits" | "hazardrisk" | "climaterisk" | "riskprofile" |
+ *             "recorder" | "parcelboundary" | "schoolboundary" | "neighborhoodboundary" |
+ *             "salestrend" | "ibuyer" | "marketanalytics" (default: "expanded")
  * - propertytype         (SFR, APARTMENT, CONDO, etc.)
  * - page, pagesize       (pagination)
  */
@@ -134,6 +138,66 @@ export async function GET(request: NextRequest) {
       case "neighborhood":
         result = await client.getNeighborhoodProfile(params);
         break;
+
+      // ── Previously unexposed existing endpoints ────────────────────────
+      case "assessmenthistory":
+        result = await client.getAssessmentHistory(params);
+        break;
+      case "saleshistoryexpanded":
+        result = await client.getSalesHistoryExpanded(params);
+        break;
+      case "attomavm":
+        result = await client.getAttomAvmDetail(params);
+        break;
+
+      // ── Building Permits ───────────────────────────────────────────────
+      case "buildingpermits":
+        result = await client.getBuildingPermits(params);
+        break;
+
+      // ── Hazard & Climate Risk ──────────────────────────────────────────
+      case "hazardrisk":
+        result = await client.getHazardRisk(params);
+        break;
+      case "climaterisk":
+        result = await client.getClimateRisk(params);
+        break;
+      case "riskprofile":
+        result = await client.getRiskProfile(params);
+        break;
+
+      // ── Rental AVM ─────────────────────────────────────────────────────
+      case "rentalavm":
+        result = await client.getRentalAvm(params);
+        break;
+
+      // ── Recorder / Deeds ───────────────────────────────────────────────
+      case "recorder":
+        result = await client.getRecorderDeed(params);
+        break;
+
+      // ── Boundaries ─────────────────────────────────────────────────────
+      case "parcelboundary":
+        result = await client.getParcelBoundary(params);
+        break;
+      case "schoolboundary":
+        result = await client.getSchoolBoundary(params);
+        break;
+      case "neighborhoodboundary":
+        result = await client.getNeighborhoodBoundary(params);
+        break;
+
+      // ── Sales Trends & Analytics ───────────────────────────────────────
+      case "salestrend":
+        result = await client.getSalesTrend(params);
+        break;
+      case "ibuyer":
+        result = await client.getIBuyerTrends(params);
+        break;
+      case "marketanalytics":
+        result = await client.getMarketAnalytics(params);
+        break;
+
       default:
         result = await client.getPropertyExpandedProfile(params);
     }

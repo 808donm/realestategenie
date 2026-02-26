@@ -279,6 +279,16 @@ export default function MLSClient() {
   const [neighborhoodLoading, setNeighborhoodLoading] = useState(false);
   const [neighborhoodError, setNeighborhoodError] = useState("");
 
+  // ATTOM risk, rental AVM, and building permits state
+  const [riskData, setRiskData] = useState<Record<string, any> | null>(null);
+  const [riskLoading, setRiskLoading] = useState(false);
+  const [rentalAvmData, setRentalAvmData] = useState<Record<string, any> | null>(null);
+  const [rentalAvmLoading, setRentalAvmLoading] = useState(false);
+  const [permitsData, setPermitsData] = useState<Record<string, any> | null>(null);
+  const [permitsLoading, setPermitsLoading] = useState(false);
+  const [salesTrendData, setSalesTrendData] = useState<Record<string, any> | null>(null);
+  const [salesTrendLoading, setSalesTrendLoading] = useState(false);
+
   // Send to contact state
   const [showSendModal, setShowSendModal] = useState(false);
   const [sendProperty, setSendProperty] = useState<Property | null>(null);
@@ -296,6 +306,10 @@ export default function MLSClient() {
       setAttomError("");
       setNeighborhoodData(null);
       setNeighborhoodError("");
+      setRiskData(null);
+      setRentalAvmData(null);
+      setPermitsData(null);
+      setSalesTrendData(null);
       return;
     }
 
@@ -392,6 +406,74 @@ export default function MLSClient() {
     };
 
     fetchNeighborhood();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedProperty]);
+
+  // Auto-fetch ATTOM risk profile, rental AVM, permits, and sales trends
+  useEffect(() => {
+    if (!selectedProperty) return;
+
+    const addr = getAddress(selectedProperty);
+    const city = selectedProperty.City;
+    const state = selectedProperty.StateOrProvince;
+    const zip = selectedProperty.PostalCode;
+
+    if (!addr || !city) return;
+
+    let cancelled = false;
+
+    // Helper to build address params
+    const buildParams = (endpoint: string) => {
+      const params = new URLSearchParams();
+      params.set("endpoint", endpoint);
+      if (addr) params.set("address1", addr);
+      if (city && state) params.set("address2", `${city}, ${state}`);
+      if (zip) params.set("postalcode", zip);
+      return params;
+    };
+
+    // Fetch risk profile (hazard + climate)
+    setRiskLoading(true);
+    setRiskData(null);
+    fetch(`/api/integrations/attom/property?${buildParams("riskprofile").toString()}`)
+      .then((r) => r.json())
+      .then((data) => { if (!cancelled) setRiskData(data); })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setRiskLoading(false); });
+
+    // Fetch rental AVM
+    setRentalAvmLoading(true);
+    setRentalAvmData(null);
+    fetch(`/api/integrations/attom/property?${buildParams("rentalavm").toString()}`)
+      .then((r) => r.json())
+      .then((data) => { if (!cancelled) setRentalAvmData(data); })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setRentalAvmLoading(false); });
+
+    // Fetch building permits
+    setPermitsLoading(true);
+    setPermitsData(null);
+    fetch(`/api/integrations/attom/property?${buildParams("buildingpermits").toString()}`)
+      .then((r) => r.json())
+      .then((data) => { if (!cancelled) setPermitsData(data); })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setPermitsLoading(false); });
+
+    // Fetch sales trends (area-level, by zip)
+    if (zip) {
+      setSalesTrendLoading(true);
+      setSalesTrendData(null);
+      const trendParams = new URLSearchParams();
+      trendParams.set("endpoint", "salestrend");
+      trendParams.set("postalcode", zip);
+      fetch(`/api/integrations/attom/property?${trendParams.toString()}`)
+        .then((r) => r.json())
+        .then((data) => { if (!cancelled) setSalesTrendData(data); })
+        .catch(() => {})
+        .finally(() => { if (!cancelled) setSalesTrendLoading(false); });
+    }
+
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedProperty]);
@@ -2825,6 +2907,257 @@ export default function MLSClient() {
                       );
                     })()}
                   </div>
+                )}
+              </div>
+
+              {/* Hazard & Climate Risk */}
+              <div style={{ marginBottom: 20 }}>
+                <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 10, color: "#374151", display: "flex", alignItems: "center", gap: 8 }}>
+                  Hazard &amp; Climate Risk
+                  {riskLoading && <span style={{ fontSize: 12, color: "#9ca3af", fontWeight: 400 }}>Loading...</span>}
+                </h4>
+
+                {riskData && (riskData.hazard || riskData.climate) ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {/* Hazard Risk Cards */}
+                    {riskData.hazard && (() => {
+                      // Normalize — ATTOM can nest under property[0] or directly
+                      const h = riskData.hazard?.property?.[0] || riskData.hazard;
+                      const risks = [
+                        { key: "floodRisk", label: "Flood", icon: "~" },
+                        { key: "earthquakeRisk", label: "Earthquake", icon: "~" },
+                        { key: "wildfireRisk", label: "Wildfire", icon: "~" },
+                        { key: "windRisk", label: "Wind", icon: "~" },
+                        { key: "hailRisk", label: "Hail", icon: "~" },
+                        { key: "hurricaneRisk", label: "Hurricane", icon: "~" },
+                        { key: "tornadoRisk", label: "Tornado", icon: "~" },
+                      ].filter((r) => h?.[r.key]?.riskScore != null || h?.[r.key]?.riskDescription);
+
+                      if (risks.length === 0) return null;
+
+                      const getRiskColor = (score: number) => {
+                        if (score <= 2) return { bg: "#dcfce7", text: "#16a34a" }; // Low
+                        if (score <= 4) return { bg: "#fef3c7", text: "#d97706" }; // Moderate
+                        if (score <= 6) return { bg: "#fed7aa", text: "#ea580c" }; // High
+                        return { bg: "#fee2e2", text: "#dc2626" }; // Severe
+                      };
+
+                      return (
+                        <>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280" }}>Natural Hazards</div>
+                          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 6 }}>
+                            {risks.map((r) => {
+                              const risk = h[r.key];
+                              const score = risk.riskScore ?? 0;
+                              const color = getRiskColor(score);
+                              return (
+                                <div key={r.key} style={{ padding: "8px 10px", background: color.bg, borderRadius: 8, textAlign: "center" }}>
+                                  <div style={{ fontSize: 10, color: color.text, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>{r.label}</div>
+                                  <div style={{ fontSize: 16, fontWeight: 700, color: color.text }}>{score}/10</div>
+                                  {risk.riskDescription && <div style={{ fontSize: 9, color: color.text, opacity: 0.8 }}>{risk.riskDescription}</div>}
+                                </div>
+                              );
+                            })}
+                          </div>
+                          {h?.floodRisk?.femaFloodZone && (
+                            <div style={{ fontSize: 12, color: "#6b7280" }}>
+                              <span style={{ fontWeight: 600 }}>FEMA Flood Zone:</span> {h.floodRisk.femaFloodZone}
+                              {h.floodRisk.floodZone ? ` (${h.floodRisk.floodZone})` : ""}
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
+
+                    {/* Climate Risk Cards */}
+                    {riskData.climate && (() => {
+                      const c = riskData.climate?.property?.[0] || riskData.climate;
+                      const risks = [
+                        { key: "droughtRisk", label: "Drought" },
+                        { key: "heatRisk", label: "Heat" },
+                        { key: "stormRisk", label: "Storm" },
+                        { key: "floodRisk", label: "Flood" },
+                        { key: "fireRisk", label: "Fire" },
+                      ].filter((r) => c?.[r.key]?.riskScore != null);
+
+                      if (risks.length === 0) return null;
+
+                      const getClimateColor = (score: number) => {
+                        if (score <= 2) return { bg: "#ecfdf5", text: "#059669" };
+                        if (score <= 4) return { bg: "#fefce8", text: "#a16207" };
+                        if (score <= 6) return { bg: "#fff7ed", text: "#ea580c" };
+                        return { bg: "#fef2f2", text: "#dc2626" };
+                      };
+
+                      return (
+                        <>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginTop: 4 }}>Climate Change Projections</div>
+                          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 6 }}>
+                            {risks.map((r) => {
+                              const risk = c[r.key];
+                              const score = risk.riskScore ?? 0;
+                              const color = getClimateColor(score);
+                              return (
+                                <div key={r.key} style={{ padding: "8px 10px", background: color.bg, borderRadius: 8, textAlign: "center" }}>
+                                  <div style={{ fontSize: 10, color: color.text, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>{r.label}</div>
+                                  <div style={{ fontSize: 16, fontWeight: 700, color: color.text }}>{score}/10</div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                ) : !riskLoading ? (
+                  <div style={{ padding: 10, background: "#f9fafb", borderRadius: 8, fontSize: 13, color: "#9ca3af" }}>
+                    No hazard data available
+                  </div>
+                ) : null}
+              </div>
+
+              {/* Rental AVM & Sales Trends */}
+              <div style={{ marginBottom: 20, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                {/* Rental AVM */}
+                <div>
+                  <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, color: "#374151", display: "flex", alignItems: "center", gap: 8 }}>
+                    Rental Value
+                    {rentalAvmLoading && <span style={{ fontSize: 12, color: "#9ca3af", fontWeight: 400 }}>Loading...</span>}
+                  </h4>
+                  {rentalAvmData && (() => {
+                    const rental = rentalAvmData?.property?.[0]?.avm || rentalAvmData?.property?.[0]?.rental || rentalAvmData?.rental || rentalAvmData?.avm;
+                    const amt = rental?.rentAmount ?? rental?.amount?.value ?? rental?.value;
+                    const low = rental?.rentLow ?? rental?.amount?.low ?? rental?.low;
+                    const high = rental?.rentHigh ?? rental?.amount?.high ?? rental?.high;
+
+                    if (amt == null) return (
+                      <div style={{ padding: 10, background: "#f9fafb", borderRadius: 8, fontSize: 13, color: "#9ca3af" }}>No rental estimate</div>
+                    );
+
+                    return (
+                      <div style={{ padding: "12px 14px", background: "#eff6ff", borderRadius: 8 }}>
+                        <div style={{ fontSize: 10, color: "#3b82f6", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Est. Monthly Rent</div>
+                        <div style={{ fontSize: 22, fontWeight: 700, color: "#3b82f6" }}>${Number(amt).toLocaleString()}</div>
+                        {low != null && high != null && (
+                          <div style={{ fontSize: 11, color: "#6b7280" }}>${Number(low).toLocaleString()} – ${Number(high).toLocaleString()}</div>
+                        )}
+                        {selectedProperty.ListPrice && amt && (
+                          <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>
+                            GRM: {(selectedProperty.ListPrice / (Number(amt) * 12)).toFixed(1)}x
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                  {!rentalAvmData && !rentalAvmLoading && (
+                    <div style={{ padding: 10, background: "#f9fafb", borderRadius: 8, fontSize: 13, color: "#9ca3af" }}>No rental estimate</div>
+                  )}
+                </div>
+
+                {/* Sales Trends */}
+                <div>
+                  <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, color: "#374151", display: "flex", alignItems: "center", gap: 8 }}>
+                    Market Trends
+                    {salesTrendLoading && <span style={{ fontSize: 12, color: "#9ca3af", fontWeight: 400 }}>Loading...</span>}
+                  </h4>
+                  {salesTrendData && (() => {
+                    const t = salesTrendData?.salesTrend?.[0] || salesTrendData?.property?.[0] || salesTrendData?.trend?.[0] || salesTrendData;
+                    const median = t?.medianSalePrice ?? t?.medianSalesPrice;
+                    const avg = t?.avgSalePrice ?? t?.avgSalesPrice ?? t?.averageSalePrice;
+                    const dom = t?.medianDaysOnMarket ?? t?.avgDaysOnMarket;
+                    const ppsf = t?.avgPricePerSqFt ?? t?.medianPricePerSqFt;
+                    const change = t?.priceChangePercent ?? t?.priceChangePct;
+
+                    if (median == null && avg == null && dom == null) return (
+                      <div style={{ padding: 10, background: "#f9fafb", borderRadius: 8, fontSize: 13, color: "#9ca3af" }}>No trend data</div>
+                    );
+
+                    return (
+                      <div style={{ padding: "12px 14px", background: "#f5f3ff", borderRadius: 8, display: "flex", flexDirection: "column", gap: 4 }}>
+                        {median != null && (
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
+                            <span style={{ fontWeight: 600, color: "#7c3aed" }}>Median Price</span>
+                            <span style={{ color: "#374151", fontWeight: 700 }}>${Number(median).toLocaleString()}</span>
+                          </div>
+                        )}
+                        {ppsf != null && (
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
+                            <span style={{ fontWeight: 600, color: "#7c3aed" }}>$/Sq Ft</span>
+                            <span style={{ color: "#374151", fontWeight: 700 }}>${Number(ppsf).toFixed(0)}</span>
+                          </div>
+                        )}
+                        {dom != null && (
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
+                            <span style={{ fontWeight: 600, color: "#7c3aed" }}>Days on Market</span>
+                            <span style={{ color: "#374151", fontWeight: 700 }}>{dom}</span>
+                          </div>
+                        )}
+                        {change != null && (
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
+                            <span style={{ fontWeight: 600, color: "#7c3aed" }}>Price Change</span>
+                            <span style={{ color: change >= 0 ? "#16a34a" : "#dc2626", fontWeight: 700 }}>{change >= 0 ? "+" : ""}{change}%</span>
+                          </div>
+                        )}
+                        {t?.inventoryCount != null && (
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
+                            <span style={{ fontWeight: 600, color: "#7c3aed" }}>Inventory</span>
+                            <span style={{ color: "#374151", fontWeight: 700 }}>{t.inventoryCount}</span>
+                          </div>
+                        )}
+                        {t?.monthsOfSupply != null && (
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
+                            <span style={{ fontWeight: 600, color: "#7c3aed" }}>Months Supply</span>
+                            <span style={{ color: "#374151", fontWeight: 700 }}>{t.monthsOfSupply}</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                  {!salesTrendData && !salesTrendLoading && (
+                    <div style={{ padding: 10, background: "#f9fafb", borderRadius: 8, fontSize: 13, color: "#9ca3af" }}>No trend data</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Building Permits */}
+              <div style={{ marginBottom: 20 }}>
+                <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 10, color: "#374151", display: "flex", alignItems: "center", gap: 8 }}>
+                  Building Permits
+                  {permitsLoading && <span style={{ fontSize: 12, color: "#9ca3af", fontWeight: 400 }}>Loading...</span>}
+                </h4>
+
+                {permitsData && (() => {
+                  const permits = permitsData?.property?.[0]?.buildingPermits ||
+                    permitsData?.buildingPermits || permitsData?.permits || [];
+                  const list = Array.isArray(permits) ? permits : [];
+
+                  if (list.length === 0) return (
+                    <div style={{ padding: 10, background: "#f9fafb", borderRadius: 8, fontSize: 13, color: "#9ca3af" }}>No building permits on record</div>
+                  );
+
+                  return (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                      {list.slice(0, 5).map((p: any, i: number) => (
+                        <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px", background: "#f9fafb", borderRadius: 6, fontSize: 12 }}>
+                          <div style={{ display: "flex", flexDirection: "column" }}>
+                            <span style={{ fontWeight: 600, color: "#374151" }}>{p.type || p.subType || "Permit"}{p.description ? `: ${p.description}` : ""}</span>
+                            <span style={{ color: "#9ca3af", fontSize: 11 }}>
+                              {[p.effectiveDate, p.status, p.contractorName || p.businessName].filter(Boolean).join(" · ")}
+                            </span>
+                          </div>
+                          {p.jobValue != null && (
+                            <div style={{ fontWeight: 700, color: "#374151", whiteSpace: "nowrap" }}>${Number(p.jobValue).toLocaleString()}</div>
+                          )}
+                        </div>
+                      ))}
+                      {list.length > 5 && (
+                        <div style={{ fontSize: 11, color: "#9ca3af", textAlign: "center" }}>+ {list.length - 5} more permits</div>
+                      )}
+                    </div>
+                  );
+                })()}
+                {!permitsData && !permitsLoading && (
+                  <div style={{ padding: 10, background: "#f9fafb", borderRadius: 8, fontSize: 13, color: "#9ca3af" }}>No building permits on record</div>
                 )}
               </div>
 
