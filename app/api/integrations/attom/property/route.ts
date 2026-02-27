@@ -40,7 +40,7 @@ async function getAttomClient(): Promise<AttomClient> {
  * - postalcode           (zip code area search)
  * - latitude + longitude + radius  (radius search)
  * - attomid              (direct lookup by ATTOM ID)
- * - endpoint: "detail" | "profile" | "expanded" | "snapshot" | "assessment" |
+ * - endpoint: "detail" | "detailowner" | "profile" | "expanded" | "snapshot" | "assessment" |
  *             "assessmenthistory" | "sale" | "saleshistory" | "saleshistoryexpanded" |
  *             "avm" | "attomavm" | "rentalavm" | "allevents" |
  *             "community" | "schools" | "poi" | "neighborhood" |
@@ -101,6 +101,9 @@ export async function GET(request: NextRequest) {
     switch (endpoint) {
       case "detail":
         result = await client.getPropertyDetail(params);
+        break;
+      case "detailowner":
+        result = await client.getPropertyDetailOwner(params);
         break;
       case "profile":
         result = await client.getPropertyBasicProfile(params);

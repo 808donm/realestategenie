@@ -523,6 +523,17 @@ export class AttomClient {
   }
 
   /**
+   * Get detailed property information WITH owner data (names, mailing address, corporate indicator).
+   * This is the correct endpoint for owner-enriched area searches — /property/detail
+   * does NOT include owner information for postal code queries.
+   */
+  async getPropertyDetailOwner(
+    params: AttomSearchParams
+  ): Promise<AttomApiResponse<AttomPropertyDetail>> {
+    return this.request("/property/detailowner", this.buildParams(params));
+  }
+
+  /**
    * Get basic property profile (property info + most recent sale + tax)
    */
   async getPropertyBasicProfile(

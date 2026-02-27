@@ -393,23 +393,28 @@ export default function Prospecting() {
       //
       // IMPORTANT: ATTOM's expandedprofile does NOT return owner names,
       // mortgage data, or AVM values for postal code area searches.
-      // We supplement with /property/detail (for owner data) and use
-      // assessment values as AVM fallback via getPropertyValue().
+      // We supplement with /property/detailowner (the ATTOM endpoint
+      // specifically designed to return owner names, mailing addresses,
+      // and corporate indicators) and use assessment values as AVM
+      // fallback via getPropertyValue().
       const needsMultiPage = mode === "absentee" || mode === "foreclosure" || mode === "investor" || mode === "equity";
 
       if (needsMultiPage) {
         let allRaw: AttomProperty[] = [];
         const maxPages = 3;
 
-        // Determine which supplemental endpoints to fetch for this mode
+        // Determine which supplemental endpoints to fetch for this mode.
+        // ATTOM's /property/detailowner endpoint specifically returns owner
+        // names, mailing addresses, and corporate indicators — data that
+        // expandedprofile omits for postal code area searches.
         const needsOwnerData = mode === "absentee" || mode === "investor";
 
         for (let pg = 1; pg <= maxPages; pg++) {
-          // Fetch expanded profile + supplemental detail endpoint in parallel
+          // Fetch expanded profile + supplemental detailowner endpoint in parallel
           const fetches: Promise<any>[] = [fetchPage(pg)];
           if (needsOwnerData) {
             fetches.push(
-              fetchPage(pg, "detail").catch(() => ({ property: [] }))
+              fetchPage(pg, "detailowner").catch(() => ({ property: [] }))
             );
           }
 
