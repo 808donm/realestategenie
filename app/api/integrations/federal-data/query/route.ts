@@ -29,6 +29,7 @@ async function getFederalClient(): Promise<FederalDataClient> {
     return new FederalDataClient({
       uspsClientId: config.usps_client_id,
       uspsClientSecret: config.usps_client_secret,
+      hudToken: config.hud_api_token,
       censusApiKey: config.census_api_key,
       blsApiKey: config.bls_api_key,
     });

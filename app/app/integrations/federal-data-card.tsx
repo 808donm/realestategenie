@@ -29,6 +29,7 @@ export default function FederalDataIntegrationCard({
   const [showDialog, setShowDialog] = useState(false);
   const [uspsClientId, setUspsClientId] = useState("");
   const [uspsClientSecret, setUspsClientSecret] = useState("");
+  const [hudApiToken, setHudApiToken] = useState("");
   const [censusApiKey, setCensusApiKey] = useState("");
   const [blsApiKey, setBlsApiKey] = useState("");
   const [connecting, setConnecting] = useState(false);
@@ -50,6 +51,7 @@ export default function FederalDataIntegrationCard({
         body: JSON.stringify({
           usps_client_id: uspsClientId.trim() || null,
           usps_client_secret: uspsClientSecret.trim() || null,
+          hud_api_token: hudApiToken.trim() || null,
           census_api_key: censusApiKey.trim() || null,
           bls_api_key: blsApiKey.trim() || null,
         }),
@@ -64,6 +66,7 @@ export default function FederalDataIntegrationCard({
         setShowDialog(false);
         setUspsClientId("");
         setUspsClientSecret("");
+        setHudApiToken("");
         setCensusApiKey("");
         setBlsApiKey("");
         window.location.reload();
@@ -259,7 +262,7 @@ export default function FederalDataIntegrationCard({
             <div className="p-3 bg-muted/30 rounded-lg">
               <h4 className="font-medium text-sm mb-2">Data Sources (mostly free)</h4>
               <ul className="text-xs text-muted-foreground space-y-1">
-                <li>• <strong>HUD:</strong> Fair Market Rents, income limits (free, no key)</li>
+                <li>• <strong>HUD:</strong> Fair Market Rents, income limits (free token required)</li>
                 <li>• <strong>Census:</strong> Demographics, housing, income (free, optional key)</li>
                 <li>• <strong>FEMA:</strong> Flood zones, disaster declarations (free, no key)</li>
                 <li>• <strong>FHFA:</strong> Conforming loan limits (free, no key)</li>
@@ -328,7 +331,7 @@ export default function FederalDataIntegrationCard({
 
           <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
             <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
-              <strong>No keys required to get started!</strong> HUD, FEMA, EPA, CFPB, and FHFA data is available immediately. Optional keys below enhance the experience.
+              <strong>Most sources are free!</strong> FEMA, EPA, CFPB, and FHFA data needs no keys. A free HUD token unlocks Fair Market Rents. Optional Census &amp; BLS keys boost rate limits.
             </div>
 
             {/* USPS (optional) */}
@@ -370,6 +373,33 @@ export default function FederalDataIntegrationCard({
                   {" "}— enables property-level vacancy indicators (60 req/hr free tier)
                 </p>
               </div>
+            </div>
+
+            {/* HUD (recommended) */}
+            <div className="space-y-2 p-3 border rounded-lg border-blue-200 bg-blue-50/30">
+              <h4 className="font-medium text-sm flex items-center gap-2">
+                HUD Fair Market Rents
+                <Badge className="text-xs bg-blue-100 text-blue-800 border-blue-200">Recommended</Badge>
+              </h4>
+              <div>
+                <Label htmlFor="hud-token" className="text-xs">API Token</Label>
+                <Input
+                  id="hud-token"
+                  type="password"
+                  placeholder="HUD USER API Token"
+                  value={hudApiToken}
+                  onChange={(e) => setHudApiToken(e.target.value)}
+                  disabled={connecting}
+                  className="text-sm"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Free instant token at{" "}
+                <a href="https://www.huduser.gov/hudapi/public/register" target="_blank" rel="noopener noreferrer" className="underline">
+                  huduser.gov
+                </a>
+                {" "}— required for Fair Market Rents, income limits, and Section 8 data
+              </p>
             </div>
 
             {/* Census (optional) */}
@@ -434,6 +464,7 @@ export default function FederalDataIntegrationCard({
                 setShowDialog(false);
                 setUspsClientId("");
                 setUspsClientSecret("");
+                setHudApiToken("");
                 setCensusApiKey("");
                 setBlsApiKey("");
               }}

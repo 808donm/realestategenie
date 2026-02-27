@@ -46,6 +46,7 @@ export async function GET(request: NextRequest) {
       clientConfig = {
         uspsClientId: config.usps_client_id,
         uspsClientSecret: config.usps_client_secret,
+        hudToken: config.hud_api_token,
         censusApiKey: config.census_api_key,
         blsApiKey: config.bls_api_key,
       };
@@ -55,6 +56,7 @@ export async function GET(request: NextRequest) {
     const client = new FederalDataClient({
       uspsClientId: clientConfig.uspsClientId || process.env.USPS_CLIENT_ID,
       uspsClientSecret: clientConfig.uspsClientSecret || process.env.USPS_CLIENT_SECRET,
+      hudToken: clientConfig.hudToken || process.env.HUD_API_TOKEN,
       censusApiKey: clientConfig.censusApiKey || process.env.CENSUS_API_KEY,
       blsApiKey: clientConfig.blsApiKey || process.env.BLS_API_KEY,
     });

@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
     const {
       usps_client_id,
       usps_client_secret,
+      hud_api_token,
       census_api_key,
       bls_api_key,
     } = body;
@@ -45,6 +46,7 @@ export async function POST(request: NextRequest) {
     const client = new FederalDataClient({
       uspsClientId: usps_client_id?.trim() || undefined,
       uspsClientSecret: usps_client_secret?.trim() || undefined,
+      hudToken: hud_api_token?.trim() || undefined,
       censusApiKey: census_api_key?.trim() || undefined,
       blsApiKey: bls_api_key?.trim() || undefined,
     });
@@ -62,6 +64,7 @@ export async function POST(request: NextRequest) {
     const config = {
       usps_client_id: usps_client_id?.trim() || null,
       usps_client_secret: usps_client_secret?.trim() || null,
+      hud_api_token: hud_api_token?.trim() || null,
       census_api_key: census_api_key?.trim() || null,
       bls_api_key: bls_api_key?.trim() || null,
       connected_at: new Date().toISOString(),

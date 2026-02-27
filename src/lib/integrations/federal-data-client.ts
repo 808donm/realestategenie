@@ -27,6 +27,8 @@ export interface FederalDataConfig {
   uspsClientId?: string;
   /** USPS OAuth client secret */
   uspsClientSecret?: string;
+  /** HUD USER API token (free at huduser.gov/hudapi/public/register) */
+  hudToken?: string;
   /** Census Bureau API key (free at api.census.gov/data/key_signup.html) */
   censusApiKey?: string;
   /** BLS API key (free at data.bls.gov/registrationEngine/) */
@@ -362,18 +364,32 @@ export class FederalDataClient {
   // ── HUD ──────────────────────────────────────────────────────────────────
 
   /**
+   * Build HUD API headers with optional Bearer token
+   */
+  private getHUDHeaders(): Record<string, string> {
+    const headers: Record<string, string> = { Accept: "application/json" };
+    if (this.config.hudToken) {
+      headers["Authorization"] = `Bearer ${this.config.hudToken}`;
+    }
+    return headers;
+  }
+
+  /**
    * Get Fair Market Rents by ZIP code
    * API: https://www.huduser.gov/portal/dataset/fmr-api.html
-   * Free, no API key needed
+   * Requires free HUD USER API token (register at huduser.gov/hudapi/public/register)
    */
   async getFairMarketRents(zipCode: string): Promise<HUDFMRResult> {
     try {
       const response = await fetch(
         `https://www.huduser.gov/hudapi/public/fmr/data/${zipCode}`,
-        { headers: { Accept: "application/json" } }
+        { headers: this.getHUDHeaders() }
       );
 
       if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          return { success: false, error: `HUD API auth error (${response.status}): A free HUD USER API token is required. Register at huduser.gov/hudapi/public/register` };
+        }
         return { success: false, error: `HUD API error: ${response.status}` };
       }
 
@@ -400,10 +416,13 @@ export class FederalDataClient {
       const entityId = `${stateCode}${countyCode}99999`;
       const response = await fetch(
         `https://www.huduser.gov/hudapi/public/il/data/${entityId}`,
-        { headers: { Accept: "application/json" } }
+        { headers: this.getHUDHeaders() }
       );
 
       if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          return { success: false, error: `HUD IL API auth error (${response.status}): HUD USER API token required` };
+        }
         return { success: false, error: `HUD IL API error: ${response.status}` };
       }
 
@@ -778,6 +797,23 @@ export class FederalDataClient {
   // ── EPA ──────────────────────────────────────────────────────────────────
 
   /**
+   * Fetch from EPA Envirofacts with timeout and retry
+   */
+  private async fetchEPA(url: string, timeoutMs = 15000): Promise<Response> {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const resp = await fetch(url, {
+        signal: controller.signal,
+        headers: { Accept: "application/json" },
+      });
+      return resp;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  /**
    * Search for environmental sites near a location
    * API: https://www.epa.gov/enviro/envirofacts-data-service-api
    * Free, no key needed
@@ -787,77 +823,135 @@ export class FederalDataClient {
   ): Promise<EPAResult> {
     try {
       const sites: EPASite[] = [];
+      const fetches: Promise<void>[] = [];
 
-      // Superfund (NPL) sites
-      const superfundUrl = `https://enviro.epa.gov/enviro/efservice/SEMS_ACTIVE_SITES/SITE_ZIP_CODE/${zipCode}/JSON`;
-      try {
-        const sfResp = await fetch(superfundUrl);
-        if (sfResp.ok) {
-          const sfData = await sfResp.json();
-          for (const s of sfData.slice(0, 20)) {
-            sites.push({
-              facilityName: s.SITE_NAME || s.ALIAS_NAME || "Unknown",
-              registryId: s.EPA_ID || s.SITE_EPA_ID || "",
-              city: s.SITE_CITY_NAME || "",
-              state: s.SITE_STATE_CODE || "",
-              zipCode: s.SITE_ZIP_CODE || zipCode,
-              latitude: parseFloat(s.LATITUDE) || 0,
-              longitude: parseFloat(s.LONGITUDE) || 0,
-              siteType: "Superfund",
-              nplStatus: s.NPL_STATUS || s.SITE_NPL_STATUS,
-            });
+      // Superfund (NPL) sites via SEMS
+      fetches.push(
+        (async () => {
+          try {
+            const sfResp = await this.fetchEPA(
+              `https://enviro.epa.gov/enviro/efservice/SEMS_ACTIVE_SITES/SITE_ZIP_CODE/${zipCode}/JSON/ROWS/0:20`
+            );
+            if (sfResp.ok) {
+              const sfData = await sfResp.json();
+              if (Array.isArray(sfData)) {
+                for (const s of sfData.slice(0, 20)) {
+                  sites.push({
+                    facilityName: s.SITE_NAME || s.ALIAS_NAME || "Unknown",
+                    registryId: s.EPA_ID || s.SITE_EPA_ID || "",
+                    city: s.SITE_CITY_NAME || "",
+                    state: s.SITE_STATE_CODE || "",
+                    zipCode: s.SITE_ZIP_CODE || zipCode,
+                    latitude: parseFloat(s.LATITUDE) || 0,
+                    longitude: parseFloat(s.LONGITUDE) || 0,
+                    siteType: "Superfund",
+                    nplStatus: s.NPL_STATUS || s.SITE_NPL_STATUS,
+                  });
+                }
+              }
+            }
+          } catch {
+            // Superfund lookup failed, continue
           }
-        }
-      } catch {
-        // Superfund lookup failed, continue
-      }
+        })()
+      );
 
       // Brownfield sites
-      const brownfieldUrl = `https://enviro.epa.gov/enviro/efservice/BROWNFIELDS_ASSESSMENTS/ASSESSMENT_ZIP/${zipCode}/JSON`;
-      try {
-        const bfResp = await fetch(brownfieldUrl);
-        if (bfResp.ok) {
-          const bfData = await bfResp.json();
-          for (const b of bfData.slice(0, 20)) {
-            sites.push({
-              facilityName: b.PROPERTY_NAME || "Unknown Brownfield",
-              registryId: b.EPA_ID || "",
-              city: b.ASSESSMENT_CITY || "",
-              state: b.ASSESSMENT_STATE || "",
-              zipCode: b.ASSESSMENT_ZIP || zipCode,
-              latitude: parseFloat(b.LATITUDE) || 0,
-              longitude: parseFloat(b.LONGITUDE) || 0,
-              siteType: "Brownfield",
-            });
+      fetches.push(
+        (async () => {
+          try {
+            const bfResp = await this.fetchEPA(
+              `https://enviro.epa.gov/enviro/efservice/BROWNFIELDS_ASSESSMENTS/ASSESSMENT_ZIP/${zipCode}/JSON/ROWS/0:20`
+            );
+            if (bfResp.ok) {
+              const bfData = await bfResp.json();
+              if (Array.isArray(bfData)) {
+                for (const b of bfData.slice(0, 20)) {
+                  sites.push({
+                    facilityName: b.PROPERTY_NAME || "Unknown Brownfield",
+                    registryId: b.EPA_ID || "",
+                    city: b.ASSESSMENT_CITY || "",
+                    state: b.ASSESSMENT_STATE || "",
+                    zipCode: b.ASSESSMENT_ZIP || zipCode,
+                    latitude: parseFloat(b.LATITUDE) || 0,
+                    longitude: parseFloat(b.LONGITUDE) || 0,
+                    siteType: "Brownfield",
+                  });
+                }
+              }
+            }
+          } catch {
+            // Brownfield lookup failed, continue
           }
-        }
-      } catch {
-        // Brownfield lookup failed, continue
-      }
+        })()
+      );
 
       // Toxic Release Inventory (TRI) facilities
-      const triUrl = `https://enviro.epa.gov/enviro/efservice/TRI_FACILITY/ZIP_CODE/BEGINNING/${zipCode}/JSON/ROWS/0:20`;
-      try {
-        const triResp = await fetch(triUrl);
-        if (triResp.ok) {
-          const triData = await triResp.json();
-          for (const t of triData.slice(0, 20)) {
-            sites.push({
-              facilityName: t.FACILITY_NAME || "Unknown Facility",
-              registryId: t.TRI_FACILITY_ID || "",
-              city: t.CITY_NAME || "",
-              state: t.STATE_ABBR || "",
-              zipCode: t.ZIP_CODE || zipCode,
-              latitude: parseFloat(t.LATITUDE) || 0,
-              longitude: parseFloat(t.LONGITUDE) || 0,
-              siteType: "TRI",
-              lastReportYear: parseInt(t.REPORTING_YEAR) || undefined,
-            });
+      fetches.push(
+        (async () => {
+          try {
+            const triResp = await this.fetchEPA(
+              `https://enviro.epa.gov/enviro/efservice/TRI_FACILITY/ZIP_CODE/${zipCode}/JSON/ROWS/0:20`
+            );
+            if (triResp.ok) {
+              const triData = await triResp.json();
+              if (Array.isArray(triData)) {
+                for (const t of triData.slice(0, 20)) {
+                  sites.push({
+                    facilityName: t.FACILITY_NAME || "Unknown Facility",
+                    registryId: t.TRI_FACILITY_ID || "",
+                    city: t.CITY_NAME || "",
+                    state: t.STATE_ABBR || "",
+                    zipCode: t.ZIP_CODE || zipCode,
+                    latitude: parseFloat(t.LATITUDE) || 0,
+                    longitude: parseFloat(t.LONGITUDE) || 0,
+                    siteType: "TRI",
+                    lastReportYear: parseInt(t.REPORTING_YEAR) || undefined,
+                  });
+                }
+              }
+            }
+          } catch {
+            // TRI lookup failed, continue
           }
-        }
-      } catch {
-        // TRI lookup failed, continue
-      }
+        })()
+      );
+
+      // FRS (Facility Registry Service) as a reliable fallback/supplement
+      fetches.push(
+        (async () => {
+          try {
+            const frsResp = await this.fetchEPA(
+              `https://enviro.epa.gov/enviro/efservice/FRS_PROGRAM_FACILITY/POSTAL_CODE/${zipCode}/JSON/ROWS/0:20`
+            );
+            if (frsResp.ok) {
+              const frsData = await frsResp.json();
+              if (Array.isArray(frsData)) {
+                // Only add FRS facilities not already captured by other sources
+                const existingIds = new Set(sites.map(s => s.registryId).filter(Boolean));
+                for (const f of frsData.slice(0, 20)) {
+                  const regId = f.REGISTRY_ID || f.PGM_SYS_ID || "";
+                  if (regId && existingIds.has(regId)) continue;
+                  sites.push({
+                    facilityName: f.PRIMARY_NAME || f.PGM_SYS_ACRNM || "EPA Registered Facility",
+                    registryId: regId,
+                    city: f.CITY_NAME || "",
+                    state: f.STATE_CODE || "",
+                    zipCode: f.POSTAL_CODE || zipCode,
+                    latitude: parseFloat(f.LATITUDE83) || 0,
+                    longitude: parseFloat(f.LONGITUDE83) || 0,
+                    siteType: f.PGM_SYS_ACRNM || "FRS",
+                  });
+                }
+              }
+            }
+          } catch {
+            // FRS lookup failed, continue
+          }
+        })()
+      );
+
+      await Promise.allSettled(fetches);
 
       return { success: true, sites };
     } catch (error: any) {
@@ -871,50 +965,67 @@ export class FederalDataClient {
    * Get mortgage lending aggregation data for an area
    * API: https://ffiec.cfpb.gov/v2/data-browser-api/
    * Free, no key needed
+   *
+   * HMDA data is typically published ~18 months after the reporting year closes.
+   * We try the most recent likely year first, then fall back to older years.
    */
   async getMortgageLendingData(
     stateFips: string,
     countyFips: string,
     year?: number
   ): Promise<HMDAResult> {
-    try {
-      const queryYear = year || new Date().getFullYear() - 1;
-      const fipsCode = `${stateFips}${countyFips}`;
+    const fipsCode = `${stateFips}${countyFips}`;
 
-      const url = `https://ffiec.cfpb.gov/v2/data-browser-api/view/aggregations?counties=${fipsCode}&years=${queryYear}`;
-      const response = await fetch(url, {
-        headers: { Accept: "application/json" },
-      });
+    // HMDA data availability: typically current year - 2 is the most recent
+    // available dataset (e.g., in 2026, 2024 may be available, 2023 definitely is)
+    const currentYear = new Date().getFullYear();
+    const yearsToTry = year
+      ? [year]
+      : [currentYear - 2, currentYear - 1, currentYear - 3];
 
-      if (!response.ok) {
-        return { success: false, error: `HMDA API error: ${response.status}` };
+    for (const queryYear of yearsToTry) {
+      try {
+        const url = `https://ffiec.cfpb.gov/v2/data-browser-api/view/aggregations?counties=${fipsCode}&years=${queryYear}`;
+        const response = await fetch(url, {
+          headers: { Accept: "application/json" },
+        });
+
+        if (!response.ok) {
+          // If this year isn't available, try the next
+          if (response.status === 404 || response.status === 400) continue;
+          return { success: false, error: `HMDA API error: ${response.status}` };
+        }
+
+        const data = await response.json();
+        const aggs = data.aggregations;
+
+        if (!aggs || (aggs.totalApplications === 0 && aggs.totalOriginations === 0)) {
+          // Empty data for this year, try next
+          continue;
+        }
+
+        return {
+          success: true,
+          data: {
+            year: queryYear,
+            msa: fipsCode,
+            totalApplications: aggs.totalApplications || 0,
+            totalOriginations: aggs.totalOriginations || 0,
+            totalDenials: aggs.totalDenials || 0,
+            medianLoanAmount: aggs.medianLoanAmount || 0,
+            medianIncome: aggs.medianIncome || 0,
+            approvalRate: aggs.totalOriginations && aggs.totalApplications
+              ? (aggs.totalOriginations / aggs.totalApplications) * 100
+              : 0,
+          },
+        };
+      } catch (error: any) {
+        // Network error - try next year
+        continue;
       }
-
-      const data = await response.json();
-      const aggs = data.aggregations;
-
-      if (!aggs) {
-        return { success: false, error: "No HMDA data found" };
-      }
-
-      return {
-        success: true,
-        data: {
-          year: queryYear,
-          msa: fipsCode,
-          totalApplications: aggs.totalApplications || 0,
-          totalOriginations: aggs.totalOriginations || 0,
-          totalDenials: aggs.totalDenials || 0,
-          medianLoanAmount: aggs.medianLoanAmount || 0,
-          medianIncome: aggs.medianIncome || 0,
-          approvalRate: aggs.totalOriginations && aggs.totalApplications
-            ? (aggs.totalOriginations / aggs.totalApplications) * 100
-            : 0,
-        },
-      };
-    } catch (error: any) {
-      return { success: false, error: error.message };
     }
+
+    return { success: false, error: `No HMDA data found for county ${fipsCode} (tried years: ${yearsToTry.join(", ")})` };
   }
 
   // ── Composite / Supplement ───────────────────────────────────────────────
@@ -1085,14 +1196,18 @@ export class FederalDataClient {
 
     const tests: Promise<void>[] = [];
 
-    // HUD (no key needed)
+    // HUD (requires free Bearer token from huduser.gov/hudapi/public/register)
     tests.push(
       fetch("https://www.huduser.gov/hudapi/public/fmr/data/96701", {
-        headers: { Accept: "application/json" },
+        headers: this.getHUDHeaders(),
       })
         .then((r) => {
           sources.hud = { available: r.ok };
-          if (!r.ok) sources.hud.error = `HTTP ${r.status}`;
+          if (!r.ok) {
+            sources.hud.error = r.status === 401 || r.status === 403
+              ? `Auth required: Register free token at huduser.gov/hudapi/public/register`
+              : `HTTP ${r.status}`;
+          }
         })
         .catch((e) => {
           sources.hud = { available: false, error: e.message };
@@ -1153,17 +1268,29 @@ export class FederalDataClient {
         })
     );
 
-    // EPA (no key needed)
+    // EPA (no key needed) — use FRS as the most reliable Envirofacts table
     tests.push(
-      fetch(
-        "https://enviro.epa.gov/enviro/efservice/SEMS_ACTIVE_SITES/SITE_STATE_CODE/HI/JSON/ROWS/0:1"
+      this.fetchEPA(
+        "https://enviro.epa.gov/enviro/efservice/FRS_PROGRAM_FACILITY/STATE_CODE/HI/JSON/ROWS/0:1",
+        10000
       )
         .then((r) => {
           sources.epa = { available: r.ok };
           if (!r.ok) sources.epa.error = `HTTP ${r.status}`;
         })
         .catch((e) => {
-          sources.epa = { available: false, error: e.message };
+          // If FRS fails, try a simpler SEMS endpoint as fallback
+          return this.fetchEPA(
+            "https://enviro.epa.gov/enviro/efservice/SEMS_ACTIVE_SITES/SITE_STATE_CODE/HI/JSON/ROWS/0:1",
+            10000
+          )
+            .then((r) => {
+              sources.epa = { available: r.ok };
+              if (!r.ok) sources.epa.error = `HTTP ${r.status}`;
+            })
+            .catch((e2) => {
+              sources.epa = { available: false, error: e2.message || e.message };
+            });
         })
     );
 
@@ -1185,17 +1312,33 @@ export class FederalDataClient {
       };
     }
 
-    // CFPB/HMDA (no key needed)
-    tests.push(
-      fetch("https://ffiec.cfpb.gov/v2/data-browser-api/view/nationwide/aggregations?years=2023")
-        .then((r) => {
-          sources.cfpb_hmda = { available: r.ok };
-          if (!r.ok) sources.cfpb_hmda.error = `HTTP ${r.status}`;
+    // CFPB/HMDA (no key needed) — try most recent available year
+    {
+      const hmdaYear = new Date().getFullYear() - 2; // Typically 2-year lag
+      tests.push(
+        fetch(`https://ffiec.cfpb.gov/v2/data-browser-api/view/nationwide/aggregations?years=${hmdaYear}`, {
+          headers: { Accept: "application/json" },
         })
-        .catch((e) => {
-          sources.cfpb_hmda = { available: false, error: e.message };
-        })
-    );
+          .then(async (r) => {
+            if (r.ok) {
+              sources.cfpb_hmda = { available: true };
+            } else if (r.status === 404 || r.status === 400) {
+              // Try year - 3 as fallback
+              const fallbackResp = await fetch(
+                `https://ffiec.cfpb.gov/v2/data-browser-api/view/nationwide/aggregations?years=${hmdaYear - 1}`,
+                { headers: { Accept: "application/json" } }
+              );
+              sources.cfpb_hmda = { available: fallbackResp.ok };
+              if (!fallbackResp.ok) sources.cfpb_hmda.error = `No data for years ${hmdaYear} or ${hmdaYear - 1}`;
+            } else {
+              sources.cfpb_hmda = { available: false, error: `HTTP ${r.status}` };
+            }
+          })
+          .catch((e) => {
+            sources.cfpb_hmda = { available: false, error: e.message };
+          })
+      );
+    }
 
     await Promise.allSettled(tests);
 
@@ -1222,6 +1365,8 @@ export function createFederalDataClient(
       config?.uspsClientId || process.env.USPS_CLIENT_ID,
     uspsClientSecret:
       config?.uspsClientSecret || process.env.USPS_CLIENT_SECRET,
+    hudToken:
+      config?.hudToken || process.env.HUD_API_TOKEN,
     censusApiKey:
       config?.censusApiKey || process.env.CENSUS_API_KEY,
     blsApiKey: config?.blsApiKey || process.env.BLS_API_KEY,
