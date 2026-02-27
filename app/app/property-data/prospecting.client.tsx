@@ -465,15 +465,26 @@ export default function Prospecting() {
         // (lender, amount, term) in one call. This is the most comprehensive
         // endpoint for postal code area searches where expandedprofile omits
         // owner and mortgage fields.
-        const needsSupplementalData = mode !== "radius";
+        //
+        // For radius (Just Sold) mode, salesnapshot only returns sale dates
+        // and amounts (often $0 in non-disclosure states). We supplement with
+        // expandedprofile to get assessment values, building details, and owner
+        // info — so we can show "Est. Value" for each recently sold property.
 
         for (let pg = 1; pg <= maxPages; pg++) {
-          // Fetch base data + supplemental detailmortgageowner in parallel
+          // Fetch base data + supplemental endpoint in parallel
           const fetches: Promise<any>[] = [fetchPage(pg)];
-          if (needsSupplementalData) {
+          if (mode === "radius") {
+            // Just Sold: supplement salesnapshot with expandedprofile
+            // to get assessment/market values, building details, owner data
+            fetches.push(
+              fetchPage(pg, "expanded").catch(() => ({ property: [] }))
+            );
+          } else {
+            // Other modes: supplement expandedprofile with detailmortgageowner
+            // to get owner names, mailing addresses, and mortgage data
             fetches.push(
               fetchPage(pg, "detailmortgageowner").catch(() =>
-                // If detailmortgageowner fails, fall back to detailowner
                 fetchPage(pg, "detailowner").catch(() => ({ property: [] }))
               )
             );
