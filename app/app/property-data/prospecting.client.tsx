@@ -147,6 +147,8 @@ interface DistressSignals {
   mortgageAmount: number | null;
   avmValue: number | null;
   assessmentDrop: boolean;
+  negativeAppreciation: boolean;
+  minimalAppreciation: boolean;
 }
 
 function getDistressSignals(p: AttomProperty): DistressSignals {
@@ -155,6 +157,7 @@ function getDistressSignals(p: AttomProperty): DistressSignals {
   const avmValue = getPropertyValue(p);
   const assdTotal = p.assessment?.assessed?.assdTtlValue ?? null;
   const mktTotal = p.assessment?.market?.mktTtlValue ?? null;
+  const saleAmount = getSaleAmount(p);
 
   let ltvPct: number | null = null;
   let isUnderwater = false;
@@ -166,14 +169,35 @@ function getDistressSignals(p: AttomProperty): DistressSignals {
     highLtv = ltvPct >= 80;
   }
 
-  // Assessment drop: market value less than 90% of assessed value → tax overpayment pressure
+  // Assessment drop: market value less than 95% of assessed value → tax overpayment pressure
+  // (Broadened from 90% to 95% to catch more borderline cases)
   const assessmentDrop = (mktTotal != null && assdTotal != null && assdTotal > 0)
-    ? mktTotal < assdTotal * 0.9
+    ? mktTotal < assdTotal * 0.95
     : false;
 
-  const isDistressed = isUnderwater || highLtv || assessmentDrop;
+  // Negative appreciation: current value is LESS than what the owner paid
+  // (Property lost value since purchase — owner may be motivated to sell)
+  const negativeAppreciation = (saleAmount != null && saleAmount > 0 && avmValue != null && avmValue > 0)
+    ? avmValue < saleAmount
+    : false;
 
-  return { isDistressed, isUnderwater, highLtv, ltvPct, mortgageAmount, avmValue, assessmentDrop };
+  // Minimal appreciation: owned 10+ years but less than 20% total appreciation
+  // (Stagnant investment — owner has tied up capital with minimal return)
+  let minimalAppreciation = false;
+  if (saleAmount != null && saleAmount > 0 && avmValue != null && avmValue > 0) {
+    const ownershipDate = getOwnershipDate(p);
+    if (ownershipDate) {
+      const yearsOwned = (Date.now() - ownershipDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
+      if (yearsOwned >= 10) {
+        const totalAppreciation = ((avmValue - saleAmount) / saleAmount) * 100;
+        minimalAppreciation = totalAppreciation < 20;
+      }
+    }
+  }
+
+  const isDistressed = isUnderwater || highLtv || assessmentDrop || negativeAppreciation || minimalAppreciation;
+
+  return { isDistressed, isUnderwater, highLtv, ltvPct, mortgageAmount, avmValue, assessmentDrop, negativeAppreciation, minimalAppreciation };
 }
 
 /**
@@ -229,22 +253,38 @@ function groupByOwner(properties: AttomProperty[]): InvestorGroup[] {
   const groups = new Map<string, AttomProperty[]>();
 
   for (const p of properties) {
+    // Primary: group by owner name
     const ownerName = getOwnerName(p)?.trim();
-    if (!ownerName) continue;
-    // Group by owner name only — mailing address can vary across properties
-    const key = ownerName.toLowerCase();
-    const list = groups.get(key) || [];
-    list.push(p);
-    groups.set(key, list);
+    if (ownerName) {
+      const key = `name:${ownerName.toLowerCase()}`;
+      const list = groups.get(key) || [];
+      list.push(p);
+      groups.set(key, list);
+      continue;
+    }
+
+    // Fallback: group by mailing address when owner name is missing.
+    // If the mailing address differs from the property address, the owner
+    // likely lives elsewhere (investor). Multiple properties sharing the
+    // same non-local mailing address = same investor entity.
+    const mailAddr = p.owner?.mailingAddressOneLine?.trim();
+    const propAddr = p.address?.oneLine?.trim();
+    if (mailAddr && propAddr && mailAddr.toLowerCase() !== propAddr.toLowerCase()) {
+      const key = `mail:${mailAddr.toLowerCase()}`;
+      const list = groups.get(key) || [];
+      list.push(p);
+      groups.set(key, list);
+    }
   }
 
   // Only keep owners with 2+ properties
   const result: InvestorGroup[] = [];
-  for (const [, props] of groups) {
+  for (const [key, props] of groups) {
     if (props.length < 2) continue;
-    const ownerName = getOwnerName(props[0]) || "Unknown";
+    const ownerName = getOwnerName(props[0])
+      || (key.startsWith("mail:") ? `Unknown Owner (${props[0].owner?.mailingAddressOneLine || "Shared Mailing Address"})` : "Unknown");
     const mailingAddress = props[0].owner?.mailingAddressOneLine || "";
-    const isCorporate = props[0].owner?.corporateIndicator === "Y";
+    const isCorporate = props.some((p) => p.owner?.corporateIndicator === "Y");
     const years = props.map((p) => p.building?.summary?.yearBuilt).filter((y): y is number => y != null);
 
     result.push({
@@ -386,7 +426,7 @@ export default function Prospecting() {
     setInvestorGroups([]);
 
     try {
-      // Modes that require client-side filtering or multi-page accumulation.
+      // All modes use multi-page scanning to accumulate more results.
       // ATTOM's expandedprofile doesn't support server-side filtering for
       // absentee status, distress signals, owner tenure, or multi-property
       // owner grouping, so we scan multiple pages and filter/group locally.
@@ -397,17 +437,21 @@ export default function Prospecting() {
       // specifically designed to return owner names, mailing addresses,
       // and corporate indicators) and use assessment values as AVM
       // fallback via getPropertyValue().
-      const needsMultiPage = mode === "absentee" || mode === "foreclosure" || mode === "investor" || mode === "equity";
-
-      if (needsMultiPage) {
+      {
         let allRaw: AttomProperty[] = [];
-        const maxPages = 3;
+        // Mode-specific page counts: investor needs the most data to find
+        // multi-property owners; foreclosure needs broad coverage; radius
+        // (Just Sold) targets 200+ results; others use 4 pages.
+        const maxPages = mode === "investor" ? 6
+          : mode === "foreclosure" ? 5
+          : mode === "radius" ? 4
+          : 4;
 
         // Determine which supplemental endpoints to fetch for this mode.
         // ATTOM's /property/detailowner endpoint specifically returns owner
         // names, mailing addresses, and corporate indicators — data that
         // expandedprofile omits for postal code area searches.
-        const needsOwnerData = mode === "absentee" || mode === "investor";
+        const needsOwnerData = mode === "absentee" || mode === "investor" || mode === "equity" || mode === "foreclosure";
 
         for (let pg = 1; pg <= maxPages; pg++) {
           // Fetch expanded profile + supplemental detailowner endpoint in parallel
@@ -448,7 +492,9 @@ export default function Prospecting() {
         );
 
         if (mode === "absentee") {
-          const matches = allRaw.filter(isAbsenteeOwner);
+          // Only include properties that have an owner name — absentee
+          // status is useless without knowing who the owner is.
+          const matches = allRaw.filter((p) => isAbsenteeOwner(p) && getOwnerName(p));
           setResults(matches);
           setTotalCount(matches.length);
           setInvestorGroups([]);
@@ -505,43 +551,31 @@ export default function Prospecting() {
           setResults(matches);
           setTotalCount(matches.length);
           setInvestorGroups([]);
-        } else {
+        } else if (mode === "investor") {
           // Investor mode: group across all fetched pages
           const groups = groupByOwner(allRaw);
           setInvestorGroups(groups);
           setTotalCount(groups.length);
           setResults(allRaw);
+        } else if (mode === "radius") {
+          // Just Sold Farming — filter to disclosed sale prices only.
+          // "Your Neighbor Just Sold for $X" campaigns need actual prices.
+          const withPrice = allRaw.filter((p) => {
+            const saleAmt = getSaleAmount(p);
+            return saleAmt != null && saleAmt > 0;
+          });
+          const excluded = allRaw.length - withPrice.length;
+          setDebugInfo(
+            `Scanned ${allRaw.length} recent sales across ${Math.min(maxPages, Math.ceil(allRaw.length / pageSize) + 1)} pages — ` +
+            `${withPrice.length} with disclosed prices, ${excluded} excluded (non-disclosed)`
+          );
+          setResults(withPrice);
+          setTotalCount(withPrice.length);
+          setInvestorGroups([]);
         }
 
         setHasSearched(true);
-        return;
       }
-
-      // Standard fetch for non-filtered modes (radius / Just Sold Farming)
-      const data = await fetchPage(pageNum);
-      let properties: AttomProperty[] = data.property || [];
-
-      // Filter out non-disclosed sale prices — "Just Sold Farming" is pointless
-      // without actual sale prices for "Your Neighbor Just Sold for $X" campaigns
-      const totalFetched = properties.length;
-      properties = properties.filter((p) => {
-        const saleAmt = getSaleAmount(p);
-        return saleAmt != null && saleAmt > 0;
-      });
-      const excluded = totalFetched - properties.length;
-
-      // Data diagnostics for radius mode
-      const withDate = properties.filter((p) => getSaleDateStr(p)).length;
-      const withValue = properties.filter((p) => getPropertyValue(p) != null).length;
-      setDebugInfo(
-        `Fetched ${totalFetched} recent sales — ${properties.length} with disclosed prices, ` +
-        `${excluded} excluded (non-disclosed), ${withDate} with sale dates, ${withValue} with property values`
-      );
-
-      setInvestorGroups([]);
-      setResults(properties);
-      setTotalCount(properties.length);
-      setHasSearched(true);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Search failed");
       setResults([]);
@@ -720,6 +754,16 @@ export default function Prospecting() {
                       Assessment Drop
                     </span>
                   )}
+                  {distress.negativeAppreciation && (
+                    <span style={{ padding: "1px 8px", background: "#be123c", color: "#fff", borderRadius: 10, fontSize: 11, fontWeight: 700 }}>
+                      Lost Value
+                    </span>
+                  )}
+                  {distress.minimalAppreciation && !distress.negativeAppreciation && (
+                    <span style={{ padding: "1px 8px", background: "#9333ea", color: "#fff", borderRadius: 10, fontSize: 11, fontWeight: 700 }}>
+                      Stagnant Value
+                    </span>
+                  )}
                   {absentee && (
                     <span style={{ padding: "1px 8px", background: "#fef3c7", color: "#92400e", borderRadius: 10, fontSize: 11, fontWeight: 600 }}>
                       Absentee
@@ -745,6 +789,16 @@ export default function Prospecting() {
                 {distress.isUnderwater && distress.mortgageAmount != null && distress.avmValue != null && (
                   <div style={{ marginTop: 4, color: "#dc2626", fontWeight: 600, fontSize: 11 }}>
                     Negative equity: {fmt(distress.mortgageAmount - distress.avmValue)} (mortgage exceeds AVM)
+                  </div>
+                )}
+                {distress.negativeAppreciation && lastSale != null && avmVal != null && (
+                  <div style={{ marginTop: 4, color: "#be123c", fontWeight: 600, fontSize: 11 }}>
+                    Value decline: purchased for {fmt(lastSale)}, now worth {fmt(avmVal)} ({((avmVal - lastSale) / lastSale * 100).toFixed(1)}%)
+                  </div>
+                )}
+                {distress.minimalAppreciation && !distress.negativeAppreciation && yearsOwned != null && lastSale != null && avmVal != null && (
+                  <div style={{ marginTop: 4, color: "#7c3aed", fontWeight: 600, fontSize: 11 }}>
+                    Stagnant: owned {yearsOwned} years, only {((avmVal - lastSale) / lastSale * 100).toFixed(0)}% appreciation (purchased {fmt(lastSale)})
                   </div>
                 )}
               </div>
@@ -1048,9 +1102,7 @@ export default function Prospecting() {
 
       {isLoading && (
         <div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>
-          {(mode === "absentee" || mode === "foreclosure" || mode === "investor" || mode === "equity")
-            ? "Scanning ATTOM records (multiple pages)..."
-            : "Searching ATTOM records..."}
+          Scanning ATTOM records (multiple pages)...
         </div>
       )}
 
