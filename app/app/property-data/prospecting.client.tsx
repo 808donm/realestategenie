@@ -3,6 +3,7 @@
 import { useState } from "react";
 import PropertyDetailModal from "./property-detail-modal.client";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface AttomProperty {
   identifier?: { Id?: number; fips?: string; apn?: string; attomId?: number };
   address?: { oneLine?: string; line1?: string; line2?: string; locality?: string; countrySubd?: string; postal1?: string };
@@ -28,14 +29,57 @@ interface AttomProperty {
     tax?: { taxAmt?: number; taxYear?: number };
   };
   sale?: {
-    amount?: { saleAmt?: number; saleTransDate?: string; saleRecDate?: string; saleDocType?: string; salePrice?: number };
-    // ATTOM sometimes places date fields at the sale level too
+    amount?: { saleAmt?: number; saleTransDate?: string; saleRecDate?: string; saleDocType?: string; salePrice?: number; saleSearchDate?: string };
+    calculation?: { pricePerBed?: number; pricePerSizeUnit?: number };
+    // ATTOM sometimes places date/amount fields at the sale level too
+    saleAmt?: number; salePrice?: number;
     saleTransDate?: string; saleRecDate?: string; saleSearchDate?: string;
   };
   avm?: { amount?: { value?: number; high?: number; low?: number; scr?: number }; eventDate?: string };
-  mortgage?: { amount?: number; lender?: { fullName?: string }; term?: string; date?: string };
+  // ATTOM expandedprofile nests mortgage under FirstConcurrent/SecondConcurrent
+  mortgage?: {
+    amount?: number; lender?: { fullName?: string }; term?: string; date?: string;
+    FirstConcurrent?: { amount?: number; lender?: { fullName?: string }; term?: string; date?: string; dueDate?: string; loanType?: string };
+    SecondConcurrent?: { amount?: number; lender?: { fullName?: string }; term?: string; date?: string };
+  };
   foreclosure?: { actionType?: string; filingDate?: string; auctionDate?: string; defaultAmount?: number; originalLoanAmount?: number; auctionLocation?: string };
   utilities?: { coolingType?: string; heatingType?: string; sewerType?: string; waterType?: string };
+  // Allow unknown keys since ATTOM responses vary by endpoint
+  [key: string]: unknown;
+}
+
+// ── Data accessor helpers ──────────────────────────────────────────────────
+// ATTOM's response format varies by endpoint. These helpers normalize access.
+
+/** Get the mortgage balance — checks both direct and FirstConcurrent nesting */
+function getMortgageAmount(p: AttomProperty): number | null {
+  if (typeof p.mortgage?.amount === "number" && p.mortgage.amount > 0) return p.mortgage.amount;
+  const fc = p.mortgage?.FirstConcurrent;
+  if (fc?.amount != null && fc.amount > 0) return fc.amount;
+  const sc = p.mortgage?.SecondConcurrent;
+  if (sc?.amount != null && sc.amount > 0) return sc.amount;
+  return null;
+}
+
+/** Get the mortgage lender name */
+function getMortgageLender(p: AttomProperty): string | null {
+  return p.mortgage?.lender?.fullName || p.mortgage?.FirstConcurrent?.lender?.fullName || null;
+}
+
+/** Get the sale amount — checks multiple possible field locations */
+function getSaleAmount(p: AttomProperty): number | null {
+  return p.sale?.amount?.saleAmt ?? p.sale?.amount?.salePrice ?? p.sale?.saleAmt ?? p.sale?.salePrice ?? null;
+}
+
+/** Get the sale/transaction date string — checks multiple possible locations */
+function getSaleDateStr(p: AttomProperty): string | null {
+  return p.sale?.amount?.saleTransDate ?? p.sale?.amount?.saleRecDate ?? p.sale?.amount?.saleSearchDate
+    ?? p.sale?.saleTransDate ?? p.sale?.saleRecDate ?? p.sale?.saleSearchDate ?? null;
+}
+
+/** Get the owner name */
+function getOwnerName(p: AttomProperty): string | null {
+  return p.owner?.owner1?.fullName || p.owner?.owner2?.fullName || null;
 }
 
 type ProspectMode = "absentee" | "equity" | "foreclosure" | "radius" | "investor";
@@ -92,7 +136,7 @@ interface DistressSignals {
 }
 
 function getDistressSignals(p: AttomProperty): DistressSignals {
-  const mortgageAmount = p.mortgage?.amount ?? null;
+  const mortgageAmount = getMortgageAmount(p);
   const avmValue = p.avm?.amount?.value ?? null;
   const assdTotal = p.assessment?.assessed?.assdTtlValue ?? null;
   const mktTotal = p.assessment?.market?.mktTtlValue ?? null;
@@ -137,23 +181,18 @@ function parseDate(s: string | undefined | null): Date | null {
 
 /**
  * Extract the best available ownership/purchase date from ATTOM property data.
- *
- * ATTOM nests sale dates inconsistently across response formats:
- *  - sale.amount.saleTransDate  (most common in expandedprofile)
- *  - sale.amount.saleRecDate    (recording date — close to transaction)
- *  - sale.saleTransDate         (sometimes at sale root level)
- *  - sale.saleRecDate
- *  - sale.saleSearchDate
- *  - mortgage.date              (fallback — mortgage origination ~ purchase)
+ * Uses getSaleDateStr() for sale dates, then falls back to mortgage origination.
  */
 function getOwnershipDate(p: AttomProperty): Date | null {
+  const saleDateStr = getSaleDateStr(p);
+  if (saleDateStr) {
+    const d = parseDate(saleDateStr);
+    if (d) return d;
+  }
+  // Fallback: mortgage origination date ≈ purchase date
   return (
-    parseDate(p.sale?.amount?.saleTransDate) ||
-    parseDate(p.sale?.amount?.saleRecDate) ||
-    parseDate(p.sale?.saleTransDate) ||
-    parseDate(p.sale?.saleRecDate) ||
-    parseDate(p.sale?.saleSearchDate) ||
     parseDate(p.mortgage?.date) ||
+    parseDate(p.mortgage?.FirstConcurrent?.date) ||
     null
   );
 }
@@ -175,11 +214,10 @@ function groupByOwner(properties: AttomProperty[]): InvestorGroup[] {
   const groups = new Map<string, AttomProperty[]>();
 
   for (const p of properties) {
-    const ownerName = p.owner?.owner1?.fullName?.trim();
-    const mail = p.owner?.mailingAddressOneLine?.trim();
+    const ownerName = getOwnerName(p)?.trim();
     if (!ownerName) continue;
-    // Group by name + mailing address for accuracy
-    const key = `${ownerName.toLowerCase()}|${(mail || "").toLowerCase()}`;
+    // Group by owner name only — mailing address can vary across properties
+    const key = ownerName.toLowerCase();
     const list = groups.get(key) || [];
     list.push(p);
     groups.set(key, list);
@@ -189,7 +227,7 @@ function groupByOwner(properties: AttomProperty[]): InvestorGroup[] {
   const result: InvestorGroup[] = [];
   for (const [, props] of groups) {
     if (props.length < 2) continue;
-    const ownerName = props[0].owner?.owner1?.fullName || "Unknown";
+    const ownerName = getOwnerName(props[0]) || "Unknown";
     const mailingAddress = props[0].owner?.mailingAddressOneLine || "";
     const isCorporate = props[0].owner?.corporateIndicator === "Y";
     const years = props.map((p) => p.building?.summary?.yearBuilt).filter((y): y is number => y != null);
@@ -241,6 +279,7 @@ export default function Prospecting() {
 
   const [selectedProperty, setSelectedProperty] = useState<AttomProperty | null>(null);
   const [expandedInvestor, setExpandedInvestor] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState("");
 
   /**
    * Fetch a single page of ATTOM results with the current mode's filters.
@@ -305,6 +344,18 @@ export default function Prospecting() {
           if (raw.length < pageSize) break;
         }
 
+        // Data diagnostics: show what ATTOM actually returned
+        const withOwner = allRaw.filter((p) => getOwnerName(p)).length;
+        const withSaleAmt = allRaw.filter((p) => getSaleAmount(p) != null).length;
+        const withSaleDate = allRaw.filter((p) => getSaleDateStr(p)).length;
+        const withMortgage = allRaw.filter((p) => getMortgageAmount(p) != null).length;
+        const withAvm = allRaw.filter((p) => p.avm?.amount?.value != null).length;
+        const withAbsentee = allRaw.filter(isAbsenteeOwner).length;
+        setDebugInfo(
+          `Scanned ${allRaw.length} properties — ${withOwner} with owner names, ${withSaleAmt} with sale amounts, ` +
+          `${withSaleDate} with sale dates, ${withMortgage} with mortgage data, ${withAvm} with AVM, ${withAbsentee} absentee`
+        );
+
         if (mode === "absentee") {
           const matches = allRaw.filter(isAbsenteeOwner);
           setResults(matches);
@@ -346,7 +397,7 @@ export default function Prospecting() {
             if (ownershipDate > cutoffDate) return false;
 
             // Must have positive equity (AVM > purchase price)
-            const purchasePrice = p.sale?.amount?.saleAmt || p.sale?.amount?.salePrice || 0;
+            const purchasePrice = getSaleAmount(p) || 0;
             if (purchasePrice > 0 && avmVal <= purchasePrice) return false;
             return true;
           });
@@ -354,9 +405,9 @@ export default function Prospecting() {
           // Sort by estimated equity descending (highest equity first)
           matches.sort((a, b) => {
             const aAvm = a.avm?.amount?.value || 0;
-            const aSale = a.sale?.amount?.saleAmt || a.sale?.amount?.salePrice || 0;
+            const aSale = getSaleAmount(a) || 0;
             const bAvm = b.avm?.amount?.value || 0;
-            const bSale = b.sale?.amount?.saleAmt || b.sale?.amount?.salePrice || 0;
+            const bSale = getSaleAmount(b) || 0;
             return (bAvm - bSale) - (aAvm - aSale);
           });
 
@@ -378,6 +429,11 @@ export default function Prospecting() {
       // Standard fetch for non-filtered modes (radius)
       const data = await fetchPage(pageNum);
       const properties: AttomProperty[] = data.property || [];
+
+      // Data diagnostics for radius mode
+      const withSale = properties.filter((p) => getSaleAmount(p) != null).length;
+      const withDate = properties.filter((p) => getSaleDateStr(p)).length;
+      setDebugInfo(`Fetched ${properties.length} properties — ${withSale} with sale amounts, ${withDate} with sale dates`);
 
       setInvestorGroups([]);
       setResults(properties);
@@ -438,8 +494,9 @@ export default function Prospecting() {
     const avmVal = prop.avm?.amount?.value;
     const avmHigh = prop.avm?.amount?.high;
     const avmLow = prop.avm?.amount?.low;
-    const lastSale = prop.sale?.amount?.saleAmt || prop.sale?.amount?.salePrice;
-    const owner = prop.owner?.owner1?.fullName;
+    const lastSale = getSaleAmount(prop);
+    const saleDateStr = getSaleDateStr(prop);
+    const owner = getOwnerName(prop);
     const absentee = isAbsenteeOwner(prop);
     const equity = avmVal && lastSale ? avmVal - lastSale : null;
     const equityPct = avmVal && lastSale ? ((avmVal - lastSale) / avmVal) * 100 : null;
@@ -452,6 +509,8 @@ export default function Prospecting() {
     const baths = prop.building?.rooms?.bathsFull ?? prop.building?.rooms?.bathsTotal;
     const yearBuilt = prop.building?.summary?.yearBuilt;
     const taxAmt = prop.assessment?.tax?.taxAmt;
+    const mortgageAmt = getMortgageAmount(prop);
+    const lenderName = getMortgageLender(prop);
     const distress = mode === "foreclosure" ? getDistressSignals(prop) : null;
 
     return (
@@ -476,24 +535,37 @@ export default function Prospecting() {
                 yearBuilt ? `Built ${yearBuilt}` : null,
               ].filter(Boolean).join(" · ")}
             </div>
-            {owner && (
-              <div style={{ fontSize: 13, color: "#6b7280", marginTop: 2 }}>
-                Owner: {owner}
-                {absentee && (
-                  <span style={{ marginLeft: 6, padding: "1px 8px", background: "#fef3c7", color: "#92400e", borderRadius: 10, fontSize: 11, fontWeight: 600 }}>
-                    Absentee
-                  </span>
-                )}
-                {prop.owner?.corporateIndicator === "Y" && (
-                  <span style={{ marginLeft: 6, padding: "1px 8px", background: "#ede9fe", color: "#6d28d9", borderRadius: 10, fontSize: 11, fontWeight: 600 }}>
-                    Corporate
-                  </span>
+            <div style={{ fontSize: 13, color: "#6b7280", marginTop: 2 }}>
+              {owner ? `Owner: ${owner}` : "Owner: Not listed"}
+              {absentee && (
+                <span style={{ marginLeft: 6, padding: "1px 8px", background: "#fef3c7", color: "#92400e", borderRadius: 10, fontSize: 11, fontWeight: 600 }}>
+                  Absentee
+                </span>
+              )}
+              {prop.owner?.corporateIndicator === "Y" && (
+                <span style={{ marginLeft: 6, padding: "1px 8px", background: "#ede9fe", color: "#6d28d9", borderRadius: 10, fontSize: 11, fontWeight: 600 }}>
+                  Corporate
+                </span>
+              )}
+            </div>
+            {/* Absentee mode — show ownership evidence */}
+            {mode === "absentee" && (
+              <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
+                {prop.summary?.absenteeInd && (
+                  <span>Status: {prop.summary.absenteeInd}</span>
                 )}
                 {prop.owner?.mailingAddressOneLine && (
-                  <span style={{ marginLeft: 6, fontSize: 12, color: "#9ca3af" }}>
-                    (Mail: {prop.owner.mailingAddressOneLine})
-                  </span>
+                  <span style={{ marginLeft: 8 }}>Mailing: {prop.owner.mailingAddressOneLine}</span>
                 )}
+                {prop.owner?.ownerOccupied && (
+                  <span style={{ marginLeft: 8 }}>Occupied: {prop.owner.ownerOccupied === "Y" ? "Yes" : prop.owner.ownerOccupied === "N" ? "No" : prop.owner.ownerOccupied}</span>
+                )}
+              </div>
+            )}
+            {/* Other modes — show mailing address if different */}
+            {mode !== "absentee" && prop.owner?.mailingAddressOneLine && (
+              <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 1 }}>
+                Mail: {prop.owner.mailingAddressOneLine}
               </div>
             )}
 
@@ -562,8 +634,8 @@ export default function Prospecting() {
                       <strong>LTV:</strong> {distress.ltvPct.toFixed(0)}%
                     </span>
                   )}
-                  {prop.mortgage?.lender?.fullName && (
-                    <span><strong>Lender:</strong> {prop.mortgage.lender.fullName}</span>
+                  {lenderName && (
+                    <span><strong>Lender:</strong> {lenderName}</span>
                   )}
                 </div>
                 {distress.isUnderwater && distress.mortgageAmount != null && distress.avmValue != null && (
@@ -574,13 +646,17 @@ export default function Prospecting() {
               </div>
             )}
 
-            {/* Radius farming — sale info */}
-            {mode === "radius" && lastSale != null && (
+            {/* Radius farming — sale info (always show for this mode) */}
+            {mode === "radius" && (
               <div style={{ marginTop: 6, padding: "6px 10px", background: "#f5f3ff", borderRadius: 6, fontSize: 12 }}>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
-                  <span><strong>Sold:</strong> {fmt(lastSale)}</span>
-                  {prop.sale?.amount?.saleTransDate && (
-                    <span><strong>Date:</strong> {prop.sale.amount.saleTransDate}</span>
+                  {lastSale != null ? (
+                    <span><strong>Sold:</strong> {fmt(lastSale)}</span>
+                  ) : (
+                    <span><strong>Sale price:</strong> Not disclosed</span>
+                  )}
+                  {saleDateStr && (
+                    <span><strong>Date:</strong> {saleDateStr}</span>
                   )}
                   {sqft && lastSale ? (
                     <span><strong>$/sqft:</strong> ${Math.round(lastSale / sqft).toLocaleString()}</span>
@@ -596,12 +672,12 @@ export default function Prospecting() {
           </div>
 
           <div style={{ display: "flex", gap: 16, flexWrap: "wrap", textAlign: "right" }}>
-            {(mode === "radius") && lastSale != null && (
+            {mode === "radius" && (
               <div>
                 <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>Sale Price</div>
-                <div style={{ fontWeight: 700, fontSize: 15, color: "#7c3aed" }}>{fmt(lastSale)}</div>
-                {prop.sale?.amount?.saleTransDate && (
-                  <div style={{ fontSize: 11, color: "#9ca3af" }}>{prop.sale.amount.saleTransDate}</div>
+                <div style={{ fontWeight: 700, fontSize: 15, color: "#7c3aed" }}>{lastSale != null ? fmt(lastSale) : "N/A"}</div>
+                {saleDateStr && (
+                  <div style={{ fontSize: 11, color: "#9ca3af" }}>{saleDateStr}</div>
                 )}
               </div>
             )}
@@ -638,11 +714,22 @@ export default function Prospecting() {
                 </div>
               </div>
             )}
-            {mode === "absentee" && lastSale != null && (
-              <div>
-                <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>Last Sale</div>
-                <div style={{ fontWeight: 600, fontSize: 14 }}>{fmt(lastSale)}</div>
-              </div>
+            {mode === "absentee" && (
+              <>
+                {lastSale != null && (
+                  <div>
+                    <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>Last Sale</div>
+                    <div style={{ fontWeight: 600, fontSize: 14 }}>{fmt(lastSale)}</div>
+                    {saleDateStr && <div style={{ fontSize: 11, color: "#9ca3af" }}>{saleDateStr}</div>}
+                  </div>
+                )}
+                {mortgageAmt != null && (
+                  <div>
+                    <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>Mortgage</div>
+                    <div style={{ fontWeight: 600, fontSize: 14 }}>{fmt(mortgageAmt)}</div>
+                  </div>
+                )}
+              </>
             )}
             {mode === "equity" && yearsOwned != null && (
               <div>
@@ -747,7 +834,7 @@ export default function Prospecting() {
         {modes.map((m) => (
           <button
             key={m.id}
-            onClick={() => { setMode(m.id); setResults([]); setInvestorGroups([]); setHasSearched(false); setError(""); setExpandedInvestor(null); }}
+            onClick={() => { setMode(m.id); setResults([]); setInvestorGroups([]); setHasSearched(false); setError(""); setExpandedInvestor(null); setDebugInfo(""); }}
             style={{
               padding: 14, borderRadius: 10, border: mode === m.id ? `2px solid ${m.color}` : "1px solid #e5e7eb",
               background: mode === m.id ? `${m.color}08` : "#fff", cursor: "pointer", textAlign: "left",
@@ -863,7 +950,13 @@ export default function Prospecting() {
         </div>
       )}
 
-      {!isLoading && hasSearched && results.length === 0 && (
+      {!isLoading && hasSearched && debugInfo && (
+        <div style={{ padding: "6px 12px", background: "#f0f9ff", color: "#0369a1", borderRadius: 6, marginBottom: 12, fontSize: 12, fontFamily: "monospace" }}>
+          {debugInfo}
+        </div>
+      )}
+
+      {!isLoading && hasSearched && results.length === 0 && investorGroups.length === 0 && (
         <div style={{ padding: 40, textAlign: "center", color: "#6b7280", background: "#f9fafb", borderRadius: 12 }}>
           No properties found. Try adjusting your filters.
         </div>
