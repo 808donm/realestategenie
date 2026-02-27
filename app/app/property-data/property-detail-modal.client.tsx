@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import type { FederalPropertySupplement } from "@/lib/integrations/federal-data-client";
 
 interface AttomProperty {
   identifier?: { Id?: number; fips?: string; apn?: string; attomId?: number };
@@ -67,7 +68,9 @@ export default function PropertyDetailModal({
   property: AttomProperty;
   onClose: () => void;
 }) {
-  const [activeSection, setActiveSection] = useState<"overview" | "building" | "financial" | "ownership">("overview");
+  const [activeSection, setActiveSection] = useState<"overview" | "building" | "financial" | "ownership" | "federal">("overview");
+  const [federalData, setFederalData] = useState<FederalPropertySupplement | null>(null);
+  const [federalLoading, setFederalLoading] = useState(false);
 
   const addr = p.address?.oneLine || [p.address?.line1, p.address?.line2].filter(Boolean).join(", ") || "Property Detail";
   const sqft = p.building?.size?.livingSize || p.building?.size?.universalSize || p.building?.size?.bldgSize;
@@ -78,11 +81,39 @@ export default function PropertyDetailModal({
   const lastSaleAmt = p.sale?.amount?.saleAmt || p.sale?.amount?.salePrice;
   const equity = avmVal && lastSaleAmt ? avmVal - lastSaleAmt : null;
 
+  // Fetch federal data when the Federal tab is selected
+  useEffect(() => {
+    if (activeSection !== "federal" || federalData || federalLoading) return;
+    const zipCode = p.address?.postal1;
+    if (!zipCode) return;
+
+    setFederalLoading(true);
+    const params = new URLSearchParams({
+      endpoint: "supplement",
+      zipCode,
+      ...(p.address?.countrySubd ? { state: p.address.countrySubd } : {}),
+      ...(p.identifier?.fips ? { stateFips: p.identifier.fips.substring(0, 2), countyFips: p.identifier.fips.substring(2, 5) } : {}),
+      ...(p.address?.line1 ? { address: p.address.line1 } : {}),
+      ...(p.address?.locality ? { city: p.address.locality } : {}),
+    });
+
+    fetch(`/api/integrations/federal-data/query?${params}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success !== false) {
+          setFederalData(data);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setFederalLoading(false));
+  }, [activeSection, federalData, federalLoading, p]);
+
   const sections = [
     { id: "overview" as const, label: "Overview" },
     { id: "building" as const, label: "Building" },
     { id: "financial" as const, label: "Financial" },
     { id: "ownership" as const, label: "Ownership" },
+    { id: "federal" as const, label: "Area Intel" },
   ];
 
   return (
@@ -333,6 +364,129 @@ export default function PropertyDetailModal({
                 <Field label="Absentee Status" value={p.owner?.absenteeOwnerStatus || (p.summary?.absenteeInd === "O" ? "Absentee Owner" : p.summary?.absenteeInd === "S" ? "Owner Occupied" : undefined)} />
                 <Field label="Mailing Address" value={p.owner?.mailingAddressOneLine} />
               </Section>
+            </>
+          )}
+
+          {activeSection === "federal" && (
+            <>
+              {federalLoading && (
+                <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>
+                  Loading federal data sources...
+                </div>
+              )}
+
+              {!federalLoading && !federalData && (
+                <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>
+                  Federal data not available. Connect the Federal Data integration to access government property intelligence.
+                </div>
+              )}
+
+              {federalData && (
+                <>
+                  {/* Vacancy / Occupancy */}
+                  {federalData.vacancy && (
+                    <Section title="Vacancy Status">
+                      {federalData.vacancy.source === "usps" && (
+                        <Field label="USPS Vacancy" value={federalData.vacancy.vacant ? "Vacant" : "Active Mail Delivery"} />
+                      )}
+                      {federalData.vacancy.vacancyRate != null && (
+                        <Field label="Area Vacancy Rate" value={`${federalData.vacancy.vacancyRate.toFixed(1)}%`} />
+                      )}
+                      <Field label="Data Source" value={federalData.vacancy.source === "usps" ? "USPS" : "Census Bureau ACS"} />
+                    </Section>
+                  )}
+
+                  {/* Fair Market Rents */}
+                  {federalData.fairMarketRent && (
+                    <Section title="HUD Fair Market Rents">
+                      <Field label="Area" value={federalData.fairMarketRent.areaName || federalData.fairMarketRent.countyName} />
+                      <Field label="Studio/Efficiency" value={fmt(federalData.fairMarketRent.efficiency)} />
+                      <Field label="1 Bedroom" value={fmt(federalData.fairMarketRent.oneBedroom)} />
+                      <Field label="2 Bedroom" value={fmt(federalData.fairMarketRent.twoBedroom)} />
+                      <Field label="3 Bedroom" value={fmt(federalData.fairMarketRent.threeBedroom)} />
+                      <Field label="4 Bedroom" value={fmt(federalData.fairMarketRent.fourBedroom)} />
+                      <Field label="Year" value={federalData.fairMarketRent.year} />
+                    </Section>
+                  )}
+
+                  {/* Demographics */}
+                  {federalData.demographics && (
+                    <Section title="Census Demographics">
+                      <Field label="Total Population" value={fmtNum(federalData.demographics.totalPopulation ?? undefined)} />
+                      <Field label="Median Age" value={federalData.demographics.medianAge ?? undefined} />
+                      <Field label="Median Household Income" value={fmt(federalData.demographics.medianHouseholdIncome ?? undefined)} />
+                      <Field label="Median Home Value" value={fmt(federalData.demographics.medianHomeValue ?? undefined)} />
+                      <Field label="Median Gross Rent" value={fmt(federalData.demographics.medianGrossRent ?? undefined)} />
+                      <Field label="Total Housing Units" value={fmtNum(federalData.demographics.totalHousingUnits ?? undefined)} />
+                      <Field label="Owner Occupied" value={fmtNum(federalData.demographics.ownerOccupied ?? undefined)} />
+                      <Field label="Renter Occupied" value={fmtNum(federalData.demographics.renterOccupied ?? undefined)} />
+                      <Field label="Vacant Units" value={fmtNum(federalData.demographics.vacantUnits ?? undefined)} />
+                    </Section>
+                  )}
+
+                  {/* Flood Risk */}
+                  {federalData.floodRisk && (
+                    <Section title="FEMA Flood Insurance">
+                      <Field label="Flood Zone" value={federalData.floodRisk.floodZone} />
+                      <Field label="NFIP Policies" value={fmtNum(federalData.floodRisk.policyCount)} />
+                      <Field label="Avg Premium" value={fmt(Math.round(federalData.floodRisk.averagePremium))} />
+                      <Field label="Total Coverage" value={fmt(federalData.floodRisk.totalCoverage)} />
+                    </Section>
+                  )}
+
+                  {/* Conforming Loan Limits */}
+                  {federalData.conformingLoanLimit && (
+                    <Section title="FHFA Conforming Loan Limits">
+                      <Field label="1 Unit" value={fmt(federalData.conformingLoanLimit.oneUnit)} />
+                      <Field label="2 Units" value={fmt(federalData.conformingLoanLimit.twoUnit)} />
+                      <Field label="3 Units" value={fmt(federalData.conformingLoanLimit.threeUnit)} />
+                      <Field label="4 Units" value={fmt(federalData.conformingLoanLimit.fourUnit)} />
+                      <Field label="Year" value={federalData.conformingLoanLimit.year} />
+                      <Field label="County" value={federalData.conformingLoanLimit.county} />
+                    </Section>
+                  )}
+
+                  {/* Employment */}
+                  {federalData.localEmployment?.unemploymentRate && (
+                    <Section title="BLS Employment Data">
+                      <Field label="State Unemployment Rate" value={`${federalData.localEmployment.unemploymentRate}%`} />
+                    </Section>
+                  )}
+
+                  {/* Lending Data */}
+                  {federalData.lendingData && (
+                    <Section title="HMDA Mortgage Lending">
+                      <Field label="Total Applications" value={fmtNum(federalData.lendingData.totalApplications)} />
+                      <Field label="Total Originations" value={fmtNum(federalData.lendingData.totalOriginations)} />
+                      <Field label="Total Denials" value={fmtNum(federalData.lendingData.totalDenials)} />
+                      <Field label="Approval Rate" value={federalData.lendingData.approvalRate ? `${federalData.lendingData.approvalRate.toFixed(1)}%` : undefined} />
+                      <Field label="Median Loan Amount" value={fmt(federalData.lendingData.medianLoanAmount)} />
+                      <Field label="Year" value={federalData.lendingData.year} />
+                    </Section>
+                  )}
+
+                  {/* Environmental Sites */}
+                  {federalData.environmentalSites && federalData.environmentalSites.length > 0 && (
+                    <Section title="EPA Environmental Sites">
+                      {federalData.environmentalSites.slice(0, 10).map((site, i) => (
+                        <Field key={i} label={site.siteType} value={site.facilityName} />
+                      ))}
+                      {federalData.environmentalSites.length > 10 && (
+                        <Field label="More Sites" value={`${federalData.environmentalSites.length - 10} additional`} />
+                      )}
+                    </Section>
+                  )}
+
+                  {/* Recent Disasters */}
+                  {federalData.recentDisasters && federalData.recentDisasters.length > 0 && (
+                    <Section title="Recent FEMA Disaster Declarations">
+                      {federalData.recentDisasters.slice(0, 5).map((d, i) => (
+                        <Field key={i} label={d.incidentType} value={`${d.title} (${d.declarationDate?.substring(0, 10)})`} />
+                      ))}
+                    </Section>
+                  )}
+                </>
+              )}
             </>
           )}
         </div>

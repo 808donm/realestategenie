@@ -8,6 +8,7 @@ import PayPalIntegrationCard from "./paypal-card";
 import StripeIntegrationCard from "./stripe-card";
 import TrestleIntegrationCard from "./trestle-card";
 import AttomIntegrationCard from "./attom-card";
+import FederalDataIntegrationCard from "./federal-data-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import IntegrationsNotifications from "./notifications";
 
@@ -51,6 +52,15 @@ export default async function IntegrationsPage() {
     .limit(1);
 
   const attomIntegration = attomIntegrations?.[0] || null;
+
+  // Federal Data is platform-wide — find any connected integration across all agents
+  const { data: federalIntegrations } = await supabaseAdmin
+    .from("integrations")
+    .select("*")
+    .eq("provider", "federal_data")
+    .limit(1);
+
+  const federalIntegration = federalIntegrations?.[0] || null;
 
   // Fetch new OAuth-based connections (for regular agents)
   const { data: connections } = await supabase
@@ -106,6 +116,7 @@ export default async function IntegrationsPage() {
       <div className="grid gap-6 md:grid-cols-2">
         <TrestleIntegrationCard integration={trestleIntegration || null} />
         <AttomIntegrationCard integration={attomIntegration} isPlatformAdmin={isPlatformAdmin} />
+        <FederalDataIntegrationCard integration={federalIntegration} isPlatformAdmin={isPlatformAdmin} />
       </div>
 
       {/* Coming Soon Integrations */}

@@ -19,8 +19,12 @@ interface AttomProperty {
   };
   lot?: { lotSize1?: number; lotSize2?: number; poolInd?: string; siteZoningIdent?: string };
   owner?: {
-    owner1?: { fullName?: string }; owner2?: { fullName?: string };
+    owner1?: { fullName?: string; lastName?: string; firstNameAndMi?: string };
+    owner2?: { fullName?: string; lastName?: string; firstNameAndMi?: string };
+    owner3?: { fullName?: string; lastName?: string; firstNameAndMi?: string };
+    owner4?: { fullName?: string; lastName?: string; firstNameAndMi?: string };
     corporateIndicator?: string; absenteeOwnerStatus?: string; mailingAddressOneLine?: string; ownerOccupied?: string;
+    ownerRelationshipType?: string; ownerRelationshipRights?: string;
   };
   assessment?: {
     appraised?: { apprTtlValue?: number };
@@ -29,7 +33,7 @@ interface AttomProperty {
     tax?: { taxAmt?: number; taxYear?: number };
   };
   sale?: {
-    amount?: { saleAmt?: number; saleTransDate?: string; saleRecDate?: string; saleDocType?: string; salePrice?: number; saleSearchDate?: string };
+    amount?: { saleAmt?: number; saleTransDate?: string; saleRecDate?: string; saleDocType?: string; saleDocNum?: string; saleTransType?: string; saleCode?: string; saleDisclosureType?: string; salePrice?: number; saleSearchDate?: string };
     calculation?: { pricePerBed?: number; pricePerSizeUnit?: number };
     // ATTOM sometimes places date/amount fields at the sale level too
     saleAmt?: number; salePrice?: number;
@@ -402,24 +406,71 @@ export default function Prospecting() {
       const supp = (id ? byId.get(id) : null) || (addr ? byAddr.get(addr) : null);
       if (!supp) return p;
 
-      // Determine if supplement has useful owner data (name, mailing address, or corporate flag)
-      const suppHasOwner = supp.owner?.owner1?.fullName
-        || supp.owner?.mailingAddressOneLine
-        || supp.owner?.corporateIndicator
-        || supp.owner?.absenteeOwnerStatus
-        || supp.owner?.ownerOccupied;
+      // Deep-merge owner data: supplement fills in any fields the base is missing.
+      // The base expandedprofile often returns a partial owner (just a name) while
+      // detailmortgageowner/detailowner returns full owner info (mailing address,
+      // corporate indicator, occupancy status). We must merge, not choose one or the other.
+      const mergedOwner = (p.owner || supp.owner) ? {
+        owner1: {
+          fullName: p.owner?.owner1?.fullName || supp.owner?.owner1?.fullName,
+          lastName: p.owner?.owner1?.lastName || supp.owner?.owner1?.lastName,
+          firstNameAndMi: p.owner?.owner1?.firstNameAndMi || supp.owner?.owner1?.firstNameAndMi,
+        },
+        owner2: {
+          fullName: p.owner?.owner2?.fullName || supp.owner?.owner2?.fullName,
+          lastName: p.owner?.owner2?.lastName || supp.owner?.owner2?.lastName,
+          firstNameAndMi: p.owner?.owner2?.firstNameAndMi || supp.owner?.owner2?.firstNameAndMi,
+        },
+        owner3: {
+          fullName: p.owner?.owner3?.fullName || supp.owner?.owner3?.fullName,
+          lastName: p.owner?.owner3?.lastName || supp.owner?.owner3?.lastName,
+          firstNameAndMi: p.owner?.owner3?.firstNameAndMi || supp.owner?.owner3?.firstNameAndMi,
+        },
+        owner4: {
+          fullName: p.owner?.owner4?.fullName || supp.owner?.owner4?.fullName,
+          lastName: p.owner?.owner4?.lastName || supp.owner?.owner4?.lastName,
+          firstNameAndMi: p.owner?.owner4?.firstNameAndMi || supp.owner?.owner4?.firstNameAndMi,
+        },
+        corporateIndicator: p.owner?.corporateIndicator || supp.owner?.corporateIndicator,
+        mailingAddressOneLine: p.owner?.mailingAddressOneLine || supp.owner?.mailingAddressOneLine,
+        absenteeOwnerStatus: p.owner?.absenteeOwnerStatus || supp.owner?.absenteeOwnerStatus,
+        ownerOccupied: p.owner?.ownerOccupied || supp.owner?.ownerOccupied,
+        ownerRelationshipType: p.owner?.ownerRelationshipType || supp.owner?.ownerRelationshipType,
+        ownerRelationshipRights: p.owner?.ownerRelationshipRights || supp.owner?.ownerRelationshipRights,
+      } : p.owner;
+
+      // Deep-merge sale data: supplement fills in missing sale fields
+      const mergedSale = (p.sale || supp.sale) ? {
+        amount: {
+          saleAmt: p.sale?.amount?.saleAmt || supp.sale?.amount?.saleAmt,
+          salePrice: p.sale?.amount?.salePrice || supp.sale?.amount?.salePrice,
+          saleTransDate: p.sale?.amount?.saleTransDate || supp.sale?.amount?.saleTransDate,
+          saleRecDate: p.sale?.amount?.saleRecDate || supp.sale?.amount?.saleRecDate,
+          saleDocType: p.sale?.amount?.saleDocType || supp.sale?.amount?.saleDocType,
+          saleDocNum: p.sale?.amount?.saleDocNum || supp.sale?.amount?.saleDocNum,
+          saleTransType: p.sale?.amount?.saleTransType || supp.sale?.amount?.saleTransType,
+          saleCode: p.sale?.amount?.saleCode || supp.sale?.amount?.saleCode,
+          saleDisclosureType: p.sale?.amount?.saleDisclosureType || supp.sale?.amount?.saleDisclosureType,
+        },
+        calculation: {
+          pricePerBed: p.sale?.calculation?.pricePerBed || supp.sale?.calculation?.pricePerBed,
+          pricePerSizeUnit: p.sale?.calculation?.pricePerSizeUnit || supp.sale?.calculation?.pricePerSizeUnit,
+        },
+        // Preserve any extra sale fields from either source
+        ...(supp.sale || {}),
+        ...(p.sale || {}),
+      } : p.sale;
 
       return {
         ...p,
-        // Fill in missing owner data — take supplement if base has no owner name
-        // AND supplement has ANY useful owner info (name, mailing addr, corporate indicator)
-        owner: getOwnerName(p) ? p.owner : (suppHasOwner ? supp.owner : p.owner),
+        // Use deep-merged owner data so no supplemental fields are lost
+        owner: mergedOwner,
+        // Use deep-merged sale data so no supplemental fields are lost
+        sale: mergedSale,
         // Fill in missing AVM data from supplement
         avm: p.avm?.amount?.value ? p.avm : (supp.avm?.amount?.value ? supp.avm : p.avm),
         // Fill in missing mortgage data from supplement
         mortgage: getMortgageAmount(p) != null ? p.mortgage : (getMortgageAmount(supp as AttomProperty) != null ? supp.mortgage : p.mortgage),
-        // Fill in missing sale data from supplement
-        sale: getSaleAmount(p) != null ? p.sale : (getSaleAmount(supp as AttomProperty) != null ? supp.sale : p.sale),
         // Fill in missing assessment data from supplement (take richer data)
         assessment: p.assessment?.assessed?.assdTtlValue ? p.assessment : (supp.assessment?.assessed?.assdTtlValue ? supp.assessment : p.assessment),
       };
