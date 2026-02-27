@@ -27,7 +27,11 @@ interface AttomProperty {
     market?: { mktTtlValue?: number };
     tax?: { taxAmt?: number; taxYear?: number };
   };
-  sale?: { amount?: { saleAmt?: number; saleTransDate?: string; saleRecDate?: string; saleDocType?: string; salePrice?: number } };
+  sale?: {
+    amount?: { saleAmt?: number; saleTransDate?: string; saleRecDate?: string; saleDocType?: string; salePrice?: number };
+    // ATTOM sometimes places date fields at the sale level too
+    saleTransDate?: string; saleRecDate?: string; saleSearchDate?: string;
+  };
   avm?: { amount?: { value?: number; high?: number; low?: number; scr?: number }; eventDate?: string };
   mortgage?: { amount?: number; lender?: { fullName?: string }; term?: string; date?: string };
   foreclosure?: { actionType?: string; filingDate?: string; auctionDate?: string; defaultAmount?: number; originalLoanAmount?: number; auctionLocation?: string };
@@ -111,6 +115,47 @@ function getDistressSignals(p: AttomProperty): DistressSignals {
   const isDistressed = isUnderwater || highLtv || assessmentDrop;
 
   return { isDistressed, isUnderwater, highLtv, ltvPct, mortgageAmount, avmValue, assessmentDrop };
+}
+
+/**
+ * Parse a date string in various formats ATTOM may return:
+ *  - "2015-06-02" (ISO)
+ *  - "06/02/2015" (US MM/DD/YYYY)
+ *  - "2015/06/02"
+ *  - "6/2/2015"
+ * Returns null if unparseable.
+ */
+function parseDate(s: string | undefined | null): Date | null {
+  if (!s || typeof s !== "string") return null;
+  const trimmed = s.trim();
+  if (!trimmed) return null;
+  const d = new Date(trimmed);
+  // Reject clearly invalid dates (NaN, year 0, or dates before 1900)
+  if (isNaN(d.getTime()) || d.getFullYear() < 1900) return null;
+  return d;
+}
+
+/**
+ * Extract the best available ownership/purchase date from ATTOM property data.
+ *
+ * ATTOM nests sale dates inconsistently across response formats:
+ *  - sale.amount.saleTransDate  (most common in expandedprofile)
+ *  - sale.amount.saleRecDate    (recording date — close to transaction)
+ *  - sale.saleTransDate         (sometimes at sale root level)
+ *  - sale.saleRecDate
+ *  - sale.saleSearchDate
+ *  - mortgage.date              (fallback — mortgage origination ~ purchase)
+ */
+function getOwnershipDate(p: AttomProperty): Date | null {
+  return (
+    parseDate(p.sale?.amount?.saleTransDate) ||
+    parseDate(p.sale?.amount?.saleRecDate) ||
+    parseDate(p.sale?.saleTransDate) ||
+    parseDate(p.sale?.saleRecDate) ||
+    parseDate(p.sale?.saleSearchDate) ||
+    parseDate(p.mortgage?.date) ||
+    null
+  );
 }
 
 // ── Investor grouping helpers ──────────────────────────────────────────────
@@ -210,9 +255,6 @@ export default function Prospecting() {
     if (mode === "absentee" || mode === "equity" || mode === "investor") {
       params.set("endpoint", "expanded");
     }
-    if (mode === "equity") {
-      if (minAvmValue) params.set("minavmvalue", minAvmValue);
-    }
     if (mode === "foreclosure") {
       params.set("endpoint", "expanded");
     }
@@ -282,25 +324,27 @@ export default function Prospecting() {
           setTotalCount(matches.length);
           setInvestorGroups([]);
         } else if (mode === "equity") {
-          // Filter by owner tenure using saleTransDate — the year the property
-          // was BUILT (maxYearBuilt) says nothing about how long the current
-          // owner has held it. We use the last sale date to identify long-tenure
-          // owners who have built up significant equity through appreciation.
+          // Filter by owner tenure using the actual purchase/sale date.
+          // The old maxYearBuilt filter only checked when the property was
+          // BUILT, not when the current owner purchased it.
           const minYears = parseInt(minYearsOwned, 10) || 10;
           const cutoffDate = new Date();
           cutoffDate.setFullYear(cutoffDate.getFullYear() - minYears);
+          const minAvm = minAvmValue ? Number(minAvmValue) : 0;
 
           const matches = allRaw.filter((p) => {
-            // Must have a sale date to determine tenure
-            const saleDateStr = p.sale?.amount?.saleTransDate || p.sale?.amount?.saleRecDate;
-            if (!saleDateStr) return false;
-            const saleDate = new Date(saleDateStr);
-            if (isNaN(saleDate.getTime())) return false;
-            // Owner must have purchased before the cutoff
-            if (saleDate > cutoffDate) return false;
             // Must have AVM data to estimate equity
             const avmVal = p.avm?.amount?.value;
             if (!avmVal || avmVal <= 0) return false;
+            // Client-side AVM floor filter (replaces broken server-side minavmvalue)
+            if (minAvm > 0 && avmVal < minAvm) return false;
+
+            // Must have a sale/ownership date to determine tenure
+            const ownershipDate = getOwnershipDate(p);
+            if (!ownershipDate) return false;
+            // Owner must have purchased before the cutoff
+            if (ownershipDate > cutoffDate) return false;
+
             // Must have positive equity (AVM > purchase price)
             const purchasePrice = p.sale?.amount?.saleAmt || p.sale?.amount?.salePrice || 0;
             if (purchasePrice > 0 && avmVal <= purchasePrice) return false;
@@ -399,10 +443,9 @@ export default function Prospecting() {
     const absentee = isAbsenteeOwner(prop);
     const equity = avmVal && lastSale ? avmVal - lastSale : null;
     const equityPct = avmVal && lastSale ? ((avmVal - lastSale) / avmVal) * 100 : null;
-    const saleDateStr = prop.sale?.amount?.saleTransDate || prop.sale?.amount?.saleRecDate;
-    const saleDate = saleDateStr ? new Date(saleDateStr) : null;
-    const yearsOwned = saleDate && !isNaN(saleDate.getTime())
-      ? Math.floor((Date.now() - saleDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+    const ownershipDate = getOwnershipDate(prop);
+    const yearsOwned = ownershipDate
+      ? Math.floor((Date.now() - ownershipDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000))
       : null;
     const sqft = prop.building?.size?.livingSize || prop.building?.size?.universalSize || prop.building?.size?.bldgSize;
     const beds = prop.building?.rooms?.beds;
@@ -465,9 +508,9 @@ export default function Prospecting() {
                   }}>
                     Owned {yearsOwned} years
                   </span>
-                  {saleDateStr && (
+                  {ownershipDate && (
                     <span style={{ color: "#6b7280" }}>
-                      Purchased: {saleDate!.toLocaleDateString("en-US", { month: "short", year: "numeric" })}
+                      Purchased: {ownershipDate.toLocaleDateString("en-US", { month: "short", year: "numeric" })}
                     </span>
                   )}
                   {lastSale != null && (
