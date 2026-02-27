@@ -82,6 +82,20 @@ function getOwnerName(p: AttomProperty): string | null {
   return p.owner?.owner1?.fullName || p.owner?.owner2?.fullName || null;
 }
 
+/**
+ * Get the best available property value estimate.
+ * ATTOM's expandedprofile endpoint does NOT return AVM data for postal code
+ * area searches. We fall back through assessment values which ARE returned:
+ *   AVM → market value → appraised value → assessed value
+ */
+function getPropertyValue(p: AttomProperty): number | null {
+  if (p.avm?.amount?.value != null && p.avm.amount.value > 0) return p.avm.amount.value;
+  if (p.assessment?.market?.mktTtlValue != null && p.assessment.market.mktTtlValue > 0) return p.assessment.market.mktTtlValue;
+  if (p.assessment?.appraised?.apprTtlValue != null && p.assessment.appraised.apprTtlValue > 0) return p.assessment.appraised.apprTtlValue;
+  if (p.assessment?.assessed?.assdTtlValue != null && p.assessment.assessed.assdTtlValue > 0) return p.assessment.assessed.assdTtlValue;
+  return null;
+}
+
 type ProspectMode = "absentee" | "equity" | "foreclosure" | "radius" | "investor";
 
 const PROPERTY_TYPES = [
@@ -137,7 +151,8 @@ interface DistressSignals {
 
 function getDistressSignals(p: AttomProperty): DistressSignals {
   const mortgageAmount = getMortgageAmount(p);
-  const avmValue = p.avm?.amount?.value ?? null;
+  // Use getPropertyValue() which falls back from AVM → assessment values
+  const avmValue = getPropertyValue(p);
   const assdTotal = p.assessment?.assessed?.assdTtlValue ?? null;
   const mktTotal = p.assessment?.market?.mktTtlValue ?? null;
 
@@ -238,7 +253,7 @@ function groupByOwner(properties: AttomProperty[]): InvestorGroup[] {
       isCorporate,
       properties: props,
       totalTaxBurden: props.reduce((sum, p) => sum + (p.assessment?.tax?.taxAmt || 0), 0),
-      totalAvmValue: props.reduce((sum, p) => sum + (p.avm?.amount?.value || 0), 0),
+      totalAvmValue: props.reduce((sum, p) => sum + (getPropertyValue(p) || 0), 0),
       oldestYearBuilt: years.length > 0 ? Math.min(...years) : null,
       avgYearBuilt: years.length > 0 ? Math.round(years.reduce((a, b) => a + b, 0) / years.length) : null,
     });
@@ -284,20 +299,20 @@ export default function Prospecting() {
   /**
    * Fetch a single page of ATTOM results with the current mode's filters.
    */
-  const fetchPage = async (pageNum: number) => {
+  const fetchPage = async (pageNum: number, endpointOverride?: string) => {
     const params = new URLSearchParams();
     params.set("postalcode", zip.trim());
     params.set("propertytype", propertyType);
     params.set("page", String(pageNum));
     params.set("pagesize", String(pageSize));
 
-    if (mode === "absentee" || mode === "equity" || mode === "investor") {
+    if (endpointOverride) {
+      params.set("endpoint", endpointOverride);
+    } else if (mode === "absentee" || mode === "equity" || mode === "investor") {
       params.set("endpoint", "expanded");
-    }
-    if (mode === "foreclosure") {
+    } else if (mode === "foreclosure") {
       params.set("endpoint", "expanded");
-    }
-    if (mode === "radius") {
+    } else if (mode === "radius") {
       params.set("endpoint", "salesnapshot");
       params.set("startSaleSearchDate", startDate);
       params.set("endSaleSearchDate", endDate);
@@ -311,6 +326,52 @@ export default function Prospecting() {
     }
 
     return data;
+  };
+
+  /**
+   * Merge supplemental property data into the base array.
+   * Matches by attomId first, then by address as fallback.
+   * Only fills in fields that are missing from the base data.
+   */
+  const mergeSupplementalData = (
+    base: AttomProperty[],
+    supplements: AttomProperty[][]
+  ): AttomProperty[] => {
+    // Build lookup maps from all supplement arrays
+    const byId = new Map<number, AttomProperty>();
+    const byAddr = new Map<string, AttomProperty>();
+
+    for (const suppList of supplements) {
+      for (const s of suppList) {
+        const id = s.identifier?.attomId;
+        if (id) {
+          const existing = byId.get(id);
+          byId.set(id, existing ? { ...existing, ...s } : s);
+        }
+        const addr = s.address?.oneLine?.toLowerCase().trim();
+        if (addr) {
+          const existing = byAddr.get(addr);
+          byAddr.set(addr, existing ? { ...existing, ...s } : s);
+        }
+      }
+    }
+
+    return base.map((p) => {
+      const id = p.identifier?.attomId;
+      const addr = p.address?.oneLine?.toLowerCase().trim();
+      const supp = (id ? byId.get(id) : null) || (addr ? byAddr.get(addr) : null);
+      if (!supp) return p;
+
+      return {
+        ...p,
+        // Fill in missing owner data from supplement
+        owner: getOwnerName(p) ? p.owner : (supp.owner?.owner1?.fullName ? supp.owner : p.owner),
+        // Fill in missing AVM data from supplement
+        avm: p.avm?.amount?.value ? p.avm : (supp.avm?.amount?.value ? supp.avm : p.avm),
+        // Fill in missing mortgage data from supplement
+        mortgage: getMortgageAmount(p) != null ? p.mortgage : (getMortgageAmount(supp as AttomProperty) != null ? supp.mortgage : p.mortgage),
+      };
+    });
   };
 
   const handleSearch = async (pageNum = 1) => {
@@ -329,19 +390,42 @@ export default function Prospecting() {
       // ATTOM's expandedprofile doesn't support server-side filtering for
       // absentee status, distress signals, owner tenure, or multi-property
       // owner grouping, so we scan multiple pages and filter/group locally.
+      //
+      // IMPORTANT: ATTOM's expandedprofile does NOT return owner names,
+      // mortgage data, or AVM values for postal code area searches.
+      // We supplement with /property/detail (for owner data) and use
+      // assessment values as AVM fallback via getPropertyValue().
       const needsMultiPage = mode === "absentee" || mode === "foreclosure" || mode === "investor" || mode === "equity";
 
       if (needsMultiPage) {
         let allRaw: AttomProperty[] = [];
         const maxPages = 3;
 
+        // Determine which supplemental endpoints to fetch for this mode
+        const needsOwnerData = mode === "absentee" || mode === "investor";
+
         for (let pg = 1; pg <= maxPages; pg++) {
-          const data = await fetchPage(pg);
-          const raw: AttomProperty[] = data.property || [];
-          if (raw.length === 0) break;
-          allRaw = allRaw.concat(raw);
+          // Fetch expanded profile + supplemental detail endpoint in parallel
+          const fetches: Promise<any>[] = [fetchPage(pg)];
+          if (needsOwnerData) {
+            fetches.push(
+              fetchPage(pg, "detail").catch(() => ({ property: [] }))
+            );
+          }
+
+          const [expandedData, ...suppResults] = await Promise.all(fetches);
+          const baseProps: AttomProperty[] = expandedData.property || [];
+          if (baseProps.length === 0) break;
+
+          // Merge supplemental data (owner names etc.) into base properties
+          const suppArrays = suppResults.map((r: any) => (r.property || []) as AttomProperty[]);
+          const merged = suppArrays.length > 0
+            ? mergeSupplementalData(baseProps, suppArrays)
+            : baseProps;
+
+          allRaw = allRaw.concat(merged);
           // Stop if ATTOM returned fewer than a full page (no more data)
-          if (raw.length < pageSize) break;
+          if (baseProps.length < pageSize) break;
         }
 
         // Data diagnostics: show what ATTOM actually returned
@@ -350,10 +434,12 @@ export default function Prospecting() {
         const withSaleDate = allRaw.filter((p) => getSaleDateStr(p)).length;
         const withMortgage = allRaw.filter((p) => getMortgageAmount(p) != null).length;
         const withAvm = allRaw.filter((p) => p.avm?.amount?.value != null).length;
+        const withValue = allRaw.filter((p) => getPropertyValue(p) != null).length;
         const withAbsentee = allRaw.filter(isAbsenteeOwner).length;
         setDebugInfo(
           `Scanned ${allRaw.length} properties — ${withOwner} with owner names, ${withSaleAmt} with sale amounts, ` +
-          `${withSaleDate} with sale dates, ${withMortgage} with mortgage data, ${withAvm} with AVM, ${withAbsentee} absentee`
+          `${withSaleDate} with sale dates, ${withMortgage} with mortgage data, ${withAvm} with AVM, ` +
+          `${withValue} with property values (AVM or assessment), ${withAbsentee} absentee`
         );
 
         if (mode === "absentee") {
@@ -376,19 +462,19 @@ export default function Prospecting() {
           setInvestorGroups([]);
         } else if (mode === "equity") {
           // Filter by owner tenure using the actual purchase/sale date.
-          // The old maxYearBuilt filter only checked when the property was
-          // BUILT, not when the current owner purchased it.
+          // Uses getPropertyValue() which falls back from AVM → assessment
+          // values when AVM isn't available (common in postal code searches).
           const minYears = parseInt(minYearsOwned, 10) || 10;
           const cutoffDate = new Date();
           cutoffDate.setFullYear(cutoffDate.getFullYear() - minYears);
           const minAvm = minAvmValue ? Number(minAvmValue) : 0;
 
           const matches = allRaw.filter((p) => {
-            // Must have AVM data to estimate equity
-            const avmVal = p.avm?.amount?.value;
-            if (!avmVal || avmVal <= 0) return false;
-            // Client-side AVM floor filter (replaces broken server-side minavmvalue)
-            if (minAvm > 0 && avmVal < minAvm) return false;
+            // Must have some value estimate (AVM or assessment) to gauge equity
+            const propVal = getPropertyValue(p);
+            if (!propVal || propVal <= 0) return false;
+            // Client-side value floor filter
+            if (minAvm > 0 && propVal < minAvm) return false;
 
             // Must have a sale/ownership date to determine tenure
             const ownershipDate = getOwnershipDate(p);
@@ -396,19 +482,19 @@ export default function Prospecting() {
             // Owner must have purchased before the cutoff
             if (ownershipDate > cutoffDate) return false;
 
-            // Must have positive equity (AVM > purchase price)
+            // Must have positive equity (current value > purchase price)
             const purchasePrice = getSaleAmount(p) || 0;
-            if (purchasePrice > 0 && avmVal <= purchasePrice) return false;
+            if (purchasePrice > 0 && propVal <= purchasePrice) return false;
             return true;
           });
 
           // Sort by estimated equity descending (highest equity first)
           matches.sort((a, b) => {
-            const aAvm = a.avm?.amount?.value || 0;
+            const aVal = getPropertyValue(a) || 0;
             const aSale = getSaleAmount(a) || 0;
-            const bAvm = b.avm?.amount?.value || 0;
+            const bVal = getPropertyValue(b) || 0;
             const bSale = getSaleAmount(b) || 0;
-            return (bAvm - bSale) - (aAvm - aSale);
+            return (bVal - bSale) - (aVal - aSale);
           });
 
           setResults(matches);
@@ -426,18 +512,30 @@ export default function Prospecting() {
         return;
       }
 
-      // Standard fetch for non-filtered modes (radius)
+      // Standard fetch for non-filtered modes (radius / Just Sold Farming)
       const data = await fetchPage(pageNum);
-      const properties: AttomProperty[] = data.property || [];
+      let properties: AttomProperty[] = data.property || [];
+
+      // Filter out non-disclosed sale prices — "Just Sold Farming" is pointless
+      // without actual sale prices for "Your Neighbor Just Sold for $X" campaigns
+      const totalFetched = properties.length;
+      properties = properties.filter((p) => {
+        const saleAmt = getSaleAmount(p);
+        return saleAmt != null && saleAmt > 0;
+      });
+      const excluded = totalFetched - properties.length;
 
       // Data diagnostics for radius mode
-      const withSale = properties.filter((p) => getSaleAmount(p) != null).length;
       const withDate = properties.filter((p) => getSaleDateStr(p)).length;
-      setDebugInfo(`Fetched ${properties.length} properties — ${withSale} with sale amounts, ${withDate} with sale dates`);
+      const withValue = properties.filter((p) => getPropertyValue(p) != null).length;
+      setDebugInfo(
+        `Fetched ${totalFetched} recent sales — ${properties.length} with disclosed prices, ` +
+        `${excluded} excluded (non-disclosed), ${withDate} with sale dates, ${withValue} with property values`
+      );
 
       setInvestorGroups([]);
       setResults(properties);
-      setTotalCount(data.status?.total || properties.length);
+      setTotalCount(properties.length);
       setHasSearched(true);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Search failed");
@@ -491,7 +589,8 @@ export default function Prospecting() {
   // ── Render helpers for each mode ─────────────────────────────────────────
 
   const renderPropertyCard = (prop: AttomProperty, idx: number) => {
-    const avmVal = prop.avm?.amount?.value;
+    // Use getPropertyValue() for display — falls back from AVM to assessment
+    const avmVal = getPropertyValue(prop);
     const avmHigh = prop.avm?.amount?.high;
     const avmLow = prop.avm?.amount?.low;
     const lastSale = getSaleAmount(prop);
