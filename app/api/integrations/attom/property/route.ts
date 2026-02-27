@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
     const passthrough = [
       "address1", "address2", "address", "postalcode", "apn", "fips",
       "propertytype", "startSaleSearchDate", "endSaleSearchDate",
-      "geoidv4", "orderby",
+      "geoidv4", "orderby", "absenteeowner",
     ];
 
     for (const key of passthrough) {
@@ -104,6 +104,9 @@ export async function GET(request: NextRequest) {
         break;
       case "detailowner":
         result = await client.getPropertyDetailOwner(params);
+        break;
+      case "detailmortgageowner":
+        result = await client.getPropertyDetailMortgageOwner(params);
         break;
       case "profile":
         result = await client.getPropertyBasicProfile(params);

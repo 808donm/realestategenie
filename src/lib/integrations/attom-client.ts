@@ -430,6 +430,8 @@ export interface AttomSearchParams {
   // AVM filters
   minavmvalue?: number;
   maxavmvalue?: number;
+  // Owner filters
+  absenteeowner?: string;
   // Sale filters
   startSaleSearchDate?: string;
   endSaleSearchDate?: string;
@@ -531,6 +533,21 @@ export class AttomClient {
     params: AttomSearchParams
   ): Promise<AttomApiResponse<AttomPropertyDetail>> {
     return this.request("/property/detailowner", this.buildParams(params));
+  }
+
+  /**
+   * Get property details with BOTH mortgage AND owner information in a single response.
+   * Returns owner names, mailing addresses, corporate indicators, plus mortgage lender,
+   * amount, term, and due date. More comprehensive than detailowner alone.
+   * Supports postal code area searches.
+   */
+  async getPropertyDetailMortgageOwner(
+    params: AttomSearchParams
+  ): Promise<AttomApiResponse<AttomPropertyDetail>> {
+    return this.request(
+      "/property/detailmortgageowner",
+      this.buildParams(params)
+    );
   }
 
   /**

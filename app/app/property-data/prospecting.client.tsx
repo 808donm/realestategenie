@@ -402,14 +402,26 @@ export default function Prospecting() {
       const supp = (id ? byId.get(id) : null) || (addr ? byAddr.get(addr) : null);
       if (!supp) return p;
 
+      // Determine if supplement has useful owner data (name, mailing address, or corporate flag)
+      const suppHasOwner = supp.owner?.owner1?.fullName
+        || supp.owner?.mailingAddressOneLine
+        || supp.owner?.corporateIndicator
+        || supp.owner?.absenteeOwnerStatus
+        || supp.owner?.ownerOccupied;
+
       return {
         ...p,
-        // Fill in missing owner data from supplement
-        owner: getOwnerName(p) ? p.owner : (supp.owner?.owner1?.fullName ? supp.owner : p.owner),
+        // Fill in missing owner data — take supplement if base has no owner name
+        // AND supplement has ANY useful owner info (name, mailing addr, corporate indicator)
+        owner: getOwnerName(p) ? p.owner : (suppHasOwner ? supp.owner : p.owner),
         // Fill in missing AVM data from supplement
         avm: p.avm?.amount?.value ? p.avm : (supp.avm?.amount?.value ? supp.avm : p.avm),
         // Fill in missing mortgage data from supplement
         mortgage: getMortgageAmount(p) != null ? p.mortgage : (getMortgageAmount(supp as AttomProperty) != null ? supp.mortgage : p.mortgage),
+        // Fill in missing sale data from supplement
+        sale: getSaleAmount(p) != null ? p.sale : (getSaleAmount(supp as AttomProperty) != null ? supp.sale : p.sale),
+        // Fill in missing assessment data from supplement (take richer data)
+        assessment: p.assessment?.assessed?.assdTtlValue ? p.assessment : (supp.assessment?.assessed?.assdTtlValue ? supp.assessment : p.assessment),
       };
     });
   };
@@ -448,17 +460,22 @@ export default function Prospecting() {
           : 4;
 
         // Determine which supplemental endpoints to fetch for this mode.
-        // ATTOM's /property/detailowner endpoint specifically returns owner
-        // names, mailing addresses, and corporate indicators — data that
-        // expandedprofile omits for postal code area searches.
-        const needsOwnerData = mode === "absentee" || mode === "investor" || mode === "equity" || mode === "foreclosure";
+        // ATTOM's /property/detailmortgageowner returns BOTH owner data
+        // (names, mailing addresses, corporate indicators) AND mortgage data
+        // (lender, amount, term) in one call. This is the most comprehensive
+        // endpoint for postal code area searches where expandedprofile omits
+        // owner and mortgage fields.
+        const needsSupplementalData = mode !== "radius";
 
         for (let pg = 1; pg <= maxPages; pg++) {
-          // Fetch expanded profile + supplemental detailowner endpoint in parallel
+          // Fetch base data + supplemental detailmortgageowner in parallel
           const fetches: Promise<any>[] = [fetchPage(pg)];
-          if (needsOwnerData) {
+          if (needsSupplementalData) {
             fetches.push(
-              fetchPage(pg, "detailowner").catch(() => ({ property: [] }))
+              fetchPage(pg, "detailmortgageowner").catch(() =>
+                // If detailmortgageowner fails, fall back to detailowner
+                fetchPage(pg, "detailowner").catch(() => ({ property: [] }))
+              )
             );
           }
 
@@ -558,19 +575,20 @@ export default function Prospecting() {
           setTotalCount(groups.length);
           setResults(allRaw);
         } else if (mode === "radius") {
-          // Just Sold Farming — filter to disclosed sale prices only.
-          // "Your Neighbor Just Sold for $X" campaigns need actual prices.
-          const withPrice = allRaw.filter((p) => {
-            const saleAmt = getSaleAmount(p);
-            return saleAmt != null && saleAmt > 0;
-          });
-          const excluded = allRaw.length - withPrice.length;
+          // Just Sold Farming — show all recent sales.
+          // In non-disclosure states (HI, TX, etc.) sale prices aren't public,
+          // so we can't filter to disclosed-only without losing ALL results.
+          // Instead, show all sales and use AVM/assessment as value proxy.
+          const withPrice = allRaw.filter((p) => getSaleAmount(p) != null && getSaleAmount(p)! > 0).length;
+          const withValue = allRaw.filter((p) => getPropertyValue(p) != null).length;
+          const isNonDisclosure = allRaw.length > 0 && withPrice === 0;
           setDebugInfo(
             `Scanned ${allRaw.length} recent sales across ${Math.min(maxPages, Math.ceil(allRaw.length / pageSize) + 1)} pages — ` +
-            `${withPrice.length} with disclosed prices, ${excluded} excluded (non-disclosed)`
+            `${withPrice} with disclosed prices, ${withValue} with estimated values` +
+            (isNonDisclosure ? ` (non-disclosure state — using assessed/market values)` : "")
           );
-          setResults(withPrice);
-          setTotalCount(withPrice.length);
+          setResults(allRaw);
+          setTotalCount(allRaw.length);
           setInvestorGroups([]);
         }
 
@@ -608,7 +626,7 @@ export default function Prospecting() {
     {
       id: "foreclosure",
       label: "Distressed / Pre-Foreclosure",
-      desc: "Underwater mortgages, high LTV, and assessment drops — owners under financial pressure who may need to sell.",
+      desc: "Underwater mortgages, stagnant values, and assessment drops — owners under financial pressure who may need to sell.",
       color: "#dc2626",
     },
     {
@@ -635,7 +653,10 @@ export default function Prospecting() {
     const lastSale = getSaleAmount(prop);
     const saleDateStr = getSaleDateStr(prop);
     const owner = getOwnerName(prop);
-    const absentee = isAbsenteeOwner(prop);
+    // Only show absentee badge when we have owner data to back it up.
+    // ATTOM sets summary.absenteeInd even when owner name is missing,
+    // but an absentee label without an owner name is useless.
+    const absentee = isAbsenteeOwner(prop) && (owner || prop.owner?.mailingAddressOneLine);
     const equity = avmVal && lastSale ? avmVal - lastSale : null;
     const equityPct = avmVal && lastSale ? ((avmVal - lastSale) / avmVal) * 100 : null;
     const ownershipDate = getOwnershipDate(prop);
@@ -808,19 +829,26 @@ export default function Prospecting() {
             {mode === "radius" && (
               <div style={{ marginTop: 6, padding: "6px 10px", background: "#f5f3ff", borderRadius: 6, fontSize: 12 }}>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
-                  {lastSale != null ? (
+                  {lastSale != null && lastSale > 0 ? (
                     <span><strong>Sold:</strong> {fmt(lastSale)}</span>
                   ) : (
-                    <span><strong>Sale price:</strong> Not disclosed</span>
+                    <span style={{ color: "#9ca3af" }}>
+                      <strong>Sale price:</strong> Not disclosed
+                      {avmVal != null && (
+                        <span style={{ color: "#6b7280" }}> — <strong>Est. value:</strong> {fmt(avmVal)}</span>
+                      )}
+                    </span>
                   )}
                   {saleDateStr && (
                     <span><strong>Date:</strong> {saleDateStr}</span>
                   )}
-                  {sqft && lastSale ? (
+                  {sqft && lastSale && lastSale > 0 ? (
                     <span><strong>$/sqft:</strong> ${Math.round(lastSale / sqft).toLocaleString()}</span>
+                  ) : sqft && avmVal ? (
+                    <span style={{ color: "#9ca3af" }}><strong>Est. $/sqft:</strong> ~${Math.round(avmVal / sqft).toLocaleString()}</span>
                   ) : null}
                 </div>
-                {avmVal != null && (
+                {avmVal != null && lastSale != null && lastSale > 0 && (
                   <div style={{ marginTop: 4, fontSize: 11, color: "#6b7280" }}>
                     AVM range: {fmt(avmLow)} – {fmt(avmHigh)} (est. {fmt(avmVal)})
                   </div>
@@ -832,8 +860,12 @@ export default function Prospecting() {
           <div style={{ display: "flex", gap: 16, flexWrap: "wrap", textAlign: "right" }}>
             {mode === "radius" && (
               <div>
-                <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>Sale Price</div>
-                <div style={{ fontWeight: 700, fontSize: 15, color: "#7c3aed" }}>{lastSale != null ? fmt(lastSale) : "N/A"}</div>
+                <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                  {lastSale != null && lastSale > 0 ? "Sale Price" : "Est. Value"}
+                </div>
+                <div style={{ fontWeight: 700, fontSize: 15, color: "#7c3aed" }}>
+                  {lastSale != null && lastSale > 0 ? fmt(lastSale) : avmVal != null ? fmt(avmVal) : "N/A"}
+                </div>
                 {saleDateStr && (
                   <div style={{ fontSize: 11, color: "#9ca3af" }}>{saleDateStr}</div>
                 )}
