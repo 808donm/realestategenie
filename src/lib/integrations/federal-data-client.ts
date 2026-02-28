@@ -396,14 +396,63 @@ export class FederalDataClient {
   }
 
   /**
-   * Get Fair Market Rents by ZIP code
+   * Convert a ZIP code to a county FIPS entity ID using HUD's USPS Crosswalk API.
+   * Returns the 10-digit entity ID (5-digit FIPS + "99999") needed by the FMR API,
+   * or null if the crosswalk fails.
+   */
+  private async zipToCountyEntityId(zipCode: string): Promise<string | null> {
+    try {
+      const url = `https://www.huduser.gov/hudapi/public/usps?type=2&query=${zipCode}`;
+      const response = await this.hudFetch(url);
+      if (!response.ok) return null;
+      const data = await response.json();
+      // Response is an object with a "data" wrapper or a direct array
+      const results = data?.data?.results || data?.results || (Array.isArray(data) ? data : data?.data);
+      if (Array.isArray(results) && results.length > 0) {
+        // Pick the county with the highest total ratio (most addresses overlap)
+        const best = results.reduce(
+          (a: any, b: any) => ((b.tot_ratio ?? 0) > (a.tot_ratio ?? 0) ? b : a),
+          results[0]
+        );
+        const geoid: string = best.geoid || best.county || "";
+        if (geoid.length === 5) return `${geoid}99999`;
+        if (geoid.length === 10 && geoid.endsWith("99999")) return geoid;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Get Fair Market Rents for a location.
+   * The HUD FMR API requires a county FIPS entity ID (5-digit FIPS + "99999"),
+   * NOT a raw ZIP code. If stateFips/countyFips are provided they are used
+   * directly; otherwise the USPS Crosswalk API converts the ZIP first.
+   *
    * API: https://www.huduser.gov/portal/dataset/fmr-api.html
    * Requires free HUD USER API token (register at huduser.gov/hudapi/public/register)
    */
-  async getFairMarketRents(zipCode: string): Promise<HUDFMRResult> {
+  async getFairMarketRents(
+    zipCode: string,
+    stateFips?: string,
+    countyFips?: string
+  ): Promise<HUDFMRResult> {
     try {
       if (!this.config.hudToken) {
         return { success: false, error: "HUD API token not configured. Get a free token at huduser.gov/hudapi/public/register" };
+      }
+
+      // Build the 10-digit entity ID the FMR API expects
+      let entityId: string | null = null;
+      if (stateFips && countyFips) {
+        entityId = `${stateFips}${countyFips}99999`;
+      } else {
+        // Use HUD USPS Crosswalk to convert ZIP → county FIPS entity ID
+        entityId = await this.zipToCountyEntityId(zipCode);
+      }
+      if (!entityId) {
+        return { success: false, error: `Could not resolve ZIP ${zipCode} to a county FIPS code for HUD FMR lookup` };
       }
 
       // HUD FMR API may require a year parameter. The fiscal year runs Oct–Sep,
@@ -413,7 +462,7 @@ export class FederalDataClient {
       const yearsToTry = [currentFY, currentFY - 1];
 
       for (const fy of yearsToTry) {
-        const url = `https://www.huduser.gov/hudapi/public/fmr/data/${zipCode}?year=${fy}`;
+        const url = `https://www.huduser.gov/hudapi/public/fmr/data/${entityId}?year=${fy}`;
         const response = await this.hudFetch(url);
 
         if (!response.ok) {
@@ -439,7 +488,7 @@ export class FederalDataClient {
 
       // If year-parameterized calls failed, try without year as final fallback
       const response = await this.hudFetch(
-        `https://www.huduser.gov/hudapi/public/fmr/data/${zipCode}`
+        `https://www.huduser.gov/hudapi/public/fmr/data/${entityId}`
       );
 
       if (!response.ok) {
@@ -1164,7 +1213,7 @@ export class FederalDataClient {
 
     // HUD Fair Market Rents
     tasks.push(
-      this.getFairMarketRents(zipCode)
+      this.getFairMarketRents(zipCode, stateFips, countyFips)
         .then((r) => {
           if (r.success && r.data?.basicdata) {
             supplement.fairMarketRent = r.data.basicdata;
@@ -1294,13 +1343,15 @@ export class FederalDataClient {
           return;
         }
         try {
-          // HUD FMR API may require year parameter. Try current FY first, then prior.
+          // HUD FMR API requires a county FIPS entity ID, NOT a raw ZIP code.
+          // Use Honolulu County, HI (FIPS 15003) → entity ID "1500399999".
+          const testEntityId = "1500399999";
           const now = new Date();
           const currentFY = now.getMonth() >= 9 ? now.getFullYear() + 1 : now.getFullYear();
-          let r = await this.hudFetch(`https://www.huduser.gov/hudapi/public/fmr/data/96701?year=${currentFY}`);
+          let r = await this.hudFetch(`https://www.huduser.gov/hudapi/public/fmr/data/${testEntityId}?year=${currentFY}`);
           if (!r.ok && r.status === 400) {
             // Try prior fiscal year
-            r = await this.hudFetch(`https://www.huduser.gov/hudapi/public/fmr/data/96701?year=${currentFY - 1}`);
+            r = await this.hudFetch(`https://www.huduser.gov/hudapi/public/fmr/data/${testEntityId}?year=${currentFY - 1}`);
           }
           if (r.ok) {
             sources.hud = { available: true };
