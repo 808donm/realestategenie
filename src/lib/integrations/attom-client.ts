@@ -397,52 +397,116 @@ export interface AttomApiResponse<T> {
 }
 
 export interface AttomSearchParams {
-  // Address search (two-part)
+  // ── Identifiers ─────────────────────────────────────────────────────────
+  attomId?: number;
+  /** @deprecated alias kept for backwards-compat */
+  attomid?: number;
+  ID?: number;
+
+  // ── Address search ──────────────────────────────────────────────────────
   address1?: string;
   address2?: string;
-  // Single-line address
   address?: string;
-  // APN + FIPS
+
+  // ── APN + FIPS ──────────────────────────────────────────────────────────
   apn?: string;
+  APN?: string;
   fips?: string;
-  // ATTOM ID
-  attomid?: number;
-  // Geographic
+
+  // ── Geographic ──────────────────────────────────────────────────────────
   postalcode?: string;
+  postalCode?: string;
   latitude?: number;
   longitude?: number;
   radius?: number;
-  // Filters
+
+  // ── Property Type ───────────────────────────────────────────────────────
   propertytype?: string;
+  propertyType?: string;
+  propertyIndicator?: number;
+
+  // ── Beds / Baths ────────────────────────────────────────────────────────
   minBeds?: number;
   maxBeds?: number;
-  minBaths?: number;
-  maxBaths?: number;
-  minBuildingSize?: number;
-  maxBuildingSize?: number;
+  minBathsTotal?: number;
+  maxBathsTotal?: number;
+
+  // ── Size ────────────────────────────────────────────────────────────────
+  minUniversalSize?: number;
+  maxUniversalSize?: number;
   minLotSize1?: number;
   maxLotSize1?: number;
+  minLotSize2?: number;
+  maxLotSize2?: number;
   minYearBuilt?: number;
   maxYearBuilt?: number;
-  // Assessment filters
+
+  // ── Assessment filters ──────────────────────────────────────────────────
+  minApprImprValue?: number;
+  maxApprImprValue?: number;
+  minApprLandValue?: number;
+  maxApprLandValue?: number;
+  minApprTtlValue?: number;
+  maxApprTtlValue?: number;
+  minAssdImprValue?: number;
+  maxAssdImprValue?: number;
+  minAssdLandValue?: number;
+  maxAssdLandValue?: number;
   minAssdTtlValue?: number;
   maxAssdTtlValue?: number;
-  // AVM filters
+  minMktImprValue?: number;
+  maxMktImprValue?: number;
+  minMktLandValue?: number;
+  maxMktLandValue?: number;
+  minMktTtlValue?: number;
+  maxMktTtlValue?: number;
+  minTaxAmt?: number;
+  maxTaxAmt?: number;
+
+  // ── AVM filters ─────────────────────────────────────────────────────────
+  minAVMValue?: number;
+  maxAVMValue?: number;
+  /** @deprecated alias */
   minavmvalue?: number;
+  /** @deprecated alias */
   maxavmvalue?: number;
-  // Owner filters
-  absenteeowner?: string;
-  // Sale filters
+
+  // ── Sale filters ────────────────────────────────────────────────────────
+  minSaleAmt?: number;
+  maxSaleAmt?: number;
   startSaleSearchDate?: string;
   endSaleSearchDate?: string;
-  startSaleAmountSearchDate?: string;
-  endSaleAmountSearchDate?: string;
-  // Pagination
+  startSaleTransDate?: string;
+  endSaleTransDate?: string;
+
+  // ── Date filters ────────────────────────────────────────────────────────
+  startCalendarDate?: string;
+  endCalendarDate?: string;
+  startAddedDate?: string;
+  endAddedDate?: string;
+
+  // ── Owner filters ───────────────────────────────────────────────────────
+  absenteeowner?: string;
+
+  // ── Geography IDs ───────────────────────────────────────────────────────
+  geoID?: string;
+  geoIDV4?: string;
+  /** @deprecated alias */
+  geoidv4?: string;
+  geoIdV4?: string;
+
+  // ── Sales Trend filters ─────────────────────────────────────────────────
+  interval?: string;
+  startyear?: number;
+  endyear?: number;
+  startmonth?: string;
+  endmonth?: string;
+  startQuarter?: number;
+  endQuarter?: number;
+
+  // ── Pagination / Sorting ────────────────────────────────────────────────
   page?: number;
   pagesize?: number;
-  // Geo ID (v4)
-  geoidv4?: string;
-  // Sorting
   orderby?: string;
 }
 
@@ -551,6 +615,27 @@ export class AttomClient {
   }
 
   /**
+   * Get property detail with mortgage information
+   */
+  async getPropertyDetailMortgage(
+    params: AttomSearchParams
+  ): Promise<AttomApiResponse<AttomPropertyDetail>> {
+    return this.request("/property/detailmortgage", this.buildParams(params));
+  }
+
+  /**
+   * Get property detail with schools in the attendance zone
+   */
+  async getPropertyDetailWithSchools(
+    params: AttomSearchParams
+  ): Promise<AttomApiResponse<AttomPropertyDetail>> {
+    return this.request(
+      "/property/detailwithschools",
+      this.buildParams(params)
+    );
+  }
+
+  /**
    * Get basic property profile (property info + most recent sale + tax)
    */
   async getPropertyBasicProfile(
@@ -592,6 +677,15 @@ export class AttomClient {
   }
 
   /**
+   * Get assessment snapshot (supports area searches)
+   */
+  async getAssessmentSnapshot(
+    params: AttomSearchParams
+  ): Promise<AttomApiResponse<AttomPropertyDetail>> {
+    return this.request("/assessment/snapshot", this.buildParams(params));
+  }
+
+  /**
    * Get assessment history for a specific property
    */
   async getAssessmentHistory(
@@ -624,12 +718,24 @@ export class AttomClient {
   }
 
   /**
-   * Get sales history for a property
+   * Get sales history detail for a property (single property per request)
    */
   async getSalesHistory(
     params: AttomSearchParams
   ): Promise<AttomApiResponse<AttomPropertyDetail>> {
     return this.request("/saleshistory/detail", this.buildParams(params));
+  }
+
+  /**
+   * Get basic sales history for a property
+   */
+  async getSalesHistoryBasic(
+    params: AttomSearchParams
+  ): Promise<AttomApiResponse<AttomPropertyDetail>> {
+    return this.request(
+      "/saleshistory/basichistory",
+      this.buildParams(params)
+    );
   }
 
   /**
@@ -644,24 +750,45 @@ export class AttomClient {
     );
   }
 
+  /**
+   * Get sales history snapshot for a property
+   */
+  async getSalesHistorySnapshot(
+    params: AttomSearchParams
+  ): Promise<AttomApiResponse<AttomPropertyDetail>> {
+    return this.request(
+      "/saleshistory/snapshot",
+      this.buildParams(params)
+    );
+  }
+
   // ── AVM Endpoints ───────────────────────────────────────────────────────
 
   /**
-   * Get Automated Valuation Model (AVM) for a property
+   * Get AVM snapshot for properties (supports area searches)
    */
-  async getAvmDetail(
+  async getAvmSnapshot(
     params: AttomSearchParams
   ): Promise<AttomApiResponse<AttomPropertyDetail>> {
-    return this.request("/avm/detail", this.buildParams(params));
+    return this.request("/avm/snapshot", this.buildParams(params));
   }
 
   /**
-   * Get ATTOM-ized AVM (requires attomid from a previous property lookup)
+   * Get ATTOM AVM detail (the primary AVM endpoint with full condition data)
    */
   async getAttomAvmDetail(
     params: AttomSearchParams
   ): Promise<AttomApiResponse<AttomPropertyDetail>> {
     return this.request("/attomavm/detail", this.buildParams(params));
+  }
+
+  /**
+   * Get AVM history for a specific property
+   */
+  async getAvmHistory(
+    params: AttomSearchParams
+  ): Promise<AttomApiResponse<AttomPropertyDetail>> {
+    return this.request("/avmhistory/detail", this.buildParams(params));
   }
 
   // ── All Events ──────────────────────────────────────────────────────────
@@ -767,6 +894,24 @@ export class AttomClient {
   }
 
   /**
+   * Get school district details by GeoIDV4
+   */
+  async getSchoolDistrict(
+    params: AttomSearchParams
+  ): Promise<any> {
+    return this.request("/school/district", this.buildParams(params));
+  }
+
+  /**
+   * Get detailed school profile by GeoIDV4
+   */
+  async getSchoolProfile(
+    params: AttomSearchParams
+  ): Promise<any> {
+    return this.request("/school/profile", this.buildParams(params));
+  }
+
+  /**
    * Get points of interest near a property
    */
   async getPOISearch(
@@ -825,7 +970,18 @@ export class AttomClient {
   async getBuildingPermits(
     params: AttomSearchParams
   ): Promise<any> {
-    return this.request("/buildingpermits/detail", this.buildParams(params));
+    return this.request("/property/buildingpermits", this.buildParams(params));
+  }
+
+  // ── Home Equity ───────────────────────────────────────────────────────
+
+  /**
+   * Get home equity calculation based on AVM and outstanding mortgage
+   */
+  async getHomeEquity(
+    params: AttomSearchParams
+  ): Promise<any> {
+    return this.request("/valuation/homeequity", this.buildParams(params));
   }
 
   // ── Hazard & Climate Risk ─────────────────────────────────────────────
@@ -837,7 +993,7 @@ export class AttomClient {
   async getNaturalHazard(
     params: AttomSearchParams
   ): Promise<any> {
-    return this.request("/property/detailwithschools", this.buildParams(params));
+    return this.request("/hazardrisk/detail", this.buildParams(params));
   }
 
   /**
@@ -869,7 +1025,7 @@ export class AttomClient {
   async getRentalAvm(
     params: AttomSearchParams
   ): Promise<any> {
-    return this.request("/avm/rental/detail", this.buildParams(params));
+    return this.request("/valuation/rentalavm", this.buildParams(params));
   }
 
   // ── Recorder / Deed Endpoints ─────────────────────────────────────────
@@ -936,6 +1092,17 @@ export class AttomClient {
     params: AttomSearchParams
   ): Promise<any> {
     return this.request("/salestrend/ibuyer", this.buildParams(params));
+  }
+
+  /**
+   * Get transaction-level sales trend data (supports yearly/quarterly/monthly intervals)
+   * Filters by geoIdV4, interval, year range, quarter range, month range,
+   * property type, and transfer type
+   */
+  async getTransactionSalesTrend(
+    params: AttomSearchParams
+  ): Promise<any> {
+    return this.request("/transaction/salestrend", this.buildParams(params));
   }
 
   /**

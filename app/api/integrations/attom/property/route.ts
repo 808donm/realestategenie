@@ -32,23 +32,20 @@ async function getAttomClient(): Promise<AttomClient> {
 }
 
 /**
- * GET - Search properties / get property detail
+ * GET - Search properties / get property detail from ATTOM API
  *
- * Query params:
- * - address1 + address2  (two-part address lookup)
- * - address              (single-line address)
- * - postalcode           (zip code area search)
- * - latitude + longitude + radius  (radius search)
- * - attomid              (direct lookup by ATTOM ID)
- * - endpoint: "detail" | "detailowner" | "profile" | "expanded" | "snapshot" | "assessment" |
- *             "assessmenthistory" | "sale" | "saleshistory" | "saleshistoryexpanded" |
- *             "avm" | "attomavm" | "rentalavm" | "allevents" |
- *             "community" | "schools" | "poi" | "neighborhood" |
- *             "buildingpermits" | "hazardrisk" | "climaterisk" | "riskprofile" |
- *             "recorder" | "parcelboundary" | "schoolboundary" | "neighborhoodboundary" |
- *             "salestrend" | "ibuyer" | "marketanalytics" (default: "expanded")
- * - propertytype         (SFR, APARTMENT, CONDO, etc.)
- * - page, pagesize       (pagination)
+ * Supports all ATTOM resources, packages, and filter parameters:
+ *
+ * Identifiers: attomId, ID, fips + APN, address, address1 + address2
+ * Geographic:  postalCode, latitude + longitude + radius, geoID, geoIDV4
+ * Filters:     propertyType, propertyIndicator, beds, bathsTotal,
+ *              universalSize, lotSize1/2, yearBuilt, assessment values,
+ *              AVM value, sale amount/date, tax amount, absenteeowner,
+ *              calendarDate, addedDate
+ * Trends:      interval, year/month/quarter ranges
+ * Pagination:  page, pagesize, orderby
+ *
+ * endpoint param selects the ATTOM resource+package to query (default: "expanded")
  */
 export async function GET(request: NextRequest) {
   try {
@@ -62,27 +59,63 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const endpoint = searchParams.get("endpoint") || "expanded";
 
-    // Build params from query string
+    // Build params from query string — string-valued filters
     const params: Record<string, any> = {};
-    const passthrough = [
-      "address1", "address2", "address", "postalcode", "apn", "fips",
-      "propertytype", "startSaleSearchDate", "endSaleSearchDate",
-      "geoidv4", "orderby", "absenteeowner",
+    const stringKeys = [
+      "address1", "address2", "address",
+      "postalcode", "postalCode",
+      "apn", "APN", "fips",
+      "propertytype", "propertyType",
+      "absenteeowner",
+      "geoID", "geoIDV4", "geoidv4", "geoIdV4",
+      "orderby",
+      // Date ranges (string format YYYY/MM/DD)
+      "startSaleSearchDate", "endSaleSearchDate",
+      "startSaleTransDate", "endSaleTransDate",
+      "startCalendarDate", "endCalendarDate",
+      "startAddedDate", "endAddedDate",
+      // Sales trend
+      "interval", "startmonth", "endmonth",
     ];
 
-    for (const key of passthrough) {
+    for (const key of stringKeys) {
       const val = searchParams.get(key);
       if (val) params[key] = val;
     }
 
+    // Numeric-valued filters
     const numericKeys = [
-      "attomid", "latitude", "longitude", "radius",
-      "minBeds", "maxBeds", "minBaths", "maxBaths",
-      "minBuildingSize", "maxBuildingSize",
+      "attomId", "attomid", "ID",
+      "latitude", "longitude", "radius",
+      "propertyIndicator",
+      // Beds & Baths
+      "minBeds", "maxBeds",
+      "minBathsTotal", "maxBathsTotal",
+      // Size
+      "minUniversalSize", "maxUniversalSize",
       "minLotSize1", "maxLotSize1",
+      "minLotSize2", "maxLotSize2",
       "minYearBuilt", "maxYearBuilt",
+      // Assessment
+      "minApprImprValue", "maxApprImprValue",
+      "minApprLandValue", "maxApprLandValue",
+      "minApprTtlValue", "maxApprTtlValue",
+      "minAssdImprValue", "maxAssdImprValue",
+      "minAssdLandValue", "maxAssdLandValue",
       "minAssdTtlValue", "maxAssdTtlValue",
+      "minMktImprValue", "maxMktImprValue",
+      "minMktLandValue", "maxMktLandValue",
+      "minMktTtlValue", "maxMktTtlValue",
+      "minTaxAmt", "maxTaxAmt",
+      // AVM
+      "minAVMValue", "maxAVMValue",
       "minavmvalue", "maxavmvalue",
+      // Sale
+      "minSaleAmt", "maxSaleAmt",
+      // Sales trend intervals
+      "startyear", "endyear",
+      "startQuarter", "endQuarter",
+      // Pagination
       "page", "pagesize",
     ];
 
@@ -99,14 +132,24 @@ export async function GET(request: NextRequest) {
 
     let result;
     switch (endpoint) {
+      // ── Property Resource ────────────────────────────────────────────────
+      case "id":
+        result = await client.getPropertyDetail(params); // /property/id
+        break;
       case "detail":
         result = await client.getPropertyDetail(params);
         break;
       case "detailowner":
         result = await client.getPropertyDetailOwner(params);
         break;
+      case "detailmortgage":
+        result = await client.getPropertyDetailMortgage(params);
+        break;
       case "detailmortgageowner":
         result = await client.getPropertyDetailMortgageOwner(params);
+        break;
+      case "detailwithschools":
+        result = await client.getPropertyDetailWithSchools(params);
         break;
       case "profile":
         result = await client.getPropertyBasicProfile(params);
@@ -117,26 +160,95 @@ export async function GET(request: NextRequest) {
       case "snapshot":
         result = await client.getPropertySnapshot(params);
         break;
+      case "buildingpermits":
+        result = await client.getBuildingPermits(params);
+        break;
+
+      // ── Assessment Resource ──────────────────────────────────────────────
       case "assessment":
         result = await client.getAssessmentDetail(params);
         break;
+      case "assessmentsnapshot":
+        result = await client.getAssessmentSnapshot(params);
+        break;
+      case "assessmenthistory":
+        result = await client.getAssessmentHistory(params);
+        break;
+
+      // ── Sale Resource ────────────────────────────────────────────────────
       case "sale":
         result = await client.getSaleDetail(params);
         break;
+      case "salesnapshot":
+        result = await client.getSaleSnapshot(params);
+        break;
+
+      // ── Sales History Resource ───────────────────────────────────────────
       case "saleshistory":
         result = await client.getSalesHistory(params);
         break;
-      case "avm":
-        result = await client.getAvmDetail(params);
+      case "saleshistorybasic":
+        result = await client.getSalesHistoryBasic(params);
         break;
+      case "saleshistoryexpanded":
+        result = await client.getSalesHistoryExpanded(params);
+        break;
+      case "saleshistorysnapshot":
+        result = await client.getSalesHistorySnapshot(params);
+        break;
+
+      // ── AVM Resource ─────────────────────────────────────────────────────
+      case "avm":
+        result = await client.getAvmSnapshot(params);
+        break;
+      case "attomavm":
+        result = await client.getAttomAvmDetail(params);
+        break;
+      case "avmhistory":
+        result = await client.getAvmHistory(params);
+        break;
+
+      // ── Valuation Resource ───────────────────────────────────────────────
+      case "rentalavm":
+        result = await client.getRentalAvm(params);
+        break;
+      case "homeequity":
+        result = await client.getHomeEquity(params);
+        break;
+
+      // ── All Events Resource ──────────────────────────────────────────────
       case "allevents":
         result = await client.getAllEvents(params);
         break;
-      case "community":
-        result = await client.getCommunityProfile(params);
+
+      // ── Sales Trend Resource ─────────────────────────────────────────────
+      case "salestrend":
+        result = await client.getSalesTrend(params);
         break;
+      case "transactionsalestrend":
+        result = await client.getTransactionSalesTrend(params);
+        break;
+      case "ibuyer":
+        result = await client.getIBuyerTrends(params);
+        break;
+      case "marketanalytics":
+        result = await client.getMarketAnalytics(params);
+        break;
+
+      // ── School Resource ──────────────────────────────────────────────────
       case "schools":
         result = await client.getSchoolSearch(params);
+        break;
+      case "schooldistrict":
+        result = await client.getSchoolDistrict(params);
+        break;
+      case "schoolprofile":
+        result = await client.getSchoolProfile(params);
+        break;
+
+      // ── Community / Neighborhood ─────────────────────────────────────────
+      case "community":
+        result = await client.getCommunityProfile(params);
         break;
       case "poi":
         result = await client.getPOISearch(params);
@@ -145,23 +257,7 @@ export async function GET(request: NextRequest) {
         result = await client.getNeighborhoodProfile(params);
         break;
 
-      // ── Previously unexposed existing endpoints ────────────────────────
-      case "assessmenthistory":
-        result = await client.getAssessmentHistory(params);
-        break;
-      case "saleshistoryexpanded":
-        result = await client.getSalesHistoryExpanded(params);
-        break;
-      case "attomavm":
-        result = await client.getAttomAvmDetail(params);
-        break;
-
-      // ── Building Permits ───────────────────────────────────────────────
-      case "buildingpermits":
-        result = await client.getBuildingPermits(params);
-        break;
-
-      // ── Hazard & Climate Risk ──────────────────────────────────────────
+      // ── Hazard & Climate Risk ────────────────────────────────────────────
       case "hazardrisk":
         result = await client.getHazardRisk(params);
         break;
@@ -172,17 +268,12 @@ export async function GET(request: NextRequest) {
         result = await client.getRiskProfile(params);
         break;
 
-      // ── Rental AVM ─────────────────────────────────────────────────────
-      case "rentalavm":
-        result = await client.getRentalAvm(params);
-        break;
-
-      // ── Recorder / Deeds ───────────────────────────────────────────────
+      // ── Recorder / Deeds ─────────────────────────────────────────────────
       case "recorder":
         result = await client.getRecorderDeed(params);
         break;
 
-      // ── Boundaries ─────────────────────────────────────────────────────
+      // ── Boundaries ───────────────────────────────────────────────────────
       case "parcelboundary":
         result = await client.getParcelBoundary(params);
         break;
@@ -191,22 +282,6 @@ export async function GET(request: NextRequest) {
         break;
       case "neighborhoodboundary":
         result = await client.getNeighborhoodBoundary(params);
-        break;
-
-      // ── Sale Snapshot (recent sales in area) ─────────────────────────
-      case "salesnapshot":
-        result = await client.getSaleSnapshot(params);
-        break;
-
-      // ── Sales Trends & Analytics ───────────────────────────────────────
-      case "salestrend":
-        result = await client.getSalesTrend(params);
-        break;
-      case "ibuyer":
-        result = await client.getIBuyerTrends(params);
-        break;
-      case "marketanalytics":
-        result = await client.getMarketAnalytics(params);
         break;
 
       default:

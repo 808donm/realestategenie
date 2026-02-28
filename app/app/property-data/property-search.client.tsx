@@ -45,13 +45,37 @@ const PROPERTY_TYPES = [
 ];
 
 export default function PropertySearch() {
-  const [searchMode, setSearchMode] = useState<"address" | "zip">("address");
+  const [searchMode, setSearchMode] = useState<"address" | "zip" | "radius">("address");
   const [address, setAddress] = useState("");
   const [zip, setZip] = useState("");
+  const [latitude, setLatitude] = useState("");
+  const [longitude, setLongitude] = useState("");
+  const [radius, setRadius] = useState("5");
   const [propertyType, setPropertyType] = useState("");
   const [minBeds, setMinBeds] = useState("");
+  const [maxBeds, setMaxBeds] = useState("");
   const [minBaths, setMinBaths] = useState("");
+  const [maxBaths, setMaxBaths] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+
+  // Advanced filters
+  const [minYearBuilt, setMinYearBuilt] = useState("");
+  const [maxYearBuilt, setMaxYearBuilt] = useState("");
+  const [minUniversalSize, setMinUniversalSize] = useState("");
+  const [maxUniversalSize, setMaxUniversalSize] = useState("");
+  const [minLotSize1, setMinLotSize1] = useState("");
+  const [maxLotSize1, setMaxLotSize1] = useState("");
+  const [minAVMValue, setMinAVMValue] = useState("");
+  const [maxAVMValue, setMaxAVMValue] = useState("");
+  const [minSaleAmt, setMinSaleAmt] = useState("");
+  const [maxSaleAmt, setMaxSaleAmt] = useState("");
+  const [minAssdTtlValue, setMinAssdTtlValue] = useState("");
+  const [maxAssdTtlValue, setMaxAssdTtlValue] = useState("");
+  const [minMktTtlValue, setMinMktTtlValue] = useState("");
+  const [maxMktTtlValue, setMaxMktTtlValue] = useState("");
+  const [absenteeowner, setAbsenteeowner] = useState("");
+  const [startSaleSearchDate, setStartSaleSearchDate] = useState("");
+  const [endSaleSearchDate, setEndSaleSearchDate] = useState("");
 
   const [results, setResults] = useState<AttomProperty[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -72,6 +96,10 @@ export default function PropertySearch() {
       setError("Enter a zip code to search.");
       return;
     }
+    if (searchMode === "radius" && (!latitude.trim() || !longitude.trim())) {
+      setError("Enter both latitude and longitude for radius search.");
+      return;
+    }
 
     setIsLoading(true);
     setError("");
@@ -85,13 +113,45 @@ export default function PropertySearch() {
 
       if (searchMode === "address") {
         params.set("address", address.trim());
-      } else {
+      } else if (searchMode === "zip") {
         params.set("postalcode", zip.trim());
+      } else {
+        params.set("latitude", latitude.trim());
+        params.set("longitude", longitude.trim());
+        params.set("radius", radius || "5");
       }
 
+      // Property type & beds/baths
       if (propertyType) params.set("propertytype", propertyType);
       if (minBeds) params.set("minBeds", minBeds);
-      if (minBaths) params.set("minBaths", minBaths);
+      if (maxBeds) params.set("maxBeds", maxBeds);
+      if (minBaths) params.set("minBathsTotal", minBaths);
+      if (maxBaths) params.set("maxBathsTotal", maxBaths);
+
+      // Size & year
+      if (minYearBuilt) params.set("minYearBuilt", minYearBuilt);
+      if (maxYearBuilt) params.set("maxYearBuilt", maxYearBuilt);
+      if (minUniversalSize) params.set("minUniversalSize", minUniversalSize);
+      if (maxUniversalSize) params.set("maxUniversalSize", maxUniversalSize);
+      if (minLotSize1) params.set("minLotSize1", minLotSize1);
+      if (maxLotSize1) params.set("maxLotSize1", maxLotSize1);
+
+      // Valuation / financial filters
+      if (minAVMValue) params.set("minAVMValue", minAVMValue);
+      if (maxAVMValue) params.set("maxAVMValue", maxAVMValue);
+      if (minSaleAmt) params.set("minSaleAmt", minSaleAmt);
+      if (maxSaleAmt) params.set("maxSaleAmt", maxSaleAmt);
+      if (minAssdTtlValue) params.set("minAssdTtlValue", minAssdTtlValue);
+      if (maxAssdTtlValue) params.set("maxAssdTtlValue", maxAssdTtlValue);
+      if (minMktTtlValue) params.set("minMktTtlValue", minMktTtlValue);
+      if (maxMktTtlValue) params.set("maxMktTtlValue", maxMktTtlValue);
+
+      // Owner filter
+      if (absenteeowner) params.set("absenteeowner", absenteeowner);
+
+      // Sale date range
+      if (startSaleSearchDate) params.set("startSaleSearchDate", startSaleSearchDate);
+      if (endSaleSearchDate) params.set("endSaleSearchDate", endSaleSearchDate);
 
       const res = await fetch(`/api/integrations/attom/property?${params.toString()}`);
       const data = await res.json();
@@ -138,30 +198,23 @@ export default function PropertySearch() {
       <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 20, marginBottom: 20 }}>
         {/* Mode Toggle */}
         <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-          <button
-            onClick={() => setSearchMode("address")}
-            style={{
-              padding: "6px 16px", fontSize: 13, fontWeight: 600, borderRadius: 6, border: "1px solid #e5e7eb", cursor: "pointer",
-              background: searchMode === "address" ? "#3b82f6" : "#fff",
-              color: searchMode === "address" ? "#fff" : "#374151",
-            }}
-          >
-            By Address
-          </button>
-          <button
-            onClick={() => setSearchMode("zip")}
-            style={{
-              padding: "6px 16px", fontSize: 13, fontWeight: 600, borderRadius: 6, border: "1px solid #e5e7eb", cursor: "pointer",
-              background: searchMode === "zip" ? "#3b82f6" : "#fff",
-              color: searchMode === "zip" ? "#fff" : "#374151",
-            }}
-          >
-            By Zip Code
-          </button>
+          {(["address", "zip", "radius"] as const).map((mode) => (
+            <button
+              key={mode}
+              onClick={() => setSearchMode(mode)}
+              style={{
+                padding: "6px 16px", fontSize: 13, fontWeight: 600, borderRadius: 6, border: "1px solid #e5e7eb", cursor: "pointer",
+                background: searchMode === mode ? "#3b82f6" : "#fff",
+                color: searchMode === mode ? "#fff" : "#374151",
+              }}
+            >
+              {mode === "address" ? "By Address" : mode === "zip" ? "By Zip Code" : "By Lat/Long"}
+            </button>
+          ))}
         </div>
 
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {searchMode === "address" ? (
+          {searchMode === "address" && (
             <input
               type="text"
               value={address}
@@ -173,7 +226,8 @@ export default function PropertySearch() {
                 borderRadius: 8, outline: "none",
               }}
             />
-          ) : (
+          )}
+          {searchMode === "zip" && (
             <input
               type="text"
               value={zip}
@@ -185,6 +239,44 @@ export default function PropertySearch() {
                 borderRadius: 8, outline: "none",
               }}
             />
+          )}
+          {searchMode === "radius" && (
+            <>
+              <input
+                type="text"
+                value={latitude}
+                onChange={(e) => setLatitude(e.target.value)}
+                placeholder="Latitude"
+                style={{
+                  width: 140, padding: "10px 14px", fontSize: 14, border: "1px solid #d1d5db",
+                  borderRadius: 8, outline: "none",
+                }}
+              />
+              <input
+                type="text"
+                value={longitude}
+                onChange={(e) => setLongitude(e.target.value)}
+                placeholder="Longitude"
+                onKeyDown={(e) => e.key === "Enter" && handleSearch(1)}
+                style={{
+                  width: 140, padding: "10px 14px", fontSize: 14, border: "1px solid #d1d5db",
+                  borderRadius: 8, outline: "none",
+                }}
+              />
+              <input
+                type="number"
+                value={radius}
+                onChange={(e) => setRadius(e.target.value)}
+                placeholder="Radius (mi)"
+                min="0.1"
+                max="20"
+                step="0.5"
+                style={{
+                  width: 110, padding: "10px 14px", fontSize: 14, border: "1px solid #d1d5db",
+                  borderRadius: 8, outline: "none",
+                }}
+              />
+            </>
           )}
           <button
             onClick={() => handleSearch(1)}
@@ -209,30 +301,112 @@ export default function PropertySearch() {
 
         {/* Filters */}
         {showFilters && (
-          <div style={{ display: "flex", gap: 12, marginTop: 12, flexWrap: "wrap" }}>
-            <select
-              value={propertyType}
-              onChange={(e) => setPropertyType(e.target.value)}
-              style={{ padding: "8px 12px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 6 }}
-            >
-              {PROPERTY_TYPES.map((t) => (
-                <option key={t.value} value={t.value}>{t.label}</option>
-              ))}
-            </select>
-            <input
-              type="number"
-              value={minBeds}
-              onChange={(e) => setMinBeds(e.target.value)}
-              placeholder="Min Beds"
-              style={{ width: 100, padding: "8px 12px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 6 }}
-            />
-            <input
-              type="number"
-              value={minBaths}
-              onChange={(e) => setMinBaths(e.target.value)}
-              placeholder="Min Baths"
-              style={{ width: 100, padding: "8px 12px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 6 }}
-            />
+          <div style={{ marginTop: 16 }}>
+            {/* Row 1: Property Type, Beds, Baths */}
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
+              <select
+                value={propertyType}
+                onChange={(e) => setPropertyType(e.target.value)}
+                style={{ padding: "8px 12px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 6 }}
+              >
+                {PROPERTY_TYPES.map((t) => (
+                  <option key={t.value} value={t.value}>{t.label}</option>
+                ))}
+              </select>
+              <input type="number" value={minBeds} onChange={(e) => setMinBeds(e.target.value)} placeholder="Min Beds"
+                style={{ width: 90, padding: "8px 12px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 6 }} />
+              <input type="number" value={maxBeds} onChange={(e) => setMaxBeds(e.target.value)} placeholder="Max Beds"
+                style={{ width: 90, padding: "8px 12px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 6 }} />
+              <input type="number" value={minBaths} onChange={(e) => setMinBaths(e.target.value)} placeholder="Min Baths"
+                style={{ width: 95, padding: "8px 12px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 6 }} />
+              <input type="number" value={maxBaths} onChange={(e) => setMaxBaths(e.target.value)} placeholder="Max Baths"
+                style={{ width: 95, padding: "8px 12px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 6 }} />
+              <select
+                value={absenteeowner}
+                onChange={(e) => setAbsenteeowner(e.target.value)}
+                style={{ padding: "8px 12px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 6 }}
+              >
+                <option value="">Owner Status</option>
+                <option value="absentee">Absentee</option>
+                <option value="occupied">Occupied</option>
+              </select>
+            </div>
+
+            {/* Row 2: Size, Year, Lot */}
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
+              <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                <span style={{ fontSize: 12, color: "#6b7280", whiteSpace: "nowrap" }}>Sqft:</span>
+                <input type="number" value={minUniversalSize} onChange={(e) => setMinUniversalSize(e.target.value)} placeholder="Min"
+                  style={{ width: 80, padding: "8px 10px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 6 }} />
+                <span style={{ fontSize: 12, color: "#9ca3af" }}>–</span>
+                <input type="number" value={maxUniversalSize} onChange={(e) => setMaxUniversalSize(e.target.value)} placeholder="Max"
+                  style={{ width: 80, padding: "8px 10px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 6 }} />
+              </div>
+              <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                <span style={{ fontSize: 12, color: "#6b7280", whiteSpace: "nowrap" }}>Year:</span>
+                <input type="number" value={minYearBuilt} onChange={(e) => setMinYearBuilt(e.target.value)} placeholder="Min"
+                  style={{ width: 75, padding: "8px 10px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 6 }} />
+                <span style={{ fontSize: 12, color: "#9ca3af" }}>–</span>
+                <input type="number" value={maxYearBuilt} onChange={(e) => setMaxYearBuilt(e.target.value)} placeholder="Max"
+                  style={{ width: 75, padding: "8px 10px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 6 }} />
+              </div>
+              <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                <span style={{ fontSize: 12, color: "#6b7280", whiteSpace: "nowrap" }}>Lot (acres):</span>
+                <input type="number" value={minLotSize1} onChange={(e) => setMinLotSize1(e.target.value)} placeholder="Min" step="0.1"
+                  style={{ width: 70, padding: "8px 10px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 6 }} />
+                <span style={{ fontSize: 12, color: "#9ca3af" }}>–</span>
+                <input type="number" value={maxLotSize1} onChange={(e) => setMaxLotSize1(e.target.value)} placeholder="Max" step="0.1"
+                  style={{ width: 70, padding: "8px 10px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 6 }} />
+              </div>
+            </div>
+
+            {/* Row 3: Valuation Filters */}
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
+              <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                <span style={{ fontSize: 12, color: "#6b7280", whiteSpace: "nowrap" }}>AVM:</span>
+                <input type="number" value={minAVMValue} onChange={(e) => setMinAVMValue(e.target.value)} placeholder="Min $"
+                  style={{ width: 95, padding: "8px 10px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 6 }} />
+                <span style={{ fontSize: 12, color: "#9ca3af" }}>–</span>
+                <input type="number" value={maxAVMValue} onChange={(e) => setMaxAVMValue(e.target.value)} placeholder="Max $"
+                  style={{ width: 95, padding: "8px 10px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 6 }} />
+              </div>
+              <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                <span style={{ fontSize: 12, color: "#6b7280", whiteSpace: "nowrap" }}>Sale $:</span>
+                <input type="number" value={minSaleAmt} onChange={(e) => setMinSaleAmt(e.target.value)} placeholder="Min $"
+                  style={{ width: 95, padding: "8px 10px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 6 }} />
+                <span style={{ fontSize: 12, color: "#9ca3af" }}>–</span>
+                <input type="number" value={maxSaleAmt} onChange={(e) => setMaxSaleAmt(e.target.value)} placeholder="Max $"
+                  style={{ width: 95, padding: "8px 10px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 6 }} />
+              </div>
+              <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                <span style={{ fontSize: 12, color: "#6b7280", whiteSpace: "nowrap" }}>Assessed:</span>
+                <input type="number" value={minAssdTtlValue} onChange={(e) => setMinAssdTtlValue(e.target.value)} placeholder="Min $"
+                  style={{ width: 95, padding: "8px 10px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 6 }} />
+                <span style={{ fontSize: 12, color: "#9ca3af" }}>–</span>
+                <input type="number" value={maxAssdTtlValue} onChange={(e) => setMaxAssdTtlValue(e.target.value)} placeholder="Max $"
+                  style={{ width: 95, padding: "8px 10px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 6 }} />
+              </div>
+            </div>
+
+            {/* Row 4: Market Value & Sale Date */}
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                <span style={{ fontSize: 12, color: "#6b7280", whiteSpace: "nowrap" }}>Market Value:</span>
+                <input type="number" value={minMktTtlValue} onChange={(e) => setMinMktTtlValue(e.target.value)} placeholder="Min $"
+                  style={{ width: 95, padding: "8px 10px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 6 }} />
+                <span style={{ fontSize: 12, color: "#9ca3af" }}>–</span>
+                <input type="number" value={maxMktTtlValue} onChange={(e) => setMaxMktTtlValue(e.target.value)} placeholder="Max $"
+                  style={{ width: 95, padding: "8px 10px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 6 }} />
+              </div>
+              <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                <span style={{ fontSize: 12, color: "#6b7280", whiteSpace: "nowrap" }}>Sale Date:</span>
+                <input type="text" value={startSaleSearchDate} onChange={(e) => setStartSaleSearchDate(e.target.value)} placeholder="YYYY/MM/DD"
+                  style={{ width: 110, padding: "8px 10px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 6 }} />
+                <span style={{ fontSize: 12, color: "#9ca3af" }}>–</span>
+                <input type="text" value={endSaleSearchDate} onChange={(e) => setEndSaleSearchDate(e.target.value)} placeholder="YYYY/MM/DD"
+                  style={{ width: 110, padding: "8px 10px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 6 }} />
+              </div>
+            </div>
           </div>
         )}
       </div>
