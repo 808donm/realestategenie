@@ -381,27 +381,33 @@ export class FederalDataClient {
    */
   async getFairMarketRents(zipCode: string): Promise<HUDFMRResult> {
     try {
+      if (!this.config.hudToken) {
+        return { success: false, error: "HUD API token not configured. Get a free token at huduser.gov/hudapi/public/register" };
+      }
+
       const response = await fetch(
         `https://www.huduser.gov/hudapi/public/fmr/data/${zipCode}`,
         { headers: this.getHUDHeaders() }
       );
 
       if (!response.ok) {
+        let body = "";
+        try { body = await response.text(); } catch { /* ignore */ }
         if (response.status === 401 || response.status === 403) {
-          return { success: false, error: `HUD API auth error (${response.status}): A free HUD USER API token is required. Register at huduser.gov/hudapi/public/register` };
+          return { success: false, error: `HUD API auth failed (${response.status}): Token may be invalid or expired. Verify your token at huduser.gov/hudapi/public/login${body ? ` — ${body.slice(0, 200)}` : ""}` };
         }
-        return { success: false, error: `HUD API error: ${response.status}` };
+        return { success: false, error: `HUD API error ${response.status}${body ? `: ${body.slice(0, 200)}` : ""}` };
       }
 
       const data = await response.json();
 
       if (data.error) {
-        return { success: false, error: data.error.message || data.error };
+        return { success: false, error: data.error.message || JSON.stringify(data.error) };
       }
 
       return { success: true, data: data.data };
     } catch (error: any) {
-      return { success: false, error: error.message };
+      return { success: false, error: `HUD API request failed: ${error.message}` };
     }
   }
 
@@ -413,6 +419,10 @@ export class FederalDataClient {
     countyCode: string
   ): Promise<{ success: boolean; data?: any; error?: string }> {
     try {
+      if (!this.config.hudToken) {
+        return { success: false, error: "HUD API token not configured. Get a free token at huduser.gov/hudapi/public/register" };
+      }
+
       const entityId = `${stateCode}${countyCode}99999`;
       const response = await fetch(
         `https://www.huduser.gov/hudapi/public/il/data/${entityId}`,
@@ -420,10 +430,12 @@ export class FederalDataClient {
       );
 
       if (!response.ok) {
+        let body = "";
+        try { body = await response.text(); } catch { /* ignore */ }
         if (response.status === 401 || response.status === 403) {
-          return { success: false, error: `HUD IL API auth error (${response.status}): HUD USER API token required` };
+          return { success: false, error: `HUD IL API auth failed (${response.status}): Token may be invalid or expired${body ? ` — ${body.slice(0, 200)}` : ""}` };
         }
-        return { success: false, error: `HUD IL API error: ${response.status}` };
+        return { success: false, error: `HUD IL API error ${response.status}${body ? `: ${body.slice(0, 200)}` : ""}` };
       }
 
       const data = await response.json();
@@ -985,7 +997,10 @@ export class FederalDataClient {
 
     for (const queryYear of yearsToTry) {
       try {
-        const url = `https://ffiec.cfpb.gov/v2/data-browser-api/view/aggregations?counties=${fipsCode}&years=${queryYear}`;
+        // HMDA Data Browser API requires at least one HMDA data filter parameter.
+        // actions_taken: 1=originated, 2=approved not accepted, 3=denied,
+        //                4=withdrawn, 5=closed incomplete
+        const url = `https://ffiec.cfpb.gov/v2/data-browser-api/view/aggregations?counties=${fipsCode}&years=${queryYear}&actions_taken=1,2,3,4,5`;
         const response = await fetch(url, {
           headers: { Accept: "application/json" },
         });
@@ -999,8 +1014,33 @@ export class FederalDataClient {
         const data = await response.json();
         const aggs = data.aggregations;
 
-        if (!aggs || (aggs.totalApplications === 0 && aggs.totalOriginations === 0)) {
-          // Empty data for this year, try next
+        // The HMDA API returns aggregations as an array of objects,
+        // each with count, sum, and the filter value (actions_taken).
+        if (!Array.isArray(aggs) || aggs.length === 0) {
+          continue;
+        }
+
+        let totalApplications = 0;
+        let totalOriginations = 0;
+        let totalDenials = 0;
+        let originationLoanSum = 0;
+
+        for (const agg of aggs) {
+          const count = agg.count || 0;
+          const sum = agg.sum || 0;
+          const action = String(agg.actions_taken);
+
+          totalApplications += count;
+
+          if (action === "1") {
+            totalOriginations = count;
+            originationLoanSum = sum;
+          } else if (action === "3") {
+            totalDenials = count;
+          }
+        }
+
+        if (totalApplications === 0) {
           continue;
         }
 
@@ -1009,13 +1049,15 @@ export class FederalDataClient {
           data: {
             year: queryYear,
             msa: fipsCode,
-            totalApplications: aggs.totalApplications || 0,
-            totalOriginations: aggs.totalOriginations || 0,
-            totalDenials: aggs.totalDenials || 0,
-            medianLoanAmount: aggs.medianLoanAmount || 0,
-            medianIncome: aggs.medianIncome || 0,
-            approvalRate: aggs.totalOriginations && aggs.totalApplications
-              ? (aggs.totalOriginations / aggs.totalApplications) * 100
+            totalApplications,
+            totalOriginations,
+            totalDenials,
+            medianLoanAmount: totalOriginations > 0
+              ? Math.round(originationLoanSum / totalOriginations)
+              : 0,
+            medianIncome: 0,
+            approvalRate: totalApplications > 0
+              ? Math.round((totalOriginations / totalApplications) * 10000) / 100
               : 0,
           },
         };
@@ -1198,20 +1240,31 @@ export class FederalDataClient {
 
     // HUD (requires free Bearer token from huduser.gov/hudapi/public/register)
     tests.push(
-      fetch("https://www.huduser.gov/hudapi/public/fmr/data/96701", {
-        headers: this.getHUDHeaders(),
-      })
-        .then((r) => {
-          sources.hud = { available: r.ok };
-          if (!r.ok) {
-            sources.hud.error = r.status === 401 || r.status === 403
-              ? `Auth required: Register free token at huduser.gov/hudapi/public/register`
-              : `HTTP ${r.status}`;
+      (async () => {
+        if (!this.config.hudToken) {
+          sources.hud = { available: false, error: "No HUD token configured. Get a free token at huduser.gov/hudapi/public/register" };
+          return;
+        }
+        try {
+          const r = await fetch("https://www.huduser.gov/hudapi/public/fmr/data/96701", {
+            headers: this.getHUDHeaders(),
+          });
+          if (r.ok) {
+            sources.hud = { available: true };
+          } else {
+            let body = "";
+            try { body = await r.text(); } catch { /* ignore */ }
+            sources.hud = {
+              available: false,
+              error: r.status === 401 || r.status === 403
+                ? `Token invalid or expired (${r.status}). Verify at huduser.gov/hudapi/public/login${body ? ` — ${body.slice(0, 150)}` : ""}`
+                : `HTTP ${r.status}${body ? `: ${body.slice(0, 150)}` : ""}`,
+            };
           }
-        })
-        .catch((e) => {
+        } catch (e: any) {
           sources.hud = { available: false, error: e.message };
-        })
+        }
+      })()
     );
 
     // Census (key optional)
@@ -1313,10 +1366,11 @@ export class FederalDataClient {
     }
 
     // CFPB/HMDA (no key needed) — try most recent available year
+    // The HMDA Data Browser API requires at least one HMDA data filter (e.g. actions_taken)
     {
       const hmdaYear = new Date().getFullYear() - 2; // Typically 2-year lag
       tests.push(
-        fetch(`https://ffiec.cfpb.gov/v2/data-browser-api/view/nationwide/aggregations?years=${hmdaYear}`, {
+        fetch(`https://ffiec.cfpb.gov/v2/data-browser-api/view/aggregations?states=MD&years=${hmdaYear}&actions_taken=1`, {
           headers: { Accept: "application/json" },
         })
           .then(async (r) => {
@@ -1325,7 +1379,7 @@ export class FederalDataClient {
             } else if (r.status === 404 || r.status === 400) {
               // Try year - 3 as fallback
               const fallbackResp = await fetch(
-                `https://ffiec.cfpb.gov/v2/data-browser-api/view/nationwide/aggregations?years=${hmdaYear - 1}`,
+                `https://ffiec.cfpb.gov/v2/data-browser-api/view/aggregations?states=MD&years=${hmdaYear - 1}&actions_taken=1`,
                 { headers: { Accept: "application/json" } }
               );
               sources.cfpb_hmda = { available: fallbackResp.ok };
