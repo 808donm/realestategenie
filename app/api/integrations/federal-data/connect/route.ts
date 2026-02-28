@@ -7,7 +7,8 @@ import { FederalDataClient } from "@/lib/integrations/federal-data-client";
  * Connect Federal Data Integration (Platform-wide)
  *
  * Admin-only: stores optional API keys for USPS, Census, BLS.
- * Most federal sources (HUD, FEMA, EPA, CFPB) are free with no key.
+ * HUD requires a free Bearer token (register at huduser.gov/hudapi/public/register).
+ * Most other federal sources (FEMA, EPA, CFPB) are free with no key.
  * All agents benefit from federal data once connected.
  */
 export async function POST(request: NextRequest) {
