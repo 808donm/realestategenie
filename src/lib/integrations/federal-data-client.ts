@@ -399,7 +399,7 @@ export class FederalDataClient {
           let body = "";
           try { body = await response.text(); } catch { /* ignore */ }
           if (response.status === 401 || response.status === 403) {
-            return { success: false, error: `HUD API auth failed (${response.status}): Token may be invalid or expired. Verify your token at huduser.gov/hudapi/public/login${body ? ` — ${body.slice(0, 200)}` : ""}` };
+            return { success: false, error: `HUD API auth failed (${response.status}): Your HUD token is invalid or expired. HUD requires its own Bearer token (separate from HMDA/CFPB). Log in at huduser.gov/hudapi/public/login and click "Create New Token".${body ? ` — ${body.slice(0, 200)}` : ""}` };
           }
           // 400 may mean data not available for this year — try next
           if (response.status === 400) continue;
@@ -1295,7 +1295,7 @@ export class FederalDataClient {
             sources.hud = {
               available: false,
               error: r.status === 401 || r.status === 403
-                ? `Token invalid or expired (${r.status}). Verify at huduser.gov/hudapi/public/login${body ? ` — ${body.slice(0, 150)}` : ""}`
+                ? `HUD token rejected (${r.status}). HUD requires its own separate token — not the same as HMDA/CFPB. Log in at huduser.gov/hudapi/public/login and click "Create New Token".${body ? ` — ${body.slice(0, 150)}` : ""}`
                 : `HTTP ${r.status}${body ? `: ${body.slice(0, 150)}` : ""}`,
             };
           }
