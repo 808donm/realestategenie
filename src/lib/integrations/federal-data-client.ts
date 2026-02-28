@@ -375,6 +375,27 @@ export class FederalDataClient {
   }
 
   /**
+   * Fetch wrapper that preserves the Authorization header across redirects.
+   * The standard fetch API strips Authorization on cross-origin redirects
+   * (e.g. www.huduser.gov → huduser.gov), causing silent 401 errors.
+   */
+  private async hudFetch(url: string): Promise<Response> {
+    const headers = this.getHUDHeaders();
+    const response = await fetch(url, { headers, redirect: "manual" });
+
+    // Follow redirects manually so the Authorization header is preserved
+    if (response.status >= 300 && response.status < 400) {
+      const location = response.headers.get("location");
+      if (location) {
+        const resolved = new URL(location, url).toString();
+        return fetch(resolved, { headers, redirect: "manual" });
+      }
+    }
+
+    return response;
+  }
+
+  /**
    * Get Fair Market Rents by ZIP code
    * API: https://www.huduser.gov/portal/dataset/fmr-api.html
    * Requires free HUD USER API token (register at huduser.gov/hudapi/public/register)
@@ -393,7 +414,7 @@ export class FederalDataClient {
 
       for (const fy of yearsToTry) {
         const url = `https://www.huduser.gov/hudapi/public/fmr/data/${zipCode}?year=${fy}`;
-        const response = await fetch(url, { headers: this.getHUDHeaders() });
+        const response = await this.hudFetch(url);
 
         if (!response.ok) {
           let body = "";
@@ -417,9 +438,8 @@ export class FederalDataClient {
       }
 
       // If year-parameterized calls failed, try without year as final fallback
-      const response = await fetch(
-        `https://www.huduser.gov/hudapi/public/fmr/data/${zipCode}`,
-        { headers: this.getHUDHeaders() }
+      const response = await this.hudFetch(
+        `https://www.huduser.gov/hudapi/public/fmr/data/${zipCode}`
       );
 
       if (!response.ok) {
@@ -452,9 +472,8 @@ export class FederalDataClient {
       }
 
       const entityId = `${stateCode}${countyCode}99999`;
-      const response = await fetch(
-        `https://www.huduser.gov/hudapi/public/il/data/${entityId}`,
-        { headers: this.getHUDHeaders() }
+      const response = await this.hudFetch(
+        `https://www.huduser.gov/hudapi/public/il/data/${entityId}`
       );
 
       if (!response.ok) {
@@ -1278,14 +1297,10 @@ export class FederalDataClient {
           // HUD FMR API may require year parameter. Try current FY first, then prior.
           const now = new Date();
           const currentFY = now.getMonth() >= 9 ? now.getFullYear() + 1 : now.getFullYear();
-          let r = await fetch(`https://www.huduser.gov/hudapi/public/fmr/data/96701?year=${currentFY}`, {
-            headers: this.getHUDHeaders(),
-          });
+          let r = await this.hudFetch(`https://www.huduser.gov/hudapi/public/fmr/data/96701?year=${currentFY}`);
           if (!r.ok && r.status === 400) {
             // Try prior fiscal year
-            r = await fetch(`https://www.huduser.gov/hudapi/public/fmr/data/96701?year=${currentFY - 1}`, {
-              headers: this.getHUDHeaders(),
-            });
+            r = await this.hudFetch(`https://www.huduser.gov/hudapi/public/fmr/data/96701?year=${currentFY - 1}`);
           }
           if (r.ok) {
             sources.hud = { available: true };
