@@ -81,9 +81,30 @@ function getSaleDateStr(p: AttomProperty): string | null {
     ?? p.sale?.saleTransDate ?? p.sale?.saleRecDate ?? p.sale?.saleSearchDate ?? null;
 }
 
-/** Get the owner name */
+/**
+ * Get the owner name — falls back to mortgage lender when owner fields are empty.
+ * In ATTOM data, the mortgagee (borrower) is the property owner. When ATTOM
+ * doesn't return owner names, we use the mortgage lender as the best available
+ * contact lead for the property.
+ */
 function getOwnerName(p: AttomProperty): string | null {
-  return p.owner?.owner1?.fullName || p.owner?.owner2?.fullName || null;
+  return p.owner?.owner1?.fullName || p.owner?.owner2?.fullName
+    || getMortgageLender(p) || null;
+}
+
+/** Check whether the displayed owner name is derived from the mortgage lender */
+function isOwnerFromMortgage(p: AttomProperty): boolean {
+  return !p.owner?.owner1?.fullName && !p.owner?.owner2?.fullName && !!getMortgageLender(p);
+}
+
+/** Check if a property has any useful contact information (name, address, or lender) */
+function hasContactInfo(p: AttomProperty): boolean {
+  return !!(
+    p.owner?.owner1?.fullName ||
+    p.owner?.owner2?.fullName ||
+    p.owner?.mailingAddressOneLine ||
+    getMortgageLender(p)
+  );
 }
 
 /**
@@ -324,8 +345,11 @@ export default function Prospecting() {
   });
   const [endDate, setEndDate] = useState(() => new Date().toISOString().split("T")[0]);
 
-  // Radius farming radius
+  // Radius farming radius and reference address
   const [radiusMiles, setRadiusMiles] = useState("0.5");
+  const [radiusResults, setRadiusResults] = useState<AttomProperty[]>([]);
+  const [radiusLoading, setRadiusLoading] = useState(false);
+  const [radiusCenter, setRadiusCenter] = useState<{ address: string; lat: string; lng: string } | null>(null);
 
   const [results, setResults] = useState<AttomProperty[]>([]);
   const [investorGroups, setInvestorGroups] = useState<InvestorGroup[]>([]);
@@ -373,6 +397,49 @@ export default function Prospecting() {
     }
 
     return data;
+  };
+
+  /**
+   * Search for nearby properties around a lat/lng point using detailmortgageowner.
+   * Used for "Just Sold Farming" secondary radius search.
+   */
+  const handleRadiusSearch = async (lat: string, lng: string, address: string) => {
+    setRadiusLoading(true);
+    setRadiusCenter({ address, lat, lng });
+    setRadiusResults([]);
+    try {
+      const params = new URLSearchParams();
+      params.set("latitude", lat);
+      params.set("longitude", lng);
+      params.set("radius", radiusMiles);
+      params.set("propertytype", propertyType);
+      params.set("page", "1");
+      params.set("pagesize", String(pageSize));
+      params.set("endpoint", "detailmortgageowner");
+
+      const res = await fetch(`/api/integrations/attom/property?${params.toString()}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Radius search failed");
+
+      const baseProps: AttomProperty[] = data.property || [];
+
+      // Supplement with expanded for AVM/assessment
+      const suppParams = new URLSearchParams(params);
+      suppParams.set("endpoint", "expanded");
+      const suppRes = await fetch(`/api/integrations/attom/property?${suppParams.toString()}`).catch(() => null);
+      const suppData = suppRes ? await suppRes.json().catch(() => ({})) : {};
+      const suppProps: AttomProperty[] = suppData.property || [];
+
+      const merged = suppProps.length > 0
+        ? mergeSupplementalData(baseProps, [suppProps])
+        : baseProps;
+
+      setRadiusResults(merged);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Radius search failed");
+    } finally {
+      setRadiusLoading(false);
+    }
   };
 
   /**
@@ -549,7 +616,10 @@ export default function Prospecting() {
         }
 
         // Data diagnostics: show what ATTOM actually returned
-        const withOwner = allRaw.filter((p) => getOwnerName(p)).length;
+        const withDirectOwner = allRaw.filter((p) => p.owner?.owner1?.fullName || p.owner?.owner2?.fullName).length;
+        const withMortgagee = allRaw.filter((p) => !p.owner?.owner1?.fullName && !p.owner?.owner2?.fullName && getMortgageLender(p)).length;
+        const withMailAddr = allRaw.filter((p) => p.owner?.mailingAddressOneLine).length;
+        const withContact = allRaw.filter(hasContactInfo).length;
         const withSaleAmt = allRaw.filter((p) => getSaleAmount(p) != null).length;
         const withSaleDate = allRaw.filter((p) => getSaleDateStr(p)).length;
         const withMortgage = allRaw.filter((p) => getMortgageAmount(p) != null).length;
@@ -557,15 +627,16 @@ export default function Prospecting() {
         const withValue = allRaw.filter((p) => getPropertyValue(p) != null).length;
         const withAbsentee = allRaw.filter(isAbsenteeOwner).length;
         setDebugInfo(
-          `Scanned ${allRaw.length} properties — ${withOwner} with owner names, ${withSaleAmt} with sale amounts, ` +
-          `${withSaleDate} with sale dates, ${withMortgage} with mortgage data, ${withAvm} with AVM, ` +
-          `${withValue} with property values (AVM or assessment), ${withAbsentee} absentee`
+          `Scanned ${allRaw.length} properties — ${withDirectOwner} with owner names, ${withMortgagee} with mortgagee (via mortgage), ` +
+          `${withMailAddr} with mailing addresses, ${withContact} with any contact info, ` +
+          `${withSaleAmt} with sale amounts, ${withSaleDate} with sale dates, ${withMortgage} with mortgage data, ` +
+          `${withAvm} with AVM, ${withValue} with property values, ${withAbsentee} absentee`
         );
 
         if (mode === "absentee") {
-          // Only include properties that have an owner name — absentee
-          // status is useless without knowing who the owner is.
-          const matches = allRaw.filter((p) => isAbsenteeOwner(p) && getOwnerName(p));
+          // Include absentee properties that have any contact info:
+          // owner name, mailing address, or mortgage lender as lead.
+          const matches = allRaw.filter((p) => isAbsenteeOwner(p) && hasContactInfo(p));
           setResults(matches);
           setTotalCount(matches.length);
           setInvestorGroups([]);
@@ -790,7 +861,16 @@ export default function Prospecting() {
               ].filter(Boolean).join(" · ")}
             </div>
             <div style={{ fontSize: 13, color: "#6b7280", marginTop: 2 }}>
-              {owner ? `Owner: ${owner}` : "Owner: Not listed"}
+              {owner ? (
+                <>
+                  {isOwnerFromMortgage(prop) ? "Mortgagee" : "Owner"}: {owner}
+                  {isOwnerFromMortgage(prop) && (
+                    <span style={{ marginLeft: 6, padding: "1px 8px", background: "#e0f2fe", color: "#0369a1", borderRadius: 10, fontSize: 11, fontWeight: 600 }}>
+                      via Mortgage
+                    </span>
+                  )}
+                </>
+              ) : "Owner: Not listed"}
               {absentee && (
                 <span style={{ marginLeft: 6, padding: "1px 8px", background: "#fef3c7", color: "#92400e", borderRadius: 10, fontSize: 11, fontWeight: 600 }}>
                   Absentee
@@ -802,9 +882,9 @@ export default function Prospecting() {
                 </span>
               )}
             </div>
-            {/* Always show mailing address if available */}
+            {/* Always show mailing address if available — key contact point for absentee owners */}
             {prop.owner?.mailingAddressOneLine && (
-              <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
+              <div style={{ fontSize: 12, color: owner ? "#6b7280" : "#374151", fontWeight: owner ? 400 : 600, marginTop: 2 }}>
                 Mailing: {prop.owner.mailingAddressOneLine}
               </div>
             )}
@@ -928,7 +1008,7 @@ export default function Prospecting() {
             {/* Radius farming — sale info (always show for this mode) */}
             {mode === "radius" && (
               <div style={{ marginTop: 6, padding: "6px 10px", background: "#f5f3ff", borderRadius: 6, fontSize: 12 }}>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
                   {lastSale != null && lastSale > 0 ? (
                     <span><strong>Sold:</strong> {fmt(lastSale)}</span>
                   ) : (
@@ -947,6 +1027,22 @@ export default function Prospecting() {
                   ) : sqft && avmVal ? (
                     <span style={{ color: "#9ca3af" }}><strong>Est. $/sqft:</strong> ~${Math.round(avmVal / sqft).toLocaleString()}</span>
                   ) : null}
+                  {prop.location?.latitude && prop.location?.longitude && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRadiusSearch(prop.location!.latitude!, prop.location!.longitude!, getAddress(prop));
+                      }}
+                      disabled={radiusLoading}
+                      style={{
+                        padding: "2px 10px", background: "#7c3aed", color: "#fff", borderRadius: 6, border: "none",
+                        fontSize: 11, fontWeight: 600, cursor: radiusLoading ? "not-allowed" : "pointer",
+                        opacity: radiusLoading ? 0.6 : 1, marginLeft: "auto",
+                      }}
+                    >
+                      {radiusLoading ? "Searching..." : `Search ${radiusMiles} mi Radius`}
+                    </button>
+                  )}
                 </div>
                 {avmVal != null && lastSale != null && lastSale > 0 && (
                   <div style={{ marginTop: 4, fontSize: 11, color: "#6b7280" }}>
@@ -1099,9 +1195,9 @@ export default function Prospecting() {
 
   return (
     <div>
-      {/* Mode Selection */}
+      {/* Mode Selection — Investor Portfolios hidden (returns no results currently) */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10, marginBottom: 20 }}>
-        {modes.map((m) => (
+        {modes.filter((m) => m.id !== "investor").map((m) => (
           <button
             key={m.id}
             onClick={() => { setMode(m.id); setResults([]); setInvestorGroups([]); setHasSearched(false); setError(""); setExpandedInvestor(null); setDebugInfo(""); }}
@@ -1188,6 +1284,19 @@ export default function Prospecting() {
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
                   style={{ padding: "8px 12px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 6 }}
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 4 }}>Radius (miles)</label>
+                <input
+                  type="number"
+                  value={radiusMiles}
+                  onChange={(e) => setRadiusMiles(e.target.value)}
+                  placeholder="0.5"
+                  step="0.1"
+                  min="0.1"
+                  max="5"
+                  style={{ width: 80, padding: "8px 12px", fontSize: 14, border: "1px solid #d1d5db", borderRadius: 6 }}
                 />
               </div>
             </>
@@ -1287,6 +1396,89 @@ export default function Prospecting() {
             </div>
           )}
         </>
+      )}
+
+      {/* Radius search results — shown when user clicks "Search Radius" on a property */}
+      {mode === "radius" && radiusCenter && (
+        <div style={{ marginTop: 24, borderTop: "2px solid #7c3aed", paddingTop: 16 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <div>
+              <h3 style={{ fontSize: 15, fontWeight: 700, color: "#7c3aed", margin: 0 }}>
+                Nearby Owners — {radiusMiles} mi radius
+              </h3>
+              <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
+                Center: {radiusCenter.address}
+              </div>
+            </div>
+            <button
+              onClick={() => { setRadiusCenter(null); setRadiusResults([]); }}
+              style={{
+                padding: "4px 12px", background: "#f3f4f6", color: "#6b7280", borderRadius: 6, border: "1px solid #e5e7eb",
+                fontSize: 12, cursor: "pointer",
+              }}
+            >
+              Close
+            </button>
+          </div>
+          {radiusLoading && (
+            <div style={{ padding: 20, textAlign: "center", color: "#6b7280" }}>
+              Searching nearby properties...
+            </div>
+          )}
+          {!radiusLoading && radiusResults.length === 0 && (
+            <div style={{ padding: 20, textAlign: "center", color: "#9ca3af", background: "#f9fafb", borderRadius: 8 }}>
+              No nearby properties found.
+            </div>
+          )}
+          {!radiusLoading && radiusResults.length > 0 && (
+            <>
+              <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}>
+                {radiusResults.length} nearby propert{radiusResults.length === 1 ? "y" : "ies"} found
+                — {radiusResults.filter((p) => getOwnerName(p)).length} with owner/mortgagee info
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {radiusResults.map((prop, idx) => (
+                  <div
+                    key={prop.identifier?.attomId || idx}
+                    onClick={() => setSelectedProperty(prop)}
+                    style={{
+                      background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, padding: 12,
+                      cursor: "pointer", transition: "box-shadow 0.15s", fontSize: 13,
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.08)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "none")}
+                  >
+                    <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 3 }}>{getAddress(prop)}</div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 12, color: "#6b7280" }}>
+                      <span>
+                        {getOwnerName(prop)
+                          ? `${isOwnerFromMortgage(prop) ? "Mortgagee" : "Owner"}: ${getOwnerName(prop)}`
+                          : "Owner: Not listed"}
+                        {isOwnerFromMortgage(prop) && (
+                          <span style={{ marginLeft: 4, padding: "0px 6px", background: "#e0f2fe", color: "#0369a1", borderRadius: 8, fontSize: 10, fontWeight: 600 }}>
+                            via Mortgage
+                          </span>
+                        )}
+                      </span>
+                      {prop.owner?.mailingAddressOneLine && (
+                        <span>Mailing: {prop.owner.mailingAddressOneLine}</span>
+                      )}
+                      {getPropertyValue(prop) != null && (
+                        <span><strong>Value:</strong> {fmt(getPropertyValue(prop)!)}</span>
+                      )}
+                      {getMortgageAmount(prop) != null && (
+                        <span><strong>Mortgage:</strong> {fmt(getMortgageAmount(prop)!)}</span>
+                      )}
+                      {getMortgageLender(prop) && (
+                        <span><strong>Lender:</strong> {getMortgageLender(prop)}</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
       )}
 
       {!hasSearched && !isLoading && (
