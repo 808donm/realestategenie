@@ -43,8 +43,18 @@ interface AttomProperty {
   // ATTOM expandedprofile nests mortgage under FirstConcurrent/SecondConcurrent
   mortgage?: {
     amount?: number; lender?: { fullName?: string }; term?: string; date?: string;
-    FirstConcurrent?: { amount?: number; lender?: { fullName?: string }; term?: string; date?: string; dueDate?: string; loanType?: string };
+    FirstConcurrent?: { amount?: number; lender?: { fullName?: string }; term?: string; date?: string; dueDate?: string; loanType?: string;
+      borrower1?: { fullName?: string; lastName?: string; firstNameAndMi?: string };
+      borrower2?: { fullName?: string; lastName?: string; firstNameAndMi?: string };
+      borrowerVesting?: string; borrowerMailFullStreetAddress?: string; borrowerMailCity?: string; borrowerMailState?: string; borrowerMailZip?: string; companyName?: string;
+    };
     SecondConcurrent?: { amount?: number; lender?: { fullName?: string }; term?: string; date?: string };
+    // Mortgagor (borrower) fields — the borrower IS the property owner
+    borrower1?: { fullName?: string; lastName?: string; firstNameAndMi?: string };
+    borrower2?: { fullName?: string; lastName?: string; firstNameAndMi?: string };
+    borrowerVesting?: string;
+    borrowerMailFullStreetAddress?: string; borrowerMailCity?: string; borrowerMailState?: string; borrowerMailZip?: string;
+    companyName?: string;
   };
   foreclosure?: { actionType?: string; filingDate?: string; auctionDate?: string; defaultAmount?: number; originalLoanAmount?: number; auctionLocation?: string };
   utilities?: { coolingType?: string; heatingType?: string; sewerType?: string; waterType?: string };
@@ -65,9 +75,39 @@ function getMortgageAmount(p: AttomProperty): number | null {
   return null;
 }
 
-/** Get the mortgage lender name */
+/** Get the mortgage lender (mortgagee) name */
 function getMortgageLender(p: AttomProperty): string | null {
   return p.mortgage?.lender?.fullName || p.mortgage?.FirstConcurrent?.lender?.fullName || null;
+}
+
+/**
+ * Get the mortgagor (borrower) name from the mortgage record.
+ * The mortgagor IS the property owner — they're the one who took the loan.
+ * Checks borrower1/borrower2 fields, then falls back to borrowerVesting.
+ */
+function getMortgagorName(p: AttomProperty): string | null {
+  return p.mortgage?.borrower1?.fullName
+    || p.mortgage?.FirstConcurrent?.borrower1?.fullName
+    || p.mortgage?.borrower2?.fullName
+    || p.mortgage?.FirstConcurrent?.borrower2?.fullName
+    || p.mortgage?.borrowerVesting
+    || p.mortgage?.FirstConcurrent?.borrowerVesting
+    || null;
+}
+
+/**
+ * Get the mortgagor (borrower) mailing address from the mortgage record.
+ * Assembles a single-line address from the borrower mailing fields.
+ */
+function getMortgagorAddress(p: AttomProperty): string | null {
+  const m = p.mortgage;
+  const fc = m?.FirstConcurrent;
+  const street = m?.borrowerMailFullStreetAddress || fc?.borrowerMailFullStreetAddress;
+  if (!street) return null;
+  const city = m?.borrowerMailCity || fc?.borrowerMailCity || "";
+  const state = m?.borrowerMailState || fc?.borrowerMailState || "";
+  const zip = m?.borrowerMailZip || fc?.borrowerMailZip || "";
+  return [street, city, state, zip].filter(Boolean).join(", ");
 }
 
 /** Get the sale amount — checks multiple possible field locations */
@@ -82,28 +122,35 @@ function getSaleDateStr(p: AttomProperty): string | null {
 }
 
 /**
- * Get the owner name — falls back to mortgage lender when owner fields are empty.
- * In ATTOM data, the mortgagee (borrower) is the property owner. When ATTOM
- * doesn't return owner names, we use the mortgage lender as the best available
- * contact lead for the property.
+ * Get the owner name — falls back to mortgagor (borrower) when owner fields
+ * are empty. The mortgagor is the property owner who took the loan.
  */
 function getOwnerName(p: AttomProperty): string | null {
   return p.owner?.owner1?.fullName || p.owner?.owner2?.fullName
-    || getMortgageLender(p) || null;
+    || getMortgagorName(p) || null;
 }
 
-/** Check whether the displayed owner name is derived from the mortgage lender */
+/** Check whether the displayed owner name is derived from the mortgagor (borrower) */
 function isOwnerFromMortgage(p: AttomProperty): boolean {
-  return !p.owner?.owner1?.fullName && !p.owner?.owner2?.fullName && !!getMortgageLender(p);
+  return !p.owner?.owner1?.fullName && !p.owner?.owner2?.fullName && !!getMortgagorName(p);
 }
 
-/** Check if a property has any useful contact information (name, address, or lender) */
+/**
+ * Get the best mailing address — falls back to mortgagor address when
+ * the owner mailing address is missing.
+ */
+function getMailingAddress(p: AttomProperty): string | null {
+  return p.owner?.mailingAddressOneLine || getMortgagorAddress(p) || null;
+}
+
+/** Check if a property has any useful contact information (name, address, or mortgagor) */
 function hasContactInfo(p: AttomProperty): boolean {
   return !!(
     p.owner?.owner1?.fullName ||
     p.owner?.owner2?.fullName ||
     p.owner?.mailingAddressOneLine ||
-    getMortgageLender(p)
+    getMortgagorName(p) ||
+    getMortgagorAddress(p)
   );
 }
 
@@ -539,8 +586,31 @@ export default function Prospecting() {
         sale: mergedSale,
         // Fill in missing AVM data from supplement
         avm: p.avm?.amount?.value ? p.avm : (supp.avm?.amount?.value ? supp.avm : p.avm),
-        // Fill in missing mortgage data from supplement
-        mortgage: getMortgageAmount(p) != null ? p.mortgage : (getMortgageAmount(supp as AttomProperty) != null ? supp.mortgage : p.mortgage),
+        // Deep-merge mortgage data: preserve both financial and mortgagor fields from either source
+        mortgage: (p.mortgage || supp.mortgage) ? {
+          ...(supp.mortgage || {}),
+          ...(p.mortgage || {}),
+          // Ensure mortgagor (borrower) fields are preserved from supplement if base lacks them
+          borrower1: p.mortgage?.borrower1?.fullName ? p.mortgage.borrower1 : (supp.mortgage as any)?.borrower1 || p.mortgage?.borrower1,
+          borrower2: p.mortgage?.borrower2?.fullName ? p.mortgage.borrower2 : (supp.mortgage as any)?.borrower2 || p.mortgage?.borrower2,
+          borrowerVesting: p.mortgage?.borrowerVesting || (supp.mortgage as any)?.borrowerVesting,
+          borrowerMailFullStreetAddress: p.mortgage?.borrowerMailFullStreetAddress || (supp.mortgage as any)?.borrowerMailFullStreetAddress,
+          borrowerMailCity: p.mortgage?.borrowerMailCity || (supp.mortgage as any)?.borrowerMailCity,
+          borrowerMailState: p.mortgage?.borrowerMailState || (supp.mortgage as any)?.borrowerMailState,
+          borrowerMailZip: p.mortgage?.borrowerMailZip || (supp.mortgage as any)?.borrowerMailZip,
+          // Preserve FirstConcurrent with deep merge for its borrower fields too
+          FirstConcurrent: (p.mortgage?.FirstConcurrent || (supp.mortgage as any)?.FirstConcurrent) ? {
+            ...((supp.mortgage as any)?.FirstConcurrent || {}),
+            ...(p.mortgage?.FirstConcurrent || {}),
+            borrower1: p.mortgage?.FirstConcurrent?.borrower1?.fullName ? p.mortgage.FirstConcurrent.borrower1 : (supp.mortgage as any)?.FirstConcurrent?.borrower1,
+            borrower2: p.mortgage?.FirstConcurrent?.borrower2?.fullName ? p.mortgage.FirstConcurrent.borrower2 : (supp.mortgage as any)?.FirstConcurrent?.borrower2,
+            borrowerVesting: p.mortgage?.FirstConcurrent?.borrowerVesting || (supp.mortgage as any)?.FirstConcurrent?.borrowerVesting,
+            borrowerMailFullStreetAddress: p.mortgage?.FirstConcurrent?.borrowerMailFullStreetAddress || (supp.mortgage as any)?.FirstConcurrent?.borrowerMailFullStreetAddress,
+            borrowerMailCity: p.mortgage?.FirstConcurrent?.borrowerMailCity || (supp.mortgage as any)?.FirstConcurrent?.borrowerMailCity,
+            borrowerMailState: p.mortgage?.FirstConcurrent?.borrowerMailState || (supp.mortgage as any)?.FirstConcurrent?.borrowerMailState,
+            borrowerMailZip: p.mortgage?.FirstConcurrent?.borrowerMailZip || (supp.mortgage as any)?.FirstConcurrent?.borrowerMailZip,
+          } : p.mortgage?.FirstConcurrent,
+        } : p.mortgage,
         // Fill in missing assessment data from supplement (take richer data)
         assessment: p.assessment?.assessed?.assdTtlValue ? p.assessment : (supp.assessment?.assessed?.assdTtlValue ? supp.assessment : p.assessment),
       };
@@ -627,8 +697,8 @@ export default function Prospecting() {
 
         // Data diagnostics: show what ATTOM actually returned
         const withDirectOwner = allRaw.filter((p) => p.owner?.owner1?.fullName || p.owner?.owner2?.fullName).length;
-        const withMortgagee = allRaw.filter((p) => !p.owner?.owner1?.fullName && !p.owner?.owner2?.fullName && getMortgageLender(p)).length;
-        const withMailAddr = allRaw.filter((p) => p.owner?.mailingAddressOneLine).length;
+        const withMortgagor = allRaw.filter((p) => !p.owner?.owner1?.fullName && !p.owner?.owner2?.fullName && getMortgagorName(p)).length;
+        const withMailAddr = allRaw.filter((p) => getMailingAddress(p)).length;
         const withContact = allRaw.filter(hasContactInfo).length;
         const withSaleAmt = allRaw.filter((p) => getSaleAmount(p) != null).length;
         const withSaleDate = allRaw.filter((p) => getSaleDateStr(p)).length;
@@ -639,13 +709,14 @@ export default function Prospecting() {
         if (mode === "absentee") {
           setDebugInfo(
             `Scanned ${allRaw.length} properties — ${withAbsentee} absentee, ` +
-            `${withContact} with contact info, ${withValue} with property values, ` +
-            `${withSaleAmt} with sale amounts, ${withMortgage} with mortgage data` +
-            (withContact === 0 && withAbsentee > 0 ? ` (owner names unavailable for this area — use property addresses for skip tracing or direct mail)` : "")
+            `${withDirectOwner} with owner names, ${withMortgagor} with mortgagor (via mortgage), ` +
+            `${withMailAddr} with mailing addresses, ${withContact} with any contact info, ` +
+            `${withValue} with property values, ${withMortgage} with mortgage data` +
+            (withContact === 0 && withAbsentee > 0 ? ` (use property addresses for skip tracing or direct mail)` : "")
           );
         } else {
           setDebugInfo(
-            `Scanned ${allRaw.length} properties — ${withDirectOwner} with owner names, ${withMortgagee} with mortgagee (via mortgage), ` +
+            `Scanned ${allRaw.length} properties — ${withDirectOwner} with owner names, ${withMortgagor} with mortgagor (via mortgage), ` +
             `${withMailAddr} with mailing addresses, ${withContact} with any contact info, ` +
             `${withSaleAmt} with sale amounts, ${withSaleDate} with sale dates, ${withMortgage} with mortgage data, ` +
             `${withAvm} with AVM, ${withValue} with property values, ${withAbsentee} absentee`
@@ -864,6 +935,7 @@ export default function Prospecting() {
     const taxAmt = prop.assessment?.tax?.taxAmt;
     const mortgageAmt = getMortgageAmount(prop);
     const lenderName = getMortgageLender(prop);
+    const mailingAddr = getMailingAddress(prop);
     const distress = mode === "foreclosure" ? getDistressSignals(prop) : null;
 
     return (
@@ -891,10 +963,10 @@ export default function Prospecting() {
             <div style={{ fontSize: 13, color: "#6b7280", marginTop: 2 }}>
               {owner ? (
                 <>
-                  {isOwnerFromMortgage(prop) ? "Mortgagee" : "Owner"}: {owner}
+                  {isOwnerFromMortgage(prop) ? "Mortgagor" : "Owner"}: {owner}
                   {isOwnerFromMortgage(prop) && (
                     <span style={{ marginLeft: 6, padding: "1px 8px", background: "#e0f2fe", color: "#0369a1", borderRadius: 10, fontSize: 11, fontWeight: 600 }}>
-                      via Mortgage
+                      via Mortgage Record
                     </span>
                   )}
                 </>
@@ -910,10 +982,11 @@ export default function Prospecting() {
                 </span>
               )}
             </div>
-            {/* Always show mailing address if available — key contact point for absentee owners */}
-            {prop.owner?.mailingAddressOneLine && (
+            {/* Always show mailing address if available — key contact point for absentee owners.
+                Falls back to mortgagor (borrower) address from mortgage record. */}
+            {mailingAddr && (
               <div style={{ fontSize: 12, color: owner ? "#6b7280" : "#374151", fontWeight: owner ? 400 : 600, marginTop: 2 }}>
-                Mailing: {prop.owner.mailingAddressOneLine}
+                {prop.owner?.mailingAddressOneLine ? "Mailing" : "Mortgagor Address"}: {mailingAddr}
               </div>
             )}
 
@@ -1462,7 +1535,7 @@ export default function Prospecting() {
             <>
               <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}>
                 {radiusResults.length} nearby propert{radiusResults.length === 1 ? "y" : "ies"} found
-                — {radiusResults.filter((p) => getOwnerName(p)).length} with owner/mortgagee info
+                — {radiusResults.filter((p) => getOwnerName(p)).length} with owner/mortgagor info
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {radiusResults.map((prop, idx) => (
@@ -1480,16 +1553,16 @@ export default function Prospecting() {
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 12, color: "#6b7280" }}>
                       <span>
                         {getOwnerName(prop)
-                          ? `${isOwnerFromMortgage(prop) ? "Mortgagee" : "Owner"}: ${getOwnerName(prop)}`
+                          ? `${isOwnerFromMortgage(prop) ? "Mortgagor" : "Owner"}: ${getOwnerName(prop)}`
                           : "Owner: Not listed"}
                         {isOwnerFromMortgage(prop) && (
                           <span style={{ marginLeft: 4, padding: "0px 6px", background: "#e0f2fe", color: "#0369a1", borderRadius: 8, fontSize: 10, fontWeight: 600 }}>
-                            via Mortgage
+                            via Mortgage Record
                           </span>
                         )}
                       </span>
-                      {prop.owner?.mailingAddressOneLine && (
-                        <span>Mailing: {prop.owner.mailingAddressOneLine}</span>
+                      {getMailingAddress(prop) && (
+                        <span>{prop.owner?.mailingAddressOneLine ? "Mailing" : "Mortgagor Address"}: {getMailingAddress(prop)}</span>
                       )}
                       {getPropertyValue(prop) != null && (
                         <span><strong>Value:</strong> {fmt(getPropertyValue(prop)!)}</span>

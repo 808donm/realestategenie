@@ -180,6 +180,16 @@ export interface AttomMortgage {
   loanType?: string;
   term?: string;
   interestRateType?: string;
+  // Mortgagor (borrower) fields — the borrower IS the property owner
+  borrower1?: { fullName?: string; lastName?: string; firstNameAndMi?: string };
+  borrower2?: { fullName?: string; lastName?: string; firstNameAndMi?: string };
+  borrowerVesting?: string;
+  borrowerMailFullStreetAddress?: string;
+  borrowerMailUnitNumber?: string;
+  borrowerMailCity?: string;
+  borrowerMailState?: string;
+  borrowerMailZip?: string;
+  companyName?: string;
 }
 
 export interface AttomAvm {
