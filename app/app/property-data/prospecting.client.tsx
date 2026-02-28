@@ -352,14 +352,17 @@ export default function Prospecting() {
 
     if (endpointOverride) {
       params.set("endpoint", endpointOverride);
-    } else if (mode === "absentee" || mode === "equity" || mode === "investor") {
-      params.set("endpoint", "expanded");
-    } else if (mode === "foreclosure") {
-      params.set("endpoint", "expanded");
     } else if (mode === "radius") {
+      // Just Sold: primary = sale snapshot (returns recent sales in area)
       params.set("endpoint", "salesnapshot");
-      params.set("startSaleSearchDate", startDate);
-      params.set("endSaleSearchDate", endDate);
+      params.set("startSaleSearchDate", startDate.replace(/-/g, "/"));
+      params.set("endSaleSearchDate", endDate.replace(/-/g, "/"));
+    } else {
+      // ALL other modes: use detailmortgageowner as primary.
+      // This is the ONLY ATTOM endpoint that returns owner names, mailing
+      // addresses, corporate indicators, AND mortgage data for zip code
+      // area searches. The expandedprofile endpoint omits all of these.
+      params.set("endpoint", "detailmortgageowner");
     }
 
     const res = await fetch(`/api/integrations/attom/property?${params.toString()}`);
@@ -490,62 +493,51 @@ export default function Prospecting() {
 
     try {
       // All modes use multi-page scanning to accumulate more results.
-      // ATTOM's expandedprofile doesn't support server-side filtering for
-      // absentee status, distress signals, owner tenure, or multi-property
-      // owner grouping, so we scan multiple pages and filter/group locally.
       //
-      // IMPORTANT: ATTOM's expandedprofile does NOT return owner names,
-      // mortgage data, or AVM values for postal code area searches.
-      // We supplement with /property/detailowner (the ATTOM endpoint
-      // specifically designed to return owner names, mailing addresses,
-      // and corporate indicators) and use assessment values as AVM
-      // fallback via getPropertyValue().
+      // Primary endpoints by mode:
+      //   - absentee / equity / foreclosure / investor: detailmortgageowner
+      //     (returns owner names, mailing addresses, corporate indicators,
+      //      mortgage lender/amount/term — the data that matters for prospecting)
+      //   - radius (Just Sold): salesnapshot (returns recent sales in area)
+      //
+      // Each mode supplements with a second endpoint in parallel:
+      //   - Non-radius modes: supplement with "expanded" to get AVM values,
+      //     assessment details, and building characteristics
+      //   - Radius mode: supplement with "detailmortgageowner" to get owner
+      //     names, mailing addresses, and mortgage data for the sold properties
       {
         let allRaw: AttomProperty[] = [];
-        // Mode-specific page counts: investor needs the most data to find
-        // multi-property owners; foreclosure needs broad coverage; radius
-        // (Just Sold) targets 200+ results; others use 4 pages.
         const maxPages = mode === "investor" ? 6
           : mode === "foreclosure" ? 5
           : mode === "radius" ? 4
           : 4;
 
-        // Determine which supplemental endpoints to fetch for this mode.
-        // ATTOM's /property/detailmortgageowner returns BOTH owner data
-        // (names, mailing addresses, corporate indicators) AND mortgage data
-        // (lender, amount, term) in one call. This is the most comprehensive
-        // endpoint for postal code area searches where expandedprofile omits
-        // owner and mortgage fields.
-        //
-        // For radius (Just Sold) mode, salesnapshot only returns sale dates
-        // and amounts (often $0 in non-disclosure states). We supplement with
-        // expandedprofile to get assessment values, building details, and owner
-        // info — so we can show "Est. Value" for each recently sold property.
-
         for (let pg = 1; pg <= maxPages; pg++) {
           // Fetch base data + supplemental endpoint in parallel
           const fetches: Promise<any>[] = [fetchPage(pg)];
           if (mode === "radius") {
-            // Just Sold: supplement salesnapshot with expandedprofile
-            // to get assessment/market values, building details, owner data
+            // Just Sold: supplement salesnapshot with detailmortgageowner
+            // to get owner names, mailing addresses, mortgage, and equity data
+            fetches.push(
+              fetchPage(pg, "detailmortgageowner").catch(() => ({ property: [] }))
+            );
+            // Also fetch expanded for AVM/assessment values
             fetches.push(
               fetchPage(pg, "expanded").catch(() => ({ property: [] }))
             );
           } else {
-            // Other modes: supplement expandedprofile with detailmortgageowner
-            // to get owner names, mailing addresses, and mortgage data
+            // Other modes: primary = detailmortgageowner, supplement with
+            // expanded to get AVM values, assessment details, building info
             fetches.push(
-              fetchPage(pg, "detailmortgageowner").catch(() =>
-                fetchPage(pg, "detailowner").catch(() => ({ property: [] }))
-              )
+              fetchPage(pg, "expanded").catch(() => ({ property: [] }))
             );
           }
 
-          const [expandedData, ...suppResults] = await Promise.all(fetches);
-          const baseProps: AttomProperty[] = expandedData.property || [];
+          const [baseData, ...suppResults] = await Promise.all(fetches);
+          const baseProps: AttomProperty[] = baseData.property || [];
           if (baseProps.length === 0) break;
 
-          // Merge supplemental data (owner names etc.) into base properties
+          // Merge supplemental data into base properties
           const suppArrays = suppResults.map((r: any) => (r.property || []) as AttomProperty[]);
           const merged = suppArrays.length > 0
             ? mergeSupplementalData(baseProps, suppArrays)
@@ -631,8 +623,49 @@ export default function Prospecting() {
           setTotalCount(matches.length);
           setInvestorGroups([]);
         } else if (mode === "investor") {
-          // Investor mode: group across all fetched pages
+          // Investor mode: group by owner name across all fetched pages.
+          // Also include single-property corporate entities and absentee
+          // owners with non-local mailing addresses — these are investors
+          // even if they only own one property in this zip code.
           const groups = groupByOwner(allRaw);
+
+          // Add single-property investors: corporate entities or absentee
+          // owners that didn't appear in multi-property groups
+          const groupedIds = new Set<number>();
+          for (const g of groups) {
+            for (const p of g.properties) {
+              if (p.identifier?.attomId) groupedIds.add(p.identifier.attomId);
+            }
+          }
+          const singleInvestors = allRaw.filter((p) => {
+            if (p.identifier?.attomId && groupedIds.has(p.identifier.attomId)) return false;
+            const isCorp = p.owner?.corporateIndicator === "Y";
+            const isAbsentee = isAbsenteeOwner(p);
+            const hasOwnerName = !!getOwnerName(p);
+            return hasOwnerName && (isCorp || isAbsentee);
+          });
+
+          // Wrap single investors in group format
+          for (const p of singleInvestors) {
+            const years = p.building?.summary?.yearBuilt ? [p.building.summary.yearBuilt] : [];
+            groups.push({
+              ownerName: getOwnerName(p) || "Unknown",
+              mailingAddress: p.owner?.mailingAddressOneLine || "",
+              isCorporate: p.owner?.corporateIndicator === "Y",
+              properties: [p],
+              totalTaxBurden: p.assessment?.tax?.taxAmt || 0,
+              totalAvmValue: getPropertyValue(p) || 0,
+              oldestYearBuilt: years.length > 0 ? Math.min(...years) : null,
+              avgYearBuilt: years.length > 0 ? years[0] : null,
+            });
+          }
+
+          // Re-sort: multi-property first, then by total value
+          groups.sort((a, b) => {
+            if (a.properties.length !== b.properties.length) return b.properties.length - a.properties.length;
+            return b.totalAvmValue - a.totalAvmValue;
+          });
+
           setInvestorGroups(groups);
           setTotalCount(groups.length);
           setResults(allRaw);
@@ -694,13 +727,13 @@ export default function Prospecting() {
     {
       id: "radius",
       label: "Just Sold Farming",
-      desc: "Recent sales for \"Your Neighbor Just Sold\" campaigns with real AVM data and owner context.",
+      desc: "Recent sales with new owner names, mailing addresses, sale prices, and equity data for farming campaigns.",
       color: "#7c3aed",
     },
     {
       id: "investor",
       label: "Investor Portfolios",
-      desc: "Multi-property owners in a zip code — find \"tired landlords\" with high tax burdens and aging properties.",
+      desc: "Corporate entities, absentee owners, and multi-property investors — find landlords with contact info and financials.",
       color: "#b45309",
     },
   ];
@@ -769,26 +802,31 @@ export default function Prospecting() {
                 </span>
               )}
             </div>
-            {/* Absentee mode — show ownership evidence */}
-            {mode === "absentee" && (
+            {/* Always show mailing address if available */}
+            {prop.owner?.mailingAddressOneLine && (
               <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
-                {prop.summary?.absenteeInd && (
-                  <span>Status: {prop.summary.absenteeInd}</span>
-                )}
-                {prop.owner?.mailingAddressOneLine && (
-                  <span style={{ marginLeft: 8 }}>Mailing: {prop.owner.mailingAddressOneLine}</span>
-                )}
-                {prop.owner?.ownerOccupied && (
-                  <span style={{ marginLeft: 8 }}>Occupied: {prop.owner.ownerOccupied === "Y" ? "Yes" : prop.owner.ownerOccupied === "N" ? "No" : prop.owner.ownerOccupied}</span>
-                )}
+                Mailing: {prop.owner.mailingAddressOneLine}
               </div>
             )}
-            {/* Other modes — show mailing address if different */}
-            {mode !== "absentee" && prop.owner?.mailingAddressOneLine && (
-              <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 1 }}>
-                Mail: {prop.owner.mailingAddressOneLine}
-              </div>
-            )}
+
+            {/* Key financial data row — always visible for all modes */}
+            <div style={{ marginTop: 6, display: "flex", flexWrap: "wrap", gap: 12, fontSize: 12, color: "#374151" }}>
+              {avmVal != null && (
+                <span><strong>AVM:</strong> <span style={{ color: "#059669" }}>{fmt(avmVal)}</span></span>
+              )}
+              {lastSale != null && (
+                <span><strong>Last Sale:</strong> {fmt(lastSale)}{saleDateStr ? ` (${saleDateStr})` : ""}</span>
+              )}
+              {mortgageAmt != null && (
+                <span><strong>Mortgage:</strong> {fmt(mortgageAmt)}{lenderName ? ` — ${lenderName}` : ""}</span>
+              )}
+              {equity != null && equity > 0 && (
+                <span><strong>Est. Equity:</strong> <span style={{ color: "#a16207", fontWeight: 600 }}>+{fmt(equity)}</span></span>
+              )}
+              {taxAmt != null && (
+                <span><strong>Tax:</strong> {fmt(taxAmt)}/yr</span>
+              )}
+            </div>
 
             {/* Equity mode — tenure and purchase info */}
             {mode === "equity" && yearsOwned != null && (
@@ -920,6 +958,38 @@ export default function Prospecting() {
           </div>
 
           <div style={{ display: "flex", gap: 16, flexWrap: "wrap", textAlign: "right" }}>
+            {/* Primary value metric per mode */}
+            {mode === "absentee" && avmVal != null && (
+              <div>
+                <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>Est. Value</div>
+                <div style={{ fontWeight: 700, fontSize: 15, color: "#059669" }}>{fmt(avmVal)}</div>
+              </div>
+            )}
+            {mode === "equity" && equity != null && (
+              <div>
+                <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>Est. Equity</div>
+                <div style={{ fontWeight: 700, fontSize: 15, color: equity > 0 ? "#a16207" : "#dc2626" }}>
+                  {equity > 0 ? "+" : ""}{fmt(equity)}
+                  {equityPct != null && (
+                    <span style={{ fontSize: 11, fontWeight: 400, marginLeft: 4 }}>({equityPct.toFixed(0)}%)</span>
+                  )}
+                </div>
+              </div>
+            )}
+            {mode === "equity" && yearsOwned != null && (
+              <div>
+                <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>Tenure</div>
+                <div style={{ fontWeight: 700, fontSize: 15, color: yearsOwned >= 20 ? "#059669" : "#10b981" }}>{yearsOwned} yrs</div>
+              </div>
+            )}
+            {mode === "foreclosure" && distress?.ltvPct != null && (
+              <div>
+                <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>LTV</div>
+                <div style={{ fontWeight: 700, fontSize: 15, color: distress.ltvPct >= 100 ? "#dc2626" : distress.ltvPct >= 80 ? "#d97706" : "#059669" }}>
+                  {distress.ltvPct.toFixed(0)}%
+                </div>
+              </div>
+            )}
             {mode === "radius" && (
               <div>
                 <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>
@@ -933,66 +1003,10 @@ export default function Prospecting() {
                 )}
               </div>
             )}
-            {mode === "foreclosure" && distress?.ltvPct != null && (
+            {mode === "investor" && avmVal != null && (
               <div>
-                <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>LTV</div>
-                <div style={{ fontWeight: 700, fontSize: 15, color: distress.ltvPct >= 100 ? "#dc2626" : distress.ltvPct >= 80 ? "#d97706" : "#059669" }}>
-                  {distress.ltvPct.toFixed(0)}%
-                </div>
-              </div>
-            )}
-            {mode === "foreclosure" && distress?.mortgageAmount != null && (
-              <div>
-                <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>Mortgage</div>
-                <div style={{ fontWeight: 600, fontSize: 14 }}>{fmt(distress.mortgageAmount)}</div>
-              </div>
-            )}
-            {(mode === "absentee" || mode === "equity") && avmVal != null && (
-              <div>
-                <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>AVM</div>
+                <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>Est. Value</div>
                 <div style={{ fontWeight: 700, fontSize: 15, color: "#059669" }}>{fmt(avmVal)}</div>
-              </div>
-            )}
-            {mode === "equity" && equity != null && (
-              <div>
-                <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>Est. Equity</div>
-                <div style={{ fontWeight: 700, fontSize: 15, color: equity > 0 ? "#a16207" : "#dc2626" }}>
-                  {equity > 0 ? "+" : ""}{fmt(equity)}
-                  {equityPct != null && (
-                    <span style={{ fontSize: 11, fontWeight: 400, marginLeft: 4 }}>
-                      ({equityPct.toFixed(0)}%)
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
-            {mode === "absentee" && (
-              <>
-                {lastSale != null && (
-                  <div>
-                    <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>Last Sale</div>
-                    <div style={{ fontWeight: 600, fontSize: 14 }}>{fmt(lastSale)}</div>
-                    {saleDateStr && <div style={{ fontSize: 11, color: "#9ca3af" }}>{saleDateStr}</div>}
-                  </div>
-                )}
-                {mortgageAmt != null && (
-                  <div>
-                    <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>Mortgage</div>
-                    <div style={{ fontWeight: 600, fontSize: 14 }}>{fmt(mortgageAmt)}</div>
-                  </div>
-                )}
-              </>
-            )}
-            {mode === "equity" && yearsOwned != null && (
-              <div>
-                <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>Tenure</div>
-                <div style={{ fontWeight: 700, fontSize: 15, color: yearsOwned >= 20 ? "#059669" : "#10b981" }}>{yearsOwned} yrs</div>
-              </div>
-            )}
-            {taxAmt != null && (mode === "investor" || mode === "equity") && (
-              <div>
-                <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>Tax/yr</div>
-                <div style={{ fontWeight: 600, fontSize: 14 }}>{fmt(taxAmt)}</div>
               </div>
             )}
           </div>
@@ -1052,7 +1066,11 @@ export default function Prospecting() {
             </div>
             <div style={{ display: "flex", gap: 16, flexWrap: "wrap", textAlign: "right" }}>
               <div>
-                <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>Total AVM</div>
+                <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>Properties</div>
+                <div style={{ fontWeight: 700, fontSize: 15, color: "#3b82f6" }}>{group.properties.length}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>Total Value</div>
                 <div style={{ fontWeight: 700, fontSize: 15, color: "#059669" }}>{fmt(group.totalAvmValue)}</div>
               </div>
               <div>
@@ -1226,7 +1244,7 @@ export default function Prospecting() {
 
       {!isLoading && hasSearched && mode === "investor" && investorGroups.length === 0 && results.length > 0 && (
         <div style={{ padding: 40, textAlign: "center", color: "#6b7280", background: "#f9fafb", borderRadius: 12 }}>
-          No multi-property owners found in this zip code. All {results.length} properties are individually owned.
+          No investor-owned properties found in this zip code. All {results.length} properties appear to be owner-occupied individual owners.
         </div>
       )}
 
@@ -1292,7 +1310,7 @@ export default function Prospecting() {
             {mode === "equity" && "Search for long-tenure homeowners based on their purchase date. Owners who bought 10+ years ago have built significant equity through appreciation — ideal for \"unlock your equity\" listing campaigns."}
             {mode === "foreclosure" && "Find properties with underwater mortgages, high loan-to-value ratios, or declining assessments. These owners may be under financial pressure and open to selling."}
             {mode === "radius" && "Find recent sales in a zip code. Use the data to build \"Your Neighbor's Home Just Sold for $X\" prospecting campaigns with real comparable data."}
-            {mode === "investor" && "Identify multi-property owners in a zip code. Find \"tired landlords\" with high tax burdens and aging properties who may want to sell."}
+            {mode === "investor" && "Find corporate entities, absentee owners, and multi-property investors in a zip code. Shows owner contact info, mailing addresses, mortgage details, and estimated values."}
           </div>
         </div>
       )}
