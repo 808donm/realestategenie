@@ -592,6 +592,16 @@ export default function Prospecting() {
             fetches.push(
               fetchPage(pg, "expanded").catch(() => ({ property: [] }))
             );
+          } else if (mode === "absentee") {
+            // Absentee mode: supplement with both expanded (for AVM/assessment)
+            // and detailowner (sometimes returns owner names that
+            // detailmortgageowner doesn't have for certain zip codes)
+            fetches.push(
+              fetchPage(pg, "expanded").catch(() => ({ property: [] }))
+            );
+            fetches.push(
+              fetchPage(pg, "detailowner").catch(() => ({ property: [] }))
+            );
           } else {
             // Other modes: primary = detailmortgageowner, supplement with
             // expanded to get AVM values, assessment details, building info
@@ -626,17 +636,35 @@ export default function Prospecting() {
         const withAvm = allRaw.filter((p) => p.avm?.amount?.value != null).length;
         const withValue = allRaw.filter((p) => getPropertyValue(p) != null).length;
         const withAbsentee = allRaw.filter(isAbsenteeOwner).length;
-        setDebugInfo(
-          `Scanned ${allRaw.length} properties — ${withDirectOwner} with owner names, ${withMortgagee} with mortgagee (via mortgage), ` +
-          `${withMailAddr} with mailing addresses, ${withContact} with any contact info, ` +
-          `${withSaleAmt} with sale amounts, ${withSaleDate} with sale dates, ${withMortgage} with mortgage data, ` +
-          `${withAvm} with AVM, ${withValue} with property values, ${withAbsentee} absentee`
-        );
+        if (mode === "absentee") {
+          setDebugInfo(
+            `Scanned ${allRaw.length} properties — ${withAbsentee} absentee, ` +
+            `${withContact} with contact info, ${withValue} with property values, ` +
+            `${withSaleAmt} with sale amounts, ${withMortgage} with mortgage data` +
+            (withContact === 0 && withAbsentee > 0 ? ` (owner names unavailable for this area — use property addresses for skip tracing or direct mail)` : "")
+          );
+        } else {
+          setDebugInfo(
+            `Scanned ${allRaw.length} properties — ${withDirectOwner} with owner names, ${withMortgagee} with mortgagee (via mortgage), ` +
+            `${withMailAddr} with mailing addresses, ${withContact} with any contact info, ` +
+            `${withSaleAmt} with sale amounts, ${withSaleDate} with sale dates, ${withMortgage} with mortgage data, ` +
+            `${withAvm} with AVM, ${withValue} with property values, ${withAbsentee} absentee`
+          );
+        }
 
         if (mode === "absentee") {
-          // Include absentee properties that have any contact info:
-          // owner name, mailing address, or mortgage lender as lead.
-          const matches = allRaw.filter((p) => isAbsenteeOwner(p) && hasContactInfo(p));
+          // Show ALL absentee properties — the property address itself is a
+          // usable contact point (direct mail, door knocking, skip tracing).
+          // ATTOM often returns absentee indicators without owner names for
+          // certain zip codes, so requiring hasContactInfo() would hide valid leads.
+          const matches = allRaw.filter((p) => isAbsenteeOwner(p));
+          // Sort: properties with contact info first, then by value descending
+          matches.sort((a, b) => {
+            const aHas = hasContactInfo(a) ? 1 : 0;
+            const bHas = hasContactInfo(b) ? 1 : 0;
+            if (aHas !== bHas) return bHas - aHas;
+            return (getPropertyValue(b) || 0) - (getPropertyValue(a) || 0);
+          });
           setResults(matches);
           setTotalCount(matches.length);
           setInvestorGroups([]);
@@ -819,10 +847,10 @@ export default function Prospecting() {
     const lastSale = getSaleAmount(prop);
     const saleDateStr = getSaleDateStr(prop);
     const owner = getOwnerName(prop);
-    // Only show absentee badge when we have owner data to back it up.
-    // ATTOM sets summary.absenteeInd even when owner name is missing,
-    // but an absentee label without an owner name is useless.
-    const absentee = isAbsenteeOwner(prop) && (owner || prop.owner?.mailingAddressOneLine);
+    // Show absentee badge when ATTOM flags the property as absentee-owned.
+    // In absentee mode, always show it since the user explicitly searched for
+    // absentee owners. In other modes, require some owner data to back it up.
+    const absentee = isAbsenteeOwner(prop) && (mode === "absentee" || owner || prop.owner?.mailingAddressOneLine);
     const equity = avmVal && lastSale ? avmVal - lastSale : null;
     const equityPct = avmVal && lastSale ? ((avmVal - lastSale) / avmVal) * 100 : null;
     const ownershipDate = getOwnershipDate(prop);
@@ -870,7 +898,7 @@ export default function Prospecting() {
                     </span>
                   )}
                 </>
-              ) : "Owner: Not listed"}
+              ) : (mode === "absentee" ? "Owner: Skip trace needed" : "Owner: Not listed")}
               {absentee && (
                 <span style={{ marginLeft: 6, padding: "1px 8px", background: "#fef3c7", color: "#92400e", borderRadius: 10, fontSize: 11, fontWeight: 600 }}>
                   Absentee
