@@ -49,6 +49,19 @@ BEGIN
     ORDER BY created_at DESC
     LIMIT 1;
 
+    -- Skip if agent already has an account (idempotent re-run)
+    SELECT am.account_id INTO new_account_id
+    FROM account_members am
+    WHERE am.agent_id = agent_record.id
+      AND am.account_role = 'owner'
+      AND am.is_active = true
+    LIMIT 1;
+
+    IF new_account_id IS NOT NULL THEN
+      RAISE NOTICE 'Agent % already has account %, skipping', agent_record.email, new_account_id;
+      CONTINUE;
+    END IF;
+
     -- Create account for this agent
     INSERT INTO accounts (
       owner_id,

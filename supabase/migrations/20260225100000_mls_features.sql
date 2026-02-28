@@ -40,6 +40,7 @@ CREATE INDEX IF NOT EXISTS idx_llm_status ON lead_listing_matches (status);
 -- RLS for lead_listing_matches
 ALTER TABLE lead_listing_matches ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS lead_listing_matches_agent_policy ON lead_listing_matches;
 CREATE POLICY lead_listing_matches_agent_policy ON lead_listing_matches
   FOR ALL USING (agent_id = auth.uid());
 
@@ -69,5 +70,6 @@ CREATE INDEX IF NOT EXISTS idx_cma_agent_id ON cma_reports (agent_id);
 -- RLS for cma_reports
 ALTER TABLE cma_reports ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS cma_reports_agent_policy ON cma_reports;
 CREATE POLICY cma_reports_agent_policy ON cma_reports
   FOR ALL USING (agent_id = auth.uid());

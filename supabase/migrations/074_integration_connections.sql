@@ -1,11 +1,12 @@
 -- Migration: Integration Connections for OAuth
 -- Stores OAuth tokens and connection details for Stripe, PayPal, and other integrations
+-- Made idempotent so it can be re-run safely if partially applied.
 
 -- ============================================================================
 -- INTEGRATION CONNECTIONS TABLE
 -- ============================================================================
 
-CREATE TABLE integration_connections (
+CREATE TABLE IF NOT EXISTS integration_connections (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   agent_id UUID NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
   account_id UUID REFERENCES accounts(id) ON DELETE CASCADE,
@@ -43,33 +44,38 @@ CREATE TABLE integration_connections (
   UNIQUE(agent_id, integration_type)
 );
 
-CREATE INDEX idx_integration_connections_agent_id ON integration_connections(agent_id);
-CREATE INDEX idx_integration_connections_account_id ON integration_connections(account_id);
-CREATE INDEX idx_integration_connections_type ON integration_connections(integration_type);
-CREATE INDEX idx_integration_connections_status ON integration_connections(connection_status);
-CREATE INDEX idx_integration_connections_external_account ON integration_connections(external_account_id);
+CREATE INDEX IF NOT EXISTS idx_integration_connections_agent_id ON integration_connections(agent_id);
+CREATE INDEX IF NOT EXISTS idx_integration_connections_account_id ON integration_connections(account_id);
+CREATE INDEX IF NOT EXISTS idx_integration_connections_type ON integration_connections(integration_type);
+CREATE INDEX IF NOT EXISTS idx_integration_connections_status ON integration_connections(connection_status);
+CREATE INDEX IF NOT EXISTS idx_integration_connections_external_account ON integration_connections(external_account_id);
 
 -- Enable RLS
 ALTER TABLE integration_connections ENABLE ROW LEVEL SECURITY;
 
 -- Agents can view and manage their own connections
+DROP POLICY IF EXISTS "Agents can view own connections" ON integration_connections;
 CREATE POLICY "Agents can view own connections"
   ON integration_connections FOR SELECT
   USING (agent_id = auth.uid());
 
+DROP POLICY IF EXISTS "Agents can insert own connections" ON integration_connections;
 CREATE POLICY "Agents can insert own connections"
   ON integration_connections FOR INSERT
   WITH CHECK (agent_id = auth.uid());
 
+DROP POLICY IF EXISTS "Agents can update own connections" ON integration_connections;
 CREATE POLICY "Agents can update own connections"
   ON integration_connections FOR UPDATE
   USING (agent_id = auth.uid());
 
+DROP POLICY IF EXISTS "Agents can delete own connections" ON integration_connections;
 CREATE POLICY "Agents can delete own connections"
   ON integration_connections FOR DELETE
   USING (agent_id = auth.uid());
 
 -- Account admins can view connections in their account
+DROP POLICY IF EXISTS "Account admins can view account connections" ON integration_connections;
 CREATE POLICY "Account admins can view account connections"
   ON integration_connections FOR SELECT
   USING (

@@ -5,7 +5,7 @@
 -- CREATE ACCOUNT USAGE TABLE
 -- ============================================================================
 
-CREATE TABLE account_usage (
+CREATE TABLE IF NOT EXISTS account_usage (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
   -- Role-based member counts
@@ -24,12 +24,13 @@ CREATE TABLE account_usage (
   UNIQUE(account_id)
 );
 
-CREATE INDEX idx_account_usage_account_id ON account_usage(account_id);
+CREATE INDEX IF NOT EXISTS idx_account_usage_account_id ON account_usage(account_id);
 
 -- Enable RLS
 ALTER TABLE account_usage ENABLE ROW LEVEL SECURITY;
 
 -- Account members can view their account's usage
+DROP POLICY IF EXISTS "Account members can view usage" ON account_usage;
 CREATE POLICY "Account members can view usage"
   ON account_usage FOR SELECT
   USING (
@@ -234,12 +235,14 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Trigger on account_members
+DROP TRIGGER IF EXISTS account_members_update_usage ON account_members;
 CREATE TRIGGER account_members_update_usage
   AFTER INSERT OR UPDATE OR DELETE ON account_members
   FOR EACH ROW
   EXECUTE FUNCTION trigger_update_account_usage();
 
 -- Trigger on offices
+DROP TRIGGER IF EXISTS offices_update_usage ON offices;
 CREATE TRIGGER offices_update_usage
   AFTER INSERT OR UPDATE OR DELETE ON offices
   FOR EACH ROW

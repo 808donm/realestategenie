@@ -1,4 +1,5 @@
 -- Agent-created MLS listings stored locally
+-- Made idempotent so it can be re-run safely if partially applied.
 CREATE TABLE IF NOT EXISTS agent_listings (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -71,25 +72,29 @@ CREATE TABLE IF NOT EXISTS agent_listings (
 );
 
 -- Index for fast user lookups
-CREATE INDEX idx_agent_listings_user_id ON agent_listings(user_id);
-CREATE INDEX idx_agent_listings_status ON agent_listings(status);
-CREATE INDEX idx_agent_listings_created ON agent_listings(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_agent_listings_user_id ON agent_listings(user_id);
+CREATE INDEX IF NOT EXISTS idx_agent_listings_status ON agent_listings(status);
+CREATE INDEX IF NOT EXISTS idx_agent_listings_created ON agent_listings(created_at DESC);
 
 -- RLS policies
 ALTER TABLE agent_listings ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own listings" ON agent_listings;
 CREATE POLICY "Users can view own listings"
   ON agent_listings FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can create own listings" ON agent_listings;
 CREATE POLICY "Users can create own listings"
   ON agent_listings FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own listings" ON agent_listings;
 CREATE POLICY "Users can update own listings"
   ON agent_listings FOR UPDATE
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete own listings" ON agent_listings;
 CREATE POLICY "Users can delete own listings"
   ON agent_listings FOR DELETE
   USING (auth.uid() = user_id);
@@ -103,6 +108,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trigger_agent_listings_updated_at ON agent_listings;
 CREATE TRIGGER trigger_agent_listings_updated_at
   BEFORE UPDATE ON agent_listings
   FOR EACH ROW
@@ -114,18 +120,22 @@ VALUES ('listing-photos', 'listing-photos', true)
 ON CONFLICT (id) DO NOTHING;
 
 -- Storage policies for listing photos
+DROP POLICY IF EXISTS "Users can upload listing photos" ON storage.objects;
 CREATE POLICY "Users can upload listing photos"
   ON storage.objects FOR INSERT
   WITH CHECK (bucket_id = 'listing-photos' AND auth.uid() IS NOT NULL);
 
+DROP POLICY IF EXISTS "Users can update own listing photos" ON storage.objects;
 CREATE POLICY "Users can update own listing photos"
   ON storage.objects FOR UPDATE
   USING (bucket_id = 'listing-photos' AND auth.uid() IS NOT NULL);
 
+DROP POLICY IF EXISTS "Users can delete own listing photos" ON storage.objects;
 CREATE POLICY "Users can delete own listing photos"
   ON storage.objects FOR DELETE
   USING (bucket_id = 'listing-photos' AND auth.uid() IS NOT NULL);
 
+DROP POLICY IF EXISTS "Anyone can view listing photos" ON storage.objects;
 CREATE POLICY "Anyone can view listing photos"
   ON storage.objects FOR SELECT
   USING (bucket_id = 'listing-photos');

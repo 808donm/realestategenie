@@ -1,10 +1,11 @@
 -- BRRR and House Flip Analyzer Tables
 -- Supports multi-family properties
+-- Made idempotent so it can be re-run safely if partially applied.
 
 -- ============================================
 -- BRRR (Buy, Renovate, Refinance, Rent) Table
 -- ============================================
-CREATE TABLE brrr_analyses (
+CREATE TABLE IF NOT EXISTS brrr_analyses (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   agent_id UUID NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
 
@@ -67,25 +68,29 @@ CREATE TABLE brrr_analyses (
 );
 
 -- Indexes for BRRR
-CREATE INDEX idx_brrr_analyses_agent ON brrr_analyses(agent_id);
-CREATE INDEX idx_brrr_analyses_active ON brrr_analyses(agent_id, is_active);
+CREATE INDEX IF NOT EXISTS idx_brrr_analyses_agent ON brrr_analyses(agent_id);
+CREATE INDEX IF NOT EXISTS idx_brrr_analyses_active ON brrr_analyses(agent_id, is_active);
 
 -- Enable RLS for BRRR
 ALTER TABLE brrr_analyses ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for BRRR
+DROP POLICY IF EXISTS "Agents can view their own BRRR analyses" ON brrr_analyses;
 CREATE POLICY "Agents can view their own BRRR analyses"
   ON brrr_analyses FOR SELECT
   USING (agent_id = auth.uid());
 
+DROP POLICY IF EXISTS "Agents can insert their own BRRR analyses" ON brrr_analyses;
 CREATE POLICY "Agents can insert their own BRRR analyses"
   ON brrr_analyses FOR INSERT
   WITH CHECK (agent_id = auth.uid());
 
+DROP POLICY IF EXISTS "Agents can update their own BRRR analyses" ON brrr_analyses;
 CREATE POLICY "Agents can update their own BRRR analyses"
   ON brrr_analyses FOR UPDATE
   USING (agent_id = auth.uid());
 
+DROP POLICY IF EXISTS "Agents can delete their own BRRR analyses" ON brrr_analyses;
 CREATE POLICY "Agents can delete their own BRRR analyses"
   ON brrr_analyses FOR DELETE
   USING (agent_id = auth.uid());
@@ -93,7 +98,7 @@ CREATE POLICY "Agents can delete their own BRRR analyses"
 -- ============================================
 -- House Flip Analyses Table
 -- ============================================
-CREATE TABLE flip_analyses (
+CREATE TABLE IF NOT EXISTS flip_analyses (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   agent_id UUID NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
 
@@ -150,25 +155,29 @@ CREATE TABLE flip_analyses (
 );
 
 -- Indexes for Flip
-CREATE INDEX idx_flip_analyses_agent ON flip_analyses(agent_id);
-CREATE INDEX idx_flip_analyses_active ON flip_analyses(agent_id, is_active);
+CREATE INDEX IF NOT EXISTS idx_flip_analyses_agent ON flip_analyses(agent_id);
+CREATE INDEX IF NOT EXISTS idx_flip_analyses_active ON flip_analyses(agent_id, is_active);
 
 -- Enable RLS for Flip
 ALTER TABLE flip_analyses ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for Flip
+DROP POLICY IF EXISTS "Agents can view their own flip analyses" ON flip_analyses;
 CREATE POLICY "Agents can view their own flip analyses"
   ON flip_analyses FOR SELECT
   USING (agent_id = auth.uid());
 
+DROP POLICY IF EXISTS "Agents can insert their own flip analyses" ON flip_analyses;
 CREATE POLICY "Agents can insert their own flip analyses"
   ON flip_analyses FOR INSERT
   WITH CHECK (agent_id = auth.uid());
 
+DROP POLICY IF EXISTS "Agents can update their own flip analyses" ON flip_analyses;
 CREATE POLICY "Agents can update their own flip analyses"
   ON flip_analyses FOR UPDATE
   USING (agent_id = auth.uid());
 
+DROP POLICY IF EXISTS "Agents can delete their own flip analyses" ON flip_analyses;
 CREATE POLICY "Agents can delete their own flip analyses"
   ON flip_analyses FOR DELETE
   USING (agent_id = auth.uid());
@@ -204,6 +213,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS brrr_analyses_updated_at ON brrr_analyses;
 CREATE TRIGGER brrr_analyses_updated_at
   BEFORE UPDATE ON brrr_analyses
   FOR EACH ROW
@@ -217,6 +227,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS flip_analyses_updated_at ON flip_analyses;
 CREATE TRIGGER flip_analyses_updated_at
   BEFORE UPDATE ON flip_analyses
   FOR EACH ROW

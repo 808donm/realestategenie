@@ -1,11 +1,12 @@
 -- Migration: Account-Based Subscriptions
 -- Transforms individual agent subscriptions into account-based team management
+-- Made idempotent so it can be re-run safely if partially applied.
 
 -- ============================================================================
 -- ACCOUNTS TABLE
 -- ============================================================================
 -- Core account/organization structure. Each account has an owner and subscription.
-CREATE TABLE accounts (
+CREATE TABLE IF NOT EXISTS accounts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   owner_id UUID NOT NULL REFERENCES agents(id) ON DELETE RESTRICT,
@@ -16,14 +17,14 @@ CREATE TABLE accounts (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_accounts_owner_id ON accounts(owner_id);
-CREATE INDEX idx_accounts_subscription_plan_id ON accounts(subscription_plan_id);
+CREATE INDEX IF NOT EXISTS idx_accounts_owner_id ON accounts(owner_id);
+CREATE INDEX IF NOT EXISTS idx_accounts_subscription_plan_id ON accounts(subscription_plan_id);
 
 -- ============================================================================
 -- OFFICES TABLE
 -- ============================================================================
 -- Physical office locations for Brokerage Scale and Enterprise tiers
-CREATE TABLE offices (
+CREATE TABLE IF NOT EXISTS offices (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
@@ -38,13 +39,13 @@ CREATE TABLE offices (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_offices_account_id ON offices(account_id);
+CREATE INDEX IF NOT EXISTS idx_offices_account_id ON offices(account_id);
 
 -- ============================================================================
 -- ACCOUNT MEMBERS TABLE
 -- ============================================================================
 -- Junction table linking agents to accounts with role-based access
-CREATE TABLE account_members (
+CREATE TABLE IF NOT EXISTS account_members (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
   agent_id UUID NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
@@ -58,11 +59,11 @@ CREATE TABLE account_members (
   UNIQUE(account_id, agent_id)
 );
 
-CREATE INDEX idx_account_members_account_id ON account_members(account_id);
-CREATE INDEX idx_account_members_agent_id ON account_members(agent_id);
-CREATE INDEX idx_account_members_office_id ON account_members(office_id);
-CREATE INDEX idx_account_members_role ON account_members(account_role);
-CREATE INDEX idx_account_members_active ON account_members(is_active) WHERE is_active = true;
+CREATE INDEX IF NOT EXISTS idx_account_members_account_id ON account_members(account_id);
+CREATE INDEX IF NOT EXISTS idx_account_members_agent_id ON account_members(agent_id);
+CREATE INDEX IF NOT EXISTS idx_account_members_office_id ON account_members(office_id);
+CREATE INDEX IF NOT EXISTS idx_account_members_role ON account_members(account_role);
+CREATE INDEX IF NOT EXISTS idx_account_members_active ON account_members(is_active) WHERE is_active = true;
 
 -- ============================================================================
 -- UPDATE EXISTING TABLES
@@ -70,17 +71,17 @@ CREATE INDEX idx_account_members_active ON account_members(is_active) WHERE is_a
 
 -- Link agent_subscriptions to accounts
 ALTER TABLE agent_subscriptions
-  ADD COLUMN account_id UUID REFERENCES accounts(id) ON DELETE SET NULL;
+  ADD COLUMN IF NOT EXISTS account_id UUID REFERENCES accounts(id) ON DELETE SET NULL;
 
-CREATE INDEX idx_agent_subscriptions_account_id ON agent_subscriptions(account_id);
+CREATE INDEX IF NOT EXISTS idx_agent_subscriptions_account_id ON agent_subscriptions(account_id);
 
 -- Update user_invitations to include account context and role assignment
 ALTER TABLE user_invitations
-  ADD COLUMN account_id UUID REFERENCES accounts(id) ON DELETE CASCADE,
-  ADD COLUMN invited_role TEXT CHECK (invited_role IN ('admin', 'agent', 'assistant')),
-  ADD COLUMN office_id UUID REFERENCES offices(id) ON DELETE SET NULL;
+  ADD COLUMN IF NOT EXISTS account_id UUID REFERENCES accounts(id) ON DELETE CASCADE,
+  ADD COLUMN IF NOT EXISTS invited_role TEXT CHECK (invited_role IN ('admin', 'agent', 'assistant')),
+  ADD COLUMN IF NOT EXISTS office_id UUID REFERENCES offices(id) ON DELETE SET NULL;
 
-CREATE INDEX idx_user_invitations_account_id ON user_invitations(account_id);
+CREATE INDEX IF NOT EXISTS idx_user_invitations_account_id ON user_invitations(account_id);
 
 -- ============================================================================
 -- ENABLE RLS
@@ -95,6 +96,7 @@ ALTER TABLE account_members ENABLE ROW LEVEL SECURITY;
 -- ============================================================================
 
 -- Account owners and admins can view their accounts
+DROP POLICY IF EXISTS "Account owners and admins can view accounts" ON accounts;
 CREATE POLICY "Account owners and admins can view accounts"
   ON accounts FOR SELECT
   USING (
@@ -108,6 +110,7 @@ CREATE POLICY "Account owners and admins can view accounts"
   );
 
 -- Only owners can update accounts
+DROP POLICY IF EXISTS "Account owners can update accounts" ON accounts;
 CREATE POLICY "Account owners can update accounts"
   ON accounts FOR UPDATE
   USING (owner_id = auth.uid());
@@ -117,6 +120,7 @@ CREATE POLICY "Account owners can update accounts"
 -- ============================================================================
 
 -- Account members can view offices in their account
+DROP POLICY IF EXISTS "Account members can view offices" ON offices;
 CREATE POLICY "Account members can view offices"
   ON offices FOR SELECT
   USING (
@@ -128,6 +132,7 @@ CREATE POLICY "Account members can view offices"
   );
 
 -- Account owners and admins can manage offices
+DROP POLICY IF EXISTS "Account admins can insert offices" ON offices;
 CREATE POLICY "Account admins can insert offices"
   ON offices FOR INSERT
   WITH CHECK (
@@ -139,6 +144,7 @@ CREATE POLICY "Account admins can insert offices"
     )
   );
 
+DROP POLICY IF EXISTS "Account admins can update offices" ON offices;
 CREATE POLICY "Account admins can update offices"
   ON offices FOR UPDATE
   USING (
@@ -150,6 +156,7 @@ CREATE POLICY "Account admins can update offices"
     )
   );
 
+DROP POLICY IF EXISTS "Account admins can delete offices" ON offices;
 CREATE POLICY "Account admins can delete offices"
   ON offices FOR DELETE
   USING (
@@ -166,6 +173,7 @@ CREATE POLICY "Account admins can delete offices"
 -- ============================================================================
 
 -- Account members can view other members in their account
+DROP POLICY IF EXISTS "Account members can view members" ON account_members;
 CREATE POLICY "Account members can view members"
   ON account_members FOR SELECT
   USING (
@@ -177,6 +185,7 @@ CREATE POLICY "Account members can view members"
   );
 
 -- Account owners and admins can add members
+DROP POLICY IF EXISTS "Account admins can add members" ON account_members;
 CREATE POLICY "Account admins can add members"
   ON account_members FOR INSERT
   WITH CHECK (
@@ -189,6 +198,7 @@ CREATE POLICY "Account admins can add members"
   );
 
 -- Account owners and admins can update members
+DROP POLICY IF EXISTS "Account admins can update members" ON account_members;
 CREATE POLICY "Account admins can update members"
   ON account_members FOR UPDATE
   USING (
@@ -201,6 +211,7 @@ CREATE POLICY "Account admins can update members"
   );
 
 -- Account owners and admins can remove members
+DROP POLICY IF EXISTS "Account admins can remove members" ON account_members;
 CREATE POLICY "Account admins can remove members"
   ON account_members FOR DELETE
   USING (
