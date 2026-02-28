@@ -8,16 +8,15 @@ export default async function OpenHousesIndex() {
 
   const { data: events, error } = await supabase
     .from("open_house_events")
-    .select("id,address,start_at,end_at,status,property_photo_url")
-    .or("event_type.eq.sales,event_type.eq.both,event_type.is.null")
+    .select("id,address,start_at,end_at,status,property_photo_url,event_type")
     .order("start_at", { ascending: false })
     .limit(50);
 
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
-        <h1 style={{ margin: 0, fontSize: 28, fontWeight: 900 }}>Open Houses</h1>
-        <Link href="/app/open-houses/new" style={btn}>+ New Open House</Link>
+        <h1 style={{ margin: 0, fontSize: 28, fontWeight: 900 }}>Open Houses &amp; Showings</h1>
+        <Link href="/app/open-houses/new" style={btn}>+ New Event</Link>
       </div>
 
       {error && <p style={{ color: "crimson" }}>{error.message}</p>}
@@ -66,7 +65,19 @@ export default async function OpenHousesIndex() {
 
               {/* Card Content */}
               <div style={{ padding: 14 }}>
-                <div style={{ fontWeight: 900 }}>{e.address}</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ fontWeight: 900, flex: 1 }}>{e.address}</div>
+                  <span style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    padding: "2px 8px",
+                    borderRadius: 12,
+                    background: (e as any).event_type === "rental" ? "#dcfce7" : (e as any).event_type === "both" ? "#fef3c7" : "#e0e7ff",
+                    color: (e as any).event_type === "rental" ? "#166534" : (e as any).event_type === "both" ? "#92400e" : "#3730a3",
+                  }}>
+                    {(e as any).event_type === "rental" ? "Rental" : (e as any).event_type === "both" ? "Both" : "Sales"}
+                  </span>
+                </div>
                 <div style={{ fontSize: 12, opacity: 0.75, marginTop: 6 }}>
                   {new Date(e.start_at).toLocaleString()} → {new Date(e.end_at).toLocaleString()}
                 </div>

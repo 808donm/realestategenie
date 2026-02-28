@@ -58,6 +58,7 @@ export default function OpenHouseForm({
   onSubmit,
 }: OpenHouseFormProps) {
   const [address, setAddress] = useState<string>("");
+  const [eventType, setEventType] = useState<"sales" | "rental" | "both">("sales");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -195,8 +196,43 @@ export default function OpenHouseForm({
 
   return (
     <form onSubmit={handleSubmit} style={{ display: "grid", gap: 12, marginTop: 12 }}>
-      {/* Event type is always sales for open houses; rentals are managed in PM Showings */}
-      <input type="hidden" name="event_type" value="sales" />
+      {/* Event Type Selector */}
+      <input type="hidden" name="event_type" value={eventType} />
+      <div>
+        <label style={{ display: "block", fontSize: 12, marginBottom: 6 }}>Event Type</label>
+        <div style={{ display: "flex", gap: 0 }}>
+          {([
+            { value: "sales" as const, label: "Open House (Sales)" },
+            { value: "rental" as const, label: "Rental Showing" },
+            { value: "both" as const, label: "Both" },
+          ]).map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => setEventType(opt.value)}
+              disabled={submitting}
+              style={{
+                padding: "8px 16px",
+                fontSize: 13,
+                fontWeight: 600,
+                border: "1px solid #d1d5db",
+                borderRight: opt.value === "both" ? "1px solid #d1d5db" : "none",
+                borderRadius: opt.value === "sales" ? "8px 0 0 8px" : opt.value === "both" ? "0 8px 8px 0" : "0",
+                background: eventType === opt.value ? "#4f46e5" : "#fff",
+                color: eventType === opt.value ? "#fff" : "#374151",
+                cursor: submitting ? "not-allowed" : "pointer",
+              }}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+        <p style={{ fontSize: 11, opacity: 0.6, margin: "4px 0 0 0" }}>
+          {eventType === "sales" && "Visitors will see the buyer check-in form."}
+          {eventType === "rental" && "Visitors will see the rental application form."}
+          {eventType === "both" && "Visitors will choose between buyer check-in or rental application."}
+        </p>
+      </div>
 
       {/* Hidden MLS fields */}
       {Object.entries(mlsFields).map(([key, value]) => (

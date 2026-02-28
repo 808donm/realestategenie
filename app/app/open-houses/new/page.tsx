@@ -91,7 +91,7 @@ export default async function NewOpenHousePage() {
       details_page_enabled: true,
       latitude: hasMlsCoords ? Number(mlsLatitude) : (geoResult?.latitude ?? null),
       longitude: hasMlsCoords ? Number(mlsLongitude) : (geoResult?.longitude ?? null),
-      event_type: "sales",
+      event_type: String(formData.get("event_type") || "sales"),
       pm_property_id: null,
     };
 

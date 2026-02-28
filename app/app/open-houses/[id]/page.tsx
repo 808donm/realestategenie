@@ -21,7 +21,7 @@ export default async function OpenHouseDetail({
   const result = await supabase
     .from("open_house_events")
     .select(
-      "id,address,start_at,end_at,status,pdf_download_enabled,details_page_enabled,latitude,longitude,property_photo_url,flyer_template_id"
+      "id,address,start_at,end_at,status,pdf_download_enabled,details_page_enabled,latitude,longitude,property_photo_url,flyer_template_id,event_type"
     )
     .eq("id", id)
     .single();
@@ -31,7 +31,7 @@ export default async function OpenHouseDetail({
     const fallback = await supabase
       .from("open_house_events")
       .select(
-        "id,address,start_at,end_at,status,pdf_download_enabled,details_page_enabled,latitude,longitude,property_photo_url"
+        "id,address,start_at,end_at,status,pdf_download_enabled,details_page_enabled,latitude,longitude,property_photo_url,event_type"
       )
       .eq("id", id)
       .single();
@@ -59,12 +59,13 @@ export default async function OpenHouseDetail({
 async function setStatus(formData: FormData) {
   "use server";
   const status = String(formData.get("status") || "");
+  const eventType = String(formData.get("event_type") || "sales");
   const supabase = await (await import("@/lib/supabase/server")).supabaseServer();
   const { revalidatePath } = await import("next/cache");
 
   await supabase
     .from("open_house_events")
-    .update({ status })
+    .update({ status, event_type: eventType })
     .eq("id", id);
 
   // Revalidate the page to show updated status
@@ -80,16 +81,33 @@ async function setStatus(formData: FormData) {
             {new Date(evt.start_at).toLocaleString()} →{" "}
             {new Date(evt.end_at).toLocaleString()}
           </p>
-          <p style={{ marginTop: 6 }}>
-            Status: <strong>{evt.status}</strong>
-          </p>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
+            <p style={{ margin: 0 }}>
+              Status: <strong>{evt.status}</strong>
+            </p>
+            <span style={{
+              fontSize: 11,
+              fontWeight: 700,
+              padding: "2px 10px",
+              borderRadius: 12,
+              background: evt.event_type === "rental" ? "#dcfce7" : evt.event_type === "both" ? "#fef3c7" : "#e0e7ff",
+              color: evt.event_type === "rental" ? "#166534" : evt.event_type === "both" ? "#92400e" : "#3730a3",
+            }}>
+              {evt.event_type === "rental" ? "Rental Showing" : evt.event_type === "both" ? "Sales + Rental" : "Open House"}
+            </span>
+          </div>
         </div>
 
-        <form action={setStatus} style={{ display: "flex", gap: 10, alignItems: "center" }}>
+        <form action={setStatus} style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           <select name="status" defaultValue={evt.status} style={{ padding: 8 }}>
-          <option value="draft">draft</option>
-          <option value="published">published</option>
-          <option value="archived">archived</option>
+            <option value="draft">draft</option>
+            <option value="published">published</option>
+            <option value="archived">archived</option>
+          </select>
+          <select name="event_type" defaultValue={evt.event_type || "sales"} style={{ padding: 8 }}>
+            <option value="sales">Sales</option>
+            <option value="rental">Rental</option>
+            <option value="both">Both</option>
           </select>
           <button style={{ padding: "8px 10px", fontWeight: 800 }}>Save</button>
        </form>

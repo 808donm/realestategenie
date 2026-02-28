@@ -385,6 +385,38 @@ export class FederalDataClient {
         return { success: false, error: "HUD API token not configured. Get a free token at huduser.gov/hudapi/public/register" };
       }
 
+      // HUD FMR API may require a year parameter. The fiscal year runs Oct–Sep,
+      // so FY2026 is effective from Oct 1 2025. Try current FY first, then prior.
+      const now = new Date();
+      const currentFY = now.getMonth() >= 9 ? now.getFullYear() + 1 : now.getFullYear();
+      const yearsToTry = [currentFY, currentFY - 1];
+
+      for (const fy of yearsToTry) {
+        const url = `https://www.huduser.gov/hudapi/public/fmr/data/${zipCode}?year=${fy}`;
+        const response = await fetch(url, { headers: this.getHUDHeaders() });
+
+        if (!response.ok) {
+          let body = "";
+          try { body = await response.text(); } catch { /* ignore */ }
+          if (response.status === 401 || response.status === 403) {
+            return { success: false, error: `HUD API auth failed (${response.status}): Token may be invalid or expired. Verify your token at huduser.gov/hudapi/public/login${body ? ` — ${body.slice(0, 200)}` : ""}` };
+          }
+          // 400 may mean data not available for this year — try next
+          if (response.status === 400) continue;
+          return { success: false, error: `HUD API error ${response.status}${body ? `: ${body.slice(0, 200)}` : ""}` };
+        }
+
+        const data = await response.json();
+
+        if (data.error) {
+          // Try next year if this one has no data
+          continue;
+        }
+
+        return { success: true, data: data.data };
+      }
+
+      // If year-parameterized calls failed, try without year as final fallback
       const response = await fetch(
         `https://www.huduser.gov/hudapi/public/fmr/data/${zipCode}`,
         { headers: this.getHUDHeaders() }
@@ -393,14 +425,10 @@ export class FederalDataClient {
       if (!response.ok) {
         let body = "";
         try { body = await response.text(); } catch { /* ignore */ }
-        if (response.status === 401 || response.status === 403) {
-          return { success: false, error: `HUD API auth failed (${response.status}): Token may be invalid or expired. Verify your token at huduser.gov/hudapi/public/login${body ? ` — ${body.slice(0, 200)}` : ""}` };
-        }
         return { success: false, error: `HUD API error ${response.status}${body ? `: ${body.slice(0, 200)}` : ""}` };
       }
 
       const data = await response.json();
-
       if (data.error) {
         return { success: false, error: data.error.message || JSON.stringify(data.error) };
       }
@@ -989,11 +1017,12 @@ export class FederalDataClient {
     const fipsCode = `${stateFips}${countyFips}`;
 
     // HMDA data availability: typically current year - 2 is the most recent
-    // available dataset (e.g., in 2026, 2024 may be available, 2023 definitely is)
+    // available dataset (e.g., in 2026, 2023 is most likely available).
+    // We try progressively older years to find available data.
     const currentYear = new Date().getFullYear();
     const yearsToTry = year
       ? [year]
-      : [currentYear - 2, currentYear - 1, currentYear - 3];
+      : [currentYear - 2, currentYear - 3, currentYear - 1, currentYear - 4];
 
     for (const queryYear of yearsToTry) {
       try {
@@ -1246,9 +1275,18 @@ export class FederalDataClient {
           return;
         }
         try {
-          const r = await fetch("https://www.huduser.gov/hudapi/public/fmr/data/96701", {
+          // HUD FMR API may require year parameter. Try current FY first, then prior.
+          const now = new Date();
+          const currentFY = now.getMonth() >= 9 ? now.getFullYear() + 1 : now.getFullYear();
+          let r = await fetch(`https://www.huduser.gov/hudapi/public/fmr/data/96701?year=${currentFY}`, {
             headers: this.getHUDHeaders(),
           });
+          if (!r.ok && r.status === 400) {
+            // Try prior fiscal year
+            r = await fetch(`https://www.huduser.gov/hudapi/public/fmr/data/96701?year=${currentFY - 1}`, {
+              headers: this.getHUDHeaders(),
+            });
+          }
           if (r.ok) {
             sources.hud = { available: true };
           } else {
@@ -1367,30 +1405,34 @@ export class FederalDataClient {
 
     // CFPB/HMDA (no key needed) — try most recent available year
     // The HMDA Data Browser API requires at least one HMDA data filter (e.g. actions_taken)
+    // Data is typically published ~18 months after the reporting year.
     {
-      const hmdaYear = new Date().getFullYear() - 2; // Typically 2-year lag
+      const currentYear = new Date().getFullYear();
+      const hmdaYears = [currentYear - 2, currentYear - 3, currentYear - 4];
       tests.push(
-        fetch(`https://ffiec.cfpb.gov/v2/data-browser-api/view/aggregations?states=MD&years=${hmdaYear}&actions_taken=1`, {
-          headers: { Accept: "application/json" },
-        })
-          .then(async (r) => {
-            if (r.ok) {
-              sources.cfpb_hmda = { available: true };
-            } else if (r.status === 404 || r.status === 400) {
-              // Try year - 3 as fallback
-              const fallbackResp = await fetch(
-                `https://ffiec.cfpb.gov/v2/data-browser-api/view/aggregations?states=MD&years=${hmdaYear - 1}&actions_taken=1`,
+        (async () => {
+          for (const yr of hmdaYears) {
+            try {
+              const r = await fetch(
+                `https://ffiec.cfpb.gov/v2/data-browser-api/view/aggregations?states=MD&years=${yr}&actions_taken=1`,
                 { headers: { Accept: "application/json" } }
               );
-              sources.cfpb_hmda = { available: fallbackResp.ok };
-              if (!fallbackResp.ok) sources.cfpb_hmda.error = `No data for years ${hmdaYear} or ${hmdaYear - 1}`;
-            } else {
-              sources.cfpb_hmda = { available: false, error: `HTTP ${r.status}` };
+              if (r.ok) {
+                sources.cfpb_hmda = { available: true };
+                return;
+              }
+              if (r.status !== 404 && r.status !== 400) {
+                sources.cfpb_hmda = { available: false, error: `HTTP ${r.status}` };
+                return;
+              }
+              // 400/404 = data not available for this year, try next
+            } catch (e: any) {
+              sources.cfpb_hmda = { available: false, error: e.message };
+              return;
             }
-          })
-          .catch((e) => {
-            sources.cfpb_hmda = { available: false, error: e.message };
-          })
+          }
+          sources.cfpb_hmda = { available: false, error: `No data for years ${hmdaYears.join(", ")}` };
+        })()
       );
     }
 
