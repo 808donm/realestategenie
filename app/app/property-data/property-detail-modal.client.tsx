@@ -406,19 +406,21 @@ export default function PropertyDetailModal({
             // Resolve TMK from multiple sources: ATTOM APN, Hawaii statewide parcel, or Hawaii owners
             const tmkValue = p.identifier?.apn || hawaiiData?.parcel?.tmk_txt || hawaiiData?.parcel?.tmk || hawaiiData?.parcel?.cty_tmk || (hawaiiData?.owners?.[0]?.tmk) || null;
 
-            // Build QPublic link: prefer the one from Hawaii ArcGIS, otherwise construct from TMK + county
+            // Build QPublic direct report link from TMK + county AppID
+            // Format: https://qpublic.schneidercorp.com/Application.aspx?AppID={id}&PageTypeID=4&KeyValue={tmk}
             const qpubLink = (() => {
               if (hawaiiData?.parcel?.qpub_link) return hawaiiData.parcel.qpub_link;
               if (!tmkValue) return null;
-              // Determine county for fallback URL construction
+              const cleanTmk = String(tmkValue).replace(/[-\s.]/g, "");
               const county = (hawaiiData?.parcel?.county || "").toUpperCase();
-              const countyUrlMap: Record<string, string> = {
-                HONOLULU: "https://qpublic.net/hi/honolulu/",
-                HAWAII: "https://qpublic.net/hi/hawaii/",
-                MAUI: "https://qpublic.net/hi/maui/",
-                KAUAI: "https://qpublic.net/hi/kauai/",
+              const countyAppIdMap: Record<string, string> = {
+                HONOLULU: "1045",
+                HAWAII: "1048",
+                MAUI: "1029",
+                KAUAI: "986",
               };
-              return countyUrlMap[county] || "https://qpublic.net/hi/honolulu/";
+              const appId = countyAppIdMap[county] || "1045"; // default to Honolulu
+              return `https://qpublic.schneidercorp.com/Application.aspx?AppID=${appId}&PageTypeID=4&KeyValue=${cleanTmk}`;
             })();
 
             return (
