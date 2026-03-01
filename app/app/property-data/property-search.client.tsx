@@ -441,7 +441,8 @@ export default function PropertySearch() {
               const lastSale = prop.sale?.amount?.saleAmt;
               const assessed = prop.assessment?.assessed?.assdTtlValue;
               const owner = prop.owner?.owner1?.fullName;
-              const absentee = prop.summary?.absenteeInd === "O" || prop.owner?.absenteeOwnerStatus === "Absentee";
+              const absenteeInd = (prop.summary?.absenteeInd || "").toUpperCase();
+              const absentee = absenteeInd.includes("ABSENTEE") || absenteeInd === "A" || prop.owner?.absenteeOwnerStatus?.toUpperCase().includes("ABSENTEE") || prop.owner?.ownerOccupied === "N";
               const apn = prop.identifier?.apn;
               const isHI = prop.address?.countrySubd?.toUpperCase() === "HI" || prop.address?.countrySubd?.toUpperCase() === "HAWAII";
               // Convert ATTOM APN to 12-digit TMK and build county-specific QPublic link via zip code

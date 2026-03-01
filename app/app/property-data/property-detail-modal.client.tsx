@@ -675,23 +675,34 @@ export default function PropertyDetailModal({
               </Section>
 
               <Section title="Occupancy">
-                <Field label="Owner Occupied" value={p.owner?.ownerOccupied} />
-                <Field label="Absentee Status" value={
-                  p.owner?.absenteeOwnerStatus
-                  || (p.summary?.absenteeInd === "O" || p.summary?.absenteeInd === "ABSENTEE OWNER" || p.summary?.absenteeInd === "ABSENTEE" || p.summary?.absenteeInd === "A"
-                      ? "Absentee Owner"
-                      : p.summary?.absenteeInd === "S" || p.summary?.absenteeInd === "OWNER OCCUPIED"
-                      ? "Owner Occupied"
-                      : p.owner?.ownerOccupied === "N" || p.owner?.ownerOccupied === "0"
-                      ? "Absentee Owner"
-                      : p.owner?.ownerOccupied === "Y" || p.owner?.ownerOccupied === "1"
-                      ? "Owner Occupied"
-                      : searchContext?.absenteeowner === "absentee"
-                      ? "Absentee Owner"
-                      : searchContext?.absenteeowner === "occupied"
-                      ? "Owner Occupied"
-                      : undefined)
+                <Field label="Owner Occupied" value={
+                  p.owner?.ownerOccupied === "Y" || p.owner?.ownerOccupied === "1" ? "Yes"
+                  : p.owner?.ownerOccupied === "N" || p.owner?.ownerOccupied === "0" ? "No"
+                  : p.owner?.ownerOccupied || undefined
                 } />
+                <Field label="Absentee Status" value={(() => {
+                  // Check owner.absenteeOwnerStatus first (human-readable from ATTOM)
+                  const ownerStatus = (p.owner?.absenteeOwnerStatus || "").toUpperCase();
+                  if (ownerStatus.includes("ABSENTEE")) return "Absentee Owner";
+                  if (ownerStatus.includes("OWNER") && ownerStatus.includes("OCC")) return "Owner Occupied";
+                  if (ownerStatus === "A") return "Absentee Owner";
+                  if (ownerStatus === "O" || ownerStatus === "S") return "Owner Occupied";
+
+                  // Check summary.absenteeInd — ATTOM uses: "A"/"ABSENTEE" = absentee, "O"/"OWNER OCCUPIED" = occupied
+                  const ind = (p.summary?.absenteeInd || "").toUpperCase();
+                  if (ind.includes("ABSENTEE") || ind === "A") return "Absentee Owner";
+                  if (ind === "O" || ind === "S" || ind.includes("OWNER OCC")) return "Owner Occupied";
+
+                  // Derive from ownerOccupied flag
+                  if (p.owner?.ownerOccupied === "N" || p.owner?.ownerOccupied === "0") return "Absentee Owner";
+                  if (p.owner?.ownerOccupied === "Y" || p.owner?.ownerOccupied === "1") return "Owner Occupied";
+
+                  // Fallback to search context
+                  if (searchContext?.absenteeowner === "absentee") return "Absentee Owner";
+                  if (searchContext?.absenteeowner === "occupied") return "Owner Occupied";
+
+                  return undefined;
+                })()} />
                 <Field label="Mailing Address" value={p.owner?.mailingAddressOneLine} />
               </Section>
 
@@ -752,9 +763,13 @@ export default function PropertyDetailModal({
               )}
 
               {neighborhoodData && (() => {
-                // Extract community data — ATTOM returns { community: [ {...} ] } inside the response
+                // Extract community data — ATTOM returns data in varying formats:
+                //   { community: [ {...} ] }  or  { area: [ {...} ] }  or flat object
                 const communityRaw = neighborhoodData.community;
-                const community = communityRaw?.community?.[0] || (communityRaw && !communityRaw.status ? communityRaw : null);
+                const community = communityRaw?.community?.[0]
+                  || communityRaw?.area?.[0]
+                  || (Array.isArray(communityRaw) ? communityRaw[0] : null)
+                  || (communityRaw && typeof communityRaw === "object" && !communityRaw.status && !communityRaw.community && !communityRaw.area ? communityRaw : null);
                 // Extract school data — ATTOM returns { school: [ {...} ] } inside the response
                 const schoolsRaw = neighborhoodData.schools;
                 const schools = schoolsRaw?.school || (Array.isArray(schoolsRaw) ? schoolsRaw : []);

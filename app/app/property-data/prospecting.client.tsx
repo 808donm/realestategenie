@@ -579,8 +579,18 @@ export default function Prospecting() {
         ...(p.sale || {}),
       } : p.sale;
 
+      // Deep-merge summary: preserve absenteeInd and other fields from supplement
+      const mergedSummary = (p.summary || supp.summary) ? {
+        ...supp.summary,
+        ...p.summary,
+        // Explicitly preserve absenteeInd from whichever source has it
+        absenteeInd: p.summary?.absenteeInd || supp.summary?.absenteeInd,
+      } : p.summary;
+
       return {
         ...p,
+        // Use deep-merged summary so absenteeInd is not lost
+        summary: mergedSummary,
         // Use deep-merged owner data so no supplemental fields are lost
         owner: mergedOwner,
         // Use deep-merged sale data so no supplemental fields are lost
@@ -1631,6 +1641,7 @@ export default function Prospecting() {
       {selectedProperty && (
         <PropertyDetailModal
           property={selectedProperty}
+          searchContext={{ absenteeowner: mode === "absentee" ? "absentee" : undefined }}
           onClose={() => setSelectedProperty(null)}
         />
       )}
