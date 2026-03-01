@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import PropertyDetailModal from "./property-detail-modal.client";
+import { buildQPublicUrl } from "@/lib/hawaii-zip-county";
 
 interface AttomProperty {
   identifier?: { Id?: number; fips?: string; apn?: string; attomId?: number };
@@ -443,9 +444,9 @@ export default function PropertySearch() {
               const absentee = prop.summary?.absenteeInd === "O" || prop.owner?.absenteeOwnerStatus === "Absentee";
               const apn = prop.identifier?.apn;
               const isHI = prop.address?.countrySubd?.toUpperCase() === "HI" || prop.address?.countrySubd?.toUpperCase() === "HAWAII";
-              // Convert ATTOM APN to QPublic TMK: strip leading island digit, right-pad to 12 digits
+              // Convert ATTOM APN to 12-digit TMK and build county-specific QPublic link via zip code
               const qpubTmk = isHI && apn ? apn.replace(/[-\s.]/g, "").slice(1).padEnd(12, "0") : null;
-              const qpubUrl = qpubTmk ? `https://qpublic.schneidercorp.com/Application.aspx?AppID=1045&LayerID=23342&PageTypeID=4&PageID=9746&KeyValue=${qpubTmk}` : null;
+              const qpubUrl = qpubTmk ? buildQPublicUrl(apn!, null, prop.address?.postal1) : null;
 
               return (
                 <div

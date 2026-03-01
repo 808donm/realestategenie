@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import type { FederalPropertySupplement } from "@/lib/integrations/federal-data-client";
+import { buildQPublicUrl } from "@/lib/hawaii-zip-county";
 
 interface AttomProperty {
   identifier?: { Id?: number; fips?: string; apn?: string; attomId?: number };
@@ -529,30 +530,19 @@ export default function PropertyDetailModal({
             // ATTOM APN as fallback display — different format, not QPublic-compatible
             const attomApn = p.identifier?.apn || null;
 
-            // Build QPublic direct report link from TMK + county-specific params
+            // Build QPublic direct report link from TMK + county-specific AppID
             // Falls back to converting ATTOM APN if Hawaii statewide data is unavailable
             const qpubLink = (() => {
               if (hawaiiData?.parcel?.qpub_link) return hawaiiData.parcel.qpub_link;
 
-              // Determine the 12-digit QPublic KeyValue
-              let keyValue: string | null = null;
-              if (tmkValue) {
-                keyValue = String(tmkValue).replace(/[-\s.]/g, "");
-              } else if (attomApn) {
-                // Convert ATTOM APN to QPublic TMK: strip leading island digit, right-pad to 12
-                keyValue = attomApn.replace(/[-\s.]/g, "").slice(1).padEnd(12, "0");
-              }
-              if (!keyValue) return null;
+              const keySource = tmkValue ? String(tmkValue) : attomApn;
+              if (!keySource) return null;
 
-              const county = (hawaiiData?.parcel?.county || "").toUpperCase();
-              const countyParams: Record<string, string> = {
-                HONOLULU: "AppID=1045&LayerID=23342&PageTypeID=4&PageID=9746",
-                HAWAII: "AppID=1048&PageTypeID=4",
-                MAUI: "AppID=1029&PageTypeID=4",
-                KAUAI: "AppID=986&PageTypeID=4",
-              };
-              const params = countyParams[county] || countyParams.HONOLULU;
-              return `https://qpublic.schneidercorp.com/Application.aspx?${params}&KeyValue=${keyValue}`;
+              return buildQPublicUrl(
+                keySource,
+                hawaiiData?.parcel?.county,
+                p.address?.postal1,
+              );
             })();
             // Display TMK: prefer Hawaii source, fall back to converted ATTOM APN
             const displayTmk = tmkValue || (attomApn ? attomApn.replace(/[-\s.]/g, "").slice(1).padEnd(12, "0") : null);
