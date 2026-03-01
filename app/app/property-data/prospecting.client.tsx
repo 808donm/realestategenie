@@ -937,9 +937,11 @@ export default function Prospecting() {
     const lenderName = getMortgageLender(prop);
     const mailingAddr = getMailingAddress(prop);
     const distress = mode === "foreclosure" ? getDistressSignals(prop) : null;
-    const tmk = prop.identifier?.apn;
+    const apn = prop.identifier?.apn;
     const isHI = prop.address?.countrySubd?.toUpperCase() === "HI" || prop.address?.countrySubd?.toUpperCase() === "HAWAII";
-    const qpubUrl = isHI && tmk ? `https://qpublic.schneidercorp.com/Application.aspx?AppID=1045&PageTypeID=4&KeyValue=${tmk.replace(/[-\s.]/g, "")}` : null;
+    // Convert ATTOM APN to QPublic TMK: strip leading island digit, right-pad to 12 digits
+    const qpubTmk = isHI && apn ? apn.replace(/[-\s.]/g, "").slice(1).padEnd(12, "0") : null;
+    const qpubUrl = qpubTmk ? `https://qpublic.schneidercorp.com/Application.aspx?AppID=1045&LayerID=23342&PageTypeID=4&PageID=9746&KeyValue=${qpubTmk}` : null;
 
     return (
       <div
@@ -992,9 +994,9 @@ export default function Prospecting() {
                 {prop.owner?.mailingAddressOneLine ? "Mailing" : "Mortgagor Address"}: {mailingAddr}
               </div>
             )}
-            {tmk && qpubUrl && (
+            {qpubTmk && qpubUrl && (
               <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2, display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ fontFamily: "monospace", fontWeight: 600, color: "#374151" }}>TMK: {tmk}</span>
+                <span style={{ fontFamily: "monospace", fontWeight: 600, color: "#374151" }}>TMK: {qpubTmk}</span>
                 <a
                   href={qpubUrl}
                   target="_blank"

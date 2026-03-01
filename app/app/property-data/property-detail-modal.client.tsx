@@ -403,35 +403,41 @@ export default function PropertyDetailModal({
           )}
 
           {activeSection === "ownership" && (() => {
-            // Resolve TMK from multiple sources: ATTOM APN, Hawaii statewide parcel, or Hawaii owners
-            const tmkValue = p.identifier?.apn || hawaiiData?.parcel?.tmk_txt || hawaiiData?.parcel?.tmk || hawaiiData?.parcel?.cty_tmk || (hawaiiData?.owners?.[0]?.tmk) || null;
+            // Resolve TMK: prefer Hawaii statewide parcel data (12-digit QPublic-compatible format)
+            // over ATTOM APN (which uses a different format with island prefix, no CPR suffix)
+            const tmkValue = hawaiiData?.parcel?.tmk_txt || hawaiiData?.parcel?.tmk || hawaiiData?.parcel?.cty_tmk || (hawaiiData?.owners?.[0]?.tmk) || null;
+            // ATTOM APN as fallback display — different format, not QPublic-compatible
+            const attomApn = p.identifier?.apn || null;
 
-            // Build QPublic direct report link from TMK + county AppID
-            // Format: https://qpublic.schneidercorp.com/Application.aspx?AppID={id}&PageTypeID=4&KeyValue={tmk}
+            // Build QPublic direct report link from TMK + county-specific params
             const qpubLink = (() => {
               if (hawaiiData?.parcel?.qpub_link) return hawaiiData.parcel.qpub_link;
-              if (!tmkValue) return null;
-              const cleanTmk = String(tmkValue).replace(/[-\s.]/g, "");
+              const keyValue = tmkValue ? String(tmkValue).replace(/[-\s.]/g, "") : null;
+              if (!keyValue) return null;
               const county = (hawaiiData?.parcel?.county || "").toUpperCase();
-              const countyAppIdMap: Record<string, string> = {
-                HONOLULU: "1045",
-                HAWAII: "1048",
-                MAUI: "1029",
-                KAUAI: "986",
+              // Each county has fixed AppID, LayerID, and PageID on qpublic.schneidercorp.com
+              const countyParams: Record<string, string> = {
+                HONOLULU: "AppID=1045&LayerID=23342&PageTypeID=4&PageID=9746",
+                HAWAII: "AppID=1048&PageTypeID=4",
+                MAUI: "AppID=1029&PageTypeID=4",
+                KAUAI: "AppID=986&PageTypeID=4",
               };
-              const appId = countyAppIdMap[county] || "1045"; // default to Honolulu
-              return `https://qpublic.schneidercorp.com/Application.aspx?AppID=${appId}&PageTypeID=4&KeyValue=${cleanTmk}`;
+              const params = countyParams[county] || countyParams.HONOLULU;
+              return `https://qpublic.schneidercorp.com/Application.aspx?${params}&KeyValue=${keyValue}`;
             })();
 
             return (
             <>
               {/* TMK & QPublic Quick Access — always visible when TMK is known */}
-              {tmkValue && (
+              {(tmkValue || attomApn) && (
                 <div style={{ marginBottom: 20, padding: "14px 18px", background: "#f0f9ff", borderRadius: 10, border: "1px solid #bfdbfe" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
                     <div>
                       <div style={{ fontSize: 11, fontWeight: 600, color: "#3b82f6", textTransform: "uppercase", letterSpacing: 0.5 }}>TMK (Tax Map Key)</div>
-                      <div style={{ fontSize: 18, fontWeight: 700, color: "#1e40af", fontFamily: "monospace", marginTop: 2 }}>{tmkValue}</div>
+                      <div style={{ fontSize: 18, fontWeight: 700, color: "#1e40af", fontFamily: "monospace", marginTop: 2 }}>{tmkValue || attomApn}</div>
+                      {tmkValue && attomApn && tmkValue !== attomApn && (
+                        <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>APN: {attomApn}</div>
+                      )}
                     </div>
                     {qpubLink && (
                       <a
@@ -450,9 +456,16 @@ export default function PropertyDetailModal({
                       </a>
                     )}
                   </div>
-                  <div style={{ fontSize: 11, color: "#6b7280", marginTop: 6 }}>
-                    Search this TMK on QPublic for full owner details, tax history, and assessment data.
-                  </div>
+                  {qpubLink && (
+                    <div style={{ fontSize: 11, color: "#6b7280", marginTop: 6 }}>
+                      Opens the county tax records page with full owner details, tax history, and assessment data.
+                    </div>
+                  )}
+                  {!qpubLink && hawaiiLoading && (
+                    <div style={{ fontSize: 11, color: "#6b7280", marginTop: 6 }}>
+                      Loading Hawaii public records...
+                    </div>
+                  )}
                 </div>
               )}
 
