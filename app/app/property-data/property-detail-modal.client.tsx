@@ -68,9 +68,12 @@ export default function PropertyDetailModal({
   property: AttomProperty;
   onClose: () => void;
 }) {
-  const [activeSection, setActiveSection] = useState<"overview" | "building" | "financial" | "ownership" | "federal">("overview");
+  const [activeSection, setActiveSection] = useState<"overview" | "building" | "financial" | "ownership" | "honolulu" | "federal">("overview");
   const [federalData, setFederalData] = useState<FederalPropertySupplement | null>(null);
   const [federalLoading, setFederalLoading] = useState(false);
+  const [honoluluData, setHonoluluData] = useState<any>(null);
+  const [honoluluLoading, setHonoluluLoading] = useState(false);
+  const [honoluluError, setHonoluluError] = useState("");
 
   const addr = p.address?.oneLine || [p.address?.line1, p.address?.line2].filter(Boolean).join(", ") || "Property Detail";
   const sqft = p.building?.size?.livingSize || p.building?.size?.universalSize || p.building?.size?.bldgSize;
@@ -108,11 +111,52 @@ export default function PropertyDetailModal({
       .finally(() => setFederalLoading(false));
   }, [activeSection, federalData, federalLoading, p]);
 
+  // Fetch Honolulu tax/owner data when the Honolulu tab is selected
+  // Works for Hawaii properties — uses the TMK (Tax Map Key) or APN as lookup
+  useEffect(() => {
+    if (activeSection !== "honolulu" || honoluluData || honoluluLoading) return;
+
+    // Check if this looks like a Hawaii property
+    const state = p.address?.countrySubd?.toUpperCase();
+    const isHawaii = state === "HI" || state === "HAWAII";
+    // Use APN as TMK — in Hawaii, the APN IS the TMK
+    const tmk = p.identifier?.apn;
+
+    if (!isHawaii && !tmk) {
+      setHonoluluError("This feature is for Honolulu/Hawaii properties. No TMK found.");
+      return;
+    }
+
+    if (!tmk) {
+      setHonoluluError("No TMK (APN) available for this property.");
+      return;
+    }
+
+    setHonoluluLoading(true);
+    setHonoluluError("");
+
+    const params = new URLSearchParams({ endpoint: "record", tmk });
+    fetch(`/api/integrations/honolulu-tax?${params}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success) {
+          setHonoluluData(data);
+        } else {
+          setHonoluluError(data.error || "Failed to fetch Honolulu tax data");
+        }
+      })
+      .catch((err) => {
+        setHonoluluError(err.message || "Failed to connect to Honolulu tax data");
+      })
+      .finally(() => setHonoluluLoading(false));
+  }, [activeSection, honoluluData, honoluluLoading, p]);
+
   const sections = [
     { id: "overview" as const, label: "Overview" },
     { id: "building" as const, label: "Building" },
     { id: "financial" as const, label: "Financial" },
     { id: "ownership" as const, label: "Ownership" },
+    { id: "honolulu" as const, label: "HNL Tax" },
     { id: "federal" as const, label: "Area Intel" },
   ];
 
@@ -364,6 +408,90 @@ export default function PropertyDetailModal({
                 <Field label="Absentee Status" value={p.owner?.absenteeOwnerStatus || (p.summary?.absenteeInd === "O" ? "Absentee Owner" : p.summary?.absenteeInd === "S" ? "Owner Occupied" : undefined)} />
                 <Field label="Mailing Address" value={p.owner?.mailingAddressOneLine} />
               </Section>
+            </>
+          )}
+
+          {activeSection === "honolulu" && (
+            <>
+              {honoluluLoading && (
+                <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>
+                  Loading Honolulu tax records...
+                </div>
+              )}
+
+              {!honoluluLoading && honoluluError && (
+                <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>
+                  {honoluluError}
+                </div>
+              )}
+
+              {!honoluluLoading && !honoluluError && !honoluluData && (
+                <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>
+                  <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>Honolulu Tax & Owner Records</div>
+                  <div style={{ fontSize: 13 }}>
+                    Public tax and ownership data from the City & County of Honolulu
+                    ArcGIS Open Geospatial Data portal. Available for Oahu properties only.
+                  </div>
+                </div>
+              )}
+
+              {honoluluData && (
+                <>
+                  {/* TMK Info */}
+                  <Section title="Tax Map Key (TMK)">
+                    <Field label="TMK" value={honoluluData.tmk} />
+                    <Field label="Total Owners on Deed" value={honoluluData.owners?.length || 0} />
+                  </Section>
+
+                  {/* Owner(s) from OWNALL table */}
+                  {honoluluData.owners?.length > 0 && (
+                    <Section title="Deed Owners (OWNALL)">
+                      {honoluluData.owners.map((owner: any, i: number) => (
+                        <Field
+                          key={i}
+                          label={`Owner ${owner.ownseq || i + 1}${owner.owntype ? ` (${owner.owntype})` : ""}`}
+                          value={owner.owner}
+                        />
+                      ))}
+                    </Section>
+                  )}
+
+                  {honoluluData.owners?.length === 0 && (
+                    <div style={{ padding: 12, background: "#fef3c7", borderRadius: 8, fontSize: 13, color: "#92400e", marginBottom: 16 }}>
+                      No owners found in the OWNALL table for this TMK. The TMK format may differ
+                      between ATTOM and Honolulu records, or the endpoint may need configuration.
+                    </div>
+                  )}
+
+                  {/* Tax Parcel data */}
+                  {honoluluData.parcel && (
+                    <>
+                      <Section title="Tax Parcel Assessment">
+                        <Field label="Land Value" value={honoluluData.parcel.landvalue != null ? `$${Number(honoluluData.parcel.landvalue).toLocaleString()}` : undefined} />
+                        <Field label="Building Value" value={honoluluData.parcel.bldgvalue != null ? `$${Number(honoluluData.parcel.bldgvalue).toLocaleString()}` : undefined} />
+                        <Field label="Total Value" value={honoluluData.parcel.totalvalue != null ? `$${Number(honoluluData.parcel.totalvalue).toLocaleString()}` : undefined} />
+                        <Field label="Exemption" value={honoluluData.parcel.exemption != null ? `$${Number(honoluluData.parcel.exemption).toLocaleString()}` : undefined} />
+                        <Field label="Taxable Value" value={honoluluData.parcel.taxable != null ? `$${Number(honoluluData.parcel.taxable).toLocaleString()}` : undefined} />
+                        <Field label="Tax Amount" value={honoluluData.parcel.taxamount != null ? `$${Number(honoluluData.parcel.taxamount).toLocaleString()}` : undefined} />
+                        <Field label="Tax Year" value={honoluluData.parcel.taxyear} />
+                      </Section>
+
+                      <Section title="Parcel Details">
+                        <Field label="Parcel Type" value={honoluluData.parcel.type} />
+                        <Field label="Zoning" value={honoluluData.parcel.zoning} />
+                        <Field label="Land Area" value={honoluluData.parcel.landarea != null ? `${Number(honoluluData.parcel.landarea).toLocaleString()} sqft` : undefined} />
+                        <Field label="Land Area (sf)" value={honoluluData.parcel.landareasf != null ? `${Number(honoluluData.parcel.landareasf).toLocaleString()} sqft` : undefined} />
+                      </Section>
+                    </>
+                  )}
+
+                  <div style={{ marginTop: 12, padding: 10, background: "#f0f9ff", borderRadius: 8, fontSize: 11, color: "#6b7280" }}>
+                    Source: City & County of Honolulu Open Geospatial Data (CCHNL).
+                    Data from BFS Real Property Assessment, updated weekly.
+                    Parcel boundaries are for visual reference only and do not represent legal accuracy.
+                  </div>
+                </>
+              )}
             </>
           )}
 
