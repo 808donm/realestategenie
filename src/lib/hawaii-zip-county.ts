@@ -213,8 +213,11 @@ export function buildQPublicUrl(
   // Clean the key — strip dashes, spaces, dots
   let keyValue = tmkOrApn.replace(/[-\s.]/g, "");
 
-  // If this looks like an ATTOM APN (13+ digits with island prefix), convert to 12-digit TMK
-  if (keyValue.length > 12) {
+  // Convert ATTOM APN to 12-digit QPublic TMK format.
+  // ATTOM APNs have an island prefix digit (1=Honolulu, 2=Maui, 3=Hawaii, 4=Kauai)
+  // followed by the TMK digits. They can be 9-13+ digits depending on format.
+  // QPublic always expects a 12-digit TMK (no island prefix, zero-padded).
+  if (keyValue.length !== 12) {
     keyValue = keyValue.slice(1).padEnd(12, "0");
   }
 
