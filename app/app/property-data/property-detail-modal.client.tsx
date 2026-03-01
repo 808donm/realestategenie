@@ -227,9 +227,11 @@ export default function PropertyDetailModal({
       .then((data) => {
         if (data && !data.error) {
           setNeighborhoodData(data);
+        } else {
+          console.warn("[Neighborhood] API returned error:", data?.error);
         }
       })
-      .catch(() => {})
+      .catch((err) => console.warn("[Neighborhood] fetch failed:", err))
       .finally(() => setNeighborhoodLoading(false));
   }, [activeSection, neighborhoodData, neighborhoodLoading, p]);
 
@@ -675,11 +677,12 @@ export default function PropertyDetailModal({
               </Section>
 
               <Section title="Occupancy">
-                <Field label="Owner Occupied" value={
-                  p.owner?.ownerOccupied === "Y" || p.owner?.ownerOccupied === "1" ? "Yes"
-                  : p.owner?.ownerOccupied === "N" || p.owner?.ownerOccupied === "0" ? "No"
-                  : p.owner?.ownerOccupied || undefined
-                } />
+                <Field label="Owner Occupied" value={(() => {
+                  const val = (p.owner?.ownerOccupied || "").toUpperCase();
+                  if (val === "Y" || val === "1" || val === "YES" || val === "TRUE") return "Yes";
+                  if (val === "N" || val === "0" || val === "NO" || val === "FALSE") return "No";
+                  return p.owner?.ownerOccupied || undefined;
+                })()} />
                 <Field label="Absentee Status" value={(() => {
                   // Check owner.absenteeOwnerStatus first (human-readable from ATTOM)
                   const ownerStatus = (p.owner?.absenteeOwnerStatus || "").toUpperCase();
@@ -693,11 +696,12 @@ export default function PropertyDetailModal({
                   if (ind.includes("ABSENTEE") || ind === "A") return "Absentee Owner";
                   if (ind === "O" || ind === "S" || ind.includes("OWNER OCC")) return "Owner Occupied";
 
-                  // Derive from ownerOccupied flag
-                  if (p.owner?.ownerOccupied === "N" || p.owner?.ownerOccupied === "0") return "Absentee Owner";
-                  if (p.owner?.ownerOccupied === "Y" || p.owner?.ownerOccupied === "1") return "Owner Occupied";
+                  // Derive from ownerOccupied flag (case-insensitive to match isAbsenteeOwner logic)
+                  const occupied = (p.owner?.ownerOccupied || "").toUpperCase();
+                  if (occupied === "N" || occupied === "0" || occupied === "NO" || occupied === "FALSE") return "Absentee Owner";
+                  if (occupied === "Y" || occupied === "1" || occupied === "YES" || occupied === "TRUE") return "Owner Occupied";
 
-                  // Fallback to search context
+                  // Fallback to search context (e.g. when prospecting for absentee owners)
                   if (searchContext?.absenteeowner === "absentee") return "Absentee Owner";
                   if (searchContext?.absenteeowner === "occupied") return "Owner Occupied";
 
@@ -763,13 +767,53 @@ export default function PropertyDetailModal({
               )}
 
               {neighborhoodData && (() => {
-                // Extract community data — ATTOM returns data in varying formats:
-                //   { community: [ {...} ] }  or  { area: [ {...} ] }  or flat object
+                // Extract community data — ATTOM returns data in varying formats depending
+                // on endpoint: /neighborhood/community may use "neighborhood" key,
+                // /area/community/profile uses "area" key, or flat object.
+                // Field names may also vary (e.g. "communityname" vs "communityName").
                 const communityRaw = neighborhoodData.community;
-                const community = communityRaw?.community?.[0]
+                const rawObj = communityRaw?.neighborhood?.[0]
+                  || communityRaw?.community?.[0]
                   || communityRaw?.area?.[0]
                   || (Array.isArray(communityRaw) ? communityRaw[0] : null)
-                  || (communityRaw && typeof communityRaw === "object" && !communityRaw.status && !communityRaw.community && !communityRaw.area ? communityRaw : null);
+                  || (communityRaw && typeof communityRaw === "object" && !communityRaw.status && !communityRaw.community && !communityRaw.area && !communityRaw.neighborhood ? communityRaw : null);
+
+                // Normalize ATTOM field names — the API may return all-lowercase, camelCase,
+                // or PascalCase. Build a lookup by lowercase key so we can find fields reliably.
+                const community = rawObj ? (() => {
+                  const lookup: Record<string, any> = {};
+                  for (const [k, v] of Object.entries(rawObj)) {
+                    lookup[k.toLowerCase()] = v;
+                    // Also check nested demographic/community objects
+                    if (v && typeof v === "object" && !Array.isArray(v)) {
+                      for (const [nk, nv] of Object.entries(v as Record<string, any>)) {
+                        if (lookup[nk.toLowerCase()] === undefined) lookup[nk.toLowerCase()] = nv;
+                      }
+                    }
+                  }
+                  return {
+                    communityName: lookup.communityname || lookup.name || lookup.communityname || rawObj.communityName,
+                    population: lookup.population ?? rawObj.population,
+                    populationDensity: lookup.populationdensity ?? rawObj.populationDensity,
+                    medianAge: lookup.medianage ?? rawObj.medianAge,
+                    medianHouseholdIncome: lookup.medianhouseholdincome ?? rawObj.medianHouseholdIncome,
+                    medianHomePrice: lookup.medianhomeprice ?? rawObj.medianHomePrice,
+                    affordabilityIndex: lookup.affordabilityindex ?? rawObj.affordabilityIndex,
+                    houseAppreciationRate: lookup.houseappreciationrate ?? rawObj.houseAppreciationRate,
+                    ownerOccupiedPct: lookup.owneroccupiedpct ?? rawObj.ownerOccupiedPct,
+                    renterOccupiedPct: lookup.renteroccupiedpct ?? rawObj.renterOccupiedPct,
+                    employmentGrowthRate: lookup.employmentgrowthrate ?? rawObj.employmentGrowthRate,
+                    populationGrowth: lookup.populationgrowth ?? rawObj.populationGrowth,
+                    avgSchoolRating: lookup.avgschoolrating ?? rawObj.avgSchoolRating,
+                    walkScore: lookup.walkscore ?? rawObj.walkScore,
+                    bikeScore: lookup.bikescore ?? rawObj.bikeScore,
+                    transitScore: lookup.transitscore ?? rawObj.transitScore,
+                    commuteTime: lookup.commutetime ?? rawObj.commuteTime,
+                    crimeIndex: lookup.crimeindex ?? rawObj.crimeIndex,
+                    crimeRisk: lookup.crimerisk ?? rawObj.crimeRisk,
+                  };
+                })() : null;
+
                 // Extract school data — ATTOM returns { school: [ {...} ] } inside the response
                 const schoolsRaw = neighborhoodData.schools;
                 const schools = schoolsRaw?.school || (Array.isArray(schoolsRaw) ? schoolsRaw : []);

@@ -885,13 +885,36 @@ export class AttomClient {
   // ── Community / Neighborhood Endpoints ──────────────────────────────────
 
   /**
-   * Get community profile by GeoID or lat/long
+   * Get neighborhood community profile by GeoIdV4 or postalcode
    * Returns demographics, affordability, appreciation, crime index, etc.
+   *
+   * ATTOM docs specify /neighborhood/community with GeoIdV4 parameter.
+   * Falls back to /area/community/profile with postalcode if the primary fails.
    */
   async getCommunityProfile(
     params: AttomSearchParams
   ): Promise<any> {
-    return this.request("/area/community/profile", this.buildParams(params));
+    // Normalize geoIdV4 parameter casing — ATTOM expects "geoIdV4"
+    const normalized = this.buildParams(params) || {};
+    if (normalized.geoidv4 && !normalized.geoIdV4) {
+      normalized.geoIdV4 = normalized.geoidv4;
+      delete normalized.geoidv4;
+    }
+    if (normalized.geoIDV4 && !normalized.geoIdV4) {
+      normalized.geoIdV4 = normalized.geoIDV4;
+      delete normalized.geoIDV4;
+    }
+
+    // Try /neighborhood/community first (preferred per ATTOM docs)
+    try {
+      const result = await this.request<any>("/neighborhood/community", normalized);
+      if (result && !result.error) return result;
+    } catch (e) {
+      console.log("[ATTOM] /neighborhood/community failed, trying /area/community/profile fallback:", (e as Error).message);
+    }
+
+    // Fallback to /area/community/profile (accepts postalcode)
+    return this.request("/area/community/profile", normalized);
   }
 
   /**
@@ -947,10 +970,15 @@ export class AttomClient {
     schools: any;
     poi: any;
   }> {
-    // Community profile only supports postalcode or geoIdV4 — not address/lat-lng
+    // Community profile: try geoIdV4, postalcode, and address params.
+    // /neighborhood/community prefers GeoIdV4; fallback /area/community/profile accepts postalcode.
     const communityParams: AttomSearchParams = {
       postalcode: options.postalcode,
-      geoidv4: options.geoidv4,
+      geoIdV4: options.geoidv4,
+      address1: options.address1,
+      address2: options.address2,
+      latitude: options.latitude,
+      longitude: options.longitude,
     };
 
     // School search supports postalcode, lat/lng + radius, or geoIdV4

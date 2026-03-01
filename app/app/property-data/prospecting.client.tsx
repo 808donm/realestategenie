@@ -194,8 +194,8 @@ function isAbsenteeOwner(p: AttomProperty): boolean {
   if (ind.includes("ABSENTEE") || ind === "A") return true;
   // absenteeOwnerStatus: "Absentee", "Absentee Owner", etc.
   if (status.includes("ABSENTEE")) return true;
-  // ownerOccupied: "N" means not owner-occupied (= absentee)
-  if (occupied === "N") return true;
+  // ownerOccupied: "N", "0", "NO", "FALSE" means not owner-occupied (= absentee)
+  if (occupied === "N" || occupied === "0" || occupied === "NO" || occupied === "FALSE") return true;
 
   return false;
 }
