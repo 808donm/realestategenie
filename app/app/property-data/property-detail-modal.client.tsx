@@ -68,11 +68,13 @@ export default function PropertyDetailModal({
   property: AttomProperty;
   onClose: () => void;
 }) {
-  const [activeSection, setActiveSection] = useState<"overview" | "building" | "financial" | "ownership" | "federal">("overview");
+  const [activeSection, setActiveSection] = useState<"overview" | "building" | "financial" | "ownership" | "neighborhood" | "federal">("overview");
   const [federalData, setFederalData] = useState<FederalPropertySupplement | null>(null);
   const [federalLoading, setFederalLoading] = useState(false);
   const [hawaiiData, setHawaiiData] = useState<any>(null);
   const [hawaiiLoading, setHawaiiLoading] = useState(false);
+  const [neighborhoodData, setNeighborhoodData] = useState<any>(null);
+  const [neighborhoodLoading, setNeighborhoodLoading] = useState(false);
 
   const addr = p.address?.oneLine || [p.address?.line1, p.address?.line2].filter(Boolean).join(", ") || "Property Detail";
   const sqft = p.building?.size?.livingSize || p.building?.size?.universalSize || p.building?.size?.bldgSize;
@@ -135,11 +137,42 @@ export default function PropertyDetailModal({
       .finally(() => setHawaiiLoading(false));
   }, [activeSection, hawaiiData, hawaiiLoading, p]);
 
+  // Fetch neighborhood profile (community data, schools) when Neighborhood tab is selected
+  useEffect(() => {
+    if (activeSection !== "neighborhood" || neighborhoodData || neighborhoodLoading) return;
+
+    const addr1 = p.address?.line1;
+    const city = p.address?.locality;
+    const state = p.address?.countrySubd;
+    const zip = p.address?.postal1;
+    if (!addr1 && !zip) return;
+
+    setNeighborhoodLoading(true);
+
+    const params = new URLSearchParams({ endpoint: "neighborhood" });
+    if (addr1) params.set("address1", addr1);
+    if (city && state) params.set("address2", `${city}, ${state}`);
+    if (zip) params.set("postalcode", zip);
+    if (p.location?.latitude) params.set("latitude", p.location.latitude);
+    if (p.location?.longitude) params.set("longitude", p.location.longitude);
+
+    fetch(`/api/integrations/attom/property?${params}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data && !data.error) {
+          setNeighborhoodData(data);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setNeighborhoodLoading(false));
+  }, [activeSection, neighborhoodData, neighborhoodLoading, p]);
+
   const sections = [
     { id: "overview" as const, label: "Overview" },
     { id: "building" as const, label: "Building" },
     { id: "financial" as const, label: "Financial" },
     { id: "ownership" as const, label: "Ownership" },
+    { id: "neighborhood" as const, label: "Neighborhood" },
     { id: "federal" as const, label: "Area Intel" },
   ];
 
@@ -238,7 +271,7 @@ export default function PropertyDetailModal({
                 <Field label="Year Built" value={yearBuilt} />
                 <Field label="APN" value={p.identifier?.apn} />
                 <Field label="FIPS" value={p.identifier?.fips} />
-                <Field label="ATTOM ID" value={p.identifier?.attomId} />
+                <Field label="Record ID" value={p.identifier?.attomId} />
                 <Field label="Zoning" value={p.lot?.siteZoningIdent} />
                 <Field label="Legal" value={p.summary?.legal1} />
               </Section>
@@ -526,6 +559,144 @@ export default function PropertyDetailModal({
             </>
             );
           })()}
+
+          {activeSection === "neighborhood" && (
+            <>
+              {neighborhoodLoading && (
+                <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>
+                  Loading neighborhood data...
+                </div>
+              )}
+
+              {!neighborhoodLoading && !neighborhoodData && (
+                <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>
+                  Neighborhood data not available. Connect the property data integration to access community intelligence.
+                </div>
+              )}
+
+              {neighborhoodData && (() => {
+                const community = neighborhoodData.community?.community?.[0] || neighborhoodData.community;
+                const schools = neighborhoodData.schools?.school || neighborhoodData.schools || [];
+                const schoolList = Array.isArray(schools) ? schools : [];
+
+                return (
+                  <>
+                    {/* Walkability / Transportation Scores */}
+                    {(community?.walkScore != null || community?.bikeScore != null || community?.transitScore != null || community?.commuteTime != null) && (
+                      <div style={{ marginBottom: 20 }}>
+                        <h3 style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 10, paddingBottom: 6, borderBottom: "1px solid #e5e7eb" }}>
+                          Walkability & Transportation
+                        </h3>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10 }}>
+                          {community.walkScore != null && (
+                            <div style={{ padding: "12px 14px", background: community.walkScore >= 70 ? "#ecfdf5" : community.walkScore >= 50 ? "#fefce8" : "#fef2f2", borderRadius: 8, textAlign: "center" }}>
+                              <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: community.walkScore >= 70 ? "#059669" : community.walkScore >= 50 ? "#a16207" : "#dc2626" }}>Walk Score</div>
+                              <div style={{ fontSize: 28, fontWeight: 800, color: community.walkScore >= 70 ? "#059669" : community.walkScore >= 50 ? "#a16207" : "#dc2626" }}>{community.walkScore}</div>
+                              <div style={{ fontSize: 11, color: "#6b7280" }}>
+                                {community.walkScore >= 90 ? "Walker's Paradise" : community.walkScore >= 70 ? "Very Walkable" : community.walkScore >= 50 ? "Somewhat Walkable" : community.walkScore >= 25 ? "Car-Dependent" : "Almost All Errands Require a Car"}
+                              </div>
+                            </div>
+                          )}
+                          {community.bikeScore != null && (
+                            <div style={{ padding: "12px 14px", background: community.bikeScore >= 70 ? "#ecfdf5" : community.bikeScore >= 50 ? "#fefce8" : "#f0f9ff", borderRadius: 8, textAlign: "center" }}>
+                              <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: community.bikeScore >= 70 ? "#059669" : community.bikeScore >= 50 ? "#a16207" : "#3b82f6" }}>Bike Score</div>
+                              <div style={{ fontSize: 28, fontWeight: 800, color: community.bikeScore >= 70 ? "#059669" : community.bikeScore >= 50 ? "#a16207" : "#3b82f6" }}>{community.bikeScore}</div>
+                              <div style={{ fontSize: 11, color: "#6b7280" }}>
+                                {community.bikeScore >= 90 ? "Biker's Paradise" : community.bikeScore >= 70 ? "Very Bikeable" : community.bikeScore >= 50 ? "Bikeable" : "Minimal Bike Infrastructure"}
+                              </div>
+                            </div>
+                          )}
+                          {community.transitScore != null && (
+                            <div style={{ padding: "12px 14px", background: community.transitScore >= 70 ? "#ecfdf5" : community.transitScore >= 50 ? "#fefce8" : "#f5f3ff", borderRadius: 8, textAlign: "center" }}>
+                              <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: community.transitScore >= 70 ? "#059669" : community.transitScore >= 50 ? "#a16207" : "#7c3aed" }}>Transit Score</div>
+                              <div style={{ fontSize: 28, fontWeight: 800, color: community.transitScore >= 70 ? "#059669" : community.transitScore >= 50 ? "#a16207" : "#7c3aed" }}>{community.transitScore}</div>
+                              <div style={{ fontSize: 11, color: "#6b7280" }}>
+                                {community.transitScore >= 90 ? "Excellent Transit" : community.transitScore >= 70 ? "Rider's Paradise" : community.transitScore >= 50 ? "Good Transit" : "Minimal Transit"}
+                              </div>
+                            </div>
+                          )}
+                          {community.commuteTime != null && (
+                            <div style={{ padding: "12px 14px", background: "#f9fafb", borderRadius: 8, textAlign: "center" }}>
+                              <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: "#6b7280" }}>Avg Commute</div>
+                              <div style={{ fontSize: 28, fontWeight: 800, color: "#374151" }}>{community.commuteTime}</div>
+                              <div style={{ fontSize: 11, color: "#6b7280" }}>minutes</div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Crime & Safety */}
+                    {(community?.crimeIndex != null || community?.crimeRisk) && (
+                      <Section title="Crime & Safety">
+                        <Field label="Crime Index" value={community.crimeIndex} />
+                        <Field label="Crime Risk" value={community.crimeRisk} />
+                      </Section>
+                    )}
+
+                    {/* Community Profile */}
+                    {community && (
+                      <Section title="Community Profile">
+                        <Field label="Community" value={community.communityName} />
+                        <Field label="Population" value={community.population != null ? Number(community.population).toLocaleString() : undefined} />
+                        <Field label="Population Density" value={community.populationDensity != null ? `${Number(community.populationDensity).toLocaleString()} / sqmi` : undefined} />
+                        <Field label="Median Age" value={community.medianAge} />
+                        <Field label="Median Household Income" value={community.medianHouseholdIncome != null ? `$${Number(community.medianHouseholdIncome).toLocaleString()}` : undefined} />
+                        <Field label="Median Home Price" value={community.medianHomePrice != null ? `$${Number(community.medianHomePrice).toLocaleString()}` : undefined} />
+                        <Field label="Affordability Index" value={community.affordabilityIndex} />
+                        <Field label="House Appreciation" value={community.houseAppreciationRate != null ? `${community.houseAppreciationRate}%` : undefined} />
+                        <Field label="Owner Occupied" value={community.ownerOccupiedPct != null ? `${community.ownerOccupiedPct}%` : undefined} />
+                        <Field label="Renter Occupied" value={community.renterOccupiedPct != null ? `${community.renterOccupiedPct}%` : undefined} />
+                        <Field label="Employment Growth" value={community.employmentGrowthRate != null ? `${community.employmentGrowthRate}%` : undefined} />
+                        <Field label="Population Growth" value={community.populationGrowth != null ? `${community.populationGrowth}%` : undefined} />
+                        <Field label="Avg School Rating" value={community.avgSchoolRating != null ? `${community.avgSchoolRating}/10` : undefined} />
+                      </Section>
+                    )}
+
+                    {/* Nearby Schools */}
+                    {schoolList.length > 0 && (
+                      <div style={{ marginBottom: 20 }}>
+                        <h3 style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 10, paddingBottom: 6, borderBottom: "1px solid #e5e7eb" }}>
+                          Nearby Schools
+                        </h3>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                          {schoolList.slice(0, 10).map((school: any, i: number) => (
+                            <div key={i} style={{ padding: "10px 14px", background: "#f9fafb", borderRadius: 8, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+                              <div style={{ flex: 1, minWidth: 180 }}>
+                                <div style={{ fontWeight: 600, fontSize: 13, color: "#111827" }}>{school.schoolName || school.InstitutionName}</div>
+                                <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
+                                  {[
+                                    school.schoolType || school.Type,
+                                    school.gradeRange || school.Grades,
+                                    school.distance != null ? `${Number(school.distance).toFixed(1)} mi` : null,
+                                  ].filter(Boolean).join(" · ")}
+                                </div>
+                                {(school.enrollment || school.Enrollment) && (
+                                  <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>
+                                    Enrollment: {Number(school.enrollment || school.Enrollment).toLocaleString()}
+                                    {(school.studentTeacherRatio || school.StudentTeacher) ? ` · ${school.studentTeacherRatio || school.StudentTeacher}:1 student-teacher` : ""}
+                                  </div>
+                                )}
+                              </div>
+                              {(school.rating != null || school.SchoolRating != null) && (
+                                <div style={{
+                                  width: 40, height: 40, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
+                                  fontWeight: 800, fontSize: 16, color: "#fff", flexShrink: 0,
+                                  background: (school.rating || school.SchoolRating) >= 8 ? "#059669" : (school.rating || school.SchoolRating) >= 5 ? "#d97706" : "#dc2626",
+                                }}>
+                                  {school.rating || school.SchoolRating}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+            </>
+          )}
 
           {activeSection === "federal" && (
             <>

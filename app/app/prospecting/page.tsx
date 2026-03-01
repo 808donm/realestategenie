@@ -20,7 +20,7 @@ export default function ProspectingPage() {
     <div>
       <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 4 }}>Prospecting Tools</h1>
       <p style={{ color: "#6b7280", marginBottom: 24 }}>
-        Find motivated sellers, distressed properties, investor portfolios, and farming opportunities using ATTOM property intelligence.
+        Find motivated sellers, distressed properties, investor portfolios, and farming opportunities using public records intelligence.
       </p>
       <Prospecting />
     </div>

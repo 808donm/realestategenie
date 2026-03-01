@@ -350,7 +350,7 @@ export default function MLSClient() {
         if (cancelled) return;
 
         if (!res.ok) {
-          setAttomError(data.error || "ATTOM lookup failed");
+          setAttomError(data.error || "Property lookup failed");
           return;
         }
 
@@ -364,10 +364,10 @@ export default function MLSClient() {
           setAttomData(prop);
         } else {
           console.log("[ATTOM] No property found in response:", JSON.stringify(data).substring(0, 500));
-          setAttomError("No ATTOM record found for this address");
+          setAttomError("No property record found for this address");
         }
       } catch {
-        if (!cancelled) setAttomError("Could not connect to ATTOM");
+        if (!cancelled) setAttomError("Could not connect to property data service");
       } finally {
         if (!cancelled) setAttomLoading(false);
       }
@@ -2714,7 +2714,7 @@ export default function MLSClient() {
 
                 {!attomData && !attomLoading && !attomError && (
                   <div style={{ padding: 10, background: "#f9fafb", borderRadius: 8, fontSize: 13, color: "#9ca3af" }}>
-                    No ATTOM data available for this address
+                    No property data available for this address
                   </div>
                 )}
 
@@ -2907,7 +2907,7 @@ export default function MLSClient() {
                 )}
               </div>
 
-              {/* Neighborhood Profile (ATTOM) */}
+              {/* Neighborhood Profile */}
               <div style={{ marginBottom: 20 }}>
                 <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 10, color: "#374151", display: "flex", alignItems: "center", gap: 8 }}>
                   Neighborhood Profile
@@ -3080,7 +3080,7 @@ export default function MLSClient() {
                   <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                     {/* Hazard Risk Cards */}
                     {riskData.hazard && (() => {
-                      // Normalize — ATTOM can nest under property[0] or directly
+                      // Normalize — data can nest under property[0] or directly
                       const h = riskData.hazard?.property?.[0] || riskData.hazard;
                       const risks = [
                         { key: "floodRisk", label: "Flood", icon: "~" },
