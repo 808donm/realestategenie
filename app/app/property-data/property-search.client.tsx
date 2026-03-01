@@ -564,6 +564,7 @@ export default function PropertySearch() {
       {selectedProperty && (
         <PropertyDetailModal
           property={selectedProperty}
+          searchContext={{ absenteeowner }}
           onClose={() => setSelectedProperty(null)}
         />
       )}

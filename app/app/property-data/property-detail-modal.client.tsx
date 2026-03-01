@@ -64,9 +64,11 @@ function Field({ label, value }: { label: string; value?: string | number | null
 
 export default function PropertyDetailModal({
   property: p,
+  searchContext,
   onClose,
 }: {
   property: AttomProperty;
+  searchContext?: { absenteeowner?: string };
   onClose: () => void;
 }) {
   const [activeSection, setActiveSection] = useState<"overview" | "building" | "financial" | "ownership" | "neighborhood" | "federal">("overview");
@@ -78,6 +80,8 @@ export default function PropertyDetailModal({
   const [neighborhoodLoading, setNeighborhoodLoading] = useState(false);
   const [hazardData, setHazardData] = useState<any>(null);
   const [hazardLoading, setHazardLoading] = useState(false);
+  const [avmData, setAvmData] = useState<any>(null);
+  const [avmLoading, setAvmLoading] = useState(false);
 
   const addr = p.address?.oneLine || [p.address?.line1, p.address?.line2].filter(Boolean).join(", ") || "Property Detail";
   const sqft = p.building?.size?.livingSize || p.building?.size?.universalSize || p.building?.size?.bldgSize;
@@ -108,6 +112,44 @@ export default function PropertyDetailModal({
       .catch(() => {})
       .finally(() => setHazardLoading(false));
   }, [hazardData, hazardLoading, p]);
+
+  // Fetch AVM data when the Financial tab is selected and property doesn't already have AVM
+  useEffect(() => {
+    if (activeSection !== "financial" || avmData || avmLoading) return;
+    if (p.avm?.amount?.value) return; // Already have AVM from search results
+
+    const attomId = p.identifier?.attomId;
+    const addr1 = p.address?.line1;
+    const addr2 = p.address?.locality && p.address?.countrySubd
+      ? `${p.address.locality}, ${p.address.countrySubd}`
+      : undefined;
+
+    if (!attomId && !addr1) return;
+
+    setAvmLoading(true);
+
+    const params = new URLSearchParams({ endpoint: "attomavm" });
+    if (attomId) {
+      params.set("attomid", String(attomId));
+    } else {
+      if (addr1) params.set("address1", addr1);
+      if (addr2) params.set("address2", addr2);
+    }
+
+    fetch(`/api/integrations/attom/property?${params}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data && !data.error) {
+          // Extract AVM from the response property data
+          const prop = data.property?.[0] || data;
+          if (prop.avm || prop.assessment) {
+            setAvmData(prop);
+          }
+        }
+      })
+      .catch(() => {})
+      .finally(() => setAvmLoading(false));
+  }, [activeSection, avmData, avmLoading, p]);
 
   // Fetch federal data when the Federal tab is selected
   useEffect(() => {
@@ -431,16 +473,32 @@ export default function PropertyDetailModal({
             </>
           )}
 
-          {activeSection === "financial" && (
+          {activeSection === "financial" && (() => {
+            // Use inline AVM data, or fall back to separately fetched AVM data
+            const avm = p.avm || avmData?.avm;
+            return (
             <>
-              {p.avm && (
+              {avmLoading && !avm && (
+                <div style={{ textAlign: "center", padding: 20, color: "#6b7280", fontSize: 13 }}>
+                  Loading AVM valuation data...
+                </div>
+              )}
+
+              {avm && (
                 <Section title="Automated Valuation (AVM)">
-                  <Field label="Estimated Value" value={fmt(p.avm.amount?.value)} />
-                  <Field label="Low Estimate" value={fmt(p.avm.amount?.low)} />
-                  <Field label="High Estimate" value={fmt(p.avm.amount?.high)} />
-                  <Field label="Confidence Score" value={p.avm.amount?.scr} />
-                  <Field label="Valuation Date" value={p.avm.eventDate} />
+                  <Field label="Estimated Value" value={fmt(avm.amount?.value)} />
+                  <Field label="Low Estimate" value={fmt(avm.amount?.low)} />
+                  <Field label="High Estimate" value={fmt(avm.amount?.high)} />
+                  <Field label="Confidence Score" value={avm.amount?.scr} />
+                  <Field label="Value Range" value={fmt(avm.amount?.valueRange)} />
+                  <Field label="Valuation Date" value={avm.eventDate} />
                 </Section>
+              )}
+
+              {!avmLoading && !avm && (
+                <div style={{ padding: "12px 16px", background: "#f9fafb", borderRadius: 8, fontSize: 13, color: "#6b7280", marginBottom: 16 }}>
+                  AVM data not available for this property.
+                </div>
               )}
 
               {p.assessment && (
@@ -521,7 +579,8 @@ export default function PropertyDetailModal({
                 </>
               )}
             </>
-          )}
+            );
+          })()}
 
           {activeSection === "ownership" && (() => {
             // Resolve TMK: prefer Hawaii statewide parcel data (12-digit QPublic-compatible format)
@@ -617,7 +676,22 @@ export default function PropertyDetailModal({
 
               <Section title="Occupancy">
                 <Field label="Owner Occupied" value={p.owner?.ownerOccupied} />
-                <Field label="Absentee Status" value={p.owner?.absenteeOwnerStatus || (p.summary?.absenteeInd === "O" ? "Absentee Owner" : p.summary?.absenteeInd === "S" ? "Owner Occupied" : undefined)} />
+                <Field label="Absentee Status" value={
+                  p.owner?.absenteeOwnerStatus
+                  || (p.summary?.absenteeInd === "O" || p.summary?.absenteeInd === "ABSENTEE OWNER" || p.summary?.absenteeInd === "ABSENTEE" || p.summary?.absenteeInd === "A"
+                      ? "Absentee Owner"
+                      : p.summary?.absenteeInd === "S" || p.summary?.absenteeInd === "OWNER OCCUPIED"
+                      ? "Owner Occupied"
+                      : p.owner?.ownerOccupied === "N" || p.owner?.ownerOccupied === "0"
+                      ? "Absentee Owner"
+                      : p.owner?.ownerOccupied === "Y" || p.owner?.ownerOccupied === "1"
+                      ? "Owner Occupied"
+                      : searchContext?.absenteeowner === "absentee"
+                      ? "Absentee Owner"
+                      : searchContext?.absenteeowner === "occupied"
+                      ? "Owner Occupied"
+                      : undefined)
+                } />
                 <Field label="Mailing Address" value={p.owner?.mailingAddressOneLine} />
               </Section>
 
@@ -678,9 +752,22 @@ export default function PropertyDetailModal({
               )}
 
               {neighborhoodData && (() => {
-                const community = neighborhoodData.community?.community?.[0] || neighborhoodData.community;
-                const schools = neighborhoodData.schools?.school || neighborhoodData.schools || [];
+                // Extract community data — ATTOM returns { community: [ {...} ] } inside the response
+                const communityRaw = neighborhoodData.community;
+                const community = communityRaw?.community?.[0] || (communityRaw && !communityRaw.status ? communityRaw : null);
+                // Extract school data — ATTOM returns { school: [ {...} ] } inside the response
+                const schoolsRaw = neighborhoodData.schools;
+                const schools = schoolsRaw?.school || (Array.isArray(schoolsRaw) ? schoolsRaw : []);
                 const schoolList = Array.isArray(schools) ? schools : [];
+
+                // If all data sources returned null, show a helpful message
+                if (!community && schoolList.length === 0) {
+                  return (
+                    <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>
+                      No neighborhood data found for this property. This may occur if the area is not covered by the community data provider.
+                    </div>
+                  );
+                }
 
                 return (
                   <>

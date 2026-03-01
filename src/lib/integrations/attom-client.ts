@@ -947,9 +947,14 @@ export class AttomClient {
     schools: any;
     poi: any;
   }> {
-    const params: AttomSearchParams = {
-      address1: options.address1,
-      address2: options.address2,
+    // Community profile only supports postalcode or geoIdV4 — not address/lat-lng
+    const communityParams: AttomSearchParams = {
+      postalcode: options.postalcode,
+      geoidv4: options.geoidv4,
+    };
+
+    // School search supports postalcode, lat/lng + radius, or geoIdV4
+    const schoolParams: AttomSearchParams = {
       latitude: options.latitude,
       longitude: options.longitude,
       postalcode: options.postalcode,
@@ -958,10 +963,19 @@ export class AttomClient {
       pagesize: 10,
     };
 
+    // POI search supports lat/lng + radius or postalcode
+    const poiParams: AttomSearchParams = {
+      latitude: options.latitude,
+      longitude: options.longitude,
+      postalcode: options.postalcode,
+      radius: options.radius || 1,
+      pagesize: 10,
+    };
+
     const [community, schools, poi] = await Promise.allSettled([
-      this.getCommunityProfile(params),
-      this.getSchoolSearch(params),
-      this.getPOISearch(params),
+      this.getCommunityProfile(communityParams),
+      this.getSchoolSearch(schoolParams),
+      this.getPOISearch(poiParams),
     ]);
 
     return {
