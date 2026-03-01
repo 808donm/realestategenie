@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { HawaiiStatewideParcelClient } from "@/lib/integrations/hawaii-statewide-parcels-client";
+import { HonoluluTaxClient } from "@/lib/integrations/honolulu-tax-client";
 
 /**
  * GET - Query Hawaii Statewide TMK parcel data via the State ArcGIS MapServer
@@ -8,6 +9,7 @@ import { HawaiiStatewideParcelClient } from "@/lib/integrations/hawaii-statewide
  * Endpoints:
  *   ?endpoint=tmk&tmk=...                      — Get parcel by TMK
  *   ?endpoint=tmk&tmk=...&geometry=true         — Get parcel + polygon geometry
+ *   ?endpoint=enriched&tmk=...                  — Get parcel + owner data (statewide + Honolulu OWNALL)
  *   ?endpoint=county&county=HAWAII              — Get parcels by county
  *   ?endpoint=island&island=OAHU                — Get parcels by island
  *   ?endpoint=zone&zone=1&county=HONOLULU       — Get parcels by TMK zone
@@ -61,6 +63,43 @@ export async function GET(request: NextRequest) {
         }
         const parcel = await client.getParcelByTMK(tmk);
         return NextResponse.json({ success: true, tmk, parcel });
+      }
+
+      case "enriched": {
+        // Combined lookup: statewide parcel data + Honolulu OWNALL owners
+        if (!tmk) {
+          return NextResponse.json(
+            { error: "tmk parameter required" },
+            { status: 400 }
+          );
+        }
+
+        // Fetch statewide parcel and Honolulu owner data in parallel
+        const honoluluClient = new HonoluluTaxClient();
+
+        const [parcelResult, ownersResult, honoluluParcelResult] =
+          await Promise.allSettled([
+            client.getParcelByTMK(tmk),
+            honoluluClient.getOwnersByTMK(tmk),
+            honoluluClient.getTaxParcelByTMK(tmk),
+          ]);
+
+        const parcel =
+          parcelResult.status === "fulfilled" ? parcelResult.value : null;
+        const owners =
+          ownersResult.status === "fulfilled" ? ownersResult.value : [];
+        const honoluluParcel =
+          honoluluParcelResult.status === "fulfilled"
+            ? honoluluParcelResult.value
+            : null;
+
+        return NextResponse.json({
+          success: true,
+          tmk,
+          parcel,
+          owners,
+          honoluluParcel,
+        });
       }
 
       case "county": {
@@ -188,7 +227,7 @@ export async function GET(request: NextRequest) {
       default:
         return NextResponse.json(
           {
-            error: `Unknown endpoint: ${endpoint}. Use: tmk, county, island, zone, section, acreage, point, test`,
+            error: `Unknown endpoint: ${endpoint}. Use: tmk, enriched, county, island, zone, section, acreage, point, test`,
           },
           { status: 400 }
         );

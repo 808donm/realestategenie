@@ -68,12 +68,11 @@ export default function PropertyDetailModal({
   property: AttomProperty;
   onClose: () => void;
 }) {
-  const [activeSection, setActiveSection] = useState<"overview" | "building" | "financial" | "ownership" | "honolulu" | "federal">("overview");
+  const [activeSection, setActiveSection] = useState<"overview" | "building" | "financial" | "ownership" | "federal">("overview");
   const [federalData, setFederalData] = useState<FederalPropertySupplement | null>(null);
   const [federalLoading, setFederalLoading] = useState(false);
-  const [honoluluData, setHonoluluData] = useState<any>(null);
-  const [honoluluLoading, setHonoluluLoading] = useState(false);
-  const [honoluluError, setHonoluluError] = useState("");
+  const [hawaiiData, setHawaiiData] = useState<any>(null);
+  const [hawaiiLoading, setHawaiiLoading] = useState(false);
 
   const addr = p.address?.oneLine || [p.address?.line1, p.address?.line2].filter(Boolean).join(", ") || "Property Detail";
   const sqft = p.building?.size?.livingSize || p.building?.size?.universalSize || p.building?.size?.bldgSize;
@@ -111,52 +110,36 @@ export default function PropertyDetailModal({
       .finally(() => setFederalLoading(false));
   }, [activeSection, federalData, federalLoading, p]);
 
-  // Fetch Honolulu tax/owner data when the Honolulu tab is selected
-  // Works for Hawaii properties — uses the TMK (Tax Map Key) or APN as lookup
+  // Fetch Hawaii statewide parcel + owner data when Ownership or Financial tab is selected
+  // Combines State ArcGIS (all counties) with Honolulu OWNALL (deed owners)
   useEffect(() => {
-    if (activeSection !== "honolulu" || honoluluData || honoluluLoading) return;
+    if ((activeSection !== "ownership" && activeSection !== "financial") || hawaiiData || hawaiiLoading) return;
 
-    // Check if this looks like a Hawaii property
     const state = p.address?.countrySubd?.toUpperCase();
     const isHawaii = state === "HI" || state === "HAWAII";
-    // Use APN as TMK — in Hawaii, the APN IS the TMK
     const tmk = p.identifier?.apn;
 
-    if (!isHawaii && !tmk) {
-      setHonoluluError("This feature is for Honolulu/Hawaii properties. No TMK found.");
-      return;
-    }
+    if (!isHawaii || !tmk) return;
 
-    if (!tmk) {
-      setHonoluluError("No TMK (APN) available for this property.");
-      return;
-    }
+    setHawaiiLoading(true);
 
-    setHonoluluLoading(true);
-    setHonoluluError("");
-
-    const params = new URLSearchParams({ endpoint: "record", tmk });
-    fetch(`/api/integrations/honolulu-tax?${params}`)
+    const params = new URLSearchParams({ endpoint: "enriched", tmk });
+    fetch(`/api/integrations/hawaii-parcels?${params}`)
       .then((r) => r.json())
       .then((data) => {
         if (data.success) {
-          setHonoluluData(data);
-        } else {
-          setHonoluluError(data.error || "Failed to fetch Honolulu tax data");
+          setHawaiiData(data);
         }
       })
-      .catch((err) => {
-        setHonoluluError(err.message || "Failed to connect to Honolulu tax data");
-      })
-      .finally(() => setHonoluluLoading(false));
-  }, [activeSection, honoluluData, honoluluLoading, p]);
+      .catch(() => {})
+      .finally(() => setHawaiiLoading(false));
+  }, [activeSection, hawaiiData, hawaiiLoading, p]);
 
   const sections = [
     { id: "overview" as const, label: "Overview" },
     { id: "building" as const, label: "Building" },
     { id: "financial" as const, label: "Financial" },
     { id: "ownership" as const, label: "Ownership" },
-    { id: "honolulu" as const, label: "HNL Tax" },
     { id: "federal" as const, label: "Area Intel" },
   ];
 
@@ -388,6 +371,34 @@ export default function PropertyDetailModal({
                   <Field label="Trustee" value={p.foreclosure.trusteeFullName} />
                 </Section>
               )}
+
+              {/* Hawaii county-level tax assessment (from Honolulu CCHNL ArcGIS) */}
+              {hawaiiLoading && !hawaiiData && (
+                <div style={{ textAlign: "center", padding: 20, color: "#6b7280", fontSize: 13 }}>
+                  Loading Hawaii tax records...
+                </div>
+              )}
+
+              {hawaiiData?.honoluluParcel && (
+                <>
+                  <Section title="Honolulu County Tax Assessment">
+                    <Field label="Land Value" value={hawaiiData.honoluluParcel.landvalue != null ? `$${Number(hawaiiData.honoluluParcel.landvalue).toLocaleString()}` : undefined} />
+                    <Field label="Building Value" value={hawaiiData.honoluluParcel.bldgvalue != null ? `$${Number(hawaiiData.honoluluParcel.bldgvalue).toLocaleString()}` : undefined} />
+                    <Field label="Total Value" value={hawaiiData.honoluluParcel.totalvalue != null ? `$${Number(hawaiiData.honoluluParcel.totalvalue).toLocaleString()}` : undefined} />
+                    <Field label="Exemption" value={hawaiiData.honoluluParcel.exemption != null ? `$${Number(hawaiiData.honoluluParcel.exemption).toLocaleString()}` : undefined} />
+                    <Field label="Taxable Value" value={hawaiiData.honoluluParcel.taxable != null ? `$${Number(hawaiiData.honoluluParcel.taxable).toLocaleString()}` : undefined} />
+                    <Field label="Tax Amount" value={hawaiiData.honoluluParcel.taxamount != null ? `$${Number(hawaiiData.honoluluParcel.taxamount).toLocaleString()}` : undefined} />
+                    <Field label="Tax Year" value={hawaiiData.honoluluParcel.taxyear} />
+                  </Section>
+
+                  <Section title="Honolulu Parcel Details">
+                    <Field label="Parcel Type" value={hawaiiData.honoluluParcel.type} />
+                    <Field label="Zoning" value={hawaiiData.honoluluParcel.zoning} />
+                    <Field label="Land Area" value={hawaiiData.honoluluParcel.landarea != null ? `${Number(hawaiiData.honoluluParcel.landarea).toLocaleString()} sqft` : undefined} />
+                    <Field label="Land Area (sf)" value={hawaiiData.honoluluParcel.landareasf != null ? `${Number(hawaiiData.honoluluParcel.landareasf).toLocaleString()} sqft` : undefined} />
+                  </Section>
+                </>
+              )}
             </>
           )}
 
@@ -408,89 +419,66 @@ export default function PropertyDetailModal({
                 <Field label="Absentee Status" value={p.owner?.absenteeOwnerStatus || (p.summary?.absenteeInd === "O" ? "Absentee Owner" : p.summary?.absenteeInd === "S" ? "Owner Occupied" : undefined)} />
                 <Field label="Mailing Address" value={p.owner?.mailingAddressOneLine} />
               </Section>
-            </>
-          )}
 
-          {activeSection === "honolulu" && (
-            <>
-              {honoluluLoading && (
-                <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>
-                  Loading Honolulu tax records...
+              {/* Hawaii State Data — deed owners from Honolulu OWNALL + statewide parcel */}
+              {hawaiiLoading && (
+                <div style={{ textAlign: "center", padding: 20, color: "#6b7280", fontSize: 13 }}>
+                  Loading Hawaii public records...
                 </div>
               )}
 
-              {!honoluluLoading && honoluluError && (
-                <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>
-                  {honoluluError}
-                </div>
+              {hawaiiData?.owners?.length > 0 && (
+                <Section title="Deed Owners (Hawaii Public Records)">
+                  {hawaiiData.owners.map((owner: any, i: number) => (
+                    <Field
+                      key={i}
+                      label={`Owner ${owner.ownseq || i + 1}${owner.owntype ? ` (${owner.owntype})` : ""}`}
+                      value={owner.owner}
+                    />
+                  ))}
+                </Section>
               )}
 
-              {!honoluluLoading && !honoluluError && !honoluluData && (
-                <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>
-                  <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>Honolulu Tax & Owner Records</div>
-                  <div style={{ fontSize: 13 }}>
-                    Public tax and ownership data from the City & County of Honolulu
-                    ArcGIS Open Geospatial Data portal. Available for Oahu properties only.
+              {hawaiiData?.parcel && (
+                <Section title="State Parcel Record">
+                  <Field label="TMK" value={hawaiiData.parcel.tmk_txt || hawaiiData.parcel.tmk} />
+                  <Field label="County" value={hawaiiData.parcel.county} />
+                  <Field label="Island" value={hawaiiData.parcel.island} />
+                  <Field label="Zone" value={hawaiiData.parcel.zone} />
+                  <Field label="Section" value={hawaiiData.parcel.section} />
+                  <Field label="Plat" value={hawaiiData.parcel.plat} />
+                  <Field label="Parcel" value={hawaiiData.parcel.parcel} />
+                  <Field label="GIS Acres" value={hawaiiData.parcel.gisacres != null ? `${Number(hawaiiData.parcel.gisacres).toFixed(2)} acres` : undefined} />
+                </Section>
+              )}
+
+              {hawaiiData?.parcel?.qpub_link && (
+                <div style={{ marginTop: 4, marginBottom: 16 }}>
+                  <a
+                    href={hawaiiData.parcel.qpub_link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: "inline-flex", alignItems: "center", gap: 6,
+                      padding: "8px 16px", background: "#3b82f6", color: "#fff",
+                      borderRadius: 8, fontSize: 13, fontWeight: 600,
+                      textDecoration: "none",
+                    }}
+                  >
+                    View Full Public Record (QPublic)
+                    <span style={{ fontSize: 11 }}>&#8599;</span>
+                  </a>
+                  <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>
+                    Opens the county tax records page with full owner details, tax history, and assessment data.
                   </div>
                 </div>
               )}
 
-              {honoluluData && (
-                <>
-                  {/* TMK Info */}
-                  <Section title="Tax Map Key (TMK)">
-                    <Field label="TMK" value={honoluluData.tmk} />
-                    <Field label="Total Owners on Deed" value={honoluluData.owners?.length || 0} />
-                  </Section>
-
-                  {/* Owner(s) from OWNALL table */}
-                  {honoluluData.owners?.length > 0 && (
-                    <Section title="Deed Owners (OWNALL)">
-                      {honoluluData.owners.map((owner: any, i: number) => (
-                        <Field
-                          key={i}
-                          label={`Owner ${owner.ownseq || i + 1}${owner.owntype ? ` (${owner.owntype})` : ""}`}
-                          value={owner.owner}
-                        />
-                      ))}
-                    </Section>
-                  )}
-
-                  {honoluluData.owners?.length === 0 && (
-                    <div style={{ padding: 12, background: "#fef3c7", borderRadius: 8, fontSize: 13, color: "#92400e", marginBottom: 16 }}>
-                      No owners found in the OWNALL table for this TMK. The TMK format may differ
-                      between ATTOM and Honolulu records, or the endpoint may need configuration.
-                    </div>
-                  )}
-
-                  {/* Tax Parcel data */}
-                  {honoluluData.parcel && (
-                    <>
-                      <Section title="Tax Parcel Assessment">
-                        <Field label="Land Value" value={honoluluData.parcel.landvalue != null ? `$${Number(honoluluData.parcel.landvalue).toLocaleString()}` : undefined} />
-                        <Field label="Building Value" value={honoluluData.parcel.bldgvalue != null ? `$${Number(honoluluData.parcel.bldgvalue).toLocaleString()}` : undefined} />
-                        <Field label="Total Value" value={honoluluData.parcel.totalvalue != null ? `$${Number(honoluluData.parcel.totalvalue).toLocaleString()}` : undefined} />
-                        <Field label="Exemption" value={honoluluData.parcel.exemption != null ? `$${Number(honoluluData.parcel.exemption).toLocaleString()}` : undefined} />
-                        <Field label="Taxable Value" value={honoluluData.parcel.taxable != null ? `$${Number(honoluluData.parcel.taxable).toLocaleString()}` : undefined} />
-                        <Field label="Tax Amount" value={honoluluData.parcel.taxamount != null ? `$${Number(honoluluData.parcel.taxamount).toLocaleString()}` : undefined} />
-                        <Field label="Tax Year" value={honoluluData.parcel.taxyear} />
-                      </Section>
-
-                      <Section title="Parcel Details">
-                        <Field label="Parcel Type" value={honoluluData.parcel.type} />
-                        <Field label="Zoning" value={honoluluData.parcel.zoning} />
-                        <Field label="Land Area" value={honoluluData.parcel.landarea != null ? `${Number(honoluluData.parcel.landarea).toLocaleString()} sqft` : undefined} />
-                        <Field label="Land Area (sf)" value={honoluluData.parcel.landareasf != null ? `${Number(honoluluData.parcel.landareasf).toLocaleString()} sqft` : undefined} />
-                      </Section>
-                    </>
-                  )}
-
-                  <div style={{ marginTop: 12, padding: 10, background: "#f0f9ff", borderRadius: 8, fontSize: 11, color: "#6b7280" }}>
-                    Source: City & County of Honolulu Open Geospatial Data (CCHNL).
-                    Data from BFS Real Property Assessment, updated weekly.
-                    Parcel boundaries are for visual reference only and do not represent legal accuracy.
-                  </div>
-                </>
+              {hawaiiData && (
+                <div style={{ marginTop: 8, padding: 10, background: "#f0f9ff", borderRadius: 8, fontSize: 11, color: "#6b7280" }}>
+                  Source: State of Hawaii Statewide GIS Program &amp; City &amp; County of Honolulu OWNALL.
+                  Public data updated periodically. Parcel boundaries are for visual reference only.
+                </div>
               )}
             </>
           )}
