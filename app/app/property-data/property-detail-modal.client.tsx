@@ -595,6 +595,24 @@ export default function PropertyDetailModal({
                 <Field label="Corporate" value={p.owner?.corporateIndicator === "Y" ? "Yes" : p.owner?.corporateIndicator === "N" ? "No" : undefined} />
                 <Field label="Relationship" value={p.owner?.ownerRelationshipType} />
                 <Field label="Rights" value={p.owner?.ownerRelationshipRights} />
+                {qpubLink && (
+                  <div style={{ marginTop: 10 }}>
+                    <a
+                      href={qpubLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        display: "inline-flex", alignItems: "center", gap: 6,
+                        padding: "6px 14px", background: "#1e40af", color: "#fff",
+                        borderRadius: 6, fontSize: 12, fontWeight: 600,
+                        textDecoration: "none",
+                      }}
+                    >
+                      View TMK Ownership Records
+                      <span style={{ fontSize: 11 }}>&#8599;</span>
+                    </a>
+                  </div>
+                )}
               </Section>
 
               <Section title="Occupancy">
