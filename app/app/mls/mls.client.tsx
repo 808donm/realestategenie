@@ -35,6 +35,8 @@ interface Property {
   ListAgentFullName?: string;
   ListOfficeName?: string;
   OnMarketDate?: string;
+  DaysOnMarket?: number;
+  CumulativeDaysOnMarket?: number;
   ModificationTimestamp: string;
   PhotosCount?: number;
   Media?: TrestleMedia[];
@@ -104,6 +106,7 @@ export default function MLSClient() {
     minBeds: "",
     minBaths: "",
     propertyType: "",
+    minDaysOnMarket: "",
   });
 
   // Data state
@@ -616,7 +619,7 @@ export default function MLSClient() {
   // Search properties
   const searchProperties = useCallback(
     async (newOffset = 0) => {
-      if (!debouncedQuery && !filters.minPrice && !filters.maxPrice && !filters.minBeds && !filters.minBaths) {
+      if (!debouncedQuery && !filters.minPrice && !filters.maxPrice && !filters.minBeds && !filters.minBaths && !filters.minDaysOnMarket) {
         return;
       }
 
@@ -633,6 +636,7 @@ export default function MLSClient() {
         if (filters.minBeds) params.append("minBeds", filters.minBeds);
         if (filters.minBaths) params.append("minBaths", filters.minBaths);
         if (filters.propertyType) params.append("propertyType", filters.propertyType);
+        if (filters.minDaysOnMarket) params.append("minDaysOnMarket", filters.minDaysOnMarket);
         params.append("limit", limit.toString());
         params.append("offset", newOffset.toString());
 
@@ -657,7 +661,7 @@ export default function MLSClient() {
 
   // Trigger search when debounced query or filters change
   useEffect(() => {
-    if (debouncedQuery || filters.minPrice || filters.maxPrice || filters.minBeds || filters.minBaths) {
+    if (debouncedQuery || filters.minPrice || filters.maxPrice || filters.minBeds || filters.minBaths || filters.minDaysOnMarket) {
       searchProperties(0);
     }
   }, [debouncedQuery, searchProperties]);
@@ -688,6 +692,15 @@ export default function MLSClient() {
       return sorted[0].MediaURL;
     }
     return null;
+  };
+
+  // Calculate Days on Market from OnMarketDate (fallback when DaysOnMarket field not provided)
+  const getDaysOnMarket = (p: Property): number | null => {
+    if (p.DaysOnMarket != null) return p.DaysOnMarket;
+    if (!p.OnMarketDate) return null;
+    const onMarket = new Date(p.OnMarketDate).getTime();
+    const now = Date.now();
+    return Math.max(0, Math.floor((now - onMarket) / 86400000));
   };
 
   // Get status color
@@ -1038,6 +1051,26 @@ export default function MLSClient() {
                 ))}
               </select>
             </div>
+            <div>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                Min Days on Market
+              </label>
+              <select
+                value={filters.minDaysOnMarket}
+                onChange={(e) => setFilters({ ...filters, minDaysOnMarket: e.target.value })}
+                style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
+              >
+                <option value="">Any</option>
+                <option value="7">7+ days</option>
+                <option value="14">14+ days</option>
+                <option value="21">21+ days</option>
+                <option value="30">30+ days</option>
+                <option value="60">60+ days</option>
+                <option value="90">90+ days</option>
+                <option value="120">120+ days</option>
+                <option value="180">180+ days</option>
+              </select>
+            </div>
           </div>
         </div>
       )}
@@ -1175,6 +1208,7 @@ export default function MLSClient() {
                             <span><strong>{property.LivingArea.toLocaleString()}</strong> sqft</span>
                           )}
                           {property.YearBuilt != null && <span>Built {property.YearBuilt}</span>}
+                          {(() => { const dom = getDaysOnMarket(property); return dom != null ? <span style={{ color: dom > 30 ? "#dc2626" : dom > 14 ? "#d97706" : "#6b7280" }}><strong>{dom}</strong> DOM</span> : null; })()}
                         </div>
                         <div style={{ marginTop: 10, fontSize: 11, color: "#9ca3af" }}>
                           MLS# {property.ListingId || property.ListingKey}
@@ -1332,6 +1366,7 @@ export default function MLSClient() {
                       </span>
                     )}
                     {property.YearBuilt != null && <span>Built {property.YearBuilt}</span>}
+                    {(() => { const dom = getDaysOnMarket(property); return dom != null ? <span style={{ color: dom > 30 ? "#dc2626" : dom > 14 ? "#d97706" : "#6b7280" }}><strong>{dom}</strong> DOM</span> : null; })()}
                   </div>
 
                   {/* MLS # */}
@@ -2616,6 +2651,18 @@ export default function MLSClient() {
                     <div style={{ fontSize: 12, color: "#6b7280" }}>Lot Size</div>
                   </div>
                 )}
+                {(() => {
+                  const dom = getDaysOnMarket(selectedProperty);
+                  if (dom == null) return null;
+                  return (
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{ fontSize: 20, fontWeight: 700, color: dom > 30 ? "#dc2626" : dom > 14 ? "#d97706" : "#111827" }}>
+                        {dom}
+                      </div>
+                      <div style={{ fontSize: 12, color: "#6b7280" }}>Days on Market</div>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Property Details */}

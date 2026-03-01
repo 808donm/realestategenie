@@ -48,6 +48,7 @@ export async function GET(request: NextRequest) {
     const minBeds = searchParams.get("minBeds") ? parseInt(searchParams.get("minBeds")!) : undefined;
     const minBaths = searchParams.get("minBaths") ? parseInt(searchParams.get("minBaths")!) : undefined;
     const propertyType = searchParams.get("propertyType") || undefined;
+    const minDaysOnMarket = searchParams.get("minDaysOnMarket") ? parseInt(searchParams.get("minDaysOnMarket")!) : undefined;
     const statusParam = searchParams.get("status");
     const status: ("Active" | "Pending" | "Closed")[] = statusParam
       ? (statusParam.split(",") as ("Active" | "Pending" | "Closed")[])
@@ -79,7 +80,7 @@ export async function GET(request: NextRequest) {
 
     // For the "latest listings" case (no location/price/beds filters), narrow the query
     // so it stays under Trestle's 5,000-record threshold for ad-hoc queries.
-    const isLatestQuery = !hasLocationFilter && !minPrice && !maxPrice && !minBeds && !minBaths && !propertyType;
+    const isLatestQuery = !hasLocationFilter && !minPrice && !maxPrice && !minBeds && !minBaths && !propertyType && !minDaysOnMarket;
 
     const result = await client.searchProperties({
       status,
@@ -90,6 +91,7 @@ export async function GET(request: NextRequest) {
       minBeds,
       minBaths,
       propertyType,
+      minDaysOnMarket,
       limit,
       offset,
       includeMedia: true,

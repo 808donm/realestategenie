@@ -61,6 +61,8 @@ export interface TrestleProperty {
   ListingContractDate?: string;
   CloseDate?: string;
   OnMarketDate?: string;
+  DaysOnMarket?: number;
+  CumulativeDaysOnMarket?: number;
   ModificationTimestamp: string;
   PhotosCount?: number;
   Media?: TrestleMedia[];
@@ -340,6 +342,7 @@ export class TrestleClient {
     minBeds?: number;
     minBaths?: number;
     propertyType?: string;
+    minDaysOnMarket?: number;
     modifiedSince?: Date;
     limit?: number;
     offset?: number;
@@ -381,6 +384,12 @@ export class TrestleClient {
 
     if (options.propertyType) {
       filters.push(`PropertyType eq '${options.propertyType}'`);
+    }
+
+    if (options.minDaysOnMarket !== undefined) {
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - options.minDaysOnMarket);
+      filters.push(`OnMarketDate le ${cutoffDate.toISOString().split("T")[0]}`);
     }
 
     if (options.modifiedSince) {
