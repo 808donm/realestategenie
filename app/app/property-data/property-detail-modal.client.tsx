@@ -530,12 +530,21 @@ export default function PropertyDetailModal({
             const attomApn = p.identifier?.apn || null;
 
             // Build QPublic direct report link from TMK + county-specific params
+            // Falls back to converting ATTOM APN if Hawaii statewide data is unavailable
             const qpubLink = (() => {
               if (hawaiiData?.parcel?.qpub_link) return hawaiiData.parcel.qpub_link;
-              const keyValue = tmkValue ? String(tmkValue).replace(/[-\s.]/g, "") : null;
+
+              // Determine the 12-digit QPublic KeyValue
+              let keyValue: string | null = null;
+              if (tmkValue) {
+                keyValue = String(tmkValue).replace(/[-\s.]/g, "");
+              } else if (attomApn) {
+                // Convert ATTOM APN to QPublic TMK: strip leading island digit, right-pad to 12
+                keyValue = attomApn.replace(/[-\s.]/g, "").slice(1).padEnd(12, "0");
+              }
               if (!keyValue) return null;
+
               const county = (hawaiiData?.parcel?.county || "").toUpperCase();
-              // Each county has fixed AppID, LayerID, and PageID on qpublic.schneidercorp.com
               const countyParams: Record<string, string> = {
                 HONOLULU: "AppID=1045&LayerID=23342&PageTypeID=4&PageID=9746",
                 HAWAII: "AppID=1048&PageTypeID=4",
@@ -545,19 +554,18 @@ export default function PropertyDetailModal({
               const params = countyParams[county] || countyParams.HONOLULU;
               return `https://qpublic.schneidercorp.com/Application.aspx?${params}&KeyValue=${keyValue}`;
             })();
+            // Display TMK: prefer Hawaii source, fall back to converted ATTOM APN
+            const displayTmk = tmkValue || (attomApn ? attomApn.replace(/[-\s.]/g, "").slice(1).padEnd(12, "0") : null);
 
             return (
             <>
               {/* TMK & QPublic Quick Access — always visible when TMK is known */}
-              {(tmkValue || attomApn) && (
+              {(displayTmk || attomApn) && (
                 <div style={{ marginBottom: 20, padding: "14px 18px", background: "#f0f9ff", borderRadius: 10, border: "1px solid #bfdbfe" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
                     <div>
                       <div style={{ fontSize: 11, fontWeight: 600, color: "#3b82f6", textTransform: "uppercase", letterSpacing: 0.5 }}>TMK (Tax Map Key)</div>
-                      <div style={{ fontSize: 18, fontWeight: 700, color: "#1e40af", fontFamily: "monospace", marginTop: 2 }}>{tmkValue || attomApn}</div>
-                      {tmkValue && attomApn && tmkValue !== attomApn && (
-                        <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>APN: {attomApn}</div>
-                      )}
+                      <div style={{ fontSize: 18, fontWeight: 700, color: "#1e40af", fontFamily: "monospace", marginTop: 2 }}>{displayTmk || attomApn}</div>
                     </div>
                     {qpubLink && (
                       <a
