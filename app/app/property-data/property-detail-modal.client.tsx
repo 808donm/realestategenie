@@ -402,8 +402,58 @@ export default function PropertyDetailModal({
             </>
           )}
 
-          {activeSection === "ownership" && (
+          {activeSection === "ownership" && (() => {
+            // Resolve TMK from multiple sources: ATTOM APN, Hawaii statewide parcel, or Hawaii owners
+            const tmkValue = p.identifier?.apn || hawaiiData?.parcel?.tmk_txt || hawaiiData?.parcel?.tmk || hawaiiData?.parcel?.cty_tmk || (hawaiiData?.owners?.[0]?.tmk) || null;
+
+            // Build QPublic link: prefer the one from Hawaii ArcGIS, otherwise construct from TMK + county
+            const qpubLink = (() => {
+              if (hawaiiData?.parcel?.qpub_link) return hawaiiData.parcel.qpub_link;
+              if (!tmkValue) return null;
+              // Determine county for fallback URL construction
+              const county = (hawaiiData?.parcel?.county || "").toUpperCase();
+              const countyUrlMap: Record<string, string> = {
+                HONOLULU: "https://qpublic.net/hi/honolulu/",
+                HAWAII: "https://qpublic.net/hi/hawaii/",
+                MAUI: "https://qpublic.net/hi/maui/",
+                KAUAI: "https://qpublic.net/hi/kauai/",
+              };
+              return countyUrlMap[county] || "https://qpublic.net/hi/honolulu/";
+            })();
+
+            return (
             <>
+              {/* TMK & QPublic Quick Access — always visible when TMK is known */}
+              {tmkValue && (
+                <div style={{ marginBottom: 20, padding: "14px 18px", background: "#f0f9ff", borderRadius: 10, border: "1px solid #bfdbfe" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
+                    <div>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: "#3b82f6", textTransform: "uppercase", letterSpacing: 0.5 }}>TMK (Tax Map Key)</div>
+                      <div style={{ fontSize: 18, fontWeight: 700, color: "#1e40af", fontFamily: "monospace", marginTop: 2 }}>{tmkValue}</div>
+                    </div>
+                    {qpubLink && (
+                      <a
+                        href={qpubLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: "inline-flex", alignItems: "center", gap: 6,
+                          padding: "8px 16px", background: "#3b82f6", color: "#fff",
+                          borderRadius: 8, fontSize: 13, fontWeight: 600,
+                          textDecoration: "none", whiteSpace: "nowrap",
+                        }}
+                      >
+                        View on QPublic
+                        <span style={{ fontSize: 11 }}>&#8599;</span>
+                      </a>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 11, color: "#6b7280", marginTop: 6 }}>
+                    Search this TMK on QPublic for full owner details, tax history, and assessment data.
+                  </div>
+                </div>
+              )}
+
               <Section title="Current Owner">
                 <Field label="Owner 1" value={p.owner?.owner1?.fullName} />
                 <Field label="Owner 2" value={p.owner?.owner2?.fullName} />
@@ -452,28 +502,6 @@ export default function PropertyDetailModal({
                 </Section>
               )}
 
-              {hawaiiData?.parcel?.qpub_link && (
-                <div style={{ marginTop: 4, marginBottom: 16 }}>
-                  <a
-                    href={hawaiiData.parcel.qpub_link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      display: "inline-flex", alignItems: "center", gap: 6,
-                      padding: "8px 16px", background: "#3b82f6", color: "#fff",
-                      borderRadius: 8, fontSize: 13, fontWeight: 600,
-                      textDecoration: "none",
-                    }}
-                  >
-                    View Full Public Record (QPublic)
-                    <span style={{ fontSize: 11 }}>&#8599;</span>
-                  </a>
-                  <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>
-                    Opens the county tax records page with full owner details, tax history, and assessment data.
-                  </div>
-                </div>
-              )}
-
               {hawaiiData && (
                 <div style={{ marginTop: 8, padding: 10, background: "#f0f9ff", borderRadius: 8, fontSize: 11, color: "#6b7280" }}>
                   Source: State of Hawaii Statewide GIS Program &amp; City &amp; County of Honolulu OWNALL.
@@ -481,7 +509,8 @@ export default function PropertyDetailModal({
                 </div>
               )}
             </>
-          )}
+            );
+          })()}
 
           {activeSection === "federal" && (
             <>
