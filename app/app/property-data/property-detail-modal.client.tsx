@@ -75,6 +75,8 @@ export default function PropertyDetailModal({
   const [hawaiiLoading, setHawaiiLoading] = useState(false);
   const [neighborhoodData, setNeighborhoodData] = useState<any>(null);
   const [neighborhoodLoading, setNeighborhoodLoading] = useState(false);
+  const [hazardData, setHazardData] = useState<any>(null);
+  const [hazardLoading, setHazardLoading] = useState(false);
 
   const addr = p.address?.oneLine || [p.address?.line1, p.address?.line2].filter(Boolean).join(", ") || "Property Detail";
   const sqft = p.building?.size?.livingSize || p.building?.size?.universalSize || p.building?.size?.bldgSize;
@@ -84,6 +86,27 @@ export default function PropertyDetailModal({
   const avmVal = p.avm?.amount?.value;
   const lastSaleAmt = p.sale?.amount?.saleAmt || p.sale?.amount?.salePrice;
   const equity = avmVal && lastSaleAmt ? avmVal - lastSaleAmt : null;
+
+  // Fetch Hawaii hazard/environmental zone data on mount (for HI properties with lat/lng)
+  useEffect(() => {
+    if (hazardData || hazardLoading) return;
+    const state = p.address?.countrySubd?.toUpperCase();
+    const isHawaii = state === "HI" || state === "HAWAII";
+    const lat = p.location?.latitude;
+    const lng = p.location?.longitude;
+    if (!isHawaii || !lat || !lng) return;
+
+    setHazardLoading(true);
+    fetch(`/api/integrations/hawaii-hazards?endpoint=profile&lat=${lat}&lng=${lng}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success) {
+          setHazardData(data);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setHazardLoading(false));
+  }, [hazardData, hazardLoading, p]);
 
   // Fetch federal data when the Federal tab is selected
   useEffect(() => {
@@ -293,6 +316,70 @@ export default function PropertyDetailModal({
                 <Field label="Energy" value={p.utilities?.energyType} />
                 <Field label="Heating Fuel" value={p.utilities?.heatingFuel} />
               </Section>
+
+              {/* Hawaii Hazard & Environmental Zones */}
+              {hazardLoading && (
+                <div style={{ textAlign: "center", padding: 16, color: "#6b7280", fontSize: 13 }}>
+                  Loading Hawaii environmental data...
+                </div>
+              )}
+
+              {hazardData && (() => {
+                const zones: Array<{ label: string; value: string; color: string; bg: string }> = [];
+
+                if (hazardData.tsunami?.found) {
+                  const a = hazardData.tsunami.attributes;
+                  const zone = a.evaczone || a.zone || a.type || "Yes";
+                  zones.push({ label: "Tsunami Evacuation Zone", value: String(zone), color: "#dc2626", bg: "#fef2f2" });
+                }
+                if (hazardData.seaLevelRise?.found) {
+                  zones.push({ label: "Sea Level Rise Exposure", value: "In 3.2ft SLR coastal flood zone", color: "#0369a1", bg: "#e0f2fe" });
+                }
+                if (hazardData.lavaFlow?.found) {
+                  const a = hazardData.lavaFlow.attributes;
+                  const zone = a.hazard || a.zone || a.lavazone || "Yes";
+                  zones.push({ label: "Lava Flow Hazard Zone", value: `Zone ${zone}`, color: "#ea580c", bg: "#fff7ed" });
+                }
+                if (hazardData.cesspoolPriority?.found) {
+                  const a = hazardData.cesspoolPriority.attributes;
+                  const score = a.priorityscore || a.priority || a.score;
+                  zones.push({ label: "Cesspool Priority Area", value: score ? `Priority Score: ${score}` : "In cesspool priority area", color: "#92400e", bg: "#fef3c7" });
+                }
+                if (hazardData.dhhl?.found) {
+                  zones.push({ label: "Hawaiian Home Lands (DHHL)", value: "Property is on DHHL land", color: "#7c3aed", bg: "#f5f3ff" });
+                }
+                if (hazardData.sma?.found) {
+                  zones.push({ label: "Special Management Area (SMA)", value: "Coastal zone — SMA permits may be required", color: "#0891b2", bg: "#ecfeff" });
+                }
+                if (hazardData.stateLandUse?.found) {
+                  const a = hazardData.stateLandUse.attributes;
+                  const district = a.district || a.landuse || a.type || a.slu;
+                  if (district) {
+                    zones.push({ label: "State Land Use District", value: String(district), color: "#374151", bg: "#f3f4f6" });
+                  }
+                }
+
+                if (zones.length === 0) return null;
+
+                return (
+                  <div style={{ marginBottom: 20 }}>
+                    <h3 style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 10, paddingBottom: 6, borderBottom: "1px solid #e5e7eb" }}>
+                      Hawaii Environmental & Hazard Zones
+                    </h3>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      {zones.map((z, i) => (
+                        <div key={i} style={{ padding: "8px 12px", background: z.bg, borderRadius: 8, borderLeft: `4px solid ${z.color}` }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: z.color, textTransform: "uppercase", letterSpacing: 0.5 }}>{z.label}</div>
+                          <div style={{ fontSize: 13, fontWeight: 500, color: "#374151", marginTop: 2 }}>{z.value}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 8 }}>
+                      Source: State of Hawaii Statewide GIS Program. Data updated periodically. Verify with county for official determinations.
+                    </div>
+                  </div>
+                );
+              })()}
             </>
           )}
 
