@@ -7,7 +7,13 @@ import { buildQPublicUrl } from "@/lib/hawaii-zip-county";
 interface AttomProperty {
   identifier?: { Id?: number; fips?: string; apn?: string; attomId?: number };
   address?: { oneLine?: string; line1?: string; line2?: string; locality?: string; countrySubd?: string; postal1?: string };
-  location?: { latitude?: string; longitude?: string };
+  location?: { latitude?: string; longitude?: string; geoid?: string; geoIdV4?: string };
+  area?: {
+    munName?: string; countrySecSubd?: string; geoid?: string;
+    blockGeoIdV4?: string; blockGroupGeoIdV4?: string; tractGeoIdV4?: string;
+    countyGeoIdV4?: string; placeGeoIdV4?: string; cbsaGeoIdV4?: string;
+    schoolDistrictGeoIdV4?: string; neighborhoodGeoIdV4?: string;
+  };
   summary?: { propType?: string; propertyType?: string; propSubType?: string; yearBuilt?: number; propLandUse?: string; absenteeInd?: string; legal1?: string; propIndicator?: string };
   building?: {
     size?: { bldgSize?: number; livingSize?: number; universalSize?: number; grossSize?: number; groundFloorSize?: number };
@@ -378,9 +384,44 @@ export default function PropertyDetailModal({
                 <Field label="City" value={p.address?.locality} />
                 <Field label="State" value={p.address?.countrySubd} />
                 <Field label="Zip" value={p.address?.postal1} />
+                <Field label="County" value={p.area?.munName || p.area?.countrySecSubd} />
                 <Field label="Latitude" value={p.location?.latitude} />
                 <Field label="Longitude" value={p.location?.longitude} />
               </Section>
+
+              {/* GeoCode Identifiers (v4) — used to query community, school, POI, and sales trend data */}
+              {(() => {
+                const geoId = findGeoIdV4(p);
+                const legacyGeoId = p.location?.geoid || p.area?.geoid;
+                // Also look for area-level geocodes embedded in property responses
+                const blockGeoId = p.area?.blockGeoIdV4;
+                const blockGroupGeoId = p.area?.blockGroupGeoIdV4;
+                const tractGeoId = p.area?.tractGeoIdV4;
+                const countyGeoId = p.area?.countyGeoIdV4;
+                const placeGeoId = p.area?.placeGeoIdV4;
+                const cbsaGeoId = p.area?.cbsaGeoIdV4;
+                // Additional geocodes from identifier or nested objects
+                const schoolDistGeoId = p.area?.schoolDistrictGeoIdV4;
+                const neighborhoodGeoId = p.area?.neighborhoodGeoIdV4;
+
+                const hasAnyGeo = geoId || legacyGeoId || blockGeoId || tractGeoId || countyGeoId;
+                if (!hasAnyGeo) return null;
+
+                return (
+                  <Section title="GeoCodes">
+                    <Field label="GeoID v4" value={geoId} />
+                    {legacyGeoId && <Field label="Legacy GeoID" value={legacyGeoId} />}
+                    <Field label="Census Block" value={blockGeoId} />
+                    <Field label="Block Group" value={blockGroupGeoId} />
+                    <Field label="Census Tract" value={tractGeoId} />
+                    <Field label="County" value={countyGeoId} />
+                    <Field label="Place" value={placeGeoId} />
+                    <Field label="CBSA" value={cbsaGeoId} />
+                    <Field label="School District" value={schoolDistGeoId} />
+                    <Field label="Neighborhood" value={neighborhoodGeoId} />
+                  </Section>
+                );
+              })()}
 
               <Section title="Utilities">
                 <Field label="Heating" value={p.utilities?.heatingType} />
@@ -1004,39 +1045,65 @@ export default function PropertyDetailModal({
                     )}
 
                     {/* Sales Trends */}
-                    {trendsList.length > 0 && (
-                      <div style={{ marginBottom: 20 }}>
-                        <h3 style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 10, paddingBottom: 6, borderBottom: "1px solid #e5e7eb" }}>
-                          Market Trends
-                        </h3>
-                        <div style={{ overflowX: "auto" }}>
-                          <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
-                            <thead>
-                              <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
-                                <th style={{ textAlign: "left", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Period</th>
-                                <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Median Price</th>
-                                <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Avg Price</th>
-                                <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Sales</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {trendsList.slice(-8).map((t: any, i: number) => {
-                                const period = t.dateRange?.start || t.dateRange?.interval || "";
-                                const st = t.salesTrend || t;
-                                return (
-                                  <tr key={i} style={{ borderBottom: "1px solid #f3f4f6" }}>
-                                    <td style={{ padding: "6px 8px", fontWeight: 500 }}>{period}</td>
-                                    <td style={{ padding: "6px 8px", textAlign: "right" }}>{st.medSalePrice != null ? `$${Number(st.medSalePrice).toLocaleString()}` : "—"}</td>
-                                    <td style={{ padding: "6px 8px", textAlign: "right" }}>{st.avgSalePrice != null ? `$${Number(st.avgSalePrice).toLocaleString()}` : "—"}</td>
-                                    <td style={{ padding: "6px 8px", textAlign: "right" }}>{st.homeSaleCount ?? "—"}</td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
+                    {trendsList.length > 0 && (() => {
+                      // v4 response: salesTrends[].location.geographyName, .dateRange.start/.end, .salesTrend.{homeSaleCount, avgSalePrice, medSalePrice}
+                      const areaName = trendsList[0]?.location?.geographyName;
+                      // Show the most recent 12 quarters (3 years)
+                      const recent = trendsList.slice(-12);
+                      // Compute price change from first to last for trend indicator
+                      const firstMed = recent[0]?.salesTrend?.medSalePrice;
+                      const lastMed = recent[recent.length - 1]?.salesTrend?.medSalePrice;
+                      const priceChange = (firstMed && lastMed) ? ((lastMed - firstMed) / firstMed * 100) : null;
+
+                      return (
+                        <div style={{ marginBottom: 20 }}>
+                          <h3 style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 4, paddingBottom: 6, borderBottom: "1px solid #e5e7eb" }}>
+                            Market Trends — Single Family Residential
+                          </h3>
+                          {areaName && (
+                            <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}>
+                              Area: {areaName}
+                              {priceChange != null && (
+                                <span style={{ marginLeft: 12, fontWeight: 600, color: priceChange >= 0 ? "#059669" : "#dc2626" }}>
+                                  {priceChange >= 0 ? "+" : ""}{priceChange.toFixed(1)}% median price change over period
+                                </span>
+                              )}
+                            </div>
+                          )}
+                          <div style={{ overflowX: "auto" }}>
+                            <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
+                              <thead>
+                                <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
+                                  <th style={{ textAlign: "left", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Period</th>
+                                  <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Median Price</th>
+                                  <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Avg Price</th>
+                                  <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Sales</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {recent.map((t: any, i: number) => {
+                                  const period = t.dateRange?.start || t.dateRange?.interval || "";
+                                  const st = t.salesTrend || t;
+                                  return (
+                                    <tr key={i} style={{ borderBottom: "1px solid #f3f4f6", background: i % 2 === 0 ? "#fff" : "#f9fafb" }}>
+                                      <td style={{ padding: "6px 8px", fontWeight: 500 }}>{period}</td>
+                                      <td style={{ padding: "6px 8px", textAlign: "right" }}>{st.medSalePrice != null ? `$${Number(st.medSalePrice).toLocaleString()}` : "—"}</td>
+                                      <td style={{ padding: "6px 8px", textAlign: "right" }}>{st.avgSalePrice != null ? `$${Number(st.avgSalePrice).toLocaleString()}` : "—"}</td>
+                                      <td style={{ padding: "6px 8px", textAlign: "right" }}>{st.homeSaleCount ?? "—"}</td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                          {trendsList[0]?.vintage?.pubDate && (
+                            <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 6 }}>
+                              Data published: {trendsList[0].vintage.pubDate}
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
 
                     {/* Nearby Schools */}
                     {schoolList.length > 0 && (

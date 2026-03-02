@@ -76,6 +76,8 @@ export async function GET(request: NextRequest) {
       "startAddedDate", "endAddedDate",
       // Sales trend
       "interval", "startmonth", "endmonth",
+      // Sales trend v4 filters
+      "transactiontype",
     ];
 
     for (const key of stringKeys) {

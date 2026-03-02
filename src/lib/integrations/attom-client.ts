@@ -36,6 +36,7 @@ export interface AttomLocation {
   longitude?: string;
   distance?: number;
   geoid?: string;
+  geoIdV4?: string;
 }
 
 export interface AttomAreaInfo {
@@ -50,6 +51,16 @@ export interface AttomAreaInfo {
   srvyTownship?: string;
   taxCodeArea?: string;
   taxExemption?: string;
+  geoid?: string;
+  // ── v4 GeoCode identifiers ────────────────────────────────
+  blockGeoIdV4?: string;
+  blockGroupGeoIdV4?: string;
+  tractGeoIdV4?: string;
+  countyGeoIdV4?: string;
+  placeGeoIdV4?: string;
+  cbsaGeoIdV4?: string;
+  schoolDistrictGeoIdV4?: string;
+  neighborhoodGeoIdV4?: string;
 }
 
 export interface AttomOwner {
@@ -515,6 +526,8 @@ export interface AttomSearchParams {
   endmonth?: string;
   startQuarter?: number;
   endQuarter?: number;
+  /** Transaction type filter for sales trends (e.g. "FORECLOSURE", "ALL") */
+  transactiontype?: string;
 
   // ── Pagination / Sorting ────────────────────────────────────────────────
   page?: number;
@@ -1264,14 +1277,15 @@ export class AttomClient {
     };
 
     // Sales trends: uses v4 /transaction/salestrends (requires geoIdV4)
-    // We'll pass geoIdV4 if available; the method will try v4 first then v1
+    // Fetch quarterly data for the last 3 years, for single-family residences (most relevant)
     const currentYear = new Date().getFullYear();
     const salesTrendParams: AttomSearchParams = {
       geoIdV4: options.geoidv4,
       postalcode: options.postalcode,
       interval: "quarterly",
-      startyear: currentYear - 2,
+      startyear: currentYear - 3,
       endyear: currentYear,
+      propertytype: "SINGLE FAMILY RESIDENCE",
     };
 
     const [community, schools, poi, salesTrends] = await Promise.allSettled([
@@ -1430,6 +1444,8 @@ export class AttomClient {
     if (built.endQuarter) v4Params.endquarter = built.endQuarter;
     if (built.propertytype || built.propertyType)
       v4Params.propertytype = String(built.propertytype || built.propertyType);
+    if (built.transactiontype)
+      v4Params.transactiontype = String(built.transactiontype);
 
     if (v4Params.geoIdV4) {
       try {
