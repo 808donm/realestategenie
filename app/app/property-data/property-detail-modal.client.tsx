@@ -768,20 +768,31 @@ export default function PropertyDetailModal({
               {/* Rental AVM — from /valuation/rentalavm */}
               {enrichedFinancial && !enrichedFinancialLoading && (() => {
                 const resp = enrichedFinancial.rentalAvm;
+                if (!resp || resp.error) return (
+                  <div style={{ marginBottom: 20, padding: "14px 18px", background: "#fef3c7", borderRadius: 10, border: "1px solid #fcd34d" }}>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: "#a16207", textTransform: "uppercase", letterSpacing: 0.5 }}>Estimated Rental Value (Rental AVM)</div>
+                    <div style={{ marginTop: 8, fontSize: 13, color: "#92400e" }}>Not Available</div>
+                  </div>
+                );
                 const prop = resp?.property?.[0] || resp;
                 // ATTOM /valuation/rentalavm actual response structure:
                 //   property[0].rentalAvm.estimatedRentalValue      (monthly rent)
                 //   property[0].rentalAvm.estimatedMinRentalValue   (low end)
                 //   property[0].rentalAvm.estimatedMaxRentalValue   (high end)
                 //   property[0].rentalAvm.valuationDate
-                const rental = prop?.rentalAvm || prop?.rentalAVM || prop?.rentalavm;
+                const rental = prop?.rentalAvm || prop?.rentalAVM || prop?.rentalavm || prop?.rental_avm;
 
-                // Extract values from the actual ATTOM field names
-                const rentValue = rental?.estimatedRentalValue ?? rental?.rentalAmount?.value ?? rental?.amount?.value ?? rental?.value;
-                const rentLow = rental?.estimatedMinRentalValue ?? rental?.rentalAmount?.low ?? rental?.amount?.low ?? rental?.low;
-                const rentHigh = rental?.estimatedMaxRentalValue ?? rental?.rentalAmount?.high ?? rental?.amount?.high ?? rental?.high;
+                // Extract values from the actual ATTOM field names.
+                // Check both camelCase (estimatedRentalValue) and legacy paths (rentalAmount.value)
+                const rentValue = rental?.estimatedRentalValue ?? rental?.rentalAmount?.value ?? rental?.amount?.value ?? rental?.value
+                  ?? prop?.estimatedRentalValue;
+                const rentLow = rental?.estimatedMinRentalValue ?? rental?.rentalAmount?.low ?? rental?.amount?.low ?? rental?.low
+                  ?? prop?.estimatedMinRentalValue;
+                const rentHigh = rental?.estimatedMaxRentalValue ?? rental?.rentalAmount?.high ?? rental?.amount?.high ?? rental?.high
+                  ?? prop?.estimatedMaxRentalValue;
                 const rentScr = rental?.confidenceScore ?? rental?.scr ?? rental?.rentalAmount?.scr ?? rental?.amount?.scr;
-                const eventDate = rental?.valuationDate ?? rental?.eventDate ?? rental?.calculatedDate;
+                const eventDate = rental?.valuationDate ?? rental?.eventDate ?? rental?.calculatedDate
+                  ?? prop?.valuationDate;
 
                 const hasData = rentValue != null || rentLow != null || rentHigh != null;
                 const avmVal = p.avm?.amount?.value;
@@ -790,7 +801,7 @@ export default function PropertyDetailModal({
 
                 return (
                   <div style={{ marginBottom: 20, padding: "14px 18px", background: "#fef3c7", borderRadius: 10, border: "1px solid #fcd34d" }}>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: "#a16207", textTransform: "uppercase", letterSpacing: 0.5 }}>Rental Value Estimate (Rental AVM)</div>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: "#a16207", textTransform: "uppercase", letterSpacing: 0.5 }}>Estimated Rental Value (Rental AVM)</div>
                     {!hasData ? (
                       <div style={{ marginTop: 8, fontSize: 13, color: "#92400e" }}>Not Disclosed</div>
                     ) : (
@@ -1300,51 +1311,62 @@ export default function PropertyDetailModal({
                 </div>
               )}
 
-              <Section title="Current Owner">
-                <Field label="Owner 1" value={p.owner?.owner1?.fullName} />
-                <Field label="Owner 2" value={p.owner?.owner2?.fullName} />
-                <Field label="Owner 3" value={p.owner?.owner3?.fullName} />
-                <Field label="Owner 4" value={p.owner?.owner4?.fullName} />
-                {/* Fallback: show mortgagor (borrower) from mortgage record when owner fields are empty */}
-                {!p.owner?.owner1?.fullName && !p.owner?.owner2?.fullName && (() => {
-                  const m = p.mortgage as any;
-                  const fc = m?.FirstConcurrent;
-                  const b1 = m?.borrower1?.fullName || fc?.borrower1?.fullName;
-                  const b2 = m?.borrower2?.fullName || fc?.borrower2?.fullName;
-                  const vest = m?.borrowerVesting || fc?.borrowerVesting;
-                  if (!b1 && !b2 && !vest) return null;
-                  return (
-                    <>
-                      {b1 && <Field label="Owner (via Mortgage)" value={b1} />}
-                      {b2 && <Field label="Owner 2 (via Mortgage)" value={b2} />}
-                      {vest && <Field label="Vesting" value={vest} />}
-                    </>
-                  );
-                })()}
-                <Field label="Owner Type" value={p.owner?.type} />
-                <Field label="Corporate" value={p.owner?.corporateIndicator === "Y" ? "Yes" : p.owner?.corporateIndicator === "N" ? "No" : undefined} />
-                <Field label="Mailing Address" value={p.owner?.mailingAddressOneLine} />
-                {/* Fallback: show mortgagor mailing address when owner mailing is empty */}
-                {!p.owner?.mailingAddressOneLine && (() => {
-                  const m = p.mortgage as any;
-                  const fc = m?.FirstConcurrent;
-                  const street = m?.borrowerMailFullStreetAddress || fc?.borrowerMailFullStreetAddress;
-                  if (!street) return null;
-                  const city = m?.borrowerMailCity || fc?.borrowerMailCity || "";
-                  const state = m?.borrowerMailState || fc?.borrowerMailState || "";
-                  const zip = m?.borrowerMailZip || fc?.borrowerMailZip || "";
-                  return <Field label="Mailing (via Mortgage)" value={[street, city, state, zip].filter(Boolean).join(", ")} />;
-                })()}
-                <Field label="Relationship" value={p.owner?.ownerRelationshipType} />
-                <Field label="Rights" value={p.owner?.ownerRelationshipRights} />
-                <Field label="Absentee Status" value={(() => {
-                  const status = (p.owner?.absenteeOwnerStatus || "").toUpperCase();
-                  const ind = (p.summary?.absenteeInd || "").toUpperCase();
-                  if (status.includes("ABSENTEE") || ind.includes("ABSENTEE") || ind === "A") return "Absentee Owner";
-                  if (status.includes("OWNER") || ind.includes("OWNER OCC") || ind === "O" || ind === "S") return "Owner Occupied";
-                  return p.owner?.absenteeOwnerStatus || undefined;
-                })()} />
-              </Section>
+              {/* Current Owner — resolve from p.owner or assessment.owner (ATTOM nests owner in assessment for expandedprofile) */}
+              {(() => {
+                const topOwner = p.owner;
+                const assessOwner = p.assessment?.owner;
+                const hasTop = topOwner?.owner1?.fullName || topOwner?.owner2?.fullName || topOwner?.owner3?.fullName
+                  || topOwner?.corporateIndicator || (topOwner?.mailingAddressOneLine && topOwner.mailingAddressOneLine.trim());
+                const owner = hasTop ? topOwner : (assessOwner ? { ...topOwner, ...assessOwner } : topOwner);
+                const ownerMailing = owner?.mailingAddressOneLine?.trim();
+                return (
+                  <Section title="Current Owner">
+                    <Field label="Owner 1" value={owner?.owner1?.fullName} />
+                    <Field label="Owner 2" value={owner?.owner2?.fullName} />
+                    <Field label="Owner 3" value={owner?.owner3?.fullName} />
+                    <Field label="Owner 4" value={owner?.owner4?.fullName} />
+                    {/* Fallback: show mortgagor (borrower) from mortgage record when owner fields are empty */}
+                    {!owner?.owner1?.fullName && !owner?.owner2?.fullName && !owner?.owner3?.fullName && (() => {
+                      const m = p.mortgage as any;
+                      const fc = m?.FirstConcurrent;
+                      const b1 = m?.borrower1?.fullName || fc?.borrower1?.fullName;
+                      const b2 = m?.borrower2?.fullName || fc?.borrower2?.fullName;
+                      const vest = m?.borrowerVesting || fc?.borrowerVesting;
+                      if (!b1 && !b2 && !vest) return null;
+                      return (
+                        <>
+                          {b1 && <Field label="Owner (via Mortgage)" value={b1} />}
+                          {b2 && <Field label="Owner 2 (via Mortgage)" value={b2} />}
+                          {vest && <Field label="Vesting" value={vest} />}
+                        </>
+                      );
+                    })()}
+                    <Field label="Owner Type" value={owner?.type} />
+                    <Field label="Corporate" value={owner?.corporateIndicator === "Y" ? "Yes" : owner?.corporateIndicator === "N" ? "No" : undefined} />
+                    <Field label="Mailing Address" value={ownerMailing || undefined} />
+                    {/* Fallback: show mortgagor mailing address when owner mailing is empty */}
+                    {!ownerMailing && (() => {
+                      const m = p.mortgage as any;
+                      const fc = m?.FirstConcurrent;
+                      const street = m?.borrowerMailFullStreetAddress || fc?.borrowerMailFullStreetAddress;
+                      if (!street) return null;
+                      const city = m?.borrowerMailCity || fc?.borrowerMailCity || "";
+                      const state = m?.borrowerMailState || fc?.borrowerMailState || "";
+                      const zip = m?.borrowerMailZip || fc?.borrowerMailZip || "";
+                      return <Field label="Mailing (via Mortgage)" value={[street, city, state, zip].filter(Boolean).join(", ")} />;
+                    })()}
+                    <Field label="Relationship" value={owner?.ownerRelationshipType} />
+                    <Field label="Rights" value={owner?.ownerRelationshipRights} />
+                    <Field label="Absentee Status" value={(() => {
+                      const status = (owner?.absenteeOwnerStatus || "").toUpperCase();
+                      const ind = (p.summary?.absenteeInd || "").toUpperCase();
+                      if (status.includes("ABSENTEE") || ind.includes("ABSENTEE") || ind === "A") return "Absentee Owner";
+                      if (status.includes("OWNER") || ind.includes("OWNER OCC") || ind === "O" || ind === "S") return "Owner Occupied";
+                      return owner?.absenteeOwnerStatus || undefined;
+                    })()} />
+                  </Section>
+                );
+              })()}
 
               {/* Last Sale Summary — always visible from base property data */}
               {(p.sale?.amount?.saleAmt || p.sale?.amount?.saleTransDate || p.sale?.amount?.saleRecDate) && (() => {
@@ -1372,7 +1394,8 @@ export default function PropertyDetailModal({
                 // The detailmortgageowner response wraps data in { property: [{ owner, mortgage, ... }] }
                 // or the prop-level fields may already be extracted
                 const ownerProp = enrichedOwner.property?.[0] || enrichedOwner;
-                const eo = ownerProp?.owner || enrichedOwner.owner || enrichedOwner;
+                // Also check assessment.owner as ATTOM may nest owner data there
+                const eo = ownerProp?.owner || ownerProp?.assessment?.owner || enrichedOwner.owner || enrichedOwner;
                 const anyOwner = eo?.owner1?.fullName || eo?.owner1?.lastName || eo?.owner2?.fullName
                   || eo?.mailingAddressOneLine || eo?.absenteeOwnerStatus || eo?.corporateIndicator;
                 if (!anyOwner) return null;
@@ -1438,39 +1461,49 @@ export default function PropertyDetailModal({
                 );
               })()}
 
-              <Section title="Occupancy">
-                <Field label="Owner Occupied" value={(() => {
-                  const val = (p.owner?.ownerOccupied || "").toUpperCase();
-                  if (val === "Y" || val === "1" || val === "YES" || val === "TRUE") return "Yes";
-                  if (val === "N" || val === "0" || val === "NO" || val === "FALSE") return "No";
-                  return p.owner?.ownerOccupied || undefined;
-                })()} />
-                <Field label="Absentee Status" value={(() => {
-                  // Check owner.absenteeOwnerStatus first (human-readable from ATTOM)
-                  const ownerStatus = (p.owner?.absenteeOwnerStatus || "").toUpperCase();
-                  if (ownerStatus.includes("ABSENTEE")) return "Absentee Owner";
-                  if (ownerStatus.includes("OWNER") && ownerStatus.includes("OCC")) return "Owner Occupied";
-                  if (ownerStatus === "A") return "Absentee Owner";
-                  if (ownerStatus === "O" || ownerStatus === "S") return "Owner Occupied";
+              {(() => {
+                // Resolve owner for Occupancy section — same assessment.owner fallback
+                const topO = p.owner;
+                const assO = p.assessment?.owner;
+                const hasTopO = topO?.owner1?.fullName || topO?.owner2?.fullName || topO?.owner3?.fullName
+                  || topO?.corporateIndicator || (topO?.mailingAddressOneLine && topO.mailingAddressOneLine.trim());
+                const occOwner = hasTopO ? topO : (assO ? { ...topO, ...assO } : topO);
+                return (
+                  <Section title="Occupancy">
+                    <Field label="Owner Occupied" value={(() => {
+                      const val = (occOwner?.ownerOccupied || "").toUpperCase();
+                      if (val === "Y" || val === "1" || val === "YES" || val === "TRUE") return "Yes";
+                      if (val === "N" || val === "0" || val === "NO" || val === "FALSE") return "No";
+                      return occOwner?.ownerOccupied || undefined;
+                    })()} />
+                    <Field label="Absentee Status" value={(() => {
+                      // Check owner.absenteeOwnerStatus first (human-readable from ATTOM)
+                      const ownerStatus = (occOwner?.absenteeOwnerStatus || "").toUpperCase();
+                      if (ownerStatus.includes("ABSENTEE")) return "Absentee Owner";
+                      if (ownerStatus.includes("OWNER") && ownerStatus.includes("OCC")) return "Owner Occupied";
+                      if (ownerStatus === "A") return "Absentee Owner";
+                      if (ownerStatus === "O" || ownerStatus === "S") return "Owner Occupied";
 
-                  // Check summary.absenteeInd — ATTOM uses: "A"/"ABSENTEE" = absentee, "O"/"OWNER OCCUPIED" = occupied
-                  const ind = (p.summary?.absenteeInd || "").toUpperCase();
-                  if (ind.includes("ABSENTEE") || ind === "A") return "Absentee Owner";
-                  if (ind === "O" || ind === "S" || ind.includes("OWNER OCC")) return "Owner Occupied";
+                      // Check summary.absenteeInd — ATTOM uses: "A"/"ABSENTEE" = absentee, "O"/"OWNER OCCUPIED" = occupied
+                      const ind = (p.summary?.absenteeInd || "").toUpperCase();
+                      if (ind.includes("ABSENTEE") || ind === "A") return "Absentee Owner";
+                      if (ind === "O" || ind === "S" || ind.includes("OWNER OCC")) return "Owner Occupied";
 
-                  // Derive from ownerOccupied flag (case-insensitive to match isAbsenteeOwner logic)
-                  const occupied = (p.owner?.ownerOccupied || "").toUpperCase();
-                  if (occupied === "N" || occupied === "0" || occupied === "NO" || occupied === "FALSE") return "Absentee Owner";
-                  if (occupied === "Y" || occupied === "1" || occupied === "YES" || occupied === "TRUE") return "Owner Occupied";
+                      // Derive from ownerOccupied flag (case-insensitive to match isAbsenteeOwner logic)
+                      const occupied = (occOwner?.ownerOccupied || "").toUpperCase();
+                      if (occupied === "N" || occupied === "0" || occupied === "NO" || occupied === "FALSE") return "Absentee Owner";
+                      if (occupied === "Y" || occupied === "1" || occupied === "YES" || occupied === "TRUE") return "Owner Occupied";
 
-                  // Fallback to search context (e.g. when prospecting for absentee owners)
-                  if (searchContext?.absenteeowner === "absentee") return "Absentee Owner";
-                  if (searchContext?.absenteeowner === "occupied") return "Owner Occupied";
+                      // Fallback to search context (e.g. when prospecting for absentee owners)
+                      if (searchContext?.absenteeowner === "absentee") return "Absentee Owner";
+                      if (searchContext?.absenteeowner === "occupied") return "Owner Occupied";
 
-                  return undefined;
-                })()} />
-                <Field label="Mailing Address" value={p.owner?.mailingAddressOneLine} />
-              </Section>
+                      return undefined;
+                    })()} />
+                    <Field label="Mailing Address" value={occOwner?.mailingAddressOneLine?.trim() || undefined} />
+                  </Section>
+                );
+              })()}
 
               {/* Hawaii State Data — deed owners from Honolulu OWNALL + statewide parcel */}
               {hawaiiLoading && (

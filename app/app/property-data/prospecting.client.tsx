@@ -32,6 +32,13 @@ interface AttomProperty {
     assessed?: { assdTtlValue?: number; assdImprValue?: number; assdLandValue?: number };
     market?: { mktTtlValue?: number };
     tax?: { taxAmt?: number; taxYear?: number };
+    // ATTOM expandedprofile nests owner & mortgage inside assessment
+    owner?: AttomProperty["owner"];
+    mortgage?: {
+      FirstConcurrent?: AttomProperty["mortgage"];
+      SecondConcurrent?: AttomProperty["mortgage"];
+      title?: { companyName?: string };
+    };
   };
   sale?: {
     amount?: { saleAmt?: number; saleTransDate?: string; saleRecDate?: string; saleDocType?: string; saleDocNum?: string; saleTransType?: string; saleCode?: string; saleDisclosureType?: string; salePrice?: number; saleSearchDate?: string };
@@ -65,6 +72,22 @@ interface AttomProperty {
 
 // ── Data accessor helpers ──────────────────────────────────────────────────
 // ATTOM's response format varies by endpoint. These helpers normalize access.
+
+/**
+ * Resolve the owner object from a property.
+ * ATTOM expandedprofile nests owner inside assessment.owner. The server-side
+ * normalizeAttomProperty() promotes it, but as a safety net we also check
+ * assessment.owner client-side and merge when the top-level owner is empty.
+ */
+function resolveOwner(p: AttomProperty): AttomProperty["owner"] | undefined {
+  const top = p.owner;
+  const nested = p.assessment?.owner;
+  const hasTop = top?.owner1?.fullName || top?.owner2?.fullName || top?.owner3?.fullName
+    || top?.corporateIndicator || (top?.mailingAddressOneLine && top.mailingAddressOneLine.trim());
+  if (hasTop) return top;
+  if (nested) return { ...top, ...nested };
+  return top;
+}
 
 /** Get the mortgage balance — checks both direct and FirstConcurrent nesting */
 function getMortgageAmount(p: AttomProperty): number | null {
@@ -127,13 +150,15 @@ function getSaleDateStr(p: AttomProperty): string | null {
  * are empty. The mortgagor is the property owner who took the loan.
  */
 function getOwnerName(p: AttomProperty): string | null {
-  return p.owner?.owner1?.fullName || p.owner?.owner2?.fullName
+  const owner = resolveOwner(p);
+  return owner?.owner1?.fullName || owner?.owner2?.fullName || owner?.owner3?.fullName
     || getMortgagorName(p) || null;
 }
 
 /** Check whether the displayed owner name is derived from the mortgagor (borrower) */
 function isOwnerFromMortgage(p: AttomProperty): boolean {
-  return !p.owner?.owner1?.fullName && !p.owner?.owner2?.fullName && !!getMortgagorName(p);
+  const owner = resolveOwner(p);
+  return !owner?.owner1?.fullName && !owner?.owner2?.fullName && !owner?.owner3?.fullName && !!getMortgagorName(p);
 }
 
 /**
@@ -141,15 +166,19 @@ function isOwnerFromMortgage(p: AttomProperty): boolean {
  * the owner mailing address is missing.
  */
 function getMailingAddress(p: AttomProperty): string | null {
-  return p.owner?.mailingAddressOneLine || getMortgagorAddress(p) || null;
+  const owner = resolveOwner(p);
+  const ownerMailing = owner?.mailingAddressOneLine?.trim();
+  return ownerMailing || getMortgagorAddress(p) || null;
 }
 
 /** Check if a property has any useful contact information (name, address, or mortgagor) */
 function hasContactInfo(p: AttomProperty): boolean {
+  const owner = resolveOwner(p);
   return !!(
-    p.owner?.owner1?.fullName ||
-    p.owner?.owner2?.fullName ||
-    p.owner?.mailingAddressOneLine ||
+    owner?.owner1?.fullName ||
+    owner?.owner2?.fullName ||
+    owner?.owner3?.fullName ||
+    (owner?.mailingAddressOneLine && owner.mailingAddressOneLine.trim()) ||
     getMortgagorName(p) ||
     getMortgagorAddress(p)
   );
@@ -186,9 +215,10 @@ const PROPERTY_TYPES = [
  *  - owner.ownerOccupied: "Y" / "N"
  */
 function isAbsenteeOwner(p: AttomProperty): boolean {
+  const owner = resolveOwner(p);
   const ind = (p.summary?.absenteeInd || "").toUpperCase();
-  const status = (p.owner?.absenteeOwnerStatus || "").toUpperCase();
-  const occupied = (p.owner?.ownerOccupied || "").toUpperCase();
+  const status = (owner?.absenteeOwnerStatus || "").toUpperCase();
+  const occupied = (owner?.ownerOccupied || "").toUpperCase();
 
   // absenteeInd: "ABSENTEE OWNER", "ABSENTEE", or single-char "A"
   if (ind.includes("ABSENTEE") || ind === "A") return true;
@@ -340,7 +370,8 @@ function groupByOwner(properties: AttomProperty[]): InvestorGroup[] {
     // If the mailing address differs from the property address, the owner
     // likely lives elsewhere (investor). Multiple properties sharing the
     // same non-local mailing address = same investor entity.
-    const mailAddr = p.owner?.mailingAddressOneLine?.trim();
+    const ownerR = resolveOwner(p);
+    const mailAddr = ownerR?.mailingAddressOneLine?.trim();
     const propAddr = p.address?.oneLine?.trim();
     if (mailAddr && propAddr && mailAddr.toLowerCase() !== propAddr.toLowerCase()) {
       const key = `mail:${mailAddr.toLowerCase()}`;
@@ -355,9 +386,9 @@ function groupByOwner(properties: AttomProperty[]): InvestorGroup[] {
   for (const [key, props] of groups) {
     if (props.length < 2) continue;
     const ownerName = getOwnerName(props[0])
-      || (key.startsWith("mail:") ? `Unknown Owner (${props[0].owner?.mailingAddressOneLine || "Shared Mailing Address"})` : "Unknown");
-    const mailingAddress = props[0].owner?.mailingAddressOneLine || "";
-    const isCorporate = props.some((p) => p.owner?.corporateIndicator === "Y");
+      || (key.startsWith("mail:") ? `Unknown Owner (${resolveOwner(props[0])?.mailingAddressOneLine || "Shared Mailing Address"})` : "Unknown");
+    const mailingAddress = resolveOwner(props[0])?.mailingAddressOneLine || "";
+    const isCorporate = props.some((p) => resolveOwner(p)?.corporateIndicator === "Y");
     const years = props.map((p) => p.building?.summary?.yearBuilt).filter((y): y is number => y != null);
 
     result.push({
@@ -528,34 +559,37 @@ export default function Prospecting() {
       // The base expandedprofile often returns a partial owner (just a name) while
       // detailmortgageowner/detailowner returns full owner info (mailing address,
       // corporate indicator, occupancy status). We must merge, not choose one or the other.
-      const mergedOwner = (p.owner || supp.owner) ? {
+      // Also check assessment.owner as ATTOM expandedprofile nests owner there.
+      const pOwner = resolveOwner(p);
+      const sOwner = resolveOwner(supp);
+      const mergedOwner = (pOwner || sOwner) ? {
         owner1: {
-          fullName: p.owner?.owner1?.fullName || supp.owner?.owner1?.fullName,
-          lastName: p.owner?.owner1?.lastName || supp.owner?.owner1?.lastName,
-          firstNameAndMi: p.owner?.owner1?.firstNameAndMi || supp.owner?.owner1?.firstNameAndMi,
+          fullName: pOwner?.owner1?.fullName || sOwner?.owner1?.fullName,
+          lastName: pOwner?.owner1?.lastName || sOwner?.owner1?.lastName,
+          firstNameAndMi: pOwner?.owner1?.firstNameAndMi || sOwner?.owner1?.firstNameAndMi,
         },
         owner2: {
-          fullName: p.owner?.owner2?.fullName || supp.owner?.owner2?.fullName,
-          lastName: p.owner?.owner2?.lastName || supp.owner?.owner2?.lastName,
-          firstNameAndMi: p.owner?.owner2?.firstNameAndMi || supp.owner?.owner2?.firstNameAndMi,
+          fullName: pOwner?.owner2?.fullName || sOwner?.owner2?.fullName,
+          lastName: pOwner?.owner2?.lastName || sOwner?.owner2?.lastName,
+          firstNameAndMi: pOwner?.owner2?.firstNameAndMi || sOwner?.owner2?.firstNameAndMi,
         },
         owner3: {
-          fullName: p.owner?.owner3?.fullName || supp.owner?.owner3?.fullName,
-          lastName: p.owner?.owner3?.lastName || supp.owner?.owner3?.lastName,
-          firstNameAndMi: p.owner?.owner3?.firstNameAndMi || supp.owner?.owner3?.firstNameAndMi,
+          fullName: pOwner?.owner3?.fullName || sOwner?.owner3?.fullName,
+          lastName: pOwner?.owner3?.lastName || sOwner?.owner3?.lastName,
+          firstNameAndMi: pOwner?.owner3?.firstNameAndMi || sOwner?.owner3?.firstNameAndMi,
         },
         owner4: {
-          fullName: p.owner?.owner4?.fullName || supp.owner?.owner4?.fullName,
-          lastName: p.owner?.owner4?.lastName || supp.owner?.owner4?.lastName,
-          firstNameAndMi: p.owner?.owner4?.firstNameAndMi || supp.owner?.owner4?.firstNameAndMi,
+          fullName: pOwner?.owner4?.fullName || sOwner?.owner4?.fullName,
+          lastName: pOwner?.owner4?.lastName || sOwner?.owner4?.lastName,
+          firstNameAndMi: pOwner?.owner4?.firstNameAndMi || sOwner?.owner4?.firstNameAndMi,
         },
-        corporateIndicator: p.owner?.corporateIndicator || supp.owner?.corporateIndicator,
-        mailingAddressOneLine: p.owner?.mailingAddressOneLine || supp.owner?.mailingAddressOneLine,
-        absenteeOwnerStatus: p.owner?.absenteeOwnerStatus || supp.owner?.absenteeOwnerStatus,
-        ownerOccupied: p.owner?.ownerOccupied || supp.owner?.ownerOccupied,
-        ownerRelationshipType: p.owner?.ownerRelationshipType || supp.owner?.ownerRelationshipType,
-        ownerRelationshipRights: p.owner?.ownerRelationshipRights || supp.owner?.ownerRelationshipRights,
-      } : p.owner;
+        corporateIndicator: pOwner?.corporateIndicator || sOwner?.corporateIndicator,
+        mailingAddressOneLine: pOwner?.mailingAddressOneLine || sOwner?.mailingAddressOneLine,
+        absenteeOwnerStatus: pOwner?.absenteeOwnerStatus || sOwner?.absenteeOwnerStatus,
+        ownerOccupied: pOwner?.ownerOccupied || sOwner?.ownerOccupied,
+        ownerRelationshipType: pOwner?.ownerRelationshipType || sOwner?.ownerRelationshipType,
+        ownerRelationshipRights: pOwner?.ownerRelationshipRights || sOwner?.ownerRelationshipRights,
+      } : pOwner;
 
       // Deep-merge sale data: supplement fills in missing sale fields
       const mergedSale = (p.sale || supp.sale) ? {
@@ -715,8 +749,8 @@ export default function Prospecting() {
         }
 
         // Data diagnostics: show what ATTOM actually returned
-        const withDirectOwner = allRaw.filter((p) => p.owner?.owner1?.fullName || p.owner?.owner2?.fullName).length;
-        const withMortgagor = allRaw.filter((p) => !p.owner?.owner1?.fullName && !p.owner?.owner2?.fullName && getMortgagorName(p)).length;
+        const withDirectOwner = allRaw.filter((p) => { const o = resolveOwner(p); return o?.owner1?.fullName || o?.owner2?.fullName || o?.owner3?.fullName; }).length;
+        const withMortgagor = allRaw.filter((p) => { const o = resolveOwner(p); return !o?.owner1?.fullName && !o?.owner2?.fullName && !o?.owner3?.fullName && !!getMortgagorName(p); }).length;
         const withMailAddr = allRaw.filter((p) => getMailingAddress(p)).length;
         const withContact = allRaw.filter(hasContactInfo).length;
         const withSaleAmt = allRaw.filter((p) => getSaleAmount(p) != null).length;
@@ -828,7 +862,8 @@ export default function Prospecting() {
           }
           const singleInvestors = allRaw.filter((p) => {
             if (p.identifier?.attomId && groupedIds.has(p.identifier.attomId)) return false;
-            const isCorp = p.owner?.corporateIndicator === "Y";
+            const ownerR = resolveOwner(p);
+            const isCorp = ownerR?.corporateIndicator === "Y";
             const isAbsentee = isAbsenteeOwner(p);
             const hasOwnerName = !!getOwnerName(p);
             return hasOwnerName && (isCorp || isAbsentee);
@@ -836,11 +871,12 @@ export default function Prospecting() {
 
           // Wrap single investors in group format
           for (const p of singleInvestors) {
+            const ownerR = resolveOwner(p);
             const years = p.building?.summary?.yearBuilt ? [p.building.summary.yearBuilt] : [];
             groups.push({
               ownerName: getOwnerName(p) || "Unknown",
-              mailingAddress: p.owner?.mailingAddressOneLine || "",
-              isCorporate: p.owner?.corporateIndicator === "Y",
+              mailingAddress: ownerR?.mailingAddressOneLine || "",
+              isCorporate: ownerR?.corporateIndicator === "Y",
               properties: [p],
               totalTaxBurden: p.assessment?.tax?.taxAmt || 0,
               totalAvmValue: getPropertyValue(p) || 0,
@@ -937,10 +973,11 @@ export default function Prospecting() {
     const lastSale = getSaleAmount(prop);
     const saleDateStr = getSaleDateStr(prop);
     const owner = getOwnerName(prop);
+    const ownerObj = resolveOwner(prop);
     // Show absentee badge when ATTOM flags the property as absentee-owned.
     // In absentee mode, always show it since the user explicitly searched for
     // absentee owners. In other modes, require some owner data to back it up.
-    const absentee = isAbsenteeOwner(prop) && (mode === "absentee" || owner || prop.owner?.mailingAddressOneLine);
+    const absentee = isAbsenteeOwner(prop) && (mode === "absentee" || owner || ownerObj?.mailingAddressOneLine);
     const equity = avmVal && lastSale ? avmVal - lastSale : null;
     const equityPct = avmVal && lastSale ? ((avmVal - lastSale) / avmVal) * 100 : null;
     const ownershipDate = getOwnershipDate(prop);
@@ -1000,21 +1037,21 @@ export default function Prospecting() {
                   Absentee
                 </span>
               )}
-              {prop.owner?.corporateIndicator === "Y" && (
+              {ownerObj?.corporateIndicator === "Y" && (
                 <span style={{ marginLeft: 6, padding: "1px 8px", background: "#ede9fe", color: "#6d28d9", borderRadius: 10, fontSize: 11, fontWeight: 600 }}>
                   Corporate
                 </span>
               )}
             </div>
             {/* Additional owners (owner 2, 3, 4) */}
-            {prop.owner?.owner2?.fullName && (
+            {ownerObj?.owner2?.fullName && (
               <div style={{ fontSize: 12, color: "#6b7280", marginTop: 1 }}>
-                Owner 2: {prop.owner.owner2.fullName}
+                Owner 2: {ownerObj.owner2.fullName}
               </div>
             )}
-            {prop.owner?.owner3?.fullName && (
+            {ownerObj?.owner3?.fullName && (
               <div style={{ fontSize: 12, color: "#6b7280", marginTop: 1 }}>
-                Owner 3: {prop.owner.owner3.fullName}
+                Owner 3: {ownerObj.owner3.fullName}
               </div>
             )}
 
@@ -1022,15 +1059,15 @@ export default function Prospecting() {
                 Falls back to mortgagor (borrower) address from mortgage record. */}
             {mailingAddr && (
               <div style={{ fontSize: 12, color: owner ? "#6b7280" : "#374151", fontWeight: owner ? 400 : 600, marginTop: 2 }}>
-                {prop.owner?.mailingAddressOneLine ? "Mailing" : "Mortgagor Address"}: {mailingAddr}
+                {ownerObj?.mailingAddressOneLine?.trim() ? "Mailing" : "Mortgagor Address"}: {mailingAddr}
               </div>
             )}
 
             {/* Ownership & sale intel summary — always visible */}
-            {(prop.owner?.absenteeOwnerStatus || prop.summary?.absenteeInd || yearsOwned != null || saleDateStr || prop.owner?.ownerRelationshipType) && (
+            {(ownerObj?.absenteeOwnerStatus || prop.summary?.absenteeInd || yearsOwned != null || saleDateStr || ownerObj?.ownerRelationshipType) && (
               <div style={{ marginTop: 4, display: "flex", flexWrap: "wrap", gap: 8, fontSize: 11, color: "#6b7280" }}>
                 {(() => {
-                  const occ = (prop.owner?.absenteeOwnerStatus || "").toUpperCase();
+                  const occ = (ownerObj?.absenteeOwnerStatus || "").toUpperCase();
                   const ind = (prop.summary?.absenteeInd || "").toUpperCase();
                   if (occ.includes("ABSENTEE") || ind.includes("ABSENTEE") || ind === "A") {
                     return <span style={{ padding: "1px 6px", background: "#fef3c7", color: "#92400e", borderRadius: 4, fontWeight: 500 }}>Absentee Owner</span>;
@@ -1045,8 +1082,8 @@ export default function Prospecting() {
                     Owned {yearsOwned} yr{yearsOwned !== 1 ? "s" : ""}
                   </span>
                 )}
-                {prop.owner?.ownerRelationshipType && (
-                  <span>{prop.owner.ownerRelationshipType}</span>
+                {ownerObj?.ownerRelationshipType && (
+                  <span>{ownerObj.ownerRelationshipType}</span>
                 )}
                 {saleDateStr && !lastSale && (
                   <span>Last transfer: {saleDateStr}</span>
@@ -1644,7 +1681,7 @@ export default function Prospecting() {
                         )}
                       </span>
                       {getMailingAddress(prop) && (
-                        <span>{prop.owner?.mailingAddressOneLine ? "Mailing" : "Mortgagor Address"}: {getMailingAddress(prop)}</span>
+                        <span>{resolveOwner(prop)?.mailingAddressOneLine?.trim() ? "Mailing" : "Mortgagor Address"}: {getMailingAddress(prop)}</span>
                       )}
                       {getPropertyValue(prop) != null && (
                         <span><strong>Value:</strong> {fmt(getPropertyValue(prop)!)}</span>
