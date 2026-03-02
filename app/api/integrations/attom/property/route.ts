@@ -253,6 +253,9 @@ export async function GET(request: NextRequest) {
       case "poi":
         result = await client.getPOISearch(params);
         break;
+      case "poicategories":
+        result = await client.getPOICategoryLookup();
+        break;
       case "neighborhood":
         result = await client.getNeighborhoodProfile(params);
         break;

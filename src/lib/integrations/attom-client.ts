@@ -1000,35 +1000,49 @@ export class AttomClient {
     if (!normalized.geoIdV4) {
       const cityState = String(normalized.address2 || "");
       const postalcode = String(normalized.postalcode || normalized.postalCode || "");
+      const state = cityState.split(",")[1]?.trim() || "";
 
       // Extract just city name (ATTOM location lookup works best with city-only)
       const cityOnly = cityState.split(",")[0]?.trim();
 
-      // Try multiple lookup strategies in order of likelihood
-      const lookupAttempts = [
-        cityOnly,    // "Honolulu" — most reliable for location lookup
-        cityState,   // "Honolulu, HI"
-        postalcode,  // "96740"
-      ].filter((v) => v && v.length > 0);
+      // Try multiple lookup strategies with appropriate geographyTypeAbbreviation:
+      // CI = Postal City, PZ = Zip Code, N2 = Neighborhood, PL = Place
+      const lookupAttempts: Array<{ name: string; geoType?: string }> = [];
+      if (cityState) lookupAttempts.push({ name: cityState, geoType: "CI" }); // "Honolulu, HI" as Postal City
+      if (cityOnly && state) lookupAttempts.push({ name: `${cityOnly}, ${state}`, geoType: "PL" }); // Place
+      if (cityOnly) lookupAttempts.push({ name: cityOnly }); // Untyped — returns all matches
+      if (postalcode) lookupAttempts.push({ name: postalcode, geoType: "PZ" }); // Zip code
 
-      for (const lookupName of lookupAttempts) {
+      for (const attempt of lookupAttempts) {
         try {
-          console.log(`[ATTOM] Location lookup attempt: name="${lookupName}"`);
-          const lookupResult = await this.requestV4<any>("/location/lookup", { name: lookupName });
-          console.log("[ATTOM] Location lookup raw response:", JSON.stringify(lookupResult).slice(0, 1000));
+          const lookupParams: Record<string, string> = { name: attempt.name };
+          if (attempt.geoType) lookupParams.geographyTypeAbbreviation = attempt.geoType;
 
-          // Deep-search for geoIdV4 in the response
-          const resolvedGeoId = this.extractGeoIdV4(lookupResult);
+          console.log(`[ATTOM] Location lookup: name="${attempt.name}" geoType=${attempt.geoType || "any"}`);
+          const lookupResult = await this.requestV4<any>("/location/lookup", lookupParams);
 
-          if (resolvedGeoId) {
-            console.log(`[ATTOM] Resolved geoIdV4: ${resolvedGeoId} (from name="${lookupName}")`);
-            normalized.geoIdV4 = resolvedGeoId;
-            break;
-          } else {
-            console.log(`[ATTOM] No geoIdV4 found in response for "${lookupName}"`);
+          // ATTOM v4 location lookup returns: { status: {...}, geographies: [{ geoIdV4, geographyName, ... }] }
+          const geographies = lookupResult?.geographies;
+          if (Array.isArray(geographies) && geographies.length > 0) {
+            const geoId = geographies[0]?.geoIdV4;
+            if (geoId) {
+              console.log(`[ATTOM] Resolved geoIdV4: ${geoId} (${geographies[0].geographyName}, ${geographies[0].geographyTypeName})`);
+              normalized.geoIdV4 = geoId;
+              break;
+            }
           }
+
+          // Fallback: deep-search in case structure differs
+          const fallbackGeoId = this.extractGeoIdV4(lookupResult);
+          if (fallbackGeoId) {
+            console.log(`[ATTOM] Resolved geoIdV4 via deep-search: ${fallbackGeoId}`);
+            normalized.geoIdV4 = fallbackGeoId;
+            break;
+          }
+
+          console.log(`[ATTOM] No geoIdV4 found for "${attempt.name}" (${attempt.geoType || "any"})`);
         } catch (e) {
-          console.log(`[ATTOM] Location lookup failed for "${lookupName}":`, (e as Error).message);
+          console.log(`[ATTOM] Location lookup failed for "${attempt.name}":`, (e as Error).message);
         }
       }
     }
@@ -1062,57 +1076,106 @@ export class AttomClient {
   }
 
   /**
-   * Get schools near a property by address, lat/long, or GeoID.
-   * Tries /school/snapshot (v4-compatible) first, falls back to /school/search.
+   * Search for schools near a property.
+   * Uses v4 endpoint: /v4/school/search (accepts geoIdV4, lat/lng+radius)
+   * Falls back to v1: /propertyapi/v1.0.0/school/snapshot
    */
   async getSchoolSearch(
     params: AttomSearchParams
   ): Promise<any> {
-    const builtParams = this.buildParams(params);
+    const built = this.buildParams(params) || {};
+    const geoId = built.geoIdV4 || built.geoidv4 || built.geoIDV4;
+
+    // Try v4 first with geoIdV4 or lat/lng
+    if (geoId || (built.latitude && built.longitude)) {
+      try {
+        const v4Params: Record<string, string | number | undefined> = {};
+        if (geoId) {
+          v4Params.geoIdV4 = String(geoId);
+        } else if (built.latitude && built.longitude) {
+          v4Params.latitude = built.latitude;
+          v4Params.longitude = built.longitude;
+          if (built.radius) v4Params.radius = built.radius;
+        }
+        if (built.pagesize) v4Params.pagesize = built.pagesize;
+        if (built.page) v4Params.page = built.page;
+        return await this.requestV4("/school/search", v4Params);
+      } catch (e) {
+        console.log("[ATTOM] v4 /school/search failed, trying v1:", (e as Error).message);
+      }
+    }
+
+    // Fall back to v1
     try {
-      return await this.request("/school/snapshot", builtParams);
+      return await this.request("/school/snapshot", built);
     } catch (e) {
-      console.log("[ATTOM] /school/snapshot failed, trying /school/search:", (e as Error).message);
-      return this.request("/school/search", builtParams);
+      console.log("[ATTOM] v1 /school/snapshot failed:", (e as Error).message);
+      return this.request("/school/search", built);
     }
   }
 
   /**
-   * Get school district details by GeoIDV4
+   * Get school district details by geoIdV4.
+   * Uses v4 endpoint: /v4/school/district
+   * Falls back to v1: /propertyapi/v1.0.0/school/districtdetail
    */
   async getSchoolDistrict(
     params: AttomSearchParams
   ): Promise<any> {
-    return this.request("/school/district", this.buildParams(params));
+    const built = this.buildParams(params) || {};
+    const geoId = built.geoIdV4 || built.geoidv4 || built.geoIDV4;
+    if (geoId) {
+      try {
+        return await this.requestV4("/school/district", { geoIdV4: String(geoId) });
+      } catch (e) {
+        console.log("[ATTOM] v4 /school/district failed, trying v1:", (e as Error).message);
+      }
+    }
+    return this.request("/school/districtdetail", this.buildParams(params));
   }
 
   /**
-   * Get detailed school profile by GeoIDV4
+   * Get detailed school profile by geoIdV4.
+   * Uses v4 endpoint: /v4/school/profile (accepts geoIdV4)
+   * Falls back to v1: /propertyapi/v1.0.0/school/detail
    */
   async getSchoolProfile(
     params: AttomSearchParams
   ): Promise<any> {
-    return this.request("/school/profile", this.buildParams(params));
+    const built = this.buildParams(params) || {};
+    const geoId = built.geoIdV4 || built.geoidv4 || built.geoIDV4;
+
+    if (geoId) {
+      try {
+        return await this.requestV4("/school/profile", { geoIdV4: String(geoId) });
+      } catch (e) {
+        console.log("[ATTOM] v4 /school/profile failed, trying v1:", (e as Error).message);
+      }
+    }
+    return this.request("/school/detail", built);
   }
 
   /**
    * Get points of interest near a property.
-   * Uses the ATTOM v4 endpoint: /neighborhood/poi
+   * Uses the ATTOM v4 endpoint: /v4/neighborhood/poi
    *
-   * Accepts: point (POINT(lng,lat)), radius, address, zipCode,
-   *          categoryName, LineOfBusinessName, IndustryName, categoryId
+   * Accepts: geoIdV4, point (POINT(lng,lat)), address, zipCode, radius,
+   *          categoryName, pagesize, page
    *
-   * Uses ONE primary location identifier (POINT preferred) to avoid conflicts.
+   * Priority: geoIdV4 > POINT(lng,lat) > address > zipCode
    */
   async getPOISearch(
     params: AttomSearchParams
   ): Promise<any> {
     const normalized = this.buildParams(params) || {};
     const v4Params: Record<string, string | number | undefined> = {};
+    const geoId = normalized.geoIdV4 || normalized.geoidv4 || normalized.geoIDV4;
 
     // Use the most specific location identifier available:
-    // POINT(lng,lat) > address > zipCode
-    if (normalized.latitude && normalized.longitude) {
+    // geoIdV4 > POINT(lng,lat) > address > zipCode
+    if (geoId) {
+      v4Params.geoIdV4 = String(geoId);
+    } else if (normalized.latitude && normalized.longitude) {
       v4Params.point = `POINT(${normalized.longitude},${normalized.latitude})`;
     } else if (normalized.address1 || normalized.address) {
       v4Params.address = String(normalized.address1 || normalized.address);
@@ -1120,10 +1183,10 @@ export class AttomClient {
       v4Params.zipCode = String(normalized.postalcode || normalized.postalCode);
     }
 
-    // Pass through radius
-    if (normalized.radius) {
-      v4Params.radius = normalized.radius;
-    }
+    // Pass through radius and pagination
+    if (normalized.radius) v4Params.radius = normalized.radius;
+    if (normalized.pagesize) v4Params.pagesize = normalized.pagesize;
+    if (normalized.page) v4Params.page = normalized.page;
 
     // Pass through POI-specific filters
     if (normalized.categoryName) v4Params.categoryName = normalized.categoryName;
@@ -1138,8 +1201,18 @@ export class AttomClient {
   }
 
   /**
+   * Get POI category lookup — lists available business categories
+   * Uses v4 endpoint: /v4/neighborhood/poi/categorylookup
+   * Consolidates the former /poisearch/v2.0.0/business+category/lookup and
+   * /poisearch/v2.0.0/lob/lookup into a single endpoint.
+   */
+  async getPOICategoryLookup(): Promise<any> {
+    return this.requestV4("/neighborhood/poi/categorylookup", {});
+  }
+
+  /**
    * Convenience: fetch a full neighborhood profile for a given address
-   * Combines community data (v4), school search, and POI (v4) in parallel
+   * Combines community data (v4), school search (v4), POI (v4), and sales trends (v4) in parallel
    */
   async getNeighborhoodProfile(options: {
     address1?: string;
@@ -1153,6 +1226,7 @@ export class AttomClient {
     community: any;
     schools: any;
     poi: any;
+    salesTrends: any;
   }> {
     console.log("[ATTOM] getNeighborhoodProfile called with:", JSON.stringify(options));
 
@@ -1168,40 +1242,56 @@ export class AttomClient {
       longitude: options.longitude,
     };
 
-    // School search supports postalcode, lat/lng + radius, or geoIdV4
+    // School search: v4 /school/search (accepts geoIdV4, lat/lng + radius)
     const schoolParams: AttomSearchParams = {
       latitude: options.latitude,
       longitude: options.longitude,
       postalcode: options.postalcode,
       geoIdV4: options.geoidv4,
-      radius: options.radius || 1,
-      pagesize: 10,
+      radius: options.radius || 3,
+      pagesize: 15,
     };
 
-    // POI search uses v4 /neighborhood/poi — accepts POINT(lng,lat), address, or zipCode
+    // POI search: v4 /neighborhood/poi (accepts geoIdV4, POINT, address, zipCode)
     const poiParams: AttomSearchParams = {
+      geoIdV4: options.geoidv4,
       latitude: options.latitude,
       longitude: options.longitude,
       address1: options.address1,
       postalcode: options.postalcode,
       radius: options.radius || 5,
+      pagesize: 25,
     };
 
-    const [community, schools, poi] = await Promise.allSettled([
+    // Sales trends: uses v4 /transaction/salestrends (requires geoIdV4)
+    // We'll pass geoIdV4 if available; the method will try v4 first then v1
+    const currentYear = new Date().getFullYear();
+    const salesTrendParams: AttomSearchParams = {
+      geoIdV4: options.geoidv4,
+      postalcode: options.postalcode,
+      interval: "quarterly",
+      startyear: currentYear - 2,
+      endyear: currentYear,
+    };
+
+    const [community, schools, poi, salesTrends] = await Promise.allSettled([
       this.getCommunityProfile(communityParams),
       this.getSchoolSearch(schoolParams),
       this.getPOISearch(poiParams),
+      this.getSalesTrend(salesTrendParams),
     ]);
 
-    console.log("[ATTOM] Neighborhood results - community:", community.status, "schools:", schools.status, "poi:", poi.status);
-    if (community.status === "rejected") console.log("[ATTOM] Community rejection reason:", (community as PromiseRejectedResult).reason?.message || community);
-    if (schools.status === "rejected") console.log("[ATTOM] Schools rejection reason:", (schools as PromiseRejectedResult).reason?.message || schools);
-    if (poi.status === "rejected") console.log("[ATTOM] POI rejection reason:", (poi as PromiseRejectedResult).reason?.message || poi);
+    console.log("[ATTOM] Neighborhood results - community:", community.status, "schools:", schools.status, "poi:", poi.status, "salesTrends:", salesTrends.status);
+    if (community.status === "rejected") console.log("[ATTOM] Community rejection:", (community as PromiseRejectedResult).reason?.message);
+    if (schools.status === "rejected") console.log("[ATTOM] Schools rejection:", (schools as PromiseRejectedResult).reason?.message);
+    if (poi.status === "rejected") console.log("[ATTOM] POI rejection:", (poi as PromiseRejectedResult).reason?.message);
+    if (salesTrends.status === "rejected") console.log("[ATTOM] Sales trends rejection:", (salesTrends as PromiseRejectedResult).reason?.message);
 
     return {
       community: community.status === "fulfilled" ? community.value : null,
       schools: schools.status === "fulfilled" ? schools.value : null,
       poi: poi.status === "fulfilled" ? poi.value : null,
+      salesTrends: salesTrends.status === "fulfilled" ? salesTrends.value : null,
     };
   }
 
@@ -1319,12 +1409,36 @@ export class AttomClient {
   // ── Sales Trends & Analytics ──────────────────────────────────────────
 
   /**
-   * Get sales trend data for an area
-   * Returns median price, volume, days on market, price/sqft trends
+   * Get sales trend data for an area.
+   * Uses v4 endpoint: /v4/transaction/salestrends (supports geoIdV4, propertytype, transactiontype)
+   * Falls back to v1: /propertyapi/v1.0.0/salestrend/snapshot
    */
   async getSalesTrend(
     params: AttomSearchParams
   ): Promise<any> {
+    const built = this.buildParams(params) || {};
+    // Build v4 params
+    const v4Params: Record<string, string | number | undefined> = {};
+    if (built.geoIdV4 || built.geoidv4 || built.geoIDV4)
+      v4Params.geoIdV4 = String(built.geoIdV4 || built.geoidv4 || built.geoIDV4);
+    if (built.interval) v4Params.interval = built.interval;
+    if (built.startyear) v4Params.startyear = built.startyear;
+    if (built.endyear) v4Params.endyear = built.endyear;
+    if (built.startmonth) v4Params.startmonth = built.startmonth;
+    if (built.endmonth) v4Params.endmonth = built.endmonth;
+    if (built.startQuarter) v4Params.startquarter = built.startQuarter;
+    if (built.endQuarter) v4Params.endquarter = built.endQuarter;
+    if (built.propertytype || built.propertyType)
+      v4Params.propertytype = String(built.propertytype || built.propertyType);
+
+    if (v4Params.geoIdV4) {
+      try {
+        return await this.requestV4("/transaction/salestrends", v4Params);
+      } catch (e) {
+        console.log("[ATTOM] v4 /transaction/salestrends failed, trying v1:", (e as Error).message);
+      }
+    }
+    // Fallback to v1
     return this.request("/salestrend/snapshot", this.buildParams(params));
   }
 

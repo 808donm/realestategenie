@@ -796,75 +796,23 @@ export default function PropertyDetailModal({
               )}
 
               {neighborhoodData && (() => {
-                // Extract community data — ATTOM returns data in varying formats:
-                // v4 /neighborhood/community: { community: { demographics: {...} } }
-                // v4 wrapped: { response: { result: { community: { demographics: {...} } } } }
-                // /area/community/profile: { area: [...] }
-                // Field names vary: camelCase, snake_case, lowercase.
+                // ── Extract v4 community data ──
+                // v4 response: { community: { geography: {...}, demographics: {...}, crime: {...}, climate: {...}, airQuality: {...}, naturalDisasters: {...} } }
                 const communityRaw = neighborhoodData.community;
-                const rawObj = communityRaw?.community?.demographics
-                  || communityRaw?.response?.result?.community?.demographics
-                  || communityRaw?.response?.community?.demographics
-                  || communityRaw?.demographics
-                  || communityRaw?.community?.[0]
-                  || communityRaw?.response?.result?.community?.[0]
-                  || communityRaw?.neighborhood?.[0]
-                  || communityRaw?.area?.[0]
-                  || (Array.isArray(communityRaw) ? communityRaw[0] : null)
-                  || (communityRaw && typeof communityRaw === "object" && !communityRaw.status && !communityRaw.community && !communityRaw.area && !communityRaw.neighborhood && !communityRaw.response ? communityRaw : null);
+                const communityObj = communityRaw?.community || communityRaw?.response?.result?.community;
+                const geo = communityObj?.geography;
+                const demo = communityObj?.demographics;
+                const crime = communityObj?.crime;
+                const climate = communityObj?.climate;
+                const airQuality = communityObj?.airQuality;
+                const naturalDisasters = communityObj?.naturalDisasters;
+                const hasCommunity = !!(demo || crime || climate);
 
-                // Normalize ATTOM field names — v4 uses snake_case (population_density_sq_mi),
-                // older APIs use camelCase (populationDensity). Build lookups by both
-                // lowercase key and underscore-stripped key.
-                const community = rawObj ? (() => {
-                  const lookup: Record<string, any> = {};
-                  const addToLookup = (key: string, val: any) => {
-                    const lower = key.toLowerCase();
-                    if (lookup[lower] === undefined) lookup[lower] = val;
-                    // Also store version with underscores removed for snake_case matching
-                    const stripped = lower.replace(/_/g, "");
-                    if (lookup[stripped] === undefined) lookup[stripped] = val;
-                  };
-                  for (const [k, v] of Object.entries(rawObj)) {
-                    addToLookup(k, v);
-                    // Also check nested demographic/community objects
-                    if (v && typeof v === "object" && !Array.isArray(v)) {
-                      for (const [nk, nv] of Object.entries(v as Record<string, any>)) {
-                        addToLookup(nk, nv);
-                      }
-                    }
-                  }
-                  // Also extract from parent community object if it has extra fields
-                  if (communityRaw?.community && typeof communityRaw.community === "object") {
-                    for (const [k, v] of Object.entries(communityRaw.community)) {
-                      if (typeof v !== "object") addToLookup(k, v);
-                    }
-                  }
-                  return {
-                    communityName: lookup.communityname || lookup.name || rawObj.communityName,
-                    population: lookup.population ?? rawObj.population,
-                    populationDensity: lookup.populationdensity ?? lookup.populationdensitysqmi ?? rawObj.populationDensity ?? rawObj.population_density_sq_mi,
-                    medianAge: lookup.medianage ?? rawObj.medianAge,
-                    medianHouseholdIncome: lookup.medianhouseholdincome ?? rawObj.medianHouseholdIncome,
-                    medianHomePrice: lookup.medianhomeprice ?? rawObj.medianHomePrice,
-                    affordabilityIndex: lookup.affordabilityindex ?? rawObj.affordabilityIndex,
-                    houseAppreciationRate: lookup.houseappreciationrate ?? rawObj.houseAppreciationRate,
-                    ownerOccupiedPct: lookup.owneroccupiedpct ?? rawObj.ownerOccupiedPct,
-                    renterOccupiedPct: lookup.renteroccupiedpct ?? rawObj.renterOccupiedPct,
-                    employmentGrowthRate: lookup.employmentgrowthrate ?? rawObj.employmentGrowthRate,
-                    populationGrowth: lookup.populationgrowth ?? lookup.populationchgpct2010 ?? rawObj.populationGrowth ?? rawObj.population_chg_pct_2010,
-                    avgSchoolRating: lookup.avgschoolrating ?? rawObj.avgSchoolRating,
-                    walkScore: lookup.walkscore ?? rawObj.walkScore,
-                    bikeScore: lookup.bikescore ?? rawObj.bikeScore,
-                    transitScore: lookup.transitscore ?? rawObj.transitScore,
-                    commuteTime: lookup.commutetime ?? rawObj.commuteTime,
-                    crimeIndex: lookup.crimeindex ?? rawObj.crimeIndex,
-                    crimeRisk: lookup.crimerisk ?? rawObj.crimeRisk,
-                    population5YrProjection: lookup.population5yrprojection ?? rawObj.population_5_yr_projection,
-                  };
-                })() : null;
+                // Helper: get a field by exact v4 snake_Case_Name from demographics
+                const d = (key: string) => demo?.[key];
+                const pct = (key: string) => { const v = d(key); return v != null ? `${v}%` : undefined; };
 
-                // Extract school data — ATTOM returns in various formats
+                // Extract school data — v4 returns { school: [...] } or v1 format
                 const schoolsRaw = neighborhoodData.schools;
                 const schools = schoolsRaw?.school
                   || schoolsRaw?.response?.result?.package?.item
@@ -873,18 +821,24 @@ export default function PropertyDetailModal({
                   || (Array.isArray(schoolsRaw) ? schoolsRaw : []);
                 const schoolList = Array.isArray(schools) ? schools : schools ? [schools] : [];
 
-                // Extract POI data — v4 returns { response: { result: { package: { item: [...] } } } }
+                // Extract school district data (if embedded in the response)
+                const districtRaw = schoolsRaw?.district || null;
+
+                // Extract POI data — v4 returns { poi: [...] }
                 const poiRaw = neighborhoodData.poi;
-                const poiItems = poiRaw?.response?.result?.package?.item
+                const poiItems = poiRaw?.poi
+                  || poiRaw?.response?.result?.package?.item
                   || poiRaw?.result?.package?.item
                   || poiRaw?.package?.item
                   || poiRaw?.item
-                  || poiRaw?.poi
                   || (Array.isArray(poiRaw) ? poiRaw : []);
                 const poiList = Array.isArray(poiItems) ? poiItems : poiItems ? [poiItems] : [];
 
-                // If all data sources returned null, show a helpful message
-                if (!community && schoolList.length === 0 && poiList.length === 0) {
+                // Extract sales trends
+                const trendsRaw = neighborhoodData.salesTrends;
+                const trendsList: any[] = trendsRaw?.salesTrends || trendsRaw?.salestrend || [];
+
+                if (!hasCommunity && schoolList.length === 0 && poiList.length === 0 && trendsList.length === 0) {
                   return (
                     <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>
                       No neighborhood data found for this property. This may occur if the area is not covered by the community data provider.
@@ -892,78 +846,196 @@ export default function PropertyDetailModal({
                   );
                 }
 
+                // Index color helper for 100-base indexes
+                const idxColor = (v: number) => v >= 150 ? "#dc2626" : v >= 120 ? "#d97706" : v >= 80 ? "#059669" : "#3b82f6";
+                const idxLabel = (v: number) => v >= 150 ? "High" : v >= 120 ? "Above Avg" : v >= 80 ? "Average" : "Below Avg";
+
                 return (
                   <>
-                    {/* Walkability / Transportation Scores */}
-                    {(community?.walkScore != null || community?.bikeScore != null || community?.transitScore != null || community?.commuteTime != null) && (
+                    {/* Geography Name */}
+                    {geo?.geographyName && (
+                      <div style={{ marginBottom: 16, padding: "10px 14px", background: "#f0f9ff", borderRadius: 8, borderLeft: "4px solid #3b82f6" }}>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: "#1e40af" }}>{geo.geographyName}</div>
+                        {geo.geographyTypeName && <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>{geo.geographyTypeName}</div>}
+                      </div>
+                    )}
+
+                    {/* Demographics Overview */}
+                    {demo && (
+                      <Section title="Demographics">
+                        <Field label="Population" value={d("population") != null ? Number(d("population")).toLocaleString() : undefined} />
+                        <Field label="5-Yr Projection" value={d("population_5_Yr_Projection") != null ? Number(d("population_5_Yr_Projection")).toLocaleString() : undefined} />
+                        <Field label="Pop Density" value={d("population_Density_Sq_Mi") != null ? `${Number(d("population_Density_Sq_Mi")).toLocaleString()}/sqmi` : undefined} />
+                        <Field label="Pop Growth (10yr)" value={pct("population_Chg_Pct_2010")} />
+                        <Field label="Median Age" value={d("median_Age")} />
+                        <Field label="Households" value={d("households") != null ? Number(d("households")).toLocaleString() : undefined} />
+                        <Field label="Avg Household Size" value={d("household_Size_Avg")} />
+                        <Field label="Family Households" value={pct("households_Family_Pct")} />
+                        <Field label="Owner Occupied" value={pct("housing_Units_Owner_Occupied_Pct")} />
+                        <Field label="Renter Occupied" value={pct("housing_Units_Renter_Occupied_Pct")} />
+                        <Field label="Vacant Units" value={pct("housing_Units_Vacant_Pct")} />
+                        <Field label="Urban" value={pct("population_Urban_Pct")} />
+                      </Section>
+                    )}
+
+                    {/* Income & Economy */}
+                    {demo && (d("median_Household_Income") || d("household_Income_Per_Capita") || d("population_In_Poverty_Pct")) && (
+                      <Section title="Income & Economy">
+                        <Field label="Median HH Income" value={d("median_Household_Income") != null ? `$${Number(d("median_Household_Income")).toLocaleString()}` : undefined} />
+                        <Field label="Avg HH Income" value={d("avg_Household_Income") != null ? `$${Number(d("avg_Household_Income")).toLocaleString()}` : undefined} />
+                        <Field label="Per Capita Income" value={d("household_Income_Per_Capita") != null ? `$${Number(d("household_Income_Per_Capita")).toLocaleString()}` : undefined} />
+                        <Field label="Family Median Income" value={d("family_Median_Income") != null ? `$${Number(d("family_Median_Income")).toLocaleString()}` : undefined} />
+                        <Field label="Poverty Rate" value={pct("population_In_Poverty_Pct")} />
+                        <Field label="White Collar" value={pct("occupation_White_Collar_Pct")} />
+                        <Field label="Blue Collar" value={pct("occupation_Blue_Collar_Pct")} />
+                        <Field label="Work From Home" value={pct("transportation_Work_From_Home_Pct")} />
+                      </Section>
+                    )}
+
+                    {/* Housing Market */}
+                    {demo && (d("housing_Owner_Households_Median_Value") || d("housing_Median_Rent")) && (
+                      <Section title="Housing Market">
+                        <Field label="Median Home Value" value={d("housing_Owner_Households_Median_Value") != null ? `$${Number(d("housing_Owner_Households_Median_Value")).toLocaleString()}` : undefined} />
+                        <Field label="Median Rent" value={d("housing_Median_Rent") != null ? `$${Number(d("housing_Median_Rent")).toLocaleString()}/mo` : undefined} />
+                        <Field label="With Mortgage" value={pct("housing_Owner_Households_With_Mortgage_Pct")} />
+                        <Field label="Median Year Built" value={d("housing_Median_Built_Yr")} />
+                        <Field label="Med Length of Residence" value={d("median_Length_Of_Residence_Yr") != null ? `${d("median_Length_Of_Residence_Yr")} yrs` : undefined} />
+                        <Field label="Single Family" value={pct("housing_Occupied_Structure_1_Unit_Detached_Pct")} />
+                        <Field label="Median Vehicles" value={d("households_Median_Vehicles")} />
+                      </Section>
+                    )}
+
+                    {/* Transportation & Commute */}
+                    {demo && d("median_Travel_Time_To_Work_Mi") && (
+                      <Section title="Transportation & Commute">
+                        <Field label="Median Commute" value={d("median_Travel_Time_To_Work_Mi") != null ? `${d("median_Travel_Time_To_Work_Mi")} min` : undefined} />
+                        <Field label="Drive Alone" value={pct("transportation_Car_Alone_Pct")} />
+                        <Field label="Carpool" value={pct("transportation_Car_Carpool_Pct")} />
+                        <Field label="Public Transit" value={pct("transportation_Public_Pct")} />
+                        <Field label="Walk" value={pct("transportation_Walk_Pct")} />
+                        <Field label="Work From Home" value={pct("transportation_Work_From_Home_Pct")} />
+                      </Section>
+                    )}
+
+                    {/* Education */}
+                    {demo && d("education_Bach_Degree_Pct") && (
+                      <Section title="Education">
+                        <Field label="Bachelor's Degree" value={pct("education_Bach_Degree_Pct")} />
+                        <Field label="Graduate Degree" value={pct("education_Grad_Degree_Pct")} />
+                        <Field label="Some College" value={pct("education_Some_College_Pct")} />
+                        <Field label="High School" value={pct("education_Hs_Pct")} />
+                        <Field label="Associate Degree" value={pct("education_Assoc_Degree_Pct")} />
+                      </Section>
+                    )}
+
+                    {/* Crime & Safety */}
+                    {crime && (
                       <div style={{ marginBottom: 20 }}>
                         <h3 style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 10, paddingBottom: 6, borderBottom: "1px solid #e5e7eb" }}>
-                          Walkability & Transportation
+                          Crime & Safety (Index: 100 = National Avg)
                         </h3>
-                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10 }}>
-                          {community.walkScore != null && (
-                            <div style={{ padding: "12px 14px", background: community.walkScore >= 70 ? "#ecfdf5" : community.walkScore >= 50 ? "#fefce8" : "#fef2f2", borderRadius: 8, textAlign: "center" }}>
-                              <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: community.walkScore >= 70 ? "#059669" : community.walkScore >= 50 ? "#a16207" : "#dc2626" }}>Walk Score</div>
-                              <div style={{ fontSize: 28, fontWeight: 800, color: community.walkScore >= 70 ? "#059669" : community.walkScore >= 50 ? "#a16207" : "#dc2626" }}>{community.walkScore}</div>
-                              <div style={{ fontSize: 11, color: "#6b7280" }}>
-                                {community.walkScore >= 90 ? "Walker's Paradise" : community.walkScore >= 70 ? "Very Walkable" : community.walkScore >= 50 ? "Somewhat Walkable" : community.walkScore >= 25 ? "Car-Dependent" : "Almost All Errands Require a Car"}
-                              </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8 }}>
+                          {[
+                            { label: "Overall Crime", val: crime.crime_Index },
+                            { label: "Burglary", val: crime.burglary_Index },
+                            { label: "Larceny", val: crime.larceny_Index },
+                            { label: "Vehicle Theft", val: crime.motor_Vehicle_Theft_Index },
+                            { label: "Assault", val: crime.aggravated_Assault_Index },
+                            { label: "Robbery", val: crime.forcible_Robbery_Index },
+                          ].filter((c) => c.val != null).map((c) => (
+                            <div key={c.label} style={{ padding: "10px 12px", background: "#f9fafb", borderRadius: 8, textAlign: "center" }}>
+                              <div style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", color: "#6b7280", letterSpacing: 0.5 }}>{c.label}</div>
+                              <div style={{ fontSize: 22, fontWeight: 800, color: idxColor(c.val!) }}>{c.val}</div>
+                              <div style={{ fontSize: 10, color: idxColor(c.val!) }}>{idxLabel(c.val!)}</div>
                             </div>
-                          )}
-                          {community.bikeScore != null && (
-                            <div style={{ padding: "12px 14px", background: community.bikeScore >= 70 ? "#ecfdf5" : community.bikeScore >= 50 ? "#fefce8" : "#f0f9ff", borderRadius: 8, textAlign: "center" }}>
-                              <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: community.bikeScore >= 70 ? "#059669" : community.bikeScore >= 50 ? "#a16207" : "#3b82f6" }}>Bike Score</div>
-                              <div style={{ fontSize: 28, fontWeight: 800, color: community.bikeScore >= 70 ? "#059669" : community.bikeScore >= 50 ? "#a16207" : "#3b82f6" }}>{community.bikeScore}</div>
-                              <div style={{ fontSize: 11, color: "#6b7280" }}>
-                                {community.bikeScore >= 90 ? "Biker's Paradise" : community.bikeScore >= 70 ? "Very Bikeable" : community.bikeScore >= 50 ? "Bikeable" : "Minimal Bike Infrastructure"}
-                              </div>
-                            </div>
-                          )}
-                          {community.transitScore != null && (
-                            <div style={{ padding: "12px 14px", background: community.transitScore >= 70 ? "#ecfdf5" : community.transitScore >= 50 ? "#fefce8" : "#f5f3ff", borderRadius: 8, textAlign: "center" }}>
-                              <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: community.transitScore >= 70 ? "#059669" : community.transitScore >= 50 ? "#a16207" : "#7c3aed" }}>Transit Score</div>
-                              <div style={{ fontSize: 28, fontWeight: 800, color: community.transitScore >= 70 ? "#059669" : community.transitScore >= 50 ? "#a16207" : "#7c3aed" }}>{community.transitScore}</div>
-                              <div style={{ fontSize: 11, color: "#6b7280" }}>
-                                {community.transitScore >= 90 ? "Excellent Transit" : community.transitScore >= 70 ? "Rider's Paradise" : community.transitScore >= 50 ? "Good Transit" : "Minimal Transit"}
-                              </div>
-                            </div>
-                          )}
-                          {community.commuteTime != null && (
-                            <div style={{ padding: "12px 14px", background: "#f9fafb", borderRadius: 8, textAlign: "center" }}>
-                              <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: "#6b7280" }}>Avg Commute</div>
-                              <div style={{ fontSize: 28, fontWeight: 800, color: "#374151" }}>{community.commuteTime}</div>
-                              <div style={{ fontSize: 11, color: "#6b7280" }}>minutes</div>
-                            </div>
-                          )}
+                          ))}
                         </div>
                       </div>
                     )}
 
-                    {/* Crime & Safety */}
-                    {(community?.crimeIndex != null || community?.crimeRisk) && (
-                      <Section title="Crime & Safety">
-                        <Field label="Crime Index" value={community.crimeIndex} />
-                        <Field label="Crime Risk" value={community.crimeRisk} />
+                    {/* Climate */}
+                    {climate && (
+                      <Section title="Climate">
+                        <Field label="Avg Annual Temp" value={climate.annual_Avg_Temp != null ? `${climate.annual_Avg_Temp}°F` : undefined} />
+                        <Field label="Summer High" value={climate.avg_Jul_High_Temp != null ? `${climate.avg_Jul_High_Temp}°F` : undefined} />
+                        <Field label="Winter Low" value={climate.avg_Jan_Low_Temp != null ? `${climate.avg_Jan_Low_Temp}°F` : undefined} />
+                        <Field label="Annual Rainfall" value={climate.annual_Precip_In != null ? `${climate.annual_Precip_In}"` : undefined} />
+                        <Field label="Annual Snowfall" value={climate.annual_Snowfall_In != null ? `${climate.annual_Snowfall_In}"` : undefined} />
+                        <Field label="Clear Days/Yr" value={climate.clear_Day_Mean} />
+                        <Field label="Rainy Days/Yr" value={climate.rainy_Day_Mean} />
+                        <Field label="Sunshine" value={climate.possible_Sunshine_Pct != null ? `${climate.possible_Sunshine_Pct}%` : undefined} />
                       </Section>
                     )}
 
-                    {/* Community Profile */}
-                    {community && (
-                      <Section title="Community Profile">
-                        <Field label="Community" value={community.communityName} />
-                        <Field label="Population" value={community.population != null ? Number(community.population).toLocaleString() : undefined} />
-                        <Field label="Population Density" value={community.populationDensity != null ? `${Number(community.populationDensity).toLocaleString()} / sqmi` : undefined} />
-                        <Field label="Median Age" value={community.medianAge} />
-                        <Field label="Median Household Income" value={community.medianHouseholdIncome != null ? `$${Number(community.medianHouseholdIncome).toLocaleString()}` : undefined} />
-                        <Field label="Median Home Price" value={community.medianHomePrice != null ? `$${Number(community.medianHomePrice).toLocaleString()}` : undefined} />
-                        <Field label="Affordability Index" value={community.affordabilityIndex} />
-                        <Field label="House Appreciation" value={community.houseAppreciationRate != null ? `${community.houseAppreciationRate}%` : undefined} />
-                        <Field label="Owner Occupied" value={community.ownerOccupiedPct != null ? `${community.ownerOccupiedPct}%` : undefined} />
-                        <Field label="Renter Occupied" value={community.renterOccupiedPct != null ? `${community.renterOccupiedPct}%` : undefined} />
-                        <Field label="Employment Growth" value={community.employmentGrowthRate != null ? `${community.employmentGrowthRate}%` : undefined} />
-                        <Field label="Population Growth" value={community.populationGrowth != null ? `${community.populationGrowth}%` : undefined} />
-                        <Field label="Avg School Rating" value={community.avgSchoolRating != null ? `${community.avgSchoolRating}/10` : undefined} />
+                    {/* Air Quality */}
+                    {airQuality && (
+                      <Section title="Air Quality (Index: 100 = National Avg)">
+                        <Field label="Air Pollution" value={airQuality.air_Pollution_Index} />
+                        <Field label="Ozone" value={airQuality.ozone_Index} />
+                        <Field label="Particulate Matter" value={airQuality.particulate_Matter_Index} />
+                        <Field label="Carbon Monoxide" value={airQuality.carbon_Monoxide_Index} />
+                        <Field label="Nitrogen Dioxide" value={airQuality.nitrogen_Dioxide_Index} />
                       </Section>
+                    )}
+
+                    {/* Natural Disasters */}
+                    {naturalDisasters && (
+                      <div style={{ marginBottom: 20 }}>
+                        <h3 style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 10, paddingBottom: 6, borderBottom: "1px solid #e5e7eb" }}>
+                          Natural Disaster Risk (Index: 100 = National Avg)
+                        </h3>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 8 }}>
+                          {[
+                            { label: "Earthquake", val: naturalDisasters.earthquake_Index },
+                            { label: "Hurricane", val: naturalDisasters.hurricane_Index },
+                            { label: "Tornado", val: naturalDisasters.tornado_Index },
+                            { label: "Hail", val: naturalDisasters.hail_Index },
+                            { label: "Wind", val: naturalDisasters.wind_Index },
+                            { label: "Weather", val: naturalDisasters.weather_Index },
+                          ].filter((c) => c.val != null).map((c) => (
+                            <div key={c.label} style={{ padding: "10px 12px", background: "#f9fafb", borderRadius: 8, textAlign: "center" }}>
+                              <div style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", color: "#6b7280", letterSpacing: 0.5 }}>{c.label}</div>
+                              <div style={{ fontSize: 22, fontWeight: 800, color: idxColor(c.val!) }}>{c.val}</div>
+                              <div style={{ fontSize: 10, color: idxColor(c.val!) }}>{idxLabel(c.val!)}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Sales Trends */}
+                    {trendsList.length > 0 && (
+                      <div style={{ marginBottom: 20 }}>
+                        <h3 style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 10, paddingBottom: 6, borderBottom: "1px solid #e5e7eb" }}>
+                          Market Trends
+                        </h3>
+                        <div style={{ overflowX: "auto" }}>
+                          <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
+                            <thead>
+                              <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
+                                <th style={{ textAlign: "left", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Period</th>
+                                <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Median Price</th>
+                                <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Avg Price</th>
+                                <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Sales</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {trendsList.slice(-8).map((t: any, i: number) => {
+                                const period = t.dateRange?.start || t.dateRange?.interval || "";
+                                const st = t.salesTrend || t;
+                                return (
+                                  <tr key={i} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                                    <td style={{ padding: "6px 8px", fontWeight: 500 }}>{period}</td>
+                                    <td style={{ padding: "6px 8px", textAlign: "right" }}>{st.medSalePrice != null ? `$${Number(st.medSalePrice).toLocaleString()}` : "—"}</td>
+                                    <td style={{ padding: "6px 8px", textAlign: "right" }}>{st.avgSalePrice != null ? `$${Number(st.avgSalePrice).toLocaleString()}` : "—"}</td>
+                                    <td style={{ padding: "6px 8px", textAlign: "right" }}>{st.homeSaleCount ?? "—"}</td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
                     )}
 
                     {/* Nearby Schools */}
@@ -973,35 +1045,67 @@ export default function PropertyDetailModal({
                           Nearby Schools
                         </h3>
                         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                          {schoolList.slice(0, 10).map((school: any, i: number) => (
-                            <div key={i} style={{ padding: "10px 14px", background: "#f9fafb", borderRadius: 8, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
-                              <div style={{ flex: 1, minWidth: 180 }}>
-                                <div style={{ fontWeight: 600, fontSize: 13, color: "#111827" }}>{school.schoolName || school.InstitutionName}</div>
-                                <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
-                                  {[
-                                    school.schoolType || school.Type,
-                                    school.gradeRange || school.Grades,
-                                    school.distance != null ? `${Number(school.distance).toFixed(1)} mi` : null,
-                                  ].filter(Boolean).join(" · ")}
+                          {schoolList.slice(0, 15).map((school: any, i: number) => {
+                            // v4 fields: schoolName, schoolType, institutionType, gradeSpanLow, gradeSpanHigh,
+                            //            studentCnt, schoolRating, urbanCentricCommunityType, apInd
+                            // v4 nested: school.detail.schoolName, school.location, school.district
+                            const detail = school.detail || school;
+                            const loc = school.location || {};
+                            const name = detail.schoolName || detail.InstitutionName || school.schoolName || school.InstitutionName;
+                            const type = detail.institutionType || detail.schoolType || school.schoolType || school.Type;
+                            const gradeSpan = (detail.gradeSpanLow && detail.gradeSpanHigh)
+                              ? `${detail.gradeSpanLow}–${detail.gradeSpanHigh}`
+                              : school.gradeRange || school.Grades;
+                            const level = [detail.elementarySchoolInd === "Y" && "Elementary", detail.middleSchoolInd === "Y" && "Middle", detail.highSchoolInd === "Y" && "High"].filter(Boolean).join("/") || detail.instructionalLevel;
+                            const students = detail.studentCnt || school.enrollment || school.Enrollment;
+                            const rating = detail.schoolRating || school.rating || school.SchoolRating;
+                            const dist = loc.distance ?? school.distance;
+                            const community = detail.urbanCentricCommunityType;
+                            const hasAP = detail.apInd === "Y";
+                            const charter = detail.charterInd === "Y";
+
+                            // Rating color for letter grades (A+, A, A-, B+, B, B-, etc.)
+                            const ratingBg = typeof rating === "string"
+                              ? rating.startsWith("A") ? "#059669" : rating.startsWith("B") ? "#3b82f6" : rating.startsWith("C") ? "#d97706" : "#dc2626"
+                              : rating >= 8 ? "#059669" : rating >= 5 ? "#d97706" : "#dc2626";
+
+                            return (
+                              <div key={i} style={{ padding: "10px 14px", background: "#f9fafb", borderRadius: 8, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+                                <div style={{ flex: 1, minWidth: 180 }}>
+                                  <div style={{ fontWeight: 600, fontSize: 13, color: "#111827" }}>{name}</div>
+                                  <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
+                                    {[
+                                      type,
+                                      level,
+                                      gradeSpan ? `Grades ${gradeSpan}` : null,
+                                      dist != null ? `${Number(dist).toFixed(1)} mi` : null,
+                                    ].filter(Boolean).join(" · ")}
+                                  </div>
+                                  <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1, display: "flex", flexWrap: "wrap", gap: 8 }}>
+                                    {students != null && <span>Enrollment: {Number(students).toLocaleString()}</span>}
+                                    {community && <span>{community}</span>}
+                                    {hasAP && <span style={{ color: "#059669", fontWeight: 600 }}>AP Classes</span>}
+                                    {charter && <span style={{ color: "#7c3aed", fontWeight: 600 }}>Charter</span>}
+                                  </div>
+                                  {/* District info if nested in v4 */}
+                                  {school.district?.schoolDistrictName && (
+                                    <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>
+                                      District: {school.district.schoolDistrictName}
+                                    </div>
+                                  )}
                                 </div>
-                                {(school.enrollment || school.Enrollment) && (
-                                  <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>
-                                    Enrollment: {Number(school.enrollment || school.Enrollment).toLocaleString()}
-                                    {(school.studentTeacherRatio || school.StudentTeacher) ? ` · ${school.studentTeacherRatio || school.StudentTeacher}:1 student-teacher` : ""}
+                                {rating != null && (
+                                  <div style={{
+                                    minWidth: 40, height: 40, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center",
+                                    fontWeight: 800, fontSize: typeof rating === "string" ? 14 : 16, color: "#fff", flexShrink: 0,
+                                    padding: "0 8px", background: ratingBg,
+                                  }}>
+                                    {rating}
                                   </div>
                                 )}
                               </div>
-                              {(school.rating != null || school.SchoolRating != null) && (
-                                <div style={{
-                                  width: 40, height: 40, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
-                                  fontWeight: 800, fontSize: 16, color: "#fff", flexShrink: 0,
-                                  background: (school.rating || school.SchoolRating) >= 8 ? "#059669" : (school.rating || school.SchoolRating) >= 5 ? "#d97706" : "#dc2626",
-                                }}>
-                                  {school.rating || school.SchoolRating}
-                                </div>
-                              )}
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </div>
                     )}
@@ -1013,25 +1117,53 @@ export default function PropertyDetailModal({
                           Points of Interest
                         </h3>
                         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                          {poiList.slice(0, 20).map((poi: any, i: number) => (
-                            <div key={i} style={{ padding: "10px 14px", background: "#f9fafb", borderRadius: 8, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
-                              <div style={{ flex: 1, minWidth: 180 }}>
-                                <div style={{ fontWeight: 600, fontSize: 13, color: "#111827" }}>{poi.name || poi.Name}</div>
-                                <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
-                                  {[
-                                    poi.business_category || poi.businessCategory || poi.lob || poi.industry,
-                                    poi.city,
-                                    poi.distance != null ? `${Number(poi.distance).toFixed(1)} mi` : null,
-                                  ].filter(Boolean).join(" · ")}
-                                </div>
-                                {poi.franchise && (
-                                  <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>
-                                    {poi.franchise}
+                          {poiList.slice(0, 25).map((poi: any, i: number) => {
+                            // v4 fields: name, businessCategory, address, city, stateCode, zipCode,
+                            //            phone, facebookUrl, yelpUrl, operatingHours, industryCode,
+                            //            naicsCode, sicCode, franchiseInd, distance
+                            const poiName = poi.name || poi.Name || poi.businessName;
+                            const category = poi.businessCategory || poi.business_category || poi.categoryName || poi.lob || poi.industry;
+                            const address = poi.address || poi.addressLine1;
+                            const phone = poi.phone || poi.contactPhone;
+                            const facebook = poi.facebookUrl;
+                            const yelp = poi.yelpUrl;
+                            const hours = poi.operatingHours;
+                            const franchise = poi.franchiseInd === "Y" || poi.franchise;
+                            const dist = poi.distance;
+
+                            return (
+                              <div key={i} style={{ padding: "10px 14px", background: "#f9fafb", borderRadius: 8 }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                                  <div style={{ flex: 1, minWidth: 180 }}>
+                                    <div style={{ fontWeight: 600, fontSize: 13, color: "#111827" }}>{poiName}</div>
+                                    <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
+                                      {[
+                                        category,
+                                        poi.city,
+                                        dist != null ? `${Number(dist).toFixed(1)} mi` : null,
+                                      ].filter(Boolean).join(" · ")}
+                                    </div>
+                                    {address && (
+                                      <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>
+                                        {[address, poi.city, poi.stateCode, poi.zipCode].filter(Boolean).join(", ")}
+                                      </div>
+                                    )}
+                                    <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1, display: "flex", flexWrap: "wrap", gap: 8 }}>
+                                      {phone && <span>Tel: {phone}</span>}
+                                      {franchise && <span style={{ color: "#7c3aed", fontWeight: 600 }}>Franchise</span>}
+                                      {hours && <span>Hours: {hours}</span>}
+                                    </div>
+                                    {(facebook || yelp) && (
+                                      <div style={{ fontSize: 11, marginTop: 2, display: "flex", gap: 10 }}>
+                                        {facebook && <a href={facebook} target="_blank" rel="noopener noreferrer" style={{ color: "#3b82f6", textDecoration: "none" }}>Facebook</a>}
+                                        {yelp && <a href={yelp} target="_blank" rel="noopener noreferrer" style={{ color: "#dc2626", textDecoration: "none" }}>Yelp</a>}
+                                      </div>
+                                    )}
                                   </div>
-                                )}
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </div>
                     )}
