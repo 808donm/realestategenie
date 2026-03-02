@@ -13,6 +13,8 @@
 const DEFAULT_BASE_URL =
   "https://api.gateway.attomdata.com/propertyapi/v1.0.0";
 
+const V4_BASE_URL = "https://api.gateway.attomdata.com/v4";
+
 // ── Response types ──────────────────────────────────────────────────────────
 
 export interface AttomAddress {
@@ -572,6 +574,47 @@ export class AttomClient {
   }
 
   /**
+   * Make an authenticated GET request to the ATTOM v4 API
+   * (neighborhood, community, POI, and location endpoints)
+   */
+  private async requestV4<T>(
+    endpoint: string,
+    params?: Record<string, string | number | undefined>
+  ): Promise<T> {
+    const url = new URL(`${V4_BASE_URL}${endpoint}`);
+
+    if (params) {
+      for (const [key, value] of Object.entries(params)) {
+        if (value !== undefined && value !== null && value !== "") {
+          url.searchParams.set(key, String(value));
+        }
+      }
+    }
+
+    console.log(`[ATTOM v4] API request: ${url.toString()}`);
+
+    const response = await fetch(url.toString(), {
+      headers: {
+        Accept: "application/json",
+        apikey: this.apiKey,
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(
+        `[ATTOM v4] API request FAILED (${response.status}) for ${url}:`,
+        errorText
+      );
+      throw new Error(
+        `ATTOM API error: ${response.status} - ${errorText}`
+      );
+    }
+
+    return response.json();
+  }
+
+  /**
    * Build params from AttomSearchParams, filtering out undefined values
    */
   private buildParams(
@@ -885,11 +928,29 @@ export class AttomClient {
   // ── Community / Neighborhood Endpoints ──────────────────────────────────
 
   /**
-   * Get neighborhood community profile by GeoIdV4 or postalcode
+   * Look up a location to obtain its geoIdV4 identifier.
+   * Uses the ATTOM v4 /location/lookup endpoint.
+   */
+  async locationLookup(options: {
+    name?: string;
+    geoIdV4?: string;
+    geographyTypeAbbreviation?: string;
+  }): Promise<any> {
+    const params: Record<string, string | number | undefined> = {};
+    if (options.name) params.name = options.name;
+    if (options.geoIdV4) params.geoIdV4 = options.geoIdV4;
+    if (options.geographyTypeAbbreviation) params.geographyTypeAbbreviation = options.geographyTypeAbbreviation;
+
+    return this.requestV4("/location/lookup", params);
+  }
+
+  /**
+   * Get neighborhood community profile by GeoIdV4.
    * Returns demographics, affordability, appreciation, crime index, etc.
    *
-   * ATTOM docs specify /neighborhood/community with GeoIdV4 parameter.
-   * Falls back to /area/community/profile with postalcode if the primary fails.
+   * ATTOM v4 endpoint: /neighborhood/community?geoIdV4=...
+   * If no geoIdV4 is provided, attempts to resolve one via /location/lookup
+   * using the city name or postal code.
    */
   async getCommunityProfile(
     params: AttomSearchParams
@@ -905,16 +966,62 @@ export class AttomClient {
       delete normalized.geoIDV4;
     }
 
-    // Try /neighborhood/community first (preferred per ATTOM docs)
-    try {
-      const result = await this.request<any>("/neighborhood/community", normalized);
-      if (result && !result.error) return result;
-    } catch (e) {
-      console.log("[ATTOM] /neighborhood/community failed, trying /area/community/profile fallback:", (e as Error).message);
+    // If we don't have a geoIdV4, try to look one up from the address/city
+    if (!normalized.geoIdV4) {
+      try {
+        // Build a location name from address parts
+        const cityState = normalized.address2 || "";
+        const locality = normalized.locality || "";
+        const postalcode = normalized.postalcode || normalized.postalCode || "";
+        const lookupName = cityState || locality || postalcode;
+
+        if (lookupName) {
+          console.log(`[ATTOM] Looking up geoIdV4 for: ${lookupName}`);
+          const lookupResult = await this.requestV4<any>("/location/lookup", { name: String(lookupName) });
+
+          // Extract geoIdV4 from the lookup response
+          const locations = lookupResult?.response?.result?.package?.item
+            || lookupResult?.result?.package?.item
+            || lookupResult?.item
+            || (Array.isArray(lookupResult) ? lookupResult : null);
+
+          const firstLocation = Array.isArray(locations) ? locations[0] : locations;
+          const resolvedGeoId = firstLocation?.geoIdV4 || firstLocation?.geoidv4 || firstLocation?.geoIdV4;
+
+          if (resolvedGeoId) {
+            console.log(`[ATTOM] Resolved geoIdV4: ${resolvedGeoId}`);
+            normalized.geoIdV4 = resolvedGeoId;
+          } else {
+            console.log("[ATTOM] Location lookup returned no geoIdV4:", JSON.stringify(lookupResult).slice(0, 500));
+          }
+        }
+      } catch (e) {
+        console.log("[ATTOM] Location lookup failed:", (e as Error).message);
+      }
     }
 
-    // Fallback to /area/community/profile (accepts postalcode)
-    return this.request("/area/community/profile", normalized);
+    // Call the v4 /neighborhood/community endpoint
+    if (normalized.geoIdV4) {
+      try {
+        const result = await this.requestV4<any>("/neighborhood/community", { geoIdV4: normalized.geoIdV4 });
+        if (result && !result.error) return result;
+      } catch (e) {
+        console.log("[ATTOM] /neighborhood/community (v4) failed:", (e as Error).message);
+      }
+    }
+
+    // Fallback: try the propertyapi /area/community/profile if we have postalcode
+    const postalcode = normalized.postalcode || normalized.postalCode;
+    if (postalcode) {
+      try {
+        console.log("[ATTOM] Trying /area/community/profile fallback with postalcode:", postalcode);
+        return await this.request("/area/community/profile", { postalcode });
+      } catch (e) {
+        console.log("[ATTOM] /area/community/profile fallback also failed:", (e as Error).message);
+      }
+    }
+
+    throw new Error("Unable to fetch community profile: no geoIdV4 resolved and no postalcode fallback available");
   }
 
   /**
@@ -945,17 +1052,52 @@ export class AttomClient {
   }
 
   /**
-   * Get points of interest near a property
+   * Get points of interest near a property.
+   * Uses the ATTOM v4 endpoint: /neighborhood/poi
+   *
+   * Accepts: point (POINT(lng,lat)), radius, address, zipCode,
+   *          categoryName, LineOfBusinessName, IndustryName, categoryId
    */
   async getPOISearch(
     params: AttomSearchParams
   ): Promise<any> {
-    return this.request("/poi/search", this.buildParams(params));
+    const normalized = this.buildParams(params) || {};
+    const v4Params: Record<string, string | number | undefined> = {};
+
+    // Convert lat/lng to POINT(lng,lat) format if present
+    if (normalized.latitude && normalized.longitude) {
+      v4Params.point = `POINT(${normalized.longitude},${normalized.latitude})`;
+    }
+
+    // Map postalcode to zipCode (ATTOM v4 POI uses "zipCode")
+    if (normalized.postalcode || normalized.postalCode) {
+      v4Params.zipCode = normalized.postalcode || normalized.postalCode;
+    }
+
+    // Pass through address
+    if (normalized.address1) {
+      v4Params.address = String(normalized.address1);
+    } else if (normalized.address) {
+      v4Params.address = String(normalized.address);
+    }
+
+    // Pass through radius
+    if (normalized.radius) {
+      v4Params.radius = normalized.radius;
+    }
+
+    // Pass through POI-specific filters
+    if (normalized.categoryName) v4Params.categoryName = normalized.categoryName;
+    if (normalized.LineOfBusinessName) v4Params.LineOfBusinessName = normalized.LineOfBusinessName;
+    if (normalized.IndustryName) v4Params.IndustryName = normalized.IndustryName;
+    if (normalized.categoryId) v4Params.categoryId = normalized.categoryId;
+
+    return this.requestV4("/neighborhood/poi", v4Params);
   }
 
   /**
    * Convenience: fetch a full neighborhood profile for a given address
-   * Combines community data, school search, and POI in parallel
+   * Combines community data (v4), school search, and POI (v4) in parallel
    */
   async getNeighborhoodProfile(options: {
     address1?: string;
@@ -970,8 +1112,9 @@ export class AttomClient {
     schools: any;
     poi: any;
   }> {
-    // Community profile: try geoIdV4, postalcode, and address params.
-    // /neighborhood/community prefers GeoIdV4; fallback /area/community/profile accepts postalcode.
+    // Community profile: uses v4 /neighborhood/community (requires geoIdV4).
+    // getCommunityProfile will attempt to resolve geoIdV4 from address2/postalcode
+    // via /location/lookup if not provided.
     const communityParams: AttomSearchParams = {
       postalcode: options.postalcode,
       geoIdV4: options.geoidv4,
@@ -991,13 +1134,13 @@ export class AttomClient {
       pagesize: 10,
     };
 
-    // POI search supports lat/lng + radius or postalcode
+    // POI search uses v4 /neighborhood/poi — accepts POINT(lng,lat), address, or zipCode
     const poiParams: AttomSearchParams = {
       latitude: options.latitude,
       longitude: options.longitude,
+      address1: options.address1,
       postalcode: options.postalcode,
-      radius: options.radius || 1,
-      pagesize: 10,
+      radius: options.radius || 5,
     };
 
     const [community, schools, poi] = await Promise.allSettled([

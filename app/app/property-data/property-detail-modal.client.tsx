@@ -767,34 +767,49 @@ export default function PropertyDetailModal({
               )}
 
               {neighborhoodData && (() => {
-                // Extract community data — ATTOM returns data in varying formats depending
-                // on endpoint: /neighborhood/community may use "neighborhood" key,
-                // /area/community/profile uses "area" key, or flat object.
-                // Field names may also vary (e.g. "communityname" vs "communityName").
+                // Extract community data — ATTOM returns data in varying formats:
+                // v4 /neighborhood/community: { community: { demographics: {...} } }
+                // /area/community/profile: { area: [...] }
+                // Field names vary: camelCase, snake_case, lowercase.
                 const communityRaw = neighborhoodData.community;
-                const rawObj = communityRaw?.neighborhood?.[0]
+                const rawObj = communityRaw?.community?.demographics
                   || communityRaw?.community?.[0]
+                  || communityRaw?.neighborhood?.[0]
                   || communityRaw?.area?.[0]
                   || (Array.isArray(communityRaw) ? communityRaw[0] : null)
                   || (communityRaw && typeof communityRaw === "object" && !communityRaw.status && !communityRaw.community && !communityRaw.area && !communityRaw.neighborhood ? communityRaw : null);
 
-                // Normalize ATTOM field names — the API may return all-lowercase, camelCase,
-                // or PascalCase. Build a lookup by lowercase key so we can find fields reliably.
+                // Normalize ATTOM field names — v4 uses snake_case (population_density_sq_mi),
+                // older APIs use camelCase (populationDensity). Build lookups by both
+                // lowercase key and underscore-stripped key.
                 const community = rawObj ? (() => {
                   const lookup: Record<string, any> = {};
+                  const addToLookup = (key: string, val: any) => {
+                    const lower = key.toLowerCase();
+                    if (lookup[lower] === undefined) lookup[lower] = val;
+                    // Also store version with underscores removed for snake_case matching
+                    const stripped = lower.replace(/_/g, "");
+                    if (lookup[stripped] === undefined) lookup[stripped] = val;
+                  };
                   for (const [k, v] of Object.entries(rawObj)) {
-                    lookup[k.toLowerCase()] = v;
+                    addToLookup(k, v);
                     // Also check nested demographic/community objects
                     if (v && typeof v === "object" && !Array.isArray(v)) {
                       for (const [nk, nv] of Object.entries(v as Record<string, any>)) {
-                        if (lookup[nk.toLowerCase()] === undefined) lookup[nk.toLowerCase()] = nv;
+                        addToLookup(nk, nv);
                       }
                     }
                   }
+                  // Also extract from parent community object if it has extra fields
+                  if (communityRaw?.community && typeof communityRaw.community === "object") {
+                    for (const [k, v] of Object.entries(communityRaw.community)) {
+                      if (typeof v !== "object") addToLookup(k, v);
+                    }
+                  }
                   return {
-                    communityName: lookup.communityname || lookup.name || lookup.communityname || rawObj.communityName,
+                    communityName: lookup.communityname || lookup.name || rawObj.communityName,
                     population: lookup.population ?? rawObj.population,
-                    populationDensity: lookup.populationdensity ?? rawObj.populationDensity,
+                    populationDensity: lookup.populationdensity ?? lookup.populationdensitysqmi ?? rawObj.populationDensity ?? rawObj.population_density_sq_mi,
                     medianAge: lookup.medianage ?? rawObj.medianAge,
                     medianHouseholdIncome: lookup.medianhouseholdincome ?? rawObj.medianHouseholdIncome,
                     medianHomePrice: lookup.medianhomeprice ?? rawObj.medianHomePrice,
@@ -803,7 +818,7 @@ export default function PropertyDetailModal({
                     ownerOccupiedPct: lookup.owneroccupiedpct ?? rawObj.ownerOccupiedPct,
                     renterOccupiedPct: lookup.renteroccupiedpct ?? rawObj.renterOccupiedPct,
                     employmentGrowthRate: lookup.employmentgrowthrate ?? rawObj.employmentGrowthRate,
-                    populationGrowth: lookup.populationgrowth ?? rawObj.populationGrowth,
+                    populationGrowth: lookup.populationgrowth ?? lookup.populationchgpct2010 ?? rawObj.populationGrowth ?? rawObj.population_chg_pct_2010,
                     avgSchoolRating: lookup.avgschoolrating ?? rawObj.avgSchoolRating,
                     walkScore: lookup.walkscore ?? rawObj.walkScore,
                     bikeScore: lookup.bikescore ?? rawObj.bikeScore,
@@ -811,6 +826,7 @@ export default function PropertyDetailModal({
                     commuteTime: lookup.commutetime ?? rawObj.commuteTime,
                     crimeIndex: lookup.crimeindex ?? rawObj.crimeIndex,
                     crimeRisk: lookup.crimerisk ?? rawObj.crimeRisk,
+                    population5YrProjection: lookup.population5yrprojection ?? rawObj.population_5_yr_projection,
                   };
                 })() : null;
 
@@ -819,8 +835,16 @@ export default function PropertyDetailModal({
                 const schools = schoolsRaw?.school || (Array.isArray(schoolsRaw) ? schoolsRaw : []);
                 const schoolList = Array.isArray(schools) ? schools : [];
 
+                // Extract POI data — v4 returns { response: { result: { package: { item: [...] } } } }
+                const poiRaw = neighborhoodData.poi;
+                const poiItems = poiRaw?.response?.result?.package?.item
+                  || poiRaw?.result?.package?.item
+                  || poiRaw?.poi
+                  || (Array.isArray(poiRaw) ? poiRaw : []);
+                const poiList = Array.isArray(poiItems) ? poiItems : poiItems ? [poiItems] : [];
+
                 // If all data sources returned null, show a helpful message
-                if (!community && schoolList.length === 0) {
+                if (!community && schoolList.length === 0 && poiList.length === 0) {
                   return (
                     <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>
                       No neighborhood data found for this property. This may occur if the area is not covered by the community data provider.
@@ -936,6 +960,36 @@ export default function PropertyDetailModal({
                                   {school.rating || school.SchoolRating}
                                 </div>
                               )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Points of Interest */}
+                    {poiList.length > 0 && (
+                      <div style={{ marginBottom: 20 }}>
+                        <h3 style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 10, paddingBottom: 6, borderBottom: "1px solid #e5e7eb" }}>
+                          Points of Interest
+                        </h3>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                          {poiList.slice(0, 20).map((poi: any, i: number) => (
+                            <div key={i} style={{ padding: "10px 14px", background: "#f9fafb", borderRadius: 8, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+                              <div style={{ flex: 1, minWidth: 180 }}>
+                                <div style={{ fontWeight: 600, fontSize: 13, color: "#111827" }}>{poi.name || poi.Name}</div>
+                                <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
+                                  {[
+                                    poi.business_category || poi.businessCategory || poi.lob || poi.industry,
+                                    poi.city,
+                                    poi.distance != null ? `${Number(poi.distance).toFixed(1)} mi` : null,
+                                  ].filter(Boolean).join(" · ")}
+                                </div>
+                                {poi.franchise && (
+                                  <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>
+                                    {poi.franchise}
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           ))}
                         </div>
