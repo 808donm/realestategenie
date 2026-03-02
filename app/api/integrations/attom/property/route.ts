@@ -126,9 +126,17 @@ export async function GET(request: NextRequest) {
       if (val) params[key] = Number(val);
     }
 
-    // Default pagination
+    // Default pagination (only for endpoints that support it)
     if (!params.pagesize) params.pagesize = 25;
     if (!params.page) params.page = 1;
+
+    // Valuation endpoints (/valuation/rentalavm, /valuation/homeequity) reject
+    // pagination params. Strip them before calling these endpoints.
+    const noPaginationEndpoints = ["rentalavm", "homeequity"];
+    if (noPaginationEndpoints.includes(endpoint)) {
+      delete params.pagesize;
+      delete params.page;
+    }
 
     const client = await getAttomClient();
 
