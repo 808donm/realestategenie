@@ -163,6 +163,13 @@ export interface AttomAssessment {
     taxPerSizeUnit?: number;
     taxYear?: number;
   };
+  // expandedprofile nests owner & mortgage inside assessment
+  owner?: AttomOwner;
+  mortgage?: {
+    FirstConcurrent?: AttomMortgage;
+    SecondConcurrent?: AttomMortgage;
+    title?: { companyName?: string };
+  };
 }
 
 export interface AttomSale {
@@ -402,6 +409,42 @@ export interface AttomPropertyDetail {
   mortgage?: AttomMortgage;
   avm?: AttomAvm;
   foreclosure?: AttomForeclosure;
+}
+
+/**
+ * Normalize ATTOM property data from expandedprofile responses.
+ * The expandedprofile endpoint nests owner & mortgage data inside
+ * `assessment.owner` and `assessment.mortgage` instead of at the top level.
+ * This function promotes those nested fields to top-level `owner` and `mortgage`
+ * when the top-level fields are missing/empty.
+ */
+export function normalizeAttomProperty(property: AttomPropertyDetail): AttomPropertyDetail {
+  const result = { ...property };
+
+  // Promote assessment.owner -> owner when top-level owner is empty
+  const assessmentOwner = result.assessment?.owner;
+  if (assessmentOwner) {
+    const topOwner = result.owner;
+    const hasTopOwner = topOwner?.owner1?.fullName || topOwner?.owner2?.fullName
+      || topOwner?.corporateIndicator || topOwner?.mailingAddressOneLine;
+
+    if (!hasTopOwner) {
+      result.owner = { ...assessmentOwner, ...topOwner };
+    }
+  }
+
+  // Promote assessment.mortgage.FirstConcurrent -> mortgage when top-level mortgage is empty
+  const assessmentMortgage = result.assessment?.mortgage;
+  if (assessmentMortgage?.FirstConcurrent) {
+    const topMortgage = result.mortgage;
+    const hasTopMortgage = topMortgage?.amount || topMortgage?.lender?.fullName;
+
+    if (!hasTopMortgage) {
+      result.mortgage = { ...assessmentMortgage.FirstConcurrent, ...topMortgage };
+    }
+  }
+
+  return result;
 }
 
 export interface AttomApiResponse<T> {

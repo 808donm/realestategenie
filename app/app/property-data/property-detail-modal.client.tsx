@@ -25,8 +25,11 @@ interface AttomProperty {
   };
   lot?: { lotSize1?: number; lotSize2?: number; lotNum?: string; poolInd?: string; poolType?: string; siteZoningIdent?: string };
   owner?: {
-    owner1?: { fullName?: string }; owner2?: { fullName?: string }; owner3?: { fullName?: string }; owner4?: { fullName?: string };
-    corporateIndicator?: string; absenteeOwnerStatus?: string; mailingAddressOneLine?: string; ownerOccupied?: string;
+    owner1?: { fullName?: string; lastName?: string; firstNameAndMi?: string; trustIndicator?: string };
+    owner2?: { fullName?: string; lastName?: string; firstNameAndMi?: string; trustIndicator?: string };
+    owner3?: { fullName?: string; lastName?: string; firstNameAndMi?: string };
+    owner4?: { fullName?: string; lastName?: string; firstNameAndMi?: string };
+    corporateIndicator?: string; type?: string; absenteeOwnerStatus?: string; mailingAddressOneLine?: string; ownerOccupied?: string;
     ownerRelationshipType?: string; ownerRelationshipRights?: string;
   };
   assessment?: {
@@ -34,6 +37,8 @@ interface AttomProperty {
     assessed?: { assdTtlValue?: number; assdImprValue?: number; assdLandValue?: number };
     market?: { mktTtlValue?: number; mktImprValue?: number; mktLandValue?: number };
     tax?: { taxAmt?: number; taxPerSizeUnit?: number; taxYear?: number };
+    // expandedprofile nests owner here (promoted to top-level by API normalization)
+    owner?: AttomProperty["owner"];
   };
   sale?: { amount?: { saleAmt?: number; saleTransDate?: string; saleRecDate?: string; saleDocType?: string; salePrice?: number; saleCode?: string; pricePerBed?: number; pricePerSizeUnit?: number } };
   avm?: { amount?: { value?: number; high?: number; low?: number; scr?: number; valueRange?: number }; eventDate?: string };
@@ -1137,7 +1142,9 @@ export default function PropertyDetailModal({
                 <Field label="Owner 2" value={p.owner?.owner2?.fullName} />
                 <Field label="Owner 3" value={p.owner?.owner3?.fullName} />
                 <Field label="Owner 4" value={p.owner?.owner4?.fullName} />
+                <Field label="Owner Type" value={p.owner?.type} />
                 <Field label="Corporate" value={p.owner?.corporateIndicator === "Y" ? "Yes" : p.owner?.corporateIndicator === "N" ? "No" : undefined} />
+                <Field label="Mailing Address" value={p.owner?.mailingAddressOneLine} />
                 <Field label="Relationship" value={p.owner?.ownerRelationshipType} />
                 <Field label="Rights" value={p.owner?.ownerRelationshipRights} />
                 {qpubLink && (

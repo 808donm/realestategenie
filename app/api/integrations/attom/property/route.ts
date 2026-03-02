@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { AttomClient, createAttomClient } from "@/lib/integrations/attom-client";
+import { AttomClient, createAttomClient, normalizeAttomProperty } from "@/lib/integrations/attom-client";
 
 /**
  * Helper: get a working ATTOM client (from DB config or env var)
@@ -291,6 +291,14 @@ export async function GET(request: NextRequest) {
 
       default:
         result = await client.getPropertyExpandedProfile(params);
+    }
+
+    // Normalize property data: expandedprofile nests owner/mortgage inside assessment
+    if (result?.property && Array.isArray(result.property)) {
+      result = {
+        ...result,
+        property: result.property.map(normalizeAttomProperty),
+      };
     }
 
     return NextResponse.json({

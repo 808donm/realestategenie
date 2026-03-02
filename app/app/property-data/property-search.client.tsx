@@ -19,7 +19,10 @@ interface AttomProperty {
   };
   lot?: { lotSize1?: number; lotSize2?: number; poolInd?: string; siteZoningIdent?: string };
   owner?: {
-    owner1?: { fullName?: string }; owner2?: { fullName?: string };
+    owner1?: { fullName?: string; lastName?: string; firstNameAndMi?: string };
+    owner2?: { fullName?: string; lastName?: string; firstNameAndMi?: string };
+    owner3?: { fullName?: string }; owner4?: { fullName?: string };
+    corporateIndicator?: string; type?: string;
     absenteeOwnerStatus?: string; mailingAddressOneLine?: string; ownerOccupied?: string;
   };
   assessment?: {
