@@ -274,7 +274,7 @@ export default function PropertyDetailModal({
       .finally(() => setNeighborhoodLoading(false));
   }, [activeSection, neighborhoodData, neighborhoodLoading, p]);
 
-  // Fetch enriched financial data (AVM history, rental AVM, sales history, mortgage detail)
+  // Fetch enriched financial data (AVM history, rental AVM, sales history, mortgage detail, home equity)
   // when Financial tab is selected — makes parallel calls for each additional endpoint
   useEffect(() => {
     if (activeSection !== "financial" || enrichedFinancial || enrichedFinancialLoading) return;
@@ -298,17 +298,32 @@ export default function PropertyDetailModal({
       return params;
     };
 
+    // Also build sales trend params using geoIdV4 from property data
+    const geoId = findGeoIdV4(p);
+    const salesTrendParams = new URLSearchParams({ endpoint: "salestrend" });
+    if (geoId) salesTrendParams.set("geoIdV4", geoId);
+    else if (p.address?.postal1) salesTrendParams.set("postalcode", p.address.postal1);
+    const currentYear = new Date().getFullYear();
+    salesTrendParams.set("interval", "quarterly");
+    salesTrendParams.set("startyear", String(currentYear - 3));
+    salesTrendParams.set("endyear", String(currentYear));
+    salesTrendParams.set("propertytype", "SINGLE FAMILY RESIDENCE");
+
     Promise.allSettled([
       fetch(`/api/integrations/attom/property?${buildParams("avmhistory")}`).then(r => r.json()),
       fetch(`/api/integrations/attom/property?${buildParams("rentalavm")}`).then(r => r.json()),
       fetch(`/api/integrations/attom/property?${buildParams("saleshistory")}`).then(r => r.json()),
       fetch(`/api/integrations/attom/property?${buildParams("detailmortgage")}`).then(r => r.json()),
-    ]).then(([avmHistory, rentalAvm, salesHistory, mortgageDetail]) => {
+      fetch(`/api/integrations/attom/property?${buildParams("homeequity")}`).then(r => r.json()),
+      fetch(`/api/integrations/attom/property?${salesTrendParams}`).then(r => r.json()),
+    ]).then(([avmHistory, rentalAvm, salesHistory, mortgageDetail, homeEquity, salesTrends]) => {
       setEnrichedFinancial({
         avmHistory: avmHistory.status === "fulfilled" && !avmHistory.value?.error ? avmHistory.value : null,
         rentalAvm: rentalAvm.status === "fulfilled" && !rentalAvm.value?.error ? rentalAvm.value : null,
         salesHistory: salesHistory.status === "fulfilled" && !salesHistory.value?.error ? salesHistory.value : null,
         mortgageDetail: mortgageDetail.status === "fulfilled" && !mortgageDetail.value?.error ? mortgageDetail.value : null,
+        homeEquity: homeEquity.status === "fulfilled" && !homeEquity.value?.error ? homeEquity.value : null,
+        salesTrends: salesTrends.status === "fulfilled" && !salesTrends.value?.error ? salesTrends.value : null,
       });
     }).finally(() => setEnrichedFinancialLoading(false));
   }, [activeSection, enrichedFinancial, enrichedFinancialLoading, p]);
@@ -735,13 +750,18 @@ export default function PropertyDetailModal({
 
               {/* Rental AVM — rental value estimate */}
               {enrichedFinancial?.rentalAvm && (() => {
-                const prop = enrichedFinancial.rentalAvm.property?.[0] || enrichedFinancial.rentalAvm;
-                const rental = prop?.avm || prop?.rentalAvm;
+                const resp = enrichedFinancial.rentalAvm;
+                const prop = resp.property?.[0] || resp;
+                // ATTOM returns rental data under various paths depending on endpoint version
+                const rental = prop?.rentalAVM || prop?.rentalAvm || prop?.rentalavm || prop?.avm;
                 if (!rental) return null;
-                const rentAmt = rental.amount || rental;
+                // The amount object may be nested under .amount, .rentalAmount, or directly on the rental object
+                const rentAmt = rental.rentalAmount || rental.amount || rental;
+                if (rentAmt.value == null && rentAmt.low == null && rentAmt.high == null) return null;
+                const eventDate = rental.eventDate || rental.calculatedDate;
                 return (
                   <div style={{ marginBottom: 20, padding: "14px 18px", background: "#fef3c7", borderRadius: 10, border: "1px solid #fcd34d" }}>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: "#a16207", textTransform: "uppercase", letterSpacing: 0.5 }}>Rental Value Estimate</div>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: "#a16207", textTransform: "uppercase", letterSpacing: 0.5 }}>Rental Value Estimate (Rental AVM)</div>
                     <div style={{ display: "flex", gap: 20, marginTop: 6, flexWrap: "wrap" }}>
                       {rentAmt.value != null && (
                         <div>
@@ -753,35 +773,49 @@ export default function PropertyDetailModal({
                           Range: {rentAmt.low != null ? `$${Number(rentAmt.low).toLocaleString()}` : "?"} – {rentAmt.high != null ? `$${Number(rentAmt.high).toLocaleString()}` : "?"}
                         </div>
                       )}
+                      {rentAmt.scr != null && (
+                        <div style={{ fontSize: 12, color: "#92400e", alignSelf: "flex-end" }}>
+                          Confidence: {rentAmt.scr}
+                        </div>
+                      )}
                     </div>
-                    {rental.eventDate && <div style={{ fontSize: 11, color: "#a16207", marginTop: 4 }}>As of {rental.eventDate}</div>}
+                    {eventDate && <div style={{ fontSize: 11, color: "#a16207", marginTop: 4 }}>As of {eventDate}</div>}
                   </div>
                 );
               })()}
 
               {/* Mortgage Detail — enriched from detailmortgage endpoint */}
               {enrichedFinancial?.mortgageDetail && (() => {
-                const prop = enrichedFinancial.mortgageDetail.property?.[0] || enrichedFinancial.mortgageDetail;
+                const resp = enrichedFinancial.mortgageDetail;
+                const prop = resp.property?.[0] || resp;
                 // ATTOM can return multiple mortgages (first, second, equity line)
-                const m1 = prop?.mortgage?.firstConcurrent || prop?.mortgage;
-                const m2 = prop?.mortgage?.secondConcurrent;
+                const mortgageRoot = prop?.mortgage;
+                const m1 = mortgageRoot?.firstConcurrent || mortgageRoot;
+                const m2 = mortgageRoot?.secondConcurrent;
+                const m3 = mortgageRoot?.thirdConcurrent || mortgageRoot?.equityLine;
+                // Borrower info may be at mortgage root level
+                const borrower1 = mortgageRoot?.borrower1 || m1?.borrower1;
+                const borrower2 = mortgageRoot?.borrower2 || m1?.borrower2;
                 if (!m1 && !m2) return null;
 
                 const renderMortgage = (m: any, title: string) => {
                   if (!m) return null;
-                  const amt = m.amount ?? m.loanAmount;
+                  const amt = m.amount ?? m.loanAmount ?? m.loanAmt;
+                  const hasData = amt != null || m.lender?.fullName || m.companyName || m.loanType;
+                  if (!hasData) return null;
                   return (
                     <Section title={title}>
                       <Field label="Loan Amount" value={amt != null ? fmt(Number(amt)) : undefined} />
-                      <Field label="Lender" value={m.lender?.fullName || m.companyName} />
+                      <Field label="Lender" value={m.lender?.fullName || m.companyName || m.lenderName} />
                       <Field label="Loan Type" value={m.loanType || m.loanTypeCode} />
                       <Field label="Interest Rate" value={m.interestRate != null ? `${m.interestRate}%` : undefined} />
                       <Field label="Rate Type" value={m.interestRateType} />
                       <Field label="Term" value={m.term} />
                       <Field label="Due Date" value={m.dueDate} />
                       <Field label="Origination Date" value={m.date || m.recordingDate} />
-                      <Field label="Document Number" value={m.documentNumber} />
+                      <Field label="Document Number" value={m.documentNumber || m.docNumber} />
                       <Field label="Deed Type" value={m.deedType} />
+                      <Field label="Title Company" value={m.titleCompanyName || m.titleCompany} />
                     </Section>
                   );
                 };
@@ -790,6 +824,14 @@ export default function PropertyDetailModal({
                   <>
                     {renderMortgage(m1, "First Mortgage (Detailed)")}
                     {renderMortgage(m2, "Second Mortgage / Equity Line")}
+                    {renderMortgage(m3, "Third Mortgage / Equity Line")}
+                    {(borrower1?.fullName || borrower2?.fullName) && (
+                      <Section title="Mortgage Borrower">
+                        <Field label="Borrower 1" value={borrower1?.fullName || [borrower1?.firstNameAndMi, borrower1?.lastName].filter(Boolean).join(" ")} />
+                        <Field label="Borrower 2" value={borrower2?.fullName || [borrower2?.firstNameAndMi, borrower2?.lastName].filter(Boolean).join(" ")} />
+                        <Field label="Vesting" value={mortgageRoot?.borrowerVesting} />
+                      </Section>
+                    )}
                   </>
                 );
               })()}
@@ -909,6 +951,119 @@ export default function PropertyDetailModal({
                   </div>
                 );
               })()}
+
+              {/* Home Equity — estimated equity position */}
+              {enrichedFinancial?.homeEquity && (() => {
+                const resp = enrichedFinancial.homeEquity;
+                const prop = resp.property?.[0] || resp;
+                const he = prop?.homeEquity || prop?.valuation || prop;
+                const avmValue = he?.avmValue ?? he?.avm?.amount?.value ?? he?.estimatedValue;
+                const loanBalance = he?.outstandingBalance ?? he?.loanBalance ?? he?.mortgageBalance ?? he?.estimatedBalance;
+                const equityAmount = he?.equity ?? he?.equityAmount ?? (avmValue != null && loanBalance != null ? avmValue - loanBalance : null);
+                const ltv = he?.loanToValue ?? he?.ltv ?? (avmValue && loanBalance ? (loanBalance / avmValue * 100) : null);
+
+                if (avmValue == null && loanBalance == null && equityAmount == null) return null;
+
+                const isPositive = equityAmount != null ? equityAmount >= 0 : true;
+
+                return (
+                  <div style={{ marginBottom: 20, padding: "14px 18px", background: isPositive ? "#ecfdf5" : "#fef2f2", borderRadius: 10, border: `1px solid ${isPositive ? "#a7f3d0" : "#fecaca"}` }}>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: isPositive ? "#059669" : "#dc2626", textTransform: "uppercase", letterSpacing: 0.5 }}>Home Equity Analysis</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12, marginTop: 8 }}>
+                      {avmValue != null && (
+                        <div>
+                          <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 500 }}>Estimated Value</div>
+                          <div style={{ fontSize: 16, fontWeight: 700, color: "#111827" }}>{fmt(avmValue)}</div>
+                        </div>
+                      )}
+                      {loanBalance != null && (
+                        <div>
+                          <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 500 }}>Est. Loan Balance</div>
+                          <div style={{ fontSize: 16, fontWeight: 700, color: "#111827" }}>{fmt(loanBalance)}</div>
+                        </div>
+                      )}
+                      {equityAmount != null && (
+                        <div>
+                          <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 500 }}>Est. Equity</div>
+                          <div style={{ fontSize: 16, fontWeight: 700, color: isPositive ? "#059669" : "#dc2626" }}>
+                            {equityAmount >= 0 ? "+" : ""}{fmt(equityAmount)}
+                          </div>
+                        </div>
+                      )}
+                      {ltv != null && (
+                        <div>
+                          <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 500 }}>Loan-to-Value</div>
+                          <div style={{ fontSize: 16, fontWeight: 700, color: ltv > 80 ? "#dc2626" : "#059669" }}>
+                            {Number(ltv).toFixed(1)}%
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Market Sales Trends — from v4 transaction/salestrends */}
+              {enrichedFinancial?.salesTrends && (() => {
+                const resp = enrichedFinancial.salesTrends;
+                const trendsList: any[] = resp.salesTrends || resp.salestrend || [];
+                if (trendsList.length === 0) return null;
+
+                const areaName = trendsList[0]?.location?.geographyName;
+                const recent = trendsList.slice(-12);
+                const firstMed = recent[0]?.salesTrend?.medSalePrice;
+                const lastMed = recent[recent.length - 1]?.salesTrend?.medSalePrice;
+                const priceChange = (firstMed && lastMed) ? ((lastMed - firstMed) / firstMed * 100) : null;
+
+                return (
+                  <div style={{ marginBottom: 20 }}>
+                    <h3 style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 4, paddingBottom: 6, borderBottom: "1px solid #e5e7eb" }}>
+                      Area Market Trends
+                    </h3>
+                    {areaName && (
+                      <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}>
+                        Area: {areaName}
+                        {priceChange != null && (
+                          <span style={{ marginLeft: 12, fontWeight: 600, color: priceChange >= 0 ? "#059669" : "#dc2626" }}>
+                            {priceChange >= 0 ? "+" : ""}{priceChange.toFixed(1)}% median price change
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    <div style={{ overflowX: "auto" }}>
+                      <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
+                        <thead>
+                          <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
+                            <th style={{ textAlign: "left", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Period</th>
+                            <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Median Price</th>
+                            <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Avg Price</th>
+                            <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Sales</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {recent.map((t: any, i: number) => {
+                            const period = t.dateRange?.start || t.dateRange?.interval || "";
+                            const st = t.salesTrend || t;
+                            return (
+                              <tr key={i} style={{ borderBottom: "1px solid #f3f4f6", background: i % 2 === 0 ? "#fff" : "#f9fafb" }}>
+                                <td style={{ padding: "6px 8px", fontWeight: 500 }}>{period}</td>
+                                <td style={{ padding: "6px 8px", textAlign: "right" }}>{st.medSalePrice != null ? `$${Number(st.medSalePrice).toLocaleString()}` : "—"}</td>
+                                <td style={{ padding: "6px 8px", textAlign: "right" }}>{st.avgSalePrice != null ? `$${Number(st.avgSalePrice).toLocaleString()}` : "—"}</td>
+                                <td style={{ padding: "6px 8px", textAlign: "right" }}>{st.homeSaleCount ?? "—"}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                    {trendsList[0]?.vintage?.pubDate && (
+                      <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 6 }}>
+                        Data published: {trendsList[0].vintage.pubDate}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </>
             );
           })()}
@@ -1013,10 +1168,13 @@ export default function PropertyDetailModal({
               )}
 
               {enrichedOwner && (() => {
-                const eo = enrichedOwner.owner || enrichedOwner;
-                // Check for fields beyond what we already show
-                const hasExtra = eo?.owner1?.lastName || eo?.mailingAddressOneLine || eo?.owner1?.firstNameAndMi;
-                if (!hasExtra) return null;
+                // The detailmortgageowner response wraps data in { property: [{ owner, mortgage, ... }] }
+                // or the prop-level fields may already be extracted
+                const ownerProp = enrichedOwner.property?.[0] || enrichedOwner;
+                const eo = ownerProp?.owner || enrichedOwner.owner || enrichedOwner;
+                const anyOwner = eo?.owner1?.fullName || eo?.owner1?.lastName || eo?.owner2?.fullName
+                  || eo?.mailingAddressOneLine || eo?.absenteeOwnerStatus || eo?.corporateIndicator;
+                if (!anyOwner) return null;
                 return (
                   <Section title="Detailed Owner Information">
                     {[1, 2, 3, 4].map((n) => {
@@ -1041,32 +1199,36 @@ export default function PropertyDetailModal({
               })()}
 
               {/* Mortgage lender info from enriched owner (detailmortgageowner) */}
-              {enrichedOwner?.mortgage && (() => {
-                const m = enrichedOwner.mortgage;
+              {enrichedOwner && (() => {
+                // Handle both property[0].mortgage and direct .mortgage paths
+                const ownerProp = enrichedOwner.property?.[0] || enrichedOwner;
+                const m = ownerProp?.mortgage || enrichedOwner?.mortgage;
+                if (!m) return null;
                 const m1 = m.firstConcurrent || m;
                 const m2 = m.secondConcurrent;
-                const hasData = m1?.lender?.fullName || m1?.companyName || m1?.amount || m2;
+                const hasData = m1?.lender?.fullName || m1?.companyName || m1?.lenderName || m1?.amount || m2;
                 if (!hasData) return null;
 
                 return (
                   <>
-                    {m1 && (m1.lender?.fullName || m1.companyName || m1.amount) && (
+                    {m1 && (m1.lender?.fullName || m1.companyName || m1.lenderName || m1.amount) && (
                       <Section title="Current Mortgage Holder">
-                        <Field label="Lender" value={m1.lender?.fullName || m1.companyName} />
+                        <Field label="Lender" value={m1.lender?.fullName || m1.companyName || m1.lenderName} />
                         <Field label="Loan Amount" value={m1.amount != null ? fmt(Number(m1.amount)) : undefined} />
-                        <Field label="Loan Type" value={m1.loanType} />
+                        <Field label="Loan Type" value={m1.loanType || m1.loanTypeCode} />
                         <Field label="Interest Rate" value={m1.interestRate != null ? `${m1.interestRate}%` : undefined} />
                         <Field label="Rate Type" value={m1.interestRateType} />
                         <Field label="Term" value={m1.term} />
                         <Field label="Origination" value={m1.date || m1.recordingDate} />
                         <Field label="Due Date" value={m1.dueDate} />
+                        <Field label="Document Number" value={m1.documentNumber || m1.docNumber} />
                       </Section>
                     )}
-                    {m2 && (m2.lender?.fullName || m2.companyName || m2.amount) && (
+                    {m2 && (m2.lender?.fullName || m2.companyName || m2.lenderName || m2.amount) && (
                       <Section title="Second Mortgage / Equity Line">
-                        <Field label="Lender" value={m2.lender?.fullName || m2.companyName} />
+                        <Field label="Lender" value={m2.lender?.fullName || m2.companyName || m2.lenderName} />
                         <Field label="Loan Amount" value={m2.amount != null ? fmt(Number(m2.amount)) : undefined} />
-                        <Field label="Loan Type" value={m2.loanType} />
+                        <Field label="Loan Type" value={m2.loanType || m2.loanTypeCode} />
                         <Field label="Interest Rate" value={m2.interestRate != null ? `${m2.interestRate}%` : undefined} />
                         <Field label="Origination" value={m2.date || m2.recordingDate} />
                       </Section>
