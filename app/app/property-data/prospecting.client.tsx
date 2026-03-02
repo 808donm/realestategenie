@@ -673,6 +673,10 @@ export default function Prospecting() {
             fetches.push(
               fetchPage(pg, "expanded").catch(() => ({ property: [] }))
             );
+            // Also fetch detailowner for full owner names and mailing addresses
+            fetches.push(
+              fetchPage(pg, "detailowner").catch(() => ({ property: [] }))
+            );
           } else if (mode === "absentee") {
             // Absentee mode: supplement with both expanded (for AVM/assessment)
             // and detailowner (sometimes returns owner names that
@@ -686,8 +690,12 @@ export default function Prospecting() {
           } else {
             // Other modes: primary = detailmortgageowner, supplement with
             // expanded to get AVM values, assessment details, building info
+            // and detailowner to get full owner names, mailing addresses
             fetches.push(
               fetchPage(pg, "expanded").catch(() => ({ property: [] }))
+            );
+            fetches.push(
+              fetchPage(pg, "detailowner").catch(() => ({ property: [] }))
             );
           }
 
@@ -998,6 +1006,18 @@ export default function Prospecting() {
                 </span>
               )}
             </div>
+            {/* Additional owners (owner 2, 3, 4) */}
+            {prop.owner?.owner2?.fullName && (
+              <div style={{ fontSize: 12, color: "#6b7280", marginTop: 1 }}>
+                Owner 2: {prop.owner.owner2.fullName}
+              </div>
+            )}
+            {prop.owner?.owner3?.fullName && (
+              <div style={{ fontSize: 12, color: "#6b7280", marginTop: 1 }}>
+                Owner 3: {prop.owner.owner3.fullName}
+              </div>
+            )}
+
             {/* Always show mailing address if available — key contact point for absentee owners.
                 Falls back to mortgagor (borrower) address from mortgage record. */}
             {mailingAddr && (
@@ -1005,6 +1025,35 @@ export default function Prospecting() {
                 {prop.owner?.mailingAddressOneLine ? "Mailing" : "Mortgagor Address"}: {mailingAddr}
               </div>
             )}
+
+            {/* Ownership & sale intel summary — always visible */}
+            {(prop.owner?.absenteeOwnerStatus || prop.summary?.absenteeInd || yearsOwned != null || saleDateStr || prop.owner?.ownerRelationshipType) && (
+              <div style={{ marginTop: 4, display: "flex", flexWrap: "wrap", gap: 8, fontSize: 11, color: "#6b7280" }}>
+                {(() => {
+                  const occ = (prop.owner?.absenteeOwnerStatus || "").toUpperCase();
+                  const ind = (prop.summary?.absenteeInd || "").toUpperCase();
+                  if (occ.includes("ABSENTEE") || ind.includes("ABSENTEE") || ind === "A") {
+                    return <span style={{ padding: "1px 6px", background: "#fef3c7", color: "#92400e", borderRadius: 4, fontWeight: 500 }}>Absentee Owner</span>;
+                  }
+                  if (occ.includes("OWNER") || ind.includes("OWNER OCC") || ind === "O" || ind === "S") {
+                    return <span style={{ padding: "1px 6px", background: "#ecfdf5", color: "#059669", borderRadius: 4, fontWeight: 500 }}>Owner Occupied</span>;
+                  }
+                  return null;
+                })()}
+                {yearsOwned != null && yearsOwned > 0 && (
+                  <span style={{ padding: "1px 6px", background: "#f0f9ff", color: "#0369a1", borderRadius: 4, fontWeight: 500 }}>
+                    Owned {yearsOwned} yr{yearsOwned !== 1 ? "s" : ""}
+                  </span>
+                )}
+                {prop.owner?.ownerRelationshipType && (
+                  <span>{prop.owner.ownerRelationshipType}</span>
+                )}
+                {saleDateStr && !lastSale && (
+                  <span>Last transfer: {saleDateStr}</span>
+                )}
+              </div>
+            )}
+
             {qpubTmk && qpubUrl && (
               <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2, display: "flex", alignItems: "center", gap: 6 }}>
                 <span style={{ fontFamily: "monospace", fontWeight: 600, color: "#374151" }}>TMK: {qpubTmk}</span>
@@ -1027,6 +1076,9 @@ export default function Prospecting() {
               )}
               {lastSale != null && (
                 <span><strong>Last Sale:</strong> {fmt(lastSale)}{saleDateStr ? ` (${saleDateStr})` : ""}</span>
+              )}
+              {!lastSale && saleDateStr && (
+                <span><strong>Last Transfer:</strong> {saleDateStr} (price not disclosed)</span>
               )}
               {mortgageAmt != null && (
                 <span><strong>Mortgage:</strong> {fmt(mortgageAmt)}{lenderName ? ` — ${lenderName}` : ""}</span>
