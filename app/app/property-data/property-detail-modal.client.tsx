@@ -62,6 +62,27 @@ function Field({ label, value }: { label: string; value?: string | number | null
   );
 }
 
+/**
+ * Deep-search a property object for any geoIdV4 value.
+ * ATTOM v4 property responses embed geoIdV4 in various locations
+ * (area, identifier, location, etc.).
+ */
+function findGeoIdV4(obj: any, depth = 0): string | null {
+  if (!obj || typeof obj !== "object" || depth > 6) return null;
+  // Check common field name variants at current level
+  for (const key of ["geoIdV4", "geoidv4", "geoIDV4", "GeoIdV4", "geo_id_v4"]) {
+    if (obj[key] && typeof obj[key] === "string") return obj[key];
+  }
+  // Recurse into nested objects (skip arrays of primitives)
+  for (const value of Object.values(obj)) {
+    if (value && typeof value === "object") {
+      const found = findGeoIdV4(value, depth + 1);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
 export default function PropertyDetailModal({
   property: p,
   searchContext,
@@ -218,13 +239,21 @@ export default function PropertyDetailModal({
     const params = new URLSearchParams({ endpoint: "neighborhood" });
     if (addr1) params.set("address1", addr1);
     if (city && state) params.set("address2", `${city}, ${state}`);
+    else if (city) params.set("address2", city);
     if (zip) params.set("postalcode", zip);
     if (p.location?.latitude) params.set("latitude", p.location.latitude);
     if (p.location?.longitude) params.set("longitude", p.location.longitude);
 
+    // Extract geoIdV4 from property data if available (ATTOM v4 embeds it in responses)
+    const geoId = findGeoIdV4(p);
+    if (geoId) params.set("geoidv4", geoId);
+
+    console.log("[Neighborhood] Fetching with params:", Object.fromEntries(params));
+
     fetch(`/api/integrations/attom/property?${params}`)
       .then((r) => r.json())
       .then((data) => {
+        console.log("[Neighborhood] Raw API response keys:", data ? Object.keys(data) : "null");
         if (data && !data.error) {
           setNeighborhoodData(data);
         } else {
@@ -769,15 +798,20 @@ export default function PropertyDetailModal({
               {neighborhoodData && (() => {
                 // Extract community data — ATTOM returns data in varying formats:
                 // v4 /neighborhood/community: { community: { demographics: {...} } }
+                // v4 wrapped: { response: { result: { community: { demographics: {...} } } } }
                 // /area/community/profile: { area: [...] }
                 // Field names vary: camelCase, snake_case, lowercase.
                 const communityRaw = neighborhoodData.community;
                 const rawObj = communityRaw?.community?.demographics
+                  || communityRaw?.response?.result?.community?.demographics
+                  || communityRaw?.response?.community?.demographics
+                  || communityRaw?.demographics
                   || communityRaw?.community?.[0]
+                  || communityRaw?.response?.result?.community?.[0]
                   || communityRaw?.neighborhood?.[0]
                   || communityRaw?.area?.[0]
                   || (Array.isArray(communityRaw) ? communityRaw[0] : null)
-                  || (communityRaw && typeof communityRaw === "object" && !communityRaw.status && !communityRaw.community && !communityRaw.area && !communityRaw.neighborhood ? communityRaw : null);
+                  || (communityRaw && typeof communityRaw === "object" && !communityRaw.status && !communityRaw.community && !communityRaw.area && !communityRaw.neighborhood && !communityRaw.response ? communityRaw : null);
 
                 // Normalize ATTOM field names — v4 uses snake_case (population_density_sq_mi),
                 // older APIs use camelCase (populationDensity). Build lookups by both
@@ -830,15 +864,21 @@ export default function PropertyDetailModal({
                   };
                 })() : null;
 
-                // Extract school data — ATTOM returns { school: [ {...} ] } inside the response
+                // Extract school data — ATTOM returns in various formats
                 const schoolsRaw = neighborhoodData.schools;
-                const schools = schoolsRaw?.school || (Array.isArray(schoolsRaw) ? schoolsRaw : []);
-                const schoolList = Array.isArray(schools) ? schools : [];
+                const schools = schoolsRaw?.school
+                  || schoolsRaw?.response?.result?.package?.item
+                  || schoolsRaw?.result?.package?.item
+                  || schoolsRaw?.property?.[0]?.school
+                  || (Array.isArray(schoolsRaw) ? schoolsRaw : []);
+                const schoolList = Array.isArray(schools) ? schools : schools ? [schools] : [];
 
                 // Extract POI data — v4 returns { response: { result: { package: { item: [...] } } } }
                 const poiRaw = neighborhoodData.poi;
                 const poiItems = poiRaw?.response?.result?.package?.item
                   || poiRaw?.result?.package?.item
+                  || poiRaw?.package?.item
+                  || poiRaw?.item
                   || poiRaw?.poi
                   || (Array.isArray(poiRaw) ? poiRaw : []);
                 const poiList = Array.isArray(poiItems) ? poiItems : poiItems ? [poiItems] : [];
