@@ -487,7 +487,6 @@ export default function PropertyDetailModal({
               {/* GeoCode Identifiers (v4) — used to query community, school, POI, and sales trend data */}
               {(() => {
                 const geoId = findGeoIdV4(p);
-                const legacyGeoId = p.location?.geoid || p.area?.geoid;
                 // Also look for area-level geocodes embedded in property responses
                 const blockGeoId = p.area?.blockGeoIdV4;
                 const blockGroupGeoId = p.area?.blockGroupGeoIdV4;
@@ -499,13 +498,12 @@ export default function PropertyDetailModal({
                 const schoolDistGeoId = p.area?.schoolDistrictGeoIdV4;
                 const neighborhoodGeoId = p.area?.neighborhoodGeoIdV4;
 
-                const hasAnyGeo = geoId || legacyGeoId || blockGeoId || tractGeoId || countyGeoId;
+                const hasAnyGeo = geoId || blockGeoId || tractGeoId || countyGeoId;
                 if (!hasAnyGeo) return null;
 
                 return (
                   <Section title="GeoCodes">
                     <Field label="GeoID v4" value={geoId} />
-                    {legacyGeoId && <Field label="Legacy GeoID" value={legacyGeoId} />}
                     <Field label="Census Block" value={blockGeoId} />
                     <Field label="Block Group" value={blockGroupGeoId} />
                     <Field label="Census Tract" value={tractGeoId} />
@@ -753,38 +751,59 @@ export default function PropertyDetailModal({
                 </div>
               )}
 
-              {/* Rental AVM — rental value estimate */}
-              {enrichedFinancial?.rentalAvm && (() => {
+              {/* Rental AVM — from /valuation/rentalavm */}
+              {enrichedFinancial && !enrichedFinancialLoading && (() => {
                 const resp = enrichedFinancial.rentalAvm;
-                const prop = resp.property?.[0] || resp;
-                // ATTOM returns rental data under various paths depending on endpoint version
+                const prop = resp?.property?.[0] || resp;
                 const rental = prop?.rentalAVM || prop?.rentalAvm || prop?.rentalavm || prop?.avm;
-                if (!rental) return null;
-                // The amount object may be nested under .amount, .rentalAmount, or directly on the rental object
-                const rentAmt = rental.rentalAmount || rental.amount || rental;
-                if (rentAmt.value == null && rentAmt.low == null && rentAmt.high == null) return null;
-                const eventDate = rental.eventDate || rental.calculatedDate;
+                const rentAmt = rental?.rentalAmount || rental?.amount || rental;
+                const hasData = rentAmt?.value != null || rentAmt?.low != null || rentAmt?.high != null;
+                const eventDate = rental?.eventDate || rental?.calculatedDate;
+                const avmVal = p.avm?.amount?.value;
+                const annualRent = rentAmt?.value != null ? rentAmt.value * 12 : null;
+                const grossYield = annualRent != null && avmVal ? ((annualRent / avmVal) * 100) : null;
+
                 return (
                   <div style={{ marginBottom: 20, padding: "14px 18px", background: "#fef3c7", borderRadius: 10, border: "1px solid #fcd34d" }}>
                     <div style={{ fontSize: 11, fontWeight: 600, color: "#a16207", textTransform: "uppercase", letterSpacing: 0.5 }}>Rental Value Estimate (Rental AVM)</div>
-                    <div style={{ display: "flex", gap: 20, marginTop: 6, flexWrap: "wrap" }}>
-                      {rentAmt.value != null && (
-                        <div>
-                          <div style={{ fontSize: 22, fontWeight: 700, color: "#92400e" }}>${Number(rentAmt.value).toLocaleString()}<span style={{ fontSize: 13, fontWeight: 500 }}>/mo</span></div>
+                    {!hasData ? (
+                      <div style={{ marginTop: 8, fontSize: 13, color: "#92400e" }}>Not Disclosed</div>
+                    ) : (
+                      <>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12, marginTop: 8 }}>
+                          <div>
+                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 500 }}>Est. Monthly Rent</div>
+                            <div style={{ fontSize: 20, fontWeight: 700, color: "#92400e" }}>
+                              {rentAmt.value != null ? <>${Number(rentAmt.value).toLocaleString()}<span style={{ fontSize: 13, fontWeight: 500 }}>/mo</span></> : "Not Disclosed"}
+                            </div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 500 }}>Est. Annual Rent</div>
+                            <div style={{ fontSize: 16, fontWeight: 700, color: "#92400e" }}>
+                              {annualRent != null ? <>{fmt(annualRent)}<span style={{ fontSize: 12, fontWeight: 500 }}>/yr</span></> : "Not Disclosed"}
+                            </div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 500 }}>Gross Yield</div>
+                            <div style={{ fontSize: 16, fontWeight: 700, color: grossYield != null ? (grossYield >= 5 ? "#059669" : "#a16207") : "#9ca3af" }}>
+                              {grossYield != null ? `${grossYield.toFixed(2)}%` : "Not Disclosed"}
+                            </div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 500 }}>Confidence</div>
+                            <div style={{ fontSize: 16, fontWeight: 700, color: "#374151" }}>
+                              {rentAmt.scr != null ? rentAmt.scr : "Not Disclosed"}
+                            </div>
+                          </div>
                         </div>
-                      )}
-                      {(rentAmt.low != null || rentAmt.high != null) && (
-                        <div style={{ fontSize: 13, color: "#92400e", alignSelf: "flex-end" }}>
-                          Range: {rentAmt.low != null ? `$${Number(rentAmt.low).toLocaleString()}` : "?"} – {rentAmt.high != null ? `$${Number(rentAmt.high).toLocaleString()}` : "?"}
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 16, marginTop: 8, fontSize: 12, color: "#92400e" }}>
+                          {(rentAmt.low != null || rentAmt.high != null) && (
+                            <span>Range: {rentAmt.low != null ? `$${Number(rentAmt.low).toLocaleString()}` : "?"} – {rentAmt.high != null ? `$${Number(rentAmt.high).toLocaleString()}` : "?"}/mo</span>
+                          )}
+                          {eventDate && <span>As of {eventDate}</span>}
                         </div>
-                      )}
-                      {rentAmt.scr != null && (
-                        <div style={{ fontSize: 12, color: "#92400e", alignSelf: "flex-end" }}>
-                          Confidence: {rentAmt.scr}
-                        </div>
-                      )}
-                    </div>
-                    {eventDate && <div style={{ fontSize: 11, color: "#a16207", marginTop: 4 }}>As of {eventDate}</div>}
+                      </>
+                    )}
                   </div>
                 );
               })()}
@@ -1073,53 +1092,61 @@ export default function PropertyDetailModal({
                 );
               })()}
 
-              {/* Home Equity — estimated equity position */}
-              {enrichedFinancial?.homeEquity && (() => {
+              {/* Home Equity — estimated equity position from /valuation/homeequity */}
+              {enrichedFinancial && !enrichedFinancialLoading && (() => {
                 const resp = enrichedFinancial.homeEquity;
-                const prop = resp.property?.[0] || resp;
+                const prop = resp?.property?.[0] || resp;
                 const he = prop?.homeEquity || prop?.valuation || prop;
                 const avmValue = he?.avmValue ?? he?.avm?.amount?.value ?? he?.estimatedValue;
                 const loanBalance = he?.outstandingBalance ?? he?.loanBalance ?? he?.mortgageBalance ?? he?.estimatedBalance;
                 const equityAmount = he?.equity ?? he?.equityAmount ?? (avmValue != null && loanBalance != null ? avmValue - loanBalance : null);
                 const ltv = he?.loanToValue ?? he?.ltv ?? (avmValue && loanBalance ? (loanBalance / avmValue * 100) : null);
+                const loanCount = he?.loanCount ?? he?.numberOfLoans;
+                const estimatedPayment = he?.estimatedPayment ?? he?.monthlyPayment;
+                const lastSalePrice = he?.lastSalePrice ?? he?.salePrice;
+                const lastSaleDate = he?.lastSaleDate ?? he?.saleDate;
 
-                if (avmValue == null && loanBalance == null && equityAmount == null) return null;
-
+                const hasData = avmValue != null || loanBalance != null || equityAmount != null;
                 const isPositive = equityAmount != null ? equityAmount >= 0 : true;
 
                 return (
-                  <div style={{ marginBottom: 20, padding: "14px 18px", background: isPositive ? "#ecfdf5" : "#fef2f2", borderRadius: 10, border: `1px solid ${isPositive ? "#a7f3d0" : "#fecaca"}` }}>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: isPositive ? "#059669" : "#dc2626", textTransform: "uppercase", letterSpacing: 0.5 }}>Home Equity Analysis</div>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12, marginTop: 8 }}>
-                      {avmValue != null && (
-                        <div>
-                          <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 500 }}>Estimated Value</div>
-                          <div style={{ fontSize: 16, fontWeight: 700, color: "#111827" }}>{fmt(avmValue)}</div>
-                        </div>
-                      )}
-                      {loanBalance != null && (
-                        <div>
-                          <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 500 }}>Est. Loan Balance</div>
-                          <div style={{ fontSize: 16, fontWeight: 700, color: "#111827" }}>{fmt(loanBalance)}</div>
-                        </div>
-                      )}
-                      {equityAmount != null && (
-                        <div>
-                          <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 500 }}>Est. Equity</div>
-                          <div style={{ fontSize: 16, fontWeight: 700, color: isPositive ? "#059669" : "#dc2626" }}>
-                            {equityAmount >= 0 ? "+" : ""}{fmt(equityAmount)}
+                  <div style={{ marginBottom: 20, padding: "14px 18px", background: hasData ? (isPositive ? "#ecfdf5" : "#fef2f2") : "#f9fafb", borderRadius: 10, border: `1px solid ${hasData ? (isPositive ? "#a7f3d0" : "#fecaca") : "#e5e7eb"}` }}>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: hasData ? (isPositive ? "#059669" : "#dc2626") : "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>Home Equity Analysis</div>
+                    {!hasData ? (
+                      <div style={{ marginTop: 8, fontSize: 13, color: "#6b7280" }}>Not Disclosed</div>
+                    ) : (
+                      <>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12, marginTop: 8 }}>
+                          <div>
+                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 500 }}>Estimated Value</div>
+                            <div style={{ fontSize: 16, fontWeight: 700, color: "#111827" }}>{avmValue != null ? fmt(avmValue) : "Not Disclosed"}</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 500 }}>Est. Loan Balance</div>
+                            <div style={{ fontSize: 16, fontWeight: 700, color: "#111827" }}>{loanBalance != null ? fmt(loanBalance) : "Not Disclosed"}</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 500 }}>Est. Equity</div>
+                            <div style={{ fontSize: 16, fontWeight: 700, color: equityAmount != null ? (isPositive ? "#059669" : "#dc2626") : "#9ca3af" }}>
+                              {equityAmount != null ? `${equityAmount >= 0 ? "+" : ""}${fmt(equityAmount)}` : "Not Disclosed"}
+                            </div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 500 }}>Loan-to-Value</div>
+                            <div style={{ fontSize: 16, fontWeight: 700, color: ltv != null ? (Number(ltv) > 80 ? "#dc2626" : "#059669") : "#9ca3af" }}>
+                              {ltv != null ? `${Number(ltv).toFixed(1)}%` : "Not Disclosed"}
+                            </div>
                           </div>
                         </div>
-                      )}
-                      {ltv != null && (
-                        <div>
-                          <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 500 }}>Loan-to-Value</div>
-                          <div style={{ fontSize: 16, fontWeight: 700, color: ltv > 80 ? "#dc2626" : "#059669" }}>
-                            {Number(ltv).toFixed(1)}%
-                          </div>
+                        {/* Additional equity details */}
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 16, marginTop: 10, fontSize: 12, color: "#374151" }}>
+                          <span><strong>Active Loans:</strong> {loanCount != null ? loanCount : "Not Disclosed"}</span>
+                          <span><strong>Est. Monthly Payment:</strong> {estimatedPayment != null ? fmt(estimatedPayment) : "Not Disclosed"}</span>
+                          <span><strong>Last Sale:</strong> {lastSalePrice != null ? fmt(lastSalePrice) : "Not Disclosed"}</span>
+                          <span><strong>Sale Date:</strong> {lastSaleDate || "Not Disclosed"}</span>
                         </div>
-                      )}
-                    </div>
+                      </>
+                    )}
                   </div>
                 );
               })()}
@@ -1215,7 +1242,7 @@ export default function PropertyDetailModal({
 
             return (
             <>
-              {/* TMK & QPublic Quick Access — always visible when TMK is known */}
+              {/* TMK Quick Access — always visible when TMK is known */}
               {(displayTmk || attomApn) && (
                 <div style={{ marginBottom: 20, padding: "14px 18px", background: "#f0f9ff", borderRadius: 10, border: "1px solid #bfdbfe" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
@@ -1230,21 +1257,16 @@ export default function PropertyDetailModal({
                         rel="noopener noreferrer"
                         style={{
                           display: "inline-flex", alignItems: "center", gap: 6,
-                          padding: "8px 16px", background: "#3b82f6", color: "#fff",
+                          padding: "8px 16px", background: "#1e40af", color: "#fff",
                           borderRadius: 8, fontSize: 13, fontWeight: 600,
                           textDecoration: "none", whiteSpace: "nowrap",
                         }}
                       >
-                        View on QPublic
+                        View TMK Records
                         <span style={{ fontSize: 11 }}>&#8599;</span>
                       </a>
                     )}
                   </div>
-                  {qpubLink && (
-                    <div style={{ fontSize: 11, color: "#6b7280", marginTop: 6 }}>
-                      Opens the county tax records page with full owner details, tax history, and assessment data.
-                    </div>
-                  )}
                   {!qpubLink && hawaiiLoading && (
                     <div style={{ fontSize: 11, color: "#6b7280", marginTop: 6 }}>
                       Loading Hawaii public records...
@@ -1297,24 +1319,6 @@ export default function PropertyDetailModal({
                   if (status.includes("OWNER") || ind.includes("OWNER OCC") || ind === "O" || ind === "S") return "Owner Occupied";
                   return p.owner?.absenteeOwnerStatus || undefined;
                 })()} />
-                {qpubLink && (
-                  <div style={{ marginTop: 10 }}>
-                    <a
-                      href={qpubLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        display: "inline-flex", alignItems: "center", gap: 6,
-                        padding: "6px 14px", background: "#1e40af", color: "#fff",
-                        borderRadius: 6, fontSize: 12, fontWeight: 600,
-                        textDecoration: "none",
-                      }}
-                    >
-                      View TMK Ownership Records
-                      <span style={{ fontSize: 11 }}>&#8599;</span>
-                    </a>
-                  </div>
-                )}
               </Section>
 
               {/* Last Sale Summary — always visible from base property data */}
