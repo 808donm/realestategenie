@@ -1231,22 +1231,33 @@ export class AttomClient {
     const v4Params: Record<string, string | number | undefined> = {};
     const geoId = normalized.geoIdV4 || normalized.geoidv4 || normalized.geoIDV4;
 
-    // Use the most specific location identifier available:
-    // geoIdV4 > POINT(lng,lat) > address > zipCode
+    // The v4 /neighborhood/poi endpoint requires BOTH address AND zipcode together.
+    // zipcode must be the full "City, ST ZIP" format (e.g., "Kaneohe, HI 96744"),
+    // NOT just the numeric zip code.
     if (geoId) {
       v4Params.geoIdV4 = String(geoId);
     } else if (normalized.latitude && normalized.longitude) {
       v4Params.point = `POINT(${normalized.longitude},${normalized.latitude})`;
-    } else if (normalized.address1 || normalized.address) {
-      v4Params.address = String(normalized.address1 || normalized.address);
-    } else if (normalized.postalcode || normalized.postalCode) {
-      v4Params.zipCode = String(normalized.postalcode || normalized.postalCode);
     }
 
-    // Pass through radius and pagination
+    // Always send address + zipcode when available (endpoint needs both)
+    if (normalized.address1 || normalized.address) {
+      v4Params.address = String(normalized.address1 || normalized.address);
+    }
+    // Build zipcode as "City, ST ZIP" from address2 + postalcode
+    const addr2 = normalized.address2 ? String(normalized.address2) : "";
+    const zip = normalized.postalcode || normalized.postalCode;
+    if (addr2 && zip) {
+      // address2 is "KANEOHE, HI" and postalcode is "96744" → "KANEOHE, HI 96744"
+      v4Params.zipcode = `${addr2} ${zip}`;
+    } else if (addr2) {
+      v4Params.zipcode = addr2;
+    } else if (zip) {
+      v4Params.zipcode = String(zip);
+    }
+
+    // Pass through radius (no pagination — v4 POI doesn't support page/pagesize)
     if (normalized.radius) v4Params.radius = normalized.radius;
-    if (normalized.pagesize) v4Params.pagesize = normalized.pagesize;
-    if (normalized.page) v4Params.page = normalized.page;
 
     // Pass through POI-specific filters
     if (normalized.categoryName) v4Params.categoryName = normalized.categoryName;
@@ -1312,15 +1323,15 @@ export class AttomClient {
       pagesize: 15,
     };
 
-    // POI search: v4 /neighborhood/poi (accepts geoIdV4, POINT, address, zipCode)
+    // POI search: v4 /neighborhood/poi (requires address + zipcode as "City, ST ZIP")
     const poiParams: AttomSearchParams = {
       geoIdV4: options.geoidv4,
       latitude: options.latitude,
       longitude: options.longitude,
       address1: options.address1,
+      address2: options.address2,
       postalcode: options.postalcode,
       radius: options.radius || 5,
-      pagesize: 25,
     };
 
     // Sales trends: uses v4 /transaction/salestrends (requires geoIdV4)
