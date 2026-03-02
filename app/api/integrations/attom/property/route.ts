@@ -213,9 +213,13 @@ export async function GET(request: NextRequest) {
       // ── Valuation Resource ───────────────────────────────────────────────
       case "rentalavm":
         result = await client.getRentalAvm(params);
+        console.log("[ATTOM] rentalavm response keys:", result ? Object.keys(result) : "null",
+          "property[0] keys:", result?.property?.[0] ? Object.keys(result.property[0]) : "no property");
         break;
       case "homeequity":
         result = await client.getHomeEquity(params);
+        console.log("[ATTOM] homeequity response keys:", result ? Object.keys(result) : "null",
+          "property[0] keys:", result?.property?.[0] ? Object.keys(result.property[0]) : "no property");
         break;
 
       // ── All Events Resource ──────────────────────────────────────────────

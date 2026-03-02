@@ -303,6 +303,20 @@ export default function PropertyDetailModal({
       return params;
     };
 
+    // Valuation endpoints (/valuation/rentalavm, /valuation/homeequity) require
+    // address-based lookups — attomId is not supported. Always use address params,
+    // with attomId as fallback only if address is unavailable.
+    const buildAddrParams = (endpoint: string) => {
+      const params = new URLSearchParams({ endpoint });
+      if (addr1) {
+        params.set("address1", addr1);
+        if (addr2) params.set("address2", addr2);
+      } else if (attomId) {
+        params.set("attomid", String(attomId));
+      }
+      return params;
+    };
+
     // Also build sales trend params using geoIdV4 from property data
     const geoId = findGeoIdV4(p);
     const salesTrendParams = new URLSearchParams({ endpoint: "salestrend" });
@@ -316,18 +330,18 @@ export default function PropertyDetailModal({
 
     Promise.allSettled([
       fetch(`/api/integrations/attom/property?${buildParams("avmhistory")}`).then(r => r.json()),
-      fetch(`/api/integrations/attom/property?${buildParams("rentalavm")}`).then(r => r.json()),
+      fetch(`/api/integrations/attom/property?${buildAddrParams("rentalavm")}`).then(r => r.json()),
       fetch(`/api/integrations/attom/property?${buildParams("saleshistoryexpanded")}`).then(r => r.json()),
       fetch(`/api/integrations/attom/property?${buildParams("detailmortgage")}`).then(r => r.json()),
-      fetch(`/api/integrations/attom/property?${buildParams("homeequity")}`).then(r => r.json()),
+      fetch(`/api/integrations/attom/property?${buildAddrParams("homeequity")}`).then(r => r.json()),
       fetch(`/api/integrations/attom/property?${salesTrendParams}`).then(r => r.json()),
     ]).then(([avmHistory, rentalAvm, salesHistory, mortgageDetail, homeEquity, salesTrends]) => {
       setEnrichedFinancial({
         avmHistory: avmHistory.status === "fulfilled" && !avmHistory.value?.error ? avmHistory.value : null,
-        rentalAvm: rentalAvm.status === "fulfilled" && !rentalAvm.value?.error ? rentalAvm.value : null,
+        rentalAvm: rentalAvm.status === "fulfilled" ? rentalAvm.value : null,
         salesHistory: salesHistory.status === "fulfilled" && !salesHistory.value?.error ? salesHistory.value : null,
         mortgageDetail: mortgageDetail.status === "fulfilled" && !mortgageDetail.value?.error ? mortgageDetail.value : null,
-        homeEquity: homeEquity.status === "fulfilled" && !homeEquity.value?.error ? homeEquity.value : null,
+        homeEquity: homeEquity.status === "fulfilled" ? homeEquity.value : null,
         salesTrends: salesTrends.status === "fulfilled" && !salesTrends.value?.error ? salesTrends.value : null,
       });
     }).finally(() => setEnrichedFinancialLoading(false));
@@ -755,12 +769,20 @@ export default function PropertyDetailModal({
               {enrichedFinancial && !enrichedFinancialLoading && (() => {
                 const resp = enrichedFinancial.rentalAvm;
                 const prop = resp?.property?.[0] || resp;
+                // ATTOM /valuation/rentalavm returns rental data in various nested paths:
+                //   property[0].rentalAVM.rentalAmount.{value,low,high,scr}
+                //   property[0].avm.rentalAmount.{value,low,high,scr}
+                //   property[0].avm.amount.{value,low,high,scr}
+                // Try all known paths to find the rental amount data
                 const rental = prop?.rentalAVM || prop?.rentalAvm || prop?.rentalavm || prop?.avm;
                 const rentAmt = rental?.rentalAmount || rental?.amount || rental;
-                const hasData = rentAmt?.value != null || rentAmt?.low != null || rentAmt?.high != null;
-                const eventDate = rental?.eventDate || rental?.calculatedDate;
+                // Also check direct property-level paths (some responses flatten the data)
+                const directAmt = prop?.rentalAmount || prop?.amount;
+                const finalAmt = (rentAmt?.value != null || rentAmt?.low != null) ? rentAmt : (directAmt || rentAmt);
+                const hasData = finalAmt?.value != null || finalAmt?.low != null || finalAmt?.high != null;
+                const eventDate = rental?.eventDate || rental?.calculatedDate || prop?.eventDate;
                 const avmVal = p.avm?.amount?.value;
-                const annualRent = rentAmt?.value != null ? rentAmt.value * 12 : null;
+                const annualRent = finalAmt?.value != null ? finalAmt.value * 12 : null;
                 const grossYield = annualRent != null && avmVal ? ((annualRent / avmVal) * 100) : null;
 
                 return (
@@ -774,7 +796,7 @@ export default function PropertyDetailModal({
                           <div>
                             <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 500 }}>Est. Monthly Rent</div>
                             <div style={{ fontSize: 20, fontWeight: 700, color: "#92400e" }}>
-                              {rentAmt.value != null ? <>${Number(rentAmt.value).toLocaleString()}<span style={{ fontSize: 13, fontWeight: 500 }}>/mo</span></> : "Not Disclosed"}
+                              {finalAmt.value != null ? <>${Number(finalAmt.value).toLocaleString()}<span style={{ fontSize: 13, fontWeight: 500 }}>/mo</span></> : "Not Disclosed"}
                             </div>
                           </div>
                           <div>
@@ -792,13 +814,13 @@ export default function PropertyDetailModal({
                           <div>
                             <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 500 }}>Confidence</div>
                             <div style={{ fontSize: 16, fontWeight: 700, color: "#374151" }}>
-                              {rentAmt.scr != null ? rentAmt.scr : "Not Disclosed"}
+                              {finalAmt.scr != null ? finalAmt.scr : "Not Disclosed"}
                             </div>
                           </div>
                         </div>
                         <div style={{ display: "flex", flexWrap: "wrap", gap: 16, marginTop: 8, fontSize: 12, color: "#92400e" }}>
-                          {(rentAmt.low != null || rentAmt.high != null) && (
-                            <span>Range: {rentAmt.low != null ? `$${Number(rentAmt.low).toLocaleString()}` : "?"} – {rentAmt.high != null ? `$${Number(rentAmt.high).toLocaleString()}` : "?"}/mo</span>
+                          {(finalAmt.low != null || finalAmt.high != null) && (
+                            <span>Range: {finalAmt.low != null ? `$${Number(finalAmt.low).toLocaleString()}` : "?"} – {finalAmt.high != null ? `$${Number(finalAmt.high).toLocaleString()}` : "?"}/mo</span>
                           )}
                           {eventDate && <span>As of {eventDate}</span>}
                         </div>

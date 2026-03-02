@@ -421,7 +421,10 @@ export interface AttomPropertyDetail {
 export function normalizeAttomProperty(property: AttomPropertyDetail): AttomPropertyDetail {
   const result = { ...property };
 
-  // Promote assessment.owner -> owner when top-level owner is empty
+  // Promote assessment.owner -> owner when top-level owner is empty.
+  // The expandedprofile endpoint nests owner data at assessment.owner.
+  // Spread order: topOwner first (empty), then assessmentOwner (has data)
+  // so that assessmentOwner fields overwrite the empty top-level ones.
   const assessmentOwner = result.assessment?.owner;
   if (assessmentOwner) {
     const topOwner = result.owner;
@@ -429,18 +432,19 @@ export function normalizeAttomProperty(property: AttomPropertyDetail): AttomProp
       || topOwner?.corporateIndicator || topOwner?.mailingAddressOneLine;
 
     if (!hasTopOwner) {
-      result.owner = { ...assessmentOwner, ...topOwner };
+      result.owner = { ...topOwner, ...assessmentOwner };
     }
   }
 
-  // Promote assessment.mortgage.FirstConcurrent -> mortgage when top-level mortgage is empty
+  // Promote assessment.mortgage.FirstConcurrent -> mortgage when top-level mortgage is empty.
+  // Same spread order fix: topMortgage first (empty), then assessmentMortgage (has data).
   const assessmentMortgage = result.assessment?.mortgage;
   if (assessmentMortgage?.FirstConcurrent) {
     const topMortgage = result.mortgage;
     const hasTopMortgage = topMortgage?.amount || topMortgage?.lender?.fullName;
 
     if (!hasTopMortgage) {
-      result.mortgage = { ...assessmentMortgage.FirstConcurrent, ...topMortgage };
+      result.mortgage = { ...topMortgage, ...assessmentMortgage.FirstConcurrent };
     }
   }
 
