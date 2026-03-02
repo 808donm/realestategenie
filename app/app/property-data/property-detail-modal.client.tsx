@@ -109,6 +109,10 @@ export default function PropertyDetailModal({
   const [hazardLoading, setHazardLoading] = useState(false);
   const [avmData, setAvmData] = useState<any>(null);
   const [avmLoading, setAvmLoading] = useState(false);
+  const [enrichedFinancial, setEnrichedFinancial] = useState<any>(null);
+  const [enrichedFinancialLoading, setEnrichedFinancialLoading] = useState(false);
+  const [enrichedOwner, setEnrichedOwner] = useState<any>(null);
+  const [enrichedOwnerLoading, setEnrichedOwnerLoading] = useState(false);
 
   const addr = p.address?.oneLine || [p.address?.line1, p.address?.line2].filter(Boolean).join(", ") || "Property Detail";
   const sqft = p.building?.size?.livingSize || p.building?.size?.universalSize || p.building?.size?.bldgSize;
@@ -269,6 +273,77 @@ export default function PropertyDetailModal({
       .catch((err) => console.warn("[Neighborhood] fetch failed:", err))
       .finally(() => setNeighborhoodLoading(false));
   }, [activeSection, neighborhoodData, neighborhoodLoading, p]);
+
+  // Fetch enriched financial data (AVM history, rental AVM, sales history, mortgage detail)
+  // when Financial tab is selected — makes parallel calls for each additional endpoint
+  useEffect(() => {
+    if (activeSection !== "financial" || enrichedFinancial || enrichedFinancialLoading) return;
+
+    const attomId = p.identifier?.attomId;
+    const addr1 = p.address?.line1;
+    const addr2 = p.address?.locality && p.address?.countrySubd
+      ? `${p.address.locality}, ${p.address.countrySubd}`
+      : undefined;
+    if (!attomId && !addr1) return;
+
+    setEnrichedFinancialLoading(true);
+
+    const buildParams = (endpoint: string) => {
+      const params = new URLSearchParams({ endpoint });
+      if (attomId) params.set("attomid", String(attomId));
+      else {
+        if (addr1) params.set("address1", addr1);
+        if (addr2) params.set("address2", addr2);
+      }
+      return params;
+    };
+
+    Promise.allSettled([
+      fetch(`/api/integrations/attom/property?${buildParams("avmhistory")}`).then(r => r.json()),
+      fetch(`/api/integrations/attom/property?${buildParams("rentalavm")}`).then(r => r.json()),
+      fetch(`/api/integrations/attom/property?${buildParams("saleshistory")}`).then(r => r.json()),
+      fetch(`/api/integrations/attom/property?${buildParams("detailmortgage")}`).then(r => r.json()),
+    ]).then(([avmHistory, rentalAvm, salesHistory, mortgageDetail]) => {
+      setEnrichedFinancial({
+        avmHistory: avmHistory.status === "fulfilled" && !avmHistory.value?.error ? avmHistory.value : null,
+        rentalAvm: rentalAvm.status === "fulfilled" && !rentalAvm.value?.error ? rentalAvm.value : null,
+        salesHistory: salesHistory.status === "fulfilled" && !salesHistory.value?.error ? salesHistory.value : null,
+        mortgageDetail: mortgageDetail.status === "fulfilled" && !mortgageDetail.value?.error ? mortgageDetail.value : null,
+      });
+    }).finally(() => setEnrichedFinancialLoading(false));
+  }, [activeSection, enrichedFinancial, enrichedFinancialLoading, p]);
+
+  // Fetch enriched owner data (detail owner with mortgage owner info) when Ownership tab is selected
+  useEffect(() => {
+    if (activeSection !== "ownership" || enrichedOwner || enrichedOwnerLoading) return;
+
+    const attomId = p.identifier?.attomId;
+    const addr1 = p.address?.line1;
+    const addr2 = p.address?.locality && p.address?.countrySubd
+      ? `${p.address.locality}, ${p.address.countrySubd}`
+      : undefined;
+    if (!attomId && !addr1) return;
+
+    setEnrichedOwnerLoading(true);
+
+    const params = new URLSearchParams({ endpoint: "detailmortgageowner" });
+    if (attomId) params.set("attomid", String(attomId));
+    else {
+      if (addr1) params.set("address1", addr1);
+      if (addr2) params.set("address2", addr2);
+    }
+
+    fetch(`/api/integrations/attom/property?${params}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data && !data.error) {
+          const prop = data.property?.[0] || data;
+          setEnrichedOwner(prop);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setEnrichedOwnerLoading(false));
+  }, [activeSection, enrichedOwner, enrichedOwnerLoading, p]);
 
   const sections = [
     { id: "overview" as const, label: "Overview" },
@@ -650,6 +725,190 @@ export default function PropertyDetailModal({
                   </Section>
                 </>
               )}
+
+              {/* ── Enriched Financial Data (loaded on tab open) ── */}
+              {enrichedFinancialLoading && (
+                <div style={{ textAlign: "center", padding: 20, color: "#6b7280", fontSize: 13 }}>
+                  Loading additional financial data...
+                </div>
+              )}
+
+              {/* Rental AVM — rental value estimate */}
+              {enrichedFinancial?.rentalAvm && (() => {
+                const prop = enrichedFinancial.rentalAvm.property?.[0] || enrichedFinancial.rentalAvm;
+                const rental = prop?.avm || prop?.rentalAvm;
+                if (!rental) return null;
+                const rentAmt = rental.amount || rental;
+                return (
+                  <div style={{ marginBottom: 20, padding: "14px 18px", background: "#fef3c7", borderRadius: 10, border: "1px solid #fcd34d" }}>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: "#a16207", textTransform: "uppercase", letterSpacing: 0.5 }}>Rental Value Estimate</div>
+                    <div style={{ display: "flex", gap: 20, marginTop: 6, flexWrap: "wrap" }}>
+                      {rentAmt.value != null && (
+                        <div>
+                          <div style={{ fontSize: 22, fontWeight: 700, color: "#92400e" }}>${Number(rentAmt.value).toLocaleString()}<span style={{ fontSize: 13, fontWeight: 500 }}>/mo</span></div>
+                        </div>
+                      )}
+                      {(rentAmt.low != null || rentAmt.high != null) && (
+                        <div style={{ fontSize: 13, color: "#92400e", alignSelf: "flex-end" }}>
+                          Range: {rentAmt.low != null ? `$${Number(rentAmt.low).toLocaleString()}` : "?"} – {rentAmt.high != null ? `$${Number(rentAmt.high).toLocaleString()}` : "?"}
+                        </div>
+                      )}
+                    </div>
+                    {rental.eventDate && <div style={{ fontSize: 11, color: "#a16207", marginTop: 4 }}>As of {rental.eventDate}</div>}
+                  </div>
+                );
+              })()}
+
+              {/* Mortgage Detail — enriched from detailmortgage endpoint */}
+              {enrichedFinancial?.mortgageDetail && (() => {
+                const prop = enrichedFinancial.mortgageDetail.property?.[0] || enrichedFinancial.mortgageDetail;
+                // ATTOM can return multiple mortgages (first, second, equity line)
+                const m1 = prop?.mortgage?.firstConcurrent || prop?.mortgage;
+                const m2 = prop?.mortgage?.secondConcurrent;
+                if (!m1 && !m2) return null;
+
+                const renderMortgage = (m: any, title: string) => {
+                  if (!m) return null;
+                  const amt = m.amount ?? m.loanAmount;
+                  return (
+                    <Section title={title}>
+                      <Field label="Loan Amount" value={amt != null ? fmt(Number(amt)) : undefined} />
+                      <Field label="Lender" value={m.lender?.fullName || m.companyName} />
+                      <Field label="Loan Type" value={m.loanType || m.loanTypeCode} />
+                      <Field label="Interest Rate" value={m.interestRate != null ? `${m.interestRate}%` : undefined} />
+                      <Field label="Rate Type" value={m.interestRateType} />
+                      <Field label="Term" value={m.term} />
+                      <Field label="Due Date" value={m.dueDate} />
+                      <Field label="Origination Date" value={m.date || m.recordingDate} />
+                      <Field label="Document Number" value={m.documentNumber} />
+                      <Field label="Deed Type" value={m.deedType} />
+                    </Section>
+                  );
+                };
+
+                return (
+                  <>
+                    {renderMortgage(m1, "First Mortgage (Detailed)")}
+                    {renderMortgage(m2, "Second Mortgage / Equity Line")}
+                  </>
+                );
+              })()}
+
+              {/* AVM History — value trend over time */}
+              {enrichedFinancial?.avmHistory && (() => {
+                const props = enrichedFinancial.avmHistory.property || [];
+                // Each property entry may have an avm with eventDate
+                const history = props
+                  .map((pp: any) => ({
+                    date: pp.avm?.eventDate || pp.avm?.calculatedDate,
+                    value: pp.avm?.amount?.value,
+                    low: pp.avm?.amount?.low,
+                    high: pp.avm?.amount?.high,
+                    scr: pp.avm?.amount?.scr,
+                  }))
+                  .filter((h: any) => h.value != null)
+                  .sort((a: any, b: any) => (a.date || "").localeCompare(b.date || ""));
+
+                if (history.length === 0) return null;
+
+                // Compute overall value change
+                const firstVal = history[0].value;
+                const lastVal = history[history.length - 1].value;
+                const change = firstVal && lastVal ? ((lastVal - firstVal) / firstVal * 100) : null;
+
+                return (
+                  <div style={{ marginBottom: 20 }}>
+                    <h3 style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 4, paddingBottom: 6, borderBottom: "1px solid #e5e7eb" }}>
+                      AVM Value History
+                    </h3>
+                    {change != null && (
+                      <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}>
+                        <span style={{ fontWeight: 600, color: change >= 0 ? "#059669" : "#dc2626" }}>
+                          {change >= 0 ? "+" : ""}{change.toFixed(1)}%
+                        </span> change over {history.length} data points
+                      </div>
+                    )}
+                    <div style={{ overflowX: "auto" }}>
+                      <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
+                        <thead>
+                          <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
+                            <th style={{ textAlign: "left", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Date</th>
+                            <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Value</th>
+                            <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Range</th>
+                            <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Confidence</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {history.map((h: any, i: number) => (
+                            <tr key={i} style={{ borderBottom: "1px solid #f3f4f6", background: i % 2 === 0 ? "#fff" : "#f9fafb" }}>
+                              <td style={{ padding: "6px 8px", fontWeight: 500 }}>{h.date || "—"}</td>
+                              <td style={{ padding: "6px 8px", textAlign: "right", fontWeight: 600 }}>{fmt(h.value)}</td>
+                              <td style={{ padding: "6px 8px", textAlign: "right", fontSize: 11, color: "#6b7280" }}>
+                                {h.low != null && h.high != null ? `${fmt(h.low)} – ${fmt(h.high)}` : "—"}
+                              </td>
+                              <td style={{ padding: "6px 8px", textAlign: "right" }}>{h.scr ?? "—"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Sales History — all past transactions for this property */}
+              {enrichedFinancial?.salesHistory && (() => {
+                const props = enrichedFinancial.salesHistory.property || [];
+                // Each property may have nested sale data
+                const sales = props
+                  .map((pp: any) => ({
+                    date: pp.sale?.amount?.saleTransDate || pp.sale?.amount?.saleRecDate,
+                    amount: pp.sale?.amount?.saleAmt || pp.sale?.amount?.salePrice,
+                    docType: pp.sale?.amount?.saleDocType,
+                    code: pp.sale?.amount?.saleCode,
+                    buyer: pp.sale?.amount?.buyerName || pp.sale?.buyer?.fullName,
+                    seller: pp.sale?.amount?.sellerName || pp.sale?.seller?.fullName,
+                    pricePerSqft: pp.sale?.amount?.pricePerSizeUnit,
+                  }))
+                  .filter((s: any) => s.date || s.amount)
+                  .sort((a: any, b: any) => (b.date || "").localeCompare(a.date || ""));
+
+                if (sales.length === 0) return null;
+
+                return (
+                  <div style={{ marginBottom: 20 }}>
+                    <h3 style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 10, paddingBottom: 6, borderBottom: "1px solid #e5e7eb" }}>
+                      Sales History ({sales.length} transaction{sales.length !== 1 ? "s" : ""})
+                    </h3>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {sales.map((s: any, i: number) => (
+                        <div key={i} style={{ padding: "10px 14px", background: i === 0 ? "#eff6ff" : "#f9fafb", borderRadius: 8, borderLeft: i === 0 ? "4px solid #3b82f6" : "none" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+                            <div>
+                              <div style={{ fontSize: 13, fontWeight: 600, color: "#111827" }}>
+                                {s.amount != null ? fmt(s.amount) : "Price Not Disclosed"}
+                              </div>
+                              <div style={{ fontSize: 12, color: "#6b7280", marginTop: 1 }}>
+                                {[s.date, s.docType, s.code].filter(Boolean).join(" · ")}
+                              </div>
+                            </div>
+                            {s.pricePerSqft != null && (
+                              <div style={{ fontSize: 12, color: "#6b7280" }}>${Number(s.pricePerSqft).toFixed(0)}/sqft</div>
+                            )}
+                          </div>
+                          {(s.buyer || s.seller) && (
+                            <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>
+                              {s.seller && <span>Seller: {s.seller}</span>}
+                              {s.seller && s.buyer && <span> → </span>}
+                              {s.buyer && <span>Buyer: {s.buyer}</span>}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
             </>
             );
           })()}
@@ -745,6 +1004,76 @@ export default function PropertyDetailModal({
                   </div>
                 )}
               </Section>
+
+              {/* Enriched owner data from detailmortgageowner endpoint */}
+              {enrichedOwnerLoading && (
+                <div style={{ textAlign: "center", padding: 12, color: "#6b7280", fontSize: 13 }}>
+                  Loading detailed ownership records...
+                </div>
+              )}
+
+              {enrichedOwner && (() => {
+                const eo = enrichedOwner.owner || enrichedOwner;
+                // Check for fields beyond what we already show
+                const hasExtra = eo?.owner1?.lastName || eo?.mailingAddressOneLine || eo?.owner1?.firstNameAndMi;
+                if (!hasExtra) return null;
+                return (
+                  <Section title="Detailed Owner Information">
+                    {[1, 2, 3, 4].map((n) => {
+                      const o = eo?.[`owner${n}`];
+                      if (!o?.fullName && !o?.lastName) return null;
+                      return (
+                        <div key={n} style={{ gridColumn: "1 / -1" }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: "#111827" }}>
+                            Owner {n}: {o.fullName || [o.firstNameAndMi, o.lastName].filter(Boolean).join(" ")}
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <Field label="Corporate Owner" value={eo?.corporateIndicator === "Y" ? "Yes" : eo?.corporateIndicator === "N" ? "No" : undefined} />
+                    <Field label="Relationship Type" value={eo?.ownerRelationshipType} />
+                    <Field label="Rights" value={eo?.ownerRelationshipRights} />
+                    <Field label="Mailing Address" value={eo?.mailingAddressOneLine} />
+                    <Field label="Owner Occupied" value={eo?.ownerOccupied === "Y" ? "Yes" : eo?.ownerOccupied === "N" ? "No" : undefined} />
+                    <Field label="Absentee Status" value={eo?.absenteeOwnerStatus} />
+                  </Section>
+                );
+              })()}
+
+              {/* Mortgage lender info from enriched owner (detailmortgageowner) */}
+              {enrichedOwner?.mortgage && (() => {
+                const m = enrichedOwner.mortgage;
+                const m1 = m.firstConcurrent || m;
+                const m2 = m.secondConcurrent;
+                const hasData = m1?.lender?.fullName || m1?.companyName || m1?.amount || m2;
+                if (!hasData) return null;
+
+                return (
+                  <>
+                    {m1 && (m1.lender?.fullName || m1.companyName || m1.amount) && (
+                      <Section title="Current Mortgage Holder">
+                        <Field label="Lender" value={m1.lender?.fullName || m1.companyName} />
+                        <Field label="Loan Amount" value={m1.amount != null ? fmt(Number(m1.amount)) : undefined} />
+                        <Field label="Loan Type" value={m1.loanType} />
+                        <Field label="Interest Rate" value={m1.interestRate != null ? `${m1.interestRate}%` : undefined} />
+                        <Field label="Rate Type" value={m1.interestRateType} />
+                        <Field label="Term" value={m1.term} />
+                        <Field label="Origination" value={m1.date || m1.recordingDate} />
+                        <Field label="Due Date" value={m1.dueDate} />
+                      </Section>
+                    )}
+                    {m2 && (m2.lender?.fullName || m2.companyName || m2.amount) && (
+                      <Section title="Second Mortgage / Equity Line">
+                        <Field label="Lender" value={m2.lender?.fullName || m2.companyName} />
+                        <Field label="Loan Amount" value={m2.amount != null ? fmt(Number(m2.amount)) : undefined} />
+                        <Field label="Loan Type" value={m2.loanType} />
+                        <Field label="Interest Rate" value={m2.interestRate != null ? `${m2.interestRate}%` : undefined} />
+                        <Field label="Origination" value={m2.date || m2.recordingDate} />
+                      </Section>
+                    )}
+                  </>
+                );
+              })()}
 
               <Section title="Occupancy">
                 <Field label="Owner Occupied" value={(() => {
