@@ -18,7 +18,7 @@ function toE164US(input: string): string | null {
   return null;
 }
 
-type Representation = "yes" | "no" | "unsure";
+type Representation = "" | "yes" | "no" | "unsure";
 type Timeline = "0-3 months" | "3-6 months" | "6+ months" | "just browsing";
 type Financing = "pre-approved" | "cash" | "need lender" | "not sure";
 
@@ -37,7 +37,7 @@ export default function IntakeForm({ eventId, agentName, brokerageName, accessTo
   const [consentSms, setConsentSms] = useState(false);
   const [consentEmail, setConsentEmail] = useState(false);
 
-  const [representation, setRepresentation] = useState<Representation>("unsure");
+  const [representation, setRepresentation] = useState<Representation>("");
   const [realtorName, setRealtorName] = useState("");
   const [wantsAgentReachOut, setWantsAgentReachOut] = useState(true);
 
@@ -63,6 +63,7 @@ export default function IntakeForm({ eventId, agentName, brokerageName, accessTo
     if (!name.trim()) return setErr("Name is required.");
     if (!email.trim()) return setErr("Email is required.");
     if (!phoneE164) return setErr("Phone number is required and must be valid.");
+    if (!representation) return setErr("Please select whether you are working with a realtor.");
 
     setSubmitting(true);
 
@@ -77,7 +78,7 @@ export default function IntakeForm({ eventId, agentName, brokerageName, accessTo
       },
       representation,
       realtor_name: representation === "yes" ? realtorName.trim() : "",
-      wants_agent_reach_out: representation === "no" ? wantsAgentReachOut : false,
+      wants_agent_reach_out: (representation === "no" || representation === "unsure") ? wantsAgentReachOut : false,
       timeline,
       financing,
       neighborhoods: neighborhoods.trim(),
@@ -175,37 +176,23 @@ export default function IntakeForm({ eventId, agentName, brokerageName, accessTo
 
         <div>
           <label style={{ display: "block", fontSize: 12, marginBottom: 6 }}>
-            Are you currently represented by an agent?
+            Are you currently working with a realtor?
           </label>
           <select
             value={representation}
             onChange={(e) => setRepresentation(e.target.value as Representation)}
             style={{ padding: 10 }}
           >
-            <option value="no">No</option>
+            <option value="" disabled>Select…</option>
             <option value="yes">Yes</option>
+            <option value="no">No</option>
             <option value="unsure">Not sure</option>
           </select>
         </div>
 
-        {representation === "no" && (
-          <div style={{ padding: 12, border: "1px solid #ddd", borderRadius: 12 }}>
-            <div style={{ fontWeight: 800 }}>Would you like the agent to reach out?</div>
-            <label style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 8 }}>
-              <input
-                type="checkbox"
-                checked={wantsAgentReachOut}
-                onChange={(e) => setWantsAgentReachOut(e.target.checked)}
-              />
-              <span>Yes, please contact me.</span>
-            </label>
-          </div>
-        )}
-
         {representation === "yes" && (
           <div style={{ padding: 12, border: "1px solid #ddd", borderRadius: 12 }}>
-            <strong>Note:</strong> If you're represented, please coordinate offers and next steps through your agent.
-            <div style={{ marginTop: 10 }}>
+            <div>
               <label style={{ display: "block", fontSize: 12, marginBottom: 6 }}>Realtor's Name</label>
               <input
                 value={realtorName}
@@ -217,37 +204,54 @@ export default function IntakeForm({ eventId, agentName, brokerageName, accessTo
           </div>
         )}
 
-        <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr" }}>
-          <div>
-            <label style={{ display: "block", fontSize: 12, marginBottom: 6 }}>Timeline</label>
-            <select value={timeline} onChange={(e) => setTimeline(e.target.value as Timeline)} style={{ padding: 10, width: "100%" }}>
-              <option value="0-3 months">0–3 months</option>
-              <option value="3-6 months">3–6 months</option>
-              <option value="6+ months">6–12 months</option>
-              <option value="just browsing">Just browsing</option>
-            </select>
+        {(representation === "no" || representation === "unsure") && (
+          <div style={{ padding: 12, border: "1px solid #ddd", borderRadius: 12 }}>
+            <label style={{ display: "flex", gap: 10, alignItems: "center" }}>
+              <input
+                type="checkbox"
+                checked={wantsAgentReachOut}
+                onChange={(e) => setWantsAgentReachOut(e.target.checked)}
+              />
+              <span style={{ fontWeight: 600 }}>Would you like the realtor to reach out to you?</span>
+            </label>
           </div>
+        )}
 
-          <div>
-            <label style={{ display: "block", fontSize: 12, marginBottom: 6 }}>Financing</label>
-            <select value={financing} onChange={(e) => setFinancing(e.target.value as Financing)} style={{ padding: 10, width: "100%" }}>
-              <option value="pre-approved">Pre-approved</option>
-              <option value="cash">Cash</option>
-              <option value="need lender">Need a lender</option>
-              <option value="not sure">Not sure</option>
-            </select>
-          </div>
-        </div>
+        {(representation === "no" || representation === "unsure") && (
+          <>
+            <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr" }}>
+              <div>
+                <label style={{ display: "block", fontSize: 12, marginBottom: 6 }}>Timeline</label>
+                <select value={timeline} onChange={(e) => setTimeline(e.target.value as Timeline)} style={{ padding: 10, width: "100%" }}>
+                  <option value="0-3 months">0–3 months</option>
+                  <option value="3-6 months">3–6 months</option>
+                  <option value="6+ months">6–12 months</option>
+                  <option value="just browsing">Just browsing</option>
+                </select>
+              </div>
 
-        <div>
-          <label style={{ display: "block", fontSize: 12, marginBottom: 6 }}>Neighborhoods of interest</label>
-          <input value={neighborhoods} onChange={(e) => setNeighborhoods(e.target.value)} placeholder="Kaka‘ako, Kailua..." style={{ width: "100%", padding: 10 }} />
-        </div>
+              <div>
+                <label style={{ display: "block", fontSize: 12, marginBottom: 6 }}>Financing</label>
+                <select value={financing} onChange={(e) => setFinancing(e.target.value as Financing)} style={{ padding: 10, width: "100%" }}>
+                  <option value="pre-approved">Pre-approved</option>
+                  <option value="cash">Cash</option>
+                  <option value="need lender">Need a lender</option>
+                  <option value="not sure">Not sure</option>
+                </select>
+              </div>
+            </div>
 
-        <div>
-          <label style={{ display: "block", fontSize: 12, marginBottom: 6 }}>Must-haves</label>
-          <input value={mustHaves} onChange={(e) => setMustHaves(e.target.value)} placeholder="3 bed, parking..." style={{ width: "100%", padding: 10 }} />
-        </div>
+            <div>
+              <label style={{ display: "block", fontSize: 12, marginBottom: 6 }}>Neighborhoods of interest</label>
+              <input value={neighborhoods} onChange={(e) => setNeighborhoods(e.target.value)} placeholder="Kaka’ako, Kailua..." style={{ width: "100%", padding: 10 }} />
+            </div>
+
+            <div>
+              <label style={{ display: "block", fontSize: 12, marginBottom: 6 }}>Must-haves</label>
+              <input value={mustHaves} onChange={(e) => setMustHaves(e.target.value)} placeholder="3 bed, parking..." style={{ width: "100%", padding: 10 }} />
+            </div>
+          </>
+        )}
 
         <button disabled={submitting} style={{ padding: 12, fontWeight: 800 }}>
           {submitting ? "Submitting…" : "Check in"}
