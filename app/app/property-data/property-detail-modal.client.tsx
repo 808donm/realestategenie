@@ -769,20 +769,23 @@ export default function PropertyDetailModal({
               {enrichedFinancial && !enrichedFinancialLoading && (() => {
                 const resp = enrichedFinancial.rentalAvm;
                 const prop = resp?.property?.[0] || resp;
-                // ATTOM /valuation/rentalavm returns rental data in various nested paths:
-                //   property[0].rentalAVM.rentalAmount.{value,low,high,scr}
-                //   property[0].avm.rentalAmount.{value,low,high,scr}
-                //   property[0].avm.amount.{value,low,high,scr}
-                // Try all known paths to find the rental amount data
-                const rental = prop?.rentalAVM || prop?.rentalAvm || prop?.rentalavm || prop?.avm;
-                const rentAmt = rental?.rentalAmount || rental?.amount || rental;
-                // Also check direct property-level paths (some responses flatten the data)
-                const directAmt = prop?.rentalAmount || prop?.amount;
-                const finalAmt = (rentAmt?.value != null || rentAmt?.low != null) ? rentAmt : (directAmt || rentAmt);
-                const hasData = finalAmt?.value != null || finalAmt?.low != null || finalAmt?.high != null;
-                const eventDate = rental?.eventDate || rental?.calculatedDate || prop?.eventDate;
+                // ATTOM /valuation/rentalavm actual response structure:
+                //   property[0].rentalAvm.estimatedRentalValue      (monthly rent)
+                //   property[0].rentalAvm.estimatedMinRentalValue   (low end)
+                //   property[0].rentalAvm.estimatedMaxRentalValue   (high end)
+                //   property[0].rentalAvm.valuationDate
+                const rental = prop?.rentalAvm || prop?.rentalAVM || prop?.rentalavm;
+
+                // Extract values from the actual ATTOM field names
+                const rentValue = rental?.estimatedRentalValue ?? rental?.rentalAmount?.value ?? rental?.amount?.value ?? rental?.value;
+                const rentLow = rental?.estimatedMinRentalValue ?? rental?.rentalAmount?.low ?? rental?.amount?.low ?? rental?.low;
+                const rentHigh = rental?.estimatedMaxRentalValue ?? rental?.rentalAmount?.high ?? rental?.amount?.high ?? rental?.high;
+                const rentScr = rental?.confidenceScore ?? rental?.scr ?? rental?.rentalAmount?.scr ?? rental?.amount?.scr;
+                const eventDate = rental?.valuationDate ?? rental?.eventDate ?? rental?.calculatedDate;
+
+                const hasData = rentValue != null || rentLow != null || rentHigh != null;
                 const avmVal = p.avm?.amount?.value;
-                const annualRent = finalAmt?.value != null ? finalAmt.value * 12 : null;
+                const annualRent = rentValue != null ? rentValue * 12 : null;
                 const grossYield = annualRent != null && avmVal ? ((annualRent / avmVal) * 100) : null;
 
                 return (
@@ -796,31 +799,31 @@ export default function PropertyDetailModal({
                           <div>
                             <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 500 }}>Est. Monthly Rent</div>
                             <div style={{ fontSize: 20, fontWeight: 700, color: "#92400e" }}>
-                              {finalAmt.value != null ? <>${Number(finalAmt.value).toLocaleString()}<span style={{ fontSize: 13, fontWeight: 500 }}>/mo</span></> : "Not Disclosed"}
+                              {rentValue != null ? <>${Number(rentValue).toLocaleString()}<span style={{ fontSize: 13, fontWeight: 500 }}>/mo</span></> : "N/A"}
                             </div>
                           </div>
                           <div>
                             <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 500 }}>Est. Annual Rent</div>
                             <div style={{ fontSize: 16, fontWeight: 700, color: "#92400e" }}>
-                              {annualRent != null ? <>{fmt(annualRent)}<span style={{ fontSize: 12, fontWeight: 500 }}>/yr</span></> : "Not Disclosed"}
+                              {annualRent != null ? <>{fmt(annualRent)}<span style={{ fontSize: 12, fontWeight: 500 }}>/yr</span></> : "N/A"}
                             </div>
                           </div>
                           <div>
                             <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 500 }}>Gross Yield</div>
                             <div style={{ fontSize: 16, fontWeight: 700, color: grossYield != null ? (grossYield >= 5 ? "#059669" : "#a16207") : "#9ca3af" }}>
-                              {grossYield != null ? `${grossYield.toFixed(2)}%` : "Not Disclosed"}
+                              {grossYield != null ? `${grossYield.toFixed(2)}%` : "N/A"}
                             </div>
                           </div>
-                          <div>
-                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 500 }}>Confidence</div>
-                            <div style={{ fontSize: 16, fontWeight: 700, color: "#374151" }}>
-                              {finalAmt.scr != null ? finalAmt.scr : "Not Disclosed"}
+                          {rentScr != null && (
+                            <div>
+                              <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 500 }}>Confidence</div>
+                              <div style={{ fontSize: 16, fontWeight: 700, color: "#374151" }}>{rentScr}</div>
                             </div>
-                          </div>
+                          )}
                         </div>
                         <div style={{ display: "flex", flexWrap: "wrap", gap: 16, marginTop: 8, fontSize: 12, color: "#92400e" }}>
-                          {(finalAmt.low != null || finalAmt.high != null) && (
-                            <span>Range: {finalAmt.low != null ? `$${Number(finalAmt.low).toLocaleString()}` : "?"} – {finalAmt.high != null ? `$${Number(finalAmt.high).toLocaleString()}` : "?"}/mo</span>
+                          {(rentLow != null || rentHigh != null) && (
+                            <span>Range: {rentLow != null ? `$${Number(rentLow).toLocaleString()}` : "?"} – {rentHigh != null ? `$${Number(rentHigh).toLocaleString()}` : "?"}/mo</span>
                           )}
                           {eventDate && <span>As of {eventDate}</span>}
                         </div>
