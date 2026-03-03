@@ -1197,14 +1197,31 @@ export default function Prospecting() {
           //   3. "avm" (avm/snapshot) — AVM values
           // Non-paginated supplements (rentalavm, homeequity) are fetched once
           // before the loop and merged into every page via valuationSupps.
+          //
+          // For radius (Just Sold) mode, the primary is salesnapshot which
+          // returns recently-sold properties WITHOUT owner data. The normal
+          // "expanded"/"detailowner" supplements won't overlap because they
+          // return all properties in the zip (different pagination window).
+          // Instead we fetch "detailmortgageowner" WITH sale date filters —
+          // it returns the SAME recently-sold properties enriched with owner
+          // names and mailing addresses.
           const suppFetches: Promise<any>[] = [];
           const suppLabels: string[] = [];
 
-          if (needsExpanded || needsOwner) {
+          if (mode === "radius" && needsOwner) {
+            // detailmortgageowner with sale date filters returns matching
+            // recently-sold properties with full owner info
+            suppFetches.push(fetchPage(pg, "detailmortgageowner").catch(() => ({ property: [] })));
+            suppLabels.push("detailmortgageowner");
+          }
+          if (needsExpanded || (needsOwner && mode !== "radius")) {
             suppFetches.push(fetchPage(pg, "expanded").catch(() => ({ property: [] })));
             suppLabels.push("expanded");
           }
-          if (needsOwner) {
+          if (needsOwner && mode !== "radius") {
+            // For radius mode, detailmortgageowner already provides owner data
+            // with matching sale-date filters. detailowner without date filters
+            // would return non-overlapping properties from the zip.
             suppFetches.push(fetchPage(pg, "detailowner").catch(() => ({ property: [] })));
             suppLabels.push("detailowner");
           }
