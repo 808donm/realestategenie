@@ -548,11 +548,11 @@ export default function Prospecting() {
 
     if (endpointOverride) {
       params.set("endpoint", endpointOverride);
-      // For radius mode supplements, also add sale date filters so that
-      // supplement endpoints return the same recently-sold properties as
-      // the primary salesnapshot (otherwise supplements return ALL properties
-      // in the zip code, causing merge by attomId to find no matches).
-      if (mode === "radius" && startDate && endDate) {
+      // The "expanded" (expandedprofile) endpoint returns ALL properties in
+      // the zip — it does NOT support sale date filters. Merge by attomId
+      // handles matching to the primary results. Only add sale date filters
+      // for sale-related supplement endpoints (detailmortgageowner, detailowner).
+      if (mode === "radius" && startDate && endDate && endpointOverride !== "expanded") {
         params.set("startSaleSearchDate", startDate.replace(/-/g, "/"));
         params.set("endSaleSearchDate", endDate.replace(/-/g, "/"));
       }
@@ -563,9 +563,9 @@ export default function Prospecting() {
       params.set("endSaleSearchDate", endDate.replace(/-/g, "/"));
     } else {
       // ALL other modes: use detailmortgageowner as primary.
-      // This is the ONLY ATTOM endpoint that returns owner names, mailing
-      // addresses, corporate indicators, AND mortgage data for zip code
-      // area searches. The expandedprofile endpoint omits all of these.
+      // Returns owner names, mailing addresses, corporate indicators, AND
+      // mortgage data. Supplemented with expandedprofile for assessment/AVM
+      // and detailowner for additional owner data.
       params.set("endpoint", "detailmortgageowner");
     }
 
@@ -1009,6 +1009,11 @@ export default function Prospecting() {
       // Primary endpoints by mode:
       //   - absentee / equity / foreclosure / investor: detailmortgageowner
       //   - radius (Just Sold): salesnapshot
+      //
+      // All modes use the SAME supplement strategy:
+      //   1. "expanded" (expandedprofile) — returns owner, assessment, mortgage,
+      //      building data. Owner data is normalized server-side from assessment.owner.
+      //   2. "detailowner" — secondary supplement for full owner names + mailing addresses
       {
         let allRaw: AttomProperty[] = [];
         const maxPages = mode === "investor" ? 6
@@ -1029,32 +1034,24 @@ export default function Prospecting() {
           // Check cache to see which supplements we can skip for this page
           const { enriched: cacheEnriched, needsOwner, needsExpanded } = enrichFromCache(baseProps, cacheSnapshot);
 
-          // Build supplement fetches — only for data the cache doesn't have
+          // Build supplement fetches — only for data the cache doesn't have.
+          // ALL modes use the same supplement strategy:
+          //   1. "expanded" (expandedprofile) — returns owner, assessment, mortgage,
+          //      and building data in one call (owner is normalized server-side).
+          //   2. "detailowner" — secondary supplement if owner data is still needed,
+          //      provides full owner names and mailing addresses.
           const suppFetches: Promise<any>[] = [];
           const suppLabels: string[] = [];
 
-          if (mode === "radius") {
-            // Radius supplements: owner + expanded + detailowner
-            if (needsOwner) {
-              suppFetches.push(fetchPage(pg, "detailmortgageowner").catch(() => ({ property: [] })));
-              suppLabels.push("detailmortgageowner");
-              suppFetches.push(fetchPage(pg, "detailowner").catch(() => ({ property: [] })));
-              suppLabels.push("detailowner");
-            }
-            if (needsExpanded) {
-              suppFetches.push(fetchPage(pg, "expanded").catch(() => ({ property: [] })));
-              suppLabels.push("expanded");
-            }
-          } else {
-            // Non-radius supplements: expanded + detailowner
-            if (needsExpanded) {
-              suppFetches.push(fetchPage(pg, "expanded").catch(() => ({ property: [] })));
-              suppLabels.push("expanded");
-            }
-            if (needsOwner) {
-              suppFetches.push(fetchPage(pg, "detailowner").catch(() => ({ property: [] })));
-              suppLabels.push("detailowner");
-            }
+          if (needsExpanded || needsOwner) {
+            // expandedprofile is the primary supplement for ALL modes — it returns
+            // the richest property data including owner info after normalization
+            suppFetches.push(fetchPage(pg, "expanded").catch(() => ({ property: [] })));
+            suppLabels.push("expanded");
+          }
+          if (needsOwner) {
+            suppFetches.push(fetchPage(pg, "detailowner").catch(() => ({ property: [] })));
+            suppLabels.push("detailowner");
           }
 
           let merged: AttomProperty[];
