@@ -1537,6 +1537,41 @@ export class AttomClient {
     return this.request("/transaction/salestrend", this.buildParams(params));
   }
 
+  // ── Pre-Foreclosure ──────────────────────────────────────────────────
+
+  /**
+   * Get pre-foreclosure details for properties in an area.
+   * Returns NOD/NTS/lis pendens filings, auction dates, default amounts.
+   * Supports postalcode area searches.
+   */
+  async getPreForeclosureDetail(
+    params: AttomSearchParams
+  ): Promise<any> {
+    return this.request("/preforeclosure/detail", this.buildParams(params));
+  }
+
+  // ── Sale Comparables ──────────────────────────────────────────────────
+
+  /**
+   * Get sale comparables by ATTOMid (cheapest — single key lookup).
+   * Returns comparable properties with sale prices, dates, and property details.
+   */
+  async getSaleComparablesByAttomId(
+    params: AttomSearchParams
+  ): Promise<any> {
+    return this.request("/sale/comparables", this.buildParams(params));
+  }
+
+  /**
+   * Get sale comparables by APN + FIPS code.
+   * Fallback when ATTOMid is not available.
+   */
+  async getSaleComparablesByApn(
+    params: AttomSearchParams
+  ): Promise<any> {
+    return this.request("/sale/comparables", this.buildParams(params));
+  }
+
   /**
    * Convenience: fetch comprehensive risk profile for a property
    * Combines hazard risk, climate risk, and flood zone data in parallel

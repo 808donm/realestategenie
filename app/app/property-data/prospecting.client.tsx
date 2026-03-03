@@ -68,7 +68,10 @@ interface AttomProperty {
     borrowerMailFullStreetAddress?: string; borrowerMailCity?: string; borrowerMailState?: string; borrowerMailZip?: string;
     companyName?: string;
   };
-  foreclosure?: { actionType?: string; filingDate?: string; auctionDate?: string; defaultAmount?: number; originalLoanAmount?: number; auctionLocation?: string };
+  foreclosure?: { actionType?: string; filingDate?: string; recordingDate?: string; documentType?: string;
+    trusteeFullName?: string; defaultAmount?: number; originalLoanAmount?: number; penaltyInterest?: number;
+    auctionDate?: string; auctionLocation?: string; startingBid?: number;
+    borrowerName?: string; lenderName?: string; caseNumber?: string };
   utilities?: { coolingType?: string; heatingType?: string; sewerType?: string; waterType?: string };
   // Allow unknown keys since ATTOM responses vary by endpoint
   [key: string]: unknown;
@@ -580,6 +583,8 @@ export default function Prospecting() {
   const [selectedProperty, setSelectedProperty] = useState<AttomProperty | null>(null);
   const [expandedInvestor, setExpandedInvestor] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState("");
+  const [salesTrendData, setSalesTrendData] = useState<any>(null);
+  const [salesTrendZip, setSalesTrendZip] = useState("");
 
   // Universal property cache — keyed by attomId, accumulates data from ALL search modes.
   // Every search (radius or not) adds its properties here. Before making supplemental
@@ -607,14 +612,13 @@ export default function Prospecting() {
       params.set("endpoint", endpointOverride);
       // Valuation endpoints don't support pagination — strip page/pagesize
       // (server strips them too, but cleaner to not send them)
-      const noPaginationEndpoints = ["rentalavm", "homeequity"];
+      const noPaginationEndpoints = ["rentalavm", "homeequity", "preforeclosure"];
       if (noPaginationEndpoints.includes(endpointOverride)) {
         params.delete("page");
         params.delete("pagesize");
       }
-      // "expanded", "avm", "rentalavm", "homeequity", "assessmentsnapshot"
-      // return ALL properties in the zip — they do NOT support sale date filters.
-      const noSaleDateEndpoints = ["expanded", "avm", "rentalavm", "homeequity", "assessmentsnapshot"];
+      // These endpoints return ALL properties in the zip — no sale date filters.
+      const noSaleDateEndpoints = ["expanded", "avm", "rentalavm", "homeequity", "assessmentsnapshot", "preforeclosure"];
       if (mode === "radius" && startDate && endDate && !noSaleDateEndpoints.includes(endpointOverride)) {
         params.set("startSaleSearchDate", startDate.replace(/-/g, "/"));
         params.set("endSaleSearchDate", endDate.replace(/-/g, "/"));
@@ -857,6 +861,8 @@ export default function Prospecting() {
         rentalAvm: resolveRentalAvm(p) || resolveRentalAvm(supp),
         // Fill in home equity data from supplement (from /valuation/homeequity)
         homeEquity: resolveHomeEquity(p) || resolveHomeEquity(supp),
+        // Fill in foreclosure / pre-foreclosure data from supplement
+        foreclosure: p.foreclosure?.actionType ? p.foreclosure : (supp.foreclosure as any)?.actionType ? supp.foreclosure as any : p.foreclosure,
       };
     });
   };
@@ -1142,9 +1148,37 @@ export default function Prospecting() {
           valuationFetches.push(fetchPage(1, "homeequity").catch(() => ({ property: [] })));
           valuationLabels.push("homeequity");
         }
+        // Pre-foreclosure details — only for foreclosure mode (NOD/NTS filings, auction dates)
+        if (mode === "foreclosure") {
+          valuationFetches.push(fetchPage(1, "preforeclosure").catch(() => ({ property: [] })));
+          valuationLabels.push("preforeclosure");
+        }
         if (valuationFetches.length > 0) {
           const valuationResults = await Promise.all(valuationFetches);
           valuationSupps = valuationResults.map((r: any) => (r.property || []) as AttomProperty[]);
+        }
+
+        // Fetch sales trend for this zip code (zip-level, not per-property)
+        // Only fetch if we haven't already fetched for this zip
+        if (salesTrendZip !== zip.trim()) {
+          const currentYear = new Date().getFullYear();
+          const trendParams = new URLSearchParams({
+            endpoint: "salestrend",
+            postalcode: zip.trim(),
+            interval: "quarterly",
+            startyear: String(currentYear - 3),
+            endyear: String(currentYear),
+            propertytype: "SINGLE FAMILY RESIDENCE",
+          });
+          fetch(`/api/integrations/attom/property?${trendParams}`)
+            .then(r => r.json())
+            .then(data => {
+              if (data && !data.error) {
+                setSalesTrendData(data);
+                setSalesTrendZip(zip.trim());
+              }
+            })
+            .catch(() => { /* non-critical */ });
         }
 
         for (let pg = 1; pg <= maxPages; pg++) {
@@ -1559,6 +1593,44 @@ export default function Prospecting() {
               </div>
             )}
 
+            {/* Pre-Foreclosure details from /preforeclosure/detail supplement */}
+            {mode === "foreclosure" && prop.foreclosure?.actionType && (
+              <div style={{ marginTop: 6, padding: "6px 10px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, fontSize: 12 }}>
+                <div style={{ fontWeight: 700, color: "#991b1b", marginBottom: 4, display: "flex", alignItems: "center", gap: 6 }}>
+                  Pre-Foreclosure Filing
+                  <span style={{ padding: "1px 8px", background: "#dc2626", color: "#fff", borderRadius: 10, fontSize: 10, fontWeight: 700 }}>
+                    {prop.foreclosure.actionType}
+                  </span>
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+                  {prop.foreclosure.filingDate && (
+                    <span><strong>Filed:</strong> {prop.foreclosure.filingDate}</span>
+                  )}
+                  {prop.foreclosure.recordingDate && (
+                    <span><strong>Recorded:</strong> {prop.foreclosure.recordingDate}</span>
+                  )}
+                  {prop.foreclosure.auctionDate && (
+                    <span><strong>Auction:</strong> <span style={{ color: "#dc2626", fontWeight: 600 }}>{prop.foreclosure.auctionDate}</span></span>
+                  )}
+                  {prop.foreclosure.defaultAmount != null && (
+                    <span><strong>Default:</strong> {fmt(prop.foreclosure.defaultAmount)}</span>
+                  )}
+                  {prop.foreclosure.originalLoanAmount != null && (
+                    <span><strong>Original Loan:</strong> {fmt(prop.foreclosure.originalLoanAmount)}</span>
+                  )}
+                  {prop.foreclosure.startingBid != null && (
+                    <span><strong>Starting Bid:</strong> <span style={{ color: "#059669", fontWeight: 600 }}>{fmt(prop.foreclosure.startingBid)}</span></span>
+                  )}
+                  {prop.foreclosure.trusteeFullName && (
+                    <span><strong>Trustee:</strong> {prop.foreclosure.trusteeFullName}</span>
+                  )}
+                  {prop.foreclosure.auctionLocation && (
+                    <span><strong>Location:</strong> {prop.foreclosure.auctionLocation}</span>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Radius farming — sale info (always show for this mode) */}
             {mode === "radius" && (
               <div style={{ marginTop: 6, padding: "6px 10px", background: "#f5f3ff", borderRadius: 6, fontSize: 12 }}>
@@ -1932,6 +2004,50 @@ export default function Prospecting() {
           {debugInfo}
         </div>
       )}
+
+      {/* Sales Trend Summary — zip-level market data from /transaction/salestrend */}
+      {!isLoading && hasSearched && salesTrendData && (() => {
+        const trendsList: any[] = salesTrendData.salesTrends || salesTrendData.salestrend || [];
+        if (trendsList.length === 0) return null;
+        const recent = trendsList.slice(-4); // Last 4 quarters
+        const areaName = trendsList[0]?.location?.geographyName;
+        const firstMed = recent[0]?.salesTrend?.medSalePrice;
+        const lastMed = recent[recent.length - 1]?.salesTrend?.medSalePrice;
+        const priceChange = (firstMed && lastMed) ? ((lastMed - firstMed) / firstMed * 100) : null;
+        const lastPeriod = recent[recent.length - 1];
+        const st = lastPeriod?.salesTrend || lastPeriod;
+        return (
+          <div style={{ padding: "10px 14px", background: "#faf5ff", border: "1px solid #e9d5ff", borderRadius: 8, marginBottom: 12, fontSize: 12 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+              <div style={{ fontWeight: 700, fontSize: 13, color: "#7c3aed" }}>
+                Market Trends{areaName ? ` — ${areaName}` : ` — ${zip.trim()}`}
+              </div>
+              {priceChange != null && (
+                <span style={{ fontWeight: 600, fontSize: 12, color: priceChange >= 0 ? "#059669" : "#dc2626" }}>
+                  {priceChange >= 0 ? "+" : ""}{priceChange.toFixed(1)}% median price (last year)
+                </span>
+              )}
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 16, marginTop: 6 }}>
+              {st?.medSalePrice != null && (
+                <span><strong>Median:</strong> ${Number(st.medSalePrice).toLocaleString()}</span>
+              )}
+              {st?.avgSalePrice != null && (
+                <span><strong>Avg:</strong> ${Number(st.avgSalePrice).toLocaleString()}</span>
+              )}
+              {st?.homeSaleCount != null && (
+                <span><strong>Sales:</strong> {st.homeSaleCount}</span>
+              )}
+              {st?.avgDaysOnMarket != null && (
+                <span><strong>Avg DOM:</strong> {st.avgDaysOnMarket} days</span>
+              )}
+              {st?.medPricePerSqFt != null && (
+                <span><strong>Med $/sqft:</strong> ${Number(st.medPricePerSqFt).toLocaleString()}</span>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {!isLoading && hasSearched && results.length === 0 && investorGroups.length === 0 && (
         <div style={{ padding: 40, textAlign: "center", color: "#6b7280", background: "#f9fafb", borderRadius: 12 }}>

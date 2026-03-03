@@ -134,9 +134,8 @@ export async function GET(request: NextRequest) {
     if (!params.pagesize) params.pagesize = 25;
     if (!params.page) params.page = 1;
 
-    // Valuation endpoints (/valuation/rentalavm, /valuation/homeequity) reject
-    // pagination params. Strip them before calling these endpoints.
-    const noPaginationEndpoints = ["rentalavm", "homeequity"];
+    // Valuation and single-property endpoints reject pagination params.
+    const noPaginationEndpoints = ["rentalavm", "homeequity", "comparables"];
     if (noPaginationEndpoints.includes(endpoint)) {
       delete params.pagesize;
       delete params.page;
@@ -318,6 +317,16 @@ export async function GET(request: NextRequest) {
         break;
       case "riskprofile":
         result = await client.getRiskProfile(params);
+        break;
+
+      // ── Pre-Foreclosure ──────────────────────────────────────────────────
+      case "preforeclosure":
+        result = await client.getPreForeclosureDetail(params);
+        break;
+
+      // ── Sale Comparables ──────────────────────────────────────────────────
+      case "comparables":
+        result = await client.getSaleComparablesByAttomId(params);
         break;
 
       // ── Recorder / Deeds ─────────────────────────────────────────────────
