@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { AttomClient, createAttomClient, normalizeAttomProperty } from "@/lib/integrations/attom-client";
+import {
+  buildCacheKey, cacheGet, cacheSet,
+  mockReplay, mockCapture, isReplayMode,
+} from "@/lib/integrations/attom-cache";
 
 /**
  * Helper: get a working ATTOM client (from DB config or env var)
@@ -136,6 +140,34 @@ export async function GET(request: NextRequest) {
     if (noPaginationEndpoints.includes(endpoint)) {
       delete params.pagesize;
       delete params.page;
+    }
+
+    // ── Cache + Mock Mode ──────────────────────────────────────────────────
+    const cacheKey = buildCacheKey(endpoint, params);
+
+    // 1. Replay mode: serve from saved JSON files, zero API calls
+    const replayed = mockReplay(cacheKey, endpoint);
+    if (replayed) {
+      return NextResponse.json({ success: true, endpoint, ...replayed }, {
+        headers: { "X-Attom-Cache": "REPLAY" },
+      });
+    }
+
+    // 2. In-memory cache: return cached response if still valid
+    const cached = cacheGet(cacheKey);
+    if (cached) {
+      console.log(`[ATTOM Cache] HIT for ${endpoint} (${cacheKey.slice(0, 60)}…)`);
+      return NextResponse.json(cached, {
+        headers: { "X-Attom-Cache": "HIT" },
+      });
+    }
+
+    // 3. If replay mode but no saved data, return a helpful error instead of calling API
+    if (isReplayMode()) {
+      return NextResponse.json(
+        { error: `No saved mock data for ${endpoint}. Run with ATTOM_MOCK_MODE=capture first.` },
+        { status: 404, headers: { "X-Attom-Cache": "REPLAY-MISS" } }
+      );
     }
 
     const client = await getAttomClient();
@@ -313,10 +345,13 @@ export async function GET(request: NextRequest) {
       };
     }
 
-    return NextResponse.json({
-      success: true,
-      endpoint,
-      ...result,
+    // Store in cache + save to disk in capture mode
+    const responsePayload = { success: true, endpoint, ...result };
+    cacheSet(cacheKey, responsePayload);
+    mockCapture(cacheKey, endpoint, result);
+
+    return NextResponse.json(responsePayload, {
+      headers: { "X-Attom-Cache": "MISS" },
     });
   } catch (error) {
     console.error("Error fetching ATTOM property:", error);

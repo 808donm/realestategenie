@@ -46,6 +46,9 @@ android/app/build/
 android/build/
 android/local.properties
 
+# ATTOM mock data (captured API responses for offline development)
+src/lib/integrations/attom-mock-data/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
