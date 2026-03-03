@@ -443,6 +443,11 @@ export default function Prospecting() {
   const [expandedInvestor, setExpandedInvestor] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState("");
 
+  // Shared raw data — fetched once per zip+propertyType, reused across non-radius modes.
+  // This avoids re-fetching identical ATTOM data when switching between absentee/equity/foreclosure/investor.
+  const [sharedRawData, setSharedRawData] = useState<AttomProperty[]>([]);
+  const [sharedDataKey, setSharedDataKey] = useState("");
+
   /**
    * Fetch a single page of ATTOM results with the current mode's filters.
    */
@@ -670,15 +675,179 @@ export default function Prospecting() {
     });
   };
 
+  /**
+   * Apply mode-specific filtering/sorting to already-fetched raw data.
+   * Called both after fresh fetch and on mode switch (instant re-filter).
+   */
+  const applyModeFilter = (filterMode: ProspectMode, allRaw: AttomProperty[]) => {
+    // Data diagnostics
+    const withDirectOwner = allRaw.filter((p) => { const o = resolveOwner(p); return o?.owner1?.fullName || o?.owner2?.fullName || o?.owner3?.fullName; }).length;
+    const withMortgagor = allRaw.filter((p) => { const o = resolveOwner(p); return !o?.owner1?.fullName && !o?.owner2?.fullName && !o?.owner3?.fullName && !!getMortgagorName(p); }).length;
+    const withMailAddr = allRaw.filter((p) => getMailingAddress(p)).length;
+    const withContact = allRaw.filter(hasContactInfo).length;
+    const withSaleAmt = allRaw.filter((p) => getSaleAmount(p) != null).length;
+    const withSaleDate = allRaw.filter((p) => getSaleDateStr(p)).length;
+    const withMortgage = allRaw.filter((p) => getMortgageAmount(p) != null).length;
+    const withAvm = allRaw.filter((p) => p.avm?.amount?.value != null).length;
+    const withValue = allRaw.filter((p) => getPropertyValue(p) != null).length;
+    const withAbsentee = allRaw.filter(isAbsenteeOwner).length;
+
+    if (filterMode === "absentee") {
+      setDebugInfo(
+        `Scanned ${allRaw.length} properties — ${withAbsentee} absentee, ` +
+        `${withDirectOwner} with owner names, ${withMortgagor} with mortgagor (via mortgage), ` +
+        `${withMailAddr} with mailing addresses, ${withContact} with any contact info, ` +
+        `${withValue} with property values, ${withMortgage} with mortgage data` +
+        (withContact === 0 && withAbsentee > 0 ? ` (use property addresses for skip tracing or direct mail)` : "")
+      );
+
+      const matches = allRaw.filter((p) => isAbsenteeOwner(p));
+      matches.sort((a, b) => {
+        const aHas = hasContactInfo(a) ? 1 : 0;
+        const bHas = hasContactInfo(b) ? 1 : 0;
+        if (aHas !== bHas) return bHas - aHas;
+        return (getPropertyValue(b) || 0) - (getPropertyValue(a) || 0);
+      });
+      setResults(matches);
+      setTotalCount(matches.length);
+      setInvestorGroups([]);
+    } else if (filterMode === "foreclosure") {
+      setDebugInfo(
+        `Scanned ${allRaw.length} properties — ${withDirectOwner} with owner names, ${withMortgagor} with mortgagor (via mortgage), ` +
+        `${withMailAddr} with mailing addresses, ${withContact} with any contact info, ` +
+        `${withSaleAmt} with sale amounts, ${withSaleDate} with sale dates, ${withMortgage} with mortgage data, ` +
+        `${withAvm} with AVM, ${withValue} with property values, ${withAbsentee} absentee`
+      );
+
+      const matches = allRaw.filter((p) => getDistressSignals(p).isDistressed);
+      matches.sort((a, b) => {
+        const sa = getDistressSignals(a);
+        const sb = getDistressSignals(b);
+        if (sa.isUnderwater !== sb.isUnderwater) return sa.isUnderwater ? -1 : 1;
+        return (sb.ltvPct ?? 0) - (sa.ltvPct ?? 0);
+      });
+      setResults(matches);
+      setTotalCount(matches.length);
+      setInvestorGroups([]);
+    } else if (filterMode === "equity") {
+      setDebugInfo(
+        `Scanned ${allRaw.length} properties — ${withDirectOwner} with owner names, ${withMortgagor} with mortgagor (via mortgage), ` +
+        `${withMailAddr} with mailing addresses, ${withContact} with any contact info, ` +
+        `${withSaleAmt} with sale amounts, ${withSaleDate} with sale dates, ${withMortgage} with mortgage data, ` +
+        `${withAvm} with AVM, ${withValue} with property values, ${withAbsentee} absentee`
+      );
+
+      const minYearsVal = parseInt(minYearsOwned, 10) || 10;
+      const cutoffDate = new Date();
+      cutoffDate.setFullYear(cutoffDate.getFullYear() - minYearsVal);
+      const minAvm = minAvmValue ? Number(minAvmValue) : 0;
+
+      const matches = allRaw.filter((p) => {
+        const propVal = getPropertyValue(p);
+        if (!propVal || propVal <= 0) return false;
+        if (minAvm > 0 && propVal < minAvm) return false;
+        const ownershipDate = getOwnershipDate(p);
+        if (!ownershipDate) return false;
+        if (ownershipDate > cutoffDate) return false;
+        const purchasePrice = getSaleAmount(p) || 0;
+        if (purchasePrice > 0 && propVal <= purchasePrice) return false;
+        return true;
+      });
+
+      matches.sort((a, b) => {
+        const aVal = getPropertyValue(a) || 0;
+        const aSale = getSaleAmount(a) || 0;
+        const bVal = getPropertyValue(b) || 0;
+        const bSale = getSaleAmount(b) || 0;
+        return (bVal - bSale) - (aVal - aSale);
+      });
+
+      setResults(matches);
+      setTotalCount(matches.length);
+      setInvestorGroups([]);
+    } else if (filterMode === "investor") {
+      setDebugInfo(
+        `Scanned ${allRaw.length} properties — ${withDirectOwner} with owner names, ${withMortgagor} with mortgagor (via mortgage), ` +
+        `${withMailAddr} with mailing addresses, ${withContact} with any contact info, ` +
+        `${withSaleAmt} with sale amounts, ${withSaleDate} with sale dates, ${withMortgage} with mortgage data, ` +
+        `${withAvm} with AVM, ${withValue} with property values, ${withAbsentee} absentee`
+      );
+
+      const groups = groupByOwner(allRaw);
+
+      const groupedIds = new Set<number>();
+      for (const g of groups) {
+        for (const p of g.properties) {
+          if (p.identifier?.attomId) groupedIds.add(p.identifier.attomId);
+        }
+      }
+      const singleInvestors = allRaw.filter((p) => {
+        if (p.identifier?.attomId && groupedIds.has(p.identifier.attomId)) return false;
+        const ownerR = resolveOwner(p);
+        const isCorp = ownerR?.corporateIndicator === "Y";
+        const isAbsentee = isAbsenteeOwner(p);
+        const hasOwnerName = !!getOwnerName(p);
+        return hasOwnerName && (isCorp || isAbsentee);
+      });
+
+      for (const p of singleInvestors) {
+        const ownerR = resolveOwner(p);
+        const years = p.building?.summary?.yearBuilt ? [p.building.summary.yearBuilt] : [];
+        groups.push({
+          ownerName: getOwnerName(p) || "Unknown",
+          mailingAddress: ownerR?.mailingAddressOneLine || "",
+          isCorporate: ownerR?.corporateIndicator === "Y",
+          properties: [p],
+          totalTaxBurden: p.assessment?.tax?.taxAmt || 0,
+          totalAvmValue: getPropertyValue(p) || 0,
+          oldestYearBuilt: years.length > 0 ? Math.min(...years) : null,
+          avgYearBuilt: years.length > 0 ? years[0] : null,
+        });
+      }
+
+      groups.sort((a, b) => {
+        if (a.properties.length !== b.properties.length) return b.properties.length - a.properties.length;
+        return b.totalAvmValue - a.totalAvmValue;
+      });
+
+      setInvestorGroups(groups);
+      setTotalCount(groups.length);
+      setResults(allRaw);
+    } else if (filterMode === "radius") {
+      const withPrice = allRaw.filter((p) => getSaleAmount(p) != null && getSaleAmount(p)! > 0).length;
+      const withVal = allRaw.filter((p) => getPropertyValue(p) != null).length;
+      const isNonDisclosure = allRaw.length > 0 && withPrice === 0;
+      setDebugInfo(
+        `Scanned ${allRaw.length} recent sales — ` +
+        `${withPrice} with disclosed prices, ${withVal} with estimated values` +
+        (isNonDisclosure ? ` (non-disclosure state — using assessed/market values)` : "")
+      );
+      setResults(allRaw);
+      setTotalCount(allRaw.length);
+      setInvestorGroups([]);
+    }
+
+    setHasSearched(true);
+  };
+
   const handleSearch = async (pageNum = 1) => {
     if (!zip.trim()) {
       setError("Enter a zip code.");
       return;
     }
 
-    setIsLoading(true);
     setError("");
     setPage(pageNum);
+
+    // For non-radius modes, reuse shared data if we already fetched for this zip+propertyType.
+    // This avoids redundant ATTOM API calls when switching between absentee/equity/foreclosure/investor.
+    const currentKey = `${zip.trim()}:${propertyType}`;
+    if (mode !== "radius" && sharedRawData.length > 0 && sharedDataKey === currentKey) {
+      applyModeFilter(mode, sharedRawData);
+      return;
+    }
+
+    setIsLoading(true);
     setInvestorGroups([]);
 
     try {
@@ -756,158 +925,8 @@ export default function Prospecting() {
           if (baseProps.length < pageSize) break;
         }
 
-        // Data diagnostics: show what ATTOM actually returned
-        const withDirectOwner = allRaw.filter((p) => { const o = resolveOwner(p); return o?.owner1?.fullName || o?.owner2?.fullName || o?.owner3?.fullName; }).length;
-        const withMortgagor = allRaw.filter((p) => { const o = resolveOwner(p); return !o?.owner1?.fullName && !o?.owner2?.fullName && !o?.owner3?.fullName && !!getMortgagorName(p); }).length;
-        const withMailAddr = allRaw.filter((p) => getMailingAddress(p)).length;
-        const withContact = allRaw.filter(hasContactInfo).length;
-        const withSaleAmt = allRaw.filter((p) => getSaleAmount(p) != null).length;
-        const withSaleDate = allRaw.filter((p) => getSaleDateStr(p)).length;
-        const withMortgage = allRaw.filter((p) => getMortgageAmount(p) != null).length;
-        const withAvm = allRaw.filter((p) => p.avm?.amount?.value != null).length;
-        const withValue = allRaw.filter((p) => getPropertyValue(p) != null).length;
-        const withAbsentee = allRaw.filter(isAbsenteeOwner).length;
-        if (mode === "absentee") {
-          setDebugInfo(
-            `Scanned ${allRaw.length} properties — ${withAbsentee} absentee, ` +
-            `${withDirectOwner} with owner names, ${withMortgagor} with mortgagor (via mortgage), ` +
-            `${withMailAddr} with mailing addresses, ${withContact} with any contact info, ` +
-            `${withValue} with property values, ${withMortgage} with mortgage data` +
-            (withContact === 0 && withAbsentee > 0 ? ` (use property addresses for skip tracing or direct mail)` : "")
-          );
-        } else {
-          setDebugInfo(
-            `Scanned ${allRaw.length} properties — ${withDirectOwner} with owner names, ${withMortgagor} with mortgagor (via mortgage), ` +
-            `${withMailAddr} with mailing addresses, ${withContact} with any contact info, ` +
-            `${withSaleAmt} with sale amounts, ${withSaleDate} with sale dates, ${withMortgage} with mortgage data, ` +
-            `${withAvm} with AVM, ${withValue} with property values, ${withAbsentee} absentee`
-          );
-        }
-
-        if (mode === "absentee") {
-          // Show ALL absentee properties — the property address itself is a
-          // usable contact point (direct mail, door knocking, skip tracing).
-          // ATTOM often returns absentee indicators without owner names for
-          // certain zip codes, so requiring hasContactInfo() would hide valid leads.
-          const matches = allRaw.filter((p) => isAbsenteeOwner(p));
-          // Sort: properties with contact info first, then by value descending
-          matches.sort((a, b) => {
-            const aHas = hasContactInfo(a) ? 1 : 0;
-            const bHas = hasContactInfo(b) ? 1 : 0;
-            if (aHas !== bHas) return bHas - aHas;
-            return (getPropertyValue(b) || 0) - (getPropertyValue(a) || 0);
-          });
-          setResults(matches);
-          setTotalCount(matches.length);
-          setInvestorGroups([]);
-        } else if (mode === "foreclosure") {
-          // Detect distress from mortgage/AVM/assessment data
-          const matches = allRaw.filter((p) => getDistressSignals(p).isDistressed);
-          // Sort: underwater first, then by LTV descending
-          matches.sort((a, b) => {
-            const sa = getDistressSignals(a);
-            const sb = getDistressSignals(b);
-            if (sa.isUnderwater !== sb.isUnderwater) return sa.isUnderwater ? -1 : 1;
-            return (sb.ltvPct ?? 0) - (sa.ltvPct ?? 0);
-          });
-          setResults(matches);
-          setTotalCount(matches.length);
-          setInvestorGroups([]);
-        } else if (mode === "equity") {
-          // Filter by owner tenure using the actual purchase/sale date.
-          // Uses getPropertyValue() which falls back from AVM → assessment
-          // values when AVM isn't available (common in postal code searches).
-          const minYears = parseInt(minYearsOwned, 10) || 10;
-          const cutoffDate = new Date();
-          cutoffDate.setFullYear(cutoffDate.getFullYear() - minYears);
-          const minAvm = minAvmValue ? Number(minAvmValue) : 0;
-
-          const matches = allRaw.filter((p) => {
-            // Must have some value estimate (AVM or assessment) to gauge equity
-            const propVal = getPropertyValue(p);
-            if (!propVal || propVal <= 0) return false;
-            // Client-side value floor filter
-            if (minAvm > 0 && propVal < minAvm) return false;
-
-            // Must have a sale/ownership date to determine tenure
-            const ownershipDate = getOwnershipDate(p);
-            if (!ownershipDate) return false;
-            // Owner must have purchased before the cutoff
-            if (ownershipDate > cutoffDate) return false;
-
-            // Must have positive equity (current value > purchase price)
-            const purchasePrice = getSaleAmount(p) || 0;
-            if (purchasePrice > 0 && propVal <= purchasePrice) return false;
-            return true;
-          });
-
-          // Sort by estimated equity descending (highest equity first)
-          matches.sort((a, b) => {
-            const aVal = getPropertyValue(a) || 0;
-            const aSale = getSaleAmount(a) || 0;
-            const bVal = getPropertyValue(b) || 0;
-            const bSale = getSaleAmount(b) || 0;
-            return (bVal - bSale) - (aVal - aSale);
-          });
-
-          setResults(matches);
-          setTotalCount(matches.length);
-          setInvestorGroups([]);
-        } else if (mode === "investor") {
-          // Investor mode: group by owner name across all fetched pages.
-          // Also include single-property corporate entities and absentee
-          // owners with non-local mailing addresses — these are investors
-          // even if they only own one property in this zip code.
-          const groups = groupByOwner(allRaw);
-
-          // Add single-property investors: corporate entities or absentee
-          // owners that didn't appear in multi-property groups
-          const groupedIds = new Set<number>();
-          for (const g of groups) {
-            for (const p of g.properties) {
-              if (p.identifier?.attomId) groupedIds.add(p.identifier.attomId);
-            }
-          }
-          const singleInvestors = allRaw.filter((p) => {
-            if (p.identifier?.attomId && groupedIds.has(p.identifier.attomId)) return false;
-            const ownerR = resolveOwner(p);
-            const isCorp = ownerR?.corporateIndicator === "Y";
-            const isAbsentee = isAbsenteeOwner(p);
-            const hasOwnerName = !!getOwnerName(p);
-            return hasOwnerName && (isCorp || isAbsentee);
-          });
-
-          // Wrap single investors in group format
-          for (const p of singleInvestors) {
-            const ownerR = resolveOwner(p);
-            const years = p.building?.summary?.yearBuilt ? [p.building.summary.yearBuilt] : [];
-            groups.push({
-              ownerName: getOwnerName(p) || "Unknown",
-              mailingAddress: ownerR?.mailingAddressOneLine || "",
-              isCorporate: ownerR?.corporateIndicator === "Y",
-              properties: [p],
-              totalTaxBurden: p.assessment?.tax?.taxAmt || 0,
-              totalAvmValue: getPropertyValue(p) || 0,
-              oldestYearBuilt: years.length > 0 ? Math.min(...years) : null,
-              avgYearBuilt: years.length > 0 ? years[0] : null,
-            });
-          }
-
-          // Re-sort: multi-property first, then by total value
-          groups.sort((a, b) => {
-            if (a.properties.length !== b.properties.length) return b.properties.length - a.properties.length;
-            return b.totalAvmValue - a.totalAvmValue;
-          });
-
-          setInvestorGroups(groups);
-          setTotalCount(groups.length);
-          setResults(allRaw);
-        } else if (mode === "radius") {
-          // Post-merge owner enrichment: for any properties still missing owner
-          // data after the supplement merge, individually fetch detailmortgageowner
-          // by attomId. This handles cases where supplement pagination didn't align
-          // with the salesnapshot results (or ATTOM didn't support sale date filters
-          // on the supplement endpoints).
+        // Radius mode: post-merge owner enrichment for properties still missing owner data
+        if (mode === "radius") {
           const needsOwner = allRaw.filter((p) => {
             const o = resolveOwner(p);
             return !(o?.owner1?.fullName || o?.owner2?.fullName || o?.owner3?.fullName);
@@ -926,7 +945,6 @@ export default function Prospecting() {
                     if (attomId) {
                       oParams.set("attomid", String(attomId));
                     } else if (addrLine) {
-                      // Parse "123 Main St, City, ST 96744" into address1 + address2
                       const parts = addrLine.split(",").map((s: string) => s.trim());
                       if (parts.length >= 2) {
                         oParams.set("address1", parts[0]);
@@ -939,7 +957,6 @@ export default function Prospecting() {
                   } catch { return null; }
                 })
               );
-              // Merge owner results back into allRaw
               for (let j = 0; j < batch.length; j++) {
                 const ownerData = ownerResults[j];
                 if (!ownerData) continue;
@@ -950,25 +967,16 @@ export default function Prospecting() {
               }
             }
           }
-
-          // Just Sold Farming — show all recent sales.
-          // In non-disclosure states (HI, TX, etc.) sale prices aren't public,
-          // so we can't filter to disclosed-only without losing ALL results.
-          // Instead, show all sales and use AVM/assessment as value proxy.
-          const withPrice = allRaw.filter((p) => getSaleAmount(p) != null && getSaleAmount(p)! > 0).length;
-          const withValue = allRaw.filter((p) => getPropertyValue(p) != null).length;
-          const isNonDisclosure = allRaw.length > 0 && withPrice === 0;
-          setDebugInfo(
-            `Scanned ${allRaw.length} recent sales across ${Math.min(maxPages, Math.ceil(allRaw.length / pageSize) + 1)} pages — ` +
-            `${withPrice} with disclosed prices, ${withValue} with estimated values` +
-            (isNonDisclosure ? ` (non-disclosure state — using assessed/market values)` : "")
-          );
-          setResults(allRaw);
-          setTotalCount(allRaw.length);
-          setInvestorGroups([]);
         }
 
-        setHasSearched(true);
+        // Store shared data for non-radius modes so mode switches are instant
+        if (mode !== "radius") {
+          setSharedRawData(allRaw);
+          setSharedDataKey(`${zip.trim()}:${propertyType}`);
+        }
+
+        // Apply mode-specific filtering, sorting, and diagnostics
+        applyModeFilter(mode, allRaw);
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Search failed");
@@ -1471,12 +1479,27 @@ export default function Prospecting() {
 
   return (
     <div>
-      {/* Mode Selection — Investor Portfolios hidden (returns no results currently) */}
+      {/* Mode Selection */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10, marginBottom: 20 }}>
-        {modes.filter((m) => m.id !== "investor").map((m) => (
+        {modes.map((m) => (
           <button
             key={m.id}
-            onClick={() => { setMode(m.id); setResults([]); setInvestorGroups([]); setHasSearched(false); setError(""); setExpandedInvestor(null); setDebugInfo(""); }}
+            onClick={() => {
+              const newMode = m.id;
+              setMode(newMode);
+              setError("");
+              setExpandedInvestor(null);
+              // If we have shared data for the current zip and this isn't radius mode,
+              // instantly re-filter instead of requiring a new search
+              if (newMode !== "radius" && sharedRawData.length > 0 && sharedDataKey === `${zip.trim()}:${propertyType}`) {
+                applyModeFilter(newMode, sharedRawData);
+              } else {
+                setResults([]);
+                setInvestorGroups([]);
+                setHasSearched(false);
+                setDebugInfo("");
+              }
+            }}
             style={{
               padding: 14, borderRadius: 10, border: mode === m.id ? `2px solid ${m.color}` : "1px solid #e5e7eb",
               background: mode === m.id ? `${m.color}08` : "#fff", cursor: "pointer", textAlign: "left",
@@ -1498,7 +1521,7 @@ export default function Prospecting() {
             <input
               type="text"
               value={zip}
-              onChange={(e) => setZip(e.target.value)}
+              onChange={(e) => { setZip(e.target.value); if (sharedDataKey) { setSharedRawData([]); setSharedDataKey(""); } }}
               placeholder="e.g. 80211"
               onKeyDown={(e) => e.key === "Enter" && handleSearch(1)}
               style={{ width: 140, padding: "8px 12px", fontSize: 14, border: "1px solid #d1d5db", borderRadius: 6 }}
@@ -1508,7 +1531,7 @@ export default function Prospecting() {
             <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 4 }}>Property Type</label>
             <select
               value={propertyType}
-              onChange={(e) => setPropertyType(e.target.value)}
+              onChange={(e) => { setPropertyType(e.target.value); if (sharedDataKey) { setSharedRawData([]); setSharedDataKey(""); } }}
               style={{ padding: "8px 12px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 6 }}
             >
               {PROPERTY_TYPES.map((t) => (
