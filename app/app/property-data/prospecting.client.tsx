@@ -858,9 +858,9 @@ export default function Prospecting() {
         // Fill in missing assessment data from supplement (take richer data)
         assessment: p.assessment?.assessed?.assdTtlValue ? p.assessment : (supp.assessment?.assessed?.assdTtlValue ? supp.assessment : p.assessment),
         // Fill in rental AVM data from supplement (from /valuation/rentalavm)
-        rentalAvm: resolveRentalAvm(p) || resolveRentalAvm(supp),
+        rentalAvm: resolveRentalAvm(p) || resolveRentalAvm(supp) || undefined,
         // Fill in home equity data from supplement (from /valuation/homeequity)
-        homeEquity: resolveHomeEquity(p) || resolveHomeEquity(supp),
+        homeEquity: resolveHomeEquity(p) || resolveHomeEquity(supp) || undefined,
         // Fill in foreclosure / pre-foreclosure data from supplement
         foreclosure: p.foreclosure?.actionType ? p.foreclosure : (supp.foreclosure as any)?.actionType ? supp.foreclosure as any : p.foreclosure,
       };
