@@ -13,6 +13,7 @@
 const DEFAULT_BASE_URL =
   "https://api.gateway.attomdata.com/propertyapi/v1.0.0";
 
+const V2_BASE_URL = "https://api.gateway.attomdata.com/property/v2";
 const V4_BASE_URL = "https://api.gateway.attomdata.com/v4";
 
 // ── Response types ──────────────────────────────────────────────────────────
@@ -623,6 +624,36 @@ export class AttomClient {
       const errorText = await response.text();
       console.error(
         `[ATTOM] API request FAILED (${response.status}) for ${url}:`,
+        errorText
+      );
+      throw new Error(
+        `ATTOM API error: ${response.status} - ${errorText}`
+      );
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Make an authenticated GET request to the ATTOM v2 API
+   * (salescomparables endpoint uses path-based property IDs)
+   */
+  private async requestV2<T>(endpoint: string): Promise<T> {
+    const url = new URL(`${V2_BASE_URL}${endpoint}`);
+
+    console.log(`[ATTOM v2] API request: ${url.toString()}`);
+
+    const response = await fetch(url.toString(), {
+      headers: {
+        Accept: "application/json",
+        apikey: this.apiKey,
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(
+        `[ATTOM v2] API request FAILED (${response.status}) for ${url}:`,
         errorText
       );
       throw new Error(
@@ -1553,23 +1584,17 @@ export class AttomClient {
   // ── Sale Comparables ──────────────────────────────────────────────────
 
   /**
-   * Get sale comparables by ATTOMid (cheapest — single key lookup).
-   * Returns comparable properties with sale prices, dates, and property details.
+   * Get sale comparables by ATTOM ID (propId).
+   * Uses v2 endpoint: /property/v2/salescomparables/propid/{propId}
    */
   async getSaleComparablesByAttomId(
     params: AttomSearchParams
   ): Promise<any> {
-    return this.request("/sale/comparables", this.buildParams(params));
-  }
-
-  /**
-   * Get sale comparables by APN + FIPS code.
-   * Fallback when ATTOMid is not available.
-   */
-  async getSaleComparablesByApn(
-    params: AttomSearchParams
-  ): Promise<any> {
-    return this.request("/sale/comparables", this.buildParams(params));
+    const propId = params.attomId || params.attomid || params.ID;
+    if (!propId) {
+      throw new Error("attomId is required for getSaleComparablesByAttomId");
+    }
+    return this.requestV2(`/salescomparables/propid/${propId}`);
   }
 
   /**
