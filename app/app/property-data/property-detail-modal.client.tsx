@@ -428,12 +428,18 @@ export default function PropertyDetailModal({
     setComparablesLoading(true);
     const params = new URLSearchParams({ endpoint: "comparables", attomid: String(attomId) });
     fetch(`/api/integrations/attom/property?${params}`)
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) {
+          return r.json().then(d => { throw new Error(d?.error || `HTTP ${r.status}`); });
+        }
+        return r.json();
+      })
       .then(data => {
+        console.log("[Comps] response keys:", Object.keys(data), "property count:", data.property?.length);
         if (data && !data.error) setComparablesData(data);
         else setComparablesData({ error: data?.error || "No comparables found" });
       })
-      .catch(() => setComparablesData({ error: "Failed to fetch comparables" }))
+      .catch((err) => setComparablesData({ error: err?.message || "Failed to fetch comparables" }))
       .finally(() => setComparablesLoading(false));
   }, [activeSection, comparablesData, comparablesLoading, p]);
 

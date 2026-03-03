@@ -325,9 +325,31 @@ export async function GET(request: NextRequest) {
         break;
 
       // ── Sale Comparables ──────────────────────────────────────────────────
-      case "comparables":
+      case "comparables": {
         result = await client.getSaleComparablesByAttomId(params);
+        console.log("[ATTOM] comparables raw response keys:", result ? Object.keys(result) : "null",
+          JSON.stringify(result).slice(0, 800));
+        // v2 salescomparables response may nest data under SALE_COMPARABLES
+        // or other keys. Normalize into a flat property[] array the UI expects.
+        // The subject property is typically first, followed by comparables.
+        if (result && !result.property) {
+          const comps =
+            result.SALE_COMPARABLES?.[0]?.PROPERTY_COMPARABLES ||
+            result.SALE_COMPARABLES?.[0]?.property ||
+            result.salesComparables?.[0]?.propertyComparables ||
+            result.salesComparables?.[0]?.property ||
+            result.salesComparables ||
+            result.comparables ||
+            result.COMPARABLES;
+          if (Array.isArray(comps)) {
+            console.log("[ATTOM] comparables: normalized", comps.length, "properties from nested response");
+            result = { ...result, property: comps };
+          } else {
+            console.log("[ATTOM] comparables: could not find property array in response");
+          }
+        }
         break;
+      }
 
       // ── Recorder / Deeds ─────────────────────────────────────────────────
       case "recorder":
