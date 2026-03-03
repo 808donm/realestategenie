@@ -548,11 +548,12 @@ export default function Prospecting() {
 
     if (endpointOverride) {
       params.set("endpoint", endpointOverride);
-      // The "expanded" (expandedprofile) endpoint returns ALL properties in
-      // the zip — it does NOT support sale date filters. Merge by attomId
-      // handles matching to the primary results. Only add sale date filters
-      // for sale-related supplement endpoints (detailmortgageowner, detailowner).
-      if (mode === "radius" && startDate && endDate && endpointOverride !== "expanded") {
+      // "expanded" (expandedprofile) and "avm" (avm/snapshot) return ALL
+      // properties in the zip — they do NOT support sale date filters.
+      // Merge by attomId handles matching to the primary results.
+      // Only add sale date filters for sale-related endpoints (detailowner, etc).
+      const noSaleDateEndpoints = ["expanded", "avm"];
+      if (mode === "radius" && startDate && endDate && !noSaleDateEndpoints.includes(endpointOverride)) {
         params.set("startSaleSearchDate", startDate.replace(/-/g, "/"));
         params.set("endSaleSearchDate", endDate.replace(/-/g, "/"));
       }
@@ -603,18 +604,27 @@ export default function Prospecting() {
 
       const baseProps: AttomProperty[] = data.property || [];
 
-      // Check cache for expanded data before making the supplement call
-      const { enriched, needsExpanded } = enrichFromCache(baseProps, propertyCache);
+      // Check cache before making supplement calls
+      const { enriched, needsExpanded, needsAvm } = enrichFromCache(baseProps, propertyCache);
 
-      let merged: AttomProperty[];
+      const suppFetches: Promise<any>[] = [];
       if (needsExpanded) {
         const suppParams = new URLSearchParams(params);
         suppParams.set("endpoint", "expanded");
-        const suppRes = await fetch(`/api/integrations/attom/property?${suppParams.toString()}`).catch(() => null);
-        const suppData = suppRes ? await suppRes.json().catch(() => ({})) : {};
-        const suppProps: AttomProperty[] = suppData.property || [];
-        merged = suppProps.length > 0
-          ? mergeSupplementalData(enriched, [suppProps])
+        suppFetches.push(fetch(`/api/integrations/attom/property?${suppParams.toString()}`).then(r => r.json()).catch(() => ({ property: [] })));
+      }
+      if (needsAvm) {
+        const avmParams = new URLSearchParams(params);
+        avmParams.set("endpoint", "avm");
+        suppFetches.push(fetch(`/api/integrations/attom/property?${avmParams.toString()}`).then(r => r.json()).catch(() => ({ property: [] })));
+      }
+
+      let merged: AttomProperty[];
+      if (suppFetches.length > 0) {
+        const suppResults = await Promise.all(suppFetches);
+        const suppArrays = suppResults.map((r: any) => (r.property || []) as AttomProperty[]).filter(a => a.length > 0);
+        merged = suppArrays.length > 0
+          ? mergeSupplementalData(enriched, suppArrays)
           : enriched;
       } else {
         merged = enriched;
@@ -780,11 +790,12 @@ export default function Prospecting() {
   const enrichFromCache = (
     properties: AttomProperty[],
     cache: Map<number, AttomProperty>
-  ): { enriched: AttomProperty[]; needsOwner: boolean; needsExpanded: boolean } => {
-    if (cache.size === 0) return { enriched: properties, needsOwner: true, needsExpanded: true };
+  ): { enriched: AttomProperty[]; needsOwner: boolean; needsExpanded: boolean; needsAvm: boolean } => {
+    if (cache.size === 0) return { enriched: properties, needsOwner: true, needsExpanded: true, needsAvm: true };
 
     let needsOwner = false;
     let needsExpanded = false;
+    let needsAvm = false;
 
     const enriched = properties.map((p) => {
       const id = p.identifier?.attomId;
@@ -792,16 +803,18 @@ export default function Prospecting() {
       if (!cached) {
         needsOwner = true;
         needsExpanded = true;
+        needsAvm = true;
         return p;
       }
       const merged = mergeSupplementalData([p], [[cached]])[0];
       const o = resolveOwner(merged);
       if (!(o?.owner1?.fullName || o?.owner2?.fullName || o?.owner3?.fullName)) needsOwner = true;
-      if (!merged.avm?.amount?.value && !merged.assessment?.assessed?.assdTtlValue) needsExpanded = true;
+      if (!merged.assessment?.assessed?.assdTtlValue) needsExpanded = true;
+      if (!merged.avm?.amount?.value) needsAvm = true;
       return merged;
     });
 
-    return { enriched, needsOwner, needsExpanded };
+    return { enriched, needsOwner, needsExpanded, needsAvm };
   };
 
   /**
@@ -1032,26 +1045,28 @@ export default function Prospecting() {
           if (baseProps.length === 0) break;
 
           // Check cache to see which supplements we can skip for this page
-          const { enriched: cacheEnriched, needsOwner, needsExpanded } = enrichFromCache(baseProps, cacheSnapshot);
+          const { enriched: cacheEnriched, needsOwner, needsExpanded, needsAvm } = enrichFromCache(baseProps, cacheSnapshot);
 
           // Build supplement fetches — only for data the cache doesn't have.
           // ALL modes use the same supplement strategy:
-          //   1. "expanded" (expandedprofile) — returns owner, assessment, mortgage,
-          //      and building data in one call (owner is normalized server-side).
-          //   2. "detailowner" — secondary supplement if owner data is still needed,
-          //      provides full owner names and mailing addresses.
+          //   1. "expanded" (expandedprofile) — owner, assessment, mortgage, building
+          //   2. "detailowner" — full owner names and mailing addresses
+          //   3. "avm" (avm/snapshot) — AVM values (expandedprofile does NOT return
+          //      AVM for postal code area searches, so this is a separate call)
           const suppFetches: Promise<any>[] = [];
           const suppLabels: string[] = [];
 
           if (needsExpanded || needsOwner) {
-            // expandedprofile is the primary supplement for ALL modes — it returns
-            // the richest property data including owner info after normalization
             suppFetches.push(fetchPage(pg, "expanded").catch(() => ({ property: [] })));
             suppLabels.push("expanded");
           }
           if (needsOwner) {
             suppFetches.push(fetchPage(pg, "detailowner").catch(() => ({ property: [] })));
             suppLabels.push("detailowner");
+          }
+          if (needsAvm) {
+            suppFetches.push(fetchPage(pg, "avm").catch(() => ({ property: [] })));
+            suppLabels.push("avm");
           }
 
           let merged: AttomProperty[];
@@ -1157,6 +1172,7 @@ export default function Prospecting() {
   const renderPropertyCard = (prop: AttomProperty, idx: number) => {
     // Use getPropertyValue() for display — falls back from AVM to assessment
     const avmVal = getPropertyValue(prop);
+    const hasRealAvm = prop.avm?.amount?.value != null && prop.avm.amount.value > 0;
     const avmHigh = prop.avm?.amount?.high;
     const avmLow = prop.avm?.amount?.low;
     const lastSale = getSaleAmount(prop);
@@ -1298,7 +1314,7 @@ export default function Prospecting() {
             {/* Key financial data row — always visible for all modes */}
             <div style={{ marginTop: 6, display: "flex", flexWrap: "wrap", gap: 12, fontSize: 12, color: "#374151" }}>
               {avmVal != null && (
-                <span><strong>AVM:</strong> <span style={{ color: "#059669" }}>{fmt(avmVal)}</span></span>
+                <span><strong>{hasRealAvm ? "AVM" : "Est. Value"}:</strong> <span style={{ color: "#059669" }}>{fmt(avmVal)}</span></span>
               )}
               {lastSale != null && (
                 <span><strong>Last Sale:</strong> {fmt(lastSale)}{saleDateStr ? ` (${saleDateStr})` : ""}</span>
@@ -1453,7 +1469,7 @@ export default function Prospecting() {
                     </button>
                   )}
                 </div>
-                {avmVal != null && lastSale != null && lastSale > 0 && (
+                {hasRealAvm && avmLow != null && avmHigh != null && (
                   <div style={{ marginTop: 4, fontSize: 11, color: "#6b7280" }}>
                     AVM range: {fmt(avmLow)} – {fmt(avmHigh)} (est. {fmt(avmVal)})
                   </div>
@@ -1466,7 +1482,7 @@ export default function Prospecting() {
             {/* Primary value metric per mode */}
             {mode === "absentee" && avmVal != null && (
               <div>
-                <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>Est. Value</div>
+                <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>{hasRealAvm ? "AVM" : "Est. Value"}</div>
                 <div style={{ fontWeight: 700, fontSize: 15, color: "#059669" }}>{fmt(avmVal)}</div>
               </div>
             )}
@@ -1510,7 +1526,7 @@ export default function Prospecting() {
             )}
             {mode === "investor" && avmVal != null && (
               <div>
-                <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>Est. Value</div>
+                <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>{hasRealAvm ? "AVM" : "Est. Value"}</div>
                 <div style={{ fontWeight: 700, fontSize: 15, color: "#059669" }}>{fmt(avmVal)}</div>
               </div>
             )}
