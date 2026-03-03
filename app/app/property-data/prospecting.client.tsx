@@ -1158,24 +1158,6 @@ export default function Prospecting() {
           valuationSupps = valuationResults.map((r: any) => (r.property || []) as AttomProperty[]);
         }
 
-        // For radius (Just Sold) mode, salesnapshot returns recent sales WITHOUT
-        // owner data. The "expanded" (expandedprofile) endpoint has owner info but
-        // returns ALL properties in the zip — different pagination window than
-        // salesnapshot. Pre-fetch multiple pages of expanded to build a complete
-        // owner lookup that gets merged with every salesnapshot page.
-        let radiusOwnerLookup: AttomProperty[][] = [];
-        if (mode === "radius") {
-          const expandedPages = await Promise.all(
-            [1, 2, 3, 4].map(pg =>
-              fetchPage(pg, "expanded").catch(() => ({ property: [] }))
-            )
-          );
-          const allExpanded = expandedPages.flatMap((r: any) => (r.property || []) as AttomProperty[]);
-          if (allExpanded.length > 0) {
-            radiusOwnerLookup = [allExpanded];
-          }
-        }
-
         // Fetch sales trend for this zip code (zip-level, not per-property)
         // Only fetch if we haven't already fetched for this zip
         if (salesTrendZip !== zip.trim()) {
@@ -1256,8 +1238,6 @@ export default function Prospecting() {
           }
           // Add valuation data (fetched once, applied to every page)
           allSuppArrays = allSuppArrays.concat(valuationSupps);
-          // Add pre-fetched expanded owner lookup for radius mode
-          allSuppArrays = allSuppArrays.concat(radiusOwnerLookup);
 
           let merged: AttomProperty[];
           if (allSuppArrays.length > 0) {
@@ -1279,16 +1259,66 @@ export default function Prospecting() {
           if (baseProps.length < pageSize) break;
         }
 
-        // Radius mode: enrich remaining ownerless properties from cache
-        // instead of individual API calls
+        // Radius mode: salesnapshot returns recent sales WITHOUT owner data.
+        // The page-aligned supplements (detailmortgageowner) have pagination
+        // mismatch with salesnapshot, so owner data doesn't merge reliably.
+        // Instead, fetch expandedprofile individually by attomId for each
+        // ownerless property — this is the same approach Property Search uses
+        // and is guaranteed to return owner data. Results are cached (memory +
+        // disk) by the API route, so repeated searches are instant.
         if (mode === "radius") {
-          allRaw = allRaw.map((p) => {
+          const ownerless = allRaw.filter((p) => {
             const o = resolveOwner(p);
-            if (o?.owner1?.fullName || o?.owner2?.fullName || o?.owner3?.fullName) return p;
-            const id = p.identifier?.attomId;
-            const cached = id ? cacheSnapshot.get(id) : undefined;
-            return cached ? mergeSupplementalData([p], [[cached]])[0] : p;
+            return !(o?.owner1?.fullName || o?.owner2?.fullName || o?.owner3?.fullName)
+              && p.identifier?.attomId;
           });
+
+          if (ownerless.length > 0) {
+            // Batch in groups of 10 to avoid overwhelming the API
+            const batchSize = 10;
+            for (let i = 0; i < ownerless.length; i += batchSize) {
+              const batch = ownerless.slice(i, i + batchSize);
+              const expandedResults = await Promise.all(
+                batch.map(async (p) => {
+                  try {
+                    const qs = new URLSearchParams({
+                      endpoint: "expanded",
+                      attomId: String(p.identifier!.attomId),
+                    });
+                    const res = await fetch(`/api/integrations/attom/property?${qs}`);
+                    if (!res.ok) return null;
+                    const data = await res.json();
+                    return data.property?.[0] as AttomProperty | undefined;
+                  } catch {
+                    return null;
+                  }
+                })
+              );
+
+              // Build lookup from results
+              const expandedById = new Map<number, AttomProperty>();
+              for (const ep of expandedResults) {
+                if (ep?.identifier?.attomId) {
+                  expandedById.set(ep.identifier.attomId, ep);
+                }
+              }
+
+              // Merge owner data into allRaw
+              allRaw = allRaw.map((p) => {
+                const id = p.identifier?.attomId;
+                if (!id) return p;
+                const expanded = expandedById.get(id);
+                if (!expanded) return p;
+                return mergeSupplementalData([p], [[expanded]])[0];
+              });
+            }
+
+            // Update cache with enriched data
+            for (const p of allRaw) {
+              const id = p.identifier?.attomId;
+              if (id) cacheSnapshot.set(id, p);
+            }
+          }
         }
 
         // Persist the accumulated cache snapshot to state
