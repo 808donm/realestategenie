@@ -352,28 +352,54 @@ export default function PropertyDetailModal({
     if (activeSection !== "ownership" || enrichedOwner || enrichedOwnerLoading) return;
 
     const attomId = p.identifier?.attomId;
-    const addr1 = p.address?.line1;
+    // Try address.line1 first, then parse from address.oneLine as fallback
+    // (salesnapshot results may not have line1 but always have oneLine)
+    let addr1 = p.address?.line1;
+    if (!addr1 && p.address?.oneLine) {
+      // Parse "123 Main St, City, ST 96744" → "123 Main St"
+      const parts = p.address.oneLine.split(",");
+      if (parts.length >= 2) addr1 = parts[0].trim();
+    }
+    // Include zip code in address2 — ATTOM needs "City, ST ZIP" for reliable lookups
+    const postal = p.address?.postal1;
     const addr2 = p.address?.locality && p.address?.countrySubd
-      ? `${p.address.locality}, ${p.address.countrySubd}`
-      : undefined;
+      ? `${p.address.locality}, ${p.address.countrySubd}${postal ? ` ${postal}` : ""}`
+      : (p.address?.oneLine ? p.address.oneLine.split(",").slice(1).join(",").trim() : undefined);
     if (!attomId && !addr1) return;
 
     setEnrichedOwnerLoading(true);
 
-    const params = new URLSearchParams({ endpoint: "detailmortgageowner" });
-    if (attomId) params.set("attomid", String(attomId));
-    else {
-      if (addr1) params.set("address1", addr1);
-      if (addr2) params.set("address2", addr2);
-    }
+    const buildParams = (endpoint: string) => {
+      const prms = new URLSearchParams({ endpoint });
+      if (attomId) prms.set("attomid", String(attomId));
+      else {
+        if (addr1) prms.set("address1", addr1);
+        if (addr2) prms.set("address2", addr2);
+      }
+      return prms;
+    };
 
-    fetch(`/api/integrations/attom/property?${params}`)
+    // Try detailmortgageowner first; if it returns no owner data, fall back to detailowner
+    fetch(`/api/integrations/attom/property?${buildParams("detailmortgageowner")}`)
       .then(r => r.json())
       .then(data => {
         if (data && !data.error) {
           const prop = data.property?.[0] || data;
-          setEnrichedOwner(prop);
+          const ow = prop?.owner || prop?.assessment?.owner;
+          if (ow?.owner1?.fullName || ow?.owner2?.fullName || ow?.mailingAddressOneLine || ow?.corporateIndicator) {
+            setEnrichedOwner(prop);
+            return;
+          }
         }
+        // Fallback: try detailowner endpoint
+        return fetch(`/api/integrations/attom/property?${buildParams("detailowner")}`)
+          .then(r2 => r2.json())
+          .then(data2 => {
+            if (data2 && !data2.error) {
+              const prop2 = data2.property?.[0] || data2;
+              setEnrichedOwner(prop2);
+            }
+          });
       })
       .catch(() => {})
       .finally(() => setEnrichedOwnerLoading(false));
@@ -1265,13 +1291,21 @@ export default function PropertyDetailModal({
                 </div>
               )}
 
-              {/* Current Owner — resolve from p.owner or assessment.owner (ATTOM nests owner in assessment for expandedprofile) */}
+              {/* Current Owner — resolve from p.owner, assessment.owner, or enrichedOwner (ATTOM nests owner in assessment for expandedprofile) */}
               {(() => {
                 const topOwner = p.owner;
                 const assessOwner = p.assessment?.owner;
                 const hasTop = topOwner?.owner1?.fullName || topOwner?.owner2?.fullName || topOwner?.owner3?.fullName
                   || topOwner?.corporateIndicator || (topOwner?.mailingAddressOneLine && topOwner.mailingAddressOneLine.trim());
-                const owner = hasTop ? topOwner : (assessOwner ? { ...topOwner, ...assessOwner } : topOwner);
+                // Also use enrichedOwner as fallback (fetched from detailmortgageowner on Ownership tab)
+                const enrichedOw = enrichedOwner
+                  ? (enrichedOwner.property?.[0] || enrichedOwner)?.owner
+                    || (enrichedOwner.property?.[0] || enrichedOwner)?.assessment?.owner
+                  : undefined;
+                const baseOwner = hasTop ? topOwner : (assessOwner ? { ...topOwner, ...assessOwner } : topOwner);
+                const hasBase = baseOwner?.owner1?.fullName || baseOwner?.owner2?.fullName || baseOwner?.owner3?.fullName
+                  || baseOwner?.corporateIndicator || (baseOwner?.mailingAddressOneLine && baseOwner.mailingAddressOneLine.trim());
+                const owner = hasBase ? baseOwner : (enrichedOw ? { ...baseOwner, ...enrichedOw } : baseOwner);
                 const ownerMailing = owner?.mailingAddressOneLine?.trim();
                 return (
                   <Section title="Current Owner">
@@ -1283,9 +1317,12 @@ export default function PropertyDetailModal({
                     {!owner?.owner1?.fullName && !owner?.owner2?.fullName && !owner?.owner3?.fullName && (() => {
                       const m = p.mortgage as any;
                       const fc = m?.FirstConcurrent;
-                      const b1 = m?.borrower1?.fullName || fc?.borrower1?.fullName;
-                      const b2 = m?.borrower2?.fullName || fc?.borrower2?.fullName;
-                      const vest = m?.borrowerVesting || fc?.borrowerVesting;
+                      // Also check enrichedOwner mortgage as fallback source for borrower names
+                      const em = (enrichedOwner?.property?.[0] || enrichedOwner)?.mortgage as any;
+                      const efc = em?.FirstConcurrent || em?.firstConcurrent;
+                      const b1 = m?.borrower1?.fullName || fc?.borrower1?.fullName || em?.borrower1?.fullName || efc?.borrower1?.fullName;
+                      const b2 = m?.borrower2?.fullName || fc?.borrower2?.fullName || em?.borrower2?.fullName || efc?.borrower2?.fullName;
+                      const vest = m?.borrowerVesting || fc?.borrowerVesting || em?.borrowerVesting || efc?.borrowerVesting;
                       if (!b1 && !b2 && !vest) return null;
                       return (
                         <>
@@ -1302,12 +1339,15 @@ export default function PropertyDetailModal({
                     {!ownerMailing && (() => {
                       const m = p.mortgage as any;
                       const fc = m?.FirstConcurrent;
-                      const street = m?.borrowerMailFullStreetAddress || fc?.borrowerMailFullStreetAddress;
+                      const em = (enrichedOwner?.property?.[0] || enrichedOwner)?.mortgage as any;
+                      const efc = em?.FirstConcurrent || em?.firstConcurrent;
+                      const street = m?.borrowerMailFullStreetAddress || fc?.borrowerMailFullStreetAddress
+                        || em?.borrowerMailFullStreetAddress || efc?.borrowerMailFullStreetAddress;
                       if (!street) return null;
-                      const city = m?.borrowerMailCity || fc?.borrowerMailCity || "";
-                      const state = m?.borrowerMailState || fc?.borrowerMailState || "";
-                      const zip = m?.borrowerMailZip || fc?.borrowerMailZip || "";
-                      return <Field label="Mailing (via Mortgage)" value={[street, city, state, zip].filter(Boolean).join(", ")} />;
+                      const city = m?.borrowerMailCity || fc?.borrowerMailCity || em?.borrowerMailCity || efc?.borrowerMailCity || "";
+                      const state = m?.borrowerMailState || fc?.borrowerMailState || em?.borrowerMailState || efc?.borrowerMailState || "";
+                      const zipVal = m?.borrowerMailZip || fc?.borrowerMailZip || em?.borrowerMailZip || efc?.borrowerMailZip || "";
+                      return <Field label="Mailing (via Mortgage)" value={[street, city, state, zipVal].filter(Boolean).join(", ")} />;
                     })()}
                     <Field label="Relationship" value={owner?.ownerRelationshipType} />
                     <Field label="Rights" value={owner?.ownerRelationshipRights} />

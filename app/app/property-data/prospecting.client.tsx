@@ -455,6 +455,14 @@ export default function Prospecting() {
 
     if (endpointOverride) {
       params.set("endpoint", endpointOverride);
+      // For radius mode supplements, also add sale date filters so that
+      // supplement endpoints return the same recently-sold properties as
+      // the primary salesnapshot (otherwise supplements return ALL properties
+      // in the zip code, causing merge by attomId to find no matches).
+      if (mode === "radius" && startDate && endDate) {
+        params.set("startSaleSearchDate", startDate.replace(/-/g, "/"));
+        params.set("endSaleSearchDate", endDate.replace(/-/g, "/"));
+      }
     } else if (mode === "radius") {
       // Just Sold: primary = sale snapshot (returns recent sales in area)
       params.set("endpoint", "salesnapshot");
@@ -895,6 +903,54 @@ export default function Prospecting() {
           setTotalCount(groups.length);
           setResults(allRaw);
         } else if (mode === "radius") {
+          // Post-merge owner enrichment: for any properties still missing owner
+          // data after the supplement merge, individually fetch detailmortgageowner
+          // by attomId. This handles cases where supplement pagination didn't align
+          // with the salesnapshot results (or ATTOM didn't support sale date filters
+          // on the supplement endpoints).
+          const needsOwner = allRaw.filter((p) => {
+            const o = resolveOwner(p);
+            return !(o?.owner1?.fullName || o?.owner2?.fullName || o?.owner3?.fullName);
+          });
+          if (needsOwner.length > 0) {
+            const batchSize = 10;
+            for (let i = 0; i < needsOwner.length; i += batchSize) {
+              const batch = needsOwner.slice(i, i + batchSize);
+              const ownerResults = await Promise.all(
+                batch.map(async (p) => {
+                  const attomId = p.identifier?.attomId;
+                  const addrLine = p.address?.oneLine || p.address?.line1;
+                  if (!attomId && !addrLine) return null;
+                  try {
+                    const oParams = new URLSearchParams({ endpoint: "detailmortgageowner" });
+                    if (attomId) {
+                      oParams.set("attomid", String(attomId));
+                    } else if (addrLine) {
+                      // Parse "123 Main St, City, ST 96744" into address1 + address2
+                      const parts = addrLine.split(",").map((s: string) => s.trim());
+                      if (parts.length >= 2) {
+                        oParams.set("address1", parts[0]);
+                        oParams.set("address2", parts.slice(1).join(", "));
+                      }
+                    }
+                    const oRes = await fetch(`/api/integrations/attom/property?${oParams}`);
+                    const oData = await oRes.json();
+                    return oData?.property?.[0] || null;
+                  } catch { return null; }
+                })
+              );
+              // Merge owner results back into allRaw
+              for (let j = 0; j < batch.length; j++) {
+                const ownerData = ownerResults[j];
+                if (!ownerData) continue;
+                const idx = allRaw.indexOf(batch[j]);
+                if (idx >= 0) {
+                  allRaw[idx] = mergeSupplementalData([allRaw[idx]], [[ownerData]])[0];
+                }
+              }
+            }
+          }
+
           // Just Sold Farming — show all recent sales.
           // In non-disclosure states (HI, TX, etc.) sale prices aren't public,
           // so we can't filter to disclosed-only without losing ALL results.
