@@ -133,7 +133,15 @@ export default function PropertyDetailModal({
   // Fetch Hawaii hazard/environmental zone data on mount (for HI properties with lat/lng)
   useEffect(() => {
     if (hazardData || hazardLoading) return;
-    const state = p.address?.countrySubd?.toUpperCase();
+    let state = p.address?.countrySubd?.toUpperCase();
+    // Derive state from oneLine if countrySubd missing (salesnapshot results)
+    if (!state && p.address?.oneLine) {
+      const parts = p.address.oneLine.split(",").map(s => s.trim());
+      if (parts.length >= 2) {
+        const stateZip = parts[parts.length - 1].split(/\s+/);
+        if (stateZip.length >= 1) state = stateZip[0].toUpperCase();
+      }
+    }
     const isHawaii = state === "HI" || state === "HAWAII";
     const lat = p.location?.latitude;
     const lng = p.location?.longitude;
@@ -157,10 +165,14 @@ export default function PropertyDetailModal({
     if (p.avm?.amount?.value) return; // Already have AVM from search results
 
     const attomId = p.identifier?.attomId;
-    const addr1 = p.address?.line1;
+    let addr1 = p.address?.line1;
+    if (!addr1 && p.address?.oneLine) {
+      const parts = p.address.oneLine.split(",");
+      if (parts.length >= 2) addr1 = parts[0].trim();
+    }
     const addr2 = p.address?.locality && p.address?.countrySubd
       ? `${p.address.locality}, ${p.address.countrySubd}`
-      : undefined;
+      : (p.address?.oneLine ? p.address.oneLine.split(",").slice(1).join(",").trim() : undefined);
 
     if (!attomId && !addr1) return;
 
@@ -221,8 +233,15 @@ export default function PropertyDetailModal({
   useEffect(() => {
     if ((activeSection !== "ownership" && activeSection !== "financial") || hawaiiData || hawaiiLoading) return;
 
-    const state = p.address?.countrySubd?.toUpperCase();
-    const isHawaii = state === "HI" || state === "HAWAII";
+    let hiState = p.address?.countrySubd?.toUpperCase();
+    if (!hiState && p.address?.oneLine) {
+      const parts = p.address.oneLine.split(",").map(s => s.trim());
+      if (parts.length >= 2) {
+        const stateZip = parts[parts.length - 1].split(/\s+/);
+        if (stateZip.length >= 1) hiState = stateZip[0].toUpperCase();
+      }
+    }
+    const isHawaii = hiState === "HI" || hiState === "HAWAII";
     const tmk = p.identifier?.apn;
 
     if (!isHawaii || !tmk) return;
@@ -245,11 +264,27 @@ export default function PropertyDetailModal({
   useEffect(() => {
     if (activeSection !== "neighborhood" || neighborhoodData || neighborhoodLoading) return;
 
-    const addr1 = p.address?.line1;
-    const city = p.address?.locality;
-    const state = p.address?.countrySubd;
+    // Parse address — salesnapshot results may only have oneLine without line1
+    let addr1 = p.address?.line1;
+    if (!addr1 && p.address?.oneLine) {
+      const parts = p.address.oneLine.split(",");
+      if (parts.length >= 2) addr1 = parts[0].trim();
+    }
+    let city = p.address?.locality;
+    let state = p.address?.countrySubd;
     const zip = p.address?.postal1;
-    if (!addr1 && !zip) return;
+    // Parse city/state from oneLine if missing (e.g. "123 Main St, Kailua, HI 96734")
+    if ((!city || !state) && p.address?.oneLine) {
+      const parts = p.address.oneLine.split(",").map(s => s.trim());
+      if (parts.length >= 3) {
+        if (!city) city = parts[parts.length - 2];
+        if (!state) {
+          const stateZip = parts[parts.length - 1].split(/\s+/);
+          if (stateZip.length >= 1) state = stateZip[0];
+        }
+      }
+    }
+    if (!addr1 && !zip && !p.location?.latitude) return;
 
     setNeighborhoodLoading(true);
 
@@ -287,10 +322,16 @@ export default function PropertyDetailModal({
     if (activeSection !== "financial" || enrichedFinancial || enrichedFinancialLoading) return;
 
     const attomId = p.identifier?.attomId;
-    const addr1 = p.address?.line1;
+    // Parse address — salesnapshot results may only have oneLine without line1
+    let addr1 = p.address?.line1;
+    if (!addr1 && p.address?.oneLine) {
+      const parts = p.address.oneLine.split(",");
+      if (parts.length >= 2) addr1 = parts[0].trim();
+    }
+    const postal = p.address?.postal1;
     const addr2 = p.address?.locality && p.address?.countrySubd
-      ? `${p.address.locality}, ${p.address.countrySubd}`
-      : undefined;
+      ? `${p.address.locality}, ${p.address.countrySubd}${postal ? ` ${postal}` : ""}`
+      : (p.address?.oneLine ? p.address.oneLine.split(",").slice(1).join(",").trim() : undefined);
     if (!attomId && !addr1) return;
 
     setEnrichedFinancialLoading(true);
@@ -814,18 +855,47 @@ export default function PropertyDetailModal({
                 );
               })()}
 
-              {p.assessment && (
-                <Section title="Tax Assessment">
-                  <Field label="Assessed Total" value={fmt(p.assessment.assessed?.assdTtlValue)} />
-                  <Field label="Assessed Land" value={fmt(p.assessment.assessed?.assdLandValue)} />
-                  <Field label="Assessed Improvements" value={fmt(p.assessment.assessed?.assdImprValue)} />
-                  <Field label="Appraised Total" value={fmt(p.assessment.appraised?.apprTtlValue)} />
-                  <Field label="Market Total" value={fmt(p.assessment.market?.mktTtlValue)} />
-                  <Field label="Annual Tax" value={fmt(p.assessment.tax?.taxAmt)} />
-                  <Field label="Tax Year" value={p.assessment.tax?.taxYear} />
-                  <Field label="Tax / Sqft" value={p.assessment.tax?.taxPerSizeUnit ? `$${p.assessment.tax.taxPerSizeUnit.toFixed(2)}` : undefined} />
-                </Section>
-              )}
+              {p.assessment && (() => {
+                const tmkKey = p.identifier?.apn;
+                const assessQpubLink = tmkKey ? buildQPublicUrl(
+                  String(tmkKey),
+                  undefined,
+                  p.address?.postal1,
+                ) : null;
+                return (
+                  <div style={{ marginBottom: 20 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, paddingBottom: 6, borderBottom: "1px solid #e5e7eb" }}>
+                      <h3 style={{ fontSize: 14, fontWeight: 700, color: "#374151", margin: 0 }}>Tax Assessment</h3>
+                      {assessQpubLink && (
+                        <a
+                          href={assessQpubLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            display: "inline-flex", alignItems: "center", gap: 4,
+                            padding: "5px 12px", background: "#1e40af", color: "#fff",
+                            borderRadius: 6, fontSize: 12, fontWeight: 600,
+                            textDecoration: "none", whiteSpace: "nowrap",
+                          }}
+                        >
+                          View TMK Records
+                          <span style={{ fontSize: 10 }}>&#8599;</span>
+                        </a>
+                      )}
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "8px 20px" }}>
+                      <Field label="Assessed Total" value={fmt(p.assessment.assessed?.assdTtlValue)} />
+                      <Field label="Assessed Land" value={fmt(p.assessment.assessed?.assdLandValue)} />
+                      <Field label="Assessed Improvements" value={fmt(p.assessment.assessed?.assdImprValue)} />
+                      <Field label="Appraised Total" value={fmt(p.assessment.appraised?.apprTtlValue)} />
+                      <Field label="Market Total" value={fmt(p.assessment.market?.mktTtlValue)} />
+                      <Field label="Annual Tax" value={fmt(p.assessment.tax?.taxAmt)} />
+                      <Field label="Tax Year" value={p.assessment.tax?.taxYear} />
+                      <Field label="Tax / Sqft" value={p.assessment.tax?.taxPerSizeUnit ? `$${p.assessment.tax.taxPerSizeUnit.toFixed(2)}` : undefined} />
+                    </div>
+                  </div>
+                );
+              })()}
 
               {p.sale && (
                 <Section title="Last Sale">
@@ -2142,26 +2212,40 @@ export default function PropertyDetailModal({
                       </div>
                     )}
 
-                    {/* Points of Interest */}
+                    {/* Nearby Amenities / Points of Interest */}
                     {poiList.length > 0 && (
                       <div style={{ marginBottom: 20 }}>
                         <h3 style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 10, paddingBottom: 6, borderBottom: "1px solid #e5e7eb" }}>
-                          Points of Interest
+                          Nearby Amenities
                         </h3>
                         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                           {poiList.slice(0, 25).map((poi: any, i: number) => {
-                            // v4 fields: name, businessCategory, address, city, stateCode, zipCode,
-                            //            phone, facebookUrl, yelpUrl, operatingHours, industryCode,
-                            //            naicsCode, sicCode, franchiseInd, distance
-                            const poiName = poi.name || poi.Name || poi.businessName;
-                            const category = poi.businessCategory || poi.business_category || poi.categoryName || poi.lob || poi.industry;
-                            const address = poi.address || poi.addressLine1;
-                            const phone = poi.phone || poi.contactPhone;
-                            const facebook = poi.facebookUrl;
-                            const yelp = poi.yelpUrl;
-                            const hours = poi.operatingHours;
-                            const franchise = poi.franchiseInd === "Y" || poi.franchise;
-                            const dist = poi.distance;
+                            // v4 response nests under businessLocation, category, details
+                            const biz = poi.businessLocation || {};
+                            const cat = poi.category || {};
+                            const det = poi.details || {};
+                            // Resolve name: v4 nested → flat fallbacks
+                            const poiName = biz.businessStandardName || det.businessShortName
+                              || poi.name || poi.Name || poi.businessName;
+                            const category = cat.condensedHeading || cat.industry || cat.category
+                              || poi.businessCategory || poi.categoryName;
+                            const address = biz.address || det.house && det.street
+                              ? [det.house, det.street, det.strType].filter(Boolean).join(" ")
+                              : (poi.address || poi.addressLine1);
+                            const poiCity = biz.city || det.cityName || poi.city;
+                            const poiState = det.state || poi.stateCode;
+                            const poiZip = det.zip || poi.zipCode;
+                            // Build phone from area code + exchange + number
+                            const phone = (det.areaCode && det.exchange && det.phoneNumber)
+                              ? `(${det.areaCode}) ${det.exchange}-${det.phoneNumber}`
+                              : (poi.phone || poi.contactPhone);
+                            const facebook = det.facebookUrl || poi.facebookUrl;
+                            const yelp = det.yelpUrl || poi.yelpUrl;
+                            const website = det.website || poi.website;
+                            const hours = det.standardizedHours || poi.operatingHours;
+                            const franchise = det.franchiseInd === "Y" || poi.franchiseInd === "Y";
+                            const dist = det.distance ?? poi.distance;
+                            const industry = cat.lineOfBusiness || det.industry;
 
                             return (
                               <div key={i} style={{ padding: "10px 14px", background: "#f9fafb", borderRadius: 8 }}>
@@ -2171,13 +2255,13 @@ export default function PropertyDetailModal({
                                     <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
                                       {[
                                         category,
-                                        poi.city,
+                                        industry && industry !== category ? industry : null,
                                         dist != null ? `${Number(dist).toFixed(1)} mi` : null,
                                       ].filter(Boolean).join(" · ")}
                                     </div>
                                     {address && (
                                       <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>
-                                        {[address, poi.city, poi.stateCode, poi.zipCode].filter(Boolean).join(", ")}
+                                        {[address, poiCity, poiState, poiZip].filter(Boolean).join(", ")}
                                       </div>
                                     )}
                                     <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1, display: "flex", flexWrap: "wrap", gap: 8 }}>
@@ -2185,8 +2269,9 @@ export default function PropertyDetailModal({
                                       {franchise && <span style={{ color: "#7c3aed", fontWeight: 600 }}>Franchise</span>}
                                       {hours && <span>Hours: {hours}</span>}
                                     </div>
-                                    {(facebook || yelp) && (
+                                    {(facebook || yelp || website) && (
                                       <div style={{ fontSize: 11, marginTop: 2, display: "flex", gap: 10 }}>
+                                        {website && <a href={website} target="_blank" rel="noopener noreferrer" style={{ color: "#059669", textDecoration: "none" }}>Website</a>}
                                         {facebook && <a href={facebook} target="_blank" rel="noopener noreferrer" style={{ color: "#3b82f6", textDecoration: "none" }}>Facebook</a>}
                                         {yelp && <a href={yelp} target="_blank" rel="noopener noreferrer" style={{ color: "#dc2626", textDecoration: "none" }}>Yelp</a>}
                                       </div>
