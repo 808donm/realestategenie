@@ -1670,7 +1670,7 @@ export default function Prospecting() {
                     </button>
                   )}
                 </div>
-                {hasRealAvm && avmLow != null && avmHigh != null && (
+                {hasRealAvm && avmLow != null && avmHigh != null && avmVal != null && (
                   <div style={{ marginTop: 4, fontSize: 11, color: "#6b7280" }}>
                     AVM range: {fmt(avmLow)} – {fmt(avmHigh)} (est. {fmt(avmVal)})
                   </div>
