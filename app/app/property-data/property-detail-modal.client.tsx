@@ -328,14 +328,25 @@ export default function PropertyDetailModal({
     salesTrendParams.set("endyear", String(currentYear));
     salesTrendParams.set("propertytype", "SINGLE FAMILY RESIDENCE");
 
-    Promise.allSettled([
-      fetch(`/api/integrations/attom/property?${buildParams("avmhistory")}`).then(r => r.json()),
-      fetch(`/api/integrations/attom/property?${buildAddrParams("rentalavm")}`).then(r => r.json()),
-      fetch(`/api/integrations/attom/property?${buildParams("saleshistoryexpanded")}`).then(r => r.json()),
-      fetch(`/api/integrations/attom/property?${buildParams("detailmortgage")}`).then(r => r.json()),
-      fetch(`/api/integrations/attom/property?${buildAddrParams("homeequity")}`).then(r => r.json()),
-      fetch(`/api/integrations/attom/property?${salesTrendParams}`).then(r => r.json()),
-    ]).then(([avmHistory, rentalAvm, salesHistory, mortgageDetail, homeEquity, salesTrends]) => {
+    // Use cached rental AVM / home equity from search supplements if available,
+    // otherwise fetch individually. This avoids redundant API calls.
+    const cachedRentalAvm = (p as any).rentalAvm;
+    const cachedHomeEquity = (p as any).homeEquity;
+
+    const fetches: Promise<PromiseSettledResult<any>>[] = [
+      fetch(`/api/integrations/attom/property?${buildParams("avmhistory")}`).then(r => r.json()).then(v => ({ status: "fulfilled" as const, value: v })).catch(e => ({ status: "rejected" as const, reason: e })),
+      cachedRentalAvm
+        ? Promise.resolve({ status: "fulfilled" as const, value: { property: [{ rentalAvm: cachedRentalAvm }] } })
+        : fetch(`/api/integrations/attom/property?${buildAddrParams("rentalavm")}`).then(r => r.json()).then(v => ({ status: "fulfilled" as const, value: v })).catch(e => ({ status: "rejected" as const, reason: e })),
+      fetch(`/api/integrations/attom/property?${buildParams("saleshistoryexpanded")}`).then(r => r.json()).then(v => ({ status: "fulfilled" as const, value: v })).catch(e => ({ status: "rejected" as const, reason: e })),
+      fetch(`/api/integrations/attom/property?${buildParams("detailmortgage")}`).then(r => r.json()).then(v => ({ status: "fulfilled" as const, value: v })).catch(e => ({ status: "rejected" as const, reason: e })),
+      cachedHomeEquity
+        ? Promise.resolve({ status: "fulfilled" as const, value: { property: [{ homeEquity: cachedHomeEquity }] } })
+        : fetch(`/api/integrations/attom/property?${buildAddrParams("homeequity")}`).then(r => r.json()).then(v => ({ status: "fulfilled" as const, value: v })).catch(e => ({ status: "rejected" as const, reason: e })),
+      fetch(`/api/integrations/attom/property?${salesTrendParams}`).then(r => r.json()).then(v => ({ status: "fulfilled" as const, value: v })).catch(e => ({ status: "rejected" as const, reason: e })),
+    ];
+
+    Promise.all(fetches).then(([avmHistory, rentalAvm, salesHistory, mortgageDetail, homeEquity, salesTrends]) => {
       setEnrichedFinancial({
         avmHistory: avmHistory.status === "fulfilled" && !avmHistory.value?.error ? avmHistory.value : null,
         rentalAvm: rentalAvm.status === "fulfilled" ? rentalAvm.value : null,
@@ -478,6 +489,22 @@ export default function PropertyDetailModal({
                 </div>
               </div>
             )}
+            {/* Rental AVM from search supplement data */}
+            {(() => {
+              const ra = (p as any).rentalAvm;
+              const rentVal = ra?.estimatedRentalValue ?? ra?.rentalAmount?.value ?? ra?.amount?.value;
+              if (rentVal == null) return null;
+              const grossYield = avmVal ? ((rentVal * 12 / avmVal) * 100) : null;
+              return (
+                <div style={{ flex: 1, minWidth: 130, padding: "10px 14px", background: "#f5f3ff", borderRadius: 8 }}>
+                  <div style={{ fontSize: 11, color: "#7c3aed", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Rent Est.</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: "#7c3aed" }}>${Number(rentVal).toLocaleString()}/mo</div>
+                  {grossYield != null && (
+                    <div style={{ fontSize: 11, color: "#0891b2", fontWeight: 600 }}>{grossYield.toFixed(1)}% gross yield</div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
 
           {/* Section Tabs */}

@@ -48,6 +48,10 @@ interface AttomProperty {
     saleTransDate?: string; saleRecDate?: string; saleSearchDate?: string;
   };
   avm?: { amount?: { value?: number; high?: number; low?: number; scr?: number }; eventDate?: string };
+  rentalAvm?: { estimatedRentalValue?: number; estimatedMinRentalValue?: number; estimatedMaxRentalValue?: number; confidenceScore?: number; valuationDate?: string;
+    rentalAmount?: { value?: number; low?: number; high?: number; scr?: number }; amount?: { value?: number; low?: number; high?: number; scr?: number } };
+  homeEquity?: { avmValue?: number; outstandingBalance?: number; equity?: number; equityAmount?: number; loanToValue?: number; ltv?: number;
+    avm?: { amount?: { value?: number } }; estimatedValue?: number; loanBalance?: number; mortgageBalance?: number; estimatedBalance?: number };
   // ATTOM expandedprofile nests mortgage under FirstConcurrent/SecondConcurrent
   mortgage?: {
     amount?: number; lender?: { fullName?: string }; term?: string; date?: string;
@@ -195,6 +199,53 @@ function getPropertyValue(p: AttomProperty): number | null {
   if (p.assessment?.market?.mktTtlValue != null && p.assessment.market.mktTtlValue > 0) return p.assessment.market.mktTtlValue;
   if (p.assessment?.appraised?.apprTtlValue != null && p.assessment.appraised.apprTtlValue > 0) return p.assessment.appraised.apprTtlValue;
   if (p.assessment?.assessed?.assdTtlValue != null && p.assessment.assessed.assdTtlValue > 0) return p.assessment.assessed.assdTtlValue;
+  return null;
+}
+
+/**
+ * Resolve rental AVM data from an ATTOM property.
+ * The /valuation/rentalavm endpoint returns data nested under various keys.
+ * Returns a normalized rental AVM object or null if no data is available.
+ */
+function resolveRentalAvm(p: AttomProperty): AttomProperty["rentalAvm"] | null {
+  if (p.rentalAvm) return p.rentalAvm;
+  // ATTOM sometimes uses different casing / key names
+  const r = (p as any).rentalAVM || (p as any).rentalavm || (p as any).rental_avm;
+  if (r) return r;
+  return null;
+}
+
+/**
+ * Get the estimated monthly rent from rental AVM data.
+ */
+function getRentalValue(p: AttomProperty): number | null {
+  const r = resolveRentalAvm(p);
+  if (!r) return null;
+  return r.estimatedRentalValue ?? r.rentalAmount?.value ?? r.amount?.value ?? null;
+}
+
+/**
+ * Resolve home equity data from an ATTOM property.
+ * The /valuation/homeequity endpoint returns data nested under various keys.
+ */
+function resolveHomeEquity(p: AttomProperty): AttomProperty["homeEquity"] | null {
+  if (p.homeEquity) return p.homeEquity;
+  const he = (p as any).homeequity || (p as any).home_equity || (p as any).valuation;
+  if (he) return he;
+  return null;
+}
+
+/**
+ * Get the estimated equity from home equity data.
+ */
+function getEquityFromValuation(p: AttomProperty): number | null {
+  const he = resolveHomeEquity(p);
+  if (!he) return null;
+  if (he.equity != null) return he.equity;
+  if (he.equityAmount != null) return he.equityAmount;
+  const avmValue = he.avmValue ?? he.avm?.amount?.value ?? he.estimatedValue;
+  const balance = he.outstandingBalance ?? he.loanBalance ?? he.mortgageBalance ?? he.estimatedBalance;
+  if (avmValue != null && balance != null) return avmValue - balance;
   return null;
 }
 
@@ -348,6 +399,8 @@ interface InvestorGroup {
   properties: AttomProperty[];
   totalTaxBurden: number;
   totalAvmValue: number;
+  totalRentalIncome: number;
+  totalEquity: number | null;
   oldestYearBuilt: number | null;
   avgYearBuilt: number | null;
 }
@@ -479,6 +532,10 @@ function groupByOwner(properties: AttomProperty[]): InvestorGroup[] {
       properties: props,
       totalTaxBurden: props.reduce((sum, p) => sum + (p.assessment?.tax?.taxAmt || 0), 0),
       totalAvmValue: props.reduce((sum, p) => sum + (getPropertyValue(p) || 0), 0),
+      totalRentalIncome: props.reduce((sum, p) => sum + (getRentalValue(p) || 0), 0),
+      totalEquity: props.some(p => getEquityFromValuation(p) != null)
+        ? props.reduce((sum, p) => sum + (getEquityFromValuation(p) || 0), 0)
+        : null,
       oldestYearBuilt: years.length > 0 ? Math.min(...years) : null,
       avgYearBuilt: years.length > 0 ? Math.round(years.reduce((a, b) => a + b, 0) / years.length) : null,
     });
@@ -548,11 +605,16 @@ export default function Prospecting() {
 
     if (endpointOverride) {
       params.set("endpoint", endpointOverride);
-      // "expanded" (expandedprofile) and "avm" (avm/snapshot) return ALL
-      // properties in the zip — they do NOT support sale date filters.
-      // Merge by attomId handles matching to the primary results.
-      // Only add sale date filters for sale-related endpoints (detailowner, etc).
-      const noSaleDateEndpoints = ["expanded", "avm"];
+      // Valuation endpoints don't support pagination — strip page/pagesize
+      // (server strips them too, but cleaner to not send them)
+      const noPaginationEndpoints = ["rentalavm", "homeequity"];
+      if (noPaginationEndpoints.includes(endpointOverride)) {
+        params.delete("page");
+        params.delete("pagesize");
+      }
+      // "expanded", "avm", "rentalavm", "homeequity", "assessmentsnapshot"
+      // return ALL properties in the zip — they do NOT support sale date filters.
+      const noSaleDateEndpoints = ["expanded", "avm", "rentalavm", "homeequity", "assessmentsnapshot"];
       if (mode === "radius" && startDate && endDate && !noSaleDateEndpoints.includes(endpointOverride)) {
         params.set("startSaleSearchDate", startDate.replace(/-/g, "/"));
         params.set("endSaleSearchDate", endDate.replace(/-/g, "/"));
@@ -605,7 +667,7 @@ export default function Prospecting() {
       const baseProps: AttomProperty[] = data.property || [];
 
       // Check cache before making supplement calls
-      const { enriched, needsExpanded, needsAvm } = enrichFromCache(baseProps, propertyCache);
+      const { enriched, needsExpanded, needsAvm, needsRentalAvm, needsHomeEquity } = enrichFromCache(baseProps, propertyCache);
 
       const suppFetches: Promise<any>[] = [];
       if (needsExpanded) {
@@ -617,6 +679,20 @@ export default function Prospecting() {
         const avmParams = new URLSearchParams(params);
         avmParams.set("endpoint", "avm");
         suppFetches.push(fetch(`/api/integrations/attom/property?${avmParams.toString()}`).then(r => r.json()).catch(() => ({ property: [] })));
+      }
+      if (needsRentalAvm) {
+        const rentalParams = new URLSearchParams(params);
+        rentalParams.set("endpoint", "rentalavm");
+        rentalParams.delete("page");
+        rentalParams.delete("pagesize");
+        suppFetches.push(fetch(`/api/integrations/attom/property?${rentalParams.toString()}`).then(r => r.json()).catch(() => ({ property: [] })));
+      }
+      if (needsHomeEquity) {
+        const eqParams = new URLSearchParams(params);
+        eqParams.set("endpoint", "homeequity");
+        eqParams.delete("page");
+        eqParams.delete("pagesize");
+        suppFetches.push(fetch(`/api/integrations/attom/property?${eqParams.toString()}`).then(r => r.json()).catch(() => ({ property: [] })));
       }
 
       let merged: AttomProperty[];
@@ -777,6 +853,10 @@ export default function Prospecting() {
         } : p.mortgage,
         // Fill in missing assessment data from supplement (take richer data)
         assessment: p.assessment?.assessed?.assdTtlValue ? p.assessment : (supp.assessment?.assessed?.assdTtlValue ? supp.assessment : p.assessment),
+        // Fill in rental AVM data from supplement (from /valuation/rentalavm)
+        rentalAvm: resolveRentalAvm(p) || resolveRentalAvm(supp),
+        // Fill in home equity data from supplement (from /valuation/homeequity)
+        homeEquity: resolveHomeEquity(p) || resolveHomeEquity(supp),
       };
     });
   };
@@ -790,12 +870,14 @@ export default function Prospecting() {
   const enrichFromCache = (
     properties: AttomProperty[],
     cache: Map<number, AttomProperty>
-  ): { enriched: AttomProperty[]; needsOwner: boolean; needsExpanded: boolean; needsAvm: boolean } => {
-    if (cache.size === 0) return { enriched: properties, needsOwner: true, needsExpanded: true, needsAvm: true };
+  ): { enriched: AttomProperty[]; needsOwner: boolean; needsExpanded: boolean; needsAvm: boolean; needsRentalAvm: boolean; needsHomeEquity: boolean } => {
+    if (cache.size === 0) return { enriched: properties, needsOwner: true, needsExpanded: true, needsAvm: true, needsRentalAvm: true, needsHomeEquity: true };
 
     let needsOwner = false;
     let needsExpanded = false;
     let needsAvm = false;
+    let needsRentalAvm = false;
+    let needsHomeEquity = false;
 
     const enriched = properties.map((p) => {
       const id = p.identifier?.attomId;
@@ -804,6 +886,8 @@ export default function Prospecting() {
         needsOwner = true;
         needsExpanded = true;
         needsAvm = true;
+        needsRentalAvm = true;
+        needsHomeEquity = true;
         return p;
       }
       const merged = mergeSupplementalData([p], [[cached]])[0];
@@ -811,10 +895,12 @@ export default function Prospecting() {
       if (!(o?.owner1?.fullName || o?.owner2?.fullName || o?.owner3?.fullName)) needsOwner = true;
       if (!merged.assessment?.assessed?.assdTtlValue) needsExpanded = true;
       if (!merged.avm?.amount?.value) needsAvm = true;
+      if (!resolveRentalAvm(merged)) needsRentalAvm = true;
+      if (!resolveHomeEquity(merged)) needsHomeEquity = true;
       return merged;
     });
 
-    return { enriched, needsOwner, needsExpanded, needsAvm };
+    return { enriched, needsOwner, needsExpanded, needsAvm, needsRentalAvm, needsHomeEquity };
   };
 
   /**
@@ -963,6 +1049,8 @@ export default function Prospecting() {
           properties: [p],
           totalTaxBurden: p.assessment?.tax?.taxAmt || 0,
           totalAvmValue: getPropertyValue(p) || 0,
+          totalRentalIncome: getRentalValue(p) || 0,
+          totalEquity: getEquityFromValuation(p),
           oldestYearBuilt: years.length > 0 ? Math.min(...years) : null,
           avgYearBuilt: years.length > 0 ? years[0] : null,
         });
@@ -1038,6 +1126,27 @@ export default function Prospecting() {
         // see a consistent view (state updates are async).
         const cacheSnapshot = new Map(propertyCache);
 
+        // Valuation endpoints (rentalavm, homeequity) don't support pagination —
+        // they return all properties for the zip at once. Fetch once before the
+        // page loop and merge into every page's results.
+        // Check cache first: if we already have this data, skip the API calls.
+        const firstPageCheck = enrichFromCache([], cacheSnapshot);
+        let valuationSupps: AttomProperty[][] = [];
+        const valuationFetches: Promise<any>[] = [];
+        const valuationLabels: string[] = [];
+        if (firstPageCheck.needsRentalAvm) {
+          valuationFetches.push(fetchPage(1, "rentalavm").catch(() => ({ property: [] })));
+          valuationLabels.push("rentalavm");
+        }
+        if (firstPageCheck.needsHomeEquity) {
+          valuationFetches.push(fetchPage(1, "homeequity").catch(() => ({ property: [] })));
+          valuationLabels.push("homeequity");
+        }
+        if (valuationFetches.length > 0) {
+          const valuationResults = await Promise.all(valuationFetches);
+          valuationSupps = valuationResults.map((r: any) => (r.property || []) as AttomProperty[]);
+        }
+
         for (let pg = 1; pg <= maxPages; pg++) {
           // Always fetch the primary endpoint (determines which properties match the query)
           const baseData = await fetchPage(pg);
@@ -1048,11 +1157,12 @@ export default function Prospecting() {
           const { enriched: cacheEnriched, needsOwner, needsExpanded, needsAvm } = enrichFromCache(baseProps, cacheSnapshot);
 
           // Build supplement fetches — only for data the cache doesn't have.
-          // ALL modes use the same supplement strategy:
+          // Paginated supplements fetched per-page:
           //   1. "expanded" (expandedprofile) — owner, assessment, mortgage, building
           //   2. "detailowner" — full owner names and mailing addresses
-          //   3. "avm" (avm/snapshot) — AVM values (expandedprofile does NOT return
-          //      AVM for postal code area searches, so this is a separate call)
+          //   3. "avm" (avm/snapshot) — AVM values
+          // Non-paginated supplements (rentalavm, homeequity) are fetched once
+          // before the loop and merged into every page via valuationSupps.
           const suppFetches: Promise<any>[] = [];
           const suppLabels: string[] = [];
 
@@ -1069,14 +1179,19 @@ export default function Prospecting() {
             suppLabels.push("avm");
           }
 
-          let merged: AttomProperty[];
+          // Combine paginated supplements with the one-shot valuation supplements
+          let allSuppArrays: AttomProperty[][] = [];
           if (suppFetches.length > 0) {
             const suppResults = await Promise.all(suppFetches);
-            const suppArrays = suppResults.map((r: any) => (r.property || []) as AttomProperty[]);
-            // Merge cache-enriched base with fresh supplement data
-            merged = mergeSupplementalData(cacheEnriched, suppArrays);
+            allSuppArrays = suppResults.map((r: any) => (r.property || []) as AttomProperty[]);
+          }
+          // Add valuation data (fetched once, applied to every page)
+          allSuppArrays = allSuppArrays.concat(valuationSupps);
+
+          let merged: AttomProperty[];
+          if (allSuppArrays.length > 0) {
+            merged = mergeSupplementalData(cacheEnriched, allSuppArrays);
           } else {
-            // Cache had everything — no supplement API calls needed
             merged = cacheEnriched;
           }
 
@@ -1197,6 +1312,10 @@ export default function Prospecting() {
     const mortgageAmt = getMortgageAmount(prop);
     const lenderName = getMortgageLender(prop);
     const mailingAddr = getMailingAddress(prop);
+    const rentalVal = getRentalValue(prop);
+    const heEquity = getEquityFromValuation(prop);
+    const he = resolveHomeEquity(prop);
+    const heLtv = he?.loanToValue ?? he?.ltv ?? (he?.avmValue && he?.outstandingBalance ? (((he.outstandingBalance ?? he.loanBalance ?? he.mortgageBalance ?? he.estimatedBalance ?? 0) / (he.avmValue ?? he.avm?.amount?.value ?? he.estimatedValue ?? 1)) * 100) : null);
     const distress = mode === "foreclosure" ? getDistressSignals(prop) : null;
     const apn = prop.identifier?.apn;
     const isHI = prop.address?.countrySubd?.toUpperCase() === "HI" || prop.address?.countrySubd?.toUpperCase() === "HAWAII";
@@ -1316,6 +1435,9 @@ export default function Prospecting() {
               {avmVal != null && (
                 <span><strong>{hasRealAvm ? "AVM" : "Est. Value"}:</strong> <span style={{ color: "#059669" }}>{fmt(avmVal)}</span></span>
               )}
+              {rentalVal != null && (
+                <span><strong>Rent Est.:</strong> <span style={{ color: "#7c3aed" }}>${Number(rentalVal).toLocaleString()}/mo</span></span>
+              )}
               {lastSale != null && (
                 <span><strong>Last Sale:</strong> {fmt(lastSale)}{saleDateStr ? ` (${saleDateStr})` : ""}</span>
               )}
@@ -1325,11 +1447,18 @@ export default function Prospecting() {
               {mortgageAmt != null && (
                 <span><strong>Mortgage:</strong> {fmt(mortgageAmt)}{lenderName ? ` — ${lenderName}` : ""}</span>
               )}
-              {equity != null && equity > 0 && (
+              {heEquity != null ? (
+                <span><strong>Equity:</strong> <span style={{ color: heEquity >= 0 ? "#a16207" : "#dc2626", fontWeight: 600 }}>{heEquity >= 0 ? "+" : ""}{fmt(heEquity)}</span>
+                  {heLtv != null && <span style={{ fontSize: 11, color: "#6b7280", marginLeft: 4 }}>(LTV {Number(heLtv).toFixed(0)}%)</span>}
+                </span>
+              ) : equity != null && equity > 0 ? (
                 <span><strong>Est. Equity:</strong> <span style={{ color: "#a16207", fontWeight: 600 }}>+{fmt(equity)}</span></span>
-              )}
+              ) : null}
               {taxAmt != null && (
                 <span><strong>Tax:</strong> {fmt(taxAmt)}/yr</span>
+              )}
+              {rentalVal != null && avmVal != null && (
+                <span><strong>Yield:</strong> <span style={{ color: "#0891b2", fontWeight: 600 }}>{((rentalVal * 12 / avmVal) * 100).toFixed(1)}%</span></span>
               )}
             </div>
 
@@ -1530,6 +1659,18 @@ export default function Prospecting() {
                 <div style={{ fontWeight: 700, fontSize: 15, color: "#059669" }}>{fmt(avmVal)}</div>
               </div>
             )}
+            {/* Rental AVM — shown for all modes when available */}
+            {rentalVal != null && (
+              <div>
+                <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>Rent Est.</div>
+                <div style={{ fontWeight: 700, fontSize: 15, color: "#7c3aed" }}>${Number(rentalVal).toLocaleString()}/mo</div>
+                {rentalVal != null && avmVal != null && (
+                  <div style={{ fontSize: 11, color: "#0891b2", fontWeight: 600 }}>
+                    {((rentalVal * 12 / avmVal) * 100).toFixed(1)}% yield
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -1600,6 +1741,25 @@ export default function Prospecting() {
                   {fmt(group.totalTaxBurden)}
                 </div>
               </div>
+              {group.totalRentalIncome > 0 && (
+                <div>
+                  <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>Rent Est./mo</div>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: "#7c3aed" }}>${group.totalRentalIncome.toLocaleString()}</div>
+                  {group.totalAvmValue > 0 && (
+                    <div style={{ fontSize: 11, color: "#0891b2", fontWeight: 600 }}>
+                      {((group.totalRentalIncome * 12 / group.totalAvmValue) * 100).toFixed(1)}% yield
+                    </div>
+                  )}
+                </div>
+              )}
+              {group.totalEquity != null && (
+                <div>
+                  <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>Est. Equity</div>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: group.totalEquity >= 0 ? "#059669" : "#dc2626" }}>
+                    {group.totalEquity >= 0 ? "+" : ""}{fmt(group.totalEquity)}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 4 }}>
