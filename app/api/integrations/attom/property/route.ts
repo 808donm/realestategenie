@@ -4,7 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { AttomClient, createAttomClient, normalizeAttomProperty } from "@/lib/integrations/attom-client";
 import {
   buildCacheKey, cacheGet, cacheSet,
-  mockReplay, mockCapture, isReplayMode,
+  diskRead, diskWrite,
 } from "@/lib/integrations/attom-cache";
 
 /**
@@ -142,34 +142,31 @@ export async function GET(request: NextRequest) {
       delete params.page;
     }
 
-    // ── Cache + Mock Mode ──────────────────────────────────────────────────
+    // ── Cache ────────────────────────────────────────────────────────────────
+    // Layer 1: in-memory (survives within a server process)
+    // Layer 2: disk (survives server restarts, when ATTOM_MOCK_MODE=auto)
+    // Layer 3: real ATTOM API (only called on full miss)
     const cacheKey = buildCacheKey(endpoint, params);
 
-    // 1. Replay mode: serve from saved JSON files, zero API calls
-    const replayed = mockReplay(cacheKey, endpoint);
-    if (replayed) {
-      return NextResponse.json({ success: true, endpoint, ...replayed }, {
-        headers: { "X-Attom-Cache": "REPLAY" },
+    // Check in-memory cache first (fastest)
+    const memoryCached = cacheGet(cacheKey);
+    if (memoryCached) {
+      return NextResponse.json(memoryCached, {
+        headers: { "X-Attom-Cache": "MEMORY" },
       });
     }
 
-    // 2. In-memory cache: return cached response if still valid
-    const cached = cacheGet(cacheKey);
-    if (cached) {
-      console.log(`[ATTOM Cache] HIT for ${endpoint} (${cacheKey.slice(0, 60)}…)`);
-      return NextResponse.json(cached, {
-        headers: { "X-Attom-Cache": "HIT" },
+    // Check disk cache (ATTOM_MOCK_MODE=auto)
+    const diskCached = diskRead(cacheKey, endpoint);
+    if (diskCached) {
+      const payload = { success: true, endpoint, ...diskCached };
+      cacheSet(cacheKey, payload); // promote to memory for next hit
+      return NextResponse.json(payload, {
+        headers: { "X-Attom-Cache": "DISK" },
       });
     }
 
-    // 3. If replay mode but no saved data, return a helpful error instead of calling API
-    if (isReplayMode()) {
-      return NextResponse.json(
-        { error: `No saved mock data for ${endpoint}. Run with ATTOM_MOCK_MODE=capture first.` },
-        { status: 404, headers: { "X-Attom-Cache": "REPLAY-MISS" } }
-      );
-    }
-
+    // Cache miss — call real ATTOM API
     const client = await getAttomClient();
 
     let result;
@@ -345,13 +342,13 @@ export async function GET(request: NextRequest) {
       };
     }
 
-    // Store in cache + save to disk in capture mode
+    // Store in memory cache + save to disk (if ATTOM_MOCK_MODE=auto)
     const responsePayload = { success: true, endpoint, ...result };
     cacheSet(cacheKey, responsePayload);
-    mockCapture(cacheKey, endpoint, result);
+    diskWrite(cacheKey, endpoint, result);
 
     return NextResponse.json(responsePayload, {
-      headers: { "X-Attom-Cache": "MISS" },
+      headers: { "X-Attom-Cache": "API" },
     });
   } catch (error) {
     console.error("Error fetching ATTOM property:", error);

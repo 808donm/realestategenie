@@ -4,7 +4,7 @@ import { join } from "path";
 
 // ── Configuration ──────────────────────────────────────────────────────────
 // ATTOM_CACHE_TTL_HOURS: how long to keep responses in memory (default 168 = 7 days)
-// ATTOM_MOCK_MODE: "off" (default) | "capture" (save responses to disk) | "replay" (serve from disk only)
+// ATTOM_MOCK_MODE: "off" (default) | "auto" (read from disk first, call API only on miss, save result)
 
 const DEFAULT_TTL_HOURS = 168; // 7 days — optimized for trial accounts
 const MAX_CACHE_SIZE = 500;
@@ -15,10 +15,9 @@ function getTtlMs(): number {
   return (Number.isFinite(hours) && hours > 0 ? hours : DEFAULT_TTL_HOURS) * 3600 * 1000;
 }
 
-function getMockMode(): "off" | "capture" | "replay" {
+function isMockEnabled(): boolean {
   const mode = (process.env.ATTOM_MOCK_MODE || "off").toLowerCase();
-  if (mode === "capture" || mode === "replay") return mode;
-  return "off";
+  return mode === "auto" || mode === "true" || mode === "1";
 }
 
 // ── Cache Key ──────────────────────────────────────────────────────────────
@@ -87,10 +86,13 @@ export function cacheStats(): { size: number; maxSize: number; ttlHours: number 
   return { size: cache.size, maxSize: MAX_CACHE_SIZE, ttlHours: getTtlMs() / 3600000 };
 }
 
-// ── Mock / Capture Mode ────────────────────────────────────────────────────
+// ── Disk Cache (auto mode) ─────────────────────────────────────────────────
+// When ATTOM_MOCK_MODE=auto, responses are automatically saved to disk and
+// loaded from disk on subsequent requests. No mode switching needed — just
+// set it once and forget. First request hits the real API and saves the
+// response; every subsequent identical request reads from disk instantly.
 
 function mockFilePath(key: string, endpoint: string): string {
-  // Use endpoint prefix for human-readable filenames + hash for uniqueness
   const safe = endpoint.replace(/[^a-zA-Z0-9]/g, "_");
   return join(MOCK_DATA_DIR, `${safe}_${hashKey(key)}.json`);
 }
@@ -101,39 +103,28 @@ function ensureMockDir(): void {
   }
 }
 
-/** In replay mode, try to load a saved response from disk. Returns null if not found. */
-export function mockReplay(key: string, endpoint: string): any | null {
-  if (getMockMode() !== "replay") return null;
+/** Try to load a saved response from disk. Returns null if not found or mock mode is off. */
+export function diskRead(key: string, endpoint: string): any | null {
+  if (!isMockEnabled()) return null;
   const filePath = mockFilePath(key, endpoint);
   try {
     const raw = readFileSync(filePath, "utf-8");
-    console.log(`[ATTOM Cache] REPLAY from ${filePath}`);
+    console.log(`[ATTOM Cache] DISK HIT: ${endpoint} (${hashKey(key).slice(0, 8)})`);
     return JSON.parse(raw);
   } catch {
-    console.log(`[ATTOM Cache] REPLAY miss — no saved data for ${endpoint} (${hashKey(key).slice(0, 8)})`);
     return null;
   }
 }
 
-/** In capture mode, save a response to disk for future replay. */
-export function mockCapture(key: string, endpoint: string, data: any): void {
-  if (getMockMode() !== "capture") return;
+/** Save a response to disk for future use. No-op if mock mode is off. */
+export function diskWrite(key: string, endpoint: string, data: any): void {
+  if (!isMockEnabled()) return;
   try {
     ensureMockDir();
     const filePath = mockFilePath(key, endpoint);
     writeFileSync(filePath, JSON.stringify(data, null, 2));
-    console.log(`[ATTOM Cache] CAPTURED ${endpoint} → ${filePath}`);
+    console.log(`[ATTOM Cache] SAVED: ${endpoint} → ${filePath}`);
   } catch (err) {
-    console.error(`[ATTOM Cache] Failed to capture:`, err);
+    console.error(`[ATTOM Cache] Failed to save:`, err);
   }
-}
-
-/** Check if we're in replay mode (no real API calls should be made). */
-export function isReplayMode(): boolean {
-  return getMockMode() === "replay";
-}
-
-/** Check if we're in capture mode (save responses alongside real calls). */
-export function isCaptureMode(): boolean {
-  return getMockMode() === "capture";
 }
