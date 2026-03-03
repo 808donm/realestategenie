@@ -16,6 +16,7 @@
 # next.js
 /.next/
 /out/
+app/.next/
 
 # production
 /build
@@ -52,3 +53,4 @@ src/lib/integrations/attom-mock-data/
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+app/tsconfig.json
