@@ -422,11 +422,13 @@ export default function PropertyDetailModal({
   useEffect(() => {
     if (activeSection !== "comparables" || comparablesData || comparablesLoading) return;
 
-    const attomId = p.identifier?.attomId;
-    if (!attomId) return;
+    // ATTOM /sale/comparables requires address1+address2 (attomid alone returns 404 "No rule matched")
+    const address1 = p.address?.line1;
+    const address2 = p.address?.line2 || [p.address?.locality, p.address?.countrySubd, p.address?.postal1].filter(Boolean).join(" ");
+    if (!address1 || !address2) return;
 
     setComparablesLoading(true);
-    const params = new URLSearchParams({ endpoint: "comparables", attomid: String(attomId) });
+    const params = new URLSearchParams({ endpoint: "comparables", address1, address2 });
     fetch(`/api/integrations/attom/property?${params}`)
       .then(r => r.json())
       .then(data => {
