@@ -352,17 +352,72 @@ interface InvestorGroup {
   avgYearBuilt: number | null;
 }
 
+/**
+ * Normalize an owner name for grouping/matching.
+ * Strips corporate suffixes, punctuation, extra whitespace, and handles
+ * "LAST, FIRST" vs "FIRST LAST" formats so the same investor entity
+ * matches regardless of how ATTOM records the name.
+ */
+function normalizeOwnerName(name: string): string {
+  let n = name.toLowerCase().trim();
+
+  // Strip common corporate/trust suffixes (order matters — longest first)
+  const suffixes = [
+    "limited liability company", "limited liability co",
+    "living trust", "family trust", "revocable trust", "irrevocable trust",
+    "l\\.?l\\.?c\\.?", "inc\\.?", "corp\\.?", "llp\\.?", "lp\\.?",
+    "ltd\\.?", "co\\.?", "trust", "trustees?", "etal", "et al\\.?",
+    "partnership", "associates?", "enterprises?", "holdings?", "properties",
+    "investments?", "ventures?", "group", "company", "management",
+  ];
+  for (const suffix of suffixes) {
+    n = n.replace(new RegExp(`[,\\s]+${suffix}\\s*$`, "i"), "");
+    n = n.replace(new RegExp(`\\b${suffix}\\b`, "i"), "");
+  }
+
+  // Strip punctuation (periods, commas, apostrophes, hyphens → space)
+  n = n.replace(/[.,'''`\-]/g, " ");
+
+  // Collapse multiple spaces
+  n = n.replace(/\s+/g, " ").trim();
+
+  // Handle "LAST, FIRST" → "FIRST LAST" for consistent matching
+  // Only do this if there's exactly one comma-separated pair
+  const commaParts = name.toLowerCase().split(",").map((s) => s.trim());
+  if (commaParts.length === 2 && commaParts[0] && commaParts[1]) {
+    // Check it looks like "LAST, FIRST" (not "ABC CO, LLC" which we already stripped)
+    const secondWord = commaParts[1].split(/\s+/)[0];
+    if (secondWord && secondWord.length > 1 && !suffixes.some((s) => secondWord.match(new RegExp(`^${s}$`, "i")))) {
+      n = `${commaParts[1]} ${commaParts[0]}`.replace(/[.,'''`\-]/g, " ").replace(/\s+/g, " ").trim();
+    }
+  }
+
+  return n;
+}
+
 function groupByOwner(properties: AttomProperty[]): InvestorGroup[] {
   const groups = new Map<string, AttomProperty[]>();
 
   for (const p of properties) {
-    // Primary: group by owner name
+    // Primary: group by normalized owner name
     const ownerName = getOwnerName(p)?.trim();
     if (ownerName) {
-      const key = `name:${ownerName.toLowerCase()}`;
+      const key = `name:${normalizeOwnerName(ownerName)}`;
       const list = groups.get(key) || [];
       list.push(p);
       groups.set(key, list);
+
+      // Also check owner2/owner3 — an investor may be listed as co-owner
+      // on some properties but primary owner on others
+      const owner = resolveOwner(p);
+      for (const ownerN of [owner?.owner2?.fullName, owner?.owner3?.fullName]) {
+        if (ownerN && normalizeOwnerName(ownerN) !== normalizeOwnerName(ownerName)) {
+          const altKey = `name:${normalizeOwnerName(ownerN)}`;
+          const altList = groups.get(altKey) || [];
+          altList.push(p);
+          groups.set(altKey, altList);
+        }
+      }
       continue;
     }
 
@@ -381,18 +436,44 @@ function groupByOwner(properties: AttomProperty[]): InvestorGroup[] {
     }
   }
 
+  // Deduplicate: a property might appear in multiple groups (via owner2/owner3).
+  // Keep it in the largest group only.
+  const propBestGroup = new Map<number, string>(); // attomId → best group key
+  for (const [key, props] of groups) {
+    for (const p of props) {
+      const id = p.identifier?.attomId;
+      if (!id) continue;
+      const existing = propBestGroup.get(id);
+      if (!existing || (groups.get(existing)?.length || 0) < props.length) {
+        propBestGroup.set(id, key);
+      }
+    }
+  }
+  // Remove properties from non-best groups
+  for (const [key, props] of groups) {
+    const filtered = props.filter((p) => {
+      const id = p.identifier?.attomId;
+      return !id || propBestGroup.get(id) === key;
+    });
+    if (filtered.length > 0) {
+      groups.set(key, filtered);
+    } else {
+      groups.delete(key);
+    }
+  }
+
   // Only keep owners with 2+ properties
   const result: InvestorGroup[] = [];
   for (const [key, props] of groups) {
     if (props.length < 2) continue;
-    const ownerName = getOwnerName(props[0])
+    const displayName = getOwnerName(props[0])
       || (key.startsWith("mail:") ? `Unknown Owner (${resolveOwner(props[0])?.mailingAddressOneLine || "Shared Mailing Address"})` : "Unknown");
     const mailingAddress = resolveOwner(props[0])?.mailingAddressOneLine || "";
     const isCorporate = props.some((p) => resolveOwner(p)?.corporateIndicator === "Y");
     const years = props.map((p) => p.building?.summary?.yearBuilt).filter((y): y is number => y != null);
 
     result.push({
-      ownerName,
+      ownerName: displayName,
       mailingAddress,
       isCorporate,
       properties: props,

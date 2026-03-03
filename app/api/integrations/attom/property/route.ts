@@ -144,8 +144,14 @@ export async function GET(request: NextRequest) {
 
     // ── Cache ────────────────────────────────────────────────────────────────
     // Layer 1: in-memory (survives within a server process)
-    // Layer 2: disk (survives server restarts, when ATTOM_MOCK_MODE=auto)
-    // Layer 3: real ATTOM API (only called on full miss)
+    // Layer 2: disk (always-on, survives restarts, shared across all users)
+    // Layer 3: real ATTOM API (only called on full cache miss)
+    //
+    // TTLs are aligned to ATTOM's data update schedule:
+    //   Daily:   assessor, recorder, property details (24h)
+    //   Weekly:  building permits (7d)
+    //   Monthly: AVM, equity, rental AVM (30d)
+    //   Static:  neighborhood, POI, risk, schools (30d)
     const cacheKey = buildCacheKey(endpoint, params);
 
     // Check in-memory cache first (fastest)
@@ -156,17 +162,17 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Check disk cache (ATTOM_MOCK_MODE=auto)
+    // Check disk cache (shared across all users, persists across restarts)
     const diskCached = diskRead(cacheKey, endpoint);
     if (diskCached) {
       const payload = { success: true, endpoint, ...diskCached };
-      cacheSet(cacheKey, payload); // promote to memory for next hit
+      cacheSet(cacheKey, payload, endpoint); // promote to memory
       return NextResponse.json(payload, {
         headers: { "X-Attom-Cache": "DISK" },
       });
     }
 
-    // Cache miss — call real ATTOM API
+    // Full cache miss — call real ATTOM API
     const client = await getAttomClient();
 
     let result;
@@ -342,9 +348,9 @@ export async function GET(request: NextRequest) {
       };
     }
 
-    // Store in memory cache + save to disk (if ATTOM_MOCK_MODE=auto)
+    // Store in memory + disk cache (shared across all users)
     const responsePayload = { success: true, endpoint, ...result };
-    cacheSet(cacheKey, responsePayload);
+    cacheSet(cacheKey, responsePayload, endpoint);
     diskWrite(cacheKey, endpoint, result);
 
     return NextResponse.json(responsePayload, {

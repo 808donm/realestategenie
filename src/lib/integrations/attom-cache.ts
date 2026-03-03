@@ -1,29 +1,61 @@
 import { createHash } from "crypto";
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from "fs";
+import { readFileSync, writeFileSync, mkdirSync, existsSync, statSync } from "fs";
 import { join } from "path";
 
-// ── Configuration ──────────────────────────────────────────────────────────
-// ATTOM_CACHE_TTL_HOURS: how long to keep responses in memory (default 168 = 7 days)
-// ATTOM_MOCK_MODE: "off" (default) | "auto" (read from disk first, call API only on miss, save result)
+// ── ATTOM Data Update Schedule ─────────────────────────────────────────────
+// Daily:   assessor, recorder, preforeclosure
+// Weekly:  building permits
+// Monthly: AVM, equity
+//
+// Cache TTLs are aligned to these frequencies so data stays fresh without
+// burning API calls on data that hasn't changed yet.
 
-const DEFAULT_TTL_HOURS = 168; // 7 days — optimized for trial accounts
-const MAX_CACHE_SIZE = 500;
-const MOCK_DATA_DIR = join(process.cwd(), "src/lib/integrations/attom-mock-data");
+const HOUR = 3600 * 1000;
+const DAY = 24 * HOUR;
 
-function getTtlMs(): number {
-  const hours = parseInt(process.env.ATTOM_CACHE_TTL_HOURS || "", 10);
-  return (Number.isFinite(hours) && hours > 0 ? hours : DEFAULT_TTL_HOURS) * 3600 * 1000;
+/** TTL per endpoint category (in ms). Aligned to ATTOM's data update cadence. */
+function getEndpointTtl(endpoint: string): number {
+  // Override: env var sets a floor/ceiling for all endpoints (in hours)
+  const envHours = parseInt(process.env.ATTOM_CACHE_TTL_HOURS || "", 10);
+  if (Number.isFinite(envHours) && envHours > 0) return envHours * HOUR;
+
+  const ep = endpoint.toLowerCase();
+
+  // Monthly updates — cache 30 days
+  if (ep.includes("avm") || ep === "rentalavm" || ep === "homeequity") return 30 * DAY;
+
+  // Weekly updates — cache 7 days
+  if (ep === "buildingpermits") return 7 * DAY;
+
+  // Area/static data — rarely changes, cache 30 days
+  if (["neighborhood", "poi", "salestrend", "transactionsalestrend",
+       "community", "school", "schooldistrict", "schoolprofile",
+       "hazardrisk", "climaterisk", "riskprofile",
+       "parcelboundary", "schoolboundary", "neighborhoodboundary",
+       "ibuyer", "marketanalytics"].includes(ep)) return 30 * DAY;
+
+  // Daily updates (assessor/recorder/preforeclosure) — cache 24 hours
+  if (["assessment", "assessmentdetail", "assessmenthistory",
+       "recorder", "preforeclosure"].includes(ep)) return 1 * DAY;
+
+  // Property detail endpoints — owner/mortgage data updated daily
+  // but 24h is safe since changes are rare for a specific property
+  if (ep.includes("detail") || ep.includes("expanded") || ep.includes("snapshot")
+      || ep === "basicprofile" || ep === "sale" || ep === "salesnapshot"
+      || ep === "saleshistory" || ep === "saleshistoryexpanded"
+      || ep === "detailowner" || ep === "detailmortgageowner"
+      || ep === "detailmortgage" || ep === "detailwithschools") return 1 * DAY;
+
+  // Default: 24 hours
+  return 1 * DAY;
 }
 
-function isMockEnabled(): boolean {
-  const mode = (process.env.ATTOM_MOCK_MODE || "off").toLowerCase();
-  return mode === "auto" || mode === "true" || mode === "1";
-}
+const MAX_CACHE_SIZE = 1000;
+const DISK_CACHE_DIR = join(process.cwd(), "src/lib/integrations/attom-mock-data");
 
 // ── Cache Key ──────────────────────────────────────────────────────────────
 
 export function buildCacheKey(endpoint: string, params: Record<string, any>): string {
-  // Sort params for deterministic keys
   const sorted = Object.keys(params)
     .filter((k) => k !== "endpoint" && params[k] !== undefined && params[k] !== null && params[k] !== "")
     .sort()
@@ -57,8 +89,7 @@ export function cacheGet(key: string): any | null {
   return entry.data;
 }
 
-export function cacheSet(key: string, data: any): void {
-  // Evict LRU entries if at capacity
+export function cacheSet(key: string, data: any, endpoint: string): void {
   if (cache.size >= MAX_CACHE_SIZE) {
     let oldestKey: string | null = null;
     let oldestTime = Infinity;
@@ -73,7 +104,7 @@ export function cacheSet(key: string, data: any): void {
 
   cache.set(key, {
     data,
-    expiresAt: Date.now() + getTtlMs(),
+    expiresAt: Date.now() + getEndpointTtl(endpoint),
     lastAccessed: Date.now(),
   });
 }
@@ -82,46 +113,64 @@ export function cacheClear(): void {
   cache.clear();
 }
 
-export function cacheStats(): { size: number; maxSize: number; ttlHours: number } {
-  return { size: cache.size, maxSize: MAX_CACHE_SIZE, ttlHours: getTtlMs() / 3600000 };
+export function cacheStats(): { size: number; maxSize: number } {
+  return { size: cache.size, maxSize: MAX_CACHE_SIZE };
 }
 
-// ── Disk Cache (auto mode) ─────────────────────────────────────────────────
-// When ATTOM_MOCK_MODE=auto, responses are automatically saved to disk and
-// loaded from disk on subsequent requests. No mode switching needed — just
-// set it once and forget. First request hits the real API and saves the
-// response; every subsequent identical request reads from disk instantly.
+// ── Disk Cache ─────────────────────────────────────────────────────────────
+// Always-on. Saves ATTOM responses to disk so they survive server restarts
+// and are shared across all users. Files are checked against endpoint-specific
+// TTLs so stale data gets refreshed automatically.
+//
+// Disable with ATTOM_DISK_CACHE=false if needed (e.g., in CI).
 
-function mockFilePath(key: string, endpoint: string): string {
+function isDiskCacheEnabled(): boolean {
+  const val = (process.env.ATTOM_DISK_CACHE || "").toLowerCase();
+  return val !== "false" && val !== "0";
+}
+
+function diskFilePath(key: string, endpoint: string): string {
   const safe = endpoint.replace(/[^a-zA-Z0-9]/g, "_");
-  return join(MOCK_DATA_DIR, `${safe}_${hashKey(key)}.json`);
+  return join(DISK_CACHE_DIR, `${safe}_${hashKey(key)}.json`);
 }
 
-function ensureMockDir(): void {
-  if (!existsSync(MOCK_DATA_DIR)) {
-    mkdirSync(MOCK_DATA_DIR, { recursive: true });
+function ensureDiskDir(): void {
+  if (!existsSync(DISK_CACHE_DIR)) {
+    mkdirSync(DISK_CACHE_DIR, { recursive: true });
   }
 }
 
-/** Try to load a saved response from disk. Returns null if not found or mock mode is off. */
+/**
+ * Read from disk cache. Returns null if:
+ * - Disk cache is disabled
+ * - File doesn't exist
+ * - File is older than the endpoint's TTL
+ */
 export function diskRead(key: string, endpoint: string): any | null {
-  if (!isMockEnabled()) return null;
-  const filePath = mockFilePath(key, endpoint);
+  if (!isDiskCacheEnabled()) return null;
+  const filePath = diskFilePath(key, endpoint);
   try {
+    const stats = statSync(filePath);
+    const ageMs = Date.now() - stats.mtimeMs;
+    const ttl = getEndpointTtl(endpoint);
+    if (ageMs > ttl) {
+      console.log(`[ATTOM Cache] DISK STALE: ${endpoint} (age ${Math.round(ageMs / HOUR)}h > TTL ${Math.round(ttl / HOUR)}h)`);
+      return null;
+    }
     const raw = readFileSync(filePath, "utf-8");
-    console.log(`[ATTOM Cache] DISK HIT: ${endpoint} (${hashKey(key).slice(0, 8)})`);
+    console.log(`[ATTOM Cache] DISK HIT: ${endpoint} (age ${Math.round(ageMs / HOUR)}h, TTL ${Math.round(ttl / HOUR)}h)`);
     return JSON.parse(raw);
   } catch {
     return null;
   }
 }
 
-/** Save a response to disk for future use. No-op if mock mode is off. */
+/** Save response to disk. Always-on unless ATTOM_DISK_CACHE=false. */
 export function diskWrite(key: string, endpoint: string, data: any): void {
-  if (!isMockEnabled()) return;
+  if (!isDiskCacheEnabled()) return;
   try {
-    ensureMockDir();
-    const filePath = mockFilePath(key, endpoint);
+    ensureDiskDir();
+    const filePath = diskFilePath(key, endpoint);
     writeFileSync(filePath, JSON.stringify(data, null, 2));
     console.log(`[ATTOM Cache] SAVED: ${endpoint} → ${filePath}`);
   } catch (err) {
