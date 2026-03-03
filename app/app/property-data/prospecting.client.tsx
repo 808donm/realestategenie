@@ -1158,6 +1158,24 @@ export default function Prospecting() {
           valuationSupps = valuationResults.map((r: any) => (r.property || []) as AttomProperty[]);
         }
 
+        // For radius (Just Sold) mode, salesnapshot returns recent sales WITHOUT
+        // owner data. The "expanded" (expandedprofile) endpoint has owner info but
+        // returns ALL properties in the zip — different pagination window than
+        // salesnapshot. Pre-fetch multiple pages of expanded to build a complete
+        // owner lookup that gets merged with every salesnapshot page.
+        let radiusOwnerLookup: AttomProperty[][] = [];
+        if (mode === "radius") {
+          const expandedPages = await Promise.all(
+            [1, 2, 3, 4].map(pg =>
+              fetchPage(pg, "expanded").catch(() => ({ property: [] }))
+            )
+          );
+          const allExpanded = expandedPages.flatMap((r: any) => (r.property || []) as AttomProperty[]);
+          if (allExpanded.length > 0) {
+            radiusOwnerLookup = [allExpanded];
+          }
+        }
+
         // Fetch sales trend for this zip code (zip-level, not per-property)
         // Only fetch if we haven't already fetched for this zip
         if (salesTrendZip !== zip.trim()) {
@@ -1238,6 +1256,8 @@ export default function Prospecting() {
           }
           // Add valuation data (fetched once, applied to every page)
           allSuppArrays = allSuppArrays.concat(valuationSupps);
+          // Add pre-fetched expanded owner lookup for radius mode
+          allSuppArrays = allSuppArrays.concat(radiusOwnerLookup);
 
           let merged: AttomProperty[];
           if (allSuppArrays.length > 0) {
