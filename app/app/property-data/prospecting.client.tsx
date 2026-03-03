@@ -524,8 +524,15 @@ export default function Prospecting() {
   const [expandedInvestor, setExpandedInvestor] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState("");
 
-  // Shared raw data — fetched once per zip+propertyType, reused across non-radius modes.
-  // This avoids re-fetching identical ATTOM data when switching between absentee/equity/foreclosure/investor.
+  // Universal property cache — keyed by attomId, accumulates data from ALL search modes.
+  // Every search (radius or not) adds its properties here. Before making supplemental
+  // API calls, the fetch loop checks this cache so we never re-fetch data we already have.
+  const [propertyCache, setPropertyCache] = useState<Map<number, AttomProperty>>(new Map());
+  const [propertyCacheKey, setPropertyCacheKey] = useState(""); // zip:propertyType — cleared on change
+
+  // Shared raw data for non-radius modes — the full result array from the primary endpoint.
+  // Since absentee/equity/foreclosure/investor all use the same primary (detailmortgageowner),
+  // mode switches just re-filter this array instead of re-fetching.
   const [sharedRawData, setSharedRawData] = useState<AttomProperty[]>([]);
   const [sharedDataKey, setSharedDataKey] = useState("");
 
@@ -596,17 +603,25 @@ export default function Prospecting() {
 
       const baseProps: AttomProperty[] = data.property || [];
 
-      // Supplement with expanded for AVM/assessment
-      const suppParams = new URLSearchParams(params);
-      suppParams.set("endpoint", "expanded");
-      const suppRes = await fetch(`/api/integrations/attom/property?${suppParams.toString()}`).catch(() => null);
-      const suppData = suppRes ? await suppRes.json().catch(() => ({})) : {};
-      const suppProps: AttomProperty[] = suppData.property || [];
+      // Check cache for expanded data before making the supplement call
+      const { enriched, needsExpanded } = enrichFromCache(baseProps, propertyCache);
 
-      const merged = suppProps.length > 0
-        ? mergeSupplementalData(baseProps, [suppProps])
-        : baseProps;
+      let merged: AttomProperty[];
+      if (needsExpanded) {
+        const suppParams = new URLSearchParams(params);
+        suppParams.set("endpoint", "expanded");
+        const suppRes = await fetch(`/api/integrations/attom/property?${suppParams.toString()}`).catch(() => null);
+        const suppData = suppRes ? await suppRes.json().catch(() => ({})) : {};
+        const suppProps: AttomProperty[] = suppData.property || [];
+        merged = suppProps.length > 0
+          ? mergeSupplementalData(enriched, [suppProps])
+          : enriched;
+      } else {
+        merged = enriched;
+      }
 
+      // Contribute to universal cache
+      addToPropertyCache(merged);
       setRadiusResults(merged);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Radius search failed");
@@ -753,6 +768,60 @@ export default function Prospecting() {
         // Fill in missing assessment data from supplement (take richer data)
         assessment: p.assessment?.assessed?.assdTtlValue ? p.assessment : (supp.assessment?.assessed?.assdTtlValue ? supp.assessment : p.assessment),
       };
+    });
+  };
+
+  /**
+   * Enrich an array of properties from the universal cache.
+   * Returns the enriched properties and flags indicating which supplement
+   * endpoints still need to be fetched (true = at least one property on the
+   * page is missing that data).
+   */
+  const enrichFromCache = (
+    properties: AttomProperty[],
+    cache: Map<number, AttomProperty>
+  ): { enriched: AttomProperty[]; needsOwner: boolean; needsExpanded: boolean } => {
+    if (cache.size === 0) return { enriched: properties, needsOwner: true, needsExpanded: true };
+
+    let needsOwner = false;
+    let needsExpanded = false;
+
+    const enriched = properties.map((p) => {
+      const id = p.identifier?.attomId;
+      const cached = id ? cache.get(id) : undefined;
+      if (!cached) {
+        needsOwner = true;
+        needsExpanded = true;
+        return p;
+      }
+      const merged = mergeSupplementalData([p], [[cached]])[0];
+      const o = resolveOwner(merged);
+      if (!(o?.owner1?.fullName || o?.owner2?.fullName || o?.owner3?.fullName)) needsOwner = true;
+      if (!merged.avm?.amount?.value && !merged.assessment?.assessed?.assdTtlValue) needsExpanded = true;
+      return merged;
+    });
+
+    return { enriched, needsOwner, needsExpanded };
+  };
+
+  /**
+   * Add properties to the universal cache, merging with any existing entries.
+   */
+  const addToPropertyCache = (properties: AttomProperty[]) => {
+    setPropertyCache((prev) => {
+      const next = new Map(prev);
+      for (const p of properties) {
+        const id = p.identifier?.attomId;
+        if (!id) continue;
+        const existing = next.get(id);
+        if (existing) {
+          // Merge new data into existing cached entry
+          next.set(id, mergeSupplementalData([existing], [[p]])[0]);
+        } else {
+          next.set(id, p);
+        }
+      }
+      return next;
     });
   };
 
@@ -933,18 +1002,13 @@ export default function Prospecting() {
 
     try {
       // All modes use multi-page scanning to accumulate more results.
+      // Before fetching supplements, we check the universal property cache —
+      // if a previous search already has owner/expanded data for these properties,
+      // we skip the redundant API calls.
       //
       // Primary endpoints by mode:
       //   - absentee / equity / foreclosure / investor: detailmortgageowner
-      //     (returns owner names, mailing addresses, corporate indicators,
-      //      mortgage lender/amount/term — the data that matters for prospecting)
-      //   - radius (Just Sold): salesnapshot (returns recent sales in area)
-      //
-      // Each mode supplements with a second endpoint in parallel:
-      //   - Non-radius modes: supplement with "expanded" to get AVM values,
-      //     assessment details, and building characteristics
-      //   - Radius mode: supplement with "detailmortgageowner" to get owner
-      //     names, mailing addresses, and mortgage data for the sold properties
+      //   - radius (Just Sold): salesnapshot
       {
         let allRaw: AttomProperty[] = [];
         const maxPages = mode === "investor" ? 6
@@ -952,103 +1016,86 @@ export default function Prospecting() {
           : mode === "radius" ? 4
           : 4;
 
-        for (let pg = 1; pg <= maxPages; pg++) {
-          // Fetch base data + supplemental endpoint in parallel
-          const fetches: Promise<any>[] = [fetchPage(pg)];
-          if (mode === "radius") {
-            // Just Sold: supplement salesnapshot with detailmortgageowner
-            // to get owner names, mailing addresses, mortgage, and equity data
-            fetches.push(
-              fetchPage(pg, "detailmortgageowner").catch(() => ({ property: [] }))
-            );
-            // Also fetch expanded for AVM/assessment values
-            fetches.push(
-              fetchPage(pg, "expanded").catch(() => ({ property: [] }))
-            );
-            // Also fetch detailowner for full owner names and mailing addresses
-            fetches.push(
-              fetchPage(pg, "detailowner").catch(() => ({ property: [] }))
-            );
-          } else if (mode === "absentee") {
-            // Absentee mode: supplement with both expanded (for AVM/assessment)
-            // and detailowner (sometimes returns owner names that
-            // detailmortgageowner doesn't have for certain zip codes)
-            fetches.push(
-              fetchPage(pg, "expanded").catch(() => ({ property: [] }))
-            );
-            fetches.push(
-              fetchPage(pg, "detailowner").catch(() => ({ property: [] }))
-            );
-          } else {
-            // Other modes: primary = detailmortgageowner, supplement with
-            // expanded to get AVM values, assessment details, building info
-            // and detailowner to get full owner names, mailing addresses
-            fetches.push(
-              fetchPage(pg, "expanded").catch(() => ({ property: [] }))
-            );
-            fetches.push(
-              fetchPage(pg, "detailowner").catch(() => ({ property: [] }))
-            );
-          }
+        // Snapshot the cache once at the start of the search so all pages
+        // see a consistent view (state updates are async).
+        const cacheSnapshot = new Map(propertyCache);
 
-          const [baseData, ...suppResults] = await Promise.all(fetches);
+        for (let pg = 1; pg <= maxPages; pg++) {
+          // Always fetch the primary endpoint (determines which properties match the query)
+          const baseData = await fetchPage(pg);
           const baseProps: AttomProperty[] = baseData.property || [];
           if (baseProps.length === 0) break;
 
-          // Merge supplemental data into base properties
-          const suppArrays = suppResults.map((r: any) => (r.property || []) as AttomProperty[]);
-          const merged = suppArrays.length > 0
-            ? mergeSupplementalData(baseProps, suppArrays)
-            : baseProps;
+          // Check cache to see which supplements we can skip for this page
+          const { enriched: cacheEnriched, needsOwner, needsExpanded } = enrichFromCache(baseProps, cacheSnapshot);
+
+          // Build supplement fetches — only for data the cache doesn't have
+          const suppFetches: Promise<any>[] = [];
+          const suppLabels: string[] = [];
+
+          if (mode === "radius") {
+            // Radius supplements: owner + expanded + detailowner
+            if (needsOwner) {
+              suppFetches.push(fetchPage(pg, "detailmortgageowner").catch(() => ({ property: [] })));
+              suppLabels.push("detailmortgageowner");
+              suppFetches.push(fetchPage(pg, "detailowner").catch(() => ({ property: [] })));
+              suppLabels.push("detailowner");
+            }
+            if (needsExpanded) {
+              suppFetches.push(fetchPage(pg, "expanded").catch(() => ({ property: [] })));
+              suppLabels.push("expanded");
+            }
+          } else {
+            // Non-radius supplements: expanded + detailowner
+            if (needsExpanded) {
+              suppFetches.push(fetchPage(pg, "expanded").catch(() => ({ property: [] })));
+              suppLabels.push("expanded");
+            }
+            if (needsOwner) {
+              suppFetches.push(fetchPage(pg, "detailowner").catch(() => ({ property: [] })));
+              suppLabels.push("detailowner");
+            }
+          }
+
+          let merged: AttomProperty[];
+          if (suppFetches.length > 0) {
+            const suppResults = await Promise.all(suppFetches);
+            const suppArrays = suppResults.map((r: any) => (r.property || []) as AttomProperty[]);
+            // Merge cache-enriched base with fresh supplement data
+            merged = mergeSupplementalData(cacheEnriched, suppArrays);
+          } else {
+            // Cache had everything — no supplement API calls needed
+            merged = cacheEnriched;
+          }
+
+          // Add this page's data to cache snapshot so later pages benefit too
+          for (const p of merged) {
+            const id = p.identifier?.attomId;
+            if (id) {
+              const existing = cacheSnapshot.get(id);
+              cacheSnapshot.set(id, existing ? mergeSupplementalData([existing], [[p]])[0] : p);
+            }
+          }
 
           allRaw = allRaw.concat(merged);
-          // Stop if ATTOM returned fewer than a full page (no more data)
           if (baseProps.length < pageSize) break;
         }
 
-        // Radius mode: post-merge owner enrichment for properties still missing owner data
+        // Radius mode: enrich remaining ownerless properties from cache
+        // instead of individual API calls
         if (mode === "radius") {
-          const needsOwner = allRaw.filter((p) => {
+          allRaw = allRaw.map((p) => {
             const o = resolveOwner(p);
-            return !(o?.owner1?.fullName || o?.owner2?.fullName || o?.owner3?.fullName);
+            if (o?.owner1?.fullName || o?.owner2?.fullName || o?.owner3?.fullName) return p;
+            const id = p.identifier?.attomId;
+            const cached = id ? cacheSnapshot.get(id) : undefined;
+            return cached ? mergeSupplementalData([p], [[cached]])[0] : p;
           });
-          if (needsOwner.length > 0) {
-            const batchSize = 10;
-            for (let i = 0; i < needsOwner.length; i += batchSize) {
-              const batch = needsOwner.slice(i, i + batchSize);
-              const ownerResults = await Promise.all(
-                batch.map(async (p) => {
-                  const attomId = p.identifier?.attomId;
-                  const addrLine = p.address?.oneLine || p.address?.line1;
-                  if (!attomId && !addrLine) return null;
-                  try {
-                    const oParams = new URLSearchParams({ endpoint: "detailmortgageowner" });
-                    if (attomId) {
-                      oParams.set("attomid", String(attomId));
-                    } else if (addrLine) {
-                      const parts = addrLine.split(",").map((s: string) => s.trim());
-                      if (parts.length >= 2) {
-                        oParams.set("address1", parts[0]);
-                        oParams.set("address2", parts.slice(1).join(", "));
-                      }
-                    }
-                    const oRes = await fetch(`/api/integrations/attom/property?${oParams}`);
-                    const oData = await oRes.json();
-                    return oData?.property?.[0] || null;
-                  } catch { return null; }
-                })
-              );
-              for (let j = 0; j < batch.length; j++) {
-                const ownerData = ownerResults[j];
-                if (!ownerData) continue;
-                const idx = allRaw.indexOf(batch[j]);
-                if (idx >= 0) {
-                  allRaw[idx] = mergeSupplementalData([allRaw[idx]], [[ownerData]])[0];
-                }
-              }
-            }
-          }
         }
+
+        // Persist the accumulated cache snapshot to state
+        addToPropertyCache(allRaw);
+        setPropertyCacheKey(currentKey);
 
         // Store shared data for non-radius modes so mode switches are instant
         if (mode !== "radius") {
@@ -1602,7 +1649,7 @@ export default function Prospecting() {
             <input
               type="text"
               value={zip}
-              onChange={(e) => { setZip(e.target.value); if (sharedDataKey) { setSharedRawData([]); setSharedDataKey(""); } }}
+              onChange={(e) => { setZip(e.target.value); if (sharedDataKey || propertyCacheKey) { setSharedRawData([]); setSharedDataKey(""); setPropertyCache(new Map()); setPropertyCacheKey(""); } }}
               placeholder="e.g. 80211"
               onKeyDown={(e) => e.key === "Enter" && handleSearch(1)}
               style={{ width: 140, padding: "8px 12px", fontSize: 14, border: "1px solid #d1d5db", borderRadius: 6 }}
@@ -1612,7 +1659,7 @@ export default function Prospecting() {
             <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 4 }}>Property Type</label>
             <select
               value={propertyType}
-              onChange={(e) => { setPropertyType(e.target.value); if (sharedDataKey) { setSharedRawData([]); setSharedDataKey(""); } }}
+              onChange={(e) => { setPropertyType(e.target.value); if (sharedDataKey || propertyCacheKey) { setSharedRawData([]); setSharedDataKey(""); setPropertyCache(new Map()); setPropertyCacheKey(""); } }}
               style={{ padding: "8px 12px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 6 }}
             >
               {PROPERTY_TYPES.map((t) => (
