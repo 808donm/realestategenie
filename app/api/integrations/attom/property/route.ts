@@ -327,26 +327,97 @@ export async function GET(request: NextRequest) {
       // ── Sale Comparables ──────────────────────────────────────────────────
       case "comparables": {
         result = await client.getSaleComparablesByAttomId(params);
-        console.log("[ATTOM] comparables raw response keys:", result ? Object.keys(result) : "null",
-          JSON.stringify(result).slice(0, 800));
-        // v2 salescomparables response may nest data under SALE_COMPARABLES
-        // or other keys. Normalize into a flat property[] array the UI expects.
-        // The subject property is typically first, followed by comparables.
-        if (result && !result.property) {
-          const comps =
-            result.SALE_COMPARABLES?.[0]?.PROPERTY_COMPARABLES ||
-            result.SALE_COMPARABLES?.[0]?.property ||
-            result.salesComparables?.[0]?.propertyComparables ||
-            result.salesComparables?.[0]?.property ||
-            result.salesComparables ||
-            result.comparables ||
-            result.COMPARABLES;
-          if (Array.isArray(comps)) {
-            console.log("[ATTOM] comparables: normalized", comps.length, "properties from nested response");
-            result = { ...result, property: comps };
-          } else {
-            console.log("[ATTOM] comparables: could not find property array in response");
-          }
+        // v2 salescomparables returns XML-style response:
+        //   RESPONSE_GROUP.RESPONSE.RESPONSE_DATA
+        //     .PROPERTY_INFORMATION_RESPONSE_ext.SUBJECT_PROPERTY_ext.PROPERTY[]
+        // [0] = subject (fields directly on object)
+        // [1..N] = comps (fields under COMPARABLE_PROPERTY_ext)
+        // Normalize into flat property[] array matching the standard ATTOM shape.
+        const rawProps = result?.RESPONSE_GROUP?.RESPONSE?.RESPONSE_DATA
+          ?.PROPERTY_INFORMATION_RESPONSE_ext?.SUBJECT_PROPERTY_ext?.PROPERTY;
+        if (Array.isArray(rawProps) && rawProps.length > 0) {
+          const normalized = rawProps.map((raw: any, idx: number) => {
+            // Subject (idx 0): fields at top level. Comps: under COMPARABLE_PROPERTY_ext.
+            const src = idx === 0 ? raw : (raw.COMPARABLE_PROPERTY_ext || raw);
+            const street = src["@_StreetAddress"] || "";
+            const city = src["@_City"] || "";
+            const state = src["@_State"] || "";
+            const zip = src["@_PostalCode"] || "";
+            const sh = src.SALES_HISTORY || {};
+            const st = src.STRUCTURE || {};
+            return {
+              identifier: {
+                attomId: Number(src._IDENTIFICATION?.["@RTPropertyID_ext"]) || undefined,
+                fips: src._IDENTIFICATION?.["@CountyFIPSName_ext"],
+                apn: src._IDENTIFICATION?.["@AssessorsParcelIdentifier"]
+                  || src._IDENTIFICATION?.["@AssessorsSecondParcelIdentifier"],
+              },
+              address: {
+                oneLine: [street, city, state, zip].filter(Boolean).join(", "),
+                line1: street,
+                locality: city,
+                countrySubd: state,
+                postal1: zip,
+              },
+              sale: {
+                amount: {
+                  saleAmt: Number(sh["@PropertySalesAmount"]) || undefined,
+                  saleTransDate: sh["@PropertySalesDate"] || sh["@TransferDate_ext"] || undefined,
+                  saleRecDate: sh["@PropertySalesDate"] || sh["@TransferDate_ext"] || undefined,
+                },
+                calculation: {
+                  pricePerSizeUnit: Number(sh["@PricePerSquareFootAmount"]) || undefined,
+                },
+              },
+              building: {
+                size: {
+                  livingSize: Number(st["@GrossLivingAreaSquareFeetCount"]) || undefined,
+                  universalSize: Number(st["@GrossLivingAreaSquareFeetCount"]) || undefined,
+                },
+                rooms: {
+                  beds: Number(st["@TotalBedroomCount"]) || undefined,
+                  bathsFull: Number(st["@TotalBathroomCount"]) || undefined,
+                  bathsTotal: Number(st["@TotalBathroomCount"]) || undefined,
+                },
+                summary: {
+                  yearBuilt: Number(st.STRUCTURE_ANALYSIS?.["@PropertyStructureBuiltYear"]) || undefined,
+                },
+              },
+              lot: {
+                lotSize1: Number(src.SITE?.["@LotSquareFeetCount"]) || undefined,
+              },
+              owner: {
+                owner1: {
+                  fullName: src._OWNER?.["@_Name"] || undefined,
+                },
+                owner2: {
+                  fullName: src._OWNER?.["@_SecondaryOwnerName_ext"] || undefined,
+                },
+                mailingAddressOneLine: src.MAILING_ADDRESS_ext
+                  ? [src.MAILING_ADDRESS_ext["@_StreetAddress"], src.MAILING_ADDRESS_ext["@_City"],
+                     src.MAILING_ADDRESS_ext["@_State"], src.MAILING_ADDRESS_ext["@_PostalCode"]]
+                    .filter(Boolean).join(", ")
+                  : undefined,
+              },
+              assessment: {
+                assessed: {
+                  assdTtlValue: Number(src._TAX?.["@_TotalAssessedValueAmount"]) || undefined,
+                },
+                market: {
+                  mktTtlValue: Number(src._TAX?.["@_AssessorMarketValue_ext"]) || undefined,
+                },
+              },
+              // Comp-specific: distance from subject
+              proximity: idx > 0 ? {
+                distanceFromSubject: Number(src["@DistanceFromSubjectPropertyMilesCount"]) || undefined,
+              } : undefined,
+            };
+          });
+          console.log("[ATTOM] comparables: normalized", normalized.length, "properties (1 subject +", normalized.length - 1, "comps)");
+          result = { property: normalized };
+        } else {
+          console.log("[ATTOM] comparables: unexpected response structure, keys:",
+            result ? Object.keys(result) : "null");
         }
         break;
       }

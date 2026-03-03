@@ -638,8 +638,19 @@ export class AttomClient {
    * Make an authenticated GET request to the ATTOM v2 API
    * (salescomparables endpoint uses path-based property IDs)
    */
-  private async requestV2<T>(endpoint: string): Promise<T> {
+  private async requestV2<T>(
+    endpoint: string,
+    params?: Record<string, string | number | undefined>
+  ): Promise<T> {
     const url = new URL(`${V2_BASE_URL}${endpoint}`);
+
+    if (params) {
+      for (const [key, value] of Object.entries(params)) {
+        if (value !== undefined && value !== null && value !== "") {
+          url.searchParams.set(key, String(value));
+        }
+      }
+    }
 
     console.log(`[ATTOM v2] API request: ${url.toString()}`);
 
@@ -1586,6 +1597,9 @@ export class AttomClient {
   /**
    * Get sale comparables by ATTOM ID (propId).
    * Uses v2 endpoint: /property/v2/salescomparables/propid/{propId}
+   *
+   * Required query params: searchType, minComps, maxComps, miles, etc.
+   * See: https://api.gateway.attomdata.com/property/v2/salescomparables/propid/{propId}
    */
   async getSaleComparablesByAttomId(
     params: AttomSearchParams
@@ -1594,7 +1608,21 @@ export class AttomClient {
     if (!propId) {
       throw new Error("attomId is required for getSaleComparablesByAttomId");
     }
-    return this.requestV2(`/salescomparables/propid/${propId}`);
+    return this.requestV2(`/salescomparables/propid/${propId}`, {
+      searchType: "Radius",
+      minComps: 1,
+      maxComps: 10,
+      miles: 5,
+      sameCity: "true",
+      bedroomsRange: 2,
+      bathroomRange: 2,
+      sqFeetRange: 600,
+      lotSizeRange: 2000,
+      saleDateRange: 6,
+      yearBuiltRange: 10,
+      ownerOccupied: "Both",
+      distressed: "IncludeDistressed",
+    });
   }
 
   /**
