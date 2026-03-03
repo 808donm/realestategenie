@@ -392,26 +392,46 @@ export default function PropertyDetailModal({
       return prms;
     };
 
-    // Try detailmortgageowner first; if it returns no owner data, fall back to detailowner
+    // Helper to check if a property has meaningful owner data
+    const hasOwnerData = (prop: any) => {
+      const ow = prop?.owner || prop?.assessment?.owner;
+      return !!(ow?.owner1?.fullName || ow?.owner2?.fullName || ow?.mailingAddressOneLine || ow?.corporateIndicator);
+    };
+
+    // Try detailmortgageowner → detailowner → expandedprofile (fallback chain)
     fetch(`/api/integrations/attom/property?${buildParams("detailmortgageowner")}`)
       .then(r => r.json())
       .then(data => {
         if (data && !data.error) {
           const prop = data.property?.[0] || data;
-          const ow = prop?.owner || prop?.assessment?.owner;
-          if (ow?.owner1?.fullName || ow?.owner2?.fullName || ow?.mailingAddressOneLine || ow?.corporateIndicator) {
+          if (hasOwnerData(prop)) {
             setEnrichedOwner(prop);
             return;
           }
         }
-        // Fallback: try detailowner endpoint
+        // Fallback 1: try detailowner endpoint
         return fetch(`/api/integrations/attom/property?${buildParams("detailowner")}`)
           .then(r2 => r2.json())
           .then(data2 => {
             if (data2 && !data2.error) {
               const prop2 = data2.property?.[0] || data2;
-              setEnrichedOwner(prop2);
+              if (hasOwnerData(prop2)) {
+                setEnrichedOwner(prop2);
+                return;
+              }
             }
+            // Fallback 2: try expandedprofile — owner data is nested under
+            // assessment.owner and gets normalized server-side to top-level
+            return fetch(`/api/integrations/attom/property?${buildParams("expanded")}`)
+              .then(r3 => r3.json())
+              .then(data3 => {
+                if (data3 && !data3.error) {
+                  const prop3 = data3.property?.[0] || data3;
+                  if (hasOwnerData(prop3)) {
+                    setEnrichedOwner(prop3);
+                  }
+                }
+              });
           });
       })
       .catch(() => {})

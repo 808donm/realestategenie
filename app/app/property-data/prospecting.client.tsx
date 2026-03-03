@@ -1259,25 +1259,29 @@ export default function Prospecting() {
           if (baseProps.length < pageSize) break;
         }
 
-        // Radius mode: salesnapshot returns recent sales WITHOUT owner data.
-        // The page-aligned supplements (detailmortgageowner) have pagination
-        // mismatch with salesnapshot, so owner data doesn't merge reliably.
-        // Instead, fetch expandedprofile individually by attomId for each
-        // ownerless property — this is the same approach Property Search uses
-        // and is guaranteed to return owner data. Results are cached (memory +
-        // disk) by the API route, so repeated searches are instant.
+        // Radius mode: salesnapshot returns recent sales WITHOUT owner,
+        // assessment, or AVM data. Page-aligned supplements (avm, expanded,
+        // detailmortgageowner) have pagination mismatch with salesnapshot
+        // (different result sets/ordering), so data doesn't merge reliably.
+        //
+        // Fix: fetch expandedprofile individually by attomId for each
+        // property that's missing owner OR value data. This is the same
+        // approach Property Search uses and is guaranteed to work. Results
+        // are cached (memory + disk) by the API route.
         if (mode === "radius") {
-          const ownerless = allRaw.filter((p) => {
+          const needsEnrichment = allRaw.filter((p) => {
+            if (!p.identifier?.attomId) return false;
             const o = resolveOwner(p);
-            return !(o?.owner1?.fullName || o?.owner2?.fullName || o?.owner3?.fullName)
-              && p.identifier?.attomId;
+            const hasOwner = !!(o?.owner1?.fullName || o?.owner2?.fullName || o?.owner3?.fullName);
+            const hasValue = getPropertyValue(p) != null;
+            return !hasOwner || !hasValue;
           });
 
-          if (ownerless.length > 0) {
+          if (needsEnrichment.length > 0) {
             // Batch in groups of 10 to avoid overwhelming the API
             const batchSize = 10;
-            for (let i = 0; i < ownerless.length; i += batchSize) {
-              const batch = ownerless.slice(i, i + batchSize);
+            for (let i = 0; i < needsEnrichment.length; i += batchSize) {
+              const batch = needsEnrichment.slice(i, i + batchSize);
               const expandedResults = await Promise.all(
                 batch.map(async (p) => {
                   try {
@@ -1303,7 +1307,7 @@ export default function Prospecting() {
                 }
               }
 
-              // Merge owner data into allRaw
+              // Merge expanded data (owner, assessment, building) into allRaw
               allRaw = allRaw.map((p) => {
                 const id = p.identifier?.attomId;
                 if (!id) return p;
