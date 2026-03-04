@@ -347,36 +347,42 @@ export function renderModernBlueTemplate(ctx: FlyerRenderContext): void {
   const contentWidth = pageWidth - margin * 2;
   let y = 0;
 
-  // --- A. Blue header bar (0–22mm) ---
+  // --- A. Blue header bar (0–26mm) ---
+  const headerH = 26;
   pdf.setFillColor(primaryRGB.r, primaryRGB.g, primaryRGB.b);
-  pdf.rect(0, 0, pageWidth, 22, "F");
+  pdf.rect(0, 0, pageWidth, headerH, "F");
 
-  let logoRightEdge = margin;
+  const halfW = pageWidth / 2;
+  const slotW = halfW / 3;
+
+  // Slot 1: Logo (left-aligned in first slot)
   if (logoData) {
-    const logoH = 16;
-    const logoW = Math.min((logoWidth / logoHeight) * logoH, 40);
+    const logoH = 20;
+    const logoW = Math.min((logoWidth / logoHeight) * logoH, 38);
     try {
-      pdf.addImage(logoData, "PNG", margin, 3, logoW, logoH, undefined, "FAST");
-      logoRightEdge = margin + logoW + 5;
+      pdf.addImage(logoData, "PNG", margin, (headerH - logoH) / 2, logoW, logoH, undefined, "FAST");
     } catch (error) {
       console.error("Failed to add logo:", error);
     }
   }
 
+  // Slot 2: Company/Agency name (centered in second slot)
   pdf.setTextColor(255, 255, 255);
   if (agent?.brokerage_name) {
     pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(12);
-    pdf.text(agent.brokerage_name, logoRightEdge, 10);
-  }
-  if (agent?.phone_e164) {
-    pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(9);
-    pdf.text(agent.phone_e164, logoRightEdge, 17);
+    pdf.setFontSize(24);
+    pdf.text(pdfSafe(agent.brokerage_name), slotW + slotW / 2, headerH / 2 + 3, { align: "center" });
   }
 
-  // --- B. "OPEN HOUSE" title + "Premium Real Estate" (25–48mm) ---
-  y = 35;
+  // Slot 3: Phone (centered in third slot)
+  if (agent?.phone_e164) {
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(18);
+    pdf.text(agent.phone_e164, slotW * 2 + slotW / 2, headerH / 2 + 3, { align: "center" });
+  }
+
+  // --- B. "OPEN HOUSE" title + "Premium Real Estate" ---
+  y = 31;
   pdf.setTextColor(primaryRGB.r, primaryRGB.g, primaryRGB.b);
   pdf.setFont("times", "bold");
   pdf.setFontSize(28);
@@ -392,9 +398,9 @@ export function renderModernBlueTemplate(ctx: FlyerRenderContext): void {
   pdf.setLineWidth(0.8);
   pdf.line(pageWidth / 2 - 25, y + 13, pageWidth / 2 + 25, y + 13);
 
-  // --- C. Hero property image (52–132mm) ---
-  y = 52;
-  const heroMaxH = 80;
+  // --- C. Hero property image ---
+  y = 46;
+  const heroMaxH = 107;
   if (propertyPhotoData) {
     const aspect = photoWidth / photoHeight;
     let imgW = contentWidth;
@@ -425,7 +431,7 @@ export function renderModernBlueTemplate(ctx: FlyerRenderContext): void {
       pdf.setTextColor(255, 255, 255);
       pdf.text(priceText, bx + badgeW / 2, by + 7.5, { align: "center" });
     }
-    y += imgH + 4;
+    y += imgH + 2;
   } else {
     // Placeholder
     pdf.setFillColor(secondaryRGB.r, secondaryRGB.g, secondaryRGB.b);
@@ -436,7 +442,7 @@ export function renderModernBlueTemplate(ctx: FlyerRenderContext): void {
     pdf.text("Property Photo", pageWidth / 2, y + heroMaxH / 2, { align: "center" });
     pdf.setFontSize(9);
     pdf.text("Recommended: 1200 x 600 px", pageWidth / 2, y + heroMaxH / 2 + 7, { align: "center" });
-    y += heroMaxH + 4;
+    y += heroMaxH + 2;
   }
 
   // --- D. Description + QR code (two-column) ---
@@ -489,7 +495,7 @@ export function renderModernBlueTemplate(ctx: FlyerRenderContext): void {
     y = Math.max(y, qrY + qrSize + 8);
   }
 
-  y += 4;
+  y += 2;
 
   // --- E. Secondary image (left, 60mm tall) + Feature icons (right) ---
   const secImgH = 60;
