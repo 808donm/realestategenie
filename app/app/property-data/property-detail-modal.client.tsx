@@ -98,10 +98,13 @@ export default function PropertyDetailModal({
   property: p,
   searchContext,
   onClose,
+  embedded,
 }: {
   property: AttomProperty;
   searchContext?: { absenteeowner?: string };
   onClose: () => void;
+  /** When true, renders just tabs + content inline (no overlay, no header). Used by MLS detail card. */
+  embedded?: boolean;
 }) {
   const [activeSection, setActiveSection] = useState<"overview" | "building" | "financial" | "ownership" | "neighborhood" | "federal" | "comparables">("overview");
   const [comparablesData, setComparablesData] = useState<any>(null);
@@ -514,109 +517,80 @@ export default function PropertyDetailModal({
     { id: "federal" as const, label: "Area Intel" },
   ];
 
-  return (
-    <div
-      style={{
-        position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)",
-        zIndex: 1000, display: "flex", justifyContent: "center", alignItems: "flex-start", padding: "40px 16px", overflowY: "auto",
-      }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 720, maxHeight: "85vh", overflow: "hidden", display: "flex", flexDirection: "column" }}>
-        {/* Header */}
-        <div style={{ padding: "20px 24px", borderBottom: "1px solid #e5e7eb", flexShrink: 0 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-            <div>
-              <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>{addr}</h2>
-              <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>
-                {[
-                  beds != null ? `${beds} bed` : null,
-                  baths != null ? `${baths} bath` : null,
-                  sqft ? `${fmtNum(sqft)} sqft` : null,
-                  yearBuilt ? `Built ${yearBuilt}` : null,
-                ].filter(Boolean).join(" · ")}
-              </div>
-            </div>
-            <button
-              onClick={onClose}
-              style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: "#9ca3af", lineHeight: 1, padding: 4 }}
-            >
-              ✕
-            </button>
-          </div>
+  // ── Shared Tabs Bar ──
+  const tabsBar = (
+    <div style={{ display: "flex", gap: 0, borderBottom: "1px solid #e5e7eb", overflowX: "auto" }}>
+      {sections.map((s) => (
+        <button
+          key={s.id}
+          onClick={() => setActiveSection(s.id)}
+          style={{
+            padding: "8px 16px", fontSize: 13, fontWeight: 600, border: "none", background: "transparent", cursor: "pointer",
+            color: activeSection === s.id ? "#3b82f6" : "#6b7280",
+            borderBottom: activeSection === s.id ? "2px solid #3b82f6" : "2px solid transparent",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {s.label}
+        </button>
+      ))}
+    </div>
+  );
 
-          {/* Value Summary Cards */}
-          <div style={{ display: "flex", gap: 12, marginTop: 16, flexWrap: "wrap" }}>
-            {avmVal != null && (
-              <div style={{ flex: 1, minWidth: 130, padding: "10px 14px", background: "#ecfdf5", borderRadius: 8 }}>
-                <div style={{ fontSize: 11, color: "#059669", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>AVM Value</div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: "#059669" }}>{fmt(avmVal)}</div>
-                {p.avm?.amount?.low != null && p.avm?.amount?.high != null && (
-                  <div style={{ fontSize: 11, color: "#6b7280" }}>Range: {fmt(p.avm.amount.low)} – {fmt(p.avm.amount.high)}</div>
-                )}
-                {p.avm?.amount?.scr != null && (
-                  <div style={{ fontSize: 11, color: "#6b7280" }}>Confidence: {p.avm.amount.scr}</div>
-                )}
-              </div>
-            )}
-            {lastSaleAmt != null && (
-              <div style={{ flex: 1, minWidth: 130, padding: "10px 14px", background: "#eff6ff", borderRadius: 8 }}>
-                <div style={{ fontSize: 11, color: "#3b82f6", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Last Sale</div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: "#3b82f6" }}>{fmt(lastSaleAmt)}</div>
-                {p.sale?.amount?.saleTransDate && (
-                  <div style={{ fontSize: 11, color: "#6b7280" }}>{p.sale.amount.saleTransDate}</div>
-                )}
-              </div>
-            )}
-            {equity != null && (
-              <div style={{ flex: 1, minWidth: 130, padding: "10px 14px", background: equity > 0 ? "#fefce8" : "#fef2f2", borderRadius: 8 }}>
-                <div style={{ fontSize: 11, color: equity > 0 ? "#a16207" : "#dc2626", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                  Est. Equity
-                </div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: equity > 0 ? "#a16207" : "#dc2626" }}>
-                  {equity > 0 ? "+" : ""}{fmt(equity)}
-                </div>
-              </div>
-            )}
-            {/* Rental AVM from search supplement data */}
-            {(() => {
-              const ra = (p as any).rentalAvm;
-              const rentVal = ra?.estimatedRentalValue ?? ra?.rentalAmount?.value ?? ra?.amount?.value;
-              if (rentVal == null) return null;
-              const grossYield = avmVal ? ((rentVal * 12 / avmVal) * 100) : null;
-              return (
-                <div style={{ flex: 1, minWidth: 130, padding: "10px 14px", background: "#f5f3ff", borderRadius: 8 }}>
-                  <div style={{ fontSize: 11, color: "#7c3aed", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Rent Est.</div>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: "#7c3aed" }}>${Number(rentVal).toLocaleString()}/mo</div>
-                  {grossYield != null && (
-                    <div style={{ fontSize: 11, color: "#0891b2", fontWeight: 600 }}>{grossYield.toFixed(1)}% gross yield</div>
-                  )}
-                </div>
-              );
-            })()}
+  // ── Shared Value Summary Cards ──
+  const valueSummaryCards = (
+    <div style={{ display: "flex", gap: 12, marginBottom: embedded ? 16 : 0, marginTop: embedded ? 0 : 16, flexWrap: "wrap" }}>
+      {avmVal != null && (
+        <div style={{ flex: 1, minWidth: 130, padding: "10px 14px", background: "#ecfdf5", borderRadius: 8 }}>
+          <div style={{ fontSize: 11, color: "#059669", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>AVM Value</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: "#059669" }}>{fmt(avmVal)}</div>
+          {p.avm?.amount?.low != null && p.avm?.amount?.high != null && (
+            <div style={{ fontSize: 11, color: "#6b7280" }}>Range: {fmt(p.avm.amount.low)} – {fmt(p.avm.amount.high)}</div>
+          )}
+        </div>
+      )}
+      {lastSaleAmt != null && (
+        <div style={{ flex: 1, minWidth: 130, padding: "10px 14px", background: "#eff6ff", borderRadius: 8 }}>
+          <div style={{ fontSize: 11, color: "#3b82f6", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Last Sale</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: "#3b82f6" }}>{fmt(lastSaleAmt)}</div>
+          {p.sale?.amount?.saleTransDate && (
+            <div style={{ fontSize: 11, color: "#6b7280" }}>{p.sale.amount.saleTransDate}</div>
+          )}
+        </div>
+      )}
+      {equity != null && (
+        <div style={{ flex: 1, minWidth: 130, padding: "10px 14px", background: equity > 0 ? "#fefce8" : "#fef2f2", borderRadius: 8 }}>
+          <div style={{ fontSize: 11, color: equity > 0 ? "#a16207" : "#dc2626", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
+            Est. Equity
           </div>
-
-          {/* Section Tabs */}
-          <div style={{ display: "flex", gap: 0, marginTop: 16, borderBottom: "1px solid #e5e7eb" }}>
-            {sections.map((s) => (
-              <button
-                key={s.id}
-                onClick={() => setActiveSection(s.id)}
-                style={{
-                  padding: "8px 16px", fontSize: 13, fontWeight: 600, border: "none", background: "transparent", cursor: "pointer",
-                  color: activeSection === s.id ? "#3b82f6" : "#6b7280",
-                  borderBottom: activeSection === s.id ? "2px solid #3b82f6" : "2px solid transparent",
-                }}
-              >
-                {s.label}
-              </button>
-            ))}
+          <div style={{ fontSize: 18, fontWeight: 700, color: equity > 0 ? "#a16207" : "#dc2626" }}>
+            {equity > 0 ? "+" : ""}{fmt(equity)}
           </div>
         </div>
+      )}
+      {/* Rental AVM from search supplement data */}
+      {(() => {
+        const ra = (p as any).rentalAvm;
+        const rentVal = ra?.estimatedRentalValue ?? ra?.rentalAmount?.value ?? ra?.amount?.value;
+        if (rentVal == null) return null;
+        const grossYield = avmVal ? ((rentVal * 12 / avmVal) * 100) : null;
+        return (
+          <div style={{ flex: 1, minWidth: 130, padding: "10px 14px", background: "#f5f3ff", borderRadius: 8 }}>
+            <div style={{ fontSize: 11, color: "#7c3aed", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Rent Est.</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: "#7c3aed" }}>${Number(rentVal).toLocaleString()}/mo</div>
+            {grossYield != null && (
+              <div style={{ fontSize: 11, color: "#0891b2", fontWeight: 600 }}>{grossYield.toFixed(1)}% gross yield</div>
+            )}
+          </div>
+        );
+      })()}
+    </div>
+  );
 
-        {/* Content */}
-        <div style={{ padding: "20px 24px", overflowY: "auto", flex: 1 }}>
-          {activeSection === "overview" && (
+  // ── Tab content (shared between embedded and modal mode) ──
+  const tabContent = (
+    <div style={{ padding: embedded ? "16px 0" : "20px 24px", overflowY: embedded ? undefined : "auto", flex: embedded ? undefined : 1 }}>
+      {activeSection === "overview" && (
             <>
               <Section title="Property Summary">
                 <Field label="Property Type" value={p.summary?.propertyType || p.summary?.propType} />
@@ -2412,7 +2386,57 @@ export default function PropertyDetailModal({
               )}
             </>
           )}
+    </div>
+  );
+
+  // In embedded mode: render value cards + tabs + content inline (no overlay or header)
+  if (embedded) {
+    return (
+      <div>
+        {valueSummaryCards}
+        {tabsBar}
+        {tabContent}
+      </div>
+    );
+  }
+
+  // ── Full modal mode ──
+  return (
+    <div
+      style={{
+        position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)",
+        zIndex: 1000, display: "flex", justifyContent: "center", alignItems: "flex-start", padding: "40px 16px", overflowY: "auto",
+      }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 720, maxHeight: "85vh", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+        {/* Header */}
+        <div style={{ padding: "20px 24px", borderBottom: "1px solid #e5e7eb", flexShrink: 0 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <div>
+              <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>{addr}</h2>
+              <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>
+                {[
+                  beds != null ? `${beds} bed` : null,
+                  baths != null ? `${baths} bath` : null,
+                  sqft ? `${fmtNum(sqft)} sqft` : null,
+                  yearBuilt ? `Built ${yearBuilt}` : null,
+                ].filter(Boolean).join(" · ")}
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: "#9ca3af", lineHeight: 1, padding: 4 }}
+            >
+              ✕
+            </button>
+          </div>
+
+          {valueSummaryCards}
+          {tabsBar}
         </div>
+
+        {tabContent}
       </div>
     </div>
   );
