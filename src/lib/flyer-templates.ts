@@ -164,6 +164,42 @@ export const FLYER_TEMPLATES: FlyerTemplate[] = [
       showQrCode: true,
     },
   },
+  {
+    id: "modern-blue",
+    name: "Modern Blue",
+    description: "Corporate blue design with company branding, hero image, price overlay, QR code, and agent footer.",
+    thumbnail: "/templates/modern-blue-thumb.png",
+    category: "Contemporary",
+    defaultSettings: {
+      headerStyle: "left",
+      footerStyle: "contact",
+      imageLayout: "hero",
+      primaryColor: "#1a3a6b",
+      secondaryColor: "#e8eef6",
+      fontFamily: "montserrat",
+      showPrice: true,
+      showAgentPhoto: true,
+      showQrCode: true,
+    },
+  },
+  {
+    id: "elegant-warm",
+    name: "Elegant Warm",
+    description: "Warm beige tones with 3-photo layout, property highlights with icons, and agent card with QR code.",
+    thumbnail: "/templates/elegant-warm-thumb.png",
+    category: "Premium",
+    defaultSettings: {
+      headerStyle: "centered",
+      footerStyle: "qr",
+      imageLayout: "grid",
+      primaryColor: "#5c4033",
+      secondaryColor: "#f5f0e8",
+      fontFamily: "playfair",
+      showPrice: true,
+      showAgentPhoto: false,
+      showQrCode: true,
+    },
+  },
 ];
 
 export const FONT_OPTIONS = [

@@ -59,9 +59,26 @@ export async function POST(
       );
     }
 
+    // Determine which photo slot to update
+    const url = new URL(request.url);
+    const slot = url.searchParams.get("slot") || "primary";
+    const validSlots = ["primary", "secondary", "tertiary"];
+    if (!validSlots.includes(slot)) {
+      return NextResponse.json(
+        { error: "Invalid slot. Must be primary, secondary, or tertiary." },
+        { status: 400 }
+      );
+    }
+
+    const columnMap: Record<string, string> = {
+      primary: "property_photo_url",
+      secondary: "secondary_photo_url",
+      tertiary: "tertiary_photo_url",
+    };
+
     // Create a unique filename
     const fileExt = file.name.split(".").pop();
-    const fileName = `${id}-${Date.now()}.${fileExt}`;
+    const fileName = `${id}-${slot}-${Date.now()}.${fileExt}`;
     const filePath = `property-photos/${fileName}`;
 
     // Upload to Supabase Storage
@@ -90,7 +107,7 @@ export async function POST(
     const { error: updateError } = await supabase
       .from("open_house_events")
       .update({
-        property_photo_url: publicUrl,
+        [columnMap[slot]]: publicUrl,
         updated_at: new Date().toISOString(),
       })
       .eq("id", id);
@@ -132,10 +149,28 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Determine which photo slot to delete
+    const url = new URL(request.url);
+    const slot = url.searchParams.get("slot") || "primary";
+    const validSlots = ["primary", "secondary", "tertiary"];
+    if (!validSlots.includes(slot)) {
+      return NextResponse.json(
+        { error: "Invalid slot. Must be primary, secondary, or tertiary." },
+        { status: 400 }
+      );
+    }
+
+    const columnMap: Record<string, string> = {
+      primary: "property_photo_url",
+      secondary: "secondary_photo_url",
+      tertiary: "tertiary_photo_url",
+    };
+    const column = columnMap[slot];
+
     // Get the open house to verify ownership and get the photo URL
     const { data: event, error: fetchError } = await supabase
       .from("open_house_events")
-      .select("agent_id, property_photo_url")
+      .select("agent_id, property_photo_url, secondary_photo_url, tertiary_photo_url")
       .eq("id", id)
       .single();
 
@@ -143,16 +178,17 @@ export async function DELETE(
       return NextResponse.json({ error: "Open house not found" }, { status: 404 });
     }
 
-    if (event.agent_id !== user.id) {
+    if ((event as any).agent_id !== user.id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    if (!event.property_photo_url) {
+    const photoUrl = (event as any)[column];
+    if (!photoUrl) {
       return NextResponse.json({ error: "No photo to delete" }, { status: 404 });
     }
 
     // Extract the file path from the URL
-    const urlParts = event.property_photo_url.split("/property-photos/");
+    const urlParts = photoUrl.split("/property-photos/");
     if (urlParts.length < 2) {
       return NextResponse.json({ error: "Invalid photo URL" }, { status: 400 });
     }
@@ -172,7 +208,7 @@ export async function DELETE(
     const { error: updateError } = await supabase
       .from("open_house_events")
       .update({
-        property_photo_url: null,
+        [column]: null,
         updated_at: new Date().toISOString(),
       })
       .eq("id", id);
