@@ -94,7 +94,7 @@ function findGeoIdV4(obj: any, depth = 0): string | null {
   return null;
 }
 
-type SectionId = "overview" | "building" | "financial" | "ownership" | "neighborhood" | "federal" | "comparables";
+type SectionId = "overview" | "building" | "financial" | "ownership" | "neighborhood" | "federal" | "comparables" | "nearby";
 
 export default function PropertyDetailModal({
   property: p,
@@ -102,6 +102,7 @@ export default function PropertyDetailModal({
   onClose,
   embedded,
   tabs: visibleTabs,
+  farmingContext,
 }: {
   property: AttomProperty;
   searchContext?: { absenteeowner?: string };
@@ -110,6 +111,8 @@ export default function PropertyDetailModal({
   embedded?: boolean;
   /** Optional subset of tabs to show (e.g. ["building","financial","ownership","comparables","neighborhood"]). Shows all by default. */
   tabs?: SectionId[];
+  /** When provided, enables the "Nearby Homes" tab for Just Sold Farming. */
+  farmingContext?: { radiusMiles: string; propertyType?: string };
 }) {
   const [activeSection, setActiveSection] = useState<SectionId>(visibleTabs?.[0] || "overview");
   const [comparablesData, setComparablesData] = useState<any>(null);
@@ -128,6 +131,8 @@ export default function PropertyDetailModal({
   const [enrichedFinancialLoading, setEnrichedFinancialLoading] = useState(false);
   const [enrichedOwner, setEnrichedOwner] = useState<any>(null);
   const [enrichedOwnerLoading, setEnrichedOwnerLoading] = useState(false);
+  const [nearbyHomes, setNearbyHomes] = useState<AttomProperty[] | null>(null);
+  const [nearbyLoading, setNearbyLoading] = useState(false);
 
   const addr = p.address?.oneLine || [p.address?.line1, p.address?.line2].filter(Boolean).join(", ") || "Property Detail";
   const sqft = p.building?.size?.livingSize || p.building?.size?.universalSize || p.building?.size?.bldgSize;
@@ -323,6 +328,71 @@ export default function PropertyDetailModal({
       .catch((err) => console.warn("[Neighborhood] fetch failed:", err))
       .finally(() => setNeighborhoodLoading(false));
   }, [activeSection, neighborhoodData, neighborhoodLoading, p]);
+
+  // Fetch nearby homes when "nearby" tab is selected (Just Sold Farming)
+  useEffect(() => {
+    if (activeSection !== "nearby" || nearbyHomes || nearbyLoading || !farmingContext) return;
+    const lat = p.location?.latitude;
+    const lng = p.location?.longitude;
+    if (!lat || !lng) return;
+
+    setNearbyLoading(true);
+
+    const params = new URLSearchParams({
+      latitude: lat,
+      longitude: lng,
+      radius: farmingContext.radiusMiles || "0.5",
+      propertytype: farmingContext.propertyType || "SFR",
+      page: "1",
+      pagesize: "50",
+      endpoint: "detailmortgageowner",
+    });
+
+    // Fetch base properties + expanded data in parallel for enrichment
+    const baseUrl = `/api/integrations/attom/property?${params.toString()}`;
+    const expandedParams = new URLSearchParams(params);
+    expandedParams.set("endpoint", "expanded");
+    const expandedUrl = `/api/integrations/attom/property?${expandedParams.toString()}`;
+
+    Promise.all([
+      fetch(baseUrl).then((r) => r.json()).catch(() => ({ property: [] })),
+      fetch(expandedUrl).then((r) => r.json()).catch(() => ({ property: [] })),
+    ])
+      .then(([baseData, expandedData]) => {
+        const baseProps: AttomProperty[] = baseData.property || [];
+        const expandedProps: AttomProperty[] = expandedData.property || [];
+
+        // Merge expanded data into base by attomId
+        if (expandedProps.length > 0) {
+          const byId = new Map<number, AttomProperty>();
+          for (const ep of expandedProps) {
+            const id = ep.identifier?.attomId;
+            if (id) byId.set(id, ep);
+          }
+          const merged = baseProps.map((bp) => {
+            const id = bp.identifier?.attomId;
+            if (!id) return bp;
+            const ep = byId.get(id);
+            if (!ep) return bp;
+            return {
+              ...bp,
+              ...ep,
+              // Preserve base owner/mortgage if expanded doesn't have them
+              owner: ep.owner?.owner1?.fullName ? ep.owner : bp.owner,
+              mortgage: bp.mortgage || ep.mortgage,
+              address: bp.address || ep.address,
+              identifier: bp.identifier,
+              location: bp.location || ep.location,
+            };
+          });
+          setNearbyHomes(merged);
+        } else {
+          setNearbyHomes(baseProps);
+        }
+      })
+      .catch(() => setNearbyHomes([]))
+      .finally(() => setNearbyLoading(false));
+  }, [activeSection, nearbyHomes, nearbyLoading, farmingContext, p]);
 
   // Fetch enriched financial data (AVM history, rental AVM, sales history, mortgage detail, home equity)
   // when Financial tab is selected — makes parallel calls for each additional endpoint
@@ -520,6 +590,7 @@ export default function PropertyDetailModal({
     { id: "ownership", label: "Ownership" },
     { id: "neighborhood", label: "Neighborhood" },
     { id: "federal", label: "Area Intel" },
+    ...(farmingContext ? [{ id: "nearby" as SectionId, label: "Nearby Homes" }] : []),
   ];
   const sections = visibleTabs
     ? allSections.filter((s) => visibleTabs.includes(s.id))
@@ -2392,6 +2463,117 @@ export default function PropertyDetailModal({
                   )}
                 </>
               )}
+            </>
+          )}
+
+          {/* ── Nearby Homes (Just Sold Farming) ── */}
+          {activeSection === "nearby" && (
+            <>
+              {nearbyLoading && (
+                <div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>
+                  Searching for nearby homeowners...
+                </div>
+              )}
+
+              {!nearbyLoading && nearbyHomes && nearbyHomes.length === 0 && (
+                <div style={{ padding: 40, textAlign: "center", color: "#9ca3af", background: "#f9fafb", borderRadius: 12 }}>
+                  No nearby properties found within {farmingContext?.radiusMiles || "0.5"} miles.
+                </div>
+              )}
+
+              {!nearbyLoading && !nearbyHomes && !p.location?.latitude && (
+                <div style={{ padding: 40, textAlign: "center", color: "#9ca3af", background: "#f9fafb", borderRadius: 12 }}>
+                  No coordinates available for this property. Nearby homes search requires lat/lng data.
+                </div>
+              )}
+
+              {!nearbyLoading && nearbyHomes && nearbyHomes.length > 0 && (() => {
+                const getOwnerName = (prop: AttomProperty) => {
+                  const o = prop.owner;
+                  const nested = prop.assessment?.owner;
+                  const owner = (o?.owner1?.fullName || o?.owner2?.fullName) ? o : nested;
+                  return owner?.owner1?.fullName || owner?.owner2?.fullName || null;
+                };
+                const getMailAddr = (prop: AttomProperty) => {
+                  const o = prop.owner;
+                  const nested = prop.assessment?.owner;
+                  const owner = (o?.mailingAddressOneLine?.trim()) ? o : nested;
+                  if (owner?.mailingAddressOneLine?.trim()) return owner.mailingAddressOneLine;
+                  const m = (prop.mortgage as any)?.FirstConcurrent || prop.mortgage;
+                  if (m?.borrowerMailFullStreetAddress) {
+                    return [m.borrowerMailFullStreetAddress, m.borrowerMailCity, m.borrowerMailState, m.borrowerMailZip].filter(Boolean).join(", ");
+                  }
+                  return null;
+                };
+                const withOwner = nearbyHomes.filter((h) => getOwnerName(h));
+                const withMailing = nearbyHomes.filter((h) => getMailAddr(h));
+
+                return (
+                  <>
+                    <div style={{ padding: "10px 14px", background: "#f5f3ff", border: "1px solid #e9d5ff", borderRadius: 8, marginBottom: 12, fontSize: 12 }}>
+                      <div style={{ fontWeight: 700, fontSize: 13, color: "#7c3aed", marginBottom: 4 }}>
+                        Farming Radius: {farmingContext?.radiusMiles || "0.5"} miles from this property
+                      </div>
+                      <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+                        <span><strong>{nearbyHomes.length}</strong> properties found</span>
+                        <span><strong>{withOwner.length}</strong> with owner names</span>
+                        <span><strong>{withMailing.length}</strong> with mailing addresses</span>
+                      </div>
+                      <div style={{ marginTop: 6, color: "#6b7280" }}>
+                        Use this data to send &ldquo;Your Neighbor&rsquo;s Home Just Sold&rdquo; postcards to nearby homeowners.
+                      </div>
+                    </div>
+
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      {nearbyHomes.map((nh, idx) => {
+                        const nhAddr = nh.address?.oneLine || [nh.address?.line1, nh.address?.line2].filter(Boolean).join(", ") || "Unknown";
+                        const ownerName = getOwnerName(nh);
+                        const mailingAddr = getMailAddr(nh);
+                        const nhBeds = nh.building?.rooms?.beds;
+                        const nhBaths = nh.building?.rooms?.bathsFull ?? nh.building?.rooms?.bathsTotal;
+                        const nhSqft = nh.building?.size?.livingSize || nh.building?.size?.universalSize;
+                        const nhValue = nh.avm?.amount?.value || nh.assessment?.market?.mktTtlValue || nh.assessment?.assessed?.assdTtlValue;
+                        const nhYearBuilt = nh.building?.summary?.yearBuilt || nh.summary?.yearBuilt;
+
+                        return (
+                          <div
+                            key={nh.identifier?.attomId || idx}
+                            style={{
+                              padding: "10px 14px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8,
+                              borderLeft: ownerName ? "3px solid #7c3aed" : "3px solid #e5e7eb",
+                            }}
+                          >
+                            <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 3 }}>{nhAddr}</div>
+                            <div style={{ fontSize: 12, color: "#6b7280", display: "flex", flexWrap: "wrap", gap: 8 }}>
+                              {[
+                                nhBeds != null ? `${nhBeds} bed` : null,
+                                nhBaths != null ? `${nhBaths} bath` : null,
+                                nhSqft ? `${nhSqft.toLocaleString()} sqft` : null,
+                                nhYearBuilt ? `Built ${nhYearBuilt}` : null,
+                              ].filter(Boolean).join(" · ")}
+                            </div>
+                            <div style={{ marginTop: 4, fontSize: 12, display: "flex", flexDirection: "column", gap: 2 }}>
+                              <div style={{ color: ownerName ? "#374151" : "#9ca3af" }}>
+                                <strong>Owner:</strong> {ownerName || "Not listed"}
+                              </div>
+                              {mailingAddr && (
+                                <div style={{ color: "#374151" }}>
+                                  <strong>Mailing:</strong> {mailingAddr}
+                                </div>
+                              )}
+                              {nhValue != null && (
+                                <div style={{ color: "#6b7280" }}>
+                                  <strong>Est. Value:</strong> ${nhValue.toLocaleString()}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                );
+              })()}
             </>
           )}
     </div>

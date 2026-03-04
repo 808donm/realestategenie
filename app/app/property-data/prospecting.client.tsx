@@ -565,6 +565,10 @@ export default function Prospecting() {
   });
   const [endDate, setEndDate] = useState(() => new Date().toISOString().split("T")[0]);
 
+  // Radius farming — address-based search
+  const [farmAddress, setFarmAddress] = useState("");
+  const [farmSearchMode, setFarmSearchMode] = useState<"zip" | "address">("zip");
+
   // Radius farming radius and reference address
   const [radiusMiles, setRadiusMiles] = useState("0.5");
   const [radiusResults, setRadiusResults] = useState<AttomProperty[]>([]);
@@ -1087,7 +1091,76 @@ export default function Prospecting() {
     setHasSearched(true);
   };
 
+  /**
+   * Address-based search for Just Sold Farming.
+   * Looks up the sold property by address, then shows it in results
+   * so the user can open it and use the Nearby Homes tab.
+   */
+  const handleAddressSearch = async () => {
+    if (!farmAddress.trim()) {
+      setError("Enter a sold property address.");
+      return;
+    }
+    setError("");
+    setIsLoading(true);
+    setResults([]);
+    setInvestorGroups([]);
+    setHasSearched(false);
+    setRadiusCenter(null);
+    setRadiusResults([]);
+
+    try {
+      // Search ATTOM by address using the expanded profile endpoint
+      const params = new URLSearchParams({
+        address: farmAddress.trim(),
+        endpoint: "expanded",
+      });
+      const res = await fetch(`/api/integrations/attom/property?${params.toString()}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Address search failed");
+
+      const props: AttomProperty[] = data.property || [];
+      if (props.length === 0) {
+        setError("No property found at that address. Try a different address or use zip code search.");
+        setResults([]);
+      } else {
+        // Supplement with sale history to get sale data
+        const prop = props[0];
+        const attomId = prop.identifier?.attomId;
+        if (attomId) {
+          try {
+            const saleParams = new URLSearchParams({
+              attomId: String(attomId),
+              endpoint: "saleshistory",
+            });
+            const saleRes = await fetch(`/api/integrations/attom/property?${saleParams.toString()}`);
+            const saleData = await saleRes.json();
+            if (saleRes.ok && saleData.property?.[0]?.sale) {
+              props[0] = { ...props[0], sale: saleData.property[0].sale };
+            }
+          } catch {
+            // Sale data is optional
+          }
+        }
+        setResults(props);
+        setTotalCount(props.length);
+        setDebugInfo(`Found property at: ${props[0].address?.oneLine || farmAddress}. Click to open and view nearby homes for farming.`);
+      }
+      setHasSearched(true);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Address search failed");
+      setResults([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSearch = async (pageNum = 1) => {
+    // For radius mode with address search, use the address handler
+    if (mode === "radius" && farmSearchMode === "address") {
+      handleAddressSearch();
+      return;
+    }
     if (!zip.trim()) {
       setError("Enter a zip code.");
       return;
@@ -1376,7 +1449,7 @@ export default function Prospecting() {
     {
       id: "radius",
       label: "Just Sold Farming",
-      desc: "Recent sales with new owner names, mailing addresses, sale prices, and equity data for farming campaigns.",
+      desc: "Find a recently sold property and discover nearby homeowners to send \"Your Neighbor's Home Just Sold\" postcards.",
       color: "#7c3aed",
     },
     {
@@ -1746,6 +1819,9 @@ export default function Prospecting() {
                     AVM range: {fmt(avmLow)} – {fmt(avmHigh)} (est. {fmt(avmVal)})
                   </div>
                 )}
+                <div style={{ marginTop: 4, fontSize: 11, color: "#7c3aed", fontWeight: 600 }}>
+                  Click to open &amp; view Nearby Homes for farming postcards
+                </div>
               </div>
             )}
           </div>
@@ -1959,18 +2035,61 @@ export default function Prospecting() {
 
       {/* Search Form */}
       <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 20, marginBottom: 20 }}>
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end" }}>
-          <div>
-            <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 4 }}>Zip Code</label>
-            <input
-              type="text"
-              value={zip}
-              onChange={(e) => { setZip(e.target.value); if (sharedDataKey || propertyCacheKey) { setSharedRawData([]); setSharedDataKey(""); setPropertyCache(new Map()); setPropertyCacheKey(""); } }}
-              placeholder="e.g. 80211"
-              onKeyDown={(e) => e.key === "Enter" && handleSearch(1)}
-              style={{ width: 140, padding: "8px 12px", fontSize: 14, border: "1px solid #d1d5db", borderRadius: 6 }}
-            />
+        {/* Search mode toggle for Just Sold Farming */}
+        {mode === "radius" && (
+          <div style={{ display: "flex", gap: 0, marginBottom: 12 }}>
+            <button
+              onClick={() => setFarmSearchMode("zip")}
+              style={{
+                padding: "6px 16px", fontSize: 12, fontWeight: 600, border: "1px solid #d1d5db",
+                borderRadius: "6px 0 0 6px", cursor: "pointer",
+                background: farmSearchMode === "zip" ? "#7c3aed" : "#fff",
+                color: farmSearchMode === "zip" ? "#fff" : "#374151",
+              }}
+            >
+              Search by Zip Code
+            </button>
+            <button
+              onClick={() => setFarmSearchMode("address")}
+              style={{
+                padding: "6px 16px", fontSize: 12, fontWeight: 600, border: "1px solid #d1d5db", borderLeft: "none",
+                borderRadius: "0 6px 6px 0", cursor: "pointer",
+                background: farmSearchMode === "address" ? "#7c3aed" : "#fff",
+                color: farmSearchMode === "address" ? "#fff" : "#374151",
+              }}
+            >
+              Search by Address
+            </button>
           </div>
+        )}
+
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end" }}>
+          {/* Address input for radius/address mode */}
+          {mode === "radius" && farmSearchMode === "address" ? (
+            <div style={{ flex: 1, minWidth: 250 }}>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 4 }}>Sold Property Address</label>
+              <input
+                type="text"
+                value={farmAddress}
+                onChange={(e) => setFarmAddress(e.target.value)}
+                placeholder="e.g. 123 Main St, Denver, CO 80211"
+                onKeyDown={(e) => e.key === "Enter" && handleSearch(1)}
+                style={{ width: "100%", padding: "8px 12px", fontSize: 14, border: "1px solid #d1d5db", borderRadius: 6 }}
+              />
+            </div>
+          ) : (
+            <div>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 4 }}>Zip Code</label>
+              <input
+                type="text"
+                value={zip}
+                onChange={(e) => { setZip(e.target.value); if (sharedDataKey || propertyCacheKey) { setSharedRawData([]); setSharedDataKey(""); setPropertyCache(new Map()); setPropertyCacheKey(""); } }}
+                placeholder="e.g. 80211"
+                onKeyDown={(e) => e.key === "Enter" && handleSearch(1)}
+                style={{ width: 140, padding: "8px 12px", fontSize: 14, border: "1px solid #d1d5db", borderRadius: 6 }}
+              />
+            </div>
+          )}
           <div>
             <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 4 }}>Property Type</label>
             <select
@@ -2281,14 +2400,14 @@ export default function Prospecting() {
             {mode === "absentee" && "Find Absentee Owners"}
             {mode === "equity" && "Find High-Equity / Likely Sellers"}
             {mode === "foreclosure" && "Find Distressed Properties"}
-            {mode === "radius" && "Just Sold Radius Farming"}
+            {mode === "radius" && "Just Sold Farming"}
             {mode === "investor" && "Find Investor Portfolios"}
           </div>
           <div style={{ fontSize: 13, maxWidth: 500, margin: "0 auto" }}>
             {mode === "absentee" && "Search for non-owner-occupied properties by zip code. These owners are managing properties remotely and may be motivated to sell."}
             {mode === "equity" && "Search for long-tenure homeowners based on their purchase date. Owners who bought 10+ years ago have built significant equity through appreciation — ideal for \"unlock your equity\" listing campaigns."}
             {mode === "foreclosure" && "Find properties with underwater mortgages, high loan-to-value ratios, or declining assessments. These owners may be under financial pressure and open to selling."}
-            {mode === "radius" && "Find recent sales in a zip code. Use the data to build \"Your Neighbor's Home Just Sold for $X\" prospecting campaigns with real comparable data."}
+            {mode === "radius" && "Search by the address of a recently sold property, or find recent sales in a zip code. Click any sold property to view the Nearby Homes tab — it shows all homeowners within your farming radius with names and mailing addresses for postcard campaigns."}
             {mode === "investor" && "Find corporate entities, absentee owners, and multi-property investors in a zip code. Shows owner contact info, mailing addresses, mortgage details, and estimated values."}
           </div>
         </div>
@@ -2299,6 +2418,7 @@ export default function Prospecting() {
           property={selectedProperty}
           searchContext={{ absenteeowner: mode === "absentee" ? "absentee" : undefined }}
           onClose={() => setSelectedProperty(null)}
+          farmingContext={mode === "radius" ? { radiusMiles, propertyType } : undefined}
         />
       )}
     </div>
