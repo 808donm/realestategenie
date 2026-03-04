@@ -6,8 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import Image from "next/image";
+
+type FlyerFeature = {
+  icon: string;
+  label: string;
+  value: string;
+};
 
 type PropertyDetailsFormProps = {
   eventId: string;
@@ -18,9 +24,26 @@ type PropertyDetailsFormProps = {
     price?: number | null;
     listing_description?: string | null;
     key_features?: string[] | null;
+    flyer_description?: string | null;
+    flyer_features?: FlyerFeature[] | null;
     property_photo_url?: string | null;
   };
 };
+
+const DEFAULT_FLYER_FEATURES: FlyerFeature[] = [
+  { icon: "bed", label: "Bedrooms", value: "" },
+  { icon: "bath", label: "Bathrooms", value: "" },
+  { icon: "garage", label: "Parking", value: "" },
+  { icon: "solar", label: "Solar", value: "" },
+];
+
+const FEATURE_ICON_OPTIONS = [
+  { value: "solar", label: "Solar" },
+  { value: "garage", label: "Garage" },
+  { value: "sqft", label: "Square Feet" },
+  { value: "bed", label: "Bedroom" },
+  { value: "bath", label: "Bathroom" },
+];
 
 export default function PropertyDetailsForm({ eventId, initialData }: PropertyDetailsFormProps) {
   const router = useRouter();
@@ -30,12 +53,42 @@ export default function PropertyDetailsForm({ eventId, initialData }: PropertyDe
   const [sqft, setSqft] = useState(initialData.sqft?.toString() || "");
   const [price, setPrice] = useState(initialData.price?.toString() || "");
   const [description, setDescription] = useState(initialData.listing_description || "");
+  const [flyerDescription, setFlyerDescription] = useState(initialData.flyer_description || "");
   const [features, setFeatures] = useState(
     initialData.key_features?.join("\n") || ""
   );
+
+  // Initialize flyer features from saved data or defaults, pre-populating beds/baths from specs
+  const initFlyerFeatures = (): FlyerFeature[] => {
+    if (initialData.flyer_features && initialData.flyer_features.length > 0) {
+      // Pad to 4 if fewer saved
+      const saved = [...initialData.flyer_features];
+      while (saved.length < 4) {
+        saved.push(DEFAULT_FLYER_FEATURES[saved.length] || { icon: "solar", label: "Feature", value: "" });
+      }
+      return saved.slice(0, 4);
+    }
+    return [
+      { icon: "bed", label: "Bedrooms", value: initialData.beds?.toString() || "" },
+      { icon: "bath", label: "Bathrooms", value: initialData.baths?.toString() || "" },
+      { icon: "garage", label: "Parking", value: "" },
+      { icon: "solar", label: "Solar", value: "" },
+    ];
+  };
+
+  const [flyerFeatures, setFlyerFeatures] = useState<FlyerFeature[]>(initFlyerFeatures);
+
   const [photoUrl, setPhotoUrl] = useState(initialData.property_photo_url || "");
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
+
+  const updateFlyerFeature = (index: number, field: keyof FlyerFeature, value: string) => {
+    setFlyerFeatures((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
+  };
 
   const handlePhotoUpload = async (file: File) => {
     setUploadingPhoto(true);
@@ -106,6 +159,8 @@ export default function PropertyDetailsForm({ eventId, initialData }: PropertyDe
           key_features: features
             ? features.split("\n").filter((f) => f.trim())
             : null,
+          flyer_description: flyerDescription || null,
+          flyer_features: flyerFeatures.filter((f) => f.value.trim()),
         }),
       });
 
@@ -236,24 +291,48 @@ export default function PropertyDetailsForm({ eventId, initialData }: PropertyDe
 
       <Card>
         <CardHeader>
-          <CardTitle>Property Description</CardTitle>
+          <CardTitle>Full Description</CardTitle>
+          <CardDescription>
+            Detailed property description for your records. This will not appear on the flyer.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Enter a detailed description of the property..."
+            placeholder="Enter the full, detailed description of the property..."
             className="min-h-32"
           />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Flyer Description</CardTitle>
+          <CardDescription>
+            A short, compelling description that will appear on the printed flyer. Keep it brief.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Textarea
+            value={flyerDescription}
+            onChange={(e) => setFlyerDescription(e.target.value)}
+            placeholder="Charming 3-bed home with modern upgrades, open floor plan, and a spacious backyard perfect for entertaining."
+            className="min-h-20"
+            maxLength={300}
+          />
           <p className="text-sm text-muted-foreground mt-2">
-            This will appear on the flyer and property details page
+            {flyerDescription.length}/300 characters
           </p>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Key Features</CardTitle>
+          <CardTitle>Full Feature List</CardTitle>
+          <CardDescription>
+            Complete list of property features for your records. These will not appear on the flyer.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Textarea
@@ -263,8 +342,81 @@ export default function PropertyDetailsForm({ eventId, initialData }: PropertyDe
             className="min-h-32 font-mono text-sm"
           />
           <p className="text-sm text-muted-foreground mt-2">
-            Enter one feature per line. These will appear as bullet points on the flyer.
+            Enter one feature per line.
           </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Flyer Feature Highlights</CardTitle>
+          <CardDescription>
+            Up to 4 key features displayed as icons on the flyer. Bedrooms, bathrooms, and parking are standard — customize the 4th.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {flyerFeatures.map((feat, i) => (
+            <div key={i} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+              <div className="flex-shrink-0 w-8 text-center text-lg">
+                {feat.icon === "bed" && "🛏️"}
+                {feat.icon === "bath" && "🛁"}
+                {feat.icon === "garage" && "🚗"}
+                {feat.icon === "solar" && "☀️"}
+                {feat.icon === "sqft" && "📐"}
+              </div>
+              <div className="flex-1 grid gap-2 md:grid-cols-3">
+                {i < 3 ? (
+                  <div className="md:col-span-1">
+                    <Label className="text-xs text-muted-foreground">Feature</Label>
+                    <p className="text-sm font-medium mt-1">{feat.label}</p>
+                  </div>
+                ) : (
+                  <>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Icon</Label>
+                      <select
+                        className="w-full mt-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        value={feat.icon}
+                        onChange={(e) => updateFlyerFeature(i, "icon", e.target.value)}
+                      >
+                        {FEATURE_ICON_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Label</Label>
+                      <Input
+                        value={feat.label}
+                        onChange={(e) => updateFlyerFeature(i, "label", e.target.value)}
+                        placeholder="e.g. Solar"
+                        className="mt-1"
+                      />
+                    </div>
+                  </>
+                )}
+                <div className={i < 3 ? "md:col-span-2" : ""}>
+                  <Label className="text-xs text-muted-foreground">Value</Label>
+                  <Input
+                    value={feat.value}
+                    onChange={(e) => updateFlyerFeature(i, "value", e.target.value)}
+                    placeholder={
+                      i === 0
+                        ? "e.g. 3"
+                        : i === 1
+                        ? "e.g. 2.5"
+                        : i === 2
+                        ? "e.g. 2-Car Garage"
+                        : "e.g. Yes"
+                    }
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
         </CardContent>
       </Card>
 

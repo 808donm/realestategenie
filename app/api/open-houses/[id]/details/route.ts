@@ -42,6 +42,8 @@ export async function PATCH(
       price,
       listing_description,
       key_features,
+      flyer_description,
+      flyer_features,
     } = body;
 
     console.log('[Property Details] Update request:', {
@@ -52,7 +54,9 @@ export async function PATCH(
       price,
       priceType: typeof price,
       hasDescription: !!listing_description,
+      hasFlyerDescription: !!flyer_description,
       featuresCount: key_features?.length || 0,
+      flyerFeaturesCount: flyer_features?.length || 0,
     });
 
     // Update property details
@@ -65,6 +69,8 @@ export async function PATCH(
         price,
         listing_description,
         key_features,
+        flyer_description,
+        flyer_features,
         updated_at: new Date().toISOString(),
       })
       .eq("id", id);

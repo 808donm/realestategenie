@@ -75,6 +75,8 @@ export async function GET(
         price,
         key_features,
         listing_description,
+        flyer_description,
+        flyer_features,
         property_photo_url,
         secondary_photo_url,
         tertiary_photo_url,
