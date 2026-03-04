@@ -352,8 +352,8 @@ export function renderModernBlueTemplate(ctx: FlyerRenderContext): void {
   pdf.setFillColor(primaryRGB.r, primaryRGB.g, primaryRGB.b);
   pdf.rect(0, 0, pageWidth, headerH, "F");
 
-  // Layout: Logo | Company Name | Phone — evenly spaced in first half of header
-  const halfW = pageWidth / 2;
+  // Layout: Logo | Company Name | Phone — evenly spaced across 2/3 of header
+  const twoThirdsW = pageWidth * 2 / 3;
 
   // Logo (left-aligned)
   let logoEndX = margin;
@@ -368,28 +368,28 @@ export function renderModernBlueTemplate(ctx: FlyerRenderContext): void {
     }
   }
 
-  // Evenly space company name and phone in the remaining first-half area
+  // Evenly space company name and phone across remaining 2/3-header area
   pdf.setTextColor(255, 255, 255);
-  const remainingW = halfW - logoEndX;
+  const remainingW = twoThirdsW - logoEndX;
 
   if (agent?.brokerage_name && agent?.phone_e164) {
     // Both present: split remaining space into 2 equal zones
     const zone = remainingW / 2;
     pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(24);
-    pdf.text(pdfSafe(agent.brokerage_name), logoEndX + zone / 2, headerH / 2 + 3, { align: "center" });
+    pdf.setFontSize(14);
+    pdf.text(pdfSafe(agent.brokerage_name), logoEndX + zone / 2, headerH / 2 + 2, { align: "center" });
 
     pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(18);
-    pdf.text(agent.phone_e164, logoEndX + zone + zone / 2, headerH / 2 + 3, { align: "center" });
+    pdf.setFontSize(12);
+    pdf.text(agent.phone_e164, logoEndX + zone + zone / 2, headerH / 2 + 2, { align: "center" });
   } else if (agent?.brokerage_name) {
     pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(24);
-    pdf.text(pdfSafe(agent.brokerage_name), logoEndX + remainingW / 2, headerH / 2 + 3, { align: "center" });
+    pdf.setFontSize(14);
+    pdf.text(pdfSafe(agent.brokerage_name), logoEndX + remainingW / 2, headerH / 2 + 2, { align: "center" });
   } else if (agent?.phone_e164) {
     pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(18);
-    pdf.text(agent.phone_e164, logoEndX + remainingW / 2, headerH / 2 + 3, { align: "center" });
+    pdf.setFontSize(12);
+    pdf.text(agent.phone_e164, logoEndX + remainingW / 2, headerH / 2 + 2, { align: "center" });
   }
 
   // --- B. "OPEN HOUSE" title + "Premium Real Estate" ---
