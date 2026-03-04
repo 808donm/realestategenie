@@ -94,19 +94,24 @@ function findGeoIdV4(obj: any, depth = 0): string | null {
   return null;
 }
 
+type SectionId = "overview" | "building" | "financial" | "ownership" | "neighborhood" | "federal" | "comparables";
+
 export default function PropertyDetailModal({
   property: p,
   searchContext,
   onClose,
   embedded,
+  tabs: visibleTabs,
 }: {
   property: AttomProperty;
   searchContext?: { absenteeowner?: string };
   onClose: () => void;
   /** When true, renders just tabs + content inline (no overlay, no header). Used by MLS detail card. */
   embedded?: boolean;
+  /** Optional subset of tabs to show (e.g. ["building","financial","ownership","comparables","neighborhood"]). Shows all by default. */
+  tabs?: SectionId[];
 }) {
-  const [activeSection, setActiveSection] = useState<"overview" | "building" | "financial" | "ownership" | "neighborhood" | "federal" | "comparables">("overview");
+  const [activeSection, setActiveSection] = useState<SectionId>(visibleTabs?.[0] || "overview");
   const [comparablesData, setComparablesData] = useState<any>(null);
   const [comparablesLoading, setComparablesLoading] = useState(false);
   const [federalData, setFederalData] = useState<FederalPropertySupplement | null>(null);
@@ -507,15 +512,18 @@ export default function PropertyDetailModal({
       .finally(() => setComparablesLoading(false));
   }, [activeSection, comparablesData, comparablesLoading, p]);
 
-  const sections = [
-    { id: "overview" as const, label: "Overview" },
-    { id: "building" as const, label: "Building" },
-    { id: "financial" as const, label: "Financial" },
-    { id: "comparables" as const, label: "Comps" },
-    { id: "ownership" as const, label: "Ownership" },
-    { id: "neighborhood" as const, label: "Neighborhood" },
-    { id: "federal" as const, label: "Area Intel" },
+  const allSections: { id: SectionId; label: string }[] = [
+    { id: "overview", label: "Overview" },
+    { id: "building", label: "Building" },
+    { id: "financial", label: "Financial" },
+    { id: "comparables", label: "Comps" },
+    { id: "ownership", label: "Ownership" },
+    { id: "neighborhood", label: "Neighborhood" },
+    { id: "federal", label: "Area Intel" },
   ];
+  const sections = visibleTabs
+    ? allSections.filter((s) => visibleTabs.includes(s.id))
+    : allSections;
 
   // ── Shared Tabs Bar ──
   const tabsBar = (
