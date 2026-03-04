@@ -32,6 +32,20 @@ export type FlyerRenderContext = {
   margin: number;
 };
 
+// ─── Helper: Sanitize text for jsPDF (WinAnsiEncoding only) ──────────────────
+
+function pdfSafe(str: string): string {
+  return str.replace(/[^\x20-\x7E\xA0-\xFF]/g, (ch) => {
+    if (ch === "\u2018" || ch === "\u2019") return "'";
+    if (ch === "\u201C" || ch === "\u201D") return '"';
+    if (ch === "\u2013" || ch === "\u2014") return "-";
+    if (ch === "\u2022") return "-";
+    if (ch === "\u00A0") return " ";
+    if (ch === "\u2026") return "...";
+    return "";
+  });
+}
+
 // ─── Default Template (existing 8 templates) ────────────────────────────────
 
 export function renderDefaultTemplate(ctx: FlyerRenderContext): void {
@@ -130,7 +144,7 @@ export function renderDefaultTemplate(ctx: FlyerRenderContext): void {
     pdf.setFontSize(20);
     pdf.setFont("helvetica", "bold");
     pdf.setTextColor(primaryRGB.r, primaryRGB.g, primaryRGB.b);
-    pdf.text(`$${event.price.toLocaleString()}`, margin, yPos);
+    pdf.text(pdfSafe(`$${event.price.toLocaleString()}`), margin, yPos);
     pdf.setTextColor(0, 0, 0);
     yPos += 10;
   }
@@ -141,9 +155,9 @@ export function renderDefaultTemplate(ctx: FlyerRenderContext): void {
   const stats = [];
   if (event.beds) stats.push(`${event.beds} Beds`);
   if (event.baths) stats.push(`${event.baths} Baths`);
-  if (event.sqft) stats.push(`${event.sqft.toLocaleString()} sqft`);
+  if (event.sqft) stats.push(`${pdfSafe(event.sqft.toLocaleString())} sqft`);
   if (stats.length > 0) {
-    pdf.text(stats.join(" \u2022 "), margin, yPos);
+    pdf.text(stats.join("  |  "), margin, yPos);
     yPos += 10;
   }
 
@@ -152,7 +166,7 @@ export function renderDefaultTemplate(ctx: FlyerRenderContext): void {
     yPos += 5;
     pdf.setFontSize(11);
     pdf.setFont("helvetica", "normal");
-    const lines = pdf.splitTextToSize(event.listing_description, pageWidth - margin * 2);
+    const lines = pdf.splitTextToSize(pdfSafe(event.listing_description), pageWidth - margin * 2);
     const descriptionHeight = lines.length * 5;
     if (needsNewPage(yPos, descriptionHeight + 10)) {
       yPos = addNewPage();
@@ -171,7 +185,7 @@ export function renderDefaultTemplate(ctx: FlyerRenderContext): void {
       : pageWidth - margin * 2;
     let estimatedFeaturesHeight = 12;
     event.key_features.forEach((feature: string) => {
-      const lines = pdf.splitTextToSize(`\u2022 ${feature}`, textWidth);
+      const lines = pdf.splitTextToSize(pdfSafe(feature), textWidth - 8);
       estimatedFeaturesHeight += lines.length * 5;
     });
 
@@ -188,8 +202,12 @@ export function renderDefaultTemplate(ctx: FlyerRenderContext): void {
     pdf.setFont("helvetica", "normal");
     pdf.setFontSize(10);
     event.key_features.forEach((feature: string) => {
-      const lines = pdf.splitTextToSize(`\u2022 ${feature}`, textWidth);
-      pdf.text(lines, margin + 5, yPos);
+      // Draw filled circle bullet instead of Unicode \u2022
+      pdf.setFillColor(primaryRGB.r, primaryRGB.g, primaryRGB.b);
+      pdf.circle(margin + 7, yPos - 1.2, 1, "F");
+      const lines = pdf.splitTextToSize(pdfSafe(feature), textWidth - 8);
+      pdf.setTextColor(0, 0, 0);
+      pdf.text(lines, margin + 11, yPos);
       yPos += lines.length * 5;
     });
 
@@ -234,13 +252,13 @@ export function renderDefaultTemplate(ctx: FlyerRenderContext): void {
   pdf.setFont("helvetica", "bold");
   const startDate = new Date(event.start_at);
   const endDate = new Date(event.end_at);
-  const openHouseText = `OPEN HOUSE: ${startDate.toLocaleDateString()} \u2022 ${startDate.toLocaleTimeString([], {
+  const openHouseText = pdfSafe(`OPEN HOUSE: ${startDate.toLocaleDateString()} | ${startDate.toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",
   })} - ${endDate.toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",
-  })}`;
+  })}`);
   pdf.text(openHouseText, margin + 5, yPos + 11);
   pdf.setTextColor(0, 0, 0);
 
@@ -394,7 +412,7 @@ export function renderModernBlueTemplate(ctx: FlyerRenderContext): void {
 
     // Price badge overlay with "OFFERED AT" on same line as price
     if (event.price) {
-      const priceText = `OFFERED AT $${Number(event.price).toLocaleString()}`;
+      const priceText = pdfSafe(`OFFERED AT $${Number(event.price).toLocaleString()}`);
       pdf.setFont("helvetica", "bold");
       pdf.setFontSize(12);
       const textW = pdf.getTextWidth(priceText);
@@ -443,7 +461,7 @@ export function renderModernBlueTemplate(ctx: FlyerRenderContext): void {
     pdf.setFontSize(10);
 
     // Truncate to ~35 words
-    const words = event.listing_description.split(/\s+/);
+    const words = pdfSafe(event.listing_description).split(/\s+/);
     const truncated = words.slice(0, 35).join(" ") + (words.length > 35 ? "..." : "");
     const lines = pdf.splitTextToSize(truncated, descColWidth);
     pdf.text(lines, margin, descQrY + 16);
@@ -505,11 +523,15 @@ export function renderModernBlueTemplate(ctx: FlyerRenderContext): void {
   }
 
   // Feature icons column (right side, next to secondary image)
-  // "Property Features" header
-  pdf.setTextColor(primaryRGB.r, primaryRGB.g, primaryRGB.b);
+  // "Property Features" header — blue background with white text (matches "About the Property")
+  const featHeaderW = 62;
+  const featHeaderH = 8;
+  pdf.setFillColor(primaryRGB.r, primaryRGB.g, primaryRGB.b);
+  pdf.roundedRect(featColX, y, featHeaderW, featHeaderH, 1.5, 1.5, "F");
+  pdf.setTextColor(255, 255, 255);
   pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(11);
-  pdf.text("Property Features", featColX, y + 5);
+  pdf.setFontSize(10);
+  pdf.text("PROPERTY FEATURES", featColX + featHeaderW / 2, y + 5.5, { align: "center" });
 
   // 5 feature icon rows: Bedroom, Bathroom, PV Solar, Garage
   const featureIcons = [
@@ -668,7 +690,7 @@ export function renderElegantWarmTemplate(ctx: FlyerRenderContext): void {
     pdf.setTextColor(255, 255, 255);
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(14);
-    pdf.text(`$${Number(event.price).toLocaleString()}`, bx + badgeW - 4, by + 9, { align: "right" });
+    pdf.text(pdfSafe(`$${Number(event.price).toLocaleString()}`), bx + badgeW - 4, by + 9, { align: "right" });
   }
 
   // --- B. Brown header bar (102–118mm) ---
@@ -689,8 +711,8 @@ export function renderElegantWarmTemplate(ctx: FlyerRenderContext): void {
   pdf.setFontSize(11);
   const startDate = new Date(event.start_at);
   const endDate = new Date(event.end_at);
-  const dateLine = startDate.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
-  const timeLine = `${startDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} - ${endDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+  const dateLine = pdfSafe(startDate.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" }));
+  const timeLine = pdfSafe(`${startDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} - ${endDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`);
   pdf.text(dateLine, pageWidth - margin, y + 6, { align: "right" });
   pdf.setFontSize(10);
   pdf.text(timeLine, pageWidth - margin, y + 12, { align: "right" });
@@ -705,8 +727,8 @@ export function renderElegantWarmTemplate(ctx: FlyerRenderContext): void {
     pdf.setFontSize(11);
 
     // Truncate to ~20 words
-    const words = event.listing_description.split(/\s+/);
-    const truncated = words.slice(0, 20).join(" ") + (words.length > 20 ? "..." : "");
+    const descWords = pdfSafe(event.listing_description).split(/\s+/);
+    const truncated = descWords.slice(0, 20).join(" ") + (descWords.length > 20 ? "..." : "");
     const lines = pdf.splitTextToSize(truncated, contentWidth);
     pdf.text(lines, pageWidth / 2, y + 5, { align: "center" });
     y += lines.length * 5 + 8;
@@ -735,7 +757,7 @@ export function renderElegantWarmTemplate(ctx: FlyerRenderContext): void {
     { value: event.beds?.toString() || "--", label: "Beds", icon: "bed" },
     { value: event.baths?.toString() || "--", label: "Baths", icon: "bath" },
     { value: event.parking_notes || "--", label: "Parking", icon: "garage" },
-    { value: event.sqft ? Number(event.sqft).toLocaleString() : "--", label: "Sqft", icon: "sqft" },
+    { value: event.sqft ? pdfSafe(Number(event.sqft).toLocaleString()) : "--", label: "Sqft", icon: "sqft" },
   ];
 
   for (let i = 0; i < highlights.length; i++) {
