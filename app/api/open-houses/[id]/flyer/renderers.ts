@@ -345,27 +345,37 @@ export function renderModernBlueTemplate(ctx: FlyerRenderContext): void {
     }
   }
 
+  pdf.setTextColor(255, 255, 255);
   if (agent?.brokerage_name) {
-    pdf.setTextColor(255, 255, 255);
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(12);
-    pdf.text(agent.brokerage_name, logoRightEdge, 12);
+    pdf.text(agent.brokerage_name, logoRightEdge, 10);
+  }
+  if (agent?.phone_e164) {
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(9);
+    pdf.text(agent.phone_e164, logoRightEdge, 17);
   }
 
-  // --- B. "OPEN HOUSE" title (25–38mm) ---
+  // --- B. "OPEN HOUSE" title + "Premium Real Estate" (25–48mm) ---
   y = 35;
   pdf.setTextColor(primaryRGB.r, primaryRGB.g, primaryRGB.b);
-  pdf.setFont("helvetica", "bold");
+  pdf.setFont("times", "bold");
   pdf.setFontSize(28);
   pdf.text("OPEN HOUSE", pageWidth / 2, y, { align: "center" });
+
+  // "Premium Real Estate" subtitle in luxury font
+  pdf.setFont("times", "italic");
+  pdf.setFontSize(12);
+  pdf.text("Premium Real Estate", pageWidth / 2, y + 9, { align: "center" });
 
   // Accent underline
   pdf.setDrawColor(primaryRGB.r, primaryRGB.g, primaryRGB.b);
   pdf.setLineWidth(0.8);
-  pdf.line(pageWidth / 2 - 20, y + 3, pageWidth / 2 + 20, y + 3);
+  pdf.line(pageWidth / 2 - 25, y + 13, pageWidth / 2 + 25, y + 13);
 
-  // --- C. Hero property image (42–122mm) ---
-  y = 42;
+  // --- C. Hero property image (52–132mm) ---
+  y = 52;
   const heroMaxH = 80;
   if (propertyPhotoData) {
     const aspect = photoWidth / photoHeight;
@@ -382,18 +392,20 @@ export function renderModernBlueTemplate(ctx: FlyerRenderContext): void {
       console.error("Failed to add hero image:", error);
     }
 
-    // Price badge overlay
+    // Price badge overlay with "OFFERED AT" on same line as price
     if (event.price) {
-      const badgeW = 52;
+      const priceText = `OFFERED AT $${Number(event.price).toLocaleString()}`;
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(12);
+      const textW = pdf.getTextWidth(priceText);
+      const badgeW = textW + 12;
       const badgeH = 11;
       const bx = imgX + imgW - badgeW - 3;
       const by = y + imgH - badgeH - 3;
       pdf.setFillColor(primaryRGB.r, primaryRGB.g, primaryRGB.b);
       pdf.roundedRect(bx, by, badgeW, badgeH, 2, 2, "F");
       pdf.setTextColor(255, 255, 255);
-      pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(14);
-      pdf.text(`$${Number(event.price).toLocaleString()}`, bx + badgeW - 3, by + 8, { align: "right" });
+      pdf.text(priceText, bx + badgeW / 2, by + 7.5, { align: "center" });
     }
     y += imgH + 4;
   } else {
@@ -416,10 +428,15 @@ export function renderModernBlueTemplate(ctx: FlyerRenderContext): void {
 
   // Left column: About the Property
   if (event.listing_description) {
-    pdf.setTextColor(primaryRGB.r, primaryRGB.g, primaryRGB.b);
+    // Blue background header for "ABOUT THE PROPERTY"
+    const headerLabelW = 72;
+    const headerLabelH = 8;
+    pdf.setFillColor(primaryRGB.r, primaryRGB.g, primaryRGB.b);
+    pdf.roundedRect(margin, descQrY, headerLabelW, headerLabelH, 1.5, 1.5, "F");
+    pdf.setTextColor(255, 255, 255);
     pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(13);
-    pdf.text("About the Property", margin, descQrY + 6);
+    pdf.setFontSize(10);
+    pdf.text("ABOUT THE PROPERTY", margin + headerLabelW / 2, descQrY + 5.5, { align: "center" });
 
     pdf.setTextColor(0, 0, 0);
     pdf.setFont("helvetica", "normal");
@@ -429,8 +446,8 @@ export function renderModernBlueTemplate(ctx: FlyerRenderContext): void {
     const words = event.listing_description.split(/\s+/);
     const truncated = words.slice(0, 35).join(" ") + (words.length > 35 ? "..." : "");
     const lines = pdf.splitTextToSize(truncated, descColWidth);
-    pdf.text(lines, margin, descQrY + 14);
-    y = descQrY + 14 + lines.length * 4.5 + 6;
+    pdf.text(lines, margin, descQrY + 16);
+    y = descQrY + 16 + lines.length * 4.5 + 6;
   } else {
     y = descQrY + 6;
   }
@@ -456,70 +473,66 @@ export function renderModernBlueTemplate(ctx: FlyerRenderContext): void {
 
   y += 4;
 
-  // --- E. Secondary image ---
-  const secImgH = 30;
+  // --- E. Secondary image (left, 60mm tall) + Feature icons (right) ---
+  const secImgH = 60;
+  const secImgW = contentWidth * 0.55; // ~55% width for image
+  const featColX = margin + secImgW + 8;
+  const featColW = contentWidth - secImgW - 8;
+
   if (secondaryPhotoData) {
     const aspect = secondaryPhotoWidth / secondaryPhotoHeight;
-    let imgW = contentWidth;
+    let imgW = secImgW;
     let imgH = imgW / aspect;
     if (imgH > secImgH) {
       imgH = secImgH;
       imgW = imgH * aspect;
     }
-    const imgX = margin + (contentWidth - imgW) / 2;
     try {
-      pdf.addImage(secondaryPhotoData, "JPEG", imgX, y, imgW, imgH, undefined, "FAST");
+      pdf.addImage(secondaryPhotoData, "JPEG", margin, y, imgW, imgH, undefined, "FAST");
     } catch (error) {
       console.error("Failed to add secondary image:", error);
     }
-    y += imgH + 4;
   } else {
     // Placeholder for secondary image
     pdf.setFillColor(secondaryRGB.r, secondaryRGB.g, secondaryRGB.b);
-    pdf.rect(margin, y, contentWidth, secImgH, "F");
+    pdf.rect(margin, y, secImgW, secImgH, "F");
     pdf.setTextColor(150, 150, 150);
     pdf.setFont("helvetica", "normal");
     pdf.setFontSize(10);
-    pdf.text("Secondary Image", pageWidth / 2, y + secImgH / 2 - 2, { align: "center" });
+    pdf.text("Secondary Image", margin + secImgW / 2, y + secImgH / 2 - 4, { align: "center" });
     pdf.setFontSize(8);
-    pdf.text("Recommended: 1200 x 400 px", pageWidth / 2, y + secImgH / 2 + 4, { align: "center" });
-    y += secImgH + 4;
+    pdf.text("Recommended: 1200 x 800 px", margin + secImgW / 2, y + secImgH / 2 + 2, { align: "center" });
   }
 
-  // --- F. Features (2x2 grid, max 4) ---
-  if (event.key_features && event.key_features.length > 0) {
-    pdf.setTextColor(primaryRGB.r, primaryRGB.g, primaryRGB.b);
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(12);
-    pdf.text("Our Property Features", margin, y + 5);
-    y += 10;
+  // Feature icons column (right side, next to secondary image)
+  // "Property Features" header
+  pdf.setTextColor(primaryRGB.r, primaryRGB.g, primaryRGB.b);
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(11);
+  pdf.text("Property Features", featColX, y + 5);
 
+  // 5 feature icon rows: Bedroom, Bathroom, PV Solar, Garage
+  const featureIcons = [
+    { icon: "bed", label: "Bedroom", value: event.beds?.toString() || "--" },
+    { icon: "bath", label: "Bathroom", value: event.baths?.toString() || "--" },
+    { icon: "solar", label: "PV Solar", value: "Yes" },
+    { icon: "garage", label: "Garage", value: event.parking_notes || "--" },
+  ];
+
+  let fy = y + 13;
+  for (const feat of featureIcons) {
+    // Draw icon
+    drawHighlightIcon(pdf, feat.icon, featColX + 5, fy + 2, primaryRGB);
+
+    // Label + value
     pdf.setTextColor(0, 0, 0);
     pdf.setFont("helvetica", "normal");
     pdf.setFontSize(9);
-
-    const features = event.key_features.slice(0, 4);
-    const colW = contentWidth / 2 - 5;
-
-    for (let i = 0; i < features.length; i++) {
-      const col = i % 2;
-      const row = Math.floor(i / 2);
-      const fx = margin + col * (colW + 10);
-      const fy = y + row * 7;
-
-      // Diamond bullet
-      pdf.setFillColor(primaryRGB.r, primaryRGB.g, primaryRGB.b);
-      pdf.setFontSize(6);
-      pdf.text("\u25C6", fx, fy + 3.5);
-
-      pdf.setTextColor(0, 0, 0);
-      pdf.setFontSize(9);
-      pdf.text(features[i], fx + 5, fy + 3.5);
-    }
-
-    const rows = Math.ceil(features.length / 2);
-    y += rows * 7 + 4;
+    pdf.text(`${feat.label}: ${feat.value}`, featColX + 14, fy + 3.5);
+    fy += 11;
   }
+
+  y += secImgH + 4;
 
   // --- G. Blue footer bar with agent info ---
   const footerH = 22;
@@ -721,7 +734,7 @@ export function renderElegantWarmTemplate(ctx: FlyerRenderContext): void {
   const highlights = [
     { value: event.beds?.toString() || "--", label: "Beds", icon: "bed" },
     { value: event.baths?.toString() || "--", label: "Baths", icon: "bath" },
-    { value: event.parking_notes || "--", label: "Parking", icon: "car" },
+    { value: event.parking_notes || "--", label: "Parking", icon: "garage" },
     { value: event.sqft ? Number(event.sqft).toLocaleString() : "--", label: "Sqft", icon: "sqft" },
   ];
 
@@ -814,35 +827,55 @@ function drawHighlightIcon(
 
   switch (icon) {
     case "bed":
-      // Simple bed: rectangle with headboard
+      // Bed: mattress rectangle with headboard and pillow
       pdf.rect(cx - 5, cy - 1, 10, 4, "D");
-      pdf.rect(cx - 5, cy - 3, 3, 2, "F");
+      pdf.rect(cx - 5, cy - 3, 3, 2, "F"); // headboard
+      pdf.rect(cx - 4, cy - 0.5, 2.5, 1.5, "D"); // pillow
       break;
 
     case "bath":
-      // Simple bathtub: rectangle with rim
-      pdf.rect(cx - 5, cy - 1, 10, 3, "D");
-      pdf.line(cx - 5, cy - 1, cx - 5, cy - 3);
-      pdf.line(cx - 4, cy - 3, cx - 4, cy - 4);
+      // Bathtub with shower head
+      pdf.rect(cx - 5, cy - 1, 10, 4, "D"); // tub body
+      pdf.line(cx - 5, cy - 1, cx - 5, cy - 4); // shower pipe vertical
+      pdf.line(cx - 5, cy - 4, cx - 2, cy - 4); // shower pipe horizontal
       // Shower drops
-      pdf.circle(cx - 2, cy - 4, 0.5, "F");
-      pdf.circle(cx, cy - 4, 0.5, "F");
+      pdf.circle(cx - 4, cy - 2.5, 0.4, "F");
+      pdf.circle(cx - 3, cy - 2, 0.4, "F");
+      pdf.circle(cx - 2, cy - 2.5, 0.4, "F");
+      break;
+
+    case "solar":
+      // Sun with rays
+      pdf.circle(cx, cy, 2.2, "F"); // sun center
+      const rayLen = 1.8;
+      const r = 3;
+      for (let a = 0; a < 8; a++) {
+        const angle = (a * Math.PI) / 4;
+        const x1 = cx + r * Math.cos(angle);
+        const y1 = cy + r * Math.sin(angle);
+        const x2 = cx + (r + rayLen) * Math.cos(angle);
+        const y2 = cy + (r + rayLen) * Math.sin(angle);
+        pdf.line(x1, y1, x2, y2);
+      }
       break;
 
     case "car":
-      // Simple car: body rectangle + two wheels
-      pdf.rect(cx - 5, cy - 2, 10, 3, "D");
-      pdf.rect(cx - 3, cy - 4, 6, 2, "D");
-      pdf.circle(cx - 3, cy + 1.5, 1, "F");
-      pdf.circle(cx + 3, cy + 1.5, 1, "F");
+    case "garage":
+      // Sedan: body + roof + wheels
+      pdf.rect(cx - 5, cy - 1, 10, 3, "D"); // body
+      // Roof (trapezoid via lines)
+      pdf.line(cx - 3, cy - 1, cx - 2, cy - 3);
+      pdf.line(cx - 2, cy - 3, cx + 3, cy - 3);
+      pdf.line(cx + 3, cy - 3, cx + 4, cy - 1);
+      // Wheels
+      pdf.circle(cx - 3, cy + 2.5, 1.2, "F");
+      pdf.circle(cx + 3, cy + 2.5, 1.2, "F");
       break;
 
     case "sqft":
       // Square with measurement arrow
       pdf.rect(cx - 4, cy - 3, 8, 6, "D");
-      // Diagonal arrow
       pdf.line(cx - 2, cy + 1, cx + 2, cy - 2);
-      // Arrow head
       pdf.line(cx + 2, cy - 2, cx + 0.5, cy - 1.5);
       pdf.line(cx + 2, cy - 2, cx + 1.5, cy - 0.5);
       break;
