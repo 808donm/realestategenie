@@ -347,42 +347,53 @@ export function renderModernBlueTemplate(ctx: FlyerRenderContext): void {
   const contentWidth = pageWidth - margin * 2;
   let y = 0;
 
-  // --- A. Blue header bar (0–26mm) ---
-  const headerH = 26;
+  // --- A. Blue header bar ---
+  const headerH = 22;
   pdf.setFillColor(primaryRGB.r, primaryRGB.g, primaryRGB.b);
   pdf.rect(0, 0, pageWidth, headerH, "F");
 
+  // Layout: Logo | Company Name | Phone — evenly spaced in first half of header
   const halfW = pageWidth / 2;
-  const slotW = halfW / 3;
 
-  // Slot 1: Logo (left-aligned in first slot)
+  // Logo (left-aligned)
+  let logoEndX = margin;
   if (logoData) {
-    const logoH = 20;
-    const logoW = Math.min((logoWidth / logoHeight) * logoH, 38);
+    const logoH = 16;
+    const logoW = Math.min((logoWidth / logoHeight) * logoH, 36);
     try {
       pdf.addImage(logoData, "PNG", margin, (headerH - logoH) / 2, logoW, logoH, undefined, "FAST");
+      logoEndX = margin + logoW;
     } catch (error) {
       console.error("Failed to add logo:", error);
     }
   }
 
-  // Slot 2: Company/Agency name (centered in second slot)
+  // Evenly space company name and phone in the remaining first-half area
   pdf.setTextColor(255, 255, 255);
-  if (agent?.brokerage_name) {
+  const remainingW = halfW - logoEndX;
+
+  if (agent?.brokerage_name && agent?.phone_e164) {
+    // Both present: split remaining space into 2 equal zones
+    const zone = remainingW / 2;
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(24);
-    pdf.text(pdfSafe(agent.brokerage_name), slotW + slotW / 2, headerH / 2 + 3, { align: "center" });
-  }
+    pdf.text(pdfSafe(agent.brokerage_name), logoEndX + zone / 2, headerH / 2 + 3, { align: "center" });
 
-  // Slot 3: Phone (centered in third slot)
-  if (agent?.phone_e164) {
     pdf.setFont("helvetica", "normal");
     pdf.setFontSize(18);
-    pdf.text(agent.phone_e164, slotW * 2 + slotW / 2, headerH / 2 + 3, { align: "center" });
+    pdf.text(agent.phone_e164, logoEndX + zone + zone / 2, headerH / 2 + 3, { align: "center" });
+  } else if (agent?.brokerage_name) {
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(24);
+    pdf.text(pdfSafe(agent.brokerage_name), logoEndX + remainingW / 2, headerH / 2 + 3, { align: "center" });
+  } else if (agent?.phone_e164) {
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(18);
+    pdf.text(agent.phone_e164, logoEndX + remainingW / 2, headerH / 2 + 3, { align: "center" });
   }
 
   // --- B. "OPEN HOUSE" title + "Premium Real Estate" ---
-  y = 31;
+  y = 33;
   pdf.setTextColor(primaryRGB.r, primaryRGB.g, primaryRGB.b);
   pdf.setFont("times", "bold");
   pdf.setFontSize(28);
@@ -398,20 +409,15 @@ export function renderModernBlueTemplate(ctx: FlyerRenderContext): void {
   pdf.setLineWidth(0.8);
   pdf.line(pageWidth / 2 - 25, y + 13, pageWidth / 2 + 25, y + 13);
 
-  // --- C. Hero property image ---
+  // --- C. Hero property image (2:1 aspect to match Open House page) ---
   y = 46;
-  const heroMaxH = 107;
+  const heroAspect = 2; // 2:1 width:height to match the Open House page display
+  const heroImgW = contentWidth;
+  const heroImgH = heroImgW / heroAspect; // ~95mm on A4
   if (propertyPhotoData) {
-    const aspect = photoWidth / photoHeight;
-    let imgW = contentWidth;
-    let imgH = imgW / aspect;
-    if (imgH > heroMaxH) {
-      imgH = heroMaxH;
-      imgW = imgH * aspect;
-    }
-    const imgX = margin + (contentWidth - imgW) / 2;
+    const imgX = margin;
     try {
-      pdf.addImage(propertyPhotoData, "JPEG", imgX, y, imgW, imgH, undefined, "FAST");
+      pdf.addImage(propertyPhotoData, "JPEG", imgX, y, heroImgW, heroImgH, undefined, "FAST");
     } catch (error) {
       console.error("Failed to add hero image:", error);
     }
@@ -424,25 +430,25 @@ export function renderModernBlueTemplate(ctx: FlyerRenderContext): void {
       const textW = pdf.getTextWidth(priceText);
       const badgeW = textW + 12;
       const badgeH = 11;
-      const bx = imgX + imgW - badgeW - 3;
-      const by = y + imgH - badgeH - 3;
+      const bx = imgX + heroImgW - badgeW - 3;
+      const by = y + heroImgH - badgeH - 3;
       pdf.setFillColor(primaryRGB.r, primaryRGB.g, primaryRGB.b);
       pdf.roundedRect(bx, by, badgeW, badgeH, 2, 2, "F");
       pdf.setTextColor(255, 255, 255);
       pdf.text(priceText, bx + badgeW / 2, by + 7.5, { align: "center" });
     }
-    y += imgH + 2;
+    y += heroImgH + 2;
   } else {
     // Placeholder
     pdf.setFillColor(secondaryRGB.r, secondaryRGB.g, secondaryRGB.b);
-    pdf.rect(margin, y, contentWidth, heroMaxH, "F");
+    pdf.rect(margin, y, heroImgW, heroImgH, "F");
     pdf.setTextColor(150, 150, 150);
     pdf.setFont("helvetica", "normal");
     pdf.setFontSize(14);
-    pdf.text("Property Photo", pageWidth / 2, y + heroMaxH / 2, { align: "center" });
+    pdf.text("Property Photo", pageWidth / 2, y + heroImgH / 2, { align: "center" });
     pdf.setFontSize(9);
-    pdf.text("Recommended: 1200 x 600 px", pageWidth / 2, y + heroMaxH / 2 + 7, { align: "center" });
-    y += heroMaxH + 2;
+    pdf.text("Recommended: 1200 x 600 px", pageWidth / 2, y + heroImgH / 2 + 7, { align: "center" });
+    y += heroImgH + 2;
   }
 
   // --- D. Description + QR code (two-column) ---
@@ -497,8 +503,11 @@ export function renderModernBlueTemplate(ctx: FlyerRenderContext): void {
 
   y += 2;
 
-  // --- E. Secondary image (left, 60mm tall) + Feature icons (right) ---
-  const secImgH = 60;
+  // --- E. Secondary image (left) + Feature icons (right) ---
+  // Cap height so secondary section ends at least 10mm above footer
+  const footerTop = pageHeight - 22;
+  const maxSecH = footerTop - y - 10;
+  const secImgH = Math.min(60, maxSecH);
   const secImgW = contentWidth * 0.55; // ~55% width for image
   const featColX = margin + secImgW + 8;
   const featColW = contentWidth - secImgW - 8;
