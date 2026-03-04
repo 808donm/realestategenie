@@ -169,7 +169,7 @@ export async function GET(
     // Get agent details using admin client
     const { data: agent } = await admin
       .from("agents")
-      .select("display_name, phone_e164, email, license_number, brokerage_name, photo_url, headshot_url, company_logo_url")
+      .select("display_name, phone_e164, email, license_number, agency_name, photo_url, headshot_url, company_logo_url")
       .eq("id", event.agent_id)
       .single();
 

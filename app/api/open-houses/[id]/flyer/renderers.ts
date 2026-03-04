@@ -306,8 +306,8 @@ export function renderDefaultTemplate(ctx: FlyerRenderContext): void {
   let textY = yPos + 11;
   pdf.setFontSize(10);
   pdf.setFont("helvetica", "normal");
-  if (agent?.brokerage_name) {
-    pdf.text(agent.brokerage_name, textStartX, textY);
+  if (agent?.agency_name) {
+    pdf.text(agent.agency_name, textStartX, textY);
     textY += 5;
   }
   if (agent?.phone_e164) {
@@ -372,20 +372,20 @@ export function renderModernBlueTemplate(ctx: FlyerRenderContext): void {
   pdf.setTextColor(255, 255, 255);
   const remainingW = twoThirdsW - logoEndX;
 
-  if (agent?.brokerage_name && agent?.phone_e164) {
+  if (agent?.agency_name && agent?.phone_e164) {
     // Both present: split remaining space into 2 equal zones
     const zone = remainingW / 2;
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(14);
-    pdf.text(pdfSafe(agent.brokerage_name), logoEndX + zone / 2, headerH / 2 + 2, { align: "center" });
+    pdf.text(pdfSafe(agent.agency_name), logoEndX + zone / 2, headerH / 2 + 2, { align: "center" });
 
     pdf.setFont("helvetica", "normal");
     pdf.setFontSize(12);
     pdf.text(agent.phone_e164, logoEndX + zone + zone / 2, headerH / 2 + 2, { align: "center" });
-  } else if (agent?.brokerage_name) {
+  } else if (agent?.agency_name) {
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(14);
-    pdf.text(pdfSafe(agent.brokerage_name), logoEndX + remainingW / 2, headerH / 2 + 2, { align: "center" });
+    pdf.text(pdfSafe(agent.agency_name), logoEndX + remainingW / 2, headerH / 2 + 2, { align: "center" });
   } else if (agent?.phone_e164) {
     pdf.setFont("helvetica", "normal");
     pdf.setFontSize(12);
