@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { contactId, property, mode = "attach" } = body;
+    const { contactId, property, mode = "attach", customMessage } = body;
 
     if (!contactId || !property) {
       return NextResponse.json(
@@ -58,9 +58,14 @@ export async function POST(request: NextRequest) {
 
     if (mode === "email") {
       // Send email to the contact via GHL
+      const escapedMessage = customMessage
+        ? customMessage.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>")
+        : "";
+
       const emailHtml = `
         <div style="font-family: Arial, sans-serif; max-width: 600px;">
           <h2 style="color: #1f2937;">Property Listing for You</h2>
+          ${escapedMessage ? `<p style="font-size: 15px; color: #374151; line-height: 1.6; margin: 0 0 16px;">${escapedMessage}</p>` : ""}
           <div style="border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; margin: 16px 0;">
             <div style="padding: 20px;">
               <h3 style="margin: 0 0 8px; color: #111827;">${fullAddress || "Property Listing"}</h3>

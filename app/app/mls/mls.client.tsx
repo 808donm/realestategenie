@@ -289,6 +289,7 @@ export default function MLSClient() {
   const [sendingContactId, setSendingContactId] = useState("");
   const [sendMode, setSendMode] = useState<"email" | "attach">("attach");
   const [sendResult, setSendResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [customMessage, setCustomMessage] = useState("");
 
   // Auto-fetch ATTOM data when a property is selected
   useEffect(() => {
@@ -546,6 +547,7 @@ export default function MLSClient() {
     setSendResult(null);
     setContactSearch("");
     setContacts([]);
+    setCustomMessage("");
   };
 
   // Contact search error
@@ -598,6 +600,7 @@ export default function MLSClient() {
           contactId,
           property: sendProperty,
           mode: sendMode,
+          customMessage: customMessage.trim() || undefined,
         }),
       });
 
@@ -2726,6 +2729,31 @@ export default function MLSClient() {
                 MLS# {sendProperty.ListingId || sendProperty.ListingKey}
               </div>
             </div>
+
+            {/* Custom email message */}
+            {sendMode === "email" && (
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>
+                  Personal Message (optional)
+                </label>
+                <textarea
+                  value={customMessage}
+                  onChange={(e) => setCustomMessage(e.target.value)}
+                  placeholder="Hi! I thought you might be interested in this property..."
+                  rows={4}
+                  style={{
+                    width: "100%",
+                    padding: "10px 14px",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: 8,
+                    fontSize: 14,
+                    resize: "vertical",
+                    fontFamily: "inherit",
+                    lineHeight: 1.5,
+                  }}
+                />
+              </div>
+            )}
 
             {/* Success/Error Result */}
             {sendResult && (
