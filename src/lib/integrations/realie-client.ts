@@ -17,85 +17,174 @@ const DEFAULT_BASE_URL = "https://api.realie.ai/v1";
 // ATTOM-compatible shape so the rest of the app doesn't need to change.
 
 export interface RealieParcel {
-  parcel_id?: string;
-  apn?: string;
-  fips?: string;
-  address?: {
-    full?: string;
-    street?: string;
-    city?: string;
-    state?: string;
-    zip?: string;
-    zip4?: string;
-  };
-  location?: {
-    latitude?: number;
-    longitude?: number;
-  };
-  owner?: {
-    name?: string;
-    secondary_name?: string;
-    mailing_address?: string;
-    owner_occupied?: boolean;
-    corporate?: boolean;
-  };
-  property?: {
-    type?: string;
-    sub_type?: string;
-    land_use?: string;
-    year_built?: number;
-    bedrooms?: number;
-    bathrooms?: number;
-    bathrooms_half?: number;
-    living_area_sqft?: number;
-    lot_size_sqft?: number;
-    lot_size_acres?: number;
-    stories?: number;
-    construction_type?: string;
-    roof_type?: string;
-    pool?: boolean;
-  };
-  tax?: {
-    assessed_total?: number;
-    assessed_land?: number;
-    assessed_improvement?: number;
-    market_total?: number;
-    market_land?: number;
-    market_improvement?: number;
-    tax_amount?: number;
-    tax_year?: number;
-  };
-  valuation?: {
-    estimated_value?: number;
-    value_low?: number;
-    value_high?: number;
-    confidence_score?: number;
-    last_updated?: string;
-  };
-  sale?: {
-    last_sale_amount?: number;
-    last_sale_date?: string;
-    price_per_sqft?: number;
-  };
-  mortgage?: {
-    lender_name?: string;
-    amount?: number;
-    date?: string;
-    due_date?: string;
-    loan_type?: string;
-    interest_rate_type?: string;
-  };
-  sales_history?: Array<{
-    sale_amount?: number;
-    sale_date?: string;
-    buyer_name?: string;
-    seller_name?: string;
-    document_type?: string;
-  }>;
-  boundary?: {
+  _id?: string;
+  siteId?: string;
+  parcelId?: string;
+  fipsState?: string;
+  fipsCounty?: string;
+  county?: string;
+
+  // Address fields (flat)
+  address?: string;
+  addressFull?: string;
+  addressFormal?: string;
+  addressFullUSPS?: string;
+  addressRaw?: string;
+  streetNumber?: string;
+  street?: string;
+  streetName?: string;
+  streetType?: string;
+  streetDirectionPrefix?: string;
+  streetDirectionSuffix?: string;
+  unitNumber?: string;
+  city?: string;
+  cityUSPS?: string;
+  state?: string;
+  zipCode?: string;
+  zipCodePlusFour?: string;
+
+  // Location
+  latitude?: number;
+  longitude?: number;
+  location?: { type?: string; coordinates?: number[] };
+
+  // Owner
+  ownerName?: string;
+  ownerAddressLine1?: string;
+  ownerAddressFull?: string;
+  ownerCity?: string;
+  ownerState?: string;
+  ownerZipCode?: string;
+  ownerZipCodePlusFour?: string;
+  ownerResCount?: number;
+  ownerComCount?: number;
+  ownerParcelCount?: number;
+  ownerOriginCode?: string;
+  ownershipStartDate?: string;
+
+  // Property characteristics
+  residential?: boolean;
+  condo?: boolean;
+  useCode?: string;
+  zoningCode?: string;
+  yearBuilt?: number;
+  totalBedrooms?: number;
+  totalBathrooms?: number;
+  buildingArea?: number;
+  landArea?: number;
+  acres?: number;
+  stories?: number;
+  buildingCount?: number;
+  constructionType?: string;
+  wallType?: string;
+  roofType?: string;
+  roofStyle?: string;
+  floorType?: string;
+  foundationType?: string;
+  basementType?: string;
+  garageCount?: number;
+  garageType?: string;
+  pool?: boolean;
+  poolCode?: string;
+  fireplace?: boolean | null;
+  fireplaceCount?: number | null;
+  garage?: boolean;
+
+  // Assessment / Tax
+  totalAssessedValue?: number;
+  assessedBuildingValue?: number;
+  assessedLandValue?: number;
+  totalBuildingValue?: number;
+  totalLandValue?: number;
+  totalMarketValue?: number;
+  marketValueYear?: number;
+  assessedYear?: number;
+  taxValue?: number;
+  taxYear?: number;
+  taxRateCodeArea?: string;
+
+  // Valuation (AVM)
+  modelValue?: number;
+  modelValueMin?: number;
+  modelValueMax?: number;
+
+  // Sale / Transfer
+  transferPrice?: number;
+  transferDate?: string;
+  transferDateObject?: string;
+  recordingDate?: string;
+  transferDocNum?: string;
+  transferDocType?: string;
+  buyerIDCode?: string;
+  buyerVestingCode?: string;
+
+  // Mortgage / Liens
+  lenderName?: string;
+  totalLienCount?: number;
+  totalLienBalance?: number;
+  totalFinancingHistCount?: number;
+  LTVCurrentEstCombined?: number;
+  LTVCurrentEstRange?: number;
+  equityCurrentEstBal?: number;
+  equityCurrentEstRange?: number;
+  LTVPurchase?: number;
+
+  // Foreclosure
+  forecloseCode?: string | null;
+  forecloseRecordDate?: string | null;
+  forecloseFileDate?: string | null;
+  forecloseCaseNum?: string | null;
+  auctionDate?: string | null;
+
+  // Legal description
+  legalDesc?: string;
+  subdivision?: string | null;
+  siteCensusTract?: string;
+  bookNum?: string | null;
+  pageNum?: string | null;
+  blockNum?: string | null;
+  lotNum?: string | null;
+  lotCode?: string | null;
+  phaseNum?: string | null;
+  tractNum?: string | null;
+  secTwnRng?: string | null;
+  jurisdiction?: string | null;
+  districtNum?: string | null;
+  citySection?: string | null;
+  landLot?: string | null;
+  neighborhood?: string;
+  depthSize?: number;
+  frontage?: number;
+
+  // Geometry
+  geometry?: {
     type?: string;
     coordinates?: any;
   };
+
+  // Historical data
+  assessments?: Array<{
+    assessedYear?: number;
+    totalAssessedValue?: number;
+    totalBuildingValue?: number;
+    totalLandValue?: number;
+    totalMarketValue?: number;
+    marketValueYear?: number;
+    taxValue?: number;
+    taxYear?: number;
+  }>;
+  transfers?: Array<{
+    transferPrice?: number;
+    transferDate?: string;
+    buyerName?: string;
+    sellerName?: string;
+    documentType?: string;
+  }>;
+
+  // Composite ID fields
+  state_parcelId?: string;
+  state_parcelIdSTD?: string;
+  countyUSPS?: string;
 }
 
 export interface RealieSearchParams {
@@ -136,13 +225,11 @@ export interface RealieSearchParams {
 }
 
 export interface RealieApiResponse {
-  success: boolean;
-  data: RealieParcel[];
-  pagination?: {
-    page: number;
+  properties: RealieParcel[];
+  metadata?: {
     limit: number;
-    total: number;
-    total_pages: number;
+    offset: number;
+    count: number;
   };
 }
 
@@ -151,105 +238,121 @@ export interface RealieApiResponse {
 // component, we map Realie's response into the same structure.
 
 export function mapRealieToAttomShape(parcel: RealieParcel): any {
+  // Parse owner names — Realie returns "LAST, FIRST; LAST2, FIRST2" in ownerName
+  const ownerNames = parcel.ownerName?.split(";").map((n) => n.trim()) || [];
+  const owner1 = ownerNames[0];
+  const owner2 = ownerNames[1];
+
+  // Build FIPS from state + county codes
+  const fips = parcel.fipsState && parcel.fipsCounty
+    ? `${parcel.fipsState}${parcel.fipsCounty}`
+    : undefined;
+
+  // Determine owner-occupied from address comparison
+  const ownerOccupied = parcel.ownerAddressLine1 && parcel.address
+    ? parcel.ownerAddressLine1 === parcel.address
+    : undefined;
+
+  // Calculate price per sqft from transfer
+  const pricePerSqft = parcel.transferPrice && parcel.buildingArea
+    ? Math.round(parcel.transferPrice / parcel.buildingArea)
+    : undefined;
+
+  // Format transfer date from "20171102" to "2017-11-02"
+  const transferDate = parcel.transferDate?.length === 8
+    ? `${parcel.transferDate.slice(0, 4)}-${parcel.transferDate.slice(4, 6)}-${parcel.transferDate.slice(6, 8)}`
+    : parcel.transferDateObject || parcel.transferDate;
+
   return {
     identifier: {
-      apn: parcel.apn,
-      fips: parcel.fips,
-      obPropId: parcel.parcel_id,
+      apn: parcel.parcelId,
+      fips,
+      obPropId: parcel._id || parcel.siteId,
     },
     address: {
-      oneLine: parcel.address?.full,
-      line1: parcel.address?.street,
-      locality: parcel.address?.city,
-      countrySubd: parcel.address?.state,
-      postal1: parcel.address?.zip,
-      postal2: parcel.address?.zip4,
+      oneLine: parcel.addressFullUSPS || parcel.addressFull || `${parcel.address}, ${parcel.city}, ${parcel.state} ${parcel.zipCode}`,
+      line1: parcel.address,
+      locality: parcel.cityUSPS || parcel.city,
+      countrySubd: parcel.state,
+      postal1: parcel.zipCode,
+      postal2: parcel.zipCodePlusFour?.split("-")[1],
     },
     location: {
-      latitude: parcel.location?.latitude ? String(parcel.location.latitude) : undefined,
-      longitude: parcel.location?.longitude ? String(parcel.location.longitude) : undefined,
+      latitude: parcel.latitude ? String(parcel.latitude) : undefined,
+      longitude: parcel.longitude ? String(parcel.longitude) : undefined,
     },
     owner: {
-      owner1: parcel.owner?.name ? { fullName: parcel.owner.name } : undefined,
-      owner2: parcel.owner?.secondary_name ? { fullName: parcel.owner.secondary_name } : undefined,
-      corporateIndicator: parcel.owner?.corporate ? "Y" : "N",
-      absenteeOwnerStatus: parcel.owner?.owner_occupied === false ? "A" : "O",
-      mailingAddressOneLine: parcel.owner?.mailing_address,
-      ownerOccupied: parcel.owner?.owner_occupied ? "Y" : "N",
+      owner1: owner1 ? { fullName: owner1 } : undefined,
+      owner2: owner2 ? { fullName: owner2 } : undefined,
+      corporateIndicator: parcel.ownerComCount && parcel.ownerComCount > 0 ? "Y" : "N",
+      absenteeOwnerStatus: ownerOccupied === false ? "A" : ownerOccupied === true ? "O" : undefined,
+      mailingAddressOneLine: parcel.ownerAddressFull,
+      ownerOccupied: ownerOccupied === true ? "Y" : ownerOccupied === false ? "N" : undefined,
     },
     building: {
       size: {
-        livingSize: parcel.property?.living_area_sqft,
-        universalSize: parcel.property?.living_area_sqft,
+        livingSize: parcel.buildingArea,
+        universalSize: parcel.buildingArea,
       },
       rooms: {
-        beds: parcel.property?.bedrooms,
-        bathsFull: parcel.property?.bathrooms,
-        bathsHalf: parcel.property?.bathrooms_half,
-        bathsTotal: (parcel.property?.bathrooms || 0) + (parcel.property?.bathrooms_half || 0) * 0.5 || undefined,
+        beds: parcel.totalBedrooms,
+        bathsFull: parcel.totalBathrooms,
+        bathsTotal: parcel.totalBathrooms,
       },
       summary: {
-        yearBuilt: parcel.property?.year_built,
-        levels: parcel.property?.stories,
-        archStyle: undefined,
-        quality: undefined,
+        yearBuilt: parcel.yearBuilt,
+        levels: parcel.stories,
       },
       construction: {
-        constructionType: parcel.property?.construction_type,
-        roofCover: parcel.property?.roof_type,
+        constructionType: parcel.constructionType,
+        roofCover: parcel.roofType,
       },
     },
     lot: {
-      lotSize1: parcel.property?.lot_size_acres,
-      lotSize2: parcel.property?.lot_size_sqft,
+      lotSize1: parcel.acres,
+      lotSize2: parcel.landArea,
     },
     summary: {
-      propType: parcel.property?.type,
-      propSubType: parcel.property?.sub_type,
-      propLandUse: parcel.property?.land_use,
-      yearBuilt: parcel.property?.year_built,
+      propType: parcel.residential ? "SFR" : parcel.condo ? "CONDO" : undefined,
+      propLandUse: parcel.useCode,
+      yearBuilt: parcel.yearBuilt,
     },
     assessment: {
       assessed: {
-        assdTtlValue: parcel.tax?.assessed_total,
-        assdImprValue: parcel.tax?.assessed_improvement,
-        assdLandValue: parcel.tax?.assessed_land,
+        assdTtlValue: parcel.totalAssessedValue,
+        assdImprValue: parcel.assessedBuildingValue || parcel.totalBuildingValue,
+        assdLandValue: parcel.assessedLandValue || parcel.totalLandValue,
       },
       market: {
-        mktTtlValue: parcel.tax?.market_total,
-        mktImprValue: parcel.tax?.market_improvement,
-        mktLandValue: parcel.tax?.market_land,
+        mktTtlValue: parcel.totalMarketValue,
+        mktImprValue: parcel.totalBuildingValue,
+        mktLandValue: parcel.totalLandValue,
       },
       tax: {
-        taxAmt: parcel.tax?.tax_amount,
-        taxYear: parcel.tax?.tax_year,
+        taxAmt: parcel.taxValue,
+        taxYear: parcel.taxYear,
       },
     },
-    avm: parcel.valuation?.estimated_value ? {
+    avm: parcel.modelValue ? {
       amount: {
-        value: parcel.valuation.estimated_value,
-        high: parcel.valuation.value_high,
-        low: parcel.valuation.value_low,
-        scr: parcel.valuation.confidence_score,
+        value: parcel.modelValue,
+        high: parcel.modelValueMax,
+        low: parcel.modelValueMin,
       },
-      eventDate: parcel.valuation.last_updated,
     } : undefined,
-    sale: parcel.sale?.last_sale_amount ? {
+    sale: parcel.transferPrice ? {
       amount: {
-        saleAmt: parcel.sale.last_sale_amount,
-        saleTransDate: parcel.sale.last_sale_date,
+        saleAmt: parcel.transferPrice,
+        saleTransDate: transferDate,
+        saleRecDate: parcel.recordingDate,
       },
       calculation: {
-        pricePerSizeUnit: parcel.sale.price_per_sqft,
+        pricePerSizeUnit: pricePerSqft,
       },
     } : undefined,
-    mortgage: parcel.mortgage?.amount ? {
-      amount: parcel.mortgage.amount,
-      lender: parcel.mortgage.lender_name ? { fullName: parcel.mortgage.lender_name } : undefined,
-      date: parcel.mortgage.date,
-      dueDate: parcel.mortgage.due_date,
-      loanType: parcel.mortgage.loan_type,
-      interestRateType: parcel.mortgage.interest_rate_type,
+    mortgage: parcel.totalLienBalance ? {
+      amount: parcel.totalLienBalance,
+      lender: parcel.lenderName ? { fullName: parcel.lenderName } : undefined,
     } : undefined,
     // Mark source so we know this came from Realie
     _source: "realie",
@@ -416,7 +519,7 @@ export class RealieClient {
         limit: 1,
       });
 
-      if (result?.success || result?.data) {
+      if (result?.properties && Array.isArray(result.properties)) {
         return {
           success: true,
           message: "Realie.ai API connection successful",

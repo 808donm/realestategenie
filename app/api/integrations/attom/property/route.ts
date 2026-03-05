@@ -139,13 +139,13 @@ async function fetchFromRealie(
       return null;
     }
 
-    if (!response?.data || response.data.length === 0) {
+    if (!response?.properties || response.properties.length === 0) {
       console.log(`[Realie] No results for ${endpoint}`);
       return null;
     }
 
     // Map Realie parcels to ATTOM-compatible property shape
-    const properties = response.data.map(mapRealieToAttomShape);
+    const properties = response.properties.map(mapRealieToAttomShape);
 
     console.log(`[Realie] Got ${properties.length} properties for ${endpoint}`);
 
@@ -154,9 +154,9 @@ async function fetchFromRealie(
         version: "realie-v1",
         code: 0,
         msg: "Success",
-        total: response.pagination?.total || properties.length,
-        page: response.pagination?.page || 1,
-        pagesize: response.pagination?.limit || properties.length,
+        total: response.metadata?.count || properties.length,
+        page: response.metadata?.offset ? Math.floor(response.metadata.offset / (response.metadata.limit || 25)) + 1 : 1,
+        pagesize: response.metadata?.limit || properties.length,
       },
       property: properties,
     };
