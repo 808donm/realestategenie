@@ -296,6 +296,17 @@ export class RealieClient {
         `[Realie] API request FAILED (${response.status}) for ${url}:`,
         errorText
       );
+
+      // Detect Vercel deployment errors (service is down/undeployed)
+      if (
+        response.status === 404 &&
+        errorText.includes("deployment could not be found")
+      ) {
+        throw new Error(
+          "Realie.ai service is currently unavailable (Vercel deployment not found). Property data will fall back to ATTOM."
+        );
+      }
+
       throw new Error(
         `Realie API error: ${response.status} - ${errorText}`
       );
@@ -397,7 +408,7 @@ export class RealieClient {
   /**
    * Test the API connection
    */
-  async testConnection(): Promise<{ success: boolean; message: string }> {
+  async testConnection(): Promise<{ success: boolean; message: string; serviceDown?: boolean }> {
     try {
       // Use a known address to test
       const result = await this.request<any>("/parcels/search", {
@@ -417,9 +428,16 @@ export class RealieClient {
         message: "Unexpected response from Realie.ai API",
       };
     } catch (error: any) {
+      const msg = error.message || "Failed to connect to Realie.ai API";
+      const isServiceDown = msg.includes("service is currently unavailable") ||
+        msg.includes("deployment could not be found");
+
       return {
         success: false,
-        message: error.message || "Failed to connect to Realie.ai API",
+        serviceDown: isServiceDown,
+        message: isServiceDown
+          ? "Realie.ai service is temporarily unavailable. API key saved — it will activate automatically when the service returns."
+          : msg,
       };
     }
   }

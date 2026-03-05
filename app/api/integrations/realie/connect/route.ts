@@ -46,18 +46,24 @@ export async function POST(request: NextRequest) {
     const client = new RealieClient({ apiKey: api_key.trim() });
     const testResult = await client.testConnection();
 
-    if (!testResult.success) {
+    // If the service itself is down (Vercel deployment missing), still save the
+    // API key so it activates automatically when Realie comes back online.
+    // Only reject if it's an actual auth/key error.
+    if (!testResult.success && !testResult.serviceDown) {
       return NextResponse.json(
         { error: testResult.message || "Invalid API key or connection failed" },
         { status: 400 }
       );
     }
 
+    const serviceDown = testResult.serviceDown === true;
+
     // Store as platform-level integration
     const config = {
       api_key: api_key.trim(),
       connected_at: new Date().toISOString(),
       configured_by: userData.user.id,
+      ...(serviceDown && { saved_while_service_down: true }),
     };
 
     try {
@@ -81,7 +87,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: "Realie.ai API connected successfully",
+      message: serviceDown
+        ? "API key saved. Realie.ai service is temporarily unavailable — it will activate automatically when the service returns. ATTOM handles all property data in the meantime."
+        : "Realie.ai API connected successfully",
+      serviceDown,
     });
   } catch (error) {
     console.error("Error in Realie connect:", error);

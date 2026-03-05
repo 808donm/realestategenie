@@ -52,8 +52,10 @@ export default function RealieIntegrationCard({
       const data = await response.json();
 
       if (response.ok) {
-        toast.success("Realie.ai API connected!", {
-          description: "Property data from county records is now your primary source",
+        toast.success(data.serviceDown ? "Realie.ai API key saved" : "Realie.ai API connected!", {
+          description: data.serviceDown
+            ? "Service is temporarily unavailable — will activate automatically when it returns. ATTOM handles property data in the meantime."
+            : "Property data from county records is now your primary source",
         });
         setShowDialog(false);
         setApiKey("");
