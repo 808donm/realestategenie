@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
-import { getDirectDb } from "@/lib/supabase/db";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { RealieClient } from "@/lib/integrations/realie-client";
 
 /**
@@ -66,18 +66,41 @@ export async function POST(request: NextRequest) {
       ...(serviceDown && { saved_while_service_down: true }),
     };
 
-    try {
-      const sql = getDirectDb();
-      await sql`
-        INSERT INTO integrations (agent_id, provider, config, status, last_sync_at)
-        VALUES (${userData.user.id}, 'realie', ${sql.json(config)}, 'connected', NOW())
-        ON CONFLICT (agent_id, provider)
-        DO UPDATE SET
-          config = EXCLUDED.config,
-          status = EXCLUDED.status,
-          last_sync_at = EXCLUDED.last_sync_at
-      `;
-    } catch (dbError: any) {
+    // Check if an integration row already exists for this admin + provider
+    const { data: existing } = await supabaseAdmin
+      .from("integrations")
+      .select("id")
+      .eq("agent_id", userData.user.id)
+      .eq("provider", "realie")
+      .maybeSingle();
+
+    let dbError: any = null;
+
+    if (existing) {
+      const { error } = await supabaseAdmin
+        .from("integrations")
+        .update({
+          config,
+          status: "connected",
+          last_sync_at: new Date().toISOString(),
+          last_error: null,
+        })
+        .eq("id", existing.id);
+      dbError = error;
+    } else {
+      const { error } = await supabaseAdmin
+        .from("integrations")
+        .insert({
+          agent_id: userData.user.id,
+          provider: "realie",
+          config,
+          status: "connected",
+          last_sync_at: new Date().toISOString(),
+        });
+      dbError = error;
+    }
+
+    if (dbError) {
       console.error("Error saving Realie integration:", dbError);
       return NextResponse.json(
         { error: "Failed to save integration: " + (dbError.message || "Database error") },

@@ -70,6 +70,18 @@ export async function GET(request: NextRequest) {
     const testResult = await client.testConnection();
 
     if (!testResult.success) {
+      // If the service is just temporarily down (network/deployment issue),
+      // keep the status as "connected" so getRealieClient() still finds it
+      // and can retry when the service comes back. Only mark as "error" for
+      // actual auth/key problems.
+      if (testResult.serviceDown) {
+        return NextResponse.json({
+          connected: true,
+          serviceDown: true,
+          message: testResult.message,
+        });
+      }
+
       await supabaseAdmin
         .from("integrations")
         .update({ status: "error", last_error: testResult.message })

@@ -429,8 +429,30 @@ export class RealieClient {
       };
     } catch (error: any) {
       const msg = error.message || "Failed to connect to Realie.ai API";
-      const isServiceDown = msg.includes("service is currently unavailable") ||
-        msg.includes("deployment could not be found");
+
+      // Detect service-down conditions: Vercel deployment errors AND general
+      // network failures (DNS, timeout, connection refused, SSL, etc.).
+      // Only actual auth errors (401/403 with clear API messages) should
+      // prevent saving the key — network issues are transient.
+      const isServiceDown =
+        msg.includes("service is currently unavailable") ||
+        msg.includes("deployment could not be found") ||
+        msg.includes("fetch failed") ||
+        msg.includes("ENOTFOUND") ||
+        msg.includes("ECONNREFUSED") ||
+        msg.includes("ECONNRESET") ||
+        msg.includes("ETIMEDOUT") ||
+        msg.includes("EHOSTUNREACH") ||
+        msg.includes("socket hang up") ||
+        msg.includes("network") ||
+        msg.includes("abort") ||
+        msg.includes("SSL") ||
+        msg.includes("certificate") ||
+        msg.includes("getaddrinfo") ||
+        msg.includes("connect ECONNREFUSED") ||
+        // Catch-all: if the error doesn't look like an explicit API auth rejection,
+        // treat it as a transient failure so the key can still be saved
+        (!msg.includes("401") && !msg.includes("403") && !msg.includes("Invalid API") && !msg.includes("Unauthorized"));
 
       return {
         success: false,
