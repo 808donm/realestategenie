@@ -8,6 +8,7 @@ import PayPalIntegrationCard from "./paypal-card";
 import StripeIntegrationCard from "./stripe-card";
 import TrestleIntegrationCard from "./trestle-card";
 import AttomIntegrationCard from "./attom-card";
+import RealieIntegrationCard from "./realie-card";
 import FederalDataIntegrationCard from "./federal-data-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import IntegrationsNotifications from "./notifications";
@@ -52,6 +53,15 @@ export default async function IntegrationsPage() {
     .limit(1);
 
   const attomIntegration = attomIntegrations?.[0] || null;
+
+  // Realie.ai is platform-wide — find any connected Realie integration across all agents
+  const { data: realieIntegrations } = await supabaseAdmin
+    .from("integrations")
+    .select("*")
+    .eq("provider", "realie")
+    .limit(1);
+
+  const realieIntegration = realieIntegrations?.[0] || null;
 
   // Federal Data is platform-wide — find any connected integration across all agents
   const { data: federalIntegrations } = await supabaseAdmin
@@ -115,6 +125,7 @@ export default async function IntegrationsPage() {
       {/* MLS & Property Data Integrations */}
       <div className="grid gap-6 md:grid-cols-2">
         <TrestleIntegrationCard integration={trestleIntegration || null} />
+        <RealieIntegrationCard integration={realieIntegration} isPlatformAdmin={isPlatformAdmin} />
         <AttomIntegrationCard integration={attomIntegration} isPlatformAdmin={isPlatformAdmin} />
         <FederalDataIntegrationCard integration={federalIntegration} isPlatformAdmin={isPlatformAdmin} />
       </div>

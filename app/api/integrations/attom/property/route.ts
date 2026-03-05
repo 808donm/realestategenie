@@ -3,40 +3,445 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { AttomClient, createAttomClient, normalizeAttomProperty } from "@/lib/integrations/attom-client";
 import {
-  buildCacheKey, cacheGet, cacheSet,
-  diskRead, diskWrite,
-} from "@/lib/integrations/attom-cache";
+  RealieClient, createRealieClient,
+  mapAttomParamsToRealie, mapRealieToAttomShape,
+} from "@/lib/integrations/realie-client";
+import {
+  buildPropertyCacheKey, propertyCacheGet, propertyCacheSet,
+  propertyDiskRead, propertyDiskWrite,
+  mergePropertyData,
+} from "@/lib/integrations/property-data-cache";
+
+// ── ATTOM-only endpoints (not available in Realie) ─────────────────────────
+const ATTOM_ONLY_ENDPOINTS = new Set([
+  "rentalavm", "homeequity", "comparables",
+  "neighborhood", "community", "poi", "poicategories",
+  "schools", "schooldistrict", "schoolprofile",
+  "hazardrisk", "climaterisk", "riskprofile",
+  "salestrend", "transactionsalestrend", "ibuyer", "marketanalytics",
+  "preforeclosure", "recorder", "allevents",
+  "schoolboundary", "neighborhoodboundary",
+  "buildingpermits", "detailwithschools",
+]);
+
+// ── Realie-capable endpoints (property data we can get from Realie) ────────
+const REALIE_CAPABLE_ENDPOINTS = new Set([
+  "expanded", "detail", "detailowner", "detailmortgage",
+  "detailmortgageowner", "profile", "snapshot", "id",
+  "assessment", "assessmentsnapshot", "assessmenthistory",
+  "sale", "salesnapshot", "saleshistory", "saleshistorybasic",
+  "saleshistoryexpanded", "saleshistorysnapshot",
+  "avm", "attomavm", "avmhistory",
+  "parcelboundary",
+]);
 
 /**
  * Helper: get a working ATTOM client (from DB config or env var)
  */
-async function getAttomClient(): Promise<AttomClient> {
-  // Try DB-stored integration first
-  const { data: integration } = await supabaseAdmin
-    .from("integrations")
-    .select("config")
-    .eq("provider", "attom")
-    .eq("status", "connected")
-    .limit(1)
-    .maybeSingle();
+async function getAttomClient(): Promise<AttomClient | null> {
+  try {
+    // Try DB-stored integration first
+    const { data: integration } = await supabaseAdmin
+      .from("integrations")
+      .select("config")
+      .eq("provider", "attom")
+      .eq("status", "connected")
+      .limit(1)
+      .maybeSingle();
 
-  if (integration?.config) {
-    const config =
-      typeof integration.config === "string"
-        ? JSON.parse(integration.config)
-        : integration.config;
+    if (integration?.config) {
+      const config =
+        typeof integration.config === "string"
+          ? JSON.parse(integration.config)
+          : integration.config;
 
-    if (config.api_key) {
-      return new AttomClient({ apiKey: config.api_key });
+      if (config.api_key) {
+        return new AttomClient({ apiKey: config.api_key });
+      }
     }
-  }
 
-  // Fall back to env var
-  return createAttomClient();
+    // Fall back to env var
+    return createAttomClient();
+  } catch {
+    return null;
+  }
 }
 
 /**
- * GET - Search properties / get property detail from ATTOM API
+ * Helper: get a working Realie client (from DB config or env var)
+ */
+async function getRealieClient(): Promise<RealieClient | null> {
+  try {
+    // Try DB-stored integration first
+    const { data: integration } = await supabaseAdmin
+      .from("integrations")
+      .select("config")
+      .eq("provider", "realie")
+      .eq("status", "connected")
+      .limit(1)
+      .maybeSingle();
+
+    if (integration?.config) {
+      const config =
+        typeof integration.config === "string"
+          ? JSON.parse(integration.config)
+          : integration.config;
+
+      if (config.api_key) {
+        return new RealieClient({ apiKey: config.api_key });
+      }
+    }
+
+    // Fall back to env var
+    return createRealieClient();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Fetch property data from Realie, mapped to ATTOM-compatible shape.
+ * Returns null if Realie is unavailable or doesn't support this query.
+ */
+async function fetchFromRealie(
+  endpoint: string,
+  params: Record<string, any>
+): Promise<any | null> {
+  const realieParams = mapAttomParamsToRealie(endpoint, params);
+  if (!realieParams) return null;
+
+  const client = await getRealieClient();
+  if (!client) return null;
+
+  try {
+    let response;
+
+    if (realieParams.address) {
+      response = await client.searchByAddress({
+        address: realieParams.address,
+        page: realieParams.page,
+        limit: realieParams.limit,
+      });
+    } else if (realieParams.zip) {
+      response = await client.searchByZip(realieParams);
+    } else if (realieParams.latitude && realieParams.longitude) {
+      response = await client.searchByRadius({
+        latitude: realieParams.latitude,
+        longitude: realieParams.longitude,
+        radius: realieParams.radius || 1,
+        page: realieParams.page,
+        limit: realieParams.limit,
+        property_type: realieParams.property_type,
+      });
+    } else if (realieParams.apn && realieParams.fips) {
+      response = await client.getByApn(realieParams.apn, realieParams.fips);
+    } else {
+      return null;
+    }
+
+    if (!response?.data || response.data.length === 0) {
+      console.log(`[Realie] No results for ${endpoint}`);
+      return null;
+    }
+
+    // Map Realie parcels to ATTOM-compatible property shape
+    const properties = response.data.map(mapRealieToAttomShape);
+
+    console.log(`[Realie] Got ${properties.length} properties for ${endpoint}`);
+
+    return {
+      status: {
+        version: "realie-v1",
+        code: 0,
+        msg: "Success",
+        total: response.pagination?.total || properties.length,
+        page: response.pagination?.page || 1,
+        pagesize: response.pagination?.limit || properties.length,
+      },
+      property: properties,
+    };
+  } catch (error) {
+    console.error(`[Realie] Error fetching ${endpoint}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Fetch property data from ATTOM.
+ */
+async function fetchFromAttom(
+  client: AttomClient,
+  endpoint: string,
+  params: Record<string, any>
+): Promise<any> {
+  let result;
+  switch (endpoint) {
+    // ── Property Resource ────────────────────────────────────────────────
+    case "id":
+      result = await client.getPropertyDetail(params);
+      break;
+    case "detail":
+      result = await client.getPropertyDetail(params);
+      break;
+    case "detailowner":
+      result = await client.getPropertyDetailOwner(params);
+      break;
+    case "detailmortgage":
+      result = await client.getPropertyDetailMortgage(params);
+      break;
+    case "detailmortgageowner":
+      result = await client.getPropertyDetailMortgageOwner(params);
+      break;
+    case "detailwithschools":
+      result = await client.getPropertyDetailWithSchools(params);
+      break;
+    case "profile":
+      result = await client.getPropertyBasicProfile(params);
+      break;
+    case "expanded":
+      result = await client.getPropertyExpandedProfile(params);
+      break;
+    case "snapshot":
+      result = await client.getPropertySnapshot(params);
+      break;
+    case "buildingpermits":
+      result = await client.getBuildingPermits(params);
+      break;
+
+    // ── Assessment Resource ──────────────────────────────────────────────
+    case "assessment":
+      result = await client.getAssessmentDetail(params);
+      break;
+    case "assessmentsnapshot":
+      result = await client.getAssessmentSnapshot(params);
+      break;
+    case "assessmenthistory":
+      result = await client.getAssessmentHistory(params);
+      break;
+
+    // ── Sale Resource ────────────────────────────────────────────────────
+    case "sale":
+      result = await client.getSaleDetail(params);
+      break;
+    case "salesnapshot":
+      result = await client.getSaleSnapshot(params);
+      break;
+
+    // ── Sales History Resource ───────────────────────────────────────────
+    case "saleshistory":
+      result = await client.getSalesHistory(params);
+      break;
+    case "saleshistorybasic":
+      result = await client.getSalesHistoryBasic(params);
+      break;
+    case "saleshistoryexpanded":
+      result = await client.getSalesHistoryExpanded(params);
+      break;
+    case "saleshistorysnapshot":
+      result = await client.getSalesHistorySnapshot(params);
+      break;
+
+    // ── AVM Resource ─────────────────────────────────────────────────────
+    case "avm":
+      result = await client.getAvmSnapshot(params);
+      break;
+    case "attomavm":
+      result = await client.getAttomAvmDetail(params);
+      break;
+    case "avmhistory":
+      result = await client.getAvmHistory(params);
+      break;
+
+    // ── Valuation Resource ───────────────────────────────────────────────
+    case "rentalavm":
+      result = await client.getRentalAvm(params);
+      break;
+    case "homeequity":
+      result = await client.getHomeEquity(params);
+      break;
+
+    // ── All Events Resource ──────────────────────────────────────────────
+    case "allevents":
+      result = await client.getAllEvents(params);
+      break;
+
+    // ── Sales Trend Resource ─────────────────────────────────────────────
+    case "salestrend":
+      result = await client.getSalesTrend(params);
+      break;
+    case "transactionsalestrend":
+      result = await client.getTransactionSalesTrend(params);
+      break;
+    case "ibuyer":
+      result = await client.getIBuyerTrends(params);
+      break;
+    case "marketanalytics":
+      result = await client.getMarketAnalytics(params);
+      break;
+
+    // ── School Resource ──────────────────────────────────────────────────
+    case "schools":
+      result = await client.getSchoolSearch(params);
+      break;
+    case "schooldistrict":
+      result = await client.getSchoolDistrict(params);
+      break;
+    case "schoolprofile":
+      result = await client.getSchoolProfile(params);
+      break;
+
+    // ── Community / Neighborhood ─────────────────────────────────────────
+    case "community":
+      result = await client.getCommunityProfile(params);
+      break;
+    case "poi":
+      result = await client.getPOISearch(params);
+      break;
+    case "poicategories":
+      result = await client.getPOICategoryLookup();
+      break;
+    case "neighborhood":
+      result = await client.getNeighborhoodProfile(params);
+      break;
+
+    // ── Hazard & Climate Risk ────────────────────────────────────────────
+    case "hazardrisk":
+      result = await client.getHazardRisk(params);
+      break;
+    case "climaterisk":
+      result = await client.getClimateRisk(params);
+      break;
+    case "riskprofile":
+      result = await client.getRiskProfile(params);
+      break;
+
+    // ── Pre-Foreclosure ──────────────────────────────────────────────────
+    case "preforeclosure":
+      result = await client.getPreForeclosureDetail(params);
+      break;
+
+    // ── Sale Comparables ──────────────────────────────────────────────────
+    case "comparables": {
+      result = await client.getSaleComparablesByAttomId(params);
+      const rawProps = result?.RESPONSE_GROUP?.RESPONSE?.RESPONSE_DATA
+        ?.PROPERTY_INFORMATION_RESPONSE_ext?.SUBJECT_PROPERTY_ext?.PROPERTY;
+      if (Array.isArray(rawProps) && rawProps.length > 0) {
+        const normalized = rawProps.map((raw: any, idx: number) => {
+          const src = idx === 0 ? raw : (raw.COMPARABLE_PROPERTY_ext || raw);
+          const street = src["@_StreetAddress"] || "";
+          const city = src["@_City"] || "";
+          const state = src["@_State"] || "";
+          const zip = src["@_PostalCode"] || "";
+          const sh = src.SALES_HISTORY || {};
+          const st = src.STRUCTURE || {};
+          return {
+            identifier: {
+              attomId: Number(src._IDENTIFICATION?.["@RTPropertyID_ext"]) || undefined,
+              fips: src._IDENTIFICATION?.["@CountyFIPSName_ext"],
+              apn: src._IDENTIFICATION?.["@AssessorsParcelIdentifier"]
+                || src._IDENTIFICATION?.["@AssessorsSecondParcelIdentifier"],
+            },
+            address: {
+              oneLine: [street, city, state, zip].filter(Boolean).join(", "),
+              line1: street,
+              locality: city,
+              countrySubd: state,
+              postal1: zip,
+            },
+            sale: {
+              amount: {
+                saleAmt: Number(sh["@PropertySalesAmount"]) || undefined,
+                saleTransDate: sh["@PropertySalesDate"] || sh["@TransferDate_ext"] || undefined,
+                saleRecDate: sh["@PropertySalesDate"] || sh["@TransferDate_ext"] || undefined,
+              },
+              calculation: {
+                pricePerSizeUnit: Number(sh["@PricePerSquareFootAmount"]) || undefined,
+              },
+            },
+            building: {
+              size: {
+                livingSize: Number(st["@GrossLivingAreaSquareFeetCount"]) || undefined,
+                universalSize: Number(st["@GrossLivingAreaSquareFeetCount"]) || undefined,
+              },
+              rooms: {
+                beds: Number(st["@TotalBedroomCount"]) || undefined,
+                bathsFull: Number(st["@TotalBathroomCount"]) || undefined,
+                bathsTotal: Number(st["@TotalBathroomCount"]) || undefined,
+              },
+              summary: {
+                yearBuilt: Number(st.STRUCTURE_ANALYSIS?.["@PropertyStructureBuiltYear"]) || undefined,
+              },
+            },
+            lot: {
+              lotSize1: Number(src.SITE?.["@LotSquareFeetCount"]) || undefined,
+            },
+            owner: {
+              owner1: {
+                fullName: src._OWNER?.["@_Name"] || undefined,
+              },
+              owner2: {
+                fullName: src._OWNER?.["@_SecondaryOwnerName_ext"] || undefined,
+              },
+              mailingAddressOneLine: src.MAILING_ADDRESS_ext
+                ? [src.MAILING_ADDRESS_ext["@_StreetAddress"], src.MAILING_ADDRESS_ext["@_City"],
+                   src.MAILING_ADDRESS_ext["@_State"], src.MAILING_ADDRESS_ext["@_PostalCode"]]
+                  .filter(Boolean).join(", ")
+                : undefined,
+            },
+            assessment: {
+              assessed: {
+                assdTtlValue: Number(src._TAX?.["@_TotalAssessedValueAmount"]) || undefined,
+              },
+              market: {
+                mktTtlValue: Number(src._TAX?.["@_AssessorMarketValue_ext"]) || undefined,
+              },
+            },
+            proximity: idx > 0 ? {
+              distanceFromSubject: Number(src["@DistanceFromSubjectPropertyMilesCount"]) || undefined,
+            } : undefined,
+          };
+        });
+        result = { property: normalized };
+      }
+      break;
+    }
+
+    // ── Recorder / Deeds ─────────────────────────────────────────────────
+    case "recorder":
+      result = await client.getRecorderDeed(params);
+      break;
+
+    // ── Boundaries ───────────────────────────────────────────────────────
+    case "parcelboundary":
+      result = await client.getParcelBoundary(params);
+      break;
+    case "schoolboundary":
+      result = await client.getSchoolBoundary(params);
+      break;
+    case "neighborhoodboundary":
+      result = await client.getNeighborhoodBoundary(params);
+      break;
+
+    default:
+      result = await client.getPropertyExpandedProfile(params);
+  }
+
+  // Normalize property data: expandedprofile nests owner/mortgage inside assessment
+  if (result?.property && Array.isArray(result.property)) {
+    result = {
+      ...result,
+      property: result.property.map(normalizeAttomProperty),
+    };
+  }
+
+  return result;
+}
+
+/**
+ * GET - Search properties / get property detail
+ *
+ * Strategy: Realie.ai first for property data, ATTOM for supplemental/missing data.
+ * All results cached for 7 days regardless of source.
  *
  * Supports all ATTOM resources, packages, and filter parameters:
  *
@@ -49,7 +454,7 @@ async function getAttomClient(): Promise<AttomClient> {
  * Trends:      interval, year/month/quarter ranges
  * Pagination:  page, pagesize, orderby
  *
- * endpoint param selects the ATTOM resource+package to query (default: "expanded")
+ * endpoint param selects the resource+package to query (default: "expanded")
  */
 export async function GET(request: NextRequest) {
   try {
@@ -141,325 +546,121 @@ export async function GET(request: NextRequest) {
       delete params.page;
     }
 
-    // ── Cache ────────────────────────────────────────────────────────────────
-    // Layer 1: in-memory (survives within a server process)
-    // Layer 2: disk (always-on, survives restarts, shared across all users)
-    // Layer 3: real ATTOM API (only called on full cache miss)
-    //
-    // TTLs are aligned to ATTOM's data update schedule:
-    //   Daily:   assessor, recorder, property details (24h)
-    //   Weekly:  building permits (7d)
-    //   Monthly: AVM, equity, rental AVM (30d)
-    //   Static:  neighborhood, POI, risk, schools (30d)
-    const cacheKey = buildCacheKey(endpoint, params);
+    // ── Unified 7-Day Cache ───────────────────────────────────────────────
+    // All property data cached for 7 days regardless of source (Realie or ATTOM).
+    // New zip codes / properties get fetched fresh and added to cache.
+    // Cache refreshes weekly.
+    const cacheKey = buildPropertyCacheKey("unified", endpoint, params);
 
-    // Check in-memory cache first (fastest)
-    const memoryCached = cacheGet(cacheKey);
+    // Layer 1: in-memory cache (fastest)
+    const memoryCached = propertyCacheGet(cacheKey);
     if (memoryCached) {
-      return NextResponse.json(memoryCached, {
-        headers: { "X-Attom-Cache": "MEMORY" },
+      return NextResponse.json(memoryCached.data, {
+        headers: {
+          "X-Property-Cache": "MEMORY",
+          "X-Property-Source": memoryCached.source,
+        },
       });
     }
 
-    // Check disk cache (shared across all users, persists across restarts)
-    const diskCached = diskRead(cacheKey, endpoint);
+    // Layer 2: disk cache (persists across restarts, shared across users)
+    const diskCached = propertyDiskRead(cacheKey, "unified");
     if (diskCached) {
-      const payload = { success: true, endpoint, ...diskCached };
-      cacheSet(cacheKey, payload, endpoint); // promote to memory
+      const payload = { success: true, endpoint, ...diskCached.data };
+      propertyCacheSet(cacheKey, payload, diskCached.source as any); // promote to memory
       return NextResponse.json(payload, {
-        headers: { "X-Attom-Cache": "DISK" },
+        headers: {
+          "X-Property-Cache": "DISK",
+          "X-Property-Source": diskCached.source,
+        },
       });
     }
 
-    // Full cache miss — call real ATTOM API
-    const client = await getAttomClient();
+    // ── Layer 3: API calls ──────────────────────────────────────────────
+    // Strategy: Realie first for property data, ATTOM for gaps + exclusive data
+    let result: any = null;
+    let dataSource: "realie" | "attom" | "merged" = "attom";
 
-    let result;
-    switch (endpoint) {
-      // ── Property Resource ────────────────────────────────────────────────
-      case "id":
-        result = await client.getPropertyDetail(params); // /property/id
-        break;
-      case "detail":
-        result = await client.getPropertyDetail(params);
-        break;
-      case "detailowner":
-        result = await client.getPropertyDetailOwner(params);
-        break;
-      case "detailmortgage":
-        result = await client.getPropertyDetailMortgage(params);
-        break;
-      case "detailmortgageowner":
-        result = await client.getPropertyDetailMortgageOwner(params);
-        break;
-      case "detailwithschools":
-        result = await client.getPropertyDetailWithSchools(params);
-        break;
-      case "profile":
-        result = await client.getPropertyBasicProfile(params);
-        break;
-      case "expanded":
-        result = await client.getPropertyExpandedProfile(params);
-        break;
-      case "snapshot":
-        result = await client.getPropertySnapshot(params);
-        break;
-      case "buildingpermits":
-        result = await client.getBuildingPermits(params);
-        break;
-
-      // ── Assessment Resource ──────────────────────────────────────────────
-      case "assessment":
-        result = await client.getAssessmentDetail(params);
-        break;
-      case "assessmentsnapshot":
-        result = await client.getAssessmentSnapshot(params);
-        break;
-      case "assessmenthistory":
-        result = await client.getAssessmentHistory(params);
-        break;
-
-      // ── Sale Resource ────────────────────────────────────────────────────
-      case "sale":
-        result = await client.getSaleDetail(params);
-        break;
-      case "salesnapshot":
-        result = await client.getSaleSnapshot(params);
-        break;
-
-      // ── Sales History Resource ───────────────────────────────────────────
-      case "saleshistory":
-        result = await client.getSalesHistory(params);
-        break;
-      case "saleshistorybasic":
-        result = await client.getSalesHistoryBasic(params);
-        break;
-      case "saleshistoryexpanded":
-        result = await client.getSalesHistoryExpanded(params);
-        break;
-      case "saleshistorysnapshot":
-        result = await client.getSalesHistorySnapshot(params);
-        break;
-
-      // ── AVM Resource ─────────────────────────────────────────────────────
-      case "avm":
-        result = await client.getAvmSnapshot(params);
-        break;
-      case "attomavm":
-        result = await client.getAttomAvmDetail(params);
-        break;
-      case "avmhistory":
-        result = await client.getAvmHistory(params);
-        break;
-
-      // ── Valuation Resource ───────────────────────────────────────────────
-      case "rentalavm":
-        result = await client.getRentalAvm(params);
-        console.log("[ATTOM] rentalavm response keys:", result ? Object.keys(result) : "null",
-          "property[0] keys:", result?.property?.[0] ? Object.keys(result.property[0]) : "no property");
-        break;
-      case "homeequity":
-        result = await client.getHomeEquity(params);
-        console.log("[ATTOM] homeequity response keys:", result ? Object.keys(result) : "null",
-          "property[0] keys:", result?.property?.[0] ? Object.keys(result.property[0]) : "no property");
-        break;
-
-      // ── All Events Resource ──────────────────────────────────────────────
-      case "allevents":
-        result = await client.getAllEvents(params);
-        break;
-
-      // ── Sales Trend Resource ─────────────────────────────────────────────
-      case "salestrend":
-        result = await client.getSalesTrend(params);
-        break;
-      case "transactionsalestrend":
-        result = await client.getTransactionSalesTrend(params);
-        break;
-      case "ibuyer":
-        result = await client.getIBuyerTrends(params);
-        break;
-      case "marketanalytics":
-        result = await client.getMarketAnalytics(params);
-        break;
-
-      // ── School Resource ──────────────────────────────────────────────────
-      case "schools":
-        result = await client.getSchoolSearch(params);
-        break;
-      case "schooldistrict":
-        result = await client.getSchoolDistrict(params);
-        break;
-      case "schoolprofile":
-        result = await client.getSchoolProfile(params);
-        break;
-
-      // ── Community / Neighborhood ─────────────────────────────────────────
-      case "community":
-        result = await client.getCommunityProfile(params);
-        break;
-      case "poi":
-        result = await client.getPOISearch(params);
-        break;
-      case "poicategories":
-        result = await client.getPOICategoryLookup();
-        break;
-      case "neighborhood":
-        result = await client.getNeighborhoodProfile(params);
-        break;
-
-      // ── Hazard & Climate Risk ────────────────────────────────────────────
-      case "hazardrisk":
-        result = await client.getHazardRisk(params);
-        break;
-      case "climaterisk":
-        result = await client.getClimateRisk(params);
-        break;
-      case "riskprofile":
-        result = await client.getRiskProfile(params);
-        break;
-
-      // ── Pre-Foreclosure ──────────────────────────────────────────────────
-      case "preforeclosure":
-        result = await client.getPreForeclosureDetail(params);
-        break;
-
-      // ── Sale Comparables ──────────────────────────────────────────────────
-      case "comparables": {
-        result = await client.getSaleComparablesByAttomId(params);
-        // v2 salescomparables returns XML-style response:
-        //   RESPONSE_GROUP.RESPONSE.RESPONSE_DATA
-        //     .PROPERTY_INFORMATION_RESPONSE_ext.SUBJECT_PROPERTY_ext.PROPERTY[]
-        // [0] = subject (fields directly on object)
-        // [1..N] = comps (fields under COMPARABLE_PROPERTY_ext)
-        // Normalize into flat property[] array matching the standard ATTOM shape.
-        const rawProps = result?.RESPONSE_GROUP?.RESPONSE?.RESPONSE_DATA
-          ?.PROPERTY_INFORMATION_RESPONSE_ext?.SUBJECT_PROPERTY_ext?.PROPERTY;
-        if (Array.isArray(rawProps) && rawProps.length > 0) {
-          const normalized = rawProps.map((raw: any, idx: number) => {
-            // Subject (idx 0): fields at top level. Comps: under COMPARABLE_PROPERTY_ext.
-            const src = idx === 0 ? raw : (raw.COMPARABLE_PROPERTY_ext || raw);
-            const street = src["@_StreetAddress"] || "";
-            const city = src["@_City"] || "";
-            const state = src["@_State"] || "";
-            const zip = src["@_PostalCode"] || "";
-            const sh = src.SALES_HISTORY || {};
-            const st = src.STRUCTURE || {};
-            return {
-              identifier: {
-                attomId: Number(src._IDENTIFICATION?.["@RTPropertyID_ext"]) || undefined,
-                fips: src._IDENTIFICATION?.["@CountyFIPSName_ext"],
-                apn: src._IDENTIFICATION?.["@AssessorsParcelIdentifier"]
-                  || src._IDENTIFICATION?.["@AssessorsSecondParcelIdentifier"],
-              },
-              address: {
-                oneLine: [street, city, state, zip].filter(Boolean).join(", "),
-                line1: street,
-                locality: city,
-                countrySubd: state,
-                postal1: zip,
-              },
-              sale: {
-                amount: {
-                  saleAmt: Number(sh["@PropertySalesAmount"]) || undefined,
-                  saleTransDate: sh["@PropertySalesDate"] || sh["@TransferDate_ext"] || undefined,
-                  saleRecDate: sh["@PropertySalesDate"] || sh["@TransferDate_ext"] || undefined,
-                },
-                calculation: {
-                  pricePerSizeUnit: Number(sh["@PricePerSquareFootAmount"]) || undefined,
-                },
-              },
-              building: {
-                size: {
-                  livingSize: Number(st["@GrossLivingAreaSquareFeetCount"]) || undefined,
-                  universalSize: Number(st["@GrossLivingAreaSquareFeetCount"]) || undefined,
-                },
-                rooms: {
-                  beds: Number(st["@TotalBedroomCount"]) || undefined,
-                  bathsFull: Number(st["@TotalBathroomCount"]) || undefined,
-                  bathsTotal: Number(st["@TotalBathroomCount"]) || undefined,
-                },
-                summary: {
-                  yearBuilt: Number(st.STRUCTURE_ANALYSIS?.["@PropertyStructureBuiltYear"]) || undefined,
-                },
-              },
-              lot: {
-                lotSize1: Number(src.SITE?.["@LotSquareFeetCount"]) || undefined,
-              },
-              owner: {
-                owner1: {
-                  fullName: src._OWNER?.["@_Name"] || undefined,
-                },
-                owner2: {
-                  fullName: src._OWNER?.["@_SecondaryOwnerName_ext"] || undefined,
-                },
-                mailingAddressOneLine: src.MAILING_ADDRESS_ext
-                  ? [src.MAILING_ADDRESS_ext["@_StreetAddress"], src.MAILING_ADDRESS_ext["@_City"],
-                     src.MAILING_ADDRESS_ext["@_State"], src.MAILING_ADDRESS_ext["@_PostalCode"]]
-                    .filter(Boolean).join(", ")
-                  : undefined,
-              },
-              assessment: {
-                assessed: {
-                  assdTtlValue: Number(src._TAX?.["@_TotalAssessedValueAmount"]) || undefined,
-                },
-                market: {
-                  mktTtlValue: Number(src._TAX?.["@_AssessorMarketValue_ext"]) || undefined,
-                },
-              },
-              // Comp-specific: distance from subject
-              proximity: idx > 0 ? {
-                distanceFromSubject: Number(src["@DistanceFromSubjectPropertyMilesCount"]) || undefined,
-              } : undefined,
-            };
-          });
-          console.log("[ATTOM] comparables: normalized", normalized.length, "properties (1 subject +", normalized.length - 1, "comps)");
-          result = { property: normalized };
-        } else {
-          console.log("[ATTOM] comparables: unexpected response structure, keys:",
-            result ? Object.keys(result) : "null");
-        }
-        break;
+    if (ATTOM_ONLY_ENDPOINTS.has(endpoint)) {
+      // ── ATTOM-only endpoints (neighborhood, schools, risk, trends, etc.)
+      const attomClient = await getAttomClient();
+      if (!attomClient) {
+        return NextResponse.json(
+          { error: "No property data provider configured" },
+          { status: 503 }
+        );
       }
+      result = await fetchFromAttom(attomClient, endpoint, params);
+      dataSource = "attom";
 
-      // ── Recorder / Deeds ─────────────────────────────────────────────────
-      case "recorder":
-        result = await client.getRecorderDeed(params);
-        break;
+    } else if (REALIE_CAPABLE_ENDPOINTS.has(endpoint)) {
+      // ── Realie-first for property data endpoints
+      const realieResult = await fetchFromRealie(endpoint, params);
 
-      // ── Boundaries ───────────────────────────────────────────────────────
-      case "parcelboundary":
-        result = await client.getParcelBoundary(params);
-        break;
-      case "schoolboundary":
-        result = await client.getSchoolBoundary(params);
-        break;
-      case "neighborhoodboundary":
-        result = await client.getNeighborhoodBoundary(params);
-        break;
+      if (realieResult?.property?.length > 0) {
+        result = realieResult;
+        dataSource = "realie";
 
-      default:
-        result = await client.getPropertyExpandedProfile(params);
+        // Supplement with ATTOM for any missing fields
+        const attomClient = await getAttomClient();
+        if (attomClient) {
+          try {
+            const attomResult = await fetchFromAttom(attomClient, endpoint, params);
+            if (attomResult?.property?.length > 0) {
+              // Merge: Realie data takes priority, ATTOM fills gaps
+              const mergedProperties = result.property.map((realieProp: any, idx: number) => {
+                const attomProp = attomResult.property[idx];
+                if (!attomProp) return realieProp;
+                return mergePropertyData(realieProp, attomProp);
+              });
+              result = { ...result, property: mergedProperties };
+              dataSource = "merged";
+              console.log(`[PropertyData] Merged ${mergedProperties.length} properties (Realie + ATTOM)`);
+            }
+          } catch (attomError) {
+            // ATTOM supplement failed — Realie data is sufficient
+            console.log(`[PropertyData] ATTOM supplement failed, using Realie only:`, attomError);
+          }
+        }
+      } else {
+        // Realie didn't return data — fall back entirely to ATTOM
+        console.log(`[PropertyData] Realie returned no data for ${endpoint}, falling back to ATTOM`);
+        const attomClient = await getAttomClient();
+        if (!attomClient) {
+          return NextResponse.json(
+            { error: "No property data provider configured" },
+            { status: 503 }
+          );
+        }
+        result = await fetchFromAttom(attomClient, endpoint, params);
+        dataSource = "attom";
+      }
+    } else {
+      // Unknown endpoint — try ATTOM directly
+      const attomClient = await getAttomClient();
+      if (!attomClient) {
+        return NextResponse.json(
+          { error: "No property data provider configured" },
+          { status: 503 }
+        );
+      }
+      result = await fetchFromAttom(attomClient, endpoint, params);
+      dataSource = "attom";
     }
 
-    // Normalize property data: expandedprofile nests owner/mortgage inside assessment
-    if (result?.property && Array.isArray(result.property)) {
-      result = {
-        ...result,
-        property: result.property.map(normalizeAttomProperty),
-      };
-    }
-
-    // Store in memory + disk cache (shared across all users)
+    // Store in unified 7-day cache (memory + disk)
     const responsePayload = { success: true, endpoint, ...result };
-    cacheSet(cacheKey, responsePayload, endpoint);
-    diskWrite(cacheKey, endpoint, result);
+    propertyCacheSet(cacheKey, responsePayload, dataSource);
+    propertyDiskWrite(cacheKey, "unified", result, dataSource);
 
     return NextResponse.json(responsePayload, {
-      headers: { "X-Attom-Cache": "API" },
+      headers: {
+        "X-Property-Cache": "API",
+        "X-Property-Source": dataSource,
+      },
     });
   } catch (error) {
-    console.error("Error fetching ATTOM property:", error);
+    console.error("Error fetching property data:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to fetch property data" },
       { status: 500 }
