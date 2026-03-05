@@ -1124,24 +1124,8 @@ export default function Prospecting() {
         setError("No property found at that address. Try a different address or use zip code search.");
         setResults([]);
       } else {
-        // Supplement with sale history to get sale data
-        const prop = props[0];
-        const attomId = prop.identifier?.attomId;
-        if (attomId) {
-          try {
-            const saleParams = new URLSearchParams({
-              attomId: String(attomId),
-              endpoint: "saleshistory",
-            });
-            const saleRes = await fetch(`/api/integrations/attom/property?${saleParams.toString()}`);
-            const saleData = await saleRes.json();
-            if (saleRes.ok && saleData.property?.[0]?.sale) {
-              props[0] = { ...props[0], sale: saleData.property[0].sale };
-            }
-          } catch {
-            // Sale data is optional
-          }
-        }
+        // Last sale data is already included in the expanded profile response —
+        // no need for a separate saleshistory API call (saves 1 ATTOM hit per search)
         setResults(props);
         setTotalCount(props.length);
         setDebugInfo(`Found property at: ${props[0].address?.oneLine || farmAddress}. Click to open and view nearby homes for farming.`);

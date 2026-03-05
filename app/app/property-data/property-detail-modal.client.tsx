@@ -94,7 +94,7 @@ function findGeoIdV4(obj: any, depth = 0): string | null {
   return null;
 }
 
-type SectionId = "overview" | "building" | "financial" | "ownership" | "neighborhood" | "federal" | "comparables" | "nearby";
+type SectionId = "overview" | "building" | "financial" | "ownership" | "neighborhood" | "federal" | "nearby";
 
 export default function PropertyDetailModal({
   property: p,
@@ -109,14 +109,12 @@ export default function PropertyDetailModal({
   onClose: () => void;
   /** When true, renders just tabs + content inline (no overlay, no header). Used by MLS detail card. */
   embedded?: boolean;
-  /** Optional subset of tabs to show (e.g. ["building","financial","ownership","comparables","neighborhood"]). Shows all by default. */
+  /** Optional subset of tabs to show (e.g. ["building","financial","ownership","neighborhood"]). Shows all by default. */
   tabs?: SectionId[];
   /** When provided, enables the "Nearby Homes" tab for Just Sold Farming. */
   farmingContext?: { radiusMiles: string; propertyType?: string };
 }) {
   const [activeSection, setActiveSection] = useState<SectionId>(visibleTabs?.[0] || "overview");
-  const [comparablesData, setComparablesData] = useState<any>(null);
-  const [comparablesLoading, setComparablesLoading] = useState(false);
   const [federalData, setFederalData] = useState<FederalPropertySupplement | null>(null);
   const [federalLoading, setFederalLoading] = useState(false);
   const [hawaiiData, setHawaiiData] = useState<any>(null);
@@ -454,12 +452,13 @@ export default function PropertyDetailModal({
     const cachedRentalAvm = (p as any).rentalAvm;
     const cachedHomeEquity = (p as any).homeEquity;
 
+    // Reduced API calls: dropped avmhistory (current AVM is sufficient) and
+    // saleshistoryexpanded (last sale already available from expanded profile).
+    // This saves 2 ATTOM API calls per Financial tab view.
     const fetches: Promise<PromiseSettledResult<any>>[] = [
-      fetch(`/api/integrations/attom/property?${buildParams("avmhistory")}`).then(r => r.json()).then(v => ({ status: "fulfilled" as const, value: v })).catch(e => ({ status: "rejected" as const, reason: e })),
       cachedRentalAvm
         ? Promise.resolve({ status: "fulfilled" as const, value: { property: [{ rentalAvm: cachedRentalAvm }] } })
         : fetch(`/api/integrations/attom/property?${buildAddrParams("rentalavm")}`).then(r => r.json()).then(v => ({ status: "fulfilled" as const, value: v })).catch(e => ({ status: "rejected" as const, reason: e })),
-      fetch(`/api/integrations/attom/property?${buildParams("saleshistoryexpanded")}`).then(r => r.json()).then(v => ({ status: "fulfilled" as const, value: v })).catch(e => ({ status: "rejected" as const, reason: e })),
       fetch(`/api/integrations/attom/property?${buildParams("detailmortgage")}`).then(r => r.json()).then(v => ({ status: "fulfilled" as const, value: v })).catch(e => ({ status: "rejected" as const, reason: e })),
       cachedHomeEquity
         ? Promise.resolve({ status: "fulfilled" as const, value: { property: [{ homeEquity: cachedHomeEquity }] } })
@@ -467,11 +466,11 @@ export default function PropertyDetailModal({
       fetch(`/api/integrations/attom/property?${salesTrendParams}`).then(r => r.json()).then(v => ({ status: "fulfilled" as const, value: v })).catch(e => ({ status: "rejected" as const, reason: e })),
     ];
 
-    Promise.all(fetches).then(([avmHistory, rentalAvm, salesHistory, mortgageDetail, homeEquity, salesTrends]) => {
+    Promise.all(fetches).then(([rentalAvm, mortgageDetail, homeEquity, salesTrends]) => {
       setEnrichedFinancial({
-        avmHistory: avmHistory.status === "fulfilled" && !avmHistory.value?.error ? avmHistory.value : null,
+        avmHistory: null,
         rentalAvm: rentalAvm.status === "fulfilled" ? rentalAvm.value : null,
-        salesHistory: salesHistory.status === "fulfilled" && !salesHistory.value?.error ? salesHistory.value : null,
+        salesHistory: null,
         mortgageDetail: mortgageDetail.status === "fulfilled" && !mortgageDetail.value?.error ? mortgageDetail.value : null,
         homeEquity: homeEquity.status === "fulfilled" ? homeEquity.value : null,
         salesTrends: salesTrends.status === "fulfilled" && !salesTrends.value?.error ? salesTrends.value : null,
@@ -557,36 +556,10 @@ export default function PropertyDetailModal({
       .finally(() => setEnrichedOwnerLoading(false));
   }, [activeSection, enrichedOwner, enrichedOwnerLoading, p]);
 
-  // Fetch comparables when the Comparables tab is selected
-  useEffect(() => {
-    if (activeSection !== "comparables" || comparablesData || comparablesLoading) return;
-
-    const attomId = p.identifier?.attomId;
-    if (!attomId) return;
-
-    setComparablesLoading(true);
-    const params = new URLSearchParams({ endpoint: "comparables", attomid: String(attomId) });
-    fetch(`/api/integrations/attom/property?${params}`)
-      .then(r => {
-        if (!r.ok) {
-          return r.json().then(d => { throw new Error(d?.error || `HTTP ${r.status}`); });
-        }
-        return r.json();
-      })
-      .then(data => {
-        console.log("[Comps] response keys:", Object.keys(data), "property count:", data.property?.length);
-        if (data && !data.error) setComparablesData(data);
-        else setComparablesData({ error: data?.error || "No comparables found" });
-      })
-      .catch((err) => setComparablesData({ error: err?.message || "Failed to fetch comparables" }))
-      .finally(() => setComparablesLoading(false));
-  }, [activeSection, comparablesData, comparablesLoading, p]);
-
   const allSections: { id: SectionId; label: string }[] = [
     { id: "overview", label: "Overview" },
     { id: "building", label: "Building" },
     { id: "financial", label: "Financial" },
-    { id: "comparables", label: "Comps" },
     { id: "ownership", label: "Ownership" },
     { id: "neighborhood", label: "Neighborhood" },
     { id: "federal", label: "Area Intel" },
@@ -1431,175 +1404,8 @@ export default function PropertyDetailModal({
           })()}
 
           {/* ── Comparables Tab ─────────────────────────────────────── */}
-          {activeSection === "comparables" && (() => {
-            if (comparablesLoading) {
-              return <div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>Loading comparables...</div>;
-            }
-            if (!comparablesData || comparablesData.error) {
-              return (
-                <div style={{ padding: 40, textAlign: "center", color: "#6b7280", background: "#f9fafb", borderRadius: 12 }}>
-                  {comparablesData?.error || "No comparables available for this property."}
-                  {!p.identifier?.attomId && (
-                    <div style={{ marginTop: 8, fontSize: 12 }}>ATTOMid required — not available for this property.</div>
-                  )}
-                </div>
-              );
-            }
+          {/* Comps tab removed — Hawaii is a non-disclosure state, ATTOM comps unreliable */}
 
-            // ATTOM comparables response: property[0] is the subject, rest are comps
-            // Or: SALE_COMPARABLES[0].PROPERTY_COMPARABLES[] array
-            const rawProps = comparablesData.property || comparablesData.SALE_COMPARABLES?.[0]?.PROPERTY_COMPARABLES || [];
-            const subject = rawProps[0];
-            const comps = rawProps.slice(1);
-
-            if (comps.length === 0) {
-              return (
-                <div style={{ padding: 40, textAlign: "center", color: "#6b7280", background: "#f9fafb", borderRadius: 12 }}>
-                  No comparable sales found near this property.
-                </div>
-              );
-            }
-
-            // Helper to extract values from various ATTOM response shapes
-            const getCompAddr = (c: any) => c?.address?.oneLine || c?.address?.line1 || "Unknown address";
-            const getCompSaleAmt = (c: any) => c?.sale?.amount?.saleAmt || c?.sale?.amount?.salePrice || c?.sale?.saleAmt || c?.saleAmt;
-            const getCompSaleDate = (c: any) => c?.sale?.amount?.saleTransDate || c?.sale?.amount?.saleRecDate || c?.sale?.saleTransDate;
-            const getCompSqft = (c: any) => c?.building?.size?.livingSize || c?.building?.size?.universalSize || c?.building?.size?.bldgSize;
-            const getCompBeds = (c: any) => c?.building?.rooms?.beds;
-            const getCompBaths = (c: any) => c?.building?.rooms?.bathsFull ?? c?.building?.rooms?.bathsTotal;
-            const getCompYearBuilt = (c: any) => c?.building?.summary?.yearBuilt || c?.summary?.yearBuilt;
-            const getCompDist = (c: any) => c?.proximity?.distanceFromSubject ?? c?.distance;
-            const getCompAvm = (c: any) => c?.avm?.amount?.value;
-
-            // Calculate stats
-            const salePrices = comps.map(getCompSaleAmt).filter((v: any) => v != null && v > 0);
-            const medianPrice = salePrices.length > 0 ? salePrices.sort((a: number, b: number) => a - b)[Math.floor(salePrices.length / 2)] : null;
-            const avgPrice = salePrices.length > 0 ? Math.round(salePrices.reduce((a: number, b: number) => a + b, 0) / salePrices.length) : null;
-            const ppsfs = comps.map((c: any) => {
-              const amt = getCompSaleAmt(c);
-              const sf = getCompSqft(c);
-              return amt && sf ? amt / sf : null;
-            }).filter((v: any) => v != null) as number[];
-            const avgPpsf = ppsfs.length > 0 ? Math.round(ppsfs.reduce((a, b) => a + b, 0) / ppsfs.length) : null;
-
-            return (
-              <>
-                {/* Comps Summary */}
-                <div style={{ display: "flex", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
-                  <div style={{ flex: 1, minWidth: 120, padding: "10px 14px", background: "#ecfdf5", borderRadius: 8 }}>
-                    <div style={{ fontSize: 11, color: "#059669", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Comps Found</div>
-                    <div style={{ fontSize: 18, fontWeight: 700, color: "#059669" }}>{comps.length}</div>
-                  </div>
-                  {medianPrice != null && (
-                    <div style={{ flex: 1, minWidth: 120, padding: "10px 14px", background: "#eff6ff", borderRadius: 8 }}>
-                      <div style={{ fontSize: 11, color: "#3b82f6", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Median Sale</div>
-                      <div style={{ fontSize: 18, fontWeight: 700, color: "#3b82f6" }}>{fmt(medianPrice)}</div>
-                    </div>
-                  )}
-                  {avgPrice != null && (
-                    <div style={{ flex: 1, minWidth: 120, padding: "10px 14px", background: "#f5f3ff", borderRadius: 8 }}>
-                      <div style={{ fontSize: 11, color: "#7c3aed", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Avg Sale</div>
-                      <div style={{ fontSize: 18, fontWeight: 700, color: "#7c3aed" }}>{fmt(avgPrice)}</div>
-                    </div>
-                  )}
-                  {avgPpsf != null && (
-                    <div style={{ flex: 1, minWidth: 120, padding: "10px 14px", background: "#fefce8", borderRadius: 8 }}>
-                      <div style={{ fontSize: 11, color: "#a16207", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Avg $/sqft</div>
-                      <div style={{ fontSize: 18, fontWeight: 700, color: "#a16207" }}>${avgPpsf.toLocaleString()}</div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Subject Property Reference */}
-                {subject && (
-                  <div style={{ padding: "10px 14px", background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 8, marginBottom: 12, fontSize: 12 }}>
-                    <div style={{ fontWeight: 700, color: "#0369a1", marginBottom: 4 }}>Subject Property</div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
-                      <span>{getCompAddr(subject)}</span>
-                      {getCompSqft(subject) && <span><strong>Sqft:</strong> {Number(getCompSqft(subject)).toLocaleString()}</span>}
-                      {getCompBeds(subject) != null && <span><strong>Beds:</strong> {getCompBeds(subject)}</span>}
-                      {getCompBaths(subject) != null && <span><strong>Baths:</strong> {getCompBaths(subject)}</span>}
-                      {getCompYearBuilt(subject) && <span><strong>Built:</strong> {getCompYearBuilt(subject)}</span>}
-                    </div>
-                  </div>
-                )}
-
-                {/* Comparable Properties Table */}
-                <div style={{ overflowX: "auto" }}>
-                  <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
-                    <thead>
-                      <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
-                        <th style={{ textAlign: "left", padding: "8px 8px", color: "#6b7280", fontWeight: 600 }}>Address</th>
-                        <th style={{ textAlign: "right", padding: "8px 8px", color: "#6b7280", fontWeight: 600 }}>Sale Price</th>
-                        <th style={{ textAlign: "right", padding: "8px 8px", color: "#6b7280", fontWeight: 600 }}>Date</th>
-                        <th style={{ textAlign: "right", padding: "8px 8px", color: "#6b7280", fontWeight: 600 }}>Sqft</th>
-                        <th style={{ textAlign: "right", padding: "8px 8px", color: "#6b7280", fontWeight: 600 }}>$/sqft</th>
-                        <th style={{ textAlign: "center", padding: "8px 8px", color: "#6b7280", fontWeight: 600 }}>Bed/Bath</th>
-                        <th style={{ textAlign: "right", padding: "8px 8px", color: "#6b7280", fontWeight: 600 }}>Year</th>
-                        <th style={{ textAlign: "right", padding: "8px 8px", color: "#6b7280", fontWeight: 600 }}>AVM</th>
-                        <th style={{ textAlign: "right", padding: "8px 8px", color: "#6b7280", fontWeight: 600 }}>Dist.</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {comps.map((comp: any, i: number) => {
-                        const saleAmt = getCompSaleAmt(comp);
-                        const sqftVal = getCompSqft(comp);
-                        const ppsf = saleAmt && sqftVal ? Math.round(saleAmt / sqftVal) : null;
-                        const dist = getCompDist(comp);
-                        return (
-                          <tr key={i} style={{ borderBottom: "1px solid #f3f4f6", background: i % 2 === 0 ? "#fff" : "#f9fafb" }}>
-                            <td style={{ padding: "8px 8px", fontWeight: 500, maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                              {getCompAddr(comp)}
-                            </td>
-                            <td style={{ padding: "8px 8px", textAlign: "right", fontWeight: 600, color: "#059669" }}>
-                              {saleAmt != null ? fmt(saleAmt) : "—"}
-                            </td>
-                            <td style={{ padding: "8px 8px", textAlign: "right", color: "#6b7280" }}>
-                              {getCompSaleDate(comp) || "—"}
-                            </td>
-                            <td style={{ padding: "8px 8px", textAlign: "right" }}>
-                              {sqftVal != null ? Number(sqftVal).toLocaleString() : "—"}
-                            </td>
-                            <td style={{ padding: "8px 8px", textAlign: "right", color: "#a16207", fontWeight: 500 }}>
-                              {ppsf != null ? `$${ppsf.toLocaleString()}` : "—"}
-                            </td>
-                            <td style={{ padding: "8px 8px", textAlign: "center" }}>
-                              {[getCompBeds(comp) != null ? `${getCompBeds(comp)}bd` : null, getCompBaths(comp) != null ? `${getCompBaths(comp)}ba` : null].filter(Boolean).join("/") || "—"}
-                            </td>
-                            <td style={{ padding: "8px 8px", textAlign: "right" }}>
-                              {getCompYearBuilt(comp) || "—"}
-                            </td>
-                            <td style={{ padding: "8px 8px", textAlign: "right", color: "#7c3aed" }}>
-                              {getCompAvm(comp) != null ? fmt(getCompAvm(comp)) : "—"}
-                            </td>
-                            <td style={{ padding: "8px 8px", textAlign: "right", color: "#6b7280" }}>
-                              {dist != null ? `${Number(dist).toFixed(1)} mi` : "—"}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Price comparison vs subject */}
-                {avmVal != null && avgPrice != null && (
-                  <div style={{ marginTop: 12, padding: "10px 14px", background: avgPrice > avmVal ? "#ecfdf5" : "#fef2f2", borderRadius: 8, fontSize: 12 }}>
-                    <strong>Comp Analysis:</strong>{" "}
-                    {avgPrice > avmVal ? (
-                      <span style={{ color: "#059669" }}>
-                        Avg comp sale ({fmt(avgPrice)}) exceeds AVM ({fmt(avmVal)}) by {fmt(avgPrice - avmVal)} — potential upside
-                      </span>
-                    ) : (
-                      <span style={{ color: "#dc2626" }}>
-                        Avg comp sale ({fmt(avgPrice)}) is {fmt(avmVal - avgPrice)} below AVM ({fmt(avmVal)})
-                      </span>
-                    )}
-                  </div>
-                )}
-              </>
-            );
-          })()}
 
           {activeSection === "ownership" && (() => {
             // Resolve TMK: prefer Hawaii statewide parcel data (12-digit QPublic-compatible format)
