@@ -75,7 +75,7 @@ function Field({ label, value }: { label: string; value?: string | number | null
 
 /**
  * Deep-search a property object for any geoIdV4 value.
- * ATTOM v4 property responses embed geoIdV4 in various locations
+ * Property responses may embed geoIdV4 in various locations
  * (area, identifier, location, etc.).
  */
 function findGeoIdV4(obj: any, depth = 0): string | null {
@@ -193,7 +193,7 @@ export default function PropertyDetailModal({
 
     setAvmLoading(true);
 
-    const params = new URLSearchParams({ endpoint: "attomavm", source: "attom" });
+    const params = new URLSearchParams({ endpoint: "expanded" });
     if (attomId) {
       params.set("attomid", String(attomId));
     } else {
@@ -311,7 +311,7 @@ export default function PropertyDetailModal({
     if (p.location?.latitude) params.set("latitude", p.location.latitude);
     if (p.location?.longitude) params.set("longitude", p.location.longitude);
 
-    // Extract geoIdV4 from property data if available (ATTOM v4 embeds it in responses)
+    // Extract geoIdV4 from property data if available
     const geoId = findGeoIdV4(p);
     if (geoId) params.set("geoidv4", geoId);
 
@@ -361,7 +361,7 @@ export default function PropertyDetailModal({
 
   // Fetch enriched financial data when Financial tab is selected.
   // Realie provides mortgage and equity on the primary response.
-  // Only fetch ATTOM-exclusive: rentalavm (rental estimates) and salestrend (area trends).
+  // Rental AVM uses HUD Fair Market Rents, sales trends use FRED data.
   useEffect(() => {
     if (activeSection !== "financial" || enrichedFinancial || enrichedFinancialLoading) return;
 
@@ -379,9 +379,9 @@ export default function PropertyDetailModal({
 
     setEnrichedFinancialLoading(true);
 
-    // Rental AVM requires address-based lookups (attomId not supported)
+    // Build address params for rental AVM lookup
     const buildAddrParams = (endpoint: string) => {
-      const params = new URLSearchParams({ endpoint, source: "attom" });
+      const params = new URLSearchParams({ endpoint });
       if (addr1) {
         params.set("address1", addr1);
         if (addr2) params.set("address2", addr2);
@@ -405,7 +405,7 @@ export default function PropertyDetailModal({
 
     // Realie already provides mortgage (lenderName, totalLienBalance, totalLienCount)
     // and equity (equityCurrentEstBal, LTVCurrentEstCombined) on the primary response.
-    // Only fetch ATTOM-exclusive data: rentalavm (rental estimates) and salestrend (area trends).
+    // Fetch supplemental data: rentalavm (rental estimates via HUD) and salestrend (area trends via FRED).
     const fetches: Promise<PromiseSettledResult<any>>[] = [
       cachedRentalAvm
         ? Promise.resolve({ status: "fulfilled" as const, value: { property: [{ rentalAvm: cachedRentalAvm }] } })
@@ -447,8 +447,8 @@ export default function PropertyDetailModal({
 
   // Ownership tab: Realie already provides owner data (ownerName, ownerAddress,
   // ownerResCount, ownerComCount, lenderName, etc.) on the primary search response.
-  // No additional ATTOM calls needed — the property object already contains
-  // owner info mapped to the standard ATTOM shape by the API route.
+  // No additional calls needed — the property object already contains
+  // owner info mapped by the API route.
   // enrichedOwner is left null; the Ownership tab renders from the base property data.
 
   const allSections: { id: SectionId; label: string }[] = [
@@ -571,7 +571,7 @@ export default function PropertyDetailModal({
                 <Field label="Longitude" value={p.location?.longitude} />
               </Section>
 
-              {/* GeoCode Identifiers (v4) — used to query community, school, POI, and sales trend data */}
+              {/* GeoCode Identifiers — used to query community, school, POI, and sales trend data */}
               {(() => {
                 const geoId = findGeoIdV4(p);
                 // Also look for area-level geocodes embedded in property responses
@@ -1292,18 +1292,16 @@ export default function PropertyDetailModal({
           })()}
 
           {/* ── Comparables Tab ─────────────────────────────────────── */}
-          {/* Comps tab removed — Hawaii is a non-disclosure state, ATTOM comps unreliable */}
+          {/* Comps tab removed — Hawaii is a non-disclosure state */}
 
 
           {activeSection === "ownership" && (() => {
             // Resolve TMK: prefer Hawaii statewide parcel data (12-digit QPublic-compatible format)
-            // over ATTOM APN (which uses a different format with island prefix, no CPR suffix)
             const tmkValue = hawaiiData?.parcel?.tmk_txt || hawaiiData?.parcel?.tmk || hawaiiData?.parcel?.cty_tmk || (hawaiiData?.owners?.[0]?.tmk) || null;
-            // ATTOM APN as fallback display — different format, not QPublic-compatible
+            // APN as fallback display
             const attomApn = p.identifier?.apn || null;
 
             // Build QPublic direct report link from TMK + county-specific AppID
-            // Falls back to converting ATTOM APN if Hawaii statewide data is unavailable
             const qpubLink = (() => {
               if (hawaiiData?.parcel?.qpub_link) return hawaiiData.parcel.qpub_link;
 
@@ -1316,7 +1314,7 @@ export default function PropertyDetailModal({
                 p.address?.postal1,
               );
             })();
-            // Display TMK: prefer Hawaii source, fall back to converted ATTOM APN
+            // Display TMK: prefer Hawaii source, fall back to converted APN
             const displayTmk = tmkValue || (attomApn ? attomApn.replace(/[-\s.]/g, "").slice(1).padEnd(12, "0") : null);
 
             return (
@@ -1354,7 +1352,7 @@ export default function PropertyDetailModal({
                 </div>
               )}
 
-              {/* Current Owner — resolve from p.owner, assessment.owner, or enrichedOwner (ATTOM nests owner in assessment for expandedprofile) */}
+              {/* Current Owner — resolve from p.owner, assessment.owner, or enrichedOwner */}
               {(() => {
                 const topOwner = p.owner;
                 const assessOwner = p.assessment?.owner;
@@ -1451,7 +1449,7 @@ export default function PropertyDetailModal({
                 // The detailmortgageowner response wraps data in { property: [{ owner, mortgage, ... }] }
                 // or the prop-level fields may already be extracted
                 const ownerProp = enrichedOwner.property?.[0] || enrichedOwner;
-                // Also check assessment.owner as ATTOM may nest owner data there
+                // Also check assessment.owner (may be nested in some responses)
                 const eo = ownerProp?.owner || ownerProp?.assessment?.owner || enrichedOwner.owner || enrichedOwner;
                 const anyOwner = eo?.owner1?.fullName || eo?.owner1?.lastName || eo?.owner2?.fullName
                   || eo?.mailingAddressOneLine || eo?.absenteeOwnerStatus || eo?.corporateIndicator;
@@ -1534,14 +1532,14 @@ export default function PropertyDetailModal({
                       return occOwner?.ownerOccupied || undefined;
                     })()} />
                     <Field label="Absentee Status" value={(() => {
-                      // Check owner.absenteeOwnerStatus first (human-readable from ATTOM)
+                      // Check owner.absenteeOwnerStatus first
                       const ownerStatus = (occOwner?.absenteeOwnerStatus || "").toUpperCase();
                       if (ownerStatus.includes("ABSENTEE")) return "Absentee Owner";
                       if (ownerStatus.includes("OWNER") && ownerStatus.includes("OCC")) return "Owner Occupied";
                       if (ownerStatus === "A") return "Absentee Owner";
                       if (ownerStatus === "O" || ownerStatus === "S") return "Owner Occupied";
 
-                      // Check summary.absenteeInd — ATTOM uses: "A"/"ABSENTEE" = absentee, "O"/"OWNER OCCUPIED" = occupied
+                      // Check summary.absenteeInd — "A"/"ABSENTEE" = absentee, "O"/"OWNER OCCUPIED" = occupied
                       const ind = (p.summary?.absenteeInd || "").toUpperCase();
                       if (ind.includes("ABSENTEE") || ind === "A") return "Absentee Owner";
                       if (ind === "O" || ind === "S" || ind.includes("OWNER OCC")) return "Owner Occupied";

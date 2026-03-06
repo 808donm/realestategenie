@@ -82,8 +82,8 @@ interface AttomProperty {
 
 /**
  * Resolve the owner object from a property.
- * ATTOM expandedprofile nests owner inside assessment.owner. The server-side
- * normalizeAttomProperty() promotes it, but as a safety net we also check
+ * Some data sources nest owner inside assessment.owner. The server-side
+ * normalization promotes it, but as a safety net we also check
  * assessment.owner client-side and merge when the top-level owner is empty.
  */
 function resolveOwner(p: AttomProperty): AttomProperty["owner"] | undefined {

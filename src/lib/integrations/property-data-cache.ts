@@ -4,7 +4,7 @@ import { createClient, SupabaseClient } from "@supabase/supabase-js";
 /**
  * Unified Property Data Cache
  *
- * Provider-agnostic cache layer shared by Realie.ai (primary) and ATTOM (fallback).
+ * Provider-agnostic cache layer for Realie.ai property data and free data sources.
  * All property data is cached for 7 days regardless of source. The cache refreshes
  * weekly — if a zip code or property hasn't been queried before, it's fetched fresh
  * and then cached for 7 days.
@@ -26,7 +26,7 @@ const MAX_MEMORY_CACHE_SIZE = 500;
 // ── Cache Key ──────────────────────────────────────────────────────────────
 
 export function buildPropertyCacheKey(
-  provider: "realie" | "attom" | "unified",
+  provider: "realie" | "free-data" | "unified",
   endpoint: string,
   params: Record<string, any>
 ): string {
@@ -48,7 +48,7 @@ interface CacheEntry {
   data: any;
   expiresAt: number;
   lastAccessed: number;
-  source: "realie" | "attom" | "merged";
+  source: "realie" | "free-data" | "computed" | "merged";
 }
 
 const cache = new Map<string, CacheEntry>();
@@ -67,7 +67,7 @@ export function propertyCacheGet(key: string): { data: any; source: string } | n
 export function propertyCacheSet(
   key: string,
   data: any,
-  source: "realie" | "attom" | "merged"
+  source: "realie" | "free-data" | "computed" | "merged"
 ): void {
   if (cache.size >= MAX_MEMORY_CACHE_SIZE) {
     let oldestKey: string | null = null;
@@ -170,7 +170,7 @@ export async function propertyDbWrite(
   key: string,
   _provider: string,
   data: any,
-  source: "realie" | "attom" | "merged"
+  source: "realie" | "free-data" | "computed" | "merged"
 ): Promise<void> {
   const sb = getSupabase();
   if (!sb) return;
@@ -243,7 +243,7 @@ export function propertyDiskWrite(
   _key: string,
   _provider: string,
   _data: any,
-  _source: "realie" | "attom" | "merged"
+  _source: "realie" | "free-data" | "computed" | "merged"
 ): void {
   // No-op — use propertyDbWrite instead
 }
@@ -255,7 +255,7 @@ export function propertyDiskPurgeExpired(): number {
 /**
  * Deep merge two property objects. Values from `base` are kept unless
  * `supplement` has a non-null/undefined value for the same path.
- * This lets Realie data take priority while ATTOM fills gaps.
+ * This lets Realie data take priority while free sources fill gaps.
  */
 export function mergePropertyData(base: any, supplement: any): any {
   if (!supplement) return base;
