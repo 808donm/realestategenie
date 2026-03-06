@@ -488,6 +488,9 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const endpoint = searchParams.get("endpoint") || "expanded";
 
+    // source=attom: skip Realie entirely (saves Realie tokens for supplement calls)
+    const preferredSource = searchParams.get("source") || "auto";
+
     // Build params from query string — string-valued filters
     const params: Record<string, any> = {};
     const stringKeys = [
@@ -616,8 +619,10 @@ export async function GET(request: NextRequest) {
       dataSource = "attom";
 
     } else if (REALIE_CAPABLE_ENDPOINTS.has(endpoint)) {
-      // ── Realie-first for property data endpoints
-      const realieResult = await fetchFromRealie(endpoint, params);
+      // ── Realie-first for property data endpoints (unless source=attom)
+      const realieResult = preferredSource === "attom"
+        ? null
+        : await fetchFromRealie(endpoint, params);
 
       if (realieResult?.property?.length > 0) {
         result = realieResult;

@@ -189,7 +189,7 @@ export default function PropertyDetailModal({
 
     setAvmLoading(true);
 
-    const params = new URLSearchParams({ endpoint: "attomavm" });
+    const params = new URLSearchParams({ endpoint: "attomavm", source: "attom" });
     if (attomId) {
       params.set("attomid", String(attomId));
     } else {
@@ -347,9 +347,11 @@ export default function PropertyDetailModal({
     });
 
     // Fetch base properties + expanded data in parallel for enrichment
+    // Use source=attom for the expanded supplement to save Realie tokens
     const baseUrl = `/api/integrations/attom/property?${params.toString()}`;
     const expandedParams = new URLSearchParams(params);
     expandedParams.set("endpoint", "expanded");
+    expandedParams.set("source", "attom"); // supplement — save Realie tokens
     const expandedUrl = `/api/integrations/attom/property?${expandedParams.toString()}`;
 
     Promise.all([
@@ -413,7 +415,7 @@ export default function PropertyDetailModal({
     setEnrichedFinancialLoading(true);
 
     const buildParams = (endpoint: string) => {
-      const params = new URLSearchParams({ endpoint });
+      const params = new URLSearchParams({ endpoint, source: "attom" }); // supplement — save Realie tokens
       if (attomId) params.set("attomid", String(attomId));
       else {
         if (addr1) params.set("address1", addr1);
@@ -426,7 +428,7 @@ export default function PropertyDetailModal({
     // address-based lookups — attomId is not supported. Always use address params,
     // with attomId as fallback only if address is unavailable.
     const buildAddrParams = (endpoint: string) => {
-      const params = new URLSearchParams({ endpoint });
+      const params = new URLSearchParams({ endpoint, source: "attom" }); // supplement — save Realie tokens
       if (addr1) {
         params.set("address1", addr1);
         if (addr2) params.set("address2", addr2);

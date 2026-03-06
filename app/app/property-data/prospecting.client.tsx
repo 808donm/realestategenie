@@ -614,6 +614,10 @@ export default function Prospecting() {
 
     if (endpointOverride) {
       params.set("endpoint", endpointOverride);
+      // Supplement calls use ATTOM directly — the primary search already
+      // got comprehensive data from Realie, so these are just filling gaps.
+      // This conserves Realie API tokens.
+      params.set("source", "attom");
       // Valuation endpoints don't support pagination — strip page/pagesize
       // (server strips them too, but cleaner to not send them)
       const noPaginationEndpoints = ["rentalavm", "homeequity", "preforeclosure"];
@@ -681,11 +685,13 @@ export default function Prospecting() {
       if (needsExpanded) {
         const suppParams = new URLSearchParams(params);
         suppParams.set("endpoint", "expanded");
+        suppParams.set("source", "attom"); // supplement — save Realie tokens
         suppFetches.push(fetch(`/api/integrations/attom/property?${suppParams.toString()}`).then(r => r.json()).catch(() => ({ property: [] })));
       }
       if (needsAvm) {
         const avmParams = new URLSearchParams(params);
         avmParams.set("endpoint", "avm");
+        avmParams.set("source", "attom"); // supplement — save Realie tokens
         suppFetches.push(fetch(`/api/integrations/attom/property?${avmParams.toString()}`).then(r => r.json()).catch(() => ({ property: [] })));
       }
       if (needsRentalAvm) {
@@ -1345,6 +1351,7 @@ export default function Prospecting() {
                     const qs = new URLSearchParams({
                       endpoint: "expanded",
                       attomId: String(p.identifier!.attomId),
+                      source: "attom", // supplement — save Realie tokens
                     });
                     const res = await fetch(`/api/integrations/attom/property?${qs}`);
                     if (!res.ok) return null;
