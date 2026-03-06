@@ -553,7 +553,7 @@ export async function GET(request: NextRequest) {
         // Realie returned no data
         console.log(`[PropertyData] Realie returned no data for ${endpoint}`);
         return NextResponse.json(
-          { success: true, endpoint, property: [], message: "No property data provider returned results" },
+          { success: true, endpoint, dataSource: "realie", property: [], message: "No property data provider returned results" },
           { status: 200, headers: { "X-Property-Cache": "API", "X-Property-Source": "none" } },
         );
       }
