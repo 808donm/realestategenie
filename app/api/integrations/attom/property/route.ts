@@ -19,6 +19,11 @@ const ATTOM_ONLY_ENDPOINTS = new Set([
   // modelValueMax) in every property response, so standalone AVM lookups
   // should go to ATTOM directly to avoid burning Realie tokens.
   "avm", "attomavm", "avmhistory",
+  // Sale snapshot/history endpoints: these rely on ATTOM-specific date range
+  // filtering (startSaleSearchDate/endSaleSearchDate) that Realie doesn't support.
+  // Used by Just Sold Farming mode which needs recent sales only.
+  "salesnapshot", "saleshistory", "saleshistorybasic",
+  "saleshistoryexpanded", "saleshistorysnapshot",
   "neighborhood", "community", "poi", "poicategories",
   "schools", "schooldistrict", "schoolprofile",
   "hazardrisk", "climaterisk", "riskprofile",
@@ -33,8 +38,7 @@ const REALIE_CAPABLE_ENDPOINTS = new Set([
   "expanded", "detail", "detailowner", "detailmortgage",
   "detailmortgageowner", "profile", "snapshot", "id",
   "assessment", "assessmentsnapshot", "assessmenthistory",
-  "sale", "salesnapshot", "saleshistory", "saleshistorybasic",
-  "saleshistoryexpanded", "saleshistorysnapshot",
+  "sale", // single-property sale lookup (no date filtering needed)
   // avm/attomavm/avmhistory moved to ATTOM_ONLY — Realie already embeds AVM
   "parcelboundary",
   "comparables",
@@ -167,6 +171,27 @@ async function fetchFromRealie(
       console.log(`[Realie] No results for ${endpoint}`);
       return null;
     }
+
+    // Debug: log raw Realie fields vs mapped fields to diagnose data loss
+    const rawSample = response.properties[0];
+    const mappedSample = mapRealieToAttomShape(rawSample);
+    console.log(`[Realie] RAW fields (first parcel):`, Object.keys(rawSample).join(", "));
+    console.log(`[Realie] RAW critical values:`, JSON.stringify({
+      ownerName: rawSample.ownerName, owner_name: rawSample.owner_name,
+      modelValue: rawSample.modelValue, model_value: rawSample.model_value,
+      transferPrice: rawSample.transferPrice, transfer_price: rawSample.transfer_price,
+      totalAssessedValue: rawSample.totalAssessedValue, total_assessed_value: rawSample.total_assessed_value,
+      totalLienBalance: rawSample.totalLienBalance, total_lien_balance: rawSample.total_lien_balance,
+      ownerAddressLine1: rawSample.ownerAddressLine1, owner_address_line1: rawSample.owner_address_line1,
+    }));
+    console.log(`[Realie] MAPPED critical values:`, JSON.stringify({
+      owner: mappedSample.owner?.owner1?.fullName,
+      avm: mappedSample.avm?.amount?.value,
+      sale: mappedSample.sale?.amount?.saleAmt,
+      assessed: mappedSample.assessment?.assessed?.assdTtlValue,
+      mortgage: mappedSample.mortgage?.amount,
+      absentee: mappedSample.owner?.absenteeOwnerStatus,
+    }));
 
     // Map Realie parcels to ATTOM-compatible property shape
     const properties = response.properties.map(mapRealieToAttomShape);
@@ -657,8 +682,10 @@ export async function GET(request: NextRequest) {
         result = realieResult;
         dataSource = "realie";
 
-        // Check Realie data quality — if critical fields are mostly missing,
-        // supplement with ATTOM to fill gaps (owner names, AVM, sale data, etc.)
+        // Check Realie data quality per-category — if ANY critical category
+        // (owner names, AVM/values, sales) is mostly empty, supplement with ATTOM.
+        // The old averaged check (25% across 4 categories) missed cases where
+        // assessment data masked empty owner/AVM/sale fields.
         const props = result.property as any[];
         const total = props.length;
         const withOwner = props.filter((p: any) => p.owner?.owner1?.fullName).length;
@@ -667,17 +694,24 @@ export async function GET(request: NextRequest) {
         const withAssessment = props.filter((p: any) =>
           p.assessment?.assessed?.assdTtlValue || p.assessment?.market?.mktTtlValue
         ).length;
-        const qualityPct = total > 0
-          ? ((withOwner + withAvm + withSale + withAssessment) / (total * 4)) * 100
-          : 0;
+        const withValue = props.filter((p: any) =>
+          p.avm?.amount?.value || p.assessment?.assessed?.assdTtlValue || p.assessment?.market?.mktTtlValue
+        ).length;
+
+        const ownerPct = total > 0 ? (withOwner / total) * 100 : 0;
+        const valuePct = total > 0 ? (withValue / total) * 100 : 0;
+        const salePct = total > 0 ? (withSale / total) * 100 : 0;
 
         console.log(
           `[PropertyData] Realie quality for ${endpoint}: ${total} props, ` +
-          `${withOwner} owners, ${withAvm} AVM, ${withSale} sales, ${withAssessment} assessments ` +
-          `(${qualityPct.toFixed(0)}% coverage)`
+          `${withOwner} owners (${ownerPct.toFixed(0)}%), ${withAvm} AVM, ${withSale} sales (${salePct.toFixed(0)}%), ` +
+          `${withAssessment} assessments, ${withValue} with any value (${valuePct.toFixed(0)}%)`
         );
 
-        if (qualityPct < 25) {
+        // Supplement with ATTOM if ANY critical category is below 10%
+        const needsSupplement = ownerPct < 10 || valuePct < 10;
+        if (needsSupplement) {
+          console.log(`[PropertyData] Realie data gaps detected (owners: ${ownerPct.toFixed(0)}%, values: ${valuePct.toFixed(0)}%) — supplementing with ATTOM`);
           // Realie data is too sparse — supplement with ATTOM
           const attomClient = await getAttomClient();
           if (attomClient) {
@@ -730,7 +764,7 @@ export async function GET(request: NextRequest) {
             }
           }
         } else {
-          console.log(`[PropertyData] Realie data quality OK — skipping ATTOM supplement`);
+          console.log(`[PropertyData] Realie data quality OK (owners: ${ownerPct.toFixed(0)}%, values: ${valuePct.toFixed(0)}%) — skipping ATTOM supplement`);
         }
       } else {
         // Realie didn't return data — fall back entirely to ATTOM
