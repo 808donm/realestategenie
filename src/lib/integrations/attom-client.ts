@@ -1325,9 +1325,9 @@ export class AttomClient {
 
   /**
    * Fetch neighborhood profile for a given address.
-   * Only fetches community data (crime scores, natural disaster hazards).
-   * Schools, POI, and sales trends are excluded to minimize ATTOM API usage
-   * — Realie already covers property/AVM data.
+   * Fetches community data (crime scores, natural disaster hazards) and
+   * nearby schools in parallel. POI and sales trends excluded to minimize
+   * ATTOM API usage — Realie covers property/AVM data.
    */
   async getNeighborhoodProfile(options: {
     address1?: string;
@@ -1346,8 +1346,7 @@ export class AttomClient {
     console.log("[ATTOM] getNeighborhoodProfile called with:", JSON.stringify(options));
 
     // Community profile: uses v4 /neighborhood/community (requires geoIdV4).
-    // Returns crime scores and natural disaster indexes — the only
-    // neighborhood data we need from ATTOM.
+    // Returns crime scores and natural disaster indexes.
     const communityParams: AttomSearchParams = {
       postalcode: options.postalcode,
       geoIdV4: options.geoidv4,
@@ -1357,17 +1356,28 @@ export class AttomClient {
       longitude: options.longitude,
     };
 
-    let communityResult: any = null;
-    try {
-      communityResult = await this.getCommunityProfile(communityParams);
-      console.log("[ATTOM] Neighborhood results - community: fulfilled");
-    } catch (e) {
-      console.log("[ATTOM] Community rejection:", (e as Error)?.message);
-    }
+    // School search: v4 /school/search (accepts geoIdV4, lat/lng + radius)
+    const schoolParams: AttomSearchParams = {
+      latitude: options.latitude,
+      longitude: options.longitude,
+      postalcode: options.postalcode,
+      geoIdV4: options.geoidv4,
+      radius: options.radius || 3,
+      pagesize: 15,
+    };
+
+    const [community, schools] = await Promise.allSettled([
+      this.getCommunityProfile(communityParams),
+      this.getSchoolSearch(schoolParams),
+    ]);
+
+    console.log("[ATTOM] Neighborhood results - community:", community.status, "schools:", schools.status);
+    if (community.status === "rejected") console.log("[ATTOM] Community rejection:", (community as PromiseRejectedResult).reason?.message);
+    if (schools.status === "rejected") console.log("[ATTOM] Schools rejection:", (schools as PromiseRejectedResult).reason?.message);
 
     return {
-      community: communityResult,
-      schools: null,
+      community: community.status === "fulfilled" ? community.value : null,
+      schools: schools.status === "fulfilled" ? schools.value : null,
       poi: null,
       salesTrends: null,
     };
