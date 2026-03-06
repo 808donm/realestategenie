@@ -882,15 +882,13 @@ export default function PropertyDetailModal({
                 </div>
               )}
 
-              {/* Mortgage & Equity — from Realie primary response */}
+              {/* Mortgage & Foreclosure — from Realie primary response */}
               {(() => {
                 const m = p.mortgage;
-                const he = (p as any).homeEquity;
                 const fc = (p as any).foreclosure;
                 const hasMortgage = m && (m.amount || m.lender?.fullName);
-                const hasEquity = he && (he.equity != null || he.ltv != null);
                 const hasForeclosure = fc && (fc.actionType || fc.recordingDate || fc.auctionDate);
-                if (!hasMortgage && !hasEquity && !hasForeclosure) return null;
+                if (!hasMortgage && !hasForeclosure) return null;
 
                 return (
                   <>
@@ -899,15 +897,6 @@ export default function PropertyDetailModal({
                         <Field label="Outstanding Balance" value={m.amount != null ? fmt(Number(m.amount)) : undefined} />
                         <Field label="Lender" value={m.lender?.fullName} />
                         <Field label="Lien Count" value={m.lienCount} />
-                      </Section>
-                    )}
-                    {hasEquity && (
-                      <Section title="Equity & LTV">
-                        <Field label="Estimated Equity" value={he.equity != null ? fmt(Number(he.equity)) : undefined} />
-                        <Field label="Current LTV" value={he.ltv != null ? `${Number(he.ltv).toFixed(1)}%` : undefined} />
-                        <Field label="Purchase LTV" value={he.ltvPurchase != null ? `${Number(he.ltvPurchase).toFixed(1)}%` : undefined} />
-                        <Field label="AVM (Est. Value)" value={he.estimatedValue != null ? fmt(Number(he.estimatedValue)) : undefined} />
-                        <Field label="Outstanding Balance" value={he.outstandingBalance != null ? fmt(Number(he.outstandingBalance)) : undefined} />
                       </Section>
                     )}
                     {hasForeclosure && (
