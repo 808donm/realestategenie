@@ -632,11 +632,81 @@ export async function GET(request: NextRequest) {
         result = realieResult;
         dataSource = "realie";
 
-        // Realie returns comprehensive property data (owner, mortgage,
-        // assessment, AVM, building, lot) — no ATTOM supplement needed.
-        // ATTOM is only needed for its exclusive endpoints (neighborhood,
-        // schools, hazard/risk, trends) which go through ATTOM_ONLY_ENDPOINTS.
-        console.log(`[PropertyData] Realie returned ${result.property.length} properties for ${endpoint} — skipping ATTOM supplement`);
+        // Check Realie data quality — if critical fields are mostly missing,
+        // supplement with ATTOM to fill gaps (owner names, AVM, sale data, etc.)
+        const props = result.property as any[];
+        const total = props.length;
+        const withOwner = props.filter((p: any) => p.owner?.owner1?.fullName).length;
+        const withAvm = props.filter((p: any) => p.avm?.amount?.value).length;
+        const withSale = props.filter((p: any) => p.sale?.amount?.saleAmt).length;
+        const withAssessment = props.filter((p: any) =>
+          p.assessment?.assessed?.assdTtlValue || p.assessment?.market?.mktTtlValue
+        ).length;
+        const qualityPct = total > 0
+          ? ((withOwner + withAvm + withSale + withAssessment) / (total * 4)) * 100
+          : 0;
+
+        console.log(
+          `[PropertyData] Realie quality for ${endpoint}: ${total} props, ` +
+          `${withOwner} owners, ${withAvm} AVM, ${withSale} sales, ${withAssessment} assessments ` +
+          `(${qualityPct.toFixed(0)}% coverage)`
+        );
+
+        if (qualityPct < 25) {
+          // Realie data is too sparse — supplement with ATTOM
+          const attomClient = await getAttomClient();
+          if (attomClient) {
+            try {
+              const attomResult = await fetchFromAttom(attomClient, endpoint, params);
+              const attomProps = (attomResult?.property || []) as any[];
+
+              if (attomProps.length > 0) {
+                // Merge: use ATTOM as base, overlay Realie's mortgage/equity data
+                const realieByAddr = new Map<string, any>();
+                const realieByApn = new Map<string, any>();
+                for (const rp of props) {
+                  const addr = rp.address?.oneLine?.toLowerCase().trim();
+                  if (addr) realieByAddr.set(addr, rp);
+                  const apn = rp.identifier?.apn;
+                  if (apn) realieByApn.set(apn, rp);
+                }
+
+                result.property = attomProps.map((ap: any) => {
+                  const addr = ap.address?.oneLine?.toLowerCase().trim();
+                  const apn = ap.identifier?.apn;
+                  const rp = (addr ? realieByAddr.get(addr) : null)
+                    || (apn ? realieByApn.get(apn) : null);
+
+                  if (!rp) return ap;
+
+                  // Merge Realie's mortgage/equity/foreclosure into ATTOM base
+                  return {
+                    ...ap,
+                    // Keep ATTOM owner if present, else use Realie's
+                    owner: ap.owner?.owner1?.fullName ? ap.owner : (rp.owner?.owner1?.fullName ? rp.owner : ap.owner),
+                    // Keep ATTOM AVM if present, else use Realie's
+                    avm: ap.avm?.amount?.value ? ap.avm : (rp.avm || ap.avm),
+                    // Keep ATTOM sale if present, else use Realie's
+                    sale: ap.sale?.amount?.saleAmt ? ap.sale : (rp.sale || ap.sale),
+                    // Keep ATTOM assessment if richer, else use Realie's
+                    assessment: ap.assessment?.assessed?.assdTtlValue ? ap.assessment : (rp.assessment || ap.assessment),
+                    // Prefer Realie's pre-calculated equity/mortgage data
+                    mortgage: rp.mortgage?.amount ? rp.mortgage : (ap.mortgage || rp.mortgage),
+                    homeEquity: rp.homeEquity || ap.homeEquity,
+                    foreclosure: rp.foreclosure?.actionType ? rp.foreclosure : ap.foreclosure,
+                  };
+                });
+
+                dataSource = "merged";
+                console.log(`[PropertyData] Merged ${attomProps.length} ATTOM props with Realie mortgage/equity data`);
+              }
+            } catch (attomErr) {
+              console.warn(`[PropertyData] ATTOM supplement failed, using Realie-only data:`, attomErr);
+            }
+          }
+        } else {
+          console.log(`[PropertyData] Realie data quality OK — skipping ATTOM supplement`);
+        }
       } else {
         // Realie didn't return data — fall back entirely to ATTOM
         console.log(`[PropertyData] Realie returned no data for ${endpoint}, falling back to ATTOM`);

@@ -290,7 +290,13 @@ export function mapRealieToAttomShape(parcel: RealieParcel): any {
       owner2: owner2 ? { fullName: owner2 } : undefined,
       corporateIndicator: parcel.ownerComCount && parcel.ownerComCount > 0 ? "Y" : "N",
       absenteeOwnerStatus: ownerOccupied === false ? "A" : ownerOccupied === true ? "O" : undefined,
-      mailingAddressOneLine: parcel.ownerAddressFull,
+      mailingAddressOneLine: parcel.ownerAddressFull
+        || (parcel.ownerAddressLine1 ? [
+            parcel.ownerAddressLine1,
+            parcel.ownerCity,
+            parcel.ownerState,
+            parcel.ownerZipCode,
+          ].filter(Boolean).join(", ") : undefined),
       ownerOccupied: ownerOccupied === true ? "Y" : ownerOccupied === false ? "N" : undefined,
     },
     building: {
