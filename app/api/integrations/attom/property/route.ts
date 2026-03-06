@@ -19,10 +19,9 @@ const ATTOM_ONLY_ENDPOINTS = new Set([
   // modelValueMax) in every property response, so standalone AVM lookups
   // should go to ATTOM directly to avoid burning Realie tokens.
   "avm", "attomavm", "avmhistory",
-  // Sale snapshot/history endpoints: these rely on ATTOM-specific date range
-  // filtering (startSaleSearchDate/endSaleSearchDate) that Realie doesn't support.
-  // Used by Just Sold Farming mode which needs recent sales only.
-  "salesnapshot", "saleshistory", "saleshistorybasic",
+  // Sale history detail endpoints stay ATTOM-only (detailed transaction records).
+  // salesnapshot goes through Realie via transferedSince param.
+  "saleshistory", "saleshistorybasic",
   "saleshistoryexpanded", "saleshistorysnapshot",
   "neighborhood", "community", "poi", "poicategories",
   "schools", "schooldistrict", "schoolprofile",
@@ -38,7 +37,7 @@ const REALIE_CAPABLE_ENDPOINTS = new Set([
   "expanded", "detail", "detailowner", "detailmortgage",
   "detailmortgageowner", "profile", "snapshot", "id",
   "assessment", "assessmentsnapshot", "assessmenthistory",
-  "sale", // single-property sale lookup (no date filtering needed)
+  "sale", "salesnapshot", // sale date filtering via Realie's transferedSince param
   // avm/attomavm/avmhistory moved to ATTOM_ONLY — Realie already embeds AVM
   "parcelboundary",
   "comparables",

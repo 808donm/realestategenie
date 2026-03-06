@@ -219,6 +219,9 @@ export interface RealieSearchParams {
   owner_occupied?: boolean;
   absentee_owner?: boolean;
 
+  // Sale/transfer filtering
+  transferedSince?: string; // Days to look back for transfers (e.g., "30")
+
   // Comparables
   timeFrame?: number;   // months
   maxResults?: number;
@@ -559,6 +562,7 @@ export class RealieClient {
       max_value: params.max_value,
       owner_occupied: params.owner_occupied,
       absentee_owner: params.absentee_owner,
+      transferedSince: params.transferedSince,
       page: params.page,
       limit: params.limit,
     });
@@ -798,6 +802,27 @@ export function mapAttomParamsToRealie(
   // Absentee owner
   if (params.absenteeowner === "Y") mapped.absentee_owner = true;
   if (params.absenteeowner === "N") mapped.owner_occupied = true;
+
+  // Sale date filtering — convert ATTOM's startSaleSearchDate/endSaleSearchDate
+  // to Realie's transferedSince (days to look back).
+  // ATTOM uses "MM/DD/YYYY" or "YYYY-MM-DD" date strings.
+  if (params.startSaleSearchDate) {
+    const startStr = String(params.startSaleSearchDate);
+    // Parse both "MM/DD/YYYY" and "YYYY-MM-DD" formats
+    let startDate: Date | null = null;
+    if (startStr.includes("/")) {
+      const [m, d, y] = startStr.split("/").map(Number);
+      startDate = new Date(y, m - 1, d);
+    } else {
+      startDate = new Date(startStr);
+    }
+    if (startDate && !isNaN(startDate.getTime())) {
+      const daysBack = Math.ceil((Date.now() - startDate.getTime()) / (24 * 60 * 60 * 1000));
+      if (daysBack > 0) {
+        mapped.transferedSince = String(daysBack);
+      }
+    }
+  }
 
   // Pagination
   if (params.page) mapped.page = Number(params.page);
