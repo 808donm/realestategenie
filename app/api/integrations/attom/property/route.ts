@@ -89,13 +89,17 @@ async function getAttomClient(): Promise<AttomClient | null> {
 async function getRealieClient(): Promise<RealieClient | null> {
   try {
     // Try DB-stored integration first
-    const { data: integration } = await supabaseAdmin
+    const { data: integration, error: dbError } = await supabaseAdmin
       .from("integrations")
       .select("config")
       .eq("provider", "realie")
       .eq("status", "connected")
       .limit(1)
       .maybeSingle();
+
+    if (dbError) {
+      console.error(`[Realie] DB lookup failed:`, dbError.message);
+    }
 
     if (integration?.config) {
       const config =
@@ -104,13 +108,21 @@ async function getRealieClient(): Promise<RealieClient | null> {
           : integration.config;
 
       if (config.api_key) {
+        console.log(`[Realie] Client created from DB integration (key: ${config.api_key.substring(0, 8)}...)`);
         return new RealieClient({ apiKey: config.api_key });
+      } else {
+        console.warn(`[Realie] Integration found in DB but api_key is missing from config`);
       }
+    } else {
+      console.log(`[Realie] No connected integration found in DB${dbError ? " (query failed)" : ""}`);
     }
 
     // Fall back to env var
-    return createRealieClient();
-  } catch {
+    const envClient = createRealieClient();
+    console.log(`[Realie] Client created from REALIE_API_KEY env var`);
+    return envClient;
+  } catch (err: any) {
+    console.warn(`[Realie] Failed to create client: ${err?.message || err}`);
     return null;
   }
 }
@@ -124,10 +136,16 @@ async function fetchFromRealie(
   params: Record<string, any>
 ): Promise<any | null> {
   const realieParams = mapAttomParamsToRealie(endpoint, params);
-  if (!realieParams) return null;
+  if (!realieParams) {
+    console.log(`[Realie] Endpoint "${endpoint}" not mappable to Realie — skipping`);
+    return null;
+  }
 
   const client = await getRealieClient();
-  if (!client) return null;
+  if (!client) {
+    console.warn(`[Realie] No Realie client available (API key not configured?) — falling back to ATTOM`);
+    return null;
+  }
 
   try {
     let response;
@@ -519,6 +537,9 @@ export async function GET(request: NextRequest) {
     // source=attom: skip Realie entirely (saves Realie tokens for supplement calls)
     const preferredSource = searchParams.get("source") || "auto";
 
+    // nocache=1: bypass all cache layers and force a fresh API call
+    const noCache = searchParams.get("nocache") === "1";
+
     // Build params from query string — string-valued filters
     const params: Record<string, any> = {};
     const stringKeys = [
@@ -633,9 +654,9 @@ export async function GET(request: NextRequest) {
     };
 
     // Layer 1: in-memory cache (fastest)
-    const memoryCached = propertyCacheGet(cacheKey);
+    const memoryCached = !noCache ? propertyCacheGet(cacheKey) : null;
     if (memoryCached && isCachedDataUsable(memoryCached.data)) {
-      return NextResponse.json(memoryCached.data, {
+      return NextResponse.json({ ...memoryCached.data, dataSource: memoryCached.source, cacheHit: "memory" }, {
         headers: {
           "X-Property-Cache": "MEMORY",
           "X-Property-Source": memoryCached.source,
@@ -644,9 +665,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Layer 2: disk cache (persists across restarts, shared across users)
-    const diskCached = propertyDiskRead(cacheKey, "unified");
+    const diskCached = !noCache ? propertyDiskRead(cacheKey, "unified") : null;
     if (diskCached && isCachedDataUsable(diskCached.data)) {
-      const payload = { success: true, endpoint, ...diskCached.data };
+      const payload = { success: true, endpoint, dataSource: diskCached.source, cacheHit: "disk", ...diskCached.data };
       propertyCacheSet(cacheKey, payload, diskCached.source as any); // promote to memory
       return NextResponse.json(payload, {
         headers: {
@@ -675,6 +696,7 @@ export async function GET(request: NextRequest) {
 
     } else if (REALIE_CAPABLE_ENDPOINTS.has(endpoint)) {
       // ── Realie-first for property data endpoints (unless source=attom)
+      console.log(`[PropertyData] Attempting Realie-first for "${endpoint}" (preferredSource: ${preferredSource})`);
       const realieResult = preferredSource === "attom"
         ? null
         : await fetchFromRealie(endpoint, params);
@@ -881,7 +903,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Store in unified 7-day cache (memory + disk)
-    const responsePayload = { success: true, endpoint, ...result };
+    const responsePayload = { success: true, endpoint, dataSource, ...result };
     propertyCacheSet(cacheKey, responsePayload, dataSource);
     propertyDiskWrite(cacheKey, "unified", result, dataSource);
 

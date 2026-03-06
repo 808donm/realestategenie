@@ -475,6 +475,9 @@ export class RealieClient {
     const response = await fetch(url.toString(), {
       headers: {
         Accept: "application/json",
+        // Send API key in both headers for compatibility — Realie docs
+        // specify x-api-key but some deployments may check Authorization.
+        "x-api-key": this.apiKey,
         Authorization: this.apiKey,
       },
     });

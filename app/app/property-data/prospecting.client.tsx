@@ -944,8 +944,9 @@ export default function Prospecting() {
    * Apply mode-specific filtering/sorting to already-fetched raw data.
    * Called both after fresh fetch and on mode switch (instant re-filter).
    */
-  const applyModeFilter = (filterMode: ProspectMode, allRaw: AttomProperty[]) => {
+  const applyModeFilter = (filterMode: ProspectMode, allRaw: AttomProperty[], source?: string) => {
     // Data diagnostics
+    const srcLabel = source ? ` [source: ${source}]` : "";
     const withDirectOwner = allRaw.filter((p) => { const o = resolveOwner(p); return o?.owner1?.fullName || o?.owner2?.fullName || o?.owner3?.fullName; }).length;
     const withMortgagor = allRaw.filter((p) => { const o = resolveOwner(p); return !o?.owner1?.fullName && !o?.owner2?.fullName && !o?.owner3?.fullName && !!getMortgagorName(p); }).length;
     const withMailAddr = allRaw.filter((p) => getMailingAddress(p)).length;
@@ -963,7 +964,8 @@ export default function Prospecting() {
         `${withDirectOwner} with owner names, ${withMortgagor} with mortgagor (via mortgage), ` +
         `${withMailAddr} with mailing addresses, ${withContact} with any contact info, ` +
         `${withValue} with property values, ${withMortgage} with mortgage data` +
-        (withContact === 0 && withAbsentee > 0 ? ` (use property addresses for skip tracing or direct mail)` : "")
+        (withContact === 0 && withAbsentee > 0 ? ` (use property addresses for skip tracing or direct mail)` : "") +
+        srcLabel
       );
 
       const matches = allRaw.filter((p) => isAbsenteeOwner(p));
@@ -981,7 +983,7 @@ export default function Prospecting() {
         `Scanned ${allRaw.length} properties — ${withDirectOwner} with owner names, ${withMortgagor} with mortgagor (via mortgage), ` +
         `${withMailAddr} with mailing addresses, ${withContact} with any contact info, ` +
         `${withSaleAmt} with sale amounts, ${withSaleDate} with sale dates, ${withMortgage} with mortgage data, ` +
-        `${withAvm} with AVM, ${withValue} with property values, ${withAbsentee} absentee`
+        `${withAvm} with AVM, ${withValue} with property values, ${withAbsentee} absentee` + srcLabel
       );
 
       const matches = allRaw.filter((p) => getDistressSignals(p).isDistressed);
@@ -999,7 +1001,7 @@ export default function Prospecting() {
         `Scanned ${allRaw.length} properties — ${withDirectOwner} with owner names, ${withMortgagor} with mortgagor (via mortgage), ` +
         `${withMailAddr} with mailing addresses, ${withContact} with any contact info, ` +
         `${withSaleAmt} with sale amounts, ${withSaleDate} with sale dates, ${withMortgage} with mortgage data, ` +
-        `${withAvm} with AVM, ${withValue} with property values, ${withAbsentee} absentee`
+        `${withAvm} with AVM, ${withValue} with property values, ${withAbsentee} absentee` + srcLabel
       );
 
       const minYearsVal = parseInt(minYearsOwned, 10) || 10;
@@ -1035,7 +1037,7 @@ export default function Prospecting() {
         `Scanned ${allRaw.length} properties — ${withDirectOwner} with owner names, ${withMortgagor} with mortgagor (via mortgage), ` +
         `${withMailAddr} with mailing addresses, ${withContact} with any contact info, ` +
         `${withSaleAmt} with sale amounts, ${withSaleDate} with sale dates, ${withMortgage} with mortgage data, ` +
-        `${withAvm} with AVM, ${withValue} with property values, ${withAbsentee} absentee`
+        `${withAvm} with AVM, ${withValue} with property values, ${withAbsentee} absentee` + srcLabel
       );
 
       const groups = groupByOwner(allRaw);
@@ -1090,7 +1092,8 @@ export default function Prospecting() {
       setDebugInfo(
         `Scanned ${allRaw.length} recent sales — ` +
         `${withPrice} with disclosed prices, ${withVal} with estimated values` +
-        (isNonDisclosure ? ` (non-disclosure state — using assessed/market values)` : "")
+        (isNonDisclosure ? ` (non-disclosure state — using assessed/market values)` : "") +
+        srcLabel
       );
       setResults(allRaw);
       setTotalCount(allRaw.length);
@@ -1236,11 +1239,17 @@ export default function Prospecting() {
         // Track whether the first page's data is sparse (ATTOM-only without Realie).
         // If so, we need per-page supplements for owner/assessment/AVM data.
         let needsPerPageSupplements = false;
+        let detectedDataSource = "unknown";
 
         for (let pg = 1; pg <= maxPages; pg++) {
           const baseData = await fetchPage(pg);
           const baseProps: AttomProperty[] = baseData.property || [];
           if (baseProps.length === 0) break;
+
+          // Capture data source from first page for diagnostics
+          if (pg === 1) {
+            detectedDataSource = baseData.dataSource || baseData.cacheHit || "unknown";
+          }
 
           const { enriched: cacheEnriched, needsExpanded, needsOwner } = enrichFromCache(baseProps, cacheSnapshot);
 
@@ -1305,7 +1314,7 @@ export default function Prospecting() {
         }
 
         // Apply mode-specific filtering, sorting, and diagnostics
-        applyModeFilter(mode, allRaw);
+        applyModeFilter(mode, allRaw, detectedDataSource);
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Search failed");
