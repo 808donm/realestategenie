@@ -914,12 +914,9 @@ export default function PropertyDetailModal({
                   <>
                     {hasMortgage && (
                       <Section title="Mortgage">
-                        <Field label="Outstanding Balance" value={m.amount != null ? fmt(Number(m.amount)) : undefined} />
+                        <Field label="Mortgage Amount" value={m.amount != null ? fmt(Number(m.amount)) : undefined} />
                         <Field label="Lender" value={m.lender?.fullName} />
                         <Field label="Lien Count" value={m.lienCount} />
-                        <Field label="Financing History" value={m.financingHistoryCount != null ? `${m.financingHistoryCount} loans` : undefined} />
-                        <Field label="Loan-to-Value" value={m.ltv != null ? `${Number(m.ltv).toFixed(1)}%` : undefined} />
-                        <Field label="LTV at Purchase" value={m.ltvPurchase != null ? `${Number(m.ltvPurchase).toFixed(1)}%` : undefined} />
                       </Section>
                     )}
                     {hasForeclosure && (
