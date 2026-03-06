@@ -1253,8 +1253,8 @@ export default function PropertyDetailModal({
                         </div>
                         {/* Additional equity details */}
                         <div style={{ display: "flex", flexWrap: "wrap", gap: 16, marginTop: 10, fontSize: 12, color: "#374151" }}>
-                          <span><strong>Active Loans:</strong> {loanCount != null ? loanCount : "Not Disclosed"}</span>
-                          <span><strong>Est. Monthly Payment:</strong> {estimatedPayment != null ? fmt(estimatedPayment) : "Not Disclosed"}</span>
+                          {loanCount != null && loanCount > 0 && <span><strong>Active Loans:</strong> {loanCount}</span>}
+                          {estimatedPayment != null && estimatedPayment > 0 && <span><strong>Est. Monthly Payment:</strong> {fmt(estimatedPayment)}</span>}
                           <span><strong>Last Sale:</strong> {lastSalePrice != null ? fmt(lastSalePrice) : "Not Disclosed"}</span>
                           <span><strong>Sale Date:</strong> {lastSaleDate || "Not Disclosed"}</span>
                         </div>
