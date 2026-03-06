@@ -576,8 +576,10 @@ export class RealieClient {
     }
 
     if (params.city) queryParams.city = params.city;
-    if (params.page) queryParams.page = params.page;
-    if (params.limit) queryParams.limit = params.limit;
+    // Realie uses offset-based pagination, not page-based
+    const limit = params.limit || 200;
+    queryParams.limit = limit;
+    if (params.page && params.page > 1) queryParams.offset = (params.page - 1) * limit;
 
     const raw = await this.request<any>("/property/address/", queryParams);
     return this.normalizeResponse(raw);
@@ -587,6 +589,11 @@ export class RealieClient {
    * Search properties by zip code with optional filters
    */
   async searchByZip(params: RealieSearchParams): Promise<RealieApiResponse> {
+    // Realie uses offset-based pagination, not page-based.
+    // Convert page number to offset: page 1 → offset 0, page 2 → offset <limit>, etc.
+    const limit = params.limit || 200;
+    const offset = params.page && params.page > 1 ? (params.page - 1) * limit : 0;
+
     const raw = await this.request<any>("/property/address/", {
       zip: params.zip,
       state: params.state,
@@ -604,8 +611,8 @@ export class RealieClient {
       owner_occupied: params.owner_occupied,
       absentee_owner: params.absentee_owner,
       transferedSince: params.transferedSince,
-      page: params.page,
-      limit: params.limit,
+      offset,
+      limit,
     });
     return this.normalizeResponse(raw);
   }
@@ -621,7 +628,11 @@ export class RealieClient {
     limit?: number;
     property_type?: string;
   }): Promise<RealieApiResponse> {
-    const raw = await this.request<any>("/property/address/", params);
+    // Realie uses offset-based pagination, not page-based
+    const limit = params.limit || 200;
+    const offset = params.page && params.page > 1 ? (params.page - 1) * limit : 0;
+    const { page: _page, limit: _limit, ...rest } = params;
+    const raw = await this.request<any>("/property/address/", { ...rest, limit, offset });
     return this.normalizeResponse(raw);
   }
 
