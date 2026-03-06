@@ -219,6 +219,10 @@ export interface RealieSearchParams {
   owner_occupied?: boolean;
   absentee_owner?: boolean;
 
+  // Comparables
+  timeFrame?: number;   // months
+  maxResults?: number;
+
   // Pagination
   page?: number;
   limit?: number;
@@ -581,6 +585,27 @@ export class RealieClient {
   }
 
   /**
+   * Get comparable sales for a property.
+   * Endpoint: /premium/comparables/?latitude=X&longitude=Y&radius=1&timeFrame=18&maxResults=25
+   */
+  async getComparables(params: {
+    latitude: number;
+    longitude: number;
+    radius?: number;
+    timeFrame?: number;
+    maxResults?: number;
+  }): Promise<RealieApiResponse> {
+    const raw = await this.request<any>("/premium/comparables/", {
+      latitude: params.latitude,
+      longitude: params.longitude,
+      radius: params.radius ?? 1,
+      timeFrame: params.timeFrame ?? 18,
+      maxResults: params.maxResults ?? 25,
+    });
+    return this.normalizeResponse(raw);
+  }
+
+  /**
    * Test the API connection
    */
   async testConnection(): Promise<{ success: boolean; message: string; serviceDown?: boolean }> {
@@ -657,6 +682,7 @@ export function mapAttomParamsToRealie(
     "saleshistoryexpanded", "saleshistorysnapshot",
     "avm", "attomavm", "avmhistory",
     "parcelboundary", "id",
+    "comparables",
   ];
 
   if (!propertyEndpoints.includes(endpoint)) {
@@ -725,6 +751,10 @@ export function mapAttomParamsToRealie(
   if (params.maxAVMValue || params.maxavmvalue) {
     mapped.max_value = Number(params.maxAVMValue || params.maxavmvalue);
   }
+
+  // Comparables
+  if (params.timeFrame) mapped.timeFrame = Number(params.timeFrame);
+  if (params.maxResults) mapped.maxResults = Number(params.maxResults);
 
   // Absentee owner
   if (params.absenteeowner === "Y") mapped.absentee_owner = true;

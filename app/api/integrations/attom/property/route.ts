@@ -14,7 +14,7 @@ import {
 
 // ── ATTOM-only endpoints (not available in Realie) ─────────────────────────
 const ATTOM_ONLY_ENDPOINTS = new Set([
-  "rentalavm", "homeequity", "comparables",
+  "rentalavm", "homeequity",
   "neighborhood", "community", "poi", "poicategories",
   "schools", "schooldistrict", "schoolprofile",
   "hazardrisk", "climaterisk", "riskprofile",
@@ -33,6 +33,7 @@ const REALIE_CAPABLE_ENDPOINTS = new Set([
   "saleshistoryexpanded", "saleshistorysnapshot",
   "avm", "attomavm", "avmhistory",
   "parcelboundary",
+  "comparables",
 ]);
 
 /**
@@ -116,7 +117,15 @@ async function fetchFromRealie(
   try {
     let response;
 
-    if (realieParams.address) {
+    if (endpoint === "comparables" && realieParams.latitude && realieParams.longitude) {
+      response = await client.getComparables({
+        latitude: realieParams.latitude,
+        longitude: realieParams.longitude,
+        radius: realieParams.radius,
+        timeFrame: realieParams.timeFrame,
+        maxResults: realieParams.maxResults,
+      });
+    } else if (realieParams.address) {
       response = await client.searchByAddress({
         address: realieParams.address,
         state: realieParams.state,
@@ -529,6 +538,8 @@ export async function GET(request: NextRequest) {
       // Sales trend intervals
       "startyear", "endyear",
       "startQuarter", "endQuarter",
+      // Comparables
+      "timeFrame", "maxResults",
       // Pagination
       "page", "pagesize",
     ];
