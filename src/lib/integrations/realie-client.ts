@@ -357,6 +357,23 @@ export function mapRealieToAttomShape(parcel: RealieParcel): any {
     mortgage: parcel.totalLienBalance ? {
       amount: parcel.totalLienBalance,
       lender: parcel.lenderName ? { fullName: parcel.lenderName } : undefined,
+      lienCount: parcel.totalLienCount,
+    } : undefined,
+    // Realie provides pre-calculated equity and LTV
+    homeEquity: (parcel.equityCurrentEstBal != null || parcel.LTVCurrentEstCombined != null) ? {
+      equity: parcel.equityCurrentEstBal ?? undefined,
+      estimatedValue: parcel.modelValue ?? undefined,
+      outstandingBalance: parcel.totalLienBalance ?? undefined,
+      ltv: parcel.LTVCurrentEstCombined ?? undefined,
+      ltvPurchase: parcel.LTVPurchase ?? undefined,
+    } : undefined,
+    // Realie provides foreclosure status fields
+    foreclosure: (parcel.forecloseCode || parcel.forecloseRecordDate || parcel.auctionDate) ? {
+      actionType: parcel.forecloseCode ?? undefined,
+      filingDate: parcel.forecloseFileDate ?? undefined,
+      recordingDate: parcel.forecloseRecordDate ?? undefined,
+      auctionDate: parcel.auctionDate ?? undefined,
+      caseNumber: parcel.forecloseCaseNum ?? undefined,
     } : undefined,
     // Parcel geometry (for boundary endpoints)
     parcelBoundary: parcel.geometry || undefined,

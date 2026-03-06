@@ -228,8 +228,8 @@ function getRentalValue(p: AttomProperty): number | null {
 }
 
 /**
- * Resolve home equity data from an ATTOM property.
- * The /valuation/homeequity endpoint returns data nested under various keys.
+ * Resolve home equity data from a property.
+ * Realie provides pre-calculated equity/LTV mapped to homeEquity in the ATTOM shape.
  */
 function resolveHomeEquity(p: AttomProperty): AttomProperty["homeEquity"] | null {
   if (p.homeEquity) return p.homeEquity;
@@ -239,16 +239,37 @@ function resolveHomeEquity(p: AttomProperty): AttomProperty["homeEquity"] | null
 }
 
 /**
- * Get the estimated equity from home equity data.
+ * Get the estimated equity from property data.
+ * Uses Realie's pre-calculated equityCurrentEstBal when available,
+ * otherwise calculates from AVM - mortgage balance.
  */
 function getEquityFromValuation(p: AttomProperty): number | null {
   const he = resolveHomeEquity(p);
-  if (!he) return null;
-  if (he.equity != null) return he.equity;
-  if (he.equityAmount != null) return he.equityAmount;
-  const avmValue = he.avmValue ?? he.avm?.amount?.value ?? he.estimatedValue;
-  const balance = he.outstandingBalance ?? he.loanBalance ?? he.mortgageBalance ?? he.estimatedBalance;
-  if (avmValue != null && balance != null) return avmValue - balance;
+  if (he) {
+    if (he.equity != null) return he.equity;
+    if (he.equityAmount != null) return he.equityAmount;
+    const avmValue = he.avmValue ?? he.avm?.amount?.value ?? he.estimatedValue;
+    const balance = he.outstandingBalance ?? he.loanBalance ?? he.mortgageBalance ?? he.estimatedBalance;
+    if (avmValue != null && balance != null) return avmValue - balance;
+  }
+  // Fallback: calculate from AVM and mortgage balance
+  const avmVal = getPropertyValue(p);
+  const mortgageAmt = getMortgageAmount(p);
+  if (avmVal != null && mortgageAmt != null) return avmVal - mortgageAmt;
+  return null;
+}
+
+/**
+ * Get the LTV percentage from property data.
+ * Uses Realie's pre-calculated LTVCurrentEstCombined when available,
+ * otherwise calculates from mortgage / AVM.
+ */
+function getLtvPct(p: AttomProperty): number | null {
+  const he = resolveHomeEquity(p);
+  if (he?.ltv != null) return he.ltv;
+  const mortgageAmt = getMortgageAmount(p);
+  const avmVal = getPropertyValue(p);
+  if (mortgageAmt != null && avmVal != null && avmVal > 0) return (mortgageAmt / avmVal) * 100;
   return null;
 }
 
@@ -316,15 +337,10 @@ function getDistressSignals(p: AttomProperty): DistressSignals {
   const mktTotal = p.assessment?.market?.mktTtlValue ?? null;
   const saleAmount = getSaleAmount(p);
 
-  let ltvPct: number | null = null;
-  let isUnderwater = false;
-  let highLtv = false;
-
-  if (mortgageAmount != null && avmValue != null && avmValue > 0) {
-    ltvPct = (mortgageAmount / avmValue) * 100;
-    isUnderwater = mortgageAmount > avmValue;
-    highLtv = ltvPct >= 80;
-  }
+  // Use Realie's pre-calculated LTV when available, otherwise calculate
+  const ltvPct = getLtvPct(p);
+  const isUnderwater = ltvPct != null ? ltvPct > 100 : false;
+  const highLtv = ltvPct != null ? ltvPct >= 80 : false;
 
   // Assessment drop: market value less than 95% of assessed value → tax overpayment pressure
   // (Broadened from 90% to 95% to catch more borderline cases)

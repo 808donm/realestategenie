@@ -139,7 +139,11 @@ export default function PropertyDetailModal({
   const yearBuilt = p.building?.summary?.yearBuilt || p.summary?.yearBuilt;
   const avmVal = p.avm?.amount?.value;
   const lastSaleAmt = p.sale?.amount?.saleAmt || p.sale?.amount?.salePrice;
-  const equity = avmVal && lastSaleAmt ? avmVal - lastSaleAmt : null;
+  // Use Realie's pre-calculated equity (AVM - outstanding mortgage balance) if available,
+  // otherwise fall back to AVM - last sale price as a rough estimate
+  const realieEquity = (p as any).homeEquity?.equity;
+  const equity = realieEquity ?? (avmVal && lastSaleAmt ? avmVal - lastSaleAmt : null);
+  const ltv = (p as any).homeEquity?.ltv;
 
   // Fetch Hawaii hazard/environmental zone data on mount (for HI properties with lat/lng)
   useEffect(() => {
@@ -491,6 +495,16 @@ export default function PropertyDetailModal({
           </div>
         </div>
       )}
+      {ltv != null && (
+        <div style={{ flex: 1, minWidth: 130, padding: "10px 14px", background: ltv >= 80 ? "#fef2f2" : "#f0fdf4", borderRadius: 8 }}>
+          <div style={{ fontSize: 11, color: ltv >= 80 ? "#dc2626" : "#059669", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
+            LTV
+          </div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: ltv >= 80 ? "#dc2626" : "#059669" }}>
+            {ltv.toFixed(1)}%
+          </div>
+        </div>
+      )}
       {/* Rental AVM from search supplement data */}
       {(() => {
         const ra = (p as any).rentalAvm;
@@ -818,11 +832,13 @@ export default function PropertyDetailModal({
                 </Section>
               )}
 
-              {p.foreclosure?.actionType && (
+              {(p.foreclosure?.actionType || p.foreclosure?.recordingDate || p.foreclosure?.auctionDate || p.foreclosure?.filingDate) && (
                 <Section title="Foreclosure">
                   <Field label="Action Type" value={p.foreclosure.actionType} />
                   <Field label="Filing Date" value={p.foreclosure.filingDate} />
+                  <Field label="Recording Date" value={p.foreclosure.recordingDate} />
                   <Field label="Auction Date" value={p.foreclosure.auctionDate} />
+                  <Field label="Case Number" value={p.foreclosure.caseNumber} />
                   <Field label="Auction Location" value={p.foreclosure.auctionLocation} />
                   <Field label="Default Amount" value={fmt(p.foreclosure.defaultAmount)} />
                   <Field label="Starting Bid" value={fmt(p.foreclosure.startingBid)} />
@@ -866,52 +882,41 @@ export default function PropertyDetailModal({
                 </div>
               )}
 
-              {/* Mortgage Detail — enriched from detailmortgage endpoint */}
-              {enrichedFinancial?.mortgageDetail && (() => {
-                const resp = enrichedFinancial.mortgageDetail;
-                const prop = resp.property?.[0] || resp;
-                // ATTOM can return multiple mortgages (first, second, equity line)
-                const mortgageRoot = prop?.mortgage;
-                const m1 = mortgageRoot?.firstConcurrent || mortgageRoot;
-                const m2 = mortgageRoot?.secondConcurrent;
-                const m3 = mortgageRoot?.thirdConcurrent || mortgageRoot?.equityLine;
-                // Borrower info may be at mortgage root level
-                const borrower1 = mortgageRoot?.borrower1 || m1?.borrower1;
-                const borrower2 = mortgageRoot?.borrower2 || m1?.borrower2;
-                if (!m1 && !m2) return null;
-
-                const renderMortgage = (m: any, title: string) => {
-                  if (!m) return null;
-                  const amt = m.amount ?? m.loanAmount ?? m.loanAmt;
-                  const hasData = amt != null || m.lender?.fullName || m.companyName || m.loanType;
-                  if (!hasData) return null;
-                  return (
-                    <Section title={title}>
-                      <Field label="Loan Amount" value={amt != null ? fmt(Number(amt)) : undefined} />
-                      <Field label="Lender" value={m.lender?.fullName || m.companyName || m.lenderName} />
-                      <Field label="Loan Type" value={m.loanType || m.loanTypeCode} />
-                      <Field label="Interest Rate" value={m.interestRate != null ? `${m.interestRate}%` : undefined} />
-                      <Field label="Rate Type" value={m.interestRateType} />
-                      <Field label="Term" value={m.term} />
-                      <Field label="Due Date" value={m.dueDate} />
-                      <Field label="Origination Date" value={m.date || m.recordingDate} />
-                      <Field label="Document Number" value={m.documentNumber || m.docNumber} />
-                      <Field label="Deed Type" value={m.deedType} />
-                      <Field label="Title Company" value={m.titleCompanyName || m.titleCompany} />
-                    </Section>
-                  );
-                };
+              {/* Mortgage & Equity — from Realie primary response */}
+              {(() => {
+                const m = p.mortgage;
+                const he = (p as any).homeEquity;
+                const fc = (p as any).foreclosure;
+                const hasMortgage = m && (m.amount || m.lender?.fullName);
+                const hasEquity = he && (he.equity != null || he.ltv != null);
+                const hasForeclosure = fc && (fc.actionType || fc.recordingDate || fc.auctionDate);
+                if (!hasMortgage && !hasEquity && !hasForeclosure) return null;
 
                 return (
                   <>
-                    {renderMortgage(m1, "First Mortgage (Detailed)")}
-                    {renderMortgage(m2, "Second Mortgage / Equity Line")}
-                    {renderMortgage(m3, "Third Mortgage / Equity Line")}
-                    {(borrower1?.fullName || borrower2?.fullName) && (
-                      <Section title="Mortgage Borrower">
-                        <Field label="Borrower 1" value={borrower1?.fullName || [borrower1?.firstNameAndMi, borrower1?.lastName].filter(Boolean).join(" ")} />
-                        <Field label="Borrower 2" value={borrower2?.fullName || [borrower2?.firstNameAndMi, borrower2?.lastName].filter(Boolean).join(" ")} />
-                        <Field label="Vesting" value={mortgageRoot?.borrowerVesting} />
+                    {hasMortgage && (
+                      <Section title="Mortgage">
+                        <Field label="Outstanding Balance" value={m.amount != null ? fmt(Number(m.amount)) : undefined} />
+                        <Field label="Lender" value={m.lender?.fullName} />
+                        <Field label="Lien Count" value={m.lienCount} />
+                      </Section>
+                    )}
+                    {hasEquity && (
+                      <Section title="Equity & LTV">
+                        <Field label="Estimated Equity" value={he.equity != null ? fmt(Number(he.equity)) : undefined} />
+                        <Field label="Current LTV" value={he.ltv != null ? `${Number(he.ltv).toFixed(1)}%` : undefined} />
+                        <Field label="Purchase LTV" value={he.ltvPurchase != null ? `${Number(he.ltvPurchase).toFixed(1)}%` : undefined} />
+                        <Field label="AVM (Est. Value)" value={he.estimatedValue != null ? fmt(Number(he.estimatedValue)) : undefined} />
+                        <Field label="Outstanding Balance" value={he.outstandingBalance != null ? fmt(Number(he.outstandingBalance)) : undefined} />
+                      </Section>
+                    )}
+                    {hasForeclosure && (
+                      <Section title="Foreclosure">
+                        <Field label="Status" value={fc.actionType} />
+                        <Field label="Filing Date" value={fc.filingDate} />
+                        <Field label="Recording Date" value={fc.recordingDate} />
+                        <Field label="Auction Date" value={fc.auctionDate} />
+                        <Field label="Case Number" value={fc.caseNumber} />
                       </Section>
                     )}
                   </>
