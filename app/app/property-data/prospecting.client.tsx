@@ -694,22 +694,30 @@ export default function Prospecting() {
 
       const baseProps: AttomProperty[] = data.property || [];
 
-      // Realie provides owner, assessment, AVM, mortgage, and equity on the
-      // primary response. Only supplement with rentalavm (ATTOM-exclusive).
-      const { enriched, needsRentalAvm } = enrichFromCache(baseProps, propertyCache);
+      const { enriched, needsRentalAvm, needsExpanded, needsOwner } = enrichFromCache(baseProps, propertyCache);
 
-      let merged: AttomProperty[];
+      // Fetch supplements for gaps in the data
+      const suppFetches: Promise<any>[] = [];
+      if (needsExpanded || needsOwner) {
+        const expParams = new URLSearchParams(params);
+        expParams.set("endpoint", "expanded");
+        expParams.set("source", "attom");
+        suppFetches.push(fetch(`/api/integrations/attom/property?${expParams.toString()}`).then(r => r.json()).catch(() => ({ property: [] })));
+      }
       if (needsRentalAvm) {
         const rentalParams = new URLSearchParams(params);
         rentalParams.set("endpoint", "rentalavm");
         rentalParams.set("source", "attom");
         rentalParams.delete("page");
         rentalParams.delete("pagesize");
-        const rentalResult = await fetch(`/api/integrations/attom/property?${rentalParams.toString()}`).then(r => r.json()).catch(() => ({ property: [] }));
-        const rentalProps = (rentalResult.property || []) as AttomProperty[];
-        merged = rentalProps.length > 0
-          ? mergeSupplementalData(enriched, [rentalProps])
-          : enriched;
+        suppFetches.push(fetch(`/api/integrations/attom/property?${rentalParams.toString()}`).then(r => r.json()).catch(() => ({ property: [] })));
+      }
+
+      let merged: AttomProperty[];
+      if (suppFetches.length > 0) {
+        const suppResults = await Promise.all(suppFetches);
+        const suppArrays = suppResults.map((r: any) => (r.property || []) as AttomProperty[]).filter(a => a.length > 0);
+        merged = suppArrays.length > 0 ? mergeSupplementalData(enriched, suppArrays) : enriched;
       } else {
         merged = enriched;
       }
@@ -880,27 +888,35 @@ export default function Prospecting() {
   const enrichFromCache = (
     properties: AttomProperty[],
     cache: Map<number, AttomProperty>
-  ): { enriched: AttomProperty[]; needsRentalAvm: boolean } => {
-    // Realie already provides owner, assessment, AVM, mortgage, and equity data
-    // on the primary search response. The only ATTOM-exclusive supplement we
-    // still need is rentalavm (rental estimates).
-    if (cache.size === 0) return { enriched: properties, needsRentalAvm: true };
+  ): { enriched: AttomProperty[]; needsRentalAvm: boolean; needsExpanded: boolean; needsOwner: boolean } => {
+    // Realie provides owner, assessment, AVM, mortgage, and equity data on the
+    // primary search response. But when Realie is unavailable and ATTOM is the
+    // sole source, the primary endpoint (detailmortgageowner) may lack AVM,
+    // assessment, and comprehensive owner data. Detect this and flag supplements.
+    if (cache.size === 0) return { enriched: properties, needsRentalAvm: true, needsExpanded: true, needsOwner: true };
 
     let needsRentalAvm = false;
+    let needsExpanded = false;
+    let needsOwner = false;
 
     const enriched = properties.map((p) => {
       const id = p.identifier?.attomId;
       const cached = id ? cache.get(id) : undefined;
       if (!cached) {
         needsRentalAvm = true;
+        needsExpanded = true;
+        needsOwner = true;
         return p;
       }
       const merged = mergeSupplementalData([p], [[cached]])[0];
       if (!resolveRentalAvm(merged)) needsRentalAvm = true;
+      const o = resolveOwner(merged);
+      if (!(o?.owner1?.fullName || o?.owner2?.fullName || o?.owner3?.fullName)) needsOwner = true;
+      if (!merged.assessment?.assessed?.assdTtlValue && !merged.avm?.amount?.value) needsExpanded = true;
       return merged;
     });
 
-    return { enriched, needsRentalAvm };
+    return { enriched, needsRentalAvm, needsExpanded, needsOwner };
   };
 
   /**
@@ -1182,18 +1198,20 @@ export default function Prospecting() {
         // see a consistent view (state updates are async).
         const cacheSnapshot = new Map(propertyCache);
 
-        // Realie provides owner, assessment, AVM, mortgage, equity, and foreclosure
-        // data on the primary search response. The only ATTOM-exclusive supplement
-        // we still need is rentalavm (rental value estimates).
+        // Pre-fetch one-shot supplements (endpoints that return all properties
+        // for the zip at once and don't support pagination).
         const firstPageCheck = enrichFromCache([], cacheSnapshot);
         let valuationSupps: AttomProperty[][] = [];
+        const valuationFetches: Promise<any>[] = [];
         if (firstPageCheck.needsRentalAvm) {
-          const rentalResult = await fetchPage(1, "rentalavm").catch(() => ({ property: [] }));
-          valuationSupps = [(rentalResult.property || []) as AttomProperty[]];
+          valuationFetches.push(fetchPage(1, "rentalavm").catch(() => ({ property: [] })));
+        }
+        if (valuationFetches.length > 0) {
+          const valuationResults = await Promise.all(valuationFetches);
+          valuationSupps = valuationResults.map((r: any) => (r.property || []) as AttomProperty[]);
         }
 
         // Fetch sales trend for this zip code (zip-level, not per-property)
-        // Only fetch if we haven't already fetched for this zip
         if (salesTrendZip !== zip.trim()) {
           const currentYear = new Date().getFullYear();
           const trendParams = new URLSearchParams({
@@ -1215,19 +1233,46 @@ export default function Prospecting() {
             .catch(() => { /* non-critical */ });
         }
 
+        // Track whether the first page's data is sparse (ATTOM-only without Realie).
+        // If so, we need per-page supplements for owner/assessment/AVM data.
+        let needsPerPageSupplements = false;
+
         for (let pg = 1; pg <= maxPages; pg++) {
-          // Always fetch the primary endpoint (determines which properties match the query)
           const baseData = await fetchPage(pg);
           const baseProps: AttomProperty[] = baseData.property || [];
           if (baseProps.length === 0) break;
 
-          // Realie provides owner, assessment, AVM, mortgage, and equity on the
-          // primary response. No per-page supplements needed — just merge cached
-          // data and one-shot rental AVM valuation.
-          const { enriched: cacheEnriched } = enrichFromCache(baseProps, cacheSnapshot);
+          const { enriched: cacheEnriched, needsExpanded, needsOwner } = enrichFromCache(baseProps, cacheSnapshot);
 
-          // Merge valuation data (rentalavm, fetched once before the loop)
-          const allSuppArrays: AttomProperty[][] = [...valuationSupps];
+          // On first page, check data quality to decide if supplements are needed.
+          // If the primary response already has owner/value data (from Realie or
+          // server-side supplementing), skip redundant supplement calls.
+          if (pg === 1) {
+            const withOwner = cacheEnriched.filter((p) => { const o = resolveOwner(p); return o?.owner1?.fullName || o?.owner2?.fullName; }).length;
+            const withValue = cacheEnriched.filter((p) => getPropertyValue(p) != null).length;
+            const ownerPct = cacheEnriched.length > 0 ? (withOwner / cacheEnriched.length) * 100 : 0;
+            const valuePct = cacheEnriched.length > 0 ? (withValue / cacheEnriched.length) * 100 : 0;
+            needsPerPageSupplements = (needsExpanded || needsOwner) && (ownerPct < 25 || valuePct < 25);
+          }
+
+          // Fetch per-page supplements if primary data is sparse
+          const suppFetches: Promise<any>[] = [];
+          if (needsPerPageSupplements) {
+            suppFetches.push(fetchPage(pg, "expanded").catch(() => ({ property: [] })));
+            if (mode === "radius") {
+              suppFetches.push(fetchPage(pg, "detailmortgageowner").catch(() => ({ property: [] })));
+            } else {
+              suppFetches.push(fetchPage(pg, "detailowner").catch(() => ({ property: [] })));
+            }
+          }
+
+          let allSuppArrays: AttomProperty[][] = [];
+          if (suppFetches.length > 0) {
+            const suppResults = await Promise.all(suppFetches);
+            allSuppArrays = suppResults.map((r: any) => (r.property || []) as AttomProperty[]);
+          }
+          // Add one-shot valuation data
+          allSuppArrays = allSuppArrays.concat(valuationSupps);
 
           let merged: AttomProperty[];
           if (allSuppArrays.length > 0) {
@@ -1248,9 +1293,6 @@ export default function Prospecting() {
           allRaw = allRaw.concat(merged);
           if (baseProps.length < pageSize) break;
         }
-
-        // Realie provides owner, assessment, AVM, mortgage, and equity data
-        // on the primary response — no per-property enrichment batches needed.
 
         // Persist the accumulated cache snapshot to state
         addToPropertyCache(allRaw);

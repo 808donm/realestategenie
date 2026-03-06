@@ -616,15 +616,17 @@ export async function GET(request: NextRequest) {
       if (!props || !Array.isArray(props) || props.length === 0) return true; // non-property endpoints, trust cache
       if (!PROPERTY_DATA_ENDPOINTS.has(endpoint)) return true; // don't quality-check non-property endpoints
 
-      // Check if at least 10% of properties have owner names OR AVM — if not, cache is stale
+      // Check owners AND values SEPARATELY — stale cache may have assessment
+      // values (from ATTOM) but no owner names, which would pass a combined check.
       const sample = props.slice(0, Math.min(50, props.length));
       const withOwner = sample.filter((p: any) => p.owner?.owner1?.fullName).length;
       const withValue = sample.filter((p: any) =>
         p.avm?.amount?.value || p.assessment?.market?.mktTtlValue || p.assessment?.assessed?.assdTtlValue
       ).length;
-      const pct = ((withOwner + withValue) / (sample.length * 2)) * 100;
-      if (pct < 10) {
-        console.log(`[PropertyCache] STALE DATA detected: ${withOwner}/${sample.length} owners, ${withValue}/${sample.length} values — refetching`);
+      const ownerPct = (withOwner / sample.length) * 100;
+      const valuePct = (withValue / sample.length) * 100;
+      if (ownerPct < 10 || valuePct < 10) {
+        console.log(`[PropertyCache] STALE DATA detected: ${withOwner}/${sample.length} owners (${ownerPct.toFixed(0)}%), ${withValue}/${sample.length} values (${valuePct.toFixed(0)}%) — refetching`);
         return false;
       }
       return true;
@@ -683,8 +685,6 @@ export async function GET(request: NextRequest) {
 
         // Check Realie data quality per-category — if ANY critical category
         // (owner names, AVM/values, sales) is mostly empty, supplement with ATTOM.
-        // The old averaged check (25% across 4 categories) missed cases where
-        // assessment data masked empty owner/AVM/sale fields.
         const props = result.property as any[];
         const total = props.length;
         const withOwner = props.filter((p: any) => p.owner?.owner1?.fullName).length;
@@ -711,7 +711,6 @@ export async function GET(request: NextRequest) {
         const needsSupplement = ownerPct < 10 || valuePct < 10;
         if (needsSupplement) {
           console.log(`[PropertyData] Realie data gaps detected (owners: ${ownerPct.toFixed(0)}%, values: ${valuePct.toFixed(0)}%) — supplementing with ATTOM`);
-          // Realie data is too sparse — supplement with ATTOM
           const attomClient = await getAttomClient();
           if (attomClient) {
             try {
@@ -737,18 +736,12 @@ export async function GET(request: NextRequest) {
 
                   if (!rp) return ap;
 
-                  // Merge Realie's mortgage/equity/foreclosure into ATTOM base
                   return {
                     ...ap,
-                    // Keep ATTOM owner if present, else use Realie's
                     owner: ap.owner?.owner1?.fullName ? ap.owner : (rp.owner?.owner1?.fullName ? rp.owner : ap.owner),
-                    // Keep ATTOM AVM if present, else use Realie's
                     avm: ap.avm?.amount?.value ? ap.avm : (rp.avm || ap.avm),
-                    // Keep ATTOM sale if present, else use Realie's
                     sale: ap.sale?.amount?.saleAmt ? ap.sale : (rp.sale || ap.sale),
-                    // Keep ATTOM assessment if richer, else use Realie's
                     assessment: ap.assessment?.assessed?.assdTtlValue ? ap.assessment : (rp.assessment || ap.assessment),
-                    // Prefer Realie's pre-calculated equity/mortgage data
                     mortgage: rp.mortgage?.amount ? rp.mortgage : (ap.mortgage || rp.mortgage),
                     homeEquity: rp.homeEquity || ap.homeEquity,
                     foreclosure: rp.foreclosure?.actionType ? rp.foreclosure : ap.foreclosure,
@@ -777,6 +770,63 @@ export async function GET(request: NextRequest) {
         }
         result = await fetchFromAttom(attomClient, endpoint, params);
         dataSource = "attom";
+
+        // ATTOM's individual endpoints (detailmortgageowner, detailowner, etc.)
+        // may return partial data for area searches. Supplement with expandedprofile
+        // which returns the most comprehensive property data from ATTOM (owner,
+        // assessment, mortgage, AVM — all in one response).
+        if (PROPERTY_DATA_ENDPOINTS.has(endpoint) && endpoint !== "expanded" && result?.property?.length > 0) {
+          const attomProps = result.property as any[];
+          const total = attomProps.length;
+          const withOwner = attomProps.filter((p: any) => p.owner?.owner1?.fullName).length;
+          const withValue = attomProps.filter((p: any) =>
+            p.avm?.amount?.value || p.assessment?.assessed?.assdTtlValue || p.assessment?.market?.mktTtlValue
+          ).length;
+          const ownerPct = total > 0 ? (withOwner / total) * 100 : 0;
+          const valuePct = total > 0 ? (withValue / total) * 100 : 0;
+
+          if (ownerPct < 25 || valuePct < 25) {
+            console.log(`[PropertyData] ATTOM ${endpoint} data sparse (owners: ${ownerPct.toFixed(0)}%, values: ${valuePct.toFixed(0)}%) — supplementing with expanded`);
+            try {
+              const expandedResult = await fetchFromAttom(attomClient, "expanded", params);
+              const expandedProps = (expandedResult?.property || []) as any[];
+              if (expandedProps.length > 0) {
+                // Build lookup by address and APN
+                const expandedByAddr = new Map<string, any>();
+                const expandedByApn = new Map<string, any>();
+                for (const ep of expandedProps) {
+                  const addr = ep.address?.oneLine?.toLowerCase().trim();
+                  if (addr) expandedByAddr.set(addr, ep);
+                  const apn = ep.identifier?.apn;
+                  if (apn) expandedByApn.set(apn, ep);
+                }
+
+                result.property = attomProps.map((ap: any) => {
+                  const addr = ap.address?.oneLine?.toLowerCase().trim();
+                  const apn = ap.identifier?.apn;
+                  const ep = (addr ? expandedByAddr.get(addr) : null)
+                    || (apn ? expandedByApn.get(apn) : null);
+                  if (!ep) return ap;
+
+                  return {
+                    ...ap,
+                    owner: ap.owner?.owner1?.fullName ? ap.owner : (ep.owner?.owner1?.fullName ? ep.owner : ap.owner),
+                    avm: ap.avm?.amount?.value ? ap.avm : (ep.avm || ap.avm),
+                    sale: ap.sale?.amount?.saleAmt ? ap.sale : (ep.sale || ap.sale),
+                    assessment: ap.assessment?.assessed?.assdTtlValue ? ap.assessment : (ep.assessment || ap.assessment),
+                    mortgage: ap.mortgage?.amount ? ap.mortgage : (ep.mortgage || ap.mortgage),
+                    building: ap.building?.size?.livingSize ? ap.building : (ep.building || ap.building),
+                    summary: { ...ep.summary, ...ap.summary },
+                  };
+                });
+
+                console.log(`[PropertyData] Supplemented ATTOM ${endpoint} with ${expandedProps.length} expanded profile records`);
+              }
+            } catch (suppErr) {
+              console.warn(`[PropertyData] ATTOM expanded supplement failed:`, suppErr);
+            }
+          }
+        }
       }
     } else {
       // Unknown endpoint — try ATTOM directly
