@@ -906,7 +906,7 @@ export default function PropertyDetailModal({
               {(() => {
                 const m = p.mortgage;
                 const fc = (p as any).foreclosure;
-                const hasMortgage = m && (m.amount != null || m.lender?.fullName || m.lienCount != null);
+                const hasMortgage = m && (m.amount != null || m.lender?.fullName || m.lienCount != null || m.financingHistoryCount != null);
                 const hasForeclosure = fc && (fc.actionType || fc.recordingDate || fc.auctionDate);
                 if (!hasMortgage && !hasForeclosure) return null;
 
@@ -914,9 +914,10 @@ export default function PropertyDetailModal({
                   <>
                     {hasMortgage && (
                       <Section title="Mortgage">
-                        <Field label="Mortgage Amount" value={m.amount != null ? fmt(Number(m.amount)) : undefined} />
+                        <Field label="Loan Amount" value={m.amount != null ? fmt(Number(m.amount)) : undefined} />
                         <Field label="Lender" value={m.lender?.fullName} />
-                        <Field label="Lien Count" value={m.lienCount} />
+                        <Field label="Outstanding Loans" value={m.lienCount != null ? `${m.lienCount} lien${Number(m.lienCount) !== 1 ? 's' : ''}` : undefined} />
+                        <Field label="Financing History" value={m.financingHistoryCount != null ? `${m.financingHistoryCount} loans` : undefined} />
                       </Section>
                     )}
                     {hasForeclosure && (
