@@ -1324,8 +1324,10 @@ export class AttomClient {
   }
 
   /**
-   * Convenience: fetch a full neighborhood profile for a given address
-   * Combines community data (v4), school search (v4), POI (v4), and sales trends (v4) in parallel
+   * Fetch neighborhood profile for a given address.
+   * Only fetches community data (crime scores, natural disaster hazards).
+   * Schools, POI, and sales trends are excluded to minimize ATTOM API usage
+   * — Realie already covers property/AVM data.
    */
   async getNeighborhoodProfile(options: {
     address1?: string;
@@ -1344,8 +1346,8 @@ export class AttomClient {
     console.log("[ATTOM] getNeighborhoodProfile called with:", JSON.stringify(options));
 
     // Community profile: uses v4 /neighborhood/community (requires geoIdV4).
-    // getCommunityProfile will attempt to resolve geoIdV4 from address2/postalcode
-    // via /location/lookup if not provided.
+    // Returns crime scores and natural disaster indexes — the only
+    // neighborhood data we need from ATTOM.
     const communityParams: AttomSearchParams = {
       postalcode: options.postalcode,
       geoIdV4: options.geoidv4,
@@ -1355,57 +1357,19 @@ export class AttomClient {
       longitude: options.longitude,
     };
 
-    // School search: v4 /school/search (accepts geoIdV4, lat/lng + radius)
-    const schoolParams: AttomSearchParams = {
-      latitude: options.latitude,
-      longitude: options.longitude,
-      postalcode: options.postalcode,
-      geoIdV4: options.geoidv4,
-      radius: options.radius || 3,
-      pagesize: 15,
-    };
-
-    // POI search: v4 /neighborhood/poi (requires address + zipcode as "City, ST ZIP")
-    const poiParams: AttomSearchParams = {
-      geoIdV4: options.geoidv4,
-      latitude: options.latitude,
-      longitude: options.longitude,
-      address1: options.address1,
-      address2: options.address2,
-      postalcode: options.postalcode,
-      radius: options.radius || 5,
-    };
-
-    // Sales trends: uses v4 /transaction/salestrends (requires geoIdV4)
-    // Fetch quarterly data for the last 3 years, for single-family residences (most relevant)
-    const currentYear = new Date().getFullYear();
-    const salesTrendParams: AttomSearchParams = {
-      geoIdV4: options.geoidv4,
-      postalcode: options.postalcode,
-      interval: "quarterly",
-      startyear: currentYear - 3,
-      endyear: currentYear,
-      propertytype: "SINGLE FAMILY RESIDENCE",
-    };
-
-    const [community, schools, poi, salesTrends] = await Promise.allSettled([
-      this.getCommunityProfile(communityParams),
-      this.getSchoolSearch(schoolParams),
-      this.getPOISearch(poiParams),
-      this.getSalesTrend(salesTrendParams),
-    ]);
-
-    console.log("[ATTOM] Neighborhood results - community:", community.status, "schools:", schools.status, "poi:", poi.status, "salesTrends:", salesTrends.status);
-    if (community.status === "rejected") console.log("[ATTOM] Community rejection:", (community as PromiseRejectedResult).reason?.message);
-    if (schools.status === "rejected") console.log("[ATTOM] Schools rejection:", (schools as PromiseRejectedResult).reason?.message);
-    if (poi.status === "rejected") console.log("[ATTOM] POI rejection:", (poi as PromiseRejectedResult).reason?.message);
-    if (salesTrends.status === "rejected") console.log("[ATTOM] Sales trends rejection:", (salesTrends as PromiseRejectedResult).reason?.message);
+    let communityResult: any = null;
+    try {
+      communityResult = await this.getCommunityProfile(communityParams);
+      console.log("[ATTOM] Neighborhood results - community: fulfilled");
+    } catch (e) {
+      console.log("[ATTOM] Community rejection:", (e as Error)?.message);
+    }
 
     return {
-      community: community.status === "fulfilled" ? community.value : null,
-      schools: schools.status === "fulfilled" ? schools.value : null,
-      poi: poi.status === "fulfilled" ? poi.value : null,
-      salesTrends: salesTrends.status === "fulfilled" ? salesTrends.value : null,
+      community: communityResult,
+      schools: null,
+      poi: null,
+      salesTrends: null,
     };
   }
 

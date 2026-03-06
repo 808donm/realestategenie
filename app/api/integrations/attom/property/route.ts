@@ -15,6 +15,10 @@ import {
 // ── ATTOM-only endpoints (not available in Realie) ─────────────────────────
 const ATTOM_ONLY_ENDPOINTS = new Set([
   "rentalavm", "homeequity",
+  // AVM endpoints: Realie already returns AVM (modelValue/modelValueMin/
+  // modelValueMax) in every property response, so standalone AVM lookups
+  // should go to ATTOM directly to avoid burning Realie tokens.
+  "avm", "attomavm", "avmhistory",
   "neighborhood", "community", "poi", "poicategories",
   "schools", "schooldistrict", "schoolprofile",
   "hazardrisk", "climaterisk", "riskprofile",
@@ -31,7 +35,7 @@ const REALIE_CAPABLE_ENDPOINTS = new Set([
   "assessment", "assessmentsnapshot", "assessmenthistory",
   "sale", "salesnapshot", "saleshistory", "saleshistorybasic",
   "saleshistoryexpanded", "saleshistorysnapshot",
-  "avm", "attomavm", "avmhistory",
+  // avm/attomavm/avmhistory moved to ATTOM_ONLY — Realie already embeds AVM
   "parcelboundary",
   "comparables",
 ]);
@@ -628,27 +632,11 @@ export async function GET(request: NextRequest) {
         result = realieResult;
         dataSource = "realie";
 
-        // Supplement with ATTOM for any missing fields
-        const attomClient = await getAttomClient();
-        if (attomClient) {
-          try {
-            const attomResult = await fetchFromAttom(attomClient, endpoint, params);
-            if (attomResult?.property?.length > 0) {
-              // Merge: Realie data takes priority, ATTOM fills gaps
-              const mergedProperties = result.property.map((realieProp: any, idx: number) => {
-                const attomProp = attomResult.property[idx];
-                if (!attomProp) return realieProp;
-                return mergePropertyData(realieProp, attomProp);
-              });
-              result = { ...result, property: mergedProperties };
-              dataSource = "merged";
-              console.log(`[PropertyData] Merged ${mergedProperties.length} properties (Realie + ATTOM)`);
-            }
-          } catch (attomError) {
-            // ATTOM supplement failed — Realie data is sufficient
-            console.log(`[PropertyData] ATTOM supplement failed, using Realie only:`, attomError);
-          }
-        }
+        // Realie returns comprehensive property data (owner, mortgage,
+        // assessment, AVM, building, lot) — no ATTOM supplement needed.
+        // ATTOM is only needed for its exclusive endpoints (neighborhood,
+        // schools, hazard/risk, trends) which go through ATTOM_ONLY_ENDPOINTS.
+        console.log(`[PropertyData] Realie returned ${result.property.length} properties for ${endpoint} — skipping ATTOM supplement`);
       } else {
         // Realie didn't return data — fall back entirely to ATTOM
         console.log(`[PropertyData] Realie returned no data for ${endpoint}, falling back to ATTOM`);
