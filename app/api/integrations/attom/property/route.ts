@@ -36,6 +36,14 @@ const REALIE_CAPABLE_ENDPOINTS = new Set([
   "comparables",
 ]);
 
+// ── Non-disclosure states ──────────────────────────────────────────────────
+// These states do not require public disclosure of real estate sale prices.
+// Comparables and sale data may be limited or unavailable.
+const NON_DISCLOSURE_STATES = new Set([
+  "AK", "HI", "ID", "IN", "KS", "LA", "ME", "MS", "MO",
+  "MT", "NM", "ND", "SD", "TX", "UT", "WY",
+]);
+
 /**
  * Helper: get a working ATTOM client (from DB config or env var)
  */
@@ -660,6 +668,39 @@ export async function GET(request: NextRequest) {
       }
       result = await fetchFromAttom(attomClient, endpoint, params);
       dataSource = "attom";
+    }
+
+    // ── Handle empty results with helpful messaging ───────────────────
+    const hasResults = result?.property?.length > 0;
+    if (!hasResults) {
+      // Try to detect the state from params or result for non-disclosure messaging
+      const stateHint =
+        params.address2?.match(/\b([A-Z]{2})\b/)?.[1] ||
+        params.address?.match(/,\s*([A-Z]{2})\s*\d{0,5}\s*$/)?.[1] ||
+        result?.property?.[0]?.address?.countrySubd;
+
+      const isNonDisclosure = stateHint && NON_DISCLOSURE_STATES.has(stateHint);
+
+      let message = "No properties found matching your search criteria.";
+      if (endpoint === "comparables") {
+        message = isNonDisclosure
+          ? `${stateHint} is a non-disclosure state — sale prices are not publicly recorded. ` +
+            "Comparable sale data is limited. Try using assessed values or AVM estimates instead."
+          : "No comparable properties found. Try increasing the search radius or time frame.";
+      } else if (
+        ["sale", "salesnapshot", "saleshistory", "saleshistorybasic",
+         "saleshistoryexpanded", "saleshistorysnapshot"].includes(endpoint)
+      ) {
+        message = isNonDisclosure
+          ? `${stateHint} is a non-disclosure state — sale prices are not publicly recorded. ` +
+            "Transfer dates and parties may still be available, but dollar amounts are typically not disclosed."
+          : "No sales records found for this property.";
+      }
+
+      return NextResponse.json(
+        { success: true, endpoint, property: [], message, nonDisclosureState: isNonDisclosure || false },
+        { headers: { "X-Property-Cache": "API", "X-Property-Source": dataSource } },
+      );
     }
 
     // Store in unified 7-day cache (memory + disk)

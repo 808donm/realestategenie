@@ -1121,7 +1121,7 @@ export default function Prospecting() {
 
       const props: AttomProperty[] = data.property || [];
       if (props.length === 0) {
-        setError("No property found at that address. Try a different address or use zip code search.");
+        setError(data.message || "No property found at that address. Try a different address or use zip code search.");
         setResults([]);
       } else {
         // Last sale data is already included in the expanded profile response —
@@ -2169,7 +2169,7 @@ export default function Prospecting() {
 
       {isLoading && (
         <div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>
-          Scanning ATTOM records (multiple pages)...
+          Scanning property records (multiple pages)...
         </div>
       )}
 

@@ -168,6 +168,11 @@ export default function PropertySearch() {
       setResults(properties);
       setTotalCount(data.status?.total || properties.length);
       setHasSearched(true);
+
+      // Show server message (e.g. non-disclosure state info) as a soft notice
+      if (properties.length === 0 && data.message) {
+        setError(data.message);
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Search failed");
       setResults([]);
@@ -423,7 +428,7 @@ export default function PropertySearch() {
 
       {/* Results */}
       {isLoading && (
-        <div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>Searching ATTOM records...</div>
+        <div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>Searching property records...</div>
       )}
 
       {!isLoading && hasSearched && results.length === 0 && (

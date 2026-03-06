@@ -422,14 +422,25 @@ export class RealieClient {
         errorText
       );
 
-      // Detect Vercel deployment errors (service is down/undeployed)
-      if (
-        response.status === 404 &&
-        errorText.includes("deployment could not be found")
-      ) {
-        throw new Error(
-          "Realie.ai service is currently unavailable (Vercel deployment not found). Property data will fall back to ATTOM."
-        );
+      // 404 with a JSON body like {"error":"No comparable properties found"}
+      // is a "no results" response, not a real error — return it for normalizeResponse
+      if (response.status === 404) {
+        // Detect Vercel deployment errors (service is down/undeployed)
+        if (errorText.includes("deployment could not be found")) {
+          throw new Error(
+            "Realie.ai service is currently unavailable (Vercel deployment not found). Property data will fall back to ATTOM."
+          );
+        }
+        // Try to parse as JSON — if it's a "no results" message, return empty
+        try {
+          const parsed = JSON.parse(errorText);
+          if (parsed.error) {
+            console.log(`[Realie] No results (404): ${parsed.error}`);
+            return parsed; // normalizeResponse will handle { error: "..." }
+          }
+        } catch {
+          // Not JSON — fall through to generic error
+        }
       }
 
       throw new Error(
@@ -446,6 +457,11 @@ export class RealieClient {
    * { properties: [...] } (list), so we handle both.
    */
   private normalizeResponse(raw: any): RealieApiResponse {
+    // Handle API error responses like { error: "No comparable properties found" }
+    if (raw?.error && !raw?.property && !raw?.properties) {
+      console.log(`[Realie] API returned error: ${raw.error}`);
+      return { properties: [], metadata: { limit: 0, offset: 0, count: 0 } };
+    }
     if (raw?.properties && Array.isArray(raw.properties)) {
       return raw as RealieApiResponse;
     }
