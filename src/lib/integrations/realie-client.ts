@@ -193,7 +193,8 @@ export interface RealieSearchParams {
   street?: string;
   city?: string;
   state?: string;
-  zip?: string;
+  zip?: string;       // mapped to "zipCode" query param (Realie uses camelCase)
+  zipCode?: string;   // direct camelCase form
 
   // Geographic search
   latitude?: number;
@@ -558,7 +559,8 @@ export class RealieClient {
     const queryParams: Record<string, string | number | boolean | undefined> = {};
 
     if (params.state) queryParams.state = params.state;
-    if (params.zip) queryParams.zip = params.zip;
+    // Realie uses "zipCode" (camelCase) as the query param, not "zip"
+    if (params.zip) queryParams.zipCode = params.zip;
 
     // If a full address is given, try to extract state for the query
     if (params.address) {
@@ -594,26 +596,14 @@ export class RealieClient {
     const limit = params.limit || 200;
     const offset = params.page && params.page > 1 ? (params.page - 1) * limit : 0;
 
-    // Build full param set — but if 400 error, retry with minimal params.
-    // Realie may not support all filter params (property_type, absentee_owner, etc.)
-    // and returns 400 for unrecognized query parameters.
+    // Realie uses camelCase query params matching their response schema.
+    // "zipCode" not "zip", "buildingArea" not "sqft", etc.
+    // Filter params (property_type, absentee_owner, etc.) may not be supported
+    // as query params — if we get a 400, retry with just zipCode + pagination.
+    const zipCode = params.zipCode || params.zip;
     const fullParams: Record<string, string | number | boolean | undefined> = {
-      zip: params.zip,
+      zipCode,
       state: params.state,
-      property_type: params.property_type,
-      min_beds: params.min_beds,
-      max_beds: params.max_beds,
-      min_baths: params.min_baths,
-      max_baths: params.max_baths,
-      min_sqft: params.min_sqft,
-      max_sqft: params.max_sqft,
-      min_year_built: params.min_year_built,
-      max_year_built: params.max_year_built,
-      min_value: params.min_value,
-      max_value: params.max_value,
-      owner_occupied: params.owner_occupied,
-      absentee_owner: params.absentee_owner,
-      transferedSince: params.transferedSince,
       offset,
       limit,
     };
@@ -622,12 +612,11 @@ export class RealieClient {
       const raw = await this.request<any>("/property/address/", fullParams);
       return this.normalizeResponse(raw);
     } catch (error: any) {
-      // If 400 Bad Request, retry with just zip + pagination (minimal params).
-      // Realie may reject unknown filter params. We'll filter client-side instead.
+      // If 400 Bad Request, retry with just zipCode + pagination (absolute minimal).
       if (error?.message?.includes("Realie API error: 400")) {
-        console.warn(`[Realie] 400 error with full params — retrying with minimal params (zip + limit/offset only)`);
+        console.warn(`[Realie] 400 error — retrying with zipCode only`);
         const raw = await this.request<any>("/property/address/", {
-          zip: params.zip,
+          zipCode,
           offset,
           limit,
         });
@@ -839,9 +828,9 @@ export function mapAttomParamsToRealie(
     }
   }
 
-  // Zip code
+  // Zip code — Realie uses "zipCode" (camelCase) as query param
   if (params.postalcode || params.postalCode) {
-    mapped.zip = params.postalcode || params.postalCode;
+    mapped.zipCode = params.postalcode || params.postalCode;
   }
 
   // Lat/Lng/Radius

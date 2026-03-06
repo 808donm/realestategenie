@@ -163,11 +163,11 @@ async function fetchFromRealie(
         address: realieParams.address,
         state: realieParams.state,
         city: realieParams.city,
-        zip: realieParams.zip,
+        zip: realieParams.zipCode || realieParams.zip,
         page: realieParams.page,
         limit: realieParams.limit,
       });
-    } else if (realieParams.zip) {
+    } else if (realieParams.zipCode || realieParams.zip) {
       response = await client.searchByZip(realieParams);
     } else if (realieParams.latitude && realieParams.longitude) {
       response = await client.searchByRadius({
