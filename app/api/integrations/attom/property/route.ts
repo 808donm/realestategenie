@@ -664,7 +664,13 @@ export async function GET(request: NextRequest) {
     }
 
     // ── Handle empty results with helpful messaging ───────────────────
-    const hasResults = result?.property?.length > 0;
+    // Skip for endpoints that return structured data instead of a property array
+    // (neighborhood returns { community, schools, poi, salesTrends })
+    const NON_PROPERTY_ARRAY_ENDPOINTS = new Set([
+      "neighborhood", "community", "salestrend", "transactionsalestrend",
+      "ibuyer", "marketanalytics", "poicategories",
+    ]);
+    const hasResults = NON_PROPERTY_ARRAY_ENDPOINTS.has(endpoint) || result?.property?.length > 0;
     if (!hasResults) {
       // Try to detect the state from params or result for non-disclosure messaging
       const stateHint =
