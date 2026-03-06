@@ -419,7 +419,7 @@ export default function PropertyDetailModal({
         rentalAvm: rentalAvm.status === "fulfilled" ? rentalAvm.value : null,
         salesHistory: null,
         mortgageDetail: null, // Realie provides mortgage data on primary response
-        homeEquity: null, // Realie provides equity data on primary response
+        homeEquity: (p as any).homeEquity ? { property: [{ homeEquity: (p as any).homeEquity }] } : null,
         salesTrends: salesTrends.status === "fulfilled" && !salesTrends.value?.error ? salesTrends.value : null,
       });
     }).finally(() => setEnrichedFinancialLoading(false));
