@@ -414,12 +414,32 @@ export default function PropertyDetailModal({
     ];
 
     Promise.all(fetches).then(([rentalAvm, salesTrends]) => {
+      // Build homeEquity from Realie's pre-calculated data, or fall back to
+      // computing it from AVM - sale price (same formula the search cards use).
+      let homeEquityData = (p as any).homeEquity || null;
+      if (!homeEquityData) {
+        const avmVal = p.avm?.amount?.value;
+        const saleAmt = p.sale?.amount?.saleAmt;
+        const lienBal = (p as any).mortgage?.amount?.total ?? (p as any).mortgage?.amount?.first;
+        const estimatedEquity = avmVal && saleAmt ? avmVal - saleAmt : (avmVal && lienBal ? avmVal - lienBal : null);
+        if (estimatedEquity != null || avmVal != null) {
+          homeEquityData = {
+            equity: estimatedEquity ?? undefined,
+            estimatedValue: avmVal ?? undefined,
+            outstandingBalance: lienBal ?? undefined,
+            ltv: avmVal && lienBal ? (lienBal / avmVal) * 100 : undefined,
+            lastSalePrice: saleAmt ?? undefined,
+            lastSaleDate: p.sale?.amount?.saleRecDate ?? p.sale?.amount?.saleTransDate ?? undefined,
+          };
+        }
+      }
+
       setEnrichedFinancial({
         avmHistory: null,
         rentalAvm: rentalAvm.status === "fulfilled" ? rentalAvm.value : null,
         salesHistory: null,
         mortgageDetail: null, // Realie provides mortgage data on primary response
-        homeEquity: (p as any).homeEquity ? { property: [{ homeEquity: (p as any).homeEquity }] } : null,
+        homeEquity: homeEquityData ? { property: [{ homeEquity: homeEquityData }] } : null,
         salesTrends: salesTrends.status === "fulfilled" && !salesTrends.value?.error ? salesTrends.value : null,
       });
     }).finally(() => setEnrichedFinancialLoading(false));
@@ -886,7 +906,7 @@ export default function PropertyDetailModal({
               {(() => {
                 const m = p.mortgage;
                 const fc = (p as any).foreclosure;
-                const hasMortgage = m && (m.amount || m.lender?.fullName);
+                const hasMortgage = m && (m.amount != null || m.lender?.fullName || m.lienCount != null);
                 const hasForeclosure = fc && (fc.actionType || fc.recordingDate || fc.auctionDate);
                 if (!hasMortgage && !hasForeclosure) return null;
 

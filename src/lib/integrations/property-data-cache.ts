@@ -1,6 +1,5 @@
 import { createHash } from "crypto";
-import { readFileSync, writeFileSync, mkdirSync, existsSync, statSync, readdirSync, unlinkSync } from "fs";
-import { join } from "path";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 /**
  * Unified Property Data Cache
@@ -10,17 +9,19 @@ import { join } from "path";
  * weekly — if a zip code or property hasn't been queried before, it's fetched fresh
  * and then cached for 7 days.
  *
- * Three layers:
- *   1. In-memory (fastest, lost on restart)
- *   2. Disk (survives restarts, shared across users)
- *   3. API call (Realie first, ATTOM fallback)
+ * Two layers:
+ *   1. In-memory (fastest, within a single serverless invocation)
+ *   2. Supabase (persistent, system-wide, survives deploys & cold starts)
+ *
+ * On Vercel, serverless functions have ephemeral filesystems and no shared memory.
+ * Supabase provides the persistent, system-wide cache that survives across all
+ * invocations, users, and deploys.
  */
 
 const DAY = 24 * 3600 * 1000;
 const CACHE_TTL = 7 * DAY; // 7 days for all property data
 
-const MAX_CACHE_SIZE = 2000;
-const DISK_CACHE_DIR = join(process.cwd(), "src/lib/integrations/property-data-cache");
+const MAX_MEMORY_CACHE_SIZE = 500;
 
 // ── Cache Key ──────────────────────────────────────────────────────────────
 
@@ -41,7 +42,7 @@ function hashKey(key: string): string {
   return createHash("md5").update(key).digest("hex");
 }
 
-// ── In-Memory Cache ────────────────────────────────────────────────────────
+// ── In-Memory Cache (Layer 1) ─────────────────────────────────────────────
 
 interface CacheEntry {
   data: any;
@@ -68,7 +69,7 @@ export function propertyCacheSet(
   data: any,
   source: "realie" | "attom" | "merged"
 ): void {
-  if (cache.size >= MAX_CACHE_SIZE) {
+  if (cache.size >= MAX_MEMORY_CACHE_SIZE) {
     let oldestKey: string | null = null;
     let oldestTime = Infinity;
     for (const [k, v] of cache) {
@@ -97,96 +98,158 @@ export function propertyCacheStats(): {
   maxSize: number;
   ttlDays: number;
 } {
-  return { size: cache.size, maxSize: MAX_CACHE_SIZE, ttlDays: 7 };
+  return { size: cache.size, maxSize: MAX_MEMORY_CACHE_SIZE, ttlDays: 7 };
 }
 
-// ── Disk Cache ─────────────────────────────────────────────────────────────
+// ── Supabase Persistent Cache (Layer 2) ───────────────────────────────────
+// Uses the `property_data_cache` table in Supabase for system-wide persistence.
+// Table schema:
+//   cache_key  TEXT PRIMARY KEY
+//   data       JSONB NOT NULL
+//   source     TEXT NOT NULL
+//   created_at TIMESTAMPTZ DEFAULT now()
+//   expires_at TIMESTAMPTZ NOT NULL
 
-function isDiskCacheEnabled(): boolean {
-  const val = (process.env.PROPERTY_DISK_CACHE || "").toLowerCase();
-  return val !== "false" && val !== "0";
+let _supabase: SupabaseClient | null = null;
+
+function getSupabase(): SupabaseClient | null {
+  if (_supabase) return _supabase;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return null;
+  _supabase = createClient(url, key, { auth: { persistSession: false } });
+  return _supabase;
 }
 
-function diskFilePath(key: string, provider: string): string {
-  const safe = provider.replace(/[^a-zA-Z0-9]/g, "_");
-  return join(DISK_CACHE_DIR, `${safe}_${hashKey(key)}.json`);
-}
+/**
+ * Read from the Supabase persistent cache.
+ * Returns null on miss or expiry. Automatically deletes expired rows.
+ */
+export async function propertyDbRead(
+  key: string,
+  _provider: string
+): Promise<{ data: any; source: string } | null> {
+  const sb = getSupabase();
+  if (!sb) return null;
 
-function ensureDiskDir(): void {
-  if (!existsSync(DISK_CACHE_DIR)) {
-    mkdirSync(DISK_CACHE_DIR, { recursive: true });
-  }
-}
+  const hash = hashKey(key);
 
-export function propertyDiskRead(key: string, provider: string): { data: any; source: string } | null {
-  if (!isDiskCacheEnabled()) return null;
-  const filePath = diskFilePath(key, provider);
   try {
-    const stats = statSync(filePath);
-    const ageMs = Date.now() - stats.mtimeMs;
-    if (ageMs > CACHE_TTL) {
-      const ageDays = Math.round(ageMs / DAY * 10) / 10;
-      console.log(`[PropertyCache] DISK STALE: ${provider} (age ${ageDays}d > TTL 7d)`);
+    const { data: row, error } = await sb
+      .from("property_data_cache")
+      .select("data, source, expires_at")
+      .eq("cache_key", hash)
+      .single();
+
+    if (error || !row) return null;
+
+    // Check expiry
+    const expiresAt = new Date(row.expires_at).getTime();
+    if (Date.now() > expiresAt) {
+      // Async cleanup — don't await
+      sb.from("property_data_cache").delete().eq("cache_key", hash).then(() => {});
+      console.log(`[PropertyCache] DB EXPIRED: ${_provider} key=${hash.slice(0, 8)}…`);
       return null;
     }
-    const raw = readFileSync(filePath, "utf-8");
-    const parsed = JSON.parse(raw);
-    const ageDays = Math.round(ageMs / DAY * 10) / 10;
-    console.log(`[PropertyCache] DISK HIT: ${provider} (age ${ageDays}d, TTL 7d)`);
-    return { data: parsed.data || parsed, source: parsed.source || provider };
-  } catch {
+
+    const ageMs = Date.now() - (expiresAt - CACHE_TTL);
+    const ageDays = Math.round((ageMs / DAY) * 10) / 10;
+    console.log(`[PropertyCache] DB HIT: ${_provider} (age ${ageDays}d, TTL 7d)`);
+    return { data: row.data, source: row.source };
+  } catch (err) {
+    console.error(`[PropertyCache] DB read error:`, err);
     return null;
   }
 }
 
-export function propertyDiskWrite(
+/**
+ * Write to the Supabase persistent cache.
+ * Uses upsert to handle both inserts and updates.
+ */
+export async function propertyDbWrite(
   key: string,
-  provider: string,
+  _provider: string,
   data: any,
   source: "realie" | "attom" | "merged"
-): void {
-  if (!isDiskCacheEnabled()) return;
+): Promise<void> {
+  const sb = getSupabase();
+  if (!sb) return;
+
+  const hash = hashKey(key);
+  const expiresAt = new Date(Date.now() + CACHE_TTL).toISOString();
+
   try {
-    ensureDiskDir();
-    const filePath = diskFilePath(key, provider);
-    writeFileSync(filePath, JSON.stringify({ data, source, cachedAt: new Date().toISOString() }, null, 2));
-    console.log(`[PropertyCache] SAVED: ${provider} → ${filePath}`);
+    const { error } = await sb
+      .from("property_data_cache")
+      .upsert(
+        {
+          cache_key: hash,
+          data,
+          source,
+          expires_at: expiresAt,
+          raw_key: key.length <= 500 ? key : key.slice(0, 500), // For debugging
+        },
+        { onConflict: "cache_key" }
+      );
+
+    if (error) {
+      console.error(`[PropertyCache] DB write error:`, error.message);
+    } else {
+      console.log(`[PropertyCache] DB SAVED: ${_provider} key=${hash.slice(0, 8)}…`);
+    }
   } catch (err) {
-    console.error(`[PropertyCache] Failed to save:`, err);
+    console.error(`[PropertyCache] DB write error:`, err);
   }
 }
 
 /**
- * Purge all expired entries from disk cache.
- * Call this on a weekly schedule or at startup.
+ * Purge all expired entries from Supabase cache.
  */
-export function propertyDiskPurgeExpired(): number {
-  if (!isDiskCacheEnabled()) return 0;
-  if (!existsSync(DISK_CACHE_DIR)) return 0;
+export async function propertyDbPurgeExpired(): Promise<number> {
+  const sb = getSupabase();
+  if (!sb) return 0;
 
-  let purged = 0;
   try {
-    const files = readdirSync(DISK_CACHE_DIR);
-    for (const file of files) {
-      if (!file.endsWith(".json")) continue;
-      const filePath = join(DISK_CACHE_DIR, file);
-      try {
-        const stats = statSync(filePath);
-        if (Date.now() - stats.mtimeMs > CACHE_TTL) {
-          unlinkSync(filePath);
-          purged++;
-        }
-      } catch {
-        // Skip files we can't stat
-      }
+    const { data, error } = await sb
+      .from("property_data_cache")
+      .delete()
+      .lt("expires_at", new Date().toISOString())
+      .select("cache_key");
+
+    if (error) {
+      console.error(`[PropertyCache] DB purge error:`, error.message);
+      return 0;
     }
+
+    const purged = data?.length ?? 0;
     if (purged > 0) {
-      console.log(`[PropertyCache] Purged ${purged} expired entries from disk cache`);
+      console.log(`[PropertyCache] Purged ${purged} expired entries from DB cache`);
     }
+    return purged;
   } catch (err) {
-    console.error(`[PropertyCache] Error during purge:`, err);
+    console.error(`[PropertyCache] DB purge error:`, err);
+    return 0;
   }
-  return purged;
+}
+
+// ── Legacy disk cache stubs (no-ops on Vercel) ───────────────────────────
+// Kept for backward compatibility — callers that still reference these won't break.
+
+export function propertyDiskRead(_key: string, _provider: string): { data: any; source: string } | null {
+  return null; // Disk cache disabled — use propertyDbRead instead
+}
+
+export function propertyDiskWrite(
+  _key: string,
+  _provider: string,
+  _data: any,
+  _source: "realie" | "attom" | "merged"
+): void {
+  // No-op — use propertyDbWrite instead
+}
+
+export function propertyDiskPurgeExpired(): number {
+  return 0; // No-op — use propertyDbPurgeExpired instead
 }
 
 /**

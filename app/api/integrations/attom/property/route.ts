@@ -8,7 +8,7 @@ import {
 } from "@/lib/integrations/realie-client";
 import {
   buildPropertyCacheKey, propertyCacheGet, propertyCacheSet,
-  propertyDiskRead, propertyDiskWrite,
+  propertyDbRead, propertyDbWrite,
   mergePropertyData,
 } from "@/lib/integrations/property-data-cache";
 
@@ -664,15 +664,15 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Layer 2: disk cache (persists across restarts, shared across users)
-    const diskCached = !noCache ? propertyDiskRead(cacheKey, "unified") : null;
-    if (diskCached && isCachedDataUsable(diskCached.data)) {
-      const payload = { success: true, endpoint, dataSource: diskCached.source, cacheHit: "disk", ...diskCached.data };
-      propertyCacheSet(cacheKey, payload, diskCached.source as any); // promote to memory
+    // Layer 2: Supabase DB cache (persistent, system-wide, survives deploys)
+    const dbCached = !noCache ? await propertyDbRead(cacheKey, "unified") : null;
+    if (dbCached && isCachedDataUsable(dbCached.data)) {
+      const payload = { success: true, endpoint, dataSource: dbCached.source, cacheHit: "db", ...dbCached.data };
+      propertyCacheSet(cacheKey, payload, dbCached.source as any); // promote to memory
       return NextResponse.json(payload, {
         headers: {
-          "X-Property-Cache": "DISK",
-          "X-Property-Source": diskCached.source,
+          "X-Property-Cache": "DB",
+          "X-Property-Source": dbCached.source,
         },
       });
     }
@@ -905,7 +905,10 @@ export async function GET(request: NextRequest) {
     // Store in unified 7-day cache (memory + disk)
     const responsePayload = { success: true, endpoint, dataSource, ...result };
     propertyCacheSet(cacheKey, responsePayload, dataSource);
-    propertyDiskWrite(cacheKey, "unified", result, dataSource);
+    // Persist to Supabase for system-wide 7-day caching (don't await — fire and forget)
+    propertyDbWrite(cacheKey, "unified", result, dataSource).catch((err) =>
+      console.error("[PropertyCache] Background DB write failed:", err)
+    );
 
     return NextResponse.json(responsePayload, {
       headers: {
