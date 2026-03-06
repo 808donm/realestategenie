@@ -32,6 +32,7 @@ export default function FederalDataIntegrationCard({
   const [hudApiToken, setHudApiToken] = useState("");
   const [censusApiKey, setCensusApiKey] = useState("");
   const [blsApiKey, setBlsApiKey] = useState("");
+  const [fredApiKey, setFredApiKey] = useState("");
   const [connecting, setConnecting] = useState(false);
   const [testing, setTesting] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
@@ -54,6 +55,7 @@ export default function FederalDataIntegrationCard({
           hud_api_token: hudApiToken.trim() || null,
           census_api_key: censusApiKey.trim() || null,
           bls_api_key: blsApiKey.trim() || null,
+          fred_api_key: fredApiKey.trim() || null,
         }),
       });
 
@@ -69,6 +71,7 @@ export default function FederalDataIntegrationCard({
         setHudApiToken("");
         setCensusApiKey("");
         setBlsApiKey("");
+        setFredApiKey("");
         window.location.reload();
       } else {
         toast.error("Connection failed", {
@@ -172,7 +175,7 @@ export default function FederalDataIntegrationCard({
 
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Supplement ATTOM property data with free US government sources: vacancy status, fair market rents, flood zones, demographics, loan limits, environmental risk, and more.
+            Supplement property data with free US government sources: vacancy status, fair market rents, flood zones, demographics, loan limits, housing market trends, and more.
           </p>
 
           {/* Feature highlights */}
@@ -205,11 +208,11 @@ export default function FederalDataIntegrationCard({
               </div>
             </div>
             <div className="p-3 border rounded-lg bg-muted/20 flex items-start gap-2">
-              <Leaf className="w-4 h-4 mt-0.5 text-blue-600" />
+              <BarChart3 className="w-4 h-4 mt-0.5 text-blue-600" />
               <div>
-                <h4 className="font-medium text-sm">Environmental & Lending</h4>
+                <h4 className="font-medium text-sm">Housing Market Trends</h4>
                 <p className="text-xs text-muted-foreground mt-1">
-                  EPA sites, HMDA lending patterns, loan limits
+                  FRED median prices, HPI, sales volume, market supply
                 </p>
               </div>
             </div>
@@ -230,6 +233,7 @@ export default function FederalDataIntegrationCard({
                   { key: "epa", label: "EPA" },
                   { key: "usps", label: "USPS" },
                   { key: "cfpb_hmda", label: "HMDA" },
+                  { key: "fred", label: "FRED" },
                 ].map(({ key, label }) => (
                   <Badge
                     key={key}
@@ -267,6 +271,7 @@ export default function FederalDataIntegrationCard({
                 <li>• <strong>FEMA:</strong> Flood zones, disaster declarations (free, no key)</li>
                 <li>• <strong>FHFA:</strong> Conforming loan limits (free, no key)</li>
                 <li>• <strong>BLS:</strong> Employment & economic data (free, optional key)</li>
+                <li>• <strong>FRED:</strong> Housing market trends, median prices, HPI (free key required)</li>
                 <li>• <strong>EPA:</strong> Superfund, brownfields, TRI (free, no key)</li>
                 <li>• <strong>CFPB:</strong> HMDA mortgage lending data (free, no key)</li>
                 <li>• <strong>USPS:</strong> Vacancy indicators (free, OAuth credentials required)</li>
@@ -314,7 +319,7 @@ export default function FederalDataIntegrationCard({
           </div>
 
           <div className="text-xs text-muted-foreground">
-            <strong>Use Cases:</strong> Rental analysis, flood risk disclosure, neighborhood profiles, loan eligibility, vacancy detection, environmental due diligence
+            <strong>Use Cases:</strong> Rental analysis, flood risk disclosure, neighborhood profiles, housing market trends, loan eligibility, vacancy detection
           </div>
         </CardContent>
       </Card>
@@ -455,6 +460,33 @@ export default function FederalDataIntegrationCard({
                 {" "}— increases from 25 to 500 queries/day for employment data
               </p>
             </div>
+
+            {/* FRED (recommended) */}
+            <div className="space-y-2 p-3 border rounded-lg border-blue-200 bg-blue-50/30">
+              <h4 className="font-medium text-sm flex items-center gap-2">
+                FRED (Federal Reserve Economic Data)
+                <Badge className="text-xs bg-blue-100 text-blue-800 border-blue-200">Recommended</Badge>
+              </h4>
+              <div>
+                <Label htmlFor="fred-key" className="text-xs">API Key</Label>
+                <Input
+                  id="fred-key"
+                  type="text"
+                  placeholder="FRED API Key"
+                  value={fredApiKey}
+                  onChange={(e) => setFredApiKey(e.target.value)}
+                  disabled={connecting}
+                  className="text-sm"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Free instant key at{" "}
+                <a href="https://fred.stlouisfed.org/docs/api/api_key.html" target="_blank" rel="noopener noreferrer" className="underline">
+                  fred.stlouisfed.org
+                </a>
+                {" "}— required for housing market trends, median home prices, and HPI data
+              </p>
+            </div>
           </div>
 
           <DialogFooter>
@@ -467,6 +499,7 @@ export default function FederalDataIntegrationCard({
                 setHudApiToken("");
                 setCensusApiKey("");
                 setBlsApiKey("");
+                setFredApiKey("");
               }}
               disabled={connecting}
             >

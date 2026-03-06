@@ -2,8 +2,8 @@
  * Federal Data API Client
  *
  * Unified client for US federal government data sources that supplement
- * ATTOM property data with occupancy status, demographics, flood risk,
- * fair market rents, environmental data, loan eligibility, and more.
+ * property data with occupancy status, demographics, flood risk,
+ * fair market rents, housing market trends, loan eligibility, and more.
  *
  * Sources:
  * - USPS: Address validation & vacancy indicators
@@ -33,6 +33,8 @@ export interface FederalDataConfig {
   censusApiKey?: string;
   /** BLS API key (free at data.bls.gov/registrationEngine/) */
   blsApiKey?: string;
+  /** FRED API key (free at fred.stlouisfed.org/docs/api/api_key.html) */
+  fredApiKey?: string;
   /** EPA AQS email (for air quality API registration) */
   epaAqsEmail?: string;
   /** EPA AQS key */

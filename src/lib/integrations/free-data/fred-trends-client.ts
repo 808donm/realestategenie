@@ -50,15 +50,44 @@ export interface SalesTrendsResult {
   source: string;
 }
 
+/** Resolve FRED API key: env var first, then Supabase federal_data integration config */
+let _fredKeyCache: string | null | undefined = undefined;
+async function getFredApiKey(): Promise<string | null> {
+  if (process.env.FRED_API_KEY) return process.env.FRED_API_KEY;
+  if (_fredKeyCache !== undefined) return _fredKeyCache;
+  try {
+    const { createClient } = await import("@supabase/supabase-js");
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (url && key) {
+      const sb = createClient(url, key, { auth: { persistSession: false } });
+      const { data } = await sb
+        .from("integrations")
+        .select("config")
+        .eq("provider", "federal_data")
+        .eq("status", "connected")
+        .limit(1)
+        .maybeSingle();
+      const cfg = typeof data?.config === "string" ? JSON.parse(data.config) : data?.config;
+      _fredKeyCache = cfg?.fred_api_key || null;
+      return _fredKeyCache;
+    }
+  } catch (err) {
+    console.warn("[FRED] Could not read key from DB:", err);
+  }
+  _fredKeyCache = null;
+  return null;
+}
+
 async function fetchFREDSeries(
   seriesId: string,
   startDate: string,
   endDate?: string,
   frequency?: string,
 ): Promise<any[]> {
-  const apiKey = process.env.FRED_API_KEY;
+  const apiKey = await getFredApiKey();
   if (!apiKey) {
-    console.warn("[FRED] FRED_API_KEY not configured — sales trends will be limited");
+    console.warn("[FRED] No API key — set FRED_API_KEY env var or add key via Federal Data integration. Free at https://fred.stlouisfed.org/docs/api/api_key.html");
     return [];
   }
 

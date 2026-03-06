@@ -6,8 +6,9 @@ import { FederalDataClient } from "@/lib/integrations/federal-data-client";
 /**
  * Connect Federal Data Integration (Platform-wide)
  *
- * Admin-only: stores optional API keys for USPS, Census, BLS.
+ * Admin-only: stores optional API keys for USPS, Census, BLS, FRED.
  * HUD requires a free Bearer token (register at huduser.gov/hudapi/public/register).
+ * FRED requires a free API key (register at fred.stlouisfed.org/docs/api/api_key.html).
  * Most other federal sources (FEMA, EPA, CFPB) are free with no key.
  * All agents benefit from federal data once connected.
  */
@@ -41,6 +42,7 @@ export async function POST(request: NextRequest) {
       hud_api_token,
       census_api_key,
       bls_api_key,
+      fred_api_key,
     } = body;
 
     // Test the connections
@@ -68,9 +70,13 @@ export async function POST(request: NextRequest) {
       hud_api_token: hud_api_token?.trim() || null,
       census_api_key: census_api_key?.trim() || null,
       bls_api_key: bls_api_key?.trim() || null,
+      fred_api_key: fred_api_key?.trim() || null,
       connected_at: new Date().toISOString(),
       configured_by: userData.user.id,
-      sources: testResult.sources,
+      sources: {
+        ...testResult.sources,
+        fred: { available: !!fred_api_key?.trim() },
+      },
     };
 
     try {
