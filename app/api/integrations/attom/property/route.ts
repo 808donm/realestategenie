@@ -764,7 +764,8 @@ export async function GET(request: NextRequest) {
                     avm: ap.avm?.amount?.value ? ap.avm : (rp.avm || ap.avm),
                     sale: ap.sale?.amount?.saleAmt ? ap.sale : (rp.sale || ap.sale),
                     assessment: ap.assessment?.assessed?.assdTtlValue ? ap.assessment : (rp.assessment || ap.assessment),
-                    mortgage: rp.mortgage?.amount ? rp.mortgage : (ap.mortgage || rp.mortgage),
+                    // Always prefer Realie mortgage data (cheaper than ATTOM)
+                    mortgage: rp.mortgage ? rp.mortgage : ap.mortgage,
                     homeEquity: rp.homeEquity || ap.homeEquity,
                     foreclosure: rp.foreclosure?.actionType ? rp.foreclosure : ap.foreclosure,
                   };

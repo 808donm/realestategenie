@@ -402,17 +402,22 @@ export function mapRealieToAttomShape(parcel: RealieParcel): any {
         pricePerSizeUnit: pricePerSqft,
       },
     } : undefined,
-    mortgage: (parcel.totalLienBalance != null || parcel.lenderName || parcel.totalLienCount != null) ? {
+    mortgage: (parcel.totalLienBalance != null || parcel.lenderName || parcel.totalLienCount != null || parcel.totalFinancingHistCount != null) ? {
       amount: parcel.totalLienBalance ?? undefined,
       lender: parcel.lenderName ? { fullName: parcel.lenderName } : undefined,
       lienCount: parcel.totalLienCount ?? undefined,
+      financingHistoryCount: parcel.totalFinancingHistCount ?? undefined,
+      ltv: parcel.LTVCurrentEstCombined ?? undefined,
+      ltvPurchase: parcel.LTVPurchase ?? undefined,
     } : undefined,
     // Realie provides pre-calculated equity and LTV
     homeEquity: (parcel.equityCurrentEstBal != null || parcel.LTVCurrentEstCombined != null) ? {
       equity: parcel.equityCurrentEstBal ?? undefined,
+      equityRange: parcel.equityCurrentEstRange ?? undefined,
       estimatedValue: parcel.modelValue ?? undefined,
       outstandingBalance: parcel.totalLienBalance ?? undefined,
       ltv: parcel.LTVCurrentEstCombined ?? undefined,
+      ltvRange: parcel.LTVCurrentEstRange ?? undefined,
       ltvPurchase: parcel.LTVPurchase ?? undefined,
     } : undefined,
     // Realie provides foreclosure status fields

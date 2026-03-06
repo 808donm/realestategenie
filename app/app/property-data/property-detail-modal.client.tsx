@@ -42,7 +42,7 @@ interface AttomProperty {
   };
   sale?: { amount?: { saleAmt?: number; saleTransDate?: string; saleRecDate?: string; saleDocType?: string; salePrice?: number; saleCode?: string; pricePerBed?: number; pricePerSizeUnit?: number } };
   avm?: { amount?: { value?: number; high?: number; low?: number; scr?: number; valueRange?: number }; eventDate?: string };
-  mortgage?: { amount?: number; lender?: { fullName?: string }; term?: string; date?: string; dueDate?: string; loanType?: string; interestRateType?: string; lienCount?: number };
+  mortgage?: { amount?: number; lender?: { fullName?: string }; term?: string; date?: string; dueDate?: string; loanType?: string; interestRateType?: string; lienCount?: number; financingHistoryCount?: number; ltv?: number; ltvPurchase?: number };
   foreclosure?: { actionType?: string; filingDate?: string; recordingDate?: string; auctionDate?: string; auctionLocation?: string; defaultAmount?: number; startingBid?: number; originalLoanAmount?: number; trusteeFullName?: string; caseNumber?: string };
   utilities?: { coolingType?: string; heatingType?: string; heatingFuel?: string; energyType?: string; sewerType?: string; waterType?: string };
 }
@@ -917,6 +917,9 @@ export default function PropertyDetailModal({
                         <Field label="Outstanding Balance" value={m.amount != null ? fmt(Number(m.amount)) : undefined} />
                         <Field label="Lender" value={m.lender?.fullName} />
                         <Field label="Lien Count" value={m.lienCount} />
+                        <Field label="Financing History" value={m.financingHistoryCount != null ? `${m.financingHistoryCount} loans` : undefined} />
+                        <Field label="Loan-to-Value" value={m.ltv != null ? `${Number(m.ltv).toFixed(1)}%` : undefined} />
+                        <Field label="LTV at Purchase" value={m.ltvPurchase != null ? `${Number(m.ltvPurchase).toFixed(1)}%` : undefined} />
                       </Section>
                     )}
                     {hasForeclosure && (

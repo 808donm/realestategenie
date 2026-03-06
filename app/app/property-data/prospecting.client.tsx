@@ -54,7 +54,7 @@ interface AttomProperty {
     avm?: { amount?: { value?: number } }; estimatedValue?: number; loanBalance?: number; mortgageBalance?: number; estimatedBalance?: number };
   // ATTOM expandedprofile nests mortgage under FirstConcurrent/SecondConcurrent
   mortgage?: {
-    amount?: number; lender?: { fullName?: string }; term?: string; date?: string;
+    amount?: number; lender?: { fullName?: string }; term?: string; date?: string; lienCount?: number; financingHistoryCount?: number; ltv?: number; ltvPurchase?: number;
     FirstConcurrent?: { amount?: number; lender?: { fullName?: string }; term?: string; date?: string; dueDate?: string; loanType?: string;
       borrower1?: { fullName?: string; lastName?: string; firstNameAndMi?: string };
       borrower2?: { fullName?: string; lastName?: string; firstNameAndMi?: string };
