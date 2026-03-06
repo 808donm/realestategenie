@@ -1462,7 +1462,7 @@ export default function Prospecting() {
             {/* Key financial data row — always visible for all modes */}
             <div style={{ marginTop: 6, display: "flex", flexWrap: "wrap", gap: 12, fontSize: 12, color: "#374151" }}>
               {avmVal != null && (
-                <span><strong>{hasRealAvm ? "AVM" : "Est. Value"}:</strong> <span style={{ color: "#059669" }}>{fmt(avmVal)}</span></span>
+                <span><strong>Estimated Value:</strong> <span style={{ color: "#059669" }}>{fmt(avmVal)}</span></span>
               )}
               {rentalVal != null && (
                 <span><strong>Rent Est.:</strong> <span style={{ color: "#7c3aed" }}>${Number(rentalVal).toLocaleString()}/mo</span></span>
@@ -1681,7 +1681,7 @@ export default function Prospecting() {
             {/* Primary value metric per mode */}
             {mode === "absentee" && avmVal != null && (
               <div>
-                <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>{hasRealAvm ? "AVM" : "Est. Value"}</div>
+                <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>Estimated Value</div>
                 <div style={{ fontWeight: 700, fontSize: 15, color: "#059669" }}>{fmt(avmVal)}</div>
               </div>
             )}
@@ -1713,7 +1713,7 @@ export default function Prospecting() {
             {mode === "radius" && (
               <div>
                 <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>
-                  {lastSale != null && lastSale > 0 ? "Sale Price" : "Est. Value"}
+                  {lastSale != null && lastSale > 0 ? "Sale Price" : "Estimated Value"}
                 </div>
                 <div style={{ fontWeight: 700, fontSize: 15, color: "#7c3aed" }}>
                   {lastSale != null && lastSale > 0 ? fmt(lastSale) : avmVal != null ? fmt(avmVal) : "N/A"}
@@ -1725,7 +1725,7 @@ export default function Prospecting() {
             )}
             {mode === "investor" && avmVal != null && (
               <div>
-                <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>{hasRealAvm ? "AVM" : "Est. Value"}</div>
+                <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>Estimated Value</div>
                 <div style={{ fontWeight: 700, fontSize: 15, color: "#059669" }}>{fmt(avmVal)}</div>
               </div>
             )}

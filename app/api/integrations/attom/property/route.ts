@@ -168,36 +168,6 @@ async function fetchFromRealie(
       return null;
     }
 
-    // Debug: log raw Realie field names and sample values to diagnose mapping issues
-    if (response.properties.length > 0) {
-      const sample = response.properties[0];
-      const fieldSnapshot: Record<string, any> = {};
-      for (const key of Object.keys(sample)) {
-        const val = sample[key];
-        // Log type and value (truncate long strings/objects)
-        if (val === null || val === undefined) {
-          fieldSnapshot[key] = null;
-        } else if (typeof val === "object") {
-          fieldSnapshot[key] = `[${typeof val}] ${JSON.stringify(val).slice(0, 80)}`;
-        } else {
-          fieldSnapshot[key] = val;
-        }
-      }
-      console.log(`[Realie] Raw parcel field names (first property):`, JSON.stringify(fieldSnapshot, null, 2));
-
-      // Specifically log the critical fields we're looking for
-      console.log(`[Realie] Critical fields check:`, {
-        ownerName: sample.ownerName ?? sample.owner_name ?? sample.owner ?? "MISSING",
-        modelValue: sample.modelValue ?? sample.model_value ?? sample.estimatedValue ?? sample.estimated_value ?? "MISSING",
-        transferPrice: sample.transferPrice ?? sample.transfer_price ?? sample.salePrice ?? sample.sale_price ?? "MISSING",
-        totalAssessedValue: sample.totalAssessedValue ?? sample.total_assessed_value ?? sample.assessedValue ?? "MISSING",
-        totalMarketValue: sample.totalMarketValue ?? sample.total_market_value ?? sample.marketValue ?? "MISSING",
-        totalLienBalance: sample.totalLienBalance ?? sample.total_lien_balance ?? "MISSING",
-        ownerAddressFull: sample.ownerAddressFull ?? sample.owner_address_full ?? "MISSING",
-        ownerAddressLine1: sample.ownerAddressLine1 ?? sample.owner_address_line1 ?? "MISSING",
-      });
-    }
-
     // Map Realie parcels to ATTOM-compatible property shape
     const properties = response.properties.map(mapRealieToAttomShape);
 
@@ -608,12 +578,37 @@ export async function GET(request: NextRequest) {
     // ── Unified 7-Day Cache ───────────────────────────────────────────────
     // All property data cached for 7 days regardless of source (Realie or ATTOM).
     // New zip codes / properties get fetched fresh and added to cache.
-    // Cache refreshes weekly.
+    // Cache refreshes weekly. Stale data (missing critical fields) is refetched.
     const cacheKey = buildPropertyCacheKey("unified", endpoint, params);
+
+    // Quality gate: check if cached property data has critical fields populated.
+    // Stale cache from before Realie was integrated may have empty owner/AVM/sale data.
+    const PROPERTY_DATA_ENDPOINTS = new Set([
+      "expanded", "detail", "detailowner", "detailmortgage",
+      "detailmortgageowner", "profile", "snapshot",
+    ]);
+    const isCachedDataUsable = (cached: any): boolean => {
+      const props = cached?.property || cached?.data?.property;
+      if (!props || !Array.isArray(props) || props.length === 0) return true; // non-property endpoints, trust cache
+      if (!PROPERTY_DATA_ENDPOINTS.has(endpoint)) return true; // don't quality-check non-property endpoints
+
+      // Check if at least 10% of properties have owner names OR AVM — if not, cache is stale
+      const sample = props.slice(0, Math.min(50, props.length));
+      const withOwner = sample.filter((p: any) => p.owner?.owner1?.fullName).length;
+      const withValue = sample.filter((p: any) =>
+        p.avm?.amount?.value || p.assessment?.market?.mktTtlValue || p.assessment?.assessed?.assdTtlValue
+      ).length;
+      const pct = ((withOwner + withValue) / (sample.length * 2)) * 100;
+      if (pct < 10) {
+        console.log(`[PropertyCache] STALE DATA detected: ${withOwner}/${sample.length} owners, ${withValue}/${sample.length} values — refetching`);
+        return false;
+      }
+      return true;
+    };
 
     // Layer 1: in-memory cache (fastest)
     const memoryCached = propertyCacheGet(cacheKey);
-    if (memoryCached) {
+    if (memoryCached && isCachedDataUsable(memoryCached.data)) {
       return NextResponse.json(memoryCached.data, {
         headers: {
           "X-Property-Cache": "MEMORY",
@@ -624,7 +619,7 @@ export async function GET(request: NextRequest) {
 
     // Layer 2: disk cache (persists across restarts, shared across users)
     const diskCached = propertyDiskRead(cacheKey, "unified");
-    if (diskCached) {
+    if (diskCached && isCachedDataUsable(diskCached.data)) {
       const payload = { success: true, endpoint, ...diskCached.data };
       propertyCacheSet(cacheKey, payload, diskCached.source as any); // promote to memory
       return NextResponse.json(payload, {
