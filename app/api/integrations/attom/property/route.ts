@@ -172,7 +172,7 @@ async function fetchFromRealie(
     }
 
     // Debug: log raw Realie fields vs mapped fields to diagnose data loss
-    const rawSample = response.properties[0];
+    const rawSample: any = response.properties[0];
     const mappedSample = mapRealieToAttomShape(rawSample);
     console.log(`[Realie] RAW fields (first parcel):`, Object.keys(rawSample).join(", "));
     console.log(`[Realie] RAW critical values:`, JSON.stringify({
