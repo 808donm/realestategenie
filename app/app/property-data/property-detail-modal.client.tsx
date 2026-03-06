@@ -327,7 +327,9 @@ export default function PropertyDetailModal({
       .finally(() => setNeighborhoodLoading(false));
   }, [activeSection, neighborhoodData, neighborhoodLoading, p]);
 
-  // Fetch nearby homes when "nearby" tab is selected (Just Sold Farming)
+  // Fetch nearby homes when "nearby" tab is selected (Just Sold Farming).
+  // Realie provides owner, assessment, AVM, and mortgage data on the primary
+  // detailmortgageowner response — no expanded supplement needed.
   useEffect(() => {
     if (activeSection !== "nearby" || nearbyHomes || nearbyLoading || !farmingContext) return;
     const lat = p.location?.latitude;
@@ -346,61 +348,20 @@ export default function PropertyDetailModal({
       endpoint: "detailmortgageowner",
     });
 
-    // Fetch base properties + expanded data in parallel for enrichment
-    // Use source=attom for the expanded supplement to save Realie tokens
-    const baseUrl = `/api/integrations/attom/property?${params.toString()}`;
-    const expandedParams = new URLSearchParams(params);
-    expandedParams.set("endpoint", "expanded");
-    expandedParams.set("source", "attom"); // supplement — save Realie tokens
-    const expandedUrl = `/api/integrations/attom/property?${expandedParams.toString()}`;
-
-    Promise.all([
-      fetch(baseUrl).then((r) => r.json()).catch(() => ({ property: [] })),
-      fetch(expandedUrl).then((r) => r.json()).catch(() => ({ property: [] })),
-    ])
-      .then(([baseData, expandedData]) => {
-        const baseProps: AttomProperty[] = baseData.property || [];
-        const expandedProps: AttomProperty[] = expandedData.property || [];
-
-        // Merge expanded data into base by attomId
-        if (expandedProps.length > 0) {
-          const byId = new Map<number, AttomProperty>();
-          for (const ep of expandedProps) {
-            const id = ep.identifier?.attomId;
-            if (id) byId.set(id, ep);
-          }
-          const merged = baseProps.map((bp) => {
-            const id = bp.identifier?.attomId;
-            if (!id) return bp;
-            const ep = byId.get(id);
-            if (!ep) return bp;
-            return {
-              ...bp,
-              ...ep,
-              // Preserve base owner/mortgage if expanded doesn't have them
-              owner: ep.owner?.owner1?.fullName ? ep.owner : bp.owner,
-              mortgage: bp.mortgage || ep.mortgage,
-              address: bp.address || ep.address,
-              identifier: bp.identifier,
-              location: bp.location || ep.location,
-            };
-          });
-          setNearbyHomes(merged);
-        } else {
-          setNearbyHomes(baseProps);
-        }
-      })
+    fetch(`/api/integrations/attom/property?${params.toString()}`)
+      .then((r) => r.json())
+      .then((data) => setNearbyHomes(data.property || []))
       .catch(() => setNearbyHomes([]))
       .finally(() => setNearbyLoading(false));
   }, [activeSection, nearbyHomes, nearbyLoading, farmingContext, p]);
 
-  // Fetch enriched financial data (AVM history, rental AVM, sales history, mortgage detail, home equity)
-  // when Financial tab is selected — makes parallel calls for each additional endpoint
+  // Fetch enriched financial data when Financial tab is selected.
+  // Realie provides mortgage and equity on the primary response.
+  // Only fetch ATTOM-exclusive: rentalavm (rental estimates) and salestrend (area trends).
   useEffect(() => {
     if (activeSection !== "financial" || enrichedFinancial || enrichedFinancialLoading) return;
 
     const attomId = p.identifier?.attomId;
-    // Parse address — salesnapshot results may only have oneLine without line1
     let addr1 = p.address?.line1;
     if (!addr1 && p.address?.oneLine) {
       const parts = p.address.oneLine.split(",");
@@ -414,21 +375,9 @@ export default function PropertyDetailModal({
 
     setEnrichedFinancialLoading(true);
 
-    const buildParams = (endpoint: string) => {
-      const params = new URLSearchParams({ endpoint, source: "attom" }); // supplement — save Realie tokens
-      if (attomId) params.set("attomid", String(attomId));
-      else {
-        if (addr1) params.set("address1", addr1);
-        if (addr2) params.set("address2", addr2);
-      }
-      return params;
-    };
-
-    // Valuation endpoints (/valuation/rentalavm, /valuation/homeequity) require
-    // address-based lookups — attomId is not supported. Always use address params,
-    // with attomId as fallback only if address is unavailable.
+    // Rental AVM requires address-based lookups (attomId not supported)
     const buildAddrParams = (endpoint: string) => {
-      const params = new URLSearchParams({ endpoint, source: "attom" }); // supplement — save Realie tokens
+      const params = new URLSearchParams({ endpoint, source: "attom" });
       if (addr1) {
         params.set("address1", addr1);
         if (addr2) params.set("address2", addr2);
@@ -438,7 +387,6 @@ export default function PropertyDetailModal({
       return params;
     };
 
-    // Also build sales trend params using geoIdV4 from property data
     const geoId = findGeoIdV4(p);
     const salesTrendParams = new URLSearchParams({ endpoint: "salestrend" });
     if (geoId) salesTrendParams.set("geoIdV4", geoId);
@@ -449,114 +397,35 @@ export default function PropertyDetailModal({
     salesTrendParams.set("endyear", String(currentYear));
     salesTrendParams.set("propertytype", "SINGLE FAMILY RESIDENCE");
 
-    // Use cached rental AVM / home equity from search supplements if available,
-    // otherwise fetch individually. This avoids redundant API calls.
     const cachedRentalAvm = (p as any).rentalAvm;
-    const cachedHomeEquity = (p as any).homeEquity;
 
-    // Reduced API calls: dropped avmhistory (current AVM is sufficient) and
-    // saleshistoryexpanded (last sale already available from expanded profile).
-    // This saves 2 ATTOM API calls per Financial tab view.
+    // Realie already provides mortgage (lenderName, totalLienBalance, totalLienCount)
+    // and equity (equityCurrentEstBal, LTVCurrentEstCombined) on the primary response.
+    // Only fetch ATTOM-exclusive data: rentalavm (rental estimates) and salestrend (area trends).
     const fetches: Promise<PromiseSettledResult<any>>[] = [
       cachedRentalAvm
         ? Promise.resolve({ status: "fulfilled" as const, value: { property: [{ rentalAvm: cachedRentalAvm }] } })
         : fetch(`/api/integrations/attom/property?${buildAddrParams("rentalavm")}`).then(r => r.json()).then(v => ({ status: "fulfilled" as const, value: v })).catch(e => ({ status: "rejected" as const, reason: e })),
-      fetch(`/api/integrations/attom/property?${buildParams("detailmortgage")}`).then(r => r.json()).then(v => ({ status: "fulfilled" as const, value: v })).catch(e => ({ status: "rejected" as const, reason: e })),
-      cachedHomeEquity
-        ? Promise.resolve({ status: "fulfilled" as const, value: { property: [{ homeEquity: cachedHomeEquity }] } })
-        : fetch(`/api/integrations/attom/property?${buildAddrParams("homeequity")}`).then(r => r.json()).then(v => ({ status: "fulfilled" as const, value: v })).catch(e => ({ status: "rejected" as const, reason: e })),
       fetch(`/api/integrations/attom/property?${salesTrendParams}`).then(r => r.json()).then(v => ({ status: "fulfilled" as const, value: v })).catch(e => ({ status: "rejected" as const, reason: e })),
     ];
 
-    Promise.all(fetches).then(([rentalAvm, mortgageDetail, homeEquity, salesTrends]) => {
+    Promise.all(fetches).then(([rentalAvm, salesTrends]) => {
       setEnrichedFinancial({
         avmHistory: null,
         rentalAvm: rentalAvm.status === "fulfilled" ? rentalAvm.value : null,
         salesHistory: null,
-        mortgageDetail: mortgageDetail.status === "fulfilled" && !mortgageDetail.value?.error ? mortgageDetail.value : null,
-        homeEquity: homeEquity.status === "fulfilled" ? homeEquity.value : null,
+        mortgageDetail: null, // Realie provides mortgage data on primary response
+        homeEquity: null, // Realie provides equity data on primary response
         salesTrends: salesTrends.status === "fulfilled" && !salesTrends.value?.error ? salesTrends.value : null,
       });
     }).finally(() => setEnrichedFinancialLoading(false));
   }, [activeSection, enrichedFinancial, enrichedFinancialLoading, p]);
 
-  // Fetch enriched owner data (detail owner with mortgage owner info) when Ownership tab is selected
-  useEffect(() => {
-    if (activeSection !== "ownership" || enrichedOwner || enrichedOwnerLoading) return;
-
-    const attomId = p.identifier?.attomId;
-    // Try address.line1 first, then parse from address.oneLine as fallback
-    // (salesnapshot results may not have line1 but always have oneLine)
-    let addr1 = p.address?.line1;
-    if (!addr1 && p.address?.oneLine) {
-      // Parse "123 Main St, City, ST 96744" → "123 Main St"
-      const parts = p.address.oneLine.split(",");
-      if (parts.length >= 2) addr1 = parts[0].trim();
-    }
-    // Include zip code in address2 — ATTOM needs "City, ST ZIP" for reliable lookups
-    const postal = p.address?.postal1;
-    const addr2 = p.address?.locality && p.address?.countrySubd
-      ? `${p.address.locality}, ${p.address.countrySubd}${postal ? ` ${postal}` : ""}`
-      : (p.address?.oneLine ? p.address.oneLine.split(",").slice(1).join(",").trim() : undefined);
-    if (!attomId && !addr1) return;
-
-    setEnrichedOwnerLoading(true);
-
-    const buildParams = (endpoint: string) => {
-      const prms = new URLSearchParams({ endpoint });
-      if (attomId) prms.set("attomid", String(attomId));
-      else {
-        if (addr1) prms.set("address1", addr1);
-        if (addr2) prms.set("address2", addr2);
-      }
-      return prms;
-    };
-
-    // Helper to check if a property has meaningful owner data
-    const hasOwnerData = (prop: any) => {
-      const ow = prop?.owner || prop?.assessment?.owner;
-      return !!(ow?.owner1?.fullName || ow?.owner2?.fullName || ow?.mailingAddressOneLine || ow?.corporateIndicator);
-    };
-
-    // Try detailmortgageowner → detailowner → expandedprofile (fallback chain)
-    fetch(`/api/integrations/attom/property?${buildParams("detailmortgageowner")}`)
-      .then(r => r.json())
-      .then(data => {
-        if (data && !data.error) {
-          const prop = data.property?.[0] || data;
-          if (hasOwnerData(prop)) {
-            setEnrichedOwner(prop);
-            return;
-          }
-        }
-        // Fallback 1: try detailowner endpoint
-        return fetch(`/api/integrations/attom/property?${buildParams("detailowner")}`)
-          .then(r2 => r2.json())
-          .then(data2 => {
-            if (data2 && !data2.error) {
-              const prop2 = data2.property?.[0] || data2;
-              if (hasOwnerData(prop2)) {
-                setEnrichedOwner(prop2);
-                return;
-              }
-            }
-            // Fallback 2: try expandedprofile — owner data is nested under
-            // assessment.owner and gets normalized server-side to top-level
-            return fetch(`/api/integrations/attom/property?${buildParams("expanded")}`)
-              .then(r3 => r3.json())
-              .then(data3 => {
-                if (data3 && !data3.error) {
-                  const prop3 = data3.property?.[0] || data3;
-                  if (hasOwnerData(prop3)) {
-                    setEnrichedOwner(prop3);
-                  }
-                }
-              });
-          });
-      })
-      .catch(() => {})
-      .finally(() => setEnrichedOwnerLoading(false));
-  }, [activeSection, enrichedOwner, enrichedOwnerLoading, p]);
+  // Ownership tab: Realie already provides owner data (ownerName, ownerAddress,
+  // ownerResCount, ownerComCount, lenderName, etc.) on the primary search response.
+  // No additional ATTOM calls needed — the property object already contains
+  // owner info mapped to the standard ATTOM shape by the API route.
+  // enrichedOwner is left null; the Ownership tab renders from the base property data.
 
   const allSections: { id: SectionId; label: string }[] = [
     { id: "overview", label: "Overview" },
