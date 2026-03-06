@@ -617,7 +617,7 @@ export class GHLClient {
     return this.request<{ id: string; location: any }>("/locations/", {
       method: "POST",
       body: JSON.stringify({
-        companyKey: process.env.GHL_COMPANY_ID, // Your agency company ID
+        companyId: process.env.GHL_COMPANY_ID, // Your agency Relationship Number
         name: data.name,
         email: data.email,
         phone: data.phone,
