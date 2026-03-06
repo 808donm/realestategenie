@@ -307,6 +307,7 @@ async function fetchFromFreeData(
     case "transactionsalestrend":
     case "marketanalytics": {
       const trends = await getSalesTrends({
+        countyFips: fips,
         stateAbbrev: state,
         startYear: params.startyear || new Date().getFullYear() - 3,
         endYear: params.endyear || new Date().getFullYear(),

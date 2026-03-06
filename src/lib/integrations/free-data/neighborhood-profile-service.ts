@@ -136,8 +136,9 @@ export async function getNeighborhoodProfile(params: {
       ? searchPOI(latitude, longitude, 3000, 30)
       : Promise.resolve({ pois: [] as POIResult[], totalCount: 0, categories: [] as string[] }),
 
-    // Sales trends
+    // Sales trends (MSA → state → national fallback)
     getSalesTrends({
+      countyFips: fips,
       stateAbbrev,
       startYear: new Date().getFullYear() - 3,
       endYear: new Date().getFullYear(),

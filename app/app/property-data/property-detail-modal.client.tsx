@@ -395,6 +395,8 @@ export default function PropertyDetailModal({
     const salesTrendParams = new URLSearchParams({ endpoint: "salestrend" });
     if (geoId) salesTrendParams.set("geoIdV4", geoId);
     else if (p.address?.postal1) salesTrendParams.set("postalcode", p.address.postal1);
+    if (p.identifier?.fips) salesTrendParams.set("fips", p.identifier.fips);
+    if (addr2) salesTrendParams.set("address2", addr2);
     const currentYear = new Date().getFullYear();
     salesTrendParams.set("interval", "quarterly");
     salesTrendParams.set("startyear", String(currentYear - 3));
@@ -1173,11 +1175,14 @@ export default function PropertyDetailModal({
                 const avmValue = he?.avmValue ?? he?.avm?.amount?.value ?? he?.estimatedValue;
                 const loanBalance = he?.outstandingBalance ?? he?.loanBalance ?? he?.mortgageBalance ?? he?.estimatedBalance;
                 const equityAmount = he?.equity ?? he?.equityAmount ?? (avmValue != null && loanBalance != null ? avmValue - loanBalance : null);
-                const ltv = he?.loanToValue ?? he?.ltv ?? (avmValue && loanBalance ? (loanBalance / avmValue * 100) : null);
+                // Compute LTV from values when data source returns 0 or missing
+                const rawLtv = he?.loanToValue ?? he?.ltv;
+                const ltv = (rawLtv != null && rawLtv > 0) ? rawLtv : (avmValue && loanBalance ? (loanBalance / avmValue * 100) : null);
                 const loanCount = he?.loanCount ?? he?.numberOfLoans;
                 const estimatedPayment = he?.estimatedPayment ?? he?.monthlyPayment;
-                const lastSalePrice = he?.lastSalePrice ?? he?.salePrice;
-                const lastSaleDate = he?.lastSaleDate ?? he?.saleDate;
+                // Fall back to property-level sale data when homeEquity doesn't include it
+                const lastSalePrice = he?.lastSalePrice ?? he?.salePrice ?? p.sale?.amount?.saleAmt;
+                const lastSaleDate = he?.lastSaleDate ?? he?.saleDate ?? p.sale?.amount?.saleRecDate ?? p.sale?.amount?.saleTransDate;
 
                 const hasData = avmValue != null || loanBalance != null || equityAmount != null;
                 const isPositive = equityAmount != null ? equityAmount >= 0 : true;
