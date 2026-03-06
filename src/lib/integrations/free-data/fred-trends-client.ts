@@ -69,8 +69,9 @@ async function getFredApiKey(): Promise<string | null> {
         .limit(1)
         .maybeSingle();
       const cfg = typeof data?.config === "string" ? JSON.parse(data.config) : data?.config;
-      _fredKeyCache = cfg?.fred_api_key || null;
-      return _fredKeyCache;
+      const fredKey: string | null = cfg?.fred_api_key || null;
+      _fredKeyCache = fredKey;
+      return fredKey;
     }
   } catch (err) {
     console.warn("[FRED] Could not read key from DB:", err);
