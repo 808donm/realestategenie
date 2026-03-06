@@ -1218,6 +1218,10 @@ export default function PropertyDetailModal({
                 const hasData = avmValue != null || loanBalance != null || equityAmount != null;
                 const isPositive = equityAmount != null ? equityAmount >= 0 : true;
 
+                // Hide the entire section when there's no loan data and no estimated balance
+                const hasLoan = (loanCount != null && loanCount > 0) || (loanBalance != null && loanBalance > 0);
+                if (!hasLoan) return null;
+
                 return (
                   <div style={{ marginBottom: 20, padding: "14px 18px", background: hasData ? (isPositive ? "#ecfdf5" : "#fef2f2") : "#f9fafb", borderRadius: 10, border: `1px solid ${hasData ? (isPositive ? "#a7f3d0" : "#fecaca") : "#e5e7eb"}` }}>
                     <div style={{ fontSize: 11, fontWeight: 600, color: hasData ? (isPositive ? "#059669" : "#dc2626") : "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>Home Equity Analysis</div>
