@@ -255,26 +255,54 @@ export function mapRealieToAttomShape(parcel: RealieParcel): any {
     ? `${parcel.fipsState}${parcel.fipsCounty}`
     : undefined;
 
-  // Determine owner-occupied from address comparison
-  const ownerOccupied = parcel.ownerAddressLine1 && parcel.address
-    ? parcel.ownerAddressLine1 === parcel.address
-    : undefined;
+  // Determine owner-occupied from address comparison.
+  // Realie formats differ between owner and property addresses:
+  //   owner: "46-055 MEHEANU PL APT 3451"  vs  property: "46-55 MEHEANU PL"
+  // Normalize by stripping leading zeros, unit suffixes, and lowercasing.
+  const normalizeAddr = (s: string) =>
+    s.toLowerCase()
+      .replace(/\bapt\b.*$/i, "")     // strip "APT ..." suffix
+      .replace(/\bunit\b.*$/i, "")    // strip "UNIT ..." suffix
+      .replace(/\bste\b.*$/i, "")     // strip "STE ..." suffix
+      .replace(/\b#\d+.*$/i, "")      // strip "#123" suffix
+      .replace(/\b0+(\d)/g, "$1")     // strip leading zeros in numbers
+      .replace(/[^a-z0-9]/g, "")      // strip non-alphanumeric
+      .trim();
+  const ownerAddr = parcel.ownerAddressLine1;
+  const propAddr = parcel.address;
+  let ownerOccupied: boolean | undefined;
+  if (ownerAddr && propAddr) {
+    ownerOccupied = normalizeAddr(ownerAddr) === normalizeAddr(propAddr);
+  } else if (ownerAddr && parcel.ownerCity && parcel.city) {
+    // If we can't compare street, at least check city+state
+    ownerOccupied = parcel.ownerCity.toUpperCase() === parcel.city.toUpperCase()
+      && parcel.ownerState?.toUpperCase() === parcel.state?.toUpperCase();
+  }
 
   // Calculate price per sqft from transfer
   const pricePerSqft = parcel.transferPrice && parcel.buildingArea
     ? Math.round(parcel.transferPrice / parcel.buildingArea)
     : undefined;
 
-  // Format transfer date from "20171102" to "2017-11-02"
-  const transferDate = parcel.transferDate?.length === 8
-    ? `${parcel.transferDate.slice(0, 4)}-${parcel.transferDate.slice(4, 6)}-${parcel.transferDate.slice(6, 8)}`
-    : parcel.transferDateObject || parcel.transferDate;
+  // Format YYYYMMDD date strings to "YYYY-MM-DD"
+  const formatYMD = (d?: string | null) =>
+    d?.length === 8 ? `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}` : d || undefined;
+
+  const transferDate = formatYMD(parcel.transferDate)
+    || parcel.transferDateObject || parcel.transferDate;
+
+  // ownershipStartDate is the date the current owner acquired the property.
+  // This may differ from transferDate (which is the last recorded transfer).
+  const ownershipDate = formatYMD(parcel.ownershipStartDate);
 
   return {
     identifier: {
       apn: parcel.parcelId,
       fips,
       obPropId: parcel._id || parcel.siteId,
+      // Generate a stable numeric attomId from siteId — the frontend cache
+      // and deduplication logic keys on identifier.attomId.
+      attomId: parcel.siteId ? Number(parcel.siteId) : undefined,
     },
     address: {
       oneLine: parcel.addressFullUSPS || parcel.addressFull || `${parcel.address}, ${parcel.city}, ${parcel.state} ${parcel.zipCode}`,
@@ -291,7 +319,8 @@ export function mapRealieToAttomShape(parcel: RealieParcel): any {
     owner: {
       owner1: owner1 ? { fullName: owner1 } : undefined,
       owner2: owner2 ? { fullName: owner2 } : undefined,
-      corporateIndicator: parcel.ownerComCount && parcel.ownerComCount > 0 ? "Y" : "N",
+      corporateIndicator: (parcel.ownerComCount && parcel.ownerComCount > 0)
+        || parcel.buyerIDCode === "CO" ? "Y" : "N",
       absenteeOwnerStatus: ownerOccupied === false ? "A" : ownerOccupied === true ? "O" : undefined,
       mailingAddressOneLine: parcel.ownerAddressFull
         || (parcel.ownerAddressLine1 ? [
@@ -301,6 +330,10 @@ export function mapRealieToAttomShape(parcel: RealieParcel): any {
             parcel.ownerZipCode,
           ].filter(Boolean).join(", ") : undefined),
       ownerOccupied: ownerOccupied === true ? "Y" : ownerOccupied === false ? "N" : undefined,
+      // Realie's portfolio counts — used for investor detection
+      ownerParcelCount: parcel.ownerParcelCount,
+      ownerResCount: parcel.ownerResCount,
+      ownerComCount: parcel.ownerComCount,
     },
     building: {
       size: {
@@ -329,6 +362,8 @@ export function mapRealieToAttomShape(parcel: RealieParcel): any {
       propType: parcel.residential ? "SFR" : parcel.condo ? "CONDO" : undefined,
       propLandUse: parcel.useCode,
       yearBuilt: parcel.yearBuilt,
+      // Set absenteeInd so the frontend isAbsenteeOwner() detects it via multiple paths
+      absenteeInd: ownerOccupied === false ? "ABSENTEE OWNER" : ownerOccupied === true ? "OWNER OCCUPIED" : undefined,
     },
     assessment: {
       assessed: {
@@ -353,11 +388,14 @@ export function mapRealieToAttomShape(parcel: RealieParcel): any {
         low: parcel.modelValueMin,
       },
     } : undefined,
-    sale: (parcel.transferPrice || parcel.transferDate) ? {
+    sale: (parcel.transferPrice || parcel.transferDate || parcel.ownershipStartDate) ? {
       amount: {
         saleAmt: parcel.transferPrice || undefined,
-        saleTransDate: transferDate,
-        saleRecDate: parcel.recordingDate,
+        // Use ownershipStartDate as the primary date — it's when the current
+        // owner acquired the property. transferDate may be the last recorded
+        // transfer which could be an intra-family deed, not a real sale.
+        saleTransDate: ownershipDate || transferDate,
+        saleRecDate: formatYMD(parcel.recordingDate),
       },
       calculation: {
         pricePerSizeUnit: pricePerSqft,

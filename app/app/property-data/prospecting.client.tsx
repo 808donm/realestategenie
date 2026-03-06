@@ -1036,7 +1036,10 @@ export default function Prospecting() {
         const isCorp = ownerR?.corporateIndicator === "Y";
         const isAbsentee = isAbsenteeOwner(p);
         const hasOwnerName = !!getOwnerName(p);
-        return hasOwnerName && (isCorp || isAbsentee);
+        // Realie provides ownerParcelCount — if they own 2+ properties they're an investor
+        const parcelCount = (ownerR as any)?.ownerParcelCount;
+        const isMultiProperty = typeof parcelCount === "number" && parcelCount >= 2;
+        return hasOwnerName && (isCorp || isAbsentee || isMultiProperty);
       });
 
       for (const p of singleInvestors) {
