@@ -323,6 +323,7 @@ export interface RealieSearchParams {
   fips?: string;
 
   // Filters
+  residential?: boolean;
   property_type?: string;
   min_beds?: number;
   max_beds?: number;
@@ -734,6 +735,8 @@ export class RealieClient {
       zipCode,
       offset,
       limit,
+      // Filter to residential properties only (excludes commercial)
+      residential: params.residential !== false ? true : undefined,
       // Pass transferedSince if set (for "Just Sold" filtering)
       ...(params.transferedSince ? { transferedSince: params.transferedSince } : {}),
     };
@@ -768,6 +771,7 @@ export class RealieClient {
     page?: number;
     limit?: number;
     property_type?: string;
+    residential?: boolean;
   }): Promise<RealieApiResponse> {
     const limit = Math.min(params.limit || 100, 100);
     const offset = params.page && params.page > 1 ? (params.page - 1) * limit : 0;
@@ -776,6 +780,7 @@ export class RealieClient {
         latitude: params.latitude,
         longitude: params.longitude,
         radius: params.radius,
+        residential: params.residential !== false ? true : undefined,
         limit,
         offset,
       });
@@ -787,6 +792,7 @@ export class RealieClient {
           latitude: params.latitude,
           longitude: params.longitude,
           radius: params.radius,
+          residential: params.residential !== false ? true : undefined,
           offset,
           limit,
         });
@@ -1039,6 +1045,9 @@ export function mapAttomParamsToRealie(
   // Pagination
   if (params.page) mapped.page = Number(params.page);
   if (params.pagesize) mapped.limit = Number(params.pagesize);
+
+  // Filter residential only (default true unless explicitly set to false)
+  mapped.residential = params.residential === "false" || params.residential === false ? false : true;
 
   return mapped;
 }

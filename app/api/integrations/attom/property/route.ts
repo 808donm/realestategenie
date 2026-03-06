@@ -220,6 +220,7 @@ async function fetchFromRealie(
         page: realieParams.page,
         limit: realieParams.limit,
         property_type: realieParams.property_type,
+        residential: realieParams.residential,
       });
     } else if (realieParams.apn && realieParams.fips) {
       response = await client.getByApn(realieParams.apn, realieParams.fips);
