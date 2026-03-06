@@ -594,7 +594,10 @@ export class RealieClient {
     const limit = params.limit || 200;
     const offset = params.page && params.page > 1 ? (params.page - 1) * limit : 0;
 
-    const raw = await this.request<any>("/property/address/", {
+    // Build full param set — but if 400 error, retry with minimal params.
+    // Realie may not support all filter params (property_type, absentee_owner, etc.)
+    // and returns 400 for unrecognized query parameters.
+    const fullParams: Record<string, string | number | boolean | undefined> = {
       zip: params.zip,
       state: params.state,
       property_type: params.property_type,
@@ -613,8 +616,25 @@ export class RealieClient {
       transferedSince: params.transferedSince,
       offset,
       limit,
-    });
-    return this.normalizeResponse(raw);
+    };
+
+    try {
+      const raw = await this.request<any>("/property/address/", fullParams);
+      return this.normalizeResponse(raw);
+    } catch (error: any) {
+      // If 400 Bad Request, retry with just zip + pagination (minimal params).
+      // Realie may reject unknown filter params. We'll filter client-side instead.
+      if (error?.message?.includes("Realie API error: 400")) {
+        console.warn(`[Realie] 400 error with full params — retrying with minimal params (zip + limit/offset only)`);
+        const raw = await this.request<any>("/property/address/", {
+          zip: params.zip,
+          offset,
+          limit,
+        });
+        return this.normalizeResponse(raw);
+      }
+      throw error;
+    }
   }
 
   /**
@@ -631,9 +651,24 @@ export class RealieClient {
     // Realie uses offset-based pagination, not page-based
     const limit = params.limit || 200;
     const offset = params.page && params.page > 1 ? (params.page - 1) * limit : 0;
-    const { page: _page, limit: _limit, ...rest } = params;
-    const raw = await this.request<any>("/property/address/", { ...rest, limit, offset });
-    return this.normalizeResponse(raw);
+    const { page: _page, limit: _limit, property_type: _pt, ...rest } = params;
+    try {
+      const raw = await this.request<any>("/property/address/", { ...rest, limit, offset });
+      return this.normalizeResponse(raw);
+    } catch (error: any) {
+      if (error?.message?.includes("Realie API error: 400")) {
+        console.warn(`[Realie] 400 error with radius params — retrying with minimal params`);
+        const raw = await this.request<any>("/property/address/", {
+          latitude: params.latitude,
+          longitude: params.longitude,
+          radius: params.radius,
+          offset,
+          limit,
+        });
+        return this.normalizeResponse(raw);
+      }
+      throw error;
+    }
   }
 
   /**
