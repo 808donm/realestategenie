@@ -436,6 +436,37 @@ export default function PropertyDetailModal({
         }
       }
 
+      // Enrich homeEquity with loan count and estimated monthly payment
+      // derived from mortgage data when not already present
+      if (homeEquityData) {
+        const mortgage = p.mortgage;
+        const balance = homeEquityData.outstandingBalance ?? homeEquityData.loanBalance
+          ?? homeEquityData.mortgageBalance ?? homeEquityData.estimatedBalance;
+
+        // Active loan count: use mortgage.lienCount or financingHistoryCount,
+        // or infer from whether a loan balance exists
+        if (homeEquityData.loanCount == null && homeEquityData.numberOfLoans == null) {
+          const liens = mortgage?.lienCount ?? mortgage?.financingHistoryCount;
+          if (liens != null && liens > 0) {
+            homeEquityData.loanCount = liens;
+          } else if (balance != null && balance > 0) {
+            homeEquityData.loanCount = 1; // At least 1 active loan if there's a balance
+          }
+        }
+
+        // Estimated monthly payment: calculate from balance using standard 30yr rate
+        if (homeEquityData.estimatedPayment == null && homeEquityData.monthlyPayment == null) {
+          if (balance != null && balance > 0) {
+            // Estimate using typical 30yr fixed rate (6.5%) for P&I
+            const annualRate = 0.065;
+            const monthlyRate = annualRate / 12;
+            const n = 360; // 30 years
+            const monthlyPI = balance * (monthlyRate * Math.pow(1 + monthlyRate, n)) / (Math.pow(1 + monthlyRate, n) - 1);
+            homeEquityData.estimatedPayment = Math.round(monthlyPI);
+          }
+        }
+      }
+
       setEnrichedFinancial({
         avmHistory: null,
         rentalAvm: rentalAvm.status === "fulfilled" ? rentalAvm.value : null,
