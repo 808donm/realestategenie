@@ -10,7 +10,7 @@
  * Base URL: https://api.realie.ai/v1
  */
 
-const DEFAULT_BASE_URL = "https://api.realie.ai/v1";
+const DEFAULT_BASE_URL = "https://app.realie.ai/api/public";
 
 // ── Response types ──────────────────────────────────────────────────────────
 // Realie returns data in a normalized format that we map to our internal
@@ -340,9 +340,9 @@ export function mapRealieToAttomShape(parcel: RealieParcel): any {
         low: parcel.modelValueMin,
       },
     } : undefined,
-    sale: parcel.transferPrice ? {
+    sale: (parcel.transferPrice || parcel.transferDate) ? {
       amount: {
-        saleAmt: parcel.transferPrice,
+        saleAmt: parcel.transferPrice || undefined,
         saleTransDate: transferDate,
         saleRecDate: parcel.recordingDate,
       },
@@ -354,6 +354,24 @@ export function mapRealieToAttomShape(parcel: RealieParcel): any {
       amount: parcel.totalLienBalance,
       lender: parcel.lenderName ? { fullName: parcel.lenderName } : undefined,
     } : undefined,
+    // Parcel geometry (for boundary endpoints)
+    parcelBoundary: parcel.geometry || undefined,
+    // Assessment history from Realie
+    assessmenthistory: parcel.assessments?.map((a) => ({
+      assessed: {
+        assdTtlValue: a.totalAssessedValue,
+        assdImprValue: a.totalBuildingValue,
+        assdLandValue: a.totalLandValue,
+      },
+      market: {
+        mktTtlValue: a.totalMarketValue,
+      },
+      tax: {
+        taxAmt: a.taxValue,
+        taxYear: a.taxYear,
+      },
+      assessedYear: a.assessedYear,
+    })) || undefined,
     // Mark source so we know this came from Realie
     _source: "realie",
   };
@@ -389,7 +407,7 @@ export class RealieClient {
     const response = await fetch(url.toString(), {
       headers: {
         Accept: "application/json",
-        "x-api-key": this.apiKey,
+        Authorization: this.apiKey,
       },
     });
 
@@ -419,7 +437,26 @@ export class RealieClient {
   }
 
   /**
-   * Search parcels by address
+   * Normalize any Realie response to our standard RealieApiResponse shape.
+   * The API can return either { property: { ... } } (single) or
+   * { properties: [...] } (list), so we handle both.
+   */
+  private normalizeResponse(raw: any): RealieApiResponse {
+    if (raw?.properties && Array.isArray(raw.properties)) {
+      return raw as RealieApiResponse;
+    }
+    if (raw?.property) {
+      return {
+        properties: [raw.property],
+        metadata: { limit: 1, offset: 0, count: 1 },
+      };
+    }
+    return { properties: [], metadata: { limit: 0, offset: 0, count: 0 } };
+  }
+
+  /**
+   * Search property by address.
+   * Endpoint: /property/address/?state=XX&address=...
    */
   async searchByAddress(params: {
     address?: string;
@@ -430,15 +467,42 @@ export class RealieClient {
     page?: number;
     limit?: number;
   }): Promise<RealieApiResponse> {
-    return this.request("/parcels/search", params);
+    // The Realie address endpoint expects state + address (street portion)
+    const queryParams: Record<string, string | number | boolean | undefined> = {};
+
+    if (params.state) queryParams.state = params.state;
+    if (params.zip) queryParams.zip = params.zip;
+
+    // If a full address is given, try to extract state for the query
+    if (params.address) {
+      // Try to extract state from full address like "123 Main St, City, ST 12345"
+      const stateMatch = params.address.match(/,\s*([A-Z]{2})\s*\d{0,5}\s*$/);
+      if (stateMatch && !queryParams.state) {
+        queryParams.state = stateMatch[1];
+        // Remove city/state/zip from address to get just the street
+        queryParams.address = params.address.replace(/,\s*[^,]+,\s*[A-Z]{2}\s*\d{0,5}\s*$/, "").trim();
+      } else {
+        queryParams.address = params.address;
+      }
+    } else if (params.street) {
+      queryParams.address = params.street;
+    }
+
+    if (params.city) queryParams.city = params.city;
+    if (params.page) queryParams.page = params.page;
+    if (params.limit) queryParams.limit = params.limit;
+
+    const raw = await this.request<any>("/property/address/", queryParams);
+    return this.normalizeResponse(raw);
   }
 
   /**
-   * Search parcels by zip code with optional filters
+   * Search properties by zip code with optional filters
    */
   async searchByZip(params: RealieSearchParams): Promise<RealieApiResponse> {
-    return this.request("/parcels/search", {
+    const raw = await this.request<any>("/property/address/", {
       zip: params.zip,
+      state: params.state,
       property_type: params.property_type,
       min_beds: params.min_beds,
       max_beds: params.max_beds,
@@ -455,10 +519,11 @@ export class RealieClient {
       page: params.page,
       limit: params.limit,
     });
+    return this.normalizeResponse(raw);
   }
 
   /**
-   * Search parcels by lat/lng + radius
+   * Search properties by lat/lng + radius
    */
   async searchByRadius(params: {
     latitude: number;
@@ -468,33 +533,38 @@ export class RealieClient {
     limit?: number;
     property_type?: string;
   }): Promise<RealieApiResponse> {
-    return this.request("/parcels/search", params);
+    const raw = await this.request<any>("/property/address/", params);
+    return this.normalizeResponse(raw);
   }
 
   /**
-   * Get a single parcel by APN + FIPS
+   * Get a single property by APN + FIPS
    */
   async getByApn(apn: string, fips: string): Promise<RealieApiResponse> {
-    return this.request("/parcels/lookup", { apn, fips });
+    const raw = await this.request<any>("/property/address/", { apn, fips });
+    return this.normalizeResponse(raw);
   }
 
   /**
-   * Get parcel detail by Realie parcel ID
+   * Get property detail by Realie parcel ID
    */
   async getByParcelId(parcelId: string): Promise<RealieApiResponse> {
-    return this.request(`/parcels/${encodeURIComponent(parcelId)}`);
+    const raw = await this.request<any>(`/property/${encodeURIComponent(parcelId)}`);
+    return this.normalizeResponse(raw);
   }
 
   /**
-   * Get sales history for a parcel
+   * Get sales history for a property
    */
   async getSalesHistory(params: {
     address?: string;
+    state?: string;
     apn?: string;
     fips?: string;
     parcel_id?: string;
   }): Promise<RealieApiResponse> {
-    return this.request("/parcels/sales-history", params);
+    const raw = await this.request<any>("/property/address/", params);
+    return this.normalizeResponse(raw);
   }
 
   /**
@@ -502,10 +572,12 @@ export class RealieClient {
    */
   async getParcelBoundary(params: {
     address?: string;
+    state?: string;
     apn?: string;
     fips?: string;
   }): Promise<RealieApiResponse> {
-    return this.request("/parcels/boundary", params);
+    const raw = await this.request<any>("/property/address/", params);
+    return this.normalizeResponse(raw);
   }
 
   /**
@@ -514,12 +586,13 @@ export class RealieClient {
   async testConnection(): Promise<{ success: boolean; message: string; serviceDown?: boolean }> {
     try {
       // Use a known address to test
-      const result = await this.request<any>("/parcels/search", {
-        address: "1600 Pennsylvania Avenue NW, Washington, DC 20500",
-        limit: 1,
+      const raw = await this.request<any>("/property/address/", {
+        state: "DC",
+        address: "1600 Pennsylvania Avenue NW",
       });
 
-      if (result?.properties && Array.isArray(result.properties)) {
+      const result = this.normalizeResponse(raw);
+      if (result.properties.length > 0) {
         return {
           success: true,
           message: "Realie.ai API connection successful",
@@ -592,11 +665,22 @@ export function mapAttomParamsToRealie(
 
   const mapped: RealieSearchParams = {};
 
-  // Address
+  // Address — Realie needs state separately for address lookups
   if (params.address1 && params.address2) {
-    mapped.address = `${params.address1}, ${params.address2}`;
+    // address2 is typically "City, ST ZIP" — extract state
+    mapped.address = params.address1;
+    const stateMatch = params.address2.match(/\b([A-Z]{2})\b/);
+    if (stateMatch) mapped.state = stateMatch[1];
   } else if (params.address) {
-    mapped.address = params.address;
+    // Full address like "123 Main St, City, ST 12345"
+    const stateMatch = params.address.match(/,\s*([A-Z]{2})\s*\d{0,5}\s*$/);
+    if (stateMatch) {
+      mapped.state = stateMatch[1];
+      // Strip city/state/zip to get just street for address param
+      mapped.address = params.address.replace(/,\s*[^,]+,\s*[A-Z]{2}\s*\d{0,5}\s*$/, "").trim();
+    } else {
+      mapped.address = params.address;
+    }
   }
 
   // Zip code

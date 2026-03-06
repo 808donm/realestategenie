@@ -119,6 +119,9 @@ async function fetchFromRealie(
     if (realieParams.address) {
       response = await client.searchByAddress({
         address: realieParams.address,
+        state: realieParams.state,
+        city: realieParams.city,
+        zip: realieParams.zip,
         page: realieParams.page,
         limit: realieParams.limit,
       });
