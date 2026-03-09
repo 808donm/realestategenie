@@ -151,14 +151,6 @@ export default async function ReportsPage() {
             dataSources={["GHL"]}
             color="#f59e0b"
           />
-          <ReportCard
-            href="/app/pm/reports"
-            title="Property Management Reports"
-            description="Maintenance status, rent collection, and vendor spend reports."
-            dataSources={["GHL", "Stripe", "QBO"]}
-            color="#f59e0b"
-            badge="PM Module"
-          />
         </div>
       </section>
     </div>

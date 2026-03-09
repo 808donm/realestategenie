@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import {
   Users,
   TrendingUp,
-  DollarSign,
   Calendar,
   UserCheck,
   Flame,
@@ -93,53 +92,29 @@ export default async function TeamLeadDashboardPage() {
   const hotLeads = leads?.filter((l) => l.heat_score >= 80).length || 0;
   const warmLeads = leads?.filter((l) => l.heat_score >= 50 && l.heat_score < 80).length || 0;
 
-  // Get leases
-  const { data: leases } = await supabase
-    .from("pm_leases")
-    .select("id, monthly_rent, agent_id")
-    .in("agent_id", agentIds)
-    .in("status", ["active", "month_to_month"]);
-
-  const totalActiveLeases = leases?.length || 0;
-  const totalMonthlyRevenue =
-    leases?.reduce((sum, l) => sum + parseFloat(l.monthly_rent.toString()), 0) || 0;
-
   // Calculate individual agent performance
-  const agentPerformance = await Promise.all(
-    (teamMembers || []).map(async (tm: any) => {
-      const agentId = tm.agent_id;
+  const agentPerformance = (teamMembers || []).map((tm: any) => {
+    const agentId = tm.agent_id;
 
-      // Open houses
-      const agentOpenHouses = openHouses?.filter((oh) => oh.agent_id === agentId).length || 0;
+    const agentOpenHouses = openHouses?.filter((oh) => oh.agent_id === agentId).length || 0;
 
-      // Leads
-      const agentLeads = leads?.filter((l) => l.agent_id === agentId) || [];
-      const agentHotLeads = agentLeads.filter((l) => l.heat_score >= 80).length;
+    const agentLeads = leads?.filter((l) => l.agent_id === agentId) || [];
+    const agentHotLeads = agentLeads.filter((l) => l.heat_score >= 80).length;
 
-      // Leases and revenue
-      const agentLeases = leases?.filter((l) => l.agent_id === agentId) || [];
-      const agentRevenue = agentLeases.reduce(
-        (sum, l) => sum + parseFloat(l.monthly_rent.toString()),
-        0
-      );
+    return {
+      agent_id: agentId,
+      agent_name: tm.agents.display_name,
+      agent_email: tm.agents.email,
+      openHouses: agentOpenHouses,
+      totalLeads: agentLeads.length,
+      hotLeads: agentHotLeads,
+    };
+  });
 
-      return {
-        agent_id: agentId,
-        agent_name: tm.agents.display_name,
-        agent_email: tm.agents.email,
-        openHouses: agentOpenHouses,
-        totalLeads: agentLeads.length,
-        hotLeads: agentHotLeads,
-        activeLeases: agentLeases.length,
-        monthlyRevenue: agentRevenue,
-      };
-    })
-  );
-
-  // Sort by performance (hot leads + revenue)
+  // Sort by performance (hot leads, then total leads)
   agentPerformance.sort((a, b) => {
-    const scoreA = a.hotLeads * 1000 + a.monthlyRevenue;
-    const scoreB = b.hotLeads * 1000 + b.monthlyRevenue;
+    const scoreA = a.hotLeads * 1000 + a.totalLeads;
+    const scoreB = b.hotLeads * 1000 + b.totalLeads;
     return scoreB - scoreA;
   });
 
@@ -199,20 +174,6 @@ export default async function TeamLeadDashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
-              Monthly Revenue
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-green-600">
-              ${totalMonthlyRevenue.toLocaleString()}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">{totalActiveLeases} leases</p>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Team Performance Summary */}
@@ -272,11 +233,8 @@ export default async function TeamLeadDashboardPage() {
                 <div className="text-sm text-muted-foreground">{topPerformer.agent_email}</div>
               </div>
               <div className="text-right">
-                <div className="text-2xl font-bold text-green-600">
-                  ${topPerformer.monthlyRevenue.toLocaleString()}
-                </div>
                 <div className="text-sm text-muted-foreground">
-                  {topPerformer.hotLeads} hot leads • {topPerformer.openHouses} open houses
+                  {topPerformer.hotLeads} hot leads | {topPerformer.totalLeads} total | {topPerformer.openHouses} open houses
                 </div>
               </div>
             </div>
@@ -306,8 +264,6 @@ export default async function TeamLeadDashboardPage() {
                     <th className="text-right py-3 px-4 font-semibold">Open Houses</th>
                     <th className="text-right py-3 px-4 font-semibold">Total Leads</th>
                     <th className="text-right py-3 px-4 font-semibold">Hot Leads</th>
-                    <th className="text-right py-3 px-4 font-semibold">Active Leases</th>
-                    <th className="text-right py-3 px-4 font-semibold">Monthly Revenue</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -334,10 +290,6 @@ export default async function TeamLeadDashboardPage() {
                       <td className="text-right py-3 px-4">
                         <span className="font-semibold text-red-600">{agent.hotLeads}</span>
                       </td>
-                      <td className="text-right py-3 px-4">{agent.activeLeases}</td>
-                      <td className="text-right py-3 px-4 font-semibold text-green-600">
-                        ${agent.monthlyRevenue.toLocaleString()}
-                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -347,10 +299,6 @@ export default async function TeamLeadDashboardPage() {
                     <td className="text-right py-3 px-4">{totalOpenHouses}</td>
                     <td className="text-right py-3 px-4">{totalLeads}</td>
                     <td className="text-right py-3 px-4 text-red-600">{hotLeads}</td>
-                    <td className="text-right py-3 px-4">{totalActiveLeases}</td>
-                    <td className="text-right py-3 px-4 text-green-600">
-                      ${totalMonthlyRevenue.toLocaleString()}
-                    </td>
                   </tr>
                 </tfoot>
               </table>
