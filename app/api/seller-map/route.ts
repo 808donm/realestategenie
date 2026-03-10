@@ -69,12 +69,64 @@ export async function GET(request: NextRequest) {
     }
 
     // Score each property and filter
-    const scored = parcels
+    let scored = parcels
       .map((p) => scoreParcel(p))
       .filter((s): s is NonNullable<typeof s> => s !== null)
       .filter((s) => s.score >= minScore)
       .filter((s) => !absenteeOnly || s.absentee)
       .sort((a, b) => b.score - a.score);
+
+    // AVM enrichment: fetch real market values for top "possible" candidates
+    // (score 35-49) that are close to the "likely" threshold. This helps
+    // properties with stale lastSalePrice get accurate market values for
+    // equity and tax anomaly scoring.
+    const rentcastForAvm = await getRentcastClient();
+    if (rentcastForAvm) {
+      const candidates = scored.filter((s) => s.score >= 35 && s.score < 50);
+      const avmBatch = candidates.slice(0, 10);
+
+      if (avmBatch.length > 0) {
+        const avmResults = await Promise.allSettled(
+          avmBatch.map((s) =>
+            rentcastForAvm.getValueEstimate({
+              latitude: s.lat,
+              longitude: s.lng,
+            }).then((r) => ({ id: s.id, price: r.price }))
+          )
+        );
+
+        // Build a map of id → AVM price
+        const avmMap = new Map<string, number>();
+        for (const r of avmResults) {
+          if (r.status === "fulfilled" && r.value.price) {
+            avmMap.set(r.value.id, r.value.price);
+          }
+        }
+
+        if (avmMap.size > 0) {
+          console.log(`[SellerMap] AVM enriched ${avmMap.size}/${avmBatch.length} properties`);
+
+          // Find the original parcels for AVM-enriched properties, update modelValue, and re-score
+          const parcelMap = new Map(parcels.map((p) => [
+            p._id || p.siteId || p.parcelId || `${p.latitude}-${p.longitude}`,
+            p,
+          ]));
+
+          scored = scored.map((s) => {
+            const avmPrice = avmMap.get(s.id);
+            if (!avmPrice) return s;
+
+            const parcel = parcelMap.get(s.id);
+            if (!parcel) return s;
+
+            // Re-score with real AVM value
+            const enriched = { ...parcel, modelValue: avmPrice };
+            const rescored = scoreParcel(enriched);
+            return rescored || s;
+          }).sort((a, b) => b.score - a.score);
+        }
+      }
+    }
 
     return NextResponse.json({
       properties: scored.slice(0, limit),

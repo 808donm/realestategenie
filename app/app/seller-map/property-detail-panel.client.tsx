@@ -52,6 +52,9 @@ type PropertyDetail = {
   equity?: number;
   ltv?: number;
   modelValue?: number;
+  avmValue?: number;
+  avmLow?: number;
+  avmHigh?: number;
   totalMarketValue?: number;
   forecloseCode?: string;
   totalLienCount?: number;
@@ -357,8 +360,14 @@ function FinancialTab({
 
   return (
     <div className="space-y-4">
-      {/* Equity Analysis (from Realie) */}
-      <Section title="Equity Analysis">
+      {/* Value Estimates */}
+      <Section title="Value Estimates">
+        {detail?.avmValue && (
+          <InfoRow
+            label="RentCast AVM"
+            value={`$${(detail.avmValue / 1000).toFixed(0)}K${detail.avmLow && detail.avmHigh ? ` ($${(detail.avmLow / 1000).toFixed(0)}K–$${(detail.avmHigh / 1000).toFixed(0)}K)` : ""}`}
+          />
+        )}
         <InfoRow label="Estimated Value" value={detail?.modelValue || property.estimatedValue ? `$${((detail?.modelValue || property.estimatedValue || 0) / 1000).toFixed(0)}K` : undefined} />
         <InfoRow label="Equity" value={detail?.equity != null || property.equity != null ? `$${(((detail?.equity ?? property.equity) || 0) / 1000).toFixed(0)}K` : undefined} />
         <InfoRow label="LTV" value={detail?.ltv != null || property.ltv != null ? `${detail?.ltv ?? property.ltv}%` : undefined} />

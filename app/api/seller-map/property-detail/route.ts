@@ -50,8 +50,11 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Fetch comps from RentCast if we have coordinates
+    // Fetch AVM value estimate + comps from RentCast
     let comps: any[] = [];
+    let avmValue: number | undefined;
+    let avmLow: number | undefined;
+    let avmHigh: number | undefined;
     if (rentcast && lat && lng) {
       try {
         const valueEstimate = await rentcast.getValueEstimate({
@@ -63,6 +66,9 @@ export async function GET(request: NextRequest) {
           propertyType: property?.propertyType,
           compCount: 10,
         });
+        avmValue = valueEstimate.price;
+        avmLow = valueEstimate.priceRangeLow;
+        avmHigh = valueEstimate.priceRangeHigh;
         comps = (valueEstimate.comparables || []).map((c) => ({
           id: c.id,
           address: c.formattedAddress,
@@ -81,7 +87,7 @@ export async function GET(request: NextRequest) {
           listedDate: c.listedDate,
         }));
       } catch (err: any) {
-        console.error("[PropertyDetail] Comps error:", err.message);
+        console.error("[PropertyDetail] Comps/AVM error:", err.message);
       }
     }
 
@@ -150,7 +156,15 @@ export async function GET(request: NextRequest) {
       taxAssessments: property?.taxAssessments,
       propertyTaxes: property?.propertyTaxes,
       hoa: property?.hoa,
+      // AVM from RentCast (current market value estimate)
+      avmValue,
+      avmLow,
+      avmHigh,
+      // Prefer Realie's modelValue, fall back to RentCast AVM
+      modelValue: realieEnrichment.modelValue || avmValue,
       ...realieEnrichment,
+      // Re-apply modelValue after spread in case Realie didn't have one
+      ...(realieEnrichment.modelValue ? {} : { modelValue: avmValue }),
 
       // Ownership
       owner: property?.owner,
