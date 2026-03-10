@@ -40,9 +40,9 @@ export function SellerMapClient() {
   const [total, setTotal] = useState(0);
   const [mobileShowSidebar, setMobileShowSidebar] = useState(false);
 
-  // Current map bounds and last-fetched bounds
+  // Current map viewport (updated on pan/zoom, but does NOT trigger fetches)
   const boundsRef = useRef({ lat: 21.3069, lng: -157.8583, radius: 2 });
-  const lastFetchRef = useRef<{ lat: number; lng: number; radius: number } | null>(null);
+  const [hasFetched, setHasFetched] = useState(false);
 
   // Load saved searches on mount
   useEffect(() => {
@@ -54,7 +54,7 @@ export function SellerMapClient() {
       .catch(() => {});
   }, []);
 
-  // Fetch properties when bounds or filters change
+  // Fetch properties — only called explicitly (button click, saved search, initial load)
   const fetchProperties = useCallback(
     async (bounds: { lat: number; lng: number; radius: number }) => {
       setIsLoading(true);
@@ -78,7 +78,7 @@ export function SellerMapClient() {
 
         setProperties(data.properties || []);
         setTotal(data.total || 0);
-        lastFetchRef.current = { ...bounds };
+        setHasFetched(true);
       } catch (err) {
         console.error("[SellerMap] Fetch error:", err);
       } finally {
@@ -88,34 +88,23 @@ export function SellerMapClient() {
     [filters.minScore, filters.absenteeOnly]
   );
 
-  // Initial load
+  // Initial load — fetch once on mount
   useEffect(() => {
     fetchProperties(boundsRef.current);
-  }, [fetchProperties]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Track viewport bounds (no auto-fetch)
   const handleBoundsChange = useCallback(
     (bounds: { lat: number; lng: number; radius: number }) => {
       boundsRef.current = bounds;
-
-      // Skip re-fetch when zooming into an area we already have data for.
-      // Only re-fetch if the new viewport extends beyond the previous search area.
-      const prev = lastFetchRef.current;
-      if (prev && properties.length > 0) {
-        const distMiles =
-          Math.sqrt(
-            Math.pow((bounds.lat - prev.lat) * 69, 2) +
-            Math.pow((bounds.lng - prev.lng) * 54.6, 2)
-          );
-        // New viewport center + radius fits inside previous fetch circle
-        if (distMiles + bounds.radius < prev.radius * 0.9) {
-          return; // existing data covers this view
-        }
-      }
-
-      fetchProperties(bounds);
     },
-    [fetchProperties, properties.length]
+    []
   );
+
+  // Manual search — user clicks "Search This Area"
+  const handleSearchThisArea = useCallback(() => {
+    fetchProperties(boundsRef.current);
+  }, [fetchProperties]);
 
   const handleSaveSearch = useCallback(
     async (name: string) => {
@@ -227,6 +216,17 @@ export function SellerMapClient() {
           mapStyle={mapStyle}
           isLoading={isLoading}
         />
+
+        {/* Search This Area button — only way to trigger a new fetch */}
+        {hasFetched && (
+          <button
+            onClick={handleSearchThisArea}
+            disabled={isLoading}
+            className="absolute top-3 left-1/2 -translate-x-1/2 z-10 bg-white shadow-lg rounded-full px-5 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:shadow-xl transition-all disabled:opacity-50"
+          >
+            {isLoading ? "Searching..." : "Search This Area"}
+          </button>
+        )}
 
         {/* Mobile toggle for sidebar */}
         <button
