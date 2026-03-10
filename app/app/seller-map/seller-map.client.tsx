@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import type { ScoredProperty } from "@/lib/scoring/seller-motivation-score";
 import { SellerMapView } from "./map-view.client";
 import { SidebarPanel } from "./sidebar-panel.client";
+import { PropertyDetailPanel } from "./property-detail-panel.client";
 
 type SavedSearch = {
   id: string;
@@ -162,29 +163,37 @@ export function SellerMapClient() {
     <div className="flex h-[calc(100vh-180px)] rounded-lg overflow-hidden border bg-white shadow-sm">
       {/* Sidebar — Desktop */}
       <div className="hidden md:block w-[340px] shrink-0">
-        <SidebarPanel
-          properties={properties}
-          selectedProperty={selectedProperty}
-          onSelectProperty={setSelectedProperty}
-          filters={filters}
-          onFiltersChange={setFilters}
-          showHeatMap={showHeatMap}
-          onToggleHeatMap={() => setShowHeatMap((v) => !v)}
-          showTMK={showTMK}
-          onToggleTMK={() => setShowTMK((v) => !v)}
-          mapStyle={mapStyle}
-          onToggleMapStyle={() =>
-            setMapStyle((v) => (v === "streets" ? "satellite" : "streets"))
-          }
-          savedSearches={savedSearches}
-          onSaveSearch={handleSaveSearch}
-          onLoadSearch={handleLoadSearch}
-          onDeleteSearch={handleDeleteSearch}
-          onAddToCRM={handleAddToCRM}
-          onGenerateReport={handleGenerateReport}
-          isLoading={isLoading}
-          total={total}
-        />
+        {selectedProperty ? (
+          <PropertyDetailPanel
+            property={selectedProperty}
+            onClose={() => setSelectedProperty(null)}
+            onAddToCRM={handleAddToCRM}
+          />
+        ) : (
+          <SidebarPanel
+            properties={properties}
+            selectedProperty={selectedProperty}
+            onSelectProperty={setSelectedProperty}
+            filters={filters}
+            onFiltersChange={setFilters}
+            showHeatMap={showHeatMap}
+            onToggleHeatMap={() => setShowHeatMap((v) => !v)}
+            showTMK={showTMK}
+            onToggleTMK={() => setShowTMK((v) => !v)}
+            mapStyle={mapStyle}
+            onToggleMapStyle={() =>
+              setMapStyle((v) => (v === "streets" ? "satellite" : "streets"))
+            }
+            savedSearches={savedSearches}
+            onSaveSearch={handleSaveSearch}
+            onLoadSearch={handleLoadSearch}
+            onDeleteSearch={handleDeleteSearch}
+            onAddToCRM={handleAddToCRM}
+            onGenerateReport={handleGenerateReport}
+            isLoading={isLoading}
+            total={total}
+          />
+        )}
       </div>
 
       {/* Map */}
@@ -214,32 +223,42 @@ export function SellerMapClient() {
       {mobileShowSidebar && (
         <div className="md:hidden fixed inset-x-0 bottom-0 z-50 h-[60vh] bg-white rounded-t-2xl shadow-2xl">
           <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mt-2 mb-1" />
-          <SidebarPanel
-            properties={properties}
-            selectedProperty={selectedProperty}
-            onSelectProperty={(p) => {
-              setSelectedProperty(p);
-              setMobileShowSidebar(false);
-            }}
-            filters={filters}
-            onFiltersChange={setFilters}
-            showHeatMap={showHeatMap}
-            onToggleHeatMap={() => setShowHeatMap((v) => !v)}
-            showTMK={showTMK}
-            onToggleTMK={() => setShowTMK((v) => !v)}
-            mapStyle={mapStyle}
-            onToggleMapStyle={() =>
-              setMapStyle((v) => (v === "streets" ? "satellite" : "streets"))
-            }
-            savedSearches={savedSearches}
-            onSaveSearch={handleSaveSearch}
-            onLoadSearch={handleLoadSearch}
-            onDeleteSearch={handleDeleteSearch}
-            onAddToCRM={handleAddToCRM}
-            onGenerateReport={handleGenerateReport}
-            isLoading={isLoading}
-            total={total}
-          />
+          {selectedProperty ? (
+            <PropertyDetailPanel
+              property={selectedProperty}
+              onClose={() => {
+                setSelectedProperty(null);
+                setMobileShowSidebar(false);
+              }}
+              onAddToCRM={handleAddToCRM}
+            />
+          ) : (
+            <SidebarPanel
+              properties={properties}
+              selectedProperty={selectedProperty}
+              onSelectProperty={(p) => {
+                setSelectedProperty(p);
+              }}
+              filters={filters}
+              onFiltersChange={setFilters}
+              showHeatMap={showHeatMap}
+              onToggleHeatMap={() => setShowHeatMap((v) => !v)}
+              showTMK={showTMK}
+              onToggleTMK={() => setShowTMK((v) => !v)}
+              mapStyle={mapStyle}
+              onToggleMapStyle={() =>
+                setMapStyle((v) => (v === "streets" ? "satellite" : "streets"))
+              }
+              savedSearches={savedSearches}
+              onSaveSearch={handleSaveSearch}
+              onLoadSearch={handleLoadSearch}
+              onDeleteSearch={handleDeleteSearch}
+              onAddToCRM={handleAddToCRM}
+              onGenerateReport={handleGenerateReport}
+              isLoading={isLoading}
+              total={total}
+            />
+          )}
         </div>
       )}
     </div>
