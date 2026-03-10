@@ -105,7 +105,7 @@ type Props = {
   onAddToCRM?: (property: ScoredProperty) => void;
 };
 
-export function PropertyDetailPanel({ property, onClose, onAddToCRM }: Props) {
+export function PropertyDetailPanel({ property, onClose }: Props) {
   const [tab, setTab] = useState<DetailTab>("overview");
   const [detail, setDetail] = useState<PropertyDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -215,7 +215,7 @@ export function PropertyDetailPanel({ property, onClose, onAddToCRM }: Props) {
         ) : (
           <>
             {tab === "overview" && (
-              <OverviewTab property={property} detail={detail} onAddToCRM={onAddToCRM} />
+              <OverviewTab property={property} detail={detail} />
             )}
             {tab === "building" && <BuildingTab detail={detail} />}
             {tab === "financial" && <FinancialTab property={property} detail={detail} />}
@@ -230,17 +230,208 @@ export function PropertyDetailPanel({ property, onClose, onAddToCRM }: Props) {
 
 // ── Overview Tab ──────────────────────────────────────────────────────────
 
+function getFactorByName(factors: ScoredProperty["factors"], name: string) {
+  return factors.find((f) => f.name === name) || null;
+}
+
+const INSIGHT_CARDS: {
+  name: string;
+  icon: string;
+  colors: { bg: string; border: string; text: string; bar: string };
+}[] = [
+  {
+    name: "High Equity",
+    icon: "\u25B2",
+    colors: { bg: "bg-emerald-50", border: "border-emerald-200", text: "text-emerald-700", bar: "bg-emerald-500" },
+  },
+  {
+    name: "Distress Signals",
+    icon: "\u26A0",
+    colors: { bg: "bg-red-50", border: "border-red-200", text: "text-red-700", bar: "bg-red-500" },
+  },
+  {
+    name: "Multi-Property Owner",
+    icon: "\u229E",
+    colors: { bg: "bg-purple-50", border: "border-purple-200", text: "text-purple-700", bar: "bg-purple-500" },
+  },
+  {
+    name: "Tax Assessment Gap",
+    icon: "\u0024",
+    colors: { bg: "bg-amber-50", border: "border-amber-200", text: "text-amber-700", bar: "bg-amber-500" },
+  },
+];
+
+function exportPropertyToExcel(property: ScoredProperty, detail: PropertyDetail | null) {
+  // Build rows as tab-separated values (TSV) — pastes cleanly into Excel/Sheets
+  const rows: string[][] = [];
+  const add = (section: string, label: string, value: any) => {
+    if (value == null || value === "") return;
+    rows.push([section, label, String(value)]);
+  };
+
+  // Property Info
+  add("Property", "Address", property.address);
+  add("Property", "City", property.city);
+  add("Property", "State", property.state);
+  add("Property", "Zip", property.zip);
+  add("Property", "Type", detail?.propertyType || property.propertyType);
+  add("Property", "County", detail?.county);
+  add("Property", "Zoning", detail?.zoning);
+  add("Property", "Bedrooms", property.beds);
+  add("Property", "Bathrooms", property.baths);
+  add("Property", "Square Footage", property.sqft);
+  add("Property", "Lot Size", detail?.lotSize);
+  add("Property", "Year Built", property.yearBuilt);
+  add("Property", "Owner Occupied", detail?.ownerOccupied != null ? (detail.ownerOccupied ? "Yes" : "No") : undefined);
+
+  // Building Features
+  const f = detail?.features;
+  if (f) {
+    add("Building", "Architecture", f.architectureType);
+    add("Building", "Exterior", f.exteriorType);
+    add("Building", "Foundation", f.foundationType);
+    add("Building", "Roof", f.roofType);
+    add("Building", "Heating", f.heatingType);
+    add("Building", "Cooling", f.coolingType);
+    add("Building", "Fireplace", f.fireplaceType || (f.fireplace ? "Yes" : undefined));
+    add("Building", "Garage", f.garageType ? `${f.garageType}${f.garageSpaces ? ` (${f.garageSpaces})` : ""}` : (f.garage ? "Yes" : undefined));
+    add("Building", "Pool", f.poolType || (f.pool ? "Yes" : undefined));
+    add("Building", "Stories", f.floorCount);
+    add("Building", "Rooms", f.roomCount);
+  }
+
+  // Financial
+  add("Financial", "Estimated Value", detail?.modelValue || property.estimatedValue);
+  add("Financial", "RentCast AVM", detail?.avmValue);
+  add("Financial", "AVM Low", detail?.avmLow);
+  add("Financial", "AVM High", detail?.avmHigh);
+  add("Financial", "Equity", detail?.equity ?? property.equity);
+  add("Financial", "LTV %", detail?.ltv ?? property.ltv);
+  add("Financial", "HOA Fee", detail?.hoa?.fee);
+  add("Financial", "Last Sale Date", detail?.lastSaleDate);
+  add("Financial", "Last Sale Price", detail?.lastSalePrice);
+  add("Financial", "Total Market Value", detail?.totalMarketValue);
+  add("Financial", "Foreclosure Code", detail?.forecloseCode);
+  add("Financial", "Lien Count", detail?.totalLienCount);
+  add("Financial", "Lien Balance", detail?.totalLienBalance);
+
+  // Tax Assessments
+  if (detail?.taxAssessments) {
+    for (const [, a] of Object.entries(detail.taxAssessments).sort(([x], [y]) => y.localeCompare(x))) {
+      add("Tax Assessment", `${a.year} Total`, a.value);
+      add("Tax Assessment", `${a.year} Land`, a.land);
+      add("Tax Assessment", `${a.year} Improvements`, a.improvements);
+    }
+  }
+
+  // Property Taxes
+  if (detail?.propertyTaxes) {
+    for (const [, t] of Object.entries(detail.propertyTaxes).sort(([x], [y]) => y.localeCompare(x))) {
+      add("Property Tax", `${t.year}`, t.total);
+    }
+  }
+
+  // Ownership
+  add("Ownership", "Owner", detail?.owner?.names?.join(", ") || property.owner);
+  add("Ownership", "Owner Type", detail?.owner?.type);
+  add("Ownership", "Absentee", property.absentee ? "Yes" : "No");
+  add("Ownership", "Ownership Years", property.ownershipYears);
+  add("Ownership", "Owner Parcel Count", detail?.ownerParcelCount);
+  add("Ownership", "Residential Properties", detail?.ownerResCount);
+  add("Ownership", "Commercial Properties", detail?.ownerComCount);
+  if (detail?.owner?.mailingAddress) {
+    add("Ownership", "Mailing Address", detail.owner.mailingAddress.formattedAddress);
+    add("Ownership", "Mailing State", detail.owner.mailingAddress.state);
+  }
+
+  // Sale History
+  if (detail?.saleHistory) {
+    for (const [, ev] of Object.entries(detail.saleHistory).sort(([x], [y]) => y.localeCompare(x))) {
+      add("Sale History", `${ev.event} (${new Date(ev.date).toLocaleDateString()})`, ev.price);
+    }
+  }
+
+  // Market Data
+  add("Market", "Median Price", detail?.marketMedianPrice);
+  add("Market", "Median $/sqft", detail?.marketMedianPricePerSqft);
+  add("Market", "Avg Days on Market", detail?.marketAvgDaysOnMarket);
+  add("Market", "Active Listings", detail?.marketTotalListings);
+  add("Market", "New Listings", detail?.marketNewListings);
+  add("Market", "Price Trend %", detail?.marketPriceTrend);
+  add("Market", "Median Rent", detail?.marketMedianRent);
+
+  // Scoring
+  add("Scoring", "Total Score", property.score);
+  add("Scoring", "Level", property.level);
+  for (const fac of property.factors) {
+    add("Scoring", `${fac.name} (${fac.points}/${fac.maxPoints})`, fac.description);
+  }
+
+  // Comps
+  if (detail?.comps) {
+    for (const c of detail.comps) {
+      add("Comparable", c.address, `$${c.price.toLocaleString()} | ${c.beds}bd/${c.baths}ba | ${c.sqft?.toLocaleString() || "?"} sqft | ${c.distance?.toFixed(1) || "?"} mi`);
+    }
+  }
+
+  // Generate CSV
+  const header = "Section,Field,Value";
+  const csv = [header, ...rows.map((r) => r.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))].join("\n");
+
+  // Download
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${property.address.replace(/[^a-zA-Z0-9]/g, "_")}_property_data.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 function OverviewTab({
   property,
   detail,
-  onAddToCRM,
 }: {
   property: ScoredProperty;
   detail: PropertyDetail | null;
-  onAddToCRM?: (p: ScoredProperty) => void;
 }) {
   return (
     <div className="space-y-4">
+      {/* Key Score Insights */}
+      <div className="grid grid-cols-2 gap-2">
+        {INSIGHT_CARDS.map((card) => {
+          const factor = getFactorByName(property.factors, card.name);
+          if (!factor) return null;
+          const pct = factor.maxPoints > 0 ? (factor.points / factor.maxPoints) * 100 : 0;
+          return (
+            <div
+              key={card.name}
+              className={`rounded-lg border p-2.5 ${card.colors.bg} ${card.colors.border}`}
+            >
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className={`text-sm ${card.colors.text}`}>{card.icon}</span>
+                <span className={`text-[10px] font-semibold uppercase tracking-wide ${card.colors.text}`}>
+                  {card.name}
+                </span>
+              </div>
+              <div className="flex items-baseline gap-1">
+                <span className={`text-lg font-bold ${card.colors.text}`}>
+                  {factor.points}
+                </span>
+                <span className="text-[10px] text-gray-400">/ {factor.maxPoints}</span>
+              </div>
+              <div className="h-1 bg-white/60 rounded-full overflow-hidden mt-1">
+                <div
+                  className={`h-full rounded-full ${card.colors.bar}`}
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+              <p className="text-[10px] text-gray-500 mt-1 leading-tight">{factor.description}</p>
+            </div>
+          );
+        })}
+      </div>
+
       {/* Property info */}
       <Section title="Property Info">
         <InfoRow label="Type" value={detail?.propertyType || property.propertyType} />
@@ -261,7 +452,7 @@ function OverviewTab({
       </Section>
 
       {/* Score breakdown */}
-      <Section title="Seller Motivation Factors">
+      <Section title="All Motivation Factors">
         <div className="space-y-2">
           {property.factors
             .sort((a, b) => b.points - a.points)
@@ -285,23 +476,17 @@ function OverviewTab({
         </div>
       </Section>
 
-      {/* Actions */}
-      <div className="flex gap-2 pt-2">
-        {onAddToCRM && (
-          <button
-            onClick={() => onAddToCRM(property)}
-            className="flex-1 text-xs bg-blue-600 text-white py-2 px-3 rounded hover:bg-blue-700 transition-colors"
-          >
-            Add to CRM
-          </button>
-        )}
-        <a
-          href={`/app/property-data?address=${encodeURIComponent(property.address)}`}
-          target="_blank"
-          className="flex-1 text-xs text-center border border-gray-300 py-2 px-3 rounded hover:bg-gray-50 transition-colors"
+      {/* Export */}
+      <div className="pt-2">
+        <button
+          onClick={() => exportPropertyToExcel(property, detail)}
+          className="w-full text-xs border border-gray-300 py-2 px-3 rounded hover:bg-gray-50 transition-colors flex items-center justify-center gap-1.5"
         >
-          Full Report
-        </a>
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          Export to Excel
+        </button>
       </div>
     </div>
   );
