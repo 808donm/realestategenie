@@ -430,19 +430,22 @@ export interface RentcastListingSearchParams {
   bedrooms?: string;
   bathrooms?: string;
   squareFootage?: string;
+  lotSize?: string;
+  yearBuilt?: string;
   price?: string;
   status?: "Active" | "Inactive";
-  daysOld?: number;
+  /** Days since listed, min 1. Supports numeric ranges (e.g. "30:90"). */
+  daysOld?: string;
   limit?: number; // 1-500
   offset?: number;
+  includeTotalCount?: boolean;
 }
 
 export interface RentcastMarketParams {
-  zipCode?: string;
-  city?: string;
-  state?: string;
-  dataType?: "Sale" | "Rental" | "All";
-  historyRange?: number; // months of history to return
+  /** Required — a valid 5-digit US zip code */
+  zipCode: string;
+  dataType?: "Sale" | "Rental" | "All"; // default "All"
+  historyRange?: number; // months of history, default 12
 }
 
 // ---------------------------------------------------------------------------
