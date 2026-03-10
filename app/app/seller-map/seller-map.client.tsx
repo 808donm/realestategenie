@@ -61,17 +61,20 @@ export function SellerMapClient() {
     async (bounds: { lat: number; lng: number; radius: number }) => {
       setIsLoading(true);
       try {
+        // If user specified zip codes, use a higher limit for island-wide coverage
+        const trimmedZips = filters.zips?.trim();
+        const searchLimit = trimmedZips ? "2000" : "500";
+
         const params = new URLSearchParams({
           lat: String(bounds.lat),
           lng: String(bounds.lng),
           radius: String(bounds.radius),
           minScore: String(filters.minScore),
           absenteeOnly: String(filters.absenteeOnly),
-          limit: "500",
+          limit: searchLimit,
         });
 
         // If user specified zip codes, add them to query (overrides lat/lng search)
-        const trimmedZips = filters.zips?.trim();
         if (trimmedZips) {
           params.set("zips", trimmedZips);
         }

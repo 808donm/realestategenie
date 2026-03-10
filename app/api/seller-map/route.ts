@@ -25,7 +25,7 @@ import { buildSearchCacheKey, searchCacheGet, searchCacheSet } from "@/lib/cache
  *   minScore    — minimum seller motivation score (default 0)
  *   absenteeOnly — filter to absentee owners only
  *   zip         — alternative to lat/lng: search by zip code
- *   limit       — max results (default 100, max 500)
+ *   limit       — max results (default 100, max 2000)
  *   page        — pagination page (default 1)
  */
 export async function GET(request: NextRequest) {
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     const radius = Math.min(Number(url.searchParams.get("radius") || 10), 50);
     const minScore = Number(url.searchParams.get("minScore") || 0);
     const absenteeOnly = url.searchParams.get("absenteeOnly") === "true";
-    const limit = Math.min(Number(url.searchParams.get("limit") || 100), 500);
+    const limit = Math.min(Number(url.searchParams.get("limit") || 100), 2000);
     const page = Number(url.searchParams.get("page") || 1);
 
     if (!lat && !lng && !zip && !zips) {
@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
       const uniqueZips = [...new Set(parcels.map((p) => p.zipCode).filter(Boolean))] as string[];
       if (uniqueZips.length > 0) {
         const marketResults = await Promise.allSettled(
-          uniqueZips.slice(0, 10).map((zipCode) =>
+          uniqueZips.slice(0, 20).map((zipCode) =>
             rentcastForMarket.getMarketData({ zipCode, dataType: "Sale" })
               .then((data) => ({ zipCode, data }))
           )
@@ -190,7 +190,7 @@ export async function GET(request: NextRequest) {
       p,
     ]));
 
-    const enrichCandidates = scored.filter((s) => s.score >= 30).slice(0, 100);
+    const enrichCandidates = scored.filter((s) => s.score >= 30).slice(0, 500);
 
     if (realie && enrichCandidates.length > 0) {
       try {
@@ -202,9 +202,9 @@ export async function GET(request: NextRequest) {
 
         // Fetch Realie data for each zip (cap total across all zips)
         let realieProperties: RealieParcel[] = [];
-        let remaining = 100;
+        let remaining = 500;
 
-        for (const zipCode of candidateZips.slice(0, 10)) {
+        for (const zipCode of candidateZips.slice(0, 20)) {
           if (remaining <= 0) break;
           try {
             const result = await realie.searchByZip({
@@ -398,40 +398,65 @@ async function fetchByCoords(
 
 /**
  * Fetch properties across multiple zip codes in parallel.
- * Uses RentCast per-zip queries, distributing the limit evenly,
- * then deduplicates by address.
+ * Each zip gets up to 500 results from RentCast (or 100 from Realie),
+ * then results are merged and deduplicated.
  */
 async function fetchByZipCodes(
   zipCodes: string[],
   totalLimit: number
 ): Promise<RealieParcel[]> {
   const rentcast = await getRentcastClient();
-  if (!rentcast) {
-    // Fallback to Realie for zip searches
-    const realie = await getRealieClient();
-    if (!realie) return [];
+  const realie = await getRealieClient();
 
-    const results = await Promise.allSettled(
-      zipCodes.slice(0, 20).map((zip) =>
-        realie.searchByZip({ zip, limit: Math.min(Math.ceil(totalLimit / zipCodes.length), 100) })
-          .then((r) => r.properties)
-      )
-    );
-    return deduplicateParcels(
-      results.flatMap((r) => (r.status === "fulfilled" ? r.value : []))
-    );
-  }
+  if (!rentcast && !realie) return [];
 
-  // RentCast per-zip parallel search
-  const perZipLimit = Math.min(Math.ceil(totalLimit / zipCodes.length), 500);
+  // Query each zip independently with full per-zip limits (not split across zips)
+  const PER_ZIP_LIMIT_RENTCAST = 500;
+  const PER_ZIP_LIMIT_REALIE = 100;
+
   const results = await Promise.allSettled(
-    zipCodes.slice(0, 20).map((zipCode) =>
-      rentcast.searchProperties({ zipCode, limit: perZipLimit })
-        .then((props) => {
-          console.log(`[SellerMap] RentCast zip ${zipCode}: ${props.length} properties`);
-          return props.map(mapRentcastToRealieParcel);
-        })
-    )
+    zipCodes.slice(0, 20).map(async (zipCode) => {
+      // Try RentCast first (up to 500 per zip)
+      if (rentcast) {
+        try {
+          const props = await rentcast.searchProperties({
+            zipCode,
+            limit: PER_ZIP_LIMIT_RENTCAST,
+          });
+          if (props.length > 0) {
+            console.log(`[SellerMap] RentCast zip ${zipCode}: ${props.length} properties`);
+            return props.map(mapRentcastToRealieParcel);
+          }
+          console.log(`[SellerMap] RentCast zip ${zipCode}: 0 results, trying Realie fallback`);
+        } catch (err: any) {
+          console.warn(`[SellerMap] RentCast zip ${zipCode} failed: ${err.message}, trying Realie fallback`);
+        }
+      }
+
+      // Fallback to Realie (paginate through up to 500 results, 100 per page)
+      if (realie) {
+        try {
+          const allPages: RealieParcel[] = [];
+          const maxPages = 5; // 5 pages * 100 = 500 max per zip
+          for (let page = 1; page <= maxPages; page++) {
+            const result = await realie.searchByZip({
+              zip: zipCode,
+              limit: PER_ZIP_LIMIT_REALIE,
+              page,
+            });
+            allPages.push(...result.properties);
+            console.log(`[SellerMap] Realie zip ${zipCode} page ${page}: ${result.properties.length} properties`);
+            // Stop if we got fewer than the limit (no more pages)
+            if (result.properties.length < PER_ZIP_LIMIT_REALIE) break;
+          }
+          return allPages;
+        } catch (err: any) {
+          console.warn(`[SellerMap] Realie zip ${zipCode} failed: ${err.message}`);
+        }
+      }
+
+      return [] as RealieParcel[];
+    })
   );
 
   const all = results.flatMap((r) => (r.status === "fulfilled" ? r.value : []));
