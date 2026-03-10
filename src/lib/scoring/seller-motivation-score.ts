@@ -164,21 +164,30 @@ function scoreAbsentee(parcel: RealieParcel): SellerFactor {
         .replace(/[^a-z0-9]/g, "")
         .trim();
 
-    const isAbsentee = normalize(ownerAddr) !== normalize(propAddr);
+    const isPoBox = /\bp\.?\s*o\.?\s*box\b/i.test(ownerAddr);
+    const outOfState =
+      parcel.ownerState &&
+      parcel.state &&
+      parcel.ownerState.toUpperCase() !== parcel.state.toUpperCase();
 
-    if (isAbsentee) {
-      // Check if out-of-state
-      const outOfState =
-        parcel.ownerState &&
-        parcel.state &&
-        parcel.ownerState.toUpperCase() !== parcel.state.toUpperCase();
-
+    if (isPoBox) {
+      // P.O. Box in the same state/area is not a reliable absentee signal —
+      // many owner-occupants use a P.O. Box for mail. Only flag if out of state.
       if (outOfState) {
         points = max;
-        description = `Out-of-state absentee owner (${parcel.ownerState})`;
-      } else {
-        points = 12;
-        description = "Absentee owner — may be investor or inherited property";
+        description = `Out-of-state P.O. Box owner (${parcel.ownerState})`;
+      }
+    } else {
+      const isAbsentee = normalize(ownerAddr) !== normalize(propAddr);
+
+      if (isAbsentee) {
+        if (outOfState) {
+          points = max;
+          description = `Out-of-state absentee owner (${parcel.ownerState})`;
+        } else {
+          points = 12;
+          description = "Absentee owner — may be investor or inherited property";
+        }
       }
     }
   }
@@ -362,9 +371,20 @@ export function scoreParcel(parcel: RealieParcel): ScoredProperty | null {
   const propAddr = parcel.address;
   let absentee = false;
   if (ownerAddr && propAddr) {
-    const normalize = (s: string) =>
-      s.toLowerCase().replace(/\bapt\b.*$/i, "").replace(/\b0+(\d)/g, "$1").replace(/[^a-z0-9]/g, "");
-    absentee = normalize(ownerAddr) !== normalize(propAddr);
+    const isPoBox = /\bp\.?\s*o\.?\s*box\b/i.test(ownerAddr);
+    const outOfState =
+      parcel.ownerState &&
+      parcel.state &&
+      parcel.ownerState.toUpperCase() !== parcel.state.toUpperCase();
+
+    if (isPoBox) {
+      // Same-area P.O. Box is not absentee; only out-of-state P.O. Box counts
+      absentee = !!outOfState;
+    } else {
+      const normalize = (s: string) =>
+        s.toLowerCase().replace(/\bapt\b.*$/i, "").replace(/\b0+(\d)/g, "$1").replace(/[^a-z0-9]/g, "");
+      absentee = normalize(ownerAddr) !== normalize(propAddr);
+    }
   }
 
   // Calculate ownership years
