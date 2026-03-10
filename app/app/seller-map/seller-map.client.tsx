@@ -21,7 +21,7 @@ type SavedSearch = {
 };
 
 const DEFAULT_FILTERS = {
-  minScore: 0,
+  minScore: 40,
   absenteeOnly: false,
   minEquity: 0,
   minOwnership: 0,
