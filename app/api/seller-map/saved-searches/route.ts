@@ -21,7 +21,14 @@ export async function GET() {
       .eq("agent_id", user.id)
       .order("created_at", { ascending: false });
 
-    if (error) throw error;
+    // Table may not exist yet — return empty rather than 500
+    if (error) {
+      if (error.code === "42P01" || error.message?.includes("does not exist")) {
+        console.warn("[SavedSearches] Table not found — run migration 20260310300000");
+        return NextResponse.json({ searches: [] });
+      }
+      throw error;
+    }
     return NextResponse.json({ searches: data || [] });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -67,7 +74,15 @@ export async function POST(request: NextRequest) {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      if (error.code === "42P01" || error.message?.includes("does not exist")) {
+        return NextResponse.json(
+          { error: "Saved searches not available — run migration 20260310300000" },
+          { status: 503 }
+        );
+      }
+      throw error;
+    }
     return NextResponse.json({ search: data });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

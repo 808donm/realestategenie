@@ -67,15 +67,16 @@ export function SidebarPanel({
   const [tab, setTab] = useState<"results" | "filters" | "saved">("results");
   const [saveSearchName, setSaveSearchName] = useState("");
 
-  // Only show very-likely and likely sellers
+  // Show very-likely, likely, and possible sellers
   const qualifiedProperties = properties.filter(
-    (p) => p.level === "very-likely" || p.level === "likely"
+    (p) => p.level === "very-likely" || p.level === "likely" || p.level === "possible"
   );
 
   // Score distribution summary
   const dist = {
     veryLikely: qualifiedProperties.filter((p) => p.level === "very-likely").length,
     likely: qualifiedProperties.filter((p) => p.level === "likely").length,
+    possible: qualifiedProperties.filter((p) => p.level === "possible").length,
   };
 
   return (
@@ -106,6 +107,13 @@ export function SidebarPanel({
                 title={`Likely: ${dist.likely}`}
               />
             )}
+            {dist.possible > 0 && (
+              <div
+                className="bg-yellow-500"
+                style={{ width: `${(dist.possible / qualifiedProperties.length) * 100}%` }}
+                title={`Possible: ${dist.possible}`}
+              />
+            )}
           </div>
         )}
 
@@ -115,6 +123,9 @@ export function SidebarPanel({
           </span>
           <span className="flex items-center gap-1">
             <span className="w-2 h-2 rounded-full bg-orange-500" /> Likely ({dist.likely})
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-yellow-500" /> Possible ({dist.possible})
           </span>
         </div>
       </div>
@@ -152,7 +163,9 @@ export function SidebarPanel({
               </div>
             ) : qualifiedProperties.length === 0 ? (
               <div className="p-8 text-center text-sm text-gray-500">
-                No likely sellers found. Try panning the map or adjusting filters.
+                {total > 0
+                  ? `${total} properties found but none scored above 30. Try a different area or lower the minimum score filter.`
+                  : "No properties found. Try panning the map to a different area and clicking \"Search This Area\"."}
               </div>
             ) : (
               qualifiedProperties.map((p) => (

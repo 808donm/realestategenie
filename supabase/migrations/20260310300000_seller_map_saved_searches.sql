@@ -27,7 +27,7 @@ CREATE POLICY "agents_own_searches" ON seller_map_saved_searches
   USING (
     agent_id = auth.uid()
     OR team_id IN (
-      SELECT team_id FROM team_members WHERE user_id = auth.uid()
+      SELECT team_id FROM team_members WHERE agent_id = auth.uid() AND is_active = true
     )
   )
   WITH CHECK (agent_id = auth.uid());
