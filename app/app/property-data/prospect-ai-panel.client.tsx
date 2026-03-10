@@ -404,7 +404,7 @@ const ProspectAIPanel = forwardRef<ProspectAIPanelHandle, ProspectAIPanelProps>(
         <div style={{ padding: "40px 20px", textAlign: "center" }}>
           <div style={{ fontSize: 28, marginBottom: 8 }}>{"\uD83E\uDDE0"}</div>
           <div style={{ fontWeight: 600, color: "#6366f1", marginBottom: 4 }}>Claude is analyzing your prospects...</div>
-          <div style={{ fontSize: 13, color: "#6b7280" }}>Scoring {properties.length} properties across {market.zipCode} — this takes 10-20 seconds</div>
+          <div style={{ fontSize: 13, color: "#6b7280" }}>Analyzing properties may take a few minutes</div>
         </div>
       )}
 
