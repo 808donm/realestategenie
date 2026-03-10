@@ -113,6 +113,10 @@ export default function PropertyDetailModal({
   compGenieLoading: externalCompLoading,
   compGenieError: externalCompError,
   onRequestCompGenie,
+  realieCompsData: externalRealieComps,
+  realieCompsLoading: externalRealieCompsLoading,
+  realieCompsError: externalRealieCompsError,
+  onRequestRealieComps,
 }: {
   property: AttomProperty;
   searchContext?: { absenteeowner?: string };
@@ -131,6 +135,14 @@ export default function PropertyDetailModal({
   compGenieError?: string | null;
   /** Callback to trigger Comp Genie analysis (called when user first clicks Comps tab). */
   onRequestCompGenie?: () => void;
+  /** Realie comps from parent (disclosure states, shared across all property cards). */
+  realieCompsData?: any[] | null;
+  /** Whether Realie comps are loading. */
+  realieCompsLoading?: boolean;
+  /** Error from Realie comps. */
+  realieCompsError?: string | null;
+  /** Callback to trigger Realie comps fetch (called when user first clicks Comps tab in disclosure state). */
+  onRequestRealieComps?: () => void;
 }) {
   const [activeSection, setActiveSection] = useState<SectionId>(visibleTabs?.[0] || "overview");
   const [federalData, setFederalData] = useState<FederalPropertySupplement | null>(null);
@@ -153,10 +165,10 @@ export default function PropertyDetailModal({
   const compGenieData = externalCompData;
   const compGenieLoading = externalCompLoading || false;
   const compGenieError = externalCompError || null;
-  // Realie comps (for disclosure states — fetched per property)
-  const [realieComps, setRealieComps] = useState<any[] | null>(null);
-  const [realieCompsLoading, setRealieCompsLoading] = useState(false);
-  const [realieCompsError, setRealieCompsError] = useState<string | null>(null);
+  // Realie comps come from props (shared across all property cards in a search)
+  const realieComps = externalRealieComps || null;
+  const realieCompsLoading = externalRealieCompsLoading || false;
+  const realieCompsError = externalRealieCompsError || null;
 
   const addr = p.address?.oneLine || [p.address?.line1, p.address?.line2].filter(Boolean).join(", ") || "Property Detail";
   const sqft = p.building?.size?.livingSize || p.building?.size?.universalSize || p.building?.size?.bldgSize;
@@ -385,53 +397,18 @@ export default function PropertyDetailModal({
       .finally(() => setNearbyLoading(false));
   }, [activeSection, nearbyHomes, nearbyLoading, farmingContext, p]);
 
-  // Trigger comps when user clicks the Comps tab
+  // Trigger comps when user clicks the Comps tab (both modes run once per search via parent)
   useEffect(() => {
     if (activeSection !== "comps") return;
     const stateAbbrev = p.address?.countrySubd?.toUpperCase() || "";
     const isNonDisclosure = NON_DISCLOSURE_STATES.has(stateAbbrev);
 
     if (isNonDisclosure) {
-      // Non-disclosure: trigger Comp Genie (runs once per search via parent)
-      if (!compGenieData && !compGenieLoading) {
-        onRequestCompGenie?.();
-      }
+      if (!compGenieData && !compGenieLoading) onRequestCompGenie?.();
     } else {
-      // Disclosure: fetch Realie comps for this specific property
-      if (realieComps || realieCompsLoading) return;
-      const lat = p.location?.latitude;
-      const lng = p.location?.longitude;
-      if (!lat || !lng) return;
-
-      setRealieCompsLoading(true);
-      const beds = p.building?.rooms?.beds;
-      const baths = p.building?.rooms?.bathsTotal ?? p.building?.rooms?.bathsFull;
-      const propType = p.summary?.propType;
-      const compsParams = new URLSearchParams({
-        endpoint: "comparables",
-        latitude: String(lat),
-        longitude: String(lng),
-        radius: "1",
-        timeFrame: "18",
-        maxResults: "10",
-        ...(beds != null ? { bedsMin: String(Math.max(beds - 1, 0)), bedsMax: String(beds + 1) } : {}),
-        ...(baths != null ? { bathsMin: String(Math.max(baths - 1, 0)), bathsMax: String(baths + 1) } : {}),
-        ...(propType === "CONDO" ? { propertyType: "condo" } : propType === "SFR" ? { propertyType: "house" } : {}),
-      });
-
-      fetch(`/api/integrations/attom/property?${compsParams}`)
-        .then((r) => r.json())
-        .then((data) => {
-          if (data.property?.length > 0) {
-            setRealieComps(data.property);
-          } else {
-            setRealieCompsError(data.message || "No comparable sales found.");
-          }
-        })
-        .catch((e) => setRealieCompsError(e.message || "Failed to fetch comparables."))
-        .finally(() => setRealieCompsLoading(false));
+      if (!realieComps && !realieCompsLoading) onRequestRealieComps?.();
     }
-  }, [activeSection, compGenieData, compGenieLoading, onRequestCompGenie, realieComps, realieCompsLoading, p]);
+  }, [activeSection, compGenieData, compGenieLoading, onRequestCompGenie, realieComps, realieCompsLoading, onRequestRealieComps, p]);
 
   // Fetch enriched financial data when Financial tab is selected.
   // Realie provides mortgage and equity on the primary response.

@@ -604,11 +604,16 @@ export default function Prospecting() {
   const [selectedProperty, setSelectedProperty] = useState<AttomProperty | null>(null);
   const [expandedInvestor, setExpandedInvestor] = useState<string | null>(null);
 
-  // Comp Genie — shared state across all property detail modals (runs once per search)
+  // Comp Genie (non-disclosure) — shared state across all property detail modals (runs once per search)
   const [compGenieData, setCompGenieData] = useState<any>(null);
   const [compGenieLoading, setCompGenieLoading] = useState(false);
   const [compGenieError, setCompGenieError] = useState<string | null>(null);
   const compGenieSearchKeyRef = useRef<string>("");
+  // Realie comps (disclosure) — also shared, fetched once per search
+  const [realieCompsData, setRealieCompsData] = useState<any[] | null>(null);
+  const [realieCompsLoading, setRealieCompsLoading] = useState(false);
+  const [realieCompsError, setRealieCompsError] = useState<string | null>(null);
+  const realieCompsSearchKeyRef = useRef<string>("");
   const [debugInfo, setDebugInfo] = useState("");
   const [salesTrendData, setSalesTrendData] = useState<any>(null);
   const [salesTrendZip, setSalesTrendZip] = useState("");
@@ -1321,6 +1326,50 @@ export default function Prospecting() {
       .finally(() => setCompGenieLoading(false));
   }, [compGenieLoading, compGenieData, mode, radiusResults, results, selectedProperty, zip, propertyType]);
 
+  // Realie comps: triggered once per search when user clicks Comps tab (disclosure states only)
+  const handleRequestRealieComps = useCallback(() => {
+    if (realieCompsLoading || realieCompsData) return;
+    if (!selectedProperty) return;
+
+    const lat = selectedProperty.location?.latitude;
+    const lng = selectedProperty.location?.longitude;
+    if (!lat || !lng) return;
+
+    const searchKey = `${zip}:${mode}:${propertyType}:${lat}:${lng}`;
+    if (realieCompsSearchKeyRef.current === searchKey) return;
+    realieCompsSearchKeyRef.current = searchKey;
+
+    setRealieCompsLoading(true);
+    setRealieCompsError(null);
+
+    const beds = selectedProperty.building?.rooms?.beds;
+    const baths = selectedProperty.building?.rooms?.bathsTotal ?? selectedProperty.building?.rooms?.bathsFull;
+    const propType = selectedProperty.summary?.propType;
+    const compsParams = new URLSearchParams({
+      endpoint: "comparables",
+      latitude: String(lat),
+      longitude: String(lng),
+      radius: "1",
+      timeFrame: "18",
+      maxResults: "10",
+      ...(beds != null ? { bedsMin: String(Math.max(beds - 1, 0)), bedsMax: String(beds + 1) } : {}),
+      ...(baths != null ? { bathsMin: String(Math.max(baths - 1, 0)), bathsMax: String(baths + 1) } : {}),
+      ...(propType === "CONDO" ? { propertyType: "condo" } : propType === "SFR" ? { propertyType: "house" } : {}),
+    });
+
+    fetch(`/api/integrations/attom/property?${compsParams}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.property?.length > 0) {
+          setRealieCompsData(data.property);
+        } else {
+          setRealieCompsError(data.message || "No comparable sales found.");
+        }
+      })
+      .catch((e) => setRealieCompsError(e.message || "Failed to fetch comparables."))
+      .finally(() => setRealieCompsLoading(false));
+  }, [realieCompsLoading, realieCompsData, selectedProperty, zip, mode, propertyType]);
+
   const handleSearch = async (pageNum = 1) => {
     // For radius mode with address search, use the address handler
     if (mode === "radius" && farmSearchMode === "address") {
@@ -1345,10 +1394,13 @@ export default function Prospecting() {
 
     setIsLoading(true);
     setInvestorGroups([]);
-    // Reset Comp Genie for new search
+    // Reset comps for new search
     setCompGenieData(null);
     setCompGenieError(null);
     compGenieSearchKeyRef.current = "";
+    setRealieCompsData(null);
+    setRealieCompsError(null);
+    realieCompsSearchKeyRef.current = "";
 
     try {
       // All modes use multi-page scanning to accumulate more results.
@@ -2595,6 +2647,10 @@ export default function Prospecting() {
           compGenieLoading={compGenieLoading}
           compGenieError={compGenieError}
           onRequestCompGenie={handleRequestCompGenie}
+          realieCompsData={realieCompsData}
+          realieCompsLoading={realieCompsLoading}
+          realieCompsError={realieCompsError}
+          onRequestRealieComps={handleRequestRealieComps}
         />
       )}
     </div>
