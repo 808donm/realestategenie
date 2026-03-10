@@ -47,14 +47,11 @@ export async function POST(request: NextRequest) {
       .filter(Boolean)
       .join(", ");
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.realestategenie.app";
-    const listingKey = property.ListingKey || property.ListingId;
+    const mlsNumber = property.ListingId || property.ListingKey;
 
-    // Use the actual MLS listing URL if available from Trestle data,
-    // otherwise use our public listing page (no auth required)
-    const propertyLink = property.ListingURL
-      || `${appUrl}/listing/${encodeURIComponent(listingKey)}?a=${encodeURIComponent(userData.user.id)}`;
-    const propertyName = fullAddress || `MLS# ${listingKey}`;
+    // Link to HiCentral MLS public listing page using the MLS number
+    const propertyLink = `https://propertysearch.hicentral.com/HBR/ForSale/?/${encodeURIComponent(mlsNumber)}`;
+    const propertyName = fullAddress || `MLS# ${mlsNumber}`;
 
     if (mode === "email") {
       // Send email to the contact via GHL
