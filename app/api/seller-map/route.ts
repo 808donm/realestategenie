@@ -76,21 +76,31 @@ export async function GET(request: NextRequest) {
       .filter((s) => !absenteeOnly || s.absentee)
       .sort((a, b) => b.score - a.score);
 
-    // AVM enrichment: fetch real market values for top "possible" candidates
-    // (score 35-49) that are close to the "likely" threshold. This helps
-    // properties with stale lastSalePrice get accurate market values for
-    // equity and tax anomaly scoring.
+    // AVM enrichment: fetch real market values for top candidates using
+    // the address-based AVM endpoint. This replaces stale lastSalePrice with
+    // current market values for better equity and tax anomaly scoring.
+    // Two groups: (1) "possible" candidates near the "likely" threshold,
+    // (2) any scored properties with no modelValue at all.
     const rentcastForAvm = await getRentcastClient();
     if (rentcastForAvm) {
-      const candidates = scored.filter((s) => s.score >= 35 && s.score < 50);
-      const avmBatch = candidates.slice(0, 10);
+      const possibleCandidates = scored.filter((s) => s.score >= 35 && s.score < 50);
+      const noValueCandidates = scored.filter((s) => !s.estimatedValue && s.score >= 20);
+      // Deduplicate and cap at 10 total AVM calls
+      const seen = new Set<string>();
+      const avmBatch: typeof scored = [];
+      for (const s of [...possibleCandidates, ...noValueCandidates]) {
+        if (!seen.has(s.id) && avmBatch.length < 10) {
+          seen.add(s.id);
+          avmBatch.push(s);
+        }
+      }
 
       if (avmBatch.length > 0) {
         const avmResults = await Promise.allSettled(
           avmBatch.map((s) =>
             rentcastForAvm.getValueEstimate({
-              latitude: s.lat,
-              longitude: s.lng,
+              address: s.address,
+              compCount: 5,
             }).then((r) => ({ id: s.id, price: r.price }))
           )
         );

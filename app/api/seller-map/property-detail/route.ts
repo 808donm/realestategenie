@@ -50,25 +50,70 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Fetch AVM value estimate + comps from RentCast
+    // Fetch AVM value estimate + comps from RentCast (address-based, no lat/lng needed)
     let comps: any[] = [];
     let avmValue: number | undefined;
     let avmLow: number | undefined;
     let avmHigh: number | undefined;
-    if (rentcast && lat && lng) {
+    if (rentcast) {
       try {
-        const valueEstimate = await rentcast.getValueEstimate({
-          latitude: Number(lat),
-          longitude: Number(lng),
-          bedrooms: property?.bedrooms,
-          bathrooms: property?.bathrooms,
-          squareFootage: property?.squareFootage,
-          propertyType: property?.propertyType,
+        const avmParams: Record<string, any> = {
+          address,
           compCount: 10,
-        });
+        };
+        // Pass property attributes if available for better comp selection
+        if (property?.bedrooms) avmParams.bedrooms = property.bedrooms;
+        if (property?.bathrooms) avmParams.bathrooms = property.bathrooms;
+        if (property?.squareFootage) avmParams.squareFootage = property.squareFootage;
+        if (property?.propertyType) avmParams.propertyType = property.propertyType;
+
+        const valueEstimate = await rentcast.getValueEstimate(avmParams);
         avmValue = valueEstimate.price;
         avmLow = valueEstimate.priceRangeLow;
         avmHigh = valueEstimate.priceRangeHigh;
+
+        // Use subjectProperty to fill gaps in the property record
+        const sp = valueEstimate.subjectProperty;
+        if (sp && !property) {
+          // No property record from /properties — use AVM subject as fallback
+          property = {
+            id: sp.id,
+            formattedAddress: sp.formattedAddress,
+            addressLine1: sp.addressLine1,
+            addressLine2: sp.addressLine2,
+            city: sp.city,
+            state: sp.state,
+            stateFips: sp.stateFips,
+            zipCode: sp.zipCode,
+            county: sp.county,
+            countyFips: sp.countyFips,
+            latitude: sp.latitude,
+            longitude: sp.longitude,
+            propertyType: sp.propertyType as any,
+            bedrooms: sp.bedrooms,
+            bathrooms: sp.bathrooms,
+            squareFootage: sp.squareFootage,
+            lotSize: sp.lotSize,
+            yearBuilt: sp.yearBuilt,
+            lastSaleDate: sp.lastSaleDate,
+            lastSalePrice: sp.lastSalePrice,
+            assessorID: "",
+            legalDescription: "",
+            subdivision: "",
+            zoning: "",
+            ownerOccupied: false,
+          } as any;
+        } else if (sp && property) {
+          // Fill missing fields from subjectProperty
+          property.bedrooms = property.bedrooms || sp.bedrooms;
+          property.bathrooms = property.bathrooms || sp.bathrooms;
+          property.squareFootage = property.squareFootage || sp.squareFootage;
+          property.lotSize = property.lotSize || sp.lotSize;
+          property.yearBuilt = property.yearBuilt || sp.yearBuilt;
+          property.lastSaleDate = property.lastSaleDate || sp.lastSaleDate;
+          property.lastSalePrice = property.lastSalePrice ?? sp.lastSalePrice;
+        }
+
         comps = (valueEstimate.comparables || []).map((c) => ({
           id: c.id,
           address: c.formattedAddress,
@@ -87,7 +132,7 @@ export async function GET(request: NextRequest) {
           listedDate: c.listedDate,
         }));
       } catch (err: any) {
-        console.error("[PropertyDetail] Comps/AVM error:", err.message);
+        console.error("[PropertyDetail] AVM/comps error:", err.message);
       }
     }
 
