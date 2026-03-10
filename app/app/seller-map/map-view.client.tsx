@@ -99,10 +99,12 @@ function SellerMapInner({
     }
 
     if (showHeatMap && properties.length > 0) {
-      const heatmapData = properties.map((p) => ({
-        location: new google.maps.LatLng(p.lat, p.lng),
-        weight: p.score / 100,
-      }));
+      const heatmapData = properties
+        .filter((p) => p.level === "very-likely" || p.level === "likely")
+        .map((p) => ({
+          location: new google.maps.LatLng(p.lat, p.lng),
+          weight: p.score / 100,
+        }));
 
       heatmapRef.current = new google.maps.visualization.HeatmapLayer({
         data: heatmapData,
@@ -167,20 +169,22 @@ function SellerMapInner({
 
   return (
     <>
-      {/* Property Markers */}
-      {properties.map((p) => (
-        <AdvancedMarker
-          key={p.id}
-          position={{ lat: p.lat, lng: p.lng }}
-          title={`${p.address} — Score: ${p.score}`}
-          onClick={() => onSelectProperty(p)}
-        >
-          <div
-            className="w-4 h-4 rounded-full border-2 border-white shadow-md cursor-pointer transition-transform hover:scale-125"
-            style={{ backgroundColor: getSellerColor(p.level) }}
-          />
-        </AdvancedMarker>
-      ))}
+      {/* Property Markers — only likely+ sellers shown on map */}
+      {properties
+        .filter((p) => p.level === "very-likely" || p.level === "likely")
+        .map((p) => (
+          <AdvancedMarker
+            key={p.id}
+            position={{ lat: p.lat, lng: p.lng }}
+            title={`${p.address} — Score: ${p.score}`}
+            onClick={() => onSelectProperty(p)}
+          >
+            <div
+              className="w-4 h-4 rounded-full border-2 border-white shadow-md cursor-pointer transition-transform hover:scale-125"
+              style={{ backgroundColor: getSellerColor(p.level) }}
+            />
+          </AdvancedMarker>
+        ))}
 
       {/* Selected Property Info Window */}
       {selectedProperty && (
