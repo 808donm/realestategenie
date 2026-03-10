@@ -6,19 +6,17 @@
  *   2. Stage-aware follow-up email drafts for individual leads
  *
  * Model is configurable via BRIEFING_AI_MODEL env var.
- * Default: gpt-4o-mini (60x cheaper than gpt-4-turbo, excellent for structured output).
- * Set to "claude" to use Claude Haiku via @ai-sdk/anthropic.
+ * Default: openai/gpt-4o-mini via Vercel AI Gateway.
  */
 
-import { openai } from "@ai-sdk/openai";
+import { gateway } from "@ai-sdk/gateway";
 import { generateText } from "ai";
 import type { AgentBriefingData, TeamBriefingData, BrokerBriefingData } from "./report-data";
 
 /** Resolve the AI model to use for briefings. Cheap and fast by default. */
 function getBriefingModel() {
-  const modelEnv = process.env.BRIEFING_AI_MODEL || "gpt-4o-mini";
-  // Vercel AI SDK: openai("model-id") works for any OpenAI-compatible model
-  return openai(modelEnv);
+  const modelEnv = process.env.BRIEFING_AI_MODEL || "openai/gpt-4o-mini";
+  return gateway(modelEnv);
 }
 
 // ─── Agent daily briefing ────────────────────────────────────────────────────

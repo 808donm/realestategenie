@@ -1,12 +1,5 @@
-import { openai } from "@ai-sdk/openai";
+import { gateway } from "@ai-sdk/gateway";
 import { generateText } from "ai";
-
-// Validate API key is configured
-export function validateOpenAIKey(): void {
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error("OPENAI_API_KEY is not configured. Add it to your environment variables.");
-  }
-}
 
 export interface NeighborhoodProfileRequest {
   neighborhoodName: string;
@@ -40,13 +33,11 @@ export interface NeighborhoodProfileResponse {
 export async function generateNeighborhoodProfile(
   request: NeighborhoodProfileRequest
 ): Promise<NeighborhoodProfileResponse> {
-  validateOpenAIKey();
-
   const systemPrompt = getComplianceSystemPrompt(request.country);
   const userPrompt = buildUserPrompt(request);
 
   const { text } = await generateText({
-    model: openai("gpt-4-turbo-preview"),
+    model: gateway("openai/gpt-4-turbo"),
     system: systemPrompt,
     prompt: userPrompt,
     temperature: 0.7,

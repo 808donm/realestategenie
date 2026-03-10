@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
-import { openai } from "@ai-sdk/openai";
+import { gateway } from "@ai-sdk/gateway";
 import { generateText } from "ai";
 
 interface SocialPostInput {
@@ -58,13 +58,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (!process.env.OPENAI_API_KEY) {
-      return NextResponse.json(
-        { error: "AI service not configured. OPENAI_API_KEY is missing." },
-        { status: 500 }
-      );
-    }
-
     const body: SocialPostInput = await request.json();
 
     if (!body.postType || !body.bedrooms || !body.bathrooms || !body.sqft) {
@@ -78,7 +71,7 @@ export async function POST(request: NextRequest) {
     const userPrompt = buildUserPrompt(body);
 
     const { text } = await generateText({
-      model: openai("gpt-4-turbo-preview"),
+      model: gateway("openai/gpt-4-turbo"),
       system: systemPrompt,
       prompt: userPrompt,
       temperature: 0.8,

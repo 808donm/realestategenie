@@ -5,16 +5,16 @@
  * 5 prospecting search types: absentee, equity, foreclosure, radius (just sold farming),
  * and investor portfolios.
  *
- * Uses the Vercel AI SDK with OpenAI models (same pattern as briefing and neighborhood AI).
+ * Uses the Vercel AI SDK Gateway for provider-agnostic model routing.
  */
 
-import { anthropic } from "@ai-sdk/anthropic";
+import { gateway } from "@ai-sdk/gateway";
 import { generateText } from "ai";
 
-/** Resolve the AI model. Uses Claude Opus for best-in-class analysis; override via env. */
+/** Resolve the AI model. Uses Claude Opus via Vercel AI Gateway; override via env. */
 function getProspectModel() {
-  const modelEnv = process.env.PROSPECT_AI_MODEL || "claude-opus-4-20250514";
-  return anthropic(modelEnv);
+  const modelEnv = process.env.PROSPECT_AI_MODEL || "anthropic/claude-opus-4";
+  return gateway(modelEnv);
 }
 
 // ── Types ────────────────────────────────────────────────────────────────────
