@@ -12,8 +12,11 @@ import { scoreParcel } from "@/lib/scoring/seller-motivation-score";
  * Fetch properties in a geographic area, score them for seller motivation,
  * and return scored results for the Seller Opportunity Map.
  *
- * Uses RentCast for lat/lng radius searches (native geo support), then
- * enriches results with Realie equity/portfolio data for better scoring.
+ * Flow:
+ *   1. RentCast: primary search (up to 500 properties, valuation, market data)
+ *   2. Score with RentCast data alone
+ *   3. Realie: enrich top candidates (score >= 30) with LTV, equity, liens, portfolio
+ *   4. Re-score enriched properties for final ranking
  *
  * Query params:
  *   lat, lng    — center coordinates (required)
@@ -140,24 +143,86 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Score each property and filter
+    // ── Phase 1: Initial scoring with RentCast data only ──
     let scored = parcels
       .map((p) => scoreParcel(p))
       .filter((s): s is NonNullable<typeof s> => s !== null)
-      .filter((s) => s.score >= minScore)
       .filter((s) => !absenteeOnly || s.absentee)
       .sort((a, b) => b.score - a.score);
 
-    // AVM enrichment: fetch real market values for top candidates using
-    // the address-based AVM endpoint. This replaces stale lastSalePrice with
-    // current market values for better equity and tax anomaly scoring.
-    // Two groups: (1) "possible" candidates near the "likely" threshold,
-    // (2) any scored properties with no modelValue at all.
+    console.log(`[SellerMap] Phase 1 scored: ${scored.length} properties (before Realie enrichment)`);
+
+    // ── Phase 2: Realie enrichment — only for top candidates (score >= 30) ──
+    // Realie provides LTV, equity, liens, foreclosure, and portfolio data.
+    // We only call Realie for properties that already show seller motivation
+    // from RentCast data alone, respecting the 100-result Realie API cap.
+    const realie = await getRealieClient();
+    const parcelMap = new Map(parcels.map((p) => [
+      p._id || p.siteId || p.parcelId || `${p.latitude}-${p.longitude}`,
+      p,
+    ]));
+
+    const enrichCandidates = scored.filter((s) => s.score >= 30).slice(0, 100);
+
+    if (realie && enrichCandidates.length > 0) {
+      try {
+        // Group candidates by zip code and fetch Realie data per zip (more targeted)
+        const candidateZips = [...new Set(enrichCandidates.map((s) => {
+          const parcel = parcelMap.get(s.id);
+          return parcel?.zipCode;
+        }).filter(Boolean))] as string[];
+
+        // Fetch Realie data for each zip (cap total across all zips)
+        let realieProperties: RealieParcel[] = [];
+        let remaining = 100;
+
+        for (const zipCode of candidateZips.slice(0, 10)) {
+          if (remaining <= 0) break;
+          try {
+            const result = await realie.searchByZip({
+              zip: zipCode,
+              limit: Math.min(remaining, 100),
+            });
+            realieProperties.push(...result.properties);
+            remaining -= result.properties.length;
+          } catch (err: any) {
+            console.warn(`[SellerMap] Realie zip ${zipCode} failed (non-fatal):`, err.message);
+          }
+        }
+
+        if (realieProperties.length > 0) {
+          console.log(`[SellerMap] Realie enrichment: ${realieProperties.length} properties across ${candidateZips.length} zips`);
+          const realieMap = buildAddressMap(realieProperties);
+
+          // Enrich original parcels and re-score
+          scored = scored.map((s) => {
+            const parcel = parcelMap.get(s.id);
+            if (!parcel) return s;
+
+            const enriched = enrichWithRealieData(parcel, realieMap);
+            if (enriched === parcel) return s; // No Realie match found
+
+            // Update the parcel map with enriched data
+            parcelMap.set(s.id, enriched);
+            const rescored = scoreParcel(enriched);
+            return rescored || s;
+          }).sort((a, b) => b.score - a.score);
+        }
+      } catch (err: any) {
+        console.warn("[SellerMap] Realie enrichment failed (non-fatal):", err.message);
+      }
+    }
+
+    // ── Phase 3: Apply minScore filter after enrichment ──
+    scored = scored.filter((s) => s.score >= minScore);
+
+    // ── Phase 4: AVM enrichment for borderline candidates ──
+    // Fetch real market values for properties near the "likely" threshold
+    // or missing valuation data entirely.
     const rentcastForAvm = await getRentcastClient();
     if (rentcastForAvm) {
       const possibleCandidates = scored.filter((s) => s.score >= 35 && s.score < 50);
       const noValueCandidates = scored.filter((s) => !s.estimatedValue && s.score >= 20);
-      // Deduplicate and cap at 10 total AVM calls
       const seen = new Set<string>();
       const avmBatch: typeof scored = [];
       for (const s of [...possibleCandidates, ...noValueCandidates]) {
@@ -177,7 +242,6 @@ export async function GET(request: NextRequest) {
           )
         );
 
-        // Build a map of id → AVM price
         const avmMap = new Map<string, number>();
         for (const r of avmResults) {
           if (r.status === "fulfilled" && r.value.price) {
@@ -188,12 +252,6 @@ export async function GET(request: NextRequest) {
         if (avmMap.size > 0) {
           console.log(`[SellerMap] AVM enriched ${avmMap.size}/${avmBatch.length} properties`);
 
-          // Find the original parcels for AVM-enriched properties, update modelValue, and re-score
-          const parcelMap = new Map(parcels.map((p) => [
-            p._id || p.siteId || p.parcelId || `${p.latitude}-${p.longitude}`,
-            p,
-          ]));
-
           scored = scored.map((s) => {
             const avmPrice = avmMap.get(s.id);
             if (!avmPrice) return s;
@@ -201,7 +259,6 @@ export async function GET(request: NextRequest) {
             const parcel = parcelMap.get(s.id);
             if (!parcel) return s;
 
-            // Re-score with real AVM value
             const enriched = { ...parcel, modelValue: avmPrice };
             const rescored = scoreParcel(enriched);
             return rescored || s;
@@ -245,10 +302,8 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * Fetch properties by coordinates.
- * Primary: RentCast (native lat/lng/radius support).
- * Enrichment: Realie equity, LTV, lien, and portfolio fields.
- * Fallback: Realie alone if RentCast is unavailable.
+ * Fetch properties by coordinates using RentCast (up to 500 results).
+ * Realie enrichment happens later, only for top-scoring candidates.
  */
 async function fetchByCoords(
   lat: number,
@@ -258,10 +313,7 @@ async function fetchByCoords(
   page: number
 ): Promise<RealieParcel[]> {
   const rentcast = await getRentcastClient();
-  const realie = await getRealieClient();
 
-  // Try RentCast first (native geo search)
-  let rentcastParcels: RealieParcel[] = [];
   if (rentcast) {
     try {
       const offset = page > 1 ? (page - 1) * Math.min(limit, 500) : 0;
@@ -272,40 +324,15 @@ async function fetchByCoords(
         limit: Math.min(limit, 500),
         offset,
       });
-      rentcastParcels = results.map(mapRentcastToRealieParcel);
       console.log(`[SellerMap] RentCast returned ${results.length} properties`);
+      return results.map(mapRentcastToRealieParcel);
     } catch (err: any) {
       console.error("[SellerMap] RentCast error:", err.message);
     }
   }
 
-  // If RentCast gave us results, enrich with Realie equity/portfolio data
-  if (rentcastParcels.length > 0 && realie) {
-    try {
-      const result = await realie.searchByRadius({
-        latitude: lat,
-        longitude: lng,
-        radius,
-        limit: Math.min(limit, 100),
-        page,
-      });
-
-      if (result.properties.length > 0) {
-        console.log(`[SellerMap] Realie enrichment: ${result.properties.length} properties`);
-        const realieMap = buildAddressMap(result.properties);
-        rentcastParcels = rentcastParcels.map((p) =>
-          enrichWithRealieData(p, realieMap)
-        );
-      }
-    } catch (err: any) {
-      // Enrichment failure is non-fatal — RentCast data alone still works
-      console.warn("[SellerMap] Realie enrichment failed (non-fatal):", err.message);
-    }
-
-    return rentcastParcels;
-  }
-
-  // Fallback: Realie only (if RentCast is not configured or returned nothing)
+  // Fallback: Realie radius search if RentCast is not configured
+  const realie = await getRealieClient();
   if (realie) {
     try {
       const result = await realie.searchByRadius({
