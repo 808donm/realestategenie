@@ -41,7 +41,7 @@ export function SellerMapClient() {
   const [mobileShowSidebar, setMobileShowSidebar] = useState(false);
 
   // Current map viewport (updated on pan/zoom, but does NOT trigger fetches)
-  const boundsRef = useRef({ lat: 21.3069, lng: -157.8583, radius: 2 });
+  const boundsRef = useRef({ lat: 21.3069, lng: -157.8583, radius: 10 });
   const [hasFetched, setHasFetched] = useState(false);
 
   // Load saved searches on mount
@@ -65,7 +65,7 @@ export function SellerMapClient() {
           radius: String(bounds.radius),
           minScore: String(filters.minScore),
           absenteeOnly: String(filters.absenteeOnly),
-          limit: "200",
+          limit: "500",
         });
 
         const res = await fetch(`/api/seller-map?${params}`);

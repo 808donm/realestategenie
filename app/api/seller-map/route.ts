@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     const lat = url.searchParams.get("lat");
     const lng = url.searchParams.get("lng");
     const zip = url.searchParams.get("zip");
-    const radius = Math.min(Number(url.searchParams.get("radius") || 2), 10);
+    const radius = Math.min(Number(url.searchParams.get("radius") || 10), 10);
     const minScore = Number(url.searchParams.get("minScore") || 0);
     const absenteeOnly = url.searchParams.get("absenteeOnly") === "true";
     const limit = Math.min(Number(url.searchParams.get("limit") || 100), 500);
