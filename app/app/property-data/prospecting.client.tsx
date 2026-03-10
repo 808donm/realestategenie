@@ -619,6 +619,41 @@ export default function Prospecting() {
   const [sharedRawData, setSharedRawData] = useState<AttomProperty[]>([]);
   const [sharedDataKey, setSharedDataKey] = useState("");
 
+  // ── Residential post-filter ──────────────────────────────────────────────
+  // Realie's `residential=true` flag doesn't always exclude military bases,
+  // government parcels, or 0-bed/0-bath complexes. This client-side filter
+  // catches anything that slipped through.
+  const filterResidentialOnly = (props: AttomProperty[]): AttomProperty[] =>
+    props.filter((p) => {
+      const propType = (p.summary?.propType || p.summary?.propertyType || "").toUpperCase();
+      const landUse = (p.summary?.propLandUse || "").toUpperCase();
+      const beds = p.building?.rooms?.beds ?? null;
+      const baths = p.building?.rooms?.bathsTotal ?? p.building?.rooms?.bathsFull ?? null;
+      const address = (p.address?.oneLine || "").toUpperCase();
+
+      // Exclude known commercial / military / industrial land use codes
+      const commercialPatterns = [
+        "COMMERCIAL", "INDUSTRIAL", "MILITARY", "GOVERNMENT", "INSTITUTIONAL",
+        "RETAIL", "OFFICE", "WAREHOUSE", "CHURCH", "HOSPITAL", "HOTEL",
+        "MOTEL", "PARKING", "UTILITY", "AGRICULTURAL", "EXEMPT",
+      ];
+      if (commercialPatterns.some((pat) => landUse.includes(pat) || propType.includes(pat))) {
+        return false;
+      }
+
+      // Exclude military installations by address pattern
+      if (/\b(NAS|AFB|MCBH|JBPHH|SCHOFIELD|FORT SHAFTER|HICKAM|PEARL HARBOR|KANEOHE BAY|CAMP SMITH)\b/.test(address)) {
+        return false;
+      }
+
+      // Exclude properties with 0 beds AND 0 baths (vacant land, commercial, complexes)
+      if (beds === 0 && baths === 0) {
+        return false;
+      }
+
+      return true;
+    });
+
   // AI panel ref — allows triggering analysis from the "Prospect with AI" button
   const aiPanelRef = useRef<ProspectAIPanelHandle>(null);
   const [showAITooltip, setShowAITooltip] = useState(false);
@@ -787,8 +822,9 @@ export default function Prospecting() {
       }
 
       // Contribute to universal cache
-      addToPropertyCache(merged);
-      setRadiusResults(merged);
+      const filtered = filterResidentialOnly(merged);
+      addToPropertyCache(filtered);
+      setRadiusResults(filtered);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Radius search failed");
     } finally {
@@ -1008,7 +1044,10 @@ export default function Prospecting() {
    * Apply mode-specific filtering/sorting to already-fetched raw data.
    * Called both after fresh fetch and on mode switch (instant re-filter).
    */
-  const applyModeFilter = (filterMode: ProspectMode, allRaw: AttomProperty[], source?: string) => {
+  const applyModeFilter = (filterMode: ProspectMode, allRawUnfiltered: AttomProperty[], source?: string) => {
+    // Strip non-residential properties before any mode-specific logic
+    const allRaw = filterResidentialOnly(allRawUnfiltered);
+
     // Data diagnostics
     const srcLabel = source ? ` [source: ${source}]` : "";
     const withDirectOwner = allRaw.filter((p) => { const o = resolveOwner(p); return o?.owner1?.fullName || o?.owner2?.fullName || o?.owner3?.fullName; }).length;
