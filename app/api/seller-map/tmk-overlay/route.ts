@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
+import { createHawaiiStatewideParcelClient } from "@/lib/integrations/hawaii-statewide-parcels-client";
 
 /**
  * GET /api/seller-map/tmk-overlay
