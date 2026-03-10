@@ -737,6 +737,8 @@ export class RealieClient {
       limit,
       // Filter to residential properties only (excludes commercial)
       residential: params.residential !== false ? true : undefined,
+      // Property type filter (SFR, CONDO, APARTMENT, MOBILE)
+      ...(params.property_type ? { property_type: params.property_type } : {}),
       // Pass transferedSince if set (for "Just Sold" filtering)
       ...(params.transferedSince ? { transferedSince: params.transferedSince } : {}),
     };
@@ -781,6 +783,7 @@ export class RealieClient {
         longitude: params.longitude,
         radius: params.radius,
         residential: params.residential !== false ? true : undefined,
+        ...(params.property_type ? { property_type: params.property_type } : {}),
         limit,
         offset,
       });
