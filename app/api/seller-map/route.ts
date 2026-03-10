@@ -5,6 +5,7 @@ import { RealieClient, createRealieClient } from "@/lib/integrations/realie-clie
 import type { RealieParcel } from "@/lib/integrations/realie-client";
 import { RentcastClient, createRentcastClient, mapRentcastToRealieParcel } from "@/lib/integrations/rentcast-client";
 import { scoreParcel } from "@/lib/scoring/seller-motivation-score";
+import { buildSearchCacheKey, searchCacheGet, searchCacheSet } from "@/lib/cache/seller-map-search-cache";
 
 /**
  * GET /api/seller-map
@@ -52,6 +53,32 @@ export async function GET(request: NextRequest) {
         { error: "Either lat+lng or zip is required" },
         { status: 400 }
       );
+    }
+
+    // ── Check global search cache (7-day TTL, shared across all users) ──
+    const cacheKey = buildSearchCacheKey({
+      lat: lat ? Number(lat) : undefined,
+      lng: lng ? Number(lng) : undefined,
+      radius,
+      zip: zip || undefined,
+    });
+
+    const cached = await searchCacheGet(cacheKey);
+    if (cached) {
+      // Apply user-specific filters on cached results
+      let filtered = cached.properties
+        .filter((s: any) => s.score >= minScore)
+        .filter((s: any) => !absenteeOnly || s.absentee);
+
+      return NextResponse.json({
+        properties: filtered.slice(0, limit),
+        total: filtered.length,
+        center: lat && lng ? { lat: Number(lat), lng: Number(lng) } : undefined,
+        radiusMiles: radius,
+        page,
+        marketData: cached.marketData,
+        cached: true,
+      });
     }
 
     let parcels: RealieParcel[] = [];
@@ -284,13 +311,29 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    const marketData = Object.fromEntries(marketContext);
+
+    // ── Cache the full scored results (before user-specific filters) ──
+    // Store all scored properties so different users with different
+    // minScore/absenteeOnly filters can benefit from the same cache.
+    searchCacheSet(
+      cacheKey,
+      { properties: scored, total: scored.length, marketData },
+      {
+        lat: lat ? Number(lat) : undefined,
+        lng: lng ? Number(lng) : undefined,
+        radius,
+        zip: zip || undefined,
+      }
+    ).catch((err) => console.warn("[SellerMap] Cache write failed (non-fatal):", err));
+
     return NextResponse.json({
       properties: scored.slice(0, limit),
       total: scored.length,
       center: lat && lng ? { lat: Number(lat), lng: Number(lng) } : undefined,
       radiusMiles: radius,
       page,
-      marketData: Object.fromEntries(marketContext),
+      marketData,
     });
   } catch (error: any) {
     console.error("[SellerMap] Error:", error);
