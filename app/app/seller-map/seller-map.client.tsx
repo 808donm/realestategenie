@@ -144,7 +144,7 @@ export function SellerMapClient() {
         radius: search.radius_miles,
       };
       if (search.filters) {
-        setFilters(search.filters);
+        setFilters({ ...search.filters, zips: search.filters.zips || "" });
       }
       fetchProperties(boundsRef.current);
     },
