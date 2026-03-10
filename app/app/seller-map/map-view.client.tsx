@@ -238,7 +238,7 @@ export function SellerMapView(props: Props) {
     );
   }
 
-  const mapId = "seller-opportunity-map";
+  const mapId = "9a0305a3faa90a39b0b7b9e3";
 
   return (
     <div className="relative h-full w-full">
