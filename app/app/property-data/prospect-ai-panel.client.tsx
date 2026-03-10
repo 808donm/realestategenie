@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useImperativeHandle, forwardRef } from "react";
 import jsPDF from "jspdf";
 
 // ── Types matching the API ────────────────────────────────────────────────────
@@ -87,9 +87,13 @@ interface ProspectAIPanelProps {
   isVisible: boolean;
 }
 
+export interface ProspectAIPanelHandle {
+  triggerAnalyze: () => void;
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function ProspectAIPanel({ mode, properties, market, isVisible }: ProspectAIPanelProps) {
+const ProspectAIPanel = forwardRef<ProspectAIPanelHandle, ProspectAIPanelProps>(function ProspectAIPanel({ mode, properties, market, isVisible }, ref) {
   const [analysis, setAnalysis] = useState<ProspectAnalysis | null>(null);
   const [outreach, setOutreach] = useState<BatchOutreach | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -99,8 +103,6 @@ export default function ProspectAIPanel({ mode, properties, market, isVisible }:
   const [activeTab, setActiveTab] = useState<"analysis" | "outreach">("analysis");
   const [expandedProspect, setExpandedProspect] = useState<number | null>(null);
   const [expandedOutreach, setExpandedOutreach] = useState<number | null>(null);
-
-  if (!isVisible || properties.length === 0) return null;
 
   const handleAnalyze = async () => {
     setIsAnalyzing(true);
@@ -121,6 +123,15 @@ export default function ProspectAIPanel({ mode, properties, market, isVisible }:
       setIsAnalyzing(false);
     }
   };
+
+  // Allow parent to trigger analysis via ref
+  useImperativeHandle(ref, () => ({
+    triggerAnalyze: () => {
+      if (!isAnalyzing && properties.length > 0) handleAnalyze();
+    },
+  }));
+
+  if (!isVisible || properties.length === 0) return null;
 
   const handleGenerateOutreach = async () => {
     setIsGeneratingOutreach(true);
@@ -673,4 +684,6 @@ export default function ProspectAIPanel({ mode, properties, market, isVisible }:
       )}
     </div>
   );
-}
+});
+
+export default ProspectAIPanel;

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import PropertyDetailModal from "./property-detail-modal.client";
-import ProspectAIPanel from "./prospect-ai-panel.client";
+import ProspectAIPanel, { type ProspectAIPanelHandle } from "./prospect-ai-panel.client";
 import { buildQPublicUrl } from "@/lib/hawaii-zip-county";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -618,6 +618,10 @@ export default function Prospecting() {
   // mode switches just re-filter this array instead of re-fetching.
   const [sharedRawData, setSharedRawData] = useState<AttomProperty[]>([]);
   const [sharedDataKey, setSharedDataKey] = useState("");
+
+  // AI panel ref — allows triggering analysis from the "Prospect with AI" button
+  const aiPanelRef = useRef<ProspectAIPanelHandle>(null);
+  const [showAITooltip, setShowAITooltip] = useState(false);
 
   // ── AI Copilot data transformation ─────────────────────────────────────────
   // Convert ATTOM properties to the shape the AI panel expects.
@@ -2139,6 +2143,88 @@ export default function Prospecting() {
           >
             {isLoading ? "Searching..." : "Find Properties"}
           </button>
+
+          {/* Prospect with AI — triggers AI analysis on current results */}
+          <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 4 }}>
+            <button
+              onClick={() => {
+                if (aiPanelRef.current) {
+                  aiPanelRef.current.triggerAnalyze();
+                  // Scroll to the AI panel
+                  setTimeout(() => {
+                    document.getElementById("prospect-ai-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }, 100);
+                }
+              }}
+              disabled={isLoading || !hasSearched || (results.length === 0 && investorGroups.length === 0)}
+              style={{
+                padding: "8px 20px",
+                background: hasSearched && (results.length > 0 || investorGroups.length > 0) ? "linear-gradient(90deg, #6366f1, #8b5cf6)" : "#d1d5db",
+                color: "#fff",
+                borderRadius: 8,
+                border: "none",
+                fontWeight: 600,
+                fontSize: 14,
+                cursor: hasSearched && (results.length > 0 || investorGroups.length > 0) ? "pointer" : "not-allowed",
+                opacity: isLoading || !hasSearched || (results.length === 0 && investorGroups.length === 0) ? 0.5 : 1,
+                height: 38,
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+              }}
+            >
+              <span style={{ fontSize: 15 }}>{"\u2728"}</span>
+              Prospect with AI
+            </button>
+            {/* Info tooltip trigger */}
+            <button
+              onClick={() => setShowAITooltip(!showAITooltip)}
+              onBlur={() => setTimeout(() => setShowAITooltip(false), 200)}
+              style={{
+                width: 22, height: 22, borderRadius: "50%", border: "1px solid #a5b4fc", background: "#eef2ff",
+                color: "#6366f1", fontWeight: 700, fontSize: 12, cursor: "pointer", display: "flex",
+                alignItems: "center", justifyContent: "center", flexShrink: 0,
+              }}
+              title="How does AI Prospecting work?"
+            >
+              ?
+            </button>
+            {showAITooltip && (
+              <div style={{
+                position: "absolute", top: "calc(100% + 8px)", right: 0, width: 340, padding: 16,
+                background: "#fff", borderRadius: 10, border: "1px solid #e5e7eb",
+                boxShadow: "0 8px 24px rgba(0,0,0,0.12)", zIndex: 50, fontSize: 13, color: "#374151", lineHeight: 1.6,
+              }}>
+                <div style={{ fontWeight: 700, color: "#6366f1", marginBottom: 8, fontSize: 14 }}>
+                  {"\u2728"} AI Prospecting Engine
+                </div>
+                <p style={{ margin: "0 0 8px" }}>
+                  Powered by <strong>Claude Opus</strong>, the AI engine analyzes your search results to:
+                </p>
+                <ul style={{ margin: "0 0 8px", paddingLeft: 18 }}>
+                  <li><strong>Score &amp; rank</strong> each prospect 0–100 based on seller motivation signals</li>
+                  <li><strong>Categorize</strong> into Hot, Warm, and Long-term tiers</li>
+                  <li><strong>Explain</strong> why each property ranks where it does using actual data</li>
+                  <li><strong>Draft outreach</strong> — personalized letters, SMS, and talking points</li>
+                  <li><strong>Export</strong> results as PDF reports or CSV for your CRM</li>
+                </ul>
+                <p style={{ margin: "0 0 4px", fontSize: 12, color: "#6b7280" }}>
+                  First click <strong>Find Properties</strong> to load results, then click <strong>Prospect with AI</strong> to analyze them.
+                </p>
+                <div style={{ textAlign: "right", marginTop: 8 }}>
+                  <button
+                    onClick={() => setShowAITooltip(false)}
+                    style={{
+                      padding: "4px 12px", borderRadius: 4, border: "1px solid #d1d5db",
+                      background: "#f9fafb", fontSize: 12, cursor: "pointer", color: "#6b7280",
+                    }}
+                  >
+                    Got it
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -2205,12 +2291,15 @@ export default function Prospecting() {
       })()}
 
       {/* AI Prospecting Copilot — appears after search with results */}
-      <ProspectAIPanel
-        mode={mode}
-        properties={toProspectProperties(mode === "investor" ? investorGroups.flatMap((g) => g.properties) : results)}
-        market={getMarketContext()}
-        isVisible={!isLoading && hasSearched && (results.length > 0 || investorGroups.length > 0)}
-      />
+      <div id="prospect-ai-panel">
+        <ProspectAIPanel
+          ref={aiPanelRef}
+          mode={mode}
+          properties={toProspectProperties(mode === "investor" ? investorGroups.flatMap((g) => g.properties) : results)}
+          market={getMarketContext()}
+          isVisible={!isLoading && hasSearched && (results.length > 0 || investorGroups.length > 0)}
+        />
+      </div>
 
       {!isLoading && hasSearched && results.length === 0 && investorGroups.length === 0 && (
         <div style={{ padding: 40, textAlign: "center", color: "#6b7280", background: "#f9fafb", borderRadius: 12 }}>
