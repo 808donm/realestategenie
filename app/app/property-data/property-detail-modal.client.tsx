@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { FederalPropertySupplement } from "@/lib/integrations/federal-data-client";
 import { buildQPublicUrl } from "@/lib/hawaii-zip-county";
+import type { PropertyReportData } from "@/lib/documents/property-intelligence-report";
 
 interface AttomProperty {
   identifier?: { Id?: number; fips?: string; apn?: string; attomId?: number };
@@ -483,6 +484,155 @@ export default function PropertyDetailModal({
   // No additional calls needed — the property object already contains
   // owner info mapped by the API route.
   // enrichedOwner is left null; the Ownership tab renders from the base property data.
+
+  // ── Report generation ──
+  const [reportGenerating, setReportGenerating] = useState(false);
+  const [reportShareUrl, setReportShareUrl] = useState<string | null>(null);
+  const [reportCopied, setReportCopied] = useState(false);
+
+  const collectReportData = useCallback((): PropertyReportData => {
+    const he = enrichedFinancial?.homeEquity?.property?.[0]?.homeEquity;
+    const rentalResp = enrichedFinancial?.rentalAvm;
+    const rentalProp = rentalResp?.property?.[0] || rentalResp;
+    const rental = rentalProp?.rentalAvm || rentalProp?.rentalAVM || rentalProp?.rentalavm;
+    const rentVal = rental?.estimatedRentalValue ?? rental?.rentalAmount?.value ?? rental?.amount?.value
+      ?? (p as any).rentalAvm?.estimatedRentalValue ?? (p as any).rentalAvm?.rentalAmount?.value;
+
+    // Build hazard entries
+    const hazards: PropertyReportData["hazards"] = [];
+    if (hazardData) {
+      if (hazardData.tsunami?.found) hazards.push({ label: "Tsunami Evac Zone", value: String(hazardData.tsunami.attributes?.evaczone || hazardData.tsunami.attributes?.zone || "Yes") });
+      if (hazardData.seaLevelRise?.found) hazards.push({ label: "Sea Level Rise", value: "In 3.2ft SLR coastal flood zone" });
+      if (hazardData.lavaFlow?.found) hazards.push({ label: "Lava Flow Zone", value: `Zone ${hazardData.lavaFlow.attributes?.hazard || hazardData.lavaFlow.attributes?.zone || "?"}` });
+      if (hazardData.cesspoolPriority?.found) hazards.push({ label: "Cesspool Priority", value: hazardData.cesspoolPriority.attributes?.priorityscore ? `Score: ${hazardData.cesspoolPriority.attributes.priorityscore}` : "In priority area" });
+      if (hazardData.dhhl?.found) hazards.push({ label: "Hawaiian Home Lands", value: "On DHHL land" });
+      if (hazardData.sma?.found) hazards.push({ label: "Special Mgmt Area", value: "Coastal zone — SMA permits may apply" });
+    }
+
+    // Build federal context
+    let federal: PropertyReportData["federalData"];
+    if (federalData) {
+      const fd = federalData as any;
+      const census = fd.census || fd.demographics || {};
+      const fred = fd.fred || fd.economic || {};
+      const fema = fd.fema || fd.flood || {};
+      federal = {
+        medianIncome: census.medianHouseholdIncome ?? census.medianIncome,
+        populationDensity: census.populationDensity,
+        unemploymentRate: census.unemploymentRate ?? fred.unemploymentRate,
+        medianHomeValue: census.medianHomeValue,
+        povertyRate: census.povertyRate,
+        medianAge: census.medianAge,
+        ownerOccupiedPct: census.ownerOccupiedPct,
+        renterOccupiedPct: census.renterOccupiedPct,
+        mortgageRate30yr: fred.mortgageRate30yr ?? fred.mortgage30yr,
+        floodZone: fema.floodZone ?? fema.zone,
+        floodRisk: fema.riskRating ?? fema.risk,
+      };
+    }
+
+    return {
+      address: addr,
+      city: p.address?.locality,
+      state: p.address?.countrySubd,
+      zip: p.address?.postal1,
+      county: p.area?.munName || p.area?.countrySecSubd,
+      apn: p.identifier?.apn,
+      propertyType: p.summary?.propertyType || p.summary?.propType,
+      yearBuilt,
+      beds,
+      baths,
+      sqft,
+      lotSizeSqft: p.lot?.lotSize1,
+      lotSizeAcres: p.lot?.lotSize2,
+      stories: p.building?.summary?.levels,
+      garageSpaces: p.building?.parking?.prkgSpaces,
+      pool: p.lot?.poolInd === "Y" ? true : p.lot?.poolInd === "N" ? false : undefined,
+      avmValue: avmVal,
+      avmLow: p.avm?.amount?.low,
+      avmHigh: p.avm?.amount?.high,
+      avmConfidence: p.avm?.amount?.scr,
+      avmDate: p.avm?.eventDate,
+      assessedTotal: p.assessment?.assessed?.assdTtlValue,
+      assessedLand: p.assessment?.assessed?.assdLandValue,
+      assessedImpr: p.assessment?.assessed?.assdImprValue,
+      marketTotal: p.assessment?.market?.mktTtlValue,
+      taxAmount: p.assessment?.tax?.taxAmt,
+      taxYear: p.assessment?.tax?.taxYear,
+      lastSalePrice: lastSaleAmt,
+      lastSaleDate: p.sale?.amount?.saleTransDate,
+      estimatedEquity: equity ?? he?.equity,
+      loanBalance: he?.outstandingBalance ?? he?.loanBalance,
+      ltv: ltv ?? he?.ltv ?? he?.loanToValue,
+      loanCount: he?.loanCount ?? p.mortgage?.lienCount,
+      lender: p.mortgage?.lender?.fullName,
+      loanAmount: p.mortgage?.amount,
+      loanType: p.mortgage?.loanType,
+      rentalEstimate: rentVal != null ? Number(rentVal) : undefined,
+      rentalLow: rental?.estimatedMinRentalValue ?? rental?.rentalAmount?.low,
+      rentalHigh: rental?.estimatedMaxRentalValue ?? rental?.rentalAmount?.high,
+      grossYield: rentVal && avmVal ? ((Number(rentVal) * 12 / avmVal) * 100) : undefined,
+      owner1: p.owner?.owner1?.fullName,
+      owner2: p.owner?.owner2?.fullName,
+      ownerOccupied: p.owner?.ownerOccupied,
+      absenteeOwner: p.owner?.absenteeOwnerStatus,
+      mailingAddress: p.owner?.mailingAddressOneLine,
+      corporateOwner: p.owner?.corporateIndicator,
+      hazards: hazards.length > 0 ? hazards : undefined,
+      federalData: federal,
+      generatedAt: new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }),
+    };
+  }, [p, addr, avmVal, lastSaleAmt, equity, ltv, yearBuilt, beds, baths, sqft, hazardData, federalData, enrichedFinancial]);
+
+  const handleGenerateReport = useCallback(async () => {
+    setReportGenerating(true);
+    try {
+      const reportData = collectReportData();
+      const res = await fetch("/api/property-intelligence/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ property: reportData }),
+      });
+      if (!res.ok) throw new Error("Failed to generate report");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Property_Intelligence_${addr.replace(/[^a-zA-Z0-9 ]/g, "").replace(/\s+/g, "_").substring(0, 40)}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("[PropertyReport] Generation failed:", err);
+      alert("Failed to generate report. Please try again.");
+    } finally {
+      setReportGenerating(false);
+    }
+  }, [collectReportData, addr]);
+
+  const handleShareReport = useCallback(async () => {
+    setReportGenerating(true);
+    try {
+      const reportData = collectReportData();
+      const res = await fetch("/api/property-intelligence/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ property: reportData }),
+      });
+      if (!res.ok) throw new Error("Failed to save report");
+      const { shareUrl } = await res.json();
+      setReportShareUrl(shareUrl);
+      await navigator.clipboard.writeText(shareUrl);
+      setReportCopied(true);
+      setTimeout(() => setReportCopied(false), 3000);
+    } catch (err) {
+      console.error("[PropertyReport] Share failed:", err);
+      alert("Failed to create shareable link. Please try again.");
+    } finally {
+      setReportGenerating(false);
+    }
+  }, [collectReportData]);
 
   const allSections: { id: SectionId; label: string }[] = [
     { id: "overview", label: "Overview" },
@@ -2309,10 +2459,47 @@ export default function PropertyDetailModal({
     </div>
   );
 
+  // ── Report action bar (shared between embedded and modal) ──
+  const reportActionBar = (
+    <div style={{ display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
+      <button
+        onClick={handleGenerateReport}
+        disabled={reportGenerating}
+        style={{
+          padding: "7px 14px", fontSize: 12, fontWeight: 600, borderRadius: 6,
+          border: "none", background: "#1e40af", color: "#fff",
+          cursor: reportGenerating ? "not-allowed" : "pointer",
+          opacity: reportGenerating ? 0.6 : 1,
+        }}
+      >
+        {reportGenerating ? "Generating..." : "Download Intelligence Report (PDF)"}
+      </button>
+      <button
+        onClick={handleShareReport}
+        disabled={reportGenerating}
+        style={{
+          padding: "7px 14px", fontSize: 12, fontWeight: 600, borderRadius: 6,
+          border: "1px solid #059669", background: reportCopied ? "#059669" : "#fff",
+          color: reportCopied ? "#fff" : "#059669",
+          cursor: reportGenerating ? "not-allowed" : "pointer",
+          opacity: reportGenerating ? 0.6 : 1,
+        }}
+      >
+        {reportCopied ? "Link Copied!" : "Get Shareable Link"}
+      </button>
+      {reportShareUrl && !reportCopied && (
+        <span style={{ fontSize: 11, color: "#6b7280", alignSelf: "center" }}>
+          Link ready — click to copy again
+        </span>
+      )}
+    </div>
+  );
+
   // In embedded mode: render value cards + tabs + content inline (no overlay or header)
   if (embedded) {
     return (
       <div>
+        {reportActionBar}
         {valueSummaryCards}
         {tabsBar}
         {tabContent}
@@ -2344,12 +2531,41 @@ export default function PropertyDetailModal({
                 ].filter(Boolean).join(" · ")}
               </div>
             </div>
-            <button
-              onClick={onClose}
-              style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: "#9ca3af", lineHeight: 1, padding: 4 }}
-            >
-              ✕
-            </button>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {/* Generate Report */}
+              <button
+                onClick={handleGenerateReport}
+                disabled={reportGenerating}
+                style={{
+                  padding: "6px 12px", fontSize: 12, fontWeight: 600, borderRadius: 6,
+                  border: "1px solid #1e40af", background: "#1e40af", color: "#fff",
+                  cursor: reportGenerating ? "not-allowed" : "pointer", opacity: reportGenerating ? 0.6 : 1,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {reportGenerating ? "Generating..." : "Download PDF"}
+              </button>
+              {/* Share Link */}
+              <button
+                onClick={handleShareReport}
+                disabled={reportGenerating}
+                style={{
+                  padding: "6px 12px", fontSize: 12, fontWeight: 600, borderRadius: 6,
+                  border: "1px solid #059669", background: reportCopied ? "#059669" : "#fff",
+                  color: reportCopied ? "#fff" : "#059669",
+                  cursor: reportGenerating ? "not-allowed" : "pointer", opacity: reportGenerating ? 0.6 : 1,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {reportCopied ? "Link Copied!" : "Share Link"}
+              </button>
+              <button
+                onClick={onClose}
+                style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: "#9ca3af", lineHeight: 1, padding: 4 }}
+              >
+                ✕
+              </button>
+            </div>
           </div>
 
           {valueSummaryCards}
