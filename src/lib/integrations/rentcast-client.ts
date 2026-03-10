@@ -15,10 +15,11 @@
 const DEFAULT_BASE_URL = "https://api.rentcast.io/v1";
 
 // ---------------------------------------------------------------------------
-// Types
+// Types — Property Data (/properties)
 // ---------------------------------------------------------------------------
 
-/** Supported property types (pipe-separated for multi-select in queries) */
+/** Supported property types (pipe-separated for multi-select in queries).
+ *  Case-sensitive — must match exactly. */
 export type RentcastPropertyType =
   | "Single Family"
   | "Condo"
@@ -30,7 +31,8 @@ export type RentcastPropertyType =
 
 export interface RentcastOwner {
   names: string[];
-  type: string; // "Individual", etc.
+  /** "Individual" for persons, "Organization" for entities */
+  type: "Individual" | "Organization";
   mailingAddress?: {
     id: string;
     formattedAddress: string;
@@ -77,8 +79,9 @@ export interface RentcastPropertyTax {
   total: number;
 }
 
-export interface RentcastSaleEvent {
-  event: string;
+/** Property sale history entry (keyed by YYYY-MM-DD in response). */
+export interface RentcastPropertySaleEvent {
+  event: "Sale";
   date: string; // ISO 8601
   price: number;
 }
@@ -106,18 +109,23 @@ export interface RentcastProperty {
   legalDescription: string;
   subdivision: string;
   zoning: string;
-  lastSaleDate: string | null;
+  lastSaleDate: string | null; // ISO 8601
   lastSalePrice: number | null;
   ownerOccupied: boolean;
   hoa?: { fee: number };
   features?: RentcastFeatures;
+  /** Keyed by tax year string, e.g. "2024" */
   taxAssessments?: Record<string, RentcastTaxAssessment>;
+  /** Keyed by tax year string, e.g. "2024" */
   propertyTaxes?: Record<string, RentcastPropertyTax>;
-  history?: Record<string, RentcastSaleEvent>;
+  /** Sale history keyed by sale date, e.g. "2024-11-18" */
+  history?: Record<string, RentcastPropertySaleEvent>;
   owner?: RentcastOwner;
 }
 
-// -- AVM / Valuation types --------------------------------------------------
+// ---------------------------------------------------------------------------
+// Types — Valuations / AVM (/avm)
+// ---------------------------------------------------------------------------
 
 export interface RentcastComparable {
   id: string;
@@ -126,8 +134,10 @@ export interface RentcastComparable {
   addressLine2: string | null;
   city: string;
   state: string;
+  stateFips: string;
   zipCode: string;
   county: string;
+  countyFips: string;
   latitude: number;
   longitude: number;
   propertyType: string;
@@ -136,25 +146,100 @@ export interface RentcastComparable {
   squareFootage: number;
   lotSize: number;
   yearBuilt: number;
+  /** Active / Inactive */
+  status: string;
   price: number;
-  listingType: string; // "Standard" | "New Construction" | "Foreclosure" | "Short Sale"
-  listedDate: string;
-  removedDate: string;
-  lastSeenDate: string;
+  /** "Standard" | "New Construction" | "Foreclosure" | "Short Sale" */
+  listingType: string;
+  listedDate: string; // ISO 8601
+  removedDate: string; // ISO 8601
+  lastSeenDate: string; // ISO 8601
   daysOnMarket: number;
-  correlation?: number;
+  /** Distance from subject property, in miles */
+  distance: number;
+  /** Days since listing was last seen active */
+  daysOld: number;
+  /** 0-1, similarity ratio to subject property */
+  correlation: number;
 }
 
-export interface RentcastValuation {
+export interface RentcastSubjectProperty {
+  id: string;
+  formattedAddress: string;
+  addressLine1: string;
+  addressLine2: string | null;
+  city: string;
+  state: string;
+  stateFips: string;
+  zipCode: string;
+  county: string;
+  countyFips: string;
+  latitude: number;
+  longitude: number;
+  propertyType: string;
+  bedrooms: number;
+  bathrooms: number;
+  squareFootage: number;
+  lotSize: number;
+  yearBuilt: number;
+  lastSaleDate: string | null;
+  lastSalePrice: number | null;
+}
+
+/** Response from /avm/value */
+export interface RentcastValueEstimate {
   price: number;
   priceRangeLow: number;
   priceRangeHigh: number;
-  latitude: number;
-  longitude: number;
+  subjectProperty: RentcastSubjectProperty;
   comparables: RentcastComparable[];
 }
 
-// -- Listing types -----------------------------------------------------------
+/** Response from /avm/rent/long-term */
+export interface RentcastRentEstimate {
+  rent: number;
+  rentRangeLow: number;
+  rentRangeHigh: number;
+  subjectProperty: RentcastSubjectProperty;
+  comparables: RentcastComparable[];
+}
+
+// ---------------------------------------------------------------------------
+// Types — Listings (/listings)
+// ---------------------------------------------------------------------------
+
+export interface RentcastListingAgent {
+  name: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+}
+
+export interface RentcastListingOffice {
+  name: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+}
+
+export interface RentcastBuilder {
+  name: string;
+  development?: string;
+  phone?: string;
+  website?: string;
+}
+
+/** Listing history entry (keyed by YYYY-MM-DD in response). */
+export interface RentcastListingHistoryEntry {
+  /** "Sale Listing" | "Rental Listing" */
+  event: string;
+  price: number;
+  /** "Standard" | "New Construction" | "Foreclosure" | "Short Sale" */
+  listingType: string;
+  listedDate: string; // ISO 8601
+  removedDate: string | null;
+  daysOnMarket: number;
+}
 
 export interface RentcastListing {
   id: string;
@@ -163,8 +248,10 @@ export interface RentcastListing {
   addressLine2: string | null;
   city: string;
   state: string;
+  stateFips: string;
   zipCode: string;
   county: string;
+  countyFips: string;
   latitude: number;
   longitude: number;
   propertyType: string;
@@ -173,48 +260,129 @@ export interface RentcastListing {
   squareFootage: number;
   lotSize: number;
   yearBuilt: number;
-  price: number;
-  listingType: string;
+  hoa?: { fee: number };
+  /** "Active" | "Inactive" */
   status: string;
-  listedDate: string;
+  price: number;
+  /** "Standard" | "New Construction" | "Foreclosure" | "Short Sale" */
+  listingType: string;
+  listedDate: string; // ISO 8601
   removedDate: string | null;
+  createdDate: string; // ISO 8601
   lastSeenDate: string;
   daysOnMarket: number;
   mlsName?: string;
   mlsNumber?: string;
-  listingAgent?: { name: string; phone?: string; email?: string };
-  listingOffice?: { name: string; phone?: string; email?: string };
-  hoa?: { fee: number };
+  listingAgent?: RentcastListingAgent;
+  listingOffice?: RentcastListingOffice;
+  /** Present only for new construction listings */
+  builder?: RentcastBuilder;
+  /** Listing history keyed by date, e.g. "2024-06-24" */
+  history?: Record<string, RentcastListingHistoryEntry>;
 }
 
-// -- Market data types -------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Types — Market Data (/markets)
+// ---------------------------------------------------------------------------
 
-export interface RentcastMarketStats {
+/** Sale market statistics fields */
+export interface RentcastSaleStats {
   averagePrice?: number;
   medianPrice?: number;
   minPrice?: number;
   maxPrice?: number;
   averagePricePerSquareFoot?: number;
+  medianPricePerSquareFoot?: number;
+  minPricePerSquareFoot?: number;
+  maxPricePerSquareFoot?: number;
   averageSquareFootage?: number;
+  medianSquareFootage?: number;
+  minSquareFootage?: number;
+  maxSquareFootage?: number;
   averageDaysOnMarket?: number;
   medianDaysOnMarket?: number;
-  totalListings?: number;
+  minDaysOnMarket?: number;
+  maxDaysOnMarket?: number;
   newListings?: number;
-  dataByPropertyType?: Record<string, Record<string, number>>;
-  dataByBedroomCount?: Record<string, Record<string, number>>;
-  history?: Array<Record<string, unknown>>;
+  totalListings?: number;
+}
+
+/** Rental market statistics fields */
+export interface RentcastRentalStats {
+  averageRent?: number;
+  medianRent?: number;
+  minRent?: number;
+  maxRent?: number;
+  averageRentPerSquareFoot?: number;
+  medianRentPerSquareFoot?: number;
+  minRentPerSquareFoot?: number;
+  maxRentPerSquareFoot?: number;
+  averageSquareFootage?: number;
+  medianSquareFootage?: number;
+  minSquareFootage?: number;
+  maxSquareFootage?: number;
+  averageDaysOnMarket?: number;
+  medianDaysOnMarket?: number;
+  minDaysOnMarket?: number;
+  maxDaysOnMarket?: number;
+  newListings?: number;
+  totalListings?: number;
+}
+
+export interface RentcastSaleDataByPropertyType extends RentcastSaleStats {
+  propertyType: string;
+}
+
+export interface RentcastSaleDataByBedrooms extends RentcastSaleStats {
+  bedrooms: number;
+}
+
+export interface RentcastRentalDataByPropertyType extends RentcastRentalStats {
+  propertyType: string;
+}
+
+export interface RentcastRentalDataByBedrooms extends RentcastRentalStats {
+  bedrooms: number;
+}
+
+export interface RentcastSaleHistoryEntry extends RentcastSaleStats {
+  date: string; // ISO 8601
+  dataByPropertyType?: RentcastSaleDataByPropertyType[];
+  dataByBedrooms?: RentcastSaleDataByBedrooms[];
+}
+
+export interface RentcastRentalHistoryEntry extends RentcastRentalStats {
+  date: string; // ISO 8601
+  dataByPropertyType?: RentcastRentalDataByPropertyType[];
+  dataByBedrooms?: RentcastRentalDataByBedrooms[];
+}
+
+export interface RentcastSaleData extends RentcastSaleStats {
+  lastUpdatedDate: string;
+  dataByPropertyType?: RentcastSaleDataByPropertyType[];
+  dataByBedrooms?: RentcastSaleDataByBedrooms[];
+  /** Monthly history keyed by "YYYY-MM" */
+  history?: Record<string, RentcastSaleHistoryEntry>;
+}
+
+export interface RentcastRentalData extends RentcastRentalStats {
+  lastUpdatedDate: string;
+  dataByPropertyType?: RentcastRentalDataByPropertyType[];
+  dataByBedrooms?: RentcastRentalDataByBedrooms[];
+  /** Monthly history keyed by "YYYY-MM", available from April 2020 */
+  history?: Record<string, RentcastRentalHistoryEntry>;
 }
 
 export interface RentcastMarketData {
+  id: string;
   zipCode: string;
-  city: string;
-  state: string;
-  county: string;
-  saleData?: RentcastMarketStats;
-  rentalData?: RentcastMarketStats;
+  saleData?: RentcastSaleData;
+  rentalData?: RentcastRentalData;
 }
 
-// -- Query parameter types ---------------------------------------------------
+// ---------------------------------------------------------------------------
+// Types — Query Parameters
+// ---------------------------------------------------------------------------
 
 export interface RentcastPropertySearchParams {
   address?: string;
@@ -224,8 +392,8 @@ export interface RentcastPropertySearchParams {
   latitude?: number;
   longitude?: number;
   radius?: number; // miles, max 100
-  propertyType?: string; // pipe-separated for multiple
-  bedrooms?: string; // supports range "1:3" or multi "1|3"
+  propertyType?: string; // pipe-separated for multiple, e.g. "Single Family|Condo"
+  bedrooms?: string; // range "1:3" or multi "1|3"
   bathrooms?: string;
   squareFootage?: string;
   lotSize?: string;
@@ -247,7 +415,7 @@ export interface RentcastAvmParams {
   maxRadius?: number; // miles
   daysOld?: number;
   compCount?: number; // 5-25, default 15
-  lookupSubjectAttributes?: boolean;
+  lookupSubjectAttributes?: boolean; // default true
 }
 
 export interface RentcastListingSearchParams {
@@ -263,7 +431,7 @@ export interface RentcastListingSearchParams {
   bathrooms?: string;
   squareFootage?: string;
   price?: string;
-  status?: string; // "Active" | "Inactive"
+  status?: "Active" | "Inactive";
   daysOld?: number;
   limit?: number; // 1-500
   offset?: number;
@@ -274,7 +442,7 @@ export interface RentcastMarketParams {
   city?: string;
   state?: string;
   dataType?: "Sale" | "Rental" | "All";
-  historyRange?: number; // months
+  historyRange?: number; // months of history to return
 }
 
 // ---------------------------------------------------------------------------
@@ -327,7 +495,7 @@ export class RentcastClient {
   }
 
   // -------------------------------------------------------------------------
-  // Property Data
+  // Property Data (/properties)
   // -------------------------------------------------------------------------
 
   /** Search property records by area, address, or coordinates. */
@@ -339,7 +507,9 @@ export class RentcastClient {
 
   /** Get a single property record by its Rentcast ID. */
   async getPropertyById(id: string): Promise<RentcastProperty> {
-    return this.request<RentcastProperty>(`/properties/${encodeURIComponent(id)}`);
+    return this.request<RentcastProperty>(
+      `/properties/${encodeURIComponent(id)}`
+    );
   }
 
   /** Get random property records (useful for testing). */
@@ -348,21 +518,28 @@ export class RentcastClient {
   }
 
   // -------------------------------------------------------------------------
-  // Valuations (AVM)
+  // Valuations / AVM (/avm)
   // -------------------------------------------------------------------------
 
   /** Get a sale value estimate with comparables. */
-  async getValueEstimate(params: RentcastAvmParams): Promise<RentcastValuation> {
-    return this.request<RentcastValuation>("/avm/value", params as any);
+  async getValueEstimate(
+    params: RentcastAvmParams
+  ): Promise<RentcastValueEstimate> {
+    return this.request<RentcastValueEstimate>("/avm/value", params as any);
   }
 
   /** Get a long-term rent estimate with comparables. */
-  async getRentEstimate(params: RentcastAvmParams): Promise<RentcastValuation> {
-    return this.request<RentcastValuation>("/avm/rent/long-term", params as any);
+  async getRentEstimate(
+    params: RentcastAvmParams
+  ): Promise<RentcastRentEstimate> {
+    return this.request<RentcastRentEstimate>(
+      "/avm/rent/long-term",
+      params as any
+    );
   }
 
   // -------------------------------------------------------------------------
-  // Listings
+  // Listings (/listings)
   // -------------------------------------------------------------------------
 
   /** Search active/inactive sale listings. */
@@ -374,7 +551,9 @@ export class RentcastClient {
 
   /** Get a single sale listing by ID. */
   async getSaleListingById(id: string): Promise<RentcastListing> {
-    return this.request<RentcastListing>(`/listings/sale/${encodeURIComponent(id)}`);
+    return this.request<RentcastListing>(
+      `/listings/sale/${encodeURIComponent(id)}`
+    );
   }
 
   /** Search active/inactive long-term rental listings. */
@@ -395,11 +574,13 @@ export class RentcastClient {
   }
 
   // -------------------------------------------------------------------------
-  // Market Data
+  // Market Data (/markets)
   // -------------------------------------------------------------------------
 
   /** Get aggregate sale & rental market statistics for a zip code / city. */
-  async getMarketData(params: RentcastMarketParams): Promise<RentcastMarketData> {
+  async getMarketData(
+    params: RentcastMarketParams
+  ): Promise<RentcastMarketData> {
     return this.request<RentcastMarketData>("/markets", params as any);
   }
 
