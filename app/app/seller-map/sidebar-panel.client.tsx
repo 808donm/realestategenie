@@ -46,6 +46,7 @@ type Props = {
   onDeleteSearch: (id: string) => void;
   onAddToCRM?: (property: ScoredProperty) => void;
   onGenerateReport?: (property: ScoredProperty) => void;
+  onSearchArea: () => void;
   isLoading: boolean;
   total: number;
 };
@@ -68,6 +69,7 @@ export function SidebarPanel({
   onDeleteSearch,
   onAddToCRM,
   onGenerateReport,
+  onSearchArea,
   isLoading,
   total,
 }: Props) {
@@ -88,6 +90,34 @@ export function SidebarPanel({
 
   return (
     <div className="flex flex-col h-full bg-white border-r">
+      {/* Zip Code Search */}
+      <div className="p-3 border-b bg-white">
+        <div className="flex gap-2">
+          <input
+            type="text"
+            placeholder="Search zip codes (e.g. 96825, 96826)"
+            value={filters.zips || ""}
+            onChange={(e) =>
+              onFiltersChange({ ...filters, zips: e.target.value })
+            }
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && filters.zips?.trim()) onSearchArea();
+            }}
+            className="flex-1 text-xs border rounded px-2.5 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+          />
+          <button
+            onClick={onSearchArea}
+            disabled={isLoading}
+            className="text-xs bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700 transition-colors disabled:opacity-50 shrink-0"
+          >
+            {isLoading ? "..." : "Search"}
+          </button>
+        </div>
+        <p className="text-[10px] text-gray-400 mt-1">
+          Comma-separated zips, or leave empty and use "Search This Area" on the map.
+        </p>
+      </div>
+
       {/* Header Stats */}
       <div className="p-4 border-b bg-gray-50">
         <div className="flex items-center justify-between mb-3">
@@ -201,25 +231,6 @@ export function SidebarPanel({
         {/* Filters Tab */}
         {tab === "filters" && (
           <div className="p-4 space-y-5">
-            {/* Zip Codes */}
-            <div>
-              <label className="text-xs font-medium text-gray-700 mb-1.5 block">
-                Search Zip Codes
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. 96825, 96826, 96813"
-                value={filters.zips || ""}
-                onChange={(e) =>
-                  onFiltersChange({ ...filters, zips: e.target.value })
-                }
-                className="w-full text-xs border rounded px-2.5 py-2"
-              />
-              <p className="text-[10px] text-gray-400 mt-1">
-                Comma-separated. Leave empty to search by map area.
-              </p>
-            </div>
-
             {/* Min Score */}
             <div>
               <label className="text-xs font-medium text-gray-700 mb-1.5 block">

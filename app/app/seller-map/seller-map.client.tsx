@@ -205,6 +205,7 @@ export function SellerMapClient() {
             onDeleteSearch={handleDeleteSearch}
             onAddToCRM={handleAddToCRM}
             onGenerateReport={handleGenerateReport}
+            onSearchArea={handleSearchThisArea}
             isLoading={isLoading}
             total={total}
           />
