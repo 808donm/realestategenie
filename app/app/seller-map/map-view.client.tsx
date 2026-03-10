@@ -73,7 +73,7 @@ function SellerMapInner({
       onBoundsChange({
         lat: center.lat(),
         lng: center.lng(),
-        radius: Math.min(Math.max(radiusMiles, 0.5), 10),
+        radius: Math.min(Math.max(radiusMiles, 0.5), 50),
       });
     }, 600);
   }, [map, onBoundsChange]);

@@ -17,7 +17,7 @@ import { scoreParcel } from "@/lib/scoring/seller-motivation-score";
  *
  * Query params:
  *   lat, lng    — center coordinates (required)
- *   radius      — search radius in miles (default 2, max 10)
+ *   radius      — search radius in miles (default 10, max 50)
  *   minScore    — minimum seller motivation score (default 0)
  *   absenteeOnly — filter to absentee owners only
  *   zip         — alternative to lat/lng: search by zip code
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     const lat = url.searchParams.get("lat");
     const lng = url.searchParams.get("lng");
     const zip = url.searchParams.get("zip");
-    const radius = Math.min(Number(url.searchParams.get("radius") || 10), 10);
+    const radius = Math.min(Number(url.searchParams.get("radius") || 10), 50);
     const minScore = Number(url.searchParams.get("minScore") || 0);
     const absenteeOnly = url.searchParams.get("absenteeOnly") === "true";
     const limit = Math.min(Number(url.searchParams.get("limit") || 100), 500);
