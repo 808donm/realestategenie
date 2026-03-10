@@ -40,8 +40,9 @@ export function SellerMapClient() {
   const [total, setTotal] = useState(0);
   const [mobileShowSidebar, setMobileShowSidebar] = useState(false);
 
-  // Current map bounds
+  // Current map bounds and last-fetched bounds
   const boundsRef = useRef({ lat: 21.3069, lng: -157.8583, radius: 2 });
+  const lastFetchRef = useRef<{ lat: number; lng: number; radius: number } | null>(null);
 
   // Load saved searches on mount
   useEffect(() => {
@@ -77,6 +78,7 @@ export function SellerMapClient() {
 
         setProperties(data.properties || []);
         setTotal(data.total || 0);
+        lastFetchRef.current = { ...bounds };
       } catch (err) {
         console.error("[SellerMap] Fetch error:", err);
       } finally {
@@ -94,9 +96,25 @@ export function SellerMapClient() {
   const handleBoundsChange = useCallback(
     (bounds: { lat: number; lng: number; radius: number }) => {
       boundsRef.current = bounds;
+
+      // Skip re-fetch when zooming into an area we already have data for.
+      // Only re-fetch if the new viewport extends beyond the previous search area.
+      const prev = lastFetchRef.current;
+      if (prev && properties.length > 0) {
+        const distMiles =
+          Math.sqrt(
+            Math.pow((bounds.lat - prev.lat) * 69, 2) +
+            Math.pow((bounds.lng - prev.lng) * 54.6, 2)
+          );
+        // New viewport center + radius fits inside previous fetch circle
+        if (distMiles + bounds.radius < prev.radius * 0.9) {
+          return; // existing data covers this view
+        }
+      }
+
       fetchProperties(bounds);
     },
-    [fetchProperties]
+    [fetchProperties, properties.length]
   );
 
   const handleSaveSearch = useCallback(
