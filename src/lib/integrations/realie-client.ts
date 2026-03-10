@@ -129,6 +129,74 @@ function stateFromZip(zip: string): string | undefined {
   return ZIP_PREFIX_TO_STATE[prefix];
 }
 
+/**
+ * Approximate US state from lat/lng using bounding boxes.
+ * Covers all 50 states + DC. For overlapping borders the first match wins,
+ * which is fine for Realie search since nearby-state results still return.
+ */
+const STATE_BOUNDS: { state: string; minLat: number; maxLat: number; minLng: number; maxLng: number }[] = [
+  { state: "HI", minLat: 18.5, maxLat: 22.5, minLng: -161, maxLng: -154 },
+  { state: "AK", minLat: 51, maxLat: 72, minLng: -180, maxLng: -129 },
+  { state: "WA", minLat: 45.5, maxLat: 49, minLng: -125, maxLng: -116.9 },
+  { state: "OR", minLat: 41.9, maxLat: 46.3, minLng: -124.7, maxLng: -116.4 },
+  { state: "CA", minLat: 32.5, maxLat: 42, minLng: -124.5, maxLng: -114 },
+  { state: "NV", minLat: 35, maxLat: 42, minLng: -120, maxLng: -114 },
+  { state: "AZ", minLat: 31.3, maxLat: 37, minLng: -115, maxLng: -109 },
+  { state: "UT", minLat: 36.9, maxLat: 42, minLng: -114.1, maxLng: -109 },
+  { state: "ID", minLat: 42, maxLat: 49, minLng: -117.3, maxLng: -111 },
+  { state: "MT", minLat: 44.3, maxLat: 49, minLng: -116.1, maxLng: -104 },
+  { state: "WY", minLat: 40.9, maxLat: 45.1, minLng: -111.1, maxLng: -104 },
+  { state: "CO", minLat: 36.9, maxLat: 41, minLng: -109.1, maxLng: -102 },
+  { state: "NM", minLat: 31.3, maxLat: 37, minLng: -109.1, maxLng: -103 },
+  { state: "ND", minLat: 45.9, maxLat: 49, minLng: -104.1, maxLng: -96.5 },
+  { state: "SD", minLat: 42.4, maxLat: 46, minLng: -104.1, maxLng: -96.4 },
+  { state: "NE", minLat: 39.9, maxLat: 43, minLng: -104.1, maxLng: -95.3 },
+  { state: "KS", minLat: 36.9, maxLat: 40.1, minLng: -102.1, maxLng: -94.5 },
+  { state: "OK", minLat: 33.6, maxLat: 37, minLng: -103.1, maxLng: -94.4 },
+  { state: "TX", minLat: 25.8, maxLat: 36.5, minLng: -106.7, maxLng: -93.5 },
+  { state: "MN", minLat: 43.4, maxLat: 49.4, minLng: -97.3, maxLng: -89.4 },
+  { state: "IA", minLat: 40.3, maxLat: 43.5, minLng: -96.7, maxLng: -90 },
+  { state: "MO", minLat: 35.9, maxLat: 40.6, minLng: -95.8, maxLng: -89 },
+  { state: "AR", minLat: 33, maxLat: 36.5, minLng: -94.7, maxLng: -89.6 },
+  { state: "LA", minLat: 28.9, maxLat: 33.1, minLng: -94.1, maxLng: -88.8 },
+  { state: "WI", minLat: 42.4, maxLat: 47.3, minLng: -92.9, maxLng: -86.2 },
+  { state: "IL", minLat: 36.9, maxLat: 42.5, minLng: -91.6, maxLng: -87.4 },
+  { state: "MS", minLat: 30, maxLat: 35, minLng: -91.7, maxLng: -88 },
+  { state: "MI", minLat: 41.6, maxLat: 48.3, minLng: -90.5, maxLng: -82.1 },
+  { state: "IN", minLat: 37.7, maxLat: 41.8, minLng: -88.1, maxLng: -84.7 },
+  { state: "KY", minLat: 36.4, maxLat: 39.2, minLng: -89.6, maxLng: -81.9 },
+  { state: "TN", minLat: 34.9, maxLat: 36.7, minLng: -90.4, maxLng: -81.6 },
+  { state: "AL", minLat: 30, maxLat: 35.1, minLng: -88.5, maxLng: -84.8 },
+  { state: "OH", minLat: 38.4, maxLat: 42, minLng: -84.9, maxLng: -80.5 },
+  { state: "GA", minLat: 30.3, maxLat: 35.1, minLng: -85.7, maxLng: -80.7 },
+  { state: "FL", minLat: 24.3, maxLat: 31.1, minLng: -87.7, maxLng: -79.9 },
+  { state: "SC", minLat: 32, maxLat: 35.3, minLng: -83.4, maxLng: -78.5 },
+  { state: "NC", minLat: 33.7, maxLat: 36.6, minLng: -84.4, maxLng: -75.4 },
+  { state: "VA", minLat: 36.5, maxLat: 39.5, minLng: -83.7, maxLng: -75.2 },
+  { state: "WV", minLat: 37.1, maxLat: 40.7, minLng: -82.7, maxLng: -77.7 },
+  { state: "PA", minLat: 39.7, maxLat: 42.3, minLng: -80.6, maxLng: -74.6 },
+  { state: "NY", minLat: 40.4, maxLat: 45.1, minLng: -79.8, maxLng: -71.8 },
+  { state: "VT", minLat: 42.7, maxLat: 45.1, minLng: -73.5, maxLng: -71.4 },
+  { state: "NH", minLat: 42.6, maxLat: 45.4, minLng: -72.6, maxLng: -70.6 },
+  { state: "ME", minLat: 43, maxLat: 47.5, minLng: -71.1, maxLng: -66.9 },
+  { state: "MA", minLat: 41, maxLat: 42.9, minLng: -73.6, maxLng: -69.8 },
+  { state: "CT", minLat: 40.9, maxLat: 42.1, minLng: -73.8, maxLng: -71.7 },
+  { state: "RI", minLat: 41.1, maxLat: 42.1, minLng: -71.9, maxLng: -71.1 },
+  { state: "NJ", minLat: 38.9, maxLat: 41.4, minLng: -75.6, maxLng: -73.8 },
+  { state: "DE", minLat: 38.4, maxLat: 39.9, minLng: -75.8, maxLng: -74.9 },
+  { state: "MD", minLat: 37.9, maxLat: 39.8, minLng: -79.5, maxLng: -75 },
+  { state: "DC", minLat: 38.79, maxLat: 39, minLng: -77.12, maxLng: -76.9 },
+];
+
+function stateFromCoords(lat: number, lng: number): string | undefined {
+  for (const b of STATE_BOUNDS) {
+    if (lat >= b.minLat && lat <= b.maxLat && lng >= b.minLng && lng <= b.maxLng) {
+      return b.state;
+    }
+  }
+  return undefined;
+}
+
 // ── Response types ──────────────────────────────────────────────────────────
 // Realie returns data in a normalized format that we map to our internal
 // ATTOM-compatible shape so the rest of the app doesn't need to change.
@@ -764,7 +832,9 @@ export class RealieClient {
 
   /**
    * Search properties by lat/lng + radius.
-   * Uses /property/address/ with geo params (search endpoint doesn't support lat/lng).
+   * Uses /property/search/ with state derived from coordinates.
+   * The /property/address/ endpoint only supports single-address lookups
+   * and rejects lat/lng params, so we must use the bulk search endpoint.
    */
   async searchByRadius(params: {
     latitude: number;
@@ -777,8 +847,16 @@ export class RealieClient {
   }): Promise<RealieApiResponse> {
     const limit = Math.min(params.limit || 100, 100);
     const offset = params.page && params.page > 1 ? (params.page - 1) * limit : 0;
+
+    const state = stateFromCoords(params.latitude, params.longitude);
+    if (!state) {
+      console.warn(`[Realie] Cannot determine state from coords (${params.latitude}, ${params.longitude})`);
+      return { properties: [], metadata: { limit: 0, offset: 0, count: 0 } };
+    }
+
     try {
-      const raw = await this.request<any>("/property/address/", {
+      const raw = await this.request<any>("/property/search/", {
+        state,
         latitude: params.latitude,
         longitude: params.longitude,
         radius: params.radius,
@@ -791,11 +869,11 @@ export class RealieClient {
     } catch (error: any) {
       if (error?.message?.includes("Realie API error: 400")) {
         console.warn(`[Realie] 400 error with radius params — retrying with minimal params`);
-        const raw = await this.request<any>("/property/address/", {
+        const raw = await this.request<any>("/property/search/", {
+          state,
           latitude: params.latitude,
           longitude: params.longitude,
           radius: params.radius,
-          residential: params.residential !== false ? true : undefined,
           offset,
           limit,
         });
