@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import PropertyDetailModal from "./property-detail-modal.client";
+import ProspectAIPanel from "./prospect-ai-panel.client";
 import { buildQPublicUrl } from "@/lib/hawaii-zip-county";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -617,6 +618,65 @@ export default function Prospecting() {
   // mode switches just re-filter this array instead of re-fetching.
   const [sharedRawData, setSharedRawData] = useState<AttomProperty[]>([]);
   const [sharedDataKey, setSharedDataKey] = useState("");
+
+  // ── AI Copilot data transformation ─────────────────────────────────────────
+  // Convert ATTOM properties to the shape the AI panel expects.
+  const toProspectProperties = (props: AttomProperty[]) =>
+    props.map((p) => {
+      const avmValue = getPropertyValue(p) ?? undefined;
+      const mortgageAmount = getMortgageAmount(p) ?? undefined;
+      const saleAmount = getSaleAmount(p) ?? undefined;
+      const ownershipDate = getOwnershipDate(p);
+      const yearsOwned = ownershipDate
+        ? Math.floor((Date.now() - ownershipDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+        : undefined;
+      const equityAmount = avmValue && saleAmount ? avmValue - saleAmount : (getEquityFromValuation(p) ?? undefined);
+      const equityPct = avmValue && equityAmount ? (equityAmount / avmValue) * 100 : undefined;
+      const distress = getDistressSignals(p);
+      return {
+        address: p.address?.oneLine || "Unknown",
+        ownerName: getOwnerName(p) ?? undefined,
+        mailingAddress: getMailingAddress(p) ?? undefined,
+        isAbsentee: isAbsenteeOwner(p),
+        isCorporate: resolveOwner(p)?.corporateIndicator === "Y",
+        avmValue,
+        assessedValue: p.assessment?.assessed?.assdTtlValue ?? undefined,
+        mortgageAmount,
+        ltvPct: getLtvPct(p) ?? undefined,
+        equityAmount: equityAmount ?? undefined,
+        equityPct: equityPct ?? undefined,
+        saleAmount,
+        saleDate: getSaleDateStr(p) ?? undefined,
+        yearsOwned,
+        yearBuilt: p.building?.summary?.yearBuilt ?? undefined,
+        beds: p.building?.rooms?.beds ?? undefined,
+        baths: p.building?.rooms?.bathsFull ?? p.building?.rooms?.bathsTotal ?? undefined,
+        sqft: p.building?.size?.livingSize || p.building?.size?.universalSize || p.building?.size?.bldgSize || undefined,
+        propertyType: p.summary?.propType ?? undefined,
+        taxAmount: p.assessment?.tax?.taxAmt ?? undefined,
+        rentalValue: getRentalValue(p) ?? undefined,
+        isDistressed: distress.isDistressed,
+        isUnderwater: distress.isUnderwater,
+        highLtv: distress.highLtv,
+        assessmentDrop: distress.assessmentDrop,
+        negativeAppreciation: distress.negativeAppreciation,
+      };
+    });
+
+  const getMarketContext = () => {
+    const trendsList: any[] = salesTrendData?.salesTrends || salesTrendData?.salestrend || [];
+    const recent = trendsList.slice(-4);
+    const lastPeriod = recent[recent.length - 1]?.salesTrend || recent[recent.length - 1];
+    const firstMed = recent[0]?.salesTrend?.medSalePrice;
+    const lastMed = lastPeriod?.medSalePrice;
+    return {
+      zipCode: zip.trim(),
+      medianPrice: lastMed ?? undefined,
+      avgDaysOnMarket: lastPeriod?.avgDaysOnMarket ?? undefined,
+      priceChangeYoY: firstMed && lastMed ? ((lastMed - firstMed) / firstMed) * 100 : undefined,
+      salesCount: lastPeriod?.homeSaleCount ?? undefined,
+    };
+  };
 
   /**
    * Fetch a single page of ATTOM results with the current mode's filters.
@@ -2143,6 +2203,14 @@ export default function Prospecting() {
           </div>
         );
       })()}
+
+      {/* AI Prospecting Copilot — appears after search with results */}
+      <ProspectAIPanel
+        mode={mode}
+        properties={toProspectProperties(mode === "investor" ? investorGroups.flatMap((g) => g.properties) : results)}
+        market={getMarketContext()}
+        isVisible={!isLoading && hasSearched && (results.length > 0 || investorGroups.length > 0)}
+      />
 
       {!isLoading && hasSearched && results.length === 0 && investorGroups.length === 0 && (
         <div style={{ padding: 40, textAlign: "center", color: "#6b7280", background: "#f9fafb", borderRadius: 12 }}>
