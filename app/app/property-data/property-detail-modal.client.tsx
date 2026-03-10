@@ -48,7 +48,11 @@ interface AttomProperty {
   utilities?: { coolingType?: string; heatingType?: string; heatingFuel?: string; energyType?: string; sewerType?: string; waterType?: string };
 }
 
-const fmt = (n?: number) => (n != null ? `$${n.toLocaleString()}` : null);
+const fmt = (n?: number) => {
+  if (n == null) return null;
+  if (Math.abs(n) >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
+  return `$${n.toLocaleString()}`;
+};
 const fmtNum = (n?: number) => (n != null ? n.toLocaleString() : null);
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -973,11 +977,8 @@ export default function PropertyDetailModal({
               {avm && (
                 <Section title="Automated Valuation (AVM)">
                   <Field label="Estimated Value" value={fmt(avm.amount?.value)} />
-                  <Field label="Low Estimate" value={fmt(avm.amount?.low)} />
-                  <Field label="High Estimate" value={fmt(avm.amount?.high)} />
+                  <Field label="Value Range" value={avm.amount?.low != null && avm.amount?.high != null ? `${fmt(avm.amount.low)} – ${fmt(avm.amount.high)}` : fmt(avm.amount?.valueRange)} />
                   <Field label="Confidence Score" value={avm.amount?.scr} />
-                  <Field label="Value Range" value={fmt(avm.amount?.valueRange)} />
-                  <Field label="Valuation Date" value={avm.eventDate} />
                 </Section>
               )}
 
