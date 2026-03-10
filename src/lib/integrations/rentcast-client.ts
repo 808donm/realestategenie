@@ -618,6 +618,97 @@ export class RentcastClient {
 }
 
 // ---------------------------------------------------------------------------
+// Mapper — RentcastProperty → RealieParcel (for scoring engine compatibility)
+// ---------------------------------------------------------------------------
+
+import type { RealieParcel } from "./realie-client";
+
+/**
+ * Convert a RentcastProperty to a RealieParcel shape so the existing seller
+ * motivation scoring engine can process it without changes.
+ */
+export function mapRentcastToRealieParcel(rc: RentcastProperty): RealieParcel {
+  // Find the most recent tax assessment value
+  let totalAssessedValue: number | undefined;
+  let assessedYear: number | undefined;
+  if (rc.taxAssessments) {
+    const years = Object.keys(rc.taxAssessments).sort().reverse();
+    if (years.length > 0) {
+      const latest = rc.taxAssessments[years[0]];
+      totalAssessedValue = latest.value;
+      assessedYear = latest.year;
+    }
+  }
+
+  // Derive transfer date from lastSaleDate or most recent history entry
+  let transferDate: string | undefined;
+  let transferPrice: number | undefined;
+  if (rc.lastSaleDate) {
+    transferDate = rc.lastSaleDate;
+    transferPrice = rc.lastSalePrice ?? undefined;
+  } else if (rc.history) {
+    const dates = Object.keys(rc.history).sort().reverse();
+    if (dates.length > 0) {
+      const latest = rc.history[dates[0]];
+      transferDate = latest.date;
+      transferPrice = latest.price;
+    }
+  }
+
+  // Owner address for absentee detection
+  const ownerAddr = rc.owner?.mailingAddress;
+
+  return {
+    _id: rc.id,
+    latitude: rc.latitude,
+    longitude: rc.longitude,
+
+    // Address
+    address: rc.addressLine1,
+    addressFull: rc.formattedAddress,
+    city: rc.city,
+    state: rc.state,
+    zipCode: rc.zipCode,
+    county: rc.county,
+
+    // Owner
+    ownerName: rc.owner?.names?.join(", "),
+    ownerAddressLine1: ownerAddr?.addressLine1,
+    ownerAddressFull: ownerAddr?.formattedAddress,
+    ownerCity: ownerAddr?.city,
+    ownerState: ownerAddr?.state,
+    ownerZipCode: ownerAddr?.zipCode,
+
+    // Property characteristics
+    residential: rc.propertyType === "Single Family" || rc.propertyType === "Townhouse",
+    condo: rc.propertyType === "Condo",
+    yearBuilt: rc.yearBuilt,
+    totalBedrooms: rc.bedrooms,
+    totalBathrooms: rc.bathrooms,
+    buildingArea: rc.squareFootage,
+    landArea: rc.lotSize,
+    pool: rc.features?.pool,
+    fireplace: rc.features?.fireplace,
+    garage: rc.features?.garage,
+    garageCount: rc.features?.garageSpaces,
+    stories: rc.features?.floorCount,
+
+    // Assessment / Tax
+    totalAssessedValue,
+    assessedYear,
+
+    // Sale / Transfer — used by ownership duration & transfer recency scoring
+    transferDate,
+    transferPrice,
+    ownershipStartDate: transferDate, // Best proxy from RentCast data
+
+    // RentCast doesn't provide these — scoring factors will gracefully skip:
+    //   LTVCurrentEstCombined, equityCurrentEstBal, modelValue,
+    //   forecloseCode, totalLienCount, totalLienBalance, ownerParcelCount
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
 
