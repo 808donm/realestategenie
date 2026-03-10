@@ -12,6 +12,7 @@ type Filters = {
   minEquity: number;
   minOwnership: number;
   zips: string;
+  propertyType: string;
 };
 
 type SavedSearch = {
@@ -271,6 +272,28 @@ export function SidebarPanel({
               <label htmlFor="absenteeOnly" className="text-xs text-gray-700">
                 Absentee owners only
               </label>
+            </div>
+
+            {/* Property Type */}
+            <div>
+              <label className="text-xs font-medium text-gray-700 mb-1.5 block">
+                Property Type
+              </label>
+              <select
+                value={filters.propertyType || ""}
+                onChange={(e) =>
+                  onFiltersChange({ ...filters, propertyType: e.target.value })
+                }
+                className="w-full text-xs border rounded px-2.5 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white"
+              >
+                <option value="">All Types</option>
+                <option value="Single Family">Single Family</option>
+                <option value="Condo">Condo</option>
+                <option value="Townhouse">Townhouse</option>
+                <option value="Land">Vacant Land</option>
+                <option value="Multi-Family">Multi-Family</option>
+                <option value="Manufactured">Manufactured</option>
+              </select>
             </div>
 
             {/* Map Layers */}

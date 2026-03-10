@@ -48,6 +48,7 @@ export async function GET(request: NextRequest) {
     const absenteeOnly = url.searchParams.get("absenteeOnly") === "true";
     const limit = Math.min(Number(url.searchParams.get("limit") || 100), 2000);
     const page = Number(url.searchParams.get("page") || 1);
+    const propertyType = url.searchParams.get("propertyType") || undefined;
 
     if (!lat && !lng && !zip && !zips) {
       return NextResponse.json(
@@ -67,6 +68,7 @@ export async function GET(request: NextRequest) {
       lng: lng ? Number(lng) : undefined,
       radius,
       zip: zipList.length > 0 ? zipList.sort().join(",") : zip || undefined,
+      propertyType,
     });
 
     const cached = await searchCacheGet(cacheKey);
@@ -91,12 +93,12 @@ export async function GET(request: NextRequest) {
 
     if (zipList.length > 0) {
       // ── Multi-zip search: parallel per-zip queries ──
-      parcels = await fetchByZipCodes(zipList, limit);
+      parcels = await fetchByZipCodes(zipList, limit, propertyType);
     } else if (lat && lng) {
-      parcels = await fetchByCoords(Number(lat), Number(lng), radius, limit, page);
+      parcels = await fetchByCoords(Number(lat), Number(lng), radius, limit, page, propertyType);
     } else if (zip) {
       // Single zip search
-      parcels = await fetchByZipCodes([zip], limit);
+      parcels = await fetchByZipCodes([zip], limit, propertyType);
     }
 
     // Enrich parcels with market trend data (one API call per unique zip)
@@ -345,6 +347,20 @@ export async function GET(request: NextRequest) {
   }
 }
 
+/** Map RentCast property type values to Realie equivalents */
+function toRealiePropertyType(rentcastType: string | undefined): string | undefined {
+  if (!rentcastType) return undefined;
+  const map: Record<string, string> = {
+    "Single Family": "SFR",
+    "Condo": "CONDO",
+    "Townhouse": "SFR", // Realie doesn't have a separate townhouse type
+    "Multi-Family": "APARTMENT",
+    "Manufactured": "MOBILE",
+    "Land": "LAND",
+  };
+  return map[rentcastType];
+}
+
 /**
  * Fetch properties by coordinates using RentCast (up to 500 results).
  * Realie enrichment happens later, only for top-scoring candidates.
@@ -354,7 +370,8 @@ async function fetchByCoords(
   lng: number,
   radius: number,
   limit: number,
-  page: number
+  page: number,
+  propertyType?: string
 ): Promise<RealieParcel[]> {
   const rentcast = await getRentcastClient();
 
@@ -367,6 +384,7 @@ async function fetchByCoords(
         radius,
         limit: Math.min(limit, 500),
         offset,
+        ...(propertyType ? { propertyType } : {}),
       });
       console.log(`[SellerMap] RentCast returned ${results.length} properties`);
       return results.map(mapRentcastToRealieParcel);
@@ -385,6 +403,7 @@ async function fetchByCoords(
         radius,
         limit: Math.min(limit, 100),
         page,
+        ...(propertyType ? { property_type: toRealiePropertyType(propertyType) } : {}),
       });
       console.log(`[SellerMap] Realie fallback returned ${result.properties.length} properties`);
       return result.properties;
@@ -403,7 +422,8 @@ async function fetchByCoords(
  */
 async function fetchByZipCodes(
   zipCodes: string[],
-  totalLimit: number
+  totalLimit: number,
+  propertyType?: string
 ): Promise<RealieParcel[]> {
   const rentcast = await getRentcastClient();
   const realie = await getRealieClient();
@@ -413,6 +433,7 @@ async function fetchByZipCodes(
   // Query each zip independently with full per-zip limits (not split across zips)
   const PER_ZIP_LIMIT_RENTCAST = 500;
   const PER_ZIP_LIMIT_REALIE = 100;
+  const realieType = toRealiePropertyType(propertyType);
 
   const results = await Promise.allSettled(
     zipCodes.slice(0, 20).map(async (zipCode) => {
@@ -422,6 +443,7 @@ async function fetchByZipCodes(
           const props = await rentcast.searchProperties({
             zipCode,
             limit: PER_ZIP_LIMIT_RENTCAST,
+            ...(propertyType ? { propertyType } : {}),
           });
           if (props.length > 0) {
             console.log(`[SellerMap] RentCast zip ${zipCode}: ${props.length} properties`);
@@ -443,6 +465,7 @@ async function fetchByZipCodes(
               zip: zipCode,
               limit: PER_ZIP_LIMIT_REALIE,
               page,
+              ...(realieType ? { property_type: realieType } : {}),
             });
             allPages.push(...result.properties);
             console.log(`[SellerMap] Realie zip ${zipCode} page ${page}: ${result.properties.length} properties`);

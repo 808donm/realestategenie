@@ -18,6 +18,7 @@ type SavedSearch = {
     minEquity: number;
     minOwnership: number;
     zips?: string;
+    propertyType?: string;
   };
 };
 
@@ -27,6 +28,7 @@ const DEFAULT_FILTERS = {
   minEquity: 0,
   minOwnership: 0,
   zips: "",
+  propertyType: "",
 };
 
 export function SellerMapClient() {
@@ -79,6 +81,11 @@ export function SellerMapClient() {
           params.set("zips", trimmedZips);
         }
 
+        // Property type filter
+        if (filters.propertyType) {
+          params.set("propertyType", filters.propertyType);
+        }
+
         const res = await fetch(`/api/seller-map?${params}`);
         const data = await res.json();
 
@@ -96,7 +103,7 @@ export function SellerMapClient() {
         setIsLoading(false);
       }
     },
-    [filters.minScore, filters.absenteeOnly, filters.zips]
+    [filters.minScore, filters.absenteeOnly, filters.zips, filters.propertyType]
   );
 
   // Initial load — fetch once on mount
@@ -147,7 +154,7 @@ export function SellerMapClient() {
         radius: search.radius_miles,
       };
       if (search.filters) {
-        setFilters({ ...search.filters, zips: search.filters.zips || "" });
+        setFilters({ ...search.filters, zips: search.filters.zips || "", propertyType: search.filters.propertyType || "" });
       }
       fetchProperties(boundsRef.current);
     },

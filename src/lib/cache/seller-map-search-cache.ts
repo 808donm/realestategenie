@@ -27,14 +27,16 @@ export function buildSearchCacheKey(params: {
   lng?: number;
   radius?: number;
   zip?: string;
+  propertyType?: string;
 }): string {
+  const typeSuffix = params.propertyType ? `:t=${params.propertyType}` : "";
   if (params.zip) {
-    return `seller-map:zip:${params.zip}`;
+    return `seller-map:zip:${params.zip}${typeSuffix}`;
   }
   const lat = params.lat != null ? roundCoord(params.lat) : 0;
   const lng = params.lng != null ? roundCoord(params.lng) : 0;
   const radius = params.radius ?? 10;
-  return `seller-map:geo:${lat},${lng},r${radius}`;
+  return `seller-map:geo:${lat},${lng},r${radius}${typeSuffix}`;
 }
 
 function hashKey(key: string): string {
