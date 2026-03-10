@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import PropertyDetailModal from "./property-detail-modal.client";
 import ProspectAIPanel, { type ProspectAIPanelHandle } from "./prospect-ai-panel.client";
 import { buildQPublicUrl } from "@/lib/hawaii-zip-county";
@@ -603,6 +603,12 @@ export default function Prospecting() {
 
   const [selectedProperty, setSelectedProperty] = useState<AttomProperty | null>(null);
   const [expandedInvestor, setExpandedInvestor] = useState<string | null>(null);
+
+  // Comp Genie — shared state across all property detail modals (runs once per search)
+  const [compGenieData, setCompGenieData] = useState<any>(null);
+  const [compGenieLoading, setCompGenieLoading] = useState(false);
+  const [compGenieError, setCompGenieError] = useState<string | null>(null);
+  const compGenieSearchKeyRef = useRef<string>("");
   const [debugInfo, setDebugInfo] = useState("");
   const [salesTrendData, setSalesTrendData] = useState<any>(null);
   const [salesTrendZip, setSalesTrendZip] = useState("");
@@ -1254,6 +1260,67 @@ export default function Prospecting() {
     }
   };
 
+  // Comp Genie: triggered once per search when user clicks Comps tab on any property
+  const handleRequestCompGenie = useCallback(() => {
+    if (compGenieLoading || compGenieData) return; // Already running or done
+
+    // Use current results as the neighbor pool
+    const pool = mode === "radius" ? radiusResults : results;
+    if (!pool.length || !selectedProperty) return;
+
+    const stateAbbrev = selectedProperty.address?.countrySubd?.toUpperCase() || "";
+    // Generate a search key to prevent re-running for the same search
+    const searchKey = `${zip}:${mode}:${propertyType}:${pool.length}`;
+    if (compGenieSearchKeyRef.current === searchKey) return;
+    compGenieSearchKeyRef.current = searchKey;
+
+    const toCompProp = (p: any) => ({
+      address: p.address?.oneLine || p.address?.line1 || "",
+      avmValue: p.avm?.amount?.value,
+      avmLow: p.avm?.amount?.low,
+      avmHigh: p.avm?.amount?.high,
+      assessedValue: p.assessment?.assessed?.assdTtlValue || p.assessment?.market?.mktTtlValue,
+      transferPrice: p.sale?.amount?.saleAmt,
+      transferDate: p.sale?.amount?.saleTransDate,
+      beds: p.building?.rooms?.beds,
+      baths: p.building?.rooms?.bathsTotal ?? p.building?.rooms?.bathsFull,
+      sqft: p.building?.size?.bldgSize || p.building?.size?.livingSize,
+      lotSize: p.lot?.lotSize1,
+      yearBuilt: p.summary?.yearBuilt,
+      propertyType: p.summary?.propType,
+      pricePerSqft: p.avm?.calculations?.pricePerSqft || p.sale?.calculation?.pricePerSizeUnit,
+      latitude: parseFloat(p.location?.latitude) || undefined,
+      longitude: parseFloat(p.location?.longitude) || undefined,
+    });
+
+    const subject = toCompProp(selectedProperty);
+    const neighbors = pool
+      .filter((n: any) => {
+        const nAddr = n.address?.oneLine || n.address?.line1 || "";
+        return nAddr !== subject.address;
+      })
+      .map(toCompProp);
+
+    setCompGenieLoading(true);
+    setCompGenieError(null);
+
+    fetch("/api/ai/comp-genie", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ subject, neighbors, state: stateAbbrev }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success && data.compGenie) {
+          setCompGenieData(data.compGenie);
+        } else {
+          setCompGenieError(data.error || "Comp Genie analysis failed.");
+        }
+      })
+      .catch((e) => setCompGenieError(e.message || "Failed to run Comp Genie."))
+      .finally(() => setCompGenieLoading(false));
+  }, [compGenieLoading, compGenieData, mode, radiusResults, results, selectedProperty, zip, propertyType]);
+
   const handleSearch = async (pageNum = 1) => {
     // For radius mode with address search, use the address handler
     if (mode === "radius" && farmSearchMode === "address") {
@@ -1278,6 +1345,10 @@ export default function Prospecting() {
 
     setIsLoading(true);
     setInvestorGroups([]);
+    // Reset Comp Genie for new search
+    setCompGenieData(null);
+    setCompGenieError(null);
+    compGenieSearchKeyRef.current = "";
 
     try {
       // All modes use multi-page scanning to accumulate more results.
@@ -2520,6 +2591,10 @@ export default function Prospecting() {
           searchContext={{ absenteeowner: mode === "absentee" ? "absentee" : undefined }}
           onClose={() => setSelectedProperty(null)}
           farmingContext={mode === "radius" ? { radiusMiles, propertyType } : undefined}
+          compGenieData={compGenieData}
+          compGenieLoading={compGenieLoading}
+          compGenieError={compGenieError}
+          onRequestCompGenie={handleRequestCompGenie}
         />
       )}
     </div>

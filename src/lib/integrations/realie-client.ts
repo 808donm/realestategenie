@@ -858,14 +858,35 @@ export class RealieClient {
     radius?: number;
     timeFrame?: number;
     maxResults?: number;
+    sqftMin?: number;
+    sqftMax?: number;
+    bedsMin?: number;
+    bedsMax?: number;
+    bathsMin?: number;
+    bathsMax?: number;
+    propertyType?: string; // "any" | "condo" | "house"
+    priceMin?: number;
+    priceMax?: number;
   }): Promise<RealieApiResponse> {
-    const raw = await this.request<any>("/premium/comparables/", {
+    const reqParams: Record<string, string | number | boolean | undefined> = {
       latitude: params.latitude,
       longitude: params.longitude,
       radius: params.radius ?? 1,
       timeFrame: params.timeFrame ?? 18,
-      maxResults: params.maxResults ?? 25,
-    });
+      maxResults: Math.min(params.maxResults ?? 25, 50),
+    };
+    // Optional filters
+    if (params.sqftMin != null) reqParams.sqftMin = params.sqftMin;
+    if (params.sqftMax != null) reqParams.sqftMax = params.sqftMax;
+    if (params.bedsMin != null) reqParams.bedsMin = params.bedsMin;
+    if (params.bedsMax != null) reqParams.bedsMax = params.bedsMax;
+    if (params.bathsMin != null) reqParams.bathsMin = params.bathsMin;
+    if (params.bathsMax != null) reqParams.bathsMax = params.bathsMax;
+    if (params.propertyType && params.propertyType !== "any") reqParams.propertyType = params.propertyType;
+    if (params.priceMin != null) reqParams.priceMin = params.priceMin;
+    if (params.priceMax != null) reqParams.priceMax = params.priceMax;
+
+    const raw = await this.request<any>("/premium/comparables/", reqParams);
     return this.normalizeResponse(raw);
   }
 
