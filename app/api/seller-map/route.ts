@@ -68,6 +68,78 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Enrich parcels with market trend data (one API call per unique zip)
+    const rentcastForMarket = await getRentcastClient();
+    if (rentcastForMarket) {
+      const uniqueZips = [...new Set(parcels.map((p) => p.zipCode).filter(Boolean))] as string[];
+      if (uniqueZips.length > 0) {
+        const marketResults = await Promise.allSettled(
+          uniqueZips.slice(0, 10).map((zipCode) =>
+            rentcastForMarket.getMarketData({ zipCode, dataType: "Sale" })
+              .then((data) => ({ zipCode, data }))
+          )
+        );
+
+        const marketByZip = new Map<string, {
+          medianPrice: number | undefined;
+          medianPricePerSqft: number | undefined;
+          avgDom: number | undefined;
+          totalListings: number | undefined;
+          newListings: number | undefined;
+          priceTrend: number | undefined;
+          medianRent: number | undefined;
+        }>();
+
+        for (const r of marketResults) {
+          if (r.status !== "fulfilled") continue;
+          const { zipCode: z, data } = r.value;
+          const sale = data.saleData;
+          if (!sale) continue;
+
+          // Calculate price trend from history (compare most recent 2 months)
+          let priceTrend: number | undefined;
+          if (sale.history) {
+            const months = Object.keys(sale.history).sort();
+            if (months.length >= 2) {
+              const current = sale.history[months[months.length - 1]];
+              const previous = sale.history[months[months.length - 2]];
+              if (current?.medianPrice && previous?.medianPrice) {
+                priceTrend = ((current.medianPrice - previous.medianPrice) / previous.medianPrice) * 100;
+              }
+            }
+          }
+
+          marketByZip.set(z, {
+            medianPrice: sale.medianPrice,
+            medianPricePerSqft: sale.medianPricePerSquareFoot,
+            avgDom: sale.averageDaysOnMarket,
+            totalListings: sale.totalListings,
+            newListings: sale.newListings,
+            priceTrend,
+            medianRent: data.rentalData?.medianRent,
+          });
+        }
+
+        if (marketByZip.size > 0) {
+          console.log(`[SellerMap] Market data fetched for ${marketByZip.size}/${uniqueZips.length} zips`);
+          parcels = parcels.map((p) => {
+            const market = p.zipCode ? marketByZip.get(p.zipCode) : undefined;
+            if (!market) return p;
+            return {
+              ...p,
+              marketMedianPrice: market.medianPrice,
+              marketMedianPricePerSqft: market.medianPricePerSqft,
+              marketAvgDaysOnMarket: market.avgDom,
+              marketTotalListings: market.totalListings,
+              marketNewListings: market.newListings,
+              marketPriceTrend: market.priceTrend,
+              marketMedianRent: market.medianRent,
+            };
+          });
+        }
+      }
+    }
+
     // Score each property and filter
     let scored = parcels
       .map((p) => scoreParcel(p))
@@ -138,12 +210,30 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Extract unique market context for the response
+    const marketContext = new Map<string, any>();
+    for (const p of parcels) {
+      if (p.zipCode && p.marketMedianPrice != null && !marketContext.has(p.zipCode)) {
+        marketContext.set(p.zipCode, {
+          zipCode: p.zipCode,
+          medianPrice: p.marketMedianPrice,
+          medianPricePerSqft: p.marketMedianPricePerSqft,
+          avgDaysOnMarket: p.marketAvgDaysOnMarket,
+          totalListings: p.marketTotalListings,
+          newListings: p.marketNewListings,
+          priceTrend: p.marketPriceTrend,
+          medianRent: p.marketMedianRent,
+        });
+      }
+    }
+
     return NextResponse.json({
       properties: scored.slice(0, limit),
       total: scored.length,
       center: lat && lng ? { lat: Number(lat), lng: Number(lng) } : undefined,
       radiusMiles: radius,
       page,
+      marketData: Object.fromEntries(marketContext),
     });
   } catch (error: any) {
     console.error("[SellerMap] Error:", error);

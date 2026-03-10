@@ -136,6 +136,40 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Fetch market data for the property's zip code
+    let marketData: Record<string, any> = {};
+    const propZip = property?.zipCode;
+    if (rentcast && propZip) {
+      try {
+        const mkt = await rentcast.getMarketData({ zipCode: propZip });
+        const sale = mkt.saleData;
+        if (sale) {
+          let priceTrend: number | undefined;
+          if (sale.history) {
+            const months = Object.keys(sale.history).sort();
+            if (months.length >= 2) {
+              const current = sale.history[months[months.length - 1]];
+              const previous = sale.history[months[months.length - 2]];
+              if (current?.medianPrice && previous?.medianPrice) {
+                priceTrend = ((current.medianPrice - previous.medianPrice) / previous.medianPrice) * 100;
+              }
+            }
+          }
+          marketData = {
+            marketMedianPrice: sale.medianPrice,
+            marketMedianPricePerSqft: sale.medianPricePerSquareFoot,
+            marketAvgDaysOnMarket: sale.averageDaysOnMarket,
+            marketTotalListings: sale.totalListings,
+            marketNewListings: sale.newListings,
+            marketPriceTrend: priceTrend,
+            marketMedianRent: mkt.rentalData?.medianRent,
+          };
+        }
+      } catch (err: any) {
+        console.warn("[PropertyDetail] Market data error:", err.message);
+      }
+    }
+
     // Enrich with Realie data (equity, liens, portfolio)
     let realieEnrichment: Record<string, any> = {};
     if (realie) {
@@ -217,6 +251,9 @@ export async function GET(request: NextRequest) {
 
       // Comps
       comps,
+
+      // Market context
+      ...marketData,
     };
 
     return NextResponse.json(detail);

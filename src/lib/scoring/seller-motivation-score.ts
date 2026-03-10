@@ -60,7 +60,8 @@ const WEIGHTS = {
   distress: 15,
   portfolio: 10,
   transferRecency: 10,
-  taxAnomaly: 10,
+  taxAnomaly: 5,
+  marketTrend: 5,
 } as const;
 
 // ── Scoring Functions ──────────────────────────────────────────────────────
@@ -309,12 +310,44 @@ function scoreTaxAnomaly(parcel: RealieParcel): SellerFactor {
       points = max;
       description = `Assessed at ${Math.round(ratio * 100)}% of market value — significant gap`;
     } else if (ratio < 0.6) {
-      points = 6;
+      points = 3;
       description = `Assessed at ${Math.round(ratio * 100)}% of market value`;
     }
   }
 
   return { name: "Tax Assessment Gap", points, maxPoints: max, description };
+}
+
+function scoreMarketTrend(parcel: RealieParcel): SellerFactor {
+  const max = WEIGHTS.marketTrend;
+  let points = 0;
+  let description = "No market data available";
+
+  const trend = parcel.marketPriceTrend;
+  const dom = parcel.marketAvgDaysOnMarket;
+
+  if (trend != null) {
+    if (trend < -5) {
+      // Declining market — sellers may want to exit before further drops
+      points = max;
+      description = `Declining market (${trend.toFixed(1)}% price trend) — urgency to sell`;
+    } else if (trend < 0) {
+      points = 3;
+      description = `Softening market (${trend.toFixed(1)}% price trend)`;
+    } else if (dom != null && dom > 60) {
+      // Rising prices but high DOM means stale listings — sellers may be motivated
+      points = 2;
+      description = `High days on market (${Math.round(dom)} avg) despite rising prices`;
+    } else {
+      points = 0;
+      description = `Appreciating market (+${trend.toFixed(1)}%) — sellers less motivated`;
+    }
+  } else if (dom != null && dom > 90) {
+    points = 3;
+    description = `Very high avg days on market (${Math.round(dom)})`;
+  }
+
+  return { name: "Market Trend", points, maxPoints: max, description };
 }
 
 // ── Main Scoring Function ──────────────────────────────────────────────────
@@ -328,6 +361,7 @@ export function calculateSellerMotivationScore(parcel: RealieParcel): SellerScor
     scorePortfolio(parcel),
     scoreTransferRecency(parcel),
     scoreTaxAnomaly(parcel),
+    scoreMarketTrend(parcel),
   ];
 
   const score = Math.min(factors.reduce((sum, f) => sum + f.points, 0), 100);

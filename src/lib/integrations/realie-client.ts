@@ -367,6 +367,16 @@ export interface RealieParcel {
     documentType?: string;
   }>;
 
+  // Market context (from RentCast /markets endpoint, attached per zip)
+  marketMedianPrice?: number;
+  marketMedianPricePerSqft?: number;
+  marketAvgDaysOnMarket?: number;
+  marketTotalListings?: number;
+  marketNewListings?: number;
+  /** Price trend: positive = appreciating, negative = declining (percentage change) */
+  marketPriceTrend?: number;
+  marketMedianRent?: number;
+
   // Composite ID fields
   state_parcelId?: string;
   state_parcelIdSTD?: string;

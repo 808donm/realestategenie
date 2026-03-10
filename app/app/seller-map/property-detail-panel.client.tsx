@@ -56,6 +56,13 @@ type PropertyDetail = {
   avmLow?: number;
   avmHigh?: number;
   totalMarketValue?: number;
+  marketMedianPrice?: number;
+  marketMedianPricePerSqft?: number;
+  marketAvgDaysOnMarket?: number;
+  marketTotalListings?: number;
+  marketNewListings?: number;
+  marketPriceTrend?: number;
+  marketMedianRent?: number;
   forecloseCode?: string;
   totalLienCount?: number;
   totalLienBalance?: number;
@@ -422,6 +429,28 @@ function FinancialTab({
               </div>
             ))}
           </div>
+        </Section>
+      )}
+
+      {/* Local Market Context */}
+      {detail?.marketMedianPrice != null && (
+        <Section title="Local Market (Zip)">
+          <InfoRow label="Median Price" value={`$${(detail.marketMedianPrice / 1000).toFixed(0)}K`} />
+          <InfoRow label="$/sqft" value={detail.marketMedianPricePerSqft ? `$${detail.marketMedianPricePerSqft.toFixed(0)}` : undefined} />
+          <InfoRow label="Avg Days on Market" value={detail.marketAvgDaysOnMarket != null ? `${Math.round(detail.marketAvgDaysOnMarket)}` : undefined} />
+          <InfoRow label="Active Listings" value={detail.marketTotalListings} />
+          <InfoRow label="New Listings" value={detail.marketNewListings} />
+          {detail.marketPriceTrend != null && (
+            <InfoRow
+              label="Price Trend"
+              value={
+                <span className={detail.marketPriceTrend >= 0 ? "text-green-600" : "text-red-600"}>
+                  {detail.marketPriceTrend >= 0 ? "+" : ""}{detail.marketPriceTrend.toFixed(1)}%
+                </span>
+              }
+            />
+          )}
+          <InfoRow label="Median Rent" value={detail.marketMedianRent ? `$${detail.marketMedianRent.toLocaleString()}/mo` : undefined} />
         </Section>
       )}
     </div>
