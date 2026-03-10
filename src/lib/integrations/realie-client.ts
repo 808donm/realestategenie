@@ -274,6 +274,7 @@ export interface RealieParcel {
   fireplace?: boolean | null;
   fireplaceCount?: number | null;
   garage?: boolean;
+  ownerOccupied?: boolean;
 
   // Assessment / Tax
   totalAssessedValue?: number;

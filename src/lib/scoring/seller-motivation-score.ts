@@ -154,6 +154,11 @@ function scoreAbsentee(parcel: RealieParcel): SellerFactor {
   const ownerAddr = parcel.ownerAddressLine1 || parcel.ownerAddressFull;
   const propAddr = parcel.address;
 
+  const outOfState =
+    parcel.ownerState &&
+    parcel.state &&
+    parcel.ownerState.toUpperCase() !== parcel.state.toUpperCase();
+
   if (ownerAddr && propAddr) {
     const normalize = (s: string) =>
       s
@@ -165,10 +170,6 @@ function scoreAbsentee(parcel: RealieParcel): SellerFactor {
         .trim();
 
     const isPoBox = /\bp\.?\s*o\.?\s*box\b/i.test(ownerAddr);
-    const outOfState =
-      parcel.ownerState &&
-      parcel.state &&
-      parcel.ownerState.toUpperCase() !== parcel.state.toUpperCase();
 
     if (isPoBox) {
       // P.O. Box in the same state/area is not a reliable absentee signal —
@@ -189,6 +190,15 @@ function scoreAbsentee(parcel: RealieParcel): SellerFactor {
           description = "Absentee owner — may be investor or inherited property";
         }
       }
+    }
+  } else if (parcel.ownerOccupied === false) {
+    // Direct signal from RentCast — no address to compare, but API confirms non-owner-occupied
+    if (outOfState) {
+      points = max;
+      description = `Out-of-state absentee owner (${parcel.ownerState})`;
+    } else {
+      points = 12;
+      description = "Non-owner-occupied property";
     }
   }
 
@@ -385,6 +395,8 @@ export function scoreParcel(parcel: RealieParcel): ScoredProperty | null {
         s.toLowerCase().replace(/\bapt\b.*$/i, "").replace(/\b0+(\d)/g, "$1").replace(/[^a-z0-9]/g, "");
       absentee = normalize(ownerAddr) !== normalize(propAddr);
     }
+  } else if (parcel.ownerOccupied === false) {
+    absentee = true;
   }
 
   // Calculate ownership years

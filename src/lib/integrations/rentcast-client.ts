@@ -702,8 +702,15 @@ export function mapRentcastToRealieParcel(rc: RentcastProperty): RealieParcel {
     transferPrice,
     ownershipStartDate: transferDate, // Best proxy from RentCast data
 
+    // Use lastSalePrice as a rough market value proxy when no AVM is available.
+    // This enables tax anomaly scoring (assessed vs market gap).
+    modelValue: rc.lastSalePrice ?? undefined,
+
+    // RentCast's ownerOccupied boolean — direct absentee signal
+    ownerOccupied: rc.ownerOccupied,
+
     // RentCast doesn't provide these — scoring factors will gracefully skip:
-    //   LTVCurrentEstCombined, equityCurrentEstBal, modelValue,
+    //   LTVCurrentEstCombined, equityCurrentEstBal,
     //   forecloseCode, totalLienCount, totalLienBalance, ownerParcelCount
   };
 }
