@@ -67,12 +67,15 @@ export function SidebarPanel({
   const [tab, setTab] = useState<"results" | "filters" | "saved">("results");
   const [saveSearchName, setSaveSearchName] = useState("");
 
+  // Only show very-likely and likely sellers
+  const qualifiedProperties = properties.filter(
+    (p) => p.level === "very-likely" || p.level === "likely"
+  );
+
   // Score distribution summary
   const dist = {
-    veryLikely: properties.filter((p) => p.score >= 70).length,
-    likely: properties.filter((p) => p.score >= 50 && p.score < 70).length,
-    possible: properties.filter((p) => p.score >= 30 && p.score < 50).length,
-    unlikely: properties.filter((p) => p.score < 30).length,
+    veryLikely: qualifiedProperties.filter((p) => p.level === "very-likely").length,
+    likely: qualifiedProperties.filter((p) => p.level === "likely").length,
   };
 
   return (
@@ -82,39 +85,25 @@ export function SidebarPanel({
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-semibold">Seller Opportunities</h2>
           <span className="text-xs text-gray-500">
-            {total} properties
+            {qualifiedProperties.length} sellers
           </span>
         </div>
 
         {/* Score Distribution Bar */}
-        {properties.length > 0 && (
+        {qualifiedProperties.length > 0 && (
           <div className="flex gap-0.5 h-2 rounded-full overflow-hidden mb-2">
             {dist.veryLikely > 0 && (
               <div
                 className="bg-red-500"
-                style={{ width: `${(dist.veryLikely / properties.length) * 100}%` }}
+                style={{ width: `${(dist.veryLikely / qualifiedProperties.length) * 100}%` }}
                 title={`Very Likely: ${dist.veryLikely}`}
               />
             )}
             {dist.likely > 0 && (
               <div
                 className="bg-orange-500"
-                style={{ width: `${(dist.likely / properties.length) * 100}%` }}
+                style={{ width: `${(dist.likely / qualifiedProperties.length) * 100}%` }}
                 title={`Likely: ${dist.likely}`}
-              />
-            )}
-            {dist.possible > 0 && (
-              <div
-                className="bg-yellow-500"
-                style={{ width: `${(dist.possible / properties.length) * 100}%` }}
-                title={`Possible: ${dist.possible}`}
-              />
-            )}
-            {dist.unlikely > 0 && (
-              <div
-                className="bg-blue-500"
-                style={{ width: `${(dist.unlikely / properties.length) * 100}%` }}
-                title={`Unlikely: ${dist.unlikely}`}
               />
             )}
           </div>
@@ -126,9 +115,6 @@ export function SidebarPanel({
           </span>
           <span className="flex items-center gap-1">
             <span className="w-2 h-2 rounded-full bg-orange-500" /> Likely ({dist.likely})
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-yellow-500" /> Possible ({dist.possible})
           </span>
         </div>
       </div>
@@ -160,16 +146,16 @@ export function SidebarPanel({
         {/* Results Tab */}
         {tab === "results" && (
           <div className="divide-y">
-            {isLoading && properties.length === 0 ? (
+            {isLoading && qualifiedProperties.length === 0 ? (
               <div className="p-8 text-center text-sm text-gray-500">
                 Searching properties...
               </div>
-            ) : properties.length === 0 ? (
+            ) : qualifiedProperties.length === 0 ? (
               <div className="p-8 text-center text-sm text-gray-500">
-                No properties found. Try panning the map or adjusting filters.
+                No likely sellers found. Try panning the map or adjusting filters.
               </div>
             ) : (
-              properties.map((p) => (
+              qualifiedProperties.map((p) => (
                 <div
                   key={p.id}
                   className={`p-3 cursor-pointer transition-colors hover:bg-blue-50 ${
