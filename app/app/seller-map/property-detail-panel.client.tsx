@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { ScoredProperty } from "@/lib/scoring/seller-motivation-score";
+import type { ScoredProperty, SellerFactor } from "@/lib/scoring/seller-motivation-score";
 import { getSellerColor, getSellerLabel } from "@/lib/scoring/seller-motivation-score";
 import { fmtPrice } from "@/lib/utils";
 
@@ -235,6 +235,62 @@ function getFactorByName(factors: ScoredProperty["factors"], name: string) {
   return factors.find((f) => f.name === name) || null;
 }
 
+/**
+ * Re-score equity from detail data when the original factor scored 0
+ * (the bulk search may not include LTV/equity fields).
+ */
+function reScoreEquityFromDetail(
+  originalFactor: SellerFactor | null,
+  detail: PropertyDetail | null,
+  property: ScoredProperty,
+): SellerFactor | null {
+  if (!originalFactor) return null;
+  // If already scored, keep original
+  if (originalFactor.points > 0) return originalFactor;
+
+  const max = originalFactor.maxPoints;
+  const ltv = detail?.ltv ?? property.ltv;
+  const equity = detail?.equity ?? property.equity;
+  const value = detail?.modelValue || property.estimatedValue;
+
+  let points = 0;
+  let description = originalFactor.description;
+
+  if (ltv != null) {
+    if (ltv < 30) {
+      points = max;
+      description = `Very high equity (LTV ${ltv}%) — strong position to sell`;
+    } else if (ltv < 50) {
+      points = 15;
+      description = `High equity (LTV ${ltv}%) — favorable to sell`;
+    } else if (ltv < 70) {
+      points = 8;
+      description = `Moderate equity (LTV ${ltv}%)`;
+    } else {
+      points = 3;
+      description = `Low equity (LTV ${ltv}%)`;
+    }
+  } else if (equity != null && value) {
+    const equityPct = Math.round((equity / value) * 100);
+    if (equityPct > 70) {
+      points = max;
+      description = `Very high equity (${equityPct}% of value)`;
+    } else if (equityPct > 50) {
+      points = 15;
+      description = `High equity (${equityPct}% of value)`;
+    } else if (equityPct > 30) {
+      points = 8;
+      description = `Moderate equity (${equityPct}% of value)`;
+    } else {
+      points = 3;
+      description = `Low equity (${equityPct}% of value)`;
+    }
+  }
+
+  if (points === 0) return originalFactor;
+  return { ...originalFactor, points, description };
+}
+
 const INSIGHT_CARDS: {
   name: string;
   icon: string;
@@ -401,8 +457,13 @@ function OverviewTab({
       {/* Key Score Insights */}
       <div className="grid grid-cols-2 gap-2">
         {INSIGHT_CARDS.map((card) => {
-          const factor = getFactorByName(property.factors, card.name);
+          let factor = getFactorByName(property.factors, card.name);
           if (!factor) return null;
+          // Re-score equity from detail data when bulk search didn't include it
+          if (card.name === "High Equity") {
+            factor = reScoreEquityFromDetail(factor, detail, property);
+            if (!factor) return null;
+          }
           const pct = factor.maxPoints > 0 ? (factor.points / factor.maxPoints) * 100 : 0;
           return (
             <div
