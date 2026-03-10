@@ -334,7 +334,6 @@ const ProspectAIPanel = forwardRef<ProspectAIPanelHandle, ProspectAIPanelProps>(
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 18 }}>{"\u2728"}</span>
           <span style={{ color: "#fff", fontWeight: 700, fontSize: 15 }}>AI Prospecting Copilot</span>
-          <span style={{ color: "#c7d2fe", fontSize: 12 }}>powered by Claude Opus</span>
         </div>
         <div style={{ display: "flex", gap: 6 }}>
           {!analysis && (

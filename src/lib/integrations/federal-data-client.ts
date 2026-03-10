@@ -427,6 +427,69 @@ export class FederalDataClient {
   }
 
   /**
+   * Normalize a single HUD FMR record from HUD's field names to our interface.
+   * HUD returns: "Efficiency", "One-Bedroom", etc. (may be strings like "758.0")
+   * We need: efficiency, oneBedroom, etc. (as numbers)
+   */
+  private normalizeHUDFMRRecord(raw: any): HUDFairMarketRent {
+    return {
+      countyName: raw.county_name || raw.countyName || "",
+      metroName: raw.metro_name || raw.metroName || "",
+      areaName: raw.area_name || raw.areaName || "",
+      smallAreaStatus: raw.smallarea_status || raw.smallAreaStatus || "",
+      year: Number(raw.year) || 0,
+      efficiency: parseFloat(raw["Efficiency"] ?? raw.efficiency ?? 0) || 0,
+      oneBedroom: parseFloat(raw["One-Bedroom"] ?? raw.oneBedroom ?? 0) || 0,
+      twoBedroom: parseFloat(raw["Two-Bedroom"] ?? raw.twoBedroom ?? 0) || 0,
+      threeBedroom: parseFloat(raw["Three-Bedroom"] ?? raw.threeBedroom ?? 0) || 0,
+      fourBedroom: parseFloat(raw["Four-Bedroom"] ?? raw.fourBedroom ?? 0) || 0,
+      zipCode: raw.zip_code || raw.zipCode || undefined,
+    };
+  }
+
+  /**
+   * Normalize the full HUD FMR API response.
+   * - Non-SAFMR: basicdata is a single object
+   * - SAFMR metros: basicdata is an array with "MSA level" + per-ZIP entries
+   */
+  private normalizeHUDFMRResponse(raw: any): {
+    basicdata?: HUDFairMarketRent;
+    smallAreaData?: HUDFairMarketRent[];
+  } {
+    const bd = raw?.basicdata;
+    const topLevel = {
+      county_name: raw?.county_name,
+      metro_name: raw?.metro_name,
+      area_name: raw?.area_name,
+      smallarea_status: raw?.smallarea_status,
+      year: raw?.year,
+    };
+
+    if (Array.isArray(bd)) {
+      // SAFMR metro: basicdata is an array of ZIP-level records
+      const msaEntry = bd.find((e: any) => e.zip_code === "MSA level");
+      const zipEntries = bd.filter((e: any) => e.zip_code !== "MSA level");
+      return {
+        basicdata: msaEntry
+          ? this.normalizeHUDFMRRecord({ ...topLevel, ...msaEntry })
+          : undefined,
+        smallAreaData: zipEntries.map((e: any) =>
+          this.normalizeHUDFMRRecord({ ...topLevel, ...e })
+        ),
+      };
+    }
+
+    if (bd && typeof bd === "object") {
+      // Standard county/town: basicdata is a single object
+      return {
+        basicdata: this.normalizeHUDFMRRecord({ ...topLevel, ...bd }),
+      };
+    }
+
+    return {};
+  }
+
+  /**
    * Get Fair Market Rents for a location.
    * The HUD FMR API requires a county FIPS entity ID (5-digit FIPS + "99999"),
    * NOT a raw ZIP code. If stateFips/countyFips are provided they are used
@@ -485,7 +548,7 @@ export class FederalDataClient {
           continue;
         }
 
-        return { success: true, data: data.data };
+        return { success: true, data: this.normalizeHUDFMRResponse(data.data) };
       }
 
       // If year-parameterized calls failed, try without year as final fallback
@@ -504,7 +567,7 @@ export class FederalDataClient {
         return { success: false, error: data.error.message || JSON.stringify(data.error) };
       }
 
-      return { success: true, data: data.data };
+      return { success: true, data: this.normalizeHUDFMRResponse(data.data) };
     } catch (error: any) {
       return { success: false, error: `HUD API request failed: ${error.message}` };
     }
@@ -646,7 +709,7 @@ export class FederalDataClient {
    * API: https://www.fema.gov/about/openfema/api
    * Free, no key needed
    */
-  async getFloodData(zipCode: string): Promise<FEMAResult> {
+  async getFloodData(zipCode: string, stateAbbrev?: string): Promise<FEMAResult> {
     try {
       // Get NFIP policies summary for the ZIP
       const policyUrl = `https://www.fema.gov/api/open/v2/FimaNfipPolicies?$filter=reportedZipCode eq '${zipCode}'&$select=reportedZipCode,countyCode,policyCount,totalInsurancePremiumOfThePolicy,totalBuildingInsuranceCoverage,floodZone&$top=5&$orderby=policyEffectiveDate desc`;
@@ -680,8 +743,9 @@ export class FederalDataClient {
         }
       }
 
-      // Get recent disaster declarations for the area
-      const disasterUrl = `https://www.fema.gov/api/open/v2/DisasterDeclarationsSummaries?$filter=designatedArea eq '${zipCode}' or designatedArea eq 'Statewide'&$top=10&$orderby=declarationDate desc`;
+      // Get recent disaster declarations for the area, filtered by state
+      const stateFilter = stateAbbrev ? ` and state eq '${stateAbbrev}'` : "";
+      const disasterUrl = `https://www.fema.gov/api/open/v2/DisasterDeclarationsSummaries?$filter=(designatedArea eq '${zipCode}' or designatedArea eq 'Statewide')${stateFilter}&$top=10&$orderby=declarationDate desc`;
       const disasterResponse = await fetch(disasterUrl);
       let disasters: FEMADisaster[] = [];
 
@@ -1255,7 +1319,7 @@ export class FederalDataClient {
 
     // FEMA Flood Data
     tasks.push(
-      this.getFloodData(zipCode)
+      this.getFloodData(zipCode, state)
         .then((r) => {
           if (r.success) {
             if (r.floodData) supplement.floodRisk = r.floodData;

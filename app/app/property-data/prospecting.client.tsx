@@ -2238,7 +2238,7 @@ export default function Prospecting() {
                   {"\u2728"} AI Prospecting Engine
                 </div>
                 <p style={{ margin: "0 0 8px" }}>
-                  Powered by <strong>Claude Opus</strong>, the AI engine analyzes your search results to:
+                  The AI engine analyzes your search results to:
                 </p>
                 <ul style={{ margin: "0 0 8px", paddingLeft: 18 }}>
                   <li><strong>Score &amp; rank</strong> each prospect 0–100 based on seller motivation signals</li>
