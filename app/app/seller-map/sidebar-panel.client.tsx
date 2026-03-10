@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { ScoredProperty } from "@/lib/scoring/seller-motivation-score";
 import { getSellerColor, getSellerLabel } from "@/lib/scoring/seller-motivation-score";
+import { fmtPrice } from "@/lib/utils";
 import { PropertyCard } from "./property-card.client";
 
 type Filters = {
@@ -388,7 +389,7 @@ function PropertyListItem({ property: p }: { property: ScoredProperty }) {
         <p className="text-xs font-medium text-gray-800 truncate">{p.address}</p>
         <div className="flex gap-2 text-[10px] text-gray-500 mt-0.5">
           {p.estimatedValue && (
-            <span>${(p.estimatedValue / 1000).toFixed(0)}K</span>
+            <span>{fmtPrice(p.estimatedValue)}</span>
           )}
           {p.ownershipYears != null && <span>{p.ownershipYears}yr owned</span>}
           {p.absentee && (

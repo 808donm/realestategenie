@@ -2,6 +2,7 @@
 
 import type { ScoredProperty, SellerFactor } from "@/lib/scoring/seller-motivation-score";
 import { getSellerColor, getSellerLabel } from "@/lib/scoring/seller-motivation-score";
+import { fmtPrice } from "@/lib/utils";
 
 type Props = {
   property: ScoredProperty;
@@ -33,13 +34,13 @@ export function PropertyCard({ property, compact, onAddToCRM, onGenerateReport }
         {p.estimatedValue && (
           <div>
             <span className="text-gray-400">Value:</span>{" "}
-            <span className="font-medium">${(p.estimatedValue / 1000).toFixed(0)}K</span>
+            <span className="font-medium">{fmtPrice(p.estimatedValue)}</span>
           </div>
         )}
         {p.equity != null && (
           <div>
             <span className="text-gray-400">Equity:</span>{" "}
-            <span className="font-medium">${(p.equity / 1000).toFixed(0)}K</span>
+            <span className="font-medium">{fmtPrice(p.equity)}</span>
           </div>
         )}
         {p.ltv != null && (

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import type { ScoredProperty } from "@/lib/scoring/seller-motivation-score";
 import { getSellerColor, getSellerLabel } from "@/lib/scoring/seller-motivation-score";
+import { fmtPrice } from "@/lib/utils";
 
 type DetailTab = "overview" | "building" | "financial" | "comps" | "ownership";
 
@@ -183,7 +184,7 @@ export function PropertyDetailPanel({ property, onClose }: Props) {
           {property.yearBuilt && <span>Built {property.yearBuilt}</span>}
           {property.estimatedValue && (
             <span className="font-medium">
-              ${(property.estimatedValue / 1000).toFixed(0)}K
+              {fmtPrice(property.estimatedValue)}
             </span>
           )}
         </div>
@@ -557,11 +558,11 @@ function FinancialTab({
         {detail?.avmValue && (
           <InfoRow
             label="RentCast AVM"
-            value={`$${(detail.avmValue / 1000).toFixed(0)}K${detail.avmLow && detail.avmHigh ? ` ($${(detail.avmLow / 1000).toFixed(0)}K–$${(detail.avmHigh / 1000).toFixed(0)}K)` : ""}`}
+            value={`${fmtPrice(detail.avmValue)}${detail.avmLow && detail.avmHigh ? ` (${fmtPrice(detail.avmLow)}–${fmtPrice(detail.avmHigh)})` : ""}`}
           />
         )}
-        <InfoRow label="Estimated Value" value={detail?.modelValue || property.estimatedValue ? `$${((detail?.modelValue || property.estimatedValue || 0) / 1000).toFixed(0)}K` : undefined} />
-        <InfoRow label="Equity" value={detail?.equity != null || property.equity != null ? `$${(((detail?.equity ?? property.equity) || 0) / 1000).toFixed(0)}K` : undefined} />
+        <InfoRow label="Estimated Value" value={detail?.modelValue || property.estimatedValue ? fmtPrice(detail?.modelValue || property.estimatedValue || 0) : undefined} />
+        <InfoRow label="Equity" value={detail?.equity != null || property.equity != null ? fmtPrice((detail?.equity ?? property.equity) || 0) : undefined} />
         <InfoRow label="LTV" value={detail?.ltv != null || property.ltv != null ? `${detail?.ltv ?? property.ltv}%` : undefined} />
         <InfoRow label="HOA" value={detail?.hoa ? `$${detail.hoa.fee}/mo` : undefined} />
       </Section>
@@ -620,7 +621,7 @@ function FinancialTab({
       {/* Local Market Context */}
       {detail?.marketMedianPrice != null && (
         <Section title="Local Market (Zip)">
-          <InfoRow label="Median Price" value={`$${(detail.marketMedianPrice / 1000).toFixed(0)}K`} />
+          <InfoRow label="Median Price" value={fmtPrice(detail.marketMedianPrice)} />
           <InfoRow label="$/sqft" value={detail.marketMedianPricePerSqft ? `$${detail.marketMedianPricePerSqft.toFixed(0)}` : undefined} />
           <InfoRow label="Avg Days on Market" value={detail.marketAvgDaysOnMarket != null ? `${Math.round(detail.marketAvgDaysOnMarket)}` : undefined} />
           <InfoRow label="Active Listings" value={detail.marketTotalListings} />
