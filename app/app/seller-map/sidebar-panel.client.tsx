@@ -19,7 +19,13 @@ type SavedSearch = {
   center_lat: number;
   center_lng: number;
   radius_miles: number;
-  filters: Filters;
+  filters: {
+    minScore: number;
+    absenteeOnly: boolean;
+    minEquity: number;
+    minOwnership: number;
+    zips?: string;
+  };
 };
 
 type Props = {
