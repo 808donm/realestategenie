@@ -17,6 +17,7 @@ type SavedSearch = {
     absenteeOnly: boolean;
     minEquity: number;
     minOwnership: number;
+    zips?: string;
   };
 };
 
@@ -25,6 +26,7 @@ const DEFAULT_FILTERS = {
   absenteeOnly: false,
   minEquity: 0,
   minOwnership: 0,
+  zips: "",
 };
 
 export function SellerMapClient() {
@@ -68,6 +70,12 @@ export function SellerMapClient() {
           limit: "500",
         });
 
+        // If user specified zip codes, add them to query (overrides lat/lng search)
+        const trimmedZips = filters.zips?.trim();
+        if (trimmedZips) {
+          params.set("zips", trimmedZips);
+        }
+
         const res = await fetch(`/api/seller-map?${params}`);
         const data = await res.json();
 
@@ -85,7 +93,7 @@ export function SellerMapClient() {
         setIsLoading(false);
       }
     },
-    [filters.minScore, filters.absenteeOnly]
+    [filters.minScore, filters.absenteeOnly, filters.zips]
   );
 
   // Initial load — fetch once on mount

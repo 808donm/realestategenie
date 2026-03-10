@@ -10,6 +10,7 @@ type Filters = {
   absenteeOnly: boolean;
   minEquity: number;
   minOwnership: number;
+  zips: string;
 };
 
 type SavedSearch = {
@@ -194,6 +195,25 @@ export function SidebarPanel({
         {/* Filters Tab */}
         {tab === "filters" && (
           <div className="p-4 space-y-5">
+            {/* Zip Codes */}
+            <div>
+              <label className="text-xs font-medium text-gray-700 mb-1.5 block">
+                Search Zip Codes
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. 96825, 96826, 96813"
+                value={filters.zips || ""}
+                onChange={(e) =>
+                  onFiltersChange({ ...filters, zips: e.target.value })
+                }
+                className="w-full text-xs border rounded px-2.5 py-2"
+              />
+              <p className="text-[10px] text-gray-400 mt-1">
+                Comma-separated. Leave empty to search by map area.
+              </p>
+            </div>
+
             {/* Min Score */}
             <div>
               <label className="text-xs font-medium text-gray-700 mb-1.5 block">

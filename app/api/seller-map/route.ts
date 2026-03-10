@@ -42,25 +42,31 @@ export async function GET(request: NextRequest) {
     const lat = url.searchParams.get("lat");
     const lng = url.searchParams.get("lng");
     const zip = url.searchParams.get("zip");
+    const zips = url.searchParams.get("zips"); // comma-separated zip codes
     const radius = Math.min(Number(url.searchParams.get("radius") || 10), 50);
     const minScore = Number(url.searchParams.get("minScore") || 0);
     const absenteeOnly = url.searchParams.get("absenteeOnly") === "true";
     const limit = Math.min(Number(url.searchParams.get("limit") || 100), 500);
     const page = Number(url.searchParams.get("page") || 1);
 
-    if (!lat && !lng && !zip) {
+    if (!lat && !lng && !zip && !zips) {
       return NextResponse.json(
-        { error: "Either lat+lng or zip is required" },
+        { error: "Either lat+lng, zip, or zips is required" },
         { status: 400 }
       );
     }
+
+    // Parse multi-zip parameter
+    const zipList = zips
+      ? zips.split(",").map((z) => z.trim()).filter((z) => /^\d{5}$/.test(z))
+      : [];
 
     // ── Check global search cache (7-day TTL, shared across all users) ──
     const cacheKey = buildSearchCacheKey({
       lat: lat ? Number(lat) : undefined,
       lng: lng ? Number(lng) : undefined,
       radius,
-      zip: zip || undefined,
+      zip: zipList.length > 0 ? zipList.sort().join(",") : zip || undefined,
     });
 
     const cached = await searchCacheGet(cacheKey);
@@ -83,19 +89,14 @@ export async function GET(request: NextRequest) {
 
     let parcels: RealieParcel[] = [];
 
-    if (lat && lng) {
+    if (zipList.length > 0) {
+      // ── Multi-zip search: parallel per-zip queries ──
+      parcels = await fetchByZipCodes(zipList, limit);
+    } else if (lat && lng) {
       parcels = await fetchByCoords(Number(lat), Number(lng), radius, limit, page);
     } else if (zip) {
-      // Zip-code searches use Realie (which supports zip+state search)
-      const realie = await getRealieClient();
-      if (realie) {
-        const result = await realie.searchByZip({
-          zip,
-          limit: Math.min(limit, 100),
-          page,
-        });
-        parcels = result.properties;
-      }
+      // Single zip search
+      parcels = await fetchByZipCodes([zip], limit);
     }
 
     // Enrich parcels with market trend data (one API call per unique zip)
@@ -393,6 +394,63 @@ async function fetchByCoords(
   }
 
   return [];
+}
+
+/**
+ * Fetch properties across multiple zip codes in parallel.
+ * Uses RentCast per-zip queries, distributing the limit evenly,
+ * then deduplicates by address.
+ */
+async function fetchByZipCodes(
+  zipCodes: string[],
+  totalLimit: number
+): Promise<RealieParcel[]> {
+  const rentcast = await getRentcastClient();
+  if (!rentcast) {
+    // Fallback to Realie for zip searches
+    const realie = await getRealieClient();
+    if (!realie) return [];
+
+    const results = await Promise.allSettled(
+      zipCodes.slice(0, 20).map((zip) =>
+        realie.searchByZip({ zip, limit: Math.min(Math.ceil(totalLimit / zipCodes.length), 100) })
+          .then((r) => r.properties)
+      )
+    );
+    return deduplicateParcels(
+      results.flatMap((r) => (r.status === "fulfilled" ? r.value : []))
+    );
+  }
+
+  // RentCast per-zip parallel search
+  const perZipLimit = Math.min(Math.ceil(totalLimit / zipCodes.length), 500);
+  const results = await Promise.allSettled(
+    zipCodes.slice(0, 20).map((zipCode) =>
+      rentcast.searchProperties({ zipCode, limit: perZipLimit })
+        .then((props) => {
+          console.log(`[SellerMap] RentCast zip ${zipCode}: ${props.length} properties`);
+          return props.map(mapRentcastToRealieParcel);
+        })
+    )
+  );
+
+  const all = results.flatMap((r) => (r.status === "fulfilled" ? r.value : []));
+  console.log(`[SellerMap] Multi-zip total: ${all.length} properties across ${zipCodes.length} zips`);
+  return deduplicateParcels(all);
+}
+
+/**
+ * Deduplicate parcels by normalized address to avoid showing the same
+ * property twice when it appears in overlapping zip/radius results.
+ */
+function deduplicateParcels(parcels: RealieParcel[]): RealieParcel[] {
+  const seen = new Set<string>();
+  return parcels.filter((p) => {
+    const key = p.address ? normalizeAddress(p.address) : `${p.latitude}-${p.longitude}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 /**
