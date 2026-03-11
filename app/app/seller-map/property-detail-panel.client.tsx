@@ -517,6 +517,13 @@ function OverviewTab({
       <Section title="All Motivation Factors">
         <div className="space-y-2">
           {property.factors
+            .map((f) => {
+              // Re-score equity from detail data when bulk search didn't include it
+              if (f.name === "High Equity") {
+                return reScoreEquityFromDetail(f, detail, property) || f;
+              }
+              return f;
+            })
             .sort((a, b) => b.points - a.points)
             .map((f) => (
               <div key={f.name}>

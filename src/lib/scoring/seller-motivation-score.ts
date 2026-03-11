@@ -357,7 +357,9 @@ function scoreMarketTrend(parcel: RealieParcel): SellerFactor {
 function scoreOwnerType(parcel: RealieParcel): SellerFactor {
   const max = WEIGHTS.ownerType;
   let points = 0;
-  let description = "Individual owner or unknown";
+  let description = parcel.ownerName
+    ? `Individual owner (${parcel.ownerName})`
+    : "Individual owner or unknown";
 
   const type = parcel.ownerType;
   if (type) {
@@ -373,6 +375,8 @@ function scoreOwnerType(parcel: RealieParcel): SellerFactor {
     } else if (type === "Corporate" || type === "Organization") {
       points = 3;
       description = "Entity-owned — investor or corporate holding";
+    } else if (type === "Individual" && parcel.ownerName) {
+      description = `Individual owner (${parcel.ownerName})`;
     }
   } else {
     // Check buyerIDCode from Realie data
