@@ -69,109 +69,47 @@ export default async function IntegrationsPage() {
         </p>
       </div>
 
+      {/* Primary Integrations — GHL & Trestle */}
       <div className="grid gap-6 md:grid-cols-2">
         <GHLIntegrationCard integration={ghlIntegration} />
-
-        {/* Stripe & PayPal — admin only (for subscription billing) */}
-        {isPlatformAdmin && (
-          <>
-            <StripeIntegrationCard integration={stripeIntegration} />
-            <PayPalIntegrationCard integration={paypalIntegration} />
-          </>
-        )}
-      </div>
-
-      {/* MLS & Property Data Integrations */}
-      <div className="grid gap-6 md:grid-cols-2">
         <TrestleIntegrationCard integration={trestleIntegration || null} />
-        <RealieIntegrationCard integration={realieIntegration} isPlatformAdmin={isPlatformAdmin} />
-        <FederalDataIntegrationCard integration={federalIntegration} isPlatformAdmin={isPlatformAdmin} />
       </div>
 
-      {/* Coming Soon Integrations */}
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Bridge Interactive / Zillow */}
-        <Card className="opacity-60">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <div className="h-10 w-10 rounded bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center">
-                <svg viewBox="0 0 24 24" className="w-6 h-6 text-white" fill="currentColor">
-                  <path d="M12 3L4 9v12h16V9l-8-6zm0 2.5L18 10v9H6v-9l6-4.5z"/>
-                  <path d="M10 14h4v5h-4z"/>
-                </svg>
-              </div>
-              <span>Bridge Interactive / Zillow</span>
-              <span className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded-full font-normal">
-                Coming Soon
-              </span>
-            </CardTitle>
-            <CardDescription>
-              Property valuations, rental estimates, and market data
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <button disabled className="w-full py-2 px-4 border rounded-md text-sm font-medium text-muted-foreground bg-muted/50 cursor-not-allowed">
-              Connect Bridge Interactive
-            </button>
-          </CardContent>
-        </Card>
+      {/* Admin-only Integrations */}
+      {isPlatformAdmin && (
+        <div className="grid gap-6 md:grid-cols-2">
+          <StripeIntegrationCard integration={stripeIntegration} />
+          <PayPalIntegrationCard integration={paypalIntegration} />
+          <RealieIntegrationCard integration={realieIntegration} isPlatformAdmin={isPlatformAdmin} />
+          <FederalDataIntegrationCard integration={federalIntegration} isPlatformAdmin={isPlatformAdmin} />
 
-        {/* Voice AI Agents */}
-        <Card className="opacity-60">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <div className="h-10 w-10 rounded bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center">
-                <svg viewBox="0 0 24 24" className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                  <line x1="12" y1="19" x2="12" y2="23"/>
-                  <line x1="8" y1="23" x2="16" y2="23"/>
-                </svg>
-              </div>
-              <span>Voice AI Agents</span>
-              <span className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded-full font-normal">
-                Coming Soon
-              </span>
-            </CardTitle>
-            <CardDescription>
-              AI-powered voice agents for lead qualification and appointment scheduling
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <button disabled className="w-full py-2 px-4 border rounded-md text-sm font-medium text-muted-foreground bg-muted/50 cursor-not-allowed">
-              Connect Voice AI
-            </button>
-          </CardContent>
-        </Card>
-
-        {/* AI Employee */}
-        <Card className="opacity-60">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <div className="h-10 w-10 rounded bg-gradient-to-br from-emerald-500 to-teal-700 flex items-center justify-center">
-                <svg viewBox="0 0 24 24" className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="8" r="5"/>
-                  <path d="M3 21v-2a7 7 0 0 1 7-7h4a7 7 0 0 1 7 7v2"/>
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                  <path d="M21 21v-2a4 4 0 0 0-3-3.85"/>
-                </svg>
-              </div>
-              <span>AI Employee</span>
-              <span className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded-full font-normal">
-                Coming Soon
-              </span>
-            </CardTitle>
-            <CardDescription>
-              Autonomous AI assistant for follow-ups, market reports, and client communications
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <button disabled className="w-full py-2 px-4 border rounded-md text-sm font-medium text-muted-foreground bg-muted/50 cursor-not-allowed">
-              Connect AI Employee
-            </button>
-          </CardContent>
-        </Card>
-      </div>
+          {/* Bridge Interactive / Zillow */}
+          <Card className="opacity-60">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <div className="h-10 w-10 rounded bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center">
+                  <svg viewBox="0 0 24 24" className="w-6 h-6 text-white" fill="currentColor">
+                    <path d="M12 3L4 9v12h16V9l-8-6zm0 2.5L18 10v9H6v-9l6-4.5z"/>
+                    <path d="M10 14h4v5h-4z"/>
+                  </svg>
+                </div>
+                <span>Bridge Interactive / Zillow</span>
+                <span className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded-full font-normal">
+                  Coming Soon
+                </span>
+              </CardTitle>
+              <CardDescription>
+                Property valuations, rental estimates, and market data
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <button disabled className="w-full py-2 px-4 border rounded-md text-sm font-medium text-muted-foreground bg-muted/50 cursor-not-allowed">
+                Connect Bridge Interactive
+              </button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
