@@ -367,6 +367,18 @@ export interface RealieParcel {
     documentType?: string;
   }>;
 
+  // Enhanced scoring signals (derived from RentCast or Realie raw data)
+  /** Owner entity type: "Individual", "Organization", "Trust", "Corporate", etc. */
+  ownerType?: string;
+  /** Annual tax assessment growth rate (percent), derived from multi-year assessments */
+  taxAssessmentTrendPct?: number;
+  /** Appreciation percentage: (currentValue - purchasePrice) / purchasePrice * 100 */
+  appreciationPct?: number;
+  /** Original purchase price (from sale history) */
+  purchasePrice?: number;
+  /** Monthly HOA fee */
+  hoaFee?: number;
+
   // Market context (from RentCast /markets endpoint, attached per zip)
   marketMedianPrice?: number;
   marketMedianPricePerSqft?: number;

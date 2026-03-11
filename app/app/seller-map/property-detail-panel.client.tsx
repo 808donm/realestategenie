@@ -261,13 +261,13 @@ function reScoreEquityFromDetail(
       points = max;
       description = `Very high equity (LTV ${ltv}%) — strong position to sell`;
     } else if (ltv < 50) {
-      points = 15;
+      points = Math.round(max * 0.75);
       description = `High equity (LTV ${ltv}%) — favorable to sell`;
     } else if (ltv < 70) {
-      points = 8;
+      points = Math.round(max * 0.4);
       description = `Moderate equity (LTV ${ltv}%)`;
     } else {
-      points = 3;
+      points = Math.round(max * 0.15);
       description = `Low equity (LTV ${ltv}%)`;
     }
   } else if (equity != null && value) {
@@ -276,13 +276,13 @@ function reScoreEquityFromDetail(
       points = max;
       description = `Very high equity (${equityPct}% of value)`;
     } else if (equityPct > 50) {
-      points = 15;
+      points = Math.round(max * 0.75);
       description = `High equity (${equityPct}% of value)`;
     } else if (equityPct > 30) {
-      points = 8;
+      points = Math.round(max * 0.4);
       description = `Moderate equity (${equityPct}% of value)`;
     } else {
-      points = 3;
+      points = Math.round(max * 0.15);
       description = `Low equity (${equityPct}% of value)`;
     }
   }

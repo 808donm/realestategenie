@@ -54,14 +54,18 @@ export type ScoredProperty = {
 // ── Scoring Constants ──────────────────────────────────────────────────────
 
 const WEIGHTS = {
-  equity: 20,
-  ownershipDuration: 20,
-  absentee: 15,
-  distress: 15,
-  portfolio: 10,
-  transferRecency: 10,
+  equity: 15,
+  ownershipDuration: 15,
+  absentee: 12,
+  distress: 12,
+  portfolio: 8,
+  transferRecency: 8,
   taxAnomaly: 5,
   marketTrend: 5,
+  ownerType: 6,
+  taxTrend: 5,
+  appreciation: 5,
+  hoaBurden: 4,
 } as const;
 
 // ── Scoring Functions ──────────────────────────────────────────────────────
@@ -79,13 +83,13 @@ function scoreEquity(parcel: RealieParcel): SellerFactor {
       points = max;
       description = `Very high equity (LTV ${ltv}%) — strong position to sell`;
     } else if (ltv < 50) {
-      points = 15;
+      points = Math.round(max * 0.75);
       description = `High equity (LTV ${ltv}%) — favorable to sell`;
     } else if (ltv < 70) {
-      points = 8;
+      points = Math.round(max * 0.4);
       description = `Moderate equity (LTV ${ltv}%)`;
     } else {
-      points = 3;
+      points = Math.round(max * 0.15);
       description = `Low equity (LTV ${ltv}%)`;
     }
   } else if (equity != null && parcel.modelValue) {
@@ -94,13 +98,13 @@ function scoreEquity(parcel: RealieParcel): SellerFactor {
       points = max;
       description = `Very high equity (${equityPct}% of value)`;
     } else if (equityPct > 50) {
-      points = 15;
+      points = Math.round(max * 0.75);
       description = `High equity (${equityPct}% of value)`;
     } else if (equityPct > 30) {
-      points = 8;
+      points = Math.round(max * 0.4);
       description = `Moderate equity (${equityPct}% of value)`;
     } else {
-      points = 3;
+      points = Math.round(max * 0.15);
       description = `Low equity (${equityPct}% of value)`;
     }
   }
@@ -350,6 +354,153 @@ function scoreMarketTrend(parcel: RealieParcel): SellerFactor {
   return { name: "Market Trend", points, maxPoints: max, description };
 }
 
+function scoreOwnerType(parcel: RealieParcel): SellerFactor {
+  const max = WEIGHTS.ownerType;
+  let points = 0;
+  let description = "Individual owner or unknown";
+
+  const type = parcel.ownerType;
+  if (type) {
+    if (type === "Estate") {
+      points = max;
+      description = "Estate-owned — heirs often motivated to sell";
+    } else if (type === "Bank/REO") {
+      points = max;
+      description = "Bank/REO-owned — lender liquidation likely";
+    } else if (type === "Trust") {
+      points = 4;
+      description = "Trust-owned — may indicate estate planning or investor";
+    } else if (type === "Corporate" || type === "Organization") {
+      points = 3;
+      description = "Entity-owned — investor or corporate holding";
+    }
+  } else {
+    // Check buyerIDCode from Realie data
+    const bic = parcel.buyerIDCode;
+    if (bic === "TR") {
+      points = 4;
+      description = "Trust (buyer ID) — estate planning or investor";
+    } else if (bic === "CO" || bic === "CP") {
+      points = 3;
+      description = "Corporate buyer — investor holding";
+    }
+  }
+
+  return { name: "Owner Type", points, maxPoints: max, description };
+}
+
+function scoreTaxTrend(parcel: RealieParcel): SellerFactor {
+  const max = WEIGHTS.taxTrend;
+  let points = 0;
+  let description = "No multi-year tax data available";
+
+  // Use pre-computed trend from mapping, or compute from Realie assessments array
+  let annualGrowth = parcel.taxAssessmentTrendPct;
+
+  if (annualGrowth == null && parcel.assessments && parcel.assessments.length >= 2) {
+    const sorted = [...parcel.assessments]
+      .filter((a) => a.assessedYear && a.totalAssessedValue)
+      .sort((a, b) => (a.assessedYear || 0) - (b.assessedYear || 0));
+    if (sorted.length >= 2) {
+      const oldest = sorted[0];
+      const newest = sorted[sorted.length - 1];
+      const span = (newest.assessedYear || 0) - (oldest.assessedYear || 0);
+      if (span > 0 && oldest.totalAssessedValue && oldest.totalAssessedValue > 0 && newest.totalAssessedValue) {
+        const totalGrowth = ((newest.totalAssessedValue - oldest.totalAssessedValue) / oldest.totalAssessedValue) * 100;
+        annualGrowth = totalGrowth / span;
+      }
+    }
+  }
+
+  if (annualGrowth != null) {
+    if (annualGrowth > 10) {
+      points = max;
+      description = `Rapidly rising assessments (+${annualGrowth.toFixed(1)}%/yr) — increasing tax burden`;
+    } else if (annualGrowth > 6) {
+      points = 3;
+      description = `Rising assessments (+${annualGrowth.toFixed(1)}%/yr)`;
+    } else if (annualGrowth > 3) {
+      points = 1;
+      description = `Moderate assessment growth (+${annualGrowth.toFixed(1)}%/yr)`;
+    } else {
+      description = `Stable assessments (+${annualGrowth.toFixed(1)}%/yr)`;
+    }
+  }
+
+  return { name: "Tax Trend", points, maxPoints: max, description };
+}
+
+function scoreAppreciation(parcel: RealieParcel): SellerFactor {
+  const max = WEIGHTS.appreciation;
+  let points = 0;
+  let description = "No appreciation data available";
+
+  // Use pre-computed appreciation from mapping
+  let pct = parcel.appreciationPct;
+
+  // If not pre-computed, try to derive from purchase price vs model value
+  if (pct == null && parcel.purchasePrice && parcel.purchasePrice > 0) {
+    const currentVal = parcel.modelValue || parcel.totalMarketValue;
+    if (currentVal && currentVal !== parcel.purchasePrice) {
+      pct = ((currentVal - parcel.purchasePrice) / parcel.purchasePrice) * 100;
+    }
+  }
+
+  if (pct != null) {
+    if (pct > 100) {
+      points = max;
+      description = `Major appreciation (+${Math.round(pct)}%) — significant equity to unlock`;
+    } else if (pct > 50) {
+      points = 3;
+      description = `Strong appreciation (+${Math.round(pct)}%)`;
+    } else if (pct > 20) {
+      points = 1;
+      description = `Moderate appreciation (+${Math.round(pct)}%)`;
+    } else if (pct < -10) {
+      // Negative equity / underwater — different kind of motivation
+      points = 2;
+      description = `Depreciated (${Math.round(pct)}%) — may want to exit`;
+    } else {
+      description = `Minimal appreciation (+${Math.round(pct)}%)`;
+    }
+  }
+
+  return { name: "Appreciation", points, maxPoints: max, description };
+}
+
+function scoreHoaBurden(parcel: RealieParcel): SellerFactor {
+  const max = WEIGHTS.hoaBurden;
+  let points = 0;
+  let description = "No HOA or unknown";
+
+  const hoa = parcel.hoaFee;
+  if (hoa && hoa > 0) {
+    // Check if absentee — HOA burden is more significant for non-occupants
+    const isAbsentee = parcel.ownerOccupied === false ||
+      (parcel.ownerState && parcel.state &&
+       parcel.ownerState.toUpperCase() !== parcel.state.toUpperCase());
+
+    if (hoa >= 800) {
+      points = isAbsentee ? max : 3;
+      description = isAbsentee
+        ? `High HOA ($${hoa}/mo) + absentee — costly to hold`
+        : `High HOA ($${hoa}/mo)`;
+    } else if (hoa >= 500) {
+      points = isAbsentee ? 3 : 2;
+      description = isAbsentee
+        ? `Moderate HOA ($${hoa}/mo) + absentee`
+        : `Moderate HOA ($${hoa}/mo)`;
+    } else if (hoa >= 300) {
+      points = isAbsentee ? 2 : 1;
+      description = `HOA $${hoa}/mo${isAbsentee ? " + absentee" : ""}`;
+    } else {
+      description = `Low HOA ($${hoa}/mo)`;
+    }
+  }
+
+  return { name: "HOA Burden", points, maxPoints: max, description };
+}
+
 // ── Main Scoring Function ──────────────────────────────────────────────────
 
 export function calculateSellerMotivationScore(parcel: RealieParcel): SellerScore {
@@ -362,6 +513,10 @@ export function calculateSellerMotivationScore(parcel: RealieParcel): SellerScor
     scoreTransferRecency(parcel),
     scoreTaxAnomaly(parcel),
     scoreMarketTrend(parcel),
+    scoreOwnerType(parcel),
+    scoreTaxTrend(parcel),
+    scoreAppreciation(parcel),
+    scoreHoaBurden(parcel),
   ];
 
   const score = Math.min(factors.reduce((sum, f) => sum + f.points, 0), 100);

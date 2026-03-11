@@ -640,6 +640,21 @@ export function mapRentcastToRealieParcel(rc: RentcastProperty): RealieParcel {
     }
   }
 
+  // Tax assessment trend: compute annualized growth from multi-year assessments
+  let taxAssessmentTrendPct: number | undefined;
+  if (rc.taxAssessments) {
+    const sortedYears = Object.keys(rc.taxAssessments).sort();
+    if (sortedYears.length >= 2) {
+      const oldest = rc.taxAssessments[sortedYears[0]];
+      const newest = rc.taxAssessments[sortedYears[sortedYears.length - 1]];
+      const yearSpan = newest.year - oldest.year;
+      if (oldest.value > 0 && yearSpan > 0) {
+        const totalGrowth = ((newest.value - oldest.value) / oldest.value) * 100;
+        taxAssessmentTrendPct = totalGrowth / yearSpan; // annualized
+      }
+    }
+  }
+
   // Derive transfer date from lastSaleDate or most recent history entry
   let transferDate: string | undefined;
   let transferPrice: number | undefined;
@@ -652,6 +667,51 @@ export function mapRentcastToRealieParcel(rc: RentcastProperty): RealieParcel {
       const latest = rc.history[dates[0]];
       transferDate = latest.date;
       transferPrice = latest.price;
+    }
+  }
+
+  // Find original purchase price from sale history chain
+  // Use the earliest sale with a price > 0 as the purchase price
+  let purchasePrice: number | undefined;
+  if (rc.history) {
+    const sortedDates = Object.keys(rc.history).sort();
+    for (const d of sortedDates) {
+      if (rc.history[d].price > 0) {
+        purchasePrice = rc.history[d].price;
+        break;
+      }
+    }
+  }
+  // Fall back to lastSalePrice if no history chain
+  if (!purchasePrice && rc.lastSalePrice) {
+    purchasePrice = rc.lastSalePrice;
+  }
+
+  // Appreciation: compare purchase price to current estimated value
+  // Use lastSalePrice as market proxy if no AVM is available yet
+  const currentValue = rc.lastSalePrice ?? totalAssessedValue;
+  let appreciationPct: number | undefined;
+  if (purchasePrice && currentValue && currentValue !== purchasePrice && purchasePrice > 0) {
+    appreciationPct = ((currentValue - purchasePrice) / purchasePrice) * 100;
+  }
+
+  // Owner type: map RentCast "Organization" to more specific signals
+  // Also check owner name for trust/estate/LLC/corp patterns
+  let ownerType: string | undefined;
+  if (rc.owner?.type) {
+    ownerType = rc.owner.type; // "Individual" or "Organization"
+  }
+  const ownerNames = rc.owner?.names?.join(" ") || "";
+  if (ownerNames) {
+    const upper = ownerNames.toUpperCase();
+    if (/\bTRUST\b/.test(upper) || /\bTRUSTEE\b/.test(upper)) {
+      ownerType = "Trust";
+    } else if (/\bLLC\b/.test(upper) || /\bINC\b/.test(upper) || /\bCORP\b/.test(upper)) {
+      ownerType = "Corporate";
+    } else if (/\bESTATE\b/.test(upper)) {
+      ownerType = "Estate";
+    } else if (/\bBANK\b/.test(upper) || /\bLENDER\b/.test(upper) || /\bMORTGAGE\b/.test(upper)) {
+      ownerType = "Bank/REO";
     }
   }
 
@@ -673,6 +733,7 @@ export function mapRentcastToRealieParcel(rc: RentcastProperty): RealieParcel {
 
     // Owner
     ownerName: rc.owner?.names?.join(", "),
+    ownerType,
     ownerAddressLine1: ownerAddr?.addressLine1,
     ownerAddressFull: ownerAddr?.formattedAddress,
     ownerCity: ownerAddr?.city,
@@ -696,15 +757,23 @@ export function mapRentcastToRealieParcel(rc: RentcastProperty): RealieParcel {
     // Assessment / Tax
     totalAssessedValue,
     assessedYear,
+    taxAssessmentTrendPct,
 
     // Sale / Transfer — used by ownership duration & transfer recency scoring
     transferDate,
     transferPrice,
+    purchasePrice,
     ownershipStartDate: transferDate, // Best proxy from RentCast data
+
+    // Appreciation
+    appreciationPct,
 
     // Use lastSalePrice as a rough market value proxy when no AVM is available.
     // This enables tax anomaly scoring (assessed vs market gap).
     modelValue: rc.lastSalePrice ?? undefined,
+
+    // HOA
+    hoaFee: rc.hoa?.fee,
 
     // RentCast's ownerOccupied boolean — direct absentee signal
     ownerOccupied: rc.ownerOccupied,
