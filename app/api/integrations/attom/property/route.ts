@@ -17,6 +17,7 @@ import { searchPOI } from "@/lib/integrations/free-data/osm-poi-client";
 import { getCrimeIndicesByState, getCrimeIndicesByFips } from "@/lib/integrations/free-data/fbi-crime-client";
 import { getCountyByZip } from "@/lib/hawaii-zip-county";
 import { NON_DISCLOSURE_STATES, isNonDisclosureState } from "@/lib/constants/non-disclosure-states";
+import { analyzeComparables, CompProperty } from "@/lib/ai/comp-genie";
 
 // Hawaii county name → FIPS code mapping
 const HAWAII_COUNTY_FIPS: Record<string, string> = {
@@ -543,7 +544,7 @@ export async function GET(request: NextRequest) {
     if (!params.pagesize) params.pagesize = 25;
     if (!params.page) params.page = 1;
 
-    const noPaginationEndpoints = ["rentalavm", "homeequity", "comparables"];
+    const noPaginationEndpoints = ["rentalavm", "homeequity", "comparables", "compgenie"];
     if (noPaginationEndpoints.includes(endpoint)) {
       delete params.pagesize;
       delete params.page;
@@ -621,6 +622,85 @@ export async function GET(request: NextRequest) {
         result = { property: [], message: "Property not found for equity calculation" };
       }
       dataSource = "computed";
+
+    } else if (endpoint === "compgenie") {
+      // ── Comp Genie: AI-powered comparable analysis for non-disclosure states
+      const lat = params.latitude;
+      const lng = params.longitude;
+      const address = params.address1 || params.address || "";
+      const postalCode = params.postalcode || params.postalCode;
+      const stateHint =
+        params.address2?.match(/\b([A-Z]{2})\b/)?.[1] ||
+        params.address?.match(/,\s*([A-Z]{2})\s*\d{0,5}\s*$/)?.[1] ||
+        (postalCode ? resolveCountyFipsFromZip(postalCode).state : undefined);
+
+      if (!stateHint || !isNonDisclosureState(stateHint)) {
+        return NextResponse.json(
+          { success: false, error: `Comp Genie is only available for non-disclosure states. ${stateHint || "Unknown"} is not a non-disclosure state.` },
+          { status: 400 },
+        );
+      }
+
+      // Fetch subject property
+      const subjectResult = await fetchFromRealie("expanded", params);
+      const subjectProp = subjectResult?.property?.[0];
+      if (!subjectProp) {
+        return NextResponse.json(
+          { success: true, endpoint, property: [], message: "Subject property not found" },
+          { status: 200 },
+        );
+      }
+
+      // Fetch nearby properties for comparison
+      const searchLat = lat || subjectProp.location?.latitude;
+      const searchLng = lng || subjectProp.location?.longitude;
+      let neighborProps: any[] = [];
+      if (searchLat && searchLng) {
+        const neighborResult = await fetchFromRealie("expanded", {
+          latitude: searchLat,
+          longitude: searchLng,
+          radius: 2,
+          limit: 25,
+        });
+        neighborProps = neighborResult?.property || [];
+      }
+
+      // Convert to CompProperty format
+      const toCompProp = (p: any): CompProperty => ({
+        address: p.address?.oneLine || p.address?.line1 || "",
+        avmValue: p.avm?.amount?.value,
+        avmLow: p.avm?.amount?.low,
+        avmHigh: p.avm?.amount?.high,
+        assessedValue: p.assessment?.assessed?.assdTtlValue || p.assessment?.market?.mktTtlValue,
+        transferPrice: p.sale?.amount?.saleAmt,
+        transferDate: p.sale?.amount?.saleRecDate || p.sale?.amount?.saleTransDate,
+        beds: p.building?.rooms?.beds,
+        baths: p.building?.rooms?.bathsTotal,
+        sqft: p.building?.size?.universalSize || p.building?.size?.livingSize,
+        lotSize: p.lot?.lotSize1,
+        yearBuilt: p.summary?.yearBuilt,
+        propertyType: p.summary?.propType || p.summary?.propSubType,
+        pricePerSqft: p.avm?.amount?.value && (p.building?.size?.universalSize || p.building?.size?.livingSize)
+          ? Math.round(p.avm.amount.value / (p.building.size.universalSize || p.building.size.livingSize))
+          : undefined,
+        latitude: p.location?.latitude,
+        longitude: p.location?.longitude,
+      });
+
+      const subjectComp = toCompProp(subjectProp);
+      const neighborComps = neighborProps.map(toCompProp);
+
+      try {
+        const genieResult = await analyzeComparables(subjectComp, neighborComps, stateHint);
+        result = { compGenie: genieResult };
+        dataSource = "computed";
+      } catch (err: any) {
+        console.error("[CompGenie] AI analysis error:", err.message);
+        return NextResponse.json(
+          { success: false, error: "Comp Genie analysis failed: " + (err.message || "Unknown error") },
+          { status: 500 },
+        );
+      }
 
     } else if (REALIE_CAPABLE_ENDPOINTS.has(endpoint)) {
       // ── Realie for all property data endpoints
