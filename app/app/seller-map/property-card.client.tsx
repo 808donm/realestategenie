@@ -9,9 +9,10 @@ type Props = {
   compact?: boolean;
   onAddToCRM?: (property: ScoredProperty) => void;
   onGenerateReport?: (property: ScoredProperty) => void;
+  onDraftOutreach?: (property: ScoredProperty) => void;
 };
 
-export function PropertyCard({ property, compact, onAddToCRM, onGenerateReport }: Props) {
+export function PropertyCard({ property, compact, onAddToCRM, onGenerateReport, onDraftOutreach }: Props) {
   const p = property;
 
   return (
@@ -131,6 +132,14 @@ export function PropertyCard({ property, compact, onAddToCRM, onGenerateReport }
               className="flex-1 text-xs border border-gray-300 py-1.5 px-3 rounded hover:bg-gray-50 transition-colors"
             >
               Property Report
+            </button>
+          )}
+          {onDraftOutreach && (
+            <button
+              onClick={() => onDraftOutreach(p)}
+              className="flex-1 text-xs border border-indigo-300 text-indigo-600 py-1.5 px-3 rounded hover:bg-indigo-50 transition-colors"
+            >
+              Draft Outreach
             </button>
           )}
           <a

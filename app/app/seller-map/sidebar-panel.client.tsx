@@ -48,6 +48,7 @@ type Props = {
   onDeleteSearch: (id: string) => void;
   onAddToCRM?: (property: ScoredProperty) => void;
   onGenerateReport?: (property: ScoredProperty) => void;
+  onDraftOutreach?: (property: ScoredProperty) => void;
   onSearchArea: () => void;
   isLoading: boolean;
   total: number;
@@ -71,6 +72,7 @@ export function SidebarPanel({
   onDeleteSearch,
   onAddToCRM,
   onGenerateReport,
+  onDraftOutreach,
   onSearchArea,
   isLoading,
   total,
@@ -220,6 +222,7 @@ export function SidebarPanel({
                       property={p}
                       onAddToCRM={onAddToCRM}
                       onGenerateReport={onGenerateReport}
+                      onDraftOutreach={onDraftOutreach}
                     />
                   ) : (
                     <PropertyListItem property={p} />

@@ -184,6 +184,11 @@ export function SellerMapClient() {
     window.open(`/app/property-data?${params}`, "_blank");
   }, []);
 
+  const handleDraftOutreach = useCallback((property: ScoredProperty) => {
+    // Select the property to open its detail panel (outreach tab is available there)
+    setSelectedProperty(property);
+  }, []);
+
   return (
     <div className="flex h-[calc(100vh-180px)] rounded-lg overflow-hidden border bg-white shadow-sm">
       {/* Sidebar — Desktop */}
@@ -215,6 +220,7 @@ export function SellerMapClient() {
             onDeleteSearch={handleDeleteSearch}
             onAddToCRM={handleAddToCRM}
             onGenerateReport={handleGenerateReport}
+            onDraftOutreach={handleDraftOutreach}
             onSearchArea={handleSearchThisArea}
             isLoading={isLoading}
             total={total}

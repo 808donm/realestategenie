@@ -1,11 +1,26 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { ScoredProperty, SellerFactor } from "@/lib/scoring/seller-motivation-score";
 import { getSellerColor, getSellerLabel } from "@/lib/scoring/seller-motivation-score";
 import { fmtPrice } from "@/lib/utils";
 
-type DetailTab = "overview" | "building" | "financial" | "comps" | "ownership";
+type DetailTab = "overview" | "building" | "financial" | "comps" | "ownership" | "outreach";
+
+interface OutreachDraft {
+  address: string;
+  ownerName?: string;
+  letterBody: string;
+  subject: string;
+  smsMessage: string;
+  talkingPoints: string[];
+}
+
+interface OutreachResult {
+  drafts: OutreachDraft[];
+  campaignTheme: string;
+  bestTimeToSend: string;
+}
 
 type PropertyDetail = {
   address: string;
@@ -110,10 +125,56 @@ export function PropertyDetailPanel({ property, onClose }: Props) {
   const [tab, setTab] = useState<DetailTab>("overview");
   const [detail, setDetail] = useState<PropertyDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [outreach, setOutreach] = useState<OutreachResult | null>(null);
+  const [outreachLoading, setOutreachLoading] = useState(false);
+  const [outreachError, setOutreachError] = useState("");
+
+  const handleDraftOutreach = useCallback(async () => {
+    setOutreachLoading(true);
+    setOutreachError("");
+    setOutreach(null);
+    setTab("outreach");
+    try {
+      const prospectProp = {
+        address: property.address,
+        ownerName: property.owner,
+        isAbsentee: property.absentee,
+        avmValue: property.estimatedValue,
+        equityAmount: property.equity,
+        ltvPct: property.ltv,
+        yearsOwned: property.ownershipYears,
+        yearBuilt: property.yearBuilt,
+        beds: property.beds,
+        baths: property.baths,
+        sqft: property.sqft,
+        propertyType: property.propertyType,
+      };
+
+      const res = await fetch("/api/prospecting-ai/outreach", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode: "equity",
+          properties: [prospectProp],
+          market: { zipCode: property.zip || "unknown" },
+          agentName: "Agent",
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Outreach generation failed");
+      setOutreach(data);
+    } catch (err: unknown) {
+      setOutreachError(err instanceof Error ? err.message : "Outreach generation failed");
+    } finally {
+      setOutreachLoading(false);
+    }
+  }, [property]);
 
   useEffect(() => {
     setLoading(true);
     setTab("overview");
+    setOutreach(null);
+    setOutreachError("");
 
     const params = new URLSearchParams({
       address: property.address,
@@ -136,6 +197,7 @@ export function PropertyDetailPanel({ property, onClose }: Props) {
     { key: "financial", label: "Financial" },
     { key: "comps", label: "Comps" },
     { key: "ownership", label: "Ownership" },
+    { key: "outreach", label: "Outreach" },
   ];
 
   return (
@@ -216,12 +278,20 @@ export function PropertyDetailPanel({ property, onClose }: Props) {
         ) : (
           <>
             {tab === "overview" && (
-              <OverviewTab property={property} detail={detail} />
+              <OverviewTab property={property} detail={detail} onDraftOutreach={handleDraftOutreach} outreachLoading={outreachLoading} />
             )}
             {tab === "building" && <BuildingTab detail={detail} />}
             {tab === "financial" && <FinancialTab property={property} detail={detail} />}
             {tab === "comps" && <CompsTab detail={detail} />}
             {tab === "ownership" && <OwnershipTab property={property} detail={detail} />}
+            {tab === "outreach" && (
+              <OutreachTab
+                outreach={outreach}
+                loading={outreachLoading}
+                error={outreachError}
+                onGenerate={handleDraftOutreach}
+              />
+            )}
           </>
         )}
       </div>
@@ -453,9 +523,13 @@ function exportPropertyToExcel(property: ScoredProperty, detail: PropertyDetail 
 function OverviewTab({
   property,
   detail,
+  onDraftOutreach,
+  outreachLoading,
 }: {
   property: ScoredProperty;
   detail: PropertyDetail | null;
+  onDraftOutreach?: () => void;
+  outreachLoading?: boolean;
 }) {
   // Build a single re-scored factors array used by both insight cards and the full list.
   // This ensures equity (and any future re-scored factors) stay consistent everywhere.
@@ -547,8 +621,20 @@ function OverviewTab({
         </div>
       </Section>
 
-      {/* Export */}
-      <div className="pt-2">
+      {/* Actions */}
+      <div className="pt-2 space-y-2">
+        {onDraftOutreach && (
+          <button
+            onClick={onDraftOutreach}
+            disabled={outreachLoading}
+            className="w-full text-xs bg-indigo-600 text-white py-2 px-3 rounded hover:bg-indigo-700 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            {outreachLoading ? "Drafting..." : "Draft AI Outreach"}
+          </button>
+        )}
         <button
           onClick={() => exportPropertyToExcel(property, detail)}
           className="w-full text-xs border border-gray-300 py-2 px-3 rounded hover:bg-gray-50 transition-colors flex items-center justify-center gap-1.5"
@@ -853,6 +939,160 @@ function OwnershipTab({
           </div>
         </Section>
       )}
+    </div>
+  );
+}
+
+// ── Outreach Tab ──────────────────────────────────────────────────────────
+
+function OutreachTab({
+  outreach,
+  loading,
+  error,
+  onGenerate,
+}: {
+  outreach: OutreachResult | null;
+  loading: boolean;
+  error: string;
+  onGenerate: () => void;
+}) {
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  const copyToClipboard = (text: string, field: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(null), 2000);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-40 text-sm text-gray-500">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-3" />
+        <p className="font-medium text-indigo-600">Drafting AI outreach...</p>
+        <p className="text-xs text-gray-400 mt-1">Generating letter, SMS, and talking points</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-3">
+        <div className="p-3 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+          {error}
+        </div>
+        <button
+          onClick={onGenerate}
+          className="w-full text-xs bg-indigo-600 text-white py-2 px-3 rounded hover:bg-indigo-700 transition-colors"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
+
+  if (!outreach || outreach.drafts.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-40">
+        <svg className="w-10 h-10 text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+        <p className="text-sm font-medium text-gray-600 mb-1">No outreach drafted yet</p>
+        <p className="text-xs text-gray-400 mb-3 text-center px-4">
+          AI will generate a personalized letter, SMS message, and phone talking points for this property.
+        </p>
+        <button
+          onClick={onGenerate}
+          className="text-xs bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-700 transition-colors"
+        >
+          Draft AI Outreach
+        </button>
+      </div>
+    );
+  }
+
+  const draft = outreach.drafts[0];
+
+  return (
+    <div className="space-y-4">
+      {/* Campaign context */}
+      {outreach.campaignTheme && (
+        <div className="p-2.5 bg-indigo-50 border border-indigo-200 rounded-lg">
+          <p className="text-[10px] font-semibold text-indigo-600 uppercase tracking-wide mb-0.5">Campaign Theme</p>
+          <p className="text-xs text-gray-700">{outreach.campaignTheme}</p>
+        </div>
+      )}
+
+      {/* Subject line */}
+      <Section title="Subject Line">
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-gray-700 italic flex-1">{draft.subject}</p>
+          <button
+            onClick={() => copyToClipboard(draft.subject, "subject")}
+            className="text-[10px] text-gray-400 hover:text-indigo-600 ml-2 shrink-0"
+          >
+            {copiedField === "subject" ? "Copied!" : "Copy"}
+          </button>
+        </div>
+      </Section>
+
+      {/* Letter / Email */}
+      <Section title="Letter / Email">
+        <div className="relative">
+          <button
+            onClick={() => copyToClipboard(draft.letterBody, "letter")}
+            className="absolute top-1 right-1 text-[10px] px-1.5 py-0.5 border border-gray-200 rounded bg-white text-gray-400 hover:text-indigo-600 hover:border-indigo-300"
+          >
+            {copiedField === "letter" ? "Copied!" : "Copy"}
+          </button>
+          <div className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap bg-gray-50 p-3 rounded-lg border border-gray-100 pr-14">
+            {draft.letterBody}
+          </div>
+        </div>
+      </Section>
+
+      {/* SMS Message */}
+      <Section title="SMS Message">
+        <div className="relative">
+          <button
+            onClick={() => copyToClipboard(draft.smsMessage, "sms")}
+            className="absolute top-1 right-1 text-[10px] px-1.5 py-0.5 border border-gray-200 rounded bg-white text-gray-400 hover:text-indigo-600 hover:border-indigo-300"
+          >
+            {copiedField === "sms" ? "Copied!" : "Copy"}
+          </button>
+          <div className="text-xs text-gray-700 bg-amber-50 p-3 rounded-lg border border-amber-200 pr-14">
+            {draft.smsMessage}
+          </div>
+        </div>
+      </Section>
+
+      {/* Talking Points */}
+      {draft.talkingPoints.length > 0 && (
+        <Section title="Phone Talking Points">
+          <ul className="space-y-1.5">
+            {draft.talkingPoints.map((tp, i) => (
+              <li key={i} className="flex gap-2 text-xs text-gray-700">
+                <span className="text-indigo-500 font-bold shrink-0">{i + 1}.</span>
+                <span>{tp}</span>
+              </li>
+            ))}
+          </ul>
+        </Section>
+      )}
+
+      {/* Best time to send */}
+      {outreach.bestTimeToSend && (
+        <div className="p-2 bg-green-50 border border-green-200 rounded text-xs text-green-700">
+          <span className="font-medium">Best time to send:</span> {outreach.bestTimeToSend}
+        </div>
+      )}
+
+      {/* Regenerate button */}
+      <button
+        onClick={onGenerate}
+        className="w-full text-xs border border-indigo-300 text-indigo-600 py-2 px-3 rounded hover:bg-indigo-50 transition-colors"
+      >
+        Regenerate Outreach
+      </button>
     </div>
   );
 }
