@@ -452,18 +452,22 @@ function OverviewTab({
   property: ScoredProperty;
   detail: PropertyDetail | null;
 }) {
+  // Build a single re-scored factors array used by both insight cards and the full list.
+  // This ensures equity (and any future re-scored factors) stay consistent everywhere.
+  const factors = property.factors.map((f) => {
+    if (f.name === "High Equity") {
+      return reScoreEquityFromDetail(f, detail, property) || f;
+    }
+    return f;
+  });
+
   return (
     <div className="space-y-4">
       {/* Key Score Insights */}
       <div className="grid grid-cols-2 gap-2">
         {INSIGHT_CARDS.map((card) => {
-          let factor = getFactorByName(property.factors, card.name);
+          const factor = factors.find((f) => f.name === card.name);
           if (!factor) return null;
-          // Re-score equity from detail data when bulk search didn't include it
-          if (card.name === "High Equity") {
-            factor = reScoreEquityFromDetail(factor, detail, property);
-            if (!factor) return null;
-          }
           const pct = factor.maxPoints > 0 ? (factor.points / factor.maxPoints) * 100 : 0;
           return (
             <div
@@ -516,14 +520,7 @@ function OverviewTab({
       {/* Score breakdown */}
       <Section title="All Motivation Factors">
         <div className="space-y-2">
-          {property.factors
-            .map((f) => {
-              // Re-score equity from detail data when bulk search didn't include it
-              if (f.name === "High Equity") {
-                return reScoreEquityFromDetail(f, detail, property) || f;
-              }
-              return f;
-            })
+          {[...factors]
             .sort((a, b) => b.points - a.points)
             .map((f) => (
               <div key={f.name}>
