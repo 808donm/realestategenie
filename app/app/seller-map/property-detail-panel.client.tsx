@@ -358,10 +358,15 @@ function exportPropertyToExcel(property: ScoredProperty, detail: PropertyDetail 
   }
 
   // Financial
-  add("Financial", "Estimated Value", detail?.modelValue || property.estimatedValue);
-  add("Financial", "RentCast AVM", detail?.avmValue);
+  add("Financial", "AVM", detail?.avmValue);
   add("Financial", "AVM Low", detail?.avmLow);
   add("Financial", "AVM High", detail?.avmHigh);
+  if (detail?.avmValue && detail?.avmLow != null && detail?.avmHigh != null) {
+    const range = detail.avmHigh - detail.avmLow;
+    const pct = range / detail.avmValue;
+    const confidence = Math.max(0, Math.min(100, Math.round((1 - pct / 0.4) * 100)));
+    add("Financial", "Confidence Score", `${confidence}%`);
+  }
   add("Financial", "Equity", detail?.equity ?? property.equity);
   add("Financial", "LTV %", detail?.ltv ?? property.ltv);
   add("Financial", "HOA Fee", detail?.hoa?.fee);
@@ -622,11 +627,18 @@ function FinancialTab({
       <Section title="Value Estimates">
         {detail?.avmValue && (
           <InfoRow
-            label="RentCast AVM"
+            label="AVM"
             value={`${fmtPrice(detail.avmValue)}${detail.avmLow && detail.avmHigh ? ` (${fmtPrice(detail.avmLow)}–${fmtPrice(detail.avmHigh)})` : ""}`}
           />
         )}
-        <InfoRow label="Estimated Value" value={detail?.modelValue || property.estimatedValue ? fmtPrice(detail?.modelValue || property.estimatedValue || 0) : undefined} />
+        {detail?.avmValue && detail?.avmLow != null && detail?.avmHigh != null && (() => {
+          const range = detail.avmHigh - detail.avmLow;
+          const pct = range / detail.avmValue;
+          // Narrower range = higher confidence: <10% spread = high, >30% = low
+          const confidence = Math.max(0, Math.min(100, Math.round((1 - pct / 0.4) * 100)));
+          const label = confidence >= 80 ? "High" : confidence >= 50 ? "Moderate" : "Low";
+          return <InfoRow label="Confidence Score" value={`${confidence}% (${label})`} />;
+        })()}
         <InfoRow label="Equity" value={detail?.equity != null || property.equity != null ? fmtPrice((detail?.equity ?? property.equity) || 0) : undefined} />
         <InfoRow label="LTV" value={detail?.ltv != null || property.ltv != null ? `${detail?.ltv ?? property.ltv}%` : undefined} />
         <InfoRow label="HOA" value={detail?.hoa ? `$${detail.hoa.fee}/mo` : undefined} />

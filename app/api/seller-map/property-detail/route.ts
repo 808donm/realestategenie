@@ -239,11 +239,9 @@ export async function GET(request: NextRequest) {
       avmValue,
       avmLow,
       avmHigh,
-      // Prefer Realie's modelValue, fall back to RentCast AVM
-      modelValue: realieEnrichment.modelValue || avmValue,
       ...realieEnrichment,
-      // Re-apply modelValue after spread in case Realie didn't have one
-      ...(realieEnrichment.modelValue ? {} : { modelValue: avmValue }),
+      // Use RentCast AVM as the primary value; fall back to Realie only if unavailable
+      modelValue: avmValue || realieEnrichment.modelValue,
 
       // Ownership
       owner: property?.owner,
