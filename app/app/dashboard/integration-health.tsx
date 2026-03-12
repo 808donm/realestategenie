@@ -135,7 +135,7 @@ export default function IntegrationHealth() {
             <div className="flex items-center gap-3">
               {getHealthIcon(health.ghl.connected)}
               <div>
-                <div className="font-semibold">GoHighLevel CRM</div>
+                <div className="font-semibold">CRM</div>
                 <div className="text-sm text-muted-foreground">
                   {health.ghl.connected
                     ? `Last sync: ${formatLastUpdated(health.ghl.lastUpdated)}`
@@ -225,7 +225,7 @@ export default function IntegrationHealth() {
               <div className="flex-1">
                 <div className="font-medium text-sm">Action Required</div>
                 <div className="text-sm text-muted-foreground mt-1">
-                  Connect GoHighLevel to automatically sync leads to your CRM and enable automated
+                  Connect your CRM to automatically sync leads and enable automated
                   follow-ups.
                 </div>
                 <Link href="/app/integrations">

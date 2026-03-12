@@ -17,8 +17,8 @@ export default function PipelineTabs() {
     },
     {
       key: "ghl",
-      label: "GHL CRM Pipeline",
-      description: "View deals synced to GoHighLevel",
+      label: "CRM Pipeline",
+      description: "View deals synced to your CRM",
     },
   ];
 

@@ -14,8 +14,8 @@ export default function IntegrationsNotifications() {
     const message = searchParams.get("message");
 
     if (success === "ghl_connected") {
-      toast.success("GoHighLevel Connected!", {
-        description: "Your GHL integration is now active. Leads will be synced automatically.",
+      toast.success("CRM Connected!", {
+        description: "Your CRM integration is now active. Leads will be synced automatically.",
       });
       // Clean up URL
       router.replace("/app/integrations");
@@ -27,23 +27,23 @@ export default function IntegrationsNotifications() {
           errorMessage = message || "OAuth authorization failed";
           break;
         case "ghl_no_code":
-          errorMessage = "No authorization code received from GHL";
+          errorMessage = "No authorization code received from CRM";
           break;
         case "ghl_token_exchange_failed":
           errorMessage = "Failed to exchange authorization code for access token";
           break;
         case "ghl_save_failed":
-          errorMessage = "Failed to save GHL credentials";
+          errorMessage = "Failed to save CRM credentials";
           break;
         case "unauthorized":
           errorMessage = "You must be logged in to connect integrations";
           break;
         case "ghl_unexpected_error":
-          errorMessage = "An unexpected error occurred during GHL OAuth";
+          errorMessage = "An unexpected error occurred during CRM OAuth";
           break;
       }
 
-      toast.error("GHL Connection Failed", {
+      toast.error("CRM Connection Failed", {
         description: errorMessage,
         duration: 6000,
       });

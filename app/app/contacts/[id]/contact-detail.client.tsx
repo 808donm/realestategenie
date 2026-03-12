@@ -367,7 +367,7 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
           {!hasAddress && !propertySearched && (
             <div style={{ padding: 32, textAlign: "center", color: "#6b7280", background: "#f9fafb", borderRadius: 12 }}>
               <div style={{ marginBottom: 8, fontWeight: 600 }}>No address on file</div>
-              <div style={{ fontSize: 13 }}>Add an address to this contact in GoHighLevel to look up their property data.</div>
+              <div style={{ fontSize: 13 }}>Add an address to this contact to look up their property data.</div>
             </div>
           )}
 

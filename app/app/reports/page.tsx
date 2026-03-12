@@ -31,14 +31,14 @@ export default async function ReportsPage() {
             href="/app/reports/lead-source-roi"
             title="Lead Source ROI"
             description="Which lead source has the highest conversion rate and lowest cost-per-closing."
-            dataSources={["GHL", "QBO"]}
+            dataSources={["CRM", "QBO"]}
             color="#3b82f6"
           />
           <ReportCard
             href="/app/reports/pipeline-velocity"
             title="Pipeline Velocity"
             description="How many days a lead stays in each pipeline stage. Find where deals get stuck."
-            dataSources={["GHL"]}
+            dataSources={["CRM"]}
             color="#3b82f6"
           />
           <ReportCard
@@ -52,7 +52,7 @@ export default async function ReportsPage() {
             href="/app/reports/speed-to-lead"
             title="Speed-to-Lead Audit"
             description="Average response time to portal leads. Prove where automation is needed."
-            dataSources={["GHL"]}
+            dataSources={["CRM"]}
             color="#3b82f6"
           />
         </div>
@@ -70,14 +70,14 @@ export default async function ReportsPage() {
             href="/app/reports/agent-leaderboard"
             title="Agent Leaderboard"
             description="Activity vs. results: closings, calls, SMS, and showings per agent."
-            dataSources={["GHL"]}
+            dataSources={["CRM"]}
             color="#8b5cf6"
           />
           <ReportCard
             href="/app/reports/lead-assignment"
             title="Lead Assignment Fairness"
             description="Leads distributed to each team member and their individual conversion rates."
-            dataSources={["GHL"]}
+            dataSources={["CRM"]}
             color="#8b5cf6"
           />
           <ReportCard
@@ -116,7 +116,7 @@ export default async function ReportsPage() {
             href="/app/reports/compliance-audit"
             title="Compliance & Audit Log"
             description="Signed documents, ID verifications, and wire instruction confirmations."
-            dataSources={["GHL", "App"]}
+            dataSources={["CRM", "App"]}
             color="#059669"
           />
           <ReportCard
@@ -130,7 +130,7 @@ export default async function ReportsPage() {
             href="/app/reports/agent-retention-risk"
             title="Agent Retention Risk"
             description="AI-driven flags for agents whose activity dropped 40%+ over 30 days."
-            dataSources={["GHL"]}
+            dataSources={["CRM"]}
             color="#059669"
           />
         </div>
@@ -148,7 +148,7 @@ export default async function ReportsPage() {
             href="/app/reports/pending-documents"
             title="Pending Document Checklist"
             description="Under-contract deals missing required signatures or disclosure forms."
-            dataSources={["GHL"]}
+            dataSources={["CRM"]}
             color="#f59e0b"
           />
         </div>
