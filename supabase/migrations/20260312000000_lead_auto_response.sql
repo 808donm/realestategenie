@@ -121,14 +121,14 @@ ALTER TABLE widget_sessions ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Agents can view own conversations"
   ON lead_conversations FOR SELECT
   USING (agent_id IN (
-    SELECT id FROM agents WHERE user_id = auth.uid()
+    SELECT id FROM agents WHERE id = auth.uid()
   ));
 
 -- Agents can update their own conversations (handoff)
 CREATE POLICY "Agents can update own conversations"
   ON lead_conversations FOR UPDATE
   USING (agent_id IN (
-    SELECT id FROM agents WHERE user_id = auth.uid()
+    SELECT id FROM agents WHERE id = auth.uid()
   ));
 
 -- Service role can do everything (for webhook/engine operations)
@@ -140,7 +140,7 @@ CREATE POLICY "Service role full access to conversations"
 CREATE POLICY "Agents can manage own response settings"
   ON lead_response_settings FOR ALL
   USING (agent_id IN (
-    SELECT id FROM agents WHERE user_id = auth.uid()
+    SELECT id FROM agents WHERE id = auth.uid()
   ));
 
 CREATE POLICY "Service role full access to response settings"
@@ -152,7 +152,7 @@ CREATE POLICY "Agents can view own message logs"
   ON ai_message_log FOR SELECT
   USING (conversation_id IN (
     SELECT id FROM lead_conversations WHERE agent_id IN (
-      SELECT id FROM agents WHERE user_id = auth.uid()
+      SELECT id FROM agents WHERE id = auth.uid()
     )
   ));
 
