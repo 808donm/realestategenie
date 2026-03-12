@@ -758,6 +758,34 @@ export class GHLClient {
   async getCustomFields(locationId: string): Promise<{ customFields: any[] }> {
     return this.request<{ customFields: any[] }>(`/locations/${locationId}/customFields`);
   }
+
+  // ── Webhooks ──────────────────────────────────────────────────────
+
+  /**
+   * List all registered webhooks for a location
+   */
+  async listWebhooks(locationId: string): Promise<{ webhooks: any[] }> {
+    return this.request<{ webhooks: any[] }>(`/webhooks/?locationId=${locationId}`);
+  }
+
+  /**
+   * Create a webhook subscription for specific events
+   */
+  async createWebhook(locationId: string, url: string, events: string[]): Promise<any> {
+    return this.request<any>("/webhooks/", {
+      method: "POST",
+      body: JSON.stringify({ locationId, url, events }),
+    });
+  }
+
+  /**
+   * Delete a webhook subscription
+   */
+  async deleteWebhook(webhookId: string): Promise<void> {
+    await this.request<any>(`/webhooks/${webhookId}`, {
+      method: "DELETE",
+    });
+  }
 }
 
 /**
