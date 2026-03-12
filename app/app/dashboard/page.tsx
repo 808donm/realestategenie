@@ -9,6 +9,7 @@ import ListingSnapshot from "./listing-snapshot";
 import MarketPulse from "./market-pulse";
 import QuickActions from "./quick-actions";
 import AIBriefingCard from "./ai-briefing-card";
+import AIConversationsCard from "./ai-conversations-card";
 import PipelineStats from "./pipeline-stats";
 import { PIPELINE_STAGES, PIPELINE_STAGE_LABELS } from "@/lib/pipeline-stages";
 
@@ -281,6 +282,7 @@ export default async function DashboardPage() {
 
         {/* Right column */}
         <div className="space-y-6">
+          <AIConversationsCard agentId={user.id} />
           <QuickActions />
           <ActivityFeed />
         </div>

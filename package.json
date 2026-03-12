@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:widget": "esbuild src/widget/chat.ts --bundle --minify --target=es2020 --outfile=public/widget/chat.js",
     "start": "next start",
     "lint": "eslint",
     "cap:sync": "npx cap sync",
@@ -76,6 +77,7 @@
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "esbuild": "^0.24.0",
     "eslint": "^9",
     "eslint-config-next": "16.0.10",
     "tailwindcss": "^4",

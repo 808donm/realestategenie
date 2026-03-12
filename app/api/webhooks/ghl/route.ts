@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { handleInboundLeadMessage } from "@/lib/lead-response/engine";
 
 const admin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -48,9 +49,8 @@ async function handleInboundMessage(payload: any) {
     console.log('⚠️ Could not store inbound message:', err.message);
   }
 
-  // TODO: Add notification logic here (email, Slack, SMS, etc.)
-  // TODO: Add auto-responder logic for common questions
-  // TODO: Add AI-powered response suggestions
+  // Trigger AI auto-response engine
+  await handleAutoResponse(payload);
 
   return { success: true, action: 'logged' };
 }
@@ -134,6 +134,78 @@ export async function POST(req: Request) {
       success: false,
       error: error.message
     }, { status: 200 });
+  }
+}
+
+/**
+ * Trigger AI auto-response engine for inbound messages
+ */
+async function handleAutoResponse(payload: any) {
+  const message = payload.message || payload.data?.message;
+  const contact = payload.contact || payload.data?.contact;
+  const conversation = payload.conversation || payload.data?.conversation;
+
+  const messageBody = message?.body || message?.text;
+  if (!messageBody || !contact?.id) {
+    console.log('[Auto-Response] Skipping — no message body or contact ID');
+    return;
+  }
+
+  // Look up which agent owns this GHL location
+  const { data: integration } = await admin
+    .from('integrations')
+    .select('agent_id, config')
+    .eq('provider', 'ghl')
+    .eq('status', 'connected')
+    .single();
+
+  if (!integration) {
+    console.log('[Auto-Response] No GHL integration found for this location');
+    return;
+  }
+
+  // Check if the location matches
+  const config = integration.config as any;
+  const locationId = config.ghl_location_id || config.location_id;
+  if (payload.locationId && locationId && payload.locationId !== locationId) {
+    // Try to find the right integration by location
+    const { data: matchingIntegration } = await admin
+      .from('integrations')
+      .select('agent_id')
+      .eq('provider', 'ghl')
+      .eq('status', 'connected')
+      .filter('config->>ghl_location_id', 'eq', payload.locationId)
+      .single();
+
+    if (!matchingIntegration) {
+      console.log('[Auto-Response] No matching integration for location:', payload.locationId);
+      return;
+    }
+
+    integration.agent_id = matchingIntegration.agent_id;
+  }
+
+  try {
+    const result = await handleInboundLeadMessage({
+      agentId: integration.agent_id,
+      message: messageBody,
+      source: 'ghl',
+      contactId: contact.id,
+      contactPhone: contact.phone,
+      contactName: contact.name || [contact.firstName, contact.lastName].filter(Boolean).join(' '),
+      contactEmail: contact.email,
+      ghlConversationId: conversation?.id,
+    });
+
+    console.log('[Auto-Response] Result:', {
+      responded: result.responded,
+      phase: result.phase,
+      heatScore: result.heatScore,
+      escalated: result.escalated,
+      reason: result.reason,
+    });
+  } catch (err: any) {
+    console.error('[Auto-Response] Engine error:', err.message);
   }
 }
 
