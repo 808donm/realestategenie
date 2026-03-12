@@ -32,7 +32,7 @@ export default function TermsPage() {
             <ul>
               <li>Create and manage open house events</li>
               <li>Capture and qualify leads through QR code check-ins</li>
-              <li>Integrate with CRM systems (GoHighLevel, etc.)</li>
+              <li>Integrate with CRM systems (LeadConnector, etc.)</li>
               <li>Automate follow-up workflows</li>
               <li>Manage property information and marketing materials</li>
             </ul>
@@ -103,7 +103,7 @@ export default function TermsPage() {
             <h2>7. Third-Party Integrations</h2>
             <h3>7.1 Integration Services</h3>
             <p>
-              The Service may integrate with third-party services (GoHighLevel, n8n, IDX Broker, etc.).
+              The Service may integrate with third-party services (LeadConnector, n8n, IDX Broker, etc.).
               Your use of these integrations is subject to:
             </p>
             <ul>

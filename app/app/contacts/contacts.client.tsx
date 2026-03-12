@@ -190,7 +190,7 @@ export default function ContactsClient() {
           }}
         >
           <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 16 }}>
-            Add New Contact to GoHighLevel
+            Add New Contact to LeadConnector
           </h3>
           {addError && (
             <div style={{ padding: 12, background: "#fee2e2", color: "#dc2626", borderRadius: 6, marginBottom: 16 }}>
@@ -334,7 +334,7 @@ export default function ContactsClient() {
           }}
         >
           <p style={{ fontSize: 16, marginBottom: 8 }}>
-            {search ? "No contacts found matching your search." : "No contacts found in GoHighLevel."}
+            {search ? "No contacts found matching your search." : "No contacts found in LeadConnector."}
           </p>
           <p style={{ fontSize: 14 }}>
             {search ? "Try a different search term." : "Add your first contact using the button above."}

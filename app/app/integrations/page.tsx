@@ -69,7 +69,7 @@ export default async function IntegrationsPage() {
         </p>
       </div>
 
-      {/* Primary Integrations — GHL & Trestle */}
+      {/* Primary Integrations — LeadConnector & Trestle */}
       <div className="grid gap-6 md:grid-cols-2">
         <GHLIntegrationCard integration={ghlIntegration} />
         <TrestleIntegrationCard integration={trestleIntegration || null} />

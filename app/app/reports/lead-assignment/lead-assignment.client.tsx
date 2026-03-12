@@ -149,14 +149,14 @@ export default function LeadAssignmentClient() {
       }}>
         <span>
           {isLive ? (
-            <><strong>Live Data</strong> -- Showing live data from your GHL integration.</>
+            <><strong>Live Data</strong> -- Showing live data from your LeadConnector integration.</>
           ) : (
-            <><strong>Sample Data</strong> -- Connect your GHL integration to see live data.</>
+            <><strong>Sample Data</strong> -- Connect your LeadConnector integration to see live data.</>
           )}
         </span>
         {!isLive && (
           <Link href="/app/integrations" style={{ color: "#2563eb", fontWeight: 600, textDecoration: "none" }}>
-            Connect GHL &rarr;
+            Connect LeadConnector &rarr;
           </Link>
         )}
       </div>
@@ -341,7 +341,7 @@ export default function LeadAssignmentClient() {
           Recommendation
         </h3>
         <p style={{ margin: 0, fontSize: 13, lineHeight: 1.7, color: "#14532d" }}>
-          Consider enabling round-robin lead assignment in GHL to ensure equal distribution.
+          Consider enabling round-robin lead assignment in LeadConnector to ensure equal distribution.
           <strong> {topConverter.name}</strong> has the highest conversion rate at{" "}
           <strong>{conversionRate(topConverter)}%</strong> -- routing higher-intent leads to top converters
           while maintaining base fairness can optimize team outcomes. Agents with response times

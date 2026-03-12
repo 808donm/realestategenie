@@ -26,7 +26,7 @@ const EVENT_TYPES = [
   { value: "open_house.published", label: "Open House Published", description: "Event goes live" },
   { value: "open_house.ended", label: "Open House Ended", description: "Event closes" },
   { value: "consent.captured", label: "Consent Captured", description: "User gives consent" },
-  { value: "integration.connected", label: "Integration Connected", description: "GHL/n8n connected" },
+  { value: "integration.connected", label: "Integration Connected", description: "LeadConnector/n8n connected" },
 ];
 
 export default function N8NIntegrationCard({ integration }: { integration: Integration }) {

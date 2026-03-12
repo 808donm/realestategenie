@@ -16,7 +16,7 @@ export default function LeadAssignmentPage() {
         Lead Assignment Fairness
       </h1>
       <p style={{ margin: "0 0 24px 0", opacity: 0.7 }}>
-        Evaluate lead distribution equity and individual conversion rates across your team. Data from GHL.
+        Evaluate lead distribution equity and individual conversion rates across your team. Data from LeadConnector.
       </p>
       <LeadAssignmentClient />
     </div>

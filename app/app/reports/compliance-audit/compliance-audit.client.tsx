@@ -153,7 +153,7 @@ export default function ComplianceAuditClient() {
           {isLive ? (
             <>This report is showing <strong>live data</strong> from your connected integrations.</>
           ) : (
-            <>This report uses <strong>sample data</strong>. Connect GHL and configure your brokerage to see live compliance events.{" "}
+            <>This report uses <strong>sample data</strong>. Connect LeadConnector and configure your brokerage to see live compliance events.{" "}
               <Link href="/app/integrations" style={{ color: "#1565C0", fontWeight: 600 }}>Set up integrations &rarr;</Link>
             </>
           )}

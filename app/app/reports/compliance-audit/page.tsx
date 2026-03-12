@@ -16,7 +16,7 @@ export default function ComplianceAuditPage() {
         Compliance &amp; Audit Log
       </h1>
       <p style={{ margin: "0 0 24px 0", opacity: 0.7 }}>
-        Track every compliance event across your brokerage. Ensure nothing falls through the cracks. Data from GHL + App.
+        Track every compliance event across your brokerage. Ensure nothing falls through the cracks. Data from LeadConnector + App.
       </p>
       <ComplianceAuditClient />
     </div>

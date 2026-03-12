@@ -178,7 +178,7 @@ export default function LeadSourceROIClient() {
         <div style={{ padding: 16, background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10, marginBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <strong style={{ fontSize: 14 }}>Sample Data</strong>
-            <span style={{ fontSize: 13, opacity: 0.8, marginLeft: 8 }}>Connect GHL + QuickBooks to see your real lead source ROI.</span>
+            <span style={{ fontSize: 13, opacity: 0.8, marginLeft: 8 }}>Connect LeadConnector + QuickBooks to see your real lead source ROI.</span>
           </div>
           <Link href="/app/integrations" style={{ padding: "6px 14px", background: "#f59e0b", color: "#fff", borderRadius: 6, fontSize: 13, fontWeight: 600, textDecoration: "none" }}>
             Connect Integration

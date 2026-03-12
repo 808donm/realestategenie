@@ -16,7 +16,7 @@ export default function AgentLeaderboardPage() {
         Agent Leaderboard: Activity vs. Results
       </h1>
       <p style={{ margin: "0 0 24px 0", opacity: 0.7 }}>
-        Compare agent performance across closings, calls, SMS, and showings. Data from GHL.
+        Compare agent performance across closings, calls, SMS, and showings. Data from LeadConnector.
       </p>
       <AgentLeaderboardClient />
     </div>

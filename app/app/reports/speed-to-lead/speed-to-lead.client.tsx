@@ -101,7 +101,7 @@ export default function SpeedToLeadClient() {
         </div>
       ) : (
         <div style={{ padding: 12, background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, marginBottom: 20, fontSize: 13 }}>
-          Showing sample data. <Link href="/app/integrations" style={{ color: "#3b82f6", fontWeight: 600 }}>Connect GHL</Link> to see live response metrics.
+          Showing sample data. <Link href="/app/integrations" style={{ color: "#3b82f6", fontWeight: 600 }}>Connect LeadConnector</Link> to see live response metrics.
         </div>
       )}
 
@@ -194,7 +194,7 @@ export default function SpeedToLeadClient() {
         <h3 style={{ margin: "0 0 8px 0", fontSize: 15, fontWeight: 700 }}>Recommendation</h3>
         <p style={{ margin: 0, fontSize: 13, color: "#374151", lineHeight: 1.6 }}>
           {data.avgResponseMin > 15
-            ? "Your average response time exceeds 15 minutes. Studies show that responding within 5 minutes increases conversion by 400%. Consider setting up automated initial responses in GHL for leads that come in during your busiest hours."
+            ? "Your average response time exceeds 15 minutes. Studies show that responding within 5 minutes increases conversion by 400%. Consider setting up automated initial responses in LeadConnector for leads that come in during your busiest hours."
             : "Great job keeping response times low! Continue monitoring to ensure consistency, especially during peak hours."}
         </p>
       </div>

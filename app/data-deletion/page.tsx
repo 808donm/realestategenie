@@ -33,7 +33,7 @@ export default function DataDeletionPage() {
                 <li>Your profile and branding settings (headshot, bio, theme preferences)</li>
                 <li>All open house events you created</li>
                 <li>All leads and attendee data you collected</li>
-                <li>Integration configurations (GHL, n8n connections)</li>
+                <li>Integration configurations (LeadConnector, n8n connections)</li>
                 <li>All associated files (flyers, property photos)</li>
               </ul>
 
@@ -119,7 +119,7 @@ export default function DataDeletionPage() {
                   information) before requesting deletion. This action is permanent and cannot be undone.
                 </li>
                 <li>
-                  <strong>Third-Party Data:</strong> Data shared with integrated services (GoHighLevel, n8n)
+                  <strong>Third-Party Data:</strong> Data shared with integrated services (LeadConnector, n8n)
                   may not be automatically deleted. You must contact those services separately.
                 </li>
                 <li>

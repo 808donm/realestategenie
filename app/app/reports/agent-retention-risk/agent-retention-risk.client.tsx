@@ -169,7 +169,7 @@ export default function AgentRetentionRiskClient() {
           {isLive ? (
             <>This report is showing <strong>live data</strong> from your connected integrations.</>
           ) : (
-            <>This report uses <strong>sample data</strong>. Connect your GHL account to track real agent activity signals.{" "}
+            <>This report uses <strong>sample data</strong>. Connect your LeadConnector account to track real agent activity signals.{" "}
               <Link href="/app/integrations" style={{ color: "#1565C0", fontWeight: 600 }}>Set up integrations &rarr;</Link>
             </>
           )}

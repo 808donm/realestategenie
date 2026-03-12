@@ -73,11 +73,11 @@ export default function GHLIntegrationCard({ integration }: { integration: Integ
       const data = await response.json();
 
       if (response.ok) {
-        toast.success("GHL connection successful!", {
+        toast.success("LeadConnector connection successful!", {
           description: `Found ${data.locations?.length || 0} location(s)`,
         });
       } else {
-        toast.error("GHL connection failed", {
+        toast.error("LeadConnector connection failed", {
           description: data.error || "Unknown error",
         });
       }
@@ -91,7 +91,7 @@ export default function GHLIntegrationCard({ integration }: { integration: Integ
   };
 
   const handleDisconnect = async () => {
-    if (!confirm("Are you sure you want to disconnect GoHighLevel? Lead sync will stop.")) {
+    if (!confirm("Are you sure you want to disconnect LeadConnector? Lead sync will stop.")) {
       return;
     }
 
@@ -102,7 +102,7 @@ export default function GHLIntegrationCard({ integration }: { integration: Integ
       });
 
       if (response.ok) {
-        toast.success("GHL disconnected");
+        toast.success("LeadConnector disconnected");
         window.location.reload();
       } else {
         const data = await response.json();
@@ -158,7 +158,7 @@ export default function GHLIntegrationCard({ integration }: { integration: Integ
         setPipelines(data.pipelines);
         if (data.pipelines.length === 0) {
           toast.info("No pipelines found", {
-            description: "Create a pipeline in GHL first, then come back to configure it here.",
+            description: "Create a pipeline in LeadConnector first, then come back to configure it here.",
           });
         }
       } else {
@@ -233,10 +233,10 @@ export default function GHLIntegrationCard({ integration }: { integration: Integ
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-xl">
-              GHL
+              LC
             </div>
             <div>
-              <CardTitle>GoHighLevel</CardTitle>
+              <CardTitle>LeadConnector</CardTitle>
               <CardDescription>CRM & Lead Management</CardDescription>
             </div>
           </div>
@@ -260,7 +260,7 @@ export default function GHLIntegrationCard({ integration }: { integration: Integ
 
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          Automatically sync leads to your GoHighLevel CRM. Create contacts, opportunities, and
+          Automatically sync leads to your LeadConnector CRM. Create contacts, opportunities, and
           trigger workflows.
         </p>
 
@@ -320,7 +320,7 @@ export default function GHLIntegrationCard({ integration }: { integration: Integ
                 ) : (
                   <RefreshCw className="w-4 h-4 mr-2" />
                 )}
-                {loadingPipelines ? "Loading pipelines..." : "Load Pipelines from GHL"}
+                {loadingPipelines ? "Loading pipelines..." : "Load Pipelines from LeadConnector"}
               </Button>
             ) : (
               <div className="space-y-3">
@@ -436,7 +436,7 @@ export default function GHLIntegrationCard({ integration }: { integration: Integ
                 <Input
                   id="lease-template-id"
                   type="text"
-                  placeholder="Enter template ID from GHL"
+                  placeholder="Enter template ID from LeadConnector"
                   value={leaseTemplateId}
                   onChange={(e) => setLeaseTemplateId(e.target.value)}
                   className="flex-1"
@@ -454,7 +454,7 @@ export default function GHLIntegrationCard({ integration }: { integration: Integ
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Configure your GHL lease template for automatic document creation. Find your template
+                Configure your LeadConnector lease template for automatic document creation. Find your template
                 ID: Go to Marketing &rarr; Documents & Contracts &rarr; Click your lease template &rarr; Copy the ID
                 from the URL (e.g., /templates/<strong>abc123xyz</strong>)
               </p>
@@ -477,7 +477,7 @@ export default function GHLIntegrationCard({ integration }: { integration: Integ
           {!isConnected ? (
             <Button onClick={handleConnect} className="w-full">
               <ExternalLink className="w-4 h-4 mr-2" />
-              Connect GoHighLevel
+              Connect LeadConnector
             </Button>
           ) : (
             <>

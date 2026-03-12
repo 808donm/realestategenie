@@ -16,7 +16,7 @@ export default function PendingDocumentsPage() {
         Pending Document Checklist
       </h1>
       <p style={{ margin: "0 0 24px 0", opacity: 0.7 }}>
-        Under-contract deals missing required signatures or disclosure forms. Data from GHL.
+        Under-contract deals missing required signatures or disclosure forms. Data from LeadConnector.
       </p>
       <PendingDocumentsClient />
     </div>

@@ -16,7 +16,7 @@ export default function AgentRetentionRiskPage() {
         Agent Retention Risk
       </h1>
       <p style={{ margin: "0 0 24px 0", opacity: 0.7 }}>
-        AI-driven early warning system for agent churn. Spot disengagement before it becomes a resignation. Data from GHL.
+        AI-driven early warning system for agent churn. Spot disengagement before it becomes a resignation. Data from LeadConnector.
       </p>
       <AgentRetentionRiskClient />
     </div>

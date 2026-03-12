@@ -16,7 +16,7 @@ export default function LeadSourceROIPage() {
         Lead Source ROI
       </h1>
       <p style={{ margin: "0 0 24px 0", opacity: 0.7 }}>
-        Which lead source has the highest conversion rate and lowest cost-per-closing. Data from GHL + QBO.
+        Which lead source has the highest conversion rate and lowest cost-per-closing. Data from LeadConnector + QBO.
       </p>
       <LeadSourceROIClient />
     </div>

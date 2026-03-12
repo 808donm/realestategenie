@@ -49,7 +49,7 @@ export default function PrivacyPage() {
               <li>Process authentication and account management</li>
               <li>Facilitate open house management and lead capture</li>
               <li>Send notifications and communications related to your account</li>
-              <li>Integrate with third-party services (GoHighLevel, n8n, etc.)</li>
+              <li>Integrate with third-party services (LeadConnector, n8n, etc.)</li>
               <li>Improve our services and develop new features</li>
               <li>Comply with legal obligations</li>
             </ul>
@@ -60,7 +60,7 @@ export default function PrivacyPage() {
               With your explicit consent, we may share your data with:
             </p>
             <ul>
-              <li><strong>GoHighLevel:</strong> For CRM and lead management</li>
+              <li><strong>LeadConnector:</strong> For CRM and lead management</li>
               <li><strong>n8n:</strong> For workflow automation</li>
               <li><strong>IDX Broker:</strong> For property listings (if enabled)</li>
             </ul>

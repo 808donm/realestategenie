@@ -166,14 +166,14 @@ export default function AgentLeaderboardClient() {
       }}>
         <span>
           {isLive ? (
-            <><strong>Live Data</strong> -- Showing live data from your GHL integration.</>
+            <><strong>Live Data</strong> -- Showing live data from your LeadConnector integration.</>
           ) : (
-            <><strong>Sample Data</strong> -- Connect your GHL integration to see live data.</>
+            <><strong>Sample Data</strong> -- Connect your LeadConnector integration to see live data.</>
           )}
         </span>
         {!isLive && (
           <Link href="/app/integrations" style={{ color: "#2563eb", fontWeight: 600, textDecoration: "none" }}>
-            Connect GHL &rarr;
+            Connect LeadConnector &rarr;
           </Link>
         )}
       </div>

@@ -16,7 +16,7 @@ export default function PipelineVelocityPage() {
         Pipeline Velocity
       </h1>
       <p style={{ margin: "0 0 24px 0", opacity: 0.7 }}>
-        How many days a lead stays in each pipeline stage. Find where deals get stuck. Data from GHL.
+        How many days a lead stays in each pipeline stage. Find where deals get stuck. Data from LeadConnector.
       </p>
       <PipelineVelocityClient />
     </div>

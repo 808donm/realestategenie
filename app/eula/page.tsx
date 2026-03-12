@@ -53,10 +53,10 @@ export default function EULAPage() {
             <h3 className="text-2xl font-bold text-gray-900 mb-4">1. Definitions</h3>
             <ul className="space-y-3 text-gray-700">
               <li>
-                <strong>&ldquo;App&rdquo;</strong> means <strong>Real Estate Genie</strong>, a GoHighLevel (&ldquo;<strong>GHL</strong>&rdquo;) application, including related software, features, workflows, automations, templates, AI features, and documentation.
+                <strong>&ldquo;App&rdquo;</strong> means <strong>Real Estate Genie</strong>, a LeadConnector (&ldquo;<strong>LC</strong>&rdquo;) application, including related software, features, workflows, automations, templates, AI features, and documentation.
               </li>
               <li>
-                <strong>&ldquo;GHL&rdquo;</strong> means the GoHighLevel platform and its services, APIs, and systems.
+                <strong>&ldquo;LC&rdquo;</strong> means the LeadConnector platform and its services, APIs, and systems.
               </li>
               <li>
                 <strong>&ldquo;Customer Content&rdquo;</strong> means data and content you submit to, generate with, or process through the App (including leads, contacts, messages, call metadata, notes, listing-related information, and any personal data).
@@ -72,12 +72,12 @@ export default function EULAPage() {
 
           {/* Section 2 */}
           <section className="mb-10">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">2. Platform Dependency and Relationship to GHL</h3>
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">2. Platform Dependency and Relationship to LeadConnector</h3>
             <p className="text-gray-700 leading-relaxed mb-3">
-              The App operates <strong>only as a GHL app</strong> and depends on GHL availability and functionality. Your use of GHL is governed by your agreement(s) with GHL, not this Agreement.
+              The App operates <strong>only as a LeadConnector app</strong> and depends on LeadConnector availability and functionality. Your use of LeadConnector is governed by your agreement(s) with LeadConnector, not this Agreement.
             </p>
             <p className="text-gray-700 leading-relaxed">
-              We are not responsible for GHL outages, API changes, feature deprecations, rate limits, or platform restrictions that impact App performance or availability.
+              We are not responsible for LeadConnector outages, API changes, feature deprecations, rate limits, or platform restrictions that impact App performance or availability.
             </p>
           </section>
 
@@ -115,7 +115,7 @@ export default function EULAPage() {
               You are responsible for:
             </p>
             <ul className="list-disc pl-6 space-y-2 text-gray-700">
-              <li>all activity under your GHL account and any credentials used with the App;</li>
+              <li>all activity under your LeadConnector account and any credentials used with the App;</li>
               <li>maintaining accurate configurations and contact data;</li>
               <li>ensuring Authorized Users comply with this Agreement.</li>
             </ul>

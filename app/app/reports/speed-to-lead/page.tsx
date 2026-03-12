@@ -16,7 +16,7 @@ export default function SpeedToLeadPage() {
         Speed-to-Lead Audit
       </h1>
       <p style={{ margin: "0 0 24px 0", opacity: 0.7 }}>
-        Average response time to portal leads. Prove where automation is needed. Data from GHL.
+        Average response time to portal leads. Prove where automation is needed. Data from LeadConnector.
       </p>
       <SpeedToLeadClient />
     </div>

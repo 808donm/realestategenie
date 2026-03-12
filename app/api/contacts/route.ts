@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
 
     if (!ghlConfig) {
       return NextResponse.json(
-        { error: "GHL integration not found. Please connect GoHighLevel first." },
+        { error: "LeadConnector integration not found. Please connect LeadConnector first." },
         { status: 404 }
       );
     }
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
 
     if (!ghlConfig) {
       return NextResponse.json(
-        { error: "GHL integration not found. Please connect GoHighLevel first." },
+        { error: "LeadConnector integration not found. Please connect LeadConnector first." },
         { status: 404 }
       );
     }

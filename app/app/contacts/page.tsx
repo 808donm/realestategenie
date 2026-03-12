@@ -24,7 +24,7 @@ export default async function ContactsPage() {
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ fontSize: 28, fontWeight: 700, margin: 0 }}>Contacts</h1>
         <p style={{ opacity: 0.7, marginTop: 4 }}>
-          Manage your contacts synced with GoHighLevel CRM
+          Manage your contacts synced with LeadConnector CRM
         </p>
       </div>
 
@@ -39,10 +39,10 @@ export default async function ContactsPage() {
           }}
         >
           <h2 style={{ fontSize: 20, fontWeight: 600, marginBottom: 8 }}>
-            GoHighLevel Not Connected
+            LeadConnector Not Connected
           </h2>
           <p style={{ marginBottom: 16, color: "#92400e" }}>
-            Connect your GoHighLevel account to sync and manage contacts.
+            Connect your LeadConnector account to sync and manage contacts.
           </p>
           <a
             href="/app/integrations"

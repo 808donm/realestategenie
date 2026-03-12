@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
 
     if (!ghlConfig) {
       return NextResponse.json(
-        { error: "GoHighLevel is not connected. Go to Integrations to set it up." },
+        { error: "LeadConnector is not connected. Go to Integrations to set it up." },
         { status: 404 }
       );
     }

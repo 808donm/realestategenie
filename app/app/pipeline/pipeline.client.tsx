@@ -73,7 +73,7 @@ export default function PipelineClient() {
           setIsLoading(false);
         }
       } catch {
-        setError("Failed to load pipelines. Is GoHighLevel connected?");
+        setError("Failed to load pipelines. Is LeadConnector connected?");
         setIsLoading(false);
       }
     };
@@ -135,7 +135,7 @@ export default function PipelineClient() {
       <div style={{ padding: 40, textAlign: "center", background: "#fef2f2", borderRadius: 12, color: "#dc2626" }}>
         <p style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>{error}</p>
         <p style={{ fontSize: 14, color: "#6b7280" }}>
-          Make sure GoHighLevel is connected in your Integrations settings.
+          Make sure LeadConnector is connected in your Integrations settings.
         </p>
       </div>
     );

@@ -250,7 +250,7 @@ export default function AttachToContact({ generateFile, reportTitle }: AttachToC
               cursor: "pointer",
             }}
           >
-            Attach to GHL
+            Attach to LeadConnector
           </button>
           <button
             onClick={() => setMode("email")}
