@@ -115,7 +115,7 @@ export async function generateSmsResponse(params: {
     system: getSystemPrompt(agentName, propertyAddress),
     messages: aiMessages,
     temperature: 0.7,
-    maxTokens: 200, // SMS should be short
+    maxOutputTokens: 200, // SMS should be short
   });
 
   const reply = text?.trim() || "Thanks for your message! Let me get back to you shortly.";
