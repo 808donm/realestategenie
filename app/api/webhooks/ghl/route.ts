@@ -1,11 +1,101 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { generateSmsResponse } from "@/lib/ai/sms-assistant";
 
 const admin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
   { auth: { persistSession: false } }
 );
+
+/**
+ * Handle outbound messages (email/SMS sent from CRM to a contact).
+ * When we detect that the agent has sent an initial message to a lead,
+ * advance that lead from "new_lead" to "initial_contact".
+ */
+async function handleOutboundMessage(payload: any) {
+  const message = payload.message || payload.data?.message;
+  const contact = payload.contact || payload.data?.contact;
+  const contactId = contact?.id || payload.contactId;
+  const messageType = message?.type || payload.messageType;
+
+  console.log('📤 OUTBOUND MESSAGE DETECTED');
+  console.log('To:', contact?.name || 'Unknown');
+  console.log('Type:', messageType);
+  console.log('Contact ID:', contactId);
+
+  if (!contactId) {
+    console.log('⚠️ No contact ID in outbound message, skipping stage advancement');
+    return { success: true, action: 'skipped', reason: 'no_contact_id' };
+  }
+
+  // Only advance for SMS or Email messages
+  const normalizedType = (messageType || '').toUpperCase();
+  if (!['SMS', 'EMAIL'].includes(normalizedType)) {
+    console.log(`⚠️ Message type "${messageType}" is not SMS/Email, skipping`);
+    return { success: true, action: 'skipped', reason: 'unsupported_type' };
+  }
+
+  try {
+    // Find leads linked to this GHL contact that are still in "new_lead" stage
+    const { data: leads, error: queryError } = await admin
+      .from('lead_submissions')
+      .select('id, agent_id, pipeline_stage, ghl_contact_id')
+      .eq('ghl_contact_id', contactId)
+      .eq('pipeline_stage', 'new_lead');
+
+    if (queryError) {
+      console.error('❌ Error querying leads for stage advancement:', queryError.message);
+      return { success: false, error: queryError.message };
+    }
+
+    if (!leads || leads.length === 0) {
+      console.log('ℹ️ No leads in "new_lead" stage for contact:', contactId);
+      return { success: true, action: 'no_leads_to_advance' };
+    }
+
+    // Advance each matching lead to "initial_contact"
+    const leadIds = leads.map((l: any) => l.id);
+    const { error: updateError } = await admin
+      .from('lead_submissions')
+      .update({
+        pipeline_stage: 'initial_contact',
+        updated_at: new Date().toISOString(),
+      })
+      .in('id', leadIds);
+
+    if (updateError) {
+      console.error('❌ Error advancing leads:', updateError.message);
+      return { success: false, error: updateError.message };
+    }
+
+    console.log(
+      `✅ Advanced ${leads.length} lead(s) from "new_lead" → "initial_contact" (contact: ${contactId})`
+    );
+
+    // Log to audit trail for each lead
+    for (const lead of leads) {
+      await admin.from('audit_log').insert({
+        agent_id: lead.agent_id,
+        action: 'lead.stage_advanced',
+        details: {
+          lead_id: lead.id,
+          ghl_contact_id: contactId,
+          previous_stage: 'new_lead',
+          new_stage: 'initial_contact',
+          trigger: `outbound_${normalizedType.toLowerCase()}`,
+        },
+      }).then(({ error }: { error: any }) => {
+        if (error) console.log('⚠️ Could not log audit:', error.message);
+      });
+    }
+
+    return { success: true, action: 'advanced', count: leads.length };
+  } catch (err: any) {
+    console.error('❌ Unexpected error in outbound message handler:', err.message);
+    return { success: false, error: err.message };
+  }
+}
 
 /**
  * Handle inbound messages from contacts
@@ -48,9 +138,129 @@ async function handleInboundMessage(payload: any) {
     console.log('⚠️ Could not store inbound message:', err.message);
   }
 
-  // TODO: Add notification logic here (email, Slack, SMS, etc.)
-  // TODO: Add auto-responder logic for common questions
-  // TODO: Add AI-powered response suggestions
+  // Route SMS messages to AI assistant if no active flyer follow-up
+  const messageType = (message?.type || '').toUpperCase();
+  const contactId = contact?.id;
+  const locationId = payload.locationId;
+
+  if (messageType === 'SMS' && contactId && locationId) {
+    try {
+      // Check if there's an active flyer follow-up for this contact.
+      // If so, the message-response webhook handles it — skip AI here.
+      const { data: activeFollowup } = await admin
+        .from('open_house_flyer_followups')
+        .select('id')
+        .eq('ghl_contact_id', contactId)
+        .in('status', ['sent', 'needs_clarification'])
+        .limit(1)
+        .single();
+
+      if (activeFollowup) {
+        console.log('📋 Active flyer follow-up exists, deferring to message-response handler');
+        return { success: true, action: 'deferred_to_flyer_followup' };
+      }
+
+      // Find the agent integration for this location
+      const { data: integration } = await admin
+        .from('integrations')
+        .select('agent_id, config')
+        .eq('provider', 'ghl')
+        .eq('status', 'connected')
+        .single();
+
+      if (!integration) {
+        console.log('⚠️ No GHL integration found for AI routing');
+        return { success: true, action: 'logged' };
+      }
+
+      const config = integration.config as any;
+      if (config.ghl_location_id !== locationId) {
+        console.log('⚠️ Location ID mismatch for AI routing');
+        return { success: true, action: 'logged' };
+      }
+
+      const agentId = integration.agent_id;
+      const accessToken = config.ghl_access_token;
+
+      // Check if AI SMS assistant is enabled for this agent
+      if (!config.ai_sms_enabled) {
+        console.log('ℹ️ AI SMS assistant not enabled for this agent');
+        return { success: true, action: 'logged' };
+      }
+
+      // Get agent name for the AI prompt
+      const { data: agent } = await admin
+        .from('agents')
+        .select('full_name')
+        .eq('id', agentId)
+        .single();
+
+      const agentName = agent?.full_name || 'your agent';
+
+      // Find property context from the lead's most recent open house
+      let propertyAddress: string | undefined;
+      const { data: attendance } = await admin
+        .from('contact_open_house_attendance')
+        .select('open_house_events!inner(address)')
+        .eq('ghl_contact_id', contactId)
+        .eq('agent_id', agentId)
+        .order('attended_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (attendance) {
+        const event = Array.isArray(attendance.open_house_events)
+          ? attendance.open_house_events[0]
+          : attendance.open_house_events;
+        propertyAddress = event?.address;
+      }
+
+      const messageBody = message?.body || message?.text || '';
+
+      console.log('🤖 Routing to AI SMS assistant');
+
+      // Generate AI response
+      const { reply, conversationId } = await generateSmsResponse({
+        ghlContactId: contactId,
+        agentId,
+        agentName,
+        inboundMessage: messageBody,
+        propertyAddress,
+      });
+
+      // Send the AI reply via GHL SMS
+      const sendResponse = await fetch(
+        'https://services.leadconnectorhq.com/conversations/messages',
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+            'Version': '2021-07-28',
+          },
+          body: JSON.stringify({
+            type: 'SMS',
+            locationId,
+            contactId,
+            message: reply,
+          }),
+        }
+      );
+
+      if (!sendResponse.ok) {
+        const errorText = await sendResponse.text();
+        console.error('❌ Failed to send AI reply via GHL:', errorText);
+        return { success: false, action: 'ai_send_failed' };
+      }
+
+      console.log(`✅ AI reply sent (conversation: ${conversationId})`);
+      return { success: true, action: 'ai_replied', conversationId };
+    } catch (aiError: any) {
+      console.error('❌ AI SMS assistant error:', aiError.message);
+      // Don't fail the webhook — the message is already logged above
+      return { success: true, action: 'ai_error', error: aiError.message };
+    }
+  }
 
   return { success: true, action: 'logged' };
 }
@@ -109,6 +319,7 @@ export async function POST(req: Request) {
 
       case 'OutboundMessage':
         console.log('[GHL Webhook] Outbound message sent:', body.message?.id);
+        await handleOutboundMessage(body);
         break;
 
       case 'ConversationUnreadUpdate':
