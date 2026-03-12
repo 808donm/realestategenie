@@ -138,28 +138,13 @@ async function handleInboundMessage(payload: any) {
     console.log('⚠️ Could not store inbound message:', err.message);
   }
 
-  // Route SMS messages to AI assistant if no active flyer follow-up
+  // Route SMS messages to AI assistant
   const messageType = (message?.type || '').toUpperCase();
   const contactId = contact?.id;
   const locationId = payload.locationId;
 
   if (messageType === 'SMS' && contactId && locationId) {
     try {
-      // Check if there's an active flyer follow-up for this contact.
-      // If so, the message-response webhook handles it — skip AI here.
-      const { data: activeFollowup } = await admin
-        .from('open_house_flyer_followups')
-        .select('id')
-        .eq('ghl_contact_id', contactId)
-        .in('status', ['sent', 'needs_clarification'])
-        .limit(1)
-        .single();
-
-      if (activeFollowup) {
-        console.log('📋 Active flyer follow-up exists, deferring to message-response handler');
-        return { success: true, action: 'deferred_to_flyer_followup' };
-      }
-
       // Find the agent integration for this location
       const { data: integration } = await admin
         .from('integrations')
