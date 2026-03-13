@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
       .from("user_invitations")
       .insert({
         email,
-        token,
+        invitation_token: token,
         status: "pending",
         expires_at: expiresAt.toISOString(),
         invited_by: null, // Self-registration, no admin inviter
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       invitationId: invitation.id,
-      token: invitation.token,
+      token: invitation.invitation_token,
       message: "Please complete your account setup",
     });
   } catch (error: any) {

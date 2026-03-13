@@ -34,7 +34,7 @@ export default async function AcceptInvitePage({
   // Verify invitation
   const { data: invitation, error } = await admin
     .from("user_invitations")
-    .select("id, email, token, status, expires_at")
+    .select("id, email, invitation_token, status, expires_at")
     .eq("id", id)
     .single();
 
@@ -52,7 +52,7 @@ export default async function AcceptInvitePage({
   }
 
   // Verify token matches
-  if (invitation.token !== token) {
+  if (invitation.invitation_token !== token) {
     return (
       <div style={{ maxWidth: 500, margin: "100px auto", padding: 24, textAlign: "center" }}>
         <h1 style={{ fontSize: 24, fontWeight: 700, color: "#ef4444" }}>

@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
       .from("user_invitations")
       .insert({
         email,
-        token,
+        invitation_token: token,
         invited_by: user.id,
         status: "pending",
         expires_at: expiresAt.toISOString(),

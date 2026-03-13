@@ -186,7 +186,7 @@ async function handleNewUserRegistrationPayment(session: Stripe.Checkout.Session
     .from("user_invitations")
     .insert({
       email: accessRequest.email,
-      token,
+      invitation_token: token,
       status: "pending",
       expires_at: expiresAt.toISOString(),
       invited_by: null, // Admin-initiated

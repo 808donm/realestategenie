@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
       .from("user_invitations")
       .insert({
         email,
-        token,
+        invitation_token: token,
         invited_by: userData.user.id,
         status: "pending",
         expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
       await supabaseAdmin
         .from("user_invitations")
         .update({ status: "cancelled" })
-        .eq("token", token);
+        .eq("invitation_token", token);
       return NextResponse.json(
         { error: authError?.message || "Failed to create user" },
         { status: 500 }

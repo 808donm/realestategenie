@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     // Verify invitation
     const { data: invitation, error: inviteError } = await admin
       .from("user_invitations")
-      .select("id, email, token, status, expires_at")
+      .select("id, email, invitation_token, status, expires_at")
       .eq("id", invitationId)
       .single();
 
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify token
-    if (invitation.token !== token) {
+    if (invitation.invitation_token !== token) {
       return NextResponse.json({ error: "Invalid token" }, { status: 403 });
     }
 
