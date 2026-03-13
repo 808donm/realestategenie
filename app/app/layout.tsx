@@ -7,6 +7,7 @@ import ChangePasswordForm from "./change-password/change-password-form";
 
 import { getSubscriptionStatus, getSuggestedUpgradePlan } from "@/lib/subscriptions/utils";
 import { checkFeatureAccess } from "@/lib/subscriptions/server-utils";
+import { HelpPanel } from "./components/help-panel.client";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await supabaseServer();
@@ -153,6 +154,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             {isPlatformAdmin && (
               <NavLink href="/app/admin">Admin</NavLink>
             )}
+            <HelpPanel />
           </nav>
 
           {/* Sign Out - Mobile */}
