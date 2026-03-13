@@ -60,11 +60,14 @@ THE PLATFORM — 8 PILLARS:
    - Automatic pipeline advancement when outbound contact is made
    - Leads get contact within seconds, not hours — even at 2am
 
-5. PROSPECTING
-   - Property intelligence data to identify potential sellers and investment opportunities
-   - Market trend data and property valuations powered by ATTOM
-   - Identify likely sellers in your farm areas
-   - Build targeted prospect lists based on property characteristics and ownership data
+5. PROSPECTING (5 search modes — all included in every plan)
+   - ABSENTEE OWNER SEARCH: Find non-owner-occupied properties by zip code — out-of-state owners, corporate entities, and landlords managing properties remotely. Shows owner names, mailing addresses, mortgage info, and estimated values.
+   - HIGH-EQUITY / LIKELY SELLER SEARCH: Find long-tenure homeowners (10+ years owned) who have built significant equity through appreciation. Perfect for "unlock your equity" listing campaigns.
+   - PRE-FORECLOSURE / DISTRESSED PROPERTY SEARCH: Identify underwater mortgages, high LTV ratios, declining assessments, and pre-foreclosure filings. Includes auction dates, default amounts, trustee info.
+   - JUST SOLD FARMING: Search MLS closed listings AND property records by zip code or address. Shows sale price, SP/LP ratio, agent info, photos from MLS alongside owner data from property records. Click any sold property to find all nearby homeowners within a radius — with names and mailing addresses for "Your Neighbor's Home Just Sold" postcard campaigns.
+   - INVESTOR PORTFOLIO SEARCH: Find corporate entities, absentee owners, and multi-property investors. Groups properties by owner for portfolio-level prospecting.
+   - AI Prospecting Copilot analyzes your results and generates personalized outreach strategies
+   - Comp Genie provides comparable sales analysis for any property in your results
 
 6. PROPERTY INTELLIGENCE
    - Real-time property data, valuations, and rental estimates via ATTOM
