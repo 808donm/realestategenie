@@ -6,7 +6,7 @@
   var position = script.getAttribute("data-position") || "right";
   var greeting =
     script.getAttribute("data-greeting") ||
-    "Hey there! \uD83D\uDC4B I'm Genie, your guide to Real Estate Genie. Whether you're a solo agent, running a team, or managing a brokerage \u2014 I can help you find the right plan. What brings you here today?";
+    "Hey there! \uD83D\uDC4B I'm Genie. I can tell you all about how Real Estate Genie gives agents and brokers everything they need to buy, sell, and prospect \u2014 all in one platform powered by AI. What brings you here today?";
   var apiUrl =
     script.getAttribute("data-api-url") ||
     script.src.replace(/\/js\/sales-chat\.js.*$/, "");
