@@ -270,7 +270,7 @@ export function HelpPanel() {
       </div>
 
       {/* Scoped styles for help content */}
-      <style jsx global>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         .help-content h3 {
           font-size: 1.25rem;
           font-weight: 700;
@@ -345,7 +345,7 @@ export function HelpPanel() {
         .help-table td {
           color: #4b5563;
         }
-      `}</style>
+      ` }} />
     </>
   );
 }
