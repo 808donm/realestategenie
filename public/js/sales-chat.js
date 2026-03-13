@@ -6,7 +6,7 @@
   var position = script.getAttribute("data-position") || "right";
   var greeting =
     script.getAttribute("data-greeting") ||
-    "Hey there! \uD83D\uDC4B I'm Genie. I can tell you all about how Real Estate Genie gives agents and brokers everything they need to buy, sell, and prospect \u2014 all in one platform powered by AI. What brings you here today?";
+    "Aloha! \u2B50 I'm Hoku, your navigator. Like the Polynesian voyagers who charted the Pacific by the stars, I'm here to help you find your way to the right solution. What brings you here today?";
   var apiUrl =
     script.getAttribute("data-api-url") ||
     script.src.replace(/\/js\/sales-chat\.js.*$/, "");
@@ -66,10 +66,10 @@
     '<div id="reg-sc-window">' +
       '<div id="reg-sc-header">' +
         '<div id="reg-sc-header-left">' +
-          '<div id="reg-sc-avatar">\u2728</div>' +
+          '<div id="reg-sc-avatar">\u2B50</div>' +
           "<div>" +
-            '<div id="reg-sc-title">Genie</div>' +
-            '<div id="reg-sc-sub">Real Estate Genie Assistant</div>' +
+            '<div id="reg-sc-title">Hoku</div>' +
+            '<div id="reg-sc-sub">Your AI Navigator</div>' +
           "</div>" +
         "</div>" +
         '<button id="reg-sc-close" aria-label="Close chat">\u2715</button>' +
@@ -81,7 +81,7 @@
           '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>' +
         "</button>" +
       "</form>" +
-      '<div id="reg-sc-powered"><a href="https://realestategenie.app" target="_blank" rel="noopener">Powered by Real Estate Genie</a></div>' +
+      '<div id="reg-sc-powered"><a href="https://huliausoftware.com" target="_blank" rel="noopener">Powered by Huliau Software</a></div>' +
     "</div>" +
     '<button id="reg-sc-toggle" aria-label="Chat with us">' +
       '<span id="reg-sc-dot"></span>' +
