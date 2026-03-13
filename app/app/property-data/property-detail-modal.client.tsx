@@ -108,10 +108,6 @@ export default function PropertyDetailModal({
   embedded,
   tabs: visibleTabs,
   farmingContext,
-  realieCompsData: externalRealieComps,
-  realieCompsLoading: externalRealieCompsLoading,
-  realieCompsError: externalRealieCompsError,
-  onRequestRealieComps,
 }: {
   property: AttomProperty;
   searchContext?: { absenteeowner?: string };
@@ -122,14 +118,6 @@ export default function PropertyDetailModal({
   tabs?: SectionId[];
   /** When provided, enables the "Nearby Homes" tab for Just Sold Farming. */
   farmingContext?: { radiusMiles: string; propertyType?: string };
-  /** Realie comps from parent (disclosure states, shared across all property cards). */
-  realieCompsData?: any[] | null;
-  /** Whether Realie comps are loading. */
-  realieCompsLoading?: boolean;
-  /** Error from Realie comps. */
-  realieCompsError?: string | null;
-  /** Callback to trigger Realie comps fetch (called when user first clicks Comps tab). */
-  onRequestRealieComps?: () => void;
 }) {
   const [activeSection, setActiveSection] = useState<SectionId>(visibleTabs?.[0] || "overview");
   const [federalData, setFederalData] = useState<FederalPropertySupplement | null>(null);
@@ -148,10 +136,11 @@ export default function PropertyDetailModal({
   const [enrichedOwnerLoading, setEnrichedOwnerLoading] = useState(false);
   const [nearbyHomes, setNearbyHomes] = useState<AttomProperty[] | null>(null);
   const [nearbyLoading, setNearbyLoading] = useState(false);
-  // Realie comps come from props (shared across all property cards in a search)
-  const realieComps = externalRealieComps || null;
-  const realieCompsLoading = externalRealieCompsLoading || false;
-  const realieCompsError = externalRealieCompsError || null;
+  // RentCast comps — fetched on demand when user clicks the Comps tab
+  const [rentcastComps, setRentcastComps] = useState<any[] | null>(null);
+  const [rentcastCompsLoading, setRentcastCompsLoading] = useState(false);
+  const [rentcastCompsError, setRentcastCompsError] = useState<string | null>(null);
+  const [rentcastAvmPrice, setRentcastAvmPrice] = useState<number | null>(null);
 
   const addr = p.address?.oneLine || [p.address?.line1, p.address?.line2].filter(Boolean).join(", ") || "Property Detail";
   const sqft = p.building?.size?.livingSize || p.building?.size?.universalSize || p.building?.size?.bldgSize;
@@ -380,11 +369,44 @@ export default function PropertyDetailModal({
       .finally(() => setNearbyLoading(false));
   }, [activeSection, nearbyHomes, nearbyLoading, farmingContext, p]);
 
-  // Trigger comps when user clicks the Comps tab
+  // Fetch RentCast comps when user clicks the Comps tab
   useEffect(() => {
     if (activeSection !== "comps") return;
-    if (!realieComps && !realieCompsLoading) onRequestRealieComps?.();
-  }, [activeSection, realieComps, realieCompsLoading, onRequestRealieComps]);
+    if (rentcastComps || rentcastCompsLoading) return;
+
+    const address = p.address?.oneLine || [p.address?.line1, p.address?.line2, p.address?.locality, p.address?.countrySubd, p.address?.postal1].filter(Boolean).join(", ");
+    if (!address) {
+      setRentcastCompsError("No address available for comp search.");
+      return;
+    }
+
+    setRentcastCompsLoading(true);
+    setRentcastCompsError(null);
+
+    const params = new URLSearchParams({ address, compCount: "10" });
+    const beds = p.building?.rooms?.beds;
+    const baths = p.building?.rooms?.bathsFull ?? p.building?.rooms?.bathsTotal;
+    const sqftVal = p.building?.size?.livingSize || p.building?.size?.universalSize || p.building?.size?.bldgSize;
+    const propType = p.summary?.propType;
+    if (beds != null) params.set("bedrooms", String(beds));
+    if (baths != null) params.set("bathrooms", String(baths));
+    if (sqftVal) params.set("squareFootage", String(sqftVal));
+    if (propType === "SFR") params.set("propertyType", "Single Family");
+    else if (propType === "CONDO") params.set("propertyType", "Condo");
+
+    fetch(`/api/rentcast/comps?${params}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.error) {
+          setRentcastCompsError(data.error);
+        } else {
+          setRentcastComps(data.comparables || []);
+          setRentcastAvmPrice(data.price || null);
+        }
+      })
+      .catch((e) => setRentcastCompsError(e.message || "Failed to fetch comparables."))
+      .finally(() => setRentcastCompsLoading(false));
+  }, [activeSection, rentcastComps, rentcastCompsLoading, p]);
 
   // Fetch enriched financial data when Financial tab is selected.
   // Realie provides mortgage and equity on the primary response.
@@ -1507,53 +1529,76 @@ export default function PropertyDetailModal({
           {activeSection === "comps" && (() => {
             return (
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                {realieCompsLoading && (
+                {rentcastCompsLoading && (
                   <div style={{ textAlign: "center", padding: 32, color: "#6b7280" }}>
                     <div style={{ fontSize: 24, marginBottom: 8 }}>Loading comparable sales...</div>
                     <div style={{ fontSize: 13 }}>Searching for recent sales nearby</div>
                   </div>
                 )}
 
-                {realieCompsError && (
+                {rentcastCompsError && (
                   <div style={{ padding: 16, borderRadius: 8, background: "#fef2f2", border: "1px solid #fecaca", color: "#991b1b", fontSize: 13 }}>
-                    {realieCompsError}
+                    {rentcastCompsError}
                   </div>
                 )}
 
-                {realieComps && realieComps.length > 0 && (
+                {rentcastComps && rentcastComps.length > 0 && (
                   <div>
+                    {rentcastAvmPrice && (
+                      <div style={{ padding: 12, borderRadius: 8, marginBottom: 12, background: "#f0fdf4", border: "1px solid #bbf7d0" }}>
+                        <div style={{ fontSize: 12, color: "#166534", fontWeight: 600 }}>Estimated Value</div>
+                        <div style={{ fontSize: 18, fontWeight: 700, color: "#15803d" }}>${rentcastAvmPrice.toLocaleString()}</div>
+                      </div>
+                    )}
                     <div style={{ fontWeight: 700, fontSize: 14, color: "#1f2937", marginBottom: 8 }}>
-                      Recent Comparable Sales ({realieComps.length})
+                      Comparable Properties ({rentcastComps.length})
                     </div>
-                    {realieComps.map((comp: any, i: number) => {
-                      const cAddr = comp.address?.oneLine || comp.address?.line1 || "";
-                      const cSale = comp.sale?.amount?.saleAmt;
-                      const cDate = comp.sale?.amount?.saleTransDate;
-                      const cBeds = comp.building?.rooms?.beds;
-                      const cBaths = comp.building?.rooms?.bathsTotal ?? comp.building?.rooms?.bathsFull;
-                      const cSqft = comp.building?.size?.livingSize || comp.building?.size?.bldgSize;
-                      const cYear = comp.summary?.yearBuilt;
-                      const cAvm = comp.avm?.amount?.value;
-                      const cPpsf = cSale && cSqft ? Math.round(cSale / cSqft) : null;
+                    {rentcastComps.map((comp: any, i: number) => {
+                      const cPpsf = comp.price && comp.squareFootage ? Math.round(comp.price / comp.squareFootage) : null;
+                      const correlationPct = comp.correlation != null ? Math.round(comp.correlation * 100) : null;
                       return (
-                        <div key={i} style={{
+                        <div key={comp.id || i} style={{
                           padding: 12, borderRadius: 8, marginBottom: 8,
                           background: "#fff", border: "1px solid #e5e7eb",
                         }}>
-                          <div style={{ fontWeight: 600, fontSize: 13, color: "#1f2937", marginBottom: 4 }}>{cAddr}</div>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                            <div style={{ fontWeight: 600, fontSize: 13, color: "#1f2937" }}>{comp.formattedAddress}</div>
+                            {correlationPct != null && (
+                              <span style={{
+                                fontSize: 11, fontWeight: 600, padding: "2px 6px", borderRadius: 4,
+                                background: correlationPct >= 90 ? "#dcfce7" : correlationPct >= 70 ? "#fef9c3" : "#fee2e2",
+                                color: correlationPct >= 90 ? "#166534" : correlationPct >= 70 ? "#854d0e" : "#991b1b",
+                              }}>
+                                {correlationPct}% match
+                              </span>
+                            )}
+                          </div>
                           <div style={{ display: "flex", gap: 16, fontSize: 12, color: "#6b7280", flexWrap: "wrap" }}>
-                            {cSale && <span style={{ fontWeight: 600, color: "#166534" }}>Sold: ${cSale.toLocaleString()}</span>}
-                            {cDate && <span>Date: {cDate}</span>}
-                            {cBeds != null && <span>{cBeds} bed</span>}
-                            {cBaths != null && <span>{cBaths} bath</span>}
-                            {cSqft && <span>{cSqft.toLocaleString()} sqft</span>}
-                            {cYear && <span>Built {cYear}</span>}
+                            {comp.price != null && <span style={{ fontWeight: 600, color: "#166534" }}>${comp.price.toLocaleString()}</span>}
+                            {comp.status && (
+                              <span style={{
+                                fontWeight: 500,
+                                color: comp.status === "Active" ? "#2563eb" : "#6b7280",
+                              }}>{comp.status}</span>
+                            )}
+                            {comp.bedrooms != null && <span>{comp.bedrooms} bed</span>}
+                            {comp.bathrooms != null && <span>{comp.bathrooms} bath</span>}
+                            {comp.squareFootage != null && <span>{comp.squareFootage.toLocaleString()} sqft</span>}
+                            {comp.yearBuilt != null && <span>Built {comp.yearBuilt}</span>}
                             {cPpsf && <span>${cPpsf}/sqft</span>}
-                            {cAvm && <span>AVM: ${cAvm.toLocaleString()}</span>}
+                            {comp.distance != null && <span>{comp.distance.toFixed(1)} mi</span>}
+                            {comp.daysOnMarket != null && <span>{comp.daysOnMarket} DOM</span>}
+                            {comp.listedDate && <span>Listed {new Date(comp.listedDate).toLocaleDateString()}</span>}
                           </div>
                         </div>
                       );
                     })}
+                  </div>
+                )}
+
+                {rentcastComps && rentcastComps.length === 0 && !rentcastCompsLoading && (
+                  <div style={{ padding: 16, textAlign: "center", color: "#6b7280", fontSize: 13 }}>
+                    No comparable properties found.
                   </div>
                 )}
               </div>
