@@ -496,20 +496,30 @@ The Integrations page allows you to connect third-party services to extend the f
 
 ### 14.1 CRM Integration
 
-Connect your CRM to sync contacts, manage opportunities, map pipelines, and automate lead workflows.
+Connect your CRM to sync contacts, manage opportunities, map pipelines, and automate lead workflows. Follow the five steps below to get fully set up.
 
-**Connecting Your CRM:**
-1. Navigate to **Integrations** and locate the CRM card.
-2. Click **Connect**. You will be redirected to authorize The Real Estate Genie to access your CRM account via OAuth.
-3. Grant the requested permissions and you will be redirected back to the app.
-4. The CRM integration status will show as **Connected**.
+**Step 1 — Sign In to Your CRM**
+You will receive an invitation email from **noreply@mg.aiprofitandgrowth.com**. Click the link in the email to accept the invitation, then sign in to your CRM at **app.aiprofitandgrowth.com**.
 
-**Configuring CRM Pipeline Mapping:**
-1. After connecting, go to the CRM integration settings.
-2. Select the CRM Pipeline that corresponds to your real estate deal flow.
-3. Select the stage where new leads should land (e.g., "New Lead").
-4. Optionally, select an "Initial Contact" stage \u2014 leads will automatically move to this stage after an email or SMS is sent.
-5. Save your configuration.
+**Step 2 — Create a Private Integration API Key**
+1. Inside your CRM, navigate to **Settings > Private Integrations**.
+2. Create a new Private Integration and copy the API Key immediately — it will not be shown again.
+
+**Step 3 — Connect the CRM in REG**
+1. In The Real Estate Genie, navigate to **Integrations** and locate the CRM card.
+2. Paste the API Key you copied in Step 2 into the API Key field.
+3. Click **Connect**. The integration status will show as **Connected**.
+
+**Step 4 — Add Your CRM Location ID**
+1. In your CRM, navigate to **Settings > Business Profile** and copy your **Location ID**.
+2. Back in The Real Estate Genie CRM integration settings, paste the Location ID into the Location ID field and save.
+
+**Step 5 — Select Your Sales Pipeline**
+1. Click **Load Pipelines** to pull your CRM pipelines.
+2. Select the pipeline that corresponds to your real estate deal flow.
+3. Select the **New Lead Stage** — this is where new leads will land when synced.
+4. Optionally, select an **Initial Contact Stage** — leads will automatically move to this stage after an email or SMS is sent.
+5. Click **Save** to finalize your configuration.
 
 **CRM Features:**
 - **Contact Sync** \u2014 Contacts are synced bidirectionally between The Real Estate Genie and your CRM.
