@@ -94,7 +94,7 @@ DASHBOARD & REPORTING (14+ reports):
 
 AI FEATURES (Current + Coming Soon):
 Current: AI lead scoring, AI SMS assistant, conversational AI for lead follow-up, website prequalification chatbot, neighborhood profile generation, listing descriptions, social media post generation
-Coming soon: AI Employee Chat, Voice AI for call answering, Smart Offer Writer, Transaction Coordinator AI, Intelligent CMA, Predictive Seller Lead ID, Deal Tracker ("Domino's pizza tracker for real estate"), Client Portal, Ad Management
+Coming soon: MLS Watchdog (automated listing monitoring with push, email & SMS alerts for DOM thresholds, price drops, expired/withdrawn listings, and back-on-market opportunities — farm by TMK, zip code, or custom area), AI Employee Chat, Voice AI for call answering, Smart Offer Writer, Transaction Coordinator AI, Intelligent CMA, Predictive Seller Lead ID, Deal Tracker ("Domino's pizza tracker for real estate"), Client Portal, Ad Management
 
 INTEGRATIONS:
 - GoHighLevel — CRM, pipelines, workflows, SMS, email, contracts, invoicing
