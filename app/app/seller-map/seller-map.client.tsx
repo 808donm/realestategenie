@@ -58,14 +58,95 @@ export function SellerMapClient() {
       .catch(() => {});
   }, []);
 
+  /**
+   * Detect whether input looks like a TMK number rather than zip codes.
+   * TMK patterns: "1-2-3-004-005", "12300040050", "(1)2-3-004:005", etc.
+   * Zip codes: 5-digit numbers, possibly comma-separated.
+   */
+  const isTMKInput = useCallback((input: string): boolean => {
+    const trimmed = input.trim();
+    if (!trimmed) return false;
+    // Contains dashes with digits on both sides (TMK-style) — but not a plain zip like "96825"
+    if (/^\d[\d\-.:() ]{4,}\d$/.test(trimmed) && trimmed.includes("-")) return true;
+    // All digits, 9+ chars (raw TMK number like "120030040050")
+    const digitsOnly = trimmed.replace(/[-\s.:()]/g, "");
+    if (/^\d{9,}$/.test(digitsOnly)) return true;
+    return false;
+  }, []);
+
+  /**
+   * Fetch TMK parcel overlay by TMK number and zoom map to it.
+   */
+  const fetchTMKOverlay = useCallback(
+    async (tmkInput: string) => {
+      try {
+        const res = await fetch(
+          `/api/seller-map/tmk-overlay?tmk=${encodeURIComponent(tmkInput)}&limit=50`
+        );
+        const geojson = await res.json();
+
+        if (geojson.error || !geojson.features?.length) {
+          console.warn("[SellerMap] No TMK parcels found for:", tmkInput);
+          setTmkGeojson(null);
+          return;
+        }
+
+        setTmkGeojson(geojson);
+        setShowTMK(true);
+
+        // Compute bounding box of returned features to zoom the map
+        let minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
+        for (const feature of geojson.features) {
+          const coords = feature.geometry?.type === "Polygon"
+            ? feature.geometry.coordinates[0]
+            : feature.geometry?.type === "MultiPolygon"
+              ? feature.geometry.coordinates.flat(1).flat(0)
+              : [];
+          for (const coord of coords) {
+            const [lng, lat] = Array.isArray(coord[0]) ? coord[0] : coord;
+            if (lat < minLat) minLat = lat;
+            if (lat > maxLat) maxLat = lat;
+            if (lng < minLng) minLng = lng;
+            if (lng > maxLng) maxLng = lng;
+          }
+        }
+
+        if (minLat < maxLat && minLng < maxLng) {
+          const centerLat = (minLat + maxLat) / 2;
+          const centerLng = (minLng + maxLng) / 2;
+          const latSpan = maxLat - minLat;
+          const lngSpan = maxLng - minLng;
+          const radiusMiles = Math.max(latSpan, lngSpan) * 69 / 2;
+          boundsRef.current = {
+            lat: centerLat,
+            lng: centerLng,
+            radius: Math.max(radiusMiles, 0.5),
+          };
+        }
+      } catch (err) {
+        console.error("[SellerMap] TMK overlay fetch error:", err);
+      }
+    },
+    []
+  );
+
   // Fetch properties — only called explicitly (button click, saved search, initial load)
   const fetchProperties = useCallback(
     async (bounds: { lat: number; lng: number; radius: number }) => {
       setIsLoading(true);
       try {
+        const trimmedInput = filters.zips?.trim();
+
+        // If input looks like a TMK, fetch parcel overlay instead of zip-based search
+        if (trimmedInput && isTMKInput(trimmedInput)) {
+          await fetchTMKOverlay(trimmedInput);
+          // Still run the property search using the TMK parcel area
+          // but don't pass it as a zip code
+        }
+
         // If user specified zip codes, use a higher limit for island-wide coverage
-        const trimmedZips = filters.zips?.trim();
-        const searchLimit = trimmedZips ? "2000" : "500";
+        const isZipSearch = trimmedInput && !isTMKInput(trimmedInput);
+        const searchLimit = isZipSearch ? "2000" : "500";
 
         const params = new URLSearchParams({
           lat: String(bounds.lat),
@@ -76,9 +157,9 @@ export function SellerMapClient() {
           limit: searchLimit,
         });
 
-        // If user specified zip codes, add them to query (overrides lat/lng search)
-        if (trimmedZips) {
-          params.set("zips", trimmedZips);
+        // If user specified zip codes (not TMK), add them to query
+        if (isZipSearch) {
+          params.set("zips", trimmedInput);
         }
 
         // Property type filter
@@ -103,7 +184,7 @@ export function SellerMapClient() {
         setIsLoading(false);
       }
     },
-    [filters.minScore, filters.absenteeOnly, filters.zips, filters.propertyType]
+    [filters.minScore, filters.absenteeOnly, filters.zips, filters.propertyType, isTMKInput, fetchTMKOverlay]
   );
 
   // Initial load — fetch once on mount

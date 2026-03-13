@@ -150,6 +150,17 @@ function SellerMapInner({
         strokeOpacity: 0.5,
       });
       dataLayerRef.current = dataLayer;
+
+      // Fit map bounds to the TMK parcel geometry
+      const bounds = new google.maps.LatLngBounds();
+      dataLayer.forEach((feature) => {
+        feature.getGeometry()?.forEachLatLng((latlng) => {
+          bounds.extend(latlng);
+        });
+      });
+      if (!bounds.isEmpty()) {
+        map.fitBounds(bounds, { top: 50, right: 50, bottom: 50, left: 50 });
+      }
     }
 
     return () => {

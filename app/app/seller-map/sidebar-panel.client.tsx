@@ -94,12 +94,12 @@ export function SidebarPanel({
 
   return (
     <div className="flex flex-col h-full bg-white border-r">
-      {/* Zip Code Search */}
+      {/* Zip Code / TMK Search */}
       <div className="p-3 border-b bg-white">
         <div className="flex gap-2">
           <input
             type="text"
-            placeholder="Search zip codes (e.g. 96825, 96826)"
+            placeholder="Zip code or TMK (e.g. 96825 or 1-2-3-004-005)"
             value={filters.zips || ""}
             onChange={(e) =>
               onFiltersChange({ ...filters, zips: e.target.value })
@@ -118,7 +118,7 @@ export function SidebarPanel({
           </button>
         </div>
         <p className="text-[10px] text-gray-400 mt-1">
-          Comma-separated zips, or leave empty and use "Search This Area" on the map.
+          Zip codes (comma-separated), TMK number, or use &quot;Search This Area&quot; on the map.
         </p>
       </div>
 
