@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import Script from "next/script";
 import { Toaster } from "@/components/ui/toaster";
 import CapacitorInit from "@/components/capacitor-init";
 import "./globals.css";
@@ -29,11 +28,6 @@ export default function RootLayout({
         <CapacitorInit />
         {children}
         <Toaster />
-        <Script
-          src="https://www.realestategenie.app/js/sales-chat.js"
-          data-color="#6366f1"
-          strategy="lazyOnload"
-        />
       </body>
     </html>
   );
