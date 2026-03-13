@@ -1,3 +1,16 @@
 {
-  "crons": []
+  "crons": [
+    {
+      "path": "/api/cron/daily-briefing",
+      "schedule": "0 16 * * *"
+    },
+    {
+      "path": "/api/cron/mls-watchdog",
+      "schedule": "0 14 * * *"
+    },
+    {
+      "path": "/api/cron/send-usage-alerts",
+      "schedule": "0 * * * *"
+    }
+  ]
 }

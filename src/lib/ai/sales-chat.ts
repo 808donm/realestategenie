@@ -79,7 +79,19 @@ THE PLATFORM — 8 PILLARS:
    - Generate AI-powered listing descriptions and social media posts
    - MLS data feeds directly into your CRM and property intelligence
 
-8. 12 BUILT-IN CALCULATORS & ANALYZERS
+8. FARM AREA SEARCH & MLS WATCHDOG
+   - Search all active MLS listings in any farm area — by zip code, TMK prefix, or radius
+   - Define farm areas with customizable filters (price, beds, property type, DOM)
+   - MLS Watchdog: automated daily monitoring with configurable alert triggers
+   - DOM threshold alerts (e.g., notify when a listing hits 75+ days)
+   - Price drop alerts — by dollar amount per change or cumulative % from original list price
+   - Status change alerts — expired, withdrawn, canceled, or back-on-market listings
+   - New listing alerts — be the first to know when new inventory hits your farm area
+   - Multi-channel notifications: in-app push, email, and SMS
+   - Farm by TMK area — the way Hawaii agents actually think about neighborhoods
+   - Alerts enriched with property intelligence for informed outreach
+
+9. 12 BUILT-IN CALCULATORS & ANALYZERS
    Buyer tools: Mortgage Calculator, Buyer Cash-to-Close, Commission Split Calculator
    Seller tools: Seller Net Sheet
    Investment tools: Investment Property Analyzer, Rental Property Calculator, Quick Flip Analyzer, House Flip Analyzer, BRRR Strategy Analyzer, Wholesale MAO Calculator, 1031 Exchange Analyzer, Compare Properties
@@ -93,8 +105,8 @@ DASHBOARD & REPORTING (14+ reports):
 - Compliance audit reports
 
 AI FEATURES (Current + Coming Soon):
-Current: AI lead scoring, AI SMS assistant, conversational AI for lead follow-up, website prequalification chatbot, neighborhood profile generation, listing descriptions, social media post generation
-Coming soon: MLS Watchdog (automated listing monitoring with push, email & SMS alerts for DOM thresholds, price drops, expired/withdrawn listings, and back-on-market opportunities — farm by TMK, zip code, or custom area), AI Employee Chat, Voice AI for call answering, Smart Offer Writer, Transaction Coordinator AI, Intelligent CMA, Predictive Seller Lead ID, Deal Tracker ("Domino's pizza tracker for real estate"), Client Portal, Ad Management
+Current: AI lead scoring, AI SMS assistant, conversational AI for lead follow-up, website prequalification chatbot, neighborhood profile generation, listing descriptions, social media post generation, MLS Watchdog (farm area monitoring with push, email & SMS alerts)
+Coming soon: AI Employee Chat, Voice AI for call answering, Smart Offer Writer, Transaction Coordinator AI, Intelligent CMA, Predictive Seller Lead ID, Deal Tracker ("Domino's pizza tracker for real estate"), Client Portal, Ad Management
 
 INTEGRATIONS:
 - GoHighLevel — CRM, pipelines, workflows, SMS, email, contracts, invoicing
