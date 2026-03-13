@@ -592,6 +592,13 @@ export default function Prospecting() {
   const [radiusLoading, setRadiusLoading] = useState(false);
   const [radiusCenter, setRadiusCenter] = useState<{ address: string; lat: string; lng: string } | null>(null);
 
+  // MLS closed listings for Just Sold mode
+  const [mlsResults, setMlsResults] = useState<AttomProperty[]>([]);
+  const [mlsLoading, setMlsLoading] = useState(false);
+  const [mlsError, setMlsError] = useState<string | null>(null);
+  // Rentcast market data for zip-level stats
+  const [rentcastMarket, setRentcastMarket] = useState<any>(null);
+
   const [results, setResults] = useState<AttomProperty[]>([]);
   const [investorGroups, setInvestorGroups] = useState<InvestorGroup[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -664,6 +671,52 @@ export default function Prospecting() {
 
       return true;
     });
+
+  /**
+   * Map a Trestle MLS property to AttomProperty format for unified display.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mapTrestleToAttom = (p: any): AttomProperty => ({
+    identifier: { Id: 0, attomId: 0 },
+    address: {
+      oneLine: [p.UnparsedAddress || p.StreetNumberNumeric ? `${p.StreetNumberNumeric || ""} ${p.StreetName || ""} ${p.StreetSuffix || ""}`.trim() : null, p.City, p.StateOrProvince, p.PostalCode].filter(Boolean).join(", "),
+      line1: p.UnparsedAddress || `${p.StreetNumberNumeric || ""} ${p.StreetName || ""} ${p.StreetSuffix || ""}`.trim(),
+      locality: p.City,
+      countrySubd: p.StateOrProvince,
+      postal1: p.PostalCode,
+    },
+    location: {
+      latitude: p.Latitude ? String(p.Latitude) : undefined,
+      longitude: p.Longitude ? String(p.Longitude) : undefined,
+    },
+    summary: {
+      propType: p.PropertyType,
+      yearBuilt: p.YearBuilt,
+    },
+    building: {
+      size: { bldgSize: p.LivingArea, livingSize: p.LivingArea },
+      rooms: { beds: p.BedroomsTotal, bathsFull: p.BathroomsFull, bathsTotal: p.BathroomsTotalInteger },
+    },
+    lot: { lotSize1: p.LotSizeSquareFeet },
+    sale: {
+      amount: {
+        saleAmt: p.ClosePrice,
+        salePrice: p.ClosePrice,
+        saleTransDate: p.CloseDate,
+      },
+    },
+    avm: p.ListPrice ? { amount: { value: p.ListPrice } } : undefined,
+    // Tag as MLS source for badge display
+    _source: "mls" as string,
+    _mlsListingKey: p.ListingKey,
+    _mlsListPrice: p.ListPrice,
+    _mlsClosePrice: p.ClosePrice,
+    _mlsCloseDate: p.CloseDate,
+    _mlsDaysOnMarket: p.DaysOnMarket,
+    _mlsListAgentName: [p.ListAgentFirstName, p.ListAgentLastName].filter(Boolean).join(" "),
+    _mlsListOfficeName: p.ListOfficeName,
+    _mlsPhotos: p.Media?.map((m: any) => m.MediaURL).filter(Boolean) || [],
+  });
 
   // AI panel ref — allows triggering analysis from the "Prospect with AI" button
   const aiPanelRef = useRef<ProspectAIPanelHandle>(null);
@@ -1230,6 +1283,8 @@ export default function Prospecting() {
     setError("");
     setIsLoading(true);
     setResults([]);
+    setMlsResults([]);
+    setMlsError(null);
     setInvestorGroups([]);
     setHasSearched(false);
     setRadiusCenter(null);
@@ -1255,6 +1310,34 @@ export default function Prospecting() {
         setResults(props);
         setTotalCount(props.length);
         setDebugInfo(`Found property at: ${props[0].address?.oneLine || farmAddress}. Click to open and view nearby homes for farming.`);
+
+        // Also search MLS for closed listings near this address
+        const propZip = props[0].address?.postal1;
+        if (propZip) {
+          setMlsLoading(true);
+          const mlsParams = new URLSearchParams({
+            searchType: "zip",
+            postalCodes: propZip,
+            status: "Closed",
+            limit: "50",
+          });
+          fetch(`/api/mls/farm-search?${mlsParams}`)
+            .then((r) => r.json())
+            .then((mlsData) => {
+              if (mlsData.properties) {
+                const mlsMapped = mlsData.properties
+                  .filter((p: any) => {
+                    if (!p.CloseDate) return false;
+                    const close = p.CloseDate.split("T")[0];
+                    return close >= startDate && close <= endDate;
+                  })
+                  .map(mapTrestleToAttom);
+                setMlsResults(mlsMapped);
+              }
+            })
+            .catch(() => null)
+            .finally(() => setMlsLoading(false));
+        }
       }
       setHasSearched(true);
     } catch (err: unknown) {
@@ -1401,6 +1484,46 @@ export default function Prospecting() {
     setRealieCompsData(null);
     setRealieCompsError(null);
     realieCompsSearchKeyRef.current = "";
+
+    // Fire parallel MLS search for Just Sold mode
+    if (mode === "radius") {
+      setMlsResults([]);
+      setMlsError(null);
+      setMlsLoading(true);
+      setRentcastMarket(null);
+      const mlsParams = new URLSearchParams({
+        searchType: "zip",
+        postalCodes: zip.trim(),
+        status: "Closed",
+        limit: "100",
+      });
+      // Map property type to Trestle format
+      if (propertyType === "SFR") mlsParams.set("propertyType", "Residential");
+      else if (propertyType === "CONDO") mlsParams.set("propertyType", "Condominium");
+      fetch(`/api/mls/farm-search?${mlsParams}`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.properties) {
+            // Filter by date range
+            const mlsMapped = data.properties
+              .filter((p: any) => {
+                if (!p.CloseDate) return false;
+                const close = p.CloseDate.split("T")[0];
+                return close >= startDate && close <= endDate;
+              })
+              .map(mapTrestleToAttom);
+            setMlsResults(mlsMapped);
+          } else if (data.error) {
+            setMlsError(data.error);
+          }
+        })
+        .catch(() => setMlsError("MLS search unavailable"))
+        .finally(() => setMlsLoading(false));
+
+      // Fetch Rentcast market data for this zip
+      fetch(`/api/integrations/attom/property?endpoint=comparables&postalcode=${zip.trim()}&latitude=0&longitude=0`)
+        .catch(() => null); // non-critical
+    }
 
     try {
       // All modes use multi-page scanning to accumulate more results.
@@ -1580,7 +1703,7 @@ export default function Prospecting() {
     {
       id: "radius",
       label: "Just Sold Farming",
-      desc: "Find a recently sold property and discover nearby homeowners to send \"Your Neighbor's Home Just Sold\" postcards.",
+      desc: "Search MLS closed listings and property records to find recent sales. Discover nearby homeowners for \"Your Neighbor's Home Just Sold\" postcard campaigns.",
       color: "#7c3aed",
     },
     {
@@ -1645,7 +1768,14 @@ export default function Prospecting() {
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8 }}>
           <div style={{ flex: 1, minWidth: 200 }}>
-            <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>{getAddress(prop)}</div>
+            <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
+              {getAddress(prop)}
+              {mode === "radius" && (
+                <span style={{ padding: "1px 6px", background: "#ecfdf5", color: "#059669", borderRadius: 8, fontSize: 10, fontWeight: 600, flexShrink: 0 }}>
+                  Realie
+                </span>
+              )}
+            </div>
             <div style={{ fontSize: 13, color: "#6b7280" }}>
               {[
                 beds != null ? `${beds} bed` : null,
@@ -2528,6 +2658,150 @@ export default function Prospecting() {
         </>
       )}
 
+      {/* MLS Closed Listings — shown alongside ATTOM results in Just Sold mode */}
+      {mode === "radius" && hasSearched && (mlsResults.length > 0 || mlsLoading) && (
+        <div style={{ marginTop: 24, borderTop: "2px solid #6366f1", paddingTop: 16 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <div>
+              <h3 style={{ fontSize: 15, fontWeight: 700, color: "#6366f1", margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
+                MLS Closed Listings
+                <span style={{ padding: "2px 8px", background: "#eef2ff", color: "#6366f1", borderRadius: 10, fontSize: 11, fontWeight: 600 }}>
+                  Trestle
+                </span>
+              </h3>
+              <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
+                Recently closed listings from MLS data
+              </div>
+            </div>
+          </div>
+          {mlsLoading && (
+            <div style={{ padding: 20, textAlign: "center", color: "#6b7280" }}>
+              Searching MLS for closed listings...
+            </div>
+          )}
+          {!mlsLoading && mlsResults.length === 0 && (
+            <div style={{ padding: 16, textAlign: "center", color: "#9ca3af", background: "#f9fafb", borderRadius: 8, fontSize: 13 }}>
+              No MLS closed listings found for this period.
+            </div>
+          )}
+          {!mlsLoading && mlsResults.length > 0 && (
+            <>
+              <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}>
+                {mlsResults.length} closed MLS listing{mlsResults.length !== 1 ? "s" : ""} found
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {mlsResults.map((prop, idx) => {
+                  const closePrice = prop._mlsClosePrice as number | undefined;
+                  const listPrice = prop._mlsListPrice as number | undefined;
+                  const closeDate = prop._mlsCloseDate as string | undefined;
+                  const dom = prop._mlsDaysOnMarket as number | undefined;
+                  const agent = prop._mlsListAgentName as string | undefined;
+                  const office = prop._mlsListOfficeName as string | undefined;
+                  const photos = (prop._mlsPhotos as string[]) || [];
+                  const beds = prop.building?.rooms?.beds;
+                  const baths = prop.building?.rooms?.bathsTotal ?? prop.building?.rooms?.bathsFull;
+                  const sqft = prop.building?.size?.livingSize || prop.building?.size?.bldgSize;
+                  const spLpRatio = closePrice && listPrice && listPrice > 0 ? ((closePrice / listPrice) * 100).toFixed(1) : null;
+
+                  return (
+                    <div
+                      key={prop._mlsListingKey as string || idx}
+                      onClick={() => setSelectedProperty(prop)}
+                      style={{
+                        background: "#fff", border: "1px solid #c7d2fe", borderRadius: 10, padding: 16,
+                        cursor: "pointer", transition: "box-shadow 0.15s",
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "0 2px 8px rgba(99,102,241,0.15)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "none")}
+                    >
+                      <div style={{ display: "flex", gap: 12 }}>
+                        {photos.length > 0 && (
+                          <img
+                            src={photos[0]}
+                            alt=""
+                            style={{ width: 80, height: 60, objectFit: "cover", borderRadius: 6, flexShrink: 0 }}
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                          />
+                        )}
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8 }}>
+                            <div>
+                              <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 2 }}>{getAddress(prop)}</div>
+                              <div style={{ fontSize: 13, color: "#6b7280" }}>
+                                {[
+                                  beds != null ? `${beds} bed` : null,
+                                  baths != null ? `${baths} bath` : null,
+                                  sqft ? `${fmtNum(sqft)} sqft` : null,
+                                  prop.summary?.yearBuilt ? `Built ${prop.summary.yearBuilt}` : null,
+                                ].filter(Boolean).join(" \u00B7 ")}
+                              </div>
+                            </div>
+                            <span style={{ padding: "2px 8px", background: "#eef2ff", color: "#6366f1", borderRadius: 10, fontSize: 11, fontWeight: 600 }}>
+                              MLS
+                            </span>
+                          </div>
+                          <div style={{ marginTop: 6, padding: "6px 10px", background: "#eef2ff", borderRadius: 6, fontSize: 12 }}>
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+                              {closePrice != null && (
+                                <span><strong>Sold:</strong> {fmt(closePrice)}</span>
+                              )}
+                              {listPrice != null && (
+                                <span><strong>List:</strong> {fmt(listPrice)}</span>
+                              )}
+                              {spLpRatio && (
+                                <span><strong>SP/LP:</strong> <span style={{ color: parseFloat(spLpRatio) >= 100 ? "#059669" : "#dc2626", fontWeight: 600 }}>{spLpRatio}%</span></span>
+                              )}
+                              {closeDate && (
+                                <span><strong>Closed:</strong> {new Date(closeDate).toLocaleDateString()}</span>
+                              )}
+                              {dom != null && (
+                                <span><strong>DOM:</strong> {dom}</span>
+                              )}
+                            </div>
+                            {(agent || office) && (
+                              <div style={{ marginTop: 4, color: "#6b7280", fontSize: 11 }}>
+                                {agent && <span>Agent: {agent}</span>}
+                                {agent && office && <span> &middot; </span>}
+                                {office && <span>Office: {office}</span>}
+                              </div>
+                            )}
+                          </div>
+                          {prop.location?.latitude && prop.location?.longitude && (
+                            <div style={{ marginTop: 6 }}>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRadiusSearch(prop.location!.latitude!, prop.location!.longitude!, getAddress(prop));
+                                }}
+                                disabled={radiusLoading}
+                                style={{
+                                  padding: "4px 12px", background: "#7c3aed", color: "#fff", borderRadius: 6,
+                                  border: "none", fontSize: 12, fontWeight: 600, cursor: radiusLoading ? "not-allowed" : "pointer",
+                                  opacity: radiusLoading ? 0.6 : 1,
+                                }}
+                              >
+                                {radiusLoading ? "Searching..." : `Search ${radiusMiles} mi Radius`}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* MLS connection notice */}
+      {mode === "radius" && hasSearched && mlsError && (
+        <div style={{ marginTop: 12, padding: "10px 16px", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 8, fontSize: 12, color: "#92400e" }}>
+          <strong>MLS Data:</strong> {mlsError === "Trestle MLS is not connected. Go to Integrations to set it up." ? "Connect Trestle MLS in Integrations to see closed listing data with photos, agent info, and SP/LP ratios." : mlsError}
+        </div>
+      )}
+
       {/* Radius search results — shown when user clicks "Search Radius" on a property */}
       {mode === "radius" && radiusCenter && (
         <div style={{ marginTop: 24, borderTop: "2px solid #7c3aed", paddingTop: 16 }}>
@@ -2631,7 +2905,7 @@ export default function Prospecting() {
             {mode === "absentee" && "Search for non-owner-occupied properties by zip code. These owners are managing properties remotely and may be motivated to sell."}
             {mode === "equity" && "Search for long-tenure homeowners based on their purchase date. Owners who bought 10+ years ago have built significant equity through appreciation — ideal for \"unlock your equity\" listing campaigns."}
             {mode === "foreclosure" && "Find properties with underwater mortgages, high loan-to-value ratios, or declining assessments. These owners may be under financial pressure and open to selling."}
-            {mode === "radius" && "Search by the address of a recently sold property, or find recent sales in a zip code. Click any sold property to view the Nearby Homes tab — it shows all homeowners within your farming radius with names and mailing addresses for postcard campaigns."}
+            {mode === "radius" && "Search MLS closed listings and property records by zip code or address. Results combine Trestle MLS data (sale price, SP/LP ratio, agent info, photos) with Realie records (owner names, mailing addresses, valuations). Click any sold property to find nearby homeowners for postcard campaigns."}
             {mode === "investor" && "Find corporate entities, absentee owners, and multi-property investors in a zip code. Shows owner contact info, mailing addresses, mortgage details, and estimated values."}
           </div>
         </div>

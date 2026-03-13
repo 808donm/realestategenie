@@ -39,6 +39,7 @@
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.87.0",
     "@types/leaflet": "^1.9.21",
+    "@types/web-push": "^3.6.4",
     "@vis.gl/react-google-maps": "^1.7.1",
     "ai": "^6.0.3",
     "class-variance-authority": "^0.7.1",
@@ -63,6 +64,7 @@
     "stripe": "^20.1.0",
     "tailwind-merge": "^3.4.0",
     "twilio": "^5.10.7",
+    "web-push": "^3.6.7",
     "xlsx": "^0.18.5",
     "zod": "^4.2.1"
   },

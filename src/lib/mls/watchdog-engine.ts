@@ -36,6 +36,7 @@ interface WatchRule {
   notify_push: boolean;
   notify_email: boolean;
   notify_sms: boolean;
+  is_active: boolean;
 }
 
 interface Snapshot {
