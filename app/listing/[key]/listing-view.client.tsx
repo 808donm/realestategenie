@@ -206,6 +206,38 @@ function ListingMortgageCalculator({
           Adjust Your Numbers
         </div>
 
+        {/* Offer Price */}
+        <div style={{ marginBottom: 10 }}>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <label style={{ fontSize: 12, color: "#6b7280", width: 85, flexShrink: 0 }}>
+              Offer Price
+            </label>
+            <div style={{ position: "relative", flex: 1 }}>
+              <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", fontSize: 13, color: "#6b7280" }}>$</span>
+              <input
+                type="number"
+                value={inputs.purchasePrice}
+                onChange={(e) => handleChange("purchasePrice", parseFloat(e.target.value) || 0)}
+                step={5000}
+                style={{
+                  width: "100%",
+                  padding: "6px 10px 6px 22px",
+                  border: "1px solid #d1d5db",
+                  borderRadius: 6,
+                  fontSize: 13,
+                }}
+              />
+            </div>
+          </div>
+          {inputs.purchasePrice !== property.ListPrice && (
+            <div style={{ marginLeft: 93, fontSize: 11, marginTop: 2, color: inputs.purchasePrice < property.ListPrice ? "#dc2626" : "#059669" }}>
+              {inputs.purchasePrice < property.ListPrice
+                ? `${fmt(property.ListPrice - inputs.purchasePrice)} below list (${((1 - inputs.purchasePrice / property.ListPrice) * 100).toFixed(1)}% less)`
+                : `${fmt(inputs.purchasePrice - property.ListPrice)} above list (+${(((inputs.purchasePrice / property.ListPrice) - 1) * 100).toFixed(1)}%)`}
+            </div>
+          )}
+        </div>
+
         {/* Down Payment */}
         <div style={{ display: "flex", gap: 8, marginBottom: 10, alignItems: "center" }}>
           <label style={{ fontSize: 12, color: "#6b7280", width: 85, flexShrink: 0 }}>
