@@ -54,6 +54,13 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    // Fetch agent info for calculator CTA
+    const { data: agent } = await supabaseAdmin
+      .from("agents")
+      .select("full_name, phone, email")
+      .eq("id", agentId)
+      .single();
+
     const client = createTrestleClient(config);
     const property = await client.getProperty(listingKey);
 
@@ -93,6 +100,9 @@ export async function GET(req: NextRequest) {
         OnMarketDate: property.OnMarketDate,
         ListingURL: property.ListingURL,
         VirtualTourURLUnbranded: property.VirtualTourURLUnbranded,
+        // Financial fields for mortgage calculator
+        TaxAnnualAmount: property.TaxAnnualAmount,
+        AssociationFee: property.AssociationFee,
       },
       media: media?.map((m: any) => ({
         MediaURL: m.MediaURL,
@@ -100,6 +110,13 @@ export async function GET(req: NextRequest) {
         Order: m.Order,
         ShortDescription: m.ShortDescription,
       })),
+      agent: agent
+        ? {
+            fullName: agent.full_name,
+            phone: agent.phone,
+            email: agent.email,
+          }
+        : null,
     });
   } catch (error) {
     console.error("[Public Listing] Error:", error);
