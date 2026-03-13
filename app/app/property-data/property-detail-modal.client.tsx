@@ -101,11 +101,6 @@ function findGeoIdV4(obj: any, depth = 0): string | null {
 
 type SectionId = "overview" | "building" | "financial" | "ownership" | "neighborhood" | "federal" | "nearby" | "comps";
 
-const NON_DISCLOSURE_STATES = new Set([
-  "AK", "HI", "ID", "IN", "KS", "LA", "ME", "MS", "MO",
-  "MT", "NM", "ND", "SD", "TX", "UT", "WY",
-]);
-
 export default function PropertyDetailModal({
   property: p,
   searchContext,
@@ -113,10 +108,6 @@ export default function PropertyDetailModal({
   embedded,
   tabs: visibleTabs,
   farmingContext,
-  compGenieData: externalCompData,
-  compGenieLoading: externalCompLoading,
-  compGenieError: externalCompError,
-  onRequestCompGenie,
   realieCompsData: externalRealieComps,
   realieCompsLoading: externalRealieCompsLoading,
   realieCompsError: externalRealieCompsError,
@@ -131,21 +122,13 @@ export default function PropertyDetailModal({
   tabs?: SectionId[];
   /** When provided, enables the "Nearby Homes" tab for Just Sold Farming. */
   farmingContext?: { radiusMiles: string; propertyType?: string };
-  /** Comp Genie results from the parent (shared across all property cards in a search). */
-  compGenieData?: any;
-  /** Whether Comp Genie is currently loading. */
-  compGenieLoading?: boolean;
-  /** Error message from Comp Genie. */
-  compGenieError?: string | null;
-  /** Callback to trigger Comp Genie analysis (called when user first clicks Comps tab). */
-  onRequestCompGenie?: () => void;
   /** Realie comps from parent (disclosure states, shared across all property cards). */
   realieCompsData?: any[] | null;
   /** Whether Realie comps are loading. */
   realieCompsLoading?: boolean;
   /** Error from Realie comps. */
   realieCompsError?: string | null;
-  /** Callback to trigger Realie comps fetch (called when user first clicks Comps tab in disclosure state). */
+  /** Callback to trigger Realie comps fetch (called when user first clicks Comps tab). */
   onRequestRealieComps?: () => void;
 }) {
   const [activeSection, setActiveSection] = useState<SectionId>(visibleTabs?.[0] || "overview");
@@ -165,10 +148,6 @@ export default function PropertyDetailModal({
   const [enrichedOwnerLoading, setEnrichedOwnerLoading] = useState(false);
   const [nearbyHomes, setNearbyHomes] = useState<AttomProperty[] | null>(null);
   const [nearbyLoading, setNearbyLoading] = useState(false);
-  // Comp Genie state comes from props (shared across all property cards in a search)
-  const compGenieData = externalCompData;
-  const compGenieLoading = externalCompLoading || false;
-  const compGenieError = externalCompError || null;
   // Realie comps come from props (shared across all property cards in a search)
   const realieComps = externalRealieComps || null;
   const realieCompsLoading = externalRealieCompsLoading || false;
@@ -401,18 +380,11 @@ export default function PropertyDetailModal({
       .finally(() => setNearbyLoading(false));
   }, [activeSection, nearbyHomes, nearbyLoading, farmingContext, p]);
 
-  // Trigger comps when user clicks the Comps tab (both modes run once per search via parent)
+  // Trigger comps when user clicks the Comps tab
   useEffect(() => {
     if (activeSection !== "comps") return;
-    const stateAbbrev = p.address?.countrySubd?.toUpperCase() || "";
-    const isNonDisclosure = NON_DISCLOSURE_STATES.has(stateAbbrev);
-
-    if (isNonDisclosure) {
-      if (!compGenieData && !compGenieLoading) onRequestCompGenie?.();
-    } else {
-      if (!realieComps && !realieCompsLoading) onRequestRealieComps?.();
-    }
-  }, [activeSection, compGenieData, compGenieLoading, onRequestCompGenie, realieComps, realieCompsLoading, onRequestRealieComps, p]);
+    if (!realieComps && !realieCompsLoading) onRequestRealieComps?.();
+  }, [activeSection, realieComps, realieCompsLoading, onRequestRealieComps]);
 
   // Fetch enriched financial data when Financial tab is selected.
   // Realie provides mortgage and equity on the primary response.
@@ -692,7 +664,7 @@ export default function PropertyDetailModal({
     { id: "overview", label: "Overview" },
     { id: "building", label: "Building" },
     { id: "financial", label: "Financial" },
-    { id: "comps" as SectionId, label: NON_DISCLOSURE_STATES.has(p.address?.countrySubd?.toUpperCase() || "") ? "Comp Genie" : "Comps" },
+    { id: "comps" as SectionId, label: "Comps" },
     { id: "ownership", label: "Ownership" },
     { id: "neighborhood", label: "Neighborhood" },
     { id: "federal", label: "Area Intel" },
@@ -1533,104 +1505,6 @@ export default function PropertyDetailModal({
 
           {/* ── Comps Tab ─────────────────────────────────────────────── */}
           {activeSection === "comps" && (() => {
-            const stateAbbrev = p.address?.countrySubd?.toUpperCase() || "";
-            const isNonDisclosure = NON_DISCLOSURE_STATES.has(stateAbbrev);
-
-            // ── Non-disclosure state: Comp Genie (AI analysis) ──
-            if (isNonDisclosure) {
-              return (
-                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                  <div style={{
-                    padding: "10px 14px", borderRadius: 8,
-                    background: "linear-gradient(135deg, #eef2ff, #e0e7ff)",
-                    border: "1px solid #c7d2fe",
-                    fontSize: 13, color: "#4338ca", lineHeight: 1.5,
-                  }}>
-                    <strong>Comp Genie</strong> — AI-powered comparable analysis.
-                    {" "}{stateAbbrev} is a non-disclosure state; actual sale prices may not be publicly recorded.
-                    Values are AI-estimated using AVM data and property characteristics.
-                  </div>
-
-                  {compGenieLoading && (
-                    <div style={{ textAlign: "center", padding: 32, color: "#6b7280" }}>
-                      <div style={{ fontSize: 24, marginBottom: 8 }}>Analyzing comparables...</div>
-                      <div style={{ fontSize: 13 }}>Comp Genie is reviewing nearby properties</div>
-                    </div>
-                  )}
-
-                  {compGenieError && (
-                    <div style={{ padding: 16, borderRadius: 8, background: "#fef2f2", border: "1px solid #fecaca", color: "#991b1b", fontSize: 13 }}>
-                      {compGenieError}
-                    </div>
-                  )}
-
-                  {compGenieData && (() => {
-                    const cg = compGenieData;
-                    return (
-                      <>
-                        {cg.estimatedValueRange && (
-                          <div style={{ padding: 16, borderRadius: 8, background: "#f0fdf4", border: "1px solid #bbf7d0" }}>
-                            <div style={{ fontWeight: 700, fontSize: 14, color: "#166534", marginBottom: 4 }}>
-                              Estimated Value Range
-                            </div>
-                            <div style={{ fontSize: 20, fontWeight: 700, color: "#15803d" }}>
-                              ${cg.estimatedValueRange.low?.toLocaleString()} — ${cg.estimatedValueRange.high?.toLocaleString()}
-                            </div>
-                            <div style={{ fontSize: 12, color: "#166534", marginTop: 4 }}>
-                              Confidence: <strong>{cg.confidence}</strong>
-                            </div>
-                          </div>
-                        )}
-
-                        {cg.marketPosition && (
-                          <div style={{ padding: 12, borderRadius: 8, background: "#f8fafc", border: "1px solid #e2e8f0", fontSize: 13, color: "#374151", lineHeight: 1.5 }}>
-                            <strong>Market Position:</strong> {cg.marketPosition}
-                          </div>
-                        )}
-
-                        {cg.comparables?.length > 0 && (
-                          <div>
-                            <div style={{ fontWeight: 700, fontSize: 14, color: "#1f2937", marginBottom: 8 }}>
-                              Top Comparable Properties
-                            </div>
-                            {cg.comparables.map((comp: any, i: number) => (
-                              <div key={i} style={{
-                                padding: 12, borderRadius: 8, marginBottom: 8,
-                                background: "#fff", border: "1px solid #e5e7eb",
-                              }}>
-                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                                  <div style={{ fontWeight: 600, fontSize: 13, color: "#1f2937" }}>{comp.address}</div>
-                                  <div style={{
-                                    padding: "2px 8px", borderRadius: 12, fontSize: 11, fontWeight: 700,
-                                    background: comp.similarity >= 80 ? "#dcfce7" : comp.similarity >= 60 ? "#fef9c3" : "#f3f4f6",
-                                    color: comp.similarity >= 80 ? "#166534" : comp.similarity >= 60 ? "#854d0e" : "#6b7280",
-                                  }}>
-                                    {comp.similarity}% match
-                                  </div>
-                                </div>
-                                <div style={{ display: "flex", gap: 16, fontSize: 12, color: "#6b7280", marginBottom: 6, flexWrap: "wrap" }}>
-                                  {comp.beds != null && <span>{comp.beds} bed</span>}
-                                  {comp.baths != null && <span>{comp.baths} bath</span>}
-                                  {comp.sqft && <span>{comp.sqft.toLocaleString()} sqft</span>}
-                                  {comp.yearBuilt && <span>Built {comp.yearBuilt}</span>}
-                                  {comp.avmValue && <span>AVM: ${comp.avmValue.toLocaleString()}</span>}
-                                  {comp.adjustedValue && <span style={{ fontWeight: 600, color: "#374151" }}>Adj: ${comp.adjustedValue.toLocaleString()}</span>}
-                                </div>
-                                <div style={{ fontSize: 12, color: "#4b5563", lineHeight: 1.4 }}>{comp.reasoning}</div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        <div style={{ fontSize: 11, color: "#9ca3af", fontStyle: "italic", lineHeight: 1.4 }}>{cg.disclaimer}</div>
-                      </>
-                    );
-                  })()}
-                </div>
-              );
-            }
-
-            // ── Disclosure state: Realie comparable sales ──
             return (
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 {realieCompsLoading && (

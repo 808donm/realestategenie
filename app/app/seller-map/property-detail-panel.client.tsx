@@ -5,7 +5,7 @@ import type { ScoredProperty, SellerFactor } from "@/lib/scoring/seller-motivati
 import { getSellerColor, getSellerLabel } from "@/lib/scoring/seller-motivation-score";
 import { fmtPrice } from "@/lib/utils";
 
-type DetailTab = "overview" | "building" | "financial" | "comps" | "ownership" | "outreach";
+type DetailTab = "overview" | "building" | "financial" | "comps" | "ownership" | "neighborhood" | "federal" | "outreach";
 
 interface OutreachDraft {
   address: string;
@@ -128,6 +128,10 @@ export function PropertyDetailPanel({ property, onClose }: Props) {
   const [outreach, setOutreach] = useState<OutreachResult | null>(null);
   const [outreachLoading, setOutreachLoading] = useState(false);
   const [outreachError, setOutreachError] = useState("");
+  const [neighborhoodData, setNeighborhoodData] = useState<any>(null);
+  const [neighborhoodLoading, setNeighborhoodLoading] = useState(false);
+  const [federalData, setFederalData] = useState<any>(null);
+  const [federalLoading, setFederalLoading] = useState(false);
 
   const handleDraftOutreach = useCallback(async () => {
     setOutreachLoading(true);
@@ -175,6 +179,8 @@ export function PropertyDetailPanel({ property, onClose }: Props) {
     setTab("overview");
     setOutreach(null);
     setOutreachError("");
+    setNeighborhoodData(null);
+    setFederalData(null);
 
     const params = new URLSearchParams({
       address: property.address,
@@ -191,12 +197,69 @@ export function PropertyDetailPanel({ property, onClose }: Props) {
       .finally(() => setLoading(false));
   }, [property.address, property.lat, property.lng]);
 
+  // Fetch neighborhood data when Neighborhood tab is selected
+  useEffect(() => {
+    if (tab !== "neighborhood" || neighborhoodData || neighborhoodLoading) return;
+    const zip = property.zip || detail?.zipCode;
+    const lat = property.lat;
+    const lng = property.lng;
+    if (!zip && !lat) return;
+
+    setNeighborhoodLoading(true);
+    const params = new URLSearchParams({ endpoint: "neighborhood" });
+
+    // Parse address parts from the property address string
+    const addrParts = property.address.split(",").map((s: string) => s.trim());
+    if (addrParts.length >= 1) params.set("address1", addrParts[0]);
+    if (property.city && property.state) params.set("address2", `${property.city}, ${property.state}`);
+    if (zip) params.set("postalcode", zip);
+    if (lat) params.set("latitude", String(lat));
+    if (lng) params.set("longitude", String(lng));
+
+    fetch(`/api/integrations/attom/property?${params}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data && !data.error) setNeighborhoodData(data);
+      })
+      .catch(() => {})
+      .finally(() => setNeighborhoodLoading(false));
+  }, [tab, neighborhoodData, neighborhoodLoading, property, detail?.zipCode]);
+
+  // Fetch federal data when Area Intel tab is selected
+  useEffect(() => {
+    if (tab !== "federal" || federalData || federalLoading) return;
+    const zip = property.zip || detail?.zipCode;
+    if (!zip) return;
+
+    setFederalLoading(true);
+    const params = new URLSearchParams({
+      endpoint: "supplement",
+      zipCode: zip,
+      ...(property.state ? { state: property.state } : {}),
+    });
+
+    // Parse address for more specific data
+    const addrParts = property.address.split(",").map((s: string) => s.trim());
+    if (addrParts.length >= 1) params.set("address", addrParts[0]);
+    if (property.city) params.set("city", property.city);
+
+    fetch(`/api/integrations/federal-data/query?${params}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success !== false) setFederalData(data);
+      })
+      .catch(() => {})
+      .finally(() => setFederalLoading(false));
+  }, [tab, federalData, federalLoading, property, detail?.zipCode]);
+
   const tabs: { key: DetailTab; label: string }[] = [
     { key: "overview", label: "Overview" },
     { key: "building", label: "Building" },
     { key: "financial", label: "Financial" },
     { key: "comps", label: "Comps" },
     { key: "ownership", label: "Ownership" },
+    { key: "neighborhood", label: "Neighborhood" },
+    { key: "federal", label: "Area Intel" },
     { key: "outreach", label: "Outreach" },
   ];
 
@@ -284,6 +347,8 @@ export function PropertyDetailPanel({ property, onClose }: Props) {
             {tab === "financial" && <FinancialTab property={property} detail={detail} />}
             {tab === "comps" && <CompsTab detail={detail} />}
             {tab === "ownership" && <OwnershipTab property={property} detail={detail} />}
+            {tab === "neighborhood" && <NeighborhoodTab data={neighborhoodData} loading={neighborhoodLoading} />}
+            {tab === "federal" && <FederalTab data={federalData} loading={federalLoading} />}
             {tab === "outreach" && (
               <OutreachTab
                 outreach={outreach}
@@ -1093,6 +1158,324 @@ function OutreachTab({
       >
         Regenerate Outreach
       </button>
+    </div>
+  );
+}
+
+// ── Neighborhood Tab ──────────────────────────────────────────────────────
+
+function NeighborhoodTab({ data, loading }: { data: any; loading: boolean }) {
+  if (loading) return <EmptyState text="Loading neighborhood data..." />;
+  if (!data) return <EmptyState text="No neighborhood data available" />;
+
+  const communityRaw = data.community;
+  const communityObj = communityRaw?.community || communityRaw?.response?.result?.community;
+  const geo = communityObj?.geography;
+  const demo = communityObj?.demographics;
+  const crime = communityObj?.crime;
+  const climate = communityObj?.climate;
+  const naturalDisasters = communityObj?.naturalDisasters;
+  const hasCommunity = !!(demo || crime || climate);
+
+  const d = (key: string) => demo?.[key];
+  const pct = (key: string) => { const v = d(key); return v != null ? `${v}%` : undefined; };
+
+  const schoolsRaw = data.schools;
+  const schools = schoolsRaw?.school
+    || schoolsRaw?.response?.result?.package?.item
+    || schoolsRaw?.result?.package?.item
+    || schoolsRaw?.property?.[0]?.school
+    || (Array.isArray(schoolsRaw) ? schoolsRaw : []);
+  const schoolList = Array.isArray(schools) ? schools : schools ? [schools] : [];
+
+  const poiRaw = data.poi;
+  const poiItems = poiRaw?.poi
+    || poiRaw?.response?.result?.package?.item
+    || (Array.isArray(poiRaw) ? poiRaw : []);
+  const poiList = Array.isArray(poiItems) ? poiItems : poiItems ? [poiItems] : [];
+
+  const trendsRaw = data.salesTrends;
+  const trendsList: any[] = trendsRaw?.salesTrends || trendsRaw?.salestrend || [];
+
+  if (!hasCommunity && schoolList.length === 0 && poiList.length === 0 && trendsList.length === 0) {
+    return <EmptyState text="No neighborhood data found for this property" />;
+  }
+
+  const idxColor = (v: number) => v >= 150 ? "text-red-600" : v >= 120 ? "text-amber-600" : v >= 80 ? "text-emerald-600" : "text-blue-600";
+  const idxLabel = (v: number) => v >= 150 ? "High" : v >= 120 ? "Above Avg" : v >= 80 ? "Average" : "Below Avg";
+
+  return (
+    <div className="space-y-4">
+      {geo?.geographyName && (
+        <div className="p-2.5 bg-blue-50 border-l-4 border-blue-500 rounded">
+          <p className="text-sm font-bold text-blue-800">{geo.geographyName}</p>
+          {geo.geographyTypeName && <p className="text-[10px] text-gray-500">{geo.geographyTypeName}</p>}
+        </div>
+      )}
+
+      {demo && (
+        <Section title="Demographics">
+          <InfoRow label="Population" value={d("population") != null ? Number(d("population")).toLocaleString() : undefined} />
+          <InfoRow label="Median Age" value={d("median_Age")} />
+          <InfoRow label="Households" value={d("households") != null ? Number(d("households")).toLocaleString() : undefined} />
+          <InfoRow label="Owner Occupied" value={pct("housing_Units_Owner_Occupied_Pct")} />
+          <InfoRow label="Renter Occupied" value={pct("housing_Units_Renter_Occupied_Pct")} />
+        </Section>
+      )}
+
+      {demo && (d("median_Household_Income") || d("population_In_Poverty_Pct")) && (
+        <Section title="Income & Economy">
+          <InfoRow label="Median HH Income" value={d("median_Household_Income") != null ? `$${Number(d("median_Household_Income")).toLocaleString()}` : undefined} />
+          <InfoRow label="Per Capita Income" value={d("household_Income_Per_Capita") != null ? `$${Number(d("household_Income_Per_Capita")).toLocaleString()}` : undefined} />
+          <InfoRow label="Poverty Rate" value={pct("population_In_Poverty_Pct")} />
+        </Section>
+      )}
+
+      {demo && d("housing_Owner_Households_Median_Value") && (
+        <Section title="Housing Market">
+          <InfoRow label="Median Home Value" value={d("housing_Owner_Households_Median_Value") != null ? `$${Number(d("housing_Owner_Households_Median_Value")).toLocaleString()}` : undefined} />
+          <InfoRow label="Median Rent" value={d("housing_Median_Rent") != null ? `$${Number(d("housing_Median_Rent")).toLocaleString()}/mo` : undefined} />
+          <InfoRow label="Median Year Built" value={d("housing_Median_Built_Yr")} />
+        </Section>
+      )}
+
+      {crime && (
+        <Section title="Crime (100 = National Avg)">
+          <div className="grid grid-cols-3 gap-1.5">
+            {[
+              { label: "Overall", val: crime.crime_Index },
+              { label: "Burglary", val: crime.burglary_Index },
+              { label: "Larceny", val: crime.larceny_Index },
+              { label: "Vehicle Theft", val: crime.motor_Vehicle_Theft_Index },
+              { label: "Assault", val: crime.aggravated_Assault_Index },
+              { label: "Robbery", val: crime.forcible_Robbery_Index },
+            ].filter((c) => c.val != null).map((c) => (
+              <div key={c.label} className="p-2 bg-gray-50 rounded text-center">
+                <div className="text-[9px] font-semibold uppercase text-gray-500">{c.label}</div>
+                <div className={`text-lg font-bold ${idxColor(c.val!)}`}>{c.val}</div>
+                <div className={`text-[9px] ${idxColor(c.val!)}`}>{idxLabel(c.val!)}</div>
+              </div>
+            ))}
+          </div>
+        </Section>
+      )}
+
+      {naturalDisasters && (
+        <Section title="Natural Disaster Risk (100 = Avg)">
+          <div className="grid grid-cols-3 gap-1.5">
+            {[
+              { label: "Earthquake", val: naturalDisasters.earthquake_Index },
+              { label: "Hurricane", val: naturalDisasters.hurricane_Index },
+              { label: "Tornado", val: naturalDisasters.tornado_Index },
+              { label: "Hail", val: naturalDisasters.hail_Index },
+              { label: "Wind", val: naturalDisasters.wind_Index },
+            ].filter((c) => c.val != null).map((c) => (
+              <div key={c.label} className="p-2 bg-gray-50 rounded text-center">
+                <div className="text-[9px] font-semibold uppercase text-gray-500">{c.label}</div>
+                <div className={`text-lg font-bold ${idxColor(c.val!)}`}>{c.val}</div>
+                <div className={`text-[9px] ${idxColor(c.val!)}`}>{idxLabel(c.val!)}</div>
+              </div>
+            ))}
+          </div>
+        </Section>
+      )}
+
+      {climate && (
+        <Section title="Climate">
+          <InfoRow label="Avg Annual Temp" value={climate.annual_Avg_Temp != null ? `${climate.annual_Avg_Temp}°F` : undefined} />
+          <InfoRow label="Annual Rainfall" value={climate.annual_Precip_In != null ? `${climate.annual_Precip_In}"` : undefined} />
+          <InfoRow label="Clear Days/Yr" value={climate.clear_Day_Mean} />
+        </Section>
+      )}
+
+      {trendsList.length > 0 && (() => {
+        const recent = trendsList.slice(-8);
+        const firstMed = recent[0]?.salesTrend?.medSalePrice;
+        const lastMed = recent[recent.length - 1]?.salesTrend?.medSalePrice;
+        const priceChange = (firstMed && lastMed) ? ((lastMed - firstMed) / firstMed * 100) : null;
+        return (
+          <Section title="Sales Trends">
+            {priceChange != null && (
+              <p className={`text-xs font-semibold mb-2 ${priceChange >= 0 ? "text-green-600" : "text-red-600"}`}>
+                {priceChange >= 0 ? "+" : ""}{priceChange.toFixed(1)}% median price change
+              </p>
+            )}
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="text-gray-500 border-b">
+                    <th className="text-left py-1.5 font-medium">Period</th>
+                    <th className="text-right py-1.5 font-medium">Median</th>
+                    <th className="text-right py-1.5 font-medium">Sales</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recent.map((t: any, i: number) => {
+                    const period = t.dateRange?.start || "";
+                    const st = t.salesTrend || t;
+                    return (
+                      <tr key={i} className="border-b border-gray-50">
+                        <td className="py-1.5 text-gray-700">{period}</td>
+                        <td className="py-1.5 text-right">{st.medSalePrice != null ? `$${Number(st.medSalePrice).toLocaleString()}` : "—"}</td>
+                        <td className="py-1.5 text-right">{st.homeSaleCount ?? "—"}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </Section>
+        );
+      })()}
+
+      {schoolList.length > 0 && (
+        <Section title="Nearby Schools">
+          <div className="space-y-2">
+            {schoolList.slice(0, 10).map((school: any, i: number) => {
+              const det = school.detail || school;
+              const loc = school.location || {};
+              const name = det.schoolName || det.InstitutionName || school.schoolName;
+              const type = det.institutionType || det.schoolType || school.schoolType;
+              const gradeSpan = (det.gradeSpanLow && det.gradeSpanHigh) ? `${det.gradeSpanLow}–${det.gradeSpanHigh}` : school.gradeRange;
+              const students = det.studentCnt || school.enrollment;
+              const dist = loc.distance ?? school.distance;
+              return (
+                <div key={i} className="p-2 bg-gray-50 rounded">
+                  <p className="text-xs font-semibold text-gray-800">{name}</p>
+                  <p className="text-[10px] text-gray-500">
+                    {[type, gradeSpan ? `Grades ${gradeSpan}` : null, students ? `${Number(students).toLocaleString()} students` : null, dist != null ? `${Number(dist).toFixed(1)} mi` : null].filter(Boolean).join(" · ")}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </Section>
+      )}
+
+      {poiList.length > 0 && (
+        <Section title="Nearby Amenities">
+          <div className="space-y-1.5">
+            {poiList.slice(0, 15).map((poi: any, i: number) => {
+              const biz = poi.businessLocation || {};
+              const cat = poi.category || {};
+              const det = poi.details || {};
+              const poiName = biz.businessStandardName || det.businessShortName || poi.name || poi.Name;
+              const category = cat.condensedHeading || cat.industry || poi.businessCategory;
+              const dist = det.distance ?? poi.distance;
+              return (
+                <div key={i} className="flex justify-between text-xs py-1 border-b border-gray-50">
+                  <span className="text-gray-700">{poiName}</span>
+                  <span className="text-gray-400 text-right">{[category, dist != null ? `${Number(dist).toFixed(1)} mi` : null].filter(Boolean).join(" · ")}</span>
+                </div>
+              );
+            })}
+          </div>
+        </Section>
+      )}
+    </div>
+  );
+}
+
+// ── Federal / Area Intel Tab ──────────────────────────────────────────────
+
+function FederalTab({ data, loading }: { data: any; loading: boolean }) {
+  if (loading) return <EmptyState text="Loading federal data sources..." />;
+  if (!data) return <EmptyState text="No federal data available" />;
+
+  const fmt = (n?: number) => {
+    if (n == null) return null;
+    if (Math.abs(n) >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
+    return `$${n.toLocaleString()}`;
+  };
+
+  return (
+    <div className="space-y-4">
+      {data.vacancy && (
+        <Section title="Vacancy Status">
+          {data.vacancy.source === "usps" && (
+            <InfoRow label="USPS Vacancy" value={data.vacancy.vacant ? "Vacant" : "Active Mail Delivery"} />
+          )}
+          {data.vacancy.vacancyRate != null && (
+            <InfoRow label="Area Vacancy Rate" value={`${data.vacancy.vacancyRate.toFixed(1)}%`} />
+          )}
+        </Section>
+      )}
+
+      {data.fairMarketRent && (
+        <Section title="HUD Fair Market Rents">
+          <InfoRow label="Area" value={data.fairMarketRent.areaName || data.fairMarketRent.countyName} />
+          <InfoRow label="Studio" value={fmt(data.fairMarketRent.efficiency)} />
+          <InfoRow label="1 Bedroom" value={fmt(data.fairMarketRent.oneBedroom)} />
+          <InfoRow label="2 Bedroom" value={fmt(data.fairMarketRent.twoBedroom)} />
+          <InfoRow label="3 Bedroom" value={fmt(data.fairMarketRent.threeBedroom)} />
+          <InfoRow label="4 Bedroom" value={fmt(data.fairMarketRent.fourBedroom)} />
+          <InfoRow label="Year" value={data.fairMarketRent.year} />
+        </Section>
+      )}
+
+      {data.demographics && (
+        <Section title="Census Demographics">
+          <InfoRow label="Population" value={data.demographics.totalPopulation?.toLocaleString()} />
+          <InfoRow label="Median Age" value={data.demographics.medianAge} />
+          <InfoRow label="Median HH Income" value={fmt(data.demographics.medianHouseholdIncome)} />
+          <InfoRow label="Median Home Value" value={fmt(data.demographics.medianHomeValue)} />
+          <InfoRow label="Median Gross Rent" value={fmt(data.demographics.medianGrossRent)} />
+          <InfoRow label="Housing Units" value={data.demographics.totalHousingUnits?.toLocaleString()} />
+          <InfoRow label="Owner Occupied" value={data.demographics.ownerOccupied?.toLocaleString()} />
+          <InfoRow label="Renter Occupied" value={data.demographics.renterOccupied?.toLocaleString()} />
+          <InfoRow label="Vacant Units" value={data.demographics.vacantUnits?.toLocaleString()} />
+        </Section>
+      )}
+
+      {data.floodRisk && (
+        <Section title="FEMA Flood Insurance">
+          <InfoRow label="Flood Zone" value={data.floodRisk.floodZone} />
+          <InfoRow label="NFIP Policies" value={data.floodRisk.policyCount?.toLocaleString()} />
+          <InfoRow label="Avg Premium" value={fmt(Math.round(data.floodRisk.averagePremium))} />
+          <InfoRow label="Total Coverage" value={fmt(data.floodRisk.totalCoverage)} />
+        </Section>
+      )}
+
+      {data.conformingLoanLimit && (
+        <Section title="Conforming Loan Limits">
+          <InfoRow label="1 Unit" value={fmt(data.conformingLoanLimit.oneUnit)} />
+          <InfoRow label="2 Units" value={fmt(data.conformingLoanLimit.twoUnit)} />
+          <InfoRow label="3 Units" value={fmt(data.conformingLoanLimit.threeUnit)} />
+          <InfoRow label="4 Units" value={fmt(data.conformingLoanLimit.fourUnit)} />
+          <InfoRow label="Year" value={data.conformingLoanLimit.year} />
+        </Section>
+      )}
+
+      {data.localEmployment?.unemploymentRate && (
+        <Section title="Employment Data">
+          <InfoRow label="State Unemployment" value={`${data.localEmployment.unemploymentRate}%`} />
+        </Section>
+      )}
+
+      {data.lendingData && (
+        <Section title="HMDA Mortgage Lending">
+          <InfoRow label="Applications" value={data.lendingData.totalApplications?.toLocaleString()} />
+          <InfoRow label="Originations" value={data.lendingData.totalOriginations?.toLocaleString()} />
+          <InfoRow label="Approval Rate" value={data.lendingData.approvalRate ? `${data.lendingData.approvalRate.toFixed(1)}%` : undefined} />
+          <InfoRow label="Median Loan" value={fmt(data.lendingData.medianLoanAmount)} />
+        </Section>
+      )}
+
+      {data.environmentalSites && data.environmentalSites.length > 0 && (
+        <Section title="EPA Environmental Sites">
+          {data.environmentalSites.slice(0, 5).map((site: any, i: number) => (
+            <InfoRow key={i} label={site.siteType} value={site.facilityName} />
+          ))}
+        </Section>
+      )}
+
+      {data.recentDisasters && data.recentDisasters.length > 0 && (
+        <Section title="Recent FEMA Disasters">
+          {data.recentDisasters.slice(0, 5).map((d: any, i: number) => (
+            <InfoRow key={i} label={d.incidentType} value={`${d.title} (${d.declarationDate?.substring(0, 10)})`} />
+          ))}
+        </Section>
+      )}
     </div>
   );
 }

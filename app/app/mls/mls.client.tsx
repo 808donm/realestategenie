@@ -2582,7 +2582,6 @@ export default function MLSClient() {
                   property={attomData}
                   onClose={() => {}}
                   embedded
-                  tabs={["building", "financial", "ownership", "neighborhood"]}
                 />
               )}
 
