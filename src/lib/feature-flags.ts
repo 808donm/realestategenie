@@ -10,6 +10,7 @@ export type FeatureFlags = {
   documents_esign: boolean;
   vendor_directory: boolean;
   vendor_scheduling: boolean;
+  social_lead_response: boolean;
 };
 
 /**
@@ -44,6 +45,7 @@ export async function getFeatureFlags(): Promise<FeatureFlags | null> {
       documents_esign: false,
       vendor_directory: false,
       vendor_scheduling: false,
+      social_lead_response: false,
     };
   }
 
@@ -57,6 +59,7 @@ export async function getFeatureFlags(): Promise<FeatureFlags | null> {
     documents_esign: data.documents_esign,
     vendor_directory: data.vendor_directory,
     vendor_scheduling: data.vendor_scheduling,
+    social_lead_response: data.social_lead_response,
   };
 }
 

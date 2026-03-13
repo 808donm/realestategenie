@@ -8,6 +8,7 @@ import RealieIntegrationCard from "./realie-card";
 import FederalDataIntegrationCard from "./federal-data-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import IntegrationsNotifications from "./notifications";
+import SocialChannelsCard from "./social-channels-card";
 
 export default async function IntegrationsPage() {
   const supabase = await supabaseServer();
@@ -74,6 +75,9 @@ export default async function IntegrationsPage() {
         <GHLIntegrationCard integration={ghlIntegration} />
         <TrestleIntegrationCard integration={trestleIntegration || null} />
       </div>
+
+      {/* Social Lead Response Channels */}
+      <SocialChannelsCard />
 
       {/* Admin-only Integrations */}
       {isPlatformAdmin && (
