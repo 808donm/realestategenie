@@ -69,15 +69,18 @@ export default function LeadSourceROIClient() {
   }, [data]);
 
   const bestConversion = useMemo(() => {
+    if (sources.length === 0) return null;
     return sources.reduce((best, s) => (s.conversionRate > best.conversionRate ? s : best), sources[0]);
   }, [sources]);
 
   const lowestCostPerClosing = useMemo(() => {
     const withClosings = sources.filter((s) => s.closings > 0);
+    if (withClosings.length === 0) return null;
     return withClosings.reduce((best, s) => (s.costPerClosing < best.costPerClosing ? s : best), withClosings[0]);
   }, [sources]);
 
   const highestROI = useMemo(() => {
+    if (sources.length === 0) return null;
     return sources.reduce((best, s) => (s.roi > best.roi ? s : best), sources[0]);
   }, [sources]);
 
@@ -112,9 +115,9 @@ export default function LeadSourceROIClient() {
     y += 8;
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    doc.text(`Best Conversion: ${bestConversion.name} (${bestConversion.conversionRate.toFixed(1)}%)`, 25, y); y += 6;
-    doc.text(`Lowest Cost/Closing: ${lowestCostPerClosing.name} (${fmt(lowestCostPerClosing.costPerClosing)})`, 25, y); y += 6;
-    doc.text(`Highest ROI: ${highestROI.name} (${highestROI.roi.toFixed(0)}%)`, 25, y); y += 12;
+    doc.text(`Best Conversion: ${bestConversion ? `${bestConversion.name} (${bestConversion.conversionRate.toFixed(1)}%)` : "N/A"}`, 25, y); y += 6;
+    doc.text(`Lowest Cost/Closing: ${lowestCostPerClosing ? `${lowestCostPerClosing.name} (${fmt(lowestCostPerClosing.costPerClosing)})` : "N/A"}`, 25, y); y += 6;
+    doc.text(`Highest ROI: ${highestROI ? `${highestROI.name} (${highestROI.roi.toFixed(0)}%)` : "N/A"}`, 25, y); y += 12;
 
     // Table header
     doc.setFontSize(9);
@@ -223,18 +226,18 @@ export default function LeadSourceROIClient() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 24 }}>
         <div style={{ ...cardStyle, borderLeft: "4px solid #10b981" }}>
           <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Best Conversion Rate</div>
-          <div style={{ fontSize: 24, fontWeight: 700 }}>{bestConversion.name}</div>
-          <div style={{ fontSize: 14, color: "#10b981", fontWeight: 600 }}>{bestConversion.conversionRate.toFixed(1)}%</div>
+          <div style={{ fontSize: 24, fontWeight: 700 }}>{bestConversion?.name ?? "N/A"}</div>
+          <div style={{ fontSize: 14, color: "#10b981", fontWeight: 600 }}>{bestConversion ? `${bestConversion.conversionRate.toFixed(1)}%` : "—"}</div>
         </div>
         <div style={{ ...cardStyle, borderLeft: "4px solid #3b82f6" }}>
           <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Lowest Cost per Closing</div>
-          <div style={{ fontSize: 24, fontWeight: 700 }}>{lowestCostPerClosing.name}</div>
-          <div style={{ fontSize: 14, color: "#3b82f6", fontWeight: 600 }}>{fmt(lowestCostPerClosing.costPerClosing)}</div>
+          <div style={{ fontSize: 24, fontWeight: 700 }}>{lowestCostPerClosing?.name ?? "N/A"}</div>
+          <div style={{ fontSize: 14, color: "#3b82f6", fontWeight: 600 }}>{lowestCostPerClosing ? fmt(lowestCostPerClosing.costPerClosing) : "—"}</div>
         </div>
         <div style={{ ...cardStyle, borderLeft: "4px solid #8b5cf6" }}>
           <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Highest ROI</div>
-          <div style={{ fontSize: 24, fontWeight: 700 }}>{highestROI.name}</div>
-          <div style={{ fontSize: 14, color: "#8b5cf6", fontWeight: 600 }}>{highestROI.roi.toFixed(0)}%</div>
+          <div style={{ fontSize: 24, fontWeight: 700 }}>{highestROI?.name ?? "N/A"}</div>
+          <div style={{ fontSize: 14, color: "#8b5cf6", fontWeight: 600 }}>{highestROI ? `${highestROI.roi.toFixed(0)}%` : "—"}</div>
         </div>
       </div>
 
@@ -334,12 +337,12 @@ export default function LeadSourceROIClient() {
               <td style={{ padding: "10px 8px", fontWeight: 700 }}>TOTAL</td>
               <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 700 }}>{totalLeads}</td>
               <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 700 }}>{totalClosings}</td>
-              <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 700 }}>{((totalClosings / totalLeads) * 100).toFixed(1)}%</td>
+              <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 700 }}>{totalLeads > 0 ? ((totalClosings / totalLeads) * 100).toFixed(1) + "%" : "—"}</td>
               <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 700 }}>{fmt(totalSpend)}</td>
               <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 700 }}>{fmt(totalRevenue)}</td>
-              <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 700 }}>{fmt(totalSpend / totalLeads)}</td>
-              <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 700 }}>{fmt(totalSpend / totalClosings)}</td>
-              <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 700 }}>{(((totalRevenue - totalSpend) / totalSpend) * 100).toFixed(0)}%</td>
+              <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 700 }}>{totalLeads > 0 ? fmt(totalSpend / totalLeads) : "—"}</td>
+              <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 700 }}>{totalClosings > 0 ? fmt(totalSpend / totalClosings) : "—"}</td>
+              <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 700 }}>{totalSpend > 0 ? (((totalRevenue - totalSpend) / totalSpend) * 100).toFixed(0) + "%" : "—"}</td>
             </tr>
           </tfoot>
         </table>
