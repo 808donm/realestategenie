@@ -1,9 +1,12 @@
 "use client";
 
+import { useState, useMemo } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell,
+  LineChart, Line,
   PieChart, Pie,
 } from "recharts";
+import { STATEWIDE_MONTHLY_DATA } from "@/lib/data/statewide-monthly-data";
 import { OAHU_MONTHLY_DATA } from "@/lib/data/oahu-monthly-data";
 import { MAUI_MONTHLY_DATA } from "@/lib/data/maui-monthly-data";
 import { HAWAII_ISLAND_MONTHLY_DATA } from "@/lib/data/hawaii-island-monthly-data";
@@ -19,80 +22,95 @@ const COLORS = {
   kauai: "#8b5cf6",
 };
 
+const yoyColor = (val: number) => (val >= 0 ? "#059669" : "#dc2626");
+const yoyText = (val: number) => `${val >= 0 ? "+" : ""}${val.toFixed(1)}%`;
+
 export default function HawaiiMarketComparisonClient() {
-  // Latest data from each island
-  const oahu = OAHU_MONTHLY_DATA[OAHU_MONTHLY_DATA.length - 1];
-  const maui = MAUI_MONTHLY_DATA[MAUI_MONTHLY_DATA.length - 1];
-  const hi = HAWAII_ISLAND_MONTHLY_DATA[HAWAII_ISLAND_MONTHLY_DATA.length - 1];
-  const kauai = KAUAI_MONTHLY_DATA[KAUAI_MONTHLY_DATA.length - 1];
+  const [selectedMonth, setSelectedMonth] = useState(
+    STATEWIDE_MONTHLY_DATA[STATEWIDE_MONTHLY_DATA.length - 1].month
+  );
+
+  const statewide = useMemo(() => {
+    return STATEWIDE_MONTHLY_DATA.find((m) => m.month === selectedMonth) ?? STATEWIDE_MONTHLY_DATA[STATEWIDE_MONTHLY_DATA.length - 1];
+  }, [selectedMonth]);
+
+  const hasMultipleMonths = STATEWIDE_MONTHLY_DATA.length > 1;
+
+  // Get matching per-island data for the selected month
+  const oahu = useMemo(() => {
+    return OAHU_MONTHLY_DATA.find((m) => m.month === selectedMonth) ?? OAHU_MONTHLY_DATA[OAHU_MONTHLY_DATA.length - 1];
+  }, [selectedMonth]);
+
+  const maui = useMemo(() => {
+    return MAUI_MONTHLY_DATA.find((m) => m.month === selectedMonth) ?? MAUI_MONTHLY_DATA[MAUI_MONTHLY_DATA.length - 1];
+  }, [selectedMonth]);
+
+  const hi = useMemo(() => {
+    return HAWAII_ISLAND_MONTHLY_DATA.find((m) => m.month === selectedMonth) ?? HAWAII_ISLAND_MONTHLY_DATA[HAWAII_ISLAND_MONTHLY_DATA.length - 1];
+  }, [selectedMonth]);
+
+  const kauai = useMemo(() => {
+    return KAUAI_MONTHLY_DATA.find((m) => m.month === selectedMonth) ?? KAUAI_MONTHLY_DATA[KAUAI_MONTHLY_DATA.length - 1];
+  }, [selectedMonth]);
+
+  // Trend data for line charts (across all available months)
+  const trendData = useMemo(() => {
+    return STATEWIDE_MONTHLY_DATA.map((m) => ({
+      month: m.label.replace(/\s\d{4}$/, "").slice(0, 3),
+      sfSales: m.singleFamily.totalSales2026,
+      condoSales: m.condo.totalSales2026,
+      sfMedianPrice: m.singleFamily.totalMedianPrice2026,
+      condoMedianPrice: m.condo.totalMedianPrice2026,
+    }));
+  }, []);
+
+  const sw = statewide;
 
   // SF Median Price Comparison
-  const sfMedianPriceData = [
-    { island: "O'ahu", value: oahu.singleFamily.medianPrice, color: COLORS.oahu },
-    { island: "Maui", value: maui.singleFamily.medianPrice, color: COLORS.maui },
-    { island: "Hawai'i", value: hi.singleFamily.medianPrice, color: COLORS.hawaii },
-    { island: "Kaua'i", value: kauai.singleFamily.medianPrice, color: COLORS.kauai },
-  ];
+  const sfMedianPriceData = sw.singleFamily.counties.map((c) => ({
+    island: c.county,
+    value: c.medianPrice2026,
+    color: c.county === "O'ahu" ? COLORS.oahu : c.county === "Maui" ? COLORS.maui : c.county === "Hawai'i" ? COLORS.hawaii : COLORS.kauai,
+  }));
 
   // Condo Median Price Comparison
-  const condoMedianPriceData = [
-    { island: "O'ahu", value: oahu.condo.medianPrice, color: COLORS.oahu },
-    { island: "Maui", value: maui.condo.medianPrice, color: COLORS.maui },
-    { island: "Hawai'i", value: hi.condo.medianPrice, color: COLORS.hawaii },
-    { island: "Kaua'i", value: kauai.condo.medianPrice, color: COLORS.kauai },
-  ];
+  const condoMedianPriceData = sw.condo.counties.map((c) => ({
+    island: c.county,
+    value: c.medianPrice2026,
+    color: c.county === "O'ahu" ? COLORS.oahu : c.county === "Maui" ? COLORS.maui : c.county === "Hawai'i" ? COLORS.hawaii : COLORS.kauai,
+  }));
 
   // SF Sales Volume
-  const sfSalesData = [
-    { island: "O'ahu", value: oahu.singleFamily.sales, color: COLORS.oahu },
-    { island: "Maui", value: maui.singleFamily.closedSales, color: COLORS.maui },
-    { island: "Hawai'i", value: hi.singleFamily.soldListings, color: COLORS.hawaii },
-    { island: "Kaua'i", value: kauai.singleFamily.soldListings, color: COLORS.kauai },
-  ];
+  const sfSalesData = sw.singleFamily.counties.map((c) => ({
+    island: c.county,
+    value: c.sales2026,
+    color: c.county === "O'ahu" ? COLORS.oahu : c.county === "Maui" ? COLORS.maui : c.county === "Hawai'i" ? COLORS.hawaii : COLORS.kauai,
+  }));
 
   // Condo Sales Volume
-  const condoSalesData = [
-    { island: "O'ahu", value: oahu.condo.sales, color: COLORS.oahu },
-    { island: "Maui", value: maui.condo.closedSales, color: COLORS.maui },
-    { island: "Hawai'i", value: hi.condo.soldListings, color: COLORS.hawaii },
-    { island: "Kaua'i", value: kauai.condo.soldListings, color: COLORS.kauai },
+  const condoSalesData = sw.condo.counties.map((c) => ({
+    island: c.county,
+    value: c.sales2026,
+    color: c.county === "O'ahu" ? COLORS.oahu : c.county === "Maui" ? COLORS.maui : c.county === "Hawai'i" ? COLORS.hawaii : COLORS.kauai,
+  }));
+
+  // YoY Sales Changes
+  const salesYoYData = [
+    ...sw.singleFamily.counties.map((c) => ({
+      county: c.county,
+      sfChange: c.salesChange,
+      condoChange: sw.condo.counties.find((cc) => cc.county === c.county)?.salesChange ?? 0,
+    })),
   ];
 
-  // SF Days on Market
-  const sfDomData = [
-    { island: "O'ahu", value: oahu.singleFamily.medianDOM, color: COLORS.oahu },
-    { island: "Maui", value: maui.singleFamily.dom, color: COLORS.maui },
-    { island: "Hawai'i", value: hi.singleFamily.dom, color: COLORS.hawaii },
-    { island: "Kaua'i", value: kauai.singleFamily.dom, color: COLORS.kauai },
+  // YoY Median Price Changes
+  const priceYoYData = [
+    ...sw.singleFamily.counties.map((c) => ({
+      county: c.county,
+      sfChange: c.medianPriceChange,
+      condoChange: sw.condo.counties.find((cc) => cc.county === c.county)?.medianPriceChange ?? 0,
+    })),
   ];
-
-  // Condo Days on Market
-  const condoDomData = [
-    { island: "O'ahu", value: oahu.condo.medianDOM, color: COLORS.oahu },
-    { island: "Maui", value: maui.condo.dom, color: COLORS.maui },
-    { island: "Hawai'i", value: hi.condo.dom, color: COLORS.hawaii },
-    { island: "Kaua'i", value: kauai.condo.dom, color: COLORS.kauai },
-  ];
-
-  // SF Active Inventory
-  const sfInventoryData = [
-    { island: "O'ahu", value: oahu.singleFamily.activeInventory, color: COLORS.oahu },
-    { island: "Maui", value: maui.singleFamily.inventory, color: COLORS.maui },
-    { island: "Hawai'i", value: hi.singleFamily.activeListings, color: COLORS.hawaii },
-    { island: "Kaua'i", value: kauai.singleFamily.activeListings, color: COLORS.kauai },
-  ];
-
-  // Condo Active Inventory
-  const condoInventoryData = [
-    { island: "O'ahu", value: oahu.condo.activeInventory, color: COLORS.oahu },
-    { island: "Maui", value: maui.condo.inventory, color: COLORS.maui },
-    { island: "Hawai'i", value: hi.condo.activeListings, color: COLORS.hawaii },
-    { island: "Kaua'i", value: kauai.condo.activeListings, color: COLORS.kauai },
-  ];
-
-  // Total SF sales pie chart
-  const totalSfSales = sfSalesData.reduce((s, d) => s + d.value, 0);
-  const totalCondoSales = condoSalesData.reduce((s, d) => s + d.value, 0);
 
   const cardStyle: React.CSSProperties = {
     padding: 20,
@@ -101,60 +119,147 @@ export default function HawaiiMarketComparisonClient() {
     borderRadius: 12,
   };
 
+  const colorForCounty = (county: string) =>
+    county === "O'ahu" ? COLORS.oahu : county === "Maui" ? COLORS.maui : county === "Hawai'i" ? COLORS.hawaii : COLORS.kauai;
+
   return (
     <div>
       {/* Header */}
-      <div style={{ padding: "20px 24px", background: "linear-gradient(135deg, #1e293b 0%, #334155 100%)", borderRadius: 12, color: "#fff", marginBottom: 24 }}>
-        <div style={{ fontSize: 22, fontWeight: 800, marginBottom: 8 }}>February 2026 — All Islands</div>
-        <div style={{ fontSize: 14, opacity: 0.9 }}>
-          Side-by-side comparison of O&apos;ahu, Maui County, Hawai&apos;i Island, and Kaua&apos;i
+      <div style={{ padding: "20px 24px", background: "linear-gradient(135deg, #1e293b 0%, #334155 100%)", borderRadius: 12, color: "#fff", marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+        <div>
+          <div style={{ fontSize: 22, fontWeight: 800, marginBottom: 8 }}>{statewide.label} — All Islands</div>
+          <div style={{ fontSize: 14, opacity: 0.9 }}>
+            Official statewide statistics from Hawai&apos;i Realtors®
+          </div>
+          <div style={{ display: "flex", gap: 16, marginTop: 12, flexWrap: "wrap" }}>
+            {[
+              { label: "O'ahu", color: COLORS.oahu },
+              { label: "Maui", color: COLORS.maui },
+              { label: "Hawai'i Island", color: COLORS.hawaii },
+              { label: "Kaua'i", color: COLORS.kauai },
+            ].map((s) => (
+              <div key={s.label} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, opacity: 0.8 }}>
+                <div style={{ width: 10, height: 10, borderRadius: "50%", background: s.color }} />
+                {s.label}
+              </div>
+            ))}
+          </div>
         </div>
-        <div style={{ display: "flex", gap: 16, marginTop: 12, flexWrap: "wrap" }}>
-          {[
-            { label: "O'ahu", color: COLORS.oahu, src: "Honolulu Board of REALTORS® / HiCentral MLS" },
-            { label: "Maui", color: COLORS.maui, src: "REALTORS® Association of Maui / RAM MLS" },
-            { label: "Hawai'i Island", color: COLORS.hawaii, src: "Hawaii Information Service" },
-            { label: "Kaua'i", color: COLORS.kauai, src: "Hawaii Information Service" },
-          ].map((s) => (
-            <div key={s.label} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, opacity: 0.8 }}>
-              <div style={{ width: 10, height: 10, borderRadius: "50%", background: s.color }} />
-              {s.label}
-            </div>
-          ))}
+        {hasMultipleMonths && (
+          <select
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+            style={{ padding: "8px 14px", borderRadius: 8, border: "none", fontSize: 14, fontWeight: 600, cursor: "pointer", background: "rgba(255,255,255,0.2)", color: "#fff" }}
+          >
+            {STATEWIDE_MONTHLY_DATA.map((m) => (
+              <option key={m.month} value={m.month} style={{ color: "#1e293b" }}>{m.label}</option>
+            ))}
+          </select>
+        )}
+      </div>
+
+      {/* Statewide Totals Cards */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16, marginBottom: 16 }}>
+        <div style={{ ...cardStyle, borderTop: "4px solid #1e293b" }}>
+          <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600 }}>Statewide SF Median</div>
+          <div style={{ fontSize: 26, fontWeight: 800 }}>{fmt(sw.singleFamily.totalMedianPrice2026)}</div>
+          <div style={{ fontSize: 13, color: yoyColor(sw.singleFamily.totalMedianPriceChange), fontWeight: 600 }}>
+            {yoyText(sw.singleFamily.totalMedianPriceChange)} YoY
+          </div>
+        </div>
+        <div style={{ ...cardStyle, borderTop: "4px solid #475569" }}>
+          <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600 }}>Statewide Condo Median</div>
+          <div style={{ fontSize: 26, fontWeight: 800 }}>{fmt(sw.condo.totalMedianPrice2026)}</div>
+          <div style={{ fontSize: 13, color: yoyColor(sw.condo.totalMedianPriceChange), fontWeight: 600 }}>
+            {yoyText(sw.condo.totalMedianPriceChange)} YoY
+          </div>
+        </div>
+        <div style={{ ...cardStyle, borderTop: "4px solid #64748b" }}>
+          <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600 }}>Total SF Sales</div>
+          <div style={{ fontSize: 26, fontWeight: 800 }}>{sw.singleFamily.totalSales2026}</div>
+          <div style={{ fontSize: 13, color: yoyColor(sw.singleFamily.totalSalesChange), fontWeight: 600 }}>
+            {yoyText(sw.singleFamily.totalSalesChange)} YoY ({sw.singleFamily.totalSales2025} prev)
+          </div>
+        </div>
+        <div style={{ ...cardStyle, borderTop: "4px solid #94a3b8" }}>
+          <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600 }}>Total Condo Sales</div>
+          <div style={{ fontSize: 26, fontWeight: 800 }}>{sw.condo.totalSales2026}</div>
+          <div style={{ fontSize: 13, color: yoyColor(sw.condo.totalSalesChange), fontWeight: 600 }}>
+            {yoyText(sw.condo.totalSalesChange)} YoY ({sw.condo.totalSales2025} prev)
+          </div>
         </div>
       </div>
 
       {/* Island KPI Cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, marginBottom: 24 }}>
-        {[
-          { name: "O'ahu", color: COLORS.oahu, sfPrice: oahu.singleFamily.medianPrice, condoPrice: oahu.condo.medianPrice, sfSales: oahu.singleFamily.sales, condoSales: oahu.condo.sales, sfDOM: oahu.singleFamily.medianDOM, condoDOM: oahu.condo.medianDOM, period: oahu.label },
-          { name: "Maui", color: COLORS.maui, sfPrice: maui.singleFamily.medianPrice, condoPrice: maui.condo.medianPrice, sfSales: maui.singleFamily.closedSales, condoSales: maui.condo.closedSales, sfDOM: maui.singleFamily.dom, condoDOM: maui.condo.dom, period: maui.label },
-          { name: "Hawai'i Island", color: COLORS.hawaii, sfPrice: hi.singleFamily.medianPrice, condoPrice: hi.condo.medianPrice, sfSales: hi.singleFamily.soldListings, condoSales: hi.condo.soldListings, sfDOM: hi.singleFamily.dom, condoDOM: hi.condo.dom, period: hi.label },
-          { name: "Kaua'i", color: COLORS.kauai, sfPrice: kauai.singleFamily.medianPrice, condoPrice: kauai.condo.medianPrice, sfSales: kauai.singleFamily.soldListings, condoSales: kauai.condo.soldListings, sfDOM: kauai.singleFamily.dom, condoDOM: kauai.condo.dom, period: kauai.label },
-        ].map((island) => (
-          <div key={island.name} style={{ ...cardStyle, borderTop: `4px solid ${island.color}` }}>
-            <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 12, color: island.color }}>{island.name}</div>
-            <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 2 }}>SF Median</div>
-            <div style={{ fontSize: 20, fontWeight: 800 }}>{fmt(island.sfPrice)}</div>
-            <div style={{ fontSize: 11, color: "#6b7280", marginTop: 8, marginBottom: 2 }}>Condo Median</div>
-            <div style={{ fontSize: 20, fontWeight: 800 }}>{fmt(island.condoPrice)}</div>
-            <div style={{ display: "flex", gap: 12, marginTop: 12, fontSize: 12, color: "#6b7280" }}>
-              <div>
-                <div style={{ fontWeight: 700, color: "#374151" }}>{island.sfSales + island.condoSales}</div>
-                <div>Sales</div>
+        {sw.singleFamily.counties.map((sfCounty) => {
+          const cdCounty = sw.condo.counties.find((c) => c.county === sfCounty.county)!;
+          const color = colorForCounty(sfCounty.county);
+          return (
+            <div key={sfCounty.county} style={{ ...cardStyle, borderTop: `4px solid ${color}` }}>
+              <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 12, color }}>{sfCounty.county}</div>
+              <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 2 }}>SF Median</div>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                <div style={{ fontSize: 20, fontWeight: 800 }}>{fmt(sfCounty.medianPrice2026)}</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: yoyColor(sfCounty.medianPriceChange) }}>{yoyText(sfCounty.medianPriceChange)}</div>
               </div>
-              <div>
-                <div style={{ fontWeight: 700, color: "#374151" }}>{island.sfDOM}d / {island.condoDOM}d</div>
-                <div>SF / Condo DOM</div>
+              <div style={{ fontSize: 11, color: "#6b7280", marginTop: 8, marginBottom: 2 }}>Condo Median</div>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                <div style={{ fontSize: 20, fontWeight: 800 }}>{fmt(cdCounty.medianPrice2026)}</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: yoyColor(cdCounty.medianPriceChange) }}>{yoyText(cdCounty.medianPriceChange)}</div>
+              </div>
+              <div style={{ display: "flex", gap: 16, marginTop: 12, fontSize: 12, color: "#6b7280" }}>
+                <div>
+                  <div style={{ fontWeight: 700, color: "#374151" }}>{sfCounty.sales2026} / {cdCounty.sales2026}</div>
+                  <div>SF / Condo Sales</div>
+                </div>
+                <div>
+                  <div style={{ fontWeight: 700, color: yoyColor(sfCounty.salesChange) }}>{yoyText(sfCounty.salesChange)}</div>
+                  <div>SF Sales YoY</div>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
+
+      {/* Trend Line Charts */}
+      {hasMultipleMonths && (
+        <div style={{ display: "flex", gap: 16, marginBottom: 24, flexWrap: "wrap" }}>
+          <div style={{ ...cardStyle, flex: "1 1 380px" }}>
+            <h3 style={{ margin: "0 0 20px 0", fontSize: 16, fontWeight: 700 }}>Statewide Median Price Trend</h3>
+            <ResponsiveContainer width="100%" height={240}>
+              <LineChart data={trendData} margin={{ top: 5, right: 10, bottom: 5, left: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                <YAxis tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11 }} />
+                <Tooltip formatter={(value: any) => fmt(value)} />
+                <Legend />
+                <Line type="monotone" dataKey="sfMedianPrice" name="SF Median" stroke="#1e293b" strokeWidth={3} dot={{ r: 5 }} />
+                <Line type="monotone" dataKey="condoMedianPrice" name="Condo Median" stroke="#94a3b8" strokeWidth={3} dot={{ r: 5 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+          <div style={{ ...cardStyle, flex: "1 1 380px" }}>
+            <h3 style={{ margin: "0 0 20px 0", fontSize: 16, fontWeight: 700 }}>Statewide Sales Trend</h3>
+            <ResponsiveContainer width="100%" height={240}>
+              <LineChart data={trendData} margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Legend />
+                <Line type="monotone" dataKey="sfSales" name="SF Sales" stroke="#1e293b" strokeWidth={3} dot={{ r: 5 }} />
+                <Line type="monotone" dataKey="condoSales" name="Condo Sales" stroke="#94a3b8" strokeWidth={3} dot={{ r: 5 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
 
       {/* SF Median Price Comparison */}
       <div style={{ ...cardStyle, marginBottom: 24 }}>
-        <h3 style={{ margin: "0 0 20px 0", fontSize: 16, fontWeight: 700 }}>Single-Family Median Price by Island</h3>
+        <h3 style={{ margin: "0 0 20px 0", fontSize: 16, fontWeight: 700 }}>Single-Family Median Price by County</h3>
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={sfMedianPriceData} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -170,7 +275,7 @@ export default function HawaiiMarketComparisonClient() {
 
       {/* Condo Median Price Comparison */}
       <div style={{ ...cardStyle, marginBottom: 24 }}>
-        <h3 style={{ margin: "0 0 20px 0", fontSize: 16, fontWeight: 700 }}>Condo Median Price by Island</h3>
+        <h3 style={{ margin: "0 0 20px 0", fontSize: 16, fontWeight: 700 }}>Condo Median Price by County</h3>
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={condoMedianPriceData} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -184,10 +289,42 @@ export default function HawaiiMarketComparisonClient() {
         </ResponsiveContainer>
       </div>
 
-      {/* Sales Volume: SF + Condo side by side */}
+      {/* YoY Changes: Sales + Price */}
       <div style={{ display: "flex", gap: 16, marginBottom: 24, flexWrap: "wrap" }}>
         <div style={{ ...cardStyle, flex: "1 1 380px" }}>
-          <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>SF Sales by Island</h3>
+          <h3 style={{ margin: "0 0 20px 0", fontSize: 16, fontWeight: 700 }}>Sales Volume YoY Change (%)</h3>
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={salesYoYData} margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis dataKey="county" tick={{ fontSize: 11 }} />
+              <YAxis tick={{ fontSize: 11 }} tickFormatter={(v: number) => `${v}%`} />
+              <Tooltip formatter={(value: any) => `${Number(value).toFixed(1)}%`} />
+              <Legend />
+              <Bar dataKey="sfChange" name="SF Sales" fill="#1e293b" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="condoChange" name="Condo Sales" fill="#94a3b8" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+        <div style={{ ...cardStyle, flex: "1 1 380px" }}>
+          <h3 style={{ margin: "0 0 20px 0", fontSize: 16, fontWeight: 700 }}>Median Price YoY Change (%)</h3>
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={priceYoYData} margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis dataKey="county" tick={{ fontSize: 11 }} />
+              <YAxis tick={{ fontSize: 11 }} tickFormatter={(v: number) => `${v}%`} />
+              <Tooltip formatter={(value: any) => `${Number(value).toFixed(1)}%`} />
+              <Legend />
+              <Bar dataKey="sfChange" name="SF Price" fill="#1e293b" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="condoChange" name="Condo Price" fill="#94a3b8" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Sales Volume: SF + Condo Pies */}
+      <div style={{ display: "flex", gap: 16, marginBottom: 24, flexWrap: "wrap" }}>
+        <div style={{ ...cardStyle, flex: "1 1 380px" }}>
+          <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>SF Sales by County</h3>
           <ResponsiveContainer width="100%" height={260}>
             <PieChart>
               <Pie
@@ -206,10 +343,10 @@ export default function HawaiiMarketComparisonClient() {
               <Tooltip />
             </PieChart>
           </ResponsiveContainer>
-          <div style={{ textAlign: "center", fontSize: 13, color: "#6b7280" }}>Total: {totalSfSales} SF sales statewide</div>
+          <div style={{ textAlign: "center", fontSize: 13, color: "#6b7280" }}>Total: {sw.singleFamily.totalSales2026} SF sales statewide</div>
         </div>
         <div style={{ ...cardStyle, flex: "1 1 380px" }}>
-          <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>Condo Sales by Island</h3>
+          <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>Condo Sales by County</h3>
           <ResponsiveContainer width="100%" height={260}>
             <PieChart>
               <Pie
@@ -228,22 +365,30 @@ export default function HawaiiMarketComparisonClient() {
               <Tooltip />
             </PieChart>
           </ResponsiveContainer>
-          <div style={{ textAlign: "center", fontSize: 13, color: "#6b7280" }}>Total: {totalCondoSales} condo sales statewide</div>
+          <div style={{ textAlign: "center", fontSize: 13, color: "#6b7280" }}>Total: {sw.condo.totalSales2026} condo sales statewide</div>
         </div>
       </div>
 
-      {/* Days on Market Comparison */}
+      {/* Days on Market Comparison (from per-island data) */}
       <div style={{ display: "flex", gap: 16, marginBottom: 24, flexWrap: "wrap" }}>
         <div style={{ ...cardStyle, flex: "1 1 380px" }}>
           <h3 style={{ margin: "0 0 20px 0", fontSize: 16, fontWeight: 700 }}>SF Days on Market</h3>
           <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={sfDomData} margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>
+            <BarChart
+              data={[
+                { island: "O'ahu", value: oahu.singleFamily.medianDOM, color: COLORS.oahu },
+                { island: "Maui", value: maui.singleFamily.dom, color: COLORS.maui },
+                { island: "Hawai'i", value: hi.singleFamily.dom, color: COLORS.hawaii },
+                { island: "Kaua'i", value: kauai.singleFamily.dom, color: COLORS.kauai },
+              ]}
+              margin={{ top: 5, right: 10, bottom: 5, left: 10 }}
+            >
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis dataKey="island" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} />
               <Tooltip formatter={(value: any) => `${value} days`} />
               <Bar dataKey="value" name="Days" radius={[6, 6, 0, 0]}>
-                {sfDomData.map((d, i) => <Cell key={i} fill={d.color} />)}
+                {[COLORS.oahu, COLORS.maui, COLORS.hawaii, COLORS.kauai].map((c, i) => <Cell key={i} fill={c} />)}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
@@ -251,13 +396,21 @@ export default function HawaiiMarketComparisonClient() {
         <div style={{ ...cardStyle, flex: "1 1 380px" }}>
           <h3 style={{ margin: "0 0 20px 0", fontSize: 16, fontWeight: 700 }}>Condo Days on Market</h3>
           <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={condoDomData} margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>
+            <BarChart
+              data={[
+                { island: "O'ahu", value: oahu.condo.medianDOM, color: COLORS.oahu },
+                { island: "Maui", value: maui.condo.dom, color: COLORS.maui },
+                { island: "Hawai'i", value: hi.condo.dom, color: COLORS.hawaii },
+                { island: "Kaua'i", value: kauai.condo.dom, color: COLORS.kauai },
+              ]}
+              margin={{ top: 5, right: 10, bottom: 5, left: 10 }}
+            >
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis dataKey="island" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} />
               <Tooltip formatter={(value: any) => `${value} days`} />
               <Bar dataKey="value" name="Days" radius={[6, 6, 0, 0]}>
-                {condoDomData.map((d, i) => <Cell key={i} fill={d.color} />)}
+                {[COLORS.oahu, COLORS.maui, COLORS.hawaii, COLORS.kauai].map((c, i) => <Cell key={i} fill={c} />)}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
@@ -269,13 +422,21 @@ export default function HawaiiMarketComparisonClient() {
         <div style={{ ...cardStyle, flex: "1 1 380px" }}>
           <h3 style={{ margin: "0 0 20px 0", fontSize: 16, fontWeight: 700 }}>SF Active Inventory</h3>
           <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={sfInventoryData} margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>
+            <BarChart
+              data={[
+                { island: "O'ahu", value: oahu.singleFamily.activeInventory, color: COLORS.oahu },
+                { island: "Maui", value: maui.singleFamily.inventory, color: COLORS.maui },
+                { island: "Hawai'i", value: hi.singleFamily.activeListings, color: COLORS.hawaii },
+                { island: "Kaua'i", value: kauai.singleFamily.activeListings, color: COLORS.kauai },
+              ]}
+              margin={{ top: 5, right: 10, bottom: 5, left: 10 }}
+            >
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis dataKey="island" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} />
               <Tooltip />
               <Bar dataKey="value" name="Active Listings" radius={[6, 6, 0, 0]}>
-                {sfInventoryData.map((d, i) => <Cell key={i} fill={d.color} />)}
+                {[COLORS.oahu, COLORS.maui, COLORS.hawaii, COLORS.kauai].map((c, i) => <Cell key={i} fill={c} />)}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
@@ -283,75 +444,174 @@ export default function HawaiiMarketComparisonClient() {
         <div style={{ ...cardStyle, flex: "1 1 380px" }}>
           <h3 style={{ margin: "0 0 20px 0", fontSize: 16, fontWeight: 700 }}>Condo Active Inventory</h3>
           <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={condoInventoryData} margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>
+            <BarChart
+              data={[
+                { island: "O'ahu", value: oahu.condo.activeInventory, color: COLORS.oahu },
+                { island: "Maui", value: maui.condo.inventory, color: COLORS.maui },
+                { island: "Hawai'i", value: hi.condo.activeListings, color: COLORS.hawaii },
+                { island: "Kaua'i", value: kauai.condo.activeListings, color: COLORS.kauai },
+              ]}
+              margin={{ top: 5, right: 10, bottom: 5, left: 10 }}
+            >
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis dataKey="island" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} />
               <Tooltip />
               <Bar dataKey="value" name="Active Listings" radius={[6, 6, 0, 0]}>
-                {condoInventoryData.map((d, i) => <Cell key={i} fill={d.color} />)}
+                {[COLORS.oahu, COLORS.maui, COLORS.hawaii, COLORS.kauai].map((c, i) => <Cell key={i} fill={c} />)}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
       </div>
 
-      {/* Comprehensive Data Table */}
+      {/* Official Statewide Data Tables */}
       <div style={{ ...cardStyle, marginBottom: 24, overflowX: "auto" }}>
-        <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>Full Comparison — February 2026</h3>
+        <h3 style={{ margin: "0 0 4px 0", fontSize: 16, fontWeight: 700 }}>Single-Family Homes — {statewide.label}</h3>
+        <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 16 }}>Source: Hawai&apos;i Realtors® Statewide Real Estate Statistics</div>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
           <thead>
             <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
-              <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 700, fontSize: 12, color: "#6b7280" }}>Metric</th>
-              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: COLORS.oahu }}>O&apos;ahu</th>
-              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: COLORS.maui }}>Maui</th>
-              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: COLORS.hawaii }}>Hawai&apos;i Island</th>
-              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: COLORS.kauai }}>Kaua&apos;i</th>
+              <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 700, fontSize: 12, color: "#6b7280" }}>County</th>
+              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12 }}>2026 Sales</th>
+              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: "#6b7280" }}>2025 Sales</th>
+              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12 }}>% Change</th>
+              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12 }}>2026 Median</th>
+              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: "#6b7280" }}>2025 Median</th>
+              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12 }}>% Change</th>
             </tr>
           </thead>
           <tbody>
-            {[
-              { label: "SF Median Price", oahu: fmt(oahu.singleFamily.medianPrice), maui: fmt(maui.singleFamily.medianPrice), hi: fmt(hi.singleFamily.medianPrice), kauai: fmt(kauai.singleFamily.medianPrice) },
-              { label: "Condo Median Price", oahu: fmt(oahu.condo.medianPrice), maui: fmt(maui.condo.medianPrice), hi: fmt(hi.condo.medianPrice), kauai: fmt(kauai.condo.medianPrice) },
-              { label: "SF Sales", oahu: oahu.singleFamily.sales.toString(), maui: maui.singleFamily.closedSales.toString(), hi: hi.singleFamily.soldListings.toString(), kauai: kauai.singleFamily.soldListings.toString() },
-              { label: "Condo Sales", oahu: oahu.condo.sales.toString(), maui: maui.condo.closedSales.toString(), hi: hi.condo.soldListings.toString(), kauai: kauai.condo.soldListings.toString() },
-              { label: "SF Days on Market", oahu: `${oahu.singleFamily.medianDOM}`, maui: `${maui.singleFamily.dom}`, hi: `${hi.singleFamily.dom}`, kauai: `${kauai.singleFamily.dom}` },
-              { label: "Condo Days on Market", oahu: `${oahu.condo.medianDOM}`, maui: `${maui.condo.dom}`, hi: `${hi.condo.dom}`, kauai: `${kauai.condo.dom}` },
-              { label: "SF Active Inventory", oahu: oahu.singleFamily.activeInventory.toString(), maui: maui.singleFamily.inventory.toString(), hi: hi.singleFamily.activeListings.toString(), kauai: kauai.singleFamily.activeListings.toString() },
-              { label: "Condo Active Inventory", oahu: oahu.condo.activeInventory.toLocaleString(), maui: maui.condo.inventory.toString(), hi: hi.condo.activeListings.toString(), kauai: kauai.condo.activeListings.toString() },
-              { label: "SF New Listings", oahu: oahu.singleFamily.newListings.toString(), maui: maui.singleFamily.newListings.toString(), hi: hi.singleFamily.newListings.toString(), kauai: kauai.singleFamily.newListings.toString() },
-              { label: "Condo New Listings", oahu: oahu.condo.newListings.toString(), maui: maui.condo.newListings.toString(), hi: hi.condo.newListings.toString(), kauai: kauai.condo.newListings.toString() },
-            ].map((row, i) => (
-              <tr key={row.label} style={{ borderBottom: "1px solid #f3f4f6", background: i % 2 === 0 ? "#fff" : "#fafafa" }}>
-                <td style={{ padding: "10px 12px", fontWeight: 600 }}>{row.label}</td>
-                <td style={{ padding: "10px 12px", textAlign: "right" }}>{row.oahu}</td>
-                <td style={{ padding: "10px 12px", textAlign: "right" }}>{row.maui}</td>
-                <td style={{ padding: "10px 12px", textAlign: "right" }}>{row.hi}</td>
-                <td style={{ padding: "10px 12px", textAlign: "right" }}>{row.kauai}</td>
+            {sw.singleFamily.counties.map((c, i) => (
+              <tr key={c.county} style={{ borderBottom: "1px solid #f3f4f6", background: i % 2 === 0 ? "#fff" : "#fafafa" }}>
+                <td style={{ padding: "10px 12px", fontWeight: 600, color: colorForCounty(c.county) }}>{c.county}</td>
+                <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600 }}>{c.sales2026}</td>
+                <td style={{ padding: "10px 12px", textAlign: "right", color: "#6b7280" }}>{c.sales2025}</td>
+                <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: yoyColor(c.salesChange) }}>{yoyText(c.salesChange)}</td>
+                <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600 }}>{fmt(c.medianPrice2026)}</td>
+                <td style={{ padding: "10px 12px", textAlign: "right", color: "#6b7280" }}>{fmt(c.medianPrice2025)}</td>
+                <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: yoyColor(c.medianPriceChange) }}>{yoyText(c.medianPriceChange)}</td>
               </tr>
             ))}
+            <tr style={{ borderTop: "2px solid #e5e7eb", fontWeight: 800, background: "#f8fafc" }}>
+              <td style={{ padding: "10px 12px" }}>Total</td>
+              <td style={{ padding: "10px 12px", textAlign: "right" }}>{sw.singleFamily.totalSales2026}</td>
+              <td style={{ padding: "10px 12px", textAlign: "right", color: "#6b7280" }}>{sw.singleFamily.totalSales2025}</td>
+              <td style={{ padding: "10px 12px", textAlign: "right", color: yoyColor(sw.singleFamily.totalSalesChange) }}>{yoyText(sw.singleFamily.totalSalesChange)}</td>
+              <td style={{ padding: "10px 12px", textAlign: "right" }}>{fmt(sw.singleFamily.totalMedianPrice2026)}</td>
+              <td style={{ padding: "10px 12px", textAlign: "right", color: "#6b7280" }}>{fmt(sw.singleFamily.totalMedianPrice2025)}</td>
+              <td style={{ padding: "10px 12px", textAlign: "right", color: yoyColor(sw.singleFamily.totalMedianPriceChange) }}>{yoyText(sw.singleFamily.totalMedianPriceChange)}</td>
+            </tr>
           </tbody>
         </table>
       </div>
+
+      <div style={{ ...cardStyle, marginBottom: 24, overflowX: "auto" }}>
+        <h3 style={{ margin: "0 0 4px 0", fontSize: 16, fontWeight: 700 }}>Condominiums — {statewide.label}</h3>
+        <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 16 }}>Source: Hawai&apos;i Realtors® Statewide Real Estate Statistics</div>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+          <thead>
+            <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
+              <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 700, fontSize: 12, color: "#6b7280" }}>County</th>
+              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12 }}>2026 Sales</th>
+              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: "#6b7280" }}>2025 Sales</th>
+              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12 }}>% Change</th>
+              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12 }}>2026 Median</th>
+              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: "#6b7280" }}>2025 Median</th>
+              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12 }}>% Change</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sw.condo.counties.map((c, i) => (
+              <tr key={c.county} style={{ borderBottom: "1px solid #f3f4f6", background: i % 2 === 0 ? "#fff" : "#fafafa" }}>
+                <td style={{ padding: "10px 12px", fontWeight: 600, color: colorForCounty(c.county) }}>{c.county}</td>
+                <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600 }}>{c.sales2026}</td>
+                <td style={{ padding: "10px 12px", textAlign: "right", color: "#6b7280" }}>{c.sales2025}</td>
+                <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: yoyColor(c.salesChange) }}>{yoyText(c.salesChange)}</td>
+                <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600 }}>{fmt(c.medianPrice2026)}</td>
+                <td style={{ padding: "10px 12px", textAlign: "right", color: "#6b7280" }}>{fmt(c.medianPrice2025)}</td>
+                <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: yoyColor(c.medianPriceChange) }}>{yoyText(c.medianPriceChange)}</td>
+              </tr>
+            ))}
+            <tr style={{ borderTop: "2px solid #e5e7eb", fontWeight: 800, background: "#f8fafc" }}>
+              <td style={{ padding: "10px 12px" }}>Total</td>
+              <td style={{ padding: "10px 12px", textAlign: "right" }}>{sw.condo.totalSales2026}</td>
+              <td style={{ padding: "10px 12px", textAlign: "right", color: "#6b7280" }}>{sw.condo.totalSales2025}</td>
+              <td style={{ padding: "10px 12px", textAlign: "right", color: yoyColor(sw.condo.totalSalesChange) }}>{yoyText(sw.condo.totalSalesChange)}</td>
+              <td style={{ padding: "10px 12px", textAlign: "right" }}>{fmt(sw.condo.totalMedianPrice2026)}</td>
+              <td style={{ padding: "10px 12px", textAlign: "right", color: "#6b7280" }}>{fmt(sw.condo.totalMedianPrice2025)}</td>
+              <td style={{ padding: "10px 12px", textAlign: "right", color: yoyColor(sw.condo.totalMedianPriceChange) }}>{yoyText(sw.condo.totalMedianPriceChange)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      {/* YTD Table (if available) */}
+      {sw.ytd && (
+        <div style={{ ...cardStyle, marginBottom: 24, overflowX: "auto" }}>
+          <h3 style={{ margin: "0 0 4px 0", fontSize: 16, fontWeight: 700 }}>Year-to-Date Through {statewide.label}</h3>
+          <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 16 }}>Cumulative sales and median prices for 2026 vs 2025</div>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+            <thead>
+              <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
+                <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 700, fontSize: 12, color: "#6b7280" }}>County</th>
+                <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12 }}>SF Sales</th>
+                <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12 }}>SF Sales YoY</th>
+                <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12 }}>SF Median</th>
+                <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12 }}>Condo Sales</th>
+                <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12 }}>Condo Sales YoY</th>
+                <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12 }}>Condo Median</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sw.ytd.singleFamily.counties.map((sfC, i) => {
+                const cdC = sw.ytd!.condo.counties.find((c) => c.county === sfC.county)!;
+                return (
+                  <tr key={sfC.county} style={{ borderBottom: "1px solid #f3f4f6", background: i % 2 === 0 ? "#fff" : "#fafafa" }}>
+                    <td style={{ padding: "10px 12px", fontWeight: 600, color: colorForCounty(sfC.county) }}>{sfC.county}</td>
+                    <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600 }}>{sfC.sales2026}</td>
+                    <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: yoyColor(sfC.salesChange) }}>{yoyText(sfC.salesChange)}</td>
+                    <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600 }}>{fmt(sfC.medianPrice2026)}</td>
+                    <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600 }}>{cdC.sales2026}</td>
+                    <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: yoyColor(cdC.salesChange) }}>{yoyText(cdC.salesChange)}</td>
+                    <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600 }}>{fmt(cdC.medianPrice2026)}</td>
+                  </tr>
+                );
+              })}
+              <tr style={{ borderTop: "2px solid #e5e7eb", fontWeight: 800, background: "#f8fafc" }}>
+                <td style={{ padding: "10px 12px" }}>Total</td>
+                <td style={{ padding: "10px 12px", textAlign: "right" }}>{sw.ytd.singleFamily.totalSales2026}</td>
+                <td style={{ padding: "10px 12px", textAlign: "right", color: yoyColor(sw.ytd.singleFamily.totalSalesChange) }}>{yoyText(sw.ytd.singleFamily.totalSalesChange)}</td>
+                <td style={{ padding: "10px 12px", textAlign: "right" }}>{fmt(sw.ytd.singleFamily.totalMedianPrice2026)}</td>
+                <td style={{ padding: "10px 12px", textAlign: "right" }}>{sw.ytd.condo.totalSales2026}</td>
+                <td style={{ padding: "10px 12px", textAlign: "right", color: yoyColor(sw.ytd.condo.totalSalesChange) }}>{yoyText(sw.ytd.condo.totalSalesChange)}</td>
+                <td style={{ padding: "10px 12px", textAlign: "right" }}>{fmt(sw.ytd.condo.totalMedianPrice2026)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* Key Takeaways */}
       <div style={{ ...cardStyle, marginBottom: 24 }}>
         <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>Key Takeaways</h3>
         <ul style={{ margin: 0, padding: "0 0 0 20px", fontSize: 14, lineHeight: 2, color: "#374151" }}>
-          <li><strong>Most affordable SF market:</strong> Hawai&apos;i Island at {fmt(hi.singleFamily.medianPrice)} — less than half of Kaua&apos;i&apos;s {fmt(kauai.singleFamily.medianPrice)}.</li>
-          <li><strong>Fastest-selling SF homes:</strong> O&apos;ahu at {oahu.singleFamily.medianDOM} days, followed by Hawai&apos;i Island at {hi.singleFamily.dom} days.</li>
-          <li><strong>Highest SF prices:</strong> Kaua&apos;i leads at {fmt(kauai.singleFamily.medianPrice)}, followed by Maui at {fmt(maui.singleFamily.medianPrice)}.</li>
-          <li><strong>Most condo inventory:</strong> O&apos;ahu dominates with {oahu.condo.activeInventory.toLocaleString()} active listings vs Maui&apos;s {maui.condo.inventory}.</li>
-          <li><strong>Slowest markets:</strong> Maui SF at {maui.singleFamily.dom} days and Kaua&apos;i land at {kauai.land.dom} days show extended selling timelines.</li>
-          <li><strong>O&apos;ahu drives volume:</strong> {oahu.singleFamily.sales + oahu.condo.sales} total sales vs {maui.singleFamily.closedSales + maui.condo.closedSales} on Maui, {hi.singleFamily.soldListings + hi.condo.soldListings} on Hawai&apos;i Island, and {kauai.singleFamily.soldListings + kauai.condo.soldListings} on Kaua&apos;i.</li>
+          <li><strong>Statewide SF median:</strong> {fmt(sw.singleFamily.totalMedianPrice2026)} ({yoyText(sw.singleFamily.totalMedianPriceChange)} YoY) — {sw.singleFamily.totalSales2026} total sales.</li>
+          <li><strong>Statewide condo median:</strong> {fmt(sw.condo.totalMedianPrice2026)} ({yoyText(sw.condo.totalMedianPriceChange)} YoY) — {sw.condo.totalSales2026} total sales.</li>
+          <li><strong>Most affordable SF:</strong> Hawai&apos;i Island at {fmt(sw.singleFamily.counties.find((c) => c.county === "Hawai'i")!.medianPrice2026)}.</li>
+          <li><strong>Highest SF prices:</strong> {(() => { const sorted = [...sw.singleFamily.counties].sort((a, b) => b.medianPrice2026 - a.medianPrice2026); return `${sorted[0].county} at ${fmt(sorted[0].medianPrice2026)}`; })()}.</li>
+          <li><strong>O&apos;ahu drives volume:</strong> {sw.singleFamily.counties.find((c) => c.county === "O'ahu")!.sales2026 + sw.condo.counties.find((c) => c.county === "O'ahu")!.sales2026} of {sw.singleFamily.totalSales2026 + sw.condo.totalSales2026} total statewide sales ({((sw.singleFamily.counties.find((c) => c.county === "O'ahu")!.sales2026 + sw.condo.counties.find((c) => c.county === "O'ahu")!.sales2026) / (sw.singleFamily.totalSales2026 + sw.condo.totalSales2026) * 100).toFixed(0)}%).</li>
+          <li><strong>Sales declining statewide:</strong> SF {yoyText(sw.singleFamily.totalSalesChange)}, Condo {yoyText(sw.condo.totalSalesChange)} year-over-year.</li>
         </ul>
       </div>
 
       {/* Source Attribution */}
       <div style={{ fontSize: 12, color: "#9ca3af", textAlign: "center", padding: "12px 0", lineHeight: 1.8 }}>
-        Sources: Honolulu Board of REALTORS® / HiCentral MLS (O&apos;ahu) &middot; REALTORS® Association of Maui / RAM MLS (Maui) &middot; Hawaii Information Service (Hawai&apos;i Island &amp; Kaua&apos;i)
+        Source: Hawai&apos;i Realtors® &middot; Statewide Real Estate Statistics
         <br />
-        Data periods may vary slightly by source. Information is deemed reliable but not guaranteed.
+        &ldquo;Total&rdquo; price reflects a statewide median sales price based on a calculation of sales prices for all counties.
+        <br />
+        Information is deemed reliable but not guaranteed.
       </div>
     </div>
   );

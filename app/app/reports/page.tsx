@@ -69,8 +69,8 @@ export default async function ReportsPage() {
           <ReportCard
             href="/app/reports/hawaii-market-comparison"
             title="Statewide Comparison"
-            description="Side-by-side: O'ahu, Maui, Hawai'i Island & Kaua'i — median prices, sales volume, DOM, and inventory across all four counties."
-            dataSources={["HiCentral MLS", "RAM MLS", "HIS"]}
+            description="Official Hawai'i Realtors® statewide stats: median prices, sales, YoY changes, DOM & inventory across all four counties."
+            dataSources={["Hawai'i Realtors®"]}
             color="#dc2626"
             badge="NEW"
           />
