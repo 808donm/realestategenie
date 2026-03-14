@@ -39,8 +39,9 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    const tenant = process.env.MICROSOFT_CALENDAR_TENANT_ID || "organizations";
     const response = await fetch(
-      "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+      `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`,
       {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },

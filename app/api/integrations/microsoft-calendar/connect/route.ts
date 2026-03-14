@@ -33,6 +33,8 @@ export async function GET() {
     { onConflict: "agent_id,provider" }
   );
 
+  const tenant = process.env.MICROSOFT_CALENDAR_TENANT_ID || "organizations";
+
   const params = new URLSearchParams({
     client_id: process.env.MICROSOFT_CALENDAR_CLIENT_ID!,
     redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/integrations/microsoft-calendar/callback`,
@@ -43,6 +45,6 @@ export async function GET() {
   });
 
   return NextResponse.redirect(
-    `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${params}`
+    `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/authorize?${params}`
   );
 }
