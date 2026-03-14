@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 interface PipelineLead {
   id: string;
@@ -48,6 +48,7 @@ export default function LocalPipelineClient() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [movingLeadId, setMovingLeadId] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: "error" | "success" } | null>(null);
 
   // Lead detail drawer
   const [selectedLead, setSelectedLead] = useState<PipelineLead | null>(null);
@@ -55,6 +56,16 @@ export default function LocalPipelineClient() {
   // Draft follow-up email
   const [draftEmail, setDraftEmail] = useState<{ subject: string; body: string } | null>(null);
   const [isDrafting, setIsDrafting] = useState(false);
+
+  // Drag and drop state
+  const [draggedLead, setDraggedLead] = useState<PipelineLead | null>(null);
+  const [dragOverStage, setDragOverStage] = useState<string | null>(null);
+  const dragCounterRef = useRef<Record<string, number>>({});
+
+  const showToast = useCallback((message: string, type: "error" | "success") => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3500);
+  }, []);
 
   const fetchPipeline = useCallback(async () => {
     try {
@@ -87,20 +98,20 @@ export default function LocalPipelineClient() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ direction }),
       });
-      if (res.ok) {
-        await fetchPipeline();
-        // Update selected lead if it was the one moved
-        if (selectedLead?.id === leadId) {
-          const data = await res.json().catch(() => null);
-          if (data?.newStage) {
-            setSelectedLead((prev) =>
-              prev ? { ...prev, pipelineStage: data.newStage } : null
-            );
-          }
-        }
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        showToast(data?.error || "Failed to move lead", "error");
+        return;
       }
+      // Update selected lead if it was the one moved
+      if (selectedLead?.id === leadId && data?.newStage) {
+        setSelectedLead((prev) =>
+          prev ? { ...prev, pipelineStage: data.newStage } : null
+        );
+      }
+      await fetchPipeline();
     } catch {
-      // Silently fail - data will be stale but not lost
+      showToast("Network error — could not move lead", "error");
     } finally {
       setMovingLeadId(null);
     }
@@ -114,11 +125,14 @@ export default function LocalPipelineClient() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ stage }),
       });
-      if (res.ok) {
-        await fetchPipeline();
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        showToast(data?.error || "Failed to move lead", "error");
+        return;
       }
+      await fetchPipeline();
     } catch {
-      // Silently fail
+      showToast("Network error — could not move lead", "error");
     } finally {
       setMovingLeadId(null);
     }
@@ -140,6 +154,60 @@ export default function LocalPipelineClient() {
     } finally {
       setIsDrafting(false);
     }
+  };
+
+  // Drag and drop handlers
+  const handleDragStart = (e: React.DragEvent, lead: PipelineLead) => {
+    setDraggedLead(lead);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", lead.id);
+    // Make the drag image slightly transparent
+    if (e.currentTarget instanceof HTMLElement) {
+      e.currentTarget.style.opacity = "0.4";
+    }
+  };
+
+  const handleDragEnd = (e: React.DragEvent) => {
+    if (e.currentTarget instanceof HTMLElement) {
+      e.currentTarget.style.opacity = "1";
+    }
+    setDraggedLead(null);
+    setDragOverStage(null);
+    dragCounterRef.current = {};
+  };
+
+  const handleDragEnter = (e: React.DragEvent, stageKey: string) => {
+    e.preventDefault();
+    dragCounterRef.current[stageKey] = (dragCounterRef.current[stageKey] || 0) + 1;
+    if (draggedLead && stageKey !== draggedLead.pipelineStage) {
+      setDragOverStage(stageKey);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent, stageKey: string) => {
+    e.preventDefault();
+    dragCounterRef.current[stageKey] = (dragCounterRef.current[stageKey] || 0) - 1;
+    if (dragCounterRef.current[stageKey] <= 0) {
+      dragCounterRef.current[stageKey] = 0;
+      if (dragOverStage === stageKey) {
+        setDragOverStage(null);
+      }
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (e: React.DragEvent, stageKey: string) => {
+    e.preventDefault();
+    setDragOverStage(null);
+    dragCounterRef.current = {};
+    if (draggedLead && stageKey !== draggedLead.pipelineStage) {
+      moveToStage(draggedLead.id, stageKey);
+    }
+    setDraggedLead(null);
   };
 
   const totalLeads = stages.reduce((sum, s) => sum + s.count, 0);
@@ -194,6 +262,29 @@ export default function LocalPipelineClient() {
 
   return (
     <div>
+      {/* Toast notification */}
+      {toast && (
+        <div
+          style={{
+            position: "fixed",
+            top: 20,
+            right: 20,
+            zIndex: 100,
+            padding: "12px 20px",
+            borderRadius: 8,
+            background: toast.type === "error" ? "#fef2f2" : "#ecfdf5",
+            border: `1px solid ${toast.type === "error" ? "#fca5a5" : "#a7f3d0"}`,
+            color: toast.type === "error" ? "#dc2626" : "#059669",
+            fontSize: 14,
+            fontWeight: 600,
+            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+            animation: "fadeIn 0.2s ease-out",
+          }}
+        >
+          {toast.message}
+        </div>
+      )}
+
       {/* Summary Bar */}
       <div
         style={{
@@ -241,6 +332,9 @@ export default function LocalPipelineClient() {
             />
           ))}
         </div>
+        <div style={{ fontSize: 11, color: "#9ca3af" }}>
+          Drag cards to move between stages
+        </div>
       </div>
 
       {/* Kanban Board */}
@@ -254,18 +348,25 @@ export default function LocalPipelineClient() {
         >
           {stages.map((stage) => {
             const color = STAGE_COLORS[stage.key] || "#6b7280";
+            const isDragTarget = dragOverStage === stage.key;
             return (
               <div
                 key={stage.key}
+                onDragEnter={(e) => handleDragEnter(e, stage.key)}
+                onDragLeave={(e) => handleDragLeave(e, stage.key)}
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, stage.key)}
                 style={{
                   minWidth: 240,
                   maxWidth: 280,
                   flex: "1 0 240px",
-                  background: "#f9fafb",
+                  background: isDragTarget ? `${color}10` : "#f9fafb",
                   borderRadius: 12,
                   display: "flex",
                   flexDirection: "column",
                   maxHeight: "calc(100vh - 320px)",
+                  outline: isDragTarget ? `2px dashed ${color}` : "none",
+                  transition: "background 0.15s, outline 0.15s",
                 }}
               >
                 {/* Stage Header */}
@@ -316,6 +417,7 @@ export default function LocalPipelineClient() {
                     display: "flex",
                     flexDirection: "column",
                     gap: 8,
+                    minHeight: 60,
                   }}
                 >
                   {stage.leads.length === 0 ? (
@@ -327,29 +429,36 @@ export default function LocalPipelineClient() {
                         fontSize: 12,
                       }}
                     >
-                      No leads
+                      {isDragTarget ? "Drop here" : "No leads"}
                     </div>
                   ) : (
                     stage.leads.map((lead) => {
                       const heat = getHeatBadge(lead.heatScore);
                       const isMoving = movingLeadId === lead.id;
+                      const isDragging = draggedLead?.id === lead.id;
                       return (
                         <div
                           key={lead.id}
+                          draggable={!isMoving}
+                          onDragStart={(e) => handleDragStart(e, lead)}
+                          onDragEnd={handleDragEnd}
                           style={{
                             background: "#fff",
-                            border: "1px solid #e5e7eb",
+                            border: isDragging ? `2px dashed ${color}` : "1px solid #e5e7eb",
                             borderRadius: 8,
                             padding: 10,
-                            opacity: isMoving ? 0.5 : 1,
+                            opacity: isMoving || isDragging ? 0.4 : 1,
                             transition: "all 0.15s",
-                            cursor: "pointer",
+                            cursor: isMoving ? "wait" : "grab",
                           }}
-                          onClick={() => setSelectedLead(lead)}
-                          onMouseEnter={(e) =>
-                            (e.currentTarget.style.boxShadow =
-                              "0 2px 8px rgba(0,0,0,0.08)")
-                          }
+                          onClick={() => {
+                            if (!isDragging) setSelectedLead(lead);
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isDragging) {
+                              e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.08)";
+                            }
+                          }}
                           onMouseLeave={(e) =>
                             (e.currentTarget.style.boxShadow = "none")
                           }
