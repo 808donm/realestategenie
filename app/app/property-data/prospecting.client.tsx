@@ -2469,6 +2469,11 @@ export default function Prospecting() {
           properties={toProspectProperties(mode === "investor" ? investorGroups.flatMap((g) => g.properties) : results)}
           market={getMarketContext()}
           isVisible={!isLoading && hasSearched && (results.length > 0 || investorGroups.length > 0)}
+          onViewProperty={(address) => {
+            const allProps = mode === "investor" ? investorGroups.flatMap((g) => g.properties) : results;
+            const match = allProps.find((p) => (p.address?.oneLine || "").toLowerCase() === address.toLowerCase());
+            if (match) setSelectedProperty(match);
+          }}
         />
       </div>
 

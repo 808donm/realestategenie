@@ -85,6 +85,7 @@ interface ProspectAIPanelProps {
   properties: ProspectProperty[];
   market: MarketContext;
   isVisible: boolean;
+  onViewProperty?: (address: string) => void;
 }
 
 export interface ProspectAIPanelHandle {
@@ -93,7 +94,7 @@ export interface ProspectAIPanelHandle {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-const ProspectAIPanel = forwardRef<ProspectAIPanelHandle, ProspectAIPanelProps>(function ProspectAIPanel({ mode, properties, market, isVisible }, ref) {
+const ProspectAIPanel = forwardRef<ProspectAIPanelHandle, ProspectAIPanelProps>(function ProspectAIPanel({ mode, properties, market, isVisible, onViewProperty }, ref) {
   const [analysis, setAnalysis] = useState<ProspectAnalysis | null>(null);
   const [outreach, setOutreach] = useState<BatchOutreach | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -554,6 +555,21 @@ const ProspectAIPanel = forwardRef<ProspectAIPanelHandle, ProspectAIPanelProps>(
                           ))}
                         </div>
                       </div>
+                      {onViewProperty && (
+                        <div style={{ marginTop: 14, borderTop: "1px solid #f3f4f6", paddingTop: 12 }}>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); onViewProperty(prospect.address); }}
+                            style={{
+                              display: "inline-flex", alignItems: "center", gap: 6,
+                              padding: "7px 16px", borderRadius: 6, border: "1px solid #6366f1",
+                              background: "#eef2ff", color: "#6366f1", fontWeight: 600,
+                              fontSize: 12, cursor: "pointer",
+                            }}
+                          >
+                            View Property Details &rarr;
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
