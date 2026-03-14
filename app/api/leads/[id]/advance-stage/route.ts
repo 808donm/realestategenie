@@ -87,17 +87,20 @@ export async function POST(
     }
 
     // Update the lead's pipeline stage
-    const { error: updateError } = await supabase
+    const { data: updated, error: updateError } = await supabase
       .from("lead_submissions")
       .update({
         pipeline_stage: newStage,
         updated_at: new Date().toISOString(),
       })
-      .eq("id", leadId);
+      .eq("id", leadId)
+      .eq("agent_id", user.id)
+      .select("id")
+      .single();
 
-    if (updateError) {
+    if (updateError || !updated) {
       return NextResponse.json(
-        { error: updateError.message },
+        { error: updateError?.message || "Failed to update lead stage" },
         { status: 500 }
       );
     }

@@ -97,6 +97,31 @@ export default function LocalPipelineClient() {
     direction: "forward" | "backward"
   ) => {
     setMovingLeadId(leadId);
+    // Compute target stage for optimistic update
+    const stageKeys = stages.map((s) => s.key);
+    const lead = stages.flatMap((s) => s.leads).find((l) => l.id === leadId);
+    const currentIdx = lead ? stageKeys.indexOf(lead.pipelineStage) : -1;
+    const targetIdx = direction === "forward" ? currentIdx + 1 : currentIdx - 1;
+    const targetStage = stageKeys[targetIdx];
+
+    // Optimistic update
+    const previousStages = stages;
+    if (lead && targetStage) {
+      setStages((prev) =>
+        prev.map((s) => {
+          if (s.key === lead.pipelineStage) {
+            const newLeads = s.leads.filter((l) => l.id !== leadId);
+            return { ...s, leads: newLeads, count: newLeads.length };
+          }
+          if (s.key === targetStage) {
+            const movedLead = { ...lead, pipelineStage: targetStage };
+            return { ...s, leads: [...s.leads, movedLead], count: s.count + 1 };
+          }
+          return s;
+        })
+      );
+    }
+
     try {
       const res = await fetch(`/api/leads/${leadId}/advance-stage`, {
         method: "POST",
@@ -105,6 +130,7 @@ export default function LocalPipelineClient() {
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
+        setStages(previousStages);
         showToast(data?.error || "Failed to move lead", "error");
         return;
       }
@@ -116,6 +142,7 @@ export default function LocalPipelineClient() {
       }
       await fetchPipeline();
     } catch {
+      setStages(previousStages);
       showToast("Network error — could not move lead", "error");
     } finally {
       setMovingLeadId(null);
@@ -124,6 +151,23 @@ export default function LocalPipelineClient() {
 
   const moveToStage = async (leadId: string, stage: string) => {
     setMovingLeadId(leadId);
+    // Optimistic update: move the card immediately
+    const previousStages = stages;
+    setStages((prev) => {
+      const lead = prev.flatMap((s) => s.leads).find((l) => l.id === leadId);
+      if (!lead) return prev;
+      return prev.map((s) => {
+        if (s.key === lead.pipelineStage) {
+          const newLeads = s.leads.filter((l) => l.id !== leadId);
+          return { ...s, leads: newLeads, count: newLeads.length };
+        }
+        if (s.key === stage) {
+          const movedLead = { ...lead, pipelineStage: stage };
+          return { ...s, leads: [...s.leads, movedLead], count: s.count + 1 };
+        }
+        return s;
+      });
+    });
     try {
       const res = await fetch(`/api/leads/${leadId}/advance-stage`, {
         method: "POST",
@@ -132,11 +176,15 @@ export default function LocalPipelineClient() {
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
+        // Revert optimistic update on failure
+        setStages(previousStages);
         showToast(data?.error || "Failed to move lead", "error");
         return;
       }
+      // Refresh to get authoritative state
       await fetchPipeline();
     } catch {
+      setStages(previousStages);
       showToast("Network error — could not move lead", "error");
     } finally {
       setMovingLeadId(null);
