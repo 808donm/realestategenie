@@ -697,6 +697,15 @@ const ProspectAIPanel = forwardRef<ProspectAIPanelHandle, ProspectAIPanelProps>(
           <div style={{ fontSize: 13, color: "#6b7280" }}>Claude is writing letters, SMS messages, and talking points — about 15 seconds</div>
         </div>
       )}
+
+      {/* AI Disclaimer */}
+      {(analysis || outreach) && (
+        <div style={{ padding: "8px 16px", textAlign: "center" }}>
+          <p style={{ fontSize: 9, color: "#9ca3af", lineHeight: 1.5, margin: 0 }}>
+            This content was generated using AI. AI can make mistakes. Check AI generated content against reliable information before using.
+          </p>
+        </div>
+      )}
     </div>
   );
 });

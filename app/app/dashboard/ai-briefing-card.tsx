@@ -74,6 +74,9 @@ export default function AIBriefingCard({
             </div>
           ))}
         </div>
+        <p className="text-[9px] text-gray-400 leading-relaxed text-center mt-4">
+          This content was generated using AI. AI can make mistakes. Check AI generated content against reliable information before using.
+        </p>
       </CardContent>
     </Card>
   );

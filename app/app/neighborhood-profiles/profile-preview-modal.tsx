@@ -227,6 +227,10 @@ export default function ProfilePreviewModal({
           </div>
         </div>
 
+        <p className="text-[9px] text-gray-400 leading-relaxed text-center">
+          This content was generated using AI. AI can make mistakes. Check AI generated content against reliable information before using.
+        </p>
+
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={onClose} disabled={downloading}>
             Close
