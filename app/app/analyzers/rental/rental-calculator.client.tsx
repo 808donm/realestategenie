@@ -6,6 +6,7 @@ import jsPDF from "jspdf";
 import AttachToContact from "@/components/attach-to-contact";
 import { calculateRental, type RentalInput } from "@/lib/calculators/rental";
 import MLSImport, { type MLSPropertyData } from "@/components/mls-import";
+import CalculatorBrandedExport from "../../components/calculator-branded-export";
 
 export default function RentalCalculatorClient() {
   const [inputs, setInputs] = useState<RentalInput>({
@@ -426,13 +427,27 @@ export default function RentalCalculatorClient() {
         </div>
 
         {/* Export */}
-        <div style={{ display: "flex", gap: 12 }}>
-          <button onClick={exportToExcel} style={{ flex: 1, padding: "12px 20px", background: "#10b981", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer" }}>
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+          <button onClick={exportToExcel} style={{ flex: 1, padding: "12px 20px", background: "#10b981", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer", minWidth: 140 }}>
             Export Excel
           </button>
-          <button onClick={exportToPDF} style={{ flex: 1, padding: "12px 20px", background: "#dc2626", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer" }}>
+          <button onClick={exportToPDF} style={{ flex: 1, padding: "12px 20px", background: "#dc2626", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer", minWidth: 140 }}>
             Export PDF
           </button>
+          <CalculatorBrandedExport
+            calculatorName="Rental Property Analysis"
+            summaryData={{
+              "Purchase Price": `$${inputs.purchasePrice.toLocaleString()}`,
+              "Monthly Rent": `$${inputs.monthlyRent.toLocaleString()}`,
+              "Net Operating Income": `$${analysis.noi.toLocaleString()}`,
+              "Cap Rate": `${analysis.capRate.toFixed(2)}%`,
+              "Cash-on-Cash Return": `${analysis.cashOnCash.toFixed(2)}%`,
+              "Monthly Cash Flow": `$${analysis.monthlyCashFlow.toFixed(0)}`,
+              "Annual Cash Flow": `$${analysis.annualCashFlow.toFixed(0)}`,
+              "DSCR": analysis.dscr.toFixed(2),
+              "Expense Ratio": `${analysis.operatingExpenseRatio.toFixed(1)}%`,
+            }}
+          />
         </div>
         {/* Attach to GHL Contact */}
         <div style={{ marginTop: 12 }}>

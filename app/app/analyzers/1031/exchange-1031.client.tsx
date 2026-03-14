@@ -5,6 +5,7 @@ import { supabaseBrowser } from "@/lib/supabase/browser";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import AttachToContact from "@/components/attach-to-contact";
+import CalculatorBrandedExport from "../../components/calculator-branded-export";
 import MLSImport, { type MLSPropertyData } from "@/components/mls-import";
 import {
   calculateTimeline,
@@ -835,6 +836,24 @@ export default function Exchange1031Client({ savedExchanges, investmentPropertie
         </div>
         <div style={{ marginTop: 12 }}>
           <AttachToContact generateFile={generateFile} reportTitle="1031 Exchange Analysis" />
+        </div>
+        <div style={{ marginTop: 12 }}>
+          <CalculatorBrandedExport
+            calculatorName="1031 Exchange Analysis"
+            propertyAddress={relinquishedAddress}
+            summaryData={{
+              "Exchange Name": exchangeName || "Untitled",
+              "Sale Price": formatCurrency(salePrice),
+              "Original Basis": formatCurrency(originalBasis),
+              "Capital Gain": formatCurrency(taxAnalysis.capitalGain),
+              "Depreciation Recapture": formatCurrency(taxAnalysis.depreciationRecapture),
+              "Total Tax Without Exchange": formatCurrency(taxAnalysis.totalTaxWithoutExchange),
+              "Tax Savings with 1031": formatCurrency(taxAnalysis.taxSavings),
+              "Deferred Gain": formatCurrency(taxAnalysis.deferredGain),
+              "45-Day Deadline": formatDate(timeline.identificationDeadline),
+              "180-Day Deadline": formatDate(timeline.exchangeDeadline),
+            }}
+          />
         </div>
       </div>
 

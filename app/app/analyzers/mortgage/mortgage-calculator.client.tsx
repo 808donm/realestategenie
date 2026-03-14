@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback } from "react";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import AttachToContact from "@/components/attach-to-contact";
+import CalculatorBrandedExport from "../../components/calculator-branded-export";
 import MLSImport, { type MLSPropertyData } from "@/components/mls-import";
 
 interface MortgageInputs {
@@ -888,6 +889,23 @@ export default function MortgageCalculatorClient() {
           </div>
           <div style={{ marginTop: 12 }}>
             <AttachToContact generateFile={generateFile} reportTitle="Mortgage Calculator Summary" />
+          </div>
+          <div style={{ marginTop: 12 }}>
+            <CalculatorBrandedExport
+              calculatorName="Mortgage Analysis"
+              summaryData={{
+                "Purchase Price": fmt(inputs.purchasePrice),
+                "Down Payment": `${fmt(inputs.downPaymentAmount)} (${inputs.downPaymentPercent.toFixed(1)}%)`,
+                "Loan Amount": fmt(calculation.loanAmount),
+                "Interest Rate": `${inputs.interestRate}%`,
+                "Loan Term": `${inputs.loanTermYears} years`,
+                "Monthly P&I": fmt(calculation.monthlyPI),
+                "Monthly Tax": fmt(calculation.monthlyTax),
+                "Monthly Insurance": fmt(calculation.monthlyInsurance),
+                "Total Monthly Payment": fmt(calculation.totalMonthly),
+                "Total Interest Paid": fmt(calculation.totalInterestPaid),
+              }}
+            />
           </div>
         </div>
       </div>

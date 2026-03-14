@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback } from "react";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import AttachToContact from "@/components/attach-to-contact";
+import CalculatorBrandedExport from "../../components/calculator-branded-export";
 import { calculateQuickFlip, type QuickFlipInput } from "@/lib/calculators/quickflip";
 import MLSImport, { type MLSPropertyData } from "@/components/mls-import";
 
@@ -328,6 +329,23 @@ export default function QuickFlipClient() {
         {/* Attach to GHL Contact */}
         <div style={{ marginTop: 12 }}>
           <AttachToContact generateFile={generateFile} reportTitle="Quick Flip Analysis" />
+        </div>
+        <div style={{ marginTop: 12 }}>
+          <CalculatorBrandedExport
+            calculatorName="Quick Flip Analysis"
+            summaryData={{
+              "After Repair Value": fmt(inputs.arv),
+              "Purchase Price": fmt(inputs.purchasePrice),
+              "Rehab Cost": fmt(inputs.rehabCost),
+              "Total Investment": fmt(analysis.totalInvestment),
+              "Net Profit": fmt(analysis.netProfit),
+              "ROI": `${analysis.roi.toFixed(1)}%`,
+              "Profit Margin": `${analysis.profitMargin.toFixed(1)}%`,
+              "MAO (70% Rule)": fmt(analysis.mao70),
+              "Meets 70% Rule": analysis.meetsRule70 ? "Yes" : "No",
+              "Deal Score": `${analysis.dealScore}/5 - ${analysis.verdict}`,
+            }}
+          />
         </div>
       </div>
     </div>

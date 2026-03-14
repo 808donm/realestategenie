@@ -76,6 +76,15 @@ export default function MobileBottomBar({
 
   return (
     <>
+      {/* Tablet Hamburger Button (visible md–lg, hidden on mobile where bottom bar shows, hidden on desktop where sidebar shows) */}
+      <button
+        onClick={() => setIsMoreOpen(true)}
+        className="fixed top-4 left-4 z-40 hidden md:flex lg:hidden items-center justify-center w-10 h-10 bg-white border border-gray-200 rounded-lg shadow-sm text-gray-600 hover:bg-gray-50 transition-colors noprint"
+        title="Open navigation"
+      >
+        <Menu className="w-5 h-5" />
+      </button>
+
       {/* Bottom Tab Bar */}
       <div className="fixed bottom-0 inset-x-0 bg-white dark:bg-gray-950 border-t border-gray-200 dark:border-gray-800 z-40 md:hidden pb-[env(safe-area-inset-bottom)]">
         <div className="flex items-center justify-around h-14">
@@ -113,9 +122,9 @@ export default function MobileBottomBar({
         </div>
       </div>
 
-      {/* More Sheet (slide-up) */}
+      {/* More Sheet (slide-up) — visible on mobile + tablet */}
       {isMoreOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
+        <div className="fixed inset-0 z-50 lg:hidden">
           {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/40"

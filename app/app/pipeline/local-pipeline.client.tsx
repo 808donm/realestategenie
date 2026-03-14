@@ -3,6 +3,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import jsPDF from "jspdf";
 import * as XLSX from "xlsx";
+import ExportToolbar from "../components/export-toolbar";
+import type { ExportColumn } from "../components/export-toolbar";
+import AddFollowUpButton from "../components/add-followup-button";
 
 interface PipelineLead {
   id: string;
@@ -386,10 +389,28 @@ export default function LocalPipelineClient() {
         <div style={{ fontSize: 11, color: "#9ca3af" }}>
           Drag cards to move between stages
         </div>
-        <div className="noprint" style={{ display: "flex", gap: 6 }}>
-          <button onClick={() => exportPipeline("xlsx")} style={{ padding: "4px 10px", fontSize: 11, fontWeight: 600, border: "1px solid #d1d5db", borderRadius: 6, background: "#fff", color: "#374151", cursor: "pointer" }}>Export Excel</button>
-          <button onClick={() => exportPipeline("pdf")} style={{ padding: "4px 10px", fontSize: 11, fontWeight: 600, border: "none", borderRadius: 6, background: "#dc2626", color: "#fff", cursor: "pointer" }}>Export PDF</button>
-        </div>
+        <ExportToolbar
+          title="Sales Pipeline"
+          columns={[
+            { key: "name", label: "Name", width: 2 },
+            { key: "email", label: "Email", width: 2 },
+            { key: "phone", label: "Phone", width: 1.5 },
+            { key: "property", label: "Property", width: 2 },
+            { key: "stage", label: "Stage", width: 1.5 },
+            { key: "heatScore", label: "Score", width: 0.8 },
+            { key: "date", label: "Date", width: 1.2 },
+          ]}
+          getData={() => stages.flatMap((s) => s.leads.map((l) => ({
+            name: l.name,
+            email: l.email || "",
+            phone: l.phone || "",
+            property: l.property,
+            stage: stages.find((st) => st.key === l.pipelineStage)?.label || l.pipelineStage,
+            heatScore: l.heatScore,
+            date: new Date(l.createdAt).toLocaleDateString(),
+          })))}
+          compact
+        />
       </div>
 
       {/* Kanban Board */}
@@ -840,6 +861,11 @@ export default function LocalPipelineClient() {
                     {new Date(selectedLead.createdAt).toLocaleDateString()}
                   </div>
                 </div>
+              </div>
+
+              {/* Quick Follow-Up Task */}
+              <div style={{ marginBottom: 12 }}>
+                <AddFollowUpButton leadId={selectedLead.id} entityName={selectedLead.name} />
               </div>
 
               {/* Draft Follow-Up Email */}

@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback } from "react";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import AttachToContact from "@/components/attach-to-contact";
+import CalculatorBrandedExport from "../../components/calculator-branded-export";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import {
   PropertyInput,
@@ -458,6 +459,24 @@ export default function ComparePropertiesClient({ savedProperties, savedComparis
       </div>
       <div style={{ marginBottom: 20 }}>
         <AttachToContact generateFile={generateFile} reportTitle="Property Comparison" />
+      </div>
+      <div style={{ marginBottom: 20 }}>
+        <CalculatorBrandedExport
+          calculatorName="Property Comparison"
+          summaryData={
+            comparisons.length >= 2
+              ? Object.fromEntries(
+                  comparisons.flatMap((comp, i) => [
+                    [`Property ${i + 1}`, comp.name],
+                    [`Property ${i + 1} Cap Rate`, formatPercent(comp.analysis.capRate)],
+                    [`Property ${i + 1} Cash-on-Cash`, formatPercent(comp.analysis.cashOnCash)],
+                    [`Property ${i + 1} IRR`, formatPercent(comp.analysis.irr)],
+                    [`Property ${i + 1} Total Profit`, formatCurrency(comp.analysis.totalProfit)],
+                  ])
+                )
+              : { "Status": "Select at least 2 properties to compare" }
+          }
+        />
       </div>
 
       {/* Comparison Results */}

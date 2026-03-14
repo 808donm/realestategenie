@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import jsPDF from "jspdf";
 import * as XLSX from "xlsx";
+import AddFollowUpButton from "../components/add-followup-button";
+import ExportToolbar from "../components/export-toolbar";
 
 interface Contact {
   id: string;
@@ -211,10 +213,24 @@ export default function ContactsClient() {
             }}
           />
         </div>
-        <div className="noprint" style={{ display: "flex", gap: 8 }}>
-          <button onClick={() => exportContacts("xlsx")} style={{ padding: "12px 14px", fontSize: 12, fontWeight: 600, border: "1px solid #d1d5db", borderRadius: 8, background: "#fff", color: "#374151", cursor: "pointer" }}>Export Excel</button>
-          <button onClick={() => exportContacts("pdf")} style={{ padding: "12px 14px", fontSize: 12, fontWeight: 600, border: "none", borderRadius: 8, background: "#dc2626", color: "#fff", cursor: "pointer" }}>Export PDF</button>
-        </div>
+        <ExportToolbar
+          title="Contacts"
+          columns={[
+            { key: "name", label: "Name", width: 2 },
+            { key: "email", label: "Email", width: 2 },
+            { key: "phone", label: "Phone", width: 1.5 },
+            { key: "location", label: "Location", width: 2 },
+            { key: "tags", label: "Tags", width: 1.5 },
+          ]}
+          getData={() => contacts.map((c) => ({
+            name: c.name || `${c.firstName || ""} ${c.lastName || ""}`.trim() || "Unknown",
+            email: c.email || "",
+            phone: c.phone || "",
+            location: [c.city, c.state].filter(Boolean).join(", "),
+            tags: (c.tags || []).join(", "),
+          }))}
+          compact
+        />
         <button
           onClick={() => setShowAddForm(!showAddForm)}
           style={{
@@ -464,6 +480,14 @@ export default function ContactsClient() {
                           <a href={`sms:${contact.phone}`} onClick={(e) => e.stopPropagation()} title="Text" style={{ padding: "2px 6px", background: "#eff6ff", color: "#2563eb", borderRadius: 4, fontSize: 10, fontWeight: 600, textDecoration: "none" }}>
                             Text
                           </a>
+                          <span onClick={(e) => e.stopPropagation()}>
+                            <AddFollowUpButton contactId={contact.id} entityName={getDisplayName(contact)} compact />
+                          </span>
+                        </div>
+                      )}
+                      {!contact.phone && (
+                        <div style={{ marginTop: 2 }} onClick={(e) => e.stopPropagation()}>
+                          <AddFollowUpButton contactId={contact.id} entityName={getDisplayName(contact)} compact />
                         </div>
                       )}
                     </div>

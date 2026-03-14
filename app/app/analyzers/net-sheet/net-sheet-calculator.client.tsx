@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback } from "react";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import AttachToContact from "@/components/attach-to-contact";
+import CalculatorBrandedExport from "../../components/calculator-branded-export";
 import MLSImport, { type MLSPropertyData } from "@/components/mls-import";
 import {
   calculateNetSheet,
@@ -770,6 +771,22 @@ export default function NetSheetCalculatorClient() {
         {/* Attach to GHL Contact */}
         <div style={{ marginTop: 12 }}>
           <AttachToContact generateFile={generateFile} reportTitle="Seller Net Sheet" />
+        </div>
+        <div style={{ marginTop: 12 }}>
+          <CalculatorBrandedExport
+            calculatorName="Seller Net Sheet"
+            summaryData={{
+              "Sale Price": fmt(analysis.salePrice),
+              "Total Commission": fmt(analysis.totalCommission),
+              "Closing Costs": fmt(analysis.totalClosingCosts),
+              "Mortgage Payoff": fmt(analysis.mortgagePayoff),
+              "Repairs / Credits": fmt(analysis.repairsCredits),
+              "Seller Concessions": fmt(analysis.sellerConcessions),
+              "Total Deductions": fmt(analysis.totalDeductions),
+              "Estimated Proceeds": fmt(analysis.estimatedProceeds),
+              "Proceeds % of Sale": `${analysis.proceedsPercent.toFixed(1)}%`,
+            }}
+          />
         </div>
       </div>
     </div>

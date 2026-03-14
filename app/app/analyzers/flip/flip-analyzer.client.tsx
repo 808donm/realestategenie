@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback } from "react";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import AttachToContact from "@/components/attach-to-contact";
+import CalculatorBrandedExport from "../../components/calculator-branded-export";
 import { analyzeFlip, getFlipVerdict, calculateFlipMAO, estimateRehabCosts, FlipInput } from "@/lib/calculators/flip";
 import MLSImport, { type MLSPropertyData } from "@/components/mls-import";
 
@@ -888,6 +889,24 @@ export default function FlipAnalyzerClient({ savedAnalyses }: FlipAnalyzerClient
             </div>
             <div style={{ marginTop: 12 }}>
               <AttachToContact generateFile={generateFile} reportTitle="Flip Analysis" />
+            </div>
+            <div style={{ marginTop: 12 }}>
+              <CalculatorBrandedExport
+                calculatorName="Flip Analysis"
+                propertyAddress={formData.address}
+                summaryData={{
+                  "Property": formData.name || "Untitled",
+                  "Purchase Price": formatCurrency(formData.purchasePrice),
+                  "After Repair Value": formatCurrency(formData.afterRepairValue),
+                  "Renovation Costs": formatCurrency(formData.renovationCosts),
+                  "Net Profit": formatCurrency(analysis.netProfit),
+                  "ROI on Cash": formatPercent(analysis.roiOnCash),
+                  "Annualized ROI": formatPercent(analysis.annualizedROI),
+                  "Deal Score": `${analysis.dealScore}/10`,
+                  "Meets 70% Rule": analysis.meetsRule70 ? "Yes" : "No",
+                  "Verdict": verdict.verdict,
+                }}
+              />
             </div>
           </div>
 

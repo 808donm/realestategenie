@@ -2,6 +2,7 @@ import {
   LayoutDashboard,
   CalendarDays,
   Kanban,
+  ListTodo,
   UserPlus,
   Users,
   DoorOpen,
@@ -51,6 +52,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: "Dashboard", href: "/app/dashboard", icon: LayoutDashboard },
       { label: "Calendar", href: "/app/calendar", icon: CalendarDays },
       { label: "Pipeline", href: "/app/pipeline", icon: Kanban },
+      { label: "Tasks", href: "/app/tasks", icon: ListTodo },
     ],
   },
   {
@@ -125,7 +127,7 @@ export const HELP_ICON = HelpCircle;
 
 // Route groupings for mobile bottom bar active state detection
 export const MOBILE_TAB_ROUTES: Record<string, string[]> = {
-  dashboard: ["/app/dashboard", "/app/calendar", "/app/pipeline"],
+  dashboard: ["/app/dashboard", "/app/calendar", "/app/pipeline", "/app/tasks"],
   clients: ["/app/leads", "/app/contacts", "/app/open-houses"],
   deals: ["/app/mls", "/app/property-data", "/app/neighborhood-profiles", "/app/analyzers"],
   listings: ["/app/seller-map", "/app/farm", "/app/reports"],

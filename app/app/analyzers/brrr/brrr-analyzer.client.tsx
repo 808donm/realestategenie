@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback } from "react";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import AttachToContact from "@/components/attach-to-contact";
+import CalculatorBrandedExport from "../../components/calculator-branded-export";
 import { analyzeBRRR, getBRRRVerdict, calculate70PercentRule, BRRRInput } from "@/lib/calculators/brrr";
 import MLSImport, { type MLSPropertyData } from "@/components/mls-import";
 
@@ -885,6 +886,26 @@ export default function BRRRAnalyzerClient({ savedAnalyses }: BRRRAnalyzerClient
             </div>
             <div style={{ marginTop: 12 }}>
               <AttachToContact generateFile={generateFile} reportTitle="BRRR Strategy Analysis" />
+            </div>
+            <div style={{ marginTop: 12 }}>
+              <CalculatorBrandedExport
+                calculatorName="BRRR Analysis"
+                propertyAddress={formData.address}
+                summaryData={{
+                  "Property": formData.name || "Untitled",
+                  "Purchase Price": formatCurrency(formData.purchasePrice),
+                  "After Repair Value": formatCurrency(formData.afterRepairValue),
+                  "Renovation Costs": formatCurrency(formData.renovationCosts),
+                  "Monthly Rent": formatCurrency(formData.monthlyRent),
+                  "Cash Left in Deal": formatCurrency(analysis.cashLeftInDeal),
+                  "Monthly Cash Flow": formatCurrency(analysis.monthlyCashFlow),
+                  "Cash-on-Cash Return": formatPercent(analysis.cashOnCashReturn),
+                  "Refinance Loan Amount": formatCurrency(analysis.refinanceLoanAmount),
+                  "Deal Score": `${analysis.dealScore}/10`,
+                  "Infinite Return": analysis.isInfiniteReturn ? "Yes" : "No",
+                  "Verdict": verdict.verdict,
+                }}
+              />
             </div>
           </div>
 

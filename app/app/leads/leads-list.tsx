@@ -7,6 +7,8 @@ import { FileText, Flame, Thermometer, Snowflake, Ban } from "lucide-react";
 import jsPDF from "jspdf";
 import * as XLSX from "xlsx";
 import GenerateProfileModal from "../neighborhood-profiles/generate-modal";
+import AddFollowUpButton from "../components/add-followup-button";
+import ExportToolbar from "../components/export-toolbar";
 
 interface Lead {
   id: string;
@@ -142,8 +144,30 @@ export default function LeadsList({ leads, eventMap }: LeadsListProps) {
     <>
       {/* Export buttons */}
       <div className="noprint" style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 12 }}>
-        <button onClick={() => exportLeads("xlsx")} style={{ padding: "6px 14px", fontSize: 12, fontWeight: 600, border: "1px solid #d1d5db", borderRadius: 6, background: "#fff", color: "#374151", cursor: "pointer" }}>Export Excel</button>
-        <button onClick={() => exportLeads("pdf")} style={{ padding: "6px 14px", fontSize: 12, fontWeight: 600, border: "none", borderRadius: 6, background: "#dc2626", color: "#fff", cursor: "pointer" }}>Export PDF</button>
+        <ExportToolbar
+          title="Leads"
+          columns={[
+            { key: "name", label: "Name", width: 2 },
+            { key: "email", label: "Email", width: 2 },
+            { key: "phone", label: "Phone", width: 1.5 },
+            { key: "property", label: "Property", width: 2 },
+            { key: "score", label: "Score", width: 0.8 },
+            { key: "timeline", label: "Timeline", width: 1.2 },
+            { key: "date", label: "Date", width: 1.2 },
+          ]}
+          getData={() => leads.filter((l) => !isDNC(l)).map((l) => {
+            const p: any = l.payload ?? {};
+            return {
+              name: p.name || "Unknown",
+              email: p.email || "",
+              phone: p.phone_e164 || "",
+              property: eventMap.get(l.event_id) || l.event_id,
+              score: l.heat_score,
+              timeline: p.timeline || "",
+              date: new Date(l.created_at).toLocaleDateString(),
+            };
+          })}
+        />
       </div>
 
       {/* Scoring Summary Cards */}
@@ -243,7 +267,7 @@ export default function LeadsList({ leads, eventMap }: LeadsListProps) {
                   </div>
 
                   {/* Contact */}
-                  <div style={{ display: "flex", gap: 6, alignItems: "center" }} onClick={(e) => e.stopPropagation()}>
+                  <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }} onClick={(e) => e.stopPropagation()}>
                     {p.phone_e164 && (
                       <a href={`tel:${p.phone_e164}`} title="Call" style={{ padding: "4px 8px", background: "#ecfdf5", color: "#059669", borderRadius: 6, fontSize: 11, fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap" }}>
                         Call
@@ -259,6 +283,7 @@ export default function LeadsList({ leads, eventMap }: LeadsListProps) {
                         Email
                       </a>
                     )}
+                    <AddFollowUpButton leadId={l.id} entityName={p.name || "lead"} compact />
                   </div>
 
                   {/* Property */}

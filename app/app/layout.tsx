@@ -7,6 +7,8 @@ import ChangePasswordForm from "./change-password/change-password-form";
 import AppSidebar from "./components/sidebar/app-sidebar";
 import MobileBottomBar from "./components/sidebar/mobile-bottom-bar";
 import GlobalSearch from "./components/global-search";
+import Breadcrumbs from "./components/breadcrumbs";
+import NotificationCenter from "./components/notification-center";
 
 import { getSubscriptionStatus, getSuggestedUpgradePlan } from "@/lib/subscriptions/utils";
 import { checkFeatureAccess } from "@/lib/subscriptions/server-utils";
@@ -118,13 +120,19 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           />
         )}
 
-        {/* Global Search Bar */}
+        {/* Global Search Bar + Notification Center */}
         <div className="noprint" style={{ padding: "12px 16px 0", maxWidth: 1100, margin: "0 auto", width: "100%" }}>
-          <GlobalSearch />
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <GlobalSearch />
+            </div>
+            <NotificationCenter />
+          </div>
         </div>
 
         <main className="flex-1">
           <div className="max-w-[1100px] mx-auto px-4 py-5 pb-20 md:pb-5">
+            <Breadcrumbs />
             {children}
           </div>
         </main>

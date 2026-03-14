@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback } from "react";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import AttachToContact from "@/components/attach-to-contact";
+import CalculatorBrandedExport from "../../components/calculator-branded-export";
 import { calculateCommissionSplit, type CommissionSplitInput } from "@/lib/calculators/commissionsplit";
 import MLSImport, { type MLSPropertyData } from "@/components/mls-import";
 
@@ -416,6 +417,23 @@ export default function CommissionSplitClient() {
         {/* Attach to GHL Contact */}
         <div style={{ marginTop: 12 }}>
           <AttachToContact generateFile={generateFile} reportTitle="Commission Split" />
+        </div>
+        <div style={{ marginTop: 12 }}>
+          <CalculatorBrandedExport
+            calculatorName="Commission Split Analysis"
+            summaryData={{
+              "Sale Price": fmt(inputs.salePrice),
+              "Commission Rate": `${inputs.commissionPercent}%`,
+              "Gross Commission": fmt(analysis.grossCommission),
+              "Agent/Brokerage Split": `${inputs.agentSplitPercent}/${100 - inputs.agentSplitPercent}`,
+              "Brokerage Share": fmt(analysis.brokerageShare),
+              "Team Override": fmt(analysis.teamOverrideAmount),
+              "Total Fees": fmt(analysis.totalFees),
+              "Agent Net": fmt(analysis.agentNet),
+              "Brokerage Gross": fmt(analysis.brokerageGross),
+              "Agent Net % of Commission": `${analysis.agentNetPercent.toFixed(1)}%`,
+            }}
+          />
         </div>
       </div>
     </div>

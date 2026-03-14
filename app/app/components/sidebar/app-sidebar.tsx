@@ -64,7 +64,7 @@ export default function AppSidebar({
 
   return (
     <aside
-      className={`sticky top-0 h-screen overflow-y-auto bg-white dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800 flex-shrink-0 flex-col transition-all duration-300 hidden md:flex ${
+      className={`sticky top-0 h-screen overflow-y-auto bg-white dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800 flex-shrink-0 flex-col transition-all duration-300 hidden lg:flex ${
         isCollapsed ? "w-16" : "w-60"
       } ${!hydrated ? "opacity-0" : "opacity-100"}`}
     >

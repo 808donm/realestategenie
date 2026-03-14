@@ -5,6 +5,7 @@ import { supabaseBrowser } from "@/lib/supabase/browser";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import AttachToContact from "@/components/attach-to-contact";
+import CalculatorBrandedExport from "../../components/calculator-branded-export";
 import {
   PropertyInput,
   PropertyAnalysis,
@@ -746,6 +747,27 @@ export default function InvestmentAnalyzerClient({ savedProperties }: Props) {
         </div>
         <div style={{ marginTop: 12 }}>
           <AttachToContact generateFile={generateFile} reportTitle="Investment Property Analysis" />
+        </div>
+        <div style={{ marginTop: 12 }}>
+          <CalculatorBrandedExport
+            calculatorName="Investment Analysis"
+            propertyAddress={propertyAddress}
+            summaryData={{
+              "Property": propertyName || "Untitled",
+              "Purchase Price": formatCurrency(input.purchasePrice),
+              "Down Payment": formatCurrency(analysis.downPayment),
+              "Loan Amount": formatCurrency(analysis.loanAmount),
+              "NOI": formatCurrency(analysis.noi),
+              "Cap Rate": formatPercent(analysis.capRate),
+              "Cash-on-Cash Return": formatPercent(analysis.cashOnCash),
+              "IRR": formatPercent(analysis.irr),
+              "Total ROI": formatPercent(analysis.totalROI),
+              "Monthly Cash Flow": formatCurrency(analysis.annualCashFlow / 12),
+              "Annual Cash Flow": formatCurrency(analysis.annualCashFlow),
+              "Total Profit": formatCurrency(analysis.totalProfit),
+              "Verdict": getVerdict(analysis),
+            }}
+          />
         </div>
       </div>
 

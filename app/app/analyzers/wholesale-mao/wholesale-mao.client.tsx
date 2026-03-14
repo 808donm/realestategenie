@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback } from "react";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import AttachToContact from "@/components/attach-to-contact";
+import CalculatorBrandedExport from "../../components/calculator-branded-export";
 import { calculateWholesaleMao, type WholesaleMaoInput } from "@/lib/calculators/wholesalemao";
 import MLSImport, { type MLSPropertyData } from "@/components/mls-import";
 
@@ -299,6 +300,23 @@ export default function WholesaleMaoClient() {
         {/* Attach to GHL Contact */}
         <div style={{ marginTop: 12 }}>
           <AttachToContact generateFile={generateFile} reportTitle="Wholesale MAO Analysis" />
+        </div>
+        <div style={{ marginTop: 12 }}>
+          <CalculatorBrandedExport
+            calculatorName="Wholesale MAO Analysis"
+            summaryData={{
+              "After Repair Value": fmt(inputs.arv),
+              "Repair Estimate": fmt(inputs.repairEstimate),
+              "Investor Margin": `${inputs.investorMarginPercent}%`,
+              "Assignment Fee": fmt(inputs.assignmentFee),
+              "Maximum Allowable Offer": fmt(analysis.mao),
+              "Aggressive Offer": fmt(analysis.lowOffer),
+              "Target Offer": fmt(analysis.midOffer),
+              "Stretch Offer": fmt(analysis.highOffer),
+              "70% Rule MAO": fmt(analysis.mao70Rule),
+              "Investor ROI": `${analysis.investorROI.toFixed(1)}%`,
+            }}
+          />
         </div>
       </div>
     </div>

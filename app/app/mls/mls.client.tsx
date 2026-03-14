@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, Fragment } from "react";
 import { useSearchParams } from "next/navigation";
 import PropertyDetailModal from "../property-data/property-detail-modal.client";
+import ExportToolbar from "../components/export-toolbar";
 
 interface TrestleMedia {
   MediaKey: string;
@@ -1076,11 +1077,37 @@ export default function MLSClient() {
         </div>
       )}
 
-      {/* Results count */}
+      {/* Results count + Export */}
       {!isLoading && hasSearched && properties.length > 0 && (
-        <div style={{ marginBottom: 16, fontSize: 14, color: "#6b7280" }}>
-          Showing {offset + 1}–{Math.min(offset + limit, totalCount)} of{" "}
-          {totalCount.toLocaleString()} listings
+        <div style={{ marginBottom: 16, fontSize: 14, color: "#6b7280", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span>
+            Showing {offset + 1}–{Math.min(offset + limit, totalCount)} of{" "}
+            {totalCount.toLocaleString()} listings
+          </span>
+          <ExportToolbar
+            title="MLS Listings"
+            columns={[
+              { key: "address", label: "Address", width: 3 },
+              { key: "status", label: "Status", width: 1 },
+              { key: "price", label: "Price", width: 1.5 },
+              { key: "beds", label: "Beds", width: 0.7 },
+              { key: "baths", label: "Baths", width: 0.7 },
+              { key: "sqft", label: "Sq Ft", width: 1 },
+              { key: "dom", label: "DOM", width: 0.7 },
+              { key: "agent", label: "List Agent", width: 2 },
+            ]}
+            getData={() => properties.map((p) => ({
+              address: p.UnparsedAddress || `${p.StreetNumber || ""} ${p.StreetName || ""} ${p.StreetSuffix || ""}`.trim() || `${p.City}, ${p.StateOrProvince}`,
+              status: p.StandardStatus,
+              price: p.ClosePrice ? `$${p.ClosePrice.toLocaleString()}` : `$${p.ListPrice.toLocaleString()}`,
+              beds: p.BedroomsTotal ?? "",
+              baths: p.BathroomsTotalInteger ?? "",
+              sqft: p.LivingArea ? p.LivingArea.toLocaleString() : "",
+              dom: p.DaysOnMarket ?? p.CumulativeDaysOnMarket ?? "",
+              agent: p.ListAgentFullName || "",
+            }))}
+            compact
+          />
         </div>
       )}
 

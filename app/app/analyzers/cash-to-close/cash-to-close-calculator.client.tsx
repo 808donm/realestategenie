@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback } from "react";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import AttachToContact from "@/components/attach-to-contact";
+import CalculatorBrandedExport from "../../components/calculator-branded-export";
 import { calculateCashToClose, type CashToCloseInput } from "@/lib/calculators/cashtoclose";
 import MLSImport, { type MLSPropertyData } from "@/components/mls-import";
 
@@ -683,6 +684,23 @@ export default function CashToCloseCalculatorClient() {
         {/* Attach to GHL Contact */}
         <div style={{ marginTop: 12 }}>
           <AttachToContact generateFile={generateFile} reportTitle="Buyer Cash-to-Close Estimate" />
+        </div>
+        <div style={{ marginTop: 12 }}>
+          <CalculatorBrandedExport
+            calculatorName="Cash to Close Analysis"
+            summaryData={{
+              "Purchase Price": fmt(inputs.purchasePrice),
+              "Down Payment": fmt(analysis.downPayment),
+              "Loan Amount": fmt(inputs.loanAmount),
+              "Closing Costs": fmt(analysis.closingCosts),
+              "Total Prepaids": fmt(analysis.totalPrepaids),
+              "Gross Cash Needed": fmt(analysis.grossCashNeeded),
+              "Total Credits": fmt(analysis.totalCredits),
+              "Estimated Cash to Close": fmt(analysis.estimatedCashToClose),
+              "Low Estimate": fmt(analysis.lowEstimate),
+              "High Estimate": fmt(analysis.highEstimate),
+            }}
+          />
         </div>
       </div>
     </div>
