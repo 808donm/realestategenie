@@ -140,6 +140,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <NavLink href="/app/farm">Farm & Watchdog</NavLink>
             <NavLink href="/app/pipeline">Pipeline</NavLink>
             <NavLink href="/app/open-houses">Open Houses</NavLink>
+            <NavLink href="/app/calendar">Calendar</NavLink>
             <NavLink href="/app/leads">Leads</NavLink>
             <NavLink href="/app/contacts">Contacts</NavLink>
             <NavLink href="/app/analyzers">Calculators</NavLink>
