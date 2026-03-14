@@ -96,12 +96,19 @@ export async function POST(
       .eq("id", leadId)
       .eq("agent_id", user.id)
       .select("id")
-      .single();
+      .maybeSingle();
 
-    if (updateError || !updated) {
+    if (updateError) {
       return NextResponse.json(
-        { error: updateError?.message || "Failed to update lead stage" },
+        { error: updateError.message },
         { status: 500 }
+      );
+    }
+
+    if (!updated) {
+      return NextResponse.json(
+        { error: "Lead not found or access denied" },
+        { status: 404 }
       );
     }
 
