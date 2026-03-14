@@ -33,6 +33,15 @@ export default function ContactsClient() {
   const [isAdding, setIsAdding] = useState(false);
   const [addError, setAddError] = useState("");
 
+  // Bulk messaging state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showBulkPanel, setShowBulkPanel] = useState(false);
+  const [bulkType, setBulkType] = useState<"email" | "sms">("email");
+  const [bulkSubject, setBulkSubject] = useState("");
+  const [bulkMessage, setBulkMessage] = useState("");
+  const [isBulkSending, setIsBulkSending] = useState(false);
+  const [bulkResult, setBulkResult] = useState<{ sent: number; failed: number } | null>(null);
+
   // New contact form state
   const [newContact, setNewContact] = useState({
     firstName: "",
@@ -129,6 +138,54 @@ export default function ContactsClient() {
       return `${contact.firstName || ""} ${contact.lastName || ""}`.trim();
     }
     return contact.email || contact.phone || "Unknown";
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const selectAll = () => {
+    if (selectedIds.size === contacts.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(contacts.map((c) => c.id)));
+    }
+  };
+
+  const handleBulkSend = async () => {
+    if (selectedIds.size === 0 || !bulkMessage.trim()) return;
+    setIsBulkSending(true);
+    setBulkResult(null);
+    try {
+      const res = await fetch("/api/messaging/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contactIds: Array.from(selectedIds),
+          type: bulkType,
+          message: bulkMessage.trim(),
+          subject: bulkType === "email" ? bulkSubject.trim() : undefined,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setBulkResult({ sent: data.sent, failed: data.failed });
+        setBulkMessage("");
+        setBulkSubject("");
+        setSelectedIds(new Set());
+      } else {
+        setBulkResult({ sent: 0, failed: selectedIds.size });
+      }
+    } catch {
+      setBulkResult({ sent: 0, failed: selectedIds.size });
+    } finally {
+      setIsBulkSending(false);
+    }
   };
 
   // Group contacts alphabetically
@@ -246,6 +303,82 @@ export default function ContactsClient() {
           {showAddForm ? "Cancel" : "+ Add Contact"}
         </button>
       </div>
+
+      {/* Bulk Action Bar */}
+      {selectedIds.size > 0 && (
+        <div style={{ padding: 12, background: "#eff6ff", border: "1px solid #93c5fd", borderRadius: 8, marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: "#1d4ed8" }}>
+            {selectedIds.size} contact{selectedIds.size !== 1 ? "s" : ""} selected
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              onClick={() => setShowBulkPanel(!showBulkPanel)}
+              style={{ padding: "6px 14px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+            >
+              {showBulkPanel ? "Hide Compose" : "Bulk Email/SMS"}
+            </button>
+            <button
+              onClick={() => { setSelectedIds(new Set()); setShowBulkPanel(false); }}
+              style={{ padding: "6px 14px", background: "#fff", color: "#6b7280", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+            >
+              Clear Selection
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Compose Panel */}
+      {showBulkPanel && selectedIds.size > 0 && (
+        <div style={{ padding: 20, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 16 }}>
+          <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>
+            Send to {selectedIds.size} Contact{selectedIds.size !== 1 ? "s" : ""}
+          </h3>
+          <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+            <button
+              onClick={() => setBulkType("email")}
+              style={{ flex: 1, padding: "8px 12px", borderRadius: 6, border: "none", fontWeight: 600, fontSize: 13, cursor: "pointer", background: bulkType === "email" ? "#3b82f6" : "#f3f4f6", color: bulkType === "email" ? "#fff" : "#374151" }}
+            >
+              Email
+            </button>
+            <button
+              onClick={() => setBulkType("sms")}
+              style={{ flex: 1, padding: "8px 12px", borderRadius: 6, border: "none", fontWeight: 600, fontSize: 13, cursor: "pointer", background: bulkType === "sms" ? "#10b981" : "#f3f4f6", color: bulkType === "sms" ? "#fff" : "#374151" }}
+            >
+              SMS
+            </button>
+          </div>
+          {bulkType === "email" && (
+            <input
+              type="text"
+              value={bulkSubject}
+              onChange={(e) => setBulkSubject(e.target.value)}
+              placeholder="Email subject..."
+              style={{ width: "100%", padding: 10, border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 14, marginBottom: 8 }}
+            />
+          )}
+          <textarea
+            value={bulkMessage}
+            onChange={(e) => setBulkMessage(e.target.value)}
+            placeholder={`Write your ${bulkType} message...`}
+            rows={4}
+            style={{ width: "100%", padding: 12, border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 14, resize: "vertical", fontFamily: "inherit", marginBottom: 8 }}
+          />
+          {bulkResult && (
+            <div style={{ padding: 8, borderRadius: 6, marginBottom: 8, fontSize: 13, background: bulkResult.failed === 0 ? "#ecfdf5" : "#fefce8", color: bulkResult.failed === 0 ? "#059669" : "#a16207" }}>
+              Sent: {bulkResult.sent} | Failed: {bulkResult.failed}
+            </div>
+          )}
+          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+            <button
+              onClick={handleBulkSend}
+              disabled={isBulkSending || !bulkMessage.trim()}
+              style={{ padding: "8px 24px", fontSize: 13, fontWeight: 600, border: "none", borderRadius: 6, background: bulkType === "email" ? "#3b82f6" : "#10b981", color: "#fff", cursor: isBulkSending ? "wait" : "pointer", opacity: isBulkSending || !bulkMessage.trim() ? 0.6 : 1 }}
+            >
+              {isBulkSending ? "Sending..." : `Send ${bulkType === "email" ? "Email" : "SMS"} to ${selectedIds.size}`}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Add Contact Form */}
       {showAddForm && (
@@ -412,8 +545,14 @@ export default function ContactsClient() {
       ) : (
         /* Contacts List */
         <div>
-          <div style={{ marginBottom: 12, fontSize: 14, color: "#6b7280" }}>
-            Showing {contacts.length} contact{contacts.length !== 1 ? "s" : ""}
+          <div style={{ marginBottom: 12, fontSize: 14, color: "#6b7280", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span>Showing {contacts.length} contact{contacts.length !== 1 ? "s" : ""}</span>
+            <button
+              onClick={selectAll}
+              style={{ padding: "4px 10px", fontSize: 11, fontWeight: 600, border: "1px solid #e5e7eb", borderRadius: 4, background: "#fff", cursor: "pointer", color: "#6b7280" }}
+            >
+              {selectedIds.size === contacts.length ? "Deselect All" : "Select All"}
+            </button>
           </div>
 
           {sortedKeys.map((letter) => (
@@ -461,7 +600,15 @@ export default function ContactsClient() {
                       e.currentTarget.style.boxShadow = "none";
                     }}
                   >
-                    <div style={{ minWidth: 200 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }} onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(contact.id)}
+                        onChange={() => toggleSelect(contact.id)}
+                        style={{ width: 16, height: 16, accentColor: "#3b82f6", cursor: "pointer" }}
+                      />
+                    </div>
+                    <div style={{ minWidth: 200, flex: 1 }}>
                       <div style={{ fontWeight: 600, fontSize: 15 }}>
                         {getDisplayName(contact)}
                       </div>

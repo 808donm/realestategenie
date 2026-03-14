@@ -19,6 +19,16 @@ interface PipelineLead {
   eventId: string;
   pipelineStage: string;
   createdAt: string;
+  // Qualification context
+  buyerType: string | null;
+  priceRange: string | null;
+  preApproved: string | null;
+  agent: string | null;
+  motivation: string | null;
+  notes: string | null;
+  areas: string | null;
+  bedsBaths: string | null;
+  updatedAt: string | null;
 }
 
 interface PipelineStageData {
@@ -637,6 +647,37 @@ export default function LocalPipelineClient() {
                             {lead.property}
                           </div>
 
+                          {/* Qualification Context */}
+                          {(lead.timeline || lead.financing || lead.priceRange || lead.preApproved || lead.buyerType) && (
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginBottom: 4 }}>
+                              {lead.timeline && (
+                                <span style={{ fontSize: 9, padding: "1px 5px", background: "#f0f9ff", color: "#0369a1", borderRadius: 3, fontWeight: 600 }}>
+                                  {lead.timeline}
+                                </span>
+                              )}
+                              {lead.financing && (
+                                <span style={{ fontSize: 9, padding: "1px 5px", background: "#f0fdf4", color: "#15803d", borderRadius: 3, fontWeight: 600 }}>
+                                  {lead.financing}
+                                </span>
+                              )}
+                              {lead.priceRange && (
+                                <span style={{ fontSize: 9, padding: "1px 5px", background: "#fefce8", color: "#a16207", borderRadius: 3, fontWeight: 600 }}>
+                                  {lead.priceRange}
+                                </span>
+                              )}
+                              {lead.preApproved && lead.preApproved.toLowerCase() !== "no" && (
+                                <span style={{ fontSize: 9, padding: "1px 5px", background: "#ecfdf5", color: "#059669", borderRadius: 3, fontWeight: 600 }}>
+                                  Pre-approved
+                                </span>
+                              )}
+                              {lead.buyerType && (
+                                <span style={{ fontSize: 9, padding: "1px 5px", background: "#faf5ff", color: "#7c3aed", borderRadius: 3, fontWeight: 600 }}>
+                                  {lead.buyerType}
+                                </span>
+                              )}
+                            </div>
+                          )}
+
                           {/* Quick contact actions */}
                           {(lead.phone || lead.email) && (
                             <div style={{ display: "flex", gap: 4, marginBottom: 4 }} onClick={(e) => e.stopPropagation()}>
@@ -909,6 +950,44 @@ export default function LocalPipelineClient() {
                     {new Date(selectedLead.createdAt).toLocaleDateString()}
                   </div>
                 </div>
+                {selectedLead.priceRange && (
+                  <div>
+                    <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 600 }}>Price Range</div>
+                    <div style={{ fontSize: 14, color: "#374151" }}>{selectedLead.priceRange}</div>
+                  </div>
+                )}
+                {selectedLead.buyerType && (
+                  <div>
+                    <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 600 }}>Buyer Type</div>
+                    <div style={{ fontSize: 14, color: "#374151" }}>{selectedLead.buyerType}</div>
+                  </div>
+                )}
+                {selectedLead.preApproved && (
+                  <div>
+                    <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 600 }}>Pre-Approved</div>
+                    <div style={{ fontSize: 14, color: selectedLead.preApproved.toLowerCase() !== "no" ? "#059669" : "#374151", fontWeight: selectedLead.preApproved.toLowerCase() !== "no" ? 600 : 400 }}>
+                      {selectedLead.preApproved}
+                    </div>
+                  </div>
+                )}
+                {selectedLead.areas && (
+                  <div>
+                    <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 600 }}>Areas of Interest</div>
+                    <div style={{ fontSize: 14, color: "#374151" }}>{selectedLead.areas}</div>
+                  </div>
+                )}
+                {selectedLead.motivation && (
+                  <div style={{ gridColumn: "1 / -1" }}>
+                    <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 600 }}>Motivation</div>
+                    <div style={{ fontSize: 14, color: "#374151" }}>{selectedLead.motivation}</div>
+                  </div>
+                )}
+                {selectedLead.notes && (
+                  <div style={{ gridColumn: "1 / -1" }}>
+                    <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 600 }}>Notes</div>
+                    <div style={{ fontSize: 13, color: "#374151", lineHeight: 1.5 }}>{selectedLead.notes}</div>
+                  </div>
+                )}
               </div>
 
               {/* Quick Follow-Up Task */}

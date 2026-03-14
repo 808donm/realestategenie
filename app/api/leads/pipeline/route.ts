@@ -63,6 +63,16 @@ export async function GET() {
           eventId: l.event_id,
           pipelineStage: l.pipeline_stage,
           createdAt: l.created_at,
+          // Qualification context
+          buyerType: l.payload?.buyer_type || l.payload?.buyerType || null,
+          priceRange: l.payload?.price_range || l.payload?.priceRange || l.payload?.budget || null,
+          preApproved: l.payload?.pre_approved || l.payload?.preApproved || null,
+          agent: l.payload?.current_agent || l.payload?.hasAgent || null,
+          motivation: l.payload?.motivation || l.payload?.reason || null,
+          notes: l.payload?.notes || l.payload?.comments || null,
+          areas: l.payload?.areas_of_interest || l.payload?.areasOfInterest || null,
+          bedsBaths: l.payload?.beds_baths || null,
+          updatedAt: l.updated_at,
         })),
       };
     });
