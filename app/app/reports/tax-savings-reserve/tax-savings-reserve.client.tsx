@@ -3,6 +3,10 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import jsPDF from "jspdf";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
+  PieChart, Pie, Cell, AreaChart, Area,
+} from "recharts";
 
 interface MonthlyData {
   month: string;
@@ -267,31 +271,32 @@ export default function TaxSavingsReserveClient() {
         </div>
       </div>
 
-      {/* Visual Breakdown Bar */}
+      {/* Income Breakdown Pie Chart */}
       <div style={{ ...cardStyle, marginBottom: 24 }}>
         <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>Income Breakdown - {getMonthLabel(selectedMonth)}</h3>
-        <div style={{ display: "flex", borderRadius: 8, overflow: "hidden", height: 40, marginBottom: 16 }}>
-          {breakdownSegments.map((seg) => (
-            <div
-              key={seg.label}
-              style={{
-                width: `${Math.max(seg.pct, 2)}%`,
-                background: seg.color,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                transition: "width 0.3s ease",
-              }}
-            >
-              {seg.pct > 10 && (
-                <span style={{ fontSize: 11, fontWeight: 600, color: "#fff", whiteSpace: "nowrap" }}>
-                  {seg.pct.toFixed(0)}%
-                </span>
-              )}
-            </div>
-          ))}
+        <div style={{ display: "flex", gap: 24, alignItems: "center", flexWrap: "wrap" }}>
+          <ResponsiveContainer width="100%" height={280} minWidth={280}>
+            <PieChart>
+              <Pie
+                data={breakdownSegments}
+                dataKey="value"
+                nameKey="label"
+                cx="50%"
+                cy="50%"
+                outerRadius={100}
+                innerRadius={50}
+                label={(props: any) => `${props.label} ${props.pct.toFixed(0)}%`}
+                labelLine
+              >
+                {breakdownSegments.map((seg, i) => (
+                  <Cell key={i} fill={seg.color} />
+                ))}
+              </Pie>
+              <Tooltip formatter={(value: any) => fmt(value)} />
+            </PieChart>
+          </ResponsiveContainer>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12, marginTop: 16 }}>
           {breakdownSegments.map((seg) => (
             <div key={seg.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", background: "#f9fafb", borderRadius: 8 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -351,47 +356,17 @@ export default function TaxSavingsReserveClient() {
           </div>
         </div>
 
-        {/* Monthly bar chart */}
+        {/* Monthly Gross Commission Chart */}
         <h4 style={{ margin: "0 0 12px 0", fontSize: 14, fontWeight: 700 }}>Monthly Gross Commission</h4>
-        <div style={{ display: "flex", gap: 4, alignItems: "flex-end", height: 120 }}>
-          {monthlyData.map((m) => {
-            const maxGross = Math.max(...monthlyData.map((d) => d.grossCommission));
-            const heightPct = maxGross > 0 ? (m.grossCommission / maxGross) * 100 : 0;
-            const isSelected = m.month === selectedMonth;
-            const monthNum = parseInt(m.month.split("-")[1]);
-            return (
-              <div
-                key={m.month}
-                onClick={() => setSelectedMonth(m.month)}
-                style={{
-                  flex: 1,
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  cursor: "pointer",
-                }}
-              >
-                <div style={{ fontSize: 9, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>
-                  {fmt(m.grossCommission).replace("$", "")}
-                </div>
-                <div
-                  style={{
-                    width: "100%",
-                    height: `${heightPct}%`,
-                    minHeight: 4,
-                    background: isSelected ? "#3b82f6" : "#dbeafe",
-                    borderRadius: "4px 4px 0 0",
-                    border: isSelected ? "2px solid #1d4ed8" : "none",
-                    transition: "all 0.2s",
-                  }}
-                />
-                <div style={{ fontSize: 10, marginTop: 4, fontWeight: isSelected ? 700 : 400, color: isSelected ? "#1d4ed8" : "#6b7280" }}>
-                  {MONTH_NAMES[monthNum - 1].slice(0, 3)}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <ResponsiveContainer width="100%" height={200}>
+          <AreaChart data={monthlyData.map((m) => ({ ...m, label: MONTH_NAMES[parseInt(m.month.split("-")[1]) - 1].slice(0, 3) }))} margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+            <YAxis tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 10 }} />
+            <Tooltip formatter={(value: any) => fmt(value)} />
+            <Area type="monotone" dataKey="grossCommission" name="Gross Commission" fill="#dbeafe" stroke="#3b82f6" strokeWidth={2} />
+          </AreaChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );

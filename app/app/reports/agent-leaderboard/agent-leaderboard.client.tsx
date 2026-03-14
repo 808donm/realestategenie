@@ -3,6 +3,10 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import jsPDF from "jspdf";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
+  RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
+} from "recharts";
 
 const fmt = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 
@@ -242,6 +246,40 @@ export default function AgentLeaderboardClient() {
               : "0"}% showing-to-close rate
           </div>
         </div>
+      </div>
+
+      {/* Closings & Volume Chart */}
+      <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20, marginBottom: 20 }}>
+        <h3 style={{ margin: "0 0 16px 0", fontSize: 15, fontWeight: 700 }}>Closings & Commission by Agent</h3>
+        <ResponsiveContainer width="100%" height={300}>
+          <BarChart data={sorted} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-15} textAnchor="end" height={50} />
+            <YAxis yAxisId="left" tick={{ fontSize: 11 }} />
+            <YAxis yAxisId="right" orientation="right" tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11 }} />
+            <Tooltip formatter={(value: any, name: any) => name === "Commission" ? fmt.format(value) : value} />
+            <Legend />
+            <Bar yAxisId="left" dataKey="closings" name="Closings" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+            <Bar yAxisId="right" dataKey="commissionEarned" name="Commission" fill="#10b981" radius={[4, 4, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Activity Comparison Chart */}
+      <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20, marginBottom: 20 }}>
+        <h3 style={{ margin: "0 0 16px 0", fontSize: 15, fontWeight: 700 }}>Activity Comparison</h3>
+        <ResponsiveContainer width="100%" height={300}>
+          <BarChart data={sorted} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-15} textAnchor="end" height={50} />
+            <YAxis tick={{ fontSize: 11 }} />
+            <Tooltip />
+            <Legend />
+            <Bar dataKey="callsMade" name="Calls" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="smsSent" name="SMS" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="showingsBooked" name="Showings" fill="#ec4899" radius={[4, 4, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
       </div>
 
       {/* Data Table */}

@@ -3,6 +3,10 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import jsPDF from "jspdf";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
+  PieChart, Pie,
+} from "recharts";
 
 /* ---------- helpers ---------- */
 const fmt = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
@@ -196,6 +200,49 @@ export default function BrokerageMarketShareClient() {
         <div style={card("#F3E5F5")}>
           <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 4 }}>Total Market Volume</div>
           <div style={{ fontSize: 26, fontWeight: 800 }}>{fmt.format(totalVol)}</div>
+        </div>
+      </div>
+
+      {/* Market Share Pie Chart */}
+      <div style={{ display: "flex", gap: 16, marginBottom: 28, flexWrap: "wrap" }}>
+        <div style={{ flex: "1 1 300px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}>
+          <h3 style={{ margin: "0 0 12px 0", fontSize: 15, fontWeight: 700 }}>Market Share by Volume</h3>
+          <ResponsiveContainer width="100%" height={260}>
+            <PieChart>
+              <Pie
+                data={leaderboard}
+                dataKey="marketShare"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                outerRadius={90}
+                innerRadius={40}
+                label={(props: any) => props.marketShare > 8 ? `${props.name.split(" ")[0]} ${pct(props.marketShare)}` : ""}
+                labelLine={false}
+              >
+                {leaderboard.map((b, i) => (
+                  <Cell key={i} fill={b.isYours ? "#1565C0" : ["#90CAF9", "#64B5F6", "#42A5F5", "#29B6F6", "#26C6DA", "#4DB6AC", "#81C784"][i % 7]} />
+                ))}
+              </Pie>
+              <Tooltip formatter={(value: any) => pct(value)} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+        <div style={{ flex: "2 1 400px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}>
+          <h3 style={{ margin: "0 0 12px 0", fontSize: 15, fontWeight: 700 }}>Transactions by Brokerage</h3>
+          <ResponsiveContainer width="100%" height={260}>
+            <BarChart data={leaderboard} layout="vertical" margin={{ top: 5, right: 20, bottom: 5, left: 80 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis type="number" tick={{ fontSize: 11 }} />
+              <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={75} />
+              <Tooltip />
+              <Bar dataKey="transactions" name="Transactions" radius={[0, 4, 4, 0]}>
+                {leaderboard.map((b, i) => (
+                  <Cell key={i} fill={b.isYours ? "#1565C0" : "#90CAF9"} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </div>
 

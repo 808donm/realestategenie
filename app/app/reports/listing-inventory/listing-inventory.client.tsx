@@ -3,6 +3,10 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import jsPDF from "jspdf";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
+  PieChart, Pie,
+} from "recharts";
 
 const fmt = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 
@@ -228,28 +232,43 @@ export default function ListingInventoryClient() {
         </div>
       </div>
 
-      {/* DOM Distribution Mini Chart */}
-      <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20, marginBottom: 20 }}>
-        <h3 style={{ margin: "0 0 16px 0", fontSize: 15, fontWeight: 700 }}>Days on Market Distribution</h3>
-        <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 120 }}>
-          {domBuckets.map((bucket) => (
-            <div key={bucket.label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-              <div style={{ fontSize: 12, fontWeight: 700 }}>{bucket.count}</div>
-              <div
-                style={{
-                  width: "100%",
-                  maxWidth: 60,
-                  height: `${Math.max((bucket.count / maxBucketCount) * 80, 4)}px`,
-                  background: bucket.color,
-                  borderRadius: "4px 4px 0 0",
-                  transition: "height 0.3s ease",
-                }}
-              />
-              <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600 }}>{bucket.label}</div>
-            </div>
-          ))}
+      {/* DOM Distribution Charts */}
+      <div style={{ display: "flex", gap: 16, marginBottom: 20, flexWrap: "wrap" }}>
+        <div style={{ flex: "2 1 400px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20 }}>
+          <h3 style={{ margin: "0 0 16px 0", fontSize: 15, fontWeight: 700 }}>Days on Market Distribution</h3>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={domBuckets} margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis dataKey="label" tick={{ fontSize: 12 }} />
+              <YAxis tick={{ fontSize: 11 }} />
+              <Tooltip />
+              <Bar dataKey="count" name="Listings" radius={[6, 6, 0, 0]}>
+                {domBuckets.map((b, i) => <Cell key={i} fill={b.color} />)}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
         </div>
-        <div style={{ textAlign: "center", fontSize: 11, color: "#9ca3af", marginTop: 8 }}>Days on Market</div>
+        <div style={{ flex: "1 1 280px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20 }}>
+          <h3 style={{ margin: "0 0 16px 0", fontSize: 15, fontWeight: 700 }}>Status Breakdown</h3>
+          {(() => {
+            const statusCounts = [
+              { name: "Active", value: data.filter((l) => l.status === "Active").length, color: "#10b981" },
+              { name: "Price Reduced", value: data.filter((l) => l.status === "Active - Price Reduced").length, color: "#f59e0b" },
+              { name: "Pending", value: data.filter((l) => l.status === "Pending").length, color: "#3b82f6" },
+              { name: "Coming Soon", value: data.filter((l) => l.status === "Coming Soon").length, color: "#8b5cf6" },
+            ].filter((d) => d.value > 0);
+            return (
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie data={statusCounts} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={75} innerRadius={35} label={(props: any) => `${props.name}: ${props.value}`}>
+                    {statusCounts.map((d, i) => <Cell key={i} fill={d.color} />)}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            );
+          })()}
+        </div>
       </div>
 
       {/* Price Adjustment Alert */}

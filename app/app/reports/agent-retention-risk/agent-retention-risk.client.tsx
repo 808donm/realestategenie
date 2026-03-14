@@ -3,6 +3,10 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import jsPDF from "jspdf";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell,
+  PieChart, Pie,
+} from "recharts";
 
 /* ---------- types ---------- */
 type RiskLevel = "Low" | "Medium" | "High" | "Critical";
@@ -194,6 +198,49 @@ export default function AgentRetentionRiskClient() {
           <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 4 }}>Biggest Drop</div>
           <div style={{ fontSize: 16, fontWeight: 800 }}>{biggestDrop.name}</div>
           <div style={{ fontSize: 13, color: "#C62828", fontWeight: 700 }}>{biggestDrop.change.toFixed(1)}%</div>
+        </div>
+      </div>
+
+      {/* Risk Distribution Pie */}
+      <div style={{ display: "flex", gap: 16, marginBottom: 28, flexWrap: "wrap" }}>
+        <div style={{ flex: "1 1 300px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}>
+          <h3 style={{ margin: "0 0 12px 0", fontSize: 15, fontWeight: 700 }}>Risk Distribution</h3>
+          {(() => {
+            const riskCounts = [
+              { name: "Low", value: enriched.filter((a) => a.risk === "Low").length, color: "#2E7D32" },
+              { name: "Medium", value: enriched.filter((a) => a.risk === "Medium").length, color: "#F57F17" },
+              { name: "High", value: enriched.filter((a) => a.risk === "High").length, color: "#E65100" },
+              { name: "Critical", value: enriched.filter((a) => a.risk === "Critical").length, color: "#C62828" },
+            ].filter((d) => d.value > 0);
+            return (
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie data={riskCounts} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} innerRadius={40} label={(props: any) => `${props.name}: ${props.value}`}>
+                    {riskCounts.map((d, i) => <Cell key={i} fill={d.color} />)}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            );
+          })()}
+        </div>
+        <div style={{ flex: "2 1 400px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}>
+          <h3 style={{ margin: "0 0 12px 0", fontSize: 15, fontWeight: 700 }}>Activity Score: Current vs Previous</h3>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={sorted} margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis dataKey="name" tick={{ fontSize: 9 }} interval={0} angle={-25} textAnchor="end" height={60} />
+              <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="previousScore" name="Previous 30d" fill="#93c5fd" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="currentScore" name="Current 30d" radius={[4, 4, 0, 0]}>
+                {sorted.map((a) => (
+                  <Cell key={a.name} fill={a.risk === "Critical" ? "#C62828" : a.risk === "High" ? "#E65100" : a.risk === "Medium" ? "#F57F17" : "#2E7D32"} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </div>
 

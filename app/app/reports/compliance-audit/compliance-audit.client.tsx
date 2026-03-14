@@ -3,6 +3,10 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import jsPDF from "jspdf";
+import {
+  PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid,
+} from "recharts";
 
 /* ---------- types ---------- */
 type EventType = "Document Signed" | "ID Verified" | "Wire Instructions Sent" | "Disclosure Submitted";
@@ -177,6 +181,54 @@ export default function ComplianceAuditClient() {
         <div style={card("#FFEBEE")}>
           <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 4 }}>Missing / Overdue</div>
           <div style={{ fontSize: 26, fontWeight: 800, color: "#C62828" }}>{missingCount}</div>
+        </div>
+      </div>
+
+      {/* Status + Event Type Charts */}
+      <div style={{ display: "flex", gap: 16, marginBottom: 24, flexWrap: "wrap" }}>
+        <div style={{ flex: "1 1 280px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}>
+          <h3 style={{ margin: "0 0 12px 0", fontSize: 15, fontWeight: 700 }}>Status Breakdown</h3>
+          {(() => {
+            const statusData = [
+              { name: "Complete", value: completeCount, color: "#2E7D32" },
+              { name: "Pending", value: pendingCount, color: "#F57F17" },
+              { name: "Missing", value: missingCount, color: "#C62828" },
+            ];
+            return (
+              <ResponsiveContainer width="100%" height={200}>
+                <PieChart>
+                  <Pie data={statusData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={75} innerRadius={35} label={(props: any) => `${props.name}: ${props.value}`}>
+                    {statusData.map((d, i) => <Cell key={i} fill={d.color} />)}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            );
+          })()}
+        </div>
+        <div style={{ flex: "2 1 400px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}>
+          <h3 style={{ margin: "0 0 12px 0", fontSize: 15, fontWeight: 700 }}>Events by Type</h3>
+          {(() => {
+            const typeData = EVENT_TYPES.map((t) => ({
+              name: t,
+              Complete: events.filter((e) => e.eventType === t && e.status === "Complete").length,
+              Pending: events.filter((e) => e.eventType === t && e.status === "Pending").length,
+              Missing: events.filter((e) => e.eventType === t && e.status === "Missing").length,
+            }));
+            return (
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={typeData} margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="name" tick={{ fontSize: 9 }} interval={0} />
+                  <YAxis tick={{ fontSize: 11 }} />
+                  <Tooltip />
+                  <Bar dataKey="Complete" stackId="a" fill="#2E7D32" />
+                  <Bar dataKey="Pending" stackId="a" fill="#F57F17" />
+                  <Bar dataKey="Missing" stackId="a" fill="#C62828" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            );
+          })()}
         </div>
       </div>
 

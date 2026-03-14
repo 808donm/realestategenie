@@ -3,6 +3,10 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import jsPDF from "jspdf";
 import Link from "next/link";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
+  PieChart, Pie,
+} from "recharts";
 
 interface SpeedToLeadData {
   avgResponseMin: number;
@@ -139,54 +143,57 @@ export default function SpeedToLeadClient() {
         </div>
       </div>
 
-      {/* Response Distribution */}
+      {/* Response Distribution Pie Chart */}
       <div style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 24 }}>
         <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>Response Time Distribution</h3>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12 }}>
-          {[
-            { label: "< 5 min", count: data.under5min, color: "#059669" },
-            { label: "5-15 min", count: data.under15min, color: "#22c55e" },
-            { label: "15-60 min", count: data.under1hr, color: "#eab308" },
-            { label: "> 60 min", count: data.over1hr, color: "#dc2626" },
-          ].map((b) => (
-            <div key={b.label} style={{ textAlign: "center" }}>
-              <div style={{ height: 80, display: "flex", alignItems: "flex-end", justifyContent: "center", marginBottom: 8 }}>
-                <div style={{ width: "60%", background: b.color, borderRadius: "4px 4px 0 0", height: `${data.totalLeads > 0 ? (b.count / data.totalLeads) * 100 : 0}%`, minHeight: 4 }} />
-              </div>
-              <div style={{ fontSize: 13, fontWeight: 600 }}>{b.count}</div>
-              <div style={{ fontSize: 11, color: "#6b7280" }}>{b.label}</div>
-            </div>
-          ))}
-        </div>
+        {(() => {
+          const distData = [
+            { name: "< 5 min", value: data.under5min, color: "#059669" },
+            { name: "5-15 min", value: data.under15min, color: "#22c55e" },
+            { name: "15-60 min", value: data.under1hr, color: "#eab308" },
+            { name: "> 60 min", value: data.over1hr, color: "#dc2626" },
+          ];
+          return (
+            <ResponsiveContainer width="100%" height={280}>
+              <PieChart>
+                <Pie
+                  data={distData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={100}
+                  innerRadius={45}
+                  label={(props: any) => `${props.name}: ${props.value}`}
+                  labelLine
+                >
+                  {distData.map((d, i) => (
+                    <Cell key={i} fill={d.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          );
+        })()}
       </div>
 
-      {/* Hourly Breakdown */}
+      {/* Hourly Breakdown Bar Chart */}
       <div style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 24 }}>
         <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>Average Response by Time of Day</h3>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
-              <th style={{ padding: "8px 0", textAlign: "left", fontSize: 12, color: "#6b7280" }}>Time</th>
-              <th style={{ padding: "8px 0", textAlign: "left", fontSize: 12, color: "#6b7280" }}>Leads</th>
-              <th style={{ padding: "8px 0", textAlign: "left", fontSize: 12, color: "#6b7280" }}>Avg Response</th>
-              <th style={{ padding: "8px 0", textAlign: "left", fontSize: 12, color: "#6b7280", width: "40%" }}></th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.hourlyBreakdown.map((h) => (
-              <tr key={h.hour} style={{ borderBottom: "1px solid #f3f4f6" }}>
-                <td style={{ padding: "8px 0", fontSize: 13 }}>{h.hour}</td>
-                <td style={{ padding: "8px 0", fontSize: 13 }}>{h.count}</td>
-                <td style={{ padding: "8px 0", fontSize: 13, fontWeight: 600, color: h.avg <= 15 ? "#059669" : h.avg <= 30 ? "#eab308" : "#dc2626" }}>{h.avg} min</td>
-                <td style={{ padding: "8px 0" }}>
-                  <div style={{ height: 8, background: "#f3f4f6", borderRadius: 4, overflow: "hidden" }}>
-                    <div style={{ height: "100%", width: `${(h.avg / maxHourlyAvg) * 100}%`, background: h.avg <= 15 ? "#059669" : h.avg <= 30 ? "#eab308" : "#dc2626", borderRadius: 4 }} />
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <ResponsiveContainer width="100%" height={280}>
+          <BarChart data={data.hourlyBreakdown} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <XAxis dataKey="hour" tick={{ fontSize: 10 }} interval={0} />
+            <YAxis tick={{ fontSize: 11 }} label={{ value: "Minutes", angle: -90, position: "insideLeft", style: { fontSize: 11 } }} />
+            <Tooltip formatter={(value: any) => `${value} min`} />
+            <Bar dataKey="avg" name="Avg Response (min)" radius={[4, 4, 0, 0]}>
+              {data.hourlyBreakdown.map((h, i) => (
+                <Cell key={i} fill={h.avg <= 15 ? "#059669" : h.avg <= 30 ? "#eab308" : "#dc2626"} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
       </div>
 
       {/* Recommendation */}

@@ -3,6 +3,10 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import jsPDF from "jspdf";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
+  PieChart, Pie, Cell,
+} from "recharts";
 
 const fmt = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 const fmtPrecise = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -202,6 +206,43 @@ export default function TeamCommissionSplitClient() {
         <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 16, borderTop: "3px solid #f59e0b" }}>
           <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>House %</div>
           <div style={{ fontSize: 20, fontWeight: 800, color: "#d97706" }}>{totals.housePct.toFixed(1)}%</div>
+        </div>
+      </div>
+
+      {/* Commission Split Charts */}
+      <div style={{ display: "flex", gap: 16, marginBottom: 20, flexWrap: "wrap" }}>
+        <div style={{ flex: "1 1 280px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20 }}>
+          <h3 style={{ margin: "0 0 12px 0", fontSize: 15, fontWeight: 700 }}>Agent vs House Split</h3>
+          {(() => {
+            const splitData = [
+              { name: "Agent Portion", value: totals.totalAgent, color: "#10b981" },
+              { name: "House Portion", value: totals.totalHouse, color: "#3b82f6" },
+            ];
+            return (
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie data={splitData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} innerRadius={40} label={(props: any) => `${props.name}: ${fmt.format(props.value)}`}>
+                    {splitData.map((d, i) => <Cell key={i} fill={d.color} />)}
+                  </Pie>
+                  <Tooltip formatter={(value: any) => fmt.format(value)} />
+                </PieChart>
+              </ResponsiveContainer>
+            );
+          })()}
+        </div>
+        <div style={{ flex: "2 1 400px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20 }}>
+          <h3 style={{ margin: "0 0 12px 0", fontSize: 15, fontWeight: 700 }}>Commission by Deal</h3>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={data.map((d) => ({ address: d.propertyAddress.split(" ").slice(0, 2).join(" "), agent: agentPortion(d), house: housePortion(d) }))} margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis dataKey="address" tick={{ fontSize: 9 }} interval={0} angle={-20} textAnchor="end" height={50} />
+              <YAxis tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 10 }} />
+              <Tooltip formatter={(value: any) => fmt.format(value)} />
+              <Legend />
+              <Bar dataKey="agent" name="Agent" stackId="a" fill="#10b981" />
+              <Bar dataKey="house" name="House" stackId="a" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </div>
 

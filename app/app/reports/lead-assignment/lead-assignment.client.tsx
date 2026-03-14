@@ -3,6 +3,9 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import jsPDF from "jspdf";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine,
+} from "recharts";
 
 type Period = "this_month" | "last_30" | "this_quarter" | "ytd";
 
@@ -200,56 +203,38 @@ export default function LeadAssignmentClient() {
         </button>
       </div>
 
-      {/* Distribution Bar Chart */}
+      {/* Lead Distribution Bar Chart */}
       <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20, marginBottom: 20 }}>
         <h3 style={{ margin: "0 0 16px 0", fontSize: 15, fontWeight: 700 }}>Lead Distribution</h3>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {data.map((agent) => (
-            <div key={agent.name} style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{ width: 120, fontSize: 13, fontWeight: 600, flexShrink: 0 }}>{agent.name.split(" ")[0]}</div>
-              <div style={{ flex: 1, background: "#f3f4f6", borderRadius: 4, height: 24, position: "relative" }}>
-                <div
-                  style={{
-                    width: `${(agent.leadsReceived / maxLeads) * 100}%`,
-                    background: barColor(agent),
-                    height: "100%",
-                    borderRadius: 4,
-                    transition: "width 0.3s ease",
-                    minWidth: 2,
-                  }}
-                />
-                {/* Average line */}
-                <div
-                  style={{
-                    position: "absolute",
-                    left: `${(avgLeads / maxLeads) * 100}%`,
-                    top: -2,
-                    bottom: -2,
-                    width: 2,
-                    background: "#6b7280",
-                    borderRadius: 1,
-                  }}
-                />
-              </div>
-              <div style={{ width: 60, fontSize: 13, fontWeight: 600, textAlign: "right" }}>
-                {agent.leadsReceived}
-              </div>
-            </div>
-          ))}
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 12, fontSize: 11, color: "#6b7280" }}>
-          <div style={{ width: 16, height: 2, background: "#6b7280" }} />
-          Average: {avgLeads.toFixed(1)} leads
-          <span style={{ marginLeft: 16, display: "inline-flex", alignItems: "center", gap: 4 }}>
-            <span style={{ width: 10, height: 10, borderRadius: 2, background: "#10b981", display: "inline-block" }} /> Fair
-          </span>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-            <span style={{ width: 10, height: 10, borderRadius: 2, background: "#f59e0b", display: "inline-block" }} /> Slight skew
-          </span>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-            <span style={{ width: 10, height: 10, borderRadius: 2, background: "#ef4444", display: "inline-block" }} /> Significant skew
-          </span>
-        </div>
+        <ResponsiveContainer width="100%" height={280}>
+          <BarChart data={data.map((a) => ({ ...a, firstName: a.name.split(" ")[0] }))} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <XAxis dataKey="firstName" tick={{ fontSize: 12 }} />
+            <YAxis tick={{ fontSize: 11 }} />
+            <Tooltip />
+            <Legend />
+            <ReferenceLine y={avgLeads} stroke="#6b7280" strokeDasharray="5 5" label={{ value: `Avg: ${avgLeads.toFixed(1)}`, position: "right", style: { fontSize: 11 } }} />
+            <Bar dataKey="leadsReceived" name="Leads Received" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="leadsConverted" name="Converted" fill="#10b981" radius={[4, 4, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Conversion Rate Chart */}
+      <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20, marginBottom: 20 }}>
+        <h3 style={{ margin: "0 0 16px 0", fontSize: 15, fontWeight: 700 }}>Conversion Rate & Response Time</h3>
+        <ResponsiveContainer width="100%" height={260}>
+          <BarChart data={data.map((a) => ({ name: a.name.split(" ")[0], convRate: parseFloat(conversionRate(a)), avgResponseTime: a.avgResponseTime }))} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+            <YAxis yAxisId="left" tickFormatter={(v: number) => `${v}%`} tick={{ fontSize: 11 }} />
+            <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} label={{ value: "min", angle: 90, position: "insideRight", style: { fontSize: 11 } }} />
+            <Tooltip />
+            <Legend />
+            <Bar yAxisId="left" dataKey="convRate" name="Conv. Rate %" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+            <Bar yAxisId="right" dataKey="avgResponseTime" name="Avg Response (min)" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
       </div>
 
       {/* Data Table */}

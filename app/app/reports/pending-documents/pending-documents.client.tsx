@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import jsPDF from "jspdf";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 
 interface PendingDocument {
   id: string;
@@ -177,24 +178,46 @@ export default function PendingDocumentsClient() {
         </div>
       )}
 
-      {/* Summary Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 24 }}>
-        <div style={{ ...cardStyle, borderTop: "3px solid #3b82f6" }}>
-          <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Total Documents</div>
-          <div style={{ fontSize: 28, fontWeight: 700 }}>{totalDocs}</div>
+      {/* Summary Cards + Chart */}
+      <div style={{ display: "flex", gap: 16, marginBottom: 24, flexWrap: "wrap" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16, flex: "2 1 360px" }}>
+          <div style={{ ...cardStyle, borderTop: "3px solid #3b82f6" }}>
+            <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Total Documents</div>
+            <div style={{ fontSize: 28, fontWeight: 700 }}>{totalDocs}</div>
+          </div>
+          <div style={{ ...cardStyle, borderTop: "3px solid #16a34a" }}>
+            <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Signed / Complete</div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: "#16a34a" }}>{signedCount}</div>
+          </div>
+          <div style={{ ...cardStyle, borderTop: "3px solid #ca8a04" }}>
+            <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Pending</div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: "#ca8a04" }}>{pendingCount}</div>
+          </div>
+          <div style={{ ...cardStyle, borderTop: "3px solid #dc2626" }}>
+            <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Missing / Overdue</div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: "#dc2626" }}>{missingCount}</div>
+            <div style={{ fontSize: 11, color: "#dc2626" }}>{overdueCount} overdue</div>
+          </div>
         </div>
-        <div style={{ ...cardStyle, borderTop: "3px solid #16a34a" }}>
-          <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Signed / Complete</div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: "#16a34a" }}>{signedCount}</div>
-        </div>
-        <div style={{ ...cardStyle, borderTop: "3px solid #ca8a04" }}>
-          <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Pending</div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: "#ca8a04" }}>{pendingCount}</div>
-        </div>
-        <div style={{ ...cardStyle, borderTop: "3px solid #dc2626" }}>
-          <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Missing / Overdue</div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: "#dc2626" }}>{missingCount}</div>
-          <div style={{ fontSize: 11, color: "#dc2626" }}>{overdueCount} overdue</div>
+        <div style={{ ...cardStyle, flex: "1 1 260px" }}>
+          <h3 style={{ margin: "0 0 8px 0", fontSize: 14, fontWeight: 700 }}>Document Status</h3>
+          {(() => {
+            const pieData = [
+              { name: "Signed", value: signedCount, color: "#16a34a" },
+              { name: "Pending", value: pendingCount, color: "#ca8a04" },
+              { name: "Missing", value: missingCount, color: "#dc2626" },
+            ];
+            return (
+              <ResponsiveContainer width="100%" height={180}>
+                <PieChart>
+                  <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} innerRadius={30} label={(props: any) => `${props.name}: ${props.value}`}>
+                    {pieData.map((d, i) => <Cell key={i} fill={d.color} />)}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            );
+          })()}
         </div>
       </div>
 

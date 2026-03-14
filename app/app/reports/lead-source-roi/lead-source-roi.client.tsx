@@ -3,6 +3,10 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import jsPDF from "jspdf";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
+  ScatterChart, Scatter, ZAxis, Cell,
+} from "recharts";
 
 interface LeadSource {
   name: string;
@@ -234,40 +238,48 @@ export default function LeadSourceROIClient() {
         </div>
       </div>
 
-      {/* Bar Chart - Revenue by Source */}
+      {/* Revenue vs Spend Bar Chart */}
       <div style={{ ...cardStyle, marginBottom: 24 }}>
-        <h3 style={{ margin: "0 0 20px 0", fontSize: 16, fontWeight: 700 }}>Revenue by Lead Source</h3>
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {sources
-            .sort((a, b) => b.revenue - a.revenue)
-            .map((s) => (
-              <div key={s.name} style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{ width: 120, fontSize: 13, fontWeight: 600, flexShrink: 0 }}>{s.name}</div>
-                <div style={{ flex: 1, height: 28, background: "#f3f4f6", borderRadius: 6, overflow: "hidden", position: "relative" }}>
-                  <div
-                    style={{
-                      height: "100%",
-                      width: `${(s.revenue / maxRevenue) * 100}%`,
-                      background: s.roi > 500 ? "#10b981" : s.roi > 200 ? "#3b82f6" : s.roi > 0 ? "#f59e0b" : "#ef4444",
-                      borderRadius: 6,
-                      display: "flex",
-                      alignItems: "center",
-                      paddingLeft: 8,
-                      transition: "width 0.3s ease",
-                    }}
-                  >
-                    <span style={{ fontSize: 11, fontWeight: 600, color: "#fff", whiteSpace: "nowrap" }}>
-                      {fmt(s.revenue)}
-                    </span>
-                  </div>
-                </div>
-                <div style={{ width: 60, fontSize: 12, color: s.roi > 500 ? "#059669" : s.roi > 200 ? "#1d4ed8" : "#6b7280", fontWeight: 600, textAlign: "right" }}>
-                  {s.roi.toFixed(0)}% ROI
-                </div>
-              </div>
-            ))}
-        </div>
-        <div style={{ display: "flex", gap: 16, marginTop: 16, fontSize: 11, color: "#6b7280" }}>
+        <h3 style={{ margin: "0 0 20px 0", fontSize: 16, fontWeight: 700 }}>Revenue vs Spend by Lead Source</h3>
+        <ResponsiveContainer width="100%" height={320}>
+          <BarChart data={[...sources].sort((a, b) => b.revenue - a.revenue)} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-20} textAnchor="end" height={60} />
+            <YAxis tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11 }} />
+            <Tooltip formatter={(value: any) => fmt(value)} />
+            <Legend />
+            <Bar dataKey="revenue" name="Revenue" fill="#10b981" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="totalSpend" name="Spend" fill="#ef4444" radius={[4, 4, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* ROI Bubble Chart */}
+      <div style={{ ...cardStyle, marginBottom: 24 }}>
+        <h3 style={{ margin: "0 0 20px 0", fontSize: 16, fontWeight: 700 }}>ROI vs Conversion Rate</h3>
+        <p style={{ margin: "0 0 12px 0", fontSize: 12, color: "#6b7280" }}>Bubble size = revenue generated</p>
+        <ResponsiveContainer width="100%" height={300}>
+          <ScatterChart margin={{ top: 10, right: 20, bottom: 10, left: 20 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <XAxis dataKey="conversionRate" name="Conversion %" unit="%" tick={{ fontSize: 11 }} />
+            <YAxis dataKey="roi" name="ROI" unit="%" tick={{ fontSize: 11 }} />
+            <ZAxis dataKey="revenue" range={[60, 400]} />
+            <Tooltip
+              formatter={(value: any, name: any) => {
+                if (name === "ROI") return `${value.toFixed(0)}%`;
+                if (name === "Conversion %") return `${value.toFixed(1)}%`;
+                return fmt(value);
+              }}
+              labelFormatter={() => ""}
+            />
+            <Scatter name="Lead Sources" data={sources}>
+              {sources.map((s, i) => (
+                <Cell key={i} fill={s.roi > 500 ? "#10b981" : s.roi > 200 ? "#3b82f6" : s.roi > 0 ? "#f59e0b" : "#ef4444"} />
+              ))}
+            </Scatter>
+          </ScatterChart>
+        </ResponsiveContainer>
+        <div style={{ display: "flex", gap: 16, marginTop: 8, fontSize: 11, color: "#6b7280" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
             <div style={{ width: 10, height: 10, borderRadius: 2, background: "#10b981" }} /> ROI &gt; 500%
           </div>

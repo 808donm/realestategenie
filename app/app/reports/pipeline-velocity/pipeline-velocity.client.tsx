@@ -3,6 +3,9 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import jsPDF from "jspdf";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell,
+} from "recharts";
 
 interface PipelineStage {
   name: string;
@@ -239,6 +242,42 @@ export default function PipelineVelocityClient() {
           <div style={{ fontSize: 28, fontWeight: 700, color: "#d97706" }}>{stuckDeals.length}</div>
           <div style={{ fontSize: 12, color: "#6b7280" }}>leads in stage 2x+ longer than avg</div>
         </div>
+      </div>
+
+      {/* Avg Days per Stage Chart */}
+      <div style={{ ...cardStyle, marginBottom: 24 }}>
+        <h3 style={{ margin: "0 0 20px 0", fontSize: 16, fontWeight: 700 }}>Average Days in Each Stage</h3>
+        <ResponsiveContainer width="100%" height={280}>
+          <BarChart data={stages.filter((s) => s.name !== "Closed")} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+            <YAxis tick={{ fontSize: 11 }} label={{ value: "Days", angle: -90, position: "insideLeft", style: { fontSize: 12 } }} />
+            <Tooltip formatter={(value: any) => `${value} days`} />
+            <Bar dataKey="avgDays" name="Avg Days" radius={[6, 6, 0, 0]}>
+              {stages.filter((s) => s.name !== "Closed").map((s) => (
+                <Cell key={s.name} fill={s.name === bottleneckStage.name ? "#ef4444" : "#3b82f6"} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Conversion Rate Chart */}
+      <div style={{ ...cardStyle, marginBottom: 24 }}>
+        <h3 style={{ margin: "0 0 20px 0", fontSize: 16, fontWeight: 700 }}>Conversion Rate by Stage</h3>
+        <ResponsiveContainer width="100%" height={280}>
+          <BarChart data={stages.filter((s) => s.name !== "Closed")} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+            <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} tickFormatter={(v: number) => `${v}%`} />
+            <Tooltip formatter={(value: any) => `${value}%`} />
+            <Bar dataKey="conversionToNext" name="Conversion %" radius={[6, 6, 0, 0]}>
+              {stages.filter((s) => s.name !== "Closed").map((s) => (
+                <Cell key={s.name} fill={s.conversionToNext >= 70 ? "#10b981" : s.conversionToNext >= 40 ? "#f59e0b" : "#ef4444"} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
       </div>
 
       {/* Funnel Visualization */}

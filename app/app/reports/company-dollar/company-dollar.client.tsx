@@ -3,6 +3,18 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import jsPDF from "jspdf";
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 
 /* ---------- helpers ---------- */
 const fmt = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
@@ -216,21 +228,38 @@ export default function CompanyDollarClient() {
         </div>
       </div>
 
-      {/* bar chart */}
+      {/* Stacked Bar Chart — Revenue Breakdown */}
       <div style={{ marginBottom: 28 }}>
-        <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Monthly Company Dollar Trend</h3>
-        <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 180 }}>
-          {rows.map((r) => {
-            const h = maxCD > 0 ? (r.companyDollar / maxCD) * 160 : 0;
-            return (
-              <div key={r.month} style={{ flex: "1 1 0", display: "flex", flexDirection: "column", alignItems: "center" }}>
-                <div style={{ fontSize: 10, fontWeight: 700, marginBottom: 4 }}>{fmt.format(r.companyDollar)}</div>
-                <div style={{ width: "80%", height: h, background: "linear-gradient(180deg, #43A047, #66BB6A)", borderRadius: "6px 6px 0 0" }} />
-                <div style={{ fontSize: 9, marginTop: 4, textAlign: "center", opacity: 0.7 }}>{r.month.slice(0, 3)}</div>
-              </div>
-            );
-          })}
-        </div>
+        <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Monthly Revenue Breakdown</h3>
+        <ResponsiveContainer width="100%" height={320}>
+          <BarChart data={rows.map((r) => ({ name: r.month.slice(0, 3), "Agent Splits": r.agentSplits, Fees: r.fees, OpEx: r.opEx, "Company Dollar": r.companyDollar }))}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+            <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+            <YAxis tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`} tick={{ fontSize: 12 }} width={55} />
+            <Tooltip formatter={(value: any) => fmt.format(value)} />
+            <Legend />
+            <Bar dataKey="Agent Splits" stackId="a" fill="#93c5fd" radius={[0, 0, 0, 0]} />
+            <Bar dataKey="Fees" stackId="a" fill="#fbbf24" />
+            <Bar dataKey="OpEx" stackId="a" fill="#f87171" />
+            <Bar dataKey="Company Dollar" stackId="a" fill="#4ade80" radius={[4, 4, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Line Chart — Company Dollar Trend */}
+      <div style={{ marginBottom: 28 }}>
+        <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Company Dollar Trend</h3>
+        <ResponsiveContainer width="100%" height={280}>
+          <LineChart data={rows.map((r) => ({ name: r.month.slice(0, 3), "Company Dollar": r.companyDollar, "Gross Revenue": r.grossRevenue }))}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+            <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+            <YAxis tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`} tick={{ fontSize: 12 }} width={55} />
+            <Tooltip formatter={(value: any) => fmt.format(value)} />
+            <Legend />
+            <Line type="monotone" dataKey="Gross Revenue" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} />
+            <Line type="monotone" dataKey="Company Dollar" stroke="#16a34a" strokeWidth={2.5} dot={{ r: 4 }} />
+          </LineChart>
+        </ResponsiveContainer>
       </div>
 
       {/* data table */}

@@ -19,6 +19,32 @@ export default async function ReportsPage() {
         Business intelligence and performance tracking across your real estate operations
       </p>
 
+      {/* Market Statistics — Featured */}
+      <section style={{ marginBottom: 40 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+          <div style={{ width: 4, height: 24, background: "#dc2626", borderRadius: 2 }} />
+          <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800 }}>Market Statistics</h2>
+          <span style={{ fontSize: 13, color: "#6b7280" }}>Historical data with interactive charts</span>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
+          <ReportCard
+            href="/app/reports/market-statistics"
+            title="Oahu Annual Resales"
+            description="40 years of residential sales data with line, bar, and area charts. Median prices, sales volume, and YoY trends."
+            dataSources={["HiCentral MLS"]}
+            color="#dc2626"
+          />
+          <ReportCard
+            href="/app/reports/monthly-statistics"
+            title="Monthly Market Report"
+            description="January 2026: SF median $1,122,500 (+0.2%), condo median $529,000 (-1.9%). Sales, inventory, days on market, and price range breakdowns."
+            dataSources={["HiCentral MLS"]}
+            color="#dc2626"
+            badge="NEW"
+          />
+        </div>
+      </section>
+
       {/* Solo Agent Reports */}
       <section style={{ marginBottom: 40 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
