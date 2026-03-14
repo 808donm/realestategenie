@@ -116,7 +116,7 @@ function inlineFormat(text: string): string {
     );
 }
 
-export function HelpPanel() {
+export function HelpPanel({ trigger }: { trigger?: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const pathname = usePathname();
@@ -158,25 +158,29 @@ export function HelpPanel() {
 
   return (
     <>
-      {/* Help Button */}
-      <button
-        onClick={() => setIsOpen(true)}
-        className="no-underline font-bold py-2 px-3 border border-blue-300 rounded-xl bg-blue-50 text-blue-700 text-center text-sm md:text-base hover:bg-blue-100 transition-colors flex items-center justify-center gap-1.5"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 20 20"
-          fill="currentColor"
-          className="w-4 h-4 shrink-0"
+      {/* Help Button — use custom trigger if provided */}
+      {trigger ? (
+        <span onClick={() => setIsOpen(true)}>{trigger}</span>
+      ) : (
+        <button
+          onClick={() => setIsOpen(true)}
+          className="no-underline font-bold py-2 px-3 border border-blue-300 rounded-xl bg-blue-50 text-blue-700 text-center text-sm md:text-base hover:bg-blue-100 transition-colors flex items-center justify-center gap-1.5"
         >
-          <path
-            fillRule="evenodd"
-            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM8.94 6.94a.75.75 0 11-1.061-1.061 3 3 0 112.871 5.026v.345a.75.75 0 01-1.5 0v-.5c0-.72.57-1.172 1.081-1.287A1.5 1.5 0 108.94 6.94zM10 15a1 1 0 100-2 1 1 0 000 2z"
-            clipRule="evenodd"
-          />
-        </svg>
-        Help
-      </button>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            className="w-4 h-4 shrink-0"
+          >
+            <path
+              fillRule="evenodd"
+              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM8.94 6.94a.75.75 0 11-1.061-1.061 3 3 0 112.871 5.026v.345a.75.75 0 01-1.5 0v-.5c0-.72.57-1.172 1.081-1.287A1.5 1.5 0 108.94 6.94zM10 15a1 1 0 100-2 1 1 0 000 2z"
+              clipRule="evenodd"
+            />
+          </svg>
+          Help
+        </button>
+      )}
 
       {/* Backdrop */}
       {isOpen && (
