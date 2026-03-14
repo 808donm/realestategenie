@@ -166,6 +166,16 @@ export default function MonthlyStatisticsClient() {
         </div>
       </div>
 
+      {/* Market Highlights */}
+      <div style={{ ...cardStyle, marginBottom: 24 }}>
+        <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>Market Highlights</h3>
+        <ul style={{ margin: 0, padding: "0 0 0 20px", fontSize: 14, lineHeight: 2, color: "#374151" }}>
+          {data.highlights.map((h, i) => (
+            <li key={i}>{h}</li>
+          ))}
+        </ul>
+      </div>
+
       {/* Trend Line Charts (only shown when 2+ months of data) */}
       {hasMultipleMonths && (
         <>
@@ -333,39 +343,29 @@ export default function MonthlyStatisticsClient() {
         </div>
       </div>
 
-      {/* Inventory Pie Chart + Highlights */}
-      <div style={{ display: "flex", gap: 16, marginBottom: 24, flexWrap: "wrap" }}>
-        <div style={{ ...cardStyle, flex: "1 1 300px" }}>
-          <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>Active Inventory Split</h3>
-          <ResponsiveContainer width="100%" height={260}>
-            <PieChart>
-              <Pie
-                data={inventoryPie}
-                dataKey="value"
-                nameKey="name"
-                cx="50%"
-                cy="50%"
-                outerRadius={90}
-                innerRadius={45}
-                label={(props: any) => `${props.name}: ${props.value.toLocaleString()}`}
-                labelLine
-              >
-                {inventoryPie.map((d, i) => <Cell key={i} fill={d.color} />)}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-          <div style={{ textAlign: "center", fontSize: 13, color: "#6b7280" }}>
-            Total: {(sf.activeInventory + cd.activeInventory).toLocaleString()} active listings
-          </div>
-        </div>
-        <div style={{ ...cardStyle, flex: "2 1 500px" }}>
-          <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>Market Highlights</h3>
-          <ul style={{ margin: 0, padding: "0 0 0 20px", fontSize: 14, lineHeight: 2, color: "#374151" }}>
-            {data.highlights.map((h, i) => (
-              <li key={i}>{h}</li>
-            ))}
-          </ul>
+      {/* Active Inventory Split */}
+      <div style={{ ...cardStyle, marginBottom: 24 }}>
+        <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>Active Inventory Split</h3>
+        <ResponsiveContainer width="100%" height={260}>
+          <PieChart>
+            <Pie
+              data={inventoryPie}
+              dataKey="value"
+              nameKey="name"
+              cx="50%"
+              cy="50%"
+              outerRadius={90}
+              innerRadius={45}
+              label={(props: any) => `${props.name}: ${props.value.toLocaleString()}`}
+              labelLine
+            >
+              {inventoryPie.map((d, i) => <Cell key={i} fill={d.color} />)}
+            </Pie>
+            <Tooltip />
+          </PieChart>
+        </ResponsiveContainer>
+        <div style={{ textAlign: "center", fontSize: 13, color: "#6b7280" }}>
+          Total: {(sf.activeInventory + cd.activeInventory).toLocaleString()} active listings
         </div>
       </div>
 

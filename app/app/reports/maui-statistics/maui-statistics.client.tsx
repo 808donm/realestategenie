@@ -174,6 +174,16 @@ export default function MauiStatisticsClient() {
         </div>
       </div>
 
+      {/* Market Highlights */}
+      <div style={{ ...cardStyle, marginBottom: 24 }}>
+        <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>Market Highlights</h3>
+        <ul style={{ margin: 0, padding: "0 0 0 20px", fontSize: 14, lineHeight: 2, color: "#374151" }}>
+          {data.highlights.map((h, i) => (
+            <li key={i}>{h}</li>
+          ))}
+        </ul>
+      </div>
+
       {/* Median Price Trend Line Chart */}
       <div style={{ ...cardStyle, marginBottom: 24 }}>
         <h3 style={{ margin: "0 0 20px 0", fontSize: 16, fontWeight: 700 }}>Median Sales Price Trend (12 Months)</h3>
@@ -506,16 +516,6 @@ export default function MauiStatisticsClient() {
             ))}
           </tbody>
         </table>
-      </div>
-
-      {/* Market Highlights */}
-      <div style={{ ...cardStyle, marginBottom: 24 }}>
-        <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>Market Highlights</h3>
-        <ul style={{ margin: 0, padding: "0 0 0 20px", fontSize: 14, lineHeight: 2, color: "#374151" }}>
-          {data.highlights.map((h, i) => (
-            <li key={i}>{h}</li>
-          ))}
-        </ul>
       </div>
 
       {/* Source Attribution */}

@@ -223,6 +223,19 @@ export default function HawaiiMarketComparisonClient() {
         })}
       </div>
 
+      {/* Key Takeaways */}
+      <div style={{ ...cardStyle, marginBottom: 24 }}>
+        <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>Key Takeaways</h3>
+        <ul style={{ margin: 0, padding: "0 0 0 20px", fontSize: 14, lineHeight: 2, color: "#374151" }}>
+          <li><strong>Statewide SF median:</strong> {fmt(sw.singleFamily.totalMedianPrice2026)} ({yoyText(sw.singleFamily.totalMedianPriceChange)} YoY) — {sw.singleFamily.totalSales2026} total sales.</li>
+          <li><strong>Statewide condo median:</strong> {fmt(sw.condo.totalMedianPrice2026)} ({yoyText(sw.condo.totalMedianPriceChange)} YoY) — {sw.condo.totalSales2026} total sales.</li>
+          <li><strong>Most affordable SF:</strong> Hawai&apos;i Island at {fmt(sw.singleFamily.counties.find((c) => c.county === "Hawai'i")!.medianPrice2026)}.</li>
+          <li><strong>Highest SF prices:</strong> {(() => { const sorted = [...sw.singleFamily.counties].sort((a, b) => b.medianPrice2026 - a.medianPrice2026); return `${sorted[0].county} at ${fmt(sorted[0].medianPrice2026)}`; })()}.</li>
+          <li><strong>O&apos;ahu drives volume:</strong> {sw.singleFamily.counties.find((c) => c.county === "O'ahu")!.sales2026 + sw.condo.counties.find((c) => c.county === "O'ahu")!.sales2026} of {sw.singleFamily.totalSales2026 + sw.condo.totalSales2026} total statewide sales ({((sw.singleFamily.counties.find((c) => c.county === "O'ahu")!.sales2026 + sw.condo.counties.find((c) => c.county === "O'ahu")!.sales2026) / (sw.singleFamily.totalSales2026 + sw.condo.totalSales2026) * 100).toFixed(0)}%).</li>
+          <li><strong>Sales declining statewide:</strong> SF {yoyText(sw.singleFamily.totalSalesChange)}, Condo {yoyText(sw.condo.totalSalesChange)} year-over-year.</li>
+        </ul>
+      </div>
+
       {/* Trend Line Charts */}
       {hasMultipleMonths && (
         <div style={{ display: "flex", gap: 16, marginBottom: 24, flexWrap: "wrap" }}>
@@ -591,19 +604,6 @@ export default function HawaiiMarketComparisonClient() {
           </table>
         </div>
       )}
-
-      {/* Key Takeaways */}
-      <div style={{ ...cardStyle, marginBottom: 24 }}>
-        <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>Key Takeaways</h3>
-        <ul style={{ margin: 0, padding: "0 0 0 20px", fontSize: 14, lineHeight: 2, color: "#374151" }}>
-          <li><strong>Statewide SF median:</strong> {fmt(sw.singleFamily.totalMedianPrice2026)} ({yoyText(sw.singleFamily.totalMedianPriceChange)} YoY) — {sw.singleFamily.totalSales2026} total sales.</li>
-          <li><strong>Statewide condo median:</strong> {fmt(sw.condo.totalMedianPrice2026)} ({yoyText(sw.condo.totalMedianPriceChange)} YoY) — {sw.condo.totalSales2026} total sales.</li>
-          <li><strong>Most affordable SF:</strong> Hawai&apos;i Island at {fmt(sw.singleFamily.counties.find((c) => c.county === "Hawai'i")!.medianPrice2026)}.</li>
-          <li><strong>Highest SF prices:</strong> {(() => { const sorted = [...sw.singleFamily.counties].sort((a, b) => b.medianPrice2026 - a.medianPrice2026); return `${sorted[0].county} at ${fmt(sorted[0].medianPrice2026)}`; })()}.</li>
-          <li><strong>O&apos;ahu drives volume:</strong> {sw.singleFamily.counties.find((c) => c.county === "O'ahu")!.sales2026 + sw.condo.counties.find((c) => c.county === "O'ahu")!.sales2026} of {sw.singleFamily.totalSales2026 + sw.condo.totalSales2026} total statewide sales ({((sw.singleFamily.counties.find((c) => c.county === "O'ahu")!.sales2026 + sw.condo.counties.find((c) => c.county === "O'ahu")!.sales2026) / (sw.singleFamily.totalSales2026 + sw.condo.totalSales2026) * 100).toFixed(0)}%).</li>
-          <li><strong>Sales declining statewide:</strong> SF {yoyText(sw.singleFamily.totalSalesChange)}, Condo {yoyText(sw.condo.totalSalesChange)} year-over-year.</li>
-        </ul>
-      </div>
 
       {/* Source Attribution */}
       <div style={{ fontSize: 12, color: "#9ca3af", textAlign: "center", padding: "12px 0", lineHeight: 1.8 }}>
