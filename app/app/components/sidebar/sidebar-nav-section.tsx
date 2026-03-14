@@ -40,7 +40,7 @@ export default function SidebarNavSection({
       {/* Section header */}
       <button
         onClick={onToggle}
-        className="flex items-center gap-2 w-full px-3 py-1.5 mx-0 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 transition-colors"
+        className="flex items-center gap-2 w-full px-3 py-1.5 mx-0 text-xs font-semibold uppercase tracking-wider text-black dark:text-gray-200 hover:text-gray-700 dark:hover:text-gray-100 transition-colors"
       >
         <Icon className="w-3.5 h-3.5" />
         <span className="flex-1 text-left">{section.label}</span>

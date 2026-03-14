@@ -117,7 +117,7 @@ export default function AppSidebar({
         {visibleConditionalItems.length > 0 && (
           <div className="py-1">
             {!isCollapsed && (
-              <div className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+              <div className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-black dark:text-gray-200">
                 More
               </div>
             )}
