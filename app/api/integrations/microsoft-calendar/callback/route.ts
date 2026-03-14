@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const tenant = process.env.MICROSOFT_CALENDAR_TENANT_ID || "organizations";
+    const tenant = process.env.MICROSOFT_CALENDAR_TENANT_ID || "common";
     const response = await fetch(
       `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`,
       {

@@ -33,7 +33,7 @@ export async function GET() {
     { onConflict: "agent_id,provider" }
   );
 
-  const tenant = process.env.MICROSOFT_CALENDAR_TENANT_ID || "organizations";
+  const tenant = process.env.MICROSOFT_CALENDAR_TENANT_ID || "common";
 
   const params = new URLSearchParams({
     client_id: process.env.MICROSOFT_CALENDAR_CLIENT_ID!,
