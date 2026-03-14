@@ -53,6 +53,59 @@ export type MauiMonthlyMarketData = {
 
 export const MAUI_MONTHLY_DATA: MauiMonthlyMarketData[] = [
   {
+    month: "2026-01",
+    label: "January 2026",
+    singleFamily: {
+      closedSales: 52,
+      closedSalesYoY: -11.9,
+      medianPrice: 1445000,
+      medianPriceYoY: 20.4,
+      avgPrice: 1934139,
+      avgPriceYoY: 34.2,
+      dom: 186,
+      domYoY: 53.7,
+      pendingSales: 73,
+      pendingSalesYoY: 55.3,
+      newListings: 115,
+      newListingsYoY: 8.5,
+      inventory: 457,
+      inventoryYoY: 10.7,
+      monthsSupply: 7.9,
+      monthsSupplyYoY: 11.3,
+      pctListPriceReceived: 95.2,
+      pctListPriceReceivedYoY: -0.4,
+    },
+    condo: {
+      closedSales: 44,
+      closedSalesYoY: -20.0,
+      medianPrice: 629950,
+      medianPriceYoY: -6.7,
+      avgPrice: 926475,
+      avgPriceYoY: -11.2,
+      dom: 166,
+      domYoY: 20.3,
+      pendingSales: 65,
+      pendingSalesYoY: 4.8,
+      newListings: 144,
+      newListingsYoY: -14.3,
+      inventory: 923,
+      inventoryYoY: 13.1,
+      monthsSupply: 15.8,
+      monthsSupplyYoY: 17.9,
+      pctListPriceReceived: 93.9,
+      pctListPriceReceivedYoY: -0.7,
+    },
+    headline: "SF prices surge while sales decline; condo market slows across the board",
+    highlights: [
+      "SF median price surged to $1,445,000 (+20.4% YoY) — highest January on record for Maui.",
+      "SF closed sales fell 11.9% (52 vs 59 YoY), despite pending sales jumping 55.3%.",
+      "SF DOM spiked to 186 days (+53.7%) — homes taking significantly longer to sell.",
+      "Condo closed sales dropped 20.0% (44 vs 55) with median price declining 6.7% to $629,950.",
+      "New listings mixed: SF up 8.5% (115) while condo listings fell 14.3% (144).",
+      "Condo inventory rose 13.1% to 923 units with 15.8 months supply — deep buyer's market.",
+    ],
+  },
+  {
     month: "2026-02",
     label: "February 2026",
     singleFamily: {
@@ -139,7 +192,7 @@ export const MAUI_MONTHLY_TRENDS: MauiMonthlyTrendRow[] = [
   { month: "2025-10", label: "Oct '25", sfClosedSales: 64, condoClosedSales: 61, sfMedianPrice: 1245000, condoMedianPrice: 637500, sfDOM: 138, condoDOM: 183, sfNewListings: 105, condoNewListings: 143, sfPendingSales: 58, condoPendingSales: 69, sfPctListPrice: 96.0, condoPctListPrice: 94.7 },
   { month: "2025-11", label: "Nov '25", sfClosedSales: 51, condoClosedSales: 51, sfMedianPrice: 1150000, condoMedianPrice: 625000, sfDOM: 148, condoDOM: 158, sfNewListings: 110, condoNewListings: 174, sfPendingSales: 53, condoPendingSales: 49, sfPctListPrice: 95.1, condoPctListPrice: 92.6 },
   { month: "2025-12", label: "Dec '25", sfClosedSales: 65, condoClosedSales: 78, sfMedianPrice: 1330000, condoMedianPrice: 641250, sfDOM: 128, condoDOM: 162, sfNewListings: 95, condoNewListings: 150, sfPendingSales: 57, condoPendingSales: 65, sfPctListPrice: 96.8, condoPctListPrice: 94.2 },
-  { month: "2026-01", label: "Jan '26", sfClosedSales: 53, condoClosedSales: 44, sfMedianPrice: 1415000, condoMedianPrice: 629950, sfDOM: 184, condoDOM: 166, sfNewListings: 115, condoNewListings: 146, sfPendingSales: 65, condoPendingSales: 64, sfPctListPrice: 95.0, condoPctListPrice: 93.9 },
+  { month: "2026-01", label: "Jan '26", sfClosedSales: 52, condoClosedSales: 44, sfMedianPrice: 1445000, condoMedianPrice: 629950, sfDOM: 186, condoDOM: 166, sfNewListings: 115, condoNewListings: 144, sfPendingSales: 73, condoPendingSales: 65, sfPctListPrice: 95.2, condoPctListPrice: 93.9 },
   { month: "2026-02", label: "Feb '26", sfClosedSales: 46, condoClosedSales: 64, sfMedianPrice: 1250000, condoMedianPrice: 847500, sfDOM: 156, condoDOM: 138, sfNewListings: 80, condoNewListings: 133, sfPendingSales: 70, condoPendingSales: 88, sfPctListPrice: 95.4, condoPctListPrice: 94.4 },
 ];
 
@@ -165,7 +218,7 @@ export const MAUI_AFFORDABILITY_TRENDS: MauiAffordabilityRow[] = [
   { month: "2025-10", label: "Oct '25", sfIndex: 35, condoIndex: 67 },
   { month: "2025-11", label: "Nov '25", sfIndex: 37, condoIndex: 68 },
   { month: "2025-12", label: "Dec '25", sfIndex: 32, condoIndex: 67 },
-  { month: "2026-01", label: "Jan '26", sfIndex: 31, condoIndex: 69 },
+  { month: "2026-01", label: "Jan '26", sfIndex: 30, condoIndex: 69 },
   { month: "2026-02", label: "Feb '26", sfIndex: 35, condoIndex: 52 },
 ];
 

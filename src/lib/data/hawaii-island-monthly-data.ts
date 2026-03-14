@@ -43,6 +43,49 @@ export type HawaiiIslandMonthlyData = {
 
 export const HAWAII_ISLAND_MONTHLY_DATA: HawaiiIslandMonthlyData[] = [
   {
+    month: "2026-01",
+    label: "January 2026",
+    singleFamily: {
+      medianPrice: 574500,
+      dom: 73,
+      domDirection: "up",
+      activeListings: 942,
+      newListings: 277,
+      prevYearNewListings: 301,
+      soldListings: 154,
+      prevYearSoldListings: 172,
+    },
+    condo: {
+      medianPrice: 615000,
+      dom: 97,
+      domDirection: "down",
+      activeListings: 346,
+      newListings: 102,
+      prevYearNewListings: 96,
+      soldListings: 41,
+      prevYearSoldListings: 39,
+    },
+    land: {
+      medianPrice: 46000,
+      dom: 122,
+      domDirection: "up",
+      activeListings: 1170,
+      newListings: 198,
+      prevYearNewListings: 239,
+      soldListings: 103,
+      prevYearSoldListings: 134,
+    },
+    headline: "SF prices stable, condo activity edges up while land slows",
+    highlights: [
+      "SF median price $574,500 (up from Dec 2025), DOM 73 days (rising).",
+      "Condo new listings rose 6.3% (102 vs 96) and sales up 5.1% (41 vs 39).",
+      "Condo median price declined to $615,000 with 97 DOM (falling).",
+      "Land market contracting: new listings -17.2% (198 vs 239), sales -23.1% (103 vs 134).",
+      "SF new listings down 8.0% (277 vs 301), sold listings down 10.5% (154 vs 172).",
+      "Land inventory at 1,170 active listings with a $46,000 median price.",
+    ],
+  },
+  {
     month: "2026-02",
     label: "February 2026",
     singleFamily: {

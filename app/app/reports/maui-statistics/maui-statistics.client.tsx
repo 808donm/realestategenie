@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useState, useMemo } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell,
   LineChart, Line,
@@ -29,7 +29,16 @@ const COLORS = {
 };
 
 export default function MauiStatisticsClient() {
-  const data = MAUI_MONTHLY_DATA[MAUI_MONTHLY_DATA.length - 1];
+  const [selectedMonth, setSelectedMonth] = useState(
+    MAUI_MONTHLY_DATA[MAUI_MONTHLY_DATA.length - 1].month
+  );
+
+  const data = useMemo(() => {
+    return MAUI_MONTHLY_DATA.find((m) => m.month === selectedMonth) ?? MAUI_MONTHLY_DATA[MAUI_MONTHLY_DATA.length - 1];
+  }, [selectedMonth]);
+
+  const hasMultipleMonths = MAUI_MONTHLY_DATA.length > 1;
+
   const sf = data.singleFamily;
   const cd = data.condo;
 
@@ -90,14 +99,27 @@ export default function MauiStatisticsClient() {
   return (
     <div>
       {/* Header */}
-      <div style={{ padding: "20px 24px", background: "linear-gradient(135deg, #0c4a6e 0%, #0284c7 100%)", borderRadius: 12, color: "#fff", marginBottom: 24 }}>
-        <div style={{ fontSize: 22, fontWeight: 800, marginBottom: 8 }}>{data.label}</div>
-        <div style={{ fontSize: 14, opacity: 0.9 }}>
-          Maui County Housing Market: {data.headline}
+      <div style={{ padding: "20px 24px", background: "linear-gradient(135deg, #0c4a6e 0%, #0284c7 100%)", borderRadius: 12, color: "#fff", marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+        <div>
+          <div style={{ fontSize: 22, fontWeight: 800, marginBottom: 8 }}>{data.label}</div>
+          <div style={{ fontSize: 14, opacity: 0.9 }}>
+            Maui County Housing Market: {data.headline}
+          </div>
+          <div style={{ fontSize: 11, opacity: 0.7, marginTop: 8 }}>
+            Source: REALTORS® Association of Maui, Inc. / ShowingTime Plus, LLC
+          </div>
         </div>
-        <div style={{ fontSize: 11, opacity: 0.7, marginTop: 8 }}>
-          Source: REALTORS® Association of Maui, Inc. / ShowingTime Plus, LLC
-        </div>
+        {hasMultipleMonths && (
+          <select
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+            style={{ padding: "8px 14px", borderRadius: 8, border: "none", fontSize: 14, fontWeight: 600, cursor: "pointer", background: "rgba(255,255,255,0.2)", color: "#fff" }}
+          >
+            {MAUI_MONTHLY_DATA.map((m) => (
+              <option key={m.month} value={m.month} style={{ color: "#0c4a6e" }}>{m.label}</option>
+            ))}
+          </select>
+        )}
       </div>
 
       {/* KPI Cards — Row 1: Prices */}
