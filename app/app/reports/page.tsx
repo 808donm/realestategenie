@@ -50,6 +50,30 @@ export default async function ReportsPage() {
             color="#dc2626"
             badge="NEW"
           />
+          <ReportCard
+            href="/app/reports/hawaii-island-statistics"
+            title="Hawai'i Island Monthly"
+            description="Big Island: SF, condo & land — median prices, DOM, new vs sold listings with YoY comparisons."
+            dataSources={["HIS"]}
+            color="#dc2626"
+            badge="NEW"
+          />
+          <ReportCard
+            href="/app/reports/kauai-statistics"
+            title="Kaua'i Monthly"
+            description="Garden Isle: SF median $1.37M, condo $637K, land $1.23M. Sales, inventory, and DOM by property type."
+            dataSources={["HIS"]}
+            color="#dc2626"
+            badge="NEW"
+          />
+          <ReportCard
+            href="/app/reports/hawaii-market-comparison"
+            title="Statewide Comparison"
+            description="Side-by-side: O'ahu, Maui, Hawai'i Island & Kaua'i — median prices, sales volume, DOM, and inventory across all four counties."
+            dataSources={["HiCentral MLS", "RAM MLS", "HIS"]}
+            color="#dc2626"
+            badge="NEW"
+          />
         </div>
       </section>
 
