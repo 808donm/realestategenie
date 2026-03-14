@@ -1,5 +1,6 @@
 import { supabaseServer } from "@/lib/supabase/server";
 import ContactsClient from "./contacts.client";
+import PageHelp from "../components/page-help";
 
 export default async function ContactsPage() {
   const supabase = await supabaseServer();
@@ -22,7 +23,10 @@ export default async function ContactsPage() {
   return (
     <div>
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 28, fontWeight: 700, margin: 0 }}>Contacts</h1>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <h1 style={{ fontSize: 28, fontWeight: 700, margin: 0 }}>Contacts</h1>
+          <PageHelp title="Contacts" description="Your CRM contacts synced from GoHighLevel. Search, view details, and take action on any contact." tips={["Use Call, Text, or Email buttons for quick outreach", "Click a contact to view full details and history"]} />
+        </div>
         <p style={{ opacity: 0.7, marginTop: 4 }}>
           Manage your contacts
         </p>

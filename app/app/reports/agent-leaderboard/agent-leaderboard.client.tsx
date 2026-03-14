@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import jsPDF from "jspdf";
+import * as XLSX from "xlsx";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
@@ -133,6 +134,22 @@ export default function AgentLeaderboardClient() {
     doc.save("agent-leaderboard.pdf");
   };
 
+  const exportToExcel = () => {
+    const rows = sorted.map(row => ({
+      Agent: row.name,
+      Closings: row.closings,
+      "Calls Made": row.callsMade,
+      "SMS Sent": row.smsSent,
+      Showings: row.showingsBooked,
+      "Total Volume": row.totalVolume,
+      "Commission Earned": row.commissionEarned,
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Report");
+    XLSX.writeFile(wb, "Agent_Leaderboard.xlsx");
+  };
+
   const arrow = (key: SortKey) => (sortKey === key ? (sortDir === "asc" ? " ▲" : " ▼") : "");
 
   const thStyle = (key: SortKey): React.CSSProperties => ({
@@ -204,21 +221,26 @@ export default function AgentLeaderboardClient() {
             </button>
           ))}
         </div>
-        <button
-          onClick={exportPDF}
-          style={{
-            padding: "8px 18px",
-            borderRadius: 6,
-            border: "none",
-            background: "#7c3aed",
-            color: "#fff",
-            fontWeight: 700,
-            fontSize: 13,
-            cursor: "pointer",
-          }}
-        >
-          Export PDF
-        </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            onClick={exportPDF}
+            style={{
+              padding: "8px 18px",
+              borderRadius: 6,
+              border: "none",
+              background: "#7c3aed",
+              color: "#fff",
+              fontWeight: 700,
+              fontSize: 13,
+              cursor: "pointer",
+            }}
+          >
+            Export PDF
+          </button>
+          <button onClick={exportToExcel} style={{ padding: "8px 20px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>
+            Export Excel
+          </button>
+        </div>
       </div>
 
       {/* Summary Cards */}

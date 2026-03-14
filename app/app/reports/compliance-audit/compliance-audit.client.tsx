@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import jsPDF from "jspdf";
+import * as XLSX from "xlsx";
 import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -130,6 +131,20 @@ export default function ComplianceAuditClient() {
     doc.save("compliance-audit-log.pdf");
   };
 
+  const exportToExcel = () => {
+    const rows = filtered.map(e => ({
+      Date: e.date,
+      "Event Type": e.eventType,
+      Property: e.property,
+      Agent: e.agent,
+      Status: e.status,
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Report");
+    XLSX.writeFile(wb, "Compliance_Audit_Log.xlsx");
+  };
+
   const card = (bg: string): React.CSSProperties => ({
     background: bg,
     borderRadius: 12,
@@ -247,12 +262,17 @@ export default function ComplianceAuditClient() {
           {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
         <div style={{ flex: 1 }} />
-        <button
-          onClick={exportPDF}
-          style={{ padding: "7px 18px", borderRadius: 8, border: "1px solid #ddd", background: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer" }}
-        >
-          Export PDF
-        </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            onClick={exportPDF}
+            style={{ padding: "7px 18px", borderRadius: 8, border: "1px solid #ddd", background: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer" }}
+          >
+            Export PDF
+          </button>
+          <button onClick={exportToExcel} style={{ padding: "8px 20px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>
+            Export Excel
+          </button>
+        </div>
       </div>
 
       {/* table */}

@@ -6,6 +6,7 @@ import UsageWarningBanner from "./components/usage-warning-banner";
 import ChangePasswordForm from "./change-password/change-password-form";
 import AppSidebar from "./components/sidebar/app-sidebar";
 import MobileBottomBar from "./components/sidebar/mobile-bottom-bar";
+import GlobalSearch from "./components/global-search";
 
 import { getSubscriptionStatus, getSuggestedUpgradePlan } from "@/lib/subscriptions/utils";
 import { checkFeatureAccess } from "@/lib/subscriptions/server-utils";
@@ -116,6 +117,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             suggestedPlan={suggestedPlan}
           />
         )}
+
+        {/* Global Search Bar */}
+        <div className="noprint" style={{ padding: "12px 16px 0", maxWidth: 1100, margin: "0 auto", width: "100%" }}>
+          <GlobalSearch />
+        </div>
 
         <main className="flex-1">
           <div className="max-w-[1100px] mx-auto px-4 py-5 pb-20 md:pb-5">

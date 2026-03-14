@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import jsPDF from "jspdf";
+import * as XLSX from "xlsx";
 
 interface Contact {
   id: string;
@@ -143,6 +145,53 @@ export default function ContactsClient() {
     return a.localeCompare(b);
   });
 
+  const exportContacts = (format: "pdf" | "xlsx") => {
+    const rows = contacts.map((c) => ({
+      name: getDisplayName(c),
+      email: c.email || "",
+      phone: c.phone || "",
+      city: c.city || "",
+      state: c.state || "",
+      tags: (c.tags || []).join(", "),
+    }));
+    if (format === "xlsx") {
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Contacts");
+      XLSX.writeFile(wb, `Contacts_Export_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    } else {
+      const doc = new jsPDF();
+      const pw = doc.internal.pageSize.getWidth();
+      let y = 20;
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      doc.text("Contacts Export", pw / 2, y, { align: "center" });
+      y += 8;
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Generated ${new Date().toLocaleDateString()} | ${rows.length} contacts`, pw / 2, y, { align: "center" });
+      y += 12;
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "bold");
+      const cols = [14, 55, 100, 145, 170];
+      ["Name", "Email", "Phone", "City", "Tags"].forEach((h, i) => doc.text(h, cols[i], y));
+      y += 2;
+      doc.line(14, y, pw - 14, y);
+      y += 5;
+      doc.setFont("helvetica", "normal");
+      rows.forEach((r) => {
+        if (y > 275) { doc.addPage(); y = 20; }
+        doc.text(r.name.slice(0, 20), cols[0], y);
+        doc.text(r.email.slice(0, 22), cols[1], y);
+        doc.text(r.phone.slice(0, 18), cols[2], y);
+        doc.text(r.city.slice(0, 14), cols[3], y);
+        doc.text(r.tags.slice(0, 18), cols[4], y);
+        y += 5;
+      });
+      doc.save(`Contacts_Export_${new Date().toISOString().slice(0, 10)}.pdf`);
+    }
+  };
+
   return (
     <div>
       {/* Search and Add Button */}
@@ -161,6 +210,10 @@ export default function ContactsClient() {
               fontSize: 14,
             }}
           />
+        </div>
+        <div className="noprint" style={{ display: "flex", gap: 8 }}>
+          <button onClick={() => exportContacts("xlsx")} style={{ padding: "12px 14px", fontSize: 12, fontWeight: 600, border: "1px solid #d1d5db", borderRadius: 8, background: "#fff", color: "#374151", cursor: "pointer" }}>Export Excel</button>
+          <button onClick={() => exportContacts("pdf")} style={{ padding: "12px 14px", fontSize: 12, fontWeight: 600, border: "none", borderRadius: 8, background: "#dc2626", color: "#fff", cursor: "pointer" }}>Export PDF</button>
         </div>
         <button
           onClick={() => setShowAddForm(!showAddForm)}
@@ -404,9 +457,12 @@ export default function ContactsClient() {
                         </div>
                       )}
                       {contact.phone && (
-                        <div style={{ fontSize: 13, color: "#6b7280", marginTop: 2 }}>
+                        <div style={{ fontSize: 13, color: "#6b7280", marginTop: 2, display: "flex", alignItems: "center", gap: 6 }}>
                           <a href={`tel:${contact.phone}`} onClick={(e) => e.stopPropagation()} style={{ color: "#3b82f6" }}>
                             {contact.phone}
+                          </a>
+                          <a href={`sms:${contact.phone}`} onClick={(e) => e.stopPropagation()} title="Text" style={{ padding: "2px 6px", background: "#eff6ff", color: "#2563eb", borderRadius: 4, fontSize: 10, fontWeight: 600, textDecoration: "none" }}>
+                            Text
                           </a>
                         </div>
                       )}

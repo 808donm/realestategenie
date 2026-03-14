@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect, useCallback } from "react";
 import jsPDF from "jspdf";
+import * as XLSX from "xlsx";
 import Link from "next/link";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
@@ -94,6 +95,31 @@ export default function SpeedToLeadClient() {
       ["No Response (24hr):", `${data.noResponse24hr} leads`],
     ].forEach(([l, v]) => { doc.text(l, 25, y); doc.text(v, pw - 25, y, { align: "right" }); y += 6; });
     doc.save(`Speed_To_Lead_Audit.pdf`);
+  };
+
+  const exportToExcel = () => {
+    const summaryRows = [
+      { Metric: "Grade", Value: `${grade.letter} - ${grade.label}` },
+      { Metric: "Average Response (min)", Value: data.avgResponseMin },
+      { Metric: "Median Response (min)", Value: data.medianResponseMin },
+      { Metric: "Total Leads", Value: data.totalLeads },
+      { Metric: "Under 5 min", Value: data.under5min },
+      { Metric: "5-15 min", Value: data.under15min },
+      { Metric: "15-60 min", Value: data.under1hr },
+      { Metric: "Over 60 min", Value: data.over1hr },
+      { Metric: "No Response (24hr)", Value: data.noResponse24hr },
+    ];
+    const hourlyRows = data.hourlyBreakdown.map(h => ({
+      "Time Window": h.hour,
+      "Avg Response (min)": h.avg,
+      "Lead Count": h.count,
+    }));
+    const wb = XLSX.utils.book_new();
+    const ws1 = XLSX.utils.json_to_sheet(summaryRows);
+    XLSX.utils.book_append_sheet(wb, ws1, "Summary");
+    const ws2 = XLSX.utils.json_to_sheet(hourlyRows);
+    XLSX.utils.book_append_sheet(wb, ws2, "Hourly Breakdown");
+    XLSX.writeFile(wb, "Speed_To_Lead_Audit.xlsx");
   };
 
   return (
@@ -206,9 +232,14 @@ export default function SpeedToLeadClient() {
         </p>
       </div>
 
-      <button onClick={exportToPDF} style={{ padding: "12px 24px", background: "#dc2626", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer" }}>
-        Export PDF
-      </button>
+      <div style={{ display: "flex", gap: 8 }}>
+        <button onClick={exportToPDF} style={{ padding: "12px 24px", background: "#dc2626", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer" }}>
+          Export PDF
+        </button>
+        <button onClick={exportToExcel} style={{ padding: "8px 20px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>
+          Export Excel
+        </button>
+      </div>
     </div>
   );
 }

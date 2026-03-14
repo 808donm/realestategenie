@@ -242,3 +242,131 @@ body {
 .animate-slide-up {
   animation: slide-up 0.3s ease-out;
 }
+
+/* Calculator drawer slide-in animation */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* ==============================
+   Print-only utility class
+   (hidden on screen, visible in print)
+   ============================== */
+.print-only {
+  display: none !important;
+}
+
+/* ==============================
+   Print Styles
+   ============================== */
+@media print {
+  /* --- Hide navigation elements --- */
+  /* Sidebar (aside wrapper from AppSidebar) */
+  aside,
+  nav,
+  [data-sidebar],
+  [role="navigation"] {
+    display: none !important;
+  }
+
+  /* Mobile bottom bar (fixed bottom bar) */
+  .fixed.bottom-0,
+  [data-mobile-bar] {
+    display: none !important;
+  }
+
+  /* Action buttons, toolbars, and misc non-print elements */
+  button,
+  .noprint,
+  [data-noprint] {
+    display: none !important;
+  }
+
+  /* Analyzer link in nav */
+  a[href="/app/analyzers"] {
+    display: none !important;
+  }
+
+  /* Print-only elements become visible */
+  .print-only {
+    display: block !important;
+  }
+
+  /* --- Full-width main content --- */
+  .max-w-\[1100px\] {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  /* Ensure the flex-1 content area takes full width */
+  .flex-1.min-w-0 {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* --- Clean print appearance --- */
+  html {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  body {
+    padding: 0 !important;
+    margin: 0 !important;
+    background: white !important;
+    color: black !important;
+    font-size: 12pt;
+  }
+
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Remove all box shadows */
+  * {
+    box-shadow: none !important;
+  }
+
+  /* --- Table handling --- */
+  table {
+    border-collapse: collapse;
+  }
+
+  tr {
+    break-inside: avoid;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  /* --- Charts / graphs: page break before if needed --- */
+  canvas,
+  svg.recharts-surface,
+  .recharts-wrapper,
+  [data-chart] {
+    break-before: auto;
+    break-inside: avoid;
+    page-break-before: auto;
+    page-break-inside: avoid;
+  }
+
+  /* --- Images should not overflow page --- */
+  img {
+    max-width: 100% !important;
+    break-inside: avoid;
+  }
+
+  /* --- Links: show URL after link text (optional, useful for reports) --- */
+  a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.8em;
+    color: #555;
+  }
+}

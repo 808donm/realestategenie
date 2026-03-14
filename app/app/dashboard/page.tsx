@@ -11,6 +11,7 @@ import QuickActions from "./quick-actions";
 import AIBriefingCard from "./ai-briefing-card";
 import PipelineStats from "./pipeline-stats";
 import { PIPELINE_STAGES, PIPELINE_STAGE_LABELS } from "@/lib/pipeline-stages";
+import PageHelp from "../components/page-help";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -221,6 +222,11 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <h1 style={{ fontSize: 28, fontWeight: 900, margin: 0 }}>Dashboard</h1>
+        <PageHelp title="Dashboard" description="Your daily command center showing key metrics, upcoming open houses, and recent lead activity." tips={["Hot leads (score 80+) need immediate follow-up", "Click any metric card to see details"]} />
+      </div>
+
       {/* Profile completion alert */}
       {missing.length > 0 && (
         <Card className="border-warning bg-warning/5">

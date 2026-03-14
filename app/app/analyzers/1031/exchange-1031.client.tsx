@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import AttachToContact from "@/components/attach-to-contact";
 import MLSImport, { type MLSPropertyData } from "@/components/mls-import";
 import {
   calculateTimeline,
@@ -423,6 +425,95 @@ export default function Exchange1031Client({ savedExchanges, investmentPropertie
     XLSX.writeFile(wb, fileName);
   };
 
+  const generateFile = useCallback((format: "pdf" | "xlsx"): Blob => {
+    if (format === "xlsx") {
+      const wb = XLSX.utils.book_new();
+      const data: (string | number | string)[][] = [
+        ["1031 EXCHANGE ANALYSIS"],
+        ["Generated", new Date().toLocaleString()],
+        ["Exchange Name", exchangeName || "Untitled Exchange"],
+        [],
+        ["RELINQUISHED PROPERTY"],
+        ["Address", relinquishedAddress || "N/A"],
+        ["Sale Price", salePrice],
+        ["Selling Costs", sellingCosts],
+        ["Original Basis", originalBasis],
+        ["Accumulated Depreciation", accumulatedDepreciation],
+        ["Existing Mortgage", existingMortgage],
+        [],
+        ["TIMELINE"],
+        ["Sale Close Date", formatDate(timeline.saleCloseDate)],
+        ["45-Day Identification Deadline", formatDate(timeline.identificationDeadline)],
+        ["180-Day Exchange Deadline", formatDate(timeline.exchangeDeadline)],
+        [],
+        ["TAX ANALYSIS"],
+        ["Adjusted Basis", taxAnalysis.adjustedBasis],
+        ["Realized Gain", taxAnalysis.realizedGain],
+        ["Capital Gain", taxAnalysis.capitalGain],
+        ["Depreciation Recapture", taxAnalysis.depreciationRecapture],
+        [],
+        ["Tax Without Exchange", taxAnalysis.totalTaxWithoutExchange],
+        ["Tax With Exchange", taxAnalysis.taxWithExchange],
+        ["Tax Savings", taxAnalysis.taxSavings],
+        [],
+        ["REPLACEMENT REQUIREMENTS"],
+        ["Minimum Purchase Price", requirements.minimumPurchasePrice],
+        ["Minimum Equity", requirements.minimumEquity],
+        ["Minimum Debt", requirements.minimumDebt],
+      ];
+      const sheet = XLSX.utils.aoa_to_sheet(data);
+      XLSX.utils.book_append_sheet(wb, sheet, "1031 Exchange");
+      const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+      return new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    }
+    const doc = new jsPDF();
+    const pw = doc.internal.pageSize.getWidth();
+    let y = 20;
+    doc.setFontSize(18); doc.setFont("helvetica", "bold");
+    doc.text("1031 Exchange Analysis", pw / 2, y, { align: "center" }); y += 10;
+    doc.setFontSize(10); doc.setFont("helvetica", "normal");
+    doc.text(exchangeName || "Untitled Exchange", pw / 2, y, { align: "center" }); y += 14;
+    doc.setFontSize(12); doc.setFont("helvetica", "bold");
+    doc.text("Relinquished Property", 25, y); y += 8;
+    doc.setFontSize(10); doc.setFont("helvetica", "normal");
+    const relinquishedRows: [string, string][] = [
+      ["Address:", relinquishedAddress || "N/A"],
+      ["Sale Price:", formatCurrency(salePrice)],
+      ["Selling Costs:", formatCurrency(sellingCosts)],
+      ["Original Basis:", formatCurrency(originalBasis)],
+      ["Accum. Depreciation:", formatCurrency(accumulatedDepreciation)],
+      ["Existing Mortgage:", formatCurrency(existingMortgage)],
+    ];
+    relinquishedRows.forEach(([l, v]) => { doc.text(l, 30, y); doc.text(v, pw - 25, y, { align: "right" }); y += 7; });
+    y += 6;
+    doc.setFontSize(12); doc.setFont("helvetica", "bold");
+    doc.text("Tax Analysis", 25, y); y += 8;
+    doc.setFontSize(10); doc.setFont("helvetica", "normal");
+    const taxRows: [string, string][] = [
+      ["Adjusted Basis:", formatCurrency(taxAnalysis.adjustedBasis)],
+      ["Realized Gain:", formatCurrency(taxAnalysis.realizedGain)],
+      ["Capital Gain:", formatCurrency(taxAnalysis.capitalGain)],
+      ["Depreciation Recapture:", formatCurrency(taxAnalysis.depreciationRecapture)],
+      ["", ""],
+      ["Tax Without Exchange:", formatCurrency(taxAnalysis.totalTaxWithoutExchange)],
+      ["Tax With Exchange:", formatCurrency(taxAnalysis.taxWithExchange)],
+      ["Tax Savings:", formatCurrency(taxAnalysis.taxSavings)],
+    ];
+    taxRows.forEach(([l, v]) => { doc.text(l, 30, y); doc.text(v, pw - 25, y, { align: "right" }); y += 7; });
+    y += 6;
+    doc.setFontSize(12); doc.setFont("helvetica", "bold");
+    doc.text("Replacement Requirements", 25, y); y += 8;
+    doc.setFontSize(10); doc.setFont("helvetica", "normal");
+    const reqRows: [string, string][] = [
+      ["Min Purchase Price:", formatCurrency(requirements.minimumPurchasePrice)],
+      ["Min Equity:", formatCurrency(requirements.minimumEquity)],
+      ["Min Debt:", formatCurrency(requirements.minimumDebt)],
+      ["Net Equity from Sale:", formatCurrency(requirements.netEquityFromSale)],
+    ];
+    reqRows.forEach(([l, v]) => { doc.text(l, 30, y); doc.text(v, pw - 25, y, { align: "right" }); y += 7; });
+    return new Blob([doc.output("arraybuffer")], { type: "application/pdf" });
+  }, [exchangeName, relinquishedAddress, salePrice, sellingCosts, originalBasis, accumulatedDepreciation, existingMortgage, timeline, taxAnalysis, requirements]);
+
   const getStatusColor = (status: TimelineStatus["status"]) => {
     switch (status) {
       case "on_track":
@@ -741,6 +832,9 @@ export default function Exchange1031Client({ savedExchanges, investmentPropertie
           {message && (
             <span style={{ fontSize: 14, color: message.includes("Error") ? "red" : "green" }}>{message}</span>
           )}
+        </div>
+        <div style={{ marginTop: 12 }}>
+          <AttachToContact generateFile={generateFile} reportTitle="1031 Exchange Analysis" />
         </div>
       </div>
 

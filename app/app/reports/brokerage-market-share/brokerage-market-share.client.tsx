@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import jsPDF from "jspdf";
+import * as XLSX from "xlsx";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie,
@@ -139,6 +140,20 @@ export default function BrokerageMarketShareClient() {
     doc.save("brokerage-market-share.pdf");
   };
 
+  const exportToExcel = () => {
+    const rows = leaderboard.map(b => ({
+      Rank: b.rank,
+      "Brokerage Name": b.name,
+      Transactions: b.transactions,
+      Volume: b.volume,
+      "Market Share %": `${b.marketShare.toFixed(1)}%`,
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Report");
+    XLSX.writeFile(wb, "Brokerage_Market_Share.xlsx");
+  };
+
   const card = (bg: string): React.CSSProperties => ({
     background: bg,
     borderRadius: 12,
@@ -175,12 +190,17 @@ export default function BrokerageMarketShareClient() {
             {ZIP_CODES.map((z) => <option key={z} value={z}>{z}</option>)}
           </select>
         </div>
-        <button
-          onClick={exportPDF}
-          style={{ padding: "7px 18px", borderRadius: 8, border: "1px solid #ddd", background: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer" }}
-        >
-          Export PDF
-        </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            onClick={exportPDF}
+            style={{ padding: "7px 18px", borderRadius: 8, border: "1px solid #ddd", background: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer" }}
+          >
+            Export PDF
+          </button>
+          <button onClick={exportToExcel} style={{ padding: "8px 20px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>
+            Export Excel
+          </button>
+        </div>
       </div>
 
       {/* summary cards */}

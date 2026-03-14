@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import AttachToContact from "@/components/attach-to-contact";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import {
   PropertyInput,
@@ -278,6 +280,59 @@ export default function ComparePropertiesClient({ savedProperties, savedComparis
     XLSX.writeFile(wb, fileName);
   };
 
+  const generateFile = useCallback((format: "pdf" | "xlsx"): Blob => {
+    if (format === "xlsx") {
+      const wb = XLSX.utils.book_new();
+      const data: (string | number)[][] = [
+        ["PROPERTY COMPARISON REPORT"],
+        ["Generated", new Date().toLocaleString()],
+        ["Comparison", comparisonName || "Untitled Comparison"],
+        [],
+        ["Metric", ...comparisons.map((c) => c.name)],
+        ["Purchase Price", ...comparisons.map((c) => c.analysis.totalInvestment)],
+        ["Monthly Cash Flow", ...comparisons.map((c) => c.analysis.annualCashFlow / 12)],
+        ["Annual Cash Flow", ...comparisons.map((c) => c.analysis.annualCashFlow)],
+        ["NOI", ...comparisons.map((c) => c.analysis.noi)],
+        ["Cap Rate", ...comparisons.map((c) => `${c.analysis.capRate.toFixed(2)}%`)],
+        ["Cash-on-Cash", ...comparisons.map((c) => `${c.analysis.cashOnCash.toFixed(2)}%`)],
+        ["IRR", ...comparisons.map((c) => `${c.analysis.irr.toFixed(2)}%`)],
+        ["Total ROI", ...comparisons.map((c) => `${c.analysis.totalROI.toFixed(2)}%`)],
+        ["Total Profit", ...comparisons.map((c) => c.analysis.totalProfit)],
+        ["Projected Sale Price", ...comparisons.map((c) => c.analysis.projectedSalePrice)],
+      ];
+      const sheet = XLSX.utils.aoa_to_sheet(data);
+      XLSX.utils.book_append_sheet(wb, sheet, "Comparison");
+      const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+      return new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    }
+    const doc = new jsPDF();
+    const pw = doc.internal.pageSize.getWidth();
+    let y = 20;
+    doc.setFontSize(18); doc.setFont("helvetica", "bold");
+    doc.text("Compare Properties", pw / 2, y, { align: "center" }); y += 10;
+    doc.setFontSize(10); doc.setFont("helvetica", "normal");
+    doc.text(comparisonName || "Untitled Comparison", pw / 2, y, { align: "center" }); y += 14;
+    comparisons.forEach((comp) => {
+      doc.setFontSize(12); doc.setFont("helvetica", "bold");
+      doc.text(comp.name, 25, y); y += 8;
+      doc.setFontSize(10); doc.setFont("helvetica", "normal");
+      const rows: [string, string][] = [
+        ["Total Investment:", formatCurrency(comp.analysis.totalInvestment)],
+        ["Monthly Cash Flow:", formatCurrency(comp.analysis.annualCashFlow / 12)],
+        ["NOI:", formatCurrency(comp.analysis.noi)],
+        ["Cap Rate:", formatPercent(comp.analysis.capRate)],
+        ["Cash-on-Cash:", formatPercent(comp.analysis.cashOnCash)],
+        ["IRR:", formatPercent(comp.analysis.irr)],
+        ["Total ROI:", formatPercent(comp.analysis.totalROI)],
+        ["Total Profit:", formatCurrency(comp.analysis.totalProfit)],
+      ];
+      rows.forEach(([l, v]) => { doc.text(l, 30, y); doc.text(v, pw - 25, y, { align: "right" }); y += 7; });
+      y += 6;
+      if (y > 260) { doc.addPage(); y = 20; }
+    });
+    return new Blob([doc.output("arraybuffer")], { type: "application/pdf" });
+  }, [comparisons, comparisonName]);
+
   if (savedProperties.length === 0) {
     return (
       <div style={{ padding: 40, textAlign: "center", border: "1px solid #e6e6e6", borderRadius: 12 }}>
@@ -400,6 +455,9 @@ export default function ComparePropertiesClient({ savedProperties, savedComparis
             {message}
           </span>
         )}
+      </div>
+      <div style={{ marginBottom: 20 }}>
+        <AttachToContact generateFile={generateFile} reportTitle="Property Comparison" />
       </div>
 
       {/* Comparison Results */}

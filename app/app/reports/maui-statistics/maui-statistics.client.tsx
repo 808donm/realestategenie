@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import jsPDF from "jspdf";
+import * as XLSX from "xlsx";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell,
   LineChart, Line,
@@ -89,6 +91,56 @@ export default function MauiStatisticsClient() {
       .sort((a, b) => (b.feb2026Volume ?? 0) - (a.feb2026Volume ?? 0)),
   []);
 
+  const exportReport = (format: "pdf" | "xlsx") => {
+    const exportData = [
+      { Metric: "Closed Sales", "Single-Family": sf.closedSales, "SF YoY": `${sf.closedSalesYoY}%`, Condo: cd.closedSales, "Condo YoY": `${cd.closedSalesYoY}%` },
+      { Metric: "Median Sales Price", "Single-Family": sf.medianPrice, "SF YoY": `${sf.medianPriceYoY}%`, Condo: cd.medianPrice, "Condo YoY": `${cd.medianPriceYoY}%` },
+      { Metric: "Average Sales Price", "Single-Family": sf.avgPrice, "SF YoY": `${sf.avgPriceYoY}%`, Condo: cd.avgPrice, "Condo YoY": `${cd.avgPriceYoY}%` },
+      { Metric: "Days on Market", "Single-Family": sf.dom, "SF YoY": `${sf.domYoY}%`, Condo: cd.dom, "Condo YoY": `${cd.domYoY}%` },
+      { Metric: "Pending Sales", "Single-Family": sf.pendingSales, "SF YoY": `${sf.pendingSalesYoY}%`, Condo: cd.pendingSales, "Condo YoY": `${cd.pendingSalesYoY}%` },
+      { Metric: "New Listings", "Single-Family": sf.newListings, "SF YoY": `${sf.newListingsYoY}%`, Condo: cd.newListings, "Condo YoY": `${cd.newListingsYoY}%` },
+      { Metric: "Active Inventory", "Single-Family": sf.inventory, "SF YoY": `${sf.inventoryYoY}%`, Condo: cd.inventory, "Condo YoY": `${cd.inventoryYoY}%` },
+      { Metric: "Months Supply", "Single-Family": sf.monthsSupply, "SF YoY": `${sf.monthsSupplyYoY}%`, Condo: cd.monthsSupply, "Condo YoY": `${cd.monthsSupplyYoY}%` },
+      { Metric: "% List Price Received", "Single-Family": `${sf.pctListPriceReceived}%`, "SF YoY": `${sf.pctListPriceReceivedYoY}%`, Condo: `${cd.pctListPriceReceived}%`, "Condo YoY": `${cd.pctListPriceReceivedYoY}%` },
+    ];
+
+    if (format === "xlsx") {
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Maui Statistics");
+      XLSX.writeFile(wb, "Maui_Statistics.xlsx");
+    } else {
+      const doc = new jsPDF();
+      const pw = doc.internal.pageSize.getWidth();
+      let y = 20;
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      doc.text("Maui Statistics", pw / 2, y, { align: "center" });
+      y += 8;
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(`${data.label} — Generated ${new Date().toLocaleDateString()}`, pw / 2, y, { align: "center" });
+      y += 14;
+
+      doc.setFontSize(8);
+      const headers = ["Metric", "Single-Family", "SF YoY", "Condo", "Condo YoY"];
+      const colW = (pw - 20) / headers.length;
+      doc.setFont("helvetica", "bold");
+      headers.forEach((h, i) => doc.text(h, 10 + i * colW, y));
+      y += 6;
+      doc.setFont("helvetica", "normal");
+
+      exportData.forEach((row) => {
+        if (y > 280) { doc.addPage(); y = 20; }
+        const vals = [row.Metric, String(row["Single-Family"]), row["SF YoY"], String(row.Condo), row["Condo YoY"]];
+        vals.forEach((v, i) => doc.text(v, 10 + i * colW, y));
+        y += 5;
+      });
+
+      doc.save("Maui_Statistics.pdf");
+    }
+  };
+
   const cardStyle: React.CSSProperties = {
     padding: 20,
     background: "#fff",
@@ -120,6 +172,11 @@ export default function MauiStatisticsClient() {
             ))}
           </select>
         )}
+      </div>
+
+      <div className="noprint" style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginBottom: 16 }}>
+        <button onClick={() => exportReport("xlsx")} style={{ padding: "6px 14px", fontSize: 12, fontWeight: 600, border: "1px solid #d1d5db", borderRadius: 6, background: "#fff", color: "#374151", cursor: "pointer" }}>Export Excel</button>
+        <button onClick={() => exportReport("pdf")} style={{ padding: "6px 14px", fontSize: 12, fontWeight: 600, border: "none", borderRadius: 6, background: "#dc2626", color: "#fff", cursor: "pointer" }}>Export PDF</button>
       </div>
 
       {/* KPI Cards — Row 1: Prices */}

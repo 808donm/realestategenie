@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import jsPDF from "jspdf";
+import * as XLSX from "xlsx";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell,
 } from "recharts";
@@ -167,6 +168,29 @@ export default function PipelineVelocityClient() {
     doc.save(`Pipeline_Velocity_${dateRange}.pdf`);
   };
 
+  const exportToExcel = () => {
+    const stageRows = stages.map(s => ({
+      Stage: s.name,
+      "Avg Days": s.name === "Closed" ? "-" : s.avgDays,
+      "Current Leads": s.currentCount,
+      "Conversion to Next %": s.name === "Closed" ? "-" : `${s.conversionToNext}%`,
+    }));
+    const stuckRows = stuckDeals.map(d => ({
+      Lead: d.name,
+      Stage: d.stage,
+      "Days in Stage": d.daysInStage,
+      "Stage Avg": d.avgForStage,
+      Source: d.source,
+      "Est. Value": d.value,
+    }));
+    const wb = XLSX.utils.book_new();
+    const ws1 = XLSX.utils.json_to_sheet(stageRows);
+    XLSX.utils.book_append_sheet(wb, ws1, "Stages");
+    const ws2 = XLSX.utils.json_to_sheet(stuckRows);
+    XLSX.utils.book_append_sheet(wb, ws2, "Stuck Deals");
+    XLSX.writeFile(wb, `Pipeline_Velocity_${dateRange}.xlsx`);
+  };
+
   const cardStyle: React.CSSProperties = {
     padding: 20,
     background: "#fff",
@@ -222,6 +246,9 @@ export default function PipelineVelocityClient() {
           style={{ padding: "8px 20px", background: "#dc2626", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 13 }}
         >
           Export PDF
+        </button>
+        <button onClick={exportToExcel} style={{ padding: "8px 20px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>
+          Export Excel
         </button>
       </div>
 

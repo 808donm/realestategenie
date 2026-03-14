@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { supabaseServer } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import PageHelp from "../components/page-help";
 
 export default async function ReportsPage() {
   const supabase = await supabaseServer();
@@ -12,9 +13,12 @@ export default async function ReportsPage() {
 
   return (
     <div style={{ maxWidth: 1000 }}>
-      <h1 style={{ fontSize: 28, fontWeight: 900, marginTop: 0, marginBottom: 8 }}>
-        Reports
-      </h1>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <h1 style={{ fontSize: 28, fontWeight: 900, marginTop: 0, marginBottom: 8 }}>
+          Reports
+        </h1>
+        <PageHelp title="Reports" description="Performance reports and analytics for your real estate business. Export any report as PDF or Excel." tips={["Use Ctrl+P to print any report page", "Export reports to share with your broker or team"]} />
+      </div>
       <p style={{ margin: "0 0 32px 0", opacity: 0.7 }}>
         Business intelligence and performance tracking across your real estate operations
       </p>

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import jsPDF from "jspdf";
+import * as XLSX from "xlsx";
 
 interface PipelineLead {
   id: string;
@@ -212,6 +214,55 @@ export default function LocalPipelineClient() {
 
   const totalLeads = stages.reduce((sum, s) => sum + s.count, 0);
 
+  const exportPipeline = (format: "pdf" | "xlsx") => {
+    const allLeads = stages.flatMap((s) => s.leads.map((l) => ({
+      name: l.name,
+      email: l.email || "",
+      phone: l.phone || "",
+      property: l.property,
+      stage: stages.find((st) => st.key === l.pipelineStage)?.label || l.pipelineStage,
+      heatScore: l.heatScore,
+      date: new Date(l.createdAt).toLocaleDateString(),
+    })));
+    if (format === "xlsx") {
+      const ws = XLSX.utils.json_to_sheet(allLeads);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Pipeline");
+      XLSX.writeFile(wb, `Pipeline_Export_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    } else {
+      const doc = new jsPDF();
+      const pw = doc.internal.pageSize.getWidth();
+      let y = 20;
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      doc.text("Sales Pipeline Export", pw / 2, y, { align: "center" });
+      y += 8;
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Generated ${new Date().toLocaleDateString()} | ${allLeads.length} leads`, pw / 2, y, { align: "center" });
+      y += 12;
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "bold");
+      const cols = [14, 45, 85, 120, 150, 175];
+      ["Name", "Email", "Property", "Stage", "Score", "Date"].forEach((h, i) => doc.text(h, cols[i], y));
+      y += 2;
+      doc.line(14, y, pw - 14, y);
+      y += 5;
+      doc.setFont("helvetica", "normal");
+      allLeads.forEach((r) => {
+        if (y > 275) { doc.addPage(); y = 20; }
+        doc.text(r.name.slice(0, 16), cols[0], y);
+        doc.text(r.email.slice(0, 20), cols[1], y);
+        doc.text(r.property.slice(0, 18), cols[2], y);
+        doc.text(r.stage.slice(0, 15), cols[3], y);
+        doc.text(String(r.heatScore), cols[4], y);
+        doc.text(r.date, cols[5], y);
+        y += 5;
+      });
+      doc.save(`Pipeline_Export_${new Date().toISOString().slice(0, 10)}.pdf`);
+    }
+  };
+
   if (error && stages.length === 0) {
     return (
       <div
@@ -334,6 +385,10 @@ export default function LocalPipelineClient() {
         </div>
         <div style={{ fontSize: 11, color: "#9ca3af" }}>
           Drag cards to move between stages
+        </div>
+        <div className="noprint" style={{ display: "flex", gap: 6 }}>
+          <button onClick={() => exportPipeline("xlsx")} style={{ padding: "4px 10px", fontSize: 11, fontWeight: 600, border: "1px solid #d1d5db", borderRadius: 6, background: "#fff", color: "#374151", cursor: "pointer" }}>Export Excel</button>
+          <button onClick={() => exportPipeline("pdf")} style={{ padding: "4px 10px", fontSize: 11, fontWeight: 600, border: "none", borderRadius: 6, background: "#dc2626", color: "#fff", cursor: "pointer" }}>Export PDF</button>
         </div>
       </div>
 
@@ -512,6 +567,21 @@ export default function LocalPipelineClient() {
                           >
                             {lead.property}
                           </div>
+
+                          {/* Quick contact actions */}
+                          {(lead.phone || lead.email) && (
+                            <div style={{ display: "flex", gap: 4, marginBottom: 4 }} onClick={(e) => e.stopPropagation()}>
+                              {lead.phone && (
+                                <a href={`tel:${lead.phone}`} style={{ padding: "2px 6px", background: "#ecfdf5", color: "#059669", borderRadius: 4, fontSize: 10, fontWeight: 600, textDecoration: "none" }}>Call</a>
+                              )}
+                              {lead.phone && (
+                                <a href={`sms:${lead.phone}`} style={{ padding: "2px 6px", background: "#eff6ff", color: "#2563eb", borderRadius: 4, fontSize: 10, fontWeight: 600, textDecoration: "none" }}>Text</a>
+                              )}
+                              {lead.email && (
+                                <a href={`mailto:${lead.email}`} style={{ padding: "2px 6px", background: "#fef3c7", color: "#d97706", borderRadius: 4, fontSize: 10, fontWeight: 600, textDecoration: "none" }}>Email</a>
+                              )}
+                            </div>
+                          )}
 
                           {/* Quick advance buttons */}
                           <div

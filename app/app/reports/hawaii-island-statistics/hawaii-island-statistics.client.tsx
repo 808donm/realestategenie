@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import jsPDF from "jspdf";
+import * as XLSX from "xlsx";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell,
   LineChart, Line,
@@ -118,6 +120,54 @@ export default function HawaiiIslandStatisticsClient() {
     { type: "SF Sold '25", value: sf.prevYearSoldListings, color: COLORS.sfLight },
   ];
 
+  const exportReport = (format: "pdf" | "xlsx") => {
+    const exportData = [
+      { Metric: "Median Sales Price", "Single-Family": sf.medianPrice, Condo: cd.medianPrice, Land: ld.medianPrice },
+      { Metric: "Days on Market", "Single-Family": sf.dom, Condo: cd.dom, Land: ld.dom },
+      { Metric: "Active Listings", "Single-Family": sf.activeListings, Condo: cd.activeListings, Land: ld.activeListings },
+      { Metric: "New Listings", "Single-Family": sf.newListings, Condo: cd.newListings, Land: ld.newListings },
+      { Metric: "New Listings (prev year)", "Single-Family": sf.prevYearNewListings, Condo: cd.prevYearNewListings, Land: ld.prevYearNewListings },
+      { Metric: "Sold Listings", "Single-Family": sf.soldListings, Condo: cd.soldListings, Land: ld.soldListings },
+      { Metric: "Sold Listings (prev year)", "Single-Family": sf.prevYearSoldListings, Condo: cd.prevYearSoldListings, Land: ld.prevYearSoldListings },
+    ];
+
+    if (format === "xlsx") {
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Hawaii Island Statistics");
+      XLSX.writeFile(wb, "Hawaii_Island_Statistics.xlsx");
+    } else {
+      const doc = new jsPDF();
+      const pw = doc.internal.pageSize.getWidth();
+      let y = 20;
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      doc.text("Hawaii Island Statistics", pw / 2, y, { align: "center" });
+      y += 8;
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(`${data.label} — Generated ${new Date().toLocaleDateString()}`, pw / 2, y, { align: "center" });
+      y += 14;
+
+      doc.setFontSize(8);
+      const headers = ["Metric", "Single-Family", "Condo", "Land"];
+      const colW = (pw - 20) / headers.length;
+      doc.setFont("helvetica", "bold");
+      headers.forEach((h, i) => doc.text(h, 10 + i * colW, y));
+      y += 6;
+      doc.setFont("helvetica", "normal");
+
+      exportData.forEach((row) => {
+        if (y > 280) { doc.addPage(); y = 20; }
+        const vals = [row.Metric, String(row["Single-Family"]), String(row.Condo), String(row.Land)];
+        vals.forEach((v, i) => doc.text(v, 10 + i * colW, y));
+        y += 5;
+      });
+
+      doc.save("Hawaii_Island_Statistics.pdf");
+    }
+  };
+
   const cardStyle: React.CSSProperties = {
     padding: 20,
     background: "#fff",
@@ -149,6 +199,11 @@ export default function HawaiiIslandStatisticsClient() {
             ))}
           </select>
         )}
+      </div>
+
+      <div className="noprint" style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginBottom: 16 }}>
+        <button onClick={() => exportReport("xlsx")} style={{ padding: "6px 14px", fontSize: 12, fontWeight: 600, border: "1px solid #d1d5db", borderRadius: 6, background: "#fff", color: "#374151", cursor: "pointer" }}>Export Excel</button>
+        <button onClick={() => exportReport("pdf")} style={{ padding: "6px 14px", fontSize: 12, fontWeight: 600, border: "none", borderRadius: 6, background: "#dc2626", color: "#fff", cursor: "pointer" }}>Export PDF</button>
       </div>
 
       {/* KPI Cards — Row 1: Median Prices */}

@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { supabaseServer } from "@/lib/supabase/server";
 import DeleteOpenHouseButton from "./delete-button.client";
+import PageHelp from "../components/page-help";
 
 export default async function OpenHousesIndex() {
   const supabase = await supabaseServer();
@@ -16,7 +17,10 @@ export default async function OpenHousesIndex() {
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
         <h1 style={{ margin: 0, fontSize: 28, fontWeight: 900 }}>Open Houses &amp; Showings</h1>
-        <Link href="/app/open-houses/new" style={btn}>+ New Event</Link>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <PageHelp title="Open Houses" description="Create and manage your open house events. Each event generates a QR code for visitor check-in that automatically captures leads." tips={["Publish an event to make it live and generate a QR code", "Share the QR code at your open house for visitor sign-in"]} />
+          <Link href="/app/open-houses/new" style={btn}>+ New Event</Link>
+        </div>
       </div>
 
       {error && <p style={{ color: "crimson" }}>{error.message}</p>}

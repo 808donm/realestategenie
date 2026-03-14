@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import jsPDF from "jspdf";
+import * as XLSX from "xlsx";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie,
@@ -138,6 +139,20 @@ export default function ListingInventoryClient() {
     doc.save("listing-inventory-health.pdf");
   };
 
+  const exportToExcel = () => {
+    const rows = data.map(listing => ({
+      Address: listing.address,
+      "List Price": listing.listPrice,
+      DOM: listing.dom,
+      Status: listing.status,
+      "Listing Agent": listing.listingAgent,
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Report");
+    XLSX.writeFile(wb, "Listing_Inventory_Health.xlsx");
+  };
+
   const domColor = (dom: number): string => {
     if (dom >= 30) return "#dc2626";
     if (dom >= 21) return "#d97706";
@@ -195,21 +210,26 @@ export default function ListingInventoryClient() {
             </button>
           ))}
         </div>
-        <button
-          onClick={exportPDF}
-          style={{
-            padding: "8px 18px",
-            borderRadius: 6,
-            border: "none",
-            background: "#7c3aed",
-            color: "#fff",
-            fontWeight: 700,
-            fontSize: 13,
-            cursor: "pointer",
-          }}
-        >
-          Export PDF
-        </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            onClick={exportPDF}
+            style={{
+              padding: "8px 18px",
+              borderRadius: 6,
+              border: "none",
+              background: "#7c3aed",
+              color: "#fff",
+              fontWeight: 700,
+              fontSize: 13,
+              cursor: "pointer",
+            }}
+          >
+            Export PDF
+          </button>
+          <button onClick={exportToExcel} style={{ padding: "8px 20px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>
+            Export Excel
+          </button>
+        </div>
       </div>
 
       {/* Summary Cards */}

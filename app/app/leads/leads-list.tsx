@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { FileText, Flame, Thermometer, Snowflake, Ban } from "lucide-react";
+import jsPDF from "jspdf";
+import * as XLSX from "xlsx";
 import GenerateProfileModal from "../neighborhood-profiles/generate-modal";
 
 interface Lead {
@@ -52,6 +54,61 @@ export default function LeadsList({ leads, eventMap }: LeadsListProps) {
     alert("Neighborhood profile generated successfully! You can view it in the Neighborhood Profiles section.");
   };
 
+  const exportLeads = (format: "pdf" | "xlsx") => {
+    const rows = leads.filter((l) => !isDNC(l)).map((l) => {
+      const p: any = l.payload ?? {};
+      return {
+        name: p.name || "Unknown",
+        email: p.email || "",
+        phone: p.phone_e164 || "",
+        property: eventMap.get(l.event_id) || l.event_id,
+        score: l.heat_score,
+        heat: getHeatLevel(l.heat_score),
+        timeline: p.timeline || "",
+        date: new Date(l.created_at).toLocaleDateString(),
+      };
+    });
+
+    if (format === "xlsx") {
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Leads");
+      XLSX.writeFile(wb, `Leads_Export_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    } else {
+      const doc = new jsPDF();
+      const pw = doc.internal.pageSize.getWidth();
+      let y = 20;
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      doc.text("Leads Export", pw / 2, y, { align: "center" });
+      y += 8;
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Generated ${new Date().toLocaleDateString()} | ${rows.length} leads`, pw / 2, y, { align: "center" });
+      y += 12;
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "bold");
+      const cols = [14, 50, 90, 120, 145, 162, 185];
+      ["Name", "Email", "Phone", "Property", "Score", "Timeline", "Date"].forEach((h, i) => doc.text(h, cols[i], y));
+      y += 2;
+      doc.line(14, y, pw - 14, y);
+      y += 5;
+      doc.setFont("helvetica", "normal");
+      rows.forEach((r) => {
+        if (y > 275) { doc.addPage(); y = 20; }
+        doc.text(r.name.slice(0, 18), cols[0], y);
+        doc.text(r.email.slice(0, 20), cols[1], y);
+        doc.text(r.phone.slice(0, 14), cols[2], y);
+        doc.text(r.property.slice(0, 14), cols[3], y);
+        doc.text(String(r.score), cols[4], y);
+        doc.text(r.timeline.slice(0, 12), cols[5], y);
+        doc.text(r.date, cols[6], y);
+        y += 5;
+      });
+      doc.save(`Leads_Export_${new Date().toISOString().slice(0, 10)}.pdf`);
+    }
+  };
+
   if (!leads || leads.length === 0) {
     return (
       <p style={{ opacity: 0.7, marginTop: 16 }}>
@@ -83,6 +140,12 @@ export default function LeadsList({ leads, eventMap }: LeadsListProps) {
 
   return (
     <>
+      {/* Export buttons */}
+      <div className="noprint" style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 12 }}>
+        <button onClick={() => exportLeads("xlsx")} style={{ padding: "6px 14px", fontSize: 12, fontWeight: 600, border: "1px solid #d1d5db", borderRadius: 6, background: "#fff", color: "#374151", cursor: "pointer" }}>Export Excel</button>
+        <button onClick={() => exportLeads("pdf")} style={{ padding: "6px 14px", fontSize: 12, fontWeight: 600, border: "none", borderRadius: 6, background: "#dc2626", color: "#fff", cursor: "pointer" }}>Export PDF</button>
+      </div>
+
       {/* Scoring Summary Cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginTop: 16 }}>
         {tabs.map((tab) => (
@@ -180,9 +243,22 @@ export default function LeadsList({ leads, eventMap }: LeadsListProps) {
                   </div>
 
                   {/* Contact */}
-                  <div style={{ color: "#6b7280" }}>
-                    {p.email && <div style={{ fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.email}</div>}
-                    {p.phone_e164 && <div style={{ fontSize: 12 }}>{p.phone_e164}</div>}
+                  <div style={{ display: "flex", gap: 6, alignItems: "center" }} onClick={(e) => e.stopPropagation()}>
+                    {p.phone_e164 && (
+                      <a href={`tel:${p.phone_e164}`} title="Call" style={{ padding: "4px 8px", background: "#ecfdf5", color: "#059669", borderRadius: 6, fontSize: 11, fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap" }}>
+                        Call
+                      </a>
+                    )}
+                    {p.phone_e164 && (
+                      <a href={`sms:${p.phone_e164}`} title="Text" style={{ padding: "4px 8px", background: "#eff6ff", color: "#2563eb", borderRadius: 6, fontSize: 11, fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap" }}>
+                        Text
+                      </a>
+                    )}
+                    {p.email && (
+                      <a href={`mailto:${p.email}`} title="Email" style={{ padding: "4px 8px", background: "#fef3c7", color: "#d97706", borderRadius: 6, fontSize: 11, fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap" }}>
+                        Email
+                      </a>
+                    )}
                   </div>
 
                   {/* Property */}

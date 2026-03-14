@@ -1,6 +1,7 @@
 import { supabaseServer } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import CalculatorGrid, { CalculatorCard } from "./calculator-grid.client";
+import PageHelp from "../components/page-help";
 
 export default async function AnalyzersPage() {
   const supabase = await supabaseServer();
@@ -171,16 +172,19 @@ export default async function AnalyzersPage() {
 
   return (
     <div style={{ maxWidth: 900 }}>
-      <h1
-        style={{
-          fontSize: 28,
-          fontWeight: 900,
-          marginTop: 0,
-          marginBottom: 8,
-        }}
-      >
-        Calculators
-      </h1>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <h1
+          style={{
+            fontSize: 28,
+            fontWeight: 900,
+            marginTop: 0,
+            marginBottom: 8,
+          }}
+        >
+          Calculators
+        </h1>
+        <PageHelp title="Analyzers" description="Real estate calculators for investment analysis, mortgage estimates, and deal evaluation. Share results directly with clients." tips={["Use 'Attach to Contact' to save results to your CRM", "Email reports directly to clients with one click"]} />
+      </div>
       <p style={{ margin: "0 0 24px 0", opacity: 0.7 }}>
         Real Estate Calculators — drag cards to reorder
       </p>

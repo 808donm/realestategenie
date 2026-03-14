@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import jsPDF from "jspdf";
+import * as XLSX from "xlsx";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
   ScatterChart, Scatter, ZAxis, Cell,
@@ -164,6 +165,24 @@ export default function LeadSourceROIClient() {
     doc.save(`Lead_Source_ROI_${dateRange}.pdf`);
   };
 
+  const exportToExcel = () => {
+    const rows = sources.map(s => ({
+      Source: s.name,
+      Leads: s.leads,
+      Closings: s.closings,
+      "Conversion %": `${s.conversionRate.toFixed(1)}%`,
+      "Total Spend": s.totalSpend,
+      Revenue: s.revenue,
+      "Cost per Lead": s.costPerLead,
+      "Cost per Closing": s.costPerClosing,
+      "ROI %": `${s.roi.toFixed(0)}%`,
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Report");
+    XLSX.writeFile(wb, `Lead_Source_ROI_${dateRange}.xlsx`);
+  };
+
   const cardStyle: React.CSSProperties = {
     padding: 20,
     background: "#fff",
@@ -219,6 +238,9 @@ export default function LeadSourceROIClient() {
           style={{ padding: "8px 20px", background: "#dc2626", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 13 }}
         >
           Export PDF
+        </button>
+        <button onClick={exportToExcel} style={{ padding: "8px 20px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>
+          Export Excel
         </button>
       </div>
 

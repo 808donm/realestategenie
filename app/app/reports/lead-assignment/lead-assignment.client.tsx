@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import jsPDF from "jspdf";
+import * as XLSX from "xlsx";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine,
 } from "recharts";
@@ -129,6 +130,21 @@ export default function LeadAssignmentClient() {
     doc.save("lead-assignment-fairness.pdf");
   };
 
+  const exportToExcel = () => {
+    const rows = data.map(row => ({
+      Agent: row.name,
+      "Leads Received": row.leadsReceived,
+      "Leads Contacted": row.leadsContacted,
+      "Leads Converted": row.leadsConverted,
+      "Conversion Rate %": `${conversionRate(row)}%`,
+      "Avg Response Time (min)": row.avgResponseTime,
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Report");
+    XLSX.writeFile(wb, "Lead_Assignment_Fairness.xlsx");
+  };
+
   const barColor = (agent: AgentAssignment): string => {
     const deviation = Math.abs(agent.leadsReceived - avgLeads);
     if (deviation > avgLeads * 0.25) return "#ef4444";
@@ -186,21 +202,26 @@ export default function LeadAssignmentClient() {
             </button>
           ))}
         </div>
-        <button
-          onClick={exportPDF}
-          style={{
-            padding: "8px 18px",
-            borderRadius: 6,
-            border: "none",
-            background: "#7c3aed",
-            color: "#fff",
-            fontWeight: 700,
-            fontSize: 13,
-            cursor: "pointer",
-          }}
-        >
-          Export PDF
-        </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            onClick={exportPDF}
+            style={{
+              padding: "8px 18px",
+              borderRadius: 6,
+              border: "none",
+              background: "#7c3aed",
+              color: "#fff",
+              fontWeight: 700,
+              fontSize: 13,
+              cursor: "pointer",
+            }}
+          >
+            Export PDF
+          </button>
+          <button onClick={exportToExcel} style={{ padding: "8px 20px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>
+            Export Excel
+          </button>
+        </div>
       </div>
 
       {/* Lead Distribution Bar Chart */}

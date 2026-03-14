@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import jsPDF from "jspdf";
+import * as XLSX from "xlsx";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 
 interface PendingDocument {
@@ -155,6 +156,22 @@ export default function PendingDocumentsClient() {
     doc.save("Pending_Document_Checklist.pdf");
   };
 
+  const exportToExcel = () => {
+    const rows = filtered.map(d => ({
+      "Property Address": d.propertyAddress,
+      "Buyer/Seller": d.buyerSeller,
+      Agent: d.agent,
+      "Document Name": d.documentName,
+      Status: d.status,
+      "Due Date": d.dueDate,
+      Overdue: isOverdue(d) ? "Yes" : "No",
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Report");
+    XLSX.writeFile(wb, "Pending_Document_Checklist.xlsx");
+  };
+
   const cardStyle: React.CSSProperties = {
     padding: 20,
     background: "#fff",
@@ -269,6 +286,9 @@ export default function PendingDocumentsClient() {
           style={{ padding: "8px 20px", background: "#dc2626", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 13 }}
         >
           Export PDF
+        </button>
+        <button onClick={exportToExcel} style={{ padding: "8px 20px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>
+          Export Excel
         </button>
       </div>
 

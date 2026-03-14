@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useState, useRef, useCallback, useEffect } from "react";
+import CalculatorDrawer from "./calculator-drawer";
 
 export interface CalculatorCard {
   id: string;
@@ -36,6 +36,7 @@ export default function CalculatorGrid({ cards }: { cards: CalculatorCard[] }) {
   const [orderedCards, setOrderedCards] = useState<CalculatorCard[]>(cards);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [drawerCalc, setDrawerCalc] = useState<{ href: string; title: string } | null>(null);
   const dragNode = useRef<HTMLDivElement | null>(null);
 
   // On mount, restore saved order
@@ -175,8 +176,8 @@ export default function CalculatorGrid({ cards }: { cards: CalculatorCard[] }) {
                 dragOverIndex === index ? "scale(1.02)" : "scale(1)",
             }}
           >
-            <Link
-              href={card.href}
+            <div
+              onClick={() => setDrawerCalc({ href: card.href, title: card.title })}
               style={{
                 padding: 24,
                 border: "1px solid #e6e6e6",
@@ -186,6 +187,7 @@ export default function CalculatorGrid({ cards }: { cards: CalculatorCard[] }) {
                 display: "block",
                 transition: "border-color 0.2s",
                 background: card.background || undefined,
+                cursor: "pointer",
               }}
               draggable={false}
             >
@@ -241,10 +243,16 @@ export default function CalculatorGrid({ cards }: { cards: CalculatorCard[] }) {
                   </div>
                 )}
               </div>
-            </Link>
+            </div>
           </div>
         ))}
       </div>
+      <CalculatorDrawer
+        isOpen={!!drawerCalc}
+        onClose={() => setDrawerCalc(null)}
+        href={drawerCalc?.href || ""}
+        title={drawerCalc?.title || ""}
+      />
     </div>
   );
 }

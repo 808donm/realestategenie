@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import jsPDF from "jspdf";
+import * as XLSX from "xlsx";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
   PieChart, Pie, Cell, AreaChart, Area,
@@ -176,6 +177,25 @@ export default function TaxSavingsReserveClient() {
     doc.save(`Tax_Savings_Reserve_${selectedMonth}.pdf`);
   };
 
+  const exportToExcel = () => {
+    const rows = monthlyData.map(m => {
+      const taxReserve = m.grossCommission * taxRate;
+      const netTakeHome = m.grossCommission - taxReserve - m.businessExpenses - m.marketingBudget;
+      return {
+        Month: getMonthLabel(m.month),
+        "Gross Commission": m.grossCommission,
+        [`Tax Reserve (${(taxRate * 100).toFixed(1)}%)`]: Math.round(taxReserve),
+        "Business Expenses": m.businessExpenses,
+        "Marketing Budget": m.marketingBudget,
+        "Net Take-Home": Math.round(netTakeHome),
+      };
+    });
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Report");
+    XLSX.writeFile(wb, `Tax_Savings_Reserve_${selectedMonth}.xlsx`);
+  };
+
   const cardStyle: React.CSSProperties = {
     padding: 20,
     background: "#fff",
@@ -247,12 +267,17 @@ export default function TaxSavingsReserveClient() {
           </div>
         </div>
         <div style={{ flex: 1 }} />
-        <button
-          onClick={exportToPDF}
-          style={{ padding: "8px 20px", background: "#dc2626", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 13, alignSelf: "flex-end" }}
-        >
-          Export PDF
-        </button>
+        <div style={{ display: "flex", gap: 8, alignSelf: "flex-end" }}>
+          <button
+            onClick={exportToPDF}
+            style={{ padding: "8px 20px", background: "#dc2626", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 13 }}
+          >
+            Export PDF
+          </button>
+          <button onClick={exportToExcel} style={{ padding: "8px 20px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>
+            Export Excel
+          </button>
+        </div>
       </div>
 
       {/* Monthly Summary Cards */}

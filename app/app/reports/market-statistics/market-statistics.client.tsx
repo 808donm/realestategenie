@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import jsPDF from "jspdf";
+import * as XLSX from "xlsx";
 import {
   LineChart,
   Line,
@@ -102,6 +104,64 @@ export default function MarketStatisticsClient() {
   const condoMedianChange = ((latest.condo.medianPrice - prevYear.condo.medianPrice) / prevYear.condo.medianPrice * 100);
   const totalSalesChange = ((latest.totalSales - prevYear.totalSales) / prevYear.totalSales * 100);
 
+  const exportReport = (format: "pdf" | "xlsx") => {
+    const exportData = filteredData.map((d) => ({
+      Year: d.year,
+      "SF Median Price": d.singleFamily.medianPrice,
+      "SF Avg Price": d.singleFamily.avgPrice,
+      "SF Sales": d.singleFamily.sales,
+      "Condo Median Price": d.condo.medianPrice,
+      "Condo Avg Price": d.condo.avgPrice,
+      "Condo Sales": d.condo.sales,
+      "Total Sales": d.totalSales,
+    }));
+
+    if (format === "xlsx") {
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Oahu Market Statistics");
+      XLSX.writeFile(wb, "Oahu_Market_Statistics.xlsx");
+    } else {
+      const doc = new jsPDF();
+      const pw = doc.internal.pageSize.getWidth();
+      let y = 20;
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      doc.text("Oahu Market Statistics", pw / 2, y, { align: "center" });
+      y += 8;
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Generated ${new Date().toLocaleDateString()}`, pw / 2, y, { align: "center" });
+      y += 14;
+
+      doc.setFontSize(8);
+      const headers = ["Year", "SF Median", "SF Avg", "SF Sales", "Condo Median", "Condo Avg", "Condo Sales", "Total"];
+      const colW = (pw - 20) / headers.length;
+      doc.setFont("helvetica", "bold");
+      headers.forEach((h, i) => doc.text(h, 10 + i * colW, y));
+      y += 6;
+      doc.setFont("helvetica", "normal");
+
+      exportData.forEach((row) => {
+        if (y > 280) { doc.addPage(); y = 20; }
+        const vals = [
+          String(row.Year),
+          `$${(row["SF Median Price"] / 1000).toFixed(0)}K`,
+          `$${(row["SF Avg Price"] / 1000).toFixed(0)}K`,
+          String(row["SF Sales"]),
+          `$${(row["Condo Median Price"] / 1000).toFixed(0)}K`,
+          `$${(row["Condo Avg Price"] / 1000).toFixed(0)}K`,
+          String(row["Condo Sales"]),
+          String(row["Total Sales"]),
+        ];
+        vals.forEach((v, i) => doc.text(v, 10 + i * colW, y));
+        y += 5;
+      });
+
+      doc.save("Oahu_Market_Statistics.pdf");
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Time Range Selector */}
@@ -124,6 +184,11 @@ export default function MarketStatisticsClient() {
             {label}
           </button>
         ))}
+      </div>
+
+      <div className="noprint" style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginBottom: 16 }}>
+        <button onClick={() => exportReport("xlsx")} style={{ padding: "6px 14px", fontSize: 12, fontWeight: 600, border: "1px solid #d1d5db", borderRadius: 6, background: "#fff", color: "#374151", cursor: "pointer" }}>Export Excel</button>
+        <button onClick={() => exportReport("pdf")} style={{ padding: "6px 14px", fontSize: 12, fontWeight: 600, border: "none", borderRadius: 6, background: "#dc2626", color: "#fff", cursor: "pointer" }}>Export PDF</button>
       </div>
 
       {/* KPI Summary Cards */}

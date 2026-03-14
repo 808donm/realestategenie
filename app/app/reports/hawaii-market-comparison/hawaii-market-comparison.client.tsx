@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import jsPDF from "jspdf";
+import * as XLSX from "xlsx";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell,
   LineChart, Line,
@@ -112,6 +114,73 @@ export default function HawaiiMarketComparisonClient() {
     })),
   ];
 
+  const exportReport = (format: "pdf" | "xlsx") => {
+    const sfRows = sw.singleFamily.counties.map((c) => {
+      const cd = sw.condo.counties.find((cc) => cc.county === c.county);
+      return {
+        County: c.county,
+        "SF Sales 2026": c.sales2026,
+        "SF Sales 2025": c.sales2025,
+        "SF Sales Change": `${c.salesChange}%`,
+        "SF Median 2026": c.medianPrice2026,
+        "SF Median 2025": c.medianPrice2025,
+        "SF Median Change": `${c.medianPriceChange}%`,
+        "Condo Sales 2026": cd?.sales2026 ?? "",
+        "Condo Sales 2025": cd?.sales2025 ?? "",
+        "Condo Sales Change": cd ? `${cd.salesChange}%` : "",
+        "Condo Median 2026": cd?.medianPrice2026 ?? "",
+        "Condo Median 2025": cd?.medianPrice2025 ?? "",
+        "Condo Median Change": cd ? `${cd.medianPriceChange}%` : "",
+      };
+    });
+
+    if (format === "xlsx") {
+      const ws = XLSX.utils.json_to_sheet(sfRows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Hawaii Market Comparison");
+      XLSX.writeFile(wb, "Hawaii_Market_Comparison.xlsx");
+    } else {
+      const doc = new jsPDF({ orientation: "landscape" });
+      const pw = doc.internal.pageSize.getWidth();
+      let y = 20;
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      doc.text("Hawaii Market Comparison", pw / 2, y, { align: "center" });
+      y += 8;
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(`${statewide.label} — Generated ${new Date().toLocaleDateString()}`, pw / 2, y, { align: "center" });
+      y += 14;
+
+      doc.setFontSize(8);
+      const headers = ["County", "SF Sales '26", "SF Sales '25", "SF Chg", "SF Med '26", "Condo Sales '26", "Condo Sales '25", "Condo Chg", "Condo Med '26"];
+      const colW = (pw - 20) / headers.length;
+      doc.setFont("helvetica", "bold");
+      headers.forEach((h, i) => doc.text(h, 10 + i * colW, y));
+      y += 6;
+      doc.setFont("helvetica", "normal");
+
+      sfRows.forEach((row) => {
+        if (y > 190) { doc.addPage(); y = 20; }
+        const vals = [
+          row.County,
+          String(row["SF Sales 2026"]),
+          String(row["SF Sales 2025"]),
+          row["SF Sales Change"],
+          `$${(Number(row["SF Median 2026"]) / 1000).toFixed(0)}K`,
+          String(row["Condo Sales 2026"]),
+          String(row["Condo Sales 2025"]),
+          String(row["Condo Sales Change"]),
+          row["Condo Median 2026"] ? `$${(Number(row["Condo Median 2026"]) / 1000).toFixed(0)}K` : "",
+        ];
+        vals.forEach((v, i) => doc.text(v, 10 + i * colW, y));
+        y += 5;
+      });
+
+      doc.save("Hawaii_Market_Comparison.pdf");
+    }
+  };
+
   const cardStyle: React.CSSProperties = {
     padding: 20,
     background: "#fff",
@@ -156,6 +225,11 @@ export default function HawaiiMarketComparisonClient() {
             ))}
           </select>
         )}
+      </div>
+
+      <div className="noprint" style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginBottom: 16 }}>
+        <button onClick={() => exportReport("xlsx")} style={{ padding: "6px 14px", fontSize: 12, fontWeight: 600, border: "1px solid #d1d5db", borderRadius: 6, background: "#fff", color: "#374151", cursor: "pointer" }}>Export Excel</button>
+        <button onClick={() => exportReport("pdf")} style={{ padding: "6px 14px", fontSize: 12, fontWeight: 600, border: "none", borderRadius: 6, background: "#dc2626", color: "#fff", cursor: "pointer" }}>Export PDF</button>
       </div>
 
       {/* Statewide Totals Cards */}

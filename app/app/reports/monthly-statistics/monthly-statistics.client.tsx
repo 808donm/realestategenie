@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import jsPDF from "jspdf";
+import * as XLSX from "xlsx";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell,
   LineChart, Line,
@@ -90,6 +92,54 @@ export default function MonthlyStatisticsClient() {
 
   const hasMultipleMonths = OAHU_MONTHLY_DATA.length > 1;
 
+  const exportReport = (format: "pdf" | "xlsx") => {
+    const exportData = [
+      { Metric: "Number of Sales", "Single-Family": sf.sales, "SF YoY": `${sf.salesYoY}%`, Condo: cd.sales, "Condo YoY": `${cd.salesYoY}%` },
+      { Metric: "Median Sales Price", "Single-Family": sf.medianPrice, "SF YoY": `${sf.medianPriceYoY}%`, Condo: cd.medianPrice, "Condo YoY": `${cd.medianPriceYoY}%` },
+      { Metric: "Median Days on Market", "Single-Family": sf.medianDOM, "SF YoY": `vs ${sf.prevYearMedianDOM}`, Condo: cd.medianDOM, "Condo YoY": `vs ${cd.prevYearMedianDOM}` },
+      { Metric: "Pending Sales", "Single-Family": sf.pendingSales, "SF YoY": `${sf.pendingSalesYoY}%`, Condo: cd.pendingSales, "Condo YoY": `${cd.pendingSalesYoY}%` },
+      { Metric: "New Listings", "Single-Family": sf.newListings, "SF YoY": `${sf.newListingsYoY}%`, Condo: cd.newListings, "Condo YoY": `${cd.newListingsYoY}%` },
+      { Metric: "Active Inventory", "Single-Family": sf.activeInventory, "SF YoY": `${sf.activeInventoryYoY}%`, Condo: cd.activeInventory, "Condo YoY": `${cd.activeInventoryYoY}%` },
+      { Metric: "% Above Asking", "Single-Family": `${sf.aboveAskingPct}%`, "SF YoY": `vs ${sf.prevYearAboveAskingPct}%`, Condo: `${cd.aboveAskingPct}%`, "Condo YoY": `vs ${cd.prevYearAboveAskingPct}%` },
+    ];
+
+    if (format === "xlsx") {
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Monthly Statistics");
+      XLSX.writeFile(wb, "Monthly_Statistics.xlsx");
+    } else {
+      const doc = new jsPDF();
+      const pw = doc.internal.pageSize.getWidth();
+      let y = 20;
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      doc.text("Monthly Statistics", pw / 2, y, { align: "center" });
+      y += 8;
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(`${data.label} — Generated ${new Date().toLocaleDateString()}`, pw / 2, y, { align: "center" });
+      y += 14;
+
+      doc.setFontSize(8);
+      const headers = ["Metric", "Single-Family", "SF YoY", "Condo", "Condo YoY"];
+      const colW = (pw - 20) / headers.length;
+      doc.setFont("helvetica", "bold");
+      headers.forEach((h, i) => doc.text(h, 10 + i * colW, y));
+      y += 6;
+      doc.setFont("helvetica", "normal");
+
+      exportData.forEach((row) => {
+        if (y > 280) { doc.addPage(); y = 20; }
+        const vals = [row.Metric, String(row["Single-Family"]), row["SF YoY"], String(row.Condo), row["Condo YoY"]];
+        vals.forEach((v, i) => doc.text(v, 10 + i * colW, y));
+        y += 5;
+      });
+
+      doc.save("Monthly_Statistics.pdf");
+    }
+  };
+
   const cardStyle: React.CSSProperties = {
     padding: 20,
     background: "#fff",
@@ -132,6 +182,11 @@ export default function MonthlyStatisticsClient() {
             ))}
           </select>
         )}
+      </div>
+
+      <div className="noprint" style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginBottom: 16 }}>
+        <button onClick={() => exportReport("xlsx")} style={{ padding: "6px 14px", fontSize: 12, fontWeight: 600, border: "1px solid #d1d5db", borderRadius: 6, background: "#fff", color: "#374151", cursor: "pointer" }}>Export Excel</button>
+        <button onClick={() => exportReport("pdf")} style={{ padding: "6px 14px", fontSize: 12, fontWeight: 600, border: "none", borderRadius: 6, background: "#dc2626", color: "#fff", cursor: "pointer" }}>Export PDF</button>
       </div>
 
       {/* KPI Summary Cards */}
