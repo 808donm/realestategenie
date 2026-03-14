@@ -1,8 +1,14 @@
 /**
  * Calendar Sync Engine
  *
- * Core two-way sync logic. Individual calendars (Google, Microsoft, GHL)
- * take precedence over the merged calendar — on conflict, the source wins.
+ * Core two-way sync logic. The app calendar takes precedence for most edits.
+ * The only exception: GHL booked meetings (from the online booking page)
+ * always win — these are customer-facing appointments and the source of truth.
+ *
+ * Conflict resolution:
+ *  - App edits win by default (local changes override source on conflict)
+ *  - GHL booked meetings (identified by metadata.isBookedOnline) always win
+ *  - Google/Microsoft source changes only update if local hasn't been modified
  *
  * Inbound: source calendar → local DB
  * Outbound: local edit → push to source → confirm → update local
@@ -79,7 +85,7 @@ export async function inboundSync(
       }
     }
 
-    // Upsert events — source always wins on conflict
+    // Upsert events — app takes precedence except for GHL booked meetings
     for (const ext of events) {
       try {
         const eventData: Partial<CalendarEvent> = {
@@ -100,21 +106,38 @@ export async function inboundSync(
           etag: ext.etag || null,
           metadata: ext.metadata || {},
           synced_at: new Date().toISOString(),
-          pending_sync: false, // Source is authoritative, nothing to push back
+          pending_sync: false,
           updated_at: new Date().toISOString(),
         };
+
+        // GHL booked meetings (from online booking page) always take precedence
+        const isGHLBookedMeeting = source === "ghl" && (
+          ext.metadata?.isBookedOnline === true ||
+          ext.metadata?.appointmentStatus === "new" ||
+          ext.metadata?.source === "booking_widget"
+        );
 
         // Check if event exists locally
         const { data: existing } = await supabaseAdmin
           .from("calendar_events")
-          .select("id, etag")
+          .select("id, etag, pending_sync, updated_at")
           .eq("agent_id", agentId)
           .eq("source", source)
           .eq("external_id", ext.externalId)
           .single();
 
         if (existing) {
-          // Source wins: always update local with source data
+          // Conflict resolution:
+          // 1. GHL booked meetings always win (source of truth for customer bookings)
+          // 2. If local has pending changes (user edited in app), app wins — skip source update
+          // 3. Otherwise, accept source update
+          if (existing.pending_sync && !isGHLBookedMeeting) {
+            // App has local edits — app takes precedence, skip this inbound update
+            console.log(`[Calendar Sync] Skipping inbound update for ${ext.externalId} — app edit takes precedence`);
+            continue;
+          }
+
+          // Source update accepted (either no local edits, or GHL booked meeting wins)
           const { error } = await supabaseAdmin
             .from("calendar_events")
             .update(eventData)
@@ -231,13 +254,24 @@ export async function outboundSync(
         console.error(`[Calendar Sync] ${source} outbound push failed for ${event.id}:`, err);
         result.errors.push(`Push ${event.id}: ${err.message}`);
 
-        // If conflict (409), re-fetch from source — source wins
+        // On conflict (409): GHL booked meetings → source wins; everything else → retry later
         if (err.message?.includes("409") || err.message?.includes("conflict")) {
-          console.log(`[Calendar Sync] Conflict detected for ${event.id}, source wins — will re-sync`);
-          await supabaseAdmin
-            .from("calendar_events")
-            .update({ pending_sync: false })
-            .eq("id", event.id);
+          const isGHLBookedMeeting = event.source === "ghl" && (
+            (event.metadata as any)?.isBookedOnline === true ||
+            (event.metadata as any)?.source === "booking_widget"
+          );
+
+          if (isGHLBookedMeeting) {
+            // GHL booked meeting — source wins, discard local edits
+            console.log(`[Calendar Sync] Conflict for GHL booked meeting ${event.id} — source wins`);
+            await supabaseAdmin
+              .from("calendar_events")
+              .update({ pending_sync: false })
+              .eq("id", event.id);
+          } else {
+            // App edit — keep pending so we retry on next sync
+            console.log(`[Calendar Sync] Conflict for ${event.id} — app edit preserved, will retry`);
+          }
         }
       }
     }

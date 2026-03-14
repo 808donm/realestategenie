@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import AddFollowUpButton from "../../components/add-followup-button";
 
 interface Contact {
   id: string;
@@ -51,6 +52,10 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState<"details" | "notes" | "conversations" | "property">("details");
+
+  // Note creation state
+  const [newNote, setNewNote] = useState("");
+  const [isAddingNote, setIsAddingNote] = useState(false);
 
   // ATTOM property enrichment state
   const [propertyData, setPropertyData] = useState<Record<string, any> | null>(null);
@@ -204,6 +209,7 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
                 Call
               </a>
             )}
+            <AddFollowUpButton contactId={contactId} entityName={getDisplayName(contact)} />
           </div>
         </div>
 
@@ -267,9 +273,54 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
       {/* Notes Tab */}
       {activeTab === "notes" && (
         <div>
+          {/* Add Note Form */}
+          <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 16, marginBottom: 16 }}>
+            <textarea
+              value={newNote}
+              onChange={(e) => setNewNote(e.target.value)}
+              placeholder="Add a note..."
+              rows={3}
+              style={{
+                width: "100%", padding: 12, border: "1px solid #e5e7eb", borderRadius: 8,
+                fontSize: 14, resize: "vertical", fontFamily: "inherit",
+              }}
+            />
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 8 }}>
+              <button
+                onClick={async () => {
+                  if (!newNote.trim()) return;
+                  setIsAddingNote(true);
+                  try {
+                    const res = await fetch("/api/ghl/contacts/notes", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ contactId, body: newNote.trim() }),
+                    });
+                    if (res.ok) {
+                      setNotes((prev) => [
+                        { id: `local-${Date.now()}`, body: newNote.trim(), dateAdded: new Date().toISOString() },
+                        ...prev,
+                      ]);
+                      setNewNote("");
+                    }
+                  } catch {}
+                  finally { setIsAddingNote(false); }
+                }}
+                disabled={isAddingNote || !newNote.trim()}
+                style={{
+                  padding: "8px 20px", background: "#3b82f6", color: "#fff", border: "none",
+                  borderRadius: 6, fontWeight: 600, fontSize: 13, cursor: isAddingNote ? "wait" : "pointer",
+                  opacity: isAddingNote || !newNote.trim() ? 0.6 : 1,
+                }}
+              >
+                {isAddingNote ? "Saving..." : "Add Note"}
+              </button>
+            </div>
+          </div>
+
           {notes.length === 0 ? (
             <div style={{ padding: 32, textAlign: "center", color: "#6b7280", background: "#f9fafb", borderRadius: 12 }}>
-              No notes for this contact.
+              No notes for this contact yet. Add one above.
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>

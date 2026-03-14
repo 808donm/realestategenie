@@ -130,6 +130,50 @@ export async function GET() {
       });
     }
 
+    // Get recently completed tasks
+    const { data: completedTasks } = await supabase
+      .from("tasks")
+      .select("id, title, completed_at, task_type")
+      .or(`agent_id.eq.${user.id},assigned_to.eq.${user.id}`)
+      .eq("status", "completed")
+      .not("completed_at", "is", null)
+      .order("completed_at", { ascending: false })
+      .limit(5);
+
+    if (completedTasks) {
+      completedTasks.forEach((task) => {
+        activities.push({
+          id: `task-${task.id}`,
+          type: "lead" as const,
+          title: `Task completed: ${task.title}`,
+          description: `Type: ${task.task_type?.replace("_", " ") || "general"}`,
+          timestamp: task.completed_at!,
+        });
+      });
+    }
+
+    // Get recently synced calendar events
+    const { data: recentCalEvents } = await supabase
+      .from("calendar_events")
+      .select("id, title, source, synced_at")
+      .eq("agent_id", user.id)
+      .neq("source", "local")
+      .not("synced_at", "is", null)
+      .order("synced_at", { ascending: false })
+      .limit(3);
+
+    if (recentCalEvents) {
+      recentCalEvents.forEach((ev) => {
+        activities.push({
+          id: `cal-${ev.id}`,
+          type: "integration" as const,
+          title: `Calendar synced: ${ev.title}`,
+          description: `Source: ${ev.source}`,
+          timestamp: ev.synced_at!,
+        });
+      });
+    }
+
     // Sort all activities by timestamp
     activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 

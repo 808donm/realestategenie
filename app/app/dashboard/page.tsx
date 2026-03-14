@@ -11,6 +11,8 @@ import QuickActions from "./quick-actions";
 import AIBriefingCard from "./ai-briefing-card";
 import PipelineStats from "./pipeline-stats";
 import TasksWidget from "./tasks-widget";
+import UpcomingEventsWidget from "./upcoming-events-widget";
+import SyncHealthWidget from "./sync-health-widget";
 import { PIPELINE_STAGES, PIPELINE_STAGE_LABELS } from "@/lib/pipeline-stages";
 import PageHelp from "../components/page-help";
 
@@ -289,6 +291,8 @@ export default async function DashboardPage() {
         {/* Right column */}
         <div className="space-y-6">
           <TasksWidget />
+          <UpcomingEventsWidget />
+          <SyncHealthWidget />
           <QuickActions />
           <ActivityFeed />
         </div>

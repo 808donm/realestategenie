@@ -72,11 +72,15 @@ export async function POST() {
     }
   }
 
-  // Update last_sync_at on integrations
+  // Update last_sync_at and last_error on integrations
   for (const integration of integrations) {
+    const providerErrors = errors.filter((e) => e.startsWith(integration.provider));
     await supabaseAdmin
       .from("integrations")
-      .update({ last_sync_at: new Date().toISOString() })
+      .update({
+        last_sync_at: new Date().toISOString(),
+        last_error: providerErrors.length > 0 ? providerErrors[0] : null,
+      })
       .eq("agent_id", user.id)
       .eq("provider", integration.provider);
   }

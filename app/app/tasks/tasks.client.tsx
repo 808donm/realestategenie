@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import {
   Plus, Check, Clock, AlertCircle, Calendar, ChevronDown, Trash2,
   CheckCheck, AlarmClock, Filter, Phone, Mail, MessageSquare,
-  Repeat, MoreHorizontal, CircleDot,
+  Repeat, MoreHorizontal, CircleDot, User, Home, UserCheck, Link as LinkIcon,
 } from "lucide-react";
 import ExportToolbar from "../components/export-toolbar";
 import type { ExportColumn } from "../components/export-toolbar";
@@ -22,10 +23,19 @@ interface Task {
   linked_lead_id: string | null;
   linked_contact_id: string | null;
   linked_open_house_id: string | null;
+  linked_transaction_id: string | null;
+  assigned_to: string | null;
   task_type: string;
   is_recurring: boolean;
   recurrence_rule: string | null;
   created_at: string;
+}
+
+interface EntityOption {
+  id: string;
+  label: string;
+  heat_score?: number;
+  date?: string;
 }
 
 type TabFilter = "all" | "overdue" | "today" | "upcoming" | "completed";
@@ -63,6 +73,8 @@ const EXPORT_COLUMNS: ExportColumn[] = [
   { key: "status", label: "Status", width: 1 },
   { key: "due_date", label: "Due Date", width: 1.5 },
   { key: "task_type", label: "Type", width: 1 },
+  { key: "linked_to", label: "Linked To", width: 2 },
+  { key: "assigned_to", label: "Assigned To", width: 1.5 },
   { key: "recurrence", label: "Recurring", width: 1 },
 ];
 
@@ -74,6 +86,12 @@ export default function TasksClient() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState<string | null>(null);
 
+  // Entity options for linking
+  const [leadOptions, setLeadOptions] = useState<EntityOption[]>([]);
+  const [openHouseOptions, setOpenHouseOptions] = useState<EntityOption[]>([]);
+  const [teamMemberOptions, setTeamMemberOptions] = useState<EntityOption[]>([]);
+  const [optionsLoaded, setOptionsLoaded] = useState(false);
+
   // Create form state
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
@@ -82,9 +100,48 @@ export default function TasksClient() {
   const [newDueTime, setNewDueTime] = useState("");
   const [newTaskType, setNewTaskType] = useState("general");
   const [newRecurrence, setNewRecurrence] = useState("");
+  const [newLinkedLeadId, setNewLinkedLeadId] = useState("");
+  const [newLinkedOpenHouseId, setNewLinkedOpenHouseId] = useState("");
+  const [newAssignedTo, setNewAssignedTo] = useState("");
   const [isCreating, setIsCreating] = useState(false);
 
+  // Snooze dropdown
+  const [snoozeDropdownId, setSnoozeDropdownId] = useState<string | null>(null);
+
   const showToastMsg = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
+
+  // Build lookup maps from options
+  const leadMap = new Map(leadOptions.map((l) => [l.id, l.label]));
+  const openHouseMap = new Map(openHouseOptions.map((oh) => [oh.id, oh.label]));
+  const memberMap = new Map(teamMemberOptions.map((m) => [m.id, m.label]));
+
+  // Fetch entity options when create form is opened
+  useEffect(() => {
+    if (showCreateForm && !optionsLoaded) {
+      fetch("/api/tasks/options")
+        .then((r) => r.json())
+        .then((data) => {
+          setLeadOptions(data.leads || []);
+          setOpenHouseOptions(data.openHouses || []);
+          setTeamMemberOptions(data.teamMembers || []);
+          setOptionsLoaded(true);
+        })
+        .catch(() => {});
+    }
+  }, [showCreateForm, optionsLoaded]);
+
+  // Also load options on mount for task list entity labels
+  useEffect(() => {
+    fetch("/api/tasks/options")
+      .then((r) => r.json())
+      .then((data) => {
+        setLeadOptions(data.leads || []);
+        setOpenHouseOptions(data.openHouses || []);
+        setTeamMemberOptions(data.teamMembers || []);
+        setOptionsLoaded(true);
+      })
+      .catch(() => {});
+  }, []);
 
   const fetchTasks = useCallback(async () => {
     try {
@@ -122,12 +179,16 @@ export default function TasksClient() {
           task_type: newTaskType,
           is_recurring: !!newRecurrence,
           recurrence_rule: newRecurrence || null,
+          linked_lead_id: newLinkedLeadId || null,
+          linked_open_house_id: newLinkedOpenHouseId || null,
+          assigned_to: newAssignedTo || null,
         }),
       });
       if (res.ok) {
         showToastMsg("Task created");
         setNewTitle(""); setNewDescription(""); setNewPriority("medium");
         setNewDueDate(""); setNewDueTime(""); setNewTaskType("general"); setNewRecurrence("");
+        setNewLinkedLeadId(""); setNewLinkedOpenHouseId(""); setNewAssignedTo("");
         setShowCreateForm(false);
         fetchTasks();
       }
@@ -147,6 +208,7 @@ export default function TasksClient() {
 
   const snoozeTask = async (id: string, days: number) => {
     const snoozed_until = new Date(Date.now() + days * 86400000).toISOString();
+    setSnoozeDropdownId(null);
     try {
       const res = await fetch(`/api/tasks/${id}`, {
         method: "PATCH",
@@ -208,12 +270,20 @@ export default function TasksClient() {
     { key: "completed", label: "Completed" },
   ];
 
+  const getLinkedLabel = (task: Task): string | null => {
+    if (task.linked_lead_id) return leadMap.get(task.linked_lead_id) || "Lead";
+    if (task.linked_open_house_id) return openHouseMap.get(task.linked_open_house_id) || "Open House";
+    return null;
+  };
+
   const getExportData = () => tasks.map((t) => ({
     title: t.title,
     priority: PRIORITY_COLORS[t.priority]?.label || t.priority,
     status: t.status,
     due_date: t.due_date || "No date",
     task_type: TASK_TYPES.find((tt) => tt.value === t.task_type)?.label || t.task_type,
+    linked_to: getLinkedLabel(t) || "—",
+    assigned_to: (t.assigned_to && memberMap.get(t.assigned_to)) || "Me",
     recurrence: t.is_recurring ? "Yes" : "No",
   }));
 
@@ -330,6 +400,42 @@ export default function TasksClient() {
                 {RECURRENCE_OPTIONS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
               </select>
             </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1">Assign To</label>
+              <select value={newAssignedTo} onChange={(e) => setNewAssignedTo(e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg">
+                <option value="">Me (default)</option>
+                {teamMemberOptions.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
+              </select>
+            </div>
+
+            {/* Entity Linking */}
+            <div className="sm:col-span-2 pt-2 border-t border-gray-100">
+              <p className="text-xs font-semibold text-gray-500 mb-2 flex items-center gap-1">
+                <LinkIcon className="w-3 h-3" /> Link to Entity (optional)
+              </p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1">Lead</label>
+                  <select value={newLinkedLeadId} onChange={(e) => setNewLinkedLeadId(e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg">
+                    <option value="">No lead linked</option>
+                    {leadOptions.map((l) => (
+                      <option key={l.id} value={l.id}>
+                        {l.label} {l.heat_score !== undefined ? `(${l.heat_score})` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1">Open House</label>
+                  <select value={newLinkedOpenHouseId} onChange={(e) => setNewLinkedOpenHouseId(e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg">
+                    <option value="">No open house linked</option>
+                    {openHouseOptions.map((oh) => (
+                      <option key={oh.id} value={oh.id}>{oh.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
           </div>
           <div className="flex justify-end gap-2 mt-4">
             <button onClick={() => setShowCreateForm(false)} className="px-3 py-1.5 text-xs font-semibold text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50">
@@ -369,6 +475,8 @@ export default function TasksClient() {
             const isOverdue = task.due_date && task.due_date < today && task.status !== "completed";
             const isToday = task.due_date === today;
             const isSelected = selectedIds.has(task.id);
+            const linkedLabel = getLinkedLabel(task);
+            const assignedName = task.assigned_to ? memberMap.get(task.assigned_to) : null;
             return (
               <div
                 key={task.id}
@@ -415,7 +523,7 @@ export default function TasksClient() {
                   {task.description && (
                     <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{task.description}</p>
                   )}
-                  <div className="flex items-center gap-3 mt-1 text-[11px] text-gray-400">
+                  <div className="flex items-center gap-3 mt-1 text-[11px] text-gray-400 flex-wrap">
                     {task.due_date && (
                       <span className={`flex items-center gap-0.5 ${isOverdue ? "text-red-500 font-semibold" : isToday ? "text-blue-600 font-semibold" : ""}`}>
                         <Calendar className="w-3 h-3" />
@@ -427,19 +535,56 @@ export default function TasksClient() {
                     {task.is_recurring && task.recurrence_rule && (
                       <span>{RECURRENCE_OPTIONS.find((r) => r.value === task.recurrence_rule)?.label || "Recurring"}</span>
                     )}
+                    {linkedLabel && (
+                      <span className="flex items-center gap-0.5 text-indigo-500">
+                        <LinkIcon className="w-3 h-3" />
+                        {linkedLabel}
+                      </span>
+                    )}
+                    {assignedName && (
+                      <span className="flex items-center gap-0.5 text-teal-600">
+                        <UserCheck className="w-3 h-3" />
+                        {assignedName}
+                      </span>
+                    )}
                   </div>
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center gap-1 flex-shrink-0">
+                <div className="flex items-center gap-1 flex-shrink-0 relative">
                   {task.status !== "completed" && (
                     <>
-                      <button onClick={() => snoozeTask(task.id, 1)} title="Snooze 1 day" className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors">
-                        <AlarmClock className="w-3.5 h-3.5" />
-                      </button>
-                      <button onClick={() => snoozeTask(task.id, 7)} title="Snooze 1 week" className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors">
-                        <Clock className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="relative">
+                        <button
+                          onClick={() => setSnoozeDropdownId(snoozeDropdownId === task.id ? null : task.id)}
+                          title="Snooze"
+                          className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                        >
+                          <AlarmClock className="w-3.5 h-3.5" />
+                        </button>
+                        {snoozeDropdownId === task.id && (
+                          <>
+                            <div className="fixed inset-0 z-40" onClick={() => setSnoozeDropdownId(null)} />
+                            <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-50 py-1 min-w-[120px]">
+                              {[
+                                { days: 1, label: "1 day" },
+                                { days: 3, label: "3 days" },
+                                { days: 7, label: "1 week" },
+                                { days: 14, label: "2 weeks" },
+                                { days: 30, label: "1 month" },
+                              ].map((opt) => (
+                                <button
+                                  key={opt.days}
+                                  onClick={() => snoozeTask(task.id, opt.days)}
+                                  className="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-amber-50 hover:text-amber-700"
+                                >
+                                  {opt.label}
+                                </button>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                      </div>
                     </>
                   )}
                   <button onClick={() => deleteTask(task.id)} title="Delete" className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
