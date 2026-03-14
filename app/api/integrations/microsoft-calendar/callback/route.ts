@@ -58,7 +58,8 @@ export async function GET(request: NextRequest) {
 
     if (!response.ok) {
       const err = await response.text();
-      console.error("[Microsoft Calendar] Token exchange failed:", err);
+      console.error("[Microsoft Calendar] Token exchange failed:", response.status, err);
+      console.error("[Microsoft Calendar] redirect_uri used:", `${process.env.NEXT_PUBLIC_APP_URL}/api/integrations/microsoft-calendar/callback`);
       return NextResponse.redirect(`${redirectBase}?error=microsoft_token_failed`);
     }
 
