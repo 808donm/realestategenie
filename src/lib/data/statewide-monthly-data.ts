@@ -7,6 +7,7 @@
 export type StatewideMonthlyData = {
   month: string;
   label: string;
+  highlights: string[];
   singleFamily: {
     counties: {
       county: string;
@@ -83,6 +84,14 @@ export const STATEWIDE_MONTHLY_DATA: StatewideMonthlyData[] = [
   {
     month: "2026-01",
     label: "January 2026",
+    highlights: [
+      "Statewide single-family median held above $1M at $1,010,000, down 2.5% year-over-year.",
+      "Total SF sales fell 8.3% statewide (418 vs 456) with declines across all four counties.",
+      "Maui SF median surged 20.4% to $1,445,000 — the highest of any county.",
+      "Kaua'i saw the steepest SF sales drop at −37.9% (18 vs 29), though small sample sizes amplify swings.",
+      "Condo sales declined 7.8% statewide with a median of $565,000, down 5.0% from last year.",
+      "O'ahu accounted for 59% of all statewide sales (491 of 821 combined SF + condo).",
+    ],
     singleFamily: {
       counties: [
         { county: "Hawai'i", sales2026: 154, sales2025: 172, salesChange: -10.47, medianPrice2026: 574500, medianPrice2025: 590000, medianPriceChange: -2.63 },
@@ -115,6 +124,14 @@ export const STATEWIDE_MONTHLY_DATA: StatewideMonthlyData[] = [
   {
     month: "2026-02",
     label: "February 2026",
+    highlights: [
+      "Statewide SF median rose to $1,080,000, up 2.4% year-over-year — the first positive month of 2026.",
+      "SF sales dipped just 1.5% (383 vs 389), a much narrower decline than January's −8.3%.",
+      "Kaua'i SF median jumped 29.3% to $1,369,000, the largest price gain of any county.",
+      "Maui condo sales surged 25.5% (64 vs 51), the only county with double-digit condo sales growth.",
+      "Statewide condo median slipped to $546,000, down 0.7% year-over-year.",
+      "Year-to-date: 803 SF sales (−5.0%) and 810 condo sales (−4.3%) with a combined statewide SF median of $1,035,000.",
+    ],
     singleFamily: {
       counties: [
         { county: "Hawai'i", sales2026: 128, sales2025: 142, salesChange: -9.86, medianPrice2026: 575000, medianPrice2025: 565000, medianPriceChange: 1.77 },
