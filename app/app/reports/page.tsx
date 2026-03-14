@@ -36,9 +36,17 @@ export default async function ReportsPage() {
           />
           <ReportCard
             href="/app/reports/monthly-statistics"
-            title="Monthly Market Report"
-            description="January 2026: SF median $1,122,500 (+0.2%), condo median $529,000 (-1.9%). Sales, inventory, days on market, and price range breakdowns."
+            title="Oahu Monthly Report"
+            description="Oahu monthly resales: SF & condo sales, median prices, DOM, pending, inventory with YoY comparisons and trend charts."
             dataSources={["HiCentral MLS"]}
+            color="#dc2626"
+            badge="NEW"
+          />
+          <ReportCard
+            href="/app/reports/maui-statistics"
+            title="Maui Monthly Report"
+            description="Maui County: SF median $1.25M, condo $847K. 12-month trends, area sales volume, affordability index, and inventory analysis."
+            dataSources={["RAM MLS"]}
             color="#dc2626"
             badge="NEW"
           />
