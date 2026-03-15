@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseServer } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
@@ -23,37 +23,26 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${redirectBase}?error=microsoft_no_code`);
   }
 
-  const supabase = await supabaseServer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    console.error("[Microsoft Calendar] No authenticated user in callback");
-    return NextResponse.redirect(`${redirectBase}?error=not_authenticated`);
-  }
-
-  // Verify CSRF state
-  const { data: integration, error: fetchError } = await supabase
+  // Look up the integration by oauth_state using admin client.
+  // We use admin here because the user's auth cookies may not survive
+  // the round-trip redirect through Microsoft's OAuth flow.
+  const { data: integration, error: fetchError } = await supabaseAdmin
     .from("integrations")
     .select("*")
-    .eq("agent_id", user.id)
     .eq("provider", "microsoft_calendar")
+    .eq("config->>oauth_state", state)
     .single();
 
-  if (fetchError) {
-    console.error("[Microsoft Calendar] Failed to fetch integration row:", fetchError);
+  if (fetchError || !integration) {
+    console.error("[Microsoft Calendar] No integration found for state:", state, fetchError);
     return NextResponse.redirect(`${redirectBase}?error=microsoft_invalid_state`);
   }
 
-  if (integration?.config?.oauth_state !== state) {
-    console.error("[Microsoft Calendar] State mismatch. Expected:", integration?.config?.oauth_state, "Got:", state);
-    return NextResponse.redirect(`${redirectBase}?error=microsoft_invalid_state`);
-  }
+  const agentId = integration.agent_id;
 
   try {
     const tenant = process.env.MICROSOFT_CALENDAR_TENANT_ID || "common";
-    console.log("[Microsoft Calendar] Exchanging code with redirect_uri:", callbackUri);
+    console.log("[Microsoft Calendar] Exchanging code for agent:", agentId, "redirect_uri:", callbackUri);
 
     const response = await fetch(
       `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`,
@@ -83,7 +72,7 @@ export async function GET(request: NextRequest) {
       Date.now() + tokens.expires_in * 1000
     ).toISOString();
 
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseAdmin
       .from("integrations")
       .update({
         status: "connected",
@@ -97,15 +86,15 @@ export async function GET(request: NextRequest) {
         last_error: null,
         updated_at: new Date().toISOString(),
       })
-      .eq("agent_id", user.id)
+      .eq("agent_id", agentId)
       .eq("provider", "microsoft_calendar");
 
     if (updateError) {
       console.error("[Microsoft Calendar] Failed to save tokens:", updateError);
-      return NextResponse.redirect(`${redirectBase}?error=microsoft_oauth_failed&message=${encodeURIComponent("Failed to save connection: " + updateError.message)}`);
+      return NextResponse.redirect(`${redirectBase}?error=microsoft_oauth_failed`);
     }
 
-    console.log("[Microsoft Calendar] Connected for agent:", user.id);
+    console.log("[Microsoft Calendar] Connected for agent:", agentId);
     return NextResponse.redirect(`${redirectBase}?success=microsoft_calendar_connected`);
   } catch (err: any) {
     console.error("[Microsoft Calendar] Callback error:", err);
