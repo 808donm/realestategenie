@@ -1,14 +1,17 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import crypto from "crypto";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   if (!process.env.MICROSOFT_CALENDAR_CLIENT_ID || !process.env.MICROSOFT_CALENDAR_CLIENT_SECRET) {
     return NextResponse.json(
       { error: "Microsoft Calendar integration is not configured. Please set MICROSOFT_CALENDAR_CLIENT_ID and MICROSOFT_CALENDAR_CLIENT_SECRET environment variables." },
       { status: 503 }
     );
   }
+
+  const requestUrl = new URL(request.url);
+  const appOrigin = `${requestUrl.protocol}//${requestUrl.host}`;
 
   const supabase = await supabaseServer();
   const {
@@ -17,7 +20,7 @@ export async function GET() {
 
   if (!user) {
     return NextResponse.redirect(
-      new URL("/login", process.env.NEXT_PUBLIC_APP_URL!)
+      new URL("/login", appOrigin)
     );
   }
 
@@ -34,10 +37,11 @@ export async function GET() {
   );
 
   const tenant = process.env.MICROSOFT_CALENDAR_TENANT_ID || "common";
+  const callbackUri = `${appOrigin}/api/integrations/microsoft-calendar/callback`;
 
   const params = new URLSearchParams({
     client_id: process.env.MICROSOFT_CALENDAR_CLIENT_ID!,
-    redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/integrations/microsoft-calendar/callback`,
+    redirect_uri: callbackUri,
     response_type: "code",
     scope: "Calendars.ReadWrite offline_access",
     state,
