@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
       const err = await response.text();
       console.error("[Microsoft Calendar] Token exchange failed:", response.status, err);
       console.error("[Microsoft Calendar] redirect_uri used:", callbackUri);
-      return NextResponse.redirect(`${redirectBase}?error=microsoft_token_failed`);
+      return NextResponse.redirect(`${redirectBase}?error=microsoft_token_failed&message=${encodeURIComponent("Token exchange failed (" + response.status + "): " + err.substring(0, 200))}`);
     }
 
     const tokens = await response.json();
@@ -92,7 +92,6 @@ export async function GET(request: NextRequest) {
           token_type: tokens.token_type,
           scope: tokens.scope,
         },
-        last_error: null,
         updated_at: new Date().toISOString(),
       })
       .eq("agent_id", agentId)
@@ -100,13 +99,13 @@ export async function GET(request: NextRequest) {
 
     if (updateError) {
       console.error("[Microsoft Calendar] Failed to save tokens:", updateError);
-      return NextResponse.redirect(`${redirectBase}?error=microsoft_oauth_failed`);
+      return NextResponse.redirect(`${redirectBase}?error=microsoft_oauth_failed&message=${encodeURIComponent("Failed to save tokens: " + updateError.message)}`);
     }
 
     console.log("[Microsoft Calendar] Connected for agent:", agentId);
     return NextResponse.redirect(`${redirectBase}?success=microsoft_calendar_connected`);
   } catch (err: any) {
     console.error("[Microsoft Calendar] Callback error:", err);
-    return NextResponse.redirect(`${redirectBase}?error=microsoft_oauth_failed`);
+    return NextResponse.redirect(`${redirectBase}?error=microsoft_oauth_failed&message=${encodeURIComponent(err.message || String(err))}`);
   }
 }

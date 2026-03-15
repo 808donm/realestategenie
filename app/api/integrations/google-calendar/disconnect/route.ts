@@ -16,7 +16,6 @@ export async function POST() {
     .update({
       status: "disconnected",
       config: {},
-      last_error: null,
       updated_at: new Date().toISOString(),
     })
     .eq("agent_id", user.id)

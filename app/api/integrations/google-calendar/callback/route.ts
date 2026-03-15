@@ -74,7 +74,6 @@ export async function GET(request: NextRequest) {
           token_type: tokens.token_type,
           scope: tokens.scope,
         },
-        last_error: null,
         updated_at: new Date().toISOString(),
       })
       .eq("agent_id", user.id)
