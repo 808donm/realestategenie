@@ -26,16 +26,25 @@ export async function GET(request: NextRequest) {
   // Look up the integration by oauth_state using admin client.
   // We use admin here because the user's auth cookies may not survive
   // the round-trip redirect through Microsoft's OAuth flow.
-  const { data: integration, error: fetchError } = await supabaseAdmin
+  const { data: integrations, error: fetchError } = await supabaseAdmin
     .from("integrations")
     .select("*")
     .eq("provider", "microsoft_calendar")
-    .eq("config->>oauth_state", state)
-    .single();
+    .eq("status", "disconnected");
 
-  if (fetchError || !integration) {
-    console.error("[Microsoft Calendar] No integration found for state:", state, fetchError);
-    return NextResponse.redirect(`${redirectBase}?error=microsoft_invalid_state`);
+  if (fetchError) {
+    console.error("[Microsoft Calendar] Failed to query integrations:", fetchError);
+    return NextResponse.redirect(`${redirectBase}?error=microsoft_invalid_state&message=${encodeURIComponent("DB query failed: " + fetchError.message)}`);
+  }
+
+  // Find the integration whose config.oauth_state matches
+  const integration = integrations?.find(
+    (i: any) => i.config?.oauth_state === state
+  );
+
+  if (!integration) {
+    console.error("[Microsoft Calendar] No integration found for state:", state, "Found rows:", integrations?.length);
+    return NextResponse.redirect(`${redirectBase}?error=microsoft_invalid_state&message=${encodeURIComponent("No matching state found. Found " + (integrations?.length || 0) + " disconnected rows.")}`);
   }
 
   const agentId = integration.agent_id;

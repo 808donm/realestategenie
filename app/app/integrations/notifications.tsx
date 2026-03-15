@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 export default function IntegrationsNotifications() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const [errorBanner, setErrorBanner] = useState<{ title: string; message: string } | null>(null);
 
   useEffect(() => {
     const success = searchParams.get("success");
@@ -67,15 +68,15 @@ export default function IntegrationsNotifications() {
           break;
         case "microsoft_invalid_state":
           errorTitle = "Microsoft Calendar";
-          errorMessage = "Invalid security state. Please try connecting again.";
+          errorMessage = message || "Invalid security state. Please try connecting again.";
           break;
         case "microsoft_token_failed":
           errorTitle = "Microsoft Calendar";
-          errorMessage = "Failed to exchange authorization code. Please try again.";
+          errorMessage = message || "Failed to exchange authorization code. Please try again.";
           break;
         case "microsoft_oauth_failed":
           errorTitle = "Microsoft Calendar";
-          errorMessage = "An unexpected error occurred during Microsoft OAuth";
+          errorMessage = message || "An unexpected error occurred during Microsoft OAuth";
           break;
         case "google_oauth_denied":
           errorTitle = "Google Calendar";
@@ -101,11 +102,31 @@ export default function IntegrationsNotifications() {
 
       toast.error(errorTitle, {
         description: errorMessage,
-        duration: 6000,
+        duration: 15000,
       });
+      setErrorBanner({ title: errorTitle, message: errorMessage });
       router.replace("/app/integrations");
     }
   }, [searchParams, router]);
+
+  if (errorBanner) {
+    return (
+      <div className="rounded-lg border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/20 p-4">
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="font-medium text-red-800 dark:text-red-300">{errorBanner.title}</p>
+            <p className="text-sm text-red-700 dark:text-red-400 mt-1">{errorBanner.message}</p>
+          </div>
+          <button
+            onClick={() => setErrorBanner(null)}
+            className="text-red-500 hover:text-red-700 text-sm"
+          >
+            Dismiss
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return null;
 }

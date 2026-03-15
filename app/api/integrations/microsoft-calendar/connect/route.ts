@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import crypto from "crypto";
 
 export async function GET(request: NextRequest) {
@@ -26,7 +27,8 @@ export async function GET(request: NextRequest) {
 
   const state = crypto.randomUUID();
 
-  await supabase.from("integrations").upsert(
+  // Use admin client to bypass RLS for the upsert
+  const { error: upsertError } = await supabaseAdmin.from("integrations").upsert(
     {
       agent_id: user.id,
       provider: "microsoft_calendar",
@@ -35,6 +37,13 @@ export async function GET(request: NextRequest) {
     },
     { onConflict: "agent_id,provider" }
   );
+
+  if (upsertError) {
+    console.error("[Microsoft Calendar] Failed to create integration row:", upsertError);
+    return NextResponse.redirect(
+      `${appOrigin}/app/integrations?error=microsoft_oauth_failed&message=${encodeURIComponent("Failed to initialize: " + upsertError.message)}`
+    );
+  }
 
   const tenant = process.env.MICROSOFT_CALENDAR_TENANT_ID || "common";
   const callbackUri = `${appOrigin}/api/integrations/microsoft-calendar/callback`;
