@@ -26,6 +26,7 @@ interface LeadsBySourceChartProps {
 
 const SOURCE_COLORS: Record<string, string> = {
   "Open House": "#6366f1",
+  Zillow: "#006aff",
   Google: "#34a853",
   Facebook: "#1877f2",
   Instagram: "#e4405f",

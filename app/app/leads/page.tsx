@@ -6,6 +6,7 @@ import PageHelp from "../components/page-help";
 
 const SOURCE_LABELS: Record<string, string> = {
   open_house: "Open House",
+  zillow: "Zillow",
   google: "Google",
   facebook: "Facebook",
   instagram: "Instagram",

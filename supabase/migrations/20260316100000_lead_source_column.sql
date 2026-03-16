@@ -6,3 +6,6 @@ ALTER TABLE lead_submissions
 UPDATE lead_submissions SET lead_source = 'open_house' WHERE lead_source IS NULL;
 
 CREATE INDEX IF NOT EXISTS idx_lead_submissions_lead_source ON lead_submissions (lead_source);
+
+-- Make event_id nullable so non-open-house leads (Zillow, social, etc.) can be stored
+ALTER TABLE lead_submissions ALTER COLUMN event_id DROP NOT NULL;

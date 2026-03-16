@@ -63,7 +63,7 @@ export default function LeadsList({ leads, eventMap }: LeadsListProps) {
         name: p.name || "Unknown",
         email: p.email || "",
         phone: p.phone_e164 || "",
-        property: eventMap.get(l.event_id) || l.event_id,
+        property: eventMap.get(l.event_id) || (l.event_id ? l.event_id : "Direct Lead"),
         score: l.heat_score,
         heat: getHeatLevel(l.heat_score),
         timeline: p.timeline || "",
@@ -161,7 +161,7 @@ export default function LeadsList({ leads, eventMap }: LeadsListProps) {
               name: p.name || "Unknown",
               email: p.email || "",
               phone: p.phone_e164 || "",
-              property: eventMap.get(l.event_id) || l.event_id,
+              property: eventMap.get(l.event_id) || (l.event_id ? l.event_id : "Direct Lead"),
               score: l.heat_score,
               timeline: p.timeline || "",
               date: new Date(l.created_at).toLocaleDateString(),
@@ -232,7 +232,7 @@ export default function LeadsList({ leads, eventMap }: LeadsListProps) {
             {/* Table Rows */}
             {currentLeads.map((l) => {
               const p: any = l.payload ?? {};
-              const address = eventMap.get(l.event_id) || l.event_id;
+              const address = eventMap.get(l.event_id) || (l.event_id ? l.event_id : "Direct Lead");
               const heatColor =
                 activeTab === "dnc" ? "#6b7280" :
                 getHeatLevel(l.heat_score) === "hot" ? "#ef4444" :
