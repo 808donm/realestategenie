@@ -84,7 +84,7 @@ export default function LeadsBySourceChart({ bySource, byEvent }: LeadsBySourceC
                 ))}
               </Pie>
               <Tooltip
-                formatter={(value: number) => [value, "Leads"]}
+                formatter={(value: any) => [value, "Leads"]}
               />
             </PieChart>
           </ResponsiveContainer>
@@ -124,7 +124,7 @@ export default function LeadsBySourceChart({ bySource, byEvent }: LeadsBySourceC
                 width={160}
                 tickFormatter={(v: string) => v.length > 25 ? v.slice(0, 25) + "..." : v}
               />
-              <Tooltip formatter={(value: number) => [value, "Leads"]} />
+              <Tooltip formatter={(value: any) => [value, "Leads"]} />
               <Bar dataKey="count" fill="#6366f1" radius={[0, 4, 4, 0]} />
             </BarChart>
           </ResponsiveContainer>
