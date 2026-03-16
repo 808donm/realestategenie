@@ -70,8 +70,8 @@ export default function LeadsBySourceChart({ bySource, byEvent }: LeadsBySourceC
                 dataKey="count"
                 nameKey="name"
                 paddingAngle={2}
-                label={({ name, percent }: { name: string; percent?: number }) =>
-                  `${name} ${((percent ?? 0) * 100).toFixed(0)}%`
+                label={(props: Record<string, unknown>) =>
+                  `${props.name ?? ""} ${(((props.percent as number) ?? 0) * 100).toFixed(0)}%`
                 }
                 labelLine={{ strokeWidth: 1 }}
               >

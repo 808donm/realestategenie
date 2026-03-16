@@ -147,8 +147,67 @@ export async function POST(req: Request) {
       `[Zillow Webhook] Lead created: ${lead.id} | ${name} | Score: ${heatScore}`
     );
 
+    // Auto-match: try to link this lead to an agent listing by address
+    let matchedListingId: string | null = null;
+    if (propertyAddress) {
+      try {
+        const normalised = propertyAddress.toLowerCase().replace(/[^a-z0-9]/g, "");
+        const { data: listings } = await admin
+          .from("agent_listings")
+          .select("id, unparsed_address, street_number, street_name, city, postal_code, list_price, bedrooms_total, bathrooms_total, living_area, property_type, mls_listing_key, mls_listing_id")
+          .eq("user_id", agentId);
+
+        if (listings && listings.length > 0) {
+          // Find best address match
+          const match = listings.find((l) => {
+            const addr = (l.unparsed_address || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+            const parts = [l.street_number, l.street_name, l.city, l.postal_code]
+              .filter(Boolean)
+              .join("")
+              .toLowerCase()
+              .replace(/[^a-z0-9]/g, "");
+            return (
+              (addr && normalised.includes(addr)) ||
+              (addr && addr.includes(normalised)) ||
+              (parts && normalised.includes(parts)) ||
+              (parts && parts.includes(normalised))
+            );
+          });
+
+          if (match) {
+            matchedListingId = match.id;
+            await admin.from("lead_listing_matches").insert({
+              lead_id: lead.id,
+              agent_id: agentId,
+              listing_key: match.mls_listing_key || match.id,
+              listing_id: match.mls_listing_id || null,
+              address: match.unparsed_address || propertyAddress,
+              city: match.city || "",
+              postal_code: match.postal_code || "",
+              list_price: match.list_price || 0,
+              bedrooms: match.bedrooms_total || null,
+              bathrooms: match.bathrooms_total || null,
+              living_area: match.living_area || null,
+              property_type: match.property_type || "",
+              match_score: 100,
+              match_reasons: ["Zillow lead matched by property address"],
+              status: "new",
+            });
+            console.log(`[Zillow Webhook] Auto-matched lead to listing: ${match.unparsed_address}`);
+          }
+        }
+      } catch (matchErr) {
+        // Non-fatal — lead is still created even if matching fails
+        console.error("[Zillow Webhook] Auto-match error:", matchErr);
+      }
+    }
+
     // Return 200 quickly — Zillow expects a fast response
-    return NextResponse.json({ ok: true, lead_id: lead.id });
+    return NextResponse.json({
+      ok: true,
+      lead_id: lead.id,
+      matched_listing: matchedListingId,
+    });
   } catch (err: unknown) {
     console.error("[Zillow Webhook] Error:", err);
     return NextResponse.json(
