@@ -30,8 +30,33 @@ export async function GET() {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    // Deduplicate leads: same person + same event should only appear once.
+    // Keep the entry with the most advanced pipeline stage (or most recently updated).
+    const stageOrder: Record<string, number> = {};
+    PIPELINE_STAGES.forEach((s, i) => { stageOrder[s] = i; });
+
+    const dedupeMap = new Map<string, typeof leads[0]>();
+    for (const lead of leads || []) {
+      const name = (lead.payload?.name || "").trim().toLowerCase();
+      const key = `${name}::${lead.event_id}`;
+      const existing = dedupeMap.get(key);
+      if (!existing) {
+        dedupeMap.set(key, lead);
+      } else {
+        // Keep the one with the more advanced stage, or if same stage, most recently updated
+        const existingStageIdx = stageOrder[existing.pipeline_stage] ?? 0;
+        const newStageIdx = stageOrder[lead.pipeline_stage] ?? 0;
+        if (newStageIdx > existingStageIdx ||
+            (newStageIdx === existingStageIdx &&
+             (lead.updated_at || lead.created_at) > (existing.updated_at || existing.created_at))) {
+          dedupeMap.set(key, lead);
+        }
+      }
+    }
+    const dedupedLeads = Array.from(dedupeMap.values());
+
     // Fetch event addresses for display
-    const eventIds = [...new Set((leads || []).map((l) => l.event_id))];
+    const eventIds = [...new Set(dedupedLeads.map((l) => l.event_id))];
     const { data: events } = await supabase
       .from("open_house_events")
       .select("id, address")
@@ -44,7 +69,7 @@ export async function GET() {
 
     // Group leads by pipeline stage
     const stages = PIPELINE_STAGES.map((stageKey) => {
-      const stageLeads = (leads || []).filter(
+      const stageLeads = dedupedLeads.filter(
         (l) => l.pipeline_stage === stageKey
       );
       return {
