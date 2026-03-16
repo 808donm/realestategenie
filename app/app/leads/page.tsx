@@ -1,14 +1,23 @@
 import Link from "next/link";
 import { supabaseServer } from "@/lib/supabase/server";
 import LeadsList from "./leads-list";
+import LeadsBySourceChart from "./leads-by-source-chart";
 import PageHelp from "../components/page-help";
+
+const SOURCE_LABELS: Record<string, string> = {
+  open_house: "Open House",
+  google: "Google",
+  facebook: "Facebook",
+  instagram: "Instagram",
+  linkedin: "LinkedIn",
+};
 
 export default async function LeadsPage() {
   const supabase = await supabaseServer();
 
   const { data: leads, error } = await supabase
     .from("lead_submissions")
-    .select("id,event_id,created_at,payload,heat_score")
+    .select("id,event_id,created_at,payload,heat_score,lead_source")
     .order("created_at", { ascending: false })
     .limit(200);
 
@@ -21,6 +30,26 @@ export default async function LeadsPage() {
 
   const eventMap = new Map((events ?? []).map((e) => [e.id, e.address]));
 
+  // Aggregate leads by source
+  const sourceCounts: Record<string, number> = {};
+  for (const lead of leads ?? []) {
+    const src = lead.lead_source || "open_house";
+    sourceCounts[src] = (sourceCounts[src] || 0) + 1;
+  }
+  const bySource = Object.entries(sourceCounts)
+    .map(([key, count]) => ({ name: SOURCE_LABELS[key] || key, count }))
+    .sort((a, b) => b.count - a.count);
+
+  // Aggregate leads by open house event
+  const eventCounts: Record<string, number> = {};
+  for (const lead of leads ?? []) {
+    const addr = eventMap.get(lead.event_id) || "Unknown Event";
+    eventCounts[addr] = (eventCounts[addr] || 0) + 1;
+  }
+  const byEvent = Object.entries(eventCounts)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count);
+
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
@@ -32,6 +61,10 @@ export default async function LeadsPage() {
       </div>
 
       {error && <p style={{ color: "crimson" }}>{error.message}</p>}
+
+      <div style={{ margin: "24px 0" }}>
+        <LeadsBySourceChart bySource={bySource} byEvent={byEvent} />
+      </div>
 
       <LeadsList leads={leads ?? []} eventMap={eventMap} />
     </div>
