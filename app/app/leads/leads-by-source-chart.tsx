@@ -12,6 +12,7 @@ import {
   Pie,
   Cell,
   Legend,
+  type PieLabelRenderProps,
 } from "recharts";
 
 interface SourceData {
@@ -70,7 +71,7 @@ export default function LeadsBySourceChart({ bySource, byEvent }: LeadsBySourceC
                 dataKey="count"
                 nameKey="name"
                 paddingAngle={2}
-                label={(props: Record<string, unknown>) =>
+                label={(props: PieLabelRenderProps) =>
                   `${props.name ?? ""} ${(((props.percent as number) ?? 0) * 100).toFixed(0)}%`
                 }
                 labelLine={{ strokeWidth: 1 }}
