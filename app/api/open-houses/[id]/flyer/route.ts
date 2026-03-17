@@ -11,12 +11,14 @@ import {
   FlyerRenderContext,
 } from "./renderers";
 
-// Use admin client to bypass RLS - flyer is public for anyone with the link
-const admin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+// Lazy-init admin client to avoid build-time errors (env vars unavailable during build)
+function getAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false } }
+  );
+}
 
 // Helper: fetch an image URL and return base64 data URI + dimensions
 async function fetchImage(
@@ -58,6 +60,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+    const admin = getAdmin();
 
     // Get open house event details using admin client (bypasses RLS)
     let event: any = null;
