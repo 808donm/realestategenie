@@ -1,13 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
-import { resolveGHLAgentId } from "@/lib/integrations/ghl-token-refresh";
-import { createClient } from "@supabase/supabase-js";
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
 
 /**
  * Update GHL integration configuration
@@ -18,7 +10,6 @@ export async function POST(req: NextRequest) {
   try {
     const supabase = await supabaseServer();
 
-    // Verify user is authenticated
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -29,20 +20,17 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
 
-    // Resolve agent ID (falls back to team owner if needed)
-    const ghlAgentId = await resolveGHLAgentId(user.id);
-
-    // Get existing integration (use admin client to bypass RLS for team members)
-    const { data: integration, error: fetchError } = await supabaseAdmin
+    // Get agent's own integration
+    const { data: integration, error: fetchError } = await supabase
       .from("integrations")
       .select("config")
-      .eq("agent_id", ghlAgentId)
+      .eq("agent_id", user.id)
       .eq("provider", "ghl")
       .single();
 
     if (fetchError || !integration) {
       return NextResponse.json(
-        { error: "GHL integration not found. Please connect GHL first." },
+        { error: "GHL integration not found. Please connect your own GHL account in Integrations." },
         { status: 404 }
       );
     }
@@ -54,13 +42,13 @@ export async function POST(req: NextRequest) {
     };
 
     // Update integration config
-    const { error: updateError } = await supabaseAdmin
+    const { error: updateError } = await supabase
       .from("integrations")
       .update({
         config: updatedConfig,
         updated_at: new Date().toISOString(),
       })
-      .eq("agent_id", ghlAgentId)
+      .eq("agent_id", user.id)
       .eq("provider", "ghl");
 
     if (updateError) {
@@ -95,7 +83,6 @@ export async function GET(req: NextRequest) {
   try {
     const supabase = await supabaseServer();
 
-    // Verify user is authenticated
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -104,20 +91,17 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Resolve agent ID (falls back to team owner if needed)
-    const ghlAgentId = await resolveGHLAgentId(user.id);
-
-    // Get existing integration (use admin client to bypass RLS for team members)
-    const { data: integration, error } = await supabaseAdmin
+    // Get agent's own integration
+    const { data: integration, error } = await supabase
       .from("integrations")
       .select("config")
-      .eq("agent_id", ghlAgentId)
+      .eq("agent_id", user.id)
       .eq("provider", "ghl")
       .single();
 
     if (error || !integration) {
       return NextResponse.json(
-        { error: "GHL integration not found" },
+        { error: "GHL integration not found. Please connect your own GHL account in Integrations." },
         { status: 404 }
       );
     }
