@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 import * as XLSX from "xlsx";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell,
@@ -91,8 +92,45 @@ export default function MonthlyStatisticsClient() {
   }, []);
 
   const hasMultipleMonths = OAHU_MONTHLY_DATA.length > 1;
+  const chartsRef = useRef<HTMLDivElement>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [agentProfile, setAgentProfile] = useState<{
+    name: string; brokerage: string; email: string; phone: string;
+    licenseNumber: string; headshotUrl: string; logoUrl: string;
+  } | null>(null);
 
-  const exportReport = (format: "pdf" | "xlsx") => {
+  useEffect(() => {
+    fetch("/api/profile")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.agent) {
+          setAgentProfile({
+            name: d.agent.display_name || "",
+            brokerage: d.agent.brokerage_name || "",
+            email: d.agent.email || "",
+            phone: d.agent.phone_e164 || "",
+            licenseNumber: d.agent.license_number || "",
+            headshotUrl: d.agent.headshot_url || "",
+            logoUrl: d.agent.logo_url || "",
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const captureChart = async (chartId: string): Promise<string | null> => {
+    const el = chartsRef.current?.querySelector(`[data-pdf-chart="${chartId}"]`) as HTMLElement | null;
+    if (!el) return null;
+    const canvas = await html2canvas(el, {
+      backgroundColor: "#ffffff",
+      scale: 2,
+      logging: false,
+      useCORS: true,
+    });
+    return canvas.toDataURL("image/png");
+  };
+
+  const exportReport = async (format: "pdf" | "xlsx") => {
     const exportData = [
       { Metric: "Number of Sales", "Single-Family": sf.sales, "SF YoY": `${sf.salesYoY}%`, Condo: cd.sales, "Condo YoY": `${cd.salesYoY}%` },
       { Metric: "Median Sales Price", "Single-Family": sf.medianPrice, "SF YoY": `${sf.medianPriceYoY}%`, Condo: cd.medianPrice, "Condo YoY": `${cd.medianPriceYoY}%` },
@@ -109,6 +147,8 @@ export default function MonthlyStatisticsClient() {
       XLSX.utils.book_append_sheet(wb, ws, "Monthly Statistics");
       XLSX.writeFile(wb, "Monthly_Statistics.xlsx");
     } else {
+      setIsExporting(true);
+      try {
       const doc = new jsPDF();
       const pw = doc.internal.pageSize.getWidth();
       const ph = doc.internal.pageSize.getHeight();
@@ -129,7 +169,7 @@ export default function MonthlyStatisticsClient() {
         ensureSpace(20);
         doc.setFontSize(14);
         doc.setFont("helvetica", "bold");
-        doc.setTextColor(30, 58, 95); // dark blue
+        doc.setTextColor(30, 58, 95);
         doc.text(title, 10, y);
         y += 2;
         doc.setDrawColor(30, 58, 95);
@@ -142,7 +182,6 @@ export default function MonthlyStatisticsClient() {
       // Helper: draw a table
       const drawTable = (headers: string[], rows: string[][], colWidths?: number[]) => {
         const cw = colWidths || headers.map(() => (pw - 20) / headers.length);
-        // Header row
         ensureSpace(14);
         doc.setFillColor(30, 58, 95);
         doc.rect(10, y - 4, pw - 20, 8, "F");
@@ -156,8 +195,6 @@ export default function MonthlyStatisticsClient() {
         });
         y += 7;
         doc.setTextColor(0, 0, 0);
-
-        // Data rows
         doc.setFont("helvetica", "normal");
         doc.setFontSize(8);
         rows.forEach((row, ri) => {
@@ -176,8 +213,17 @@ export default function MonthlyStatisticsClient() {
         y += 4;
       };
 
+      // Helper: add a chart image to the PDF
+      const addChartImage = async (chartId: string, imgHeight: number = 80) => {
+        const imgData = await captureChart(chartId);
+        if (!imgData) return;
+        ensureSpace(imgHeight + 6);
+        const imgWidth = pw - 20;
+        doc.addImage(imgData, "PNG", 10, y, imgWidth, imgHeight);
+        y += imgHeight + 6;
+      };
+
       // ===== PAGE 1: Cover / Title =====
-      // Title banner
       doc.setFillColor(30, 58, 95);
       doc.rect(0, 0, pw, 60, "F");
       doc.setFontSize(26);
@@ -186,11 +232,55 @@ export default function MonthlyStatisticsClient() {
       doc.text("Monthly Market Statistics", pw / 2, 28, { align: "center" });
       doc.setFontSize(13);
       doc.setFont("helvetica", "normal");
-      doc.text("Oahu Monthly Residential Resales — Honolulu Board of REALTORS®", pw / 2, 40, { align: "center" });
+      doc.text("Oahu Monthly Residential Resales \u2014 Honolulu Board of REALTORS\u00AE", pw / 2, 40, { align: "center" });
       doc.setFontSize(11);
       doc.text(data.label, pw / 2, 52, { align: "center" });
       doc.setTextColor(0, 0, 0);
-      y = 75;
+      y = 70;
+
+      // Agent branding section
+      if (agentProfile?.headshotUrl) {
+        try {
+          const imgResponse = await fetch(agentProfile.headshotUrl);
+          const blob = await imgResponse.blob();
+          const imgDataUrl = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+          });
+          doc.addImage(imgDataUrl, "JPEG", pw / 2 - 15, y, 30, 30);
+          y += 34;
+        } catch {
+          // Skip headshot if it fails to load
+        }
+      }
+      if (agentProfile?.name) {
+        doc.setFontSize(16);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(30, 58, 95);
+        doc.text(agentProfile.name, pw / 2, y, { align: "center" });
+        y += 7;
+      }
+      if (agentProfile?.brokerage) {
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(100, 100, 100);
+        doc.text(agentProfile.brokerage, pw / 2, y, { align: "center" });
+        y += 6;
+      }
+      {
+        const contactParts: string[] = [];
+        if (agentProfile?.phone) contactParts.push(agentProfile.phone);
+        if (agentProfile?.licenseNumber) contactParts.push(`License #${agentProfile.licenseNumber}`);
+        if (contactParts.length > 0) {
+          doc.setFontSize(9);
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(120, 120, 120);
+          doc.text(contactParts.join("  |  "), pw / 2, y, { align: "center" });
+          y += 6;
+        }
+      }
+      y += 6;
 
       // Headline
       doc.setFontSize(12);
@@ -214,29 +304,24 @@ export default function MonthlyStatisticsClient() {
         { label: "Total Sales", value: `${sf.sales + cd.sales}`, change: `SF: ${sf.sales} | Condo: ${cd.sales}` },
         { label: "Pending Sales", value: `${sf.pendingSales + cd.pendingSales}`, change: `SF: ${sf.pendingSalesYoY >= 0 ? "+" : ""}${sf.pendingSalesYoY}% | Condo: ${cd.pendingSalesYoY >= 0 ? "+" : ""}${cd.pendingSalesYoY}%` },
       ];
-      const kpiW = (pw - 20 - 18) / 4; // 4 cards with gaps
+      const kpiW = (pw - 20 - 18) / 4;
       const kpiColors = ["#dc2626", "#3b82f6", "#10b981", "#8b5cf6"];
       kpiData.forEach((kpi, i) => {
         const kx = 10 + i * (kpiW + 6);
-        // Card border
         doc.setDrawColor(229, 231, 235);
         doc.setLineWidth(0.3);
         doc.roundedRect(kx, y, kpiW, 30, 3, 3, "S");
-        // Color accent bar
         const rgb = parseInt(kpiColors[i].slice(1), 16);
         doc.setFillColor((rgb >> 16) & 255, (rgb >> 8) & 255, rgb & 255);
         doc.rect(kx, y, 2, 30, "F");
-        // Label
         doc.setFontSize(7);
         doc.setFont("helvetica", "normal");
         doc.setTextColor(107, 114, 128);
         doc.text(kpi.label, kx + 6, y + 8);
-        // Value
         doc.setFontSize(14);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(0, 0, 0);
         doc.text(kpi.value, kx + 6, y + 18);
-        // Change
         doc.setFontSize(7);
         doc.setFont("helvetica", "normal");
         doc.setTextColor(107, 114, 128);
@@ -251,14 +336,14 @@ export default function MonthlyStatisticsClient() {
       doc.setTextColor(55, 65, 81);
       data.highlights.forEach((h) => {
         ensureSpace(10);
-        const lines = doc.splitTextToSize(`•  ${h}`, pw - 30);
+        const lines = doc.splitTextToSize(`\u2022  ${h}`, pw - 30);
         doc.text(lines, 14, y);
         y += lines.length * 5 + 3;
       });
       y += 4;
       doc.setTextColor(0, 0, 0);
 
-      // ===== PAGE 2: Sales & Market Activity =====
+      // ===== DATA TABLES (before graphs) =====
       doc.addPage();
       pageNum++;
       y = 20;
@@ -308,12 +393,8 @@ export default function MonthlyStatisticsClient() {
         [(pw - 20) * 0.4, (pw - 20) * 0.3, (pw - 20) * 0.3]
       );
 
-      // ===== PAGE 3: Price Range Distribution (if available) + Trends =====
       if (priceRanges.length > 0) {
-        doc.addPage();
-        pageNum++;
-        y = 20;
-
+        ensureSpace(40);
         sectionTitle("Sales by Price Range");
         drawTable(
           ["Price Range", "SF Sales", "Condo Sales", "Total"],
@@ -327,7 +408,6 @@ export default function MonthlyStatisticsClient() {
         );
       }
 
-      // Monthly Trends summary (if multiple months of data)
       if (hasMultipleMonths) {
         ensureSpace(40);
         sectionTitle("Monthly Trends Summary");
@@ -364,21 +444,82 @@ export default function MonthlyStatisticsClient() {
         [(pw - 20) * 0.28, (pw - 20) * 0.2, (pw - 20) * 0.14, (pw - 20) * 0.2, (pw - 20) * 0.18]
       );
 
-      // Footer on every page
+      // ===== CHARTS: Comparative Charts =====
+      doc.addPage();
+      pageNum++;
+      y = 20;
+
+      sectionTitle("Sales, Pending, Listings & Inventory");
+      await addChartImage("sales-comparison", 90);
+
+      sectionTitle("Year-over-Year Changes (%)");
+      await addChartImage("yoy-changes", 85);
+
+      // ===== CHARTS: More Comparisons =====
+      doc.addPage();
+      pageNum++;
+      y = 20;
+
+      if (priceRanges.length > 0) {
+        sectionTitle("Sales by Price Range");
+        await addChartImage("price-range", 90);
+      }
+
+      sectionTitle("Median Days on Market");
+      await addChartImage("dom-comparison", 70);
+
+      sectionTitle("Sales Above Asking Price (%)");
+      await addChartImage("above-asking", 70);
+
+      // ===== CHARTS: Inventory Pie =====
+      doc.addPage();
+      pageNum++;
+      y = 20;
+
+      sectionTitle("Active Inventory Split");
+      await addChartImage("inventory-pie", 80);
+
+      // ===== CHARTS: Trend Charts (if multiple months) =====
+      if (hasMultipleMonths) {
+        doc.addPage();
+        pageNum++;
+        y = 20;
+
+        sectionTitle("Median Price Trend");
+        await addChartImage("median-price-trend", 85);
+
+        sectionTitle("Sales & Days on Market Trends");
+        await addChartImage("sales-trend", 70);
+        await addChartImage("dom-trend", 70);
+
+        doc.addPage();
+        pageNum++;
+        y = 20;
+
+        sectionTitle("Inventory & Pending Sales Trends");
+        await addChartImage("inventory-trend", 70);
+        await addChartImage("pending-trend", 70);
+      }
+
+      // Footer on every page with agent branding
       const totalPages = pageNum;
+      const agentFooter = [agentProfile?.name, agentProfile?.brokerage].filter(Boolean).join(" \u2014 ");
       for (let p = 1; p <= totalPages; p++) {
         doc.setPage(p);
         doc.setFontSize(8);
         doc.setFont("helvetica", "normal");
         doc.setTextColor(156, 163, 175);
+        if (agentFooter) {
+          doc.text(agentFooter, pw / 2, ph - 17, { align: "center" });
+        }
         doc.text(
-          "Source: Honolulu Board of REALTORS® / HiCentral MLS, Ltd. — Resales of existing properties only",
+          "Source: Honolulu Board of REALTORS\u00AE / HiCentral MLS, Ltd. \u2014 Resales of existing properties only",
           pw / 2,
           ph - 12,
           { align: "center" }
         );
         doc.text(
-          `Generated ${new Date().toLocaleDateString()} — Page ${p} of ${totalPages}`,
+          `Generated ${new Date().toLocaleDateString()} \u2014 Page ${p} of ${totalPages}`,
           pw / 2,
           ph - 7,
           { align: "center" }
@@ -386,6 +527,9 @@ export default function MonthlyStatisticsClient() {
       }
 
       doc.save(`Monthly_Market_Statistics_${data.label.replace(/\s/g, "_")}.pdf`);
+      } finally {
+        setIsExporting(false);
+      }
     }
   };
 
@@ -435,7 +579,7 @@ export default function MonthlyStatisticsClient() {
 
       <div className="noprint" style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginBottom: 16 }}>
         <button onClick={() => exportReport("xlsx")} style={{ padding: "6px 14px", fontSize: 12, fontWeight: 600, border: "1px solid #d1d5db", borderRadius: 6, background: "#fff", color: "#374151", cursor: "pointer" }}>Export Excel</button>
-        <button onClick={() => exportReport("pdf")} style={{ padding: "6px 14px", fontSize: 12, fontWeight: 600, border: "none", borderRadius: 6, background: "#dc2626", color: "#fff", cursor: "pointer" }}>Export PDF</button>
+        <button onClick={() => exportReport("pdf")} disabled={isExporting} style={{ padding: "6px 14px", fontSize: 12, fontWeight: 600, border: "none", borderRadius: 6, background: isExporting ? "#9ca3af" : "#dc2626", color: "#fff", cursor: isExporting ? "wait" : "pointer" }}>{isExporting ? "Generating PDF..." : "Export PDF"}</button>
       </div>
 
       {/* KPI Summary Cards */}
@@ -480,11 +624,12 @@ export default function MonthlyStatisticsClient() {
         </ul>
       </div>
 
+      <div ref={chartsRef}>
       {/* Trend Line Charts (only shown when 2+ months of data) */}
       {hasMultipleMonths && (
         <>
           {/* Median Price Trend */}
-          <div style={{ ...cardStyle, marginBottom: 24 }}>
+          <div data-pdf-chart="median-price-trend" style={{ ...cardStyle, marginBottom: 24 }}>
             <h3 style={{ margin: "0 0 20px 0", fontSize: 16, fontWeight: 700 }}>Median Price Trend</h3>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={trendData} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
@@ -501,7 +646,7 @@ export default function MonthlyStatisticsClient() {
 
           {/* Sales & Pending Trend */}
           <div style={{ display: "flex", gap: 16, marginBottom: 24, flexWrap: "wrap" }}>
-            <div style={{ ...cardStyle, flex: "1 1 380px" }}>
+            <div data-pdf-chart="sales-trend" style={{ ...cardStyle, flex: "1 1 380px" }}>
               <h3 style={{ margin: "0 0 20px 0", fontSize: 16, fontWeight: 700 }}>Sales Trend</h3>
               <ResponsiveContainer width="100%" height={240}>
                 <LineChart data={trendData} margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>
@@ -515,7 +660,7 @@ export default function MonthlyStatisticsClient() {
                 </LineChart>
               </ResponsiveContainer>
             </div>
-            <div style={{ ...cardStyle, flex: "1 1 380px" }}>
+            <div data-pdf-chart="dom-trend" style={{ ...cardStyle, flex: "1 1 380px" }}>
               <h3 style={{ margin: "0 0 20px 0", fontSize: 16, fontWeight: 700 }}>Days on Market Trend</h3>
               <ResponsiveContainer width="100%" height={240}>
                 <LineChart data={trendData} margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>
@@ -533,7 +678,7 @@ export default function MonthlyStatisticsClient() {
 
           {/* Inventory & Pending Trend */}
           <div style={{ display: "flex", gap: 16, marginBottom: 24, flexWrap: "wrap" }}>
-            <div style={{ ...cardStyle, flex: "1 1 380px" }}>
+            <div data-pdf-chart="inventory-trend" style={{ ...cardStyle, flex: "1 1 380px" }}>
               <h3 style={{ margin: "0 0 20px 0", fontSize: 16, fontWeight: 700 }}>Active Inventory Trend</h3>
               <ResponsiveContainer width="100%" height={240}>
                 <LineChart data={trendData} margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>
@@ -547,7 +692,7 @@ export default function MonthlyStatisticsClient() {
                 </LineChart>
               </ResponsiveContainer>
             </div>
-            <div style={{ ...cardStyle, flex: "1 1 380px" }}>
+            <div data-pdf-chart="pending-trend" style={{ ...cardStyle, flex: "1 1 380px" }}>
               <h3 style={{ margin: "0 0 20px 0", fontSize: 16, fontWeight: 700 }}>Pending Sales Trend</h3>
               <ResponsiveContainer width="100%" height={240}>
                 <LineChart data={trendData} margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>
@@ -566,7 +711,7 @@ export default function MonthlyStatisticsClient() {
       )}
 
       {/* Sales & Inventory Bar Chart */}
-      <div style={{ ...cardStyle, marginBottom: 24 }}>
+      <div data-pdf-chart="sales-comparison" style={{ ...cardStyle, marginBottom: 24 }}>
         <h3 style={{ margin: "0 0 20px 0", fontSize: 16, fontWeight: 700 }}>Sales, Pending, Listings & Inventory</h3>
         <ResponsiveContainer width="100%" height={320}>
           <BarChart data={salesComparison} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
@@ -582,7 +727,7 @@ export default function MonthlyStatisticsClient() {
       </div>
 
       {/* Year-over-Year Changes */}
-      <div style={{ ...cardStyle, marginBottom: 24 }}>
+      <div data-pdf-chart="yoy-changes" style={{ ...cardStyle, marginBottom: 24 }}>
         <h3 style={{ margin: "0 0 20px 0", fontSize: 16, fontWeight: 700 }}>Year-over-Year Changes (%)</h3>
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={yoyChanges} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
@@ -599,7 +744,7 @@ export default function MonthlyStatisticsClient() {
 
       {/* Price Range Distribution */}
       {priceRanges.length > 0 && (
-        <div style={{ ...cardStyle, marginBottom: 24 }}>
+        <div data-pdf-chart="price-range" style={{ ...cardStyle, marginBottom: 24 }}>
           <h3 style={{ margin: "0 0 20px 0", fontSize: 16, fontWeight: 700 }}>Sales by Price Range</h3>
           <ResponsiveContainer width="100%" height={320}>
             <BarChart data={priceRanges} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
@@ -617,7 +762,7 @@ export default function MonthlyStatisticsClient() {
 
       {/* Days on Market & Above Asking */}
       <div style={{ display: "flex", gap: 16, marginBottom: 24, flexWrap: "wrap" }}>
-        <div style={{ ...cardStyle, flex: "1 1 380px" }}>
+        <div data-pdf-chart="dom-comparison" style={{ ...cardStyle, flex: "1 1 380px" }}>
           <h3 style={{ margin: "0 0 20px 0", fontSize: 16, fontWeight: 700 }}>Median Days on Market</h3>
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={domComparison} margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>
@@ -631,7 +776,7 @@ export default function MonthlyStatisticsClient() {
             </BarChart>
           </ResponsiveContainer>
         </div>
-        <div style={{ ...cardStyle, flex: "1 1 380px" }}>
+        <div data-pdf-chart="above-asking" style={{ ...cardStyle, flex: "1 1 380px" }}>
           <h3 style={{ margin: "0 0 20px 0", fontSize: 16, fontWeight: 700 }}>Sales Above Asking Price (%)</h3>
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={aboveAskingData} margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>
@@ -648,7 +793,7 @@ export default function MonthlyStatisticsClient() {
       </div>
 
       {/* Active Inventory Split */}
-      <div style={{ ...cardStyle, marginBottom: 24 }}>
+      <div data-pdf-chart="inventory-pie" style={{ ...cardStyle, marginBottom: 24 }}>
         <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>Active Inventory Split</h3>
         <ResponsiveContainer width="100%" height={260}>
           <PieChart>
@@ -711,6 +856,8 @@ export default function MonthlyStatisticsClient() {
           </tbody>
         </table>
       </div>
+
+      </div>{/* end chartsRef */}
 
       {/* Source Attribution */}
       <div style={{ fontSize: 12, color: "#9ca3af", textAlign: "center", padding: "12px 0" }}>
