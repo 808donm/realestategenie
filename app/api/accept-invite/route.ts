@@ -200,6 +200,50 @@ export async function POST(request: NextRequest) {
       })
       .eq("id", invitationId);
 
+    // If the invitation has account context, add user to the account
+    if (invitation.account_id && invitation.invited_role) {
+      // Check if not already a member
+      const { data: existingMembership } = await admin
+        .from("account_members")
+        .select("id")
+        .eq("account_id", invitation.account_id)
+        .eq("agent_id", authData.user.id)
+        .maybeSingle();
+
+      if (!existingMembership) {
+        await admin.from("account_members").insert({
+          account_id: invitation.account_id,
+          agent_id: authData.user.id,
+          account_role: invitation.invited_role,
+          office_id: invitation.office_id || null,
+          is_active: true,
+        });
+
+        // Get the account's subscription plan and create a subscription for the new member
+        const { data: account } = await admin
+          .from("accounts")
+          .select("subscription_plan_id")
+          .eq("id", invitation.account_id)
+          .single();
+
+        if (account?.subscription_plan_id) {
+          const today = new Date().toISOString().split("T")[0];
+          const trialEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+          await admin.from("agent_subscriptions").insert({
+            agent_id: authData.user.id,
+            subscription_plan_id: account.subscription_plan_id,
+            plan_type: "professional",
+            status: "active",
+            monthly_price: 0,
+            current_period_start: today,
+            current_period_end: trialEnd,
+            trial_end_date: trialEnd,
+            account_id: invitation.account_id,
+          });
+        }
+      }
+    }
+
     // Create GHL sub-account for the new agent (non-blocking)
     // This runs in the background and doesn't block the registration flow
     createGHLSubAccount(authData.user.id)

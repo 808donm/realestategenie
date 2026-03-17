@@ -23,6 +23,39 @@ export default function SignInClient() {
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(oauthError);
   const [loading, setLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState<string | null>(null);
+
+  async function handleDemoLogin(accountType: "brokerage" | "realtor") {
+    setErr(null);
+    setMsg(null);
+    setDemoLoading(accountType);
+    try {
+      const res = await fetch("/api/auth/demo-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accountType }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setErr(data.error || "Demo login failed");
+        return;
+      }
+      // Set the session using the tokens from the API
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+      });
+      if (sessionError) {
+        setErr(sessionError.message);
+        return;
+      }
+      window.location.href = redirectTo;
+    } catch {
+      setErr("Failed to connect to demo login service");
+    } finally {
+      setDemoLoading(null);
+    }
+  }
 
   async function sendMagicLink(e: React.FormEvent) {
     e.preventDefault();
@@ -197,6 +230,35 @@ export default function SignInClient() {
               {msg}
             </div>
           )}
+
+          {/* Demo Accounts */}
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2 text-muted-foreground">Try a demo</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Button
+              variant="outline"
+              className="w-full border-amber-300 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950 dark:hover:bg-amber-900 dark:border-amber-700"
+              disabled={demoLoading !== null}
+              onClick={() => handleDemoLogin("brokerage")}
+            >
+              {demoLoading === "brokerage" ? "Loading..." : "Brokerage Demo"}
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full border-emerald-300 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950 dark:hover:bg-emerald-900 dark:border-emerald-700"
+              disabled={demoLoading !== null}
+              onClick={() => handleDemoLogin("realtor")}
+            >
+              {demoLoading === "realtor" ? "Loading..." : "Realtor Demo"}
+            </Button>
+          </div>
 
           <p className="text-xs text-center text-muted-foreground">
             By signing in, you agree to our{" "}
