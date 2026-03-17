@@ -172,6 +172,33 @@ export default function UserManagementClient({ users, plans, subscriptionMap }: 
     setAssignSuccess(null);
   }
 
+  async function assignDemo(userId: string) {
+    if (!confirm("Assign a free 30-day demo account to this user?")) {
+      return;
+    }
+
+    setLoading(userId);
+    try {
+      const response = await fetch("/api/admin/users/assign-demo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to assign demo");
+      }
+
+      alert("Demo account assigned successfully (30-day trial)");
+      router.refresh();
+    } catch (error: any) {
+      alert(error.message || "Failed to assign demo account");
+    } finally {
+      setLoading(null);
+    }
+  }
+
   return (
     <>
       <div style={{ overflow: "auto" }}>
@@ -273,6 +300,15 @@ export default function UserManagementClient({ users, plans, subscriptionMap }: 
                   </Td>
                   <Td>
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      {!sub && (
+                        <ActionButton
+                          onClick={() => assignDemo(user.id)}
+                          disabled={loading === user.id}
+                          color="#f59e0b"
+                        >
+                          Assign Demo
+                        </ActionButton>
+                      )}
                       <ActionButton
                         onClick={() => openAssignDialog(user)}
                         disabled={loading === user.id}
