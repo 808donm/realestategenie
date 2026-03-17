@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { GHLClient } from "@/lib/integrations/ghl-client";
-import { getValidGHLConfig } from "@/lib/integrations/ghl-token-refresh";
+import { getValidGHLConfig, resolveGHLAgentId } from "@/lib/integrations/ghl-token-refresh";
 
 /**
  * Search GHL contacts by name, email, or phone
@@ -26,7 +26,8 @@ export async function GET(req: NextRequest) {
 
   try {
     // Get valid GHL config (auto-refreshes token if needed)
-    const ghlConfig = await getValidGHLConfig(user.id);
+    const ghlAgentId = await resolveGHLAgentId(user.id);
+    const ghlConfig = await getValidGHLConfig(ghlAgentId);
 
     if (!ghlConfig) {
       return NextResponse.json(

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { GHLClient, type GHLContact } from "@/lib/integrations/ghl-client";
-import { getValidGHLConfig } from "@/lib/integrations/ghl-token-refresh";
+import { getValidGHLConfig, resolveGHLAgentId } from "@/lib/integrations/ghl-token-refresh";
 
 // GET - Fetch contacts from GHL
 export async function GET(request: NextRequest) {
@@ -19,7 +19,8 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "100");
 
     // Get valid GHL config (handles token refresh automatically)
-    const ghlConfig = await getValidGHLConfig(user.id);
+    const ghlAgentId = await resolveGHLAgentId(user.id);
+    const ghlConfig = await getValidGHLConfig(ghlAgentId);
 
     if (!ghlConfig) {
       return NextResponse.json(
@@ -99,7 +100,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Get valid GHL config (handles token refresh automatically)
-    const ghlConfig = await getValidGHLConfig(user.id);
+    const ghlAgentId = await resolveGHLAgentId(user.id);
+    const ghlConfig = await getValidGHLConfig(ghlAgentId);
 
     if (!ghlConfig) {
       return NextResponse.json(

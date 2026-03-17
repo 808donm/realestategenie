@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { GHLClient } from "@/lib/integrations/ghl-client";
-import { getValidGHLConfig } from "@/lib/integrations/ghl-token-refresh";
+import { getValidGHLConfig, resolveGHLAgentId } from "@/lib/integrations/ghl-token-refresh";
 
 /**
  * Upload a calculator export file and attach it as a note to a GHL contact.
@@ -119,7 +119,8 @@ async function addNoteToContact(
   fileUrl: string,
   fileType: string
 ) {
-  const ghlConfig = await getValidGHLConfig(userId);
+  const ghlAgentId = await resolveGHLAgentId(userId);
+  const ghlConfig = await getValidGHLConfig(ghlAgentId);
 
   if (!ghlConfig) {
     throw new Error("GHL not connected. Please connect your GHL integration first.");

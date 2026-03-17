@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
+import { resolveGHLAgentId } from "@/lib/integrations/ghl-token-refresh";
+import { createClient } from "@supabase/supabase-js";
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { auth: { persistSession: false } }
+);
 
 /**
  * Update GHL integration configuration
@@ -21,11 +29,14 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
 
-    // Get existing integration
-    const { data: integration, error: fetchError } = await supabase
+    // Resolve agent ID (falls back to team owner if needed)
+    const ghlAgentId = await resolveGHLAgentId(user.id);
+
+    // Get existing integration (use admin client to bypass RLS for team members)
+    const { data: integration, error: fetchError } = await supabaseAdmin
       .from("integrations")
       .select("config")
-      .eq("agent_id", user.id)
+      .eq("agent_id", ghlAgentId)
       .eq("provider", "ghl")
       .single();
 
@@ -43,13 +54,13 @@ export async function POST(req: NextRequest) {
     };
 
     // Update integration config
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseAdmin
       .from("integrations")
       .update({
         config: updatedConfig,
         updated_at: new Date().toISOString(),
       })
-      .eq("agent_id", user.id)
+      .eq("agent_id", ghlAgentId)
       .eq("provider", "ghl");
 
     if (updateError) {
@@ -93,11 +104,14 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get existing integration
-    const { data: integration, error } = await supabase
+    // Resolve agent ID (falls back to team owner if needed)
+    const ghlAgentId = await resolveGHLAgentId(user.id);
+
+    // Get existing integration (use admin client to bypass RLS for team members)
+    const { data: integration, error } = await supabaseAdmin
       .from("integrations")
       .select("config")
-      .eq("agent_id", user.id)
+      .eq("agent_id", ghlAgentId)
       .eq("provider", "ghl")
       .single();
 

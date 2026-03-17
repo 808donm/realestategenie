@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
-import { getValidGHLConfig } from "@/lib/integrations/ghl-token-refresh";
+import { getValidGHLConfig, resolveGHLAgentId } from "@/lib/integrations/ghl-token-refresh";
 
 /**
  * Fetch available GHL pipelines and their stages for the current user
@@ -18,7 +18,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const ghlConfig = await getValidGHLConfig(user.id);
+    const ghlAgentId = await resolveGHLAgentId(user.id);
+    const ghlConfig = await getValidGHLConfig(ghlAgentId);
 
     if (!ghlConfig) {
       return NextResponse.json(

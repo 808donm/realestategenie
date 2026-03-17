@@ -13,6 +13,67 @@ const supabaseAdmin = createClient(
 );
 
 /**
+ * Resolve the correct agent ID for GHL operations.
+ * If the user has their own GHL integration, returns their ID.
+ * Otherwise, checks if they belong to a team and returns the team owner's ID.
+ * This allows team members to use the team owner's GHL integration.
+ */
+export async function resolveGHLAgentId(userId: string): Promise<string> {
+  // Check if user has their own GHL integration
+  const { data: ownIntegration } = await supabaseAdmin
+    .from("integrations")
+    .select("id")
+    .eq("agent_id", userId)
+    .eq("provider", "ghl")
+    .eq("status", "connected")
+    .maybeSingle();
+
+  if (ownIntegration) {
+    return userId;
+  }
+
+  // User has no GHL integration — check if they belong to a team
+  const { data: membership } = await supabaseAdmin
+    .from("team_members")
+    .select("team_id")
+    .eq("agent_id", userId)
+    .limit(1)
+    .maybeSingle();
+
+  if (!membership) {
+    // Not on a team, return their own ID (will result in "not connected" error downstream)
+    return userId;
+  }
+
+  // Get the team owner
+  const { data: team } = await supabaseAdmin
+    .from("teams")
+    .select("owner_id")
+    .eq("id", membership.team_id)
+    .single();
+
+  if (!team) {
+    return userId;
+  }
+
+  // Verify the team owner has a connected GHL integration
+  const { data: ownerIntegration } = await supabaseAdmin
+    .from("integrations")
+    .select("id")
+    .eq("agent_id", team.owner_id)
+    .eq("provider", "ghl")
+    .eq("status", "connected")
+    .maybeSingle();
+
+  if (ownerIntegration) {
+    console.log(`[GHL Resolve] Team member ${userId} will use team owner's GHL integration (owner: ${team.owner_id})`);
+    return team.owner_id;
+  }
+
+  return userId;
+}
+
+/**
  * Get a valid GHL access token, refreshing if necessary
  * @param agentId - The agent's ID
  * @returns Valid GHL configuration with fresh access token

@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { GHLClient } from "@/lib/integrations/ghl-client";
+import { getValidGHLConfig, resolveGHLAgentId } from "@/lib/integrations/ghl-token-refresh";
+import { createClient } from "@supabase/supabase-js";
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { auth: { persistSession: false } }
+);
 
 /**
  * Test GHL connection by fetching locations
@@ -18,78 +26,47 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // Get GHL integration
-    const { data: integration, error: integrationError } = await supabase
-      .from("integrations")
-      .select("*")
-      .eq("agent_id", user.id)
-      .eq("provider", "ghl")
-      .single();
+    // Resolve agent ID (falls back to team owner if needed)
+    const ghlAgentId = await resolveGHLAgentId(user.id);
 
-    if (integrationError || !integration) {
+    // Get valid GHL config (uses admin client to bypass RLS for team members)
+    const ghlConfig = await getValidGHLConfig(ghlAgentId);
+
+    if (!ghlConfig) {
       return NextResponse.json(
         { error: "GHL not connected" },
         { status: 404 }
       );
     }
 
-    const config = integration.config as any;
-    const client = new GHLClient(config.ghl_access_token, config.ghl_location_id);
+    const client = new GHLClient(ghlConfig.access_token, ghlConfig.location_id);
 
     // Test by fetching pipelines for the connected location
-    // This works with location-scoped tokens (unlike getLocations which needs agency token)
-    const pipelines = await client.getPipelines(config.ghl_location_id);
+    const pipelines = await client.getPipelines(ghlConfig.location_id);
 
-    // Update integration status (skip last_sync_at if column doesn't exist)
-    const updateData: any = {
-      status: "connected",
-      last_error: null,
-    };
-
-    // Try to update last_sync_at if the column exists
+    // Update integration status using admin client (bypasses RLS)
     try {
-      await supabase
+      await supabaseAdmin
         .from("integrations")
         .update({
-          ...updateData,
+          status: "connected",
+          last_error: null,
           last_sync_at: new Date().toISOString(),
         })
-        .eq("id", integration.id);
+        .eq("agent_id", ghlAgentId)
+        .eq("provider", "ghl");
     } catch {
-      // Fall back to update without last_sync_at
-      await supabase
-        .from("integrations")
-        .update(updateData)
-        .eq("id", integration.id);
+      // Non-critical - just log
     }
 
     return NextResponse.json({
       success: true,
-      locationId: config.ghl_location_id,
+      locationId: ghlConfig.location_id,
       pipelines: pipelines.pipelines?.length || 0,
       message: "GHL connection successful",
     });
   } catch (error: any) {
     console.error("GHL test error:", error);
-
-    // Update error status (handle missing last_error column gracefully)
-    try {
-      await supabase
-        .from("integrations")
-        .update({
-          status: "error",
-          last_error: error.message,
-        })
-        .eq("agent_id", user.id)
-        .eq("provider", "ghl");
-    } catch {
-      // If last_error column doesn't exist, just update status
-      await supabase
-        .from("integrations")
-        .update({ status: "error" })
-        .eq("agent_id", user.id)
-        .eq("provider", "ghl");
-    }
 
     return NextResponse.json(
       { error: error.message || "GHL test failed" },

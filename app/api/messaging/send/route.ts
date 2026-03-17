@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { GHLClient } from "@/lib/integrations/ghl-client";
-import { getValidGHLConfig } from "@/lib/integrations/ghl-token-refresh";
+import { getValidGHLConfig, resolveGHLAgentId } from "@/lib/integrations/ghl-token-refresh";
 
 /**
  * Send email or SMS via GHL conversations API
@@ -33,7 +33,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const ghlConfig = await getValidGHLConfig(userData.user.id);
+    const ghlAgentId = await resolveGHLAgentId(userData.user.id);
+    const ghlConfig = await getValidGHLConfig(ghlAgentId);
     if (!ghlConfig) {
       return NextResponse.json(
         { error: "GHL integration not connected. Connect GHL in Settings to send messages." },

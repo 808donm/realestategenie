@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
-import { getValidGHLConfig } from "@/lib/integrations/ghl-token-refresh";
+import { getValidGHLConfig, resolveGHLAgentId } from "@/lib/integrations/ghl-token-refresh";
 import { GHLClient } from "@/lib/integrations/ghl-client";
 
 /**
@@ -22,24 +22,11 @@ export async function GET(req: NextRequest) {
     // Use the specific Real Estate Pipeline ID
     const pipelineId = searchParams.get("pipelineId") || "yGkdoIRAz83GmWQ74HOw";
 
-    // Get GHL integration for this agent
-    const { data: integration, error: integrationError } = await supabase
-      .from("integrations")
-      .select("*")
-      .eq("agent_id", user.id)
-      .eq("provider", "ghl")
-      .eq("status", "connected")
-      .single();
-
-    if (integrationError || !integration) {
-      return NextResponse.json({
-        error: "No connected GHL integration found for this agent",
-        details: integrationError?.message
-      }, { status: 404 });
-    }
+    // Resolve the correct agent ID (falls back to team owner if needed)
+    const ghlAgentId = await resolveGHLAgentId(user.id);
 
     // Get valid GHL config (with token refresh if needed)
-    const ghlConfig = await getValidGHLConfig(user.id);
+    const ghlConfig = await getValidGHLConfig(ghlAgentId);
 
     if (!ghlConfig) {
       return NextResponse.json({
