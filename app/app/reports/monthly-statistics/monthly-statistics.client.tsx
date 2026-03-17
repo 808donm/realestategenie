@@ -223,7 +223,124 @@ export default function MonthlyStatisticsClient() {
         y += imgHeight + 6;
       };
 
-      // ===== PAGE 1: Cover / Title =====
+      // ===== PAGE 1: Agent Cover Page =====
+      // Full-page agent-branded cover
+      const brandColor = agentProfile?.name ? [30, 58, 95] : [30, 58, 95];
+
+      // Top accent bar
+      doc.setFillColor(brandColor[0], brandColor[1], brandColor[2]);
+      doc.rect(0, 0, pw, 8, "F");
+
+      // Centered agent branding
+      y = 60;
+
+      // Agent headshot (large, centered)
+      if (agentProfile?.headshotUrl) {
+        try {
+          const imgResponse = await fetch(agentProfile.headshotUrl);
+          const blob = await imgResponse.blob();
+          const imgDataUrl = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+          });
+          doc.addImage(imgDataUrl, "JPEG", pw / 2 - 25, y, 50, 50);
+          y += 58;
+        } catch {
+          y += 10;
+        }
+      }
+
+      // Agent name (large)
+      if (agentProfile?.name) {
+        doc.setFontSize(28);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(brandColor[0], brandColor[1], brandColor[2]);
+        doc.text(agentProfile.name, pw / 2, y, { align: "center" });
+        y += 12;
+      }
+
+      // Brokerage
+      if (agentProfile?.brokerage) {
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(100, 100, 100);
+        doc.text(agentProfile.brokerage, pw / 2, y, { align: "center" });
+        y += 8;
+      }
+
+      // Contact info line
+      {
+        const contactParts: string[] = [];
+        if (agentProfile?.phone) contactParts.push(agentProfile.phone);
+        if (agentProfile?.email) contactParts.push(agentProfile.email);
+        if (agentProfile?.licenseNumber) contactParts.push(`License #${agentProfile.licenseNumber}`);
+        if (contactParts.length > 0) {
+          doc.setFontSize(10);
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(120, 120, 120);
+          doc.text(contactParts.join("  \u2022  "), pw / 2, y, { align: "center" });
+          y += 8;
+        }
+      }
+
+      // Decorative divider
+      y += 10;
+      doc.setDrawColor(brandColor[0], brandColor[1], brandColor[2]);
+      doc.setLineWidth(1);
+      doc.line(pw / 2 - 40, y, pw / 2 + 40, y);
+      y += 16;
+
+      // Report title
+      doc.setFontSize(22);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(brandColor[0], brandColor[1], brandColor[2]);
+      doc.text("Monthly Market Statistics", pw / 2, y, { align: "center" });
+      y += 10;
+
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(80, 80, 80);
+      doc.text("Oahu Residential Resales", pw / 2, y, { align: "center" });
+      y += 10;
+
+      doc.setFontSize(16);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(brandColor[0], brandColor[1], brandColor[2]);
+      doc.text(data.label, pw / 2, y, { align: "center" });
+      y += 16;
+
+      // Generation date
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(150, 150, 150);
+      doc.text(`Generated ${new Date().toLocaleDateString()}`, pw / 2, y, { align: "center" });
+
+      // Bottom accent bar
+      doc.setFillColor(brandColor[0], brandColor[1], brandColor[2]);
+      doc.rect(0, ph - 8, pw, 8, "F");
+
+      // Company logo (bottom center, above accent bar)
+      if (agentProfile?.logoUrl) {
+        try {
+          const logoResponse = await fetch(agentProfile.logoUrl);
+          const logoBlob = await logoResponse.blob();
+          const logoDataUrl = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(logoBlob);
+          });
+          doc.addImage(logoDataUrl, "PNG", pw / 2 - 20, ph - 50, 40, 30);
+        } catch {
+          // Skip logo if it fails to load
+        }
+      }
+
+      // ===== PAGE 2: Blue Header + KPIs + Highlights =====
+      doc.addPage();
+      pageNum++;
+
+      // Blue header banner
       doc.setFillColor(30, 58, 95);
       doc.rect(0, 0, pw, 60, "F");
       doc.setFontSize(26);
@@ -236,51 +353,7 @@ export default function MonthlyStatisticsClient() {
       doc.setFontSize(11);
       doc.text(data.label, pw / 2, 52, { align: "center" });
       doc.setTextColor(0, 0, 0);
-      y = 70;
-
-      // Agent branding section
-      if (agentProfile?.headshotUrl) {
-        try {
-          const imgResponse = await fetch(agentProfile.headshotUrl);
-          const blob = await imgResponse.blob();
-          const imgDataUrl = await new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.readAsDataURL(blob);
-          });
-          doc.addImage(imgDataUrl, "JPEG", pw / 2 - 15, y, 30, 30);
-          y += 34;
-        } catch {
-          // Skip headshot if it fails to load
-        }
-      }
-      if (agentProfile?.name) {
-        doc.setFontSize(16);
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(30, 58, 95);
-        doc.text(agentProfile.name, pw / 2, y, { align: "center" });
-        y += 7;
-      }
-      if (agentProfile?.brokerage) {
-        doc.setFontSize(11);
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(100, 100, 100);
-        doc.text(agentProfile.brokerage, pw / 2, y, { align: "center" });
-        y += 6;
-      }
-      {
-        const contactParts: string[] = [];
-        if (agentProfile?.phone) contactParts.push(agentProfile.phone);
-        if (agentProfile?.licenseNumber) contactParts.push(`License #${agentProfile.licenseNumber}`);
-        if (contactParts.length > 0) {
-          doc.setFontSize(9);
-          doc.setFont("helvetica", "normal");
-          doc.setTextColor(120, 120, 120);
-          doc.text(contactParts.join("  |  "), pw / 2, y, { align: "center" });
-          y += 6;
-        }
-      }
-      y += 6;
+      y = 72;
 
       // Headline
       doc.setFontSize(12);
@@ -501,17 +574,14 @@ export default function MonthlyStatisticsClient() {
         await addChartImage("pending-trend", 70);
       }
 
-      // Footer on every page with agent branding
+      // Footer on every page (skip cover page) — Honolulu Board of REALTORS branding
       const totalPages = pageNum;
-      const agentFooter = [agentProfile?.name, agentProfile?.brokerage].filter(Boolean).join(" \u2014 ");
       for (let p = 1; p <= totalPages; p++) {
         doc.setPage(p);
+        if (p === 1) continue; // Skip cover page footer
         doc.setFontSize(8);
         doc.setFont("helvetica", "normal");
         doc.setTextColor(156, 163, 175);
-        if (agentFooter) {
-          doc.text(agentFooter, pw / 2, ph - 17, { align: "center" });
-        }
         doc.text(
           "Source: Honolulu Board of REALTORS\u00AE / HiCentral MLS, Ltd. \u2014 Resales of existing properties only",
           pw / 2,
