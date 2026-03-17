@@ -383,33 +383,34 @@ export default function MonthlyStatisticsClient() {
       y += 2;
       doc.setTextColor(0, 0, 0);
 
-      // ===== PAGE 2: Sales Table + Graph =====
+      // ===== PAGE 2: Tables + Graphs =====
       doc.addPage();
       pageNum++;
       y = 20;
 
+      // Sales table
       sectionTitle("Sales, Pending, Listings & Inventory");
       drawTable(
         ["Category", "Single-Family", "Condo"],
         salesComparison.map((r) => [r.category, r["Single-Family"].toLocaleString(), r.Condo.toLocaleString()]),
         [(pw - 20) * 0.4, (pw - 20) * 0.3, (pw - 20) * 0.3]
       );
-      await addChartImage("sales-comparison", 90);
 
-      // ===== PAGE 3: YoY Changes Table + Graph =====
-      doc.addPage();
-      pageNum++;
-      y = 20;
-
+      // YoY table
       sectionTitle("Year-over-Year Changes (%)");
       drawTable(
         ["Metric", "Single-Family", "Condo"],
         yoyChanges.map((r) => [r.metric, `${r.sf >= 0 ? "+" : ""}${r.sf.toFixed(1)}%`, `${r.condo >= 0 ? "+" : ""}${r.condo.toFixed(1)}%`]),
         [(pw - 20) * 0.4, (pw - 20) * 0.3, (pw - 20) * 0.3]
       );
-      await addChartImage("yoy-changes", 90);
 
-      // ===== PAGE 4: Median DOM Table + Graph =====
+      // Sales comparison graph
+      await addChartImage("sales-comparison", 70);
+
+      // YoY changes graph
+      await addChartImage("yoy-changes", 70);
+
+      // ===== PAGE 3: Remaining Tables =====
       doc.addPage();
       pageNum++;
       y = 20;
@@ -423,9 +424,7 @@ export default function MonthlyStatisticsClient() {
         ],
         [(pw - 20) * 0.3, (pw - 20) * 0.23, (pw - 20) * 0.23, (pw - 20) * 0.24]
       );
-      await addChartImage("dom-comparison", 75);
 
-      // Above asking fits on same page
       y += 4;
       sectionTitle("Sales Above Asking Price");
       drawTable(
@@ -436,12 +435,6 @@ export default function MonthlyStatisticsClient() {
         ],
         [(pw - 20) * 0.4, (pw - 20) * 0.3, (pw - 20) * 0.3]
       );
-      await addChartImage("above-asking", 75);
-
-      // ===== PAGE 5: Active Inventory Table + Pie =====
-      doc.addPage();
-      pageNum++;
-      y = 20;
 
       sectionTitle("Active Inventory");
       drawTable(
@@ -453,14 +446,8 @@ export default function MonthlyStatisticsClient() {
         ],
         [(pw - 20) * 0.4, (pw - 20) * 0.3, (pw - 20) * 0.3]
       );
-      await addChartImage("inventory-pie", 80);
 
-      // ===== Price Ranges Table + Graph (if available) =====
       if (priceRanges.length > 0) {
-        doc.addPage();
-        pageNum++;
-        y = 20;
-
         sectionTitle("Sales by Price Range");
         drawTable(
           ["Price Range", "SF Sales", "Condo Sales", "Total"],
@@ -472,55 +459,9 @@ export default function MonthlyStatisticsClient() {
           ]),
           [(pw - 20) * 0.34, (pw - 20) * 0.22, (pw - 20) * 0.22, (pw - 20) * 0.22]
         );
-        await addChartImage("price-range", 90);
       }
 
-      // ===== Trend Charts (if multiple months) =====
-      if (hasMultipleMonths) {
-        // Median Price Trend
-        doc.addPage();
-        pageNum++;
-        y = 20;
-        sectionTitle("Monthly Trends Summary");
-        drawTable(
-          ["Month", "SF Median", "Condo Median", "SF Sales", "Condo Sales", "SF DOM", "Condo DOM"],
-          trendData.map((t) => [
-            t.fullLabel,
-            fmt(t.sfMedianPrice),
-            fmt(t.condoMedianPrice),
-            t.sfSales.toString(),
-            t.condoSales.toString(),
-            t.sfDOM.toString(),
-            t.condoDOM.toString(),
-          ]),
-          [(pw - 20) * 0.18, (pw - 20) * 0.14, (pw - 20) * 0.14, (pw - 20) * 0.12, (pw - 20) * 0.14, (pw - 20) * 0.14, (pw - 20) * 0.14]
-        );
-        await addChartImage("median-price-trend", 85);
-
-        // Sales & DOM Trends
-        doc.addPage();
-        pageNum++;
-        y = 20;
-        sectionTitle("Sales Trend");
-        await addChartImage("sales-trend", 80);
-        sectionTitle("Days on Market Trend");
-        await addChartImage("dom-trend", 80);
-
-        // Inventory & Pending Trends
-        doc.addPage();
-        pageNum++;
-        y = 20;
-        sectionTitle("Active Inventory Trend");
-        await addChartImage("inventory-trend", 80);
-        sectionTitle("Pending Sales Trend");
-        await addChartImage("pending-trend", 80);
-      }
-
-      // ===== FINAL PAGE: Detailed Statistics =====
-      doc.addPage();
-      pageNum++;
-      y = 20;
-
+      // Detailed Statistics table
       sectionTitle(`Detailed Statistics \u2014 ${data.label}`);
       drawTable(
         ["Metric", "Single-Family", "SF YoY", "Condo", "Condo YoY"],
@@ -533,6 +474,52 @@ export default function MonthlyStatisticsClient() {
         ]),
         [(pw - 20) * 0.28, (pw - 20) * 0.2, (pw - 20) * 0.14, (pw - 20) * 0.2, (pw - 20) * 0.18]
       );
+
+      // ===== Additional pages for remaining charts =====
+      // DOM & Above Asking charts
+      doc.addPage();
+      pageNum++;
+      y = 20;
+      sectionTitle("Median Days on Market");
+      await addChartImage("dom-comparison", 75);
+      sectionTitle("Sales Above Asking Price");
+      await addChartImage("above-asking", 75);
+
+      // Inventory pie + Price range chart
+      doc.addPage();
+      pageNum++;
+      y = 20;
+      sectionTitle("Active Inventory");
+      await addChartImage("inventory-pie", 80);
+      if (priceRanges.length > 0) {
+        sectionTitle("Sales by Price Range");
+        await addChartImage("price-range", 80);
+      }
+
+      // ===== Trend Charts (if multiple months) =====
+      if (hasMultipleMonths) {
+        doc.addPage();
+        pageNum++;
+        y = 20;
+        sectionTitle("Median Price Trend");
+        await addChartImage("median-price-trend", 85);
+        sectionTitle("Sales Trend");
+        await addChartImage("sales-trend", 80);
+
+        doc.addPage();
+        pageNum++;
+        y = 20;
+        sectionTitle("Days on Market Trend");
+        await addChartImage("dom-trend", 80);
+        sectionTitle("Active Inventory Trend");
+        await addChartImage("inventory-trend", 80);
+
+        doc.addPage();
+        pageNum++;
+        y = 20;
+        sectionTitle("Pending Sales Trend");
+        await addChartImage("pending-trend", 80);
+      }
 
       // Footer on every page — Honolulu Board of REALTORS branding
       const totalPages = pageNum;
