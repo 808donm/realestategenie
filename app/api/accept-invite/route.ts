@@ -178,6 +178,19 @@ export async function POST(request: NextRequest) {
     // Note: Agent profile is automatically created by the on_auth_user_created trigger
     // No need to manually insert into agents table
 
+    // Auto-admin: if this is the first agent on the site, grant admin privileges
+    const { count: agentCount } = await admin
+      .from("agents")
+      .select("id", { count: "exact", head: true });
+
+    if (agentCount !== null && agentCount <= 1) {
+      console.log(`First agent on site — granting admin privileges to ${email}`);
+      await admin
+        .from("agents")
+        .update({ is_admin: true, role: "admin" })
+        .eq("id", authData.user.id);
+    }
+
     // Mark invitation as accepted
     await admin
       .from("user_invitations")
