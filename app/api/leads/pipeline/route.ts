@@ -31,14 +31,19 @@ export async function GET() {
     }
 
     // Deduplicate leads: same person + same event should only appear once.
+    // Use email or phone as primary identity (more reliable than name).
     // Keep the entry with the most advanced pipeline stage (or most recently updated).
     const stageOrder: Record<string, number> = {};
     PIPELINE_STAGES.forEach((s, i) => { stageOrder[s] = i; });
 
     const dedupeMap = new Map<string, typeof leads[0]>();
     for (const lead of leads || []) {
+      const email = (lead.payload?.email || "").trim().toLowerCase();
+      const phone = (lead.payload?.phone_e164 || "").trim();
       const name = (lead.payload?.name || "").trim().toLowerCase();
-      const key = `${name}::${lead.event_id}`;
+      // Use email as primary dedup key, fall back to phone, then name
+      const identity = email || phone || name;
+      const key = `${identity}::${lead.event_id}`;
       const existing = dedupeMap.get(key);
       if (!existing) {
         dedupeMap.set(key, lead);

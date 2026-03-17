@@ -111,16 +111,26 @@ export async function POST(req: Request) {
       console.log('[Registration] No GHL integration found for agent:', evt.agent_id);
     }
 
-    // Check for multiple visits to same open house (RED HOT indicator)
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Start of today
+    // Check for existing lead from same person at this event (dedup by email or phone)
+    // Use parameterised filters to avoid breakage from special characters in email/phone
+    const dupFilters: string[] = [];
+    if (payload.email) {
+      dupFilters.push(`payload->>email.eq.${payload.email}`);
+    }
+    if (payload.phone_e164) {
+      dupFilters.push(`payload->>phone_e164.eq.${payload.phone_e164}`);
+    }
 
-    const { data: previousVisits, error: visitCheckError } = await admin
-      .from("lead_submissions")
-      .select("id, created_at, heat_score")
-      .eq("event_id", eventId)
-      .gte("created_at", today.toISOString())
-      .or(`payload->>email.eq.${payload.email},payload->>phone_e164.eq.${payload.phone_e164}`);
+    let previousVisits: { id: string; created_at: string; heat_score: number }[] | null = null;
+    if (dupFilters.length > 0) {
+      const { data } = await admin
+        .from("lead_submissions")
+        .select("id, created_at, heat_score")
+        .eq("event_id", eventId)
+        .eq("agent_id", evt.agent_id)
+        .or(dupFilters.join(","));
+      previousVisits = data;
+    }
 
     const isReturnVisit = !!(previousVisits && previousVisits.length > 0);
     const visitCount = (previousVisits?.length || 0) + 1; // Including this visit
@@ -142,21 +152,44 @@ export async function POST(req: Request) {
       console.log(`🚨 Heat score boosted to ${heatScore} (RED HOT) - Multiple visits indicate high interest!`);
     }
 
-    // Insert lead
-    const { data: lead, error: insErr } = await admin
-      .from("lead_submissions")
-      .insert({
-        event_id: eventId,
-        agent_id: evt.agent_id,
-        payload,
-        heat_score: heatScore,
-        pushed_to_ghl: false,
-      })
-      .select()
-      .single();
+    // If a lead already exists for this person+event, update it instead of creating a duplicate
+    let lead: any;
+    if (isReturnVisit && previousVisits && previousVisits.length > 0) {
+      const existingId = previousVisits[0].id;
+      const { data: updated, error: updErr } = await admin
+        .from("lead_submissions")
+        .update({
+          payload,
+          heat_score: heatScore,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", existingId)
+        .select()
+        .single();
 
-    if (insErr || !lead) {
-      return NextResponse.json({ error: insErr?.message || "Failed to create lead" }, { status: 400 });
+      if (updErr || !updated) {
+        return NextResponse.json({ error: updErr?.message || "Failed to update lead" }, { status: 400 });
+      }
+      lead = updated;
+      console.log(`[Lead Submit] Updated existing lead ${existingId} instead of creating duplicate`);
+    } else {
+      // Insert new lead
+      const { data: inserted, error: insErr } = await admin
+        .from("lead_submissions")
+        .insert({
+          event_id: eventId,
+          agent_id: evt.agent_id,
+          payload,
+          heat_score: heatScore,
+          pushed_to_ghl: false,
+        })
+        .select()
+        .single();
+
+      if (insErr || !inserted) {
+        return NextResponse.json({ error: insErr?.message || "Failed to create lead" }, { status: 400 });
+      }
+      lead = inserted;
     }
 
     // Write audit record

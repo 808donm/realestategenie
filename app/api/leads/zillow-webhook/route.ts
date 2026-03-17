@@ -109,26 +109,70 @@ export async function POST(req: Request) {
 
     const heatScore = calculateHeatScore(payload);
 
-    // Insert lead with zillow source
-    const { data: lead, error: insErr } = await admin
-      .from("lead_submissions")
-      .insert({
-        agent_id: agentId,
-        event_id: null,
-        payload,
-        heat_score: heatScore,
-        lead_source: "zillow",
-        pushed_to_ghl: false,
-      })
-      .select()
-      .single();
+    // Check for existing Zillow lead from the same person (dedup by email or phone)
+    const dupFilters: string[] = [];
+    if (email) dupFilters.push(`payload->>email.eq.${email}`);
+    if (phone) dupFilters.push(`payload->>phone_e164.eq.${phone}`);
 
-    if (insErr || !lead) {
-      console.error("[Zillow Webhook] Insert error:", insErr?.message);
-      return NextResponse.json(
-        { error: insErr?.message || "Failed to create lead" },
-        { status: 500 }
-      );
+    let existingLead: any = null;
+    if (dupFilters.length > 0) {
+      const { data } = await admin
+        .from("lead_submissions")
+        .select("id")
+        .eq("agent_id", agentId)
+        .eq("lead_source", "zillow")
+        .or(dupFilters.join(","))
+        .limit(1)
+        .single();
+      existingLead = data;
+    }
+
+    let lead: any;
+    if (existingLead) {
+      // Update existing lead instead of creating a duplicate
+      const { data: updated, error: updErr } = await admin
+        .from("lead_submissions")
+        .update({
+          payload,
+          heat_score: heatScore,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", existingLead.id)
+        .select()
+        .single();
+
+      if (updErr || !updated) {
+        console.error("[Zillow Webhook] Update error:", updErr?.message);
+        return NextResponse.json(
+          { error: updErr?.message || "Failed to update lead" },
+          { status: 500 }
+        );
+      }
+      lead = updated;
+      console.log(`[Zillow Webhook] Updated existing lead ${existingLead.id} instead of creating duplicate`);
+    } else {
+      // Insert new lead
+      const { data: inserted, error: insErr } = await admin
+        .from("lead_submissions")
+        .insert({
+          agent_id: agentId,
+          event_id: null,
+          payload,
+          heat_score: heatScore,
+          lead_source: "zillow",
+          pushed_to_ghl: false,
+        })
+        .select()
+        .single();
+
+      if (insErr || !inserted) {
+        console.error("[Zillow Webhook] Insert error:", insErr?.message);
+        return NextResponse.json(
+          { error: insErr?.message || "Failed to create lead" },
+          { status: 500 }
+        );
+      }
+      lead = inserted;
     }
 
     // Write audit record
