@@ -223,34 +223,104 @@ export default function MonthlyStatisticsClient() {
         y += imgHeight + 6;
       };
 
-      // ===== PAGE 1: Blue Header + KPIs + Highlights =====
+      // ===== PAGE 1: Blue Header + Agent Info + KPIs + Highlights =====
       // Blue header banner
       doc.setFillColor(30, 58, 95);
-      doc.rect(0, 0, pw, 60, "F");
-      doc.setFontSize(26);
+      doc.rect(0, 0, pw, 55, "F");
+      doc.setFontSize(24);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(255, 255, 255);
-      doc.text("Monthly Market Statistics", pw / 2, 24, { align: "center" });
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "normal");
-      doc.text("Oahu Monthly Residential Resales \u2014 Honolulu Board of REALTORS\u00AE", pw / 2, 36, { align: "center" });
+      doc.text("Monthly Market Statistics", pw / 2, 22, { align: "center" });
       doc.setFontSize(11);
-      doc.text(data.label, pw / 2, 48, { align: "center" });
-
-      // Agent branding in header (right-aligned)
-      if (agentProfile?.name) {
-        doc.setFontSize(9);
-        doc.setFont("helvetica", "bold");
-        doc.text(agentProfile.name, pw - 12, 50, { align: "right" });
-        if (agentProfile.brokerage) {
-          doc.setFontSize(7);
-          doc.setFont("helvetica", "normal");
-          doc.text(agentProfile.brokerage, pw - 12, 56, { align: "right" });
-        }
-      }
-
+      doc.setFont("helvetica", "normal");
+      doc.text("Oahu Monthly Residential Resales \u2014 Honolulu Board of REALTORS\u00AE", pw / 2, 34, { align: "center" });
+      doc.setFontSize(10);
+      doc.text(data.label, pw / 2, 46, { align: "center" });
       doc.setTextColor(0, 0, 0);
-      y = 68;
+      y = 62;
+
+      // Agent branding section below blue header
+      const hasAgent = agentProfile?.name;
+      if (hasAgent) {
+        const photoSize = 28;
+        const agentBlockX = 14;
+        const agentTextX = agentBlockX + photoSize + 8;
+        const agentStartY = y;
+
+        // Agent headshot (left side)
+        if (agentProfile.headshotUrl) {
+          try {
+            const imgResponse = await fetch(agentProfile.headshotUrl);
+            const blob = await imgResponse.blob();
+            const imgDataUrl = await new Promise<string>((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.readAsDataURL(blob);
+            });
+            doc.addImage(imgDataUrl, "JPEG", agentBlockX, agentStartY, photoSize, photoSize);
+          } catch {
+            // Skip headshot if it fails to load
+          }
+        }
+
+        // Agent name
+        let ty = agentStartY + 6;
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(30, 58, 95);
+        doc.text(agentProfile.name, agentTextX, ty);
+        ty += 6;
+
+        // License number
+        if (agentProfile.licenseNumber) {
+          doc.setFontSize(9);
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(100, 100, 100);
+          doc.text(`License #${agentProfile.licenseNumber}`, agentTextX, ty);
+          ty += 5;
+        }
+
+        // Phone
+        if (agentProfile.phone) {
+          doc.setFontSize(9);
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(100, 100, 100);
+          doc.text(agentProfile.phone, agentTextX, ty);
+          ty += 5;
+        }
+
+        // Brokerage name + logo (right side)
+        if (agentProfile.brokerage) {
+          doc.setFontSize(10);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(80, 80, 80);
+          doc.text(agentProfile.brokerage, pw - 14, agentStartY + 8, { align: "right" });
+
+          // Brokerage logo below name
+          if (agentProfile.logoUrl) {
+            try {
+              const logoResponse = await fetch(agentProfile.logoUrl);
+              const logoBlob = await logoResponse.blob();
+              const logoDataUrl = await new Promise<string>((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.readAsDataURL(logoBlob);
+              });
+              doc.addImage(logoDataUrl, "PNG", pw - 48, agentStartY + 12, 34, 18);
+            } catch {
+              // Skip logo if it fails to load
+            }
+          }
+        }
+
+        y = agentStartY + photoSize + 6;
+
+        // Thin divider line
+        doc.setDrawColor(220, 220, 220);
+        doc.setLineWidth(0.3);
+        doc.line(14, y, pw - 14, y);
+        y += 6;
+      }
 
       // Headline
       doc.setFontSize(12);
