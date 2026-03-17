@@ -223,137 +223,34 @@ export default function MonthlyStatisticsClient() {
         y += imgHeight + 6;
       };
 
-      // ===== PAGE 1: Agent Cover Page =====
-      // Full-page agent-branded cover
-      const brandColor = agentProfile?.name ? [30, 58, 95] : [30, 58, 95];
-
-      // Top accent bar
-      doc.setFillColor(brandColor[0], brandColor[1], brandColor[2]);
-      doc.rect(0, 0, pw, 8, "F");
-
-      // Centered agent branding
-      y = 60;
-
-      // Agent headshot (large, centered)
-      if (agentProfile?.headshotUrl) {
-        try {
-          const imgResponse = await fetch(agentProfile.headshotUrl);
-          const blob = await imgResponse.blob();
-          const imgDataUrl = await new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.readAsDataURL(blob);
-          });
-          doc.addImage(imgDataUrl, "JPEG", pw / 2 - 25, y, 50, 50);
-          y += 58;
-        } catch {
-          y += 10;
-        }
-      }
-
-      // Agent name (large)
-      if (agentProfile?.name) {
-        doc.setFontSize(28);
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(brandColor[0], brandColor[1], brandColor[2]);
-        doc.text(agentProfile.name, pw / 2, y, { align: "center" });
-        y += 12;
-      }
-
-      // Brokerage
-      if (agentProfile?.brokerage) {
-        doc.setFontSize(14);
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(100, 100, 100);
-        doc.text(agentProfile.brokerage, pw / 2, y, { align: "center" });
-        y += 8;
-      }
-
-      // Contact info line
-      {
-        const contactParts: string[] = [];
-        if (agentProfile?.phone) contactParts.push(agentProfile.phone);
-        if (agentProfile?.email) contactParts.push(agentProfile.email);
-        if (agentProfile?.licenseNumber) contactParts.push(`License #${agentProfile.licenseNumber}`);
-        if (contactParts.length > 0) {
-          doc.setFontSize(10);
-          doc.setFont("helvetica", "normal");
-          doc.setTextColor(120, 120, 120);
-          doc.text(contactParts.join("  \u2022  "), pw / 2, y, { align: "center" });
-          y += 8;
-        }
-      }
-
-      // Decorative divider
-      y += 10;
-      doc.setDrawColor(brandColor[0], brandColor[1], brandColor[2]);
-      doc.setLineWidth(1);
-      doc.line(pw / 2 - 40, y, pw / 2 + 40, y);
-      y += 16;
-
-      // Report title
-      doc.setFontSize(22);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(brandColor[0], brandColor[1], brandColor[2]);
-      doc.text("Monthly Market Statistics", pw / 2, y, { align: "center" });
-      y += 10;
-
-      doc.setFontSize(14);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(80, 80, 80);
-      doc.text("Oahu Residential Resales", pw / 2, y, { align: "center" });
-      y += 10;
-
-      doc.setFontSize(16);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(brandColor[0], brandColor[1], brandColor[2]);
-      doc.text(data.label, pw / 2, y, { align: "center" });
-      y += 16;
-
-      // Generation date
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(150, 150, 150);
-      doc.text(`Generated ${new Date().toLocaleDateString()}`, pw / 2, y, { align: "center" });
-
-      // Bottom accent bar
-      doc.setFillColor(brandColor[0], brandColor[1], brandColor[2]);
-      doc.rect(0, ph - 8, pw, 8, "F");
-
-      // Company logo (bottom center, above accent bar)
-      if (agentProfile?.logoUrl) {
-        try {
-          const logoResponse = await fetch(agentProfile.logoUrl);
-          const logoBlob = await logoResponse.blob();
-          const logoDataUrl = await new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.readAsDataURL(logoBlob);
-          });
-          doc.addImage(logoDataUrl, "PNG", pw / 2 - 20, ph - 50, 40, 30);
-        } catch {
-          // Skip logo if it fails to load
-        }
-      }
-
-      // ===== PAGE 2: Blue Header + KPIs + Highlights =====
-      doc.addPage();
-      pageNum++;
-
+      // ===== PAGE 1: Blue Header + KPIs + Highlights =====
       // Blue header banner
       doc.setFillColor(30, 58, 95);
       doc.rect(0, 0, pw, 60, "F");
       doc.setFontSize(26);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(255, 255, 255);
-      doc.text("Monthly Market Statistics", pw / 2, 28, { align: "center" });
-      doc.setFontSize(13);
+      doc.text("Monthly Market Statistics", pw / 2, 24, { align: "center" });
+      doc.setFontSize(12);
       doc.setFont("helvetica", "normal");
-      doc.text("Oahu Monthly Residential Resales \u2014 Honolulu Board of REALTORS\u00AE", pw / 2, 40, { align: "center" });
+      doc.text("Oahu Monthly Residential Resales \u2014 Honolulu Board of REALTORS\u00AE", pw / 2, 36, { align: "center" });
       doc.setFontSize(11);
-      doc.text(data.label, pw / 2, 52, { align: "center" });
+      doc.text(data.label, pw / 2, 48, { align: "center" });
+
+      // Agent branding in header (right-aligned)
+      if (agentProfile?.name) {
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "bold");
+        doc.text(agentProfile.name, pw - 12, 50, { align: "right" });
+        if (agentProfile.brokerage) {
+          doc.setFontSize(7);
+          doc.setFont("helvetica", "normal");
+          doc.text(agentProfile.brokerage, pw - 12, 56, { align: "right" });
+        }
+      }
+
       doc.setTextColor(0, 0, 0);
-      y = 72;
+      y = 68;
 
       // Headline
       doc.setFontSize(12);
@@ -361,12 +258,12 @@ export default function MonthlyStatisticsClient() {
       doc.setTextColor(30, 58, 95);
       doc.text("Oahu Housing Market", 10, y);
       y += 7;
-      doc.setFontSize(11);
+      doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(55, 65, 81);
       const headlineLines = doc.splitTextToSize(data.headline, pw - 20);
       doc.text(headlineLines, 10, y);
-      y += headlineLines.length * 6 + 8;
+      y += headlineLines.length * 5 + 6;
       doc.setTextColor(0, 0, 0);
 
       // KPI Cards
@@ -383,40 +280,40 @@ export default function MonthlyStatisticsClient() {
         const kx = 10 + i * (kpiW + 6);
         doc.setDrawColor(229, 231, 235);
         doc.setLineWidth(0.3);
-        doc.roundedRect(kx, y, kpiW, 30, 3, 3, "S");
+        doc.roundedRect(kx, y, kpiW, 28, 3, 3, "S");
         const rgb = parseInt(kpiColors[i].slice(1), 16);
         doc.setFillColor((rgb >> 16) & 255, (rgb >> 8) & 255, rgb & 255);
-        doc.rect(kx, y, 2, 30, "F");
+        doc.rect(kx, y, 2, 28, "F");
         doc.setFontSize(7);
         doc.setFont("helvetica", "normal");
         doc.setTextColor(107, 114, 128);
-        doc.text(kpi.label, kx + 6, y + 8);
-        doc.setFontSize(14);
+        doc.text(kpi.label, kx + 6, y + 7);
+        doc.setFontSize(13);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(0, 0, 0);
-        doc.text(kpi.value, kx + 6, y + 18);
+        doc.text(kpi.value, kx + 6, y + 16);
         doc.setFontSize(7);
         doc.setFont("helvetica", "normal");
         doc.setTextColor(107, 114, 128);
-        doc.text(kpi.change, kx + 6, y + 25);
+        doc.text(kpi.change, kx + 6, y + 23);
       });
-      y += 42;
+      y += 36;
 
       // Market Highlights
       sectionTitle("Market Highlights");
-      doc.setFontSize(10);
+      doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(55, 65, 81);
       data.highlights.forEach((h) => {
         ensureSpace(10);
         const lines = doc.splitTextToSize(`\u2022  ${h}`, pw - 30);
         doc.text(lines, 14, y);
-        y += lines.length * 5 + 3;
+        y += lines.length * 4.5 + 2;
       });
-      y += 4;
+      y += 2;
       doc.setTextColor(0, 0, 0);
 
-      // ===== DATA TABLES (before graphs) =====
+      // ===== PAGE 2: Sales Table + Graph =====
       doc.addPage();
       pageNum++;
       y = 20;
@@ -427,6 +324,12 @@ export default function MonthlyStatisticsClient() {
         salesComparison.map((r) => [r.category, r["Single-Family"].toLocaleString(), r.Condo.toLocaleString()]),
         [(pw - 20) * 0.4, (pw - 20) * 0.3, (pw - 20) * 0.3]
       );
+      await addChartImage("sales-comparison", 90);
+
+      // ===== PAGE 3: YoY Changes Table + Graph =====
+      doc.addPage();
+      pageNum++;
+      y = 20;
 
       sectionTitle("Year-over-Year Changes (%)");
       drawTable(
@@ -434,6 +337,12 @@ export default function MonthlyStatisticsClient() {
         yoyChanges.map((r) => [r.metric, `${r.sf >= 0 ? "+" : ""}${r.sf.toFixed(1)}%`, `${r.condo >= 0 ? "+" : ""}${r.condo.toFixed(1)}%`]),
         [(pw - 20) * 0.4, (pw - 20) * 0.3, (pw - 20) * 0.3]
       );
+      await addChartImage("yoy-changes", 90);
+
+      // ===== PAGE 4: Median DOM Table + Graph =====
+      doc.addPage();
+      pageNum++;
+      y = 20;
 
       sectionTitle("Median Days on Market");
       drawTable(
@@ -444,7 +353,10 @@ export default function MonthlyStatisticsClient() {
         ],
         [(pw - 20) * 0.3, (pw - 20) * 0.23, (pw - 20) * 0.23, (pw - 20) * 0.24]
       );
+      await addChartImage("dom-comparison", 75);
 
+      // Above asking fits on same page
+      y += 4;
       sectionTitle("Sales Above Asking Price");
       drawTable(
         ["Property Type", "Current", "Last Year"],
@@ -454,6 +366,12 @@ export default function MonthlyStatisticsClient() {
         ],
         [(pw - 20) * 0.4, (pw - 20) * 0.3, (pw - 20) * 0.3]
       );
+      await addChartImage("above-asking", 75);
+
+      // ===== PAGE 5: Active Inventory Table + Pie =====
+      doc.addPage();
+      pageNum++;
+      y = 20;
 
       sectionTitle("Active Inventory");
       drawTable(
@@ -465,9 +383,14 @@ export default function MonthlyStatisticsClient() {
         ],
         [(pw - 20) * 0.4, (pw - 20) * 0.3, (pw - 20) * 0.3]
       );
+      await addChartImage("inventory-pie", 80);
 
+      // ===== Price Ranges Table + Graph (if available) =====
       if (priceRanges.length > 0) {
-        ensureSpace(40);
+        doc.addPage();
+        pageNum++;
+        y = 20;
+
         sectionTitle("Sales by Price Range");
         drawTable(
           ["Price Range", "SF Sales", "Condo Sales", "Total"],
@@ -479,10 +402,15 @@ export default function MonthlyStatisticsClient() {
           ]),
           [(pw - 20) * 0.34, (pw - 20) * 0.22, (pw - 20) * 0.22, (pw - 20) * 0.22]
         );
+        await addChartImage("price-range", 90);
       }
 
+      // ===== Trend Charts (if multiple months) =====
       if (hasMultipleMonths) {
-        ensureSpace(40);
+        // Median Price Trend
+        doc.addPage();
+        pageNum++;
+        y = 20;
         sectionTitle("Monthly Trends Summary");
         drawTable(
           ["Month", "SF Median", "Condo Median", "SF Sales", "Condo Sales", "SF DOM", "Condo DOM"],
@@ -497,14 +425,33 @@ export default function MonthlyStatisticsClient() {
           ]),
           [(pw - 20) * 0.18, (pw - 20) * 0.14, (pw - 20) * 0.14, (pw - 20) * 0.12, (pw - 20) * 0.14, (pw - 20) * 0.14, (pw - 20) * 0.14]
         );
+        await addChartImage("median-price-trend", 85);
+
+        // Sales & DOM Trends
+        doc.addPage();
+        pageNum++;
+        y = 20;
+        sectionTitle("Sales Trend");
+        await addChartImage("sales-trend", 80);
+        sectionTitle("Days on Market Trend");
+        await addChartImage("dom-trend", 80);
+
+        // Inventory & Pending Trends
+        doc.addPage();
+        pageNum++;
+        y = 20;
+        sectionTitle("Active Inventory Trend");
+        await addChartImage("inventory-trend", 80);
+        sectionTitle("Pending Sales Trend");
+        await addChartImage("pending-trend", 80);
       }
 
-      // ===== FINAL PAGE: Detailed Statistics Table =====
+      // ===== FINAL PAGE: Detailed Statistics =====
       doc.addPage();
       pageNum++;
       y = 20;
 
-      sectionTitle(`Detailed Statistics — ${data.label}`);
+      sectionTitle(`Detailed Statistics \u2014 ${data.label}`);
       drawTable(
         ["Metric", "Single-Family", "SF YoY", "Condo", "Condo YoY"],
         exportData.map((row) => [
@@ -517,68 +464,10 @@ export default function MonthlyStatisticsClient() {
         [(pw - 20) * 0.28, (pw - 20) * 0.2, (pw - 20) * 0.14, (pw - 20) * 0.2, (pw - 20) * 0.18]
       );
 
-      // ===== CHARTS: Comparative Charts =====
-      doc.addPage();
-      pageNum++;
-      y = 20;
-
-      sectionTitle("Sales, Pending, Listings & Inventory");
-      await addChartImage("sales-comparison", 90);
-
-      sectionTitle("Year-over-Year Changes (%)");
-      await addChartImage("yoy-changes", 85);
-
-      // ===== CHARTS: More Comparisons =====
-      doc.addPage();
-      pageNum++;
-      y = 20;
-
-      if (priceRanges.length > 0) {
-        sectionTitle("Sales by Price Range");
-        await addChartImage("price-range", 90);
-      }
-
-      sectionTitle("Median Days on Market");
-      await addChartImage("dom-comparison", 70);
-
-      sectionTitle("Sales Above Asking Price (%)");
-      await addChartImage("above-asking", 70);
-
-      // ===== CHARTS: Inventory Pie =====
-      doc.addPage();
-      pageNum++;
-      y = 20;
-
-      sectionTitle("Active Inventory Split");
-      await addChartImage("inventory-pie", 80);
-
-      // ===== CHARTS: Trend Charts (if multiple months) =====
-      if (hasMultipleMonths) {
-        doc.addPage();
-        pageNum++;
-        y = 20;
-
-        sectionTitle("Median Price Trend");
-        await addChartImage("median-price-trend", 85);
-
-        sectionTitle("Sales & Days on Market Trends");
-        await addChartImage("sales-trend", 70);
-        await addChartImage("dom-trend", 70);
-
-        doc.addPage();
-        pageNum++;
-        y = 20;
-
-        sectionTitle("Inventory & Pending Sales Trends");
-        await addChartImage("inventory-trend", 70);
-        await addChartImage("pending-trend", 70);
-      }
-
-      // Footer on every page (skip cover page) — Honolulu Board of REALTORS branding
+      // Footer on every page — Honolulu Board of REALTORS branding
       const totalPages = pageNum;
       for (let p = 1; p <= totalPages; p++) {
         doc.setPage(p);
-        if (p === 1) continue; // Skip cover page footer
         doc.setFontSize(8);
         doc.setFont("helvetica", "normal");
         doc.setTextColor(156, 163, 175);
