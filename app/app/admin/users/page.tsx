@@ -1,5 +1,6 @@
 import { requireAdmin } from "@/lib/auth/admin-check";
 import { supabaseServer } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import Link from "next/link";
 import UserManagementClient from "./user-management.client";
 
@@ -23,6 +24,32 @@ export default async function UsersManagementPage() {
     );
   }
 
+  // Get all active plans for plan assignment
+  const { data: plans } = await supabaseAdmin
+    .from("subscription_plans")
+    .select("id, name, slug, monthly_price, annual_price, tier_level")
+    .eq("is_active", true)
+    .order("tier_level", { ascending: true });
+
+  // Get all subscriptions to show current plan per user
+  const { data: subscriptions } = await supabaseAdmin
+    .from("agent_subscriptions")
+    .select("agent_id, subscription_plan_id, status, billing_cycle, subscription_plans(name)")
+    .eq("status", "active");
+
+  // Build a map of agent_id -> subscription info
+  const subscriptionMap: Record<string, { planName: string; planId: string; status: string }> = {};
+  if (subscriptions) {
+    for (const sub of subscriptions) {
+      const planName = (sub as any).subscription_plans?.name || "Unknown";
+      subscriptionMap[sub.agent_id] = {
+        planName,
+        planId: sub.subscription_plan_id,
+        status: sub.status,
+      };
+    }
+  }
+
   return (
     <div>
       <div style={{ marginBottom: 32 }}>
@@ -30,7 +57,7 @@ export default async function UsersManagementPage() {
           User Management
         </h1>
         <p style={{ color: "#6b7280", marginTop: 8 }}>
-          Manage agent accounts and permissions
+          Manage agent accounts, permissions, and plan assignments
         </p>
       </div>
 
@@ -70,7 +97,11 @@ export default async function UsersManagementPage() {
           </Link>
         </div>
 
-        <UserManagementClient users={users || []} />
+        <UserManagementClient
+          users={users || []}
+          plans={plans || []}
+          subscriptionMap={subscriptionMap}
+        />
       </div>
     </div>
   );

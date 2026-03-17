@@ -37,6 +37,33 @@ export default function AdminSidebar() {
         <NavLink href="/app/admin/invitations" active={pathname === "/app/admin/invitations"}>
           📧 Invitations
         </NavLink>
+
+        <div
+          style={{
+            height: 1,
+            background: "rgba(255,255,255,0.1)",
+            margin: "16px 24px",
+          }}
+        />
+
+        <NavLink href="/app/admin/plans" active={pathname?.startsWith("/app/admin/plans") ?? false}>
+          💰 Plans
+        </NavLink>
+        <NavLink href="/app/admin/subscriptions" active={pathname?.startsWith("/app/admin/subscriptions") ?? false}>
+          📄 Subscriptions
+        </NavLink>
+        <NavLink href="/app/admin/features" active={pathname === "/app/admin/features"}>
+          ⚙️ Features
+        </NavLink>
+
+        <div
+          style={{
+            height: 1,
+            background: "rgba(255,255,255,0.1)",
+            margin: "16px 24px",
+          }}
+        />
+
         <NavLink href="/app/admin/error-logs" active={pathname === "/app/admin/error-logs"}>
           🐛 Error Logs
         </NavLink>

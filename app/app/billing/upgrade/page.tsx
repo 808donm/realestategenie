@@ -152,18 +152,8 @@ export default async function UpgradePage() {
                       {plan.max_agents === 999999 ? "Unlimited" : plan.max_agents}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Properties</span>
-                    <span className="font-semibold">
-                      {plan.max_properties === 999999 ? "Unlimited" : plan.max_properties}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Tenants</span>
-                    <span className="font-semibold">
-                      {plan.max_tenants === 999999 ? "Unlimited" : plan.max_tenants}
-                    </span>
-                  </div>
+
+
                 </div>
 
                 {/* Features */}

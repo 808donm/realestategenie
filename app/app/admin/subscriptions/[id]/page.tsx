@@ -140,57 +140,7 @@ export default async function ManageUserSubscriptionPage({ params }: PageProps) 
       {usage && currentPlan && (
         <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
           <h2 className="text-lg font-bold mb-4">Current Usage</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <div className="text-sm text-gray-500 mb-2">Properties</div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold">{usage.current_properties}</span>
-                <span className="text-gray-500">/ {currentPlan.max_properties}</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                <div
-                  className={`h-2 rounded-full ${
-                    usage.current_properties > currentPlan.max_properties
-                      ? "bg-red-600"
-                      : usage.current_properties / currentPlan.max_properties > 0.7
-                      ? "bg-yellow-500"
-                      : "bg-green-600"
-                  }`}
-                  style={{
-                    width: `${Math.min(
-                      100,
-                      (usage.current_properties / currentPlan.max_properties) * 100
-                    )}%`,
-                  }}
-                />
-              </div>
-            </div>
-
-            <div>
-              <div className="text-sm text-gray-500 mb-2">Tenants</div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold">{usage.current_tenants}</span>
-                <span className="text-gray-500">/ {currentPlan.max_tenants}</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                <div
-                  className={`h-2 rounded-full ${
-                    usage.current_tenants > currentPlan.max_tenants
-                      ? "bg-red-600"
-                      : usage.current_tenants / currentPlan.max_tenants > 0.7
-                      ? "bg-yellow-500"
-                      : "bg-green-600"
-                  }`}
-                  style={{
-                    width: `${Math.min(
-                      100,
-                      (usage.current_tenants / currentPlan.max_tenants) * 100
-                    )}%`,
-                  }}
-                />
-              </div>
-            </div>
-
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <div className="text-sm text-gray-500 mb-2">Agents</div>
               <div className="flex items-baseline gap-2">

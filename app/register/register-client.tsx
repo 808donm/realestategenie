@@ -127,7 +127,7 @@ export default function RegisterClient() {
               Request Access
             </CardTitle>
             <p className="mt-2 text-sm font-bold text-foreground">
-              Real Estate Deal And Property Management For The Independent Agent
+              Real Estate Deal Flow &amp; Analytics For The Independent Agent
             </p>
             <CardDescription className="mt-2">
               Apply for exclusive access to Real Estate Genie

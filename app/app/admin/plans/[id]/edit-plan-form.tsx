@@ -291,38 +291,6 @@ export default function EditPlanForm({ plan, subscriberCount }: EditPlanFormProp
                   />
                   <p className="text-xs text-gray-500 mt-1">Use 999999 for unlimited</p>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Max Properties *
-                  </label>
-                  <input
-                    type="number"
-                    name="max_properties"
-                    value={formData.max_properties}
-                    onChange={handleInputChange}
-                    required
-                    min="1"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Use 999999 for unlimited</p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Max Tenants *
-                  </label>
-                  <input
-                    type="number"
-                    name="max_tenants"
-                    value={formData.max_tenants}
-                    onChange={handleInputChange}
-                    required
-                    min="1"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Use 999999 for unlimited</p>
-                </div>
               </div>
 
               {/* Flags */}

@@ -160,9 +160,7 @@ export default async function AdminSubscriptionsPage() {
                 const hasOverage =
                   usage &&
                   plan &&
-                  (usage.current_properties > plan.max_properties ||
-                    usage.current_tenants > plan.max_tenants ||
-                    usage.current_agents > plan.max_agents);
+                  usage.current_agents > plan.max_agents;
 
                 return (
                   <tr
@@ -194,22 +192,13 @@ export default async function AdminSubscriptionsPage() {
                         <div className="text-xs space-y-1">
                           <div
                             className={
-                              usage.current_properties > plan.max_properties
+                              usage.current_agents > plan.max_agents
                                 ? "text-red-600 font-semibold"
                                 : ""
                             }
                           >
-                            Properties: {usage.current_properties}/
-                            {plan.max_properties}
-                          </div>
-                          <div
-                            className={
-                              usage.current_tenants > plan.max_tenants
-                                ? "text-red-600 font-semibold"
-                                : ""
-                            }
-                          >
-                            Tenants: {usage.current_tenants}/{plan.max_tenants}
+                            Agents: {usage.current_agents}/
+                            {plan.max_agents === 999999 ? "Unlimited" : plan.max_agents}
                           </div>
                         </div>
                       ) : (

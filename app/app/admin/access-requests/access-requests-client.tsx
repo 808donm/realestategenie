@@ -586,7 +586,7 @@ export default function AccessRequestsClient({
                         plans.map((plan) => (
                           <SelectItem key={plan.id} value={plan.id}>
                             {plan.name} - ${plan.monthly_price}/mo or ${plan.annual_price}/yr
-                            {plan.max_agents === 999999 ? " (Unlimited)" : ` (${plan.max_agents} agents, ${plan.max_properties} properties)`}
+                            {plan.max_agents === 999999 ? " (Unlimited agents)" : ` (${plan.max_agents} agents)`}
                           </SelectItem>
                         ))
                       )}
@@ -720,7 +720,7 @@ export default function AccessRequestsClient({
                             plans.map((plan) => (
                               <SelectItem key={plan.id} value={plan.id}>
                                 {plan.name} - ${plan.monthly_price}/mo or ${plan.annual_price}/yr
-                                {plan.max_agents === 999999 ? " (Unlimited)" : ` (${plan.max_agents} agents, ${plan.max_properties} properties)`}
+                                {plan.max_agents === 999999 ? " (Unlimited agents)" : ` (${plan.max_agents} agents)`}
                               </SelectItem>
                             ))
                           )}
@@ -733,8 +733,8 @@ export default function AccessRequestsClient({
                           </p>
                           <p className="text-muted-foreground mt-1">
                             {plans.find((p) => p.id === selectedPlan)?.max_agents === 999999
-                              ? "Unlimited agents, properties, and tenants"
-                              : `Up to ${plans.find((p) => p.id === selectedPlan)?.max_agents} agents, ${plans.find((p) => p.id === selectedPlan)?.max_properties} properties, ${plans.find((p) => p.id === selectedPlan)?.max_tenants} tenants`}
+                              ? "Unlimited agents"
+                              : `Up to ${plans.find((p) => p.id === selectedPlan)?.max_agents} agents`}
                           </p>
                         </div>
                       )}

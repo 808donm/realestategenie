@@ -108,20 +108,6 @@ export default async function AdminPlansPage() {
                       {plan.max_agents === 999999 ? 'Unlimited' : plan.max_agents}
                     </span>
                   </div>
-
-                  <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                    <span className="text-sm text-gray-600">Max Properties</span>
-                    <span className="font-semibold text-gray-900">
-                      {plan.max_properties === 999999 ? 'Unlimited' : plan.max_properties}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                    <span className="text-sm text-gray-600">Max Tenants</span>
-                    <span className="font-semibold text-gray-900">
-                      {plan.max_tenants === 999999 ? 'Unlimited' : plan.max_tenants}
-                    </span>
-                  </div>
                 </div>
 
                 {/* Status */}

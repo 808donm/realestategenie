@@ -47,7 +47,7 @@ export const HELP_SECTIONS: HelpSection[] = [
 
 ### 1.1 About The Real Estate Genie
 
-The Real Estate Genie is a comprehensive SaaS platform designed for real estate agents, brokers, and teams. It provides tools for managing leads, analyzing investment properties, tracking deals through a visual pipeline, managing open houses, handling property management tasks, and much more — all from a single, unified application.
+The Real Estate Genie is a comprehensive SaaS platform designed for real estate agents, brokers, and teams. It provides tools for managing leads, analyzing investment properties, tracking deals through a visual pipeline, managing open houses, generating brokerage reports, and much more — all from a single, unified application.
 
 The platform is available as a web application at realestategenie.app and as a mobile app for iOS and Android devices.
 
@@ -92,7 +92,6 @@ The main navigation menu provides access to all major sections of the applicatio
 - **Analyzers** — 12 investment and financial analysis tools.
 - **Reports** — Business reporting and analytics.
 - **Neighborhoods** — Demographic and market data by neighborhood.
-- **Property Management** — Lease and rental application management.
 - **Integrations** — Connect third-party services.
 - **Billing** — Manage your subscription and payments.
 - **Settings** — Profile and account settings.
@@ -109,7 +108,7 @@ The Real Estate Genie supports several user roles, each with different levels of
 
 | Role | Description |
 |------|-------------|
-| **Agent** | Standard user with access to all core features including Dashboard, MLS, Pipeline, Open Houses, Leads, Contacts, Analyzers, Reports, Neighborhoods, Property Management, Integrations, Billing, and Settings. |
+| **Agent** | Standard user with access to all core features including Dashboard, MLS, Pipeline, Open Houses, Leads, Contacts, Analyzers, Reports, Neighborhoods, Integrations, Billing, and Settings. |
 | **Team Lead** | All Agent permissions plus access to the Team Dashboard for monitoring team activity and performance. |
 | **Admin (Account)** | All Agent permissions plus the ability to manage Team settings, invite and remove team members, and configure account-wide settings. |
 | **Admin (Platform)** | Full platform access including the Admin panel, admin-only integrations (Stripe, PayPal, Realie.ai, Federal Data), and user management across the platform. |`,
@@ -450,46 +449,8 @@ The Neighborhoods section provides detailed profiles with demographic and market
 4. Use this data to advise clients, prepare CMAs, and identify emerging markets.`,
   },
   {
-    id: "property-management",
-    title: "12. Property Management",
-    content: `## 12. Property Management
-
-The Property Management section provides tools for managing rental properties, leases, and tenant applications.
-
-### 12.1 Lease Management
-
-1. Navigate to **Property Management > Leases**.
-2. Click **Create Lease** to set up a new lease agreement.
-3. Enter lease details: property address, tenant information, lease term (start and end dates), monthly rent, security deposit, and any special terms.
-4. Track lease status, upcoming renewals, and payment history.
-
-### 12.2 Rental Applications
-
-Manage incoming rental applications through the Property Management section. Review applicant information, run screening checks, and approve or deny applications \u2014 all within the platform.`,
-  },
-  {
-    id: "tenant-portal",
-    title: "13. Tenant Portal",
-    content: `## 13. Tenant Portal
-
-The Tenant Portal is a separate, tenant-facing interface that allows your tenants to manage their rental experience. Tenants access it by logging in or registering at the tenant portal.
-
-### 13.1 Tenant Features
-
-- **Dashboard** — Overview of the tenant\u2019s account, upcoming payments, and recent activity.
-- **Invoices** — View and track invoices for rent and other charges.
-- **Lease Details** — Access the current lease agreement, terms, and important dates.
-- **Messages** — Communicate directly with the property manager through a built-in messaging system.
-- **Payment Methods** — Add, edit, and manage payment methods for rent payments.
-- **Work Orders** — Submit and track maintenance requests. Include descriptions, photos, and priority level.
-
-### 13.2 Tenant Registration
-
-Tenants can register for the portal using the registration link provided by their property manager. Once registered, they can sign in to access all portal features.`,
-  },
-  {
     id: "integrations",
-    title: "14. Integrations",
+    title: "12. Integrations",
     content: `## 14. Integrations
 
 The Integrations page allows you to connect third-party services to extend the functionality of The Real Estate Genie. Navigate to **Integrations** from the main navigation to view and manage all available integrations.

@@ -210,22 +210,8 @@ export default async function BillingPage({ searchParams }: PageProps) {
                         : subscription.subscription_plans.max_offices}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Properties</span>
-                    <span className="font-medium">
-                      {subscription.subscription_plans.max_properties === 999999
-                        ? "Unlimited"
-                        : subscription.subscription_plans.max_properties}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Tenants</span>
-                    <span className="font-medium">
-                      {subscription.subscription_plans.max_tenants === 999999
-                        ? "Unlimited"
-                        : subscription.subscription_plans.max_tenants}
-                    </span>
-                  </div>
+
+
                 </div>
               </div>
 

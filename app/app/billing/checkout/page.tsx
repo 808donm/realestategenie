@@ -204,33 +204,8 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between py-3 border-b">
-                  <span className="text-muted-foreground">Maximum Properties</span>
-                  <div className="text-right">
-                    {currentPlan && (
-                      <span className="text-sm text-muted-foreground mr-2 line-through">
-                        {currentPlan.max_properties === 999999 ? "Unlimited" : currentPlan.max_properties}
-                      </span>
-                    )}
-                    <span className="font-semibold text-green-600">
-                      {selectedPlan.max_properties === 999999 ? "Unlimited" : selectedPlan.max_properties}
-                    </span>
-                  </div>
-                </div>
 
-                <div className="flex items-center justify-between py-3">
-                  <span className="text-muted-foreground">Maximum Tenants</span>
-                  <div className="text-right">
-                    {currentPlan && (
-                      <span className="text-sm text-muted-foreground mr-2 line-through">
-                        {currentPlan.max_tenants === 999999 ? "Unlimited" : currentPlan.max_tenants}
-                      </span>
-                    )}
-                    <span className="font-semibold text-green-600">
-                      {selectedPlan.max_tenants === 999999 ? "Unlimited" : selectedPlan.max_tenants}
-                    </span>
-                  </div>
-                </div>
+
               </div>
             </CardContent>
           </Card>
