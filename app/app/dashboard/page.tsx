@@ -31,7 +31,7 @@ export default async function DashboardPage() {
   // Agent profile (RLS scoped)
   const { data: agent } = await supabase
     .from("agents")
-    .select("display_name, phone_e164, license_number, locations_served")
+    .select("display_name, phone_e164, license_number, locations_served, timezone")
     .eq("id", user.id)
     .single();
 
@@ -258,6 +258,7 @@ export default async function DashboardPage() {
       {/* Today View: Greeting + Schedule + Urgent Follow-ups */}
       <TodayView
         agentName={agentName}
+        timezone={agent?.timezone || undefined}
         todayEvents={(todayEvents || []).map((e) => ({
           id: e.id,
           address: e.address,

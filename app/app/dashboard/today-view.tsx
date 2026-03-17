@@ -23,21 +23,27 @@ type FollowUp = {
 
 export default function TodayView({
   agentName,
+  timezone,
   todayEvents,
   urgentFollowUps,
 }: {
   agentName: string;
+  timezone?: string;
   todayEvents: TodayEvent[];
   urgentFollowUps: FollowUp[];
 }) {
-  const hour = new Date().getHours();
+  const now = new Date();
+  const hour = timezone
+    ? parseInt(now.toLocaleString("en-US", { hour: "numeric", hour12: false, timeZone: timezone }), 10)
+    : now.getHours();
   const greeting =
     hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
-  const todayStr = new Date().toLocaleDateString("en-US", {
+  const todayStr = now.toLocaleDateString("en-US", {
     weekday: "long",
     month: "long",
     day: "numeric",
+    ...(timezone ? { timeZone: timezone } : {}),
   });
 
   return (

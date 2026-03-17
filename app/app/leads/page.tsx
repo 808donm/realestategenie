@@ -2,7 +2,9 @@ import Link from "next/link";
 import { supabaseServer } from "@/lib/supabase/server";
 import LeadsList from "./leads-list";
 import LeadsBySourceChart from "./leads-by-source-chart";
+import LeadsInsightsCharts from "./leads-insights-charts";
 import PageHelp from "../components/page-help";
+import { PIPELINE_STAGE_LABELS, PIPELINE_STAGE_COLORS, type PipelineStage } from "@/lib/pipeline-stages";
 
 const SOURCE_LABELS: Record<string, string> = {
   open_house: "Open House",
@@ -18,7 +20,7 @@ export default async function LeadsPage() {
 
   const { data: leads, error } = await supabase
     .from("lead_submissions")
-    .select("id,event_id,created_at,payload,heat_score,lead_source")
+    .select("id,event_id,created_at,payload,heat_score,lead_source,pipeline_stage")
     .order("created_at", { ascending: false })
     .limit(200);
 
@@ -51,6 +53,68 @@ export default async function LeadsPage() {
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => b.count - a.count);
 
+  // Aggregate heat score distribution
+  const allLeads = leads ?? [];
+  const heatDistribution = [
+    { name: "Hot (80+)", count: allLeads.filter((l) => l.heat_score >= 80).length, color: "#ef4444" },
+    { name: "Warm (50-79)", count: allLeads.filter((l) => l.heat_score >= 50 && l.heat_score < 80).length, color: "#f59e0b" },
+    { name: "Cold (<50)", count: allLeads.filter((l) => l.heat_score < 50).length, color: "#3b82f6" },
+  ];
+
+  // Aggregate pipeline stage breakdown
+  const stageCounts: Record<string, number> = {};
+  for (const lead of allLeads) {
+    const stage = lead.pipeline_stage || "new_lead";
+    stageCounts[stage] = (stageCounts[stage] || 0) + 1;
+  }
+  const byPipelineStage = Object.entries(stageCounts)
+    .map(([key, count]) => ({
+      name: PIPELINE_STAGE_LABELS[key as PipelineStage] || key,
+      count,
+      color: PIPELINE_STAGE_COLORS[key as PipelineStage] || "#9ca3af",
+    }))
+    .sort((a, b) => b.count - a.count);
+
+  // Aggregate leads over time (by week)
+  const leadsOverTime: { week: string; count: number }[] = [];
+  if (allLeads.length > 0) {
+    const weekMap: Record<string, number> = {};
+    for (const lead of allLeads) {
+      const d = new Date(lead.created_at);
+      // Round to start of week (Monday)
+      const day = d.getDay();
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+      const weekStart = new Date(d.getFullYear(), d.getMonth(), diff);
+      const key = weekStart.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      weekMap[key] = (weekMap[key] || 0) + 1;
+    }
+    // Sort chronologically
+    const sorted = Object.entries(weekMap).sort(
+      (a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime()
+    );
+    for (const [week, count] of sorted) {
+      leadsOverTime.push({ week, count });
+    }
+  }
+
+  // Aggregate buyer readiness from payload
+  const readinessCounts = { preApproved: 0, notPreApproved: 0, unknown: 0 };
+  for (const lead of allLeads) {
+    const payload = lead.payload as any;
+    if (payload?.pre_approved === true || payload?.pre_approved === "yes") {
+      readinessCounts.preApproved++;
+    } else if (payload?.pre_approved === false || payload?.pre_approved === "no") {
+      readinessCounts.notPreApproved++;
+    } else {
+      readinessCounts.unknown++;
+    }
+  }
+  const buyerReadiness = [
+    { name: "Pre-Approved", count: readinessCounts.preApproved, color: "#10b981" },
+    { name: "Not Pre-Approved", count: readinessCounts.notPreApproved, color: "#f97316" },
+    { name: "Unknown", count: readinessCounts.unknown, color: "#94a3b8" },
+  ].filter((d) => d.count > 0);
+
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
@@ -65,6 +129,15 @@ export default async function LeadsPage() {
 
       <div style={{ margin: "24px 0" }}>
         <LeadsBySourceChart bySource={bySource} byEvent={byEvent} />
+      </div>
+
+      <div style={{ margin: "24px 0" }}>
+        <LeadsInsightsCharts
+          heatDistribution={heatDistribution}
+          byPipelineStage={byPipelineStage}
+          leadsOverTime={leadsOverTime}
+          buyerReadiness={buyerReadiness}
+        />
       </div>
 
       <LeadsList leads={leads ?? []} eventMap={eventMap} />

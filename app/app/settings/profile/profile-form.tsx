@@ -365,7 +365,7 @@ export default function ProfileForm({ agent }: { agent: Agent }) {
             <option value="Pacific/Honolulu">Hawaii-Aleutian Time (HST)</option>
           </select>
           <p style={{ fontSize: 11, opacity: 0.6, margin: "6px 0 0 0" }}>
-            Your timezone is used to generate monthly rent invoices at midnight on the 1st of each month in your local time
+            Your timezone is used for dashboard greetings and to generate monthly rent invoices at midnight on the 1st of each month in your local time
           </p>
         </div>
 
