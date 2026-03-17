@@ -111,32 +111,281 @@ export default function MonthlyStatisticsClient() {
     } else {
       const doc = new jsPDF();
       const pw = doc.internal.pageSize.getWidth();
-      let y = 20;
-      doc.setFontSize(18);
+      const ph = doc.internal.pageSize.getHeight();
+      let y = 0;
+      let pageNum = 1;
+
+      // Helper: check if we need a new page
+      const ensureSpace = (needed: number) => {
+        if (y + needed > ph - 20) {
+          doc.addPage();
+          pageNum++;
+          y = 20;
+        }
+      };
+
+      // Helper: draw a section title
+      const sectionTitle = (title: string) => {
+        ensureSpace(20);
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(30, 58, 95); // dark blue
+        doc.text(title, 10, y);
+        y += 2;
+        doc.setDrawColor(30, 58, 95);
+        doc.setLineWidth(0.5);
+        doc.line(10, y, pw - 10, y);
+        y += 8;
+        doc.setTextColor(0, 0, 0);
+      };
+
+      // Helper: draw a table
+      const drawTable = (headers: string[], rows: string[][], colWidths?: number[]) => {
+        const cw = colWidths || headers.map(() => (pw - 20) / headers.length);
+        // Header row
+        ensureSpace(14);
+        doc.setFillColor(30, 58, 95);
+        doc.rect(10, y - 4, pw - 20, 8, "F");
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(255, 255, 255);
+        let x = 10;
+        headers.forEach((h, i) => {
+          doc.text(h, x + 2, y);
+          x += cw[i];
+        });
+        y += 7;
+        doc.setTextColor(0, 0, 0);
+
+        // Data rows
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        rows.forEach((row, ri) => {
+          ensureSpace(8);
+          if (ri % 2 === 0) {
+            doc.setFillColor(245, 247, 250);
+            doc.rect(10, y - 4, pw - 20, 7, "F");
+          }
+          x = 10;
+          row.forEach((cell, ci) => {
+            doc.text(cell, x + 2, y);
+            x += cw[ci];
+          });
+          y += 7;
+        });
+        y += 4;
+      };
+
+      // ===== PAGE 1: Cover / Title =====
+      // Title banner
+      doc.setFillColor(30, 58, 95);
+      doc.rect(0, 0, pw, 60, "F");
+      doc.setFontSize(26);
       doc.setFont("helvetica", "bold");
-      doc.text("Monthly Statistics", pw / 2, y, { align: "center" });
-      y += 8;
+      doc.setTextColor(255, 255, 255);
+      doc.text("Monthly Market Statistics", pw / 2, 28, { align: "center" });
+      doc.setFontSize(13);
+      doc.setFont("helvetica", "normal");
+      doc.text("Oahu Monthly Residential Resales — Honolulu Board of REALTORS®", pw / 2, 40, { align: "center" });
+      doc.setFontSize(11);
+      doc.text(data.label, pw / 2, 52, { align: "center" });
+      doc.setTextColor(0, 0, 0);
+      y = 75;
+
+      // Headline
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(30, 58, 95);
+      doc.text("Oahu Housing Market", 10, y);
+      y += 7;
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(55, 65, 81);
+      const headlineLines = doc.splitTextToSize(data.headline, pw - 20);
+      doc.text(headlineLines, 10, y);
+      y += headlineLines.length * 6 + 8;
+      doc.setTextColor(0, 0, 0);
+
+      // KPI Cards
+      sectionTitle("Key Performance Indicators");
+      const kpiData = [
+        { label: "SF Median Price", value: fmt(sf.medianPrice), change: `${sf.medianPriceYoY >= 0 ? "+" : ""}${sf.medianPriceYoY}% YoY` },
+        { label: "Condo Median Price", value: fmt(cd.medianPrice), change: `${cd.medianPriceYoY >= 0 ? "+" : ""}${cd.medianPriceYoY}% YoY` },
+        { label: "Total Sales", value: `${sf.sales + cd.sales}`, change: `SF: ${sf.sales} | Condo: ${cd.sales}` },
+        { label: "Pending Sales", value: `${sf.pendingSales + cd.pendingSales}`, change: `SF: ${sf.pendingSalesYoY >= 0 ? "+" : ""}${sf.pendingSalesYoY}% | Condo: ${cd.pendingSalesYoY >= 0 ? "+" : ""}${cd.pendingSalesYoY}%` },
+      ];
+      const kpiW = (pw - 20 - 18) / 4; // 4 cards with gaps
+      const kpiColors = ["#dc2626", "#3b82f6", "#10b981", "#8b5cf6"];
+      kpiData.forEach((kpi, i) => {
+        const kx = 10 + i * (kpiW + 6);
+        // Card border
+        doc.setDrawColor(229, 231, 235);
+        doc.setLineWidth(0.3);
+        doc.roundedRect(kx, y, kpiW, 30, 3, 3, "S");
+        // Color accent bar
+        const rgb = parseInt(kpiColors[i].slice(1), 16);
+        doc.setFillColor((rgb >> 16) & 255, (rgb >> 8) & 255, rgb & 255);
+        doc.rect(kx, y, 2, 30, "F");
+        // Label
+        doc.setFontSize(7);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(107, 114, 128);
+        doc.text(kpi.label, kx + 6, y + 8);
+        // Value
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(0, 0, 0);
+        doc.text(kpi.value, kx + 6, y + 18);
+        // Change
+        doc.setFontSize(7);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(107, 114, 128);
+        doc.text(kpi.change, kx + 6, y + 25);
+      });
+      y += 42;
+
+      // Market Highlights
+      sectionTitle("Market Highlights");
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
-      doc.text(`${data.label} — Generated ${new Date().toLocaleDateString()}`, pw / 2, y, { align: "center" });
-      y += 14;
-
-      doc.setFontSize(8);
-      const headers = ["Metric", "Single-Family", "SF YoY", "Condo", "Condo YoY"];
-      const colW = (pw - 20) / headers.length;
-      doc.setFont("helvetica", "bold");
-      headers.forEach((h, i) => doc.text(h, 10 + i * colW, y));
-      y += 6;
-      doc.setFont("helvetica", "normal");
-
-      exportData.forEach((row) => {
-        if (y > 280) { doc.addPage(); y = 20; }
-        const vals = [row.Metric, String(row["Single-Family"]), row["SF YoY"], String(row.Condo), row["Condo YoY"]];
-        vals.forEach((v, i) => doc.text(v, 10 + i * colW, y));
-        y += 5;
+      doc.setTextColor(55, 65, 81);
+      data.highlights.forEach((h) => {
+        ensureSpace(10);
+        const lines = doc.splitTextToSize(`•  ${h}`, pw - 30);
+        doc.text(lines, 14, y);
+        y += lines.length * 5 + 3;
       });
+      y += 4;
+      doc.setTextColor(0, 0, 0);
 
-      doc.save("Monthly_Statistics.pdf");
+      // ===== PAGE 2: Sales & Market Activity =====
+      doc.addPage();
+      pageNum++;
+      y = 20;
+
+      sectionTitle("Sales, Pending, Listings & Inventory");
+      drawTable(
+        ["Category", "Single-Family", "Condo"],
+        salesComparison.map((r) => [r.category, r["Single-Family"].toLocaleString(), r.Condo.toLocaleString()]),
+        [(pw - 20) * 0.4, (pw - 20) * 0.3, (pw - 20) * 0.3]
+      );
+
+      sectionTitle("Year-over-Year Changes (%)");
+      drawTable(
+        ["Metric", "Single-Family", "Condo"],
+        yoyChanges.map((r) => [r.metric, `${r.sf >= 0 ? "+" : ""}${r.sf.toFixed(1)}%`, `${r.condo >= 0 ? "+" : ""}${r.condo.toFixed(1)}%`]),
+        [(pw - 20) * 0.4, (pw - 20) * 0.3, (pw - 20) * 0.3]
+      );
+
+      sectionTitle("Median Days on Market");
+      drawTable(
+        ["Property Type", "Current", "Last Year", "Change"],
+        [
+          ["Single-Family", `${sf.medianDOM} days`, `${sf.prevYearMedianDOM} days`, `${sf.medianDOM - sf.prevYearMedianDOM >= 0 ? "+" : ""}${sf.medianDOM - sf.prevYearMedianDOM} days`],
+          ["Condo", `${cd.medianDOM} days`, `${cd.prevYearMedianDOM} days`, `${cd.medianDOM - cd.prevYearMedianDOM >= 0 ? "+" : ""}${cd.medianDOM - cd.prevYearMedianDOM} days`],
+        ],
+        [(pw - 20) * 0.3, (pw - 20) * 0.23, (pw - 20) * 0.23, (pw - 20) * 0.24]
+      );
+
+      sectionTitle("Sales Above Asking Price");
+      drawTable(
+        ["Property Type", "Current", "Last Year"],
+        [
+          ["Single-Family", `${sf.aboveAskingPct}%`, `${sf.prevYearAboveAskingPct}%`],
+          ["Condo", `${cd.aboveAskingPct}%`, `${cd.prevYearAboveAskingPct}%`],
+        ],
+        [(pw - 20) * 0.4, (pw - 20) * 0.3, (pw - 20) * 0.3]
+      );
+
+      sectionTitle("Active Inventory");
+      drawTable(
+        ["Property Type", "Active Listings", "% of Total"],
+        [
+          ["Single-Family", sf.activeInventory.toLocaleString(), `${((sf.activeInventory / (sf.activeInventory + cd.activeInventory)) * 100).toFixed(1)}%`],
+          ["Condo", cd.activeInventory.toLocaleString(), `${((cd.activeInventory / (sf.activeInventory + cd.activeInventory)) * 100).toFixed(1)}%`],
+          ["Total", (sf.activeInventory + cd.activeInventory).toLocaleString(), "100%"],
+        ],
+        [(pw - 20) * 0.4, (pw - 20) * 0.3, (pw - 20) * 0.3]
+      );
+
+      // ===== PAGE 3: Price Range Distribution (if available) + Trends =====
+      if (priceRanges.length > 0) {
+        doc.addPage();
+        pageNum++;
+        y = 20;
+
+        sectionTitle("Sales by Price Range");
+        drawTable(
+          ["Price Range", "SF Sales", "Condo Sales", "Total"],
+          priceRanges.map((r: any) => [
+            r.range,
+            (r.sfSales ?? 0).toLocaleString(),
+            (r.condoSales ?? 0).toLocaleString(),
+            ((r.sfSales ?? 0) + (r.condoSales ?? 0)).toLocaleString(),
+          ]),
+          [(pw - 20) * 0.34, (pw - 20) * 0.22, (pw - 20) * 0.22, (pw - 20) * 0.22]
+        );
+      }
+
+      // Monthly Trends summary (if multiple months of data)
+      if (hasMultipleMonths) {
+        ensureSpace(40);
+        sectionTitle("Monthly Trends Summary");
+        drawTable(
+          ["Month", "SF Median", "Condo Median", "SF Sales", "Condo Sales", "SF DOM", "Condo DOM"],
+          trendData.map((t) => [
+            t.fullLabel,
+            fmt(t.sfMedianPrice),
+            fmt(t.condoMedianPrice),
+            t.sfSales.toString(),
+            t.condoSales.toString(),
+            t.sfDOM.toString(),
+            t.condoDOM.toString(),
+          ]),
+          [(pw - 20) * 0.18, (pw - 20) * 0.14, (pw - 20) * 0.14, (pw - 20) * 0.12, (pw - 20) * 0.14, (pw - 20) * 0.14, (pw - 20) * 0.14]
+        );
+      }
+
+      // ===== FINAL PAGE: Detailed Statistics Table =====
+      doc.addPage();
+      pageNum++;
+      y = 20;
+
+      sectionTitle(`Detailed Statistics — ${data.label}`);
+      drawTable(
+        ["Metric", "Single-Family", "SF YoY", "Condo", "Condo YoY"],
+        exportData.map((row) => [
+          row.Metric,
+          String(row["Single-Family"]).includes("$") ? String(row["Single-Family"]) : typeof row["Single-Family"] === "number" ? row["Single-Family"].toLocaleString() : String(row["Single-Family"]),
+          row["SF YoY"],
+          String(row.Condo).includes("$") ? String(row.Condo) : typeof row.Condo === "number" ? row.Condo.toLocaleString() : String(row.Condo),
+          row["Condo YoY"],
+        ]),
+        [(pw - 20) * 0.28, (pw - 20) * 0.2, (pw - 20) * 0.14, (pw - 20) * 0.2, (pw - 20) * 0.18]
+      );
+
+      // Footer on every page
+      const totalPages = pageNum;
+      for (let p = 1; p <= totalPages; p++) {
+        doc.setPage(p);
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(156, 163, 175);
+        doc.text(
+          "Source: Honolulu Board of REALTORS® / HiCentral MLS, Ltd. — Resales of existing properties only",
+          pw / 2,
+          ph - 12,
+          { align: "center" }
+        );
+        doc.text(
+          `Generated ${new Date().toLocaleDateString()} — Page ${p} of ${totalPages}`,
+          pw / 2,
+          ph - 7,
+          { align: "center" }
+        );
+      }
+
+      doc.save(`Monthly_Market_Statistics_${data.label.replace(/\s/g, "_")}.pdf`);
     }
   };
 
