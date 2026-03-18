@@ -1,8 +1,6 @@
 import Link from "next/link";
-import { supabaseServer } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import SignOutButton from "./signout-button";
 import TodayView from "./today-view";
 import ActivityFeed from "./activity-feed";
 import ListingSnapshot from "./listing-snapshot";
@@ -15,24 +13,19 @@ import UpcomingEventsWidget from "./upcoming-events-widget";
 import SyncHealthWidget from "./sync-health-widget";
 import { PIPELINE_STAGES, PIPELINE_STAGE_LABELS } from "@/lib/pipeline-stages";
 import PageHelp from "../components/page-help";
+import { getEffectiveClient } from "@/lib/supabase/effective-client";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function DashboardPage() {
-  const supabase = await supabaseServer();
-  const { data: userData } = await supabase.auth.getUser();
+  const { supabase, userId } = await getEffectiveClient();
 
-  const user = userData.user;
-  if (!user) {
-    return <div style={{ padding: 24 }}>Not signed in.</div>;
-  }
-
-  // Agent profile (RLS scoped)
+  // Agent profile
   const { data: agent } = await supabase
     .from("agents")
     .select("display_name, phone_e164, license_number, locations_served, timezone")
-    .eq("id", user.id)
+    .eq("id", userId)
     .single();
 
   const profile = agent ?? {
@@ -42,7 +35,7 @@ export default async function DashboardPage() {
     locations_served: [],
   };
 
-  const agentName = profile.display_name?.trim() || user.email || "Agent";
+  const agentName = profile.display_name?.trim() || "Agent";
 
   const missing: string[] = [];
   if (!profile.display_name?.trim()) missing.push("name");
@@ -71,7 +64,7 @@ export default async function DashboardPage() {
       supabase
         .from("open_house_events")
         .select("id, address, start_at, end_at, status, event_type")
-        .eq("agent_id", user.id)
+        .eq("agent_id", userId)
         .gte("start_at", todayStart)
         .lt("start_at", todayEnd)
         .order("start_at", { ascending: true })
@@ -82,14 +75,14 @@ export default async function DashboardPage() {
         .select(
           "id, event_id, payload, heat_score, pipeline_stage, created_at, updated_at"
         )
-        .eq("agent_id", user.id)
+        .eq("agent_id", userId)
         .order("heat_score", { ascending: false })
         .limit(200),
       // Active listings (open houses as proxy)
       supabase
         .from("open_house_events")
         .select("id, address, start_at, created_at, status")
-        .eq("agent_id", user.id)
+        .eq("agent_id", userId)
         .eq("status", "published")
         .order("created_at", { ascending: false })
         .limit(50),

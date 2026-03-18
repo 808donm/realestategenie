@@ -1,20 +1,15 @@
-import { supabaseServer } from "@/lib/supabase/server";
 import ContactsClient from "./contacts.client";
 import PageHelp from "../components/page-help";
+import { getEffectiveClient } from "@/lib/supabase/effective-client";
 
 export default async function ContactsPage() {
-  const supabase = await supabaseServer();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return <div style={{ padding: 24, color: "crimson" }}>Not authenticated</div>;
-  }
+  const { supabase, userId } = await getEffectiveClient();
 
   // Check if GHL is connected
   const { data: integration } = await supabase
     .from("integrations")
     .select("id, config")
-    .eq("agent_id", user.id)
+    .eq("agent_id", userId)
     .eq("provider", "ghl")
     .single();
 

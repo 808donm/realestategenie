@@ -1,18 +1,25 @@
 import Link from "next/link";
 import Image from "next/image";
-import { supabaseServer } from "@/lib/supabase/server";
 import DeleteOpenHouseButton from "./delete-button.client";
 import OpenHousesExport from "./open-houses-export";
 import PageHelp from "../components/page-help";
+import { getEffectiveClient } from "@/lib/supabase/effective-client";
 
 export default async function OpenHousesIndex() {
-  const supabase = await supabaseServer();
+  const { supabase, userId, isImpersonating } = await getEffectiveClient();
 
-  const { data: events, error } = await supabase
+  let query = supabase
     .from("open_house_events")
     .select("id,address,start_at,end_at,status,property_photo_url,event_type")
     .order("start_at", { ascending: false })
     .limit(50);
+
+  // When impersonating, RLS is bypassed so we must filter explicitly
+  if (isImpersonating) {
+    query = query.eq("agent_id", userId);
+  }
+
+  const { data: events, error } = await query;
 
   return (
     <div>

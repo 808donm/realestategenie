@@ -12,6 +12,7 @@ import NotificationCenter from "./components/notification-center";
 
 import { getSubscriptionStatus, getSuggestedUpgradePlan } from "@/lib/subscriptions/utils";
 import { checkFeatureAccess } from "@/lib/subscriptions/server-utils";
+import ImpersonationBanner from "./components/impersonation-banner";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await supabaseServer();
@@ -105,7 +106,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   };
 
   return (
-    <div className="min-h-screen bg-[#fafafa] flex">
+    <div className="min-h-screen bg-[#fafafa] flex flex-col">
+      {/* Impersonation Banner (only visible when admin is viewing as another user) */}
+      <ImpersonationBanner />
+
+      <div className="flex flex-1">
       {/* Desktop Sidebar */}
       <AppSidebar {...sidebarProps} />
 
@@ -140,6 +145,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
       {/* Mobile Bottom Bar */}
       <MobileBottomBar {...sidebarProps} />
+      </div>
     </div>
   );
 }

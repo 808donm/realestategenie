@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { supabaseServer } from "@/lib/supabase/server";
+import { getEffectiveClient } from "@/lib/supabase/effective-client";
 
 export default async function EventAttendeesPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const supabase = await supabaseServer();
+  const { supabase } = await getEffectiveClient();
 
   const { data: event, error: eventErr } = await supabase
     .from("open_house_events")

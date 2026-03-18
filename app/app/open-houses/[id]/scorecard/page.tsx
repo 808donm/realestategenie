@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { supabaseServer } from "@/lib/supabase/server";
+import { getEffectiveClient } from "@/lib/supabase/effective-client";
 import ScorecardClient from "./scorecard.client";
 
 export default async function OpenHouseScorecardPage({
@@ -8,7 +8,7 @@ export default async function OpenHouseScorecardPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const supabase = await supabaseServer();
+  const { supabase } = await getEffectiveClient();
 
   // Get event details
   const { data: event, error: eventErr } = await supabase

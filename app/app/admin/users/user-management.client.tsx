@@ -172,6 +172,29 @@ export default function UserManagementClient({ users, plans, subscriptionMap }: 
     setAssignSuccess(null);
   }
 
+  async function viewAsUser(userId: string) {
+    setLoading(userId);
+    try {
+      const response = await fetch("/api/admin/impersonate/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to start impersonation");
+      }
+
+      router.push("/app/dashboard");
+      router.refresh();
+    } catch (error: any) {
+      alert(error.message || "Failed to view as user");
+    } finally {
+      setLoading(null);
+    }
+  }
+
   async function assignDemo(userId: string) {
     if (!confirm("Assign a free 30-day demo account to this user?")) {
       return;
@@ -300,6 +323,13 @@ export default function UserManagementClient({ users, plans, subscriptionMap }: 
                   </Td>
                   <Td>
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <ActionButton
+                        onClick={() => viewAsUser(user.id)}
+                        disabled={loading === user.id}
+                        color="#0891b2"
+                      >
+                        View as User
+                      </ActionButton>
                       {!sub && (
                         <ActionButton
                           onClick={() => assignDemo(user.id)}

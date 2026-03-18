@@ -1,7 +1,7 @@
-import { supabaseServer } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import PropertyDetailsForm from "./property-details-form";
+import { getEffectiveClient } from "@/lib/supabase/effective-client";
 
 export default async function EditPropertyDetails({
   params,
@@ -9,7 +9,7 @@ export default async function EditPropertyDetails({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const supabase = await supabaseServer();
+  const { supabase, userId, isImpersonating } = await getEffectiveClient();
 
   let evt: any = null;
 
@@ -60,13 +60,15 @@ export default async function EditPropertyDetails({
     evt = result.data;
   }
 
-  // Verify ownership
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Verify ownership (skip when admin is impersonating this user)
+  if (!isImpersonating) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  if (!user || user.id !== evt.agent_id) {
-    redirect("/app/open-houses");
+    if (!user || user.id !== evt.agent_id) {
+      redirect("/app/open-houses");
+    }
   }
 
   return (

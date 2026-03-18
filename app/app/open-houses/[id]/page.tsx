@@ -1,11 +1,11 @@
 import Link from "next/link";
 import Image from "next/image";
-import { supabaseServer } from "@/lib/supabase/server";
 import { geocodeAddress } from "@/lib/geocoding";
 import QRPanel from "./qr-panel";
 import PropertyMap from "@/components/PropertyMapWrapper";
 import FlyerTemplatePicker from "./flyer-template-picker.client";
 import DownloadFlyerButton from "./download-flyer-button.client";
+import { getEffectiveClient } from "@/lib/supabase/effective-client";
 
 export default async function OpenHouseDetail({
   params,
@@ -13,7 +13,7 @@ export default async function OpenHouseDetail({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const supabase = await supabaseServer();
+  const { supabase, isImpersonating } = await getEffectiveClient();
 
   // Try with flyer_template_id first; fall back without it if column doesn't exist yet
   let evt: any = null;
