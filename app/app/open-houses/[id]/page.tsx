@@ -5,6 +5,7 @@ import { geocodeAddress } from "@/lib/geocoding";
 import QRPanel from "./qr-panel";
 import PropertyMap from "@/components/PropertyMapWrapper";
 import FlyerTemplatePicker from "./flyer-template-picker.client";
+import DownloadFlyerButton from "./download-flyer-button.client";
 
 export default async function OpenHouseDetail({
   params,
@@ -144,21 +145,7 @@ async function setStatus(formData: FormData) {
           >
             ✏️ Edit Property Details
           </Link>
-          <a
-            href={`/api/open-houses/${evt.id}/flyer`}
-            download
-            style={{
-              padding: "8px 12px",
-              background: "#3b82f6",
-              color: "white",
-              borderRadius: 6,
-              textDecoration: "none",
-              fontWeight: 600,
-              fontSize: 14,
-            }}
-          >
-            📄 Download Flyer
-          </a>
+          <DownloadFlyerButton eventId={evt.id} />
         </div>
       </div>
 
