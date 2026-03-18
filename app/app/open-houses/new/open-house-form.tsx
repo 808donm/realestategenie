@@ -178,9 +178,33 @@ export default function OpenHouseForm({
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
+
+    const formData = new FormData(e.currentTarget);
+    const addr = String(formData.get("address") || "").trim();
+    const startAt = String(formData.get("start_at") || "").trim();
+    const endAt = String(formData.get("end_at") || "").trim();
+
+    // Validate required fields with specific messages
+    const missing: string[] = [];
+    if (!addr) missing.push("Address");
+    if (!startAt) missing.push("Start date/time");
+    if (!endAt) missing.push("End date/time");
+
+    if (missing.length > 0) {
+      setError(`Please fill in the following required field${missing.length > 1 ? "s" : ""}: ${missing.join(", ")}`);
+      return;
+    }
+
+    // Validate date logic
+    const startDate = new Date(startAt);
+    const endDate = new Date(endAt);
+    if (endDate <= startDate) {
+      setError("End date/time must be after the start date/time.");
+      return;
+    }
+
     setSubmitting(true);
     try {
-      const formData = new FormData(e.currentTarget);
       await onSubmit(formData);
     } catch (err: any) {
       setError(err?.message || "Failed to create open house. Please try again.");
@@ -528,7 +552,18 @@ export default function OpenHouseForm({
       </div>
 
       {error && (
-        <p style={{ margin: 0, color: "crimson", fontSize: 13, fontWeight: 600 }}>{error}</p>
+        <div style={{
+          margin: 0,
+          padding: "10px 14px",
+          background: "#fef2f2",
+          border: "1px solid #fecaca",
+          borderRadius: 8,
+          color: "#dc2626",
+          fontSize: 13,
+          fontWeight: 600,
+        }}>
+          {error}
+        </div>
       )}
 
       <button disabled={submitting} style={{ padding: 12, fontWeight: 900, opacity: submitting ? 0.6 : 1, cursor: submitting ? "wait" : "pointer" }}>

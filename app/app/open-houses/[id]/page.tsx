@@ -150,11 +150,11 @@ async function setStatus(formData: FormData) {
       </div>
 
       {/* Property Photo */}
-      {evt.property_photo_url && (
-        <div style={{ marginTop: 32 }}>
-          <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 12 }}>
-            Property Photo
-          </h2>
+      <div style={{ marginTop: 32 }}>
+        <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 12 }}>
+          Property Photo
+        </h2>
+        {evt.property_photo_url ? (
           <div style={{ position: "relative", width: "100%", maxWidth: 800, height: 400, borderRadius: 8, overflow: "hidden" }}>
             <Image
               src={evt.property_photo_url}
@@ -164,8 +164,37 @@ async function setStatus(formData: FormData) {
               priority
             />
           </div>
-        </div>
-      )}
+        ) : (
+          <div style={{
+            width: "100%",
+            maxWidth: 800,
+            height: 200,
+            borderRadius: 8,
+            border: "2px dashed #d1d5db",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "#f9fafb",
+            gap: 8,
+          }}>
+            <span style={{ fontSize: 14, color: "#6b7280" }}>
+              No property photo uploaded yet
+            </span>
+            <Link
+              href={`/app/open-houses/${evt.id}/edit`}
+              style={{
+                fontSize: 13,
+                color: "#10b981",
+                fontWeight: 600,
+                textDecoration: "underline",
+              }}
+            >
+              Upload a photo in Edit Property Details
+            </Link>
+          </div>
+        )}
+      </div>
 
       {/* Property Location Map */}
       <div style={{ marginTop: 32 }}>

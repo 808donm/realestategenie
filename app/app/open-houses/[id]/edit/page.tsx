@@ -32,9 +32,30 @@ export default async function EditPropertyDetails({
       .single();
 
     if (fallback.error || !fallback.data) {
-      redirect("/app/open-houses");
+      // Try with only base schema columns (migration 004 may not be applied)
+      const minimalFallback = await supabase
+        .from("open_house_events")
+        .select("id,address,agent_id,property_photo_url")
+        .eq("id", id)
+        .single();
+
+      if (minimalFallback.error || !minimalFallback.data) {
+        redirect("/app/open-houses");
+      }
+      evt = {
+        ...minimalFallback.data,
+        beds: null,
+        baths: null,
+        sqft: null,
+        price: null,
+        listing_description: null,
+        key_features: null,
+        flyer_description: null,
+        flyer_features: null,
+      };
+    } else {
+      evt = { ...fallback.data, flyer_description: null, flyer_features: null };
     }
-    evt = { ...fallback.data, flyer_description: null, flyer_features: null };
   } else {
     evt = result.data;
   }

@@ -53,9 +53,17 @@ export default async function NewOpenHousePage() {
     const start_at = String(formData.get("start_at") || "");
     const end_at = String(formData.get("end_at") || "");
 
-    if (!address || !start_at || !end_at) {
-      console.error("Missing required fields");
-      throw new Error("Please fill in all required fields");
+    const missing: string[] = [];
+    if (!address) missing.push("Address");
+    if (!start_at) missing.push("Start date/time");
+    if (!end_at) missing.push("End date/time");
+
+    if (missing.length > 0) {
+      throw new Error(`Please fill in the following required field${missing.length > 1 ? "s" : ""}: ${missing.join(", ")}`);
+    }
+
+    if (new Date(end_at) <= new Date(start_at)) {
+      throw new Error("End date/time must be after the start date/time.");
     }
 
     console.log("Creating open house with agent_id:", user.id);

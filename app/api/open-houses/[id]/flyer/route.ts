@@ -105,14 +105,32 @@ export async function GET(
         .single();
 
       if (fallback.error || !fallback.data) {
-        console.error("Event query error:", fallback.error);
-        return NextResponse.json({
-          error: "Open house not found",
-          details: fallback.error?.message,
-          eventId: id
-        }, { status: 404 });
+        // Try with only base schema columns
+        const minFallback = await admin
+          .from("open_house_events")
+          .select(`id, address, start_at, end_at, property_photo_url, latitude, longitude, agent_id, status`)
+          .eq("id", id)
+          .single();
+
+        if (minFallback.error || !minFallback.data) {
+          console.error("Event query error:", minFallback.error);
+          return NextResponse.json({
+            error: "Open house not found",
+            details: minFallback.error?.message,
+            eventId: id
+          }, { status: 404 });
+        }
+        event = {
+          ...minFallback.data,
+          beds: null, baths: null, sqft: null, price: null,
+          key_features: null, listing_description: null,
+          flyer_template_id: null, secondary_photo_url: null,
+          tertiary_photo_url: null, parking_notes: null,
+          flyer_description: null, flyer_features: null,
+        };
+      } else {
+        event = { ...fallback.data, flyer_template_id: null, secondary_photo_url: null, tertiary_photo_url: null, parking_notes: null, flyer_description: null, flyer_features: null };
       }
-      event = { ...fallback.data, flyer_template_id: null, secondary_photo_url: null, tertiary_photo_url: null, parking_notes: null };
     } else if (result.error || !result.data) {
       // Try with progressively fewer columns in case migrations haven't run yet
       console.error("Primary event query error:", result.error);
@@ -129,22 +147,53 @@ export async function GET(
         .single();
 
       if (fallback2.error || !fallback2.data) {
-        console.error("Fallback event query error:", fallback2.error);
-        return NextResponse.json({
-          error: "Open house not found",
-          details: fallback2.error?.message,
-          eventId: id
-        }, { status: 404 });
+        console.error("Fallback2 event query error:", fallback2.error);
+
+        // Try with only base schema columns (migration 004 columns may not exist)
+        const fallback3 = await admin
+          .from("open_house_events")
+          .select(`
+            id, address, start_at, end_at,
+            property_photo_url, latitude, longitude,
+            agent_id, status
+          `)
+          .eq("id", id)
+          .single();
+
+        if (fallback3.error || !fallback3.data) {
+          console.error("Fallback3 event query error:", fallback3.error);
+          return NextResponse.json({
+            error: "Open house not found",
+            details: fallback3.error?.message,
+            eventId: id
+          }, { status: 404 });
+        }
+        event = {
+          ...fallback3.data,
+          beds: null,
+          baths: null,
+          sqft: null,
+          price: null,
+          key_features: null,
+          listing_description: null,
+          flyer_template_id: null,
+          flyer_description: null,
+          flyer_features: null,
+          secondary_photo_url: null,
+          tertiary_photo_url: null,
+          parking_notes: null,
+        };
+      } else {
+        event = {
+          ...fallback2.data,
+          flyer_template_id: null,
+          flyer_description: null,
+          flyer_features: null,
+          secondary_photo_url: null,
+          tertiary_photo_url: null,
+          parking_notes: null,
+        };
       }
-      event = {
-        ...fallback2.data,
-        flyer_template_id: null,
-        flyer_description: null,
-        flyer_features: null,
-        secondary_photo_url: null,
-        tertiary_photo_url: null,
-        parking_notes: null,
-      };
     } else {
       event = result.data;
     }
