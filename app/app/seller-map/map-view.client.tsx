@@ -24,12 +24,14 @@ type Props = {
   showHeatMap: boolean;
   showTMK: boolean;
   tmkGeojson: GeoJSON.FeatureCollection | null;
+  showZipBoundaries: boolean;
+  zipGeojson: GeoJSON.FeatureCollection | null;
   mapStyle: "streets" | "satellite";
   isLoading: boolean;
 };
 
-// Default to Honolulu, Hawaii
-const DEFAULT_CENTER = { lat: 21.3069, lng: -157.8583 };
+// Default to downtown Honolulu, Hawaii (96813)
+const DEFAULT_CENTER = { lat: 21.3113, lng: -157.8600 };
 const DEFAULT_ZOOM = 12;
 
 const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
@@ -44,12 +46,15 @@ function SellerMapInner({
   showHeatMap,
   showTMK,
   tmkGeojson,
+  showZipBoundaries,
+  zipGeojson,
   isLoading,
 }: Props) {
   const map = useMap();
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const heatmapRef = useRef<google.maps.visualization.HeatmapLayer | null>(null);
   const dataLayerRef = useRef<google.maps.Data | null>(null);
+  const zipLayerRef = useRef<google.maps.Data | null>(null);
 
   // Handle bounds change after user stops moving
   const handleIdle = useCallback(() => {
@@ -170,6 +175,56 @@ function SellerMapInner({
       }
     };
   }, [map, showTMK, tmkGeojson]);
+
+  // Zip code boundary layer
+  useEffect(() => {
+    if (!map) return;
+
+    if (zipLayerRef.current) {
+      zipLayerRef.current.setMap(null);
+      zipLayerRef.current = null;
+    }
+
+    if (showZipBoundaries && zipGeojson) {
+      const zipLayer = new google.maps.Data({ map });
+      zipLayer.addGeoJson(zipGeojson);
+      zipLayer.setStyle({
+        fillColor: "transparent",
+        fillOpacity: 0,
+        strokeColor: "#2563eb",
+        strokeWeight: 2,
+        strokeOpacity: 0.7,
+      });
+
+      // Show zip code label on hover via info window
+      const infoWindow = new google.maps.InfoWindow();
+      zipLayer.addListener("mouseover", (event: google.maps.Data.MouseEvent) => {
+        const zipCode =
+          event.feature.getProperty("ZCTA5") ||
+          event.feature.getProperty("BASENAME") ||
+          "";
+        if (zipCode && event.latLng) {
+          infoWindow.setContent(
+            `<div style="font-size:13px;font-weight:600;padding:2px 4px">${zipCode}</div>`
+          );
+          infoWindow.setPosition(event.latLng);
+          infoWindow.open(map);
+        }
+      });
+      zipLayer.addListener("mouseout", () => {
+        infoWindow.close();
+      });
+
+      zipLayerRef.current = zipLayer;
+    }
+
+    return () => {
+      if (zipLayerRef.current) {
+        zipLayerRef.current.setMap(null);
+        zipLayerRef.current = null;
+      }
+    };
+  }, [map, showZipBoundaries, zipGeojson]);
 
   // Listen for idle event
   useEffect(() => {

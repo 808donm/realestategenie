@@ -40,6 +40,8 @@ type Props = {
   onToggleHeatMap: () => void;
   showTMK: boolean;
   onToggleTMK: () => void;
+  showZipBoundaries: boolean;
+  onToggleZipBoundaries: () => void;
   mapStyle: "streets" | "satellite";
   onToggleMapStyle: () => void;
   savedSearches: SavedSearch[];
@@ -64,6 +66,8 @@ export function SidebarPanel({
   onToggleHeatMap,
   showTMK,
   onToggleTMK,
+  showZipBoundaries,
+  onToggleZipBoundaries,
   mapStyle,
   onToggleMapStyle,
   savedSearches,
@@ -311,6 +315,15 @@ export function SidebarPanel({
                     className="rounded accent-blue-600"
                   />
                   Heat map overlay
+                </label>
+                <label className="flex items-center gap-2 text-xs text-gray-600">
+                  <input
+                    type="checkbox"
+                    checked={showZipBoundaries}
+                    onChange={onToggleZipBoundaries}
+                    className="rounded accent-blue-600"
+                  />
+                  Zip code boundaries
                 </label>
                 <label className="flex items-center gap-2 text-xs text-gray-600">
                   <input

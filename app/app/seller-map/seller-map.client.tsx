@@ -37,15 +37,18 @@ export function SellerMapClient() {
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [showHeatMap, setShowHeatMap] = useState(true);
   const [showTMK, setShowTMK] = useState(false);
+  const [showZipBoundaries, setShowZipBoundaries] = useState(true);
   const [mapStyle, setMapStyle] = useState<"streets" | "satellite">("streets");
   const [tmkGeojson, setTmkGeojson] = useState<GeoJSON.FeatureCollection | null>(null);
+  const [zipGeojson, setZipGeojson] = useState<GeoJSON.FeatureCollection | null>(null);
   const [savedSearches, setSavedSearches] = useState<SavedSearch[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [total, setTotal] = useState(0);
   const [mobileShowSidebar, setMobileShowSidebar] = useState(false);
 
   // Current map viewport (updated on pan/zoom, but does NOT trigger fetches)
-  const boundsRef = useRef({ lat: 21.3069, lng: -157.8583, radius: 10 });
+  // Default to downtown Honolulu (96813) area
+  const boundsRef = useRef({ lat: 21.3113, lng: -157.8600, radius: 10 });
   const [hasFetched, setHasFetched] = useState(false);
 
   // Load saved searches on mount
@@ -54,6 +57,16 @@ export function SellerMapClient() {
       .then((r) => r.json())
       .then((data) => {
         if (data.searches) setSavedSearches(data.searches);
+      })
+      .catch(() => {});
+  }, []);
+
+  // Fetch zip code boundaries on mount (Hawaii ZCTAs, cached for 24h server-side)
+  useEffect(() => {
+    fetch("/api/seller-map/zip-boundaries?state=15")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.features?.length) setZipGeojson(data);
       })
       .catch(() => {});
   }, []);
@@ -283,6 +296,8 @@ export function SellerMapClient() {
     onToggleHeatMap: () => setShowHeatMap((v) => !v),
     showTMK,
     onToggleTMK: () => setShowTMK((v) => !v),
+    showZipBoundaries,
+    onToggleZipBoundaries: () => setShowZipBoundaries((v) => !v),
     mapStyle,
     onToggleMapStyle: () => setMapStyle((v) => (v === "streets" ? "satellite" : "streets")),
     savedSearches,
@@ -324,6 +339,8 @@ export function SellerMapClient() {
             showHeatMap={showHeatMap}
             showTMK={showTMK}
             tmkGeojson={tmkGeojson}
+            showZipBoundaries={showZipBoundaries}
+            zipGeojson={zipGeojson}
             mapStyle={mapStyle}
             isLoading={isLoading}
           />
@@ -380,6 +397,8 @@ export function SellerMapClient() {
               showHeatMap={showHeatMap}
               showTMK={showTMK}
               tmkGeojson={tmkGeojson}
+              showZipBoundaries={showZipBoundaries}
+              zipGeojson={zipGeojson}
               mapStyle={mapStyle}
               isLoading={isLoading}
             />
