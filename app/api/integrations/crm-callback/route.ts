@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
+import { ensureGHLCustomObjects } from "@/lib/integrations/ghl-custom-objects-setup";
 
 /**
  * Handle CRM OAuth callback
@@ -170,6 +171,28 @@ export async function GET(req: NextRequest) {
       action: "integration.connected",
       details: { provider: "ghl", ghl_location_id: locationId },
     });
+
+    // Auto-create custom objects (OpenHouse + Registration) in the GHL sub-account
+    // This is idempotent — safe to run on every connection/reconnection
+    if (access_token && locationId) {
+      try {
+        console.log("Auto-creating GHL custom objects for location:", locationId);
+        const setupResult = await ensureGHLCustomObjects(access_token, locationId);
+        console.log("GHL custom objects setup result:", setupResult);
+
+        await supabase.from("audit_log").insert({
+          agent_id: user.id,
+          action: "ghl.custom_objects_setup",
+          details: {
+            location_id: locationId,
+            ...setupResult,
+          },
+        });
+      } catch (setupError: any) {
+        // Don't fail the OAuth flow if custom object setup fails
+        console.error("GHL custom objects setup failed (non-blocking):", setupError.message);
+      }
+    }
 
     // Success - redirect to integrations page
     return NextResponse.redirect(
