@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseServer } from "@/lib/supabase/server";
+import { getEffectiveClient } from "@/lib/supabase/effective-client";
 
 export async function POST(
   request: NextRequest,
@@ -7,16 +7,7 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const supabase = await supabaseServer();
-
-    // Verify authentication
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const { supabase, userId, isImpersonating } = await getEffectiveClient();
 
     // Get the open house to verify ownership
     const { data: event, error: fetchError } = await supabase
@@ -29,7 +20,7 @@ export async function POST(
       return NextResponse.json({ error: "Open house not found" }, { status: 404 });
     }
 
-    if (event.agent_id !== user.id) {
+    if (!isImpersonating && event.agent_id !== userId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -138,16 +129,7 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const supabase = await supabaseServer();
-
-    // Verify authentication
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const { supabase, userId, isImpersonating } = await getEffectiveClient();
 
     // Determine which photo slot to delete
     const url = new URL(request.url);
@@ -178,7 +160,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Open house not found" }, { status: 404 });
     }
 
-    if ((event as any).agent_id !== user.id) {
+    if (!isImpersonating && (event as any).agent_id !== userId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
