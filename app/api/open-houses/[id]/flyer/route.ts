@@ -114,35 +114,37 @@ export async function GET(
       }
       event = { ...fallback.data, flyer_template_id: null, secondary_photo_url: null, tertiary_photo_url: null, parking_notes: null };
     } else if (result.error || !result.data) {
-      // Try without new columns in case migration hasn't run yet
-      if (result.error?.message?.includes("secondary_photo_url") || result.error?.message?.includes("tertiary_photo_url") || result.error?.message?.includes("parking_notes")) {
-        const fallback2 = await admin
-          .from("open_house_events")
-          .select(`
-            id, address, start_at, end_at, beds, baths, sqft, price,
-            key_features, listing_description, property_photo_url,
-            latitude, longitude, agent_id, status, flyer_template_id
-          `)
-          .eq("id", id)
-          .single();
+      // Try with progressively fewer columns in case migrations haven't run yet
+      console.error("Primary event query error:", result.error);
 
-        if (fallback2.error || !fallback2.data) {
-          console.error("Event query error:", fallback2.error);
-          return NextResponse.json({
-            error: "Open house not found",
-            details: fallback2.error?.message,
-            eventId: id
-          }, { status: 404 });
-        }
-        event = { ...fallback2.data, secondary_photo_url: null, tertiary_photo_url: null, parking_notes: null };
-      } else {
-        console.error("Event query error:", result.error);
+      // Try without the newest optional columns
+      const fallback2 = await admin
+        .from("open_house_events")
+        .select(`
+          id, address, start_at, end_at, beds, baths, sqft, price,
+          key_features, listing_description, property_photo_url,
+          latitude, longitude, agent_id, status
+        `)
+        .eq("id", id)
+        .single();
+
+      if (fallback2.error || !fallback2.data) {
+        console.error("Fallback event query error:", fallback2.error);
         return NextResponse.json({
           error: "Open house not found",
-          details: result.error?.message,
+          details: fallback2.error?.message,
           eventId: id
         }, { status: 404 });
       }
+      event = {
+        ...fallback2.data,
+        flyer_template_id: null,
+        flyer_description: null,
+        flyer_features: null,
+        secondary_photo_url: null,
+        tertiary_photo_url: null,
+        parking_notes: null,
+      };
     } else {
       event = result.data;
     }

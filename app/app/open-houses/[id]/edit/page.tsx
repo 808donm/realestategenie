@@ -11,7 +11,9 @@ export default async function EditPropertyDetails({
   const { id } = await params;
   const supabase = await supabaseServer();
 
-  const { data: evt, error } = await supabase
+  let evt: any = null;
+
+  const result = await supabase
     .from("open_house_events")
     .select(
       "id,address,beds,baths,sqft,price,listing_description,key_features,flyer_description,flyer_features,agent_id,property_photo_url"
@@ -19,8 +21,22 @@ export default async function EditPropertyDetails({
     .eq("id", id)
     .single();
 
-  if (error || !evt) {
-    redirect("/app/open-houses");
+  if (result.error || !result.data) {
+    // Retry without optional columns that may not exist yet
+    const fallback = await supabase
+      .from("open_house_events")
+      .select(
+        "id,address,beds,baths,sqft,price,listing_description,key_features,agent_id,property_photo_url"
+      )
+      .eq("id", id)
+      .single();
+
+    if (fallback.error || !fallback.data) {
+      redirect("/app/open-houses");
+    }
+    evt = { ...fallback.data, flyer_description: null, flyer_features: null };
+  } else {
+    evt = result.data;
   }
 
   // Verify ownership
