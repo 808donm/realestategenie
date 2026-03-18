@@ -19,20 +19,22 @@ type EffectiveClientResult = {
   isImpersonating: boolean;
 };
 
+function createAdminClient(): SupabaseClient {
+  const { createClient } = require("@supabase/supabase-js");
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false } }
+  );
+}
+
 export async function getEffectiveClient(): Promise<EffectiveClientResult> {
   const impersonation = await getImpersonationState();
 
   if (impersonation) {
     // Use service role client (bypasses RLS) with impersonated user's ID
-    const { createClient } = await import("@supabase/supabase-js");
-    const adminClient = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { persistSession: false } }
-    );
-
     return {
-      supabase: adminClient,
+      supabase: createAdminClient(),
       userId: impersonation.targetUserId,
       isImpersonating: true,
     };
@@ -53,4 +55,59 @@ export async function getEffectiveClient(): Promise<EffectiveClientResult> {
     userId: user.id,
     isImpersonating: false,
   };
+}
+
+/**
+ * Verify access to an open house event, with admin fallback.
+ *
+ * When a non-impersonating user can't find the event (RLS blocks it),
+ * this checks if they're an admin and escalates to a service role client.
+ *
+ * Returns the verified supabase client (possibly escalated) and event data.
+ */
+export async function getEventWithAdminFallback(
+  supabase: SupabaseClient,
+  userId: string,
+  isImpersonating: boolean,
+  eventId: string,
+  selectColumns: string = "agent_id"
+): Promise<{
+  supabase: SupabaseClient;
+  event: any;
+  isElevated: boolean;
+} | { error: string; status: number }> {
+  const { data: event, error: fetchError } = await supabase
+    .from("open_house_events")
+    .select(selectColumns)
+    .eq("id", eventId)
+    .single();
+
+  if (!fetchError && event) {
+    // Event found — check ownership (skip for impersonating admins)
+    if (!isImpersonating && (event as any).agent_id !== userId) {
+      return { error: "Forbidden", status: 403 };
+    }
+    return { supabase, event, isElevated: isImpersonating };
+  }
+
+  // Event not found — could be RLS blocking an admin's access
+  if (!isImpersonating) {
+    const { isAdmin } = await import("@/lib/auth/admin-check");
+    const userIsAdmin = await isAdmin(userId);
+
+    if (userIsAdmin) {
+      const adminClient = createAdminClient();
+      const { data: adminEvent, error: adminFetchError } = await adminClient
+        .from("open_house_events")
+        .select(selectColumns)
+        .eq("id", eventId)
+        .single();
+
+      if (!adminFetchError && adminEvent) {
+        return { supabase: adminClient, event: adminEvent, isElevated: true };
+      }
+    }
+  }
+
+  return { error: "Open house not found", status: 404 };
 }

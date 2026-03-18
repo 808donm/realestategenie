@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getEffectiveClient } from "@/lib/supabase/effective-client";
+import { getEffectiveClient, getEventWithAdminFallback } from "@/lib/supabase/effective-client";
 
 export async function POST(
   request: NextRequest,
@@ -7,22 +7,32 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const { supabase, userId, isImpersonating } = await getEffectiveClient();
 
-    // Get the open house to verify ownership
-    const { data: event, error: fetchError } = await supabase
-      .from("open_house_events")
-      .select("agent_id")
-      .eq("id", id)
-      .single();
+    let supabase;
+    let userId: string;
+    let isImpersonating: boolean;
 
-    if (fetchError || !event) {
-      return NextResponse.json({ error: "Open house not found" }, { status: 404 });
+    try {
+      const client = await getEffectiveClient();
+      supabase = client.supabase;
+      userId = client.userId;
+      isImpersonating = client.isImpersonating;
+    } catch (authError: any) {
+      console.error("[Photo Upload] Auth error:", authError.message);
+      return NextResponse.json(
+        { error: "Authentication failed. Please refresh the page and try again." },
+        { status: 401 }
+      );
     }
 
-    if (!isImpersonating && event.agent_id !== userId) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    // Verify access to the event (with admin fallback)
+    const access = await getEventWithAdminFallback(supabase, userId, isImpersonating, id);
+
+    if ("error" in access) {
+      return NextResponse.json({ error: access.error }, { status: access.status });
     }
+
+    supabase = access.supabase;
 
     // Get the file from the request
     const formData = await request.formData();
@@ -82,7 +92,7 @@ export async function POST(
       });
 
     if (uploadError) {
-      console.error("Upload error:", uploadError);
+      console.error("[Photo Upload] Upload error:", uploadError);
       return NextResponse.json(
         { error: "Failed to upload file", details: uploadError.message },
         { status: 500 }
@@ -104,7 +114,7 @@ export async function POST(
       .eq("id", id);
 
     if (updateError) {
-      console.error("Update error:", updateError);
+      console.error("[Photo Upload] Update error:", updateError);
       // Try to delete the uploaded file if DB update fails
       await supabase.storage.from("property-photos").remove([filePath]);
       return NextResponse.json(
@@ -115,7 +125,7 @@ export async function POST(
 
     return NextResponse.json({ success: true, url: publicUrl });
   } catch (error: any) {
-    console.error("Photo upload error:", error);
+    console.error("[Photo Upload] Unexpected error:", error);
     return NextResponse.json(
       { error: "Failed to upload photo", details: error.message },
       { status: 500 }
@@ -129,7 +139,23 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const { supabase, userId, isImpersonating } = await getEffectiveClient();
+
+    let supabase;
+    let userId: string;
+    let isImpersonating: boolean;
+
+    try {
+      const client = await getEffectiveClient();
+      supabase = client.supabase;
+      userId = client.userId;
+      isImpersonating = client.isImpersonating;
+    } catch (authError: any) {
+      console.error("[Photo Delete] Auth error:", authError.message);
+      return NextResponse.json(
+        { error: "Authentication failed. Please refresh the page and try again." },
+        { status: 401 }
+      );
+    }
 
     // Determine which photo slot to delete
     const url = new URL(request.url);
@@ -149,22 +175,18 @@ export async function DELETE(
     };
     const column = columnMap[slot];
 
-    // Get the open house to verify ownership and get the photo URL
-    const { data: event, error: fetchError } = await supabase
-      .from("open_house_events")
-      .select("agent_id, property_photo_url, secondary_photo_url, tertiary_photo_url")
-      .eq("id", id)
-      .single();
+    // Verify access to the event (with admin fallback)
+    const selectColumns = "agent_id, property_photo_url, secondary_photo_url, tertiary_photo_url";
+    const access = await getEventWithAdminFallback(supabase, userId, isImpersonating, id, selectColumns);
 
-    if (fetchError || !event) {
-      return NextResponse.json({ error: "Open house not found" }, { status: 404 });
+    if ("error" in access) {
+      return NextResponse.json({ error: access.error }, { status: access.status });
     }
 
-    if (!isImpersonating && (event as any).agent_id !== userId) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    supabase = access.supabase;
+    const event = access.event;
 
-    const photoUrl = (event as any)[column];
+    const photoUrl = event[column];
     if (!photoUrl) {
       return NextResponse.json({ error: "No photo to delete" }, { status: 404 });
     }
@@ -182,7 +204,7 @@ export async function DELETE(
       .remove([filePath]);
 
     if (deleteError) {
-      console.error("Delete error:", deleteError);
+      console.error("[Photo Delete] Storage delete error:", deleteError);
       // Continue even if delete fails - maybe file doesn't exist
     }
 
@@ -196,7 +218,7 @@ export async function DELETE(
       .eq("id", id);
 
     if (updateError) {
-      console.error("Update error:", updateError);
+      console.error("[Photo Delete] Update error:", updateError);
       return NextResponse.json(
         { error: "Failed to update property", details: updateError.message },
         { status: 500 }
@@ -205,10 +227,10 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error("Photo deletion error:", error);
+    console.error("[Photo Delete] Unexpected error:", error);
     return NextResponse.json(
       { error: "Failed to delete photo", details: error.message },
       { status: 500 }
-      );
+    );
   }
 }

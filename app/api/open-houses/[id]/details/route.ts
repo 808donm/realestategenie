@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getEffectiveClient } from "@/lib/supabase/effective-client";
+import { getEffectiveClient, getEventWithAdminFallback } from "@/lib/supabase/effective-client";
 
 export async function PATCH(
   request: NextRequest,
@@ -7,22 +7,33 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
-    const { supabase, userId, isImpersonating } = await getEffectiveClient();
 
-    // Get the open house to verify ownership
-    const { data: event, error: fetchError } = await supabase
-      .from("open_house_events")
-      .select("agent_id")
-      .eq("id", id)
-      .single();
+    let supabase;
+    let userId: string;
+    let isImpersonating: boolean;
 
-    if (fetchError || !event) {
-      return NextResponse.json({ error: "Open house not found" }, { status: 404 });
+    try {
+      const client = await getEffectiveClient();
+      supabase = client.supabase;
+      userId = client.userId;
+      isImpersonating = client.isImpersonating;
+    } catch (authError: any) {
+      console.error("[Property Details] Auth error:", authError.message);
+      return NextResponse.json(
+        { error: "Authentication failed. Please refresh the page and try again." },
+        { status: 401 }
+      );
     }
 
-    if (!isImpersonating && event.agent_id !== userId) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    // Verify access to the event (with admin fallback)
+    const access = await getEventWithAdminFallback(supabase, userId, isImpersonating, id);
+
+    if ("error" in access) {
+      return NextResponse.json({ error: access.error }, { status: access.status });
     }
+
+    // Use the (possibly escalated) client for the update
+    supabase = access.supabase;
 
     // Parse request body
     const body = await request.json();
@@ -39,6 +50,9 @@ export async function PATCH(
 
     console.log('[Property Details] Update request:', {
       eventId: id,
+      userId,
+      isImpersonating,
+      isElevated: access.isElevated,
       beds,
       baths,
       sqft,
@@ -67,7 +81,7 @@ export async function PATCH(
       .eq("id", id);
 
     if (updateError) {
-      console.error("Update error:", updateError);
+      console.error("[Property Details] Update error:", updateError);
       return NextResponse.json(
         { error: "Failed to update property details", details: updateError.message },
         { status: 500 }
@@ -76,7 +90,7 @@ export async function PATCH(
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error("Property details update error:", error);
+    console.error("[Property Details] Unexpected error:", error);
     return NextResponse.json(
       { error: "Failed to update property details", details: error.message },
       { status: 500 }
