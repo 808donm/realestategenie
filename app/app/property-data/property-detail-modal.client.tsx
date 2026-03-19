@@ -1109,17 +1109,6 @@ export default function PropertyDetailModal({
                 );
               })()}
 
-              {p.sale && (
-                <Section title="Last Sale">
-                  <Field label="Sale Amount" value={fmt(lastSaleAmt)} />
-                  <Field label="Sale Date" value={p.sale.amount?.saleTransDate} />
-                  <Field label="Recording Date" value={p.sale.amount?.saleRecDate} />
-                  <Field label="Document Type" value={p.sale.amount?.saleDocType} />
-                  <Field label="Sale Code" value={p.sale.amount?.saleCode} />
-                  <Field label="Price / Bed" value={fmt(p.sale.amount?.pricePerBed)} />
-                  <Field label="Price / Sqft" value={p.sale.amount?.pricePerSizeUnit ? `$${p.sale.amount.pricePerSizeUnit.toFixed(2)}` : undefined} />
-                </Section>
-              )}
 
               {p.mortgage && (
                 <Section title="Mortgage">

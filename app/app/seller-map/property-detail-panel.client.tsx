@@ -795,19 +795,6 @@ function FinancialTab({
 
   return (
     <div className="space-y-4">
-      {/* Last Sale */}
-      {(detail?.lastSaleDate || detail?.lastSalePrice) && (
-        <Section title="Last Sale">
-          <InfoRow
-            label="Sale Date"
-            value={detail?.lastSaleDate ? new Date(detail.lastSaleDate).toLocaleDateString() : undefined}
-          />
-          <InfoRow
-            label="Sale Price"
-            value={detail?.lastSalePrice ? fmtPrice(detail.lastSalePrice) : undefined}
-          />
-        </Section>
-      )}
 
       {/* Value Estimates */}
       <Section title="Value Estimates">
