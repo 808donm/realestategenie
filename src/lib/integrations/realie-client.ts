@@ -465,28 +465,38 @@ export function mapRealieToAttomShape(parcel: RealieParcel): any {
     ? `${parcel.fipsState}${parcel.fipsCounty}`
     : undefined;
 
-  // Determine owner-occupied from address comparison.
-  // Realie formats differ between owner and property addresses:
-  //   owner: "46-055 MEHEANU PL APT 3451"  vs  property: "46-55 MEHEANU PL"
-  // Normalize by stripping leading zeros, unit suffixes, and lowercasing.
-  const normalizeAddr = (s: string) =>
-    s.toLowerCase()
-      .replace(/\bapt\b.*$/i, "")     // strip "APT ..." suffix
-      .replace(/\bunit\b.*$/i, "")    // strip "UNIT ..." suffix
-      .replace(/\bste\b.*$/i, "")     // strip "STE ..." suffix
-      .replace(/\b#\d+.*$/i, "")      // strip "#123" suffix
-      .replace(/\b0+(\d)/g, "$1")     // strip leading zeros in numbers
-      .replace(/[^a-z0-9]/g, "")      // strip non-alphanumeric
-      .trim();
-  const ownerAddr = parcel.ownerAddressLine1;
-  const propAddr = parcel.address;
-  let ownerOccupied: boolean | undefined;
-  if (ownerAddr && propAddr) {
-    ownerOccupied = normalizeAddr(ownerAddr) === normalizeAddr(propAddr);
-  } else if (ownerAddr && parcel.ownerCity && parcel.city) {
-    // If we can't compare street, at least check city+state
-    ownerOccupied = parcel.ownerCity.toUpperCase() === parcel.city.toUpperCase()
-      && parcel.ownerState?.toUpperCase() === parcel.state?.toUpperCase();
+  // Determine owner-occupied status.
+  // Prefer the direct ownerOccupied boolean from RentCast when available.
+  // Fall back to address comparison only when the flag is not set.
+  let ownerOccupied: boolean | undefined = parcel.ownerOccupied;
+
+  if (ownerOccupied === undefined) {
+    const normalizeAddr = (s: string) =>
+      s.toLowerCase()
+        .replace(/\bapt\b.*$/i, "")     // strip "APT ..." suffix
+        .replace(/\bunit\b.*$/i, "")    // strip "UNIT ..." suffix
+        .replace(/\bste\b.*$/i, "")     // strip "STE ..." suffix
+        .replace(/\b#\d+.*$/i, "")      // strip "#123" suffix
+        .replace(/\b0+(\d)/g, "$1")     // strip leading zeros in numbers
+        .replace(/[^a-z0-9]/g, "")      // strip non-alphanumeric
+        .trim();
+    const ownerAddr = parcel.ownerAddressLine1;
+    const propAddr = parcel.address;
+    if (ownerAddr && propAddr) {
+      // A P.O. Box in the same zip code is not a reliable absentee signal —
+      // the owner likely lives nearby and just picks up mail at the local post office.
+      const isPoBox = /\bp\.?\s*o\.?\s*box\b/i.test(ownerAddr);
+      if (isPoBox && parcel.ownerZipCode && parcel.zipCode
+          && parcel.ownerZipCode.slice(0, 5) === parcel.zipCode.slice(0, 5)) {
+        ownerOccupied = true;
+      } else {
+        ownerOccupied = normalizeAddr(ownerAddr) === normalizeAddr(propAddr);
+      }
+    } else if (ownerAddr && parcel.ownerCity && parcel.city) {
+      // If we can't compare street, at least check city+state
+      ownerOccupied = parcel.ownerCity.toUpperCase() === parcel.city.toUpperCase()
+        && parcel.ownerState?.toUpperCase() === parcel.state?.toUpperCase();
+    }
   }
 
   // Calculate price per sqft from transfer

@@ -155,14 +155,32 @@ function scoreAbsentee(parcel: RealieParcel): SellerFactor {
   let points = 0;
   let description = "Owner-occupied or unknown";
 
-  // Compare owner address to property address
-  const ownerAddr = parcel.ownerAddressLine1 || parcel.ownerAddressFull;
-  const propAddr = parcel.address;
-
   const outOfState =
     parcel.ownerState &&
     parcel.state &&
     parcel.ownerState.toUpperCase() !== parcel.state.toUpperCase();
+
+  // Prefer the direct ownerOccupied boolean from RentCast when available.
+  if (parcel.ownerOccupied === true) {
+    // API confirms owner-occupied — no absentee points
+    return { name: "Absentee Owner", points: 0, maxPoints: max, description: "Owner-occupied (confirmed)" };
+  }
+
+  if (parcel.ownerOccupied === false) {
+    // API confirms non-owner-occupied — score based on location
+    if (outOfState) {
+      points = max;
+      description = `Out-of-state absentee owner (${parcel.ownerState})`;
+    } else {
+      points = 12;
+      description = "Non-owner-occupied property";
+    }
+    return { name: "Absentee Owner", points, maxPoints: max, description };
+  }
+
+  // Fallback: ownerOccupied is undefined — compare owner address to property address
+  const ownerAddr = parcel.ownerAddressLine1 || parcel.ownerAddressFull;
+  const propAddr = parcel.address;
 
   if (ownerAddr && propAddr) {
     const normalize = (s: string) =>
@@ -177,11 +195,18 @@ function scoreAbsentee(parcel: RealieParcel): SellerFactor {
     const isPoBox = /\bp\.?\s*o\.?\s*box\b/i.test(ownerAddr);
 
     if (isPoBox) {
-      // P.O. Box in the same state/area is not a reliable absentee signal —
-      // many owner-occupants use a P.O. Box for mail. Only flag if out of state.
-      if (outOfState) {
+      // P.O. Box in the same zip code is not a reliable absentee signal —
+      // the owner likely lives nearby and picks up mail at the local post office.
+      const sameZip = parcel.ownerZipCode && parcel.zipCode
+        && parcel.ownerZipCode.slice(0, 5) === parcel.zipCode.slice(0, 5);
+      if (sameZip) {
+        // Not absentee — local P.O. Box
+      } else if (outOfState) {
         points = max;
         description = `Out-of-state P.O. Box owner (${parcel.ownerState})`;
+      } else {
+        points = 10;
+        description = "P.O. Box in different area — possible absentee";
       }
     } else {
       const isAbsentee = normalize(ownerAddr) !== normalize(propAddr);
@@ -195,15 +220,6 @@ function scoreAbsentee(parcel: RealieParcel): SellerFactor {
           description = "Absentee owner — may be investor or inherited property";
         }
       }
-    }
-  } else if (parcel.ownerOccupied === false) {
-    // Direct signal from RentCast — no address to compare, but API confirms non-owner-occupied
-    if (outOfState) {
-      points = max;
-      description = `Out-of-state absentee owner (${parcel.ownerState})`;
-    } else {
-      points = 12;
-      description = "Non-owner-occupied property";
     }
   }
 
