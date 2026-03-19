@@ -329,24 +329,17 @@ function mergePropertyData(
     // Deep-merge: Realie fills gaps in RentCast data
     const merged = { ...rcProp };
 
-    // AVM — Realie provides real AVM estimates; RentCast only uses lastSalePrice
-    if (!merged.avm?.amount?.value && realieProp.avm?.amount?.value) {
+    // AVM — ALWAYS prefer Realie's AVM when available. RentCast's "AVM" is just
+    // lastSalePrice (e.g. $100K from a 1984 sale), not a real statistical model.
+    // Realie provides proper automated valuations with high/low confidence ranges.
+    if (realieProp.avm?.amount?.value) {
       merged.avm = realieProp.avm;
-    } else if (merged.avm?.amount && realieProp.avm?.amount) {
-      // Realie has proper high/low range that RentCast lacks
-      if (!merged.avm.amount.high && realieProp.avm.amount.high) {
-        merged.avm = {
-          amount: {
-            ...merged.avm.amount,
-            high: realieProp.avm.amount.high,
-            low: realieProp.avm.amount.low,
-          },
-        };
-      }
     }
 
-    // Home Equity — RentCast has none, Realie provides equity/LTV
-    if (!merged.homeEquity && realieProp.homeEquity) {
+    // Home Equity — ALWAYS prefer Realie's equity data. RentCast computes equity
+    // as AVM - lastSalePrice which is meaningless (e.g. $100K - $100K = $0).
+    // Realie provides actual equity estimates based on current AVM vs liens.
+    if (realieProp.homeEquity) {
       merged.homeEquity = realieProp.homeEquity;
     }
 
@@ -388,13 +381,15 @@ function mergePropertyData(
         merged.assessment.assessed.assdLandValue = realieProp.assessment.assessed.assdLandValue;
       }
     }
-    if (merged.assessment?.market && realieProp.assessment?.market) {
-      if (!merged.assessment.market.mktImprValue && realieProp.assessment.market.mktImprValue) {
-        merged.assessment.market.mktImprValue = realieProp.assessment.market.mktImprValue;
-      }
-      if (!merged.assessment.market.mktLandValue && realieProp.assessment.market.mktLandValue) {
-        merged.assessment.market.mktLandValue = realieProp.assessment.market.mktLandValue;
-      }
+    // Market values — ALWAYS prefer Realie's market values when available.
+    // RentCast sets mktTtlValue to lastSalePrice (stale), Realie uses actual
+    // county-assessed market values which are far more accurate.
+    if (realieProp.assessment?.market) {
+      merged.assessment = merged.assessment || {};
+      merged.assessment.market = {
+        ...merged.assessment.market,
+        ...realieProp.assessment.market,
+      };
     }
 
     // Assessment history — prefer Realie's richer history if RentCast has none
