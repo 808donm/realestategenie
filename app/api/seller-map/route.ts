@@ -91,14 +91,61 @@ export async function GET(request: NextRequest) {
 
     let parcels: RealieParcel[] = [];
 
-    if (zipList.length > 0) {
-      // ── Multi-zip search: parallel per-zip queries ──
-      parcels = await fetchByZipCodes(zipList, limit, propertyType);
-    } else if (lat && lng) {
-      parcels = await fetchByCoords(Number(lat), Number(lng), radius, limit, page, propertyType);
-    } else if (zip) {
-      // Single zip search
-      parcels = await fetchByZipCodes([zip], limit, propertyType);
+    // Determine which zip codes we're searching (for parallel Realie fetch)
+    const searchZips = zipList.length > 0
+      ? zipList
+      : zip
+        ? [zip]
+        : [];
+
+    // ── Parallel data fetching: RentCast + Realie + Market Data ──
+    // Previously, Realie enrichment only happened AFTER initial scoring
+    // (threshold >= 30), which meant properties missing equity/lien/portfolio
+    // data could never score high enough to get enriched — a chicken-and-egg
+    // problem. Now we fetch Realie data upfront for all target zip codes and
+    // merge BEFORE scoring so every property benefits from full data.
+    const realie = await getRealieClient();
+
+    const [fetchedParcels, realieData] = await Promise.all([
+      // Fetch primary property data (RentCast or Realie fallback)
+      (async () => {
+        if (zipList.length > 0) {
+          return fetchByZipCodes(zipList, limit, propertyType);
+        } else if (lat && lng) {
+          return fetchByCoords(Number(lat), Number(lng), radius, limit, page, propertyType);
+        } else if (zip) {
+          return fetchByZipCodes([zip], limit, propertyType);
+        }
+        return [] as RealieParcel[];
+      })(),
+      // Fetch Realie enrichment data in parallel (equity, LTV, liens, portfolio)
+      (async () => {
+        if (!realie || searchZips.length === 0) return [] as RealieParcel[];
+        const allRealie: RealieParcel[] = [];
+        let remaining = 500;
+        for (const zipCode of searchZips.slice(0, 20)) {
+          if (remaining <= 0) break;
+          try {
+            const result = await realie.searchByZip({
+              zip: zipCode,
+              limit: Math.min(remaining, 100),
+            });
+            allRealie.push(...result.properties);
+            remaining -= result.properties.length;
+          } catch (err: any) {
+            console.warn(`[SellerMap] Realie zip ${zipCode} failed (non-fatal):`, err.message);
+          }
+        }
+        return allRealie;
+      })(),
+    ]);
+    parcels = fetchedParcels;
+
+    // ── Pre-scoring Realie enrichment: merge equity, liens, portfolio BEFORE scoring ──
+    if (realieData.length > 0) {
+      console.log(`[SellerMap] Pre-scoring Realie enrichment: ${realieData.length} properties`);
+      const realieMap = buildAddressMap(realieData);
+      parcels = parcels.map((p) => enrichWithRealieData(p, realieMap));
     }
 
     // Enrich parcels with market trend data (one API call per unique zip)
@@ -173,77 +220,74 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // ── Phase 1: Initial scoring with RentCast data only ──
+    // ── Phase 1: Score all properties (now with Realie data already merged) ──
     let scored = parcels
       .map((p) => scoreParcel(p))
       .filter((s): s is NonNullable<typeof s> => s !== null)
       .filter((s) => !absenteeOnly || s.absentee)
       .sort((a, b) => b.score - a.score);
 
-    console.log(`[SellerMap] Phase 1 scored: ${scored.length} properties (before Realie enrichment)`);
+    console.log(`[SellerMap] Phase 1 scored: ${scored.length} properties (Realie pre-enriched: ${realieData.length > 0})`);
 
-    // ── Phase 2: Realie enrichment — only for top candidates (score >= 30) ──
-    // Realie provides LTV, equity, liens, foreclosure, and portfolio data.
-    // We only call Realie for properties that already show seller motivation
-    // from RentCast data alone, respecting the 100-result Realie API cap.
-    const realie = await getRealieClient();
+    // ── Phase 2: Realie enrichment for coordinate-based searches ──
+    // For coordinate-based searches (no zip codes), we didn't have zip codes
+    // upfront to fetch Realie data. Enrich top candidates now.
     const parcelMap = new Map(parcels.map((p) => [
       p._id || p.siteId || p.parcelId || `${p.latitude}-${p.longitude}`,
       p,
     ]));
 
-    const enrichCandidates = scored.filter((s) => s.score >= 30).slice(0, 500);
+    if (realie && realieData.length === 0 && scored.length > 0) {
+      // Coordinate-based search — enrich top candidates by their discovered zips
+      const enrichCandidates = scored.filter((s) => s.score >= 20).slice(0, 500);
 
-    if (realie && enrichCandidates.length > 0) {
-      try {
-        // Group candidates by zip code and fetch Realie data per zip (more targeted)
-        const candidateZips = [...new Set(enrichCandidates.map((s) => {
-          const parcel = parcelMap.get(s.id);
-          return parcel?.zipCode;
-        }).filter(Boolean))] as string[];
-
-        // Fetch Realie data for each zip (cap total across all zips)
-        let realieProperties: RealieParcel[] = [];
-        let remaining = 500;
-
-        for (const zipCode of candidateZips.slice(0, 20)) {
-          if (remaining <= 0) break;
-          try {
-            const result = await realie.searchByZip({
-              zip: zipCode,
-              limit: Math.min(remaining, 100),
-            });
-            realieProperties.push(...result.properties);
-            remaining -= result.properties.length;
-          } catch (err: any) {
-            console.warn(`[SellerMap] Realie zip ${zipCode} failed (non-fatal):`, err.message);
-          }
-        }
-
-        if (realieProperties.length > 0) {
-          console.log(`[SellerMap] Realie enrichment: ${realieProperties.length} properties across ${candidateZips.length} zips`);
-          const realieMap = buildAddressMap(realieProperties);
-
-          // Enrich original parcels and re-score
-          scored = scored.map((s) => {
+      if (enrichCandidates.length > 0) {
+        try {
+          const candidateZips = [...new Set(enrichCandidates.map((s) => {
             const parcel = parcelMap.get(s.id);
-            if (!parcel) return s;
+            return parcel?.zipCode;
+          }).filter(Boolean))] as string[];
 
-            const enriched = enrichWithRealieData(parcel, realieMap);
-            if (enriched === parcel) return s; // No Realie match found
+          let realieProperties: RealieParcel[] = [];
+          let remaining = 500;
 
-            // Update the parcel map with enriched data
-            parcelMap.set(s.id, enriched);
-            const rescored = scoreParcel(enriched);
-            return rescored || s;
-          }).sort((a, b) => b.score - a.score);
+          for (const zipCode of candidateZips.slice(0, 20)) {
+            if (remaining <= 0) break;
+            try {
+              const result = await realie.searchByZip({
+                zip: zipCode,
+                limit: Math.min(remaining, 100),
+              });
+              realieProperties.push(...result.properties);
+              remaining -= result.properties.length;
+            } catch (err: any) {
+              console.warn(`[SellerMap] Realie zip ${zipCode} failed (non-fatal):`, err.message);
+            }
+          }
+
+          if (realieProperties.length > 0) {
+            console.log(`[SellerMap] Realie coord enrichment: ${realieProperties.length} properties across ${candidateZips.length} zips`);
+            const realieMap = buildAddressMap(realieProperties);
+
+            scored = scored.map((s) => {
+              const parcel = parcelMap.get(s.id);
+              if (!parcel) return s;
+
+              const enriched = enrichWithRealieData(parcel, realieMap);
+              if (enriched === parcel) return s;
+
+              parcelMap.set(s.id, enriched);
+              const rescored = scoreParcel(enriched);
+              return rescored || s;
+            }).sort((a, b) => b.score - a.score);
+          }
+        } catch (err: any) {
+          console.warn("[SellerMap] Realie enrichment failed (non-fatal):", err.message);
         }
-      } catch (err: any) {
-        console.warn("[SellerMap] Realie enrichment failed (non-fatal):", err.message);
       }
     }
 
-    // ── Phase 3: Apply minScore filter after enrichment ──
+    // ── Phase 3: Apply minScore filter after all enrichment ──
     scored = scored.filter((s) => s.score >= minScore);
 
     // ── Phase 4: AVM enrichment for borderline candidates ──

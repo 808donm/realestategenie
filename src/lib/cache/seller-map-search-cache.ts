@@ -22,6 +22,10 @@ function roundCoord(n: number): number {
   return Math.round(n * 1000) / 1000;
 }
 
+// Bump this version when the scoring/enrichment pipeline changes to
+// invalidate stale cache entries that were scored with the old logic.
+const CACHE_VERSION = "v2";
+
 export function buildSearchCacheKey(params: {
   lat?: number;
   lng?: number;
@@ -31,12 +35,12 @@ export function buildSearchCacheKey(params: {
 }): string {
   const typeSuffix = params.propertyType ? `:t=${params.propertyType}` : "";
   if (params.zip) {
-    return `seller-map:zip:${params.zip}${typeSuffix}`;
+    return `seller-map:${CACHE_VERSION}:zip:${params.zip}${typeSuffix}`;
   }
   const lat = params.lat != null ? roundCoord(params.lat) : 0;
   const lng = params.lng != null ? roundCoord(params.lng) : 0;
   const radius = params.radius ?? 10;
-  return `seller-map:geo:${lat},${lng},r${radius}${typeSuffix}`;
+  return `seller-map:${CACHE_VERSION}:geo:${lat},${lng},r${radius}${typeSuffix}`;
 }
 
 function hashKey(key: string): string {

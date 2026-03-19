@@ -209,8 +209,8 @@ export function SidebarPanel({
             ) : qualifiedProperties.length === 0 ? (
               <div className="p-8 text-center text-sm text-gray-500">
                 {total > 0
-                  ? `${total} properties found but none scored above 30. Try a different area or lower the minimum score filter.`
-                  : "No properties found. Try panning the map to a different area and clicking \"Search This Area\"."}
+                  ? `${total} properties found but none scored above ${filters.minScore || 30}. Try lowering the minimum score filter.`
+                  : "No properties found. Enter a zip code above or pan the map and click \"Search This Area\"."}
               </div>
             ) : (
               qualifiedProperties.map((p) => (
