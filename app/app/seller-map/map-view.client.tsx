@@ -26,6 +26,7 @@ type Props = {
   tmkGeojson: GeoJSON.FeatureCollection | null;
   showZipBoundaries: boolean;
   zipGeojson: GeoJSON.FeatureCollection | null;
+  searchedZips: string[];
   mapStyle: "streets" | "satellite";
   isLoading: boolean;
 };
@@ -48,6 +49,7 @@ function SellerMapInner({
   tmkGeojson,
   showZipBoundaries,
   zipGeojson,
+  searchedZips,
   isLoading,
 }: Props) {
   const map = useMap();
@@ -176,7 +178,9 @@ function SellerMapInner({
     };
   }, [map, showTMK, tmkGeojson]);
 
-  // Zip code boundary layer
+  // Zip code boundary layer — only show searched zips + hover highlighting
+  const hoveredFeatureRef = useRef<google.maps.Data.Feature | null>(null);
+
   useEffect(() => {
     if (!map) return;
 
@@ -186,23 +190,65 @@ function SellerMapInner({
     }
 
     if (showZipBoundaries && zipGeojson) {
+      const searchedSet = new Set(searchedZips);
+
       const zipLayer = new google.maps.Data({ map });
       zipLayer.addGeoJson(zipGeojson);
-      zipLayer.setStyle({
-        fillColor: "transparent",
-        fillOpacity: 0,
-        strokeColor: "#2563eb",
-        strokeWeight: 2,
-        strokeOpacity: 0.7,
+
+      // Style per feature: searched zips get a visible boundary, others are invisible
+      zipLayer.setStyle((feature) => {
+        const zipCode =
+          feature.getProperty("ZCTA5") ||
+          feature.getProperty("BASENAME") ||
+          "";
+        const isSearched = searchedSet.has(String(zipCode));
+        const isHovered = feature === hoveredFeatureRef.current;
+
+        if (isSearched) {
+          return {
+            fillColor: "#2563eb",
+            fillOpacity: 0.06,
+            strokeColor: "#2563eb",
+            strokeWeight: 2.5,
+            strokeOpacity: 0.85,
+          };
+        }
+        if (isHovered) {
+          return {
+            fillColor: "#2563eb",
+            fillOpacity: 0.04,
+            strokeColor: "#2563eb",
+            strokeWeight: 2,
+            strokeOpacity: 0.6,
+          };
+        }
+        // Invisible — but still interactive for hover detection
+        return {
+          fillColor: "transparent",
+          fillOpacity: 0,
+          strokeColor: "transparent",
+          strokeWeight: 0,
+          strokeOpacity: 0,
+        };
       });
 
-      // Show zip code label on hover via info window
+      // Show zip code bubble + boundary on hover
       const infoWindow = new google.maps.InfoWindow();
       zipLayer.addListener("mouseover", (event: google.maps.Data.MouseEvent) => {
         const zipCode =
           event.feature.getProperty("ZCTA5") ||
           event.feature.getProperty("BASENAME") ||
           "";
+        hoveredFeatureRef.current = event.feature;
+        // Trigger re-style so the hovered feature gets outlined
+        zipLayer.overrideStyle(event.feature, {
+          fillColor: "#2563eb",
+          fillOpacity: 0.04,
+          strokeColor: "#2563eb",
+          strokeWeight: 2,
+          strokeOpacity: 0.6,
+        });
+
         if (zipCode && event.latLng) {
           infoWindow.setContent(
             `<div style="font-size:13px;font-weight:600;padding:2px 4px">${zipCode}</div>`
@@ -211,11 +257,34 @@ function SellerMapInner({
           infoWindow.open(map);
         }
       });
-      zipLayer.addListener("mouseout", () => {
+      zipLayer.addListener("mouseout", (event: google.maps.Data.MouseEvent) => {
+        hoveredFeatureRef.current = null;
+        zipLayer.revertStyle(event.feature);
         infoWindow.close();
       });
 
       zipLayerRef.current = zipLayer;
+
+      // If there are searched zips, fit the map to show them
+      if (searchedSet.size > 0) {
+        const bounds = new google.maps.LatLngBounds();
+        let hasMatchedFeature = false;
+        zipLayer.forEach((feature) => {
+          const zipCode =
+            feature.getProperty("ZCTA5") ||
+            feature.getProperty("BASENAME") ||
+            "";
+          if (searchedSet.has(String(zipCode))) {
+            hasMatchedFeature = true;
+            feature.getGeometry()?.forEachLatLng((latlng) => {
+              bounds.extend(latlng);
+            });
+          }
+        });
+        if (hasMatchedFeature && !bounds.isEmpty()) {
+          map.fitBounds(bounds, { top: 50, right: 50, bottom: 50, left: 50 });
+        }
+      }
     }
 
     return () => {
@@ -224,7 +293,7 @@ function SellerMapInner({
         zipLayerRef.current = null;
       }
     };
-  }, [map, showZipBoundaries, zipGeojson]);
+  }, [map, showZipBoundaries, zipGeojson, searchedZips]);
 
   // Listen for idle event
   useEffect(() => {

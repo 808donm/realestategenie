@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import type { ScoredProperty } from "@/lib/scoring/seller-motivation-score";
 import { SellerMapView } from "./map-view.client";
 import { SidebarPanel } from "./sidebar-panel.client";
@@ -283,6 +283,16 @@ export function SellerMapClient() {
     setSelectedProperty(property);
   }, []);
 
+  // Derive searched zip codes from the zips filter input (only plain zip codes, not TMK)
+  const searchedZips = useMemo(() => {
+    const trimmed = filters.zips?.trim();
+    if (!trimmed || isTMKInput(trimmed)) return [];
+    return trimmed
+      .split(/[,\s]+/)
+      .map((z) => z.trim())
+      .filter((z) => /^\d{5}$/.test(z));
+  }, [filters.zips, isTMKInput]);
+
   // Mobile tab state: "map" or "list"
   const [mobileView, setMobileView] = useState<"map" | "list">("map");
 
@@ -341,6 +351,7 @@ export function SellerMapClient() {
             tmkGeojson={tmkGeojson}
             showZipBoundaries={showZipBoundaries}
             zipGeojson={zipGeojson}
+            searchedZips={searchedZips}
             mapStyle={mapStyle}
             isLoading={isLoading}
           />
@@ -399,6 +410,7 @@ export function SellerMapClient() {
               tmkGeojson={tmkGeojson}
               showZipBoundaries={showZipBoundaries}
               zipGeojson={zipGeojson}
+              searchedZips={searchedZips}
               mapStyle={mapStyle}
               isLoading={isLoading}
             />
