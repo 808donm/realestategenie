@@ -68,9 +68,19 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error("[property-intelligence/save] DB error:", error);
+      console.error("[property-intelligence/save] DB error:", error.message, error.code);
+
+      // If the table doesn't exist yet, return a graceful error so the client
+      // can fall back to the alternate share endpoint
+      if (error.code === "42P01" || error.message?.includes("does not exist")) {
+        return NextResponse.json(
+          { error: "Reports table not available. Please run database migrations." },
+          { status: 503 },
+        );
+      }
+
       return NextResponse.json(
-        { error: "Failed to save report" },
+        { error: `Failed to save report: ${error.message}` },
         { status: 500 },
       );
     }

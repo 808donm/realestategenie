@@ -148,12 +148,18 @@ export default function PropertyDetailModal({
   const baths = p.building?.rooms?.bathsFull ?? p.building?.rooms?.bathsTotal;
   const yearBuilt = p.building?.summary?.yearBuilt || p.summary?.yearBuilt;
   const avmVal = p.avm?.amount?.value;
+  // Best estimated value: AVM → market assessment → appraised assessment
+  const bestValue = avmVal || p.assessment?.market?.mktTtlValue || p.assessment?.appraised?.apprTtlValue;
   const lastSaleAmt = p.sale?.amount?.saleAmt || p.sale?.amount?.salePrice;
   // Use Realie's pre-calculated equity (AVM - outstanding mortgage balance) if available,
-  // otherwise fall back to AVM - last sale price as a rough estimate
+  // otherwise fall back to best value - last sale price as a rough estimate
   const realieEquity = (p as any).homeEquity?.equity;
-  const equity = realieEquity ?? (avmVal && lastSaleAmt ? avmVal - lastSaleAmt : null);
-  const ltv = (p as any).homeEquity?.ltv;
+  const mortgageAmt = p.mortgage?.amount != null ? Number(p.mortgage.amount) : null;
+  const equity = realieEquity
+    ?? (bestValue && mortgageAmt ? bestValue - mortgageAmt : null)
+    ?? (bestValue && lastSaleAmt ? bestValue - lastSaleAmt : null);
+  const realieLtv = (p as any).homeEquity?.ltv;
+  const ltv = realieLtv ?? (bestValue && mortgageAmt ? (mortgageAmt / bestValue) * 100 : null);
 
   // Fetch Hawaii hazard/environmental zone data on mount (for HI properties with lat/lng)
   useEffect(() => {
@@ -466,19 +472,22 @@ export default function PropertyDetailModal({
 
     Promise.all(fetches).then(([rentalAvm, salesTrends]) => {
       // Build homeEquity from Realie's pre-calculated data, or fall back to
-      // computing it from AVM - sale price (same formula the search cards use).
+      // computing it from AVM / assessment values (same cascade the search cards use).
       let homeEquityData = (p as any).homeEquity || null;
       if (!homeEquityData) {
-        const avmVal = p.avm?.amount?.value;
+        // Cascade: AVM → market assessment → appraised assessment
+        const avmVal = p.avm?.amount?.value
+          || p.assessment?.market?.mktTtlValue
+          || p.assessment?.appraised?.apprTtlValue;
         const saleAmt = p.sale?.amount?.saleAmt;
-        const lienBal = (p as any).mortgage?.amount?.total ?? (p as any).mortgage?.amount?.first;
-        const estimatedEquity = avmVal && saleAmt ? avmVal - saleAmt : (avmVal && lienBal ? avmVal - lienBal : null);
+        const lienBal = (p as any).mortgage?.amount?.total ?? (p as any).mortgage?.amount?.first ?? (p.mortgage?.amount != null ? Number(p.mortgage.amount) : null);
+        const estimatedEquity = avmVal && lienBal ? avmVal - lienBal : (avmVal && saleAmt ? avmVal - saleAmt : null);
         if (estimatedEquity != null || avmVal != null) {
           homeEquityData = {
-            equity: estimatedEquity ?? undefined,
+            equity: estimatedEquity ?? (avmVal && !lienBal && !saleAmt ? avmVal : undefined),
             estimatedValue: avmVal ?? undefined,
             outstandingBalance: lienBal ?? undefined,
-            ltv: avmVal && lienBal ? (lienBal / avmVal) * 100 : undefined,
+            ltv: avmVal && lienBal ? (lienBal / avmVal) * 100 : (avmVal && !lienBal ? 0 : undefined),
             lastSalePrice: saleAmt ?? undefined,
             lastSaleDate: p.sale?.amount?.saleRecDate ?? p.sale?.amount?.saleTransDate ?? undefined,
           };
@@ -596,7 +605,7 @@ export default function PropertyDetailModal({
       stories: p.building?.summary?.levels,
       garageSpaces: p.building?.parking?.prkgSpaces,
       pool: p.lot?.poolInd === "Y" ? true : p.lot?.poolInd === "N" ? false : undefined,
-      avmValue: avmVal,
+      avmValue: avmVal || bestValue,
       avmLow: p.avm?.amount?.low,
       avmHigh: p.avm?.amount?.high,
       avmConfidence: p.avm?.amount?.scr,
@@ -630,7 +639,7 @@ export default function PropertyDetailModal({
       federalData: federal,
       generatedAt: new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }),
     };
-  }, [p, addr, avmVal, lastSaleAmt, equity, ltv, yearBuilt, beds, baths, sqft, hazardData, federalData, enrichedFinancial]);
+  }, [p, addr, avmVal, bestValue, lastSaleAmt, equity, ltv, yearBuilt, beds, baths, sqft, hazardData, federalData, enrichedFinancial]);
 
   const handleGenerateReport = useCallback(async () => {
     setReportGenerating(true);
@@ -663,13 +672,34 @@ export default function PropertyDetailModal({
     setReportGenerating(true);
     try {
       const reportData = collectReportData();
+
+      // Try the primary save endpoint first
+      let shareUrl: string | null = null;
       const res = await fetch("/api/property-intelligence/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ property: reportData }),
       });
-      if (!res.ok) throw new Error("Failed to save report");
-      const { shareUrl } = await res.json();
+
+      if (res.ok) {
+        const data = await res.json();
+        shareUrl = data.shareUrl;
+      } else {
+        // Primary endpoint failed — try fallback share endpoint
+        console.warn("[PropertyReport] Primary save failed, trying fallback share endpoint");
+        const fallbackRes = await fetch("/api/reports/share", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ report: reportData }),
+        });
+        if (fallbackRes.ok) {
+          const fallbackData = await fallbackRes.json();
+          shareUrl = fallbackData.shareUrl;
+        }
+      }
+
+      if (!shareUrl) throw new Error("Could not generate share link");
+
       setReportShareUrl(shareUrl);
       await navigator.clipboard.writeText(shareUrl);
       setReportCopied(true);
@@ -719,15 +749,20 @@ export default function PropertyDetailModal({
   // ── Shared Value Summary Cards ──
   const valueSummaryCards = (
     <div style={{ display: "flex", gap: 12, marginBottom: embedded ? 16 : 0, marginTop: embedded ? 0 : 16, flexWrap: "wrap" }}>
-      {avmVal != null && (
-        <div style={{ flex: 1, minWidth: 130, padding: "10px 14px", background: "#ecfdf5", borderRadius: 8 }}>
-          <div style={{ fontSize: 11, color: "#059669", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>AVM Value</div>
-          <div style={{ fontSize: 18, fontWeight: 700, color: "#059669" }}>{fmt(avmVal)}</div>
-          {p.avm?.amount?.low != null && p.avm?.amount?.high != null && (
-            <div style={{ fontSize: 11, color: "#6b7280" }}>Range: {fmt(p.avm.amount.low)} – {fmt(p.avm.amount.high)}</div>
-          )}
-        </div>
-      )}
+      {(() => {
+        const displayVal = avmVal || p.assessment?.market?.mktTtlValue || p.assessment?.appraised?.apprTtlValue;
+        if (displayVal == null) return null;
+        const label = avmVal ? "AVM Value" : (p.assessment?.market?.mktTtlValue ? "Market Value" : "Appraised Value");
+        return (
+          <div style={{ flex: 1, minWidth: 130, padding: "10px 14px", background: "#ecfdf5", borderRadius: 8 }}>
+            <div style={{ fontSize: 11, color: "#059669", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>{label}</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: "#059669" }}>{fmt(displayVal)}</div>
+            {p.avm?.amount?.low != null && p.avm?.amount?.high != null && (
+              <div style={{ fontSize: 11, color: "#6b7280" }}>Range: {fmt(p.avm.amount.low)} – {fmt(p.avm.amount.high)}</div>
+            )}
+          </div>
+        );
+      })()}
       {lastSaleAmt != null && (
         <div style={{ flex: 1, minWidth: 130, padding: "10px 14px", background: "#eff6ff", borderRadius: 8 }}>
           <div style={{ fontSize: 11, color: "#3b82f6", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Last Sale</div>
@@ -762,7 +797,7 @@ export default function PropertyDetailModal({
         const ra = (p as any).rentalAvm;
         const rentVal = ra?.estimatedRentalValue ?? ra?.rentalAmount?.value ?? ra?.amount?.value;
         if (rentVal == null) return null;
-        const grossYield = avmVal ? ((rentVal * 12 / avmVal) * 100) : null;
+        const grossYield = bestValue ? ((rentVal * 12 / bestValue) * 100) : null;
         return (
           <div style={{ flex: 1, minWidth: 130, padding: "10px 14px", background: "#f5f3ff", borderRadius: 8 }}>
             <div style={{ fontSize: 11, color: "#7c3aed", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Rent Est.</div>
@@ -960,9 +995,14 @@ export default function PropertyDetailModal({
           {activeSection === "financial" && (() => {
             // Use inline AVM data, or fall back to separately fetched AVM data
             const avm = p.avm || avmData?.avm;
+            // Fallback estimated value: assessment market value → appraised → RentCast AVM
+            const fallbackValue = p.assessment?.market?.mktTtlValue
+              || p.assessment?.appraised?.apprTtlValue
+              || rentcastAvmPrice;
+            const hasFallbackValue = !avm?.amount?.value && fallbackValue != null;
             return (
             <>
-              {avmLoading && !avm && (
+              {avmLoading && !avm && !hasFallbackValue && (
                 <div style={{ textAlign: "center", padding: 20, color: "#6b7280", fontSize: 13 }}>
                   Loading AVM valuation data...
                 </div>
@@ -976,7 +1016,19 @@ export default function PropertyDetailModal({
                 </Section>
               )}
 
-              {!avmLoading && !avm && (
+              {/* When no AVM exists, show fallback estimated value from assessment or RentCast */}
+              {!avm && hasFallbackValue && (
+                <Section title="Estimated Value">
+                  <Field label="Estimated Value" value={fmt(fallbackValue)} />
+                  <Field label="Source" value={
+                    p.assessment?.market?.mktTtlValue ? "Market Assessment"
+                      : p.assessment?.appraised?.apprTtlValue ? "Appraised Value"
+                        : "Comparable Sales Analysis"
+                  } />
+                </Section>
+              )}
+
+              {!avmLoading && !avm && !hasFallbackValue && (
                 <div style={{ padding: "12px 16px", background: "#f9fafb", borderRadius: 8, fontSize: 13, color: "#6b7280", marginBottom: 16 }}>
                   AVM data not available for this property.
                 </div>
@@ -1414,9 +1466,8 @@ export default function PropertyDetailModal({
                 const hasData = avmValue != null || loanBalance != null || equityAmount != null;
                 const isPositive = equityAmount != null ? equityAmount >= 0 : true;
 
-                // Hide the entire section when there's no loan data and no estimated balance
-                const hasLoan = (loanCount != null && loanCount > 0) || (loanBalance != null && loanBalance > 0);
-                if (!hasLoan) return null;
+                // Show the section when we have any meaningful data (value, equity, or loan info)
+                if (!hasData) return null;
 
                 return (
                   <div style={{ marginBottom: 20, padding: "14px 18px", background: hasData ? (isPositive ? "#ecfdf5" : "#fef2f2") : "#f9fafb", borderRadius: 10, border: `1px solid ${hasData ? (isPositive ? "#a7f3d0" : "#fecaca") : "#e5e7eb"}` }}>
