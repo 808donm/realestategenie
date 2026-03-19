@@ -1493,6 +1493,11 @@ export default function PropertyDetailModal({
                           {estimatedPayment != null && estimatedPayment > 0 && <span><strong>Est. Monthly Payment:</strong> {fmt(estimatedPayment)}</span>}
                           <span><strong>Last Sale:</strong> {lastSalePrice != null ? fmt(lastSalePrice) : "Not Disclosed"}</span>
                           <span><strong>Sale Date:</strong> {lastSaleDate || "Not Disclosed"}</span>
+                          {p.sale?.amount?.saleRecDate && <span><strong>Recording Date:</strong> {p.sale.amount.saleRecDate}</span>}
+                          {p.sale?.amount?.saleDocType && <span><strong>Document Type:</strong> {p.sale.amount.saleDocType}</span>}
+                          {p.sale?.amount?.saleCode && <span><strong>Sale Code:</strong> {p.sale.amount.saleCode}</span>}
+                          {p.sale?.amount?.pricePerBed != null && <span><strong>Price / Bed:</strong> {fmt(p.sale.amount.pricePerBed)}</span>}
+                          {p.sale?.amount?.pricePerSizeUnit != null && <span><strong>Price / Sqft:</strong> ${p.sale.amount.pricePerSizeUnit.toFixed(2)}</span>}
                         </div>
                       </>
                     )}
