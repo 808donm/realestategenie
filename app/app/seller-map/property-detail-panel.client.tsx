@@ -321,9 +321,9 @@ export function PropertyDetailPanel({ property, onClose }: Props) {
           {property.baths && <span>{property.baths} ba</span>}
           {property.sqft && <span>{property.sqft.toLocaleString()} sqft</span>}
           {property.yearBuilt && <span>Built {property.yearBuilt}</span>}
-          {property.estimatedValue && (
+          {(detail?.avmValue || property.estimatedValue) && (
             <span className="font-medium">
-              {fmtPrice(property.estimatedValue)}
+              {fmtPrice(detail?.avmValue || property.estimatedValue || 0)}
             </span>
           )}
         </div>
