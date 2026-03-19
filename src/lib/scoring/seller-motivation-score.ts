@@ -229,7 +229,15 @@ function scoreAbsentee(parcel: RealieParcel): SellerFactor {
 function scoreDistress(parcel: RealieParcel): SellerFactor {
   const max = WEIGHTS.distress;
   let points = 0;
-  let description = "No distress signals detected";
+
+  // Distinguish between "no data available" (Realie not connected) and
+  // "checked and clean" (data exists but no distress found)
+  const hasDistressData = parcel.forecloseCode !== undefined
+    || parcel.totalLienCount !== undefined
+    || parcel.totalLienBalance !== undefined;
+  let description = hasDistressData
+    ? "No distress signals found"
+    : "No distress data available";
 
   if (parcel.forecloseCode) {
     points = max;
@@ -255,7 +263,9 @@ function scoreDistress(parcel: RealieParcel): SellerFactor {
 function scorePortfolio(parcel: RealieParcel): SellerFactor {
   const max = WEIGHTS.portfolio;
   let points = 0;
-  let description = "Single-property owner or unknown";
+  let description = parcel.ownerParcelCount != null
+    ? "Single-property owner"
+    : "No portfolio data available";
 
   const count = parcel.ownerParcelCount;
   if (count != null) {
@@ -317,10 +327,9 @@ function scoreTransferRecency(parcel: RealieParcel): SellerFactor {
 function scoreTaxAnomaly(parcel: RealieParcel): SellerFactor {
   const max = WEIGHTS.taxAnomaly;
   let points = 0;
-  let description = "Tax data normal or unavailable";
-
   const assessed = parcel.totalAssessedValue;
   const market = parcel.modelValue || parcel.totalMarketValue;
+  let description = assessed && market ? "Tax assessment normal" : "No tax assessment data available";
 
   if (assessed && market) {
     const ratio = assessed / market;
@@ -539,7 +548,25 @@ export function calculateSellerMotivationScore(parcel: RealieParcel): SellerScor
     scoreHoaBurden(parcel),
   ];
 
-  const score = Math.min(factors.reduce((sum, f) => sum + f.points, 0), 100);
+  const rawScore = factors.reduce((sum, f) => sum + f.points, 0);
+
+  // Normalize the score based on achievable points. When data sources like
+  // Realie are unavailable, factors such as Equity (15), Distress (12), and
+  // Portfolio (8) are impossible to earn — their data simply doesn't exist.
+  // Without normalization, a property scoring 40/65 achievable points looks
+  // like a weak 40/100, when it's actually a strong 62/100 relative to what
+  // can be measured. We detect "no data" factors (0 points AND description
+  // says "No … available" or "unknown") and exclude their maxPoints from the
+  // denominator so scores reflect actual seller motivation signal strength.
+  const achievableMax = factors.reduce((sum, f) => {
+    const noData = f.points === 0 && /no .* (available|data|unknown)/i.test(f.description);
+    return sum + (noData ? 0 : f.maxPoints);
+  }, 0);
+
+  // Scale: if only 65 of 100 points are achievable, 40 raw → 62 normalized
+  const score = achievableMax > 0
+    ? Math.min(Math.round((rawScore / achievableMax) * 100), 100)
+    : 0;
   const level = getSellerLevel(score);
 
   return { score, level, factors };
