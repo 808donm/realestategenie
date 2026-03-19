@@ -329,24 +329,59 @@ function mergePropertyData(
     // Deep-merge: Realie fills gaps in RentCast data
     const merged = { ...rcProp };
 
-    // AVM — prefer whichever source provides a real model-based valuation.
-    // RentCast's searchProperties uses lastSalePrice as AVM (can be decades stale),
-    // but its /avm/value endpoint provides real estimates for single-address lookups.
-    // Realie always provides proper model valuations with high/low ranges.
+    // AVM — pick the most reasonable estimate by comparing to assessed value.
+    // Assessed value is set by the county and is a reliable anchor. Whichever
+    // AVM is closer to assessed value is likely more accurate. When MLS data
+    // is available it will supersede both.
     const rcAvm = merged.avm?.amount?.value;
     const realieAvm = realieProp.avm?.amount?.value;
-    if (realieAvm) {
+    if (realieAvm || rcAvm) {
       const rcHasRange = merged.avm?.amount?.high && merged.avm?.amount?.low;
       const realieHasRange = realieProp.avm?.amount?.high && realieProp.avm?.amount?.low;
 
-      if (!rcAvm) {
-        // RentCast has no AVM — use Realie
+      // Get the best assessed/market value as our anchor
+      const assessedValue =
+        merged.assessment?.assessed?.assdTtlValue ||
+        realieProp.assessment?.assessed?.assdTtlValue ||
+        merged.assessment?.market?.mktTtlValue ||
+        realieProp.assessment?.market?.mktTtlValue;
+
+      if (!rcAvm && realieAvm) {
+        // Only Realie has an AVM
         merged.avm = realieProp.avm;
+      } else if (rcAvm && !realieAvm) {
+        // Only RentCast has an AVM — keep it (already set)
       } else if (!rcHasRange && realieHasRange) {
         // RentCast AVM is just lastSalePrice (no range) — prefer Realie's model
         merged.avm = realieProp.avm;
-      } else if (rcHasRange && realieHasRange) {
-        // Both have real AVMs — average them for a more robust estimate
+      } else if (rcAvm && realieAvm && rcHasRange && realieHasRange && assessedValue) {
+        // Both have real AVMs with ranges — use assessed value as sanity check.
+        // Pick whichever AVM is closer to the assessed value (ratio closer to 1.0).
+        const rcRatio = rcAvm / assessedValue;
+        const realieRatio = realieAvm / assessedValue;
+        // Deviation from 1.0 — lower is better (AVM closer to assessed)
+        const rcDev = Math.abs(Math.log(rcRatio));
+        const realieDev = Math.abs(Math.log(realieRatio));
+
+        const chosenSource = realieDev <= rcDev ? "realie" : "rentcast";
+        const chosen = chosenSource === "realie" ? realieProp.avm : merged.avm;
+        merged.avm = {
+          ...chosen,
+          _avmSources: {
+            chosen: chosenSource,
+            assessedValue,
+            rentcast: { value: rcAvm, low: merged.avm.amount.low, high: merged.avm.amount.high },
+            realie: { value: realieAvm, low: realieProp.avm.amount.low, high: realieProp.avm.amount.high },
+          },
+        };
+        console.log(
+          `[Merge] AVM: chose ${chosenSource} ($${chosen.amount.value.toLocaleString()}) ` +
+          `over ${chosenSource === "realie" ? "rentcast" : "realie"} — ` +
+          `assessed: $${assessedValue.toLocaleString()}, ` +
+          `RC ratio: ${rcRatio.toFixed(2)}, Realie ratio: ${realieRatio.toFixed(2)}`
+        );
+      } else if (rcAvm && realieAvm && rcHasRange && realieHasRange) {
+        // Both have ranges but no assessed value — average them
         merged.avm = {
           amount: {
             value: Math.round((rcAvm + realieAvm) / 2),
@@ -354,12 +389,13 @@ function mergePropertyData(
             high: Math.round((merged.avm.amount.high + realieProp.avm.amount.high) / 2),
           },
           _avmSources: {
+            chosen: "average",
             rentcast: { value: rcAvm, low: merged.avm.amount.low, high: merged.avm.amount.high },
             realie: { value: realieAvm, low: realieProp.avm.amount.low, high: realieProp.avm.amount.high },
           },
         };
       }
-      // else: RentCast has a real AVM with range but Realie doesn't — keep RentCast
+      // else: RentCast has range but Realie doesn't — keep RentCast (already set)
     }
 
     // Home Equity — ALWAYS prefer Realie's equity data. RentCast computes equity
