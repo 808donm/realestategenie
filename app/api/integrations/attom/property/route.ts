@@ -329,11 +329,37 @@ function mergePropertyData(
     // Deep-merge: Realie fills gaps in RentCast data
     const merged = { ...rcProp };
 
-    // AVM — ALWAYS prefer Realie's AVM when available. RentCast's "AVM" is just
-    // lastSalePrice (e.g. $100K from a 1984 sale), not a real statistical model.
-    // Realie provides proper automated valuations with high/low confidence ranges.
-    if (realieProp.avm?.amount?.value) {
-      merged.avm = realieProp.avm;
+    // AVM — prefer whichever source provides a real model-based valuation.
+    // RentCast's searchProperties uses lastSalePrice as AVM (can be decades stale),
+    // but its /avm/value endpoint provides real estimates for single-address lookups.
+    // Realie always provides proper model valuations with high/low ranges.
+    const rcAvm = merged.avm?.amount?.value;
+    const realieAvm = realieProp.avm?.amount?.value;
+    if (realieAvm) {
+      const rcHasRange = merged.avm?.amount?.high && merged.avm?.amount?.low;
+      const realieHasRange = realieProp.avm?.amount?.high && realieProp.avm?.amount?.low;
+
+      if (!rcAvm) {
+        // RentCast has no AVM — use Realie
+        merged.avm = realieProp.avm;
+      } else if (!rcHasRange && realieHasRange) {
+        // RentCast AVM is just lastSalePrice (no range) — prefer Realie's model
+        merged.avm = realieProp.avm;
+      } else if (rcHasRange && realieHasRange) {
+        // Both have real AVMs — average them for a more robust estimate
+        merged.avm = {
+          amount: {
+            value: Math.round((rcAvm + realieAvm) / 2),
+            low: Math.round((merged.avm.amount.low + realieProp.avm.amount.low) / 2),
+            high: Math.round((merged.avm.amount.high + realieProp.avm.amount.high) / 2),
+          },
+          _avmSources: {
+            rentcast: { value: rcAvm, low: merged.avm.amount.low, high: merged.avm.amount.high },
+            realie: { value: realieAvm, low: realieProp.avm.amount.low, high: realieProp.avm.amount.high },
+          },
+        };
+      }
+      // else: RentCast has a real AVM with range but Realie doesn't — keep RentCast
     }
 
     // Home Equity — ALWAYS prefer Realie's equity data. RentCast computes equity
@@ -506,6 +532,37 @@ async function fetchFromRentcast(
       // Standard property search
       const results = await client.searchProperties(rentcastParams);
       properties = results.map(mapRentcastToAttomShape);
+
+      // For single-address lookups (1-3 results), enrich with real AVM from
+      // RentCast's /avm/value endpoint. The searchProperties endpoint only
+      // returns lastSalePrice as a proxy, which can be decades stale.
+      const isSingleAddressLookup = properties.length <= 3 && rentcastParams.address;
+      if (isSingleAddressLookup) {
+        try {
+          const avmResult = await client.getValueEstimate({
+            address: rentcastParams.address,
+            latitude: rentcastParams.latitude,
+            longitude: rentcastParams.longitude,
+            compCount: 5,
+          });
+          if (avmResult?.price) {
+            // Apply the real AVM to the first (best-match) property
+            properties[0] = {
+              ...properties[0],
+              avm: {
+                amount: {
+                  value: avmResult.price,
+                  low: avmResult.priceRangeLow,
+                  high: avmResult.priceRangeHigh,
+                },
+              },
+            };
+            console.log(`[Rentcast] Enriched AVM: $${avmResult.price.toLocaleString()} (${avmResult.priceRangeLow?.toLocaleString()} - ${avmResult.priceRangeHigh?.toLocaleString()})`);
+          }
+        } catch (avmErr: any) {
+          console.warn(`[Rentcast] AVM enrichment failed (non-fatal): ${avmErr?.message}`);
+        }
+      }
     }
 
     if (properties.length === 0) {
