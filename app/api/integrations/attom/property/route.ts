@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
-import { supabaseAdmin } from "@/lib/supabase/admin";
 import {
-  RentcastClient, createRentcastClient,
+  RentcastClient,
   mapAttomParamsToRentcast, mapRentcastToAttomShape,
 } from "@/lib/integrations/rentcast-client";
 import {
-  RealieClient, createRealieClient,
   mapAttomParamsToRealie, mapRealieToAttomShape,
 } from "@/lib/integrations/realie-client";
+import {
+  getConfiguredRentcastClient,
+  getConfiguredRealieClient,
+} from "@/lib/integrations/property-data-service";
 import {
   buildPropertyCacheKey, propertyCacheGet, propertyCacheSet,
   propertyDbRead, propertyDbWrite,
@@ -133,86 +135,9 @@ const RENTCAST_CAPABLE_ENDPOINTS = new Set([
   "preforeclosure",
 ]);
 
-/**
- * Helper: get a working RentCast client (from DB config or env var)
- */
-async function getRentcastClientFromConfig(): Promise<RentcastClient | null> {
-  try {
-    const { data: integration, error: dbError } = await supabaseAdmin
-      .from("integrations")
-      .select("config")
-      .eq("provider", "rentcast")
-      .eq("status", "connected")
-      .limit(1)
-      .maybeSingle();
-
-    if (dbError) {
-      console.error(`[Rentcast] DB lookup failed:`, dbError.message);
-    }
-
-    if (integration?.config) {
-      const config =
-        typeof integration.config === "string"
-          ? JSON.parse(integration.config)
-          : integration.config;
-
-      if (config.api_key) {
-        console.log(`[Rentcast] Client created from DB integration (key: ${config.api_key.substring(0, 8)}...)`);
-        return new RentcastClient({ apiKey: config.api_key });
-      }
-    }
-
-    const envClient = createRentcastClient();
-    if (envClient) console.log(`[Rentcast] Client created from RENTCAST_API_KEY env var`);
-    return envClient;
-  } catch (err: any) {
-    console.warn(`[Rentcast] Failed to create client: ${err?.message || err}`);
-    return null;
-  }
-}
-
-/**
- * Helper: get a working Realie client (from DB config or env var)
- */
-async function getRealieClientFromConfig(): Promise<RealieClient | null> {
-  try {
-    const { data: integration, error: dbError } = await supabaseAdmin
-      .from("integrations")
-      .select("config")
-      .eq("provider", "realie")
-      .eq("status", "connected")
-      .limit(1)
-      .maybeSingle();
-
-    if (dbError) {
-      console.error(`[Realie] DB lookup failed:`, dbError.message);
-    }
-
-    if (integration?.config) {
-      const config =
-        typeof integration.config === "string"
-          ? JSON.parse(integration.config)
-          : integration.config;
-
-      if (config.api_key) {
-        console.log(`[Realie] Client created from DB integration (key: ${config.api_key.substring(0, 8)}...)`);
-        return new RealieClient({ apiKey: config.api_key });
-      }
-    }
-
-    // Fallback to env var
-    const envKey = process.env.REALIE_API_KEY;
-    if (envKey) {
-      console.log(`[Realie] Client created from REALIE_API_KEY env var`);
-      return new RealieClient({ apiKey: envKey });
-    }
-
-    return null;
-  } catch (err: any) {
-    console.warn(`[Realie] Failed to create client: ${err?.message || err}`);
-    return null;
-  }
-}
+// Client helpers are imported from the shared property-data-service
+// (getConfiguredRentcastClient, getConfiguredRealieClient)
+// so that all routes use the same client initialization logic.
 
 /**
  * Fetch property data from Realie, mapped to ATTOM-compatible shape.
@@ -226,7 +151,7 @@ async function fetchFromRealie(
     return null;
   }
 
-  const client = await getRealieClientFromConfig();
+  const client = await getConfiguredRealieClient();
   if (!client) {
     return null;
   }
@@ -480,7 +405,7 @@ async function fetchFromRentcast(
     return null;
   }
 
-  const client = await getRentcastClientFromConfig();
+  const client = await getConfiguredRentcastClient();
   if (!client) {
     console.warn(`[Rentcast] No RentCast client available (API key not configured?)`);
     return null;
@@ -992,7 +917,7 @@ export async function GET(request: NextRequest) {
 
     } else if (endpoint === "rentalavm") {
       // ── Rental AVM: use RentCast's rent estimate endpoint
-      const client = await getRentcastClientFromConfig();
+      const client = await getConfiguredRentcastClient();
       if (client) {
         try {
           const address = params.address1
@@ -1031,7 +956,7 @@ export async function GET(request: NextRequest) {
 
     } else if (endpoint === "homeequity") {
       // ── Home equity: computed from RentCast AVM value estimate
-      const client = await getRentcastClientFromConfig();
+      const client = await getConfiguredRentcastClient();
       if (client) {
         try {
           const address = params.address1

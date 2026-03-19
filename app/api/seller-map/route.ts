@@ -1,11 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
-import { supabaseAdmin } from "@/lib/supabase/admin";
-import { RealieClient, createRealieClient } from "@/lib/integrations/realie-client";
 import type { RealieParcel } from "@/lib/integrations/realie-client";
-import { RentcastClient, createRentcastClient, mapRentcastToRealieParcel } from "@/lib/integrations/rentcast-client";
+import {
+  getConfiguredRentcastClient,
+  getConfiguredRealieClient,
+  fetchAndMergeByZipCodes,
+  fetchAndMergeByCoords,
+  bulkMergeRealieData,
+  enrichWithRentcastAvm,
+} from "@/lib/integrations/property-data-service";
 import { scoreParcel } from "@/lib/scoring/seller-motivation-score";
 import { buildSearchCacheKey, searchCacheGet, searchCacheSet } from "@/lib/cache/seller-map-search-cache";
+
+/** Map RentCast property type values to Realie equivalents */
+function toRealiePropertyType(rentcastType: string | undefined): string | undefined {
+  if (!rentcastType) return undefined;
+  const map: Record<string, string> = {
+    "Single Family": "SFR",
+    "Condo": "CONDO",
+    "Townhouse": "SFR",
+    "Multi-Family": "APARTMENT",
+    "Manufactured": "MOBILE",
+    "Land": "LAND",
+  };
+  return map[rentcastType];
+}
 
 /**
  * GET /api/seller-map
@@ -13,11 +32,15 @@ import { buildSearchCacheKey, searchCacheGet, searchCacheSet } from "@/lib/cache
  * Fetch properties in a geographic area, score them for seller motivation,
  * and return scored results for the Seller Opportunity Map.
  *
+ * Uses the shared property-data-service for fetching and merging so that
+ * results are identical to the prospecting module.
+ *
  * Flow:
- *   1. RentCast: primary search (up to 500 properties, valuation, market data)
- *   2. Score with RentCast data alone
- *   3. Realie: enrich top candidates (score >= 30) with LTV, equity, liens, portfolio
- *   4. Re-score enriched properties for final ranking
+ *   1. Fetch from RentCast + Realie in parallel (shared service)
+ *   2. Merge with AVM sanity check (shared service)
+ *   3. Enrich with market trend data
+ *   4. Score all properties
+ *   5. AVM enrichment for borderline candidates
  *
  * Query params:
  *   lat, lng    — center coordinates (required)
@@ -25,6 +48,7 @@ import { buildSearchCacheKey, searchCacheGet, searchCacheSet } from "@/lib/cache
  *   minScore    — minimum seller motivation score (default 0)
  *   absenteeOnly — filter to absentee owners only
  *   zip         — alternative to lat/lng: search by zip code
+ *   zips        — comma-separated zip codes
  *   limit       — max results (default 100, max 2000)
  *   page        — pagination page (default 1)
  */
@@ -89,67 +113,38 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    let parcels: RealieParcel[] = [];
+    // ── Fetch + merge properties via shared service ──
+    // Uses the same fetch/merge pipeline as the prospecting module.
+    const realieType = toRealiePropertyType(propertyType);
+    let parcels: RealieParcel[];
 
-    // Determine which zip codes we're searching (for parallel Realie fetch)
-    const searchZips = zipList.length > 0
-      ? zipList
-      : zip
-        ? [zip]
-        : [];
-
-    // ── Parallel data fetching: RentCast + Realie + Market Data ──
-    // Previously, Realie enrichment only happened AFTER initial scoring
-    // (threshold >= 30), which meant properties missing equity/lien/portfolio
-    // data could never score high enough to get enriched — a chicken-and-egg
-    // problem. Now we fetch Realie data upfront for all target zip codes and
-    // merge BEFORE scoring so every property benefits from full data.
-    const realie = await getRealieClient();
-
-    const [fetchedParcels, realieData] = await Promise.all([
-      // Fetch primary property data (RentCast or Realie fallback)
-      (async () => {
-        if (zipList.length > 0) {
-          return fetchByZipCodes(zipList, limit, propertyType);
-        } else if (lat && lng) {
-          return fetchByCoords(Number(lat), Number(lng), radius, limit, page, propertyType);
-        } else if (zip) {
-          return fetchByZipCodes([zip], limit, propertyType);
-        }
-        return [] as RealieParcel[];
-      })(),
-      // Fetch Realie enrichment data in parallel (equity, LTV, liens, portfolio)
-      (async () => {
-        if (!realie || searchZips.length === 0) return [] as RealieParcel[];
-        const allRealie: RealieParcel[] = [];
-        let remaining = 500;
-        for (const zipCode of searchZips.slice(0, 20)) {
-          if (remaining <= 0) break;
-          try {
-            const result = await realie.searchByZip({
-              zip: zipCode,
-              limit: Math.min(remaining, 100),
-            });
-            allRealie.push(...result.properties);
-            remaining -= result.properties.length;
-          } catch (err: any) {
-            console.warn(`[SellerMap] Realie zip ${zipCode} failed (non-fatal):`, err.message);
-          }
-        }
-        return allRealie;
-      })(),
-    ]);
-    parcels = fetchedParcels;
-
-    // ── Pre-scoring Realie enrichment: merge equity, liens, portfolio BEFORE scoring ──
-    if (realieData.length > 0) {
-      console.log(`[SellerMap] Pre-scoring Realie enrichment: ${realieData.length} properties`);
-      const realieMap = buildAddressMap(realieData);
-      parcels = parcels.map((p) => enrichWithRealieData(p, realieMap));
+    if (zipList.length > 0) {
+      parcels = await fetchAndMergeByZipCodes(zipList, {
+        limit,
+        propertyType,
+        realiePropertyType: realieType,
+      });
+    } else if (lat && lng) {
+      parcels = await fetchAndMergeByCoords(Number(lat), Number(lng), radius, {
+        limit,
+        page,
+        propertyType,
+        realiePropertyType: realieType,
+      });
+    } else if (zip) {
+      parcels = await fetchAndMergeByZipCodes([zip], {
+        limit,
+        propertyType,
+        realiePropertyType: realieType,
+      });
+    } else {
+      parcels = [];
     }
 
-    // Enrich parcels with market trend data (one API call per unique zip)
-    const rentcastForMarket = await getRentcastClient();
+    console.log(`[SellerMap] Fetched ${parcels.length} parcels via shared service`);
+
+    // ── Enrich parcels with market trend data (one API call per unique zip) ──
+    const rentcastForMarket = await getConfiguredRentcastClient();
     if (rentcastForMarket) {
       const uniqueZips = [...new Set(parcels.map((p) => p.zipCode).filter(Boolean))] as string[];
       if (uniqueZips.length > 0) {
@@ -220,80 +215,84 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // ── Phase 1: Score all properties (now with Realie data already merged) ──
+    // ── Score all properties ──
+    const parcelMap = new Map(parcels.map((p) => [
+      p._id || p.siteId || p.parcelId || `${p.latitude}-${p.longitude}`,
+      p,
+    ]));
+
     let scored = parcels
       .map((p) => scoreParcel(p))
       .filter((s): s is NonNullable<typeof s> => s !== null)
       .filter((s) => !absenteeOnly || s.absentee)
       .sort((a, b) => b.score - a.score);
 
-    console.log(`[SellerMap] Phase 1 scored: ${scored.length} properties (Realie pre-enriched: ${realieData.length > 0})`);
+    console.log(`[SellerMap] Scored: ${scored.length} properties`);
 
-    // ── Phase 2: Realie enrichment for coordinate-based searches ──
-    // For coordinate-based searches (no zip codes), we didn't have zip codes
-    // upfront to fetch Realie data. Enrich top candidates now.
-    const parcelMap = new Map(parcels.map((p) => [
-      p._id || p.siteId || p.parcelId || `${p.latitude}-${p.longitude}`,
-      p,
-    ]));
+    // ── Coordinate-based Realie enrichment for top candidates ──
+    // For coordinate-based searches, the shared service already fetched Realie
+    // data via radius search. But if the radius search returned nothing (e.g.
+    // Realie has limited coord coverage), try fetching by discovered zip codes.
+    if (lat && lng && zipList.length === 0 && !zip && scored.length > 0) {
+      const realie = await getConfiguredRealieClient();
+      if (realie) {
+        const candidateZips = [...new Set(
+          scored.filter((s) => s.score >= 20).slice(0, 500)
+            .map((s) => parcelMap.get(s.id)?.zipCode)
+            .filter(Boolean)
+        )] as string[];
 
-    if (realie && realieData.length === 0 && scored.length > 0) {
-      // Coordinate-based search — enrich top candidates by their discovered zips
-      const enrichCandidates = scored.filter((s) => s.score >= 20).slice(0, 500);
-
-      if (enrichCandidates.length > 0) {
-        try {
-          const candidateZips = [...new Set(enrichCandidates.map((s) => {
-            const parcel = parcelMap.get(s.id);
-            return parcel?.zipCode;
-          }).filter(Boolean))] as string[];
-
-          let realieProperties: RealieParcel[] = [];
-          let remaining = 500;
-
-          for (const zipCode of candidateZips.slice(0, 20)) {
-            if (remaining <= 0) break;
-            try {
-              const result = await realie.searchByZip({
-                zip: zipCode,
-                limit: Math.min(remaining, 100),
-              });
-              realieProperties.push(...result.properties);
-              remaining -= result.properties.length;
-            } catch (err: any) {
-              console.warn(`[SellerMap] Realie zip ${zipCode} failed (non-fatal):`, err.message);
+        if (candidateZips.length > 0) {
+          try {
+            let realieProperties: RealieParcel[] = [];
+            let remaining = 500;
+            for (const zipCode of candidateZips.slice(0, 20)) {
+              if (remaining <= 0) break;
+              try {
+                const result = await realie.searchByZip({
+                  zip: zipCode,
+                  limit: Math.min(remaining, 100),
+                });
+                realieProperties.push(...result.properties);
+                remaining -= result.properties.length;
+              } catch (err: any) {
+                console.warn(`[SellerMap] Realie zip ${zipCode} failed (non-fatal):`, err.message);
+              }
             }
+
+            if (realieProperties.length > 0) {
+              console.log(`[SellerMap] Realie coord enrichment: ${realieProperties.length} properties across ${candidateZips.length} zips`);
+              // Use shared merge function with AVM sanity check
+              const enrichedParcels = bulkMergeRealieData(
+                scored.map((s) => parcelMap.get(s.id)).filter(Boolean) as RealieParcel[],
+                realieProperties
+              );
+
+              // Update parcel map and re-score
+              for (const ep of enrichedParcels) {
+                const key = ep._id || ep.siteId || ep.parcelId || `${ep.latitude}-${ep.longitude}`;
+                parcelMap.set(key, ep);
+              }
+
+              scored = scored.map((s) => {
+                const parcel = parcelMap.get(s.id);
+                if (!parcel) return s;
+                const rescored = scoreParcel(parcel);
+                return rescored || s;
+              }).sort((a, b) => b.score - a.score);
+            }
+          } catch (err: any) {
+            console.warn("[SellerMap] Realie enrichment failed (non-fatal):", err.message);
           }
-
-          if (realieProperties.length > 0) {
-            console.log(`[SellerMap] Realie coord enrichment: ${realieProperties.length} properties across ${candidateZips.length} zips`);
-            const realieMap = buildAddressMap(realieProperties);
-
-            scored = scored.map((s) => {
-              const parcel = parcelMap.get(s.id);
-              if (!parcel) return s;
-
-              const enriched = enrichWithRealieData(parcel, realieMap);
-              if (enriched === parcel) return s;
-
-              parcelMap.set(s.id, enriched);
-              const rescored = scoreParcel(enriched);
-              return rescored || s;
-            }).sort((a, b) => b.score - a.score);
-          }
-        } catch (err: any) {
-          console.warn("[SellerMap] Realie enrichment failed (non-fatal):", err.message);
         }
       }
     }
 
-    // ── Phase 3: Apply minScore filter after all enrichment ──
+    // ── Apply minScore filter after all enrichment ──
     scored = scored.filter((s) => s.score >= minScore);
 
-    // ── Phase 4: AVM enrichment for borderline candidates ──
-    // Fetch real market values for properties near the "likely" threshold
-    // or missing valuation data entirely.
-    const rentcastForAvm = await getRentcastClient();
+    // ── AVM enrichment for borderline candidates ──
+    const rentcastForAvm = await getConfiguredRentcastClient();
     if (rentcastForAvm) {
       const possibleCandidates = scored.filter((s) => s.score >= 35 && s.score < 50);
       const noValueCandidates = scored.filter((s) => !s.estimatedValue && s.score >= 20);
@@ -308,33 +307,29 @@ export async function GET(request: NextRequest) {
 
       if (avmBatch.length > 0) {
         const avmResults = await Promise.allSettled(
-          avmBatch.map((s) =>
-            rentcastForAvm.getValueEstimate({
-              address: s.address,
-              compCount: 5,
-            }).then((r) => ({ id: s.id, price: r.price }))
-          )
+          avmBatch.map(async (s) => {
+            const parcel = parcelMap.get(s.id);
+            if (!parcel) return null;
+            // Use shared AVM enrichment with assessed-value sanity check
+            const enriched = await enrichWithRentcastAvm(rentcastForAvm, parcel);
+            if (enriched !== parcel) {
+              parcelMap.set(s.id, enriched);
+              return { id: s.id, enriched };
+            }
+            return null;
+          })
         );
 
-        const avmMap = new Map<string, number>();
-        for (const r of avmResults) {
-          if (r.status === "fulfilled" && r.value.price) {
-            avmMap.set(r.value.id, r.value.price);
-          }
-        }
+        const enrichedCount = avmResults.filter(
+          (r) => r.status === "fulfilled" && r.value != null
+        ).length;
 
-        if (avmMap.size > 0) {
-          console.log(`[SellerMap] AVM enriched ${avmMap.size}/${avmBatch.length} properties`);
-
+        if (enrichedCount > 0) {
+          console.log(`[SellerMap] AVM enriched ${enrichedCount}/${avmBatch.length} properties`);
           scored = scored.map((s) => {
-            const avmPrice = avmMap.get(s.id);
-            if (!avmPrice) return s;
-
             const parcel = parcelMap.get(s.id);
             if (!parcel) return s;
-
-            const enriched = { ...parcel, modelValue: avmPrice };
-            const rescored = scoreParcel(enriched);
+            const rescored = scoreParcel(parcel);
             return rescored || s;
           }).sort((a, b) => b.score - a.score);
         }
@@ -360,9 +355,7 @@ export async function GET(request: NextRequest) {
 
     const marketData = Object.fromEntries(marketContext);
 
-    // ── Cache the full scored results (before user-specific filters) ──
-    // Store all scored properties so different users with different
-    // minScore/absenteeOnly filters can benefit from the same cache.
+    // ── Cache the full scored results ──
     searchCacheSet(
       cacheKey,
       { properties: scored, total: scored.length, marketData },
@@ -388,284 +381,5 @@ export async function GET(request: NextRequest) {
       { error: error.message || "Failed to fetch seller map data" },
       { status: 500 }
     );
-  }
-}
-
-/** Map RentCast property type values to Realie equivalents */
-function toRealiePropertyType(rentcastType: string | undefined): string | undefined {
-  if (!rentcastType) return undefined;
-  const map: Record<string, string> = {
-    "Single Family": "SFR",
-    "Condo": "CONDO",
-    "Townhouse": "SFR", // Realie doesn't have a separate townhouse type
-    "Multi-Family": "APARTMENT",
-    "Manufactured": "MOBILE",
-    "Land": "LAND",
-  };
-  return map[rentcastType];
-}
-
-/**
- * Fetch properties by coordinates using RentCast (up to 500 results).
- * Realie enrichment happens later, only for top-scoring candidates.
- */
-async function fetchByCoords(
-  lat: number,
-  lng: number,
-  radius: number,
-  limit: number,
-  page: number,
-  propertyType?: string
-): Promise<RealieParcel[]> {
-  const rentcast = await getRentcastClient();
-
-  if (rentcast) {
-    try {
-      const offset = page > 1 ? (page - 1) * Math.min(limit, 500) : 0;
-      const results = await rentcast.searchProperties({
-        latitude: lat,
-        longitude: lng,
-        radius,
-        limit: Math.min(limit, 500),
-        offset,
-        ...(propertyType ? { propertyType } : {}),
-      });
-      console.log(`[SellerMap] RentCast returned ${results.length} properties`);
-      return results.map(mapRentcastToRealieParcel);
-    } catch (err: any) {
-      console.error("[SellerMap] RentCast error:", err.message);
-    }
-  }
-
-  // Fallback: Realie radius search if RentCast is not configured
-  const realie = await getRealieClient();
-  if (realie) {
-    try {
-      const result = await realie.searchByRadius({
-        latitude: lat,
-        longitude: lng,
-        radius,
-        limit: Math.min(limit, 100),
-        page,
-        ...(propertyType ? { property_type: toRealiePropertyType(propertyType) } : {}),
-      });
-      console.log(`[SellerMap] Realie fallback returned ${result.properties.length} properties`);
-      return result.properties;
-    } catch (err: any) {
-      console.error("[SellerMap] Realie fallback error:", err.message);
-    }
-  }
-
-  return [];
-}
-
-/**
- * Fetch properties across multiple zip codes in parallel.
- * Each zip gets up to 500 results from RentCast (or 100 from Realie),
- * then results are merged and deduplicated.
- */
-async function fetchByZipCodes(
-  zipCodes: string[],
-  totalLimit: number,
-  propertyType?: string
-): Promise<RealieParcel[]> {
-  const rentcast = await getRentcastClient();
-  const realie = await getRealieClient();
-
-  if (!rentcast && !realie) return [];
-
-  // Query each zip independently with full per-zip limits (not split across zips)
-  const PER_ZIP_LIMIT_RENTCAST = 500;
-  const PER_ZIP_LIMIT_REALIE = 100;
-  const realieType = toRealiePropertyType(propertyType);
-
-  const results = await Promise.allSettled(
-    zipCodes.slice(0, 20).map(async (zipCode) => {
-      // Try RentCast first (up to 500 per zip)
-      if (rentcast) {
-        try {
-          const props = await rentcast.searchProperties({
-            zipCode,
-            limit: PER_ZIP_LIMIT_RENTCAST,
-            ...(propertyType ? { propertyType } : {}),
-          });
-          if (props.length > 0) {
-            console.log(`[SellerMap] RentCast zip ${zipCode}: ${props.length} properties`);
-            return props.map(mapRentcastToRealieParcel);
-          }
-          console.log(`[SellerMap] RentCast zip ${zipCode}: 0 results, trying Realie fallback`);
-        } catch (err: any) {
-          console.warn(`[SellerMap] RentCast zip ${zipCode} failed: ${err.message}, trying Realie fallback`);
-        }
-      }
-
-      // Fallback to Realie (paginate through up to 500 results, 100 per page)
-      if (realie) {
-        try {
-          const allPages: RealieParcel[] = [];
-          const maxPages = 5; // 5 pages * 100 = 500 max per zip
-          for (let page = 1; page <= maxPages; page++) {
-            const result = await realie.searchByZip({
-              zip: zipCode,
-              limit: PER_ZIP_LIMIT_REALIE,
-              page,
-              ...(realieType ? { property_type: realieType } : {}),
-            });
-            allPages.push(...result.properties);
-            console.log(`[SellerMap] Realie zip ${zipCode} page ${page}: ${result.properties.length} properties`);
-            // Stop if we got fewer than the limit (no more pages)
-            if (result.properties.length < PER_ZIP_LIMIT_REALIE) break;
-          }
-          return allPages;
-        } catch (err: any) {
-          console.warn(`[SellerMap] Realie zip ${zipCode} failed: ${err.message}`);
-        }
-      }
-
-      return [] as RealieParcel[];
-    })
-  );
-
-  const all = results.flatMap((r) => (r.status === "fulfilled" ? r.value : []));
-  console.log(`[SellerMap] Multi-zip total: ${all.length} properties across ${zipCodes.length} zips`);
-  return deduplicateParcels(all);
-}
-
-/**
- * Deduplicate parcels by normalized address to avoid showing the same
- * property twice when it appears in overlapping zip/radius results.
- */
-function deduplicateParcels(parcels: RealieParcel[]): RealieParcel[] {
-  const seen = new Set<string>();
-  return parcels.filter((p) => {
-    const key = p.address ? normalizeAddress(p.address) : `${p.latitude}-${p.longitude}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-}
-
-/**
- * Normalize address for fuzzy matching between RentCast and Realie records.
- */
-function normalizeAddress(addr: string): string {
-  return addr
-    .toLowerCase()
-    .replace(/\bapt\b.*$/i, "")
-    .replace(/\bunit\b.*$/i, "")
-    .replace(/\bste\b.*$/i, "")
-    .replace(/\b0+(\d)/g, "$1")
-    .replace(/[^a-z0-9]/g, "");
-}
-
-/**
- * Build a lookup map from Realie properties keyed by normalized address.
- */
-function buildAddressMap(
-  properties: RealieParcel[]
-): Map<string, RealieParcel> {
-  const map = new Map<string, RealieParcel>();
-  for (const p of properties) {
-    const addr = p.address || p.addressFull;
-    if (addr) {
-      map.set(normalizeAddress(addr), p);
-    }
-  }
-  return map;
-}
-
-/**
- * Merge Realie-specific fields (equity, LTV, liens, foreclosure, portfolio)
- * into a RentCast-sourced parcel. Only overwrites fields that are missing.
- */
-function enrichWithRealieData(
-  parcel: RealieParcel,
-  realieMap: Map<string, RealieParcel>
-): RealieParcel {
-  const addr = parcel.address || parcel.addressFull;
-  if (!addr) return parcel;
-
-  const match = realieMap.get(normalizeAddress(addr));
-  if (!match) return parcel;
-
-  return {
-    ...parcel,
-    // Equity analysis fields (RentCast doesn't provide these)
-    LTVCurrentEstCombined: parcel.LTVCurrentEstCombined ?? match.LTVCurrentEstCombined,
-    equityCurrentEstBal: parcel.equityCurrentEstBal ?? match.equityCurrentEstBal,
-    modelValue: parcel.modelValue ?? match.modelValue,
-
-    // Distress signals
-    forecloseCode: parcel.forecloseCode ?? match.forecloseCode,
-    totalLienCount: parcel.totalLienCount ?? match.totalLienCount,
-    totalLienBalance: parcel.totalLienBalance ?? match.totalLienBalance,
-
-    // Investor portfolio
-    ownerParcelCount: parcel.ownerParcelCount ?? match.ownerParcelCount,
-    ownerResCount: parcel.ownerResCount ?? match.ownerResCount,
-    ownerComCount: parcel.ownerComCount ?? match.ownerComCount,
-
-    // Market value (for tax anomaly scoring)
-    totalMarketValue: parcel.totalMarketValue ?? match.totalMarketValue,
-  };
-}
-
-/**
- * Helper: get a working RentCast client (from DB config or env var)
- */
-async function getRentcastClient(): Promise<RentcastClient | null> {
-  try {
-    const { data: integration } = await supabaseAdmin
-      .from("integrations")
-      .select("config")
-      .eq("provider", "rentcast")
-      .eq("status", "connected")
-      .limit(1)
-      .maybeSingle();
-
-    if (integration?.config) {
-      const config =
-        typeof integration.config === "string"
-          ? JSON.parse(integration.config)
-          : integration.config;
-
-      if (config.api_key) {
-        return new RentcastClient({ apiKey: config.api_key });
-      }
-    }
-
-    return createRentcastClient();
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Helper: get a working Realie client (from DB config or env var)
- */
-async function getRealieClient(): Promise<RealieClient | null> {
-  try {
-    const { data: integration } = await supabaseAdmin
-      .from("integrations")
-      .select("config")
-      .eq("provider", "realie")
-      .eq("status", "connected")
-      .limit(1)
-      .maybeSingle();
-
-    if (integration?.config) {
-      const config =
-        typeof integration.config === "string"
-          ? JSON.parse(integration.config)
-          : integration.config;
-
-      if (config.api_key) {
-        return new RealieClient({ apiKey: config.api_key });
-      }
-    }
-
-    return createRealieClient();
-  } catch {
-    return null;
   }
 }
