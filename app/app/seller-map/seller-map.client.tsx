@@ -283,6 +283,26 @@ export function SellerMapClient() {
     setSelectedProperty(property);
   }, []);
 
+  // Handle zip code click on the map — set the zip as search filter and trigger search
+  const handleZipClick = useCallback(
+    (zipCode: string) => {
+      setFilters((prev) => ({ ...prev, zips: zipCode }));
+    },
+    []
+  );
+
+  // When filters.zips changes from a zip click, auto-fetch
+  const prevZipsRef = useRef(filters.zips);
+  useEffect(() => {
+    if (filters.zips !== prevZipsRef.current) {
+      prevZipsRef.current = filters.zips;
+      // Only auto-fetch if the zip was set (not cleared)
+      if (filters.zips && /^\d{5}$/.test(filters.zips.trim())) {
+        fetchProperties(boundsRef.current);
+      }
+    }
+  }, [filters.zips, fetchProperties]);
+
   // Derive searched zip codes from the zips filter input (only plain zip codes, not TMK)
   const searchedZips = useMemo(() => {
     const trimmed = filters.zips?.trim();
@@ -354,6 +374,7 @@ export function SellerMapClient() {
             searchedZips={searchedZips}
             mapStyle={mapStyle}
             isLoading={isLoading}
+            onZipClick={handleZipClick}
           />
           {hasFetched && (
             <button
@@ -413,6 +434,7 @@ export function SellerMapClient() {
               searchedZips={searchedZips}
               mapStyle={mapStyle}
               isLoading={isLoading}
+              onZipClick={handleZipClick}
             />
             {hasFetched && (
               <button

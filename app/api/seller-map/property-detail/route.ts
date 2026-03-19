@@ -142,6 +142,26 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Fetch active/recent sale listings for this address from Rentcast
+    let saleListings: any[] = [];
+    if (rentcast && property) {
+      try {
+        const listingParams: Record<string, any> = {
+          address: property.addressLine1,
+          city: property.city,
+          state: property.state,
+          status: "Active",
+          limit: 5,
+        };
+        if (property.zipCode) listingParams.zipCode = property.zipCode;
+        const listings = await rentcast.getSaleListings(listingParams);
+        saleListings = listings || [];
+      } catch (err: any) {
+        // Sale listing fetch is optional
+        console.warn("[PropertyDetail] Sale listings error:", err.message);
+      }
+    }
+
     // Fetch market data for the property's zip code
     let marketData: Record<string, any> = {};
     const propZip = property?.zipCode || merged?.zipCode;
@@ -233,6 +253,18 @@ export async function GET(request: NextRequest) {
 
       // Comps
       comps,
+
+      // Active/recent sale listings from Rentcast
+      saleListings: saleListings.map((l) => ({
+        address: l.formattedAddress,
+        price: l.price,
+        status: l.status,
+        listedDate: l.listedDate,
+        daysOnMarket: l.daysOnMarket,
+        mlsNumber: l.mlsNumber,
+        listingType: l.listingType,
+        listingAgent: l.listingAgent,
+      })),
 
       // Market context
       ...marketData,

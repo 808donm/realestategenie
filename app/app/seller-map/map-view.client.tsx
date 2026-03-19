@@ -29,6 +29,7 @@ type Props = {
   searchedZips: string[];
   mapStyle: "streets" | "satellite";
   isLoading: boolean;
+  onZipClick?: (zipCode: string) => void;
 };
 
 // Default to downtown Honolulu, Hawaii (96813)
@@ -51,6 +52,7 @@ function SellerMapInner({
   zipGeojson,
   searchedZips,
   isLoading,
+  onZipClick,
 }: Props) {
   const map = useMap();
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -251,7 +253,7 @@ function SellerMapInner({
 
         if (zipCode && event.latLng) {
           infoWindow.setContent(
-            `<div style="font-size:13px;font-weight:600;padding:2px 4px">${zipCode}</div>`
+            `<div style="font-size:13px;font-weight:600;padding:2px 4px;cursor:pointer">${zipCode}<div style="font-size:10px;font-weight:400;color:#6b7280;margin-top:2px">Click to search</div></div>`
           );
           infoWindow.setPosition(event.latLng);
           infoWindow.open(map);
@@ -261,6 +263,17 @@ function SellerMapInner({
         hoveredFeatureRef.current = null;
         zipLayer.revertStyle(event.feature);
         infoWindow.close();
+      });
+
+      // Click on zip code boundary to search that zip
+      zipLayer.addListener("click", (event: google.maps.Data.MouseEvent) => {
+        const zipCode =
+          event.feature.getProperty("ZCTA5") ||
+          event.feature.getProperty("BASENAME") ||
+          "";
+        if (zipCode && onZipClick) {
+          onZipClick(String(zipCode));
+        }
       });
 
       zipLayerRef.current = zipLayer;
@@ -293,7 +306,7 @@ function SellerMapInner({
         zipLayerRef.current = null;
       }
     };
-  }, [map, showZipBoundaries, zipGeojson, searchedZips]);
+  }, [map, showZipBoundaries, zipGeojson, searchedZips, onZipClick]);
 
   // Listen for idle event
   useEffect(() => {

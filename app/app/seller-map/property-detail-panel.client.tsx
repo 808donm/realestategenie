@@ -113,6 +113,20 @@ type PropertyDetail = {
     listingType: string;
     listedDate: string;
   }[];
+  saleListings?: {
+    address: string;
+    price: number;
+    status: string;
+    listedDate: string;
+    daysOnMarket: number;
+    mlsNumber?: string;
+    listingType?: string;
+    listingAgent?: {
+      name: string;
+      phone?: string;
+      email?: string;
+    };
+  }[];
 };
 
 type Props = {
@@ -781,6 +795,20 @@ function FinancialTab({
 
   return (
     <div className="space-y-4">
+      {/* Last Sale */}
+      {(detail?.lastSaleDate || detail?.lastSalePrice) && (
+        <Section title="Last Sale">
+          <InfoRow
+            label="Sale Date"
+            value={detail?.lastSaleDate ? new Date(detail.lastSaleDate).toLocaleDateString() : undefined}
+          />
+          <InfoRow
+            label="Sale Price"
+            value={detail?.lastSalePrice ? fmtPrice(detail.lastSalePrice) : undefined}
+          />
+        </Section>
+      )}
+
       {/* Value Estimates */}
       <Section title="Value Estimates">
         {detail?.avmValue && (
@@ -872,6 +900,43 @@ function FinancialTab({
             />
           )}
           <InfoRow label="Median Rent" value={detail.marketMedianRent ? `$${detail.marketMedianRent.toLocaleString()}/mo` : undefined} />
+        </Section>
+      )}
+
+      {/* Active Sale Listings */}
+      {detail?.saleListings && detail.saleListings.length > 0 && (
+        <Section title="Active Sale Listings">
+          <div className="space-y-2">
+            {detail.saleListings.map((listing, idx) => (
+              <div key={idx} className="border rounded-lg p-2.5">
+                <div className="flex items-start justify-between gap-2 mb-1">
+                  <p className="text-xs text-gray-700 flex-1">{listing.address}</p>
+                  <span className="text-xs font-semibold text-green-700 shrink-0">
+                    ${listing.price.toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-gray-500">
+                  <span className={`px-1.5 py-0.5 rounded font-medium ${
+                    listing.status === "Active"
+                      ? "bg-green-100 text-green-700"
+                      : "bg-gray-100 text-gray-600"
+                  }`}>
+                    {listing.status}
+                  </span>
+                  {listing.listedDate && (
+                    <span>Listed {new Date(listing.listedDate).toLocaleDateString()}</span>
+                  )}
+                  {listing.daysOnMarket != null && (
+                    <span>{listing.daysOnMarket} DOM</span>
+                  )}
+                  {listing.mlsNumber && <span>MLS# {listing.mlsNumber}</span>}
+                </div>
+                {listing.listingAgent?.name && (
+                  <p className="text-[10px] text-gray-400 mt-1">Agent: {listing.listingAgent.name}</p>
+                )}
+              </div>
+            ))}
+          </div>
         </Section>
       )}
     </div>
