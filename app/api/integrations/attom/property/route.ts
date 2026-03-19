@@ -6,6 +6,10 @@ import {
   mapAttomParamsToRentcast, mapRentcastToAttomShape,
 } from "@/lib/integrations/rentcast-client";
 import {
+  RealieClient, createRealieClient,
+  mapAttomParamsToRealie, mapRealieToAttomShape,
+} from "@/lib/integrations/realie-client";
+import {
   buildPropertyCacheKey, propertyCacheGet, propertyCacheSet,
   propertyDbRead, propertyDbWrite,
 } from "@/lib/integrations/property-data-cache";
@@ -165,6 +169,245 @@ async function getRentcastClientFromConfig(): Promise<RentcastClient | null> {
     console.warn(`[Rentcast] Failed to create client: ${err?.message || err}`);
     return null;
   }
+}
+
+/**
+ * Helper: get a working Realie client (from DB config or env var)
+ */
+async function getRealieClientFromConfig(): Promise<RealieClient | null> {
+  try {
+    const { data: integration, error: dbError } = await supabaseAdmin
+      .from("integrations")
+      .select("config")
+      .eq("provider", "realie")
+      .eq("status", "connected")
+      .limit(1)
+      .maybeSingle();
+
+    if (dbError) {
+      console.error(`[Realie] DB lookup failed:`, dbError.message);
+    }
+
+    if (integration?.config) {
+      const config =
+        typeof integration.config === "string"
+          ? JSON.parse(integration.config)
+          : integration.config;
+
+      if (config.api_key) {
+        console.log(`[Realie] Client created from DB integration (key: ${config.api_key.substring(0, 8)}...)`);
+        return new RealieClient({ apiKey: config.api_key });
+      }
+    }
+
+    // Fallback to env var
+    const envKey = process.env.REALIE_API_KEY;
+    if (envKey) {
+      console.log(`[Realie] Client created from REALIE_API_KEY env var`);
+      return new RealieClient({ apiKey: envKey });
+    }
+
+    return null;
+  } catch (err: any) {
+    console.warn(`[Realie] Failed to create client: ${err?.message || err}`);
+    return null;
+  }
+}
+
+/**
+ * Fetch property data from Realie, mapped to ATTOM-compatible shape.
+ */
+async function fetchFromRealie(
+  endpoint: string,
+  params: Record<string, any>
+): Promise<any | null> {
+  const realieParams = mapAttomParamsToRealie(endpoint, params);
+  if (!realieParams) {
+    return null;
+  }
+
+  const client = await getRealieClientFromConfig();
+  if (!client) {
+    return null;
+  }
+
+  try {
+    let response;
+
+    if (endpoint === "comparables" && realieParams.latitude && realieParams.longitude) {
+      response = await client.getComparables({
+        latitude: realieParams.latitude,
+        longitude: realieParams.longitude,
+        radius: realieParams.radius,
+        timeFrame: realieParams.timeFrame,
+        maxResults: realieParams.maxResults,
+      });
+    } else if (realieParams.address || (realieParams.state && realieParams.address)) {
+      response = await client.searchByAddress({
+        address: realieParams.address,
+        state: realieParams.state,
+        city: realieParams.city,
+        zip: realieParams.zipCode || realieParams.zip,
+        limit: realieParams.limit,
+        page: realieParams.page,
+      });
+    } else if (realieParams.latitude && realieParams.longitude) {
+      response = await client.searchByRadius({
+        latitude: realieParams.latitude,
+        longitude: realieParams.longitude,
+        radius: realieParams.radius || 2,
+        limit: realieParams.limit,
+        page: realieParams.page,
+        property_type: realieParams.property_type,
+        residential: realieParams.residential,
+      });
+    } else if (realieParams.zipCode || realieParams.zip) {
+      response = await client.searchByZip(realieParams);
+    } else {
+      return null;
+    }
+
+    if (!response?.properties?.length) {
+      console.log(`[Realie] No results for ${endpoint}`);
+      return null;
+    }
+
+    const properties = response.properties.map(mapRealieToAttomShape);
+    console.log(`[Realie] Got ${properties.length} properties for ${endpoint}`);
+
+    return {
+      status: {
+        version: "realie-v1",
+        code: 0,
+        msg: "Success",
+        total: properties.length,
+      },
+      property: properties,
+    };
+  } catch (error: any) {
+    console.warn(`[Realie] Error fetching ${endpoint}: ${error?.message || error}`);
+    return null;
+  }
+}
+
+/**
+ * Deep-merge Realie supplementary data into RentCast property records.
+ * Realie fills gaps that RentCast doesn't provide: AVM estimates, equity/LTV,
+ * mortgage/liens, foreclosure status, parcel boundaries, and owner portfolio data.
+ *
+ * Matching strategy: normalize addresses to find corresponding records.
+ */
+function mergePropertyData(
+  rentcastProps: any[],
+  realieProps: any[]
+): any[] {
+  if (!realieProps?.length) return rentcastProps;
+  if (!rentcastProps?.length) return realieProps;
+
+  // Build a lookup index from Realie properties by normalized address
+  const normalizeAddr = (addr: string) =>
+    addr?.toLowerCase()
+      .replace(/\b(apt|unit|ste|suite|#)\s*\S*/gi, "")
+      .replace(/[^a-z0-9]/g, "")
+      .trim() || "";
+
+  const realieByAddr = new Map<string, any>();
+  for (const rp of realieProps) {
+    const addr = rp.address?.oneLine || rp.address?.line1;
+    if (addr) {
+      realieByAddr.set(normalizeAddr(addr), rp);
+    }
+  }
+
+  return rentcastProps.map((rcProp) => {
+    const addr = rcProp.address?.oneLine || rcProp.address?.line1;
+    const key = addr ? normalizeAddr(addr) : "";
+    const realieProp = key ? realieByAddr.get(key) : undefined;
+
+    if (!realieProp) return rcProp;
+
+    // Deep-merge: Realie fills gaps in RentCast data
+    const merged = { ...rcProp };
+
+    // AVM — Realie provides real AVM estimates; RentCast only uses lastSalePrice
+    if (!merged.avm?.amount?.value && realieProp.avm?.amount?.value) {
+      merged.avm = realieProp.avm;
+    } else if (merged.avm?.amount && realieProp.avm?.amount) {
+      // Realie has proper high/low range that RentCast lacks
+      if (!merged.avm.amount.high && realieProp.avm.amount.high) {
+        merged.avm = {
+          amount: {
+            ...merged.avm.amount,
+            high: realieProp.avm.amount.high,
+            low: realieProp.avm.amount.low,
+          },
+        };
+      }
+    }
+
+    // Home Equity — RentCast has none, Realie provides equity/LTV
+    if (!merged.homeEquity && realieProp.homeEquity) {
+      merged.homeEquity = realieProp.homeEquity;
+    }
+
+    // Mortgage / Liens — RentCast has none, Realie provides lien data
+    if (!merged.mortgage?.amount && realieProp.mortgage) {
+      merged.mortgage = { ...merged.mortgage, ...realieProp.mortgage };
+    }
+
+    // Foreclosure — RentCast has none, Realie provides foreclosure status
+    if (!merged.foreclosure && realieProp.foreclosure) {
+      merged.foreclosure = realieProp.foreclosure;
+    }
+
+    // Parcel boundary — RentCast has none, Realie provides geometry
+    if (!merged.parcelBoundary && realieProp.parcelBoundary) {
+      merged.parcelBoundary = realieProp.parcelBoundary;
+    }
+
+    // Owner portfolio counts — RentCast lacks these investor signals
+    if (realieProp.owner) {
+      merged.owner = merged.owner || {};
+      if (merged.owner.ownerParcelCount == null && realieProp.owner.ownerParcelCount != null) {
+        merged.owner.ownerParcelCount = realieProp.owner.ownerParcelCount;
+      }
+      if (merged.owner.ownerResCount == null && realieProp.owner.ownerResCount != null) {
+        merged.owner.ownerResCount = realieProp.owner.ownerResCount;
+      }
+      if (merged.owner.ownerComCount == null && realieProp.owner.ownerComCount != null) {
+        merged.owner.ownerComCount = realieProp.owner.ownerComCount;
+      }
+    }
+
+    // Assessment — Realie provides building/land breakdown that RentCast lacks
+    if (merged.assessment?.assessed && realieProp.assessment?.assessed) {
+      if (!merged.assessment.assessed.assdImprValue && realieProp.assessment.assessed.assdImprValue) {
+        merged.assessment.assessed.assdImprValue = realieProp.assessment.assessed.assdImprValue;
+      }
+      if (!merged.assessment.assessed.assdLandValue && realieProp.assessment.assessed.assdLandValue) {
+        merged.assessment.assessed.assdLandValue = realieProp.assessment.assessed.assdLandValue;
+      }
+    }
+    if (merged.assessment?.market && realieProp.assessment?.market) {
+      if (!merged.assessment.market.mktImprValue && realieProp.assessment.market.mktImprValue) {
+        merged.assessment.market.mktImprValue = realieProp.assessment.market.mktImprValue;
+      }
+      if (!merged.assessment.market.mktLandValue && realieProp.assessment.market.mktLandValue) {
+        merged.assessment.market.mktLandValue = realieProp.assessment.market.mktLandValue;
+      }
+    }
+
+    // Assessment history — prefer Realie's richer history if RentCast has none
+    if (!merged.assessmenthistory?.length && realieProp.assessmenthistory?.length) {
+      merged.assessmenthistory = realieProp.assessmenthistory;
+    }
+
+    // Mark as merged source
+    merged._source = "merged";
+    merged._sources = ["rentcast", "realie"];
+
+    return merged;
+  });
 }
 
 /**
@@ -652,7 +895,7 @@ export async function GET(request: NextRequest) {
 
     // ── Layer 3: API calls ──────────────────────────────────────────────
     let result: any = null;
-    let dataSource: "rentcast" | "free-data" | "computed" = "rentcast";
+    let dataSource: "rentcast" | "realie" | "merged" | "free-data" | "computed" = "rentcast";
 
     if (FREE_DATA_ENDPOINTS.has(endpoint)) {
       // ── Free data endpoints (neighborhood, schools, hazards, trends, etc.)
@@ -819,13 +1062,33 @@ export async function GET(request: NextRequest) {
       }
 
     } else if (RENTCAST_CAPABLE_ENDPOINTS.has(endpoint)) {
-      // ── RentCast for all property data endpoints
-      console.log(`[PropertyData] Fetching "${endpoint}" from RentCast`);
-      const rcResult = await fetchFromRentcast(endpoint, params);
+      // ── Property data: RentCast (primary) + Realie (supplementary)
+      console.log(`[PropertyData] Fetching "${endpoint}" from RentCast + Realie`);
+
+      // Fetch from both sources in parallel
+      const [rcResult, realieResult] = await Promise.all([
+        fetchFromRentcast(endpoint, params),
+        fetchFromRealie(endpoint, params).catch((err) => {
+          console.warn(`[Realie] Supplementary fetch failed: ${err?.message || err}`);
+          return null;
+        }),
+      ]);
 
       if (rcResult?.property?.length > 0) {
-        result = rcResult;
-        dataSource = "rentcast";
+        // RentCast has data — merge Realie supplementary data if available
+        if (realieResult?.property?.length > 0) {
+          result = {
+            ...rcResult,
+            property: mergePropertyData(rcResult.property, realieResult.property),
+          };
+          dataSource = "merged";
+          console.log(
+            `[PropertyData] Merged: ${rcResult.property.length} RentCast + ${realieResult.property.length} Realie props`
+          );
+        } else {
+          result = rcResult;
+          dataSource = "rentcast";
+        }
 
         // Log quality stats
         const props = result.property as any[];
@@ -834,14 +1097,20 @@ export async function GET(request: NextRequest) {
         const withValue = props.filter((p: any) =>
           p.avm?.amount?.value || p.assessment?.assessed?.assdTtlValue || p.assessment?.market?.mktTtlValue
         ).length;
+        const withEquity = props.filter((p: any) => p.homeEquity?.equity != null).length;
         console.log(
-          `[PropertyData] RentCast: ${total} props, ${withOwner} owners, ${withValue} with values`
+          `[PropertyData] ${total} props, ${withOwner} owners, ${withValue} with values, ${withEquity} with equity`
         );
+      } else if (realieResult?.property?.length > 0) {
+        // RentCast returned no data — use Realie as fallback
+        console.log(`[PropertyData] RentCast empty, using Realie as primary (${realieResult.property.length} props)`);
+        result = realieResult;
+        dataSource = "realie";
       } else {
-        // RentCast returned no data
-        console.log(`[PropertyData] RentCast returned no data for ${endpoint}`);
+        // Neither source returned data
+        console.log(`[PropertyData] No data from RentCast or Realie for ${endpoint}`);
         return NextResponse.json(
-          { success: true, endpoint, dataSource: "rentcast", property: [], message: "No property data provider returned results" },
+          { success: true, endpoint, dataSource: "none", property: [], message: "No property data provider returned results" },
           { status: 200, headers: { "X-Property-Cache": "API", "X-Property-Source": "none" } },
         );
       }
