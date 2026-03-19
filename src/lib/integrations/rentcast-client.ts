@@ -791,12 +791,315 @@ export function mapRentcastToRealieParcel(rc: RentcastProperty): RealieParcel {
 /**
  * Create a RentcastClient using an explicit key or the RENTCAST_API_KEY env var.
  */
-export function createRentcastClient(apiKey?: string): RentcastClient {
+export function createRentcastClient(apiKey?: string): RentcastClient | null {
   const key = apiKey || process.env.RENTCAST_API_KEY;
   if (!key) {
-    throw new Error(
-      "Rentcast API key is required. Set RENTCAST_API_KEY env var or pass apiKey."
-    );
+    return null;
   }
   return new RentcastClient({ apiKey: key });
+}
+
+// ---------------------------------------------------------------------------
+// ATTOM-compatible Mappers
+// ---------------------------------------------------------------------------
+
+/**
+ * Convert ATTOM-style query parameters to RentCast search parameters.
+ * Used by the property route to translate prospecting module requests.
+ */
+export function mapAttomParamsToRentcast(
+  endpoint: string,
+  params: Record<string, any>
+): RentcastPropertySearchParams | null {
+  const propertyEndpoints = [
+    "expanded", "detail", "detailowner", "detailmortgage",
+    "detailmortgageowner", "profile", "snapshot",
+    "assessment", "assessmentsnapshot",
+    "sale", "salesnapshot", "saleshistory", "saleshistorybasic",
+    "saleshistoryexpanded", "saleshistorysnapshot",
+    "avm", "attomavm", "avmhistory",
+    "parcelboundary", "id",
+    "comparables",
+  ];
+
+  if (!propertyEndpoints.includes(endpoint)) {
+    return null;
+  }
+
+  const mapped: RentcastPropertySearchParams = {};
+
+  // Address
+  if (params.address1 && params.address2) {
+    mapped.address = `${params.address1}, ${params.address2}`;
+  } else if (params.address) {
+    mapped.address = params.address;
+  }
+
+  // Zip code
+  if (params.postalcode || params.postalCode) {
+    mapped.zipCode = params.postalcode || params.postalCode;
+  }
+
+  // Lat/Lng/Radius
+  if (params.latitude && params.longitude) {
+    mapped.latitude = Number(params.latitude);
+    mapped.longitude = Number(params.longitude);
+    if (params.radius) mapped.radius = Number(params.radius);
+  }
+
+  // Property type — map ATTOM numeric indicators to RentCast string types
+  const propType = params.propertytype || params.propertyType;
+  if (propType) {
+    const typeMap: Record<string, string> = {
+      "SFR": "Single Family",
+      "CONDO": "Condo",
+      "APARTMENT": "Multi-Family",
+      "MOBILE": "Manufactured",
+      "LAND": "Land",
+      // ATTOM numeric codes
+      "10": "Single Family",
+      "11": "Condo",
+    };
+    mapped.propertyType = typeMap[propType] || propType;
+  }
+
+  // Beds / Baths — RentCast uses range strings "min:max"
+  if (params.minBeds || params.maxBeds) {
+    mapped.bedrooms = `${params.minBeds || ""}:${params.maxBeds || ""}`;
+  }
+  if (params.minBathsTotal || params.maxBathsTotal) {
+    mapped.bathrooms = `${params.minBathsTotal || ""}:${params.maxBathsTotal || ""}`;
+  }
+
+  // Size
+  if (params.minUniversalSize || params.maxUniversalSize) {
+    mapped.squareFootage = `${params.minUniversalSize || ""}:${params.maxUniversalSize || ""}`;
+  }
+
+  // Year built
+  if (params.minYearBuilt || params.maxYearBuilt) {
+    mapped.yearBuilt = `${params.minYearBuilt || ""}:${params.maxYearBuilt || ""}`;
+  }
+
+  // Sale date range for RentCast
+  if (params.startSaleSearchDate || params.endSaleSearchDate) {
+    const start = params.startSaleSearchDate?.replace(/\//g, "-");
+    const end = params.endSaleSearchDate?.replace(/\//g, "-");
+    if (start) mapped.saleDateRange = `${start}:${end || ""}`;
+  }
+
+  // Pagination — RentCast uses limit/offset
+  const pageSize = params.pagesize || 25;
+  const page = params.page || 1;
+  mapped.limit = Math.min(pageSize, 500);
+  mapped.offset = (page - 1) * pageSize;
+
+  return mapped;
+}
+
+/**
+ * Convert a RentCast property record to the ATTOM-compatible shape
+ * used by the prospecting module and property detail UI.
+ */
+export function mapRentcastToAttomShape(rc: RentcastProperty): any {
+  // Parse owner names
+  const ownerNames = rc.owner?.names || [];
+  const owner1 = ownerNames[0];
+  const owner2 = ownerNames[1];
+
+  // Owner type detection from names
+  let corporateIndicator = "N";
+  const fullName = ownerNames.join(" ").toUpperCase();
+  if (/\b(LLC|INC|CORP|LTD|LP|TRUST|TRUSTEE|BANK|ASSOC)\b/.test(fullName)) {
+    corporateIndicator = "Y";
+  }
+  if (rc.owner?.type === "Organization") {
+    corporateIndicator = "Y";
+  }
+
+  // Determine absentee status
+  const ownerOccupied = rc.ownerOccupied;
+  const absenteeStatus = ownerOccupied === false ? "A" : ownerOccupied === true ? "O" : undefined;
+
+  // Owner mailing address
+  const ownerMailing = rc.owner?.mailingAddress;
+  const mailingOneLine = ownerMailing
+    ? [ownerMailing.addressLine1, ownerMailing.addressLine2, ownerMailing.city, ownerMailing.state, ownerMailing.zipCode]
+        .filter(Boolean).join(", ")
+    : undefined;
+
+  // Most recent tax assessment
+  let assdTtlValue: number | undefined;
+  let assdYear: number | undefined;
+  let taxAmt: number | undefined;
+  let taxYear: number | undefined;
+  if (rc.taxAssessments) {
+    const years = Object.keys(rc.taxAssessments).sort().reverse();
+    if (years.length > 0) {
+      const latest = rc.taxAssessments[years[0]];
+      assdTtlValue = latest.value;
+      assdYear = latest.year;
+    }
+  }
+  if (rc.propertyTaxes) {
+    const years = Object.keys(rc.propertyTaxes).sort().reverse();
+    if (years.length > 0) {
+      const latest = rc.propertyTaxes[years[0]];
+      taxAmt = latest.total;
+      taxYear = latest.year;
+    }
+  }
+
+  // Assessment history for multi-year trend analysis
+  const assessmentHistory = rc.taxAssessments
+    ? Object.entries(rc.taxAssessments)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([, a]) => ({
+          assessed: { assdTtlValue: a.value, assdImprValue: a.improvements, assdLandValue: a.land },
+          market: { mktTtlValue: a.value },
+          tax: { taxAmt: rc.propertyTaxes?.[String(a.year)]?.total, taxYear: a.year },
+          assessedYear: a.year,
+        }))
+    : undefined;
+
+  // Sale history — get earliest and most recent
+  let saleAmt: number | undefined;
+  let saleDate: string | undefined;
+  if (rc.lastSaleDate) {
+    saleDate = rc.lastSaleDate;
+    saleAmt = rc.lastSalePrice ?? undefined;
+  } else if (rc.history) {
+    const dates = Object.keys(rc.history).sort().reverse();
+    if (dates.length > 0) {
+      const latest = rc.history[dates[0]];
+      saleDate = latest.date;
+      saleAmt = latest.price;
+    }
+  }
+
+  // Price per sqft
+  const pricePerSqft = saleAmt && rc.squareFootage
+    ? Math.round(saleAmt / rc.squareFootage)
+    : undefined;
+
+  // Generate a stable numeric ID from RentCast string ID
+  const numericId = hashStringToNumber(rc.id);
+
+  return {
+    identifier: {
+      apn: rc.assessorID || undefined,
+      fips: rc.countyFips || undefined,
+      obPropId: rc.id,
+      attomId: numericId,
+      Id: numericId,
+    },
+    address: {
+      oneLine: rc.formattedAddress,
+      line1: rc.addressLine1,
+      line2: rc.addressLine2 || undefined,
+      locality: rc.city,
+      countrySubd: rc.state,
+      postal1: rc.zipCode,
+    },
+    location: {
+      latitude: String(rc.latitude),
+      longitude: String(rc.longitude),
+    },
+    owner: {
+      owner1: owner1 ? { fullName: owner1 } : undefined,
+      owner2: owner2 ? { fullName: owner2 } : undefined,
+      corporateIndicator,
+      absenteeOwnerStatus: absenteeStatus,
+      mailingAddressOneLine: mailingOneLine,
+      ownerOccupied: ownerOccupied === true ? "Y" : ownerOccupied === false ? "N" : undefined,
+    },
+    building: {
+      size: {
+        livingSize: rc.squareFootage || undefined,
+        universalSize: rc.squareFootage || undefined,
+        bldgSize: rc.squareFootage || undefined,
+      },
+      rooms: {
+        beds: rc.bedrooms || undefined,
+        bathsFull: rc.bathrooms || undefined,
+        bathsTotal: rc.bathrooms || undefined,
+      },
+      summary: {
+        yearBuilt: rc.yearBuilt || undefined,
+        levels: rc.features?.floorCount || undefined,
+      },
+      construction: {
+        constructionType: rc.features?.exteriorType || undefined,
+        roofCover: rc.features?.roofType || undefined,
+      },
+      interior: {
+        fplcCount: rc.features?.fireplace ? 1 : undefined,
+      },
+      parking: {
+        garageType: rc.features?.garageType || undefined,
+        prkgSpaces: rc.features?.garageSpaces ? String(rc.features.garageSpaces) : undefined,
+      },
+    },
+    lot: {
+      lotSize1: rc.lotSize || undefined,
+      poolInd: rc.features?.pool ? "Y" : undefined,
+      siteZoningIdent: rc.zoning || undefined,
+    },
+    summary: {
+      propType: rc.propertyType || undefined,
+      propertyType: rc.propertyType || undefined,
+      yearBuilt: rc.yearBuilt || undefined,
+      absenteeInd: ownerOccupied === false ? "ABSENTEE OWNER"
+        : ownerOccupied === true ? "OWNER OCCUPIED"
+        : undefined,
+    },
+    assessment: {
+      assessed: {
+        assdTtlValue: assdTtlValue || undefined,
+      },
+      market: {
+        mktTtlValue: rc.lastSalePrice || assdTtlValue || undefined,
+      },
+      tax: {
+        taxAmt: taxAmt || undefined,
+        taxYear: taxYear || assdYear || undefined,
+      },
+    },
+    avm: rc.lastSalePrice ? {
+      amount: {
+        value: rc.lastSalePrice,
+      },
+    } : undefined,
+    sale: (saleAmt || saleDate) ? {
+      amount: {
+        saleAmt: saleAmt || undefined,
+        salePrice: saleAmt || undefined,
+        saleTransDate: saleDate || undefined,
+        saleRecDate: saleDate || undefined,
+      },
+      calculation: {
+        pricePerSizeUnit: pricePerSqft || undefined,
+      },
+    } : undefined,
+    mortgage: rc.hoa ? {
+      // RentCast doesn't provide mortgage data, but we store HOA here
+    } : undefined,
+    homeEquity: undefined,
+    assessmenthistory: assessmentHistory,
+    _source: "rentcast",
+  };
+}
+
+/**
+ * Generate a stable numeric hash from a string ID.
+ * Used to create ATTOM-compatible numeric IDs from RentCast string IDs.
+ */
+function hashStringToNumber(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  return Math.abs(hash);
 }
