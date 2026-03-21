@@ -1474,10 +1474,17 @@ export default function PropertyDetailModal({
 
                 {rentcastComps && rentcastComps.length > 0 && (
                   <div>
-                    {rentcastAvmPrice && (
+                    {(p.avm?.amount?.value || rentcastAvmPrice) && (
                       <div style={{ padding: 12, borderRadius: 8, marginBottom: 12, background: "#f0fdf4", border: "1px solid #bbf7d0" }}>
-                        <div style={{ fontSize: 12, color: "#166534", fontWeight: 600 }}>Estimated Value</div>
-                        <div style={{ fontSize: 18, fontWeight: 700, color: "#15803d" }}>${rentcastAvmPrice.toLocaleString()}</div>
+                        <div style={{ fontSize: 12, color: "#166534", fontWeight: 600 }}>Estimated Value (AVM)</div>
+                        <div style={{ fontSize: 18, fontWeight: 700, color: "#15803d" }}>
+                          {fmt(p.avm?.amount?.value ?? rentcastAvmPrice ?? undefined)}
+                        </div>
+                        {p.avm?.amount?.low != null && p.avm?.amount?.high != null && (
+                          <div style={{ fontSize: 11, color: "#166534", marginTop: 2 }}>
+                            Range: {fmt(p.avm.amount.low)} – {fmt(p.avm.amount.high)}
+                          </div>
+                        )}
                       </div>
                     )}
                     <div style={{ fontWeight: 700, fontSize: 14, color: "#1f2937", marginBottom: 8 }}>
