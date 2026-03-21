@@ -4,6 +4,30 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import AdminTrestleForm from "./trestle-form.client";
 
+const MLS_PROVIDERS = [
+  {
+    provider: "trestle",
+    name: "Trestle by Cotality",
+    description: "CoreLogic MLS aggregator — covers HiCentral, Maui MLS, Hawaii Information Service (Big Island/Kauai), and 700+ MLSs nationwide.",
+  },
+  {
+    provider: "bridge",
+    name: "Bridge Interactive (Zillow)",
+    description: "Zillow's RESO-compliant MLS data platform.",
+  },
+  {
+    provider: "idx_broker",
+    name: "IDX Broker",
+    description: "IDX Broker MLS data feed.",
+  },
+] as const;
+
+type IntegrationRow = {
+  provider: string;
+  status: "connected" | "disconnected" | "error";
+  config: any;
+};
+
 export default async function UserIntegrationsPage({
   params,
 }: {
@@ -22,47 +46,73 @@ export default async function UserIntegrationsPage({
       WHERE a.id = ${userId}
       LIMIT 1
     `,
-    sql<{ status: "connected" | "disconnected" | "error"; config: any }[]>`
-      SELECT status, config FROM integrations
-      WHERE agent_id = ${userId} AND provider = 'trestle'
-      LIMIT 1
+    sql<IntegrationRow[]>`
+      SELECT provider, status, config FROM integrations
+      WHERE agent_id = ${userId}
+        AND provider IN ('trestle', 'bridge', 'idx_broker')
     `,
   ]);
 
   if (!userRows[0]) redirect("/app/admin/users");
 
   const user = userRows[0];
-  const trestle = integrationRows[0] ?? null;
-  const isConnected = trestle?.status === "connected";
-  const config = trestle?.config
-    ? typeof trestle.config === "string"
-      ? JSON.parse(trestle.config)
-      : trestle.config
-    : null;
+  const integrationMap = Object.fromEntries(
+    integrationRows.map((r) => [r.provider, r])
+  );
 
   return (
-    <div style={{ maxWidth: 720, margin: "40px auto", padding: 24 }}>
+    <div style={{ maxWidth: 760, margin: "40px auto", padding: 24 }}>
       <div style={{ marginBottom: 24 }}>
         <Link href="/app/admin/users" style={{ fontSize: 14, color: "#6b7280" }}>
           ← Back to Users
         </Link>
         <h1 style={{ fontSize: 24, fontWeight: 700, margin: "8px 0 4px" }}>
-          {user.display_name || user.email} — Integrations
+          {user.display_name || user.email} — MLS Integrations
         </h1>
         <p style={{ color: "#6b7280", fontSize: 14 }}>{user.email}</p>
       </div>
 
-      <div style={{ border: "1px solid #e5e7eb", borderRadius: 10, padding: 24 }}>
-        <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>Trestle MLS</h2>
-        <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 20 }}>
-          Connect this user's Trestle (Cotality) account for MLS property data access.
-          Each agent account should have its own independent connection.
-        </p>
-        <AdminTrestleForm
-          userId={userId}
-          storedConfig={isConnected ? config : null}
-          isConnected={isConnected}
-        />
+      <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+        {MLS_PROVIDERS.map(({ provider, name, description }) => {
+          const row = integrationMap[provider];
+          const isConnected = row?.status === "connected";
+          const config = row?.config
+            ? typeof row.config === "string"
+              ? JSON.parse(row.config)
+              : row.config
+            : null;
+
+          return (
+            <div key={provider} style={{ border: "1px solid #e5e7eb", borderRadius: 10, padding: 24 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+                <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>{name}</h2>
+                <span style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  padding: "2px 8px",
+                  borderRadius: 10,
+                  background: isConnected ? "#d1fae5" : "#f3f4f6",
+                  color: isConnected ? "#065f46" : "#6b7280",
+                }}>
+                  {isConnected ? "Connected" : "Not Connected"}
+                </span>
+              </div>
+              <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 20 }}>{description}</p>
+
+              {provider === "trestle" ? (
+                <AdminTrestleForm
+                  userId={userId}
+                  storedConfig={isConnected ? config : null}
+                  isConnected={isConnected}
+                />
+              ) : (
+                <div style={{ padding: 16, background: "#f9fafb", borderRadius: 8, fontSize: 14, color: "#6b7280" }}>
+                  {name} connection management coming soon.
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
