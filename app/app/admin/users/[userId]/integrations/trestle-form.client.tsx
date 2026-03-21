@@ -19,7 +19,7 @@ export default function AdminTrestleForm({ userId, storedConfig, isConnected }: 
   const [authMethod, setAuthMethod] = useState<"basic" | "oauth2">(
     (storedConfig?.auth_method as "basic" | "oauth2") || "oauth2"
   );
-  const [apiUrl, setApiUrl] = useState(storedConfig?.api_url || "https://api.cotality.com/trestle/odata");
+  const [apiUrl, setApiUrl] = useState(storedConfig?.api_url || "https://api.cotality.com");
   const [username, setUsername] = useState(storedConfig?.username || "");
   const [password, setPassword] = useState("");
   const [clientId, setClientId] = useState(storedConfig?.client_id || "");

@@ -203,17 +203,28 @@ export class TrestleClient {
   }
 
   /**
+   * Normalize the API URL to always end with /trestle/odata.
+   * Handles these inputs:
+   *   https://api.cotality.com                  → https://api.cotality.com/trestle/odata
+   *   https://api.cotality.com/trestle          → https://api.cotality.com/trestle/odata
+   *   https://api.cotality.com/trestle/odata    → https://api.cotality.com/trestle/odata (unchanged)
+   */
+  private normalizeApiUrl(): string {
+    const raw = (this.authConfig.apiUrl || DEFAULT_API_URL).replace(/\/$/, "");
+    if (raw.includes("/trestle/odata")) return raw;
+    if (raw.includes("/trestle")) return `${raw}/odata`;
+    return `${raw}/trestle/odata`;
+  }
+
+  /**
    * Derive token URL from the API URL when no explicit token URL is configured.
-   * e.g. https://api.cotality.com/trestle/odata -> https://api.cotality.com/trestle/oidc/connect/token
+   * e.g. https://api.cotality.com → https://api.cotality.com/trestle/oidc/connect/token
    */
   private deriveTokenUrl(): string {
     if (this.authConfig.tokenUrl) return this.authConfig.tokenUrl;
-    if (!this.authConfig.apiUrl) return DEFAULT_TOKEN_URL;
-
-    const apiUrl = this.authConfig.apiUrl.replace(/\/$/, "");
-    // Strip /odata suffix to get the base trestle path, then append the OIDC token path
-    const base = apiUrl.replace(/\/odata$/, "");
-    return `${base}/oidc/connect/token`;
+    // Normalize first to ensure /trestle is in the path, then swap /odata for the OIDC path
+    const trestleBase = this.normalizeApiUrl().replace(/\/odata$/, "");
+    return `${trestleBase}/oidc/connect/token`;
   }
 
   /**
@@ -284,15 +295,7 @@ export class TrestleClient {
   ): Promise<T> {
     const authHeader = await this.getAuthHeader();
 
-    // Build URL - handle different API URL formats
-    const rawUrl = this.authConfig.apiUrl || DEFAULT_API_URL;
-    let baseUrl = rawUrl.replace(/\/$/, ""); // Remove trailing slash
-
-    // If the URL doesn't include /odata, append it
-    if (!baseUrl.includes("/odata")) {
-      baseUrl = `${baseUrl}/odata`;
-    }
-
+    const baseUrl = this.normalizeApiUrl();
     const url = `${baseUrl}${endpoint}`;
     console.log(`[Trestle] API request: ${url}`);
 
@@ -582,8 +585,7 @@ export class TrestleClient {
       const authHeader = await this.getAuthHeader();
       console.log(`[Trestle] Auth header obtained: ${authHeader.substring(0, 15)}...`);
 
-      const rawUrl = this.authConfig.apiUrl || DEFAULT_API_URL;
-      const baseUrl = rawUrl.replace(/\/$/, "").replace(/\/odata$/, "") + "/odata";
+      const baseUrl = this.normalizeApiUrl();
 
       // Step 1 — OData service root (always accessible once authenticated)
       const rootResp = await fetch(baseUrl, {
@@ -644,12 +646,7 @@ export class TrestleClient {
    */
   async getMetadata(): Promise<string> {
     const authHeader = await this.getAuthHeader();
-
-    const rawUrl = this.authConfig.apiUrl || DEFAULT_API_URL;
-    let baseUrl = rawUrl.replace(/\/$/, "");
-    if (!baseUrl.includes("/odata")) {
-      baseUrl = `${baseUrl}/odata`;
-    }
+    const baseUrl = this.normalizeApiUrl();
 
     const response = await fetch(`${baseUrl}/$metadata`, {
       headers: {
