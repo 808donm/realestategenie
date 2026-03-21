@@ -666,6 +666,20 @@ export function mapRealieToAttomShape(parcel: RealieParcel): any {
       },
       assessedYear: a.assessedYear,
     })) || undefined,
+    // Sale history from Realie transfers[] — most complete source for Hawaii non-disclosure state
+    saleHistory: parcel.transfers?.length
+      ? parcel.transfers
+          .map((t) => ({
+            date: formatYMD(t.transferDate) || t.transferDate,
+            amount: t.transferPrice,
+            buyerName: t.buyerName,
+            sellerName: t.sellerName,
+            deedType: t.documentType,
+            _source: "realie",
+          }))
+          .filter((t) => t.date || t.amount)
+          .sort((a, b) => (b.date || "").localeCompare(a.date || ""))
+      : undefined,
     // Mark source so we know this came from Realie
     _source: "realie",
   };

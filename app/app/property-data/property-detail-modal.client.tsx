@@ -42,7 +42,8 @@ interface AttomProperty {
     owner?: AttomProperty["owner"];
   };
   sale?: { amount?: { saleAmt?: number; saleTransDate?: string; saleRecDate?: string; saleDocType?: string; salePrice?: number; saleCode?: string; pricePerBed?: number; pricePerSizeUnit?: number } };
-  avm?: { amount?: { value?: number; high?: number; low?: number; scr?: number; valueRange?: number }; eventDate?: string };
+  avm?: { amount?: { value?: number; high?: number; low?: number; scr?: number; valueRange?: number }; eventDate?: string; _avmSources?: { chosen?: string } };
+  saleHistory?: Array<{ date?: string; amount?: number; buyerName?: string; sellerName?: string; deedType?: string; _source?: string }>;
   mortgage?: { amount?: number; lender?: { fullName?: string }; term?: string; date?: string; dueDate?: string; loanType?: string; interestRateType?: string; lienCount?: number; financingHistoryCount?: number; ltv?: number; ltvPurchase?: number };
   foreclosure?: { actionType?: string; filingDate?: string; recordingDate?: string; auctionDate?: string; auctionLocation?: string; defaultAmount?: number; startingBid?: number; originalLoanAmount?: number; trusteeFullName?: string; caseNumber?: string };
   utilities?: { coolingType?: string; heatingType?: string; heatingFuel?: string; energyType?: string; sewerType?: string; waterType?: string };
@@ -1011,8 +1012,11 @@ export default function PropertyDetailModal({
               {avm && (
                 <Section title="Automated Valuation (AVM)">
                   <Field label="Estimated Value" value={fmt(avm.amount?.value)} />
-                  <Field label="Value Range" value={avm.amount?.low != null && avm.amount?.high != null ? `${fmt(avm.amount.low)} – ${fmt(avm.amount.high)}` : fmt(avm.amount?.valueRange)} />
-                  <Field label="Confidence Score" value={avm.amount?.scr} />
+                  <Field label="Confidence Range" value={avm.amount?.low != null && avm.amount?.high != null ? `${fmt(avm.amount.low)} – ${fmt(avm.amount.high)}` : fmt(avm.amount?.valueRange)} />
+                  {avm.amount?.low != null && avm.amount?.high != null && avm.amount?.value != null && (
+                    <Field label="Range Width" value={`±${Math.round(((avm.amount.high - avm.amount.low) / 2 / avm.amount.value) * 100)}%`} />
+                  )}
+                  <Field label="Source" value={avm._avmSources?.chosen === "rentcast" ? "RentCast" : "Realie (County Records)"} />
                 </Section>
               )}
 
@@ -1265,173 +1269,48 @@ export default function PropertyDetailModal({
                 );
               })()}
 
-              {/* Sales History — all past transactions for this property */}
-              {enrichedFinancial?.salesHistory && (() => {
-                const props = enrichedFinancial.salesHistory.property || [];
-                const prop0 = props[0];
-                if (!prop0) return null;
-
-                // Expanded sales history: property[0].saleHistory[] array
-                const saleHistory: any[] = prop0.saleHistory || [];
-                // Foreclosure records: property[0].foreclosure[] array
-                const foreclosures: any[] = prop0.foreclosure || [];
-
-                // Map deed type codes to readable labels
-                const deedTypeLabel = (code: string | undefined) => {
-                  if (!code) return null;
-                  const map: Record<string, string> = {
-                    WD: "Warranty Deed", QC: "Quit Claim", IT: "Inter-Family Transfer",
-                    TR: "Trust Deed", GD: "Grant Deed", SD: "Special Warranty Deed",
-                    TD: "Tax Deed", CD: "Corporate Deed", FD: "Fiduciary Deed",
-                    SH: "Sheriff Deed", JD: "Judicial Deed",
-                  };
-                  return map[code.toUpperCase()] || code;
-                };
-
-                // Map distress type codes
-                const distressLabel = (code: string | undefined) => {
-                  if (!code) return null;
-                  const map: Record<string, string> = {
-                    D: "Default / Notice of Default", F: "Foreclosure", L: "Lis Pendens",
-                    A: "Auction", R: "REO / Bank Owned", B: "Bankruptcy",
-                  };
-                  return map[code.toUpperCase()] || code;
-                };
-
-                const sales = saleHistory
-                  .map((s: any) => ({
-                    sequence: s.sequence,
-                    date: s.saleTransDate || s.saleSearchDate,
-                    recordingDate: s.saleSearchDate,
-                    amount: s.amount?.saleAmt,
-                    transType: s.amount?.saleTransType,
-                    deedType: deedTypeLabel(s.amount?.deedType),
-                    docType: s.amount?.saleDocType,
-                    docNum: s.amount?.saleDocNum,
-                    buyer: s.buyerName,
-                    seller: s.sellerName,
-                    deedInLieu: s.deedInLieuOfIndicator === "Y",
-                    pricePerBed: s.calculation?.priceperbed,
-                    pricePerSqft: s.calculation?.pricepersizeunit,
-                    titleCompany: s.title?.companyName,
-                    // Mortgage per transaction
-                    mortgage1Amt: s.mortgage?.FirstConcurrent?.amount,
-                    mortgage1Lender: s.mortgage?.FirstConcurrent?.lenderLastName,
-                    mortgage1LoanType: s.mortgage?.FirstConcurrent?.loanTypeCode,
-                    mortgage1RateType: s.mortgage?.FirstConcurrent?.interestRateType,
-                    mortgage1Term: s.mortgage?.FirstConcurrent?.term,
-                    mortgage1DueDate: s.mortgage?.FirstConcurrent?.dueDate,
-                    mortgage2Amt: s.mortgage?.SecondConcurrent?.amount,
-                    mortgage2Lender: s.mortgage?.SecondConcurrent?.lenderLastName,
-                  }))
-                  .filter((s: any) => s.date || s.amount)
-                  .sort((a: any, b: any) => (b.date || "").localeCompare(a.date || ""));
-
+              {/* Sales History — sourced from Realie (transfers[]) or RentCast (history dict) */}
+              {(() => {
+                const saleHistory = p.saleHistory || [];
+                if (saleHistory.length === 0) return null;
+                const sqft = p.building?.size?.livingSize || p.building?.size?.universalSize;
                 return (
-                  <>
-                    {/* Foreclosure Activity */}
-                    {foreclosures.length > 0 && (
-                      <div style={{ marginBottom: 20, padding: "14px 18px", background: "#fef2f2", borderRadius: 10, border: "1px solid #fecaca" }}>
-                        <div style={{ fontSize: 11, fontWeight: 600, color: "#dc2626", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>
-                          Foreclosure Activity ({foreclosures.length} record{foreclosures.length !== 1 ? "s" : ""})
-                        </div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                          {foreclosures.map((f: any, i: number) => (
-                            <div key={i} style={{ padding: "8px 12px", background: "#fff", borderRadius: 6, borderLeft: "3px solid #dc2626" }}>
-                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
-                                <div>
-                                  <span style={{ fontSize: 12, fontWeight: 600, color: "#991b1b" }}>
-                                    {distressLabel(f.distressType) || "Foreclosure Action"}
-                                  </span>
-                                  {f.recordingDate && (
-                                    <span style={{ fontSize: 12, color: "#6b7280", marginLeft: 8 }}>Recorded: {f.recordingDate}</span>
-                                  )}
+                  <div style={{ marginBottom: 20 }}>
+                    <h3 style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 10, paddingBottom: 6, borderBottom: "1px solid #e5e7eb" }}>
+                      Sales History ({saleHistory.length} transaction{saleHistory.length !== 1 ? "s" : ""})
+                    </h3>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                      {saleHistory.map((s: any, i: number) => {
+                        const pricePerSqft = s.amount && sqft ? Math.round(s.amount / sqft) : null;
+                        return (
+                          <div key={i} style={{ padding: "12px 14px", background: i === 0 ? "#eff6ff" : "#f9fafb", borderRadius: 8, borderLeft: i === 0 ? "4px solid #3b82f6" : "3px solid #e5e7eb" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8 }}>
+                              <div>
+                                <div style={{ fontSize: 14, fontWeight: 700, color: "#111827" }}>
+                                  {s.amount != null && s.amount > 0 ? fmt(s.amount) : "Price Not Disclosed"}
+                                </div>
+                                <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
+                                  {[s.date, s.deedType].filter(Boolean).join(" · ")}
                                 </div>
                               </div>
-                              {(f.trustorFirstName || f.trustorLastName) && (
-                                <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 3 }}>
-                                  Trustor: {[f.trustorFirstName, f.trustorLastName].filter(Boolean).join(" ")}
-                                </div>
+                              {pricePerSqft != null && pricePerSqft > 0 && (
+                                <div style={{ fontSize: 12, color: "#6b7280" }}>${pricePerSqft.toFixed(0)}/sqft</div>
                               )}
                             </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Full Sales History */}
-                    {sales.length > 0 && (
-                      <div style={{ marginBottom: 20 }}>
-                        <h3 style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 10, paddingBottom: 6, borderBottom: "1px solid #e5e7eb" }}>
-                          Sales History ({sales.length} transaction{sales.length !== 1 ? "s" : ""})
-                        </h3>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                          {sales.map((s: any, i: number) => (
-                            <div key={i} style={{ padding: "12px 14px", background: i === 0 ? "#eff6ff" : "#f9fafb", borderRadius: 8, borderLeft: i === 0 ? "4px solid #3b82f6" : "3px solid #e5e7eb" }}>
-                              {/* Sale amount and date */}
-                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8 }}>
-                                <div>
-                                  <div style={{ fontSize: 14, fontWeight: 700, color: "#111827" }}>
-                                    {s.amount != null && s.amount > 0 ? fmt(s.amount) : "Price Not Disclosed"}
-                                  </div>
-                                  <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
-                                    {[s.date, s.transType, s.deedType].filter(Boolean).join(" · ")}
-                                  </div>
-                                </div>
-                                <div style={{ textAlign: "right" }}>
-                                  {s.pricePerSqft != null && s.pricePerSqft > 0 && (
-                                    <div style={{ fontSize: 12, color: "#6b7280" }}>${Number(s.pricePerSqft).toFixed(0)}/sqft</div>
-                                  )}
-                                  {s.pricePerBed != null && s.pricePerBed > 0 && (
-                                    <div style={{ fontSize: 11, color: "#9ca3af" }}>${Number(s.pricePerBed).toLocaleString()}/bed</div>
-                                  )}
-                                </div>
+                            {(s.buyerName || s.sellerName) && (
+                              <div style={{ fontSize: 12, color: "#374151", marginTop: 6, lineHeight: 1.5 }}>
+                                {s.sellerName && <div><span style={{ color: "#9ca3af", fontWeight: 500, fontSize: 11 }}>Seller:</span> {s.sellerName}</div>}
+                                {s.buyerName && <div><span style={{ color: "#9ca3af", fontWeight: 500, fontSize: 11 }}>Buyer:</span> {s.buyerName}</div>}
                               </div>
-
-                              {/* Buyer / Seller */}
-                              {(s.buyer || s.seller) && (
-                                <div style={{ fontSize: 12, color: "#374151", marginTop: 6, lineHeight: 1.5 }}>
-                                  {s.seller && <div><span style={{ color: "#9ca3af", fontWeight: 500, fontSize: 11 }}>Seller:</span> {s.seller}</div>}
-                                  {s.buyer && <div><span style={{ color: "#9ca3af", fontWeight: 500, fontSize: 11 }}>Buyer:</span> {s.buyer}</div>}
-                                </div>
-                              )}
-
-                              {/* Mortgage details for this transaction */}
-                              {s.mortgage1Amt != null && s.mortgage1Amt > 0 && (
-                                <div style={{ marginTop: 6, padding: "6px 10px", background: i === 0 ? "#dbeafe" : "#f3f4f6", borderRadius: 6, fontSize: 11 }}>
-                                  <div style={{ display: "flex", flexWrap: "wrap", gap: 10, color: "#374151" }}>
-                                    <span><strong>Loan:</strong> {fmt(s.mortgage1Amt)}</span>
-                                    {s.mortgage1Lender && <span><strong>Lender:</strong> {s.mortgage1Lender}</span>}
-                                    {s.mortgage1LoanType && <span><strong>Type:</strong> {s.mortgage1LoanType}</span>}
-                                    {s.mortgage1RateType && <span><strong>Rate:</strong> {s.mortgage1RateType}</span>}
-                                    {s.mortgage1Term && <span><strong>Term:</strong> {s.mortgage1Term} mo</span>}
-                                    {s.mortgage1DueDate && <span><strong>Due:</strong> {s.mortgage1DueDate}</span>}
-                                  </div>
-                                  {s.mortgage2Amt != null && s.mortgage2Amt > 0 && (
-                                    <div style={{ marginTop: 4, color: "#6b7280" }}>
-                                      <strong>2nd Loan:</strong> {fmt(s.mortgage2Amt)}
-                                      {s.mortgage2Lender && <span> — {s.mortgage2Lender}</span>}
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-
-                              {/* Title company and deed in lieu */}
-                              <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 4, fontSize: 11, color: "#9ca3af" }}>
-                                {s.titleCompany && s.titleCompany !== "NONE AVAILABLE" && (
-                                  <span>Title: {s.titleCompany}</span>
-                                )}
-                                {s.docNum && <span>Doc: {s.docNum}</span>}
-                                {s.deedInLieu && (
-                                  <span style={{ color: "#dc2626", fontWeight: 600 }}>Deed in Lieu of Foreclosure</span>
-                                )}
-                              </div>
+                            )}
+                            <div style={{ marginTop: 4, fontSize: 11, color: "#9ca3af" }}>
+                              Source: {s._source === "realie" ? "Realie (County Records)" : "RentCast"}
                             </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 );
               })()}
 

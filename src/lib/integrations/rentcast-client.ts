@@ -1086,6 +1086,17 @@ export function mapRentcastToAttomShape(rc: RentcastProperty): any {
     } : undefined,
     homeEquity: undefined,
     assessmenthistory: assessmentHistory,
+    // Sale history from RentCast history dict (keyed by date)
+    saleHistory: rc.history
+      ? Object.entries(rc.history)
+          .filter(([, entry]) => entry.event === "Sale" && (entry.date || entry.price))
+          .map(([date, entry]) => ({
+            date: entry.date || date,
+            amount: entry.price || undefined,
+            _source: "rentcast",
+          }))
+          .sort((a, b) => (b.date || "").localeCompare(a.date || ""))
+      : undefined,
     _source: "rentcast",
   };
 }
