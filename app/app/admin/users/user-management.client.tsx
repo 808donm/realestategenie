@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 type User = {
   id: string;
@@ -330,6 +331,21 @@ export default function UserManagementClient({ users, plans, subscriptionMap }: 
                       >
                         View as User
                       </ActionButton>
+                      <Link
+                        href={`/app/admin/users/${user.id}/integrations`}
+                        style={{
+                          padding: "4px 10px",
+                          fontSize: 12,
+                          fontWeight: 600,
+                          background: "#7c3aed",
+                          color: "#fff",
+                          borderRadius: 4,
+                          textDecoration: "none",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        Integrations
+                      </Link>
                       {!sub && (
                         <ActionButton
                           onClick={() => assignDemo(user.id)}

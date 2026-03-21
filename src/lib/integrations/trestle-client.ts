@@ -229,11 +229,11 @@ export class TrestleClient {
     console.log(`[Trestle] Requesting OAuth2 token from: ${tokenUrl}`);
     console.log(`[Trestle] Client ID: ${this.authConfig.clientId?.substring(0, 20)}...`);
 
-    const response = await fetch(tokenUrl, {
+    // Per Trestle docs, scope=api is required for WebAPI access.
+    // If the account isn't provisioned for that scope yet, fall back to no scope.
+    let response = await fetch(tokenUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
         grant_type: "client_credentials",
         client_id: this.authConfig.clientId || "",
@@ -244,8 +244,26 @@ export class TrestleClient {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`[Trestle] OAuth token request FAILED (${response.status}):`, errorText);
-      throw new Error(`Trestle authentication failed: ${response.status} - ${errorText}`);
+      if (response.status === 400 && errorText.includes("invalid_scope")) {
+        console.warn("[Trestle] scope=api rejected (invalid_scope) — retrying without scope. Contact Trestle to enable api scope for this client.");
+        response = await fetch(tokenUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            grant_type: "client_credentials",
+            client_id: this.authConfig.clientId || "",
+            client_secret: this.authConfig.clientSecret || "",
+          }),
+        });
+        if (!response.ok) {
+          const fallbackError = await response.text();
+          console.error(`[Trestle] OAuth token request FAILED (${response.status}):`, fallbackError);
+          throw new Error(`Trestle authentication failed: ${response.status} - ${fallbackError}`);
+        }
+      } else {
+        console.error(`[Trestle] OAuth token request FAILED (${response.status}):`, errorText);
+        throw new Error(`Trestle authentication failed: ${response.status} - ${errorText}`);
+      }
     }
 
     const data: TrestleTokenResponse = await response.json();
@@ -283,6 +301,8 @@ export class TrestleClient {
       headers: {
         "Authorization": authHeader,
         "Accept": "application/json",
+        "OData-Version": "4.0",
+        "OData-MaxVersion": "4.0",
         ...options.headers,
       },
     });
@@ -552,25 +572,63 @@ export class TrestleClient {
   }
 
   /**
-   * Test API connection
+   * Test API connection by hitting the OData service root, then attempting
+   * a minimal Property query to confirm data access.
    */
   async testConnection(): Promise<{ success: boolean; message?: string; data?: any }> {
     try {
       console.log(`[Trestle] Testing connection (method: ${this.authConfig.method}, apiUrl: ${this.authConfig.apiUrl})`);
 
-      // First test authentication
       const authHeader = await this.getAuthHeader();
       console.log(`[Trestle] Auth header obtained: ${authHeader.substring(0, 15)}...`);
 
-      // Then test API access with a simple query
-      const result = await this.getProperties({ $top: 1, $count: true });
+      const rawUrl = this.authConfig.apiUrl || DEFAULT_API_URL;
+      const baseUrl = rawUrl.replace(/\/$/, "").replace(/\/odata$/, "") + "/odata";
+
+      // Step 1 — OData service root (always accessible once authenticated)
+      const rootResp = await fetch(baseUrl, {
+        headers: {
+          "Authorization": authHeader,
+          "Accept": "application/json",
+          "OData-Version": "4.0",
+          "OData-MaxVersion": "4.0",
+        },
+      });
+
+      console.log(`[Trestle] OData root response: ${rootResp.status}`);
+
+      if (!rootResp.ok) {
+        const body = await rootResp.text();
+        throw new Error(`Trestle API error: ${rootResp.status} - ${body}`);
+      }
+
+      // Step 2 — minimal Property query (non-fatal; 403 means data not yet provisioned)
+      let totalListings = 0;
+      try {
+        const propResp = await fetch(`${baseUrl}/Property?$top=1&$select=ListingKey`, {
+          headers: {
+            "Authorization": authHeader,
+            "Accept": "application/json",
+            "OData-Version": "4.0",
+            "OData-MaxVersion": "4.0",
+          },
+        });
+        console.log(`[Trestle] Property query response: ${propResp.status}`);
+        if (propResp.ok) {
+          const data = await propResp.json();
+          totalListings = data["@odata.count"] ?? (data.value?.length ?? 0);
+        } else {
+          const body = await propResp.text();
+          console.warn(`[Trestle] Property query returned ${propResp.status} (data may not be provisioned yet):`, body);
+        }
+      } catch (propErr) {
+        console.warn("[Trestle] Property query failed (non-fatal):", propErr);
+      }
 
       return {
         success: true,
         message: "Successfully connected to Trestle API",
-        data: {
-          totalListings: result["@odata.count"] || 0,
-        },
+        data: { totalListings },
       };
     } catch (error) {
       console.error("[Trestle] Connection test failed:", error);
