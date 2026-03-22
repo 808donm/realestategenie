@@ -340,14 +340,16 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: `Unknown action: ${action}` }, { status: 400 });
     }
 
-    // Log the action
-    await supabaseAdmin.from("genie_action_log").insert({
-      agent_id: user.id,
-      lead_id: params?.leadId || null,
-      action_type: action,
-      action_detail: { params, result },
-      status: result?.success ? "completed" : "failed",
-    }).catch(() => {});
+    // Log the action (fire and forget)
+    try {
+      await supabaseAdmin.from("genie_action_log").insert({
+        agent_id: user.id,
+        lead_id: params?.leadId || null,
+        action_type: action,
+        action_detail: { params, result },
+        status: result?.success ? "completed" : "failed",
+      });
+    } catch { /* ignore logging errors */ }
 
     return NextResponse.json(result);
   } catch (error: any) {
