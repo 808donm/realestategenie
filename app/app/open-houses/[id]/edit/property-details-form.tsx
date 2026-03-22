@@ -48,6 +48,81 @@ const FEATURE_ICON_OPTIONS = [
 export default function PropertyDetailsForm({ eventId, initialData }: PropertyDetailsFormProps) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+
+  // MLS import state
+  const [mlsQuery, setMlsQuery] = useState("");
+  const [mlsSearchMode, setMlsSearchMode] = useState<"mlsNumber" | "address">("mlsNumber");
+  const [mlsLooking, setMlsLooking] = useState(false);
+  const [mlsCandidates, setMlsCandidates] = useState<any[]>([]);
+  const [mlsMessage, setMlsMessage] = useState<{ ok: boolean; text: string } | null>(null);
+
+  async function handleMlsLookup() {
+    if (!mlsQuery.trim()) return;
+    setMlsLooking(true);
+    setMlsCandidates([]);
+    setMlsMessage(null);
+    try {
+      const res = await fetch("/api/mls/lookup-listing", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          mlsSearchMode === "mlsNumber"
+            ? { mlsNumber: mlsQuery.trim() }
+            : { address: mlsQuery.trim() }
+        ),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMlsMessage({ ok: false, text: data.error || "Lookup failed" });
+        return;
+      }
+      if (data.candidates) {
+        // Multiple address matches — let user pick
+        setMlsCandidates(data.candidates);
+      } else if (data.mappedFields) {
+        applyMlsData(data.mappedFields);
+      } else {
+        setMlsMessage({ ok: false, text: "No matching listing found." });
+      }
+    } catch {
+      setMlsMessage({ ok: false, text: "Request failed" });
+    } finally {
+      setMlsLooking(false);
+    }
+  }
+
+  async function handleCandidateSelect(listingKey: string) {
+    setMlsLooking(true);
+    setMlsCandidates([]);
+    try {
+      const res = await fetch("/api/mls/lookup-listing", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ listingKey }),
+      });
+      const data = await res.json();
+      if (res.ok && data.mappedFields) {
+        applyMlsData(data.mappedFields);
+      } else {
+        setMlsMessage({ ok: false, text: data.error || "Failed to load listing" });
+      }
+    } catch {
+      setMlsMessage({ ok: false, text: "Request failed" });
+    } finally {
+      setMlsLooking(false);
+    }
+  }
+
+  function applyMlsData(fields: any) {
+    if (fields.beds) setBeds(String(fields.beds));
+    if (fields.baths) setBaths(String(fields.baths));
+    if (fields.sqft) setSqft(String(fields.sqft));
+    if (fields.price) setPrice(String(fields.price));
+    if (fields.listing_description) setDescription(fields.listing_description);
+    if (fields.key_features?.length) setFeatures(fields.key_features.join("\n"));
+    setMlsMessage({ ok: true, text: "Listing data imported. Review and save below." });
+  }
+
   const [beds, setBeds] = useState(initialData.beds?.toString() || "");
   const [baths, setBaths] = useState(initialData.baths?.toString() || "");
   const [sqft, setSqft] = useState(initialData.sqft?.toString() || "");
@@ -180,6 +255,100 @@ export default function PropertyDetailsForm({ eventId, initialData }: PropertyDe
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* MLS Import */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Import from MLS</CardTitle>
+          <CardDescription>Look up a listing by MLS# or address to auto-fill the fields below.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => { setMlsSearchMode("mlsNumber"); setMlsCandidates([]); setMlsMessage(null); }}
+              style={{
+                padding: "6px 14px", fontSize: 13, fontWeight: 600, borderRadius: 6, cursor: "pointer",
+                background: mlsSearchMode === "mlsNumber" ? "#3b82f6" : "#f3f4f6",
+                color: mlsSearchMode === "mlsNumber" ? "#fff" : "#374151",
+                border: "none",
+              }}
+            >
+              MLS #
+            </button>
+            <button
+              type="button"
+              onClick={() => { setMlsSearchMode("address"); setMlsCandidates([]); setMlsMessage(null); }}
+              style={{
+                padding: "6px 14px", fontSize: 13, fontWeight: 600, borderRadius: 6, cursor: "pointer",
+                background: mlsSearchMode === "address" ? "#3b82f6" : "#f3f4f6",
+                color: mlsSearchMode === "address" ? "#fff" : "#374151",
+                border: "none",
+              }}
+            >
+              Address
+            </button>
+          </div>
+          <div className="flex gap-2">
+            <Input
+              value={mlsQuery}
+              onChange={(e) => setMlsQuery(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleMlsLookup())}
+              placeholder={mlsSearchMode === "mlsNumber" ? "e.g. 202412345" : "e.g. 123 Main St, Kailua, HI"}
+              style={{ flex: 1 }}
+            />
+            <button
+              type="button"
+              onClick={handleMlsLookup}
+              disabled={mlsLooking || !mlsQuery.trim()}
+              style={{
+                padding: "8px 18px", fontWeight: 700, fontSize: 14, background: "#0891b2", color: "#fff",
+                border: "none", borderRadius: 6, cursor: mlsLooking ? "not-allowed" : "pointer",
+                opacity: mlsLooking ? 0.7 : 1, whiteSpace: "nowrap",
+              }}
+            >
+              {mlsLooking ? "Searching..." : "Look Up"}
+            </button>
+          </div>
+
+          {/* Address search candidates */}
+          {mlsCandidates.length > 0 && (
+            <div style={{ border: "1px solid #e5e7eb", borderRadius: 8, overflow: "hidden" }}>
+              <div style={{ padding: "8px 12px", background: "#f9fafb", fontSize: 12, color: "#6b7280", fontWeight: 600 }}>
+                {mlsCandidates.length} matches — select one:
+              </div>
+              {mlsCandidates.map((c: any) => (
+                <button
+                  key={c.listingKey}
+                  type="button"
+                  onClick={() => handleCandidateSelect(c.listingKey)}
+                  style={{
+                    display: "block", width: "100%", textAlign: "left",
+                    padding: "10px 12px", background: "#fff", border: "none",
+                    borderTop: "1px solid #f3f4f6", cursor: "pointer", fontSize: 13,
+                  }}
+                >
+                  <span style={{ fontWeight: 600 }}>{c.address}</span>
+                  {c.listingId && <span style={{ color: "#6b7280", marginLeft: 8 }}>MLS# {c.listingId}</span>}
+                  {c.price && <span style={{ color: "#059669", marginLeft: 8 }}>${Number(c.price).toLocaleString()}</span>}
+                  {c.beds && <span style={{ color: "#6b7280", marginLeft: 8 }}>{c.beds}bd</span>}
+                  {c.baths && <span style={{ color: "#6b7280", marginLeft: 4 }}>{c.baths}ba</span>}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {mlsMessage && (
+            <div style={{
+              padding: "8px 12px", borderRadius: 6, fontSize: 13,
+              background: mlsMessage.ok ? "#d1fae5" : "#fee2e2",
+              color: mlsMessage.ok ? "#065f46" : "#991b1b",
+            }}>
+              {mlsMessage.text}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>Property Specifications</CardTitle>
