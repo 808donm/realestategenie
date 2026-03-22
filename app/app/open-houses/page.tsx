@@ -10,7 +10,7 @@ export default async function OpenHousesIndex() {
 
   let query = supabase
     .from("open_house_events")
-    .select("id,address,start_at,end_at,status,property_photo_url,event_type")
+    .select("id,address,start_at,end_at,status,property_photo_url,event_type,price,beds,baths,sqft,mls_listing_id,mls_listing_key")
     .order("start_at", { ascending: false })
     .limit(50);
 
@@ -79,7 +79,7 @@ export default async function OpenHousesIndex() {
               {/* Card Content */}
               <div style={{ padding: 14 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={{ fontWeight: 900, flex: 1 }}>{e.address}</div>
+                  <div style={{ fontWeight: 900, flex: 1, fontSize: 14 }}>{e.address}</div>
                   <span style={{
                     fontSize: 10,
                     fontWeight: 700,
@@ -91,10 +91,30 @@ export default async function OpenHousesIndex() {
                     {(e as any).event_type === "rental" ? "Rental" : (e as any).event_type === "both" ? "Both" : "Sales"}
                   </span>
                 </div>
+
+                {/* MLS listing details */}
+                {((e as any).price || (e as any).beds || (e as any).sqft) && (
+                  <div style={{ display: "flex", gap: 10, marginTop: 6, fontSize: 13, flexWrap: "wrap" }}>
+                    {(e as any).price && (
+                      <span style={{ fontWeight: 700, color: "#059669" }}>
+                        ${Number((e as any).price).toLocaleString()}
+                      </span>
+                    )}
+                    {(e as any).beds && <span style={{ color: "#374151" }}>{(e as any).beds} bd</span>}
+                    {(e as any).baths && <span style={{ color: "#374151" }}>{(e as any).baths} ba</span>}
+                    {(e as any).sqft && <span style={{ color: "#6b7280" }}>{Number((e as any).sqft).toLocaleString()} sqft</span>}
+                  </div>
+                )}
+                {(e as any).mls_listing_id && (
+                  <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>
+                    MLS# {(e as any).mls_listing_id}
+                  </div>
+                )}
+
                 <div style={{ fontSize: 12, opacity: 0.75, marginTop: 6 }}>
                   {new Date(e.start_at).toLocaleString()} → {new Date(e.end_at).toLocaleString()}
                 </div>
-                <div style={{ fontSize: 12, marginTop: 6 }}>
+                <div style={{ fontSize: 12, marginTop: 4 }}>
                   Status: <strong>{e.status}</strong>
                 </div>
               </div>

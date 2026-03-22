@@ -6,6 +6,7 @@ import PropertyMap from "@/components/PropertyMapWrapper";
 import FlyerTemplatePicker from "./flyer-template-picker.client";
 import DownloadFlyerButton from "./download-flyer-button.client";
 import { getEffectiveClient } from "@/lib/supabase/effective-client";
+import MlsRefreshButton from "./mls-refresh-button.client";
 
 export default async function OpenHouseDetail({
   params,
@@ -22,7 +23,7 @@ export default async function OpenHouseDetail({
   const result = await supabase
     .from("open_house_events")
     .select(
-      "id,address,start_at,end_at,status,pdf_download_enabled,details_page_enabled,latitude,longitude,property_photo_url,flyer_template_id,event_type"
+      "id,address,start_at,end_at,status,pdf_download_enabled,details_page_enabled,latitude,longitude,property_photo_url,flyer_template_id,event_type,price,beds,baths,sqft,hoa_fee,listing_description,key_features,mls_listing_key,mls_listing_id,mls_open_house_key,mls_synced_at,mls_source,offer_deadline,disclosure_url,parking_notes,showing_notes"
     )
     .eq("id", id)
     .single();
@@ -32,7 +33,7 @@ export default async function OpenHouseDetail({
     const fallback = await supabase
       .from("open_house_events")
       .select(
-        "id,address,start_at,end_at,status,pdf_download_enabled,details_page_enabled,latitude,longitude,property_photo_url,event_type"
+        "id,address,start_at,end_at,status,pdf_download_enabled,details_page_enabled,latitude,longitude,property_photo_url,event_type,price,beds,baths,sqft,hoa_fee,listing_description,key_features,mls_listing_key,mls_listing_id,mls_open_house_key,mls_synced_at,mls_source,offer_deadline,disclosure_url,parking_notes,showing_notes"
       )
       .eq("id", id)
       .single();
@@ -147,6 +148,127 @@ async function setStatus(formData: FormData) {
           </Link>
           <DownloadFlyerButton eventId={evt.id} />
         </div>
+      </div>
+
+      {/* MLS Listing Details */}
+      <div style={{ marginTop: 28, padding: "20px 24px", border: "1px solid #e5e7eb", borderRadius: 12, background: "#fff" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
+          <div>
+            <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Listing Details</h2>
+            {evt.mls_listing_id && (
+              <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
+                MLS# {evt.mls_listing_id}
+                {evt.mls_synced_at && ` · Last synced ${new Date(evt.mls_synced_at).toLocaleDateString()}`}
+                {evt.mls_source && ` · Source: ${evt.mls_source}`}
+              </div>
+            )}
+          </div>
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            {evt.mls_listing_key && (
+              <MlsRefreshButton eventId={evt.id} mlsListingKey={evt.mls_listing_key} />
+            )}
+            <Link
+              href={`/app/open-houses/${evt.id}/edit`}
+              style={{ fontSize: 13, color: "#6b7280", textDecoration: "underline" }}
+            >
+              Edit details
+            </Link>
+          </div>
+        </div>
+
+        {/* Price + specs row */}
+        {(evt.price || evt.beds || evt.baths || evt.sqft) ? (
+          <div style={{ display: "flex", gap: 24, flexWrap: "wrap", marginBottom: 16 }}>
+            {evt.price && (
+              <div>
+                <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>List Price</div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: "#059669" }}>${Number(evt.price).toLocaleString()}</div>
+              </div>
+            )}
+            {evt.beds && (
+              <div>
+                <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Beds</div>
+                <div style={{ fontSize: 22, fontWeight: 700 }}>{evt.beds}</div>
+              </div>
+            )}
+            {evt.baths && (
+              <div>
+                <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Baths</div>
+                <div style={{ fontSize: 22, fontWeight: 700 }}>{evt.baths}</div>
+              </div>
+            )}
+            {evt.sqft && (
+              <div>
+                <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Sq Ft</div>
+                <div style={{ fontSize: 22, fontWeight: 700 }}>{Number(evt.sqft).toLocaleString()}</div>
+              </div>
+            )}
+            {evt.hoa_fee && (
+              <div>
+                <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>HOA/mo</div>
+                <div style={{ fontSize: 22, fontWeight: 700 }}>${Number(evt.hoa_fee).toLocaleString()}</div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div style={{ padding: "12px 0", color: "#9ca3af", fontSize: 13, marginBottom: 8 }}>
+            No listing data yet.{" "}
+            {evt.mls_listing_key
+              ? "Click \"Refresh from MLS\" to pull current data."
+              : <Link href={`/app/open-houses/${evt.id}/edit`} style={{ color: "#3b82f6" }}>Enter details manually or look up by MLS number.</Link>
+            }
+          </div>
+        )}
+
+        {/* Key features */}
+        {evt.key_features && evt.key_features.length > 0 && (
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>Key Features</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {evt.key_features.map((f: string, i: number) => (
+                <span key={i} style={{ fontSize: 12, padding: "3px 10px", background: "#f3f4f6", borderRadius: 20, color: "#374151" }}>{f}</span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Description */}
+        {evt.listing_description && (
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 4 }}>Description</div>
+            <p style={{ fontSize: 13, color: "#4b5563", lineHeight: 1.6, margin: 0 }}>{evt.listing_description}</p>
+          </div>
+        )}
+
+        {/* Additional info row */}
+        {(evt.offer_deadline || evt.disclosure_url || evt.parking_notes || evt.showing_notes) && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, paddingTop: 12, borderTop: "1px solid #f3f4f6" }}>
+            {evt.offer_deadline && (
+              <div style={{ fontSize: 13 }}>
+                <span style={{ fontWeight: 600, color: "#374151" }}>Offer Deadline:</span>{" "}
+                <span style={{ color: "#dc2626" }}>{new Date(evt.offer_deadline).toLocaleString()}</span>
+              </div>
+            )}
+            {evt.showing_notes && (
+              <div style={{ fontSize: 13 }}>
+                <span style={{ fontWeight: 600, color: "#374151" }}>Showing Notes:</span>{" "}
+                <span style={{ color: "#4b5563" }}>{evt.showing_notes}</span>
+              </div>
+            )}
+            {evt.parking_notes && (
+              <div style={{ fontSize: 13 }}>
+                <span style={{ fontWeight: 600, color: "#374151" }}>Parking:</span>{" "}
+                <span style={{ color: "#4b5563" }}>{evt.parking_notes}</span>
+              </div>
+            )}
+            {evt.disclosure_url && (
+              <div style={{ fontSize: 13 }}>
+                <span style={{ fontWeight: 600, color: "#374151" }}>Disclosures:</span>{" "}
+                <a href={evt.disclosure_url} target="_blank" rel="noopener noreferrer" style={{ color: "#3b82f6" }}>View</a>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Property Photo */}
