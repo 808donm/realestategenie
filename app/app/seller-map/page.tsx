@@ -24,6 +24,12 @@ export default async function SellerMapPage() {
             Find likely sellers using equity, ownership, absentee, and distress signals
           </p>
         </div>
+        <a
+          href="/app/seller-map/dom-prospecting"
+          className="px-3 py-1.5 bg-red-600 text-white rounded-md text-xs md:text-sm font-semibold hover:bg-red-700 transition-colors"
+        >
+          DOM Prospecting
+        </a>
       </div>
 
       <SellerMapClient />

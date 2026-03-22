@@ -14,7 +14,7 @@ import { createClient, SupabaseClient } from "@supabase/supabase-js";
  */
 
 const DAY = 24 * 3600 * 1000;
-const CACHE_TTL = 7 * DAY;
+const CACHE_TTL = 30 * DAY;
 
 // Round lat/lng to 3 decimal places (~0.07 miles / ~110 meters)
 // This groups nearby searches together for cache hits
