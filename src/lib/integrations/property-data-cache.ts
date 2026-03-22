@@ -26,7 +26,7 @@ const MAX_MEMORY_CACHE_SIZE = 500;
 // ── Cache Key ──────────────────────────────────────────────────────────────
 
 export function buildPropertyCacheKey(
-  provider: "realie" | "free-data" | "unified",
+  provider: "realie" | "rentcast" | "free-data" | "unified",
   endpoint: string,
   params: Record<string, any>
 ): string {
