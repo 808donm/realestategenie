@@ -500,7 +500,6 @@ export function DomProspectingClient() {
               </div>
             )}
           </div>
-        </>
       </>
       )}
 
