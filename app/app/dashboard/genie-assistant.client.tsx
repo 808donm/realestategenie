@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { QUICK_ACTIONS, type QuickActionDef } from "@/lib/genie/types";
 
 interface ActionItem {
   id: string;
@@ -155,6 +156,60 @@ export function GenieAssistant() {
     setSendResult(null);
   };
 
+  // Quick action state
+  const [showQuickActions, setShowQuickActions] = useState(false);
+  const [quickActionLoading, setQuickActionLoading] = useState<string | null>(null);
+  const [quickActionResult, setQuickActionResult] = useState<{ type: string; message: string } | null>(null);
+
+  // Execute a quick action
+  const executeQuickAction = useCallback(async (qa: QuickActionDef) => {
+    // Actions that are just redirects — navigate directly
+    const redirectActions = [
+      "create_open_house", "property_lookup", "generate_property_report",
+      "search_mls", "run_calculator", "export_calculator_report",
+      "search_seller_map", "create_farm_watchdog", "create_mls_search_profile",
+      "attach_file_to_contact",
+    ];
+
+    if (redirectActions.includes(qa.type)) {
+      setQuickActionLoading(qa.type);
+      try {
+        const res = await fetch("/api/genie/execute", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: qa.type, params: {} }),
+        });
+        const data = await res.json();
+        if (data.redirect) {
+          window.location.href = data.redirect;
+        } else {
+          setQuickActionResult({ type: qa.type, message: data.message || "Action completed" });
+          setTimeout(() => setQuickActionResult(null), 3000);
+        }
+      } catch {
+        setQuickActionResult({ type: qa.type, message: "Action failed" });
+      } finally {
+        setQuickActionLoading(null);
+      }
+      return;
+    }
+
+    // Actions that need parameters — navigate to dedicated pages
+    const pageRoutes: Record<string, string> = {
+      advance_pipeline: "/app/pipeline",
+      create_task: "/app/tasks",
+      create_calendar_event: "/app/calendar",
+      save_seller_search: "/app/seller-map",
+      create_dom_search: "/app/seller-map/dom-prospecting",
+      send_esign_document: "/app/contacts",
+    };
+
+    const route = pageRoutes[qa.type];
+    if (route) {
+      window.location.href = route;
+    }
+  }, []);
+
   return (
     <div style={{
       background: "#fff", borderRadius: 12, border: "1px solid #e0e7ff",
@@ -260,6 +315,71 @@ export function GenieAssistant() {
         {!loading && actions.length > 0 && (
           <div style={{ fontSize: 10, color: "#9ca3af", textAlign: "center", marginTop: 4 }}>
             AI-generated recommendations. Review before acting.
+          </div>
+        )}
+
+        {/* Quick Actions Toggle */}
+        {!loading && (
+          <button
+            onClick={() => setShowQuickActions(!showQuickActions)}
+            style={{
+              width: "100%", padding: "8px 0", marginTop: 8,
+              fontSize: 12, fontWeight: 600, color: "#6366f1",
+              background: "none", border: "1px solid #e0e7ff", borderRadius: 6,
+              cursor: "pointer",
+            }}
+          >
+            {showQuickActions ? "Hide Quick Actions" : `Quick Actions (${QUICK_ACTIONS.length})`}
+          </button>
+        )}
+
+        {/* Quick Actions Grid */}
+        {showQuickActions && (
+          <div style={{ marginTop: 10 }}>
+            {quickActionResult && (
+              <div style={{
+                padding: 8, borderRadius: 6, marginBottom: 8,
+                background: "#f0fdf4", color: "#065f46", fontSize: 12,
+              }}>
+                {quickActionResult.message}
+              </div>
+            )}
+
+            {(["leads", "property", "prospecting", "documents"] as const).map(category => {
+              const categoryActions = QUICK_ACTIONS.filter(a => a.category === category);
+              const categoryLabels: Record<string, string> = {
+                leads: "Leads & Pipeline",
+                property: "Property Intelligence",
+                prospecting: "Prospecting",
+                documents: "Documents",
+              };
+              return (
+                <div key={category} style={{ marginBottom: 10 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>
+                    {categoryLabels[category]}
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 6 }}>
+                    {categoryActions.map(qa => (
+                      <button
+                        key={qa.type}
+                        onClick={() => executeQuickAction(qa)}
+                        disabled={quickActionLoading === qa.type}
+                        style={{
+                          padding: "8px 10px", borderRadius: 6,
+                          border: `1px solid ${qa.color}20`,
+                          background: "#fff", cursor: "pointer",
+                          textAlign: "left", opacity: quickActionLoading === qa.type ? 0.6 : 1,
+                        }}
+                      >
+                        <div style={{ fontSize: 14, marginBottom: 2 }}>{qa.icon}</div>
+                        <div style={{ fontSize: 11, fontWeight: 600, color: qa.color }}>{qa.label}</div>
+                        <div style={{ fontSize: 9, color: "#9ca3af", lineHeight: 1.3, marginTop: 1 }}>{qa.description}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

@@ -2,7 +2,7 @@
  * Genie Action Analyzer — Deterministic Rule Engine
  *
  * No AI call. Analyzes briefing data and produces prioritized action items.
- * Runs in ~10ms. Max 5 items returned, sorted by priority.
+ * Runs in ~10ms. Max 7 items returned, sorted by priority.
  */
 
 import type { AgentBriefingData } from "@/lib/briefing/report-data";
@@ -18,6 +18,15 @@ interface AnalyzerInput {
   }>;
   upcomingEventCount: number; // events in next 14 days
   domAlertCount: number;      // unread DOM tier alerts
+  recentNewLeads: Array<{     // leads created in last 24h with no response
+    leadId: string;
+    name: string;
+    email: string | null;
+    phone: string | null;
+    source: string | null;
+    heatScore: number;
+  }>;
+  overdueTasks: number;       // tasks past due date
 }
 
 let actionCounter = 0;
@@ -184,6 +193,29 @@ export function analyzeActions(input: AnalyzerInput): GenieActionItem[] {
     });
   }
 
+  // ── Priority 2: New leads captured (no response yet) ──
+  for (const lead of input.recentNewLeads || []) {
+    if (seenLeadIds.has(lead.leadId)) continue;
+    const channels: DraftChannel[] = [];
+    if (lead.email) channels.push("email");
+    if (lead.phone) channels.push("sms");
+    if (channels.length === 0) continue;
+
+    items.push({
+      id: makeId("captured", lead.leadId),
+      type: "new_lead_captured",
+      priority: 2,
+      title: `New lead: ${lead.name}${lead.source ? ` (${lead.source})` : ""}`,
+      description: `Score ${lead.heatScore}. No response yet — send a welcome message?`,
+      leadId: lead.leadId,
+      leadName: lead.name,
+      leadEmail: lead.email || undefined,
+      leadPhone: lead.phone || undefined,
+      channels,
+    });
+    seenLeadIds.add(lead.leadId);
+  }
+
   // ── Priority 3: No upcoming open houses ──
   if (upcomingEventCount === 0) {
     items.push({
@@ -197,7 +229,20 @@ export function analyzeActions(input: AnalyzerInput): GenieActionItem[] {
     });
   }
 
-  // Sort by priority, then limit to 5
+  // ── Priority 3: Overdue tasks ──
+  if (input.overdueTasks > 0) {
+    items.push({
+      id: makeId("tasks"),
+      type: "create_task" as any,
+      priority: 3,
+      title: `${input.overdueTasks} overdue task${input.overdueTasks > 1 ? "s" : ""}`,
+      description: "Review and complete or reschedule overdue tasks.",
+      channels: [],
+      linkHref: "/app/tasks",
+    });
+  }
+
+  // Sort by priority, then limit to 7
   items.sort((a, b) => a.priority - b.priority);
-  return items.slice(0, 5);
+  return items.slice(0, 7);
 }

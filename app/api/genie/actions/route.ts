@@ -65,6 +65,25 @@ export async function POST(request: NextRequest) {
       .eq("status", "connected")
       .maybeSingle();
 
+    // Get recent new leads with no response (created < 24h, stage = new_lead)
+    const oneDayAgo = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+    const { data: recentLeads } = await supabase
+      .from("lead_submissions")
+      .select("id, payload, heat_score, lead_source, pipeline_stage")
+      .eq("agent_id", user.id)
+      .eq("pipeline_stage", "new_lead")
+      .gte("created_at", oneDayAgo)
+      .order("heat_score", { ascending: false })
+      .limit(5);
+
+    // Get overdue task count
+    const { count: overdueTasks } = await supabase
+      .from("tasks")
+      .select("*", { count: "exact", head: true })
+      .eq("agent_id", user.id)
+      .eq("status", "pending")
+      .lt("due_date", new Date().toISOString().split("T")[0]);
+
     // Run the deterministic rule engine
     const actions = analyzeActions({
       briefingData,
@@ -75,6 +94,15 @@ export async function POST(request: NextRequest) {
       })),
       upcomingEventCount: upcomingEventCount || 0,
       domAlertCount: domAlertCount || 0,
+      recentNewLeads: (recentLeads || []).map(l => ({
+        leadId: l.id,
+        name: l.payload?.name || "Unknown",
+        email: l.payload?.email || null,
+        phone: l.payload?.phone_e164 || l.payload?.phone || null,
+        source: l.lead_source || null,
+        heatScore: l.heat_score || 0,
+      })),
+      overdueTasks: overdueTasks || 0,
     });
 
     return NextResponse.json({
