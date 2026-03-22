@@ -17,7 +17,12 @@ CHECK (provider IN (
   'bridge',    -- Zillow / Bridge Interactive
   'idx_broker', -- IDX Broker
   'direct_mls', -- Direct MLS data feed
-  'attom'
+  'attom',
+  'federal_data',
+  'realie',
+  'rentcast',
+  'google_calendar',
+  'microsoft_calendar'
 ));
 
 -- ============================================================================
