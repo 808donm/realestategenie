@@ -133,16 +133,25 @@ CREATE POLICY "Service role manages all monitored properties"
 -- Add monitored_property_id for linking DOM alerts
 -- ============================================================================
 
--- Make existing NOT NULL columns nullable
-ALTER TABLE mls_watchdog_alerts
-  ALTER COLUMN watch_rule_id DROP NOT NULL,
-  ALTER COLUMN farm_area_id DROP NOT NULL;
+-- Only modify mls_watchdog_alerts if it exists (created by 20260314000000_mls_watchdog.sql)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'mls_watchdog_alerts') THEN
+    -- Make existing NOT NULL columns nullable
+    ALTER TABLE mls_watchdog_alerts
+      ALTER COLUMN watch_rule_id DROP NOT NULL,
+      ALTER COLUMN farm_area_id DROP NOT NULL;
 
--- Add monitored_property_id column
-ALTER TABLE mls_watchdog_alerts
-  ADD COLUMN IF NOT EXISTS monitored_property_id uuid REFERENCES dom_monitored_properties(id) ON DELETE CASCADE;
+    -- Add monitored_property_id column
+    IF NOT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'mls_watchdog_alerts' AND column_name = 'monitored_property_id'
+    ) THEN
+      ALTER TABLE mls_watchdog_alerts
+        ADD COLUMN monitored_property_id uuid REFERENCES dom_monitored_properties(id) ON DELETE CASCADE;
+    END IF;
 
-CREATE INDEX IF NOT EXISTS idx_watchdog_alerts_monitor ON mls_watchdog_alerts (monitored_property_id)
-  WHERE monitored_property_id IS NOT NULL;
-
--- Add 'dom_tier_change' to alert_type options (no constraint to modify — alert_type is free text)
+    CREATE INDEX IF NOT EXISTS idx_watchdog_alerts_monitor ON mls_watchdog_alerts (monitored_property_id)
+      WHERE monitored_property_id IS NOT NULL;
+  END IF;
+END $$;
