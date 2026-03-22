@@ -46,6 +46,7 @@ interface AttomProperty {
   saleHistory?: Array<{ date?: string; amount?: number; buyerName?: string; sellerName?: string; deedType?: string; _source?: string }>;
   mortgage?: { amount?: number; lender?: { fullName?: string }; term?: string; date?: string; dueDate?: string; loanType?: string; interestRateType?: string; lienCount?: number; financingHistoryCount?: number; ltv?: number; ltvPurchase?: number };
   foreclosure?: { actionType?: string; filingDate?: string; recordingDate?: string; auctionDate?: string; auctionLocation?: string; defaultAmount?: number; startingBid?: number; originalLoanAmount?: number; trusteeFullName?: string; caseNumber?: string };
+  hoa?: { fee?: number };
   utilities?: { coolingType?: string; heatingType?: string; heatingFuel?: string; energyType?: string; sewerType?: string; waterType?: string };
 }
 
@@ -100,7 +101,7 @@ function findGeoIdV4(obj: any, depth = 0): string | null {
   return null;
 }
 
-type SectionId = "overview" | "building" | "financial" | "ownership" | "neighborhood" | "federal" | "nearby" | "comps";
+type SectionId = "overview" | "building" | "financial" | "ownership" | "neighborhood" | "market" | "federal" | "nearby" | "comps";
 
 export default function PropertyDetailModal({
   property: p,
@@ -142,6 +143,9 @@ export default function PropertyDetailModal({
   const [rentcastCompsLoading, setRentcastCompsLoading] = useState(false);
   const [rentcastCompsError, setRentcastCompsError] = useState<string | null>(null);
   const [rentcastAvmPrice, setRentcastAvmPrice] = useState<number | null>(null);
+  // RentCast market stats — fetched on demand when Neighborhood tab is selected
+  const [marketStats, setMarketStats] = useState<any>(null);
+  const [marketStatsLoading, setMarketStatsLoading] = useState(false);
 
   const addr = p.address?.oneLine || [p.address?.line1, p.address?.line2].filter(Boolean).join(", ") || "Property Detail";
   const sqft = p.building?.size?.livingSize || p.building?.size?.universalSize || p.building?.size?.bldgSize;
@@ -347,6 +351,22 @@ export default function PropertyDetailModal({
       .catch((err) => console.warn("[Neighborhood] fetch failed:", err))
       .finally(() => setNeighborhoodLoading(false));
   }, [activeSection, neighborhoodData, neighborhoodLoading, p]);
+
+  // Fetch RentCast market stats when Market Stats tab is selected
+  useEffect(() => {
+    if (activeSection !== "market" || marketStats || marketStatsLoading) return;
+    const zip = p.address?.postal1;
+    if (!zip) return;
+
+    setMarketStatsLoading(true);
+    fetch(`/api/rentcast/market-stats?zipCode=${encodeURIComponent(zip)}&historyRange=12`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data && !data.error) setMarketStats(data);
+      })
+      .catch((err) => console.warn("[MarketStats] fetch failed:", err))
+      .finally(() => setMarketStatsLoading(false));
+  }, [activeSection, marketStats, marketStatsLoading, p]);
 
   // Fetch nearby homes when "nearby" tab is selected (Just Sold Farming).
   // Realie provides owner, assessment, AVM, and mortgage data on the primary
@@ -720,6 +740,7 @@ export default function PropertyDetailModal({
     { id: "comps" as SectionId, label: "Comps" },
     { id: "ownership", label: "Ownership" },
     { id: "neighborhood", label: "Neighborhood" },
+    { id: "market", label: "Market Stats" },
     { id: "federal", label: "Area Intel" },
     ...(farmingContext ? [{ id: "nearby" as SectionId, label: "Nearby Homes" }] : []),
   ];
@@ -1113,6 +1134,13 @@ export default function PropertyDetailModal({
                 );
               })()}
 
+
+              {p.hoa?.fee && (
+                <Section title="HOA">
+                  <Field label="Monthly Fee" value={fmt(p.hoa.fee)} />
+                  <Field label="Annual Fee" value={fmt(p.hoa.fee * 12)} />
+                </Section>
+              )}
 
               {p.mortgage && (
                 <Section title="Mortgage">
@@ -2274,6 +2302,230 @@ export default function PropertyDetailModal({
                               </div>
                             );
                           })}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+            </>
+          )}
+
+          {activeSection === "market" && (
+            <>
+              {marketStatsLoading && (
+                <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>
+                  Loading market statistics...
+                </div>
+              )}
+
+              {!marketStatsLoading && !marketStats && (
+                <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>
+                  Market statistics not available. Ensure RentCast is connected and a valid zip code is present.
+                </div>
+              )}
+
+              {marketStats && (() => {
+                const sale = marketStats.saleData;
+                const rental = marketStats.rentalData;
+                if (!sale && !rental) return (
+                  <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>
+                    No market data available for this zip code.
+                  </div>
+                );
+
+                // Monthly history for trend table
+                const saleHistory = sale?.history
+                  ? Object.entries(sale.history)
+                      .sort(([a], [b]) => a.localeCompare(b))
+                      .slice(-12)
+                  : [];
+
+                // Compute trend from first to last month
+                const saleTrend = saleHistory.length >= 2
+                  ? (() => {
+                      const first = (saleHistory[0][1] as any).medianPrice;
+                      const last = (saleHistory[saleHistory.length - 1][1] as any).medianPrice;
+                      return first && last ? ((last - first) / first * 100) : null;
+                    })()
+                  : null;
+
+                return (
+                  <>
+                    <div style={{ marginBottom: 16, padding: "10px 14px", background: "#f0fdf4", borderRadius: 8, borderLeft: "4px solid #059669" }}>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: "#065f46" }}>
+                        Market Statistics — {marketStats.zipCode || p.address?.postal1}
+                      </div>
+                      <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
+                        Source: RentCast{sale?.lastUpdatedDate ? ` (Updated: ${sale.lastUpdatedDate.split("T")[0]})` : ""}
+                      </div>
+                    </div>
+
+                    {sale && (
+                      <Section title="Sale Market Overview">
+                        <Field label="Median Sale Price" value={sale.medianPrice != null ? `$${Number(sale.medianPrice).toLocaleString()}` : undefined} />
+                        <Field label="Average Sale Price" value={sale.averagePrice != null ? `$${Number(sale.averagePrice).toLocaleString()}` : undefined} />
+                        <Field label="Price Range" value={sale.minPrice != null && sale.maxPrice != null ? `${fmt(sale.minPrice)} – ${fmt(sale.maxPrice)}` : undefined} />
+                        <Field label="Median $/Sqft" value={sale.medianPricePerSquareFoot != null ? `$${sale.medianPricePerSquareFoot.toLocaleString()}` : undefined} />
+                        <Field label="Avg $/Sqft" value={sale.averagePricePerSquareFoot != null ? `$${sale.averagePricePerSquareFoot.toLocaleString()}` : undefined} />
+                        <Field label="Median Sqft" value={sale.medianSquareFootage != null ? sale.medianSquareFootage.toLocaleString() : undefined} />
+                        <Field label="Median Days on Market" value={sale.medianDaysOnMarket} />
+                        <Field label="Avg Days on Market" value={sale.averageDaysOnMarket} />
+                        <Field label="New Listings" value={sale.newListings} />
+                        <Field label="Total Listings" value={sale.totalListings} />
+                      </Section>
+                    )}
+
+                    {/* Sale stats by property type */}
+                    {sale?.dataByPropertyType && sale.dataByPropertyType.length > 0 && (
+                      <div style={{ marginBottom: 20 }}>
+                        <h3 style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 10, paddingBottom: 6, borderBottom: "1px solid #e5e7eb" }}>
+                          Sale Stats by Property Type
+                        </h3>
+                        <div style={{ overflowX: "auto" }}>
+                          <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
+                            <thead>
+                              <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
+                                <th style={{ textAlign: "left", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Type</th>
+                                <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Median Price</th>
+                                <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Median $/Sqft</th>
+                                <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Median DOM</th>
+                                <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Listings</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {sale.dataByPropertyType.map((d: any, i: number) => (
+                                <tr key={d.propertyType} style={{ borderBottom: "1px solid #f3f4f6", background: i % 2 === 0 ? "#fff" : "#f9fafb" }}>
+                                  <td style={{ padding: "6px 8px", fontWeight: 500 }}>{d.propertyType}</td>
+                                  <td style={{ padding: "6px 8px", textAlign: "right" }}>{d.medianPrice != null ? `$${Number(d.medianPrice).toLocaleString()}` : "—"}</td>
+                                  <td style={{ padding: "6px 8px", textAlign: "right" }}>{d.medianPricePerSquareFoot != null ? `$${d.medianPricePerSquareFoot.toLocaleString()}` : "—"}</td>
+                                  <td style={{ padding: "6px 8px", textAlign: "right" }}>{d.medianDaysOnMarket ?? "—"}</td>
+                                  <td style={{ padding: "6px 8px", textAlign: "right" }}>{d.totalListings ?? "—"}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Sale stats by bedroom count */}
+                    {sale?.dataByBedrooms && sale.dataByBedrooms.length > 0 && (
+                      <div style={{ marginBottom: 20 }}>
+                        <h3 style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 10, paddingBottom: 6, borderBottom: "1px solid #e5e7eb" }}>
+                          Sale Stats by Bedrooms
+                        </h3>
+                        <div style={{ overflowX: "auto" }}>
+                          <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
+                            <thead>
+                              <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
+                                <th style={{ textAlign: "left", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Beds</th>
+                                <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Median Price</th>
+                                <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Median $/Sqft</th>
+                                <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Median DOM</th>
+                                <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Listings</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {sale.dataByBedrooms.sort((a: any, b: any) => a.bedrooms - b.bedrooms).map((d: any, i: number) => (
+                                <tr key={d.bedrooms} style={{ borderBottom: "1px solid #f3f4f6", background: i % 2 === 0 ? "#fff" : "#f9fafb" }}>
+                                  <td style={{ padding: "6px 8px", fontWeight: 500 }}>{d.bedrooms} BR</td>
+                                  <td style={{ padding: "6px 8px", textAlign: "right" }}>{d.medianPrice != null ? `$${Number(d.medianPrice).toLocaleString()}` : "—"}</td>
+                                  <td style={{ padding: "6px 8px", textAlign: "right" }}>{d.medianPricePerSquareFoot != null ? `$${d.medianPricePerSquareFoot.toLocaleString()}` : "—"}</td>
+                                  <td style={{ padding: "6px 8px", textAlign: "right" }}>{d.medianDaysOnMarket ?? "—"}</td>
+                                  <td style={{ padding: "6px 8px", textAlign: "right" }}>{d.totalListings ?? "—"}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Monthly sale trend */}
+                    {saleHistory.length > 0 && (
+                      <div style={{ marginBottom: 20 }}>
+                        <h3 style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 4, paddingBottom: 6, borderBottom: "1px solid #e5e7eb" }}>
+                          Monthly Sale Trends
+                        </h3>
+                        {saleTrend != null && (
+                          <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}>
+                            <span style={{ fontWeight: 600, color: saleTrend >= 0 ? "#059669" : "#dc2626" }}>
+                              {saleTrend >= 0 ? "+" : ""}{saleTrend.toFixed(1)}% median price change over {saleHistory.length} months
+                            </span>
+                          </div>
+                        )}
+                        <div style={{ overflowX: "auto" }}>
+                          <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
+                            <thead>
+                              <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
+                                <th style={{ textAlign: "left", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Month</th>
+                                <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Median Price</th>
+                                <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Avg Price</th>
+                                <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>$/Sqft</th>
+                                <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>DOM</th>
+                                <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Listings</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {saleHistory.map(([month, data]: [string, any], i: number) => (
+                                <tr key={month} style={{ borderBottom: "1px solid #f3f4f6", background: i % 2 === 0 ? "#fff" : "#f9fafb" }}>
+                                  <td style={{ padding: "6px 8px", fontWeight: 500 }}>{month}</td>
+                                  <td style={{ padding: "6px 8px", textAlign: "right" }}>{data.medianPrice != null ? `$${Number(data.medianPrice).toLocaleString()}` : "—"}</td>
+                                  <td style={{ padding: "6px 8px", textAlign: "right" }}>{data.averagePrice != null ? `$${Number(data.averagePrice).toLocaleString()}` : "—"}</td>
+                                  <td style={{ padding: "6px 8px", textAlign: "right" }}>{data.medianPricePerSquareFoot != null ? `$${data.medianPricePerSquareFoot.toLocaleString()}` : "—"}</td>
+                                  <td style={{ padding: "6px 8px", textAlign: "right" }}>{data.medianDaysOnMarket ?? "—"}</td>
+                                  <td style={{ padding: "6px 8px", textAlign: "right" }}>{data.totalListings ?? "—"}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+
+                    {rental && (
+                      <Section title="Rental Market Overview">
+                        <Field label="Median Rent" value={rental.medianRent != null ? `$${Number(rental.medianRent).toLocaleString()}/mo` : undefined} />
+                        <Field label="Average Rent" value={rental.averageRent != null ? `$${Number(rental.averageRent).toLocaleString()}/mo` : undefined} />
+                        <Field label="Rent Range" value={rental.minRent != null && rental.maxRent != null ? `$${rental.minRent.toLocaleString()} – $${rental.maxRent.toLocaleString()}/mo` : undefined} />
+                        <Field label="Median $/Sqft" value={rental.medianRentPerSquareFoot != null ? `$${rental.medianRentPerSquareFoot.toFixed(2)}/sqft` : undefined} />
+                        <Field label="Median Sqft" value={rental.medianSquareFootage != null ? rental.medianSquareFootage.toLocaleString() : undefined} />
+                        <Field label="Median Days on Market" value={rental.medianDaysOnMarket} />
+                        <Field label="Avg Days on Market" value={rental.averageDaysOnMarket} />
+                        <Field label="Total Listings" value={rental.totalListings} />
+                      </Section>
+                    )}
+
+                    {/* Rental stats by bedroom count */}
+                    {rental?.dataByBedrooms && rental.dataByBedrooms.length > 0 && (
+                      <div style={{ marginBottom: 20 }}>
+                        <h3 style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 10, paddingBottom: 6, borderBottom: "1px solid #e5e7eb" }}>
+                          Rental Stats by Bedrooms
+                        </h3>
+                        <div style={{ overflowX: "auto" }}>
+                          <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
+                            <thead>
+                              <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
+                                <th style={{ textAlign: "left", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Beds</th>
+                                <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Median Rent</th>
+                                <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>$/Sqft</th>
+                                <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Median DOM</th>
+                                <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Listings</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {rental.dataByBedrooms.sort((a: any, b: any) => a.bedrooms - b.bedrooms).map((d: any, i: number) => (
+                                <tr key={d.bedrooms} style={{ borderBottom: "1px solid #f3f4f6", background: i % 2 === 0 ? "#fff" : "#f9fafb" }}>
+                                  <td style={{ padding: "6px 8px", fontWeight: 500 }}>{d.bedrooms} BR</td>
+                                  <td style={{ padding: "6px 8px", textAlign: "right" }}>{d.medianRent != null ? `$${Number(d.medianRent).toLocaleString()}/mo` : "—"}</td>
+                                  <td style={{ padding: "6px 8px", textAlign: "right" }}>{d.medianRentPerSquareFoot != null ? `$${d.medianRentPerSquareFoot.toFixed(2)}` : "—"}</td>
+                                  <td style={{ padding: "6px 8px", textAlign: "right" }}>{d.medianDaysOnMarket ?? "—"}</td>
+                                  <td style={{ padding: "6px 8px", textAlign: "right" }}>{d.totalListings ?? "—"}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
                         </div>
                       </div>
                     )}

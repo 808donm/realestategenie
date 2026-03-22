@@ -1081,9 +1081,7 @@ export function mapRentcastToAttomShape(rc: RentcastProperty): any {
         pricePerSizeUnit: pricePerSqft || undefined,
       },
     } : undefined,
-    mortgage: rc.hoa ? {
-      // RentCast doesn't provide mortgage data, but we store HOA here
-    } : undefined,
+    hoa: rc.hoa?.fee ? { fee: rc.hoa.fee } : undefined,
     homeEquity: undefined,
     assessmenthistory: assessmentHistory,
     // Sale history from RentCast history dict (keyed by date)
