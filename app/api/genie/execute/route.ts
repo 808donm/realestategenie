@@ -308,7 +308,7 @@ export async function POST(request: NextRequest) {
 
         const config = typeof ghlInteg.config === "string" ? JSON.parse(ghlInteg.config) : ghlInteg.config;
         const { GHLClient } = await import("@/lib/integrations/ghl-client");
-        const ghl = new GHLClient({ accessToken: config.access_token, locationId: config.location_id });
+        const ghl = new GHLClient(config.access_token, config.location_id);
 
         try {
           const docResult = await ghl.sendDocumentTemplate({

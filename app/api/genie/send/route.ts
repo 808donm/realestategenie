@@ -38,10 +38,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "GoHighLevel is not connected" }, { status: 503 });
     }
 
-    const ghl = new GHLClient({
-      accessToken: config.access_token,
-      locationId: config.location_id,
-    });
+    const ghl = new GHLClient(config.access_token, config.location_id);
 
     // Send the message
     let messageId: string | undefined;
