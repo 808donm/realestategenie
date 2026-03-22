@@ -161,13 +161,98 @@ export function GenieAssistant() {
   const [quickActionLoading, setQuickActionLoading] = useState<string | null>(null);
   const [quickActionResult, setQuickActionResult] = useState<{ type: string; message: string } | null>(null);
 
+  // Inline search state
+  const [activeSearch, setActiveSearch] = useState<string | null>(null); // which search panel is open
+  const [searchInput, setSearchInput] = useState("");
+  const [searchResults, setSearchResults] = useState<any[] | null>(null);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchMeta, setSearchMeta] = useState<any>(null);
+
+  // Run inline search
+  const runInlineSearch = useCallback(async (type: string, input: string) => {
+    if (!input.trim()) return;
+    setSearchLoading(true);
+    setSearchResults(null);
+    setSearchMeta(null);
+
+    try {
+      switch (type) {
+        case "create_dom_search": {
+          const zips = input.split(",").map(z => z.trim()).filter(Boolean);
+          const res = await fetch("/api/dom-prospecting/search", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ zipCodes: zips }),
+          });
+          const data = await res.json();
+          setSearchResults(data.results || []);
+          setSearchMeta({ summary: data.summary, total: data.total, dataSource: data.dataSource });
+          break;
+        }
+        case "search_seller_map": {
+          const zips = input.split(",").map(z => z.trim()).filter(Boolean);
+          const params = new URLSearchParams({ zips: zips.join(","), minScore: "40", limit: "20" });
+          const res = await fetch(`/api/seller-map?${params}`);
+          const data = await res.json();
+          setSearchResults(data.properties || []);
+          setSearchMeta({ total: data.total });
+          break;
+        }
+        case "search_mls": {
+          const zips = input.split(",").map(z => z.trim()).filter(Boolean);
+          const params = new URLSearchParams({
+            searchType: "zip",
+            postalCodes: zips.join(","),
+            status: "Active",
+            limit: "20",
+          });
+          const res = await fetch(`/api/mls/farm-search?${params}`);
+          const data = await res.json();
+          setSearchResults(data.properties || []);
+          setSearchMeta({ totalCount: data.totalCount });
+          break;
+        }
+        case "property_lookup": {
+          const params = new URLSearchParams({ endpoint: "expanded" });
+          const parts = input.split(",").map((s: string) => s.trim());
+          if (parts.length >= 2) {
+            params.set("address1", parts[0]);
+            params.set("address2", parts.slice(1).join(", "));
+          } else {
+            params.set("postalcode", input.trim());
+          }
+          const res = await fetch(`/api/integrations/attom/property?${params}`);
+          const data = await res.json();
+          const props = data.property || (data.address ? [data] : []);
+          setSearchResults(Array.isArray(props) ? props : [props]);
+          setSearchMeta({ total: Array.isArray(props) ? props.length : 1 });
+          break;
+        }
+      }
+    } catch (err: any) {
+      setSearchMeta({ error: err.message });
+    } finally {
+      setSearchLoading(false);
+    }
+  }, []);
+
   // Execute a quick action
   const executeQuickAction = useCallback(async (qa: QuickActionDef) => {
+    // Inline search actions — open search panel instead of redirecting
+    const inlineSearchActions = ["create_dom_search", "search_seller_map", "search_mls", "property_lookup"];
+    if (inlineSearchActions.includes(qa.type)) {
+      setActiveSearch(activeSearch === qa.type ? null : qa.type);
+      setSearchResults(null);
+      setSearchMeta(null);
+      setSearchInput("");
+      return;
+    }
+
     // Actions that are just redirects — navigate directly
     const redirectActions = [
-      "create_open_house", "property_lookup", "generate_property_report",
-      "search_mls", "run_calculator", "export_calculator_report",
-      "search_seller_map", "create_farm_watchdog", "create_mls_search_profile",
+      "create_open_house", "generate_property_report",
+      "run_calculator", "export_calculator_report",
+      "create_farm_watchdog", "create_mls_search_profile",
       "attach_file_to_contact",
     ];
 
@@ -200,7 +285,6 @@ export function GenieAssistant() {
       create_task: "/app/tasks",
       create_calendar_event: "/app/calendar",
       save_seller_search: "/app/seller-map",
-      create_dom_search: "/app/seller-map/dom-prospecting",
       send_esign_document: "/app/contacts",
     };
 
@@ -208,7 +292,7 @@ export function GenieAssistant() {
     if (route) {
       window.location.href = route;
     }
-  }, []);
+  }, [activeSearch]);
 
   return (
     <div style={{
@@ -380,6 +464,153 @@ export function GenieAssistant() {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Inline Search Panel */}
+        {activeSearch && (
+          <div style={{ marginTop: 10, padding: 12, background: "#f9fafb", borderRadius: 8, border: "1px solid #e5e7eb" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#111827" }}>
+                {activeSearch === "create_dom_search" && "DOM Prospect Search"}
+                {activeSearch === "search_seller_map" && "Seller Map Search"}
+                {activeSearch === "search_mls" && "MLS Listing Search"}
+                {activeSearch === "property_lookup" && "Property Lookup"}
+              </div>
+              <button onClick={() => { setActiveSearch(null); setSearchResults(null); }} style={{ background: "none", border: "none", fontSize: 16, color: "#9ca3af", cursor: "pointer" }}>&times;</button>
+            </div>
+
+            <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+              <input
+                value={searchInput}
+                onChange={e => setSearchInput(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && runInlineSearch(activeSearch, searchInput)}
+                placeholder={
+                  activeSearch === "property_lookup"
+                    ? "Enter address (123 Main St, Kailua, HI)"
+                    : "Enter zip codes (96815, 96816)"
+                }
+                style={{ flex: 1, padding: "6px 10px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 12 }}
+              />
+              <button
+                onClick={() => runInlineSearch(activeSearch, searchInput)}
+                disabled={searchLoading}
+                style={{
+                  padding: "6px 14px", fontSize: 12, fontWeight: 600,
+                  borderRadius: 6, border: "none", cursor: "pointer",
+                  background: searchLoading ? "#9ca3af" : "#4f46e5", color: "#fff",
+                }}
+              >
+                {searchLoading ? "..." : "Search"}
+              </button>
+            </div>
+
+            {searchMeta?.error && (
+              <div style={{ padding: 8, background: "#fef2f2", borderRadius: 6, color: "#991b1b", fontSize: 12 }}>
+                {searchMeta.error}
+              </div>
+            )}
+
+            {searchMeta && !searchMeta.error && (
+              <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 6 }}>
+                {searchMeta.total ?? searchMeta.totalCount ?? 0} results found
+                {searchMeta.summary && ` (${searchMeta.summary.red || 0} red, ${searchMeta.summary.orange || 0} orange, ${searchMeta.summary.charcoal || 0} charcoal)`}
+                {searchMeta.dataSource && ` — Source: ${searchMeta.dataSource}`}
+              </div>
+            )}
+
+            {/* Results */}
+            {searchResults && searchResults.length > 0 && (
+              <div style={{ maxHeight: 300, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
+                {searchResults.slice(0, 15).map((r: any, i: number) => {
+                  // DOM results
+                  if (activeSearch === "create_dom_search") {
+                    const tierColors: Record<string, string> = { red: "#dc2626", orange: "#ea580c", charcoal: "#4b5563" };
+                    return (
+                      <div key={r.listingKey || i} style={{ padding: "8px 10px", borderRadius: 6, background: "#fff", border: `1px solid ${tierColors[r.tier] || "#e5e7eb"}`, fontSize: 12 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between" }}>
+                          <div style={{ fontWeight: 600, color: "#111827" }}>{r.address}</div>
+                          <div style={{ fontWeight: 800, color: tierColors[r.tier] }}>{r.daysOnMarket}d</div>
+                        </div>
+                        <div style={{ color: "#6b7280", fontSize: 11 }}>
+                          {r.propertyType} | {r.listPrice ? `$${Number(r.listPrice).toLocaleString()}` : ""} | {r.domRatio}x avg ({r.avgDomForType}d)
+                          {r.listingAgentName && ` | ${r.listingAgentName}`}
+                        </div>
+                      </div>
+                    );
+                  }
+                  // Seller map results
+                  if (activeSearch === "search_seller_map") {
+                    const scoreColor = r.motivationScore >= 70 ? "#dc2626" : r.motivationScore >= 50 ? "#ea580c" : r.motivationScore >= 30 ? "#f59e0b" : "#3b82f6";
+                    return (
+                      <div key={r.identifier?.Id || i} style={{ padding: "8px 10px", borderRadius: 6, background: "#fff", border: "1px solid #e5e7eb", fontSize: 12 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between" }}>
+                          <div style={{ fontWeight: 600, color: "#111827" }}>{r.address?.oneLine || "Unknown"}</div>
+                          <div style={{ fontWeight: 800, color: scoreColor }}>{r.motivationScore || 0}</div>
+                        </div>
+                        <div style={{ color: "#6b7280", fontSize: 11 }}>
+                          {r.sellerLevel} | {r.summary?.propType || ""} | {r.owner?.owner1?.fullName || ""}
+                        </div>
+                      </div>
+                    );
+                  }
+                  // MLS listing results
+                  if (activeSearch === "search_mls") {
+                    return (
+                      <div key={r.ListingKey || i} style={{ padding: "8px 10px", borderRadius: 6, background: "#fff", border: "1px solid #e5e7eb", fontSize: 12 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between" }}>
+                          <div style={{ fontWeight: 600, color: "#111827" }}>{r.UnparsedAddress || [r.StreetNumber, r.StreetName].filter(Boolean).join(" ")}</div>
+                          <div style={{ fontWeight: 700, color: "#059669" }}>${Number(r.ListPrice || 0).toLocaleString()}</div>
+                        </div>
+                        <div style={{ color: "#6b7280", fontSize: 11 }}>
+                          {r.PropertyType} | {r.BedroomsTotal}bd {r.BathroomsTotalInteger}ba | {r.LivingArea?.toLocaleString()} sqft | {r.DaysOnMarket}d DOM
+                          {r.ListAgentFullName && ` | ${r.ListAgentFullName}`}
+                        </div>
+                      </div>
+                    );
+                  }
+                  // Property lookup results
+                  return (
+                    <div key={r.identifier?.Id || i} style={{ padding: "8px 10px", borderRadius: 6, background: "#fff", border: "1px solid #e5e7eb", fontSize: 12 }}>
+                      <div style={{ fontWeight: 600, color: "#111827" }}>{r.address?.oneLine || "Unknown"}</div>
+                      <div style={{ color: "#6b7280", fontSize: 11 }}>
+                        {r.summary?.propType || r.summary?.propertyType || ""} | {r.building?.rooms?.beds}bd {r.building?.rooms?.bathsFull}ba | {r.building?.size?.livingSize?.toLocaleString()} sqft
+                        {r.avm?.amount?.value && ` | AVM: $${Number(r.avm.amount.value).toLocaleString()}`}
+                        {r.owner?.owner1?.fullName && ` | ${r.owner.owner1.fullName}`}
+                      </div>
+                    </div>
+                  );
+                })}
+                {searchResults.length > 15 && (
+                  <div style={{ fontSize: 11, color: "#6b7280", textAlign: "center", padding: 4 }}>
+                    Showing 15 of {searchResults.length}. Open the full tool for more.
+                  </div>
+                )}
+              </div>
+            )}
+
+            {searchResults && searchResults.length === 0 && !searchLoading && (
+              <div style={{ textAlign: "center", padding: 12, color: "#9ca3af", fontSize: 12 }}>
+                No results found for this search.
+              </div>
+            )}
+
+            {/* Link to full tool */}
+            {searchResults && searchResults.length > 0 && (
+              <div style={{ marginTop: 8, textAlign: "right" }}>
+                <a
+                  href={
+                    activeSearch === "create_dom_search" ? "/app/seller-map/dom-prospecting"
+                    : activeSearch === "search_seller_map" ? "/app/seller-map"
+                    : activeSearch === "search_mls" ? "/app/farm"
+                    : "/app/property-data"
+                  }
+                  style={{ fontSize: 11, color: "#4f46e5", fontWeight: 600, textDecoration: "none" }}
+                >
+                  Open full tool &rarr;
+                </a>
+              </div>
+            )}
           </div>
         )}
       </div>
