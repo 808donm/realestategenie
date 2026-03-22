@@ -1591,6 +1591,12 @@ export default function Prospecting() {
       desc: "Corporate entities, absentee owners, and multi-property investors — find landlords with contact info and financials.",
       color: "#b45309",
     },
+    {
+      id: "dom" as ProspectMode,
+      label: "DOM Prospecting",
+      desc: "Identify stale listings exceeding average days on market by property type — target frustrated sellers before their listings expire.",
+      color: "#991b1b",
+    },
   ];
 
   // ── Render helpers for each mode ─────────────────────────────────────────
@@ -2142,34 +2148,51 @@ export default function Prospecting() {
       {/* Mode Selection */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10, marginBottom: 20 }}>
         {modes.map((m) => (
-          <button
-            key={m.id}
-            onClick={() => {
-              const newMode = m.id;
-              setMode(newMode);
-              setError("");
-              setExpandedInvestor(null);
-              // If we have shared data for the current zip and this isn't radius mode,
-              // instantly re-filter instead of requiring a new search
-              if (newMode !== "radius" && sharedRawData.length > 0 && sharedDataKey === `${zip.trim()}:${propertyType}`) {
-                applyModeFilter(newMode, sharedRawData);
-              } else {
-                setResults([]);
-                setInvestorGroups([]);
-                setHasSearched(false);
-                setDebugInfo("");
-              }
-            }}
-            style={{
-              padding: 14, borderRadius: 10, border: mode === m.id ? `2px solid ${m.color}` : "1px solid #e5e7eb",
-              background: mode === m.id ? `${m.color}08` : "#fff", cursor: "pointer", textAlign: "left",
-            }}
-          >
-            <div style={{ fontWeight: 700, fontSize: 13, color: mode === m.id ? m.color : "#374151", marginBottom: 4 }}>
-              {m.label}
-            </div>
-            <div style={{ fontSize: 11, color: "#6b7280", lineHeight: 1.4 }}>{m.desc}</div>
-          </button>
+          m.id === ("dom" as ProspectMode) ? (
+            <a
+              key={m.id}
+              href="/app/seller-map/dom-prospecting"
+              style={{
+                padding: 14, borderRadius: 10, border: `2px solid ${m.color}`,
+                background: `${m.color}08`, cursor: "pointer", textAlign: "left",
+                textDecoration: "none", display: "block",
+              }}
+            >
+              <div style={{ fontWeight: 700, fontSize: 13, color: m.color, marginBottom: 4 }}>
+                {m.label} &rarr;
+              </div>
+              <div style={{ fontSize: 11, color: "#6b7280", lineHeight: 1.4 }}>{m.desc}</div>
+            </a>
+          ) : (
+            <button
+              key={m.id}
+              onClick={() => {
+                const newMode = m.id;
+                setMode(newMode);
+                setError("");
+                setExpandedInvestor(null);
+                // If we have shared data for the current zip and this isn't radius mode,
+                // instantly re-filter instead of requiring a new search
+                if (newMode !== "radius" && sharedRawData.length > 0 && sharedDataKey === `${zip.trim()}:${propertyType}`) {
+                  applyModeFilter(newMode, sharedRawData);
+                } else {
+                  setResults([]);
+                  setInvestorGroups([]);
+                  setHasSearched(false);
+                  setDebugInfo("");
+                }
+              }}
+              style={{
+                padding: 14, borderRadius: 10, border: mode === m.id ? `2px solid ${m.color}` : "1px solid #e5e7eb",
+                background: mode === m.id ? `${m.color}08` : "#fff", cursor: "pointer", textAlign: "left",
+              }}
+            >
+              <div style={{ fontWeight: 700, fontSize: 13, color: mode === m.id ? m.color : "#374151", marginBottom: 4 }}>
+                {m.label}
+              </div>
+              <div style={{ fontSize: 11, color: "#6b7280", lineHeight: 1.4 }}>{m.desc}</div>
+            </button>
+          )
         ))}
       </div>
 

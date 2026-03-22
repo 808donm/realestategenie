@@ -30,6 +30,23 @@ export async function GET(request: NextRequest) {
 
     const historyRange = Number(url.searchParams.get("historyRange")) || 12;
 
+    // Check area_data_cache first (populated by monthly cron)
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 45);
+    const { data: cached } = await supabase
+      .from("area_data_cache")
+      .select("data, fetched_at")
+      .eq("zip_code", zipCode)
+      .eq("data_type", "market_stats")
+      .gte("fetched_at", cutoff.toISOString())
+      .maybeSingle();
+
+    if (cached?.data) {
+      console.log("[RentCast Market Stats] Cache HIT for", zipCode);
+      return NextResponse.json(cached.data);
+    }
+
+    // Cache miss — fetch live from RentCast
     const rentcast = await getRentcastClient();
     if (!rentcast) {
       return NextResponse.json({ error: "RentCast not configured" }, { status: 503 });

@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { RentcastClient, createRentcastClient } from "@/lib/integrations/rentcast-client";
+import {
+  buildPropertyCacheKey, propertyCacheGet, propertyCacheSet,
+  propertyDbRead, propertyDbWrite,
+} from "@/lib/integrations/property-data-cache";
 
 /**
  * GET /api/rentcast/comps
@@ -30,7 +34,34 @@ export async function GET(request: NextRequest) {
     }
 
     const compCount = Number(url.searchParams.get("compCount")) || 5;
+    const bedrooms = url.searchParams.get("bedrooms");
+    const bathrooms = url.searchParams.get("bathrooms");
+    const squareFootage = url.searchParams.get("squareFootage");
+    const propertyType = url.searchParams.get("propertyType");
 
+    // Check property data cache first (7-day TTL)
+    const cacheKey = buildPropertyCacheKey("rentcast", "comps", {
+      address, compCount: String(compCount),
+      ...(bedrooms ? { bedrooms } : {}),
+      ...(bathrooms ? { bathrooms } : {}),
+      ...(squareFootage ? { squareFootage } : {}),
+      ...(propertyType ? { propertyType } : {}),
+    });
+
+    const memoryCached = propertyCacheGet(cacheKey);
+    if (memoryCached?.data) {
+      console.log("[RentCast Comps] Memory cache HIT for", address);
+      return NextResponse.json(memoryCached.data);
+    }
+
+    const dbCached = await propertyDbRead(cacheKey, "rentcast");
+    if (dbCached?.data) {
+      console.log("[RentCast Comps] DB cache HIT for", address);
+      propertyCacheSet(cacheKey, dbCached.data, "rentcast");
+      return NextResponse.json(dbCached.data);
+    }
+
+    // Cache miss — fetch live
     const rentcast = await getRentcastClient();
     if (!rentcast) {
       return NextResponse.json({ error: "RentCast not configured" }, { status: 503 });
@@ -41,12 +72,6 @@ export async function GET(request: NextRequest) {
       compCount: Math.min(Math.max(compCount, 5), 25),
     };
 
-    // Pass optional property attributes for better comp matching
-    const bedrooms = url.searchParams.get("bedrooms");
-    const bathrooms = url.searchParams.get("bathrooms");
-    const squareFootage = url.searchParams.get("squareFootage");
-    const propertyType = url.searchParams.get("propertyType");
-
     if (bedrooms) avmParams.bedrooms = Number(bedrooms);
     if (bathrooms) avmParams.bathrooms = Number(bathrooms);
     if (squareFootage) avmParams.squareFootage = Number(squareFootage);
@@ -54,12 +79,18 @@ export async function GET(request: NextRequest) {
 
     const valueEstimate = await rentcast.getValueEstimate(avmParams);
 
-    return NextResponse.json({
+    const result = {
       price: valueEstimate.price,
       priceRangeLow: valueEstimate.priceRangeLow,
       priceRangeHigh: valueEstimate.priceRangeHigh,
       comparables: valueEstimate.comparables || [],
-    });
+    };
+
+    // Write to both cache layers
+    propertyCacheSet(cacheKey, result, "rentcast");
+    propertyDbWrite(cacheKey, "rentcast", result, "rentcast").catch(() => {});
+
+    return NextResponse.json(result);
   } catch (error: any) {
     console.error("[RentCast Comps] Error:", error);
     return NextResponse.json(
