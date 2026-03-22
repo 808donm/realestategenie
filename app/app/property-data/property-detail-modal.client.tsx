@@ -238,29 +238,42 @@ export default function PropertyDetailModal({
   }, [activeSection, avmData, avmLoading, p]);
 
   // Fetch federal data when the Federal tab is selected
+  // Tries cached data first, falls back to live API
   useEffect(() => {
     if (activeSection !== "federal" || federalData || federalLoading) return;
     const zipCode = p.address?.postal1;
     if (!zipCode) return;
 
     setFederalLoading(true);
-    const params = new URLSearchParams({
-      endpoint: "supplement",
-      zipCode,
-      ...(p.address?.countrySubd ? { state: p.address.countrySubd } : {}),
-      ...(p.identifier?.fips ? { stateFips: p.identifier.fips.substring(0, 2), countyFips: p.identifier.fips.substring(2, 5) } : {}),
-      ...(p.address?.line1 ? { address: p.address.line1 } : {}),
-      ...(p.address?.locality ? { city: p.address.locality } : {}),
-    });
 
-    fetch(`/api/integrations/federal-data/query?${params}`)
+    const fetchLive = () => {
+      const params = new URLSearchParams({
+        endpoint: "supplement",
+        zipCode,
+        ...(p.address?.countrySubd ? { state: p.address.countrySubd } : {}),
+        ...(p.identifier?.fips ? { stateFips: p.identifier.fips.substring(0, 2), countyFips: p.identifier.fips.substring(2, 5) } : {}),
+        ...(p.address?.line1 ? { address: p.address.line1 } : {}),
+        ...(p.address?.locality ? { city: p.address.locality } : {}),
+      });
+
+      return fetch(`/api/integrations/federal-data/query?${params}`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.success !== false) setFederalData(data);
+        });
+    };
+
+    fetch(`/api/area-cache?zipCode=${encodeURIComponent(zipCode)}&dataType=federal`)
       .then((r) => r.json())
-      .then((data) => {
-        if (data.success !== false) {
-          setFederalData(data);
+      .then((cache) => {
+        if (cache.cached && cache.data) {
+          console.log("[Federal] Using cached data from", cache.fetchedAt);
+          setFederalData(cache.data);
+        } else {
+          return fetchLive();
         }
       })
-      .catch(() => {})
+      .catch(() => fetchLive())
       .finally(() => setFederalLoading(false));
   }, [activeSection, federalData, federalLoading, p]);
 
@@ -297,6 +310,7 @@ export default function PropertyDetailModal({
   }, [activeSection, hawaiiData, hawaiiLoading, p]);
 
   // Fetch neighborhood profile (community data, schools) when Neighborhood tab is selected
+  // Tries cached data first, falls back to live API
   useEffect(() => {
     if (activeSection !== "neighborhood" || neighborhoodData || neighborhoodLoading) return;
 
@@ -324,47 +338,72 @@ export default function PropertyDetailModal({
 
     setNeighborhoodLoading(true);
 
-    const params = new URLSearchParams({ endpoint: "neighborhood" });
-    if (addr1) params.set("address1", addr1);
-    if (city && state) params.set("address2", `${city}, ${state}`);
-    else if (city) params.set("address2", city);
-    if (zip) params.set("postalcode", zip);
-    if (p.location?.latitude) params.set("latitude", p.location.latitude);
-    if (p.location?.longitude) params.set("longitude", p.location.longitude);
+    const fetchLive = () => {
+      const params = new URLSearchParams({ endpoint: "neighborhood" });
+      if (addr1) params.set("address1", addr1);
+      if (city && state) params.set("address2", `${city}, ${state}`);
+      else if (city) params.set("address2", city);
+      if (zip) params.set("postalcode", zip);
+      if (p.location?.latitude) params.set("latitude", p.location.latitude);
+      if (p.location?.longitude) params.set("longitude", p.location.longitude);
+      const geoId = findGeoIdV4(p);
+      if (geoId) params.set("geoidv4", geoId);
 
-    // Extract geoIdV4 from property data if available
-    const geoId = findGeoIdV4(p);
-    if (geoId) params.set("geoidv4", geoId);
+      return fetch(`/api/integrations/attom/property?${params}`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (data && !data.error) setNeighborhoodData(data);
+        });
+    };
 
-    console.log("[Neighborhood] Fetching with params:", Object.fromEntries(params));
-
-    fetch(`/api/integrations/attom/property?${params}`)
-      .then((r) => r.json())
-      .then((data) => {
-        console.log("[Neighborhood] Raw API response keys:", data ? Object.keys(data) : "null");
-        if (data && !data.error) {
-          setNeighborhoodData(data);
-        } else {
-          console.warn("[Neighborhood] API returned error:", data?.error);
-        }
-      })
-      .catch((err) => console.warn("[Neighborhood] fetch failed:", err))
-      .finally(() => setNeighborhoodLoading(false));
+    // Try cache first, fall back to live API
+    if (zip) {
+      fetch(`/api/area-cache?zipCode=${encodeURIComponent(zip)}&dataType=neighborhood`)
+        .then((r) => r.json())
+        .then((cache) => {
+          if (cache.cached && cache.data) {
+            console.log("[Neighborhood] Using cached data from", cache.fetchedAt);
+            setNeighborhoodData(cache.data);
+          } else {
+            return fetchLive();
+          }
+        })
+        .catch(() => fetchLive())
+        .finally(() => setNeighborhoodLoading(false));
+    } else {
+      fetchLive()
+        .catch((err) => console.warn("[Neighborhood] fetch failed:", err))
+        .finally(() => setNeighborhoodLoading(false));
+    }
   }, [activeSection, neighborhoodData, neighborhoodLoading, p]);
 
   // Fetch RentCast market stats when Market Stats tab is selected
+  // Tries cached data first, falls back to live API
   useEffect(() => {
     if (activeSection !== "market" || marketStats || marketStatsLoading) return;
     const zip = p.address?.postal1;
     if (!zip) return;
 
     setMarketStatsLoading(true);
-    fetch(`/api/rentcast/market-stats?zipCode=${encodeURIComponent(zip)}&historyRange=12`)
+
+    const fetchLive = () =>
+      fetch(`/api/rentcast/market-stats?zipCode=${encodeURIComponent(zip)}&historyRange=12`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (data && !data.error) setMarketStats(data);
+        });
+
+    fetch(`/api/area-cache?zipCode=${encodeURIComponent(zip)}&dataType=market_stats`)
       .then((r) => r.json())
-      .then((data) => {
-        if (data && !data.error) setMarketStats(data);
+      .then((cache) => {
+        if (cache.cached && cache.data) {
+          console.log("[MarketStats] Using cached data from", cache.fetchedAt);
+          setMarketStats(cache.data);
+        } else {
+          return fetchLive();
+        }
       })
-      .catch((err) => console.warn("[MarketStats] fetch failed:", err))
+      .catch(() => fetchLive())
       .finally(() => setMarketStatsLoading(false));
   }, [activeSection, marketStats, marketStatsLoading, p]);
 
