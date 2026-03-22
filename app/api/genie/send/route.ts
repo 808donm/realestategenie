@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { GHLClient } from "@/lib/integrations/ghl-client";
-import { refreshGHLToken } from "@/lib/integrations/ghl-token-refresh";
+import { getValidGHLConfig } from "@/lib/integrations/ghl-token-refresh";
 
 /**
  * POST /api/genie/send
@@ -32,46 +32,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "channel, ghlContactId, and body are required" }, { status: 400 });
     }
 
-    // Get GHL integration config
-    const { data: ghlInteg } = await supabase
-      .from("integrations")
-      .select("config")
-      .eq("agent_id", user.id)
-      .eq("provider", "ghl")
-      .eq("status", "connected")
-      .single();
-
-    if (!ghlInteg?.config) {
+    // Get valid GHL config (handles token refresh internally)
+    const config = await getValidGHLConfig(user.id);
+    if (!config) {
       return NextResponse.json({ error: "GoHighLevel is not connected" }, { status: 503 });
     }
 
-    const config = typeof ghlInteg.config === "string" ? JSON.parse(ghlInteg.config) : ghlInteg.config;
-
-    // Refresh token if needed
-    let accessToken = config.access_token;
-    if (config.refresh_token) {
-      try {
-        const refreshed = await refreshGHLToken(config.refresh_token);
-        accessToken = refreshed.access_token;
-        // Update stored token
-        await supabase
-          .from("integrations")
-          .update({
-            config: {
-              ...config,
-              access_token: refreshed.access_token,
-              refresh_token: refreshed.refresh_token,
-            },
-          })
-          .eq("agent_id", user.id)
-          .eq("provider", "ghl");
-      } catch {
-        // Use existing token
-      }
-    }
-
     const ghl = new GHLClient({
-      accessToken,
+      accessToken: config.access_token,
       locationId: config.location_id,
     });
 
