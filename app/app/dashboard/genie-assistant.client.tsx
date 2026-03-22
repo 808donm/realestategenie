@@ -228,6 +228,86 @@ export function GenieAssistant() {
           setSearchMeta({ total: Array.isArray(props) ? props.length : 1 });
           break;
         }
+        case "search_absentee": {
+          const params = new URLSearchParams({
+            endpoint: "detailmortgageowner",
+            postalcode: input.trim().split(",")[0].trim(),
+            absenteeowner: "absentonly",
+            pagesize: "20",
+          });
+          const res = await fetch(`/api/integrations/attom/property?${params}`);
+          const data = await res.json();
+          const props = data.property || [];
+          setSearchResults(Array.isArray(props) ? props : [props]);
+          setSearchMeta({ total: Array.isArray(props) ? props.length : 0, mode: "absentee" });
+          break;
+        }
+        case "search_high_equity": {
+          const params = new URLSearchParams({
+            endpoint: "detailmortgageowner",
+            postalcode: input.trim().split(",")[0].trim(),
+            pagesize: "20",
+          });
+          const res = await fetch(`/api/integrations/attom/property?${params}`);
+          const data = await res.json();
+          const props = (data.property || []).filter((p: any) => {
+            const avm = p.avm?.amount?.value || p.assessment?.market?.mktTtlValue || 0;
+            const sale = p.sale?.amount?.saleAmt || 0;
+            const equity = avm - sale;
+            return equity > 0 && avm > 0 && (equity / avm) > 0.3;
+          });
+          setSearchResults(props);
+          setSearchMeta({ total: props.length, mode: "equity" });
+          break;
+        }
+        case "search_foreclosure": {
+          const params = new URLSearchParams({
+            endpoint: "detailmortgageowner",
+            postalcode: input.trim().split(",")[0].trim(),
+            pagesize: "20",
+          });
+          const res = await fetch(`/api/integrations/attom/property?${params}`);
+          const data = await res.json();
+          const props = (data.property || []).filter((p: any) => {
+            return p.foreclosure?.actionType || p.foreclosure?.filingDate;
+          });
+          setSearchResults(props);
+          setSearchMeta({ total: props.length, mode: "foreclosure" });
+          break;
+        }
+        case "search_just_sold": {
+          const endDate = new Date().toISOString().split("T")[0].replace(/-/g, "/");
+          const startDate = new Date(Date.now() - 90 * 24 * 3600 * 1000).toISOString().split("T")[0].replace(/-/g, "/");
+          const params = new URLSearchParams({
+            endpoint: "salesnapshot",
+            postalcode: input.trim().split(",")[0].trim(),
+            startSaleSearchDate: startDate,
+            endSaleSearchDate: endDate,
+            pagesize: "20",
+          });
+          const res = await fetch(`/api/integrations/attom/property?${params}`);
+          const data = await res.json();
+          const props = data.property || [];
+          setSearchResults(Array.isArray(props) ? props : [props]);
+          setSearchMeta({ total: Array.isArray(props) ? props.length : 0, mode: "just_sold" });
+          break;
+        }
+        case "search_investor": {
+          const params = new URLSearchParams({
+            endpoint: "detailmortgageowner",
+            postalcode: input.trim().split(",")[0].trim(),
+            pagesize: "20",
+          });
+          const res = await fetch(`/api/integrations/attom/property?${params}`);
+          const data = await res.json();
+          const props = (data.property || []).filter((p: any) => {
+            return p.owner?.corporateIndicator === "Y" ||
+              (p.owner?.absenteeOwnerStatus === "A" && p.owner?.owner1?.fullName);
+          });
+          setSearchResults(props);
+          setSearchMeta({ total: props.length, mode: "investor" });
+          break;
+        }
       }
     } catch (err: any) {
       setSearchMeta({ error: err.message });
@@ -239,7 +319,10 @@ export function GenieAssistant() {
   // Execute a quick action
   const executeQuickAction = useCallback(async (qa: QuickActionDef) => {
     // Inline search actions — open search panel instead of redirecting
-    const inlineSearchActions = ["create_dom_search", "search_seller_map", "search_mls", "property_lookup"];
+    const inlineSearchActions = [
+      "create_dom_search", "search_seller_map", "search_mls", "property_lookup",
+      "search_absentee", "search_high_equity", "search_foreclosure", "search_just_sold", "search_investor",
+    ];
     if (inlineSearchActions.includes(qa.type)) {
       setActiveSearch(activeSearch === qa.type ? null : qa.type);
       setSearchResults(null);
@@ -476,6 +559,11 @@ export function GenieAssistant() {
                 {activeSearch === "search_seller_map" && "Seller Map Search"}
                 {activeSearch === "search_mls" && "MLS Listing Search"}
                 {activeSearch === "property_lookup" && "Property Lookup"}
+                {activeSearch === "search_absentee" && "Absentee Owner Search"}
+                {activeSearch === "search_high_equity" && "High Equity Owner Search"}
+                {activeSearch === "search_foreclosure" && "Pre-Foreclosure Search"}
+                {activeSearch === "search_just_sold" && "Just Sold Search (Last 90 Days)"}
+                {activeSearch === "search_investor" && "Investor Portfolio Search"}
               </div>
               <button onClick={() => { setActiveSearch(null); setSearchResults(null); }} style={{ background: "none", border: "none", fontSize: 16, color: "#9ca3af", cursor: "pointer" }}>&times;</button>
             </div>
@@ -569,7 +657,86 @@ export function GenieAssistant() {
                       </div>
                     );
                   }
-                  // Property lookup results
+                  // Absentee owner results
+                  if (activeSearch === "search_absentee") {
+                    return (
+                      <div key={r.identifier?.Id || i} style={{ padding: "8px 10px", borderRadius: 6, background: "#eff6ff", border: "1px solid #bfdbfe", fontSize: 12 }}>
+                        <div style={{ fontWeight: 600, color: "#1e40af" }}>{r.address?.oneLine || "Unknown"}</div>
+                        <div style={{ color: "#6b7280", fontSize: 11 }}>
+                          {r.owner?.owner1?.fullName || "Unknown Owner"}
+                          {r.owner?.corporateIndicator === "Y" && " (Corporate)"}
+                          {r.owner?.mailingAddressOneLine && ` | Mailing: ${r.owner.mailingAddressOneLine}`}
+                        </div>
+                        <div style={{ color: "#6b7280", fontSize: 11 }}>
+                          {r.summary?.propType || ""} | {r.building?.rooms?.beds}bd {r.building?.rooms?.bathsFull}ba
+                          {r.avm?.amount?.value && ` | AVM: $${Number(r.avm.amount.value).toLocaleString()}`}
+                        </div>
+                      </div>
+                    );
+                  }
+                  // High equity results
+                  if (activeSearch === "search_high_equity") {
+                    const avm = r.avm?.amount?.value || r.assessment?.market?.mktTtlValue || 0;
+                    const sale = r.sale?.amount?.saleAmt || 0;
+                    const equity = avm - sale;
+                    const eqPct = avm > 0 ? Math.round((equity / avm) * 100) : 0;
+                    return (
+                      <div key={r.identifier?.Id || i} style={{ padding: "8px 10px", borderRadius: 6, background: "#f0fdf4", border: "1px solid #bbf7d0", fontSize: 12 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between" }}>
+                          <div style={{ fontWeight: 600, color: "#065f46" }}>{r.address?.oneLine || "Unknown"}</div>
+                          <div style={{ fontWeight: 800, color: "#059669" }}>{eqPct}% equity</div>
+                        </div>
+                        <div style={{ color: "#6b7280", fontSize: 11 }}>
+                          {r.owner?.owner1?.fullName || ""} | AVM: ${avm > 0 ? Number(avm).toLocaleString() : "N/A"} | Est. Equity: ${equity > 0 ? Number(equity).toLocaleString() : "N/A"}
+                        </div>
+                      </div>
+                    );
+                  }
+                  // Pre-foreclosure results
+                  if (activeSearch === "search_foreclosure") {
+                    return (
+                      <div key={r.identifier?.Id || i} style={{ padding: "8px 10px", borderRadius: 6, background: "#fef2f2", border: "1px solid #fca5a5", fontSize: 12 }}>
+                        <div style={{ fontWeight: 600, color: "#991b1b" }}>{r.address?.oneLine || "Unknown"}</div>
+                        <div style={{ color: "#6b7280", fontSize: 11 }}>
+                          {r.foreclosure?.actionType || "Distressed"} | Filed: {r.foreclosure?.filingDate || "N/A"}
+                          {r.owner?.owner1?.fullName && ` | ${r.owner.owner1.fullName}`}
+                          {r.avm?.amount?.value && ` | AVM: $${Number(r.avm.amount.value).toLocaleString()}`}
+                        </div>
+                      </div>
+                    );
+                  }
+                  // Just sold results
+                  if (activeSearch === "search_just_sold") {
+                    return (
+                      <div key={r.identifier?.Id || i} style={{ padding: "8px 10px", borderRadius: 6, background: "#faf5ff", border: "1px solid #d8b4fe", fontSize: 12 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between" }}>
+                          <div style={{ fontWeight: 600, color: "#6b21a8" }}>{r.address?.oneLine || "Unknown"}</div>
+                          <div style={{ fontWeight: 700, color: "#7c3aed" }}>{r.sale?.amount?.saleAmt ? `$${Number(r.sale.amount.saleAmt).toLocaleString()}` : "N/A"}</div>
+                        </div>
+                        <div style={{ color: "#6b7280", fontSize: 11 }}>
+                          Sold: {r.sale?.amount?.saleTransDate || r.sale?.amount?.saleRecDate || "N/A"}
+                          | {r.summary?.propType || ""} | {r.building?.rooms?.beds}bd {r.building?.rooms?.bathsFull}ba
+                        </div>
+                      </div>
+                    );
+                  }
+                  // Investor portfolio results
+                  if (activeSearch === "search_investor") {
+                    return (
+                      <div key={r.identifier?.Id || i} style={{ padding: "8px 10px", borderRadius: 6, background: "#fffbeb", border: "1px solid #fcd34d", fontSize: 12 }}>
+                        <div style={{ fontWeight: 600, color: "#92400e" }}>{r.address?.oneLine || "Unknown"}</div>
+                        <div style={{ color: "#6b7280", fontSize: 11 }}>
+                          {r.owner?.owner1?.fullName || "Unknown"}{r.owner?.corporateIndicator === "Y" ? " (Corporate)" : " (Absentee)"}
+                          {r.owner?.mailingAddressOneLine && ` | ${r.owner.mailingAddressOneLine}`}
+                        </div>
+                        <div style={{ color: "#6b7280", fontSize: 11 }}>
+                          {r.summary?.propType || ""} | {r.building?.rooms?.beds}bd {r.building?.rooms?.bathsFull}ba
+                          {r.avm?.amount?.value && ` | AVM: $${Number(r.avm.amount.value).toLocaleString()}`}
+                        </div>
+                      </div>
+                    );
+                  }
+                  // Generic property lookup results (fallback)
                   return (
                     <div key={r.identifier?.Id || i} style={{ padding: "8px 10px", borderRadius: 6, background: "#fff", border: "1px solid #e5e7eb", fontSize: 12 }}>
                       <div style={{ fontWeight: 600, color: "#111827" }}>{r.address?.oneLine || "Unknown"}</div>
@@ -603,7 +770,8 @@ export function GenieAssistant() {
                     activeSearch === "create_dom_search" ? "/app/seller-map/dom-prospecting"
                     : activeSearch === "search_seller_map" ? "/app/seller-map"
                     : activeSearch === "search_mls" ? "/app/farm"
-                    : "/app/property-data"
+                    : activeSearch === "property_lookup" ? "/app/property-data"
+                    : "/app/prospecting"
                   }
                   style={{ fontSize: 11, color: "#4f46e5", fontWeight: 600, textDecoration: "none" }}
                 >

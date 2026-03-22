@@ -34,7 +34,12 @@ export type QuickActionType =
   | "create_open_house"
   | "send_esign_document"
   | "attach_file_to_contact"
-  | "create_mls_search_profile";
+  | "create_mls_search_profile"
+  | "search_absentee"
+  | "search_high_equity"
+  | "search_foreclosure"
+  | "search_just_sold"
+  | "search_investor";
 
 export type GenieActionType = ProactiveActionType | QuickActionType;
 
@@ -98,10 +103,15 @@ export const QUICK_ACTIONS: QuickActionDef[] = [
   { type: "export_calculator_report", label: "Email Calculator", description: "Export calculator results and email to client", icon: "📊", color: "#92400e", category: "property" },
 
   // Prospecting
-  { type: "search_seller_map", label: "Seller Map Search", description: "Find motivated sellers by equity, ownership, distress signals", icon: "🗺", color: "#dc2626", category: "prospecting" },
-  { type: "save_seller_search", label: "Save Seller Search", description: "Save a seller map search for weekly monitoring", icon: "💾", color: "#b91c1c", category: "prospecting" },
+  { type: "search_seller_map", label: "Seller Map", description: "Find motivated sellers by equity, ownership, distress signals", icon: "🗺", color: "#dc2626", category: "prospecting" },
+  { type: "search_absentee", label: "Absentee Owners", description: "Non-owner-occupied properties — out-of-state owners, landlords", icon: "🏚", color: "#3b82f6", category: "prospecting" },
+  { type: "search_high_equity", label: "High Equity", description: "Long-tenure owners with significant untapped equity", icon: "💰", color: "#059669", category: "prospecting" },
+  { type: "search_foreclosure", label: "Pre-Foreclosure", description: "Distressed properties — underwater mortgages, assessment drops", icon: "⚠", color: "#dc2626", category: "prospecting" },
+  { type: "search_just_sold", label: "Just Sold Farming", description: "Recent sales for postcard campaigns to nearby homeowners", icon: "🏡", color: "#7c3aed", category: "prospecting" },
+  { type: "search_investor", label: "Investor Portfolios", description: "Corporate entities and multi-property investors", icon: "🏢", color: "#b45309", category: "prospecting" },
   { type: "create_dom_search", label: "DOM Search", description: "Find stale listings exceeding average DOM thresholds", icon: "⏱", color: "#991b1b", category: "prospecting" },
   { type: "create_farm_watchdog", label: "Farm & Watchdog", description: "Set up a farm area with MLS watchdog alerts", icon: "📡", color: "#7c2d12", category: "prospecting" },
+  { type: "save_seller_search", label: "Save Search", description: "Save a seller map search for weekly monitoring", icon: "💾", color: "#b91c1c", category: "prospecting" },
 
   // Documents
   { type: "send_esign_document", label: "Send E-Sign", description: "Send a document for e-signature via CRM", icon: "✍", color: "#4338ca", category: "documents" },
