@@ -7,6 +7,7 @@ import ListingSnapshot from "./listing-snapshot";
 import MarketPulse from "./market-pulse";
 import QuickActions from "./quick-actions";
 import AIBriefingCard from "./ai-briefing-card";
+import { GenieAssistant } from "./genie-assistant.client";
 import PipelineStats from "./pipeline-stats";
 import TasksWidget from "./tasks-widget";
 import UpcomingEventsWidget from "./upcoming-events-widget";
@@ -263,7 +264,10 @@ export default async function DashboardPage() {
         urgentFollowUps={urgentFollowUps}
       />
 
-      {/* AI Briefing */}
+      {/* Genie Assistant — interactive AI action agent */}
+      <GenieAssistant />
+
+      {/* AI Briefing (email priorities) */}
       <AIBriefingCard
         priorities={briefingPriorities}
         generatedAt={briefingGeneratedAt}
