@@ -501,7 +501,8 @@ export function DomProspectingClient() {
             )}
           </div>
         </>
-      </>)}
+      </>
+      )}
 
       {/* Monitored Properties Tab */}
       {activeTab === "monitored" && (
