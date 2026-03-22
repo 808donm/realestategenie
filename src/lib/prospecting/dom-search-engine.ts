@@ -75,8 +75,25 @@ export interface DomSearchResult {
 // Property type normalization
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Live DOM calculation from on_market_date
+// ---------------------------------------------------------------------------
+
+/** Calculate live DOM from on_market_date to today */
+export function calculateLiveDom(onMarketDate: string | Date | null | undefined, fallbackDom?: number): number {
+  if (!onMarketDate) return fallbackDom ?? 0;
+  const start = typeof onMarketDate === "string" ? new Date(onMarketDate) : onMarketDate;
+  if (isNaN(start.getTime())) return fallbackDom ?? 0;
+  const diffMs = Date.now() - start.getTime();
+  return Math.max(0, Math.floor(diffMs / (24 * 3600 * 1000)));
+}
+
+// ---------------------------------------------------------------------------
+// Property type normalization
+// ---------------------------------------------------------------------------
+
 /** Normalize MLS property types to standard categories */
-function normalizeMlsPropertyType(type?: string): string {
+export function normalizeMlsPropertyType(type?: string): string {
   if (!type) return "Other";
   const t = type.toLowerCase();
   if (t.includes("single") || t.includes("sfr") || t.includes("house") || t.includes("residential")) return "Single Family";
@@ -88,7 +105,7 @@ function normalizeMlsPropertyType(type?: string): string {
 }
 
 /** Normalize RentCast property types to standard categories */
-function normalizeRentcastPropertyType(type?: string): string {
+export function normalizeRentcastPropertyType(type?: string): string {
   if (!type) return "Other";
   const t = type.toLowerCase();
   if (t.includes("single") || t === "sfr") return "Single Family";
@@ -103,7 +120,7 @@ function normalizeRentcastPropertyType(type?: string): string {
 // Compute avg DOM by property type from listing data
 // ---------------------------------------------------------------------------
 
-function computeAvgDomByType(
+export function computeAvgDomByType(
   listings: Array<{ propertyType: string; dom: number }>
 ): Record<string, { avgDom: number; count: number }> {
   const groups: Record<string, number[]> = {};
@@ -127,7 +144,7 @@ function computeAvgDomByType(
 // Classify a listing into a tier
 // ---------------------------------------------------------------------------
 
-function classifyTier(
+export function classifyTier(
   dom: number,
   avgDom: number,
   params: Pick<DomSearchParams, "redMultiplier" | "orangeMultiplier" | "charcoalMultiplier">

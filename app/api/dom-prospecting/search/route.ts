@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { searchCachedListings } from "@/lib/prospecting/dom-cache-engine";
 import { runDomSearch, type DomSearchParams } from "@/lib/prospecting/dom-search-engine";
 import { RentcastClient, createRentcastClient } from "@/lib/integrations/rentcast-client";
 
 /**
  * POST /api/dom-prospecting/search
  *
- * Run a DOM prospecting search. Uses MLS (Trestle) as primary data source,
- * falls back to RentCast where MLS is unavailable.
+ * Run a DOM prospecting search. Queries the global listings cache first (zero API calls).
+ * Falls back to live MLS/RentCast search if cache is empty or expired.
  *
  * Body:
  *   zipCodes:           string[] (required)
@@ -44,74 +45,57 @@ export async function POST(request: NextRequest) {
       maxPrice: body.maxPrice || undefined,
     };
 
-    // Get Trestle config (MLS) for this agent
-    const { data: trestleInteg } = await supabase
-      .from("integrations")
-      .select("config")
-      .eq("agent_id", user.id)
-      .eq("provider", "trestle")
-      .eq("status", "connected")
-      .maybeSingle();
+    // Try cache-based search first (uses dom_listings_cache — no live API calls)
+    let searchResult = await searchCachedListings(supabaseAdmin, params);
+    let usedCache = searchResult.results.length > 0;
 
-    const trestleConfig = trestleInteg?.config
-      ? (typeof trestleInteg.config === "string" ? JSON.parse(trestleInteg.config) : trestleInteg.config)
-      : null;
+    // Fall back to live API if cache is empty
+    if (!usedCache) {
+      console.log("[DomSearch] Cache empty, falling back to live API search");
 
-    // Get RentCast client as fallback
-    let rentcastClient: RentcastClient | null = null;
-    try {
-      const { data: rcInteg } = await supabaseAdmin
+      const { data: trestleInteg } = await supabase
         .from("integrations")
         .select("config")
-        .eq("provider", "rentcast")
+        .eq("agent_id", user.id)
+        .eq("provider", "trestle")
         .eq("status", "connected")
-        .limit(1)
         .maybeSingle();
 
-      if (rcInteg?.config) {
-        const config = typeof rcInteg.config === "string" ? JSON.parse(rcInteg.config) : rcInteg.config;
-        if (config.api_key) rentcastClient = new RentcastClient({ apiKey: config.api_key });
-      }
-      if (!rentcastClient) rentcastClient = createRentcastClient();
-    } catch {
-      // RentCast unavailable
-    }
+      const trestleConfig = trestleInteg?.config
+        ? (typeof trestleInteg.config === "string" ? JSON.parse(trestleInteg.config) : trestleInteg.config)
+        : null;
 
-    // Get cached market stats from area_data_cache for RentCast fallback
-    let cachedMarketStats: Record<string, any> = {};
-    try {
-      const { data: cached } = await supabase
-        .from("area_data_cache")
-        .select("zip_code, data")
-        .eq("data_type", "market_stats")
-        .in("zip_code", zipCodes);
+      let rentcastClient: RentcastClient | null = null;
+      try {
+        const { data: rcInteg } = await supabaseAdmin
+          .from("integrations")
+          .select("config")
+          .eq("provider", "rentcast")
+          .eq("status", "connected")
+          .limit(1)
+          .maybeSingle();
 
-      if (cached) {
-        for (const row of cached) {
-          cachedMarketStats[row.zip_code] = row.data;
+        if (rcInteg?.config) {
+          const config = typeof rcInteg.config === "string" ? JSON.parse(rcInteg.config) : rcInteg.config;
+          if (config.api_key) rentcastClient = new RentcastClient({ apiKey: config.api_key });
         }
-      }
-    } catch {
-      // Cache miss is fine
+        if (!rentcastClient) rentcastClient = createRentcastClient();
+      } catch { /* RentCast unavailable */ }
+
+      searchResult = await runDomSearch(params, {
+        trestleConfig,
+        rentcastClient,
+      });
     }
 
-    // Run the search
-    const searchResult = await runDomSearch(params, {
-      trestleConfig,
-      rentcastClient,
-      cachedMarketStats,
-    });
-
-    // If saveSearchId provided, persist results to DB
+    // Save results if saveSearchId provided
     if (body.saveSearchId) {
       try {
-        // Delete old results for this search
         await supabaseAdmin
           .from("dom_prospect_results")
           .delete()
           .eq("search_id", body.saveSearchId);
 
-        // Insert new results
         if (searchResult.results.length > 0) {
           const rows = searchResult.results.map(r => ({
             search_id: body.saveSearchId,
@@ -146,7 +130,6 @@ export async function POST(request: NextRequest) {
           await supabaseAdmin.from("dom_prospect_results").insert(rows);
         }
 
-        // Update last_run_at on the search
         await supabaseAdmin
           .from("dom_prospect_searches")
           .update({
@@ -160,7 +143,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Summary counts
     const summary = {
       red: searchResult.results.filter(r => r.tier === "red").length,
       orange: searchResult.results.filter(r => r.tier === "orange").length,
@@ -171,6 +153,7 @@ export async function POST(request: NextRequest) {
       ...searchResult,
       summary,
       total: searchResult.results.length,
+      cached: usedCache,
     });
   } catch (error: any) {
     console.error("[DomSearch] Error:", error);

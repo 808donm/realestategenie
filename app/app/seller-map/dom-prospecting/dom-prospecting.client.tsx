@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 
 interface DomResult {
   listingKey?: string;
@@ -65,6 +65,70 @@ export function DomProspectingClient() {
   const [tierFilter, setTierFilter] = useState<string>("all");
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
+  // Tab: search | monitored | alerts
+  const [activeTab, setActiveTab] = useState<"search" | "monitored" | "alerts">("search");
+  const [monitoredProps, setMonitoredProps] = useState<any[]>([]);
+  const [monitoredLoading, setMonitoredLoading] = useState(false);
+  const [alerts, setAlerts] = useState<any[]>([]);
+  const [alertsLoading, setAlertsLoading] = useState(false);
+  const [unreadAlerts, setUnreadAlerts] = useState(0);
+
+  // Load monitored properties when tab is selected
+  useEffect(() => {
+    if (activeTab !== "monitored" || monitoredLoading) return;
+    setMonitoredLoading(true);
+    fetch("/api/dom-prospecting/monitor")
+      .then(r => r.json())
+      .then(data => setMonitoredProps(data.properties || []))
+      .catch(() => {})
+      .finally(() => setMonitoredLoading(false));
+  }, [activeTab]);
+
+  // Load alerts when tab is selected
+  useEffect(() => {
+    if (activeTab !== "alerts" || alertsLoading) return;
+    setAlertsLoading(true);
+    fetch("/api/dom-prospecting/alerts")
+      .then(r => r.json())
+      .then(data => {
+        setAlerts(data.alerts || []);
+        setUnreadAlerts(data.unreadCount || 0);
+      })
+      .catch(() => {})
+      .finally(() => setAlertsLoading(false));
+  }, [activeTab]);
+
+  // Check unread alert count on mount
+  useEffect(() => {
+    fetch("/api/dom-prospecting/alerts?limit=1")
+      .then(r => r.json())
+      .then(data => setUnreadAlerts(data.unreadCount || 0))
+      .catch(() => {});
+  }, []);
+
+  const monitorProperty = useCallback(async (r: DomResult) => {
+    try {
+      await fetch("/api/dom-prospecting/monitor", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          listingKey: r.listingKey,
+          listingId: r.mlsNumber,
+          address: r.address,
+          city: r.city,
+          zipCode: r.zipCode,
+          propertyType: r.propertyType,
+          listPrice: r.listPrice,
+          onMarketDate: r.listedDate,
+          currentTier: r.tier,
+          daysOnMarket: r.daysOnMarket,
+          redMultiplier: parseFloat(redMult) || 2.0,
+          orangeMultiplier: parseFloat(orangeMult) || 1.5,
+          charcoalMultiplier: parseFloat(charcoalMult) || 1.15,
+        }),
+      });
+    } catch { /* silent */ }
+  }, [redMult, orangeMult, charcoalMult]);
 
   const runSearch = useCallback(async () => {
     const zips = zipCodes.split(",").map(z => z.trim()).filter(Boolean);
@@ -152,6 +216,32 @@ export function DomProspectingClient() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {/* Tab Switcher */}
+      <div style={{ display: "flex", gap: 0 }}>
+        {([
+          { id: "search" as const, label: "Search" },
+          { id: "monitored" as const, label: "Monitored" },
+          { id: "alerts" as const, label: `Alerts${unreadAlerts > 0 ? ` (${unreadAlerts})` : ""}` },
+        ]).map((tab, i) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            style={{
+              padding: "8px 20px", fontSize: 13, fontWeight: 600,
+              border: "1px solid #d1d5db",
+              borderLeft: i === 0 ? "1px solid #d1d5db" : "none",
+              borderRadius: i === 0 ? "8px 0 0 8px" : i === 2 ? "0 8px 8px 0" : "0",
+              background: activeTab === tab.id ? "#1e40af" : "#fff",
+              color: activeTab === tab.id ? "#fff" : "#374151",
+              cursor: "pointer",
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "search" && (<>
       {/* Search Controls */}
       <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 16 }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12 }}>
@@ -393,6 +483,16 @@ export function DomProspectingClient() {
                         }}>
                           {tc.label}
                         </div>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); monitorProperty(r); }}
+                          style={{
+                            marginTop: 6, padding: "3px 8px", borderRadius: 4, fontSize: 10,
+                            fontWeight: 600, border: "1px solid #d1d5db", background: "#fff",
+                            color: "#374151", cursor: "pointer",
+                          }}
+                        >
+                          Monitor
+                        </button>
                       </div>
                     </div>
                   );
@@ -401,6 +501,120 @@ export function DomProspectingClient() {
             )}
           </div>
         </>
+      </>)}
+
+      {/* Monitored Properties Tab */}
+      {activeTab === "monitored" && (
+        <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 16 }}>
+          <h3 style={{ fontSize: 15, fontWeight: 700, color: "#374151", marginBottom: 12 }}>Monitored Properties</h3>
+          {monitoredLoading && <div style={{ textAlign: "center", padding: 20, color: "#9ca3af" }}>Loading...</div>}
+          {!monitoredLoading && monitoredProps.length === 0 && (
+            <div style={{ textAlign: "center", padding: 30, color: "#9ca3af" }}>
+              No monitored properties. Run a DOM search and click "Monitor" on properties you want to track.
+            </div>
+          )}
+          {monitoredProps.map((p: any) => {
+            const tierColor = TIER_COLORS[p.current_tier] || TIER_COLORS.charcoal;
+            return (
+              <div key={p.id} style={{
+                padding: "12px 14px", borderRadius: 8, marginBottom: 8,
+                border: `2px solid ${tierColor.border}`, background: tierColor.bg,
+                display: "grid", gridTemplateColumns: "1fr auto", gap: 12,
+              }}>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: tierColor.text }}>{p.address}</div>
+                  <div style={{ fontSize: 12, color: "#6b7280" }}>{p.city} {p.zip_code} | {p.property_type}</div>
+                  {p.latest_list_price && <div style={{ fontSize: 12, fontWeight: 600, color: "#059669", marginTop: 4 }}>{fmt(p.latest_list_price)}</div>}
+                  {p.latest_status && p.latest_status !== "Active" && (
+                    <div style={{ fontSize: 11, color: "#dc2626", fontWeight: 600, marginTop: 2 }}>Status: {p.latest_status}</div>
+                  )}
+                  {p.previous_tier && p.previous_tier !== p.current_tier && (
+                    <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>
+                      Tier changed: {p.previous_tier} → {p.current_tier}
+                    </div>
+                  )}
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: 28, fontWeight: 800, color: tierColor.border }}>{p.live_dom || p.latest_dom || "—"}</div>
+                  <div style={{ fontSize: 10, color: "#6b7280" }}>DOM</div>
+                  <div style={{
+                    marginTop: 4, padding: "2px 8px", borderRadius: 4,
+                    background: tierColor.border, color: "#fff", fontSize: 10, fontWeight: 700,
+                    display: "inline-block",
+                  }}>
+                    {tierColor.label}
+                  </div>
+                  <button
+                    onClick={async () => {
+                      await fetch(`/api/dom-prospecting/monitor?id=${p.id}`, { method: "DELETE" });
+                      setMonitoredProps(prev => prev.filter(x => x.id !== p.id));
+                    }}
+                    style={{
+                      display: "block", marginTop: 6, padding: "3px 8px", borderRadius: 4, fontSize: 10,
+                      fontWeight: 600, border: "1px solid #fca5a5", background: "#fff",
+                      color: "#dc2626", cursor: "pointer",
+                    }}
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Alerts Tab */}
+      {activeTab === "alerts" && (
+        <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 16 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <h3 style={{ fontSize: 15, fontWeight: 700, color: "#374151" }}>DOM Tier Alerts</h3>
+            {unreadAlerts > 0 && (
+              <button
+                onClick={async () => {
+                  await fetch("/api/dom-prospecting/alerts", {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ markAllRead: true }),
+                  });
+                  setAlerts(prev => prev.map(a => ({ ...a, status: a.status === "new" ? "viewed" : a.status })));
+                  setUnreadAlerts(0);
+                }}
+                style={{
+                  padding: "4px 12px", borderRadius: 4, fontSize: 11, fontWeight: 600,
+                  border: "1px solid #d1d5db", background: "#fff", color: "#374151", cursor: "pointer",
+                }}
+              >
+                Mark all read
+              </button>
+            )}
+          </div>
+          {alertsLoading && <div style={{ textAlign: "center", padding: 20, color: "#9ca3af" }}>Loading...</div>}
+          {!alertsLoading && alerts.length === 0 && (
+            <div style={{ textAlign: "center", padding: 30, color: "#9ca3af" }}>
+              No alerts yet. Monitor properties and you'll see alerts when they escalate to a higher tier.
+            </div>
+          )}
+          {alerts.map((a: any) => {
+            const details = a.alert_details || {};
+            const newTierColor = TIER_COLORS[details.newTier] || TIER_COLORS.charcoal;
+            return (
+              <div key={a.id} style={{
+                padding: "10px 14px", borderRadius: 8, marginBottom: 6,
+                border: `1px solid ${a.status === "new" ? newTierColor.border : "#e5e7eb"}`,
+                background: a.status === "new" ? newTierColor.bg : "#fff",
+              }}>
+                <div style={{ fontSize: 13, fontWeight: a.status === "new" ? 700 : 500, color: "#111827" }}>
+                  {a.alert_title}
+                </div>
+                <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>
+                  {new Date(a.created_at).toLocaleDateString()} | DOM: {details.liveDom} | Ratio: {details.domRatio}×
+                  {details.listPrice && ` | ${fmt(details.listPrice)}`}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       )}
     </div>
   );
