@@ -11,6 +11,7 @@ import {
   MapPin,
   Calculator,
   Map,
+  Crosshair,
   Radar,
   FileBarChart,
   Briefcase,
@@ -77,11 +78,12 @@ export const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
-    id: "listings",
-    label: "Listings",
-    icon: Map,
+    id: "opportunities",
+    label: "Opportunities",
+    icon: Crosshair,
     items: [
       { label: "Seller Map", href: "/app/seller-map", icon: Map },
+      { label: "Prospecting", href: "/app/prospecting", icon: Crosshair },
       { label: "Farm & Watchdog", href: "/app/farm", icon: Radar },
       { label: "Reports", href: "/app/reports", icon: FileBarChart },
     ],
