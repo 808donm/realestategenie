@@ -627,17 +627,21 @@ export function GenieAssistant() {
                       </div>
                     );
                   }
-                  // Seller map results
+                  // Seller map results (ScoredProperty shape)
                   if (activeSearch === "search_seller_map") {
-                    const scoreColor = r.motivationScore >= 70 ? "#dc2626" : r.motivationScore >= 50 ? "#ea580c" : r.motivationScore >= 30 ? "#f59e0b" : "#3b82f6";
+                    const score = r.score || 0;
+                    const scoreColor = score >= 70 ? "#dc2626" : score >= 50 ? "#ea580c" : score >= 30 ? "#f59e0b" : "#3b82f6";
+                    const levelLabels: Record<string, string> = { "very-likely": "Very Likely", "likely": "Likely", "possible": "Possible", "unlikely": "Unlikely" };
                     return (
-                      <div key={r.identifier?.Id || i} style={{ padding: "8px 10px", borderRadius: 6, background: "#fff", border: "1px solid #e5e7eb", fontSize: 12 }}>
+                      <div key={r.id || i} style={{ padding: "8px 10px", borderRadius: 6, background: "#fff", border: `1px solid ${scoreColor}40`, fontSize: 12 }}>
                         <div style={{ display: "flex", justifyContent: "space-between" }}>
-                          <div style={{ fontWeight: 600, color: "#111827" }}>{r.address?.oneLine || "Unknown"}</div>
-                          <div style={{ fontWeight: 800, color: scoreColor }}>{r.motivationScore || 0}</div>
+                          <div style={{ fontWeight: 600, color: "#111827" }}>{r.address || "Unknown"}</div>
+                          <div style={{ fontWeight: 800, color: scoreColor }}>{score}</div>
                         </div>
                         <div style={{ color: "#6b7280", fontSize: 11 }}>
-                          {r.sellerLevel} | {r.summary?.propType || ""} | {r.owner?.owner1?.fullName || ""}
+                          {levelLabels[r.level] || r.level || ""} | {r.propertyType || ""} | {r.owner || ""}
+                          {r.equity != null && ` | Equity: $${Number(r.equity).toLocaleString()}`}
+                          {r.absentee && " | Absentee"}
                         </div>
                       </div>
                     );
