@@ -296,6 +296,9 @@ export default function MLSClient() {
   const [attomLoading, setAttomLoading] = useState(false);
   const [attomError, setAttomError] = useState("");
 
+  // Photo lightbox state
+  const [lightboxPhoto, setLightboxPhoto] = useState<{ url: string; index: number; total: number; allPhotos: TrestleMedia[] } | null>(null);
+
   // Remaining ATTOM state variables are handled by PropertyDetailModal (embedded)
 
   // Send to contact state
@@ -2709,39 +2712,69 @@ export default function MLSClient() {
                 </div>
               )}
 
-              {/* Media gallery thumbnails */}
-              {selectedProperty.Media && selectedProperty.Media.length > 1 && (
-                <div style={{ marginBottom: 20 }}>
-                  <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, color: "#374151" }}>
-                    Photos ({selectedProperty.Media.length})
-                  </h4>
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: 8,
-                      overflowX: "auto",
-                      paddingBottom: 8,
-                    }}
-                  >
-                    {selectedProperty.Media.sort((a, b) => (a.Order || 0) - (b.Order || 0)).map(
-                      (media) => (
-                        <img
-                          key={media.MediaKey}
-                          src={media.MediaURL}
-                          alt={media.ShortDescription || "Property photo"}
-                          style={{
-                            width: 120,
-                            height: 80,
-                            objectFit: "cover",
-                            borderRadius: 6,
-                            flexShrink: 0,
-                          }}
-                        />
-                      )
-                    )}
+              {/* Media gallery thumbnails — click to enlarge */}
+              {selectedProperty.Media && selectedProperty.Media.length > 0 && (() => {
+                const sortedMedia = [...selectedProperty.Media].sort((a, b) => (a.Order || 0) - (b.Order || 0));
+                return (
+                  <div style={{ marginBottom: 20 }}>
+                    <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, color: "#374151" }}>
+                      Photos ({sortedMedia.length})
+                    </h4>
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: 8,
+                        overflowX: "auto",
+                        paddingBottom: 8,
+                      }}
+                    >
+                      {sortedMedia.map((media, idx) => {
+                        const url = media.MediaURL || "";
+                        const isImage = /\.(jpg|jpeg|png|gif|webp|bmp|tiff?)$/i.test(url) || media.MediaType?.toLowerCase().includes("image") || (!url.match(/\.(pdf|doc|docx|xls|xlsx)$/i) && !media.ShortDescription?.toLowerCase().includes("addendum"));
+                        return isImage ? (
+                          <img
+                            key={media.MediaKey}
+                            src={url}
+                            alt={media.ShortDescription || "Property photo"}
+                            onClick={() => setLightboxPhoto({ url, index: idx, total: sortedMedia.length, allPhotos: sortedMedia })}
+                            style={{
+                              width: 120,
+                              height: 80,
+                              objectFit: "cover",
+                              borderRadius: 6,
+                              flexShrink: 0,
+                              cursor: "pointer",
+                              border: "2px solid transparent",
+                              transition: "border-color 0.15s",
+                            }}
+                            onMouseEnter={e => (e.currentTarget.style.borderColor = "#4f46e5")}
+                            onMouseLeave={e => (e.currentTarget.style.borderColor = "transparent")}
+                            onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                          />
+                        ) : (
+                          <a
+                            key={media.MediaKey}
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              width: 120, height: 80, borderRadius: 6, flexShrink: 0,
+                              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                              background: "#f3f4f6", border: "2px solid #e5e7eb",
+                              cursor: "pointer", textDecoration: "none",
+                            }}
+                          >
+                            <span style={{ fontSize: 24 }}>📄</span>
+                            <span style={{ fontSize: 9, color: "#6b7280", textAlign: "center", padding: "0 4px" }}>
+                              {media.ShortDescription || "Document"}
+                            </span>
+                          </a>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Property Intelligence — Embedded PropertyDetailModal */}
               {attomLoading && (
@@ -3037,6 +3070,99 @@ export default function MLSClient() {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Photo Lightbox */}
+      {lightboxPhoto && (
+        <div
+          onClick={() => setLightboxPhoto(null)}
+          style={{
+            position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+            background: "rgba(0,0,0,0.9)", zIndex: 99999,
+            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+            cursor: "pointer",
+          }}
+        >
+          {/* Close button */}
+          <button
+            onClick={() => setLightboxPhoto(null)}
+            style={{
+              position: "absolute", top: 16, right: 16,
+              background: "rgba(255,255,255,0.2)", border: "none",
+              color: "#fff", fontSize: 24, width: 40, height: 40,
+              borderRadius: "50%", cursor: "pointer",
+            }}
+          >
+            &times;
+          </button>
+
+          {/* Counter */}
+          <div style={{ color: "#fff", fontSize: 14, marginBottom: 12 }}>
+            {lightboxPhoto.index + 1} / {lightboxPhoto.total}
+          </div>
+
+          {/* Main image */}
+          <img
+            src={lightboxPhoto.url}
+            alt="Property photo"
+            onClick={e => e.stopPropagation()}
+            style={{
+              maxWidth: "90vw", maxHeight: "80vh",
+              objectFit: "contain", borderRadius: 8,
+            }}
+            onError={e => {
+              // If image fails to load (PDF, doc, etc.), show a download link instead
+              const el = e.currentTarget;
+              el.style.display = "none";
+              const parent = el.parentElement;
+              if (parent) {
+                const link = document.createElement("a");
+                link.href = lightboxPhoto.url;
+                link.target = "_blank";
+                link.rel = "noopener noreferrer";
+                link.style.cssText = "color: #93c5fd; font-size: 16px; text-decoration: underline;";
+                link.textContent = "Open document in new tab";
+                parent.appendChild(link);
+              }
+            }}
+          />
+
+          {/* Navigation arrows */}
+          {lightboxPhoto.index > 0 && (
+            <button
+              onClick={e => {
+                e.stopPropagation();
+                const prev = lightboxPhoto.allPhotos[lightboxPhoto.index - 1];
+                setLightboxPhoto({ ...lightboxPhoto, url: prev.MediaURL, index: lightboxPhoto.index - 1 });
+              }}
+              style={{
+                position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)",
+                background: "rgba(255,255,255,0.2)", border: "none",
+                color: "#fff", fontSize: 28, width: 48, height: 48,
+                borderRadius: "50%", cursor: "pointer",
+              }}
+            >
+              &#8249;
+            </button>
+          )}
+          {lightboxPhoto.index < lightboxPhoto.total - 1 && (
+            <button
+              onClick={e => {
+                e.stopPropagation();
+                const next = lightboxPhoto.allPhotos[lightboxPhoto.index + 1];
+                setLightboxPhoto({ ...lightboxPhoto, url: next.MediaURL, index: lightboxPhoto.index + 1 });
+              }}
+              style={{
+                position: "absolute", right: 16, top: "50%", transform: "translateY(-50%)",
+                background: "rgba(255,255,255,0.2)", border: "none",
+                color: "#fff", fontSize: 28, width: 48, height: 48,
+                borderRadius: "50%", cursor: "pointer",
+              }}
+            >
+              &#8250;
+            </button>
+          )}
         </div>
       )}
     </div>
