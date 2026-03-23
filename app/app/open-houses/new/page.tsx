@@ -17,7 +17,7 @@ export default async function NewOpenHousePage() {
     const user = { id: userId };
     console.log("User ID:", userId, isImpersonating ? "(impersonating)" : "");
 
-    // Ensure agent profile exists
+    // Verify agent profile exists
     const { data: agent, error: agentError } = await supabase
       .from("agents")
       .select("id")
@@ -25,18 +25,7 @@ export default async function NewOpenHousePage() {
       .single();
 
     if (agentError || !agent) {
-      console.log("Agent profile not found, creating...");
-      // Create agent profile if it doesn't exist
-      const { error: createError } = await supabase.from("agents").insert({
-        id: user.id,
-        email: user.email || "",
-        display_name: user.user_metadata?.full_name || user.email || "",
-      });
-
-      if (createError) {
-        console.error("Error creating agent profile:", createError);
-        throw new Error("Failed to create agent profile. Please try again.");
-      }
+      throw new Error("Agent profile not found. Please contact an administrator.");
     }
 
     const address = String(formData.get("address") || "").trim();
