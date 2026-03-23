@@ -32,6 +32,14 @@ interface UsageData {
   byEndpoint: Record<string, Record<string, number>>;
   dailyByProvider: Record<string, Record<string, number>>;
   avgResponseByProvider: Record<string, number>;
+  ai: {
+    totalCalls: number;
+    totalTokens: number;
+    totalCost: number;
+    byModel: Record<string, { calls: number; promptTokens: number; completionTokens: number; totalTokens: number; totalCost: number }>;
+    bySource: Record<string, { calls: number; totalTokens: number; totalCost: number }>;
+    costPerUser: number;
+  };
 }
 
 function fmtNum(n: number): string {
@@ -253,6 +261,139 @@ export function ApiUsageDashboard() {
           Cache hit rate ({data.cacheHitRate}%) reduces real API calls — projections show gross calls before caching.
         </div>
       </div>
+
+      {/* AI Token Usage & Cost */}
+      {data.ai && data.ai.totalCalls > 0 && (
+        <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 16 }}>
+          <h3 style={{ fontSize: 15, fontWeight: 700, color: "#111827", marginBottom: 4 }}>
+            AI Token Usage & Cost
+          </h3>
+          <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 12 }}>
+            Vercel AI Gateway — OpenAI & Anthropic
+          </p>
+
+          {/* AI Summary Cards */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 16 }}>
+            <div style={{ padding: 12, background: "#f0fdf4", borderRadius: 8, border: "1px solid #bbf7d0" }}>
+              <div style={{ fontSize: 22, fontWeight: 800, color: "#059669" }}>{fmtNum(data.ai.totalCalls)}</div>
+              <div style={{ fontSize: 11, color: "#6b7280" }}>AI Calls</div>
+            </div>
+            <div style={{ padding: 12, background: "#eff6ff", borderRadius: 8, border: "1px solid #bfdbfe" }}>
+              <div style={{ fontSize: 22, fontWeight: 800, color: "#1e40af" }}>{fmtNum(data.ai.totalTokens)}</div>
+              <div style={{ fontSize: 11, color: "#6b7280" }}>Total Tokens</div>
+            </div>
+            <div style={{ padding: 12, background: "#faf5ff", borderRadius: 8, border: "1px solid #d8b4fe" }}>
+              <div style={{ fontSize: 22, fontWeight: 800, color: "#7c3aed" }}>${data.ai.totalCost.toFixed(2)}</div>
+              <div style={{ fontSize: 11, color: "#6b7280" }}>Est. Cost ({days}d)</div>
+            </div>
+            <div style={{ padding: 12, background: "#fff7ed", borderRadius: 8, border: "1px solid #fed7aa" }}>
+              <div style={{ fontSize: 22, fontWeight: 800, color: "#ea580c" }}>${data.ai.costPerUser.toFixed(2)}</div>
+              <div style={{ fontSize: 11, color: "#6b7280" }}>Cost/User ({days}d)</div>
+            </div>
+          </div>
+
+          {/* By Model */}
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 6 }}>By Model</div>
+            <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
+                  <th style={{ textAlign: "left", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Model</th>
+                  <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Calls</th>
+                  <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Prompt Tokens</th>
+                  <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Completion</th>
+                  <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Total Tokens</th>
+                  <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Est. Cost</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(data.ai.byModel)
+                  .sort(([, a], [, b]) => b.totalCost - a.totalCost)
+                  .map(([model, stats], i) => (
+                    <tr key={model} style={{ borderBottom: "1px solid #f3f4f6", background: i % 2 === 0 ? "#fff" : "#f9fafb" }}>
+                      <td style={{ padding: "6px 8px", fontWeight: 500 }}><code>{model}</code></td>
+                      <td style={{ padding: "6px 8px", textAlign: "right" }}>{fmtNum(stats.calls)}</td>
+                      <td style={{ padding: "6px 8px", textAlign: "right" }}>{fmtNum(stats.promptTokens)}</td>
+                      <td style={{ padding: "6px 8px", textAlign: "right" }}>{fmtNum(stats.completionTokens)}</td>
+                      <td style={{ padding: "6px 8px", textAlign: "right", fontWeight: 600 }}>{fmtNum(stats.totalTokens)}</td>
+                      <td style={{ padding: "6px 8px", textAlign: "right", fontWeight: 600, color: "#7c3aed" }}>${stats.totalCost.toFixed(4)}</td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* By Feature/Source */}
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 6 }}>By Feature</div>
+            <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
+                  <th style={{ textAlign: "left", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Feature</th>
+                  <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Calls</th>
+                  <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Total Tokens</th>
+                  <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Est. Cost</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(data.ai.bySource)
+                  .sort(([, a], [, b]) => b.totalCost - a.totalCost)
+                  .map(([source, stats], i) => (
+                    <tr key={source} style={{ borderBottom: "1px solid #f3f4f6", background: i % 2 === 0 ? "#fff" : "#f9fafb" }}>
+                      <td style={{ padding: "6px 8px", fontWeight: 500 }}>{source}</td>
+                      <td style={{ padding: "6px 8px", textAlign: "right" }}>{fmtNum(stats.calls)}</td>
+                      <td style={{ padding: "6px 8px", textAlign: "right" }}>{fmtNum(stats.totalTokens)}</td>
+                      <td style={{ padding: "6px 8px", textAlign: "right", fontWeight: 600, color: "#7c3aed" }}>${stats.totalCost.toFixed(4)}</td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* AI Cost Projection */}
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 6 }}>AI Cost Projections</div>
+            <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
+                  <th style={{ textAlign: "left", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Users</th>
+                  <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Tokens/Month</th>
+                  <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Cost/Month</th>
+                  <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Cost/Year</th>
+                  <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Cost/User/Mo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {/* Actual row */}
+                <tr style={{ borderBottom: "2px solid #7c3aed", background: "#faf5ff" }}>
+                  <td style={{ padding: "6px 8px", fontWeight: 700, color: "#7c3aed" }}>{data.activeUsers} (actual)</td>
+                  <td style={{ padding: "6px 8px", textAlign: "right" }}>{fmtNum(Math.round(data.ai.totalTokens / days * 30))}</td>
+                  <td style={{ padding: "6px 8px", textAlign: "right", fontWeight: 600 }}>${(data.ai.totalCost / days * 30).toFixed(2)}</td>
+                  <td style={{ padding: "6px 8px", textAlign: "right" }}>${(data.ai.totalCost / days * 365).toFixed(2)}</td>
+                  <td style={{ padding: "6px 8px", textAlign: "right" }}>${data.ai.costPerUser > 0 ? (data.ai.costPerUser / days * 30).toFixed(2) : "—"}</td>
+                </tr>
+                {USER_PROJECTIONS.map((users, i) => {
+                  const scale = data.activeUsers > 0 ? users / data.activeUsers : users;
+                  const monthlyTokens = Math.round(data.ai.totalTokens / days * 30 * scale);
+                  const monthlyCost = data.ai.totalCost / days * 30 * scale;
+                  return (
+                    <tr key={users} style={{ borderBottom: "1px solid #f3f4f6", background: i % 2 === 0 ? "#fff" : "#f9fafb" }}>
+                      <td style={{ padding: "6px 8px", fontWeight: 600 }}>{users.toLocaleString()}</td>
+                      <td style={{ padding: "6px 8px", textAlign: "right" }}>{fmtNum(monthlyTokens)}</td>
+                      <td style={{ padding: "6px 8px", textAlign: "right", fontWeight: 600, color: "#7c3aed" }}>${monthlyCost.toFixed(2)}</td>
+                      <td style={{ padding: "6px 8px", textAlign: "right" }}>${(monthlyCost * 12).toFixed(2)}</td>
+                      <td style={{ padding: "6px 8px", textAlign: "right" }}>${(monthlyCost / users).toFixed(4)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 6 }}>
+              Pricing: GPT-4o-mini ($0.15/$0.60 per 1M tokens), GPT-4-turbo ($10/$30), Claude Opus ($15/$75). Actual costs depend on model mix.
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Daily Trend (simple text-based) */}
       <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 16 }}>

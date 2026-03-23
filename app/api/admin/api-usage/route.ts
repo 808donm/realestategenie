@@ -103,6 +103,36 @@ export async function GET(request: NextRequest) {
       avgResponseByProvider[provider] = Math.round(times.reduce((a, b) => a + b, 0) / times.length);
     }
 
+    // AI Token usage
+    const { data: aiTokenData } = await supabaseAdmin
+      .from("ai_token_usage")
+      .select("model, prompt_tokens, completion_tokens, total_tokens, estimated_cost, source")
+      .gte("created_at", since);
+
+    const aiByModel: Record<string, { calls: number; promptTokens: number; completionTokens: number; totalTokens: number; totalCost: number }> = {};
+    const aiBySource: Record<string, { calls: number; totalTokens: number; totalCost: number }> = {};
+
+    for (const row of aiTokenData || []) {
+      // By model
+      if (!aiByModel[row.model]) aiByModel[row.model] = { calls: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0, totalCost: 0 };
+      aiByModel[row.model].calls++;
+      aiByModel[row.model].promptTokens += row.prompt_tokens || 0;
+      aiByModel[row.model].completionTokens += row.completion_tokens || 0;
+      aiByModel[row.model].totalTokens += row.total_tokens || 0;
+      aiByModel[row.model].totalCost += Number(row.estimated_cost) || 0;
+
+      // By source
+      const src = row.source || "unknown";
+      if (!aiBySource[src]) aiBySource[src] = { calls: 0, totalTokens: 0, totalCost: 0 };
+      aiBySource[src].calls++;
+      aiBySource[src].totalTokens += row.total_tokens || 0;
+      aiBySource[src].totalCost += Number(row.estimated_cost) || 0;
+    }
+
+    const aiTotalCost = Object.values(aiByModel).reduce((sum, m) => sum + m.totalCost, 0);
+    const aiTotalTokens = Object.values(aiByModel).reduce((sum, m) => sum + m.totalTokens, 0);
+    const aiTotalCalls = Object.values(aiByModel).reduce((sum, m) => sum + m.calls, 0);
+
     return NextResponse.json({
       period: { days, since },
       activeUsers: activeUserCount || 0,
@@ -113,6 +143,14 @@ export async function GET(request: NextRequest) {
       byEndpoint: endpointCounts,
       dailyByProvider,
       avgResponseByProvider,
+      ai: {
+        totalCalls: aiTotalCalls,
+        totalTokens: aiTotalTokens,
+        totalCost: Math.round(aiTotalCost * 100) / 100,
+        byModel: aiByModel,
+        bySource: aiBySource,
+        costPerUser: activeUserCount ? Math.round((aiTotalCost / (activeUserCount || 1)) * 100) / 100 : 0,
+      },
     });
   } catch (error: any) {
     console.error("[Admin API Usage] Error:", error);
