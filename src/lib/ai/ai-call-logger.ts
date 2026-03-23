@@ -58,9 +58,9 @@ export async function trackedGenerateText(params: {
   const result = await generateText(genParams);
 
   const responseTimeMs = Date.now() - start;
-  const usage = result.usage;
-  const promptTokens = usage?.promptTokens || 0;
-  const completionTokens = usage?.completionTokens || 0;
+  const usage = result.usage as any;
+  const promptTokens = usage?.promptTokens || usage?.inputTokens || 0;
+  const completionTokens = usage?.completionTokens || usage?.outputTokens || 0;
   const totalTokens = promptTokens + completionTokens;
   const cost = estimateCost(modelId, promptTokens, completionTokens);
 
