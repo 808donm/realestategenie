@@ -1481,19 +1481,46 @@ export default function PropertyDetailModal({
 
                 {rentcastComps && rentcastComps.length > 0 && (
                   <div>
-                    {(p.avm?.amount?.value || rentcastAvmPrice) && (
-                      <div style={{ padding: 12, borderRadius: 8, marginBottom: 12, background: "#f0fdf4", border: "1px solid #bbf7d0" }}>
-                        <div style={{ fontSize: 12, color: "#166534", fontWeight: 600 }}>Estimated Value (AVM)</div>
-                        <div style={{ fontSize: 18, fontWeight: 700, color: "#15803d" }}>
-                          {fmt(p.avm?.amount?.value ?? rentcastAvmPrice ?? undefined)}
-                        </div>
-                        {p.avm?.amount?.low != null && p.avm?.amount?.high != null && (
-                          <div style={{ fontSize: 11, color: "#166534", marginTop: 2 }}>
-                            Range: {fmt(p.avm.amount.low)} – {fmt(p.avm.amount.high)}
+                    {(p.avm?.amount?.value || rentcastAvmPrice) && (() => {
+                      const avmValue = p.avm?.amount?.value ?? rentcastAvmPrice;
+                      const avmLow = p.avm?.amount?.low;
+                      const avmHigh = p.avm?.amount?.high;
+                      const hasRange = avmLow != null && avmHigh != null;
+                      const rangeWidth = hasRange && avmValue ? Math.round(((avmHigh! - avmLow!) / 2 / avmValue) * 100) : null;
+                      const source = p.avm?._avmSources?.chosen === "rentcast" ? "RentCast" : "Realie (County Records)";
+                      return (
+                        <div style={{ padding: 14, borderRadius: 10, marginBottom: 14, background: "#f0fdf4", border: "1px solid #bbf7d0" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                            <div style={{ fontSize: 12, color: "#166534", fontWeight: 600 }}>Automated Valuation (AVM)</div>
+                            <div style={{ fontSize: 10, color: "#6b7280", fontWeight: 500 }}>{source}</div>
                           </div>
-                        )}
-                      </div>
-                    )}
+                          <div style={{ fontSize: 22, fontWeight: 800, color: "#15803d" }}>
+                            {fmt(avmValue)}
+                          </div>
+                          {hasRange && (
+                            <div style={{ marginTop: 8 }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#166534", marginBottom: 4 }}>
+                                <span>Low: {fmt(avmLow)}</span>
+                                <span>High: {fmt(avmHigh)}</span>
+                              </div>
+                              <div style={{ height: 6, background: "#dcfce7", borderRadius: 3, position: "relative" }}>
+                                <div style={{
+                                  position: "absolute",
+                                  left: `${avmValue && avmLow && avmHigh ? Math.round(((avmValue - avmLow) / (avmHigh - avmLow)) * 100) : 50}%`,
+                                  top: -3, width: 12, height: 12, borderRadius: "50%",
+                                  background: "#15803d", border: "2px solid #fff",
+                                  transform: "translateX(-50%)",
+                                }} />
+                              </div>
+                              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#6b7280", marginTop: 4 }}>
+                                <span>Confidence Range: {fmt(avmLow)} – {fmt(avmHigh)}</span>
+                                {rangeWidth != null && <span>±{rangeWidth}%</span>}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                     <div style={{ fontWeight: 700, fontSize: 14, color: "#1f2937", marginBottom: 8 }}>
                       Comparable Properties ({rentcastComps.length})
                     </div>

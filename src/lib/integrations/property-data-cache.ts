@@ -48,7 +48,7 @@ interface CacheEntry {
   data: any;
   expiresAt: number;
   lastAccessed: number;
-  source: "realie" | "rentcast" | "free-data" | "computed" | "merged";
+  source: "realie" | "rentcast" | "free-data" | "computed" | "merged" | "unified";
 }
 
 const cache = new Map<string, CacheEntry>();
@@ -67,7 +67,7 @@ export function propertyCacheGet(key: string): { data: any; source: string } | n
 export function propertyCacheSet(
   key: string,
   data: any,
-  source: "realie" | "rentcast" | "free-data" | "computed" | "merged"
+  source: "realie" | "rentcast" | "free-data" | "computed" | "merged" | "unified"
 ): void {
   if (cache.size >= MAX_MEMORY_CACHE_SIZE) {
     let oldestKey: string | null = null;
@@ -170,7 +170,7 @@ export async function propertyDbWrite(
   key: string,
   _provider: string,
   data: any,
-  source: "realie" | "rentcast" | "free-data" | "computed" | "merged"
+  source: "realie" | "rentcast" | "free-data" | "computed" | "merged" | "unified"
 ): Promise<void> {
   const sb = getSupabase();
   if (!sb) return;
