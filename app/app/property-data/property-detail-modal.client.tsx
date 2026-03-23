@@ -1629,7 +1629,7 @@ export default function PropertyDetailModal({
                       const compPrice = comp.closePrice || comp.price;
                       const cPpsf = compPrice && comp.squareFootage ? Math.round(compPrice / comp.squareFootage) : comp.pricePerSqft;
                       const correlationPct = comp.correlation != null ? Math.round(comp.correlation * 100) : null;
-                      const isMls = comp.source === "mls";
+                      const isMls = comp.source === "mls" || !!comp.listingKey || !!comp.closeDate;
                       return (
                         <div key={comp.listingKey || comp.id || i} style={{
                           padding: 12, borderRadius: 8, marginBottom: 8,
