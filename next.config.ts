@@ -7,6 +7,22 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "*.supabase.co",
       },
+      {
+        protocol: "https",
+        hostname: "*.paragonrels.com",
+      },
+      {
+        protocol: "https",
+        hostname: "*.corelogic.com",
+      },
+      {
+        protocol: "https",
+        hostname: "*.cotality.com",
+      },
+      {
+        protocol: "https",
+        hostname: "**.trestlemls.com",
+      },
     ],
   },
   // Prevent Resend from being bundled - keep it as external module

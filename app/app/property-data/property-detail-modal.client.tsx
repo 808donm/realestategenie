@@ -435,7 +435,7 @@ export default function PropertyDetailModal({
       .finally(() => setNearbyLoading(false));
   }, [activeSection, nearbyHomes, nearbyLoading, farmingContext, p]);
 
-  // Fetch RentCast comps when user clicks the Comps tab
+  // Fetch comps when user clicks the Comps tab (MLS first, RentCast fallback)
   useEffect(() => {
     if (activeSection !== "comps") return;
     if (rentcastComps || rentcastCompsLoading) return;
@@ -450,24 +450,25 @@ export default function PropertyDetailModal({
     setRentcastCompsError(null);
 
     const params = new URLSearchParams({ address, compCount: "10" });
-    const beds = p.building?.rooms?.beds;
-    const baths = p.building?.rooms?.bathsFull ?? p.building?.rooms?.bathsTotal;
+    const zip = p.address?.postal1;
+    const bedsVal = p.building?.rooms?.beds;
+    const bathsVal = p.building?.rooms?.bathsFull ?? p.building?.rooms?.bathsTotal;
     const sqftVal = p.building?.size?.livingSize || p.building?.size?.universalSize || p.building?.size?.bldgSize;
     const propType = p.summary?.propType;
-    if (beds != null) params.set("bedrooms", String(beds));
-    if (baths != null) params.set("bathrooms", String(baths));
-    if (sqftVal) params.set("squareFootage", String(sqftVal));
-    if (propType === "SFR") params.set("propertyType", "Single Family");
-    else if (propType === "CONDO") params.set("propertyType", "Condo");
+    if (zip) params.set("zipCode", zip);
+    if (bedsVal != null) params.set("beds", String(bedsVal));
+    if (bathsVal != null) params.set("baths", String(bathsVal));
+    if (sqftVal) params.set("sqft", String(sqftVal));
+    if (propType) params.set("propertyType", propType);
 
-    fetch(`/api/rentcast/comps?${params}`)
+    fetch(`/api/comps?${params}`)
       .then((r) => r.json())
       .then((data) => {
         if (data.error) {
           setRentcastCompsError(data.error);
         } else {
           setRentcastComps(data.comparables || []);
-          setRentcastAvmPrice(data.price || null);
+          setRentcastAvmPrice(data.avm?.price || null);
         }
       })
       .catch((e) => setRentcastCompsError(e.message || "Failed to fetch comparables."))
@@ -1497,32 +1498,37 @@ export default function PropertyDetailModal({
                       Comparable Properties ({rentcastComps.length})
                     </div>
                     {rentcastComps.map((comp: any, i: number) => {
-                      const cPpsf = comp.price && comp.squareFootage ? Math.round(comp.price / comp.squareFootage) : null;
+                      const compPrice = comp.closePrice || comp.price;
+                      const cPpsf = compPrice && comp.squareFootage ? Math.round(compPrice / comp.squareFootage) : comp.pricePerSqft;
                       const correlationPct = comp.correlation != null ? Math.round(comp.correlation * 100) : null;
+                      const isMls = comp.source === "mls";
                       return (
-                        <div key={comp.id || i} style={{
+                        <div key={comp.listingKey || comp.id || i} style={{
                           padding: 12, borderRadius: 8, marginBottom: 8,
-                          background: "#fff", border: "1px solid #e5e7eb",
+                          background: "#fff", border: `1px solid ${isMls ? "#bfdbfe" : "#e5e7eb"}`,
                         }}>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                            <div style={{ fontWeight: 600, fontSize: 13, color: "#1f2937" }}>{comp.formattedAddress}</div>
-                            {correlationPct != null && (
-                              <span style={{
-                                fontSize: 11, fontWeight: 600, padding: "2px 6px", borderRadius: 4,
-                                background: correlationPct >= 90 ? "#dcfce7" : correlationPct >= 70 ? "#fef9c3" : "#fee2e2",
-                                color: correlationPct >= 90 ? "#166534" : correlationPct >= 70 ? "#854d0e" : "#991b1b",
-                              }}>
-                                {correlationPct}% match
-                              </span>
-                            )}
+                            <div style={{ fontWeight: 600, fontSize: 13, color: "#1f2937" }}>{comp.address || comp.formattedAddress}</div>
+                            <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                              {isMls && (
+                                <span style={{ fontSize: 9, fontWeight: 700, padding: "1px 5px", borderRadius: 3, background: "#1e40af", color: "#fff" }}>MLS</span>
+                              )}
+                              {correlationPct != null && (
+                                <span style={{
+                                  fontSize: 11, fontWeight: 600, padding: "2px 6px", borderRadius: 4,
+                                  background: correlationPct >= 90 ? "#dcfce7" : correlationPct >= 70 ? "#fef9c3" : "#fee2e2",
+                                  color: correlationPct >= 90 ? "#166534" : correlationPct >= 70 ? "#854d0e" : "#991b1b",
+                                }}>
+                                  {correlationPct}% match
+                                </span>
+                              )}
+                            </div>
                           </div>
                           <div style={{ display: "flex", gap: 16, fontSize: 12, color: "#6b7280", flexWrap: "wrap" }}>
-                            {comp.price != null && <span style={{ fontWeight: 600, color: "#166534" }}>${comp.price.toLocaleString()}</span>}
-                            {comp.status && (
-                              <span style={{
-                                fontWeight: 500,
-                                color: comp.status === "Active" ? "#2563eb" : "#6b7280",
-                              }}>{comp.status}</span>
+                            {compPrice != null && <span style={{ fontWeight: 600, color: "#166534" }}>${compPrice.toLocaleString()}{isMls ? " (sold)" : ""}</span>}
+                            {comp.closeDate && <span>Closed {new Date(comp.closeDate).toLocaleDateString()}</span>}
+                            {comp.listPrice != null && comp.closePrice != null && comp.listPrice !== comp.closePrice && (
+                              <span>List: ${comp.listPrice.toLocaleString()}</span>
                             )}
                             {comp.bedrooms != null && <span>{comp.bedrooms} bed</span>}
                             {comp.bathrooms != null && <span>{comp.bathrooms} bath</span>}
@@ -1531,8 +1537,14 @@ export default function PropertyDetailModal({
                             {cPpsf && <span>${cPpsf}/sqft</span>}
                             {comp.distance != null && <span>{comp.distance.toFixed(1)} mi</span>}
                             {comp.daysOnMarket != null && <span>{comp.daysOnMarket} DOM</span>}
-                            {comp.listedDate && <span>Listed {new Date(comp.listedDate).toLocaleDateString()}</span>}
                           </div>
+                          {isMls && (comp.listAgentName || comp.buyerAgentName) && (
+                            <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>
+                              {comp.listAgentName && `List: ${comp.listAgentName}`}
+                              {comp.listAgentName && comp.buyerAgentName && " | "}
+                              {comp.buyerAgentName && `Buyer: ${comp.buyerAgentName}`}
+                            </div>
+                          )}
                         </div>
                       );
                     })}
