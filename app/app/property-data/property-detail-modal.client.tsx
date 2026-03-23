@@ -510,13 +510,31 @@ export default function PropertyDetailModal({
     const cachedRentalAvm = (p as any).rentalAvm;
 
     // Realie already provides mortgage and equity on the primary response.
-    // Fetch supplemental: rentalavm (rental estimates via HUD).
-    // Market stats/trends are now on the dedicated Market Stats tab.
+    // Fetch supplemental: rentalavm (rental estimates via HUD) + MLS last sale (Hawaii non-disclosure).
     const rentalAvmPromise: Promise<PromiseSettledResult<any>> = cachedRentalAvm
       ? Promise.resolve({ status: "fulfilled" as const, value: { property: [{ rentalAvm: cachedRentalAvm }] } })
       : fetch(`/api/integrations/attom/property?${buildAddrParams("rentalavm")}`).then(r => r.json()).then(v => ({ status: "fulfilled" as const, value: v })).catch(e => ({ status: "rejected" as const, reason: e }));
 
-    rentalAvmPromise.then((rentalAvm) => {
+    // MLS last sale — Hawaii is non-disclosure, so Realie/RentCast won't have sale prices.
+    // Query MLS for closed sales of this property to get actual ClosePrice/CloseDate.
+    const zip = p.address?.postal1;
+    const mlsLastSalePromise: Promise<any> = zip && addr1
+      ? fetch(`/api/comps?address=${encodeURIComponent(addr1 + (addr2 ? ", " + addr2 : ""))}&zipCode=${zip}&compCount=1&months=60`)
+          .then(r => r.json())
+          .then(data => {
+            // Find a comp that matches this property's address (it might be in its own closed sales)
+            const comps = data.comparables || [];
+            const addrLower = (addr1 || "").toLowerCase();
+            const match = comps.find((c: any) =>
+              c.address?.toLowerCase().includes(addrLower) ||
+              addrLower.includes((c.address || "").split(",")[0].toLowerCase().trim())
+            );
+            return match || (comps.length > 0 ? { _isComp: true, ...comps[0] } : null);
+          })
+          .catch(() => null)
+      : Promise.resolve(null);
+
+    Promise.all([rentalAvmPromise, mlsLastSalePromise]).then(([rentalAvm, mlsLastSale]) => {
       // Build homeEquity from Realie's pre-calculated data, or fall back to
       // computing it from AVM / assessment values (same cascade the search cards use).
       let homeEquityData = (p as any).homeEquity || null;
@@ -571,12 +589,25 @@ export default function PropertyDetailModal({
         }
       }
 
+      // Enrich homeEquity with MLS last sale data (Hawaii non-disclosure workaround)
+      if (mlsLastSale && !mlsLastSale._isComp) {
+        if (homeEquityData) {
+          if (!homeEquityData.lastSalePrice && mlsLastSale.closePrice) {
+            homeEquityData.lastSalePrice = mlsLastSale.closePrice;
+          }
+          if (!homeEquityData.lastSaleDate && mlsLastSale.closeDate) {
+            homeEquityData.lastSaleDate = new Date(mlsLastSale.closeDate).toLocaleDateString();
+          }
+        }
+      }
+
       setEnrichedFinancial({
         avmHistory: null,
         rentalAvm: rentalAvm.status === "fulfilled" ? rentalAvm.value : null,
         salesHistory: null,
         mortgageDetail: null,
         homeEquity: homeEquityData ? { property: [{ homeEquity: homeEquityData }] } : null,
+        mlsLastSale: mlsLastSale && !mlsLastSale._isComp ? mlsLastSale : null,
       });
     }).finally(() => setEnrichedFinancialLoading(false));
   }, [activeSection, enrichedFinancial, enrichedFinancialLoading, p]);
@@ -1422,8 +1453,26 @@ export default function PropertyDetailModal({
                         <div style={{ display: "flex", flexWrap: "wrap", gap: 16, marginTop: 10, fontSize: 12, color: "#374151" }}>
                           {loanCount != null && loanCount > 0 && <span><strong>Active Loans:</strong> {loanCount}</span>}
                           {estimatedPayment != null && estimatedPayment > 0 && <span><strong>Est. Monthly Payment:</strong> {fmt(estimatedPayment)}</span>}
-                          <span><strong>Last Sale:</strong> {lastSalePrice != null ? fmt(lastSalePrice) : "Not Disclosed"}</span>
-                          <span><strong>Sale Date:</strong> {lastSaleDate || "Not Disclosed"}</span>
+                          {(() => {
+                            const mlsSale = enrichedFinancial?.mlsLastSale;
+                            const salePrice = lastSalePrice ?? mlsSale?.closePrice;
+                            const saleDate = lastSaleDate ?? (mlsSale?.closeDate ? new Date(mlsSale.closeDate).toLocaleDateString() : null);
+                            const saleSource = lastSalePrice != null ? "" : mlsSale?.closePrice != null ? " (MLS)" : "";
+                            return (
+                              <>
+                                <span><strong>Last Sale:</strong> {salePrice != null ? `${fmt(salePrice)}${saleSource}` : "Not Disclosed"}</span>
+                                <span><strong>Sale Date:</strong> {saleDate || "Not Disclosed"}</span>
+                                {mlsSale && !lastSalePrice && mlsSale.closePrice && (
+                                  <>
+                                    {mlsSale.listPrice && <span><strong>List Price:</strong> {fmt(mlsSale.listPrice)}</span>}
+                                    {mlsSale.daysOnMarket != null && <span><strong>DOM:</strong> {mlsSale.daysOnMarket}</span>}
+                                    {mlsSale.listAgentName && <span><strong>List Agent:</strong> {mlsSale.listAgentName}</span>}
+                                    {mlsSale.buyerAgentName && <span><strong>Buyer Agent:</strong> {mlsSale.buyerAgentName}</span>}
+                                  </>
+                                )}
+                              </>
+                            );
+                          })()}
                           {p.sale?.amount?.saleRecDate && <span><strong>Recording Date:</strong> {p.sale.amount.saleRecDate}</span>}
                           {p.sale?.amount?.saleDocType && <span><strong>Document Type:</strong> {p.sale.amount.saleDocType}</span>}
                           {p.sale?.amount?.saleCode && <span><strong>Sale Code:</strong> {p.sale.amount.saleCode}</span>}
