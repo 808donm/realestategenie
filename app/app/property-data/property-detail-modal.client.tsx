@@ -950,7 +950,15 @@ export default function PropertyDetailModal({
               <Section title="Utilities">
                 <Field label="Heating" value={p.utilities?.heatingType} />
                 <Field label="Cooling" value={p.utilities?.coolingType} />
-                <Field label="Sewer" value={p.utilities?.sewerType} />
+                <Field label="Sewer/Waste" value={(() => {
+                  const sewer = p.utilities?.sewerType;
+                  if (!sewer) return undefined;
+                  const lower = sewer.toLowerCase();
+                  if (lower.includes("cesspool") || lower.includes("cess")) return `${sewer} ⚠️`;
+                  if (lower.includes("septic")) return `${sewer}`;
+                  if (lower.includes("sewer") || lower.includes("public") || lower.includes("municipal")) return `${sewer} (Public)`;
+                  return sewer;
+                })()} />
                 <Field label="Water" value={p.utilities?.waterType} />
                 <Field label="Energy" value={p.utilities?.energyType} />
                 <Field label="Heating Fuel" value={p.utilities?.heatingFuel} />
@@ -1055,8 +1063,21 @@ export default function PropertyDetailModal({
                 <Field label="Basement Size" value={p.building?.interior?.bsmtSize ? `${fmtNum(p.building.interior.bsmtSize)} sqft` : undefined} />
                 <Field label="Basement Type" value={p.building?.interior?.bsmtType} />
                 <Field label="Garage Type" value={p.building?.parking?.garageType} />
+                <Field label="Parking Type" value={p.building?.parking?.prkgType} />
+                <Field label="Parking Spaces" value={(() => {
+                  const spaces = p.building?.parking?.prkgSpaces;
+                  const type = p.building?.parking?.prkgType?.toLowerCase() || "";
+                  const garage = p.building?.parking?.garageType?.toLowerCase() || "";
+                  if (!spaces) return undefined;
+                  let label = String(spaces);
+                  if (garage.includes("attached") || garage.includes("covered") || type.includes("covered")) label += " (Covered)";
+                  else if (garage.includes("detach")) label += " (Detached)";
+                  else if (type.includes("uncovered") || type.includes("open")) label += " (Uncovered)";
+                  else if (type.includes("street") || type.includes("on-street")) label += " (Street)";
+                  else if (type.includes("carport")) label += " (Carport)";
+                  return label;
+                })()} />
                 <Field label="Parking Size" value={p.building?.parking?.prkgSize ? `${fmtNum(p.building.parking.prkgSize)} sqft` : undefined} />
-                <Field label="Parking Spaces" value={p.building?.parking?.prkgSpaces} />
                 <Field label="View" value={p.building?.summary?.view} />
               </Section>
 
