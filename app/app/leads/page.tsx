@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { supabaseServer } from "@/lib/supabase/server";
 import LeadsList from "./leads-list";
 import LeadsBySourceChart from "./leads-by-source-chart";
 import LeadsInsightsCharts from "./leads-insights-charts";
@@ -16,11 +15,13 @@ const SOURCE_LABELS: Record<string, string> = {
 };
 
 export default async function LeadsPage() {
-  const supabase = await supabaseServer();
+  const { getEffectiveClient } = await import("@/lib/supabase/effective-client");
+  const { supabase, userId } = await getEffectiveClient();
 
   const { data: leads, error } = await supabase
     .from("lead_submissions")
     .select("id,event_id,created_at,payload,heat_score,lead_source,pipeline_stage")
+    .eq("agent_id", userId)
     .order("created_at", { ascending: false })
     .limit(200);
 
