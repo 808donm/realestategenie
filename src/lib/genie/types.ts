@@ -78,6 +78,23 @@ export interface GenieActionLogEntry {
   status: "completed" | "failed" | "draft_only";
 }
 
+// ── Copilot types ────────────────────────────────────────────────────────────
+
+export interface CopilotMessage {
+  role: "user" | "assistant" | "system";
+  content: string;
+  actionResult?: CopilotActionResult;
+  timestamp: string;
+}
+
+export interface CopilotActionResult {
+  action: string;
+  success: boolean;
+  data?: any;
+  redirect?: string;
+  error?: string;
+}
+
 // ── Quick Action definitions for UI grid ─────────────────────────────────────
 export interface QuickActionDef {
   type: QuickActionType;

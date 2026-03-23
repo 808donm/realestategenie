@@ -30,7 +30,7 @@ const PRIORITY_COLORS = {
   3: { dot: "#3b82f6", bg: "#eff6ff" },
 };
 
-export function GenieAssistant() {
+export function GenieAssistant({ onOpenCopilot }: { onOpenCopilot?: (actionType: string) => void } = {}) {
   const [actions, setActions] = useState<ActionItem[]>([]);
   const [ghlConnected, setGhlConnected] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -318,7 +318,13 @@ export function GenieAssistant() {
 
   // Execute a quick action
   const executeQuickAction = useCallback(async (qa: QuickActionDef) => {
-    // Inline search actions — open search panel instead of redirecting
+    // Route through copilot if available
+    if (onOpenCopilot) {
+      onOpenCopilot(qa.type);
+      return;
+    }
+
+    // Fallback: Inline search actions — open search panel instead of redirecting
     const inlineSearchActions = [
       "create_dom_search", "search_seller_map", "search_mls", "property_lookup",
       "search_absentee", "search_high_equity", "search_foreclosure", "search_just_sold", "search_investor",
@@ -375,7 +381,7 @@ export function GenieAssistant() {
     if (route) {
       window.location.href = route;
     }
-  }, [activeSearch]);
+  }, [activeSearch, onOpenCopilot]);
 
   return (
     <div style={{
