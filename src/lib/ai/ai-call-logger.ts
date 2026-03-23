@@ -5,7 +5,7 @@
  * Works with the existing api_call_log table using provider='openai' or 'anthropic'.
  */
 
-import { generateText, type CoreMessage } from "ai";
+import { generateText } from "ai";
 import { gateway } from "@ai-sdk/gateway";
 import { logApiCall } from "@/lib/api-call-logger";
 
@@ -32,7 +32,7 @@ export async function trackedGenerateText(params: {
   model: string; // e.g., "openai/gpt-4o-mini"
   system?: string;
   prompt?: string;
-  messages?: CoreMessage[];
+  messages?: Array<{ role: string; content: string }>;
   temperature?: number;
   maxTokens?: number;
   maxOutputTokens?: number;
