@@ -64,6 +64,9 @@ export default function AdminSidebar() {
           }}
         />
 
+        <NavLink href="/app/admin/api-usage" active={pathname === "/app/admin/api-usage"}>
+          📈 API Usage
+        </NavLink>
         <NavLink href="/app/admin/error-logs" active={pathname === "/app/admin/error-logs"}>
           🐛 Error Logs
         </NavLink>

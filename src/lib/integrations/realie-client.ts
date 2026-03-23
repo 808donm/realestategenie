@@ -712,6 +712,7 @@ export class RealieClient {
 
     console.log(`[Realie] API request: ${url.toString()}`);
 
+    const start = Date.now();
     const response = await fetch(url.toString(), {
       headers: {
         Accept: "application/json",
@@ -721,6 +722,12 @@ export class RealieClient {
         Authorization: this.apiKey,
       },
     });
+
+    // Log API call (non-blocking)
+    try {
+      const { logApiCall } = await import("@/lib/api-call-logger");
+      logApiCall({ provider: "realie", endpoint, method: "GET", statusCode: response.status, responseTimeMs: Date.now() - start });
+    } catch { /* ignore */ }
 
     if (!response.ok) {
       const errorText = await response.text();

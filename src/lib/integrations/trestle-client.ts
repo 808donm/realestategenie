@@ -299,6 +299,7 @@ export class TrestleClient {
     const url = `${baseUrl}${endpoint}`;
     console.log(`[Trestle] API request: ${url}`);
 
+    const start = Date.now();
     const response = await fetch(url, {
       ...options,
       headers: {
@@ -309,6 +310,13 @@ export class TrestleClient {
         ...options.headers,
       },
     });
+
+    // Log API call (non-blocking)
+    try {
+      const { logApiCall } = await import("@/lib/api-call-logger");
+      const ep = endpoint.split("?")[0]; // strip query params
+      logApiCall({ provider: "trestle", endpoint: ep, method: options.method || "GET", statusCode: response.status, responseTimeMs: Date.now() - start });
+    } catch { /* ignore */ }
 
     if (!response.ok) {
       const errorText = await response.text();
