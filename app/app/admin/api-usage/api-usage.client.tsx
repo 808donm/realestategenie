@@ -4,6 +4,71 @@ import { useState, useEffect } from "react";
 
 const USER_PROJECTIONS = [10, 50, 100, 250, 500, 750, 1000];
 
+// Provider pricing tiers (monthly plans, calls/month, cost/month)
+const PROVIDER_PRICING: Record<string, { tiers: Array<{ name: string; calls: number; cost: number }>; perCallOverage?: number }> = {
+  rentcast: {
+    tiers: [
+      { name: "Free", calls: 100, cost: 0 },
+      { name: "Starter", calls: 1000, cost: 29 },
+      { name: "Professional", calls: 5000, cost: 99 },
+      { name: "Business", calls: 20000, cost: 299 },
+      { name: "Enterprise", calls: 100000, cost: 999 },
+    ],
+    perCallOverage: 0.01,
+  },
+  realie: {
+    tiers: [
+      { name: "Free", calls: 500, cost: 0 },
+      { name: "Starter", calls: 5000, cost: 49 },
+      { name: "Growth", calls: 25000, cost: 149 },
+      { name: "Business", calls: 100000, cost: 399 },
+      { name: "Enterprise", calls: 500000, cost: 999 },
+    ],
+    perCallOverage: 0.005,
+  },
+  trestle: {
+    tiers: [
+      { name: "Standard", calls: 50000, cost: 0 }, // Typically included with MLS membership
+      { name: "Enhanced", calls: 200000, cost: 99 },
+      { name: "Enterprise", calls: 1000000, cost: 299 },
+    ],
+  },
+};
+
+function getRecommendedTier(provider: string, monthlyCalls: number): { current: string; recommended: string; monthlyCost: number; headroom: number } | null {
+  const pricing = PROVIDER_PRICING[provider];
+  if (!pricing) return null;
+
+  // Find current tier (smallest that fits)
+  let currentTier = pricing.tiers[0];
+  let recommendedTier = pricing.tiers[0];
+
+  for (const tier of pricing.tiers) {
+    if (monthlyCalls <= tier.calls) {
+      recommendedTier = tier;
+      break;
+    }
+    recommendedTier = tier; // if exceeds all, use highest
+  }
+
+  // Current = smallest tier that has been exceeded
+  for (const tier of pricing.tiers) {
+    currentTier = tier;
+    if (monthlyCalls <= tier.calls) break;
+  }
+
+  const headroom = recommendedTier.calls > 0
+    ? Math.round(((recommendedTier.calls - monthlyCalls) / recommendedTier.calls) * 100)
+    : 0;
+
+  return {
+    current: currentTier.name,
+    recommended: recommendedTier.name,
+    monthlyCost: recommendedTier.cost,
+    headroom: Math.max(0, headroom),
+  };
+}
+
 const PROVIDER_LABELS: Record<string, string> = {
   rentcast: "RentCast",
   realie: "Realie",
@@ -259,6 +324,158 @@ export function ApiUsageDashboard() {
         <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 8 }}>
           Projections assume linear scaling. Actual usage may vary with caching efficiency at scale.
           Cache hit rate ({data.cacheHitRate}%) reduces real API calls — projections show gross calls before caching.
+        </div>
+      </div>
+
+      {/* Provider Cost Analysis & Tier Recommendations */}
+      <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 16 }}>
+        <h3 style={{ fontSize: 15, fontWeight: 700, color: "#111827", marginBottom: 4 }}>
+          API Provider Costs & Tier Recommendations
+        </h3>
+        <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 12 }}>
+          Based on {days}-day usage, projected monthly costs and recommended plan tiers
+        </p>
+
+        {/* Current usage vs tier cards */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12, marginBottom: 16 }}>
+          {providers.filter(p => PROVIDER_PRICING[p]).map(provider => {
+            const count = data.byProvider[provider] || 0;
+            const monthlyCalls = Math.round(count / days * 30);
+            const tierInfo = getRecommendedTier(provider, monthlyCalls);
+            if (!tierInfo) return null;
+            const color = PROVIDER_COLORS[provider] || "#374151";
+            const isNearLimit = tierInfo.headroom < 20;
+            const isOverLimit = tierInfo.headroom <= 0;
+
+            return (
+              <div key={provider} style={{
+                padding: 14, borderRadius: 10,
+                border: `2px solid ${isOverLimit ? "#dc2626" : isNearLimit ? "#f59e0b" : color}`,
+                background: isOverLimit ? "#fef2f2" : isNearLimit ? "#fffbeb" : "#fff",
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color }}>{PROVIDER_LABELS[provider] || provider}</div>
+                  <div style={{
+                    padding: "2px 8px", borderRadius: 4, fontSize: 11, fontWeight: 700,
+                    background: isOverLimit ? "#dc2626" : isNearLimit ? "#f59e0b" : "#059669",
+                    color: "#fff",
+                  }}>
+                    {isOverLimit ? "UPGRADE NEEDED" : isNearLimit ? "NEARING LIMIT" : `${tierInfo.headroom}% headroom`}
+                  </div>
+                </div>
+                <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>
+                  Current plan: <strong>{tierInfo.current}</strong> | Recommended: <strong>{tierInfo.recommended}</strong>
+                </div>
+                <div style={{ fontSize: 12, color: "#6b7280" }}>
+                  Est. monthly calls: <strong>{fmtNum(monthlyCalls)}</strong> | Plan cost: <strong>${tierInfo.monthlyCost}/mo</strong>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Cost projection table by provider */}
+        <div style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 6 }}>Cost Projections by Provider & User Scale</div>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
+                <th style={{ textAlign: "left", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Users</th>
+                {providers.filter(p => PROVIDER_PRICING[p]).map(p => (
+                  <th key={`${p}-calls`} style={{ textAlign: "right", padding: "6px 8px", color: PROVIDER_COLORS[p], fontWeight: 600 }}>
+                    {(PROVIDER_LABELS[p] || p).split(" ")[0]} Calls/Mo
+                  </th>
+                ))}
+                {providers.filter(p => PROVIDER_PRICING[p]).map(p => (
+                  <th key={`${p}-tier`} style={{ textAlign: "right", padding: "6px 8px", color: PROVIDER_COLORS[p], fontWeight: 600 }}>
+                    {(PROVIDER_LABELS[p] || p).split(" ")[0]} Tier
+                  </th>
+                ))}
+                <th style={{ textAlign: "right", padding: "6px 8px", color: "#111827", fontWeight: 700 }}>Total/Mo</th>
+                <th style={{ textAlign: "right", padding: "6px 8px", color: "#111827", fontWeight: 700 }}>Total/Year</th>
+              </tr>
+            </thead>
+            <tbody>
+              {/* Actual row */}
+              <tr style={{ borderBottom: "2px solid #1e40af", background: "#eff6ff" }}>
+                <td style={{ padding: "6px 8px", fontWeight: 700, color: "#1e40af" }}>{data.activeUsers} (actual)</td>
+                {providers.filter(p => PROVIDER_PRICING[p]).map(p => {
+                  const monthly = Math.round((data.byProvider[p] || 0) / days * 30);
+                  return <td key={`${p}-c`} style={{ padding: "6px 8px", textAlign: "right" }}>{fmtNum(monthly)}</td>;
+                })}
+                {providers.filter(p => PROVIDER_PRICING[p]).map(p => {
+                  const monthly = Math.round((data.byProvider[p] || 0) / days * 30);
+                  const tier = getRecommendedTier(p, monthly);
+                  return <td key={`${p}-t`} style={{ padding: "6px 8px", textAlign: "right", fontWeight: 500 }}>{tier?.recommended || "—"} (${tier?.monthlyCost || 0})</td>;
+                })}
+                {(() => {
+                  let totalMonthly = 0;
+                  providers.filter(p => PROVIDER_PRICING[p]).forEach(p => {
+                    const monthly = Math.round((data.byProvider[p] || 0) / days * 30);
+                    const tier = getRecommendedTier(p, monthly);
+                    totalMonthly += tier?.monthlyCost || 0;
+                  });
+                  return (
+                    <>
+                      <td style={{ padding: "6px 8px", textAlign: "right", fontWeight: 700 }}>${totalMonthly}</td>
+                      <td style={{ padding: "6px 8px", textAlign: "right", fontWeight: 700 }}>${(totalMonthly * 12).toLocaleString()}</td>
+                    </>
+                  );
+                })()}
+              </tr>
+
+              {/* Projection rows */}
+              {USER_PROJECTIONS.map((users, i) => {
+                const scale = data.activeUsers > 0 ? users / data.activeUsers : users;
+                let rowTotalMonthly = 0;
+
+                return (
+                  <tr key={users} style={{ borderBottom: "1px solid #f3f4f6", background: i % 2 === 0 ? "#fff" : "#f9fafb" }}>
+                    <td style={{ padding: "6px 8px", fontWeight: 600 }}>{users.toLocaleString()}</td>
+                    {providers.filter(p => PROVIDER_PRICING[p]).map(p => {
+                      const monthly = Math.round((data.byProvider[p] || 0) / days * 30 * scale);
+                      return <td key={`${p}-c`} style={{ padding: "6px 8px", textAlign: "right" }}>{fmtNum(monthly)}</td>;
+                    })}
+                    {providers.filter(p => PROVIDER_PRICING[p]).map(p => {
+                      const monthly = Math.round((data.byProvider[p] || 0) / days * 30 * scale);
+                      const tier = getRecommendedTier(p, monthly);
+                      rowTotalMonthly += tier?.monthlyCost || 0;
+                      return (
+                        <td key={`${p}-t`} style={{ padding: "6px 8px", textAlign: "right", fontWeight: 500 }}>
+                          {tier?.recommended || "—"} (${tier?.monthlyCost || 0})
+                        </td>
+                      );
+                    })}
+                    <td style={{ padding: "6px 8px", textAlign: "right", fontWeight: 700 }}>${rowTotalMonthly}</td>
+                    <td style={{ padding: "6px 8px", textAlign: "right", fontWeight: 700 }}>${(rowTotalMonthly * 12).toLocaleString()}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Tier breakdown */}
+        <div style={{ marginTop: 16, fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 6 }}>Available Plan Tiers</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 10 }}>
+          {Object.entries(PROVIDER_PRICING).map(([provider, pricing]) => (
+            <div key={provider} style={{ padding: 12, background: "#f9fafb", borderRadius: 8, border: "1px solid #e5e7eb" }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: PROVIDER_COLORS[provider] || "#374151", marginBottom: 6 }}>
+                {PROVIDER_LABELS[provider] || provider}
+              </div>
+              {pricing.tiers.map(tier => (
+                <div key={tier.name} style={{ display: "flex", justifyContent: "space-between", padding: "2px 0", fontSize: 12 }}>
+                  <span style={{ fontWeight: 500 }}>{tier.name}</span>
+                  <span style={{ color: "#6b7280" }}>{fmtNum(tier.calls)} calls/mo — ${tier.cost}/mo</span>
+                </div>
+              ))}
+              {pricing.perCallOverage && (
+                <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>
+                  Overage: ${pricing.perCallOverage}/call beyond plan limit
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       </div>
 
