@@ -52,7 +52,7 @@ export async function trackedGenerateText(params: {
     prompt: params.prompt,
     messages: params.messages,
     temperature: params.temperature,
-    maxTokens: params.maxTokens || params.maxOutputTokens,
+    maxOutputTokens: params.maxTokens || params.maxOutputTokens,
   });
 
   const responseTimeMs = Date.now() - start;
