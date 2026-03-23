@@ -46,14 +46,16 @@ export async function trackedGenerateText(params: {
   const modelId = params.model;
   const start = Date.now();
 
-  const result = await generateText({
+  const genParams: any = {
     model: gateway(modelId),
-    system: params.system,
-    prompt: params.prompt,
-    messages: params.messages,
     temperature: params.temperature,
-    maxOutputTokens: params.maxTokens || params.maxOutputTokens,
-  });
+  };
+  if (params.system) genParams.system = params.system;
+  if (params.messages) genParams.messages = params.messages;
+  else if (params.prompt) genParams.prompt = params.prompt;
+  if (params.maxTokens || params.maxOutputTokens) genParams.maxOutputTokens = params.maxTokens || params.maxOutputTokens;
+
+  const result = await generateText(genParams);
 
   const responseTimeMs = Date.now() - start;
   const usage = result.usage;
