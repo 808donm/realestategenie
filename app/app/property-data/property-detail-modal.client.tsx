@@ -460,6 +460,8 @@ export default function PropertyDetailModal({
     if (bathsVal != null) params.set("baths", String(bathsVal));
     if (sqftVal) params.set("sqft", String(sqftVal));
     if (propType) params.set("propertyType", propType);
+    const yrBuilt = p.building?.summary?.yearBuilt || p.summary?.yearBuilt;
+    if (yrBuilt) params.set("yearBuilt", String(yrBuilt));
 
     fetch(`/api/comps?${params}`)
       .then((r) => r.json())

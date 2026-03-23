@@ -9,6 +9,64 @@ import {
 } from "@/lib/integrations/property-data-cache";
 
 /**
+ * Calculate similarity/correlation score between a comp and the subject property.
+ * Returns 0-1 (1 = perfect match). Weighted by importance to valuation.
+ */
+function calculateCorrelation(
+  comp: { bedrooms?: number; bathrooms?: number; squareFootage?: number; yearBuilt?: number; propertyType?: string; lotSize?: number },
+  subject: { beds?: number; baths?: number; sqft?: number; yearBuilt?: number; propertyType?: string }
+): number {
+  let totalWeight = 0;
+  let totalScore = 0;
+
+  // Bedrooms (weight: 20) — exact match = 1.0, ±1 = 0.7, ±2 = 0.3
+  if (comp.bedrooms != null && subject.beds != null) {
+    const diff = Math.abs(comp.bedrooms - subject.beds);
+    const score = diff === 0 ? 1.0 : diff === 1 ? 0.7 : diff === 2 ? 0.3 : 0;
+    totalWeight += 20;
+    totalScore += score * 20;
+  }
+
+  // Bathrooms (weight: 15) — exact match = 1.0, ±1 = 0.7, ±2 = 0.3
+  if (comp.bathrooms != null && subject.baths != null) {
+    const diff = Math.abs(comp.bathrooms - subject.baths);
+    const score = diff === 0 ? 1.0 : diff <= 1 ? 0.7 : diff <= 2 ? 0.3 : 0;
+    totalWeight += 15;
+    totalScore += score * 15;
+  }
+
+  // Square footage (weight: 30) — within 10% = 1.0, 20% = 0.7, 30% = 0.4
+  if (comp.squareFootage && subject.sqft) {
+    const pctDiff = Math.abs(comp.squareFootage - subject.sqft) / subject.sqft;
+    const score = pctDiff <= 0.1 ? 1.0 : pctDiff <= 0.2 ? 0.7 : pctDiff <= 0.3 ? 0.4 : pctDiff <= 0.5 ? 0.15 : 0;
+    totalWeight += 30;
+    totalScore += score * 30;
+  }
+
+  // Year built (weight: 15) — within 5 yrs = 1.0, 10 = 0.7, 20 = 0.4
+  if (comp.yearBuilt && subject.yearBuilt) {
+    const diff = Math.abs(comp.yearBuilt - subject.yearBuilt);
+    const score = diff <= 5 ? 1.0 : diff <= 10 ? 0.7 : diff <= 20 ? 0.4 : diff <= 30 ? 0.2 : 0;
+    totalWeight += 15;
+    totalScore += score * 15;
+  }
+
+  // Property type (weight: 20) — same = 1.0, different = 0
+  if (comp.propertyType && subject.propertyType) {
+    const compType = (comp.propertyType || "").toLowerCase();
+    const subType = (subject.propertyType || "").toLowerCase();
+    const match = compType === subType
+      || (compType.includes("resid") && subType.includes("sfr"))
+      || (compType.includes("sfr") && subType.includes("resid"))
+      || (compType.includes("condo") && subType.includes("condo"));
+    totalWeight += 20;
+    totalScore += (match ? 1.0 : 0) * 20;
+  }
+
+  return totalWeight > 0 ? totalScore / totalWeight : 0;
+}
+
+/**
  * GET /api/comps
  *
  * MLS-first comparable sales. Queries Trestle for closed sales near the
@@ -42,6 +100,7 @@ export async function GET(request: NextRequest) {
     const propertyType = url.searchParams.get("propertyType") || "";
     const compCount = Number(url.searchParams.get("compCount")) || 10;
     const months = Number(url.searchParams.get("months")) || 12;
+    const yearBuilt = url.searchParams.get("yearBuilt") ? Number(url.searchParams.get("yearBuilt")) : undefined;
 
     if (!address && !zipCode) {
       return NextResponse.json({ error: "address or zipCode is required" }, { status: 400 });
@@ -140,6 +199,11 @@ export async function GET(request: NextRequest) {
             const pricePerSqft = p.ClosePrice && p.LivingArea
               ? Math.round(p.ClosePrice / p.LivingArea) : undefined;
 
+            const correlation = calculateCorrelation(
+              { bedrooms: p.BedroomsTotal, bathrooms: p.BathroomsTotalInteger, squareFootage: p.LivingArea, yearBuilt: p.YearBuilt, propertyType: p.PropertyType, lotSize: p.LotSizeArea },
+              { beds, baths, sqft, yearBuilt, propertyType }
+            );
+
             return {
               source: "mls",
               listingKey: p.ListingKey,
@@ -162,14 +226,17 @@ export async function GET(request: NextRequest) {
               yearBuilt: p.YearBuilt,
               lotSize: p.LotSizeArea,
               pricePerSqft,
+              correlation,
               listAgentName: p.ListAgentFullName,
               listOfficeName: p.ListOfficeName,
               buyerAgentName: p.BuyerAgentFullName,
               buyerOfficeName: p.BuyerOfficeName,
             };
           });
+          // Sort by correlation (best match first)
+          mlsComps.sort((a, b) => (b.correlation || 0) - (a.correlation || 0));
           mlsSuccess = true;
-          console.log(`[Comps] MLS returned ${mlsComps.length} closed sales`);
+          console.log(`[Comps] MLS returned ${mlsComps.length} closed sales, sorted by match %`);
         } else {
           console.log("[Comps] MLS returned 0 closed sales, falling back to RentCast");
         }
