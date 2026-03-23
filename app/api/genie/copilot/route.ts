@@ -38,6 +38,7 @@ export async function POST(request: NextRequest) {
     // ── Load or create session ─────────────────────────────────────
     let session: any = null;
     let messages: Array<{ role: string; content: string }> = [];
+    let persistedActionContext: string | null = null;
 
     if (sessionId) {
       const { data } = await supabaseAdmin
@@ -52,6 +53,8 @@ export async function POST(request: NextRequest) {
         if (age < SESSION_TTL_MS) {
           session = data;
           messages = data.messages || [];
+          // Restore action context from session
+          persistedActionContext = (data as any).last_action_context || null;
         }
       }
     }
@@ -73,11 +76,14 @@ export async function POST(request: NextRequest) {
 
     const connectedIntegrations = (integrations || []).map(i => i.provider);
 
-    // ── Build system prompt ────────────────────────────────────────
+    // ── Determine action context (new or persisted from session) ────
+    const effectiveActionContext = actionContext || persistedActionContext;
+
+    // ── Build system prompt (always pass context so Hoku stays focused) ──
     const systemPrompt = buildCopilotPrompt({
       agentName,
       connectedIntegrations,
-      actionContext: !session ? actionContext : null, // only on first message
+      actionContext: effectiveActionContext,
     });
 
     // ── Prepare messages ───────────────────────────────────────────
@@ -146,6 +152,7 @@ export async function POST(request: NextRequest) {
           message_count: messages.length,
           last_message_at: now,
           updated_at: now,
+          last_action_context: effectiveActionContext || null,
         })
         .eq("id", session.id);
     } else {
@@ -156,6 +163,7 @@ export async function POST(request: NextRequest) {
           messages,
           message_count: messages.length,
           last_message_at: now,
+          last_action_context: effectiveActionContext || null,
         })
         .select("id")
         .single();
