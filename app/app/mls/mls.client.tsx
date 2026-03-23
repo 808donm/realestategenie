@@ -44,6 +44,18 @@ interface Property {
   Media?: TrestleMedia[];
   ListingURL?: string;
   VirtualTourURLUnbranded?: string;
+  OriginalListPrice?: number;
+  CloseDate?: string;
+  ListingContractDate?: string;
+  AssociationFee?: number;
+  TaxAnnualAmount?: number;
+  NumberOfUnitsTotal?: number;
+  ListAgentDirectPhone?: string;
+  ListAgentEmail?: string;
+  BuyerAgentFullName?: string;
+  BuyerOfficeName?: string;
+  Latitude?: number;
+  Longitude?: number;
 }
 
 interface GHLContact {
@@ -2512,7 +2524,7 @@ export default function MLSClient() {
 
               {/* Property Details */}
               <div style={{ marginBottom: 16, fontSize: 14, lineHeight: 1.6 }}>
-                <div style={{ display: "grid", gridTemplateColumns: "140px 1fr", gap: "8px 12px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "160px 1fr", gap: "8px 12px" }}>
                   <span style={{ fontWeight: 600, color: "#374151" }}>MLS #:</span>
                   <span style={{ color: "#6b7280" }}>
                     {selectedProperty.ListingId || selectedProperty.ListingKey}
@@ -2522,10 +2534,42 @@ export default function MLSClient() {
                     {selectedProperty.PropertyType}
                     {selectedProperty.PropertySubType ? ` - ${selectedProperty.PropertySubType}` : ""}
                   </span>
+                  {/* Price History */}
+                  {selectedProperty.OriginalListPrice != null && selectedProperty.OriginalListPrice !== selectedProperty.ListPrice && (
+                    <>
+                      <span style={{ fontWeight: 600, color: "#374151" }}>Original Price:</span>
+                      <span style={{ color: "#6b7280" }}>
+                        ${selectedProperty.OriginalListPrice.toLocaleString()}
+                        {selectedProperty.ListPrice < selectedProperty.OriginalListPrice && (
+                          <span style={{ color: "#dc2626", fontWeight: 600, marginLeft: 6 }}>
+                            -{Math.round(((selectedProperty.OriginalListPrice - selectedProperty.ListPrice) / selectedProperty.OriginalListPrice) * 100)}% reduction
+                          </span>
+                        )}
+                      </span>
+                    </>
+                  )}
+                  {/* Closed sale info */}
+                  {selectedProperty.ClosePrice != null && (
+                    <>
+                      <span style={{ fontWeight: 600, color: "#374151" }}>Close Price:</span>
+                      <span style={{ fontWeight: 600, color: "#059669" }}>${selectedProperty.ClosePrice.toLocaleString()}</span>
+                    </>
+                  )}
+                  {selectedProperty.CloseDate && (
+                    <>
+                      <span style={{ fontWeight: 600, color: "#374151" }}>Close Date:</span>
+                      <span style={{ color: "#6b7280" }}>{new Date(selectedProperty.CloseDate).toLocaleDateString()}</span>
+                    </>
+                  )}
+                  {/* Agent Info */}
                   {selectedProperty.ListAgentFullName && (
                     <>
                       <span style={{ fontWeight: 600, color: "#374151" }}>Listing Agent:</span>
-                      <span style={{ color: "#6b7280" }}>{selectedProperty.ListAgentFullName}</span>
+                      <span style={{ color: "#6b7280" }}>
+                        {selectedProperty.ListAgentFullName}
+                        {selectedProperty.ListAgentDirectPhone && ` · ${selectedProperty.ListAgentDirectPhone}`}
+                        {selectedProperty.ListAgentEmail && ` · ${selectedProperty.ListAgentEmail}`}
+                      </span>
                     </>
                   )}
                   {selectedProperty.ListOfficeName && (
@@ -2534,6 +2578,17 @@ export default function MLSClient() {
                       <span style={{ color: "#6b7280" }}>{selectedProperty.ListOfficeName}</span>
                     </>
                   )}
+                  {/* Buyer agent (for closed sales) */}
+                  {selectedProperty.BuyerAgentFullName && (
+                    <>
+                      <span style={{ fontWeight: 600, color: "#374151" }}>Buyer Agent:</span>
+                      <span style={{ color: "#6b7280" }}>
+                        {selectedProperty.BuyerAgentFullName}
+                        {selectedProperty.BuyerOfficeName && ` · ${selectedProperty.BuyerOfficeName}`}
+                      </span>
+                    </>
+                  )}
+                  {/* Dates */}
                   {selectedProperty.OnMarketDate && (
                     <>
                       <span style={{ fontWeight: 600, color: "#374151" }}>On Market:</span>
@@ -2542,8 +2597,54 @@ export default function MLSClient() {
                       </span>
                     </>
                   )}
+                  {selectedProperty.CumulativeDaysOnMarket != null && selectedProperty.CumulativeDaysOnMarket !== selectedProperty.DaysOnMarket && (
+                    <>
+                      <span style={{ fontWeight: 600, color: "#374151" }}>Cumulative DOM:</span>
+                      <span style={{ color: selectedProperty.CumulativeDaysOnMarket > 60 ? "#dc2626" : "#6b7280" }}>
+                        {selectedProperty.CumulativeDaysOnMarket} days (includes re-lists)
+                      </span>
+                    </>
+                  )}
+                  {/* Financial */}
+                  {selectedProperty.AssociationFee != null && selectedProperty.AssociationFee > 0 && (
+                    <>
+                      <span style={{ fontWeight: 600, color: "#374151" }}>HOA / Maint Fee:</span>
+                      <span style={{ color: "#6b7280" }}>${selectedProperty.AssociationFee.toLocaleString()}/mo</span>
+                    </>
+                  )}
+                  {selectedProperty.TaxAnnualAmount != null && selectedProperty.TaxAnnualAmount > 0 && (
+                    <>
+                      <span style={{ fontWeight: 600, color: "#374151" }}>Annual Tax:</span>
+                      <span style={{ color: "#6b7280" }}>${selectedProperty.TaxAnnualAmount.toLocaleString()}</span>
+                    </>
+                  )}
+                  {selectedProperty.NumberOfUnitsTotal != null && selectedProperty.NumberOfUnitsTotal > 1 && (
+                    <>
+                      <span style={{ fontWeight: 600, color: "#374151" }}>Total Units:</span>
+                      <span style={{ color: "#6b7280" }}>{selectedProperty.NumberOfUnitsTotal}</span>
+                    </>
+                  )}
                 </div>
               </div>
+
+              {/* Virtual Tour */}
+              {selectedProperty.VirtualTourURLUnbranded && (
+                <div style={{ marginBottom: 16 }}>
+                  <a
+                    href={selectedProperty.VirtualTourURLUnbranded}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: "inline-flex", alignItems: "center", gap: 6,
+                      padding: "8px 16px", background: "#4f46e5", color: "#fff",
+                      borderRadius: 6, fontSize: 13, fontWeight: 600,
+                      textDecoration: "none",
+                    }}
+                  >
+                    Virtual Tour &#8599;
+                  </a>
+                </div>
+              )}
 
               {/* Remarks */}
               {selectedProperty.PublicRemarks && (

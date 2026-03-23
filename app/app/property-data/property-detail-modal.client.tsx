@@ -1190,6 +1190,51 @@ export default function PropertyDetailModal({
               })()}
 
 
+              {/* Assessment History (multi-year trend) */}
+              {(p as any).assessmenthistory?.length > 1 && (() => {
+                const history = (p as any).assessmenthistory.sort((a: any, b: any) =>
+                  (b.assessedYear || b.tax?.taxYear || 0) - (a.assessedYear || a.tax?.taxYear || 0)
+                );
+                return (
+                  <div style={{ marginBottom: 20 }}>
+                    <h3 style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 10, paddingBottom: 6, borderBottom: "1px solid #e5e7eb" }}>
+                      Assessment History ({history.length} years)
+                    </h3>
+                    <div style={{ overflowX: "auto" }}>
+                      <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
+                        <thead>
+                          <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
+                            <th style={{ textAlign: "left", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Year</th>
+                            <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Assessed Total</th>
+                            <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Land</th>
+                            <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Improvements</th>
+                            <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Tax</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {history.map((h: any, i: number) => {
+                            const year = h.assessedYear || h.tax?.taxYear || "—";
+                            const total = h.assessed?.assdTtlValue || h.market?.mktTtlValue;
+                            const land = h.assessed?.assdLandValue;
+                            const impr = h.assessed?.assdImprValue;
+                            const tax = h.tax?.taxAmt;
+                            return (
+                              <tr key={year} style={{ borderBottom: "1px solid #f3f4f6", background: i % 2 === 0 ? "#fff" : "#f9fafb" }}>
+                                <td style={{ padding: "6px 8px", fontWeight: 600 }}>{year}</td>
+                                <td style={{ padding: "6px 8px", textAlign: "right" }}>{total ? fmt(total) : "—"}</td>
+                                <td style={{ padding: "6px 8px", textAlign: "right" }}>{land ? fmt(land) : "—"}</td>
+                                <td style={{ padding: "6px 8px", textAlign: "right" }}>{impr ? fmt(impr) : "—"}</td>
+                                <td style={{ padding: "6px 8px", textAlign: "right" }}>{tax ? fmt(tax) : "—"}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })()}
+
               {p.hoa?.fee && (
                 <Section title="HOA">
                   <Field label="Monthly Fee" value={fmt(p.hoa.fee)} />
