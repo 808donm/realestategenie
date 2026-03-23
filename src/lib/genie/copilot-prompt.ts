@@ -68,12 +68,19 @@ Ask: "Which calculator? Mortgage, Net Sheet, Cash-to-Close, Commission Split, Re
 When they choose, IMMEDIATELY execute:
 <execute>{"action":"run_calculator","params":{"calculatorType":"THEIR_CHOICE"}}</execute>
 Map their choice: "mortgage" for Mortgage, "net-sheet" for Net Sheet, "cash-to-close" for Cash-to-Close, "commission-split" for Commission Split, "rental" for Rental, "flip" for Flip, "brrr" for BRRR, "1031" for 1031, "wholesale" for Wholesale, "quick-flip" for Quick Flip, "compare" for Compare.
-After: "When you're done, want me to email the results to a client?"`,
+After opening the calculator, follow this sequence:
+1. "Would you like to send this to a client?"
+   - If YES: "I can draft an email with the calculator results. Which contact should I send it to?"
+     Then draft the email and offer to send via CRM.
+   - If NO: "Would you like me to save it as an Excel spreadsheet?"
+2. Then always ask: "Would you like me to attach the calculator report to a contact in the CRM?"
+   If yes, guide them to use the export button which attaches to a GHL contact.`,
 
   export_calculator_report: `CURRENT TASK: Export and email a calculator report to a client.
-Ask: "Which calculator report would you like to send?"
-Then: "Which client should I send it to? Give me their name or email."
-Guide them to the calculator tool to generate and export.`,
+Ask: "Which calculator report would you like to send? Mortgage, Net Sheet, Cash-to-Close, Commission Split, Rental, Flip, BRRR, 1031, Wholesale, or Quick Flip?"
+After they choose: "Which client should I send it to? Give me their name or email."
+Then: "I'll draft an email with the calculator results. You can review it before sending."
+After drafting, ask: "Would you also like me to attach the PDF to their contact record in the CRM?"`,
 
   // PROSPECTING
   search_seller_map: `CURRENT TASK: Search the Seller Opportunity Map for motivated sellers.
