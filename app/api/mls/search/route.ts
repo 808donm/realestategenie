@@ -56,14 +56,22 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get("limit") ? parseInt(searchParams.get("limit")!) : 25;
     const offset = searchParams.get("offset") ? parseInt(searchParams.get("offset")!) : 0;
 
-    // If there's a general query, try to use it as city or postal code
+    // If there's a general query, detect if it's a zip, address, or city
     let searchCity = city;
     let searchPostalCode = postalCode;
+    let addressFilter: string | undefined;
     if (query && !city && !postalCode) {
-      if (/^\d{5}(-\d{4})?$/.test(query.trim())) {
-        searchPostalCode = query.trim();
+      const q = query.trim();
+      if (/^\d{5}(-\d{4})?$/.test(q)) {
+        // Pure zip code
+        searchPostalCode = q;
+      } else if (/^\d+[\s-]/.test(q) || /\b(st|rd|ave|dr|ln|pl|blvd|ct|way|loop|pkwy|hwy)\b/i.test(q)) {
+        // Looks like a street address (starts with number or contains street suffix)
+        const escaped = q.replace(/'/g, "''").toLowerCase();
+        addressFilter = `contains(tolower(UnparsedAddress), '${escaped}') or contains(tolower(StreetName), '${escaped}')`;
       } else {
-        searchCity = query.trim();
+        // Treat as city name
+        searchCity = q;
       }
     }
 
@@ -76,27 +84,59 @@ export async function GET(request: NextRequest) {
     // Trestle returns 0 results when a query's filter matches >5,000 records,
     // regardless of $top. When no location filter is provided (e.g. "latest listings"
     // on page load), we must narrow with additional filters and skip $count.
-    const hasLocationFilter = !!(searchCity || searchPostalCode);
+    const hasLocationFilter = !!(searchCity || searchPostalCode || addressFilter);
 
     // For the "latest listings" case (no location/price/beds filters), narrow the query
     // so it stays under Trestle's 5,000-record threshold for ad-hoc queries.
     const isLatestQuery = !hasLocationFilter && !minPrice && !maxPrice && !minBeds && !minBaths && !propertyType && !minDaysOnMarket;
 
-    const result = await client.searchProperties({
-      status,
-      city: searchCity,
-      postalCode: searchPostalCode,
-      minPrice,
-      maxPrice,
-      minBeds,
-      minBaths,
-      propertyType,
-      minDaysOnMarket,
-      limit,
-      offset,
-      includeMedia: true,
-      skipCount: !hasLocationFilter,
-    });
+    let result;
+
+    if (addressFilter) {
+      // Address search — use raw OData filter on UnparsedAddress/StreetName
+      const filters: string[] = [];
+
+      // Status filter
+      const statusFilter = status.map(s => `StandardStatus eq '${s}'`).join(" or ");
+      filters.push(status.length === 1 ? `StandardStatus eq '${status[0]}'` : `(${statusFilter})`);
+
+      // Address filter
+      filters.push(`(${addressFilter})`);
+
+      // Optional filters
+      if (minPrice) filters.push(`ListPrice ge ${minPrice}`);
+      if (maxPrice) filters.push(`ListPrice le ${maxPrice}`);
+      if (minBeds) filters.push(`BedroomsTotal ge ${minBeds}`);
+      if (minBaths) filters.push(`BathroomsTotalInteger ge ${minBaths}`);
+      if (propertyType) filters.push(`PropertyType eq '${propertyType}'`);
+
+      console.log("[MLS Search] Address search filter:", filters.join(" and "));
+
+      result = await client.getProperties({
+        $filter: filters.join(" and "),
+        $orderby: "ModificationTimestamp desc",
+        $top: limit,
+        $skip: offset,
+        $count: true,
+        $expand: "Media",
+      });
+    } else {
+      result = await client.searchProperties({
+        status,
+        city: searchCity,
+        postalCode: searchPostalCode,
+        minPrice,
+        maxPrice,
+        minBeds,
+        minBaths,
+        propertyType,
+        minDaysOnMarket,
+        limit,
+        offset,
+        includeMedia: true,
+        skipCount: !hasLocationFilter,
+      });
+    }
 
     console.log("[MLS Search] Results returned:", result.value?.length, "count:", result["@odata.count"]);
 
