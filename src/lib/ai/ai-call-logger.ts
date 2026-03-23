@@ -32,7 +32,7 @@ export async function trackedGenerateText(params: {
   model: string; // e.g., "openai/gpt-4o-mini"
   system?: string;
   prompt?: string;
-  messages?: Array<{ role: string; content: string }>;
+  messages?: any[];
   temperature?: number;
   maxTokens?: number;
   maxOutputTokens?: number;
