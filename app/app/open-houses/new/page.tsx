@@ -1,4 +1,3 @@
-import { supabaseServer } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { geocodeAddress } from "@/lib/geocoding";
 import OpenHouseForm from "./open-house-form";
@@ -7,25 +6,16 @@ export default async function NewOpenHousePage() {
   async function create(formData: FormData) {
     "use server";
 
-    const supabase = await supabaseServer();
+    const { getEffectiveClient } = await import("@/lib/supabase/effective-client");
+    const { supabase, userId, isImpersonating } = await getEffectiveClient();
 
-    // Get authenticated user
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError) {
-      console.error("Auth error:", authError);
-      throw new Error(`Authentication failed: ${authError.message}`);
-    }
-
-    if (!user || !user.id) {
-      console.error("No authenticated user or user ID");
+    if (!userId) {
       throw new Error("You must be signed in to create an open house");
     }
 
-    console.log("User ID:", user.id);
+    // When impersonating, use the target user's ID as the agent
+    const user = { id: userId };
+    console.log("User ID:", userId, isImpersonating ? "(impersonating)" : "");
 
     // Ensure agent profile exists
     const { data: agent, error: agentError } = await supabase
