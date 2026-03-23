@@ -507,31 +507,16 @@ export default function PropertyDetailModal({
       return params;
     };
 
-    const geoId = findGeoIdV4(p);
-    const salesTrendParams = new URLSearchParams({ endpoint: "salestrend" });
-    if (geoId) salesTrendParams.set("geoIdV4", geoId);
-    else if (p.address?.postal1) salesTrendParams.set("postalcode", p.address.postal1);
-    if (p.identifier?.fips) salesTrendParams.set("fips", p.identifier.fips);
-    if (addr2) salesTrendParams.set("address2", addr2);
-    const currentYear = new Date().getFullYear();
-    salesTrendParams.set("interval", "quarterly");
-    salesTrendParams.set("startyear", String(currentYear - 3));
-    salesTrendParams.set("endyear", String(currentYear));
-    salesTrendParams.set("propertytype", "SINGLE FAMILY RESIDENCE");
-
     const cachedRentalAvm = (p as any).rentalAvm;
 
-    // Realie already provides mortgage (lenderName, totalLienBalance, totalLienCount)
-    // and equity (equityCurrentEstBal, LTVCurrentEstCombined) on the primary response.
-    // Fetch supplemental data: rentalavm (rental estimates via HUD) and salestrend (area trends via FRED).
-    const fetches: Promise<PromiseSettledResult<any>>[] = [
-      cachedRentalAvm
-        ? Promise.resolve({ status: "fulfilled" as const, value: { property: [{ rentalAvm: cachedRentalAvm }] } })
-        : fetch(`/api/integrations/attom/property?${buildAddrParams("rentalavm")}`).then(r => r.json()).then(v => ({ status: "fulfilled" as const, value: v })).catch(e => ({ status: "rejected" as const, reason: e })),
-      fetch(`/api/integrations/attom/property?${salesTrendParams}`).then(r => r.json()).then(v => ({ status: "fulfilled" as const, value: v })).catch(e => ({ status: "rejected" as const, reason: e })),
-    ];
+    // Realie already provides mortgage and equity on the primary response.
+    // Fetch supplemental: rentalavm (rental estimates via HUD).
+    // Market stats/trends are now on the dedicated Market Stats tab.
+    const rentalAvmPromise: Promise<PromiseSettledResult<any>> = cachedRentalAvm
+      ? Promise.resolve({ status: "fulfilled" as const, value: { property: [{ rentalAvm: cachedRentalAvm }] } })
+      : fetch(`/api/integrations/attom/property?${buildAddrParams("rentalavm")}`).then(r => r.json()).then(v => ({ status: "fulfilled" as const, value: v })).catch(e => ({ status: "rejected" as const, reason: e }));
 
-    Promise.all(fetches).then(([rentalAvm, salesTrends]) => {
+    rentalAvmPromise.then((rentalAvm) => {
       // Build homeEquity from Realie's pre-calculated data, or fall back to
       // computing it from AVM / assessment values (same cascade the search cards use).
       let homeEquityData = (p as any).homeEquity || null;
@@ -590,9 +575,8 @@ export default function PropertyDetailModal({
         avmHistory: null,
         rentalAvm: rentalAvm.status === "fulfilled" ? rentalAvm.value : null,
         salesHistory: null,
-        mortgageDetail: null, // Realie provides mortgage data on primary response
+        mortgageDetail: null,
         homeEquity: homeEquityData ? { property: [{ homeEquity: homeEquityData }] } : null,
-        salesTrends: salesTrends.status === "fulfilled" && !salesTrends.value?.error ? salesTrends.value : null,
       });
     }).finally(() => setEnrichedFinancialLoading(false));
   }, [activeSection, enrichedFinancial, enrichedFinancialLoading, p]);
@@ -1482,7 +1466,7 @@ export default function PropertyDetailModal({
                 {rentcastComps && rentcastComps.length > 0 && (
                   <div>
                     {(p.avm?.amount?.value || rentcastAvmPrice) && (() => {
-                      const avmValue = p.avm?.amount?.value ?? rentcastAvmPrice;
+                      const avmValue = p.avm?.amount?.value ?? rentcastAvmPrice ?? undefined;
                       const avmLow = p.avm?.amount?.low;
                       const avmHigh = p.avm?.amount?.high;
                       const hasRange = avmLow != null && avmHigh != null;
@@ -1999,19 +1983,6 @@ export default function PropertyDetailModal({
                         <Field label="White Collar" value={pct("occupation_White_Collar_Pct")} />
                         <Field label="Blue Collar" value={pct("occupation_Blue_Collar_Pct")} />
                         <Field label="Work From Home" value={pct("transportation_Work_From_Home_Pct")} />
-                      </Section>
-                    )}
-
-                    {/* Housing Market */}
-                    {demo && (d("housing_Owner_Households_Median_Value") || d("housing_Median_Rent")) && (
-                      <Section title="Housing Market">
-                        <Field label="Median Home Value" value={d("housing_Owner_Households_Median_Value") != null ? `$${Number(d("housing_Owner_Households_Median_Value")).toLocaleString()}` : undefined} />
-                        <Field label="Median Rent" value={d("housing_Median_Rent") != null ? `$${Number(d("housing_Median_Rent")).toLocaleString()}/mo` : undefined} />
-                        <Field label="With Mortgage" value={pct("housing_Owner_Households_With_Mortgage_Pct")} />
-                        <Field label="Median Year Built" value={d("housing_Median_Built_Yr")} />
-                        <Field label="Med Length of Residence" value={d("median_Length_Of_Residence_Yr") != null ? `${d("median_Length_Of_Residence_Yr")} yrs` : undefined} />
-                        <Field label="Single Family" value={pct("housing_Occupied_Structure_1_Unit_Detached_Pct")} />
-                        <Field label="Median Vehicles" value={d("households_Median_Vehicles")} />
                       </Section>
                     )}
 
