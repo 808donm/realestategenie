@@ -16,16 +16,20 @@ async function buildPropertyResponse(
     photos = property.Media
       .sort((a, b) => (a.Order || 0) - (b.Order || 0))
       .map((m) => ({ url: m.MediaURL, description: m.ShortDescription || "" }));
+    console.log(`[MLS Lookup] Found ${photos.length} photos from expanded Media`);
   } else {
     try {
+      console.log(`[MLS Lookup] No expanded Media, fetching separately for ${property.ListingKey}`);
       const mediaResult = await client.getPropertyMedia(property.ListingKey);
       photos = mediaResult.value
         .sort((a, b) => (a.Order || 0) - (b.Order || 0))
         .map((m) => ({ url: m.MediaURL, description: m.ShortDescription || "" }));
-    } catch {
-      // No media available
+      console.log(`[MLS Lookup] Fetched ${photos.length} photos from Media endpoint`);
+    } catch (mediaErr: any) {
+      console.warn(`[MLS Lookup] Media fetch failed:`, mediaErr.message);
     }
   }
+  console.log(`[MLS Lookup] property_photo_url: ${photos.length > 0 ? photos[0].url?.substring(0, 60) + "..." : "NONE"}`);
 
   // Build address string
   const addressParts = [

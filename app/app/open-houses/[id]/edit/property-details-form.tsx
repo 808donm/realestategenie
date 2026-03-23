@@ -120,6 +120,7 @@ export default function PropertyDetailsForm({ eventId, initialData }: PropertyDe
     if (fields.price) setPrice(String(fields.price));
     if (fields.listing_description) setDescription(fields.listing_description);
     if (fields.key_features?.length) setFeatures(fields.key_features.join("\n"));
+    if (fields.property_photo_url) setPhotoUrl(fields.property_photo_url);
     setMlsMessage({ ok: true, text: "Listing data imported. Review and save below." });
   }
 
