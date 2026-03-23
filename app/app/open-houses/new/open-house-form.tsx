@@ -207,6 +207,10 @@ export default function OpenHouseForm({
     try {
       await onSubmit(formData);
     } catch (err: any) {
+      // Next.js redirect() throws a NEXT_REDIRECT error — let it propagate
+      if (err?.digest?.includes("NEXT_REDIRECT") || err?.message?.includes("NEXT_REDIRECT")) {
+        throw err;
+      }
       setError(err?.message || "Failed to create open house. Please try again.");
       setSubmitting(false);
     }
