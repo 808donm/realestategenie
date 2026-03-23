@@ -69,7 +69,41 @@ async function setStatus(formData: FormData) {
     .update({ status, event_type: eventType })
     .eq("id", id);
 
-  // Revalidate the page to show updated status
+  revalidatePath(`/app/open-houses/${id}`);
+}
+
+async function updateEventDetails(formData: FormData) {
+  "use server";
+  const address = String(formData.get("address") || "");
+  const startAt = String(formData.get("start_at") || "");
+  const endAt = String(formData.get("end_at") || "");
+  const supabase = await (await import("@/lib/supabase/server")).supabaseServer();
+  const { revalidatePath } = await import("next/cache");
+
+  const updates: Record<string, any> = {};
+  if (address) updates.address = address;
+  if (startAt) updates.start_at = new Date(startAt).toISOString();
+  if (endAt) updates.end_at = new Date(endAt).toISOString();
+
+  if (Object.keys(updates).length > 0) {
+    // Re-geocode if address changed
+    if (updates.address) {
+      try {
+        const { geocodeAddress } = await import("@/lib/geocoding");
+        const coords = await geocodeAddress(updates.address);
+        if (coords) {
+          updates.latitude = coords.latitude;
+          updates.longitude = coords.longitude;
+        }
+      } catch { /* keep existing coords */ }
+    }
+
+    await supabase
+      .from("open_house_events")
+      .update(updates)
+      .eq("id", id);
+  }
+
   revalidatePath(`/app/open-houses/${id}`);
 }
 
@@ -147,6 +181,50 @@ async function setStatus(formData: FormData) {
           </Link>
           <DownloadFlyerButton eventId={evt.id} />
         </div>
+      </div>
+
+      {/* Editable Event Details */}
+      <div style={{ marginTop: 24, padding: 16, background: "#f9fafb", borderRadius: 10, border: "1px solid #e5e7eb" }}>
+        <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Event Details</h2>
+        <form action={updateEventDetails} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div style={{ gridColumn: "1 / -1" }}>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 4 }}>Address</label>
+            <input
+              name="address"
+              defaultValue={evt.address}
+              style={{ width: "100%", padding: "8px 10px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
+            />
+          </div>
+          <div>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 4 }}>Start Date & Time</label>
+            <input
+              type="datetime-local"
+              name="start_at"
+              defaultValue={evt.start_at ? new Date(new Date(evt.start_at).getTime() - new Date(evt.start_at).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ""}
+              style={{ width: "100%", padding: "8px 10px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
+            />
+          </div>
+          <div>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 4 }}>End Date & Time</label>
+            <input
+              type="datetime-local"
+              name="end_at"
+              defaultValue={evt.end_at ? new Date(new Date(evt.end_at).getTime() - new Date(evt.end_at).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ""}
+              style={{ width: "100%", padding: "8px 10px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
+            />
+          </div>
+          <div style={{ gridColumn: "1 / -1" }}>
+            <button
+              type="submit"
+              style={{
+                padding: "8px 20px", background: "#1e40af", color: "#fff",
+                borderRadius: 6, fontWeight: 600, fontSize: 13, border: "none", cursor: "pointer",
+              }}
+            >
+              Update Event Details
+            </button>
+          </div>
+        </form>
       </div>
 
       {/* Property Photo */}
