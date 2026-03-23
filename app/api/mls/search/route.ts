@@ -140,9 +140,36 @@ export async function GET(request: NextRequest) {
 
     console.log("[MLS Search] Results returned:", result.value?.length, "count:", result["@odata.count"]);
 
+    // Enrich properties that have no Media with separate Media endpoint fetch
+    const properties = result.value;
+    const noMediaProps = properties.filter(p => !p.Media || p.Media.length === 0);
+
+    if (noMediaProps.length > 0 && noMediaProps.length <= 25) {
+      console.log(`[MLS Search] ${noMediaProps.length} properties have no Media, fetching separately...`);
+
+      await Promise.all(
+        noMediaProps.map(async (p) => {
+          try {
+            const mediaResult = await client.getPropertyMedia(p.ListingKey);
+            if (mediaResult.value?.length > 0) {
+              (p as any).Media = mediaResult.value.map((m: any) => ({
+                MediaKey: m.MediaKey || m.ResourceRecordKey,
+                MediaURL: m.MediaURL,
+                MediaType: m.MediaType || "image/jpeg",
+                Order: m.Order,
+                ShortDescription: m.ShortDescription,
+              }));
+            }
+          } catch {
+            // Silent — no media available
+          }
+        })
+      );
+    }
+
     return NextResponse.json({
-      properties: result.value,
-      totalCount: result["@odata.count"] || result.value.length,
+      properties,
+      totalCount: result["@odata.count"] || properties.length,
       limit,
       offset,
     });

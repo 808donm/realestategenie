@@ -451,9 +451,12 @@ export class TrestleClient {
    * Get property media/photos
    */
   async getPropertyMedia(listingKey: string): Promise<ODataResponse<TrestleMedia>> {
-    return this.request<ODataResponse<TrestleMedia>>(
-      `/Media?$filter=ResourceRecordKey eq '${listingKey}'&$orderby=Order`
+    console.log(`[Trestle] Fetching media for listing ${listingKey}`);
+    const result = await this.request<ODataResponse<TrestleMedia>>(
+      `/Media?$filter=ResourceRecordKey eq '${listingKey}'&$orderby=Order&$select=MediaKey,MediaURL,MediaType,Order,ShortDescription`
     );
+    console.log(`[Trestle] Media result: ${result.value?.length || 0} items`);
+    return result;
   }
 
   /**
