@@ -395,7 +395,7 @@ export function GenieAssistant({ onOpenCopilot }: { onOpenCopilot?: (actionType:
       }}>
         <span style={{ fontSize: 20 }}>&#10024;</span>
         <div>
-          <div style={{ fontSize: 15, fontWeight: 700, color: "#fff" }}>Genie Assistant</div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: "#fff" }}>Hoku Assistant</div>
           <div style={{ fontSize: 11, color: "#c7d2fe" }}>
             {loading ? "Analyzing..." : `${actions.length} action${actions.length !== 1 ? "s" : ""} recommended`}
           </div>

@@ -154,8 +154,8 @@ export function GenieCopilotPopup({ isOpen, onClose, actionContext, onClearConte
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 18 }}>&#10024;</span>
           <div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>Genie Copilot</div>
-            <div style={{ fontSize: 10, color: "#c7d2fe" }}>AI-powered assistant</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>Hoku</div>
+            <div style={{ fontSize: 10, color: "#c7d2fe" }}>Your AI assistant</div>
           </div>
         </div>
         <div style={{ display: "flex", gap: 6 }}>
@@ -169,8 +169,8 @@ export function GenieCopilotPopup({ isOpen, onClose, actionContext, onClearConte
         {messages.length === 0 && !loading && (
           <div style={{ textAlign: "center", padding: 30, color: "#9ca3af" }}>
             <div style={{ fontSize: 32, marginBottom: 8 }}>&#10024;</div>
-            <div style={{ fontSize: 14, fontWeight: 600 }}>How can I help?</div>
-            <div style={{ fontSize: 12, marginTop: 4 }}>Ask me to search properties, create tasks, run calculators, draft emails, and more.</div>
+            <div style={{ fontSize: 14, fontWeight: 600 }}>Aloha!</div>
+            <div style={{ fontSize: 12, marginTop: 4 }}>Aloha! I can search properties, create tasks, run calculators, draft emails, and more. What can I help with?</div>
           </div>
         )}
 
@@ -332,7 +332,7 @@ export function GenieCopilotPopup({ isOpen, onClose, actionContext, onClearConte
           ref={inputRef}
           value={input}
           onChange={e => setInput(e.target.value)}
-          placeholder="Ask Genie anything..."
+          placeholder="Ask Hoku anything..."
           disabled={loading}
           style={{
             flex: 1, padding: "8px 12px", border: "1px solid #d1d5db",
