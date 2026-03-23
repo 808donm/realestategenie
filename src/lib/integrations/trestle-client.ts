@@ -71,6 +71,11 @@ export interface TrestleProperty {
   TaxAnnualAmount?: number;
   AssociationFee?: number;
   NumberOfUnitsTotal?: number;
+  // Hawaii-critical: Land tenure
+  OwnershipType?: string;       // "Fee Simple", "Leasehold"
+  LeaseAmount?: number;          // Monthly lease rent
+  LeaseExpiration?: string;      // Lease expiration date
+  LeaseAmountFrequency?: string; // "Monthly", "Annually"
 }
 
 export interface TrestleMedia {

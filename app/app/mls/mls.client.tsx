@@ -56,6 +56,11 @@ interface Property {
   BuyerOfficeName?: string;
   Latitude?: number;
   Longitude?: number;
+  // Hawaii-critical: Land tenure
+  OwnershipType?: string;
+  LeaseAmount?: number;
+  LeaseExpiration?: string;
+  LeaseAmountFrequency?: string;
 }
 
 interface GHLContact {
@@ -1041,9 +1046,26 @@ export default function MLSClient() {
                           {property.YearBuilt != null && <span>Built {property.YearBuilt}</span>}
                           {(() => { const dom = getDaysOnMarket(property); return dom != null ? <span style={{ color: dom > 30 ? "#dc2626" : dom > 14 ? "#d97706" : "#6b7280" }}><strong>{dom}</strong> DOM</span> : null; })()}
                         </div>
-                        <div style={{ marginTop: 10, fontSize: 11, color: "#9ca3af" }}>
-                          MLS# {property.ListingId || property.ListingKey}
-                          {property.PropertyType && ` | ${property.PropertyType}`}
+                        <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 10, flexWrap: "wrap" }}>
+                          <span style={{ fontSize: 11, color: "#9ca3af" }}>
+                            MLS# {property.ListingId || property.ListingKey}
+                            {property.PropertyType && ` | ${property.PropertyType}`}
+                          </span>
+                          {property.OwnershipType && (
+                            <span style={{
+                              fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 3,
+                              background: property.OwnershipType.toLowerCase().includes("lease") ? "#fef2f2" : "#f0fdf4",
+                              color: property.OwnershipType.toLowerCase().includes("lease") ? "#dc2626" : "#059669",
+                              border: `1px solid ${property.OwnershipType.toLowerCase().includes("lease") ? "#fca5a5" : "#bbf7d0"}`,
+                            }}>
+                              {property.OwnershipType}
+                            </span>
+                          )}
+                          {property.AssociationFee != null && property.AssociationFee > 0 && (
+                            <span style={{ fontSize: 10, color: "#6b7280" }}>
+                              HOA: ${property.AssociationFee}/mo
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -2534,6 +2556,35 @@ export default function MLSClient() {
                     {selectedProperty.PropertyType}
                     {selectedProperty.PropertySubType ? ` - ${selectedProperty.PropertySubType}` : ""}
                   </span>
+                  {/* Land Tenure — critical for Hawaii */}
+                  {selectedProperty.OwnershipType && (
+                    <>
+                      <span style={{ fontWeight: 600, color: "#374151" }}>Land Tenure:</span>
+                      <span style={{
+                        fontWeight: 700,
+                        color: selectedProperty.OwnershipType.toLowerCase().includes("lease") ? "#dc2626" : "#059669",
+                      }}>
+                        {selectedProperty.OwnershipType}
+                        {selectedProperty.OwnershipType.toLowerCase().includes("lease") && " ⚠️"}
+                      </span>
+                    </>
+                  )}
+                  {selectedProperty.LeaseAmount != null && selectedProperty.LeaseAmount > 0 && (
+                    <>
+                      <span style={{ fontWeight: 600, color: "#374151" }}>Lease Rent:</span>
+                      <span style={{ color: "#dc2626", fontWeight: 600 }}>
+                        ${selectedProperty.LeaseAmount.toLocaleString()}/{selectedProperty.LeaseAmountFrequency?.toLowerCase() || "mo"}
+                      </span>
+                    </>
+                  )}
+                  {selectedProperty.LeaseExpiration && (
+                    <>
+                      <span style={{ fontWeight: 600, color: "#374151" }}>Lease Expires:</span>
+                      <span style={{ color: "#dc2626" }}>
+                        {new Date(selectedProperty.LeaseExpiration).toLocaleDateString()}
+                      </span>
+                    </>
+                  )}
                   {/* Price History */}
                   {selectedProperty.OriginalListPrice != null && selectedProperty.OriginalListPrice !== selectedProperty.ListPrice && (
                     <>
