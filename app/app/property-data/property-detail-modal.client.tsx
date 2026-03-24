@@ -715,6 +715,15 @@ export default function PropertyDetailModal({
       corporateOwner: p.owner?.corporateIndicator,
       hazards: hazards.length > 0 ? hazards : undefined,
       federalData: federal,
+      // Include up to 6 photos for shared reports
+      photos: ((p as any).Media || [])
+        .filter((m: any) => m.MediaURL && (m.MediaType || "").startsWith("image"))
+        .slice(0, 6)
+        .map((m: any) => m.MediaURL),
+      // Mortgage calculator fields
+      listPrice: (p as any).ListPrice || avmVal || bestValue,
+      taxAnnualAmount: p.assessment?.tax?.taxAmt,
+      associationFee: p.hoa?.fee ? p.hoa.fee * 12 : undefined,
       generatedAt: new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }),
     };
   }, [p, addr, avmVal, bestValue, lastSaleAmt, equity, ltv, yearBuilt, beds, baths, sqft, hazardData, federalData, enrichedFinancial]);

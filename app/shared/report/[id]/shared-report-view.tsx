@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 interface SharedReportViewProps {
   reportData: any;
   agentName?: string;
@@ -10,7 +12,6 @@ interface SharedReportViewProps {
 }
 
 const fmt = (n?: number) => (n != null ? `$${n.toLocaleString()}` : null);
-const pct = (n?: number) => (n != null ? `${n.toFixed(1)}%` : null);
 
 function Card({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: string }) {
   return (
@@ -47,6 +48,90 @@ function Row({ label, value }: { label: string; value?: string | number | null }
   );
 }
 
+// ── Mortgage Calculator ────────────────────────────────────────────────────
+function MortgageCalculator({ listPrice, taxAnnual, hoaAnnual, agentName, agentPhone, agentEmail }: {
+  listPrice: number;
+  taxAnnual?: number;
+  hoaAnnual?: number;
+  agentName?: string;
+  agentPhone?: string;
+  agentEmail?: string;
+}) {
+  const [homePrice, setHomePrice] = useState(listPrice);
+  const [downPct, setDownPct] = useState(20);
+  const [rate, setRate] = useState(6.75);
+  const [termYears, setTermYears] = useState(30);
+
+  const downPayment = homePrice * (downPct / 100);
+  const loanAmount = homePrice - downPayment;
+  const monthlyRate = rate / 100 / 12;
+  const numPayments = termYears * 12;
+  const monthlyPI = monthlyRate > 0
+    ? loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / (Math.pow(1 + monthlyRate, numPayments) - 1)
+    : loanAmount / numPayments;
+  const monthlyTax = (taxAnnual || 0) / 12;
+  const monthlyHOA = (hoaAnnual || 0) / 12;
+  const monthlyTotal = monthlyPI + monthlyTax + monthlyHOA;
+
+  const inputStyle = {
+    width: "100%", padding: "8px 12px", border: "1px solid #d1d5db", borderRadius: 6,
+    fontSize: 14, outline: "none",
+  };
+  const labelStyle = { fontSize: 12, fontWeight: 600 as const, color: "#374151", marginBottom: 4, display: "block" as const };
+
+  return (
+    <div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
+        <div>
+          <label style={labelStyle}>Home Price</label>
+          <input type="number" value={homePrice} onChange={(e) => setHomePrice(Number(e.target.value))} style={inputStyle} />
+        </div>
+        <div>
+          <label style={labelStyle}>Down Payment (%)</label>
+          <input type="number" value={downPct} onChange={(e) => setDownPct(Number(e.target.value))} style={inputStyle} min={0} max={100} />
+        </div>
+        <div>
+          <label style={labelStyle}>Interest Rate (%)</label>
+          <input type="number" value={rate} onChange={(e) => setRate(Number(e.target.value))} style={inputStyle} step={0.125} />
+        </div>
+        <div>
+          <label style={labelStyle}>Loan Term (years)</label>
+          <select value={termYears} onChange={(e) => setTermYears(Number(e.target.value))} style={inputStyle}>
+            <option value={30}>30 years</option>
+            <option value={15}>15 years</option>
+            <option value={20}>20 years</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Results */}
+      <div style={{ background: "#f0fdf4", borderRadius: 10, padding: 16, marginBottom: 12 }}>
+        <div style={{ textAlign: "center", marginBottom: 12 }}>
+          <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", fontWeight: 600 }}>Estimated Monthly Payment</div>
+          <div style={{ fontSize: 32, fontWeight: 800, color: "#15803d" }}>${Math.round(monthlyTotal).toLocaleString()}</div>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          <Row label="Principal & Interest" value={`$${Math.round(monthlyPI).toLocaleString()}`} />
+          <Row label="Down Payment" value={`$${Math.round(downPayment).toLocaleString()}`} />
+          <Row label="Property Tax" value={monthlyTax > 0 ? `$${Math.round(monthlyTax).toLocaleString()}` : "N/A"} />
+          <Row label="HOA" value={monthlyHOA > 0 ? `$${Math.round(monthlyHOA).toLocaleString()}` : "N/A"} />
+          <Row label="Loan Amount" value={`$${Math.round(loanAmount).toLocaleString()}`} />
+          <Row label="Total Interest" value={`$${Math.round(monthlyPI * numPayments - loanAmount).toLocaleString()}`} />
+        </div>
+      </div>
+
+      {/* Agent CTA */}
+      {agentName && (
+        <div style={{ textAlign: "center", padding: "12px 16px", background: "#eff6ff", borderRadius: 8, fontSize: 13, color: "#1e40af" }}>
+          Questions about this property? Contact <strong>{agentName}</strong>
+          {agentPhone && <span> at <a href={`tel:${agentPhone}`} style={{ color: "#1e40af", fontWeight: 600 }}>{agentPhone}</a></span>}
+          {agentEmail && <span> or <a href={`mailto:${agentEmail}`} style={{ color: "#1e40af", fontWeight: 600 }}>{agentEmail}</a></span>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function SharedReportView({
   reportData: d,
   agentName,
@@ -55,6 +140,8 @@ export default function SharedReportView({
   brandColor,
   createdAt,
 }: SharedReportViewProps) {
+  const [selectedPhoto, setSelectedPhoto] = useState<number | null>(null);
+
   if (!d) {
     return (
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f9fafb" }}>
@@ -68,6 +155,7 @@ export default function SharedReportView({
 
   const primaryColor = brandColor || "#3b82f6";
   const cityLine = [d.city, d.state, d.zip].filter(Boolean).join(", ");
+  const photos: string[] = d.photos || [];
 
   return (
     <div style={{ minHeight: "100vh", background: "#f9fafb" }}>
@@ -75,7 +163,7 @@ export default function SharedReportView({
       <div style={{ background: `linear-gradient(135deg, #1e40af 0%, ${primaryColor} 100%)`, padding: "32px 0 24px" }}>
         <div style={{ maxWidth: 760, margin: "0 auto", padding: "0 20px" }}>
           <div style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.7)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>
-            Property Intelligence Report
+            Property Report
           </div>
           <h1 style={{ fontSize: 24, fontWeight: 800, color: "#fff", margin: 0 }}>{d.address || "Property Report"}</h1>
           {cityLine && <div style={{ fontSize: 14, color: "rgba(255,255,255,0.85)", marginTop: 4 }}>{cityLine}</div>}
@@ -92,30 +180,53 @@ export default function SharedReportView({
       {/* Content */}
       <div style={{ maxWidth: 760, margin: "0 auto", padding: "24px 20px 60px" }}>
 
+        {/* Photo Gallery */}
+        {photos.length > 0 && (
+          <div style={{ marginBottom: 28 }}>
+            {/* Main photo */}
+            <div
+              style={{ width: "100%", height: 400, borderRadius: 12, overflow: "hidden", marginBottom: 8, cursor: "pointer" }}
+              onClick={() => setSelectedPhoto(0)}
+            >
+              <img
+                src={photos[selectedPhoto ?? 0]}
+                alt="Property"
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+            </div>
+            {/* Thumbnail strip */}
+            {photos.length > 1 && (
+              <div style={{ display: "flex", gap: 6, overflowX: "auto" }}>
+                {photos.map((url, i) => (
+                  <div
+                    key={i}
+                    onClick={() => setSelectedPhoto(i)}
+                    style={{
+                      width: 80, height: 60, borderRadius: 6, overflow: "hidden", cursor: "pointer",
+                      border: (selectedPhoto ?? 0) === i ? "2px solid #3b82f6" : "2px solid transparent",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <img src={url} alt={`Photo ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Value Cards */}
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 28 }}>
-          {d.avmValue != null && <Card label="AVM Value" value={fmt(d.avmValue)!} sub={d.avmDate ? `As of ${d.avmDate}` : undefined} />}
-          {d.lastSalePrice != null && <Card label="Last Sale" value={fmt(d.lastSalePrice)!} sub={d.lastSaleDate || undefined} color="#eff6ff" />}
-          {d.estimatedEquity != null && (
-            <Card
-              label="Est. Equity"
-              value={`${d.estimatedEquity >= 0 ? "+" : ""}${fmt(d.estimatedEquity)}`}
-              color={d.estimatedEquity >= 0 ? "#ecfdf5" : "#fef2f2"}
-            />
-          )}
-          {d.ltv != null && <Card label="LTV" value={pct(d.ltv)!} color={d.ltv > 80 ? "#fef2f2" : "#f0fdf4"} />}
-          {d.rentalEstimate != null && (
-            <Card
-              label="Rent Est."
-              value={`${fmt(d.rentalEstimate)}/mo`}
-              sub={d.grossYield != null ? `${d.grossYield.toFixed(1)}% gross yield` : undefined}
-              color="#f5f3ff"
-            />
-          )}
+          {d.listPrice != null && <Card label="List Price" value={fmt(d.listPrice)!} />}
+          {d.avmValue != null && <Card label="AVM Value" value={fmt(d.avmValue)!} sub={d.avmLow && d.avmHigh ? `Range: ${fmt(d.avmLow)} – ${fmt(d.avmHigh)}` : undefined} color="#f0f9ff" />}
+          {d.beds != null && <Card label="Bedrooms" value={String(d.beds)} color="#f5f3ff" />}
+          {d.baths != null && <Card label="Bathrooms" value={String(d.baths)} color="#f5f3ff" />}
+          {d.sqft != null && <Card label="Living Area" value={`${d.sqft.toLocaleString()} sqft`} color="#fefce8" />}
+          {d.yearBuilt != null && <Card label="Year Built" value={String(d.yearBuilt)} color="#fefce8" />}
         </div>
 
-        {/* Property Details */}
-        <Section title="Property Details">
+        {/* Property Overview */}
+        <Section title="Property Overview">
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 32px" }}>
             <Row label="Property Type" value={d.propertyType} />
             <Row label="Year Built" value={d.yearBuilt} />
@@ -128,55 +239,13 @@ export default function SharedReportView({
             <Row label="Pool" value={d.pool != null ? (d.pool ? "Yes" : "No") : null} />
             <Row label="APN / TMK" value={d.apn} />
             <Row label="County" value={d.county} />
+            <Row label="Annual Tax" value={fmt(d.taxAmount)} />
           </div>
         </Section>
 
-        {/* Tax Assessment */}
-        {(d.assessedTotal != null || d.taxAmount != null) && (
-          <Section title="Tax Assessment">
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 32px" }}>
-              <Row label="Assessed Total" value={fmt(d.assessedTotal)} />
-              <Row label="Land Value" value={fmt(d.assessedLand)} />
-              <Row label="Improvement Value" value={fmt(d.assessedImpr)} />
-              <Row label="Market Value" value={fmt(d.marketTotal)} />
-              <Row label="Annual Tax" value={fmt(d.taxAmount)} />
-              <Row label="Tax Year" value={d.taxYear} />
-            </div>
-          </Section>
-        )}
-
-        {/* Mortgage & Equity */}
-        {(d.loanBalance != null || d.loanAmount != null || d.lender) && (
-          <Section title="Mortgage & Equity">
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 32px" }}>
-              <Row label="Loan Balance" value={fmt(d.loanBalance)} />
-              <Row label="Original Loan" value={fmt(d.loanAmount)} />
-              <Row label="Lender" value={d.lender} />
-              <Row label="Loan Type" value={d.loanType} />
-              <Row label="Active Loans" value={d.loanCount} />
-              <Row label="LTV Ratio" value={pct(d.ltv)} />
-              <Row label="Est. Equity" value={d.estimatedEquity != null ? fmt(d.estimatedEquity) : null} />
-            </div>
-          </Section>
-        )}
-
-        {/* Ownership */}
-        {(d.owner1 || d.owner2) && (
-          <Section title="Ownership">
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 32px" }}>
-              <Row label="Owner" value={d.owner1} />
-              <Row label="Co-Owner" value={d.owner2} />
-              <Row label="Owner Occupied" value={d.ownerOccupied} />
-              <Row label="Absentee Owner" value={d.absenteeOwner} />
-              <Row label="Corporate" value={d.corporateOwner} />
-              <Row label="Mailing Address" value={d.mailingAddress} />
-            </div>
-          </Section>
-        )}
-
         {/* Hazard & Environmental */}
         {d.hazards && d.hazards.length > 0 && (
-          <Section title="Hazard & Environmental Zones">
+          <Section title="Environmental & Hazard Information">
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {d.hazards.map((h: any, i: number) => (
                 <div key={i} style={{ padding: "8px 12px", background: "#fef2f2", borderRadius: 8, borderLeft: "4px solid #dc2626" }}>
@@ -193,48 +262,32 @@ export default function SharedReportView({
           </Section>
         )}
 
-        {/* Neighborhood & Economic */}
-        {d.federalData && (
-          <Section title="Neighborhood & Economic Context">
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 32px" }}>
-              <Row label="Median Household Income" value={fmt(d.federalData.medianIncome)} />
-              <Row label="Median Home Value (Area)" value={fmt(d.federalData.medianHomeValue)} />
-              <Row label="Median Age" value={d.federalData.medianAge != null ? String(d.federalData.medianAge) : null} />
-              <Row label="Population Density" value={d.federalData.populationDensity != null ? `${d.federalData.populationDensity.toLocaleString()} /sq mi` : null} />
-              <Row label="Unemployment Rate" value={pct(d.federalData.unemploymentRate)} />
-              <Row label="Poverty Rate" value={pct(d.federalData.povertyRate)} />
-              <Row label="Owner-Occupied" value={pct(d.federalData.ownerOccupiedPct)} />
-              <Row label="Renter-Occupied" value={pct(d.federalData.renterOccupiedPct)} />
-              <Row label="30-yr Mortgage Rate" value={pct(d.federalData.mortgageRate30yr)} />
+        {/* No hazards — show positive note */}
+        {(!d.hazards || d.hazards.length === 0) && (
+          <Section title="Environmental & Hazard Information">
+            <div style={{ padding: "12px 16px", background: "#f0fdf4", borderRadius: 8, borderLeft: "4px solid #16a34a" }}>
+              <div style={{ fontSize: 13, color: "#15803d", fontWeight: 600 }}>No known environmental hazards detected</div>
+              <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>Based on Hawaii state GIS data for tsunami, sea level rise, lava flow, and cesspool zones.</div>
             </div>
+            {d.federalData?.floodZone && (
+              <div style={{ marginTop: 10 }}>
+                <Row label="FEMA Flood Zone" value={d.federalData.floodZone} />
+              </div>
+            )}
           </Section>
         )}
 
-        {/* Sales History */}
-        {d.salesHistory && d.salesHistory.length > 0 && (
-          <Section title="Sales History">
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
-                <thead>
-                  <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
-                    <th style={{ textAlign: "left", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Date</th>
-                    <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Amount</th>
-                    <th style={{ textAlign: "left", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Buyer</th>
-                    <th style={{ textAlign: "left", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Seller</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {d.salesHistory.map((s: any, i: number) => (
-                    <tr key={i} style={{ borderBottom: "1px solid #f3f4f6", background: i % 2 === 0 ? "#fff" : "#f9fafb" }}>
-                      <td style={{ padding: "6px 8px" }}>{s.date || "\u2014"}</td>
-                      <td style={{ padding: "6px 8px", textAlign: "right", fontWeight: 600 }}>{s.amount != null ? fmt(s.amount) : "\u2014"}</td>
-                      <td style={{ padding: "6px 8px" }}>{s.buyer || "\u2014"}</td>
-                      <td style={{ padding: "6px 8px" }}>{s.seller || "\u2014"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+        {/* Mortgage Calculator */}
+        {d.listPrice != null && d.listPrice > 0 && (
+          <Section title="Mortgage Calculator">
+            <MortgageCalculator
+              listPrice={d.listPrice}
+              taxAnnual={d.taxAmount || d.taxAnnualAmount}
+              hoaAnnual={d.associationFee}
+              agentName={agentName}
+              agentPhone={agentPhone}
+              agentEmail={agentEmail}
+            />
           </Section>
         )}
 
