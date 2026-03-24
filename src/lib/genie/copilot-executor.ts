@@ -244,7 +244,13 @@ export async function executeCopilotAction(
         const zip = params.zipCode || params.zip || "";
         if (!zip) return { action, success: false, error: "zipCode required" };
 
-        const searchParams = new URLSearchParams({ endpoint: "detailmortgageowner", postalcode: zip, pagesize: "20" });
+        // Extract filter params
+        const minYearsOwned = Number(params.minYearsOwned) || 0;
+        const minBeds = Number(params.minBeds) || 0;
+        const minBaths = Number(params.minBaths) || 0;
+        const aiScore = params.aiScore !== false;
+
+        const searchParams = new URLSearchParams({ endpoint: "detailmortgageowner", postalcode: zip, pagesize: "50" });
         if (action === "search_absentee") searchParams.set("absenteeowner", "absentonly");
         if (action === "search_just_sold") {
           searchParams.set("endpoint", "salesnapshot");
@@ -272,7 +278,99 @@ export async function executeCopilotAction(
           properties = properties.filter((p: any) => p.owner?.corporateIndicator === "Y" || (p.owner?.absenteeOwnerStatus === "A" && p.owner?.owner1?.fullName));
         }
 
-        return { action, success: true, data: { properties: properties.slice(0, 10), total: properties.length } };
+        // Apply beds/baths filter
+        if (minBeds > 0 || minBaths > 0) {
+          properties = properties.filter((p: any) => {
+            const beds = p.building?.rooms?.beds || 0;
+            const baths = (p.building?.rooms?.bathsFull || 0) + (p.building?.rooms?.bathsHalf || 0) * 0.5;
+            return beds >= minBeds && baths >= minBaths;
+          });
+        }
+
+        // Apply time-at-residence filter (years owned)
+        if (minYearsOwned > 0) {
+          const cutoffDate = new Date();
+          cutoffDate.setFullYear(cutoffDate.getFullYear() - minYearsOwned);
+          const cutoffStr = cutoffDate.toISOString().split("T")[0];
+
+          properties = properties.filter((p: any) => {
+            // Check sale date — if the last sale was before cutoff, owner has held it long enough
+            const saleDate = p.sale?.amount?.saleTransDate || p.sale?.amount?.saleRecDate;
+            if (saleDate) {
+              // Normalize date format (ATTOM can return YYYY/MM/DD or YYYY-MM-DD)
+              const normalized = saleDate.replace(/\//g, "-");
+              return normalized <= cutoffStr;
+            }
+            // No sale date available — include it (can't filter)
+            return true;
+          });
+        }
+
+        const totalBeforeAI = properties.length;
+
+        // AI scoring — call the prospecting AI analyzer
+        if (aiScore && properties.length > 0) {
+          try {
+            const modeMap: Record<string, string> = {
+              search_absentee: "absentee",
+              search_high_equity: "equity",
+              search_foreclosure: "foreclosure",
+              search_just_sold: "radius",
+              search_investor: "investor",
+            };
+
+            const aiRes = await internalFetch(`${baseUrl}/api/prospecting-ai/analyze`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                properties: properties.slice(0, 25), // AI limit
+                mode: modeMap[action] || "absentee",
+                zipCode: zip,
+              }),
+            });
+
+            if (aiRes.ok) {
+              const aiData = await aiRes.json();
+              const scoredProperties = aiData.prospects || [];
+
+              // Sort by AI score descending
+              scoredProperties.sort((a: any, b: any) => (b.score || 0) - (a.score || 0));
+
+              return {
+                action,
+                success: true,
+                data: {
+                  properties: scoredProperties.slice(0, 15),
+                  total: totalBeforeAI,
+                  aiScored: true,
+                  summary: aiData.summary || null,
+                  topInsight: aiData.topInsight || null,
+                  filters: { minYearsOwned, minBeds, minBaths },
+                },
+              };
+            }
+          } catch (aiErr) {
+            console.error("[Copilot] AI scoring failed, returning unscored:", aiErr);
+          }
+        }
+
+        // Fallback: return unscored results sorted by value
+        properties.sort((a: any, b: any) => {
+          const aVal = a.avm?.amount?.value || a.assessment?.market?.mktTtlValue || 0;
+          const bVal = b.avm?.amount?.value || b.assessment?.market?.mktTtlValue || 0;
+          return bVal - aVal;
+        });
+
+        return {
+          action,
+          success: true,
+          data: {
+            properties: properties.slice(0, 15),
+            total: totalBeforeAI,
+            aiScored: false,
+            filters: { minYearsOwned, minBeds, minBaths },
+          },
+        };
       }
 
       case "save_seller_search": {

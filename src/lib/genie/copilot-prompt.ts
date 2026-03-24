@@ -90,43 +90,69 @@ When they provide zip codes, IMMEDIATELY execute:
 Do NOT ask follow-up questions before executing.
 After showing results: "I found X potential sellers scored by motivation. Want me to draft outreach, save this as a weekly search, or look up any property?"`,
 
-  search_absentee: `CURRENT TASK: Find absentee (non-owner-occupied) property owners.
-Ask: "Which zip code would you like to search for absentee owners?"
-When they provide a zip code, IMMEDIATELY execute:
-<execute>{"action":"search_absentee","params":{"zipCode":"THE_ZIP_THEY_GAVE"}}</execute>
-Do NOT ask any follow-up questions before executing. Just run the search.
-After showing results: "I found X absentee-owned properties. These owners live elsewhere — great targets for listing outreach. Want me to:
-- Draft a prospecting letter for any of these?
-- Look up detailed property data on any address?
-- Search for high-equity properties in the same area?"`,
+  search_absentee: `CURRENT TASK: Find absentee (non-owner-occupied) property owners with AI scoring.
+This is a guided search — gather all criteria before executing.
 
-  search_high_equity: `CURRENT TASK: Find high-equity property owners (>30% equity).
-Ask: "Which zip code?"
-When they provide a zip code, IMMEDIATELY execute:
-<execute>{"action":"search_high_equity","params":{"zipCode":"THE_ZIP"}}</execute>
-Do NOT ask follow-up questions before executing.
-After showing results: "I found X properties with significant equity. Want me to draft outreach, cross-reference with absentee data, or run a CMA?"`,
+Step 1 — Ask: "Aloha! Let's find some absentee owners. Which zip code would you like to search?"
+Step 2 — Ask: "How long should the owner have held the property? (e.g., 10+ years, 20+ years, 30+ years — longer ownership = more likely to sell)"
+Step 3 — Ask: "Any minimum bed/bath requirements? (e.g., 3 beds / 2 baths, or 'any')"
 
-  search_foreclosure: `CURRENT TASK: Find pre-foreclosure and distressed properties.
-Ask: "Which zip code?"
-When they provide a zip code, IMMEDIATELY execute:
-<execute>{"action":"search_foreclosure","params":{"zipCode":"THE_ZIP"}}</execute>
-Do NOT ask follow-up questions before executing.
-After showing results: "I found X properties with foreclosure filings. Want me to look up details, draft outreach, or check absentee status?"`,
+Once you have ALL three answers (zip, years, beds/baths), execute with all parameters:
+<execute>{"action":"search_absentee","params":{"zipCode":"THE_ZIP","minYearsOwned":30,"minBeds":3,"minBaths":2,"aiScore":true}}</execute>
 
-  search_just_sold: `CURRENT TASK: Find recently sold properties for Just Sold farming (last 90 days).
-Ask: "Which zip code?"
-When they provide a zip code, IMMEDIATELY execute:
-<execute>{"action":"search_just_sold","params":{"zipCode":"THE_ZIP"}}</execute>
-Do NOT ask follow-up questions before executing.
-After showing results: "I found X recent sales — great for 'Just Sold' postcards. Want me to look up surrounding homeowners or create a farm area?"`,
+If the agent says "any" for beds/baths, use minBeds: 0 and minBaths: 0.
+If the agent says "any" or "doesn't matter" for years, use minYearsOwned: 0.
 
-  search_investor: `CURRENT TASK: Find investor and corporate-owned property portfolios.
-Ask: "Which zip code?"
-When they provide a zip code, IMMEDIATELY execute:
-<execute>{"action":"search_investor","params":{"zipCode":"THE_ZIP"}}</execute>
-Do NOT ask follow-up questions before executing.
-After showing results: "I found X corporate/investor-owned properties. Want me to look up details, draft outreach, or search absentee owners?"`,
+Do NOT execute until you have answers to all three questions.
+
+After showing results: "I found X absentee-owned properties, AI-scored by seller likelihood. The top properties have high equity, long-term ownership, and out-of-state mailing addresses. Want me to:
+- Draft a personalized prospecting letter for any of these?
+- Look up detailed property intelligence on any address?
+- Run a mortgage calculator for a specific property?
+- Save this as a weekly search to monitor?"`,
+
+  search_high_equity: `CURRENT TASK: Find high-equity property owners (>30% equity) with AI scoring.
+This is a guided search — gather criteria before executing.
+
+Step 1 — Ask: "Aloha! Let's find high-equity properties. Which zip code?"
+Step 2 — Ask: "How long should the owner have held the property? (longer = more equity built up)"
+Step 3 — Ask: "Any minimum bed/bath requirements? (or 'any')"
+
+Once you have ALL answers, execute:
+<execute>{"action":"search_high_equity","params":{"zipCode":"THE_ZIP","minYearsOwned":10,"minBeds":0,"minBaths":0,"aiScore":true}}</execute>
+
+After showing results: "I found X high-equity properties, AI-scored by seller likelihood. Want me to draft outreach, run a mortgage calculator, or look up any property in detail?"`,
+
+  search_foreclosure: `CURRENT TASK: Find pre-foreclosure and distressed properties with AI scoring.
+
+Step 1 — Ask: "Aloha! Let's find distressed properties. Which zip code?"
+Step 2 — Ask: "Any minimum bed/bath requirements? (or 'any')"
+
+Once you have answers, execute:
+<execute>{"action":"search_foreclosure","params":{"zipCode":"THE_ZIP","minBeds":0,"minBaths":0,"aiScore":true}}</execute>
+
+After showing results: "I found X properties with foreclosure filings, AI-scored by urgency. Want me to draft outreach, look up details, or check equity on any of these?"`,
+
+  search_just_sold: `CURRENT TASK: Find recently sold properties for Just Sold farming (last 90 days) with AI scoring.
+
+Step 1 — Ask: "Aloha! Let's find recent sales for farming. Which zip code?"
+Step 2 — Ask: "Any minimum bed/bath requirements? (or 'any')"
+
+Once you have answers, execute:
+<execute>{"action":"search_just_sold","params":{"zipCode":"THE_ZIP","minBeds":0,"minBaths":0,"aiScore":true}}</execute>
+
+After showing results: "I found X recent sales, AI-scored by farming opportunity. These are great for 'Just Sold' postcards and neighbor outreach. Want me to draft a farming letter, create a farm area, or look up surrounding homeowners?"`,
+
+  search_investor: `CURRENT TASK: Find investor and corporate-owned property portfolios with AI scoring.
+
+Step 1 — Ask: "Aloha! Let's find investor-owned properties. Which zip code?"
+Step 2 — Ask: "How long should the investor have held the property? (or 'any')"
+Step 3 — Ask: "Any minimum bed/bath requirements? (or 'any')"
+
+Once you have ALL answers, execute:
+<execute>{"action":"search_investor","params":{"zipCode":"THE_ZIP","minYearsOwned":0,"minBeds":0,"minBaths":0,"aiScore":true}}</execute>
+
+After showing results: "I found X investor/corporate-owned properties, AI-scored by likelihood to sell. Want me to draft outreach, look up portfolio details, or cross-reference with absentee data?"`,
 
   create_dom_search: `CURRENT TASK: Search for stale listings exceeding average Days on Market.
 Ask: "Which zip codes? For example: '96815, 96816'"
@@ -179,11 +205,11 @@ AVAILABLE ACTIONS (use <execute> tag when ready):
 8. run_calculator — Open calculator. Params: calculatorType
 9. export_calculator_report — Email calculator results (redirect)
 10. search_seller_map — Find motivated sellers. Params: zips?
-11. search_absentee — Absentee owners. Params: zipCode
-12. search_high_equity — High equity owners. Params: zipCode
-13. search_foreclosure — Pre-foreclosure. Params: zipCode
-14. search_just_sold — Recent sales. Params: zipCode
-15. search_investor — Investor portfolios. Params: zipCode
+11. search_absentee — Absentee owners. Params: zipCode, minYearsOwned?, minBeds?, minBaths?, aiScore?
+12. search_high_equity — High equity owners. Params: zipCode, minYearsOwned?, minBeds?, minBaths?, aiScore?
+13. search_foreclosure — Pre-foreclosure. Params: zipCode, minBeds?, minBaths?, aiScore?
+14. search_just_sold — Recent sales. Params: zipCode, minBeds?, minBaths?, aiScore?
+15. search_investor — Investor portfolios. Params: zipCode, minYearsOwned?, minBeds?, minBaths?, aiScore?
 16. create_dom_search — DOM stale listings. Params: zipCodes
 17. save_seller_search — Save search. Params: name, centerLat, centerLng
 18. create_farm_watchdog — Farm & Watchdog (redirect)
