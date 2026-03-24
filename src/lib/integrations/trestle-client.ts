@@ -600,21 +600,36 @@ export class TrestleClient {
     let streetPart = (parts[0] || address).trim();
 
     // Remove unit/apt numbers for broader matching
+    // Handles: #G5, Apt 301, Unit 1806, Ste 200, and bare trailing numbers after street suffix
     streetPart = streetPart.replace(/\s*(#|apt|unit|ste|suite)\s*\S+/gi, "").trim();
-    const escaped = streetPart.replace(/'/g, "''").toLowerCase();
+
+    // Extract street number and street name
+    const rawMatch = streetPart.match(/^(\d[\d-]*)\s+(.+)/i);
+    let streetNum = "";
+    let streetName = "";
+
+    if (rawMatch) {
+      streetNum = rawMatch[1];
+      streetName = rawMatch[2];
+      // Remove trailing bare unit numbers: "Ena Road 1806" → "Ena Road"
+      // Match: street suffix followed by digits at end
+      streetName = streetName.replace(/\s+(road|rd|street|st|avenue|ave|drive|dr|lane|ln|place|pl|boulevard|blvd|court|ct|way|loop|circle|cir|terrace|ter|trail|trl|parkway|pkwy|highway|hwy)\s+\d+$/i, (m, suffix) => ` ${suffix}`).trim();
+      // Also strip bare trailing number if no suffix matched: "Ena 1806" → "Ena"
+      streetName = streetName.replace(/\s+\d+$/, "").trim();
+    }
+
+    const escaped = (streetNum ? `${streetNum} ${streetName}` : streetPart).replace(/'/g, "''").toLowerCase();
+    const escapedName = streetName.replace(/'/g, "''").toLowerCase();
 
     if (!escaped || escaped.length < 3) {
       console.warn("[Trestle] getSalesHistory: address too short to search:", address);
       return [];
     }
 
-    // Extract street number and street name separately for precise matching
-    const streetMatch = escaped.match(/^(\d[\d-]*)\s+(.+)/);
+    // Build filter using StreetNumber + StreetName for precise matching
     let filter: string;
-    if (streetMatch) {
-      const [, streetNum, streetName] = streetMatch;
-      // Match by street number + street name (most precise)
-      filter = `StandardStatus eq 'Closed' and tolower(StreetNumber) eq '${streetNum}' and contains(tolower(StreetName), '${streetName}')`;
+    if (streetNum && escapedName) {
+      filter = `StandardStatus eq 'Closed' and tolower(StreetNumber) eq '${streetNum.toLowerCase()}' and contains(tolower(StreetName), '${escapedName}')`;
     } else {
       // Fallback: match against UnparsedAddress
       filter = `StandardStatus eq 'Closed' and contains(tolower(UnparsedAddress), '${escaped}')`;
