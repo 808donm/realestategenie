@@ -110,6 +110,8 @@ export default function PropertyDetailModal({
   embedded,
   tabs: visibleTabs,
   farmingContext,
+  mlsPhotos,
+  mlsListPrice,
 }: {
   property: AttomProperty;
   searchContext?: { absenteeowner?: string };
@@ -120,6 +122,10 @@ export default function PropertyDetailModal({
   tabs?: SectionId[];
   /** When provided, enables the "Nearby Homes" tab for Just Sold Farming. */
   farmingContext?: { radiusMiles: string; propertyType?: string };
+  /** MLS photos passed from the listing card for shared reports */
+  mlsPhotos?: string[];
+  /** MLS list price for mortgage calculator in shared reports */
+  mlsListPrice?: number;
 }) {
   const [activeSection, setActiveSection] = useState<SectionId>(visibleTabs?.[0] || "overview");
   const [federalData, setFederalData] = useState<FederalPropertySupplement | null>(null);
@@ -716,17 +722,19 @@ export default function PropertyDetailModal({
       hazards: hazards.length > 0 ? hazards : undefined,
       federalData: federal,
       // Include up to 6 photos for shared reports
-      photos: ((p as any).Media || [])
-        .filter((m: any) => m.MediaURL && (m.MediaType || "").startsWith("image"))
-        .slice(0, 6)
-        .map((m: any) => m.MediaURL),
+      photos: mlsPhotos?.length
+        ? mlsPhotos.slice(0, 6)
+        : ((p as any).Media || [])
+            .filter((m: any) => m.MediaURL && (m.MediaType || "").startsWith("image"))
+            .slice(0, 6)
+            .map((m: any) => m.MediaURL),
       // Mortgage calculator fields
-      listPrice: (p as any).ListPrice || avmVal || bestValue,
+      listPrice: mlsListPrice || (p as any).ListPrice || avmVal || bestValue,
       taxAnnualAmount: p.assessment?.tax?.taxAmt,
       associationFee: p.hoa?.fee ? p.hoa.fee * 12 : undefined,
       generatedAt: new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }),
     };
-  }, [p, addr, avmVal, bestValue, lastSaleAmt, equity, ltv, yearBuilt, beds, baths, sqft, hazardData, federalData, enrichedFinancial]);
+  }, [p, addr, avmVal, bestValue, lastSaleAmt, equity, ltv, yearBuilt, beds, baths, sqft, hazardData, federalData, enrichedFinancial, mlsPhotos, mlsListPrice]);
 
   const handleGenerateReport = useCallback(async () => {
     setReportGenerating(true);

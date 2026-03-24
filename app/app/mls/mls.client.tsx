@@ -2794,6 +2794,8 @@ export default function MLSClient() {
                   property={attomData}
                   onClose={() => {}}
                   embedded
+                  mlsPhotos={selectedProperty?.Media?.filter((m) => (m.MediaType || "").startsWith("image")).map((m) => m.MediaURL).slice(0, 6)}
+                  mlsListPrice={selectedProperty?.ListPrice}
                 />
               )}
 
