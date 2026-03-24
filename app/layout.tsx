@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import { Toaster } from "@/components/ui/toaster";
 import CapacitorInit from "@/components/capacitor-init";
 import "./globals.css";
@@ -27,6 +28,7 @@ export default function RootLayout({
       <body className="antialiased font-sans">
         <CapacitorInit />
         {children}
+        <Analytics />
         <Toaster />
       </body>
     </html>
