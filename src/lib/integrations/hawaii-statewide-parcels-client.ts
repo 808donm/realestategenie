@@ -101,7 +101,11 @@ export class HawaiiStatewideParcelClient {
     url.searchParams.set("where", where);
     url.searchParams.set("outFields", options?.outFields || "*");
     url.searchParams.set("f", "json");
-    url.searchParams.set("outSR", String(options?.outSR ?? 4326));
+    // Only set outSR when returning geometry — some layers reject outSR=4326
+    // when the native coordinate system doesn't support reprojection
+    if (options?.returnGeometry) {
+      url.searchParams.set("outSR", String(options?.outSR ?? 4326));
+    }
     url.searchParams.set(
       "returnGeometry",
       String(options?.returnGeometry ?? false)

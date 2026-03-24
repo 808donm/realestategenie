@@ -18,10 +18,12 @@
 const ARCGIS_BASE =
   "https://services.arcgis.com/tNJpAOha4mODLkXz/arcgis/rest/services";
 
-// Default service/layer names — override via env vars if the city renames them
-const DEFAULT_OWNALL_URL = `${ARCGIS_BASE}/OWNALL_Table/FeatureServer/0`;
-const DEFAULT_TAX_PARCELS_URL = `${ARCGIS_BASE}/Tax_Parcels/FeatureServer/0`;
-const DEFAULT_ALL_PARCELS_URL = `${ARCGIS_BASE}/All_Parcels/FeatureServer/0`;
+// Default service/layer names — updated March 2026 after city renamed services
+// Old: OWNALL_Table/0, Tax_Parcels/0, All_Parcels/0 (now return 400 Invalid URL)
+// New: OWNINFO/0, TaxMapKey/2
+const DEFAULT_OWNALL_URL = `${ARCGIS_BASE}/OWNINFO/FeatureServer/0`;
+const DEFAULT_TAX_PARCELS_URL = `${ARCGIS_BASE}/TaxMapKey/FeatureServer/2`;
+const DEFAULT_ALL_PARCELS_URL = `${ARCGIS_BASE}/TaxMapKey/FeatureServer/2`;
 
 // ── Response types ──────────────────────────────────────────────────────────
 
@@ -29,9 +31,15 @@ export interface HonoluluOwner {
   tmk?: string;
   parid?: string;
   owner?: string;
+  // New OWNINFO fields (replaced OWNALL_Table March 2026)
+  taxbillown?: string;
+  taxbillown1?: string;
+  taxbillown2?: string;
   owntype?: string;
+  owntype1?: string;
+  owntype_desc?: string;
   ownseq?: number;
-  // Additional fields the OWNALL table may include
+  // Additional fields
   [key: string]: unknown;
 }
 
@@ -317,6 +325,14 @@ export class HonoluluTaxClient {
     const result: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(attrs)) {
       result[key.toLowerCase()] = value;
+    }
+    // Map new OWNINFO fields to legacy field names for backwards compatibility
+    // OWNINFO uses taxbillown/taxbillown1/taxbillown2 instead of owner
+    if (!result.owner && (result.taxbillown || result.taxbillown1)) {
+      result.owner = result.taxbillown || result.taxbillown1;
+    }
+    if (!result.owntype && (result.owntype1 || result.owntype_desc)) {
+      result.owntype = result.owntype_desc || result.owntype1;
     }
     return result;
   }
