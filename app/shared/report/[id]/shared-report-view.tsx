@@ -243,6 +243,20 @@ export default function SharedReportView({
           </div>
         </Section>
 
+        {/* Tax Assessment */}
+        {(d.assessedTotal != null || d.taxAmount != null) && (
+          <Section title="Tax Assessment">
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 32px" }}>
+              <Row label="Assessed Total" value={fmt(d.assessedTotal)} />
+              <Row label="Land Value" value={fmt(d.assessedLand)} />
+              <Row label="Improvement Value" value={fmt(d.assessedImpr)} />
+              <Row label="Market Value" value={fmt(d.marketTotal)} />
+              <Row label="Annual Tax" value={fmt(d.taxAmount)} />
+              <Row label="Tax Year" value={d.taxYear} />
+            </div>
+          </Section>
+        )}
+
         {/* Hazard & Environmental */}
         {d.hazards && d.hazards.length > 0 && (
           <Section title="Environmental & Hazard Information">

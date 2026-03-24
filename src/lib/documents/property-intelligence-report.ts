@@ -85,6 +85,12 @@ export interface PropertyReportData {
     seller?: string;
     docType?: string;
   }>;
+  // Photos (up to 6 MLS photos for shared reports)
+  photos?: string[];
+  // Mortgage calculator fields
+  listPrice?: number;
+  taxAnnualAmount?: number;
+  associationFee?: number;
   // Generated timestamp
   generatedAt: string;
 }
