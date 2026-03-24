@@ -1562,7 +1562,7 @@ export default function PropertyDetailModal({
           {activeSection === "sales-history" && (() => {
             // Pass line1 (street only) when available, fall back to oneLine
             const salesAddr = p.address?.line1 || p.address?.oneLine || addr;
-            return <SalesHistorySection address={salesAddr} />;
+            return <SalesHistorySection address={salesAddr} publicRecords={p.saleHistory} />;
           })()}
 
           {/* ── Comps Tab ─────────────────────────────────────────────── */}
@@ -2946,7 +2946,7 @@ export default function PropertyDetailModal({
 }
 
 // ── Sales History Section ────────────────────────────────────────────────────
-function SalesHistorySection({ address }: { address?: string }) {
+function SalesHistorySection({ address, publicRecords }: { address?: string; publicRecords?: any[] }) {
   const [unitHistory, setUnitHistory] = useState<any[]>([]);
   const [buildingHistory, setBuildingHistory] = useState<any[]>([]);
   const [unitNumber, setUnitNumber] = useState<string | null>(null);
@@ -2973,7 +2973,10 @@ function SalesHistorySection({ address }: { address?: string }) {
 
   if (loading) return <div style={{ padding: 20, textAlign: "center", color: "#9ca3af", fontSize: 13 }}>Loading sales history from MLS...</div>;
   if (error) return <div style={{ padding: 20, color: "#ef4444", fontSize: 13 }}>{error}</div>;
-  if (unitHistory.length === 0 && buildingHistory.length === 0) return <div style={{ padding: 20, textAlign: "center", color: "#9ca3af", fontSize: 13 }}>No closed transactions found in MLS records for this address.</div>;
+  const hasPublicRecords = publicRecords && publicRecords.length > 0;
+  if (unitHistory.length === 0 && buildingHistory.length === 0 && !hasPublicRecords) {
+    return <div style={{ padding: 20, textAlign: "center", color: "#9ca3af", fontSize: 13 }}>No sales history found for this address.</div>;
+  }
 
   const renderTransaction = (tx: any, i: number) => {
     const priceDiff = tx.closePrice && tx.originalListPrice
@@ -3066,10 +3069,52 @@ function SalesHistorySection({ address }: { address?: string }) {
         </div>
       )}
 
-      {/* If no unit number detected, all results are in unitHistory */}
-      {unitHistory.length === 0 && buildingHistory.length === 0 && (
+      {/* Public Records (from RentCast/Realie — county deed records) */}
+      {hasPublicRecords && (
+        <div style={{ marginTop: unitHistory.length > 0 || buildingHistory.length > 0 ? 16 : 0 }}>
+          <h3 style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 8, paddingBottom: 6, borderBottom: "1px solid #e5e7eb" }}>
+            Public Records ({publicRecords!.length})
+          </h3>
+          {unitHistory.length === 0 && buildingHistory.length === 0 && (
+            <p style={{ fontSize: 11, color: "#9ca3af", marginBottom: 10 }}>
+              No MLS transactions found — showing county deed records
+            </p>
+          )}
+          {publicRecords!.map((s: any, i: number) => (
+            <div key={i} style={{
+              border: "1px solid #e5e7eb", borderRadius: 8, padding: 14, marginBottom: 10,
+              background: i === 0 ? "#eff6ff" : "#f9fafb",
+              borderLeft: i === 0 ? "4px solid #3b82f6" : "3px solid #e5e7eb",
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
+                <span style={{ fontSize: 16, fontWeight: 700, color: "#15803d" }}>
+                  {s.amount != null && s.amount > 0 ? `$${s.amount.toLocaleString()}` : "Price Not Disclosed"}
+                </span>
+                <span style={{ fontSize: 10, background: "#dbeafe", color: "#1e40af", padding: "2px 6px", borderRadius: 4 }}>
+                  {s._source === "realie" ? "County Records" : "Public Records"}
+                </span>
+              </div>
+              {s.date && (
+                <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>
+                  {s.date}
+                </div>
+              )}
+              {(s.buyerName || s.sellerName || s.deedType) && (
+                <div style={{ fontSize: 11, color: "#9ca3af" }}>
+                  {s.buyerName && <div>Buyer: {s.buyerName}</div>}
+                  {s.sellerName && <div>Seller: {s.sellerName}</div>}
+                  {s.deedType && <div>Deed: {s.deedType}</div>}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* No data at all */}
+      {unitHistory.length === 0 && buildingHistory.length === 0 && !hasPublicRecords && (
         <div style={{ padding: 20, textAlign: "center", color: "#9ca3af", fontSize: 13 }}>
-          No closed transactions found in MLS records.
+          No sales history found.
         </div>
       )}
     </div>
