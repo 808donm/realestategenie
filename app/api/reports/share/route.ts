@@ -7,6 +7,9 @@ const admin = createClient(
   { auth: { persistSession: false } }
 );
 
+// Public-facing URL for shareable links — use custom domain, not Vercel internal URL
+const PUBLIC_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://realestategenie.app";
+
 /**
  * POST /api/reports/share - Create a shareable link for a property report
  * Body: { report: {...}, agentName, agentEmail, agentPhone, brandColor?, logoUrl? }
@@ -54,7 +57,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         shareId,
-        shareUrl: `${request.nextUrl.origin}/shared/report/${shareId}`,
+        shareUrl: `${PUBLIC_URL}/shared/report/${shareId}`,
         note: "Link generated (storage pending migration)",
       });
     }
@@ -62,7 +65,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       shareId,
-      shareUrl: `${request.nextUrl.origin}/shared/report/${shareId}`,
+      shareUrl: `${PUBLIC_URL}/shared/report/${shareId}`,
     });
   } catch (error) {
     return NextResponse.json(

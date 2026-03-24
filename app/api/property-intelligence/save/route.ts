@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const origin = request.nextUrl.origin;
+    const origin = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://realestategenie.app";
     return NextResponse.json({
       id: report.id,
       shareUrl: `${origin}/report/${report.id}`,
