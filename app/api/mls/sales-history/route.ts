@@ -49,6 +49,74 @@ export async function GET(request: NextRequest) {
         : integration.config;
 
     const client = createTrestleClient(config);
+
+    // Diagnostic: first check if ANY closed listings exist in the feed at all
+    const debug = request.nextUrl.searchParams.get("debug") === "true";
+    if (debug) {
+      // Test 1: Any closed listings in the zip?
+      const zipMatch = address.match(/\d{5}/);
+      const zip = request.nextUrl.searchParams.get("zip") || (zipMatch ? zipMatch[0] : "");
+      const diagnostics: Record<string, any> = { address, zip };
+
+      if (zip) {
+        try {
+          const zipClosed = await client.getProperties({
+            $filter: `StandardStatus eq 'Closed' and startswith(PostalCode, '${zip}')`,
+            $top: 3,
+            $count: true,
+            $orderby: "CloseDate desc",
+            $select: "ListingKey,UnparsedAddress,StreetNumber,StreetName,StreetSuffix,ClosePrice,CloseDate,StandardStatus",
+          });
+          diagnostics.closedInZip = {
+            count: zipClosed["@odata.count"],
+            sample: zipClosed.value.map((p: any) => ({
+              address: p.UnparsedAddress,
+              streetNum: p.StreetNumber,
+              streetName: p.StreetName,
+              streetSuffix: p.StreetSuffix,
+              closePrice: p.ClosePrice,
+              closeDate: p.CloseDate,
+            })),
+          };
+        } catch (e: any) { diagnostics.closedInZipError = e.message; }
+      }
+
+      // Test 2: Any closed listings at all?
+      try {
+        const anyClosed = await client.getProperties({
+          $filter: "StandardStatus eq 'Closed'",
+          $top: 3,
+          $count: true,
+          $orderby: "CloseDate desc",
+          $select: "ListingKey,UnparsedAddress,City,PostalCode,ClosePrice,CloseDate",
+        });
+        diagnostics.anyClosedInFeed = {
+          count: anyClosed["@odata.count"],
+          sample: anyClosed.value.map((p: any) => ({
+            address: p.UnparsedAddress,
+            city: p.City,
+            zip: p.PostalCode,
+            closePrice: p.ClosePrice,
+            closeDate: p.CloseDate,
+          })),
+        };
+      } catch (e: any) { diagnostics.anyClosedError = e.message; }
+
+      // Test 3: What statuses exist?
+      try {
+        for (const status of ["Closed", "Sold", "Expired", "Withdrawn", "Canceled"]) {
+          const res = await client.getProperties({
+            $filter: `StandardStatus eq '${status}'`,
+            $top: 1,
+            $count: true,
+          });
+          diagnostics[`status_${status}`] = res["@odata.count"] ?? res.value?.length ?? 0;
+        }
+      } catch (e: any) { diagnostics.statusCheckError = e.message; }
+
+      return NextResponse.json({ diagnostics });
+    }
+
     const closedListings = await client.getSalesHistory(address, { limit });
 
     // Map to clean response
