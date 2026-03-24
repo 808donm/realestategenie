@@ -593,14 +593,20 @@ export class TrestleClient {
    * Get sales history for a property address — queries closed listings
    * Returns all past transactions with close price, dates, agents, and offices
    */
-  async getSalesHistory(address: string, options?: { limit?: number }): Promise<TrestleProperty[]> {
+  async getSalesHistory(address: string, options?: { limit?: number }): Promise<{ unit: TrestleProperty[]; building: TrestleProperty[]; unitNumber?: string }> {
     // Parse the address: extract street portion (before city/state/zip)
-    // Input formats: "45-535 Luluku Road #G5, Kaneohe, HI 96744" or "123 Main St"
+    // Input formats: "45-535 Luluku Road #G5, Kaneohe, HI 96744" or "469 Ena Road 1806"
     const parts = address.split(",");
     let streetPart = (parts[0] || address).trim();
 
-    // Remove unit/apt numbers for broader matching
-    // Handles: #G5, Apt 301, Unit 1806, Ste 200, and bare trailing numbers after street suffix
+    // Extract unit number BEFORE stripping it
+    let unitNumber: string | undefined;
+    const unitMatch = streetPart.match(/\s*(?:#|apt|unit|ste|suite)\s*(\S+)/i);
+    if (unitMatch) {
+      unitNumber = unitMatch[1];
+    }
+
+    // Remove unit/apt prefixed numbers: #G5, Apt 301, Unit 1806
     streetPart = streetPart.replace(/\s*(#|apt|unit|ste|suite)\s*\S+/gi, "").trim();
 
     // Extract street number and street name
@@ -611,44 +617,70 @@ export class TrestleClient {
     if (rawMatch) {
       streetNum = rawMatch[1];
       streetName = rawMatch[2];
-      // Remove trailing bare unit numbers: "Ena Road 1806" → "Ena Road"
-      // Match: street suffix followed by digits at end
-      streetName = streetName.replace(/\s+(road|rd|street|st|avenue|ave|drive|dr|lane|ln|place|pl|boulevard|blvd|court|ct|way|loop|circle|cir|terrace|ter|trail|trl|parkway|pkwy|highway|hwy)\s+\d+$/i, (m, suffix) => ` ${suffix}`).trim();
-      // Also strip bare trailing number if no suffix matched: "Ena 1806" → "Ena"
+
+      // Check for bare trailing unit number (no prefix): "Ena Road 1806"
+      const suffixUnitMatch = streetName.match(/\s+(road|rd|street|st|avenue|ave|drive|dr|lane|ln|place|pl|boulevard|blvd|court|ct|way|loop|circle|cir|terrace|ter|trail|trl|parkway|pkwy|highway|hwy)\s+(\S+)$/i);
+      if (suffixUnitMatch && !unitNumber) {
+        unitNumber = suffixUnitMatch[2];
+      }
+      // Also check bare trailing number without suffix: "Pakeke 65"
+      const bareUnitMatch = streetName.match(/\s+(\d+)$/);
+      if (bareUnitMatch && !unitNumber) {
+        unitNumber = bareUnitMatch[1];
+      }
+
+      // Remove trailing unit numbers after street suffix
+      streetName = streetName.replace(/\s+(road|rd|street|st|avenue|ave|drive|dr|lane|ln|place|pl|boulevard|blvd|court|ct|way|loop|circle|cir|terrace|ter|trail|trl|parkway|pkwy|highway|hwy)\s+\S+$/i, (m, suffix) => ` ${suffix}`).trim();
       streetName = streetName.replace(/\s+\d+$/, "").trim();
-      // Strip street suffix — Trestle stores StreetName and StreetSuffix as separate fields
-      // "Palekana St" → "Palekana", "Ena Road" → "Ena", "Luluku Rd" → "Luluku"
+      // Strip street suffix — Trestle stores StreetName and StreetSuffix separately
       streetName = streetName.replace(/\s+(road|rd|street|st|avenue|ave|drive|dr|lane|ln|place|pl|boulevard|blvd|court|ct|way|loop|circle|cir|terrace|ter|trail|trl|parkway|pkwy|highway|hwy)$/i, "").trim();
     }
 
-    const escaped = (streetNum ? `${streetNum} ${streetName}` : streetPart).replace(/'/g, "''").toLowerCase();
     const escapedName = streetName.replace(/'/g, "''").toLowerCase();
 
-    if (!escaped || escaped.length < 3) {
-      console.warn("[Trestle] getSalesHistory: address too short to search:", address);
-      return [];
+    if (!escapedName || escapedName.length < 2) {
+      console.warn("[Trestle] getSalesHistory: street name too short:", address);
+      return { unit: [], building: [], unitNumber };
     }
 
-    // Build filter using StreetNumber + StreetName for precise matching
-    let filter: string;
-    if (streetNum && escapedName) {
-      filter = `StandardStatus eq 'Closed' and tolower(StreetNumber) eq '${streetNum.toLowerCase()}' and contains(tolower(StreetName), '${escapedName}')`;
-    } else {
-      // Fallback: match against UnparsedAddress
-      filter = `StandardStatus eq 'Closed' and contains(tolower(UnparsedAddress), '${escaped}')`;
-    }
+    // Build base filter: StreetNumber + StreetName (building-wide)
+    const baseFilter = streetNum
+      ? `StandardStatus eq 'Closed' and tolower(StreetNumber) eq '${streetNum.toLowerCase()}' and contains(tolower(StreetName), '${escapedName}')`
+      : `StandardStatus eq 'Closed' and contains(tolower(UnparsedAddress), '${escapedName}')`;
 
-    console.log(`[Trestle] Sales history search: ${filter}`);
+    console.log(`[Trestle] Sales history search (building): ${baseFilter}`);
+    if (unitNumber) console.log(`[Trestle] Unit number detected: ${unitNumber}`);
+
+    const selectFields = "ListingKey,ListingId,StandardStatus,ListPrice,OriginalListPrice,ClosePrice,CloseDate,OnMarketDate,DaysOnMarket,CumulativeDaysOnMarket,UnparsedAddress,StreetNumber,StreetName,StreetSuffix,UnitNumber,City,PostalCode,BedroomsTotal,BathroomsTotalInteger,LivingArea,PropertyType,PropertySubType,ListAgentFullName,BuyerAgentFullName,ListOfficeName,BuyerOfficeName,OwnershipType";
 
     const result = await this.getProperties({
-      $filter: filter,
+      $filter: baseFilter,
       $orderby: "CloseDate desc",
-      $top: options?.limit || 20,
-      $select: "ListingKey,ListingId,StandardStatus,ListPrice,OriginalListPrice,ClosePrice,CloseDate,OnMarketDate,DaysOnMarket,CumulativeDaysOnMarket,UnparsedAddress,StreetNumber,StreetName,StreetSuffix,City,PostalCode,BedroomsTotal,BathroomsTotalInteger,LivingArea,PropertyType,PropertySubType,ListAgentFullName,BuyerAgentFullName,ListOfficeName,BuyerOfficeName,OwnershipType",
+      $top: options?.limit || 50,
+      $select: selectFields,
     });
 
-    console.log(`[Trestle] Sales history: ${result.value?.length || 0} closed transactions for "${streetPart}"`);
-    return result.value || [];
+    const all = result.value || [];
+    console.log(`[Trestle] Sales history: ${all.length} closed transactions for building`);
+
+    // Split into unit-specific and building-wide
+    if (unitNumber) {
+      const unitLower = unitNumber.toLowerCase();
+      const unitResults = all.filter((p) => {
+        const pUnit = ((p as any).UnitNumber || "").toString().toLowerCase();
+        const pAddr = (p.UnparsedAddress || "").toLowerCase();
+        return pUnit === unitLower || pAddr.includes(unitLower);
+      });
+      const buildingResults = all.filter((p) => {
+        const pUnit = ((p as any).UnitNumber || "").toString().toLowerCase();
+        const pAddr = (p.UnparsedAddress || "").toLowerCase();
+        return pUnit !== unitLower && !pAddr.includes(unitLower);
+      });
+      console.log(`[Trestle] Unit ${unitNumber}: ${unitResults.length}, Building: ${buildingResults.length}`);
+      return { unit: unitResults, building: buildingResults, unitNumber };
+    }
+
+    return { unit: all, building: [], unitNumber };
   }
 
   /**

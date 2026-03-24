@@ -2947,9 +2947,12 @@ export default function PropertyDetailModal({
 
 // ── Sales History Section ────────────────────────────────────────────────────
 function SalesHistorySection({ address }: { address?: string }) {
-  const [history, setHistory] = useState<any[]>([]);
+  const [unitHistory, setUnitHistory] = useState<any[]>([]);
+  const [buildingHistory, setBuildingHistory] = useState<any[]>([]);
+  const [unitNumber, setUnitNumber] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showBuilding, setShowBuilding] = useState(false);
 
   useEffect(() => {
     if (!address) { setLoading(false); return; }
@@ -2958,7 +2961,11 @@ function SalesHistorySection({ address }: { address?: string }) {
       .then((r) => r.json())
       .then((data) => {
         if (data.error) setError(data.error);
-        else setHistory(data.transactions || []);
+        else {
+          setUnitHistory(data.transactions || []);
+          setBuildingHistory(data.buildingTransactions || []);
+          setUnitNumber(data.unitNumber || null);
+        }
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -2966,90 +2973,105 @@ function SalesHistorySection({ address }: { address?: string }) {
 
   if (loading) return <div style={{ padding: 20, textAlign: "center", color: "#9ca3af", fontSize: 13 }}>Loading sales history from MLS...</div>;
   if (error) return <div style={{ padding: 20, color: "#ef4444", fontSize: 13 }}>{error}</div>;
-  if (history.length === 0) return <div style={{ padding: 20, textAlign: "center", color: "#9ca3af", fontSize: 13 }}>No closed transactions found in MLS records for this address.</div>;
+  if (unitHistory.length === 0 && buildingHistory.length === 0) return <div style={{ padding: 20, textAlign: "center", color: "#9ca3af", fontSize: 13 }}>No closed transactions found in MLS records for this address.</div>;
+
+  const renderTransaction = (tx: any, i: number) => {
+    const priceDiff = tx.closePrice && tx.originalListPrice
+      ? ((tx.closePrice - tx.originalListPrice) / tx.originalListPrice * 100).toFixed(1)
+      : null;
+    return (
+      <div key={tx.listingKey || i} style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: 14, marginBottom: 10 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+          <div>
+            <span style={{ fontSize: 16, fontWeight: 700, color: "#15803d" }}>
+              {tx.closePrice ? `$${tx.closePrice.toLocaleString()}` : "Price Not Disclosed"}
+            </span>
+            {tx.closeDate && (
+              <span style={{ fontSize: 12, color: "#6b7280", marginLeft: 8 }}>
+                Closed {new Date(tx.closeDate).toLocaleDateString()}
+              </span>
+            )}
+          </div>
+          {tx.daysOnMarket != null && (
+            <span style={{ fontSize: 11, background: "#f3f4f6", color: "#4b5563", padding: "2px 8px", borderRadius: 12 }}>
+              {tx.daysOnMarket} DOM
+            </span>
+          )}
+        </div>
+        {/* Address (for building sales, show unit) */}
+        {tx.address && buildingHistory.length > 0 && (
+          <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 6 }}>{tx.address}</div>
+        )}
+        <div style={{ display: "flex", gap: 16, fontSize: 12, color: "#6b7280", marginBottom: 8 }}>
+          {tx.listPrice && <span>List: ${tx.listPrice.toLocaleString()}</span>}
+          {tx.originalListPrice && tx.originalListPrice !== tx.listPrice && (
+            <span>Original: ${tx.originalListPrice.toLocaleString()}</span>
+          )}
+          {priceDiff && (
+            <span style={{ color: Number(priceDiff) >= 0 ? "#16a34a" : "#dc2626" }}>
+              {Number(priceDiff) >= 0 ? "+" : ""}{priceDiff}% vs ask
+            </span>
+          )}
+        </div>
+        <div style={{ display: "flex", gap: 12, fontSize: 11, color: "#9ca3af", marginBottom: 8 }}>
+          {tx.beds && <span>{tx.beds} bd</span>}
+          {tx.baths && <span>{tx.baths} ba</span>}
+          {tx.sqft && <span>{tx.sqft.toLocaleString()} sqft</span>}
+          {tx.ownershipType && (
+            <span style={{ color: tx.ownershipType === "Leasehold" ? "#d97706" : "#2563eb", fontWeight: 600 }}>
+              {tx.ownershipType}
+            </span>
+          )}
+        </div>
+        <div style={{ fontSize: 11, color: "#9ca3af" }}>
+          {tx.listAgentName && (
+            <div><span style={{ color: "#d1d5db" }}>List Agent:</span> {tx.listAgentName}{tx.listOfficeName && <span style={{ color: "#d1d5db" }}> / {tx.listOfficeName}</span>}</div>
+          )}
+          {tx.buyerAgentName && (
+            <div><span style={{ color: "#d1d5db" }}>Buyer Agent:</span> {tx.buyerAgentName}{tx.buyerOfficeName && <span style={{ color: "#d1d5db" }}> / {tx.buyerOfficeName}</span>}</div>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div style={{ padding: "0 4px" }}>
-      <p style={{ fontSize: 11, color: "#9ca3af", marginBottom: 12 }}>
-        {history.length} transaction{history.length !== 1 ? "s" : ""} from MLS
-      </p>
-      {history.map((tx: any, i: number) => {
-        const priceDiff = tx.closePrice && tx.originalListPrice
-          ? ((tx.closePrice - tx.originalListPrice) / tx.originalListPrice * 100).toFixed(1)
-          : null;
+      {/* Unit-specific history */}
+      {unitHistory.length > 0 && (
+        <>
+          <h3 style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 8, paddingBottom: 6, borderBottom: "1px solid #e5e7eb" }}>
+            {unitNumber ? `Unit ${unitNumber} Sales History` : "Sales History"} ({unitHistory.length})
+          </h3>
+          {unitHistory.map(renderTransaction)}
+        </>
+      )}
 
-        return (
-          <div key={tx.listingKey || i} style={{
-            border: "1px solid #e5e7eb", borderRadius: 8, padding: 14, marginBottom: 10
-          }}>
-            {/* Price + Date */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
-              <div>
-                <span style={{ fontSize: 16, fontWeight: 700, color: "#15803d" }}>
-                  {tx.closePrice ? `$${tx.closePrice.toLocaleString()}` : "Price Not Disclosed"}
-                </span>
-                {tx.closeDate && (
-                  <span style={{ fontSize: 12, color: "#6b7280", marginLeft: 8 }}>
-                    Closed {new Date(tx.closeDate).toLocaleDateString()}
-                  </span>
-                )}
-              </div>
-              {tx.daysOnMarket != null && (
-                <span style={{
-                  fontSize: 11, background: "#f3f4f6", color: "#4b5563",
-                  padding: "2px 8px", borderRadius: 12
-                }}>
-                  {tx.daysOnMarket} DOM
-                </span>
-              )}
-            </div>
+      {/* Building-wide sales (collapsible for condos) */}
+      {buildingHistory.length > 0 && (
+        <div style={{ marginTop: unitHistory.length > 0 ? 16 : 0 }}>
+          <button
+            onClick={() => setShowBuilding(!showBuilding)}
+            style={{
+              width: "100%", textAlign: "left", fontSize: 13, fontWeight: 700, color: "#374151",
+              marginBottom: 8, paddingBottom: 6, borderBottom: "1px solid #e5e7eb",
+              background: "none", border: "none", cursor: "pointer", display: "flex",
+              justifyContent: "space-between", alignItems: "center",
+            }}
+          >
+            <span>Building Sales — Other Units ({buildingHistory.length})</span>
+            <span style={{ fontSize: 11, color: "#9ca3af" }}>{showBuilding ? "▼" : "▶"}</span>
+          </button>
+          {showBuilding && buildingHistory.map(renderTransaction)}
+        </div>
+      )}
 
-            {/* Price comparison */}
-            <div style={{ display: "flex", gap: 16, fontSize: 12, color: "#6b7280", marginBottom: 8 }}>
-              {tx.listPrice && <span>List: ${tx.listPrice.toLocaleString()}</span>}
-              {tx.originalListPrice && tx.originalListPrice !== tx.listPrice && (
-                <span>Original: ${tx.originalListPrice.toLocaleString()}</span>
-              )}
-              {priceDiff && (
-                <span style={{ color: Number(priceDiff) >= 0 ? "#16a34a" : "#dc2626" }}>
-                  {Number(priceDiff) >= 0 ? "+" : ""}{priceDiff}% vs ask
-                </span>
-              )}
-            </div>
-
-            {/* Property details */}
-            <div style={{ display: "flex", gap: 12, fontSize: 11, color: "#9ca3af", marginBottom: 8 }}>
-              {tx.beds && <span>{tx.beds} bd</span>}
-              {tx.baths && <span>{tx.baths} ba</span>}
-              {tx.sqft && <span>{tx.sqft.toLocaleString()} sqft</span>}
-              {tx.ownershipType && (
-                <span style={{
-                  color: tx.ownershipType === "Leasehold" ? "#d97706" : "#2563eb",
-                  fontWeight: 600
-                }}>
-                  {tx.ownershipType}
-                </span>
-              )}
-            </div>
-
-            {/* Agents */}
-            <div style={{ fontSize: 11, color: "#9ca3af" }}>
-              {tx.listAgentName && (
-                <div>
-                  <span style={{ color: "#d1d5db" }}>List Agent:</span> {tx.listAgentName}
-                  {tx.listOfficeName && <span style={{ color: "#d1d5db" }}> / {tx.listOfficeName}</span>}
-                </div>
-              )}
-              {tx.buyerAgentName && (
-                <div>
-                  <span style={{ color: "#d1d5db" }}>Buyer Agent:</span> {tx.buyerAgentName}
-                  {tx.buyerOfficeName && <span style={{ color: "#d1d5db" }}> / {tx.buyerOfficeName}</span>}
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      })}
+      {/* If no unit number detected, all results are in unitHistory */}
+      {unitHistory.length === 0 && buildingHistory.length === 0 && (
+        <div style={{ padding: 20, textAlign: "center", color: "#9ca3af", fontSize: 13 }}>
+          No closed transactions found in MLS records.
+        </div>
+      )}
     </div>
   );
 }

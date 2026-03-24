@@ -117,13 +117,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ diagnostics });
     }
 
-    const closedListings = await client.getSalesHistory(address, { limit });
+    const { unit, building, unitNumber } = await client.getSalesHistory(address, { limit });
 
-    // Map to clean response
-    const history = closedListings.map((p) => ({
+    const mapListing = (p: any) => ({
       listingKey: p.ListingKey,
       listingId: p.ListingId,
       address: p.UnparsedAddress || [p.StreetNumber, p.StreetName, p.StreetSuffix].filter(Boolean).join(" "),
+      unitNumber: p.UnitNumber,
       city: p.City,
       postalCode: p.PostalCode,
       propertyType: p.PropertyType,
@@ -143,13 +143,18 @@ export async function GET(request: NextRequest) {
       listOfficeName: p.ListOfficeName,
       buyerOfficeName: p.BuyerOfficeName,
       ownershipType: p.OwnershipType,
-    }));
+    });
 
-    console.log(`[MLS Sales History] ${history.length} closed transactions found for "${address}"`);
+    const unitHistory = unit.map(mapListing);
+    const buildingHistory = building.map(mapListing);
+
+    console.log(`[MLS Sales History] Unit: ${unitHistory.length}, Building: ${buildingHistory.length} for "${address}" (unit: ${unitNumber || "n/a"})`);
 
     return NextResponse.json({
       address,
-      transactions: history,
+      unitNumber,
+      transactions: unitHistory,
+      buildingTransactions: buildingHistory,
       total: history.length,
       source: "mls",
     });
