@@ -768,29 +768,18 @@ export default function PropertyDetailModal({
     try {
       const reportData = collectReportData();
 
-      // Try the primary save endpoint first
-      let shareUrl: string | null = null;
-      const res = await fetch("/api/property-intelligence/save", {
+      // Use the share endpoint which creates a shared_reports record
+      // readable by the public /shared/report/[id] page
+      const res = await fetch("/api/reports/share", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ property: reportData }),
+        body: JSON.stringify({ report: reportData }),
       });
 
+      let shareUrl: string | null = null;
       if (res.ok) {
         const data = await res.json();
         shareUrl = data.shareUrl;
-      } else {
-        // Primary endpoint failed — try fallback share endpoint
-        console.warn("[PropertyReport] Primary save failed, trying fallback share endpoint");
-        const fallbackRes = await fetch("/api/reports/share", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ report: reportData }),
-        });
-        if (fallbackRes.ok) {
-          const fallbackData = await fallbackRes.json();
-          shareUrl = fallbackData.shareUrl;
-        }
       }
 
       if (!shareUrl) throw new Error("Could not generate share link");

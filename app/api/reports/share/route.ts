@@ -32,6 +32,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "report data is required" }, { status: 400 });
     }
 
+    // Auto-fetch agent info if not provided in body
+    let resolvedName = agentName;
+    let resolvedEmail = agentEmail;
+    let resolvedPhone = agentPhone;
+    if (!resolvedName) {
+      const { data: agent } = await admin
+        .from("agents")
+        .select("display_name, email, phone_e164, license_number")
+        .eq("id", userData.user.id)
+        .single();
+      if (agent) {
+        resolvedName = agent.display_name || agent.email;
+        resolvedEmail = resolvedEmail || agent.email;
+        resolvedPhone = resolvedPhone || agent.phone_e164;
+      }
+    }
+
     // Generate a unique share ID
     const shareId = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
 
@@ -41,9 +58,9 @@ export async function POST(request: NextRequest) {
         share_id: shareId,
         agent_id: userData.user.id,
         report_data: report,
-        agent_name: agentName || null,
-        agent_email: agentEmail || null,
-        agent_phone: agentPhone || null,
+        agent_name: resolvedName || null,
+        agent_email: resolvedEmail || null,
+        agent_phone: resolvedPhone || null,
         brand_color: brandColor || "#3b82f6",
         logo_url: logoUrl || null,
         created_at: new Date().toISOString(),
