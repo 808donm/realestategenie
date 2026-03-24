@@ -616,6 +616,9 @@ export class TrestleClient {
       streetName = streetName.replace(/\s+(road|rd|street|st|avenue|ave|drive|dr|lane|ln|place|pl|boulevard|blvd|court|ct|way|loop|circle|cir|terrace|ter|trail|trl|parkway|pkwy|highway|hwy)\s+\d+$/i, (m, suffix) => ` ${suffix}`).trim();
       // Also strip bare trailing number if no suffix matched: "Ena 1806" → "Ena"
       streetName = streetName.replace(/\s+\d+$/, "").trim();
+      // Strip street suffix — Trestle stores StreetName and StreetSuffix as separate fields
+      // "Palekana St" → "Palekana", "Ena Road" → "Ena", "Luluku Rd" → "Luluku"
+      streetName = streetName.replace(/\s+(road|rd|street|st|avenue|ave|drive|dr|lane|ln|place|pl|boulevard|blvd|court|ct|way|loop|circle|cir|terrace|ter|trail|trl|parkway|pkwy|highway|hwy)$/i, "").trim();
     }
 
     const escaped = (streetNum ? `${streetNum} ${streetName}` : streetPart).replace(/'/g, "''").toLowerCase();
