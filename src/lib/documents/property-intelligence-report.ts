@@ -292,16 +292,50 @@ export function generatePropertyIntelligencePDF(
     y += 4;
   }
 
-  // ── 5. OWNERSHIP ──
-  if (data.owner1 || data.owner2) {
-    sectionTitle("OWNERSHIP");
-    row("Owner", data.owner1);
-    if (data.owner2) row("Co-Owner", data.owner2);
-    row("Owner Occupied", data.ownerOccupied);
-    row("Absentee Owner", data.absenteeOwner);
-    row("Corporate Owner", data.corporateOwner);
-    row("Mailing Address", data.mailingAddress);
-    y += 4;
+  // ── 5. MORTGAGE PAYMENT ESTIMATE ──
+  {
+    const price = data.listPrice || data.avmValue;
+    if (price && price > 0) {
+      sectionTitle("MORTGAGE PAYMENT ESTIMATE");
+      const downPct = 20;
+      const rate = 6.75;
+      const termYears = 30;
+      const downPayment = price * (downPct / 100);
+      const loanAmount = price - downPayment;
+      const monthlyRate = rate / 100 / 12;
+      const numPayments = termYears * 12;
+      const monthlyPI = monthlyRate > 0
+        ? loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / (Math.pow(1 + monthlyRate, numPayments) - 1)
+        : loanAmount / numPayments;
+      const monthlyTax = (data.taxAmount || data.taxAnnualAmount || 0) / 12;
+      const monthlyHOA = (data.associationFee || 0) / 12;
+      const monthlyTotal = monthlyPI + monthlyTax + monthlyHOA;
+
+      // Summary card
+      checkNewPage(20);
+      doc.setFillColor(240, 253, 244); // green bg
+      doc.roundedRect(margin - 2, y - 4, contentW + 4, 16, 2, 2, "F");
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...textMuted);
+      doc.text("Estimated Monthly Payment", margin, y + 2);
+      doc.setFontSize(16);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(21, 128, 61); // green
+      doc.text(`$${Math.round(monthlyTotal).toLocaleString()}/mo`, margin + 60, y + 4);
+      y += 18;
+
+      doc.setTextColor(...textDark);
+      row("Home Price", $(price));
+      row("Down Payment (20%)", $(Math.round(downPayment)));
+      row("Loan Amount", $(Math.round(loanAmount)));
+      row("Interest Rate", `${rate}% (30-year fixed)`);
+      row("Principal & Interest", `$${Math.round(monthlyPI).toLocaleString()}/mo`);
+      if (monthlyTax > 0) row("Property Tax", `$${Math.round(monthlyTax).toLocaleString()}/mo`);
+      if (monthlyHOA > 0) row("HOA", `$${Math.round(monthlyHOA).toLocaleString()}/mo`);
+      row("Total Interest (30yr)", $(Math.round(monthlyPI * numPayments - loanAmount)));
+      y += 4;
+    }
   }
 
   // ── 6. SALES HISTORY ──
