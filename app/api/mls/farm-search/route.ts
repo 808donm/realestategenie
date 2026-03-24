@@ -29,23 +29,28 @@ export async function GET(request: NextRequest) {
     const isServiceCall = serviceKey && serviceKey === process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     let supabase: any;
+    let userId: string | null = null;
     if (!isServiceCall) {
       supabase = await supabaseServer();
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
+      userId = userData.user.id;
     } else {
       supabase = (await import("@/lib/supabase/admin")).supabaseAdmin;
     }
 
-    // Get Trestle integration
-    const { data: integration } = await supabase
+    // Get Trestle integration — for service calls, find any connected Trestle integration
+    let integrationQuery = supabase
       .from("integrations")
       .select("*")
-      .eq("agent_id", userData.user.id)
       .eq("provider", "trestle")
-      .maybeSingle();
+      .eq("status", "connected");
+    if (userId) {
+      integrationQuery = integrationQuery.eq("agent_id", userId);
+    }
+    const { data: integration } = await integrationQuery.maybeSingle();
 
     if (!integration || integration.status !== "connected") {
       return NextResponse.json(
