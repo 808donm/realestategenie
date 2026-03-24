@@ -683,6 +683,33 @@ export class TrestleClient {
       const buildingListings = (buildingResult.value || []).filter((p) => !unitKeys.has(p.ListingKey));
 
       console.log(`[Trestle] Unit ${unitNumber}: ${unitListings.length}, Building: ${buildingListings.length}`);
+
+      // Fallback if both returned 0 — try UnparsedAddress
+      if (unitListings.length === 0 && buildingListings.length === 0 && streetNum) {
+        const fallbackFilter = `StandardStatus eq 'Closed' and contains(tolower(UnparsedAddress), '${streetNum.toLowerCase()}') and contains(tolower(UnparsedAddress), '${escapedName}')`;
+        console.log(`[Trestle] Sales history fallback (UnparsedAddress): ${fallbackFilter}`);
+        const fallback = await this.getProperties({
+          $filter: fallbackFilter,
+          $orderby: "CloseDate desc",
+          $top: options?.limit || 50,
+          $select: selectFields,
+        });
+        const fallbackAll = fallback.value || [];
+        console.log(`[Trestle] Fallback results: ${fallbackAll.length}`);
+        if (fallbackAll.length > 0) {
+          const unitLower = unitNumber.toLowerCase();
+          const unitFromFallback = fallbackAll.filter((p) => {
+            const pAddr = (p.UnparsedAddress || "").toLowerCase();
+            return pAddr.includes(unitLower);
+          });
+          const buildingFromFallback = fallbackAll.filter((p) => {
+            const pAddr = (p.UnparsedAddress || "").toLowerCase();
+            return !pAddr.includes(unitLower);
+          });
+          return { unit: unitFromFallback, building: buildingFromFallback, unitNumber };
+        }
+      }
+
       return { unit: unitListings, building: buildingListings, unitNumber };
     }
 
@@ -694,8 +721,23 @@ export class TrestleClient {
       $select: selectFields,
     });
 
-    const all = result.value || [];
+    let all = result.value || [];
     console.log(`[Trestle] Sales history: ${all.length} closed transactions`);
+
+    // Fallback: if StreetNumber+StreetName returned 0, try UnparsedAddress contains with street number
+    if (all.length === 0 && streetNum) {
+      const fallbackFilter = `StandardStatus eq 'Closed' and contains(tolower(UnparsedAddress), '${streetNum.toLowerCase()}') and contains(tolower(UnparsedAddress), '${escapedName}')`;
+      console.log(`[Trestle] Sales history fallback (UnparsedAddress): ${fallbackFilter}`);
+      const fallback = await this.getProperties({
+        $filter: fallbackFilter,
+        $orderby: "CloseDate desc",
+        $top: options?.limit || 20,
+        $select: selectFields,
+      });
+      all = fallback.value || [];
+      console.log(`[Trestle] Fallback results: ${all.length}`);
+    }
+
     return { unit: all, building: [], unitNumber };
   }
 
