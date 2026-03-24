@@ -155,7 +155,7 @@ export async function GET(request: NextRequest) {
       unitNumber,
       transactions: unitHistory,
       buildingTransactions: buildingHistory,
-      total: history.length,
+      total: unitHistory.length + buildingHistory.length,
       source: "mls",
     });
   } catch (error: any) {
