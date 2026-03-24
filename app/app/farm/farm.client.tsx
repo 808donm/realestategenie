@@ -52,9 +52,17 @@ interface MlsListing {
   BathroomsTotalInteger?: number;
   LivingArea?: number;
   DaysOnMarket?: number;
+  CumulativeDaysOnMarket?: number;
   PropertyType: string;
+  PropertySubType?: string;
   ListAgentFullName?: string;
   ListOfficeName?: string;
+  OwnershipType?: string;
+  LeaseAmount?: number;
+  LeaseExpiration?: string;
+  AssociationFee?: number;
+  VirtualTourURLUnbranded?: string;
+  SubdivisionName?: string;
   Media?: { MediaURL: string }[];
   _priceDrop: number;
   _priceDropPct: number;
@@ -786,7 +794,28 @@ function ListingCard({ listing }: { listing: MlsListing }) {
           {listing.BedroomsTotal && <span>{listing.BedroomsTotal} bd</span>}
           {listing.BathroomsTotalInteger && <span>{listing.BathroomsTotalInteger} ba</span>}
           {listing.LivingArea && <span>{listing.LivingArea.toLocaleString()} sqft</span>}
+          {listing.SubdivisionName && <span className="text-gray-400">{listing.SubdivisionName}</span>}
         </div>
+
+        {/* Leasehold / Fee Simple + HOA */}
+        {(listing.OwnershipType || listing.AssociationFee) && (
+          <div className="flex flex-wrap gap-2 mt-1.5">
+            {listing.OwnershipType && (
+              <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                listing.OwnershipType === "Leasehold" ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"
+              }`}>
+                {listing.OwnershipType}
+                {listing.OwnershipType === "Leasehold" && listing.LeaseAmount ? ` ($${listing.LeaseAmount}/mo)` : ""}
+                {listing.OwnershipType === "Leasehold" && listing.LeaseExpiration ? ` exp ${listing.LeaseExpiration}` : ""}
+              </span>
+            )}
+            {listing.AssociationFee && (
+              <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
+                HOA ${listing.AssociationFee}/mo
+              </span>
+            )}
+          </div>
+        )}
 
         <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
           <div className="flex gap-2">
@@ -798,6 +827,9 @@ function ListingCard({ listing }: { listing: MlsListing }) {
                 "bg-green-100 text-green-700"
               }`}>
                 {listing.DaysOnMarket} DOM
+                {listing.CumulativeDaysOnMarket != null && listing.CumulativeDaysOnMarket > listing.DaysOnMarket
+                  ? ` (${listing.CumulativeDaysOnMarket} cumulative)`
+                  : ""}
               </span>
             )}
             {listing._priceDrop > 0 && (

@@ -60,6 +60,7 @@ export async function GET(request: NextRequest) {
     let searchCity = city;
     let searchPostalCode = postalCode;
     let addressFilter: string | undefined;
+    let buildingFilter: string | undefined;
     if (query && !city && !postalCode) {
       const q = query.trim();
       if (/^\d{5}(-\d{4})?$/.test(q)) {
@@ -70,7 +71,10 @@ export async function GET(request: NextRequest) {
         const escaped = q.replace(/'/g, "''").toLowerCase();
         addressFilter = `contains(tolower(UnparsedAddress), '${escaped}') or contains(tolower(StreetName), '${escaped}')`;
       } else {
-        // Treat as city name
+        // Could be a city name OR a building/condo name (e.g., "Park Lane", "The Century")
+        // Search both City and SubdivisionName
+        const escaped = q.replace(/'/g, "''").toLowerCase();
+        buildingFilter = `contains(tolower(SubdivisionName), '${escaped}')`;
         searchCity = q;
       }
     }
@@ -136,6 +140,26 @@ export async function GET(request: NextRequest) {
         includeMedia: true,
         skipCount: !hasLocationFilter,
       });
+
+      // If city search returned 0 results and we have a building name candidate, try SubdivisionName
+      if (buildingFilter && (!result.value || result.value.length === 0)) {
+        console.log("[MLS Search] City search returned 0 results, trying SubdivisionName:", buildingFilter);
+        result = await client.searchProperties({
+          status,
+          subdivisionName: query?.trim(),
+          minPrice,
+          maxPrice,
+          minBeds,
+          minBaths,
+          propertyType,
+          limit,
+          offset,
+          includeMedia: true,
+        });
+        if (result.value?.length > 0) {
+          console.log(`[MLS Search] Found ${result.value.length} results by building/subdivision name`);
+        }
+      }
     }
 
     console.log("[MLS Search] Results returned:", result.value?.length, "count:", result["@odata.count"]);

@@ -71,6 +71,8 @@ export interface TrestleProperty {
   TaxAnnualAmount?: number;
   AssociationFee?: number;
   NumberOfUnitsTotal?: number;
+  // Building / condo details
+  SubdivisionName?: string;      // Building/condo name (e.g., "Park Lane", "The Century")
   // Hawaii-critical: Land tenure
   OwnershipType?: string;       // "Fee Simple", "Leasehold"
   LeaseAmount?: number;          // Monthly lease rent
@@ -373,6 +375,7 @@ export class TrestleClient {
     status?: ("Active" | "Pending" | "Closed")[];
     city?: string;
     postalCode?: string;
+    subdivisionName?: string;
     minPrice?: number;
     maxPrice?: number;
     minBeds?: number;
@@ -400,6 +403,11 @@ export class TrestleClient {
     if (options.postalCode) {
       // Postal codes support startswith for partial zip matching
       filters.push(`startswith(PostalCode, '${options.postalCode}')`);
+    }
+
+    if (options.subdivisionName) {
+      const escaped = options.subdivisionName.replace(/'/g, "''").toLowerCase();
+      filters.push(`contains(tolower(SubdivisionName), '${escaped}')`);
     }
 
     if (options.minPrice !== undefined) {
@@ -579,6 +587,25 @@ export class TrestleClient {
       $expand: "Media",
     });
     return result.value.length > 0 ? result.value[0] : null;
+  }
+
+  /**
+   * Get sales history for a property address — queries closed listings
+   * Returns all past transactions with close price, dates, agents, and offices
+   */
+  async getSalesHistory(address: string, options?: { limit?: number }): Promise<TrestleProperty[]> {
+    const escaped = address.replace(/'/g, "''").toLowerCase();
+    // Remove unit/apt numbers for broader matching on the building address
+    const baseAddr = escaped.replace(/\s*(#|apt|unit|ste|suite)\s*\S+/gi, "").trim();
+
+    const result = await this.getProperties({
+      $filter: `StandardStatus eq 'Closed' and (contains(tolower(UnparsedAddress), '${baseAddr}') or contains(tolower(StreetName), '${baseAddr}'))`,
+      $orderby: "CloseDate desc",
+      $top: options?.limit || 20,
+      $select: "ListingKey,ListingId,StandardStatus,ListPrice,OriginalListPrice,ClosePrice,CloseDate,OnMarketDate,DaysOnMarket,CumulativeDaysOnMarket,UnparsedAddress,StreetNumber,StreetName,StreetSuffix,City,PostalCode,BedroomsTotal,BathroomsTotalInteger,LivingArea,PropertyType,PropertySubType,ListAgentFullName,BuyerAgentFullName,ListOfficeName,BuyerOfficeName,OwnershipType",
+    });
+
+    return result.value || [];
   }
 
   /**

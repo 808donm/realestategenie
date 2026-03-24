@@ -5,7 +5,7 @@ import type { ScoredProperty, SellerFactor } from "@/lib/scoring/seller-motivati
 import { getSellerColor, getSellerLabel } from "@/lib/scoring/seller-motivation-score";
 import { fmtPrice } from "@/lib/utils";
 
-type DetailTab = "overview" | "building" | "financial" | "investment" | "comps" | "ownership" | "neighborhood" | "federal" | "outreach";
+type DetailTab = "overview" | "building" | "financial" | "sales-history" | "investment" | "comps" | "ownership" | "neighborhood" | "federal" | "outreach";
 
 interface OutreachDraft {
   address: string;
@@ -279,6 +279,7 @@ export function PropertyDetailPanel({ property, onClose }: Props) {
     { key: "overview", label: "Overview" },
     { key: "building", label: "Building" },
     { key: "financial", label: "Financial" },
+    { key: "sales-history", label: "Sales History" },
     { key: "investment", label: "Investment" },
     { key: "comps", label: "Comps" },
     { key: "ownership", label: "Ownership" },
@@ -369,6 +370,7 @@ export function PropertyDetailPanel({ property, onClose }: Props) {
             )}
             {tab === "building" && <BuildingTab detail={detail} />}
             {tab === "financial" && <FinancialTab property={property} detail={detail} />}
+            {tab === "sales-history" && <SalesHistoryTab property={property} />}
             {tab === "investment" && <InvestmentTab property={property} detail={detail} />}
             {tab === "comps" && <CompsTab detail={detail} />}
             {tab === "ownership" && <OwnershipTab property={property} detail={detail} />}
@@ -1064,6 +1066,113 @@ function InvestmentTab({
           )}
         </Section>
       )}
+    </div>
+  );
+}
+
+// ── Sales History Tab ──────────────────────────────────────────────────────────
+
+function SalesHistoryTab({ property }: { property: ScoredProperty }) {
+  const [history, setHistory] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!property.address) return;
+    setLoading(true);
+    fetch(`/api/mls/sales-history?address=${encodeURIComponent(property.address)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.error) {
+          setError(data.error);
+        } else {
+          setHistory(data.transactions || []);
+        }
+      })
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
+  }, [property.address]);
+
+  if (loading) return <p className="text-xs text-gray-400 p-4">Loading sales history from MLS...</p>;
+  if (error) return <p className="text-xs text-red-500 p-4">{error}</p>;
+  if (history.length === 0) return <EmptyState text="No closed transactions found in MLS records" />;
+
+  return (
+    <div className="space-y-3">
+      <p className="text-[10px] text-gray-400 px-1">
+        {history.length} transaction{history.length !== 1 ? "s" : ""} from HiCentral MLS
+      </p>
+      {history.map((tx: any, i: number) => {
+        const priceDiff = tx.closePrice && tx.originalListPrice
+          ? ((tx.closePrice - tx.originalListPrice) / tx.originalListPrice * 100).toFixed(1)
+          : null;
+
+        return (
+          <div key={tx.listingKey || i} className="border rounded-lg p-3">
+            {/* Price + Date header */}
+            <div className="flex items-start justify-between gap-2 mb-2">
+              <div>
+                <span className="text-sm font-bold text-green-700">
+                  {tx.closePrice ? `$${tx.closePrice.toLocaleString()}` : "Price Not Disclosed"}
+                </span>
+                {tx.closeDate && (
+                  <span className="text-xs text-gray-500 ml-2">
+                    Closed {new Date(tx.closeDate).toLocaleDateString()}
+                  </span>
+                )}
+              </div>
+              {tx.daysOnMarket != null && (
+                <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
+                  {tx.daysOnMarket} DOM
+                </span>
+              )}
+            </div>
+
+            {/* Price comparison */}
+            <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-gray-600 mb-2">
+              {tx.listPrice && (
+                <span>List: ${tx.listPrice.toLocaleString()}</span>
+              )}
+              {tx.originalListPrice && tx.originalListPrice !== tx.listPrice && (
+                <span>Original: ${tx.originalListPrice.toLocaleString()}</span>
+              )}
+              {priceDiff && (
+                <span className={Number(priceDiff) >= 0 ? "text-green-600" : "text-red-600"}>
+                  {Number(priceDiff) >= 0 ? "+" : ""}{priceDiff}% vs ask
+                </span>
+              )}
+            </div>
+
+            {/* Property details */}
+            <div className="flex flex-wrap gap-x-3 text-[10px] text-gray-500 mb-2">
+              {tx.beds && <span>{tx.beds} bd</span>}
+              {tx.baths && <span>{tx.baths} ba</span>}
+              {tx.sqft && <span>{tx.sqft.toLocaleString()} sqft</span>}
+              {tx.ownershipType && (
+                <span className={tx.ownershipType === "Leasehold" ? "text-amber-600 font-medium" : "text-blue-600 font-medium"}>
+                  {tx.ownershipType}
+                </span>
+              )}
+            </div>
+
+            {/* Agents */}
+            <div className="text-[10px] text-gray-500 space-y-0.5">
+              {tx.listAgentName && (
+                <div>
+                  <span className="text-gray-400">List Agent:</span> {tx.listAgentName}
+                  {tx.listOfficeName && <span className="text-gray-400"> / {tx.listOfficeName}</span>}
+                </div>
+              )}
+              {tx.buyerAgentName && (
+                <div>
+                  <span className="text-gray-400">Buyer Agent:</span> {tx.buyerAgentName}
+                  {tx.buyerOfficeName && <span className="text-gray-400"> / {tx.buyerOfficeName}</span>}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

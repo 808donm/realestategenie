@@ -183,8 +183,10 @@ async function searchMls(
       if (params.minPrice) priceFilter += ` and ListPrice ge ${params.minPrice}`;
       if (params.maxPrice) priceFilter += ` and ListPrice le ${params.maxPrice}`;
 
+      // Include Active, Withdrawn, and Expired listings for DOM prospecting
+      const statusFilter = "(StandardStatus eq 'Active' or StandardStatus eq 'Withdrawn' or StandardStatus eq 'Expired')";
       const result = await client.getProperties({
-        $filter: `StandardStatus eq 'Active' and startswith(PostalCode, '${zip}')${propTypeFilter}${priceFilter}`,
+        $filter: `${statusFilter} and startswith(PostalCode, '${zip}')${propTypeFilter}${priceFilter}`,
         $select: [
           "ListingKey", "ListingId", "StandardStatus", "PropertyType",
           "ListPrice", "OriginalListPrice", "UnparsedAddress", "StreetNumber",
@@ -192,7 +194,7 @@ async function searchMls(
           "Latitude", "Longitude", "BedroomsTotal", "BathroomsTotalInteger",
           "LivingArea", "YearBuilt", "DaysOnMarket", "CumulativeDaysOnMarket",
           "OnMarketDate", "ListAgentFullName", "ListAgentDirectPhone",
-          "ListAgentEmail", "ListOfficeName",
+          "ListAgentEmail", "ListOfficeName", "OwnershipType",
         ].join(","),
         $orderby: "DaysOnMarket desc",
         $top: 500,
