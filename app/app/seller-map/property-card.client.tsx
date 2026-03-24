@@ -56,6 +56,12 @@ export function PropertyCard({ property, compact, onAddToCRM, onGenerateReport, 
             <span className="font-medium">{p.ownershipYears}yr</span>
           </div>
         )}
+        {p.ownerParcelCount != null && p.ownerParcelCount > 1 && (
+          <div>
+            <span className="text-gray-400">Properties:</span>{" "}
+            <span className="font-medium">{p.ownerParcelCount}</span>
+          </div>
+        )}
         {p.owner && (
           <div className="col-span-2">
             <span className="text-gray-400">Owner:</span>{" "}
@@ -66,6 +72,13 @@ export function PropertyCard({ property, compact, onAddToCRM, onGenerateReport, 
           <div className="col-span-2">
             <span className="inline-block bg-amber-100 text-amber-700 text-[10px] font-medium px-1.5 py-0.5 rounded">
               Absentee Owner
+            </span>
+          </div>
+        )}
+        {p.ownerParcelCount != null && p.ownerParcelCount > 2 && (
+          <div className="col-span-2">
+            <span className="inline-block bg-purple-100 text-purple-700 text-[10px] font-medium px-1.5 py-0.5 rounded">
+              Investor ({p.ownerParcelCount} properties)
             </span>
           </div>
         )}

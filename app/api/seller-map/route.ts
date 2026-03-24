@@ -70,6 +70,9 @@ export async function GET(request: NextRequest) {
     const radius = Math.min(Number(url.searchParams.get("radius") || 10), 50);
     const minScore = Number(url.searchParams.get("minScore") || 0);
     const absenteeOnly = url.searchParams.get("absenteeOnly") === "true";
+    const minOwnership = Number(url.searchParams.get("minOwnership") || 0);
+    const minEquity = Number(url.searchParams.get("minEquity") || 0);
+    const minProperties = Number(url.searchParams.get("minProperties") || 0);
     const limit = Math.min(Number(url.searchParams.get("limit") || 100), 2000);
     const page = Number(url.searchParams.get("page") || 1);
     const propertyType = url.searchParams.get("propertyType") || undefined;
@@ -100,7 +103,10 @@ export async function GET(request: NextRequest) {
       // Apply user-specific filters on cached results
       let filtered = cached.properties
         .filter((s: any) => s.score >= minScore)
-        .filter((s: any) => !absenteeOnly || s.absentee);
+        .filter((s: any) => !absenteeOnly || s.absentee)
+        .filter((s: any) => !minOwnership || (s.ownershipYears != null && s.ownershipYears >= minOwnership))
+        .filter((s: any) => !minEquity || (s.equity != null && s.estimatedValue && (s.equity / s.estimatedValue) * 100 >= minEquity))
+        .filter((s: any) => !minProperties || (s.ownerParcelCount != null && s.ownerParcelCount >= minProperties));
 
       return NextResponse.json({
         properties: filtered.slice(0, limit),
@@ -225,6 +231,9 @@ export async function GET(request: NextRequest) {
       .map((p) => scoreParcel(p))
       .filter((s): s is NonNullable<typeof s> => s !== null)
       .filter((s) => !absenteeOnly || s.absentee)
+      .filter((s) => !minOwnership || (s.ownershipYears != null && s.ownershipYears >= minOwnership))
+      .filter((s) => !minEquity || (s.equity != null && s.estimatedValue && (s.equity / s.estimatedValue) * 100 >= minEquity))
+      .filter((s) => !minProperties || (s.ownerParcelCount != null && s.ownerParcelCount >= minProperties))
       .sort((a, b) => b.score - a.score);
 
     console.log(`[SellerMap] Scored: ${scored.length} properties`);

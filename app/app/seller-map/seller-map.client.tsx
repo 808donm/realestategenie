@@ -17,6 +17,7 @@ type SavedSearch = {
     absenteeOnly: boolean;
     minEquity: number;
     minOwnership: number;
+    minProperties: number;
     zips?: string;
     propertyType?: string;
   };
@@ -27,6 +28,7 @@ const DEFAULT_FILTERS = {
   absenteeOnly: false,
   minEquity: 0,
   minOwnership: 0,
+  minProperties: 0,
   zips: "",
   propertyType: "",
 };
@@ -170,6 +172,21 @@ export function SellerMapClient() {
           limit: searchLimit,
         });
 
+        // Ownership years filter
+        if (filters.minOwnership > 0) {
+          params.set("minOwnership", String(filters.minOwnership));
+        }
+
+        // Equity filter
+        if (filters.minEquity > 0) {
+          params.set("minEquity", String(filters.minEquity));
+        }
+
+        // Min properties owned (investor filter)
+        if (filters.minProperties > 0) {
+          params.set("minProperties", String(filters.minProperties));
+        }
+
         // If user specified zip codes (not TMK), add them to query
         if (isZipSearch) {
           params.set("zips", trimmedInput);
@@ -197,7 +214,7 @@ export function SellerMapClient() {
         setIsLoading(false);
       }
     },
-    [filters.minScore, filters.absenteeOnly, filters.zips, filters.propertyType, isTMKInput, fetchTMKOverlay]
+    [filters.minScore, filters.absenteeOnly, filters.minOwnership, filters.minEquity, filters.minProperties, filters.zips, filters.propertyType, isTMKInput, fetchTMKOverlay]
   );
 
   // Initial load — fetch once on mount
@@ -248,7 +265,7 @@ export function SellerMapClient() {
         radius: search.radius_miles,
       };
       if (search.filters) {
-        setFilters({ ...search.filters, zips: search.filters.zips || "", propertyType: search.filters.propertyType || "" });
+        setFilters({ ...DEFAULT_FILTERS, ...search.filters, zips: search.filters.zips || "", propertyType: search.filters.propertyType || "" });
       }
       fetchProperties(boundsRef.current);
     },

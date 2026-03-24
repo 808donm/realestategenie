@@ -47,6 +47,7 @@ export type ScoredProperty = {
   baths?: number;
   sqft?: number;
   yearBuilt?: number;
+  ownerParcelCount?: number;
   geometry?: RealieParcel["geometry"];
   parcelId?: string;
 };
@@ -664,6 +665,7 @@ export function scoreParcel(parcel: RealieParcel): ScoredProperty | null {
     equity: parcel.equityCurrentEstBal,
     ltv: parcel.LTVCurrentEstCombined,
     ownershipYears,
+    ownerParcelCount: parcel.ownerParcelCount,
     absentee,
     propertyType: parcel.residential ? "Residential" : parcel.condo ? "Condo" : undefined,
     estimatedValue: parcel.modelValue || parcel.totalMarketValue,

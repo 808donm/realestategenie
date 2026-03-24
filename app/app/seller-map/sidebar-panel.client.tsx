@@ -11,6 +11,7 @@ type Filters = {
   absenteeOnly: boolean;
   minEquity: number;
   minOwnership: number;
+  minProperties: number;
   zips: string;
   propertyType: string;
 };
@@ -26,6 +27,7 @@ type SavedSearch = {
     absenteeOnly: boolean;
     minEquity: number;
     minOwnership: number;
+    minProperties: number;
     zips?: string;
   };
 };
@@ -279,6 +281,81 @@ export function SidebarPanel({
               <label htmlFor="absenteeOnly" className="text-xs text-gray-700">
                 Absentee owners only
               </label>
+            </div>
+
+            {/* Min Ownership Years (Time at Residence) */}
+            <div>
+              <label className="text-xs font-medium text-gray-700 mb-1.5 block">
+                Min Years of Ownership: {filters.minOwnership || "Any"}
+              </label>
+              <input
+                type="range"
+                min={0}
+                max={40}
+                step={5}
+                value={filters.minOwnership}
+                onChange={(e) =>
+                  onFiltersChange({ ...filters, minOwnership: Number(e.target.value) })
+                }
+                className="w-full accent-blue-600"
+              />
+              <div className="flex justify-between text-[10px] text-gray-400 mt-1">
+                <span>Any</span>
+                <span>10yr</span>
+                <span>20yr</span>
+                <span>30yr</span>
+                <span>40yr</span>
+              </div>
+            </div>
+
+            {/* Min Equity */}
+            <div>
+              <label className="text-xs font-medium text-gray-700 mb-1.5 block">
+                Min Equity: {filters.minEquity ? `${filters.minEquity}%` : "Any"}
+              </label>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                step={10}
+                value={filters.minEquity}
+                onChange={(e) =>
+                  onFiltersChange({ ...filters, minEquity: Number(e.target.value) })
+                }
+                className="w-full accent-blue-600"
+              />
+              <div className="flex justify-between text-[10px] text-gray-400 mt-1">
+                <span>Any</span>
+                <span>25%</span>
+                <span>50%</span>
+                <span>75%</span>
+                <span>100%</span>
+              </div>
+            </div>
+
+            {/* Min Properties Owned (Investor Filter) */}
+            <div>
+              <label className="text-xs font-medium text-gray-700 mb-1.5 block">
+                Min Properties Owned: {filters.minProperties || "Any"}
+              </label>
+              <input
+                type="range"
+                min={0}
+                max={20}
+                step={1}
+                value={filters.minProperties}
+                onChange={(e) =>
+                  onFiltersChange({ ...filters, minProperties: Number(e.target.value) })
+                }
+                className="w-full accent-blue-600"
+              />
+              <div className="flex justify-between text-[10px] text-gray-400 mt-1">
+                <span>Any</span>
+                <span>5</span>
+                <span>10</span>
+                <span>15</span>
+                <span>20+</span>
+              </div>
             </div>
 
             {/* Property Type */}
