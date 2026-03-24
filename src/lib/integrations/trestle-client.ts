@@ -648,38 +648,54 @@ export class TrestleClient {
       ? `StandardStatus eq 'Closed' and tolower(StreetNumber) eq '${streetNum.toLowerCase()}' and contains(tolower(StreetName), '${escapedName}')`
       : `StandardStatus eq 'Closed' and contains(tolower(UnparsedAddress), '${escapedName}')`;
 
-    console.log(`[Trestle] Sales history search (building): ${baseFilter}`);
+    console.log(`[Trestle] Sales history (building): ${baseFilter}`);
     if (unitNumber) console.log(`[Trestle] Unit number detected: ${unitNumber}`);
 
     const selectFields = "ListingKey,ListingId,StandardStatus,ListPrice,OriginalListPrice,ClosePrice,CloseDate,OnMarketDate,DaysOnMarket,CumulativeDaysOnMarket,UnparsedAddress,StreetNumber,StreetName,StreetSuffix,UnitNumber,City,PostalCode,BedroomsTotal,BathroomsTotalInteger,LivingArea,PropertyType,PropertySubType,ListAgentFullName,BuyerAgentFullName,ListOfficeName,BuyerOfficeName,OwnershipType";
 
+    if (unitNumber) {
+      // Two parallel queries: exact unit + building-wide
+      const escapedUnit = unitNumber.replace(/'/g, "''");
+      const unitFilter = streetNum
+        ? `StandardStatus eq 'Closed' and tolower(StreetNumber) eq '${streetNum.toLowerCase()}' and contains(tolower(StreetName), '${escapedName}') and tolower(UnitNumber) eq '${escapedUnit.toLowerCase()}'`
+        : `${baseFilter} and tolower(UnitNumber) eq '${escapedUnit.toLowerCase()}'`;
+
+      console.log(`[Trestle] Sales history (unit): ${unitFilter}`);
+
+      const [unitResult, buildingResult] = await Promise.all([
+        this.getProperties({
+          $filter: unitFilter,
+          $orderby: "CloseDate desc",
+          $top: 20,
+          $select: selectFields,
+        }),
+        this.getProperties({
+          $filter: baseFilter,
+          $orderby: "CloseDate desc",
+          $top: options?.limit || 50,
+          $select: selectFields,
+        }),
+      ]);
+
+      const unitListings = unitResult.value || [];
+      // Building results exclude the unit's listings
+      const unitKeys = new Set(unitListings.map((p) => p.ListingKey));
+      const buildingListings = (buildingResult.value || []).filter((p) => !unitKeys.has(p.ListingKey));
+
+      console.log(`[Trestle] Unit ${unitNumber}: ${unitListings.length}, Building: ${buildingListings.length}`);
+      return { unit: unitListings, building: buildingListings, unitNumber };
+    }
+
+    // Single-family home — one query, all results are "unit" level
     const result = await this.getProperties({
       $filter: baseFilter,
       $orderby: "CloseDate desc",
-      $top: options?.limit || 50,
+      $top: options?.limit || 20,
       $select: selectFields,
     });
 
     const all = result.value || [];
-    console.log(`[Trestle] Sales history: ${all.length} closed transactions for building`);
-
-    // Split into unit-specific and building-wide
-    if (unitNumber) {
-      const unitLower = unitNumber.toLowerCase();
-      const unitResults = all.filter((p) => {
-        const pUnit = ((p as any).UnitNumber || "").toString().toLowerCase();
-        const pAddr = (p.UnparsedAddress || "").toLowerCase();
-        return pUnit === unitLower || pAddr.includes(unitLower);
-      });
-      const buildingResults = all.filter((p) => {
-        const pUnit = ((p as any).UnitNumber || "").toString().toLowerCase();
-        const pAddr = (p.UnparsedAddress || "").toLowerCase();
-        return pUnit !== unitLower && !pAddr.includes(unitLower);
-      });
-      console.log(`[Trestle] Unit ${unitNumber}: ${unitResults.length}, Building: ${buildingResults.length}`);
-      return { unit: unitResults, building: buildingResults, unitNumber };
-    }
-
+    console.log(`[Trestle] Sales history: ${all.length} closed transactions`);
     return { unit: all, building: [], unitNumber };
   }
 
