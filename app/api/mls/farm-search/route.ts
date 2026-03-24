@@ -24,10 +24,19 @@ import { createTrestleClient } from "@/lib/integrations/trestle-client";
  */
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await supabaseServer();
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // Allow service-role key for internal server-to-server calls (e.g., Hoku copilot)
+    const serviceKey = request.headers.get("x-service-role-key");
+    const isServiceCall = serviceKey && serviceKey === process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    let supabase: any;
+    if (!isServiceCall) {
+      supabase = await supabaseServer();
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+    } else {
+      supabase = (await import("@/lib/supabase/admin")).supabaseAdmin;
     }
 
     // Get Trestle integration

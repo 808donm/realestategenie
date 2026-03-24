@@ -8,6 +8,18 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import type { CopilotActionResult } from "./types";
 
+/** Get base URL for internal API calls */
+function getBaseUrl() {
+  return process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+}
+
+/** Internal fetch with service-role auth header for server-to-server calls */
+async function internalFetch(url: string, init?: RequestInit): Promise<Response> {
+  const headers = new Headers(init?.headers);
+  headers.set("x-service-role-key", process.env.SUPABASE_SERVICE_ROLE_KEY || "");
+  return fetch(url, { ...init, headers });
+}
+
 /**
  * Extract an <execute> tag from AI text
  */
@@ -146,8 +158,8 @@ export async function executeCopilotAction(
           searchParams.set("postalcode", zipCode);
         }
 
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000";
-        const res = await fetch(`${baseUrl}/api/integrations/attom/property?${searchParams}`);
+        const baseUrl = getBaseUrl();
+        const res = await internalFetch(`${baseUrl}/api/integrations/attom/property?${searchParams}`);
         const data = await res.json();
         const properties = data.property || (data.address ? [data] : []);
 
@@ -168,8 +180,8 @@ export async function executeCopilotAction(
         if (params.minPrice) searchParams.set("minPrice", String(params.minPrice));
         if (params.maxPrice) searchParams.set("maxPrice", String(params.maxPrice));
 
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000";
-        const res = await fetch(`${baseUrl}/api/mls/farm-search?${searchParams}`);
+        const baseUrl = getBaseUrl();
+        const res = await internalFetch(`${baseUrl}/api/mls/farm-search?${searchParams}`);
         const data = await res.json();
 
         return { action, success: true, data: { properties: (data.properties || []).slice(0, 10), totalCount: data.totalCount || 0 } };
@@ -206,16 +218,16 @@ export async function executeCopilotAction(
       case "search_seller_map": {
         const zips = params.zips || params.zipCodes || "";
         const searchParams = new URLSearchParams({ zips: Array.isArray(zips) ? zips.join(",") : zips, minScore: "40", limit: "10" });
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000";
-        const res = await fetch(`${baseUrl}/api/seller-map?${searchParams}`);
+        const baseUrl = getBaseUrl();
+        const res = await internalFetch(`${baseUrl}/api/seller-map?${searchParams}`);
         const data = await res.json();
         return { action, success: true, data: { properties: (data.properties || []).slice(0, 10), total: data.total || 0 } };
       }
 
       case "create_dom_search": {
         const zips = params.zipCodes || [];
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000";
-        const res = await fetch(`${baseUrl}/api/dom-prospecting/search`, {
+        const baseUrl = getBaseUrl();
+        const res = await internalFetch(`${baseUrl}/api/dom-prospecting/search`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ zipCodes: Array.isArray(zips) ? zips : zips.split(",").map((z: string) => z.trim()) }),
@@ -242,8 +254,8 @@ export async function executeCopilotAction(
           searchParams.set("endSaleSearchDate", end);
         }
 
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000";
-        const res = await fetch(`${baseUrl}/api/integrations/attom/property?${searchParams}`);
+        const baseUrl = getBaseUrl();
+        const res = await internalFetch(`${baseUrl}/api/integrations/attom/property?${searchParams}`);
         const data = await res.json();
         let properties = data.property || [];
 

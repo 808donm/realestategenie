@@ -54,12 +54,16 @@ function toRealiePropertyType(rentcastType: string | undefined): string | undefi
  */
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await supabaseServer();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // Allow service-role key for internal server-to-server calls (e.g., Hoku copilot)
+    const serviceKey = request.headers.get("x-service-role-key");
+    const isServiceCall = serviceKey && serviceKey === process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!isServiceCall) {
+      const supabase = await supabaseServer();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
     }
 
     const url = request.nextUrl;
