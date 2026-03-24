@@ -5,7 +5,7 @@ import type { ScoredProperty, SellerFactor } from "@/lib/scoring/seller-motivati
 import { getSellerColor, getSellerLabel } from "@/lib/scoring/seller-motivation-score";
 import { fmtPrice } from "@/lib/utils";
 
-type DetailTab = "overview" | "building" | "financial" | "comps" | "ownership" | "neighborhood" | "federal" | "outreach";
+type DetailTab = "overview" | "building" | "financial" | "investment" | "comps" | "ownership" | "neighborhood" | "federal" | "outreach";
 
 interface OutreachDraft {
   address: string;
@@ -85,6 +85,15 @@ type PropertyDetail = {
   ownerParcelCount?: number;
   ownerResCount?: number;
   ownerComCount?: number;
+  // Investment metrics
+  rentalAvm?: number;
+  rentalAvmLow?: number;
+  rentalAvmHigh?: number;
+  rentalAvmSource?: string;
+  capRate?: number;
+  cashOnCash?: number;
+  annualRent?: number;
+  monthlyMortgage?: number;
   owner?: {
     names: string[];
     type: string;
@@ -270,6 +279,7 @@ export function PropertyDetailPanel({ property, onClose }: Props) {
     { key: "overview", label: "Overview" },
     { key: "building", label: "Building" },
     { key: "financial", label: "Financial" },
+    { key: "investment", label: "Investment" },
     { key: "comps", label: "Comps" },
     { key: "ownership", label: "Ownership" },
     { key: "neighborhood", label: "Neighborhood" },
@@ -359,6 +369,7 @@ export function PropertyDetailPanel({ property, onClose }: Props) {
             )}
             {tab === "building" && <BuildingTab detail={detail} />}
             {tab === "financial" && <FinancialTab property={property} detail={detail} />}
+            {tab === "investment" && <InvestmentTab property={property} detail={detail} />}
             {tab === "comps" && <CompsTab detail={detail} />}
             {tab === "ownership" && <OwnershipTab property={property} detail={detail} />}
             {tab === "neighborhood" && <NeighborhoodTab data={neighborhoodData} loading={neighborhoodLoading} />}
@@ -532,6 +543,29 @@ function exportPropertyToExcel(property: ScoredProperty, detail: PropertyDetail 
   add("Financial", "Foreclosure Code", detail?.forecloseCode);
   add("Financial", "Lien Count", detail?.totalLienCount);
   add("Financial", "Lien Balance", detail?.totalLienBalance);
+
+  // Investment metrics
+  if (detail?.rentalAvm) {
+    add("Investment", "Market Rent", `$${detail.rentalAvm.toLocaleString()}/mo`);
+  }
+  if (detail?.rentalAvmLow != null && detail?.rentalAvmHigh != null) {
+    add("Investment", "Rent Range", `$${detail.rentalAvmLow.toLocaleString()} – $${detail.rentalAvmHigh.toLocaleString()}/mo`);
+  }
+  if (detail?.annualRent) {
+    add("Investment", "Annual Rent", `$${detail.annualRent.toLocaleString()}`);
+  }
+  if (detail?.capRate != null) {
+    add("Investment", "Cap Rate", `${detail.capRate}%`);
+  }
+  if (detail?.monthlyMortgage) {
+    add("Investment", "Est. Monthly Mortgage", `$${detail.monthlyMortgage.toLocaleString()}`);
+  }
+  if (detail?.cashOnCash != null) {
+    add("Investment", "Cash-on-Cash Return", `${detail.cashOnCash}%`);
+  }
+  if (detail?.ownerParcelCount != null && detail.ownerParcelCount > 1) {
+    add("Investment", "Owner Portfolio", `${detail.ownerParcelCount} properties`);
+  }
 
   // Tax Assessments
   if (detail?.taxAssessments) {
@@ -924,6 +958,110 @@ function FinancialTab({
               </div>
             ))}
           </div>
+        </Section>
+      )}
+    </div>
+  );
+}
+
+// ── Investment Tab ──────────────────────────────────────────────────────────
+
+function InvestmentTab({
+  property,
+  detail,
+}: {
+  property: ScoredProperty;
+  detail: PropertyDetail | null;
+}) {
+  const hasRental = detail?.rentalAvm != null;
+  const hasInvestment = detail?.capRate != null || detail?.cashOnCash != null;
+
+  return (
+    <div className="space-y-4">
+      {/* Rental Income */}
+      <Section title="Rental Income Estimate">
+        {hasRental ? (
+          <>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-gray-500">Market Rent</span>
+              <span className="text-lg font-bold text-green-700">${detail!.rentalAvm!.toLocaleString()}/mo</span>
+            </div>
+            {detail?.rentalAvmLow != null && detail?.rentalAvmHigh != null && (
+              <InfoRow label="Rent Range" value={`$${detail.rentalAvmLow.toLocaleString()} – $${detail.rentalAvmHigh.toLocaleString()}/mo`} />
+            )}
+            <InfoRow label="Annual Rent" value={detail?.annualRent ? `$${detail.annualRent.toLocaleString()}` : undefined} />
+            {detail?.rentalAvmSource && (
+              <InfoRow label="Source" value={detail.rentalAvmSource === "cache" ? "Cached (30-day)" : "RentCast"} />
+            )}
+          </>
+        ) : (
+          <p className="text-xs text-gray-400 italic">Loading rental estimate...</p>
+        )}
+      </Section>
+
+      {/* Investment Returns */}
+      {hasInvestment && (
+        <Section title="Investment Returns">
+          {detail?.capRate != null && (
+            <div className="flex items-center justify-between py-1.5 border-b border-gray-50">
+              <div>
+                <span className="text-xs font-medium text-gray-700">Cap Rate</span>
+                <p className="text-[10px] text-gray-400">Annual Rent ÷ Property Value</p>
+              </div>
+              <span className={`text-sm font-bold ${detail.capRate >= 5 ? "text-green-700" : detail.capRate >= 3 ? "text-amber-600" : "text-red-600"}`}>
+                {detail.capRate}%
+              </span>
+            </div>
+          )}
+          {detail?.cashOnCash != null && (
+            <div className="flex items-center justify-between py-1.5 border-b border-gray-50">
+              <div>
+                <span className="text-xs font-medium text-gray-700">Cash-on-Cash Return</span>
+                <p className="text-[10px] text-gray-400">(Rent − Mortgage) ÷ Down Payment</p>
+              </div>
+              <span className={`text-sm font-bold ${detail.cashOnCash >= 8 ? "text-green-700" : detail.cashOnCash >= 0 ? "text-amber-600" : "text-red-600"}`}>
+                {detail.cashOnCash}%
+              </span>
+            </div>
+          )}
+          {detail?.monthlyMortgage && (
+            <InfoRow label="Est. Monthly Mortgage" value={`$${detail.monthlyMortgage.toLocaleString()}`} />
+          )}
+        </Section>
+      )}
+
+      {/* Property Value Context */}
+      <Section title="Value Context">
+        <InfoRow label="Estimated Value" value={detail?.avmValue ? fmtPrice(detail.avmValue) : (property.estimatedValue ? fmtPrice(property.estimatedValue) : undefined)} />
+        <InfoRow label="Equity" value={detail?.equity != null ? fmtPrice(detail.equity) : (property.equity != null ? fmtPrice(property.equity) : undefined)} />
+        <InfoRow label="LTV" value={detail?.ltv != null ? `${detail.ltv}%` : (property.ltv != null ? `${property.ltv}%` : undefined)} />
+        <InfoRow label="HOA" value={detail?.hoa?.fee ? `$${detail.hoa.fee}/mo` : undefined} />
+      </Section>
+
+      {/* Owner Portfolio */}
+      {(detail?.ownerParcelCount != null && detail.ownerParcelCount > 1) && (
+        <Section title="Owner Portfolio">
+          <InfoRow label="Properties Owned" value={String(detail.ownerParcelCount)} />
+          {detail?.ownerResCount != null && <InfoRow label="Residential" value={String(detail.ownerResCount)} />}
+          {detail?.ownerComCount != null && <InfoRow label="Commercial" value={String(detail.ownerComCount)} />}
+        </Section>
+      )}
+
+      {/* Market Rent Context */}
+      {detail?.marketMedianRent != null && (
+        <Section title="Market Context">
+          <InfoRow label="Area Median Rent" value={`$${detail.marketMedianRent.toLocaleString()}/mo`} />
+          {detail?.rentalAvm && detail.marketMedianRent > 0 && (
+            <InfoRow
+              label="vs Median"
+              value={
+                <span className={detail.rentalAvm >= detail.marketMedianRent ? "text-green-600" : "text-red-600"}>
+                  {detail.rentalAvm >= detail.marketMedianRent ? "+" : ""}
+                  {Math.round(((detail.rentalAvm - detail.marketMedianRent) / detail.marketMedianRent) * 100)}%
+                </span>
+              }
+            />
+          )}
         </Section>
       )}
     </div>

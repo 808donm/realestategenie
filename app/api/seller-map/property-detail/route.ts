@@ -162,6 +162,103 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // ── Rental AVM (hybrid: check cache first, then API, cache result for 30 days) ──
+    let rentalAvm: number | undefined;
+    let rentalAvmLow: number | undefined;
+    let rentalAvmHigh: number | undefined;
+    let rentalAvmSource: string | undefined;
+
+    const normalizedAddr = (property?.formattedAddress || address).trim().toLowerCase();
+
+    // Check cache first
+    const { createClient } = await import("@supabase/supabase-js");
+    const adminSb = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { persistSession: false } }
+    );
+    const { data: cachedRental } = await adminSb
+      .from("area_data_cache")
+      .select("data")
+      .eq("zip_code", property?.zipCode || merged?.zipCode || "")
+      .eq("data_type", `rental_avm:${normalizedAddr}`)
+      .gte("fetched_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+      .limit(1)
+      .maybeSingle();
+
+    if (cachedRental?.data) {
+      rentalAvm = cachedRental.data.rent;
+      rentalAvmLow = cachedRental.data.rentRangeLow;
+      rentalAvmHigh = cachedRental.data.rentRangeHigh;
+      rentalAvmSource = "cache";
+      console.log(`[PropertyDetail] Rental AVM from cache: $${rentalAvm}/mo`);
+    } else if (rentcast) {
+      // Fetch from RentCast and cache
+      try {
+        const rentParams: Record<string, any> = { address };
+        if (property?.bedrooms) rentParams.bedrooms = property.bedrooms;
+        if (property?.bathrooms) rentParams.bathrooms = property.bathrooms;
+        if (property?.squareFootage) rentParams.squareFootage = property.squareFootage;
+        if (property?.propertyType) rentParams.propertyType = property.propertyType;
+
+        const rentEstimate = await rentcast.getRentEstimate(rentParams);
+        rentalAvm = rentEstimate.rent;
+        rentalAvmLow = rentEstimate.rentRangeLow;
+        rentalAvmHigh = rentEstimate.rentRangeHigh;
+        rentalAvmSource = "rentcast";
+        console.log(`[PropertyDetail] Rental AVM from RentCast: $${rentalAvm}/mo`);
+
+        // Cache for 30 days
+        const zip = property?.zipCode || merged?.zipCode || "";
+        if (zip && rentalAvm) {
+          await adminSb.from("area_data_cache").upsert({
+            zip_code: zip,
+            data_type: `rental_avm:${normalizedAddr}`,
+            data: {
+              rent: rentalAvm,
+              rentRangeLow: rentalAvmLow,
+              rentRangeHigh: rentalAvmHigh,
+              address: normalizedAddr,
+            },
+            fetched_at: new Date().toISOString(),
+          }, { onConflict: "zip_code,data_type" }).then(({ error }) => {
+            if (error) console.warn("[PropertyDetail] Rental AVM cache write failed:", error.message);
+          });
+        }
+      } catch (err: any) {
+        console.warn("[PropertyDetail] Rental AVM error:", err.message);
+      }
+    }
+
+    // ── Calculate investment metrics ──
+    const estimatedValue = avmValue || merged?.modelValue || merged?.totalMarketValue || property?.lastSalePrice;
+    let capRate: number | undefined;
+    let cashOnCash: number | undefined;
+    let annualRent: number | undefined;
+    let monthlyMortgage: number | undefined;
+
+    if (rentalAvm && estimatedValue) {
+      annualRent = rentalAvm * 12;
+      // Simplified cap rate (gross): Annual Rent / Property Value × 100
+      capRate = Math.round((annualRent / estimatedValue) * 10000) / 100;
+
+      // Cash-on-cash return (if mortgage data available from Realie)
+      const ltvPct = merged?.LTVCurrentEstCombined;
+      const lienBalance = merged?.totalLienBalance;
+      if (ltvPct && lienBalance && estimatedValue) {
+        // Estimate monthly mortgage payment (assume 30yr at ~7% — rough estimate)
+        const rate = 0.07 / 12; // monthly rate
+        const n = 360; // 30 years
+        monthlyMortgage = lienBalance * (rate * Math.pow(1 + rate, n)) / (Math.pow(1 + rate, n) - 1);
+        const annualMortgage = monthlyMortgage * 12;
+        const downPayment = estimatedValue - lienBalance;
+        if (downPayment > 0) {
+          const annualCashFlow = annualRent - annualMortgage;
+          cashOnCash = Math.round((annualCashFlow / downPayment) * 10000) / 100;
+        }
+      }
+    }
+
     // Fetch market data for the property's zip code
     let marketData: Record<string, any> = {};
     const propZip = property?.zipCode || merged?.zipCode;
@@ -265,6 +362,16 @@ export async function GET(request: NextRequest) {
         listingType: l.listingType,
         listingAgent: l.listingAgent,
       })),
+
+      // Investment metrics
+      rentalAvm,
+      rentalAvmLow,
+      rentalAvmHigh,
+      rentalAvmSource,
+      capRate,
+      cashOnCash,
+      annualRent,
+      monthlyMortgage: monthlyMortgage ? Math.round(monthlyMortgage) : undefined,
 
       // Market context
       ...marketData,
