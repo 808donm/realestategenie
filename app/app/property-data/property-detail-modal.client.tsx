@@ -1560,7 +1560,9 @@ export default function PropertyDetailModal({
 
           {/* ── Sales History Tab ───────────────────────────────────────── */}
           {activeSection === "sales-history" && (() => {
-            return <SalesHistorySection address={addr} />;
+            // Pass line1 (street only) when available, fall back to oneLine
+            const salesAddr = p.address?.line1 || p.address?.oneLine || addr;
+            return <SalesHistorySection address={salesAddr} />;
           })()}
 
           {/* ── Comps Tab ─────────────────────────────────────────────── */}
