@@ -594,17 +594,42 @@ export class TrestleClient {
    * Returns all past transactions with close price, dates, agents, and offices
    */
   async getSalesHistory(address: string, options?: { limit?: number }): Promise<TrestleProperty[]> {
-    const escaped = address.replace(/'/g, "''").toLowerCase();
-    // Remove unit/apt numbers for broader matching on the building address
-    const baseAddr = escaped.replace(/\s*(#|apt|unit|ste|suite)\s*\S+/gi, "").trim();
+    // Parse the address: extract street portion (before city/state/zip)
+    // Input formats: "45-535 Luluku Road #G5, Kaneohe, HI 96744" or "123 Main St"
+    const parts = address.split(",");
+    let streetPart = (parts[0] || address).trim();
+
+    // Remove unit/apt numbers for broader matching
+    streetPart = streetPart.replace(/\s*(#|apt|unit|ste|suite)\s*\S+/gi, "").trim();
+    const escaped = streetPart.replace(/'/g, "''").toLowerCase();
+
+    if (!escaped || escaped.length < 3) {
+      console.warn("[Trestle] getSalesHistory: address too short to search:", address);
+      return [];
+    }
+
+    // Extract street number and street name separately for precise matching
+    const streetMatch = escaped.match(/^(\d[\d-]*)\s+(.+)/);
+    let filter: string;
+    if (streetMatch) {
+      const [, streetNum, streetName] = streetMatch;
+      // Match by street number + street name (most precise)
+      filter = `StandardStatus eq 'Closed' and tolower(StreetNumber) eq '${streetNum}' and contains(tolower(StreetName), '${streetName}')`;
+    } else {
+      // Fallback: match against UnparsedAddress
+      filter = `StandardStatus eq 'Closed' and contains(tolower(UnparsedAddress), '${escaped}')`;
+    }
+
+    console.log(`[Trestle] Sales history search: ${filter}`);
 
     const result = await this.getProperties({
-      $filter: `StandardStatus eq 'Closed' and (contains(tolower(UnparsedAddress), '${baseAddr}') or contains(tolower(StreetName), '${baseAddr}'))`,
+      $filter: filter,
       $orderby: "CloseDate desc",
       $top: options?.limit || 20,
       $select: "ListingKey,ListingId,StandardStatus,ListPrice,OriginalListPrice,ClosePrice,CloseDate,OnMarketDate,DaysOnMarket,CumulativeDaysOnMarket,UnparsedAddress,StreetNumber,StreetName,StreetSuffix,City,PostalCode,BedroomsTotal,BathroomsTotalInteger,LivingArea,PropertyType,PropertySubType,ListAgentFullName,BuyerAgentFullName,ListOfficeName,BuyerOfficeName,OwnershipType",
     });
 
+    console.log(`[Trestle] Sales history: ${result.value?.length || 0} closed transactions for "${streetPart}"`);
     return result.value || [];
   }
 
