@@ -155,31 +155,48 @@ export function GenieCopilotPopup({ isOpen, onClose, actionContext, onClearConte
     }
 
     const recognition = new SpeechRecognition();
-    recognition.continuous = false;
-    recognition.interimResults = true;
+    recognition.continuous = true;       // Keep listening through pauses
+    recognition.interimResults = true;   // Show words as they're spoken
     recognition.lang = "en-US";
 
+    let silenceTimer: ReturnType<typeof setTimeout> | null = null;
+    let fullTranscript = "";
+
     recognition.onresult = (event: any) => {
+      // Build full transcript from all results
       let transcript = "";
       for (let i = 0; i < event.results.length; i++) {
         transcript += event.results[i][0].transcript;
       }
+      fullTranscript = transcript;
       setInput(transcript);
 
-      // Auto-send when speech is final
-      if (event.results[event.results.length - 1].isFinal) {
-        setTimeout(() => {
-          setIsListening(false);
-          if (transcript.trim()) {
-            sendMessage(transcript.trim());
-            setInput("");
-          }
-        }, 300);
-      }
+      // Reset the silence timer on every new speech result
+      // Wait 3 seconds of silence before auto-sending
+      if (silenceTimer) clearTimeout(silenceTimer);
+      silenceTimer = setTimeout(() => {
+        recognition.stop();
+        if (fullTranscript.trim()) {
+          sendMessage(fullTranscript.trim());
+          setInput("");
+        }
+        setIsListening(false);
+      }, 3000); // 3 seconds of silence = done speaking
     };
 
-    recognition.onerror = () => setIsListening(false);
-    recognition.onend = () => setIsListening(false);
+    recognition.onerror = () => {
+      if (silenceTimer) clearTimeout(silenceTimer);
+      setIsListening(false);
+    };
+    recognition.onend = () => {
+      // If continuous mode ends unexpectedly (browser limit), send what we have
+      if (silenceTimer) clearTimeout(silenceTimer);
+      if (fullTranscript.trim() && isListening) {
+        sendMessage(fullTranscript.trim());
+        setInput("");
+      }
+      setIsListening(false);
+    };
 
     recognitionRef.current = recognition;
     recognition.start();
