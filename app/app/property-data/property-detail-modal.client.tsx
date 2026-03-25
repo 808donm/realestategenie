@@ -451,7 +451,7 @@ export default function PropertyDetailModal({
   // Fetch neighborhood profile (community data, schools) when Neighborhood tab is selected
   // Tries cached data first, falls back to live API
   useEffect(() => {
-    if (activeSection !== "neighborhood" || neighborhoodData || neighborhoodLoading) return;
+    if (neighborhoodData || neighborhoodLoading) return;
 
     // Parse address — salesnapshot results may only have oneLine without line1
     let addr1 = p.address?.line1;
@@ -514,12 +514,12 @@ export default function PropertyDetailModal({
         .catch((err) => console.warn("[Neighborhood] fetch failed:", err))
         .finally(() => setNeighborhoodLoading(false));
     }
-  }, [activeSection, neighborhoodData, neighborhoodLoading, p]);
+  }, [neighborhoodData, neighborhoodLoading, p]);
 
   // Fetch RentCast market stats when Market Stats tab is selected
   // Tries cached data first, falls back to live API
   useEffect(() => {
-    if (activeSection !== "market" || marketStats || marketStatsLoading) return;
+    if (marketStats || marketStatsLoading) return;
     const zip = p.address?.postal1;
     if (!zip) return;
 
@@ -544,7 +544,7 @@ export default function PropertyDetailModal({
       })
       .catch(() => fetchLive())
       .finally(() => setMarketStatsLoading(false));
-  }, [activeSection, marketStats, marketStatsLoading, p]);
+  }, [marketStats, marketStatsLoading, p]);
 
   // Fetch nearby homes when "nearby" tab is selected (Just Sold Farming).
   // Realie provides owner, assessment, AVM, and mortgage data on the primary
@@ -574,9 +574,8 @@ export default function PropertyDetailModal({
       .finally(() => setNearbyLoading(false));
   }, [activeSection, nearbyHomes, nearbyLoading, farmingContext, p]);
 
-  // Fetch comps when user clicks the Comps tab (MLS first, RentCast fallback)
+  // Pre-fetch comps on mount (needed for Hoku context + Comps tab)
   useEffect(() => {
-    if (activeSection !== "comps") return;
     if (rentcastComps || rentcastCompsLoading) return;
 
     const address = p.address?.oneLine || [p.address?.line1, p.address?.line2, p.address?.locality, p.address?.countrySubd, p.address?.postal1].filter(Boolean).join(", ");
@@ -614,7 +613,7 @@ export default function PropertyDetailModal({
       })
       .catch((e) => setRentcastCompsError(e.message || "Failed to fetch comparables."))
       .finally(() => setRentcastCompsLoading(false));
-  }, [activeSection, rentcastComps, rentcastCompsLoading, p]);
+  }, [rentcastComps, rentcastCompsLoading, p]);
 
   // Pre-fetch enriched financial data on mount (needed for Hoku context + Financial tab).
   // Realie provides mortgage and equity on the primary response.
