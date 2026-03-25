@@ -250,7 +250,7 @@ export async function executeCopilotAction(
         const minBaths = Number(params.minBaths) || 0;
         const aiScore = params.aiScore !== false;
 
-        const searchParams = new URLSearchParams({ endpoint: "detailmortgageowner", postalcode: zip, pagesize: "50" });
+        const searchParams = new URLSearchParams({ endpoint: "detailmortgageowner", postalcode: zip, pagesize: "50", nocache: "1" });
         if (action === "search_absentee") searchParams.set("absenteeowner", "absentonly");
         if (action === "search_just_sold") {
           searchParams.set("endpoint", "salesnapshot");
@@ -261,9 +261,28 @@ export async function executeCopilotAction(
         }
 
         const baseUrl = getBaseUrl();
-        const res = await internalFetch(`${baseUrl}/api/integrations/attom/property?${searchParams}`);
+        const fetchUrl = `${baseUrl}/api/integrations/attom/property?${searchParams}`;
+        console.log(`[Copilot] Prospecting fetch: ${fetchUrl}`);
+        const res = await internalFetch(fetchUrl);
         const data = await res.json();
         let properties = data.property || [];
+
+        // Log what we got back for debugging
+        console.log(`[Copilot] ${action}: got ${properties.length} properties for zip ${zip}`);
+        if (properties.length > 0) {
+          const sample = properties[0];
+          console.log(`[Copilot] Sample property: ${sample.address?.oneLine || "no address"}, state: ${sample.address?.countrySubd || "?"}, zip: ${sample.address?.postal1 || "?"}`);
+        }
+
+        // Filter out properties not in the requested zip (safety check)
+        const beforeFilter = properties.length;
+        properties = properties.filter((p: any) => {
+          const propZip = p.address?.postal1 || "";
+          return propZip.startsWith(zip.substring(0, 3)); // At least match first 3 digits
+        });
+        if (properties.length < beforeFilter) {
+          console.warn(`[Copilot] Filtered out ${beforeFilter - properties.length} properties not matching zip ${zip}`);
+        }
 
         // Apply mode-specific filters
         if (action === "search_high_equity") {
