@@ -36,12 +36,19 @@ export function GenieCopilotPopup({ isOpen, onClose, actionContext, onClearConte
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Focus input when opened
+  // Focus input when opened and after each message exchange
   useEffect(() => {
     if (isOpen) {
-      setTimeout(() => inputRef.current?.focus(), 100);
+      setTimeout(() => inputRef.current?.focus(), 150);
     }
   }, [isOpen]);
+
+  // Re-focus input after loading completes (response received)
+  useEffect(() => {
+    if (isOpen && !loading) {
+      setTimeout(() => inputRef.current?.focus(), 50);
+    }
+  }, [isOpen, loading]);
 
   // Initialize with actionContext on first open
   useEffect(() => {
@@ -412,6 +419,7 @@ export function GenieCopilotPopup({ isOpen, onClose, actionContext, onClearConte
           ref={inputRef}
           value={input}
           onChange={e => setInput(e.target.value)}
+          autoFocus
           placeholder="Ask Hoku anything..."
           disabled={loading}
           style={{
