@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 /**
  * GET /api/area-cache
@@ -68,5 +69,55 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error("[AreaCache] Error:", error);
     return NextResponse.json({ cached: false });
+  }
+}
+
+/**
+ * POST /api/area-cache
+ *
+ * Save area data to cache. Used by client-side fetches to cache live API
+ * results so the next agent searching the same zip gets instant data.
+ *
+ * Body: { zipCode, dataType, data }
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const supabase = await supabaseServer();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { zipCode, dataType, data } = body;
+
+    if (!zipCode || !dataType || !data) {
+      return NextResponse.json({ error: "zipCode, dataType, and data are required" }, { status: 400 });
+    }
+
+    if (!["neighborhood", "federal", "market_stats"].includes(dataType)) {
+      return NextResponse.json({ error: "Invalid dataType" }, { status: 400 });
+    }
+
+    const { error } = await supabaseAdmin
+      .from("area_data_cache")
+      .upsert({
+        zip_code: zipCode,
+        data_type: dataType,
+        data,
+        fetched_at: new Date().toISOString(),
+      }, {
+        onConflict: "zip_code,data_type",
+      });
+
+    if (error) {
+      console.error("[AreaCache] Save error:", error.message);
+      return NextResponse.json({ saved: false, error: error.message });
+    }
+
+    return NextResponse.json({ saved: true });
+  } catch (error: any) {
+    console.error("[AreaCache] POST error:", error);
+    return NextResponse.json({ saved: false });
   }
 }

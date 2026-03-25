@@ -376,10 +376,9 @@ export default function PropertyDetailModal({
       .finally(() => setAvmLoading(false));
   }, [activeSection, avmData, avmLoading, p]);
 
-  // Fetch federal data when the Federal tab is selected
-  // Tries cached data first, falls back to live API
+  // Pre-fetch federal data on mount — cache-first (30-day TTL in area_data_cache)
   useEffect(() => {
-    if (activeSection !== "federal" || federalData || federalLoading) return;
+    if (federalData || federalLoading) return;
     const zipCode = p.address?.postal1;
     if (!zipCode) return;
 
@@ -398,7 +397,15 @@ export default function PropertyDetailModal({
       return fetch(`/api/integrations/federal-data/query?${params}`)
         .then((r) => r.json())
         .then((data) => {
-          if (data.success !== false) setFederalData(data);
+          if (data.success !== false) {
+            setFederalData(data);
+            // Save to area_data_cache so next agent gets instant data
+            fetch("/api/area-cache", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ zipCode, dataType: "federal", data }),
+            }).catch(() => {});
+          }
         });
     };
 
@@ -406,7 +413,7 @@ export default function PropertyDetailModal({
       .then((r) => r.json())
       .then((cache) => {
         if (cache.cached && cache.data) {
-          console.log("[Federal] Using cached data from", cache.fetchedAt);
+          console.log("[Federal] Using cached data for", zipCode);
           setFederalData(cache.data);
         } else {
           return fetchLive();
@@ -414,7 +421,7 @@ export default function PropertyDetailModal({
       })
       .catch(() => fetchLive())
       .finally(() => setFederalLoading(false));
-  }, [activeSection, federalData, federalLoading, p]);
+  }, [federalData, federalLoading, p]);
 
   // Fetch Hawaii statewide parcel + owner data when Ownership or Financial tab is selected
   // Combines State ArcGIS (all counties) with Honolulu OWNALL (deed owners)
@@ -491,7 +498,17 @@ export default function PropertyDetailModal({
       return fetch(`/api/integrations/attom/property?${params}`)
         .then((r) => r.json())
         .then((data) => {
-          if (data && !data.error) setNeighborhoodData(data);
+          if (data && !data.error) {
+            setNeighborhoodData(data);
+            // Save to cache for next agent
+            if (zip) {
+              fetch("/api/area-cache", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ zipCode: zip, dataType: "neighborhood", data }),
+              }).catch(() => {});
+            }
+          }
         });
     };
 
