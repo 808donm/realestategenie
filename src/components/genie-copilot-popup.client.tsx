@@ -222,12 +222,26 @@ export function GenieCopilotPopup({ isOpen, onClose, actionContext, onClearConte
               {/* Rich action result card */}
               {msg.actionResult && msg.actionResult.success && (
                 <div style={{ marginTop: 8 }}>
-                  {/* Redirect link */}
-                  {msg.actionResult.redirect && (
+                  {/* Navigate link (opens in same tab) */}
+                  {msg.actionResult.data?.navigateUrl && (
+                    <button
+                      onClick={() => {
+                        window.location.href = msg.actionResult!.data.navigateUrl;
+                      }}
+                      style={{
+                        display: "inline-block", padding: "6px 12px", borderRadius: 6,
+                        background: "#059669", color: "#fff", fontSize: 12, fontWeight: 600,
+                        border: "none", cursor: "pointer", marginTop: 4, marginRight: 8,
+                      }}
+                    >
+                      View on Map &rarr;
+                    </button>
+                  )}
+
+                  {/* Redirect link (for external/new tab) */}
+                  {msg.actionResult.redirect && !msg.actionResult.data?.navigateUrl && (
                     <a
                       href={msg.actionResult.redirect}
-                      target="_blank"
-                      rel="noopener noreferrer"
                       style={{
                         display: "inline-block", padding: "6px 12px", borderRadius: 6,
                         background: "#4f46e5", color: "#fff", fontSize: 12, fontWeight: 600,
@@ -288,9 +302,10 @@ export function GenieCopilotPopup({ isOpen, onClose, actionContext, onClearConte
                                   cursor: "pointer",
                                 }}
                                 onClick={() => {
-                                  // Open full property detail modal in new tab
-                                  const q = encodeURIComponent(addr);
-                                  window.open(`/app/property-detail?address=${q}`, "_blank");
+                                  // Dispatch event to open property detail modal in same tab
+                                  window.dispatchEvent(new CustomEvent("open-property-detail", {
+                                    detail: { property: p, address: addr },
+                                  }));
                                 }}
                               >
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>

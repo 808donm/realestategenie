@@ -217,11 +217,20 @@ export async function executeCopilotAction(
 
       case "search_seller_map": {
         const zips = params.zips || params.zipCodes || "";
-        const searchParams = new URLSearchParams({ zips: Array.isArray(zips) ? zips.join(",") : zips, minScore: "40", limit: "10" });
+        const zipStr = Array.isArray(zips) ? zips.join(",") : zips;
+        const searchParams = new URLSearchParams({ zips: zipStr, minScore: "40", limit: "10" });
         const baseUrl = getBaseUrl();
         const res = await internalFetch(`${baseUrl}/api/seller-map?${searchParams}`);
         const data = await res.json();
-        return { action, success: true, data: { properties: (data.properties || []).slice(0, 10), total: data.total || 0 } };
+        // Include navigateUrl so the popup can open the seller map with auto-search
+        return {
+          action, success: true,
+          data: {
+            properties: (data.properties || []).slice(0, 10),
+            total: data.total || 0,
+            navigateUrl: `/app/seller-map?zip=${encodeURIComponent(zipStr.split(",")[0]?.trim() || "")}`,
+          },
+        };
       }
 
       case "create_dom_search": {

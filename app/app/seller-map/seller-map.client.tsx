@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import type { ScoredProperty } from "@/lib/scoring/seller-motivation-score";
 import { SellerMapView } from "./map-view.client";
 import { SidebarPanel } from "./sidebar-panel.client";
@@ -34,9 +35,17 @@ const DEFAULT_FILTERS = {
 };
 
 export function SellerMapClient() {
+  const searchParams = useSearchParams();
   const [properties, setProperties] = useState<ScoredProperty[]>([]);
   const [selectedProperty, setSelectedProperty] = useState<ScoredProperty | null>(null);
-  const [filters, setFilters] = useState(DEFAULT_FILTERS);
+  const [filters, setFilters] = useState(() => {
+    // Check URL params for auto-search (from Hoku navigation)
+    const urlZip = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("zip") : null;
+    const urlTmk = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("tmk") : null;
+    if (urlZip) return { ...DEFAULT_FILTERS, zips: urlZip };
+    if (urlTmk) return { ...DEFAULT_FILTERS, zips: urlTmk };
+    return DEFAULT_FILTERS;
+  });
   const [showHeatMap, setShowHeatMap] = useState(true);
   const [showTMK, setShowTMK] = useState(false);
   const [showZipBoundaries, setShowZipBoundaries] = useState(true);
