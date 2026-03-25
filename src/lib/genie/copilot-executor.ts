@@ -338,11 +338,49 @@ export async function executeCopilotAction(
               search_investor: "investor",
             };
 
+            // Map ATTOM-shaped properties to ProspectProperty format for the AI
+            const mappedForAI = properties.slice(0, 25).map((p: any) => {
+              const saleDate = p.sale?.amount?.saleTransDate || p.sale?.amount?.saleRecDate;
+              const saleAmt = p.sale?.amount?.saleAmt || p.sale?.amount?.salePrice;
+              const avm = p.avm?.amount?.value || p.assessment?.market?.mktTtlValue;
+              const mortgage = p.mortgage?.amount;
+              const equity = avm && mortgage ? avm - mortgage : avm && saleAmt ? avm - saleAmt : undefined;
+              let yearsOwned: number | undefined;
+              if (saleDate) {
+                const normalized = saleDate.replace(/\//g, "-");
+                const saleYear = new Date(normalized).getFullYear();
+                if (!isNaN(saleYear)) yearsOwned = new Date().getFullYear() - saleYear;
+              }
+              return {
+                address: p.address?.oneLine || p.address?.line1 || "Unknown",
+                ownerName: p.owner?.owner1?.fullName,
+                mailingAddress: p.owner?.mailingAddressOneLine,
+                isAbsentee: p.owner?.absenteeOwnerStatus === "A" || p.owner?.ownerOccupied === "N",
+                isCorporate: p.owner?.corporateIndicator === "Y",
+                avmValue: avm,
+                assessedValue: p.assessment?.assessed?.assdTtlValue,
+                mortgageAmount: mortgage,
+                ltvPct: p.mortgage?.ltv,
+                equityAmount: equity,
+                equityPct: avm && equity ? Math.round((equity / avm) * 100) : undefined,
+                saleAmount: saleAmt,
+                saleDate: saleDate?.replace(/\//g, "-"),
+                yearsOwned,
+                yearBuilt: p.building?.summary?.yearBuilt || p.summary?.yearBuilt,
+                beds: p.building?.rooms?.beds,
+                baths: p.building?.rooms?.bathsFull,
+                sqft: p.building?.size?.livingSize || p.building?.size?.universalSize,
+                propertyType: p.summary?.propType || p.summary?.propertyType,
+                taxAmount: p.assessment?.tax?.taxAmt,
+                isDistressed: !!(p.foreclosure?.actionType || p.foreclosure?.filingDate),
+              };
+            });
+
             const aiRes = await internalFetch(`${baseUrl}/api/prospecting-ai/analyze`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                properties: properties.slice(0, 25), // AI limit
+                properties: mappedForAI,
                 mode: modeMap[action] || "absentee",
                 zipCode: zip,
               }),
