@@ -13,8 +13,8 @@ const DEFAULT_VOICE = {
 
 const AUDIO_CONFIG = {
   audioEncoding: "MP3",
-  speakingRate: 1.0,
-  pitch: 1.0, // slightly warm
+  speakingRate: 0.92,  // slightly slower for clarity, especially for older users
+  pitch: 1.0,
 };
 
 /**
@@ -45,14 +45,42 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "text is required" }, { status: 400 });
     }
 
-    // Clean text — remove markdown, HTML, execute tags
+    // Clean text for natural speech
     text = text
+      // Remove execute tags and markdown
       .replace(/<execute>[\s\S]*?<\/execute>/g, "")
       .replace(/\*\*/g, "")
       .replace(/###?\s*/g, "")
       .replace(/\[object Object\]/g, "")
-      .replace(/[#*_~`]/g, "")
+      .replace(/[#_~`]/g, "")
       .replace(/<[^>]*>/g, "")
+      // Fix zip codes: "96797" → "9 6 7 9 7" so TTS reads digits not "ninety-six thousand"
+      .replace(/\b(9[0-9]{4})\b/g, (_, zip) => zip.split("").join(" "))
+      // Fix MLS numbers: "202605791" → "2 0 2 6 0 5 7 9 1"
+      .replace(/\b(\d{8,})\b/g, (_, num) => num.split("").join(" "))
+      // Fix TMK numbers: "1-4-2-018-077" → read as digits
+      .replace(/\b(\d{1,2}-\d{1,2}-\d{1,2}-\d{3}-\d{3})\b/g, (_, tmk) => tmk.replace(/[-]/g, ", ").split("").filter((c: string) => c !== ",").join(" ").replace(/  +/g, ", "))
+      // Remove parentheses but keep content
+      .replace(/[()]/g, "")
+      // Remove bullet points and list markers
+      .replace(/^[-•]\s*/gm, "")
+      .replace(/^\d+\.\s*/gm, "")
+      // Add pauses between facts — replace pipe separators with pauses
+      .replace(/\s*\|\s*/g, ". ")
+      // Add pauses after colons (label: value patterns)
+      .replace(/:\s*/g, ": ... ")
+      // Add pause between sections (double newlines → period)
+      .replace(/\n\n+/g, ". ... ")
+      // Single newlines → slight pause
+      .replace(/\n/g, ". ")
+      // Dollar amounts: keep natural ("$1,500,000" reads fine, but "$1.51M" → "$1.51 million")
+      .replace(/\$(\d+\.?\d*)M\b/g, "$$$1 million")
+      .replace(/\$(\d+\.?\d*)K\b/g, "$$$1 thousand")
+      // Remove remaining special chars
+      .replace(/[*{}[\]]/g, "")
+      // Clean up extra spaces and periods
+      .replace(/\.\s*\./g, ".")
+      .replace(/\s+/g, " ")
       .trim();
 
     if (!text) {

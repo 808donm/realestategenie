@@ -216,10 +216,11 @@ export async function executeCopilotAction(
       // ════════════════════════════════════════════════════════════════
 
       case "search_seller_map": {
-        const zips = params.zips || params.zipCodes || "";
-        const zipStr = Array.isArray(zips) ? zips.join(",") : zips;
-        const searchParams = new URLSearchParams({ zips: zipStr, minScore: "40", limit: "10" });
+        const zips = params.zips || params.zipCodes || params.zip || "";
+        const zipStr = Array.isArray(zips) ? zips.join(",") : String(zips);
+        const searchParams = new URLSearchParams({ zips: zipStr, minScore: "0", limit: "50" });
         const baseUrl = getBaseUrl();
+        console.log(`[Copilot] Seller map search: ${baseUrl}/api/seller-map?${searchParams}`);
         const res = await internalFetch(`${baseUrl}/api/seller-map?${searchParams}`);
         const data = await res.json();
         // Include navigateUrl so the popup can open the seller map with auto-search
