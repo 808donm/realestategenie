@@ -173,8 +173,16 @@ export default function PropertyDetailModal({
   const ltv = realieLtv ?? (bestValue && mortgageAmt ? (mortgageAmt / bestValue) * 100 : null);
 
   // Broadcast property context to Hoku so she knows what the agent is viewing
+  // Includes enriched data (financial, comps, hazards, market stats) as it loads
   useEffect(() => {
-    const ctx = {
+    // Extract enriched financial data
+    const he = enrichedFinancial?.homeEquity?.property?.[0]?.homeEquity;
+    const rentalResp = enrichedFinancial?.rentalAvm;
+    const rentalProp = rentalResp?.property?.[0] || rentalResp;
+    const rental = rentalProp?.rentalAvm || rentalProp?.rentalAVM || rentalProp?.rentalavm;
+    const rentVal = rental?.estimatedRentalValue ?? rental?.rentalAmount?.value ?? rental?.amount?.value;
+
+    const ctx: Record<string, any> = {
       address: addr,
       city: p.address?.locality,
       state: p.address?.countrySubd,
@@ -190,8 +198,11 @@ export default function PropertyDetailModal({
       avmHigh: p.avm?.amount?.high,
       lastSalePrice: lastSaleAmt,
       lastSaleDate: p.sale?.amount?.saleTransDate,
-      estimatedEquity: equity,
-      ltv,
+      estimatedEquity: equity ?? he?.equity,
+      ltv: ltv ?? he?.ltv,
+      loanBalance: he?.outstandingBalance,
+      loanCount: he?.loanCount || p.mortgage?.lienCount,
+      monthlyPayment: he?.estimatedMonthlyPayment,
       owner1: p.owner?.owner1?.fullName,
       owner2: p.owner?.owner2?.fullName,
       ownerOccupied: p.owner?.ownerOccupied,
@@ -199,6 +210,9 @@ export default function PropertyDetailModal({
       mailingAddress: p.owner?.mailingAddressOneLine,
       corporateOwner: p.owner?.corporateIndicator,
       taxAmount: p.assessment?.tax?.taxAmt,
+      assessedTotal: p.assessment?.assessed?.assdTtlValue,
+      assessedLand: p.assessment?.assessed?.assdLandValue,
+      marketValue: p.assessment?.market?.mktTtlValue,
       hoaFee: p.hoa?.fee,
       // MLS fields
       mlsNumber: (p as any).ListingId || (p as any).mlsNumber,
@@ -210,14 +224,86 @@ export default function PropertyDetailModal({
       ownershipType: (p as any).OwnershipType,
       description: (p as any).PublicRemarks,
       activeTab: activeSection,
+      // Building details
+      constructionType: p.building?.construction?.constructionType,
+      roofType: p.building?.construction?.roofCover,
+      heatingType: p.utilities?.heatingType,
+      coolingType: p.utilities?.coolingType,
+      parking: p.building?.parking?.prkgSpaces ? `${p.building.parking.prkgSpaces} spaces` : undefined,
+      pool: p.lot?.poolInd === "Y" ? "Yes" : undefined,
+      stories: p.building?.summary?.levels,
     };
+
+    // Rental AVM (enriched)
+    if (rentVal) {
+      ctx.rentalEstimate = rentVal;
+      ctx.rentalLow = rental?.estimatedMinRentalValue ?? rental?.rentalAmount?.low;
+      ctx.rentalHigh = rental?.estimatedMaxRentalValue ?? rental?.rentalAmount?.high;
+      if (avmVal && rentVal) ctx.grossYield = ((Number(rentVal) * 12 / avmVal) * 100).toFixed(1) + "%";
+      if (avmVal && rentVal) ctx.capRate = ((Number(rentVal) * 12 / avmVal) * 100).toFixed(1) + "%";
+    }
+
+    // Sale history
+    if (p.saleHistory?.length) {
+      ctx.saleHistory = p.saleHistory.slice(0, 5).map((s: any) => ({
+        date: s.date, amount: s.amount, source: s._source,
+      }));
+    }
+
+    // Comps (top 5)
+    if (rentcastComps?.length) {
+      ctx.comparableSales = rentcastComps.slice(0, 5).map((c: any) => ({
+        address: c.formattedAddress || c.address?.oneLine || c.UnparsedAddress,
+        price: c.price || c.ClosePrice || c.ListPrice,
+        beds: c.bedrooms || c.BedroomsTotal,
+        baths: c.bathrooms || c.BathroomsTotalInteger,
+        sqft: c.squareFootage || c.LivingArea,
+        correlation: c.correlation,
+      }));
+    }
+
+    // Hazards
+    if (hazardData) {
+      ctx.hazards = [];
+      if (hazardData.tsunami?.found) ctx.hazards.push("Tsunami Evacuation Zone");
+      if (hazardData.seaLevelRise?.found) ctx.hazards.push("Sea Level Rise Risk (3.2ft SLR)");
+      if (hazardData.lavaFlow?.found) ctx.hazards.push(`Lava Flow Zone ${hazardData.lavaFlow.attributes?.hazard || ""}`);
+      if (hazardData.cesspoolPriority?.found) ctx.hazards.push("Cesspool Priority Area");
+      if (hazardData.dhhl?.found) ctx.hazards.push("Hawaiian Home Lands");
+      if (hazardData.sma?.found) ctx.hazards.push("Special Management Area (coastal zone)");
+      if (ctx.hazards.length === 0) delete ctx.hazards;
+    }
+
+    // Market stats
+    if (marketStats) {
+      ctx.marketStats = {
+        medianPrice: marketStats.saleData?.medianPrice,
+        avgDOM: marketStats.saleData?.averageDaysOnMarket,
+        totalListings: marketStats.saleData?.totalListings,
+        pricePerSqft: marketStats.saleData?.averagePricePerSquareFoot,
+        medianRent: marketStats.rentalData?.medianPrice,
+      };
+    }
+
+    // Neighborhood demographics
+    if (neighborhoodData) {
+      const nd = neighborhoodData;
+      ctx.neighborhood = {
+        population: nd.population,
+        medianIncome: nd.medianHouseholdIncome,
+        medianAge: nd.medianAge,
+        ownerOccupiedPct: nd.ownerOccupiedPct,
+        walkScore: nd.walkScore,
+      };
+    }
+
     sessionStorage.setItem("hoku_selected_property", JSON.stringify(ctx));
 
     return () => {
-      // Clean up when modal closes
       sessionStorage.removeItem("hoku_selected_property");
     };
-  }, [p, addr, activeSection, avmVal, equity, ltv, beds, baths, sqft, yearBuilt, lastSaleAmt, mlsListPrice]);
+  }, [p, addr, activeSection, avmVal, equity, ltv, beds, baths, sqft, yearBuilt, lastSaleAmt, mlsListPrice,
+      enrichedFinancial, rentcastComps, hazardData, marketStats, neighborhoodData]);
 
   // Fetch Hawaii hazard/environmental zone data on mount (for HI properties with lat/lng)
   useEffect(() => {
@@ -530,11 +616,11 @@ export default function PropertyDetailModal({
       .finally(() => setRentcastCompsLoading(false));
   }, [activeSection, rentcastComps, rentcastCompsLoading, p]);
 
-  // Fetch enriched financial data when Financial tab is selected.
+  // Pre-fetch enriched financial data on mount (needed for Hoku context + Financial tab).
   // Realie provides mortgage and equity on the primary response.
   // Rental AVM uses HUD Fair Market Rents, sales trends use FRED data.
   useEffect(() => {
-    if (activeSection !== "financial" || enrichedFinancial || enrichedFinancialLoading) return;
+    if (enrichedFinancial || enrichedFinancialLoading) return;
 
     const attomId = p.identifier?.attomId;
     let addr1 = p.address?.line1;
@@ -665,7 +751,7 @@ export default function PropertyDetailModal({
         mlsLastSale: mlsLastSale && !mlsLastSale._isComp ? mlsLastSale : null,
       });
     }).finally(() => setEnrichedFinancialLoading(false));
-  }, [activeSection, enrichedFinancial, enrichedFinancialLoading, p]);
+  }, [enrichedFinancial, enrichedFinancialLoading, p]);
 
   // Ownership tab: Realie already provides owner data (ownerName, ownerAddress,
   // ownerResCount, ownerComCount, lenderName, etc.) on the primary search response.

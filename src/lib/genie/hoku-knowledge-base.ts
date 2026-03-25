@@ -306,6 +306,76 @@ export function buildPropertyContext(property: any): string {
   const desc = property.description || property.PublicRemarks;
   if (desc) parts.push(`Description: ${String(desc).substring(0, 200)}...`);
 
+  // Rental / Investment
+  const rentalEst = property.rentalEstimate;
+  if (rentalEst) parts.push(`\nRental Estimate: $${Number(rentalEst).toLocaleString()}/month`);
+  const rentalLow = property.rentalLow;
+  const rentalHigh = property.rentalHigh;
+  if (rentalLow && rentalHigh) parts.push(`Rental Range: $${Number(rentalLow).toLocaleString()} - $${Number(rentalHigh).toLocaleString()}/month`);
+  if (property.grossYield) parts.push(`Gross Yield: ${property.grossYield}`);
+  if (property.capRate) parts.push(`Cap Rate: ${property.capRate}`);
+
+  // Loan details
+  if (property.loanBalance) parts.push(`Est. Loan Balance: $${Number(property.loanBalance).toLocaleString()}`);
+  if (property.loanCount) parts.push(`Active Loans: ${property.loanCount}`);
+  if (property.monthlyPayment) parts.push(`Est. Monthly Mortgage: $${Number(property.monthlyPayment).toLocaleString()}`);
+
+  // Tax assessment detail
+  if (property.assessedTotal) parts.push(`Assessed Value: $${Number(property.assessedTotal).toLocaleString()}`);
+  if (property.assessedLand) parts.push(`Land Value: $${Number(property.assessedLand).toLocaleString()}`);
+  if (property.marketValue) parts.push(`Market Value (County): $${Number(property.marketValue).toLocaleString()}`);
+
+  // Building details
+  if (property.constructionType) parts.push(`Construction: ${property.constructionType}`);
+  if (property.roofType) parts.push(`Roof: ${property.roofType}`);
+  if (property.heatingType) parts.push(`Heating: ${property.heatingType}`);
+  if (property.coolingType) parts.push(`Cooling: ${property.coolingType}`);
+  if (property.parking) parts.push(`Parking: ${property.parking}`);
+  if (property.pool) parts.push(`Pool: ${property.pool}`);
+  if (property.stories) parts.push(`Stories: ${property.stories}`);
+
+  // Sale history
+  if (property.saleHistory?.length) {
+    parts.push(`\nSale History (${property.saleHistory.length} transactions):`);
+    property.saleHistory.forEach((s: any) => {
+      parts.push(`  ${s.date || "?"}: ${s.amount ? "$" + Number(s.amount).toLocaleString() : "Price not disclosed"} (${s.source || "?"})`);
+    });
+  }
+
+  // Comparable sales
+  if (property.comparableSales?.length) {
+    parts.push(`\nComparable Sales (${property.comparableSales.length} comps):`);
+    property.comparableSales.forEach((c: any) => {
+      parts.push(`  ${c.address || "?"}: ${c.price ? "$" + Number(c.price).toLocaleString() : "?"} | ${c.beds || "?"}bd/${c.baths || "?"}ba | ${c.sqft ? c.sqft.toLocaleString() + " sqft" : "?"} | Match: ${c.correlation ? Math.round(c.correlation) + "%" : "?"}`);
+    });
+  }
+
+  // Hazards
+  if (property.hazards?.length) {
+    parts.push(`\nEnvironmental Hazards: ${property.hazards.join(", ")}`);
+  }
+
+  // Market stats
+  if (property.marketStats) {
+    const ms = property.marketStats;
+    parts.push(`\nArea Market Statistics:`);
+    if (ms.medianPrice) parts.push(`  Median Sale Price: $${Number(ms.medianPrice).toLocaleString()}`);
+    if (ms.avgDOM) parts.push(`  Avg Days on Market: ${ms.avgDOM}`);
+    if (ms.totalListings) parts.push(`  Active Listings: ${ms.totalListings}`);
+    if (ms.pricePerSqft) parts.push(`  Avg Price/Sqft: $${ms.pricePerSqft}`);
+    if (ms.medianRent) parts.push(`  Median Rent: $${Number(ms.medianRent).toLocaleString()}/mo`);
+  }
+
+  // Neighborhood
+  if (property.neighborhood) {
+    const n = property.neighborhood;
+    parts.push(`\nNeighborhood:`);
+    if (n.medianIncome) parts.push(`  Median Income: $${Number(n.medianIncome).toLocaleString()}`);
+    if (n.medianAge) parts.push(`  Median Age: ${n.medianAge}`);
+    if (n.ownerOccupiedPct) parts.push(`  Owner-Occupied: ${n.ownerOccupiedPct}%`);
+    if (n.walkScore) parts.push(`  Walk Score: ${n.walkScore}`);
+  }
+
   // Current tab
   const tab = property.activeTab;
   if (tab) parts.push(`\nThe agent is currently viewing the "${tab}" tab.`);
