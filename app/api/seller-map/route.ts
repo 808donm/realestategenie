@@ -225,6 +225,103 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // ── Supplement ownership dates from MLS (Hawaii non-disclosure fix) ──
+    // For parcels missing transferDate, query Trestle for most recent closed sale
+    const missingDates = parcels.filter(p => !p.transferDate && !p.ownershipStartDate && p.address);
+    if (missingDates.length > 0) {
+      try {
+        const { supabaseAdmin } = await import("@/lib/supabase/admin");
+        // Find any connected Trestle integration
+        const { data: trestleInteg } = await supabaseAdmin
+          .from("integrations")
+          .select("config")
+          .eq("provider", "trestle")
+          .eq("status", "connected")
+          .limit(1)
+          .maybeSingle();
+
+        if (trestleInteg?.config) {
+          const config = typeof trestleInteg.config === "string" ? JSON.parse(trestleInteg.config) : trestleInteg.config;
+          if (config.client_id && config.client_secret) {
+            const { TrestleClient } = await import("@/lib/integrations/trestle-client");
+            const trestle = new TrestleClient(config);
+
+            // Batch by zip code to minimize API calls
+            const zipGroups = new Map<string, typeof missingDates>();
+            for (const p of missingDates.slice(0, 200)) {
+              const z = p.zipCode || "";
+              if (!z) continue;
+              if (!zipGroups.has(z)) zipGroups.set(z, []);
+              zipGroups.get(z)!.push(p);
+            }
+
+            // For each zip, get all closed sales and match by street number
+            const closedByZip = await Promise.allSettled(
+              [...zipGroups.keys()].slice(0, 10).map(async (zipCode) => {
+                const results = await trestle.searchProperties({
+                  filter: `StandardStatus eq 'Closed' and PostalCode eq '${zipCode}'`,
+                  select: "StreetNumber,StreetName,CloseDate,ClosePrice,UnparsedAddress",
+                  orderBy: "CloseDate desc",
+                  top: 500,
+                });
+                return { zipCode, listings: results.value || [] };
+              })
+            );
+
+            // Build a lookup: normalized address → most recent close date
+            const closeDateLookup = new Map<string, { date: string; price?: number }>();
+            for (const r of closedByZip) {
+              if (r.status !== "fulfilled") continue;
+              for (const listing of r.value.listings) {
+                if (!listing.CloseDate) continue;
+                const key = `${(listing.StreetNumber || "").toLowerCase()}-${(listing.StreetName || "").toLowerCase()}`.trim();
+                if (key && !closeDateLookup.has(key)) {
+                  closeDateLookup.set(key, { date: listing.CloseDate, price: listing.ClosePrice });
+                }
+                // Also index by unparsed address
+                const unparsed = (listing.UnparsedAddress || "").toLowerCase().trim();
+                if (unparsed && !closeDateLookup.has(unparsed)) {
+                  closeDateLookup.set(unparsed, { date: listing.CloseDate, price: listing.ClosePrice });
+                }
+              }
+            }
+
+            // Match parcels to closed sales
+            let matched = 0;
+            for (const p of missingDates) {
+              const addr = (p.address || p.addressFull || "").toLowerCase().trim();
+              if (!addr) continue;
+              // Try street number + name match
+              const parts = addr.match(/^(\S+)\s+(.+?)(?:,|\s+(?:apt|unit|#))/i) || addr.match(/^(\S+)\s+(.+)/);
+              if (parts) {
+                const key = `${parts[1]}-${parts[2].replace(/\s+(st|street|rd|road|dr|drive|ave|avenue|blvd|boulevard|ln|lane|ct|court|way|pl|place|cir|circle)\.?$/i, "").trim()}`;
+                const found = closeDateLookup.get(key);
+                if (found) {
+                  p.transferDate = found.date;
+                  if (found.price && !p.transferPrice) p.transferPrice = found.price;
+                  matched++;
+                  continue;
+                }
+              }
+              // Try full address match
+              const found = closeDateLookup.get(addr) || closeDateLookup.get(addr.split(",")[0].trim());
+              if (found) {
+                p.transferDate = found.date;
+                if (found.price && !p.transferPrice) p.transferPrice = found.price;
+                matched++;
+              }
+            }
+
+            if (matched > 0) {
+              console.log(`[SellerMap] MLS ownership dates: matched ${matched}/${missingDates.length} parcels`);
+            }
+          }
+        }
+      } catch (e) {
+        console.log("[SellerMap] MLS ownership supplement failed (non-fatal):", (e as any)?.message);
+      }
+    }
+
     // ── Score all properties ──
     const parcelMap = new Map(parcels.map((p) => [
       p._id || p.siteId || p.parcelId || `${p.latitude}-${p.longitude}`,
