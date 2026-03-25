@@ -156,6 +156,57 @@ export function PropertyDetailPanel({ property, onClose }: Props) {
   const [federalData, setFederalData] = useState<any>(null);
   const [federalLoading, setFederalLoading] = useState(false);
 
+  // Broadcast property context to Hoku so she knows what the agent is viewing
+  useEffect(() => {
+    const ctx: Record<string, any> = {
+      address: property.address,
+      city: property.city,
+      state: property.state,
+      zip: property.zip,
+      propertyType: property.propertyType,
+      beds: property.beds,
+      baths: property.baths,
+      sqft: property.sqft,
+      yearBuilt: property.yearBuilt,
+      avmValue: property.estimatedValue,
+      estimatedEquity: property.equity,
+      ltv: property.ltv,
+      ownershipYears: property.ownershipYears,
+      lastSaleDate: property.lastSaleDate,
+      lastSalePrice: property.lastSalePrice,
+      owner1: property.owner,
+      absenteeOwner: property.absentee ? "A" : undefined,
+      ownerParcelCount: property.ownerParcelCount,
+      sellerScore: property.score,
+      sellerLevel: property.level,
+      sellerFactors: property.factors?.map(f => `${f.name}: ${f.points}/${f.maxPoints} — ${f.description}`),
+      activeTab: tab,
+      pageContext: "seller-map",
+    };
+
+    // Add enriched detail if loaded
+    if (detail) {
+      if (detail.lastSaleDate) ctx.lastSaleDate = detail.lastSaleDate;
+      if (detail.lastSalePrice) ctx.lastSalePrice = detail.lastSalePrice;
+      if (detail.avmValue) ctx.avmValue = detail.avmValue;
+      if (detail.avmLow) ctx.avmLow = detail.avmLow;
+      if (detail.avmHigh) ctx.avmHigh = detail.avmHigh;
+      if (detail.totalLienCount) ctx.lienCount = detail.totalLienCount;
+      if (detail.totalLienBalance) ctx.lienBalance = detail.totalLienBalance;
+      if (detail.rentalAvm) ctx.rentalEstimate = detail.rentalAvm;
+      if (detail.hoa?.fee) ctx.hoaFee = detail.hoa.fee;
+      ctx.ownerOccupied = detail.ownerOccupied;
+      ctx.mailingAddress = detail.mailingAddress;
+      ctx.corporateOwner = detail.corporateIndicator;
+    }
+
+    sessionStorage.setItem("hoku_selected_property", JSON.stringify(ctx));
+
+    return () => {
+      sessionStorage.removeItem("hoku_selected_property");
+    };
+  }, [property, tab, detail]);
+
   const handleDraftOutreach = useCallback(async () => {
     setOutreachLoading(true);
     setOutreachError("");

@@ -376,21 +376,37 @@ export function buildPropertyContext(property: any): string {
     if (n.walkScore) parts.push(`  Walk Score: ${n.walkScore}`);
   }
 
+  // Seller score (from seller map)
+  const sellerScore = property.sellerScore;
+  const sellerLevel = property.sellerLevel;
+  if (sellerScore != null) {
+    parts.push(`\nSELLER MOTIVATION SCORE: ${sellerScore}/100 (${sellerLevel})`);
+    if (property.sellerFactors?.length) {
+      parts.push("Score breakdown:");
+      property.sellerFactors.forEach((f: string) => parts.push(`  ${f}`));
+    }
+  }
+
   // Current tab
   const tab = property.activeTab;
   if (tab) parts.push(`\nThe agent is currently viewing the "${tab}" tab.`);
 
+  // Page context
+  const pageCtx = property.pageContext;
+
   // Instructions for Hoku
   parts.push(`
 INSTRUCTIONS: You are looking at the same property the agent is. When they ask questions:
-- If they say "explain this" or "what am I looking at" - describe the property and its key characteristics in plain language
+- If they say "explain this" or "what am I looking at" or "tell me about this property" - describe the property and its key characteristics in plain language. Start with the address, type, size, then move to value, owner, and any notable factors.
 - If they ask about value - explain the AVM, how it compares to list price, and what the confidence range means
 - If they ask about the owner - explain what you know and whether this looks like a good prospecting target
 - If they ask about a specific tab (financial, comps, sales history, etc.) - explain what that section shows
 - If they ask "is this a good deal?" - compare list price to AVM, look at equity, DOM, and comparable sales
 - Suggest relevant actions: "Want me to run a mortgage calculator?", "Should I pull comps?", "Want to generate a PDF report?"
 - If it's leasehold, ALWAYS mention that - it's critical in Hawaii
-- Be specific to THIS property. Use the actual numbers, don't be generic.`);
+- Be specific to THIS property. Use the actual numbers, don't be generic.
+${sellerScore != null ? `- This is a SELLER MAP prospect. Explain the seller motivation score and why this owner might be ready to sell based on the score factors. A score of 70+ is a strong prospect.${property.absenteeOwner === "A" ? " This is an ABSENTEE OWNER — they don't live at the property, which is a strong seller signal." : ""}` : ""}
+${pageCtx === "seller-map" ? "- The agent is on the SELLER MAP. Focus on prospecting insights — who is likely to sell and why. Suggest outreach strategies." : ""}`);
 
   return parts.join("\n");
 }
