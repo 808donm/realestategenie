@@ -79,13 +79,82 @@ export async function POST(request: NextRequest) {
     // ── Determine action context (new or persisted from session) ────
     const effectiveActionContext = actionContext || persistedActionContext;
 
+    // ── Enrich property context if needed ──────────────────────────
+    // If we have a property address but are missing enriched data (comps,
+    // sales history, market stats), fetch it server-side so Hoku has full context
+    let enrichedProperty = selectedProperty || null;
+    if (enrichedProperty?.address && !enrichedProperty?.comparableSales) {
+      try {
+        const addr = enrichedProperty.address;
+        const zip = enrichedProperty.zip;
+        const lat = enrichedProperty.latitude;
+        const lng = enrichedProperty.longitude;
+        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000";
+
+        // Fetch comps, sales history, and market stats in parallel
+        const [compsRes, salesRes, marketRes] = await Promise.allSettled([
+          // Comps
+          (lat && lng)
+            ? fetch(`${baseUrl}/api/comps?address=${encodeURIComponent(addr)}&latitude=${lat}&longitude=${lng}&compCount=5`, {
+                headers: { Cookie: request.headers.get("cookie") || "" },
+              }).then(r => r.ok ? r.json() : null).catch(() => null)
+            : Promise.resolve(null),
+          // Sales history
+          fetch(`${baseUrl}/api/mls/sales-history?address=${encodeURIComponent(addr)}`, {
+            headers: { Cookie: request.headers.get("cookie") || "" },
+          }).then(r => r.ok ? r.json() : null).catch(() => null),
+          // Market stats
+          zip
+            ? fetch(`${baseUrl}/api/rentcast/market-stats?zipCode=${zip}`, {
+                headers: { Cookie: request.headers.get("cookie") || "" },
+              }).then(r => r.ok ? r.json() : null).catch(() => null)
+            : Promise.resolve(null),
+        ]);
+
+        // Merge enriched data
+        const comps = compsRes.status === "fulfilled" ? compsRes.value : null;
+        if (comps?.comparables?.length) {
+          enrichedProperty.comparableSales = comps.comparables.slice(0, 5).map((c: any) => ({
+            address: c.formattedAddress || c.address?.oneLine || c.UnparsedAddress || "Unknown",
+            price: c.price || c.ClosePrice || c.ListPrice,
+            beds: c.bedrooms || c.BedroomsTotal,
+            baths: c.bathrooms || c.BathroomsTotalInteger,
+            sqft: c.squareFootage || c.LivingArea,
+            correlation: c.correlation,
+          }));
+        }
+
+        const sales = salesRes.status === "fulfilled" ? salesRes.value : null;
+        if (sales?.unitHistory?.length || sales?.buildingHistory?.length) {
+          enrichedProperty.saleHistory = (sales.unitHistory || sales.buildingHistory || []).slice(0, 5).map((s: any) => ({
+            date: s.CloseDate || s.date,
+            amount: s.ClosePrice || s.amount,
+            source: s.ListAgentFullName ? "MLS" : (s._source || "public records"),
+          }));
+        }
+
+        const market = marketRes.status === "fulfilled" ? marketRes.value : null;
+        if (market?.saleData || market?.rentalData) {
+          enrichedProperty.marketStats = {
+            medianPrice: market.saleData?.medianPrice,
+            avgDOM: market.saleData?.averageDaysOnMarket,
+            totalListings: market.saleData?.totalListings,
+            pricePerSqft: market.saleData?.averagePricePerSquareFoot,
+            medianRent: market.rentalData?.medianPrice,
+          };
+        }
+      } catch (e) {
+        console.log("[Copilot] Property enrichment failed (non-fatal):", (e as any)?.message);
+      }
+    }
+
     // ── Build system prompt (always pass context so Hoku stays focused) ──
     const systemPrompt = buildCopilotPrompt({
       agentName,
       connectedIntegrations,
       actionContext: effectiveActionContext,
       currentPage: currentPage || null,
-      selectedProperty: selectedProperty || null,
+      selectedProperty: enrichedProperty,
       selectedLead: selectedLead || null,
     });
 
