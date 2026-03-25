@@ -195,9 +195,9 @@ export function PropertyDetailPanel({ property, onClose }: Props) {
       if (detail.totalLienBalance) ctx.lienBalance = detail.totalLienBalance;
       if (detail.rentalAvm) ctx.rentalEstimate = detail.rentalAvm;
       if (detail.hoa?.fee) ctx.hoaFee = detail.hoa.fee;
-      ctx.ownerOccupied = detail.ownerOccupied;
-      ctx.mailingAddress = detail.mailingAddress;
-      ctx.corporateOwner = detail.corporateIndicator;
+      if (detail.ownerOccupied != null) ctx.ownerOccupied = detail.ownerOccupied ? "Y" : "N";
+      if (detail.owner?.mailingAddress?.formattedAddress) ctx.mailingAddress = detail.owner.mailingAddress.formattedAddress;
+      if (detail.owner?.type) ctx.corporateOwner = detail.owner.type === "Organization" ? "Y" : "N";
     }
 
     sessionStorage.setItem("hoku_selected_property", JSON.stringify(ctx));
