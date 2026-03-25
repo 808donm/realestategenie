@@ -250,7 +250,7 @@ export async function executeCopilotAction(
         const minBaths = Number(params.minBaths) || 0;
         const aiScore = params.aiScore !== false;
 
-        const searchParams = new URLSearchParams({ endpoint: "detailmortgageowner", postalcode: zip, pagesize: "50", nocache: "1" });
+        const searchParams = new URLSearchParams({ endpoint: "detailmortgageowner", postalcode: zip, pagesize: "50" });
         if (action === "search_absentee") searchParams.set("absenteeowner", "absentonly");
         if (action === "search_just_sold") {
           searchParams.set("endpoint", "salesnapshot");
