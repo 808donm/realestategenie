@@ -213,30 +213,110 @@ export function GenieCopilotPopup({ isOpen, onClose, actionContext, onClearConte
                   )}
 
                   {/* Property results */}
-                  {msg.actionResult.data?.properties && (
-                    <div style={{ marginTop: 6, display: "flex", flexDirection: "column", gap: 4 }}>
-                      {msg.actionResult.data.properties.slice(0, 5).map((p: any, j: number) => (
-                        <div key={j} style={{ padding: "6px 8px", background: "#f3f4f6", borderRadius: 6, fontSize: 11 }}>
-                          <div style={{ fontWeight: 600 }}>
-                            {p.address?.oneLine || p.address || p.UnparsedAddress || [p.StreetNumber, p.StreetName].filter(Boolean).join(" ") || "Unknown"}
-                          </div>
-                          <div style={{ color: "#6b7280" }}>
-                            {p.ListPrice ? fmt(p.ListPrice) : p.avm?.amount?.value ? `AVM: ${fmt(p.avm.amount.value)}` : ""}
-                            {p.building?.rooms?.beds != null ? ` | ${p.building.rooms.beds}bd` : p.BedroomsTotal != null ? ` | ${p.BedroomsTotal}bd` : ""}
-                            {p.building?.rooms?.bathsFull != null ? ` ${p.building.rooms.bathsFull}ba` : p.BathroomsTotalInteger != null ? ` ${p.BathroomsTotalInteger}ba` : ""}
-                            {p.DaysOnMarket != null ? ` | ${p.DaysOnMarket}d DOM` : ""}
-                            {p.owner?.owner1?.fullName ? ` | ${p.owner.owner1.fullName}` : p.owner ? ` | ${p.owner}` : ""}
-                            {p.score != null ? ` | Score: ${p.score}` : ""}
-                          </div>
+                  {msg.actionResult.data?.properties && (() => {
+                    const props = msg.actionResult.data.properties;
+                    const total = msg.actionResult.data.total || props.length;
+                    const aiScored = msg.actionResult.data.aiScored;
+                    const filters = msg.actionResult.data.filters;
+                    const tierColors: Record<string, { bg: string; border: string; text: string }> = {
+                      hot: { bg: "#fef2f2", border: "#dc2626", text: "#991b1b" },
+                      warm: { bg: "#fffbeb", border: "#f59e0b", text: "#92400e" },
+                      "long-term": { bg: "#f9fafb", border: "#6b7280", text: "#374151" },
+                    };
+                    return (
+                      <div style={{ marginTop: 6 }}>
+                        {/* Summary header */}
+                        <div style={{ padding: "8px 10px", background: "#eff6ff", borderRadius: 8, marginBottom: 6, fontSize: 12 }}>
+                          <strong style={{ color: "#1e40af" }}>
+                            {aiScored ? `Found ${total} properties — showing top ${Math.min(props.length, 15)} most likely sellers` : `Found ${total} properties`}
+                          </strong>
+                          {filters && (filters.minYearsOwned > 0 || filters.minBeds > 0) && (
+                            <div style={{ fontSize: 10, color: "#6b7280", marginTop: 2 }}>
+                              Filters: {filters.minYearsOwned > 0 ? `${filters.minYearsOwned}+ years owned` : ""}{filters.minBeds > 0 ? ` | ${filters.minBeds}+ beds` : ""}{filters.minBaths > 0 ? ` / ${filters.minBaths}+ baths` : ""}
+                            </div>
+                          )}
                         </div>
-                      ))}
-                      {msg.actionResult.data.total > 5 && (
-                        <div style={{ fontSize: 10, color: "#9ca3af", textAlign: "center" }}>
-                          +{msg.actionResult.data.total - 5} more results
+
+                        {/* Scrollable property cards */}
+                        <div style={{ maxHeight: 400, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
+                          {props.slice(0, 15).map((p: any, j: number) => {
+                            const addr = p.address?.oneLine || p.address || p.UnparsedAddress || [p.StreetNumber, p.StreetName].filter(Boolean).join(" ") || "Unknown";
+                            const score = p.score;
+                            const tier = p.tier || (score >= 90 ? "hot" : score >= 60 ? "warm" : "long-term");
+                            const tc = tierColors[tier] || tierColors["long-term"];
+                            const beds = p.building?.rooms?.beds ?? p.BedroomsTotal ?? p.beds;
+                            const baths = p.building?.rooms?.bathsFull ?? p.BathroomsTotalInteger ?? p.baths;
+                            const ownerName = p.owner?.owner1?.fullName || p.ownerName || "";
+                            const mailing = p.owner?.mailingAddressOneLine || "";
+                            const absentee = p.owner?.absenteeOwnerStatus === "A" || p.owner?.absenteeOwnerStatus?.includes?.("Absentee");
+                            const avm = p.avm?.amount?.value;
+                            const reasoning = p.reasoning || p.suggestedApproach || "";
+
+                            return (
+                              <div
+                                key={j}
+                                style={{
+                                  padding: "8px 10px", borderRadius: 8, fontSize: 11,
+                                  border: `2px solid ${score != null ? tc.border : "#e5e7eb"}`,
+                                  background: score != null ? tc.bg : "#f9fafb",
+                                  cursor: "pointer",
+                                }}
+                                onClick={() => {
+                                  // Open property in new tab for full detail
+                                  const q = encodeURIComponent(addr);
+                                  window.open(`/app/property-data?search=${q}`, "_blank");
+                                }}
+                              >
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                                  <div style={{ flex: 1 }}>
+                                    <div style={{ fontWeight: 700, fontSize: 12, color: tc.text }}>{addr}</div>
+                                    <div style={{ color: "#6b7280", marginTop: 2 }}>
+                                      {beds != null && `${beds}bd `}{baths != null && `${baths}ba `}
+                                      {avm ? `| AVM: ${fmt(avm)} ` : ""}
+                                      {p.DaysOnMarket != null && `| ${p.DaysOnMarket}d DOM`}
+                                    </div>
+                                    {ownerName && (
+                                      <div style={{ marginTop: 2, color: "#4b5563" }}>
+                                        Owner: {ownerName}
+                                        {absentee && <span style={{ marginLeft: 4, padding: "1px 4px", background: "#fef3c7", borderRadius: 3, fontSize: 9, fontWeight: 600, color: "#92400e" }}>Absentee</span>}
+                                      </div>
+                                    )}
+                                    {mailing && (
+                                      <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 1 }}>Mailing: {mailing}</div>
+                                    )}
+                                    {reasoning && (
+                                      <div style={{ fontSize: 10, color: tc.text, marginTop: 3, fontStyle: "italic" }}>{reasoning}</div>
+                                    )}
+                                  </div>
+                                  {score != null && (
+                                    <div style={{ textAlign: "center", minWidth: 44, marginLeft: 8 }}>
+                                      <div style={{
+                                        width: 40, height: 40, borderRadius: "50%",
+                                        background: tc.border, color: "#fff",
+                                        display: "flex", alignItems: "center", justifyContent: "center",
+                                        fontSize: 14, fontWeight: 800,
+                                      }}>
+                                        {score}
+                                      </div>
+                                      <div style={{ fontSize: 8, color: tc.text, fontWeight: 600, marginTop: 2 }}>
+                                        {tier === "hot" ? "HOT" : tier === "warm" ? "WARM" : "WATCH"}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
-                      )}
-                    </div>
-                  )}
+
+                        {total > props.length && (
+                          <div style={{ fontSize: 10, color: "#9ca3af", textAlign: "center", marginTop: 4 }}>
+                            Showing top {Math.min(props.length, 15)} of {total} total matches
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   {/* DOM results */}
                   {msg.actionResult.data?.results && (
