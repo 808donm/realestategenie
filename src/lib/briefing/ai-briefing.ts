@@ -9,14 +9,12 @@
  * Default: openai/gpt-4o-mini via Vercel AI Gateway.
  */
 
-import { gateway } from "@ai-sdk/gateway";
-import { generateText } from "ai";
+import { trackedGenerateText } from "@/lib/ai/ai-call-logger";
 import type { AgentBriefingData, TeamBriefingData, BrokerBriefingData } from "./report-data";
 
-/** Resolve the AI model to use for briefings. Cheap and fast by default. */
-function getBriefingModel() {
-  const modelEnv = process.env.BRIEFING_AI_MODEL || "openai/gpt-4o-mini";
-  return gateway(modelEnv);
+/** Resolve the AI model ID to use for briefings. Cheap and fast by default. */
+function getBriefingModelId() {
+  return process.env.BRIEFING_AI_MODEL || "openai/gpt-4o-mini";
 }
 
 // ─── Agent daily briefing ────────────────────────────────────────────────────
@@ -37,8 +35,9 @@ export async function generateAgentBriefing(data: AgentBriefingData): Promise<{
 
   const speedSummary = `New leads this week: ${data.speedToLead.totalNewLeadsThisWeek}, Leads with no response yet: ${data.speedToLead.leadsWithNoResponse}`;
 
-  const { text } = await generateText({
-    model: getBriefingModel(),
+  const { text } = await trackedGenerateText({
+    model: getBriefingModelId(),
+    source: "daily-briefing",
     system: `You are a real estate coach and revenue optimization AI. Analyze the agent's lead data and produce EXACTLY 3 top priority actions for today, ranked by which will create the MOST revenue opportunity.
 
 Focus heavily on lead follow-up. Leads from recent open houses are especially time-sensitive — the agent should thank them, offer to answer questions, and keep the conversation warm.
@@ -111,8 +110,9 @@ export async function generateTeamBriefing(data: TeamBriefingData): Promise<{
     .map((f) => `${f.agentName}: ${f.leadsReceived} leads (${f.deviationFromAvg > 0 ? "+" : ""}${f.deviationFromAvg}% from avg)`)
     .join("\n");
 
-  const { text } = await generateText({
-    model: getBriefingModel(),
+  const { text } = await trackedGenerateText({
+    model: getBriefingModelId(),
+    source: "daily-briefing",
     system: `You are a real estate team performance coach. Analyze team performance data and create personalized coaching messages for each agent.
 
 For the TOP agent: Write a congratulatory message with 2-3 specific actions to maintain their edge.
@@ -172,8 +172,9 @@ export async function generateBrokerBriefing(data: BrokerBriefingData): Promise<
   actions: { title: string; description: string }[];
   htmlBody: string;
 }> {
-  const { text } = await generateText({
-    model: getBriefingModel(),
+  const { text } = await trackedGenerateText({
+    model: getBriefingModelId(),
+    source: "daily-briefing",
     system: `You are a brokerage strategy advisor. Produce an executive summary and 3 actionable recommendations for the broker focused on:
 1. Increasing market share
 2. Maintaining healthy margins
@@ -237,8 +238,9 @@ export async function draftFollowUpEmail(params: {
   recentOpenHouse: boolean;
   openHouseDate: string | null;
 }): Promise<{ subject: string; body: string }> {
-  const { text } = await generateText({
-    model: getBriefingModel(),
+  const { text } = await trackedGenerateText({
+    model: getBriefingModelId(),
+    source: "daily-briefing",
     system: `You are a real estate agent's email assistant. Draft a professional, warm follow-up email from the agent to the lead.
 
 RULES:

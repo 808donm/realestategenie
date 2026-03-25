@@ -1,5 +1,4 @@
-import { gateway } from "@ai-sdk/gateway";
-import { generateText } from "ai";
+import { trackedGenerateText } from "@/lib/ai/ai-call-logger";
 import { createClient } from "@supabase/supabase-js";
 
 const admin = createClient(
@@ -163,9 +162,11 @@ export async function generateChannelResponse(params: {
     content: m.content,
   }));
 
-  // Generate response via Vercel AI Gateway
-  const { text } = await generateText({
-    model: gateway("openai/gpt-4o-mini"),
+  // Generate response via tracked AI call
+  const { text } = await trackedGenerateText({
+    model: "openai/gpt-4o-mini",
+    source: "channel-assistant",
+    agentId,
     system: getSystemPrompt(agentName, channel, propertyAddress, leadSource),
     messages: aiMessages,
     temperature: 0.7,

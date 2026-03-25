@@ -8,13 +8,11 @@
  * Uses the Vercel AI SDK Gateway for provider-agnostic model routing.
  */
 
-import { gateway } from "@ai-sdk/gateway";
-import { generateText } from "ai";
+import { trackedGenerateText } from "@/lib/ai/ai-call-logger";
 
-/** Resolve the AI model. Uses Claude Opus via Vercel AI Gateway; override via env. */
-function getProspectModel() {
-  const modelEnv = process.env.PROSPECT_AI_MODEL || "anthropic/claude-opus-4";
-  return gateway(modelEnv);
+/** Resolve the AI model ID. Uses Claude Opus; override via env. */
+function getProspectModelId() {
+  return process.env.PROSPECT_AI_MODEL || "anthropic/claude-opus-4";
 }
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -111,8 +109,9 @@ export async function analyzeProspects(
 
   const propertyData = propsSlice.map((p, i) => formatPropertyForAI(p, i + 1)).join("\n");
 
-  const { text } = await generateText({
-    model: getProspectModel(),
+  const { text } = await trackedGenerateText({
+    model: getProspectModelId(),
+    source: "prospect-ai",
     system: `You are an expert real estate prospecting analyst specializing in the Hawaii market. You help agents identify the most promising prospects and prioritize outreach.
 
 ${modeContext}
@@ -188,8 +187,9 @@ export async function generateOutreach(
 
   const propertyData = propsSlice.map((p, i) => formatPropertyForAI(p, i + 1)).join("\n");
 
-  const { text } = await generateText({
-    model: getProspectModel(),
+  const { text } = await trackedGenerateText({
+    model: getProspectModelId(),
+    source: "prospect-ai",
     system: `You are an expert real estate copywriter specializing in Hawaii prospecting outreach. You write personalized, compelling letters and messages that motivate property owners to consider selling.
 
 ${modeContext}

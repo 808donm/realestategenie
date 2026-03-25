@@ -8,13 +8,11 @@
  * Uses the Vercel AI SDK Gateway for provider-agnostic model routing.
  */
 
-import { gateway } from "@ai-sdk/gateway";
-import { generateText } from "ai";
+import { trackedGenerateText } from "@/lib/ai/ai-call-logger";
 
-/** Resolve the AI model; override via COMP_GENIE_MODEL env. */
-function getCompModel() {
-  const modelEnv = process.env.COMP_GENIE_MODEL || "anthropic/claude-sonnet-4-6";
-  return gateway(modelEnv);
+/** Resolve the AI model ID; override via COMP_GENIE_MODEL env. */
+function getCompModelId() {
+  return process.env.COMP_GENIE_MODEL || "anthropic/claude-sonnet-4-6";
 }
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -94,8 +92,9 @@ export async function analyzeComparables(
     .map((n, i) => formatProperty(n, `#${i + 1}`))
     .join("\n");
 
-  const { text } = await generateText({
-    model: getCompModel(),
+  const { text } = await trackedGenerateText({
+    model: getCompModelId(),
+    source: "comp-genie",
     system: `You are an expert real estate appraiser AI. You analyze property data to identify the most comparable properties and estimate value ranges.
 
 **CONTEXT:** ${stateAbbrev} is a non-disclosure state — official sale prices are not publicly recorded. You must rely on AVM (Automated Valuation Model) estimates, property characteristics, and any available transfer data.

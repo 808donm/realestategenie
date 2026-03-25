@@ -6,16 +6,11 @@
  * All use GPT-4o-mini via Vercel AI Gateway.
  */
 
-import { generateText } from "ai";
-import { gateway } from "@ai-sdk/gateway";
+import { trackedGenerateText } from "@/lib/ai/ai-call-logger";
 import { draftFollowUpEmail } from "@/lib/briefing/ai-briefing";
 import type { DraftChannel } from "./types";
 
 const BRIEFING_MODEL = process.env.BRIEFING_AI_MODEL || "openai/gpt-4o-mini";
-
-function getModel() {
-  return gateway(BRIEFING_MODEL);
-}
 
 function extractJSON(text: string): string {
   const match = text.match(/\{[\s\S]*\}/);
@@ -54,8 +49,9 @@ export async function draftSMS(params: {
   financing: string | null;
   recentOpenHouse: boolean;
 }): Promise<{ body: string }> {
-  const { text } = await generateText({
-    model: getModel(),
+  const { text } = await trackedGenerateText({
+    model: BRIEFING_MODEL,
+    source: "draft-generator",
     system: `You are a real estate agent's SMS assistant. Draft a brief, warm follow-up text message.
 
 RULES:
@@ -95,8 +91,9 @@ export async function draftOpenHouseReminder(params: {
   date: string;
   time: string;
 }): Promise<{ body: string }> {
-  const { text } = await generateText({
-    model: getModel(),
+  const { text } = await trackedGenerateText({
+    model: BRIEFING_MODEL,
+    source: "draft-generator",
     system: `Draft a brief, friendly SMS reminder for an open house event.
 
 RULES:

@@ -1,5 +1,4 @@
-import { gateway } from "@ai-sdk/gateway";
-import { generateText } from "ai";
+import { trackedGenerateText } from "@/lib/ai/ai-call-logger";
 import { createClient } from "@supabase/supabase-js";
 
 const admin = createClient(
@@ -534,8 +533,9 @@ export async function generateSalesChatResponse(params: {
   }));
 
   // Generate response
-  const { text } = await generateText({
-    model: gateway("openai/gpt-4o-mini"),
+  const { text } = await trackedGenerateText({
+    model: "openai/gpt-4o-mini",
+    source: "sales-chat",
     system: SYSTEM_PROMPT,
     messages: aiMessages,
     temperature: 0.7,

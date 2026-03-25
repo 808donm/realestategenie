@@ -1,5 +1,4 @@
-import { gateway } from "@ai-sdk/gateway";
-import { generateText } from "ai";
+import { trackedGenerateText } from "@/lib/ai/ai-call-logger";
 
 /**
  * Qualification data extracted from the AI conversation.
@@ -86,12 +85,13 @@ export async function generateChatResponse(params: {
     content: m.content,
   }));
 
-  const { text } = await generateText({
-    model: gateway("openai/gpt-4o-mini"),
+  const { text } = await trackedGenerateText({
+    model: "openai/gpt-4o-mini",
     system: getSystemPrompt(agentName, agentContext),
     messages: aiMessages,
     temperature: 0.7,
     maxOutputTokens: 300,
+    source: "chat-prequalifier",
   });
 
   const raw = text?.trim() || "Thanks for visiting! How can I help you today?";

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
-import { gateway } from "@ai-sdk/gateway";
-import { generateText } from "ai";
+import { trackedGenerateText } from "@/lib/ai/ai-call-logger";
 
 interface SocialPostInput {
   postType: "just_listed" | "open_house" | "price_reduced" | "just_sold";
@@ -70,8 +69,9 @@ export async function POST(request: NextRequest) {
     const systemPrompt = getSystemPrompt();
     const userPrompt = buildUserPrompt(body);
 
-    const { text } = await generateText({
-      model: gateway("openai/gpt-4-turbo"),
+    const { text } = await trackedGenerateText({
+      model: "openai/gpt-4-turbo",
+      source: "mls-social",
       system: systemPrompt,
       prompt: userPrompt,
       temperature: 0.8,
