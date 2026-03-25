@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { generateText } from "ai";
-import { gateway } from "@ai-sdk/gateway";
+import { trackedGenerateText } from "@/lib/ai/ai-call-logger";
 import { buildCopilotPrompt, ACTION_LABELS } from "@/lib/genie/copilot-prompt";
 import { extractExecuteTag, stripExecuteTags, executeCopilotAction } from "@/lib/genie/copilot-executor";
 
@@ -170,14 +169,16 @@ export async function POST(request: NextRequest) {
     // ── Generate AI response ───────────────────────────────────────
     const historyForAI = messages.slice(-MAX_HISTORY);
 
-    const aiParams: any = {
-      model: gateway(MODEL),
+    const aiResult = await trackedGenerateText({
+      model: MODEL,
       system: systemPrompt,
       messages: historyForAI.map(m => ({ role: m.role as any, content: m.content })),
       temperature: 0.7,
-    };
+      source: "hoku-copilot",
+      agentId: user.id,
+    });
 
-    let { text: aiResponse } = await generateText(aiParams);
+    let aiResponse = aiResult.text;
 
     // ── Check for <execute> tag ────────────────────────────────────
     let actionResult = null;

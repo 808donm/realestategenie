@@ -29,10 +29,86 @@ export function GenieCopilotPopup({ isOpen, onClose, actionContext, onClearConte
   const [loading, setLoading] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isListening, setIsListening] = useState(false);
+  const [autoSpeak, setAutoSpeak] = useState(() => {
+    if (typeof window !== "undefined") return localStorage.getItem("hoku_auto_speak") === "true";
+    return false;
+  });
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const recognitionRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const hasInitialized = useRef(false);
+
+  // Text-to-speech — speak Hoku's response
+  const speakText = useCallback((text: string) => {
+    if (!("speechSynthesis" in window)) return;
+    // Stop any current speech
+    window.speechSynthesis.cancel();
+
+    // Clean text: remove markdown, execute tags, and special chars
+    const clean = text
+      .replace(/<execute>[\s\S]*?<\/execute>/g, "")
+      .replace(/\*\*/g, "")
+      .replace(/###?\s*/g, "")
+      .replace(/\[object Object\]/g, "")
+      .replace(/[#*_~`]/g, "")
+      .trim();
+
+    if (!clean) return;
+
+    const utterance = new SpeechSynthesisUtterance(clean);
+    utterance.rate = 1.0;
+    utterance.pitch = 1.1;
+
+    // Try to find a good female voice
+    const voices = window.speechSynthesis.getVoices();
+    const preferred = voices.find(v =>
+      /samantha|karen|moira|tessa|fiona|victoria|zira/i.test(v.name) && v.lang.startsWith("en")
+    ) || voices.find(v =>
+      /female|woman/i.test(v.name) && v.lang.startsWith("en")
+    ) || voices.find(v =>
+      v.lang.startsWith("en-US") && !/(male|david|james|daniel|mark)/i.test(v.name)
+    ) || voices.find(v => v.lang.startsWith("en"));
+
+    if (preferred) utterance.voice = preferred;
+
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+
+    window.speechSynthesis.speak(utterance);
+  }, []);
+
+  // Stop speaking
+  const stopSpeaking = useCallback(() => {
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+    }
+  }, []);
+
+  // Toggle auto-speak and persist preference
+  const toggleAutoSpeak = useCallback(() => {
+    setAutoSpeak(prev => {
+      const next = !prev;
+      localStorage.setItem("hoku_auto_speak", String(next));
+      if (!next) stopSpeaking();
+      return next;
+    });
+  }, [stopSpeaking]);
+
+  // Load voices (some browsers load them async)
+  useEffect(() => {
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.getVoices(); // trigger load
+      window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+    }
+  }, []);
+
+  // Stop speaking when popup closes
+  useEffect(() => {
+    if (!isOpen) stopSpeaking();
+  }, [isOpen, stopSpeaking]);
 
   // Speech recognition setup
   const toggleVoice = useCallback(() => {
@@ -181,6 +257,8 @@ export function GenieCopilotPopup({ isOpen, onClose, actionContext, onClearConte
           content: data.reply,
           actionResult: data.actionResult || undefined,
         }]);
+        // Auto-speak if enabled
+        if (autoSpeak) speakText(data.reply);
       }
     } catch (err: any) {
       setMessages(prev => [...prev, {
@@ -190,7 +268,7 @@ export function GenieCopilotPopup({ isOpen, onClose, actionContext, onClearConte
     } finally {
       setLoading(false);
     }
-  }, [sessionId]);
+  }, [sessionId, autoSpeak, speakText]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -232,7 +310,19 @@ export function GenieCopilotPopup({ isOpen, onClose, actionContext, onClearConte
             <div style={{ fontSize: 10, color: "#c7d2fe" }}>Your AI assistant</div>
           </div>
         </div>
-        <div style={{ display: "flex", gap: 6 }}>
+        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          <button
+            onClick={toggleAutoSpeak}
+            title={autoSpeak ? "Voice on — click to mute" : "Voice off — click to enable"}
+            style={{
+              background: autoSpeak ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.1)",
+              border: "none", borderRadius: 4, padding: "4px 6px",
+              color: "#fff", fontSize: 13, cursor: "pointer",
+              transition: "all 0.2s",
+            }}
+          >
+            {autoSpeak ? "🔊" : "🔇"}
+          </button>
           <button onClick={startNewChat} style={{ background: "rgba(255,255,255,0.2)", border: "none", borderRadius: 4, padding: "4px 8px", color: "#fff", fontSize: 10, cursor: "pointer" }}>New</button>
           <button onClick={onClose} style={{ background: "none", border: "none", color: "#fff", fontSize: 18, cursor: "pointer", padding: "0 4px" }}>&times;</button>
         </div>
@@ -266,6 +356,22 @@ export function GenieCopilotPopup({ isOpen, onClose, actionContext, onClearConte
               boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
             }}>
               <div style={{ whiteSpace: "pre-wrap" }}>{msg.content}</div>
+
+              {/* Speaker button on assistant messages */}
+              {msg.role === "assistant" && msg.content && (
+                <button
+                  onClick={() => isSpeaking ? stopSpeaking() : speakText(msg.content)}
+                  title={isSpeaking ? "Stop speaking" : "Read aloud"}
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 3,
+                    marginTop: 4, padding: "2px 6px", borderRadius: 4,
+                    border: "none", background: "transparent",
+                    color: "#9ca3af", fontSize: 11, cursor: "pointer",
+                  }}
+                >
+                  {isSpeaking ? "⏹ Stop" : "🔊 Listen"}
+                </button>
+              )}
 
               {/* Rich action result card */}
               {msg.actionResult && msg.actionResult.success && (
