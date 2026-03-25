@@ -713,12 +713,42 @@ export default function PropertyDetailModal({
       rentalLow: rental?.estimatedMinRentalValue ?? rental?.rentalAmount?.low,
       rentalHigh: rental?.estimatedMaxRentalValue ?? rental?.rentalAmount?.high,
       grossYield: rentVal && avmVal ? ((Number(rentVal) * 12 / avmVal) * 100) : undefined,
+      // Building details
+      constructionType: p.building?.construction?.constructionType,
+      roofType: p.building?.construction?.roofCover,
+      foundationType: p.building?.construction?.foundationType,
+      heatingType: p.utilities?.heatingType,
+      coolingType: p.utilities?.coolingType,
+      fireplaceCount: p.building?.interior?.fplcCount,
+      basementType: p.building?.interior?.bsmtType,
+      basementSize: p.building?.interior?.bsmtSize,
+      parkingType: p.building?.parking?.garageType || p.building?.parking?.prkgType,
+      parkingSpaces: p.building?.parking?.prkgSpaces,
+      architectureStyle: p.building?.summary?.archStyle,
+      condition: p.building?.construction?.condition,
+      // MLS listing info
+      mlsNumber: (p as any).ListingId || (p as any).mlsNumber,
+      listingStatus: (p as any).StandardStatus || (p as any).listingStatus,
+      daysOnMarket: (p as any).DaysOnMarket,
+      listingAgentName: (p as any).ListAgentFullName,
+      listingOfficeName: (p as any).ListOfficeName,
+      listingDescription: (p as any).PublicRemarks,
+      ownershipType: (p as any).OwnershipType,
+      // Ownership
       owner1: p.owner?.owner1?.fullName,
       owner2: p.owner?.owner2?.fullName,
       ownerOccupied: p.owner?.ownerOccupied,
       absenteeOwner: p.owner?.absenteeOwnerStatus,
       mailingAddress: p.owner?.mailingAddressOneLine,
       corporateOwner: p.owner?.corporateIndicator,
+      // Sale history from property data
+      salesHistory: p.saleHistory?.map(s => ({
+        date: s.date,
+        amount: s.amount,
+        buyer: s.buyerName,
+        seller: s.sellerName,
+        docType: s.deedType,
+      })),
       hazards: hazards.length > 0 ? hazards : undefined,
       federalData: federal,
       // Include up to 6 photos for shared reports
@@ -740,6 +770,40 @@ export default function PropertyDetailModal({
     setReportGenerating(true);
     try {
       const reportData = collectReportData();
+
+      // Fetch comps and market stats in parallel for the full report
+      const zip = p.address?.postal1;
+      const lat = p.location?.latitude;
+      const lng = p.location?.longitude;
+
+      const [compsRes, marketRes] = await Promise.allSettled([
+        // Fetch comps
+        (lat && lng)
+          ? fetch(`/api/comps?address=${encodeURIComponent(addr)}&latitude=${lat}&longitude=${lng}&compCount=10`)
+              .then(r => r.ok ? r.json() : null).catch(() => null)
+          : Promise.resolve(null),
+        // Fetch market stats
+        zip
+          ? fetch(`/api/integrations/attom/property?endpoint=expanded&postalcode=${zip}&pagesize=1`)
+              .then(r => r.ok ? r.json() : null).catch(() => null)
+          : Promise.resolve(null),
+      ]);
+
+      // Add comps to report
+      const compsData = compsRes.status === "fulfilled" && compsRes.value ? compsRes.value : null;
+      if (compsData?.comparables?.length) {
+        reportData.comps = compsData.comparables.slice(0, 10).map((c: any) => ({
+          address: c.formattedAddress || c.address?.oneLine || c.UnparsedAddress || "Unknown",
+          price: c.price || c.ClosePrice || c.ListPrice || c.avm?.amount?.value,
+          beds: c.bedrooms || c.BedroomsTotal || c.building?.rooms?.beds,
+          baths: c.bathrooms || c.BathroomsTotalInteger || c.building?.rooms?.bathsFull,
+          sqft: c.squareFootage || c.LivingArea || c.building?.size?.livingSize,
+          closeDate: c.closeDate || c.CloseDate,
+          correlation: c.correlation,
+          source: c.source || (c.listingKey || c.ListingKey ? "mls" : "rentcast"),
+        }));
+      }
+
       const res = await fetch("/api/property-intelligence/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

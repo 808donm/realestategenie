@@ -77,6 +77,45 @@ export interface PropertyReportData {
     floodZone?: string;
     floodRisk?: string;
   };
+  // Building details
+  constructionType?: string;
+  roofType?: string;
+  foundationType?: string;
+  heatingType?: string;
+  coolingType?: string;
+  fireplaceCount?: number;
+  basementType?: string;
+  basementSize?: number;
+  parkingType?: string;
+  parkingSpaces?: string;
+  architectureStyle?: string;
+  condition?: string;
+  // MLS Listing info
+  mlsNumber?: string;
+  listingStatus?: string;
+  daysOnMarket?: number;
+  listingAgentName?: string;
+  listingOfficeName?: string;
+  listingDescription?: string;
+  ownershipType?: string; // Leasehold / Fee Simple
+  // Comps (pre-fetched)
+  comps?: Array<{
+    address?: string;
+    price?: number;
+    beds?: number;
+    baths?: number;
+    sqft?: number;
+    closeDate?: string;
+    correlation?: number;
+    source?: string;
+  }>;
+  // Market Stats
+  marketStats?: {
+    medianPrice?: number;
+    avgDOM?: number;
+    totalListings?: number;
+    pricePerSqft?: number;
+  };
   // Sales history (recent transactions)
   salesHistory?: Array<{
     date?: string;
@@ -265,7 +304,49 @@ export function generatePropertyIntelligencePDF(
   row("Pool", data.pool != null ? (data.pool ? "Yes" : "No") : null);
   row("APN / TMK", data.apn);
   row("County", data.county);
+  if (data.ownershipType) row("Land Tenure", data.ownershipType, { bold: true });
   y += 4;
+
+  // ── 2b. BUILDING DETAILS ──
+  if (data.constructionType || data.roofType || data.heatingType || data.coolingType || data.fireplaceCount || data.basementType || data.architectureStyle) {
+    sectionTitle("BUILDING DETAILS");
+    row("Architecture", data.architectureStyle);
+    row("Construction", data.constructionType);
+    row("Condition", data.condition);
+    row("Roof", data.roofType);
+    row("Foundation", data.foundationType);
+    row("Heating", data.heatingType);
+    row("Cooling", data.coolingType);
+    if (data.fireplaceCount) row("Fireplaces", String(data.fireplaceCount));
+    if (data.basementType) row("Basement", `${data.basementType}${data.basementSize ? ` (${num(data.basementSize)} sqft)` : ""}`);
+    row("Parking", data.parkingType ? `${data.parkingType}${data.parkingSpaces ? ` (${data.parkingSpaces} spaces)` : ""}` : data.parkingSpaces ? `${data.parkingSpaces} spaces` : null);
+    y += 4;
+  }
+
+  // ── 2c. MLS LISTING INFO ──
+  if (data.mlsNumber || data.listingAgentName || data.listingStatus) {
+    sectionTitle("MLS LISTING");
+    row("MLS #", data.mlsNumber);
+    row("Status", data.listingStatus);
+    if (data.daysOnMarket != null) row("Days on Market", String(data.daysOnMarket));
+    row("Listing Agent", data.listingAgentName);
+    row("Office", data.listingOfficeName);
+    if (data.listingDescription) {
+      checkNewPage(20);
+      doc.setFontSize(8);
+      doc.setTextColor(...textMuted);
+      doc.text("Description:", margin, y);
+      y += 5;
+      doc.setTextColor(...textDark);
+      const descLines = doc.splitTextToSize(data.listingDescription.substring(0, 500), contentW);
+      descLines.forEach((line: string) => {
+        checkNewPage(6);
+        doc.text(line, margin, y);
+        y += 4;
+      });
+    }
+    y += 4;
+  }
 
   // ── 3. TAX ASSESSMENT ──
   if (data.assessedTotal != null || data.taxAmount != null) {
@@ -398,6 +479,67 @@ export function generatePropertyIntelligencePDF(
     row("FEMA Flood Zone", data.federalData.floodZone);
     row("Flood Risk", data.federalData.floodRisk);
     y += 4;
+  }
+
+  // ── 7b. OWNERSHIP ──
+  if (data.owner1 || data.owner2 || data.mailingAddress) {
+    sectionTitle("OWNERSHIP");
+    row("Owner", data.owner1, { bold: true });
+    if (data.owner2) row("Co-Owner", data.owner2);
+    row("Owner Occupied", data.ownerOccupied === "Y" ? "Yes" : data.ownerOccupied === "N" ? "No" : data.ownerOccupied);
+    row("Absentee Owner", data.absenteeOwner === "A" ? "Yes" : data.absenteeOwner);
+    row("Corporate Owner", data.corporateOwner === "Y" ? "Yes" : data.corporateOwner === "N" ? "No" : data.corporateOwner);
+    row("Mailing Address", data.mailingAddress);
+    y += 4;
+  }
+
+  // ── 7c. COMPARABLE SALES ──
+  if (data.comps && data.comps.length > 0) {
+    sectionTitle("COMPARABLE SALES");
+    checkNewPage(10 + data.comps.length * 8);
+
+    // Table header
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...textMuted);
+    doc.text("Address", margin, y);
+    doc.text("Price", margin + 65, y);
+    doc.text("Bd/Ba", margin + 95, y);
+    doc.text("Sqft", margin + 115, y);
+    doc.text("Closed", margin + 135, y);
+    doc.text("Match", margin + 160, y);
+    y += 2;
+    doc.setDrawColor(229, 231, 235);
+    doc.line(margin, y, pageW - margin, y);
+    y += 5;
+
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...textDark);
+    data.comps.slice(0, 10).forEach((comp) => {
+      checkNewPage(8);
+      doc.setFontSize(7);
+      doc.text((comp.address || "—").substring(0, 38), margin, y);
+      doc.text(comp.price != null ? $(comp.price) : "—", margin + 65, y);
+      doc.text(`${comp.beds || "?"}/${comp.baths || "?"}`, margin + 95, y);
+      doc.text(comp.sqft != null ? num(comp.sqft) : "—", margin + 115, y);
+      doc.text(comp.closeDate || "—", margin + 135, y);
+      doc.text(comp.correlation != null ? `${Math.round(comp.correlation)}%` : "—", margin + 160, y);
+      y += 6;
+    });
+    y += 4;
+  }
+
+  // ── 7d. MARKET STATS ──
+  if (data.marketStats) {
+    const ms = data.marketStats;
+    if (ms.medianPrice || ms.avgDOM || ms.totalListings) {
+      sectionTitle("AREA MARKET STATISTICS");
+      row("Median Sale Price", $(ms.medianPrice));
+      row("Avg Days on Market", ms.avgDOM != null ? String(ms.avgDOM) : null);
+      row("Active Listings", ms.totalListings != null ? String(ms.totalListings) : null);
+      row("Price per Sqft", ms.pricePerSqft != null ? `$${ms.pricePerSqft.toLocaleString()}` : null);
+      y += 4;
+    }
   }
 
   // ── 8. NEIGHBORHOOD & ECONOMIC CONTEXT ──
