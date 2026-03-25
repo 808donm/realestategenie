@@ -112,7 +112,7 @@ export default function YorkAdamsMarketClient() {
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis type="number" tickFormatter={(v: number) => fmt(v)} />
             <YAxis type="category" dataKey="name" width={120} style={{ fontSize: 11 }} />
-            <Tooltip formatter={(v: number) => fmt(v)} />
+            <Tooltip formatter={(v: any) => fmt(Number(v))} />
             <Legend />
             <Bar dataKey="2026" fill={COLORS.york} name="Jan 2026" radius={[0, 4, 4, 0]} />
             <Bar dataKey="2025" fill="#93c5fd" name="Jan 2025" radius={[0, 4, 4, 0]} />
@@ -207,7 +207,7 @@ export default function YorkAdamsMarketClient() {
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis type="number" tickFormatter={(v: number) => fmt(v)} />
             <YAxis type="category" dataKey="name" width={120} style={{ fontSize: 11 }} />
-            <Tooltip formatter={(v: number) => fmt(v)} />
+            <Tooltip formatter={(v: any) => fmt(Number(v))} />
             <Legend />
             <Bar dataKey="2026" fill={COLORS.adams} name="Jan 2026" radius={[0, 4, 4, 0]} />
             <Bar dataKey="2025" fill="#fca5a5" name="Jan 2025" radius={[0, 4, 4, 0]} />
@@ -271,7 +271,7 @@ export default function YorkAdamsMarketClient() {
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="metric" style={{ fontSize: 11 }} />
             <YAxis tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)} />
-            <Tooltip formatter={(v: number) => v >= 1000 ? fmt(v) : v} />
+            <Tooltip formatter={(v: any) => Number(v) >= 1000 ? fmt(Number(v)) : v} />
             <Legend />
             <Bar dataKey="york" fill={COLORS.york} name="York County" radius={[4, 4, 0, 0]} />
             <Bar dataKey="adams" fill={COLORS.adams} name="Adams County" radius={[4, 4, 0, 0]} />
