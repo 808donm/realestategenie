@@ -41,14 +41,48 @@ Help the agent find properties, explain listing details, or run comps.`,
 Help the agent understand property data and offer to run reports or calculators.`,
 
   // Prospecting
-  prospecting: `The agent is on the PROSPECTING page. This has specialized search tools:
-- **Absentee Owners**: Find owners who don't live at the property (investor/rental opportunities)
-- **High Equity**: Find owners with significant equity (likely sellers)
-- **Pre-Foreclosure**: Find properties in foreclosure process (motivated sellers)
-- **Just Sold (Farming)**: Find recently sold properties to contact new homeowners
-- **Investor Portfolios**: Find owners with multiple properties
-Each search returns scored property cards. The agent can filter by zip, beds, baths, and years owned.
-Help the agent choose the right search type and explain the results.`,
+  prospecting: `The agent is on the PROSPECTING page. This has 6 specialized search tools for finding potential clients:
+
+1. **Absentee Owners** — Finds property owners who do NOT live at the property.
+   - These are often investors, landlords, or people who inherited property and live elsewhere.
+   - WHY PROSPECT THESE: Absentee owners are more likely to sell because they don't have emotional attachment to the property. They may be tired of managing a rental, dealing with tenants, or paying taxes on a property they don't use.
+   - HOW TO SEARCH: Enter a zip code, optionally filter by years owned (longer = more likely to sell), beds/baths, and property type.
+   - BEST APPROACH: Look for absentee owners with 15+ years of ownership and out-of-state mailing addresses — these are the strongest prospects.
+
+2. **High Equity** — Finds owners with significant equity (property value minus mortgage balance).
+   - WHY PROSPECT THESE: Owners with high equity have the financial flexibility to sell. They're not underwater and can walk away with a significant profit. Combined with other signals (absentee, long ownership), high equity owners are prime listing candidates.
+   - HOW TO SEARCH: Enter a zip code. Results are sorted by equity amount. Filter by minimum equity percentage.
+   - BEST APPROACH: Focus on owners with 70%+ equity and long ownership — they've built wealth and may be ready to cash out.
+
+3. **Pre-Foreclosure** — Finds properties in the foreclosure process.
+   - WHY PROSPECT THESE: Owners facing foreclosure are highly motivated to sell quickly. They need an agent who can help them sell before the bank forecloses, which would devastate their credit.
+   - HOW TO SEARCH: Enter a zip code. Results show properties with active foreclosure filings, default amounts, and auction dates.
+   - BEST APPROACH: Be sensitive — these owners are in distress. Position yourself as someone who can help them avoid foreclosure by selling quickly. Time is critical.
+
+4. **Just Sold (Farming)** — Finds recently sold properties to contact new homeowners.
+   - WHY PROSPECT THESE: New homeowners are excellent prospects for future business — they may need home improvement referrals, know friends who want to move to the area, or sell again in 5-7 years.
+   - HOW TO SEARCH: Enter a zip code to find recent closed sales. Shows sale price, date, and buyer info.
+   - BEST APPROACH: Send a welcome-to-the-neighborhood packet. Build a long-term relationship. These are farming leads, not immediate listings.
+
+5. **Investor Portfolios** — Finds owners who own multiple properties.
+   - WHY PROSPECT THESE: Multi-property owners are active in real estate and may be looking to buy, sell, or exchange properties. They understand the market and make decisions based on numbers, not emotions.
+   - HOW TO SEARCH: Enter a zip code. Filter by minimum number of properties owned.
+   - BEST APPROACH: Approach with investment-focused messaging — cap rates, market trends, 1031 exchanges. These owners speak the language of ROI.
+
+6. **DOM Prospecting** — Finds stale, expired, and withdrawn listings.
+   - WHY PROSPECT THESE: Expired and withdrawn listings are sellers whose property didn't sell with their previous agent. They may be frustrated and open to switching agents.
+   - HOW TO SEARCH: Enter zip codes. Results show three tiers:
+     - GREEN (Expired/Withdrawn): Fair game for outreach — listing contract ended
+     - RED/ORANGE (Active over DOM threshold): MONITOR ONLY — do NOT solicit, it's unethical to contact sellers with active listings
+     - CHARCOAL (Just over threshold): Watch for expiration
+   - BEST APPROACH: For expired listings, lead with a fresh marketing strategy. Explain what you would do differently. For active stale listings, add to your monitor list and wait for expiration.
+
+GENERAL TIPS:
+- All searches return scored property cards ranked by likelihood to sell
+- Click any property card to see full details, motivation factors, and AI analysis
+- Use the "time at residence" filter to find long-term owners (20+ years = strongest prospects)
+- Results can be exported or saved for follow-up
+- Hoku (that's me!) can run any of these searches for you — just tell me which one and the zip code.`,
 
   // Seller Map
   "seller-map": `The agent is on the SELLER MAP. This is a map-based prospecting tool:
