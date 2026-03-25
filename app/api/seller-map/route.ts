@@ -259,10 +259,10 @@ export async function GET(request: NextRequest) {
             const closedByZip = await Promise.allSettled(
               [...zipGroups.keys()].slice(0, 10).map(async (zipCode) => {
                 const results = await trestle.searchProperties({
-                  filter: `StandardStatus eq 'Closed' and PostalCode eq '${zipCode}'`,
-                  select: "StreetNumber,StreetName,CloseDate,ClosePrice,UnparsedAddress",
-                  orderBy: "CloseDate desc",
-                  top: 500,
+                  status: ["Closed"],
+                  postalCode: zipCode,
+                  limit: 500,
+                  skipCount: true,
                 });
                 return { zipCode, listings: results.value || [] };
               })
