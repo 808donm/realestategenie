@@ -116,9 +116,31 @@ export async function POST(request: NextRequest) {
       actionResult = await executeCopilotAction(user.id, executeIntent.action, executeIntent.params);
 
       // Add the action result as context for the AI
-      const resultSummary = actionResult.success
-        ? `Action "${executeIntent.action}" executed successfully. Result: ${JSON.stringify(actionResult.data || actionResult.redirect || {}).substring(0, 500)}`
-        : `Action "${executeIntent.action}" failed: ${actionResult.error}`;
+      let resultSummary: string;
+      if (!actionResult.success) {
+        resultSummary = `Action "${executeIntent.action}" failed: ${actionResult.error}`;
+      } else if (actionResult.data?.properties?.length) {
+        // Format property results clearly for the AI
+        const props = actionResult.data.properties.slice(0, 15);
+        const formatted = props.map((p: any, i: number) => {
+          const addr = p.address?.oneLine || p.address || "Unknown";
+          const beds = p.building?.rooms?.beds || p.beds || "?";
+          const baths = p.building?.rooms?.bathsFull || p.baths || "?";
+          const avm = p.avm?.amount?.value || p.score ? `Score: ${p.score}` : "";
+          const owner = p.owner?.owner1?.fullName || p.ownerName || "";
+          const absentee = p.owner?.absenteeOwnerStatus === "A" || p.owner?.absenteeOwnerStatus?.includes("Absentee") ? "Absentee" : "";
+          const mailing = p.owner?.mailingAddressOneLine || "";
+          const tier = p.tier || "";
+          const reasoning = p.reasoning || "";
+          return `${i + 1}. ${addr} | ${beds}bd ${baths}ba | ${owner} ${absentee} ${mailing ? `(Mailing: ${mailing})` : ""} ${avm} ${tier} ${reasoning}`.trim();
+        }).join("\n");
+        const total = actionResult.data.total || props.length;
+        const aiScored = actionResult.data.aiScored ? " (AI-scored by seller likelihood)" : "";
+        const summary = actionResult.data.summary || actionResult.data.topInsight || "";
+        resultSummary = `Action "${executeIntent.action}" found ${total} properties${aiScored}.\n${summary ? `Summary: ${summary}\n` : ""}Results:\n${formatted}`;
+      } else {
+        resultSummary = `Action "${executeIntent.action}" executed successfully. Result: ${JSON.stringify(actionResult.data || actionResult.redirect || {}).substring(0, 1000)}`;
+      }
 
       // Append assistant response (with execute tag) and result
       messages.push({ role: "assistant", content: aiResponse });
