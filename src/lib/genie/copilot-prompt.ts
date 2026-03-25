@@ -7,11 +7,15 @@
  */
 
 import { QUICK_ACTIONS } from "./types";
+import { APP_KNOWLEDGE, buildPageContext, buildPropertyContext } from "./hoku-knowledge-base";
 
-interface PromptContext {
+export interface PromptContext {
   agentName: string;
   connectedIntegrations: string[];
   actionContext?: string | null;
+  currentPage?: string | null;
+  selectedProperty?: any | null;
+  selectedLead?: any | null;
 }
 
 // ── Task-specific conversation flows ─────────────────────────────────────────
@@ -253,6 +257,22 @@ ${taskFlow}
 ═══════════════════════════════════════════════════════════════`
     : "";
 
+  // Build page context
+  const pageCtx = ctx.currentPage ? buildPageContext(ctx.currentPage) : "";
+  const pageSection = pageCtx
+    ? `\n═══ CURRENT PAGE CONTEXT ═══\n${pageCtx}\n═══════════════════════════\n`
+    : "";
+
+  // Build property/lead context
+  const propertyCtx = ctx.selectedProperty ? buildPropertyContext(ctx.selectedProperty) : "";
+  const propertySection = propertyCtx
+    ? `\n═══ SELECTED PROPERTY ═══\n${propertyCtx}\n═════════════════════════\n`
+    : "";
+
+  const leadSection = ctx.selectedLead
+    ? `\n═══ SELECTED LEAD ═══\nThe agent has selected lead: ${ctx.selectedLead.name || ctx.selectedLead.full_name || "Unknown"} (${ctx.selectedLead.email || "no email"}, Score: ${ctx.selectedLead.heat_score || "?"})\n═════════════════════\n`
+    : "";
+
   return `You are Hoku, a friendly Hawaiian AI assistant for real estate agents. You have a warm island personality — professional but approachable, like a knowledgeable colleague who happens to love Hawaii.
 
 PERSONALITY:
@@ -262,9 +282,12 @@ PERSONALITY:
 - Occasionally use light Hawaiian touches (e.g., "Aloha!", "Let's get this done!")
 - Be specific and action-oriented, never vague
 - Celebrate small wins ("Nice, task created!")
+- When the agent asks "how does this work?" or "what is this?", explain the current page/feature clearly using your platform knowledge
 
 You are helping ${ctx.agentName}.
 ${integrationStatus}
+
+${APP_KNOWLEDGE}
 
 ${ACTION_CATALOG}
 
@@ -274,7 +297,7 @@ When you have enough parameters, include:
 
 CONVERSATION RULES:
 - Ask ONE question at a time. Be specific to the current task.
-- Keep responses under 100 words. Be direct.
+- Keep responses under 150 words. Be direct.
 - When a task is triggered by a quick action click, focus ONLY on that task.
 - Do not ask "How can I help?" when you already know the task.
 - CRITICAL: If a FOCUSED TASK section exists below, follow its step-by-step flow EXACTLY. Do NOT skip steps. Gather ALL required parameters before executing.
@@ -282,7 +305,13 @@ CONVERSATION RULES:
 - After completing a task, suggest ONE relevant next step.
 - NEVER fabricate property data, prices, or owner information.
 - If a required parameter is missing, ask for it specifically.
-${focusedInstruction}`;
+- When explaining features, reference your Platform Knowledge section.
+- If the agent asks about a property you have context for, explain its key characteristics and what makes it notable.
+- If the agent asks "why" a property scores high or low, explain using the scoring criteria from your knowledge.
+${focusedInstruction}
+${pageSection}
+${propertySection}
+${leadSection}`;
 }
 
 export { ACTION_LABELS };

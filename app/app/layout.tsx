@@ -13,6 +13,7 @@ import NotificationCenter from "./components/notification-center";
 import { getSubscriptionStatus, getSuggestedUpgradePlan } from "@/lib/subscriptions/utils";
 import { checkFeatureAccess } from "@/lib/subscriptions/server-utils";
 import ImpersonationBanner from "./components/impersonation-banner";
+import HokuGlobal from "./components/hoku-global.client";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await supabaseServer();
@@ -145,6 +146,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
       {/* Mobile Bottom Bar */}
       <MobileBottomBar {...sidebarProps} />
+
+      {/* Hoku AI Assistant — available on all pages */}
+      <HokuGlobal />
       </div>
     </div>
   );

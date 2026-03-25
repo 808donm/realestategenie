@@ -14,6 +14,7 @@ interface Props {
   onClose: () => void;
   actionContext?: string | null;
   onClearContext?: () => void;
+  currentPage?: string | null;
 }
 
 const fmt = (n?: number) => {
@@ -22,7 +23,7 @@ const fmt = (n?: number) => {
   return `$${n.toLocaleString()}`;
 };
 
-export function GenieCopilotPopup({ isOpen, onClose, actionContext, onClearContext }: Props) {
+export function GenieCopilotPopup({ isOpen, onClose, actionContext, onClearContext, currentPage }: Props) {
   const [messages, setMessages] = useState<CopilotMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -102,6 +103,9 @@ export function GenieCopilotPopup({ isOpen, onClose, actionContext, onClearConte
           message: msg || undefined,
           sessionId,
           actionContext: ctx || undefined,
+          currentPage: currentPage || undefined,
+          selectedProperty: (() => { try { return JSON.parse(sessionStorage.getItem("hoku_selected_property") || "null"); } catch { return null; } })(),
+          selectedLead: (() => { try { return JSON.parse(sessionStorage.getItem("hoku_selected_lead") || "null"); } catch { return null; } })(),
         }),
       });
       const data = await res.json();
@@ -444,3 +448,5 @@ export function GenieCopilotPopup({ isOpen, onClose, actionContext, onClearConte
     </div>
   );
 }
+
+export default GenieCopilotPopup;

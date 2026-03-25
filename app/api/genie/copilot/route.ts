@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { message, sessionId, actionContext } = body;
+    const { message, sessionId, actionContext, currentPage, selectedProperty, selectedLead } = body;
 
     if (!message && !actionContext) {
       return NextResponse.json({ error: "message is required" }, { status: 400 });
@@ -84,6 +84,9 @@ export async function POST(request: NextRequest) {
       agentName,
       connectedIntegrations,
       actionContext: effectiveActionContext,
+      currentPage: currentPage || null,
+      selectedProperty: selectedProperty || null,
+      selectedLead: selectedLead || null,
     });
 
     // ── Prepare messages ───────────────────────────────────────────
