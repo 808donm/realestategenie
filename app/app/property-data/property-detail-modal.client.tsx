@@ -776,32 +776,66 @@ export default function PropertyDetailModal({
       const lat = p.location?.latitude;
       const lng = p.location?.longitude;
 
-      const [compsRes, marketRes] = await Promise.allSettled([
+      // Extract line1 for address-based searches
+      const line1 = p.address?.line1 || addr.split(",")[0].trim();
+
+      const [compsRes, salesRes, rentalRes, marketRes] = await Promise.allSettled([
         // Fetch comps
-        (lat && lng)
-          ? fetch(`/api/comps?address=${encodeURIComponent(addr)}&latitude=${lat}&longitude=${lng}&compCount=10`)
-              .then(r => r.ok ? r.json() : null).catch(() => null)
-          : Promise.resolve(null),
+        fetch(`/api/comps?address=${encodeURIComponent(addr)}&latitude=${lat || ""}&longitude=${lng || ""}&compCount=10&nocache=1`)
+          .then(r => r.ok ? r.json() : null).catch(() => null),
+        // Fetch MLS sales history
+        fetch(`/api/mls/sales-history?address=${encodeURIComponent(line1)}`)
+          .then(r => r.ok ? r.json() : null).catch(() => null),
+        // Fetch rental AVM
+        fetch(`/api/integrations/attom/property?endpoint=expanded&postalcode=${zip}&pagesize=1`)
+          .then(r => r.ok ? r.json() : null).catch(() => null),
         // Fetch market stats
         zip
-          ? fetch(`/api/integrations/attom/property?endpoint=expanded&postalcode=${zip}&pagesize=1`)
+          ? fetch(`/api/rentcast/market-stats?zipCode=${zip}`)
               .then(r => r.ok ? r.json() : null).catch(() => null)
           : Promise.resolve(null),
       ]);
 
-      // Add comps to report
-      const compsData = compsRes.status === "fulfilled" && compsRes.value ? compsRes.value : null;
+      // Add comps to report — /api/comps returns camelCase fields
+      const compsData = compsRes.status === "fulfilled" ? compsRes.value : null;
       if (compsData?.comparables?.length) {
         reportData.comps = compsData.comparables.slice(0, 10).map((c: any) => ({
-          address: c.formattedAddress || c.address?.oneLine || c.UnparsedAddress || "Unknown",
-          price: c.price || c.ClosePrice || c.ListPrice || c.avm?.amount?.value,
-          beds: c.bedrooms || c.BedroomsTotal || c.building?.rooms?.beds,
-          baths: c.bathrooms || c.BathroomsTotalInteger || c.building?.rooms?.bathsFull,
-          sqft: c.squareFootage || c.LivingArea || c.building?.size?.livingSize,
-          closeDate: c.closeDate || c.CloseDate,
+          address: c.address || c.formattedAddress || "Unknown",
+          price: c.closePrice || c.listPrice || c.price,
+          beds: c.bedrooms || c.beds,
+          baths: c.bathrooms || c.baths,
+          sqft: c.squareFootage || c.sqft,
+          closeDate: c.closeDate,
           correlation: c.correlation,
-          source: c.source || (c.listingKey || c.ListingKey ? "mls" : "rentcast"),
+          source: c.source || "rentcast",
         }));
+      }
+
+      // Add MLS sales history
+      const salesData = salesRes.status === "fulfilled" ? salesRes.value : null;
+      if (salesData?.unitHistory?.length || salesData?.buildingHistory?.length) {
+        const mlsSales = (salesData.unitHistory || salesData.buildingHistory || []).map((s: any) => ({
+          date: s.CloseDate || s.closeDate,
+          amount: s.ClosePrice || s.closePrice,
+          buyer: s.BuyerAgentFullName,
+          seller: s.ListAgentFullName,
+          docType: s.isUnitMatch === false ? "Building sale" : undefined,
+        }));
+        // Merge with existing sales history (public records), MLS first
+        const existing = reportData.salesHistory || [];
+        reportData.salesHistory = [...mlsSales, ...existing];
+      }
+
+      // Add market stats
+      const marketData = marketRes.status === "fulfilled" ? marketRes.value : null;
+      if (marketData?.saleData || marketData?.sale) {
+        const sale = marketData.saleData || marketData.sale || {};
+        reportData.marketStats = {
+          medianPrice: sale.medianPrice || sale.averagePrice,
+          avgDOM: sale.averageDaysOnMarket || sale.medianDaysOnMarket,
+          totalListings: sale.totalListings,
+          pricePerSqft: sale.averagePricePerSquareFoot || sale.medianPricePerSquareFoot,
+        };
       }
 
       const res = await fetch("/api/property-intelligence/generate", {
