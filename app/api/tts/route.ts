@@ -4,10 +4,10 @@ import { supabaseServer } from "@/lib/supabase/server";
 const GOOGLE_TTS_API_KEY = process.env.GOOGLE_TTS_API_KEY;
 const GOOGLE_TTS_URL = "https://texttospeech.googleapis.com/v1/text:synthesize";
 
-// Voice config — female, warm, natural
+// Voice config — standard female voice (1M chars/month free tier)
 const DEFAULT_VOICE = {
   languageCode: "en-US",
-  name: "en-US-Neural2-F", // Neural2 female voice — natural sounding
+  name: "en-US-Standard-F", // Standard female voice — free tier eligible
   ssmlGender: "FEMALE",
 };
 
