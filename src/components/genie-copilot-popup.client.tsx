@@ -262,9 +262,9 @@ export function GenieCopilotPopup({ isOpen, onClose, actionContext, onClearConte
                                   cursor: "pointer",
                                 }}
                                 onClick={() => {
-                                  // Open property in new tab for full detail
+                                  // Open full property detail modal in new tab
                                   const q = encodeURIComponent(addr);
-                                  window.open(`/app/property-data?search=${q}`, "_blank");
+                                  window.open(`/app/property-detail?address=${q}`, "_blank");
                                 }}
                               >
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
