@@ -56,6 +56,17 @@ export function PropertyCard({ property, compact, onAddToCRM, onGenerateReport, 
             <span className="font-medium">{p.ownershipYears}yr</span>
           </div>
         )}
+        {p.lastSaleDate && (
+          <div>
+            <span className="text-gray-400">Last Sale:</span>{" "}
+            <span className="font-medium">{new Date(p.lastSaleDate).toLocaleDateString()}</span>
+          </div>
+        )}
+        {!p.lastSaleDate && !p.ownershipYears && (
+          <div className="col-span-2">
+            <span className="text-orange-500 text-xs font-medium">No sale date available (non-disclosure)</span>
+          </div>
+        )}
         {p.ownerParcelCount != null && p.ownerParcelCount > 1 && (
           <div>
             <span className="text-gray-400">Properties:</span>{" "}

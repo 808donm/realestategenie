@@ -40,6 +40,8 @@ export type ScoredProperty = {
   equity?: number;
   ltv?: number;
   ownershipYears?: number;
+  lastSaleDate?: string;
+  lastSalePrice?: number;
   absentee: boolean;
   propertyType?: string;
   estimatedValue?: number;
@@ -665,6 +667,8 @@ export function scoreParcel(parcel: RealieParcel): ScoredProperty | null {
     equity: parcel.equityCurrentEstBal,
     ltv: parcel.LTVCurrentEstCombined,
     ownershipYears,
+    lastSaleDate: dateStr || undefined,
+    lastSalePrice: parcel.transferPrice || undefined,
     ownerParcelCount: parcel.ownerParcelCount,
     absentee,
     propertyType: parcel.residential ? "Residential" : parcel.condo ? "Condo" : undefined,

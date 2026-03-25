@@ -508,6 +508,8 @@ function PropertyListItem({ property: p }: { property: ScoredProperty }) {
             <span>{fmtPrice(p.estimatedValue)}</span>
           )}
           {p.ownershipYears != null && <span>{p.ownershipYears}yr owned</span>}
+          {!p.ownershipYears && p.lastSaleDate && <span>Sold {new Date(p.lastSaleDate).toLocaleDateString()}</span>}
+          {!p.ownershipYears && !p.lastSaleDate && <span className="text-orange-400">No sale date</span>}
           {p.absentee && (
             <span className="text-amber-600 font-medium">Absentee</span>
           )}

@@ -539,8 +539,9 @@ function exportPropertyToExcel(property: ScoredProperty, detail: PropertyDetail 
   add("Financial", "Equity", detail?.equity ?? property.equity);
   add("Financial", "LTV %", detail?.ltv ?? property.ltv);
   add("Financial", "HOA Fee", detail?.hoa?.fee);
-  add("Financial", "Last Sale Date", detail?.lastSaleDate);
-  add("Financial", "Last Sale Price", detail?.lastSalePrice);
+  add("Financial", "Last Sale Date", detail?.lastSaleDate || property.lastSaleDate);
+  add("Financial", "Last Sale Price", detail?.lastSalePrice || (property.lastSalePrice ? `$${property.lastSalePrice.toLocaleString()}` : undefined));
+  add("Financial", "Ownership Duration", property.ownershipYears != null ? `${property.ownershipYears} years` : (detail?.lastSaleDate || property.lastSaleDate ? undefined : "No sale date available (non-disclosure state)"));
   add("Financial", "Total Market Value", detail?.totalMarketValue);
   add("Financial", "Foreclosure Code", detail?.forecloseCode);
   add("Financial", "Lien Count", detail?.totalLienCount);
