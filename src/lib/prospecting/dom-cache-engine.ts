@@ -338,8 +338,12 @@ export async function searchCachedListings(
       marketStats[zip][type] = { avgDom, count: doms.length };
     }
 
+    const status = l.standard_status || "Active";
+    const isExpiredOrWithdrawn = status === "Expired" || status === "Withdrawn";
     const tier = classifyTier(liveDom, avgDom, params);
-    if (!tier) continue;
+
+    // Include if: expired/withdrawn (always prospectable) OR active exceeding DOM threshold
+    if (!tier && !isExpiredOrWithdrawn) continue;
 
     results.push({
       listingKey: l.listing_key,
@@ -362,7 +366,9 @@ export async function searchCachedListings(
       listedDate: l.on_market_date,
       avgDomForType: avgDom,
       domRatio: Math.round((liveDom / avgDom) * 100) / 100,
-      tier,
+      tier: tier || (isExpiredOrWithdrawn ? "red" : "charcoal"),
+      standardStatus: status,
+      prospectCategory: isExpiredOrWithdrawn ? "outreach" : "monitor",
       listingAgentName: l.listing_agent_name,
       listingAgentPhone: l.listing_agent_phone,
       listingAgentEmail: l.listing_agent_email,
