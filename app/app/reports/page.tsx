@@ -78,6 +78,14 @@ export default async function ReportsPage() {
             color="#dc2626"
             badge="NEW"
           />
+          <ReportCard
+            href="/app/reports/york-adams-market"
+            title="York & Adams Counties, PA"
+            description="RAYAC monthly housing statistics: median prices, sales volume, DOM, inventory & school district breakdowns for York and Adams Counties."
+            dataSources={["RAYAC", "Bright MLS"]}
+            color="#1e40af"
+            badge="NEW"
+          />
         </div>
       </section>
 
