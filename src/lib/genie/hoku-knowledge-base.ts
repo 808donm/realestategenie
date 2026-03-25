@@ -346,7 +346,7 @@ export function buildPropertyContext(property: any): string {
   if (property.comparableSales?.length) {
     parts.push(`\nComparable Sales (${property.comparableSales.length} comps):`);
     property.comparableSales.forEach((c: any) => {
-      parts.push(`  ${c.address || "?"}: ${c.price ? "$" + Number(c.price).toLocaleString() : "?"} | ${c.beds || "?"}bd/${c.baths || "?"}ba | ${c.sqft ? c.sqft.toLocaleString() + " sqft" : "?"} | Match: ${c.correlation ? Math.round(c.correlation) + "%" : "?"}`);
+      parts.push(`  ${c.address || "?"}: ${c.price ? "$" + Number(c.price).toLocaleString() : "?"} | ${c.beds || "?"}bd/${c.baths || "?"}ba | ${c.sqft ? c.sqft.toLocaleString() + " sqft" : "?"} | Match: ${c.correlation ? Math.round(c.correlation <= 1 ? c.correlation * 100 : c.correlation) + "%" : "?"}`);
     });
   }
 

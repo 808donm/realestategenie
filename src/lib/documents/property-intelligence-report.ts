@@ -523,7 +523,7 @@ export function generatePropertyIntelligencePDF(
       doc.text(`${comp.beds || "?"}/${comp.baths || "?"}`, margin + 95, y);
       doc.text(comp.sqft != null ? num(comp.sqft) : "—", margin + 115, y);
       doc.text(comp.closeDate || "—", margin + 135, y);
-      doc.text(comp.correlation != null ? `${Math.round(comp.correlation)}%` : "—", margin + 160, y);
+      doc.text(comp.correlation != null ? `${Math.round(comp.correlation <= 1 ? comp.correlation * 100 : comp.correlation)}%` : "—", margin + 160, y);
       y += 6;
     });
     y += 4;
