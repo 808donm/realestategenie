@@ -39,52 +39,90 @@ export function GenieCopilotPopup({ isOpen, onClose, actionContext, onClearConte
   const inputRef = useRef<HTMLInputElement>(null);
   const hasInitialized = useRef(false);
 
-  // Text-to-speech — speak Hoku's response
-  const speakText = useCallback((text: string) => {
-    if (!("speechSynthesis" in window)) return;
-    // Stop any current speech
-    window.speechSynthesis.cancel();
+  // Text-to-speech — Google Cloud TTS with browser fallback
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-    // Clean text: remove markdown, execute tags, and special chars
-    const clean = text
-      .replace(/<execute>[\s\S]*?<\/execute>/g, "")
-      .replace(/\*\*/g, "")
-      .replace(/###?\s*/g, "")
-      .replace(/\[object Object\]/g, "")
-      .replace(/[#*_~`]/g, "")
-      .trim();
+  const speakText = useCallback(async (text: string) => {
+    // Stop any current audio
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
 
-    if (!clean) return;
+    setIsSpeaking(true);
 
-    const utterance = new SpeechSynthesisUtterance(clean);
-    utterance.rate = 1.0;
-    utterance.pitch = 1.1;
+    try {
+      // Try Google Cloud TTS first
+      const res = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
 
-    // Try to find a good female voice
-    const voices = window.speechSynthesis.getVoices();
-    const preferred = voices.find(v =>
-      /samantha|karen|moira|tessa|fiona|victoria|zira/i.test(v.name) && v.lang.startsWith("en")
-    ) || voices.find(v =>
-      /female|woman/i.test(v.name) && v.lang.startsWith("en")
-    ) || voices.find(v =>
-      v.lang.startsWith("en-US") && !/(male|david|james|daniel|mark)/i.test(v.name)
-    ) || voices.find(v => v.lang.startsWith("en"));
+      if (res.ok) {
+        const data = await res.json();
+        if (data.audio) {
+          // Decode base64 MP3 and play
+          const audioData = Uint8Array.from(atob(data.audio), c => c.charCodeAt(0));
+          const blob = new Blob([audioData], { type: "audio/mp3" });
+          const url = URL.createObjectURL(blob);
+          const audio = new Audio(url);
+          audioRef.current = audio;
 
-    if (preferred) utterance.voice = preferred;
+          audio.onended = () => {
+            setIsSpeaking(false);
+            URL.revokeObjectURL(url);
+            audioRef.current = null;
+          };
+          audio.onerror = () => {
+            setIsSpeaking(false);
+            URL.revokeObjectURL(url);
+            audioRef.current = null;
+          };
 
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
+          await audio.play();
+          return;
+        }
+      }
+    } catch {
+      // Fall through to browser TTS
+    }
 
-    window.speechSynthesis.speak(utterance);
+    // Fallback: browser SpeechSynthesis
+    if ("speechSynthesis" in window) {
+      const clean = text
+        .replace(/<execute>[\s\S]*?<\/execute>/g, "")
+        .replace(/\*\*/g, "").replace(/###?\s*/g, "")
+        .replace(/[#*_~`]/g, "").trim();
+
+      if (clean) {
+        const utterance = new SpeechSynthesisUtterance(clean);
+        utterance.rate = 1.0;
+        utterance.pitch = 1.1;
+        const voices = window.speechSynthesis.getVoices();
+        const preferred = voices.find(v =>
+          /samantha|karen|moira|tessa|fiona|victoria|zira/i.test(v.name) && v.lang.startsWith("en")
+        ) || voices.find(v => v.lang.startsWith("en-US"));
+        if (preferred) utterance.voice = preferred;
+        utterance.onend = () => setIsSpeaking(false);
+        utterance.onerror = () => setIsSpeaking(false);
+        window.speechSynthesis.speak(utterance);
+        return;
+      }
+    }
+
+    setIsSpeaking(false);
   }, []);
 
   // Stop speaking
   const stopSpeaking = useCallback(() => {
-    if ("speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-      setIsSpeaking(false);
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
     }
+    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+    setIsSpeaking(false);
   }, []);
 
   // Toggle auto-speak and persist preference
@@ -96,14 +134,6 @@ export function GenieCopilotPopup({ isOpen, onClose, actionContext, onClearConte
       return next;
     });
   }, [stopSpeaking]);
-
-  // Load voices (some browsers load them async)
-  useEffect(() => {
-    if ("speechSynthesis" in window) {
-      window.speechSynthesis.getVoices(); // trigger load
-      window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
-    }
-  }, []);
 
   // Stop speaking when popup closes
   useEffect(() => {

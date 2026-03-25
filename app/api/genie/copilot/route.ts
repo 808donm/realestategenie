@@ -221,11 +221,13 @@ export async function POST(request: NextRequest) {
 
       // Call AI again to summarize the result
       const followUpHistory = messages.slice(-MAX_HISTORY);
-      const { text: followUp } = await generateText({
-        model: gateway(MODEL),
+      const { text: followUp } = await trackedGenerateText({
+        model: MODEL,
         system: systemPrompt + "\n\nThe action has been executed. Summarize the results briefly — mention total found and top insights. The property cards are already displayed visually below your message, so do NOT list individual properties again. Instead, highlight the key patterns (e.g., 'Most are long-term holds with high equity' or 'Several have out-of-state mailing addresses'). Suggest ONE specific next step. Do NOT include another <execute> tag. Keep response under 60 words.",
         messages: followUpHistory.map(m => ({ role: m.role as any, content: m.content })),
         temperature: 0.7,
+        source: "hoku-copilot-followup",
+        agentId: user.id,
       });
 
       aiResponse = stripExecuteTags(followUp);
