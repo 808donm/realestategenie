@@ -147,6 +147,10 @@ export async function POST(request: NextRequest) {
       red: searchResult.results.filter(r => r.tier === "red").length,
       orange: searchResult.results.filter(r => r.tier === "orange").length,
       charcoal: searchResult.results.filter(r => r.tier === "charcoal").length,
+      outreach: searchResult.results.filter(r => r.prospectCategory === "outreach").length,
+      monitor: searchResult.results.filter(r => r.prospectCategory === "monitor").length,
+      expired: searchResult.results.filter(r => r.standardStatus === "Expired").length,
+      withdrawn: searchResult.results.filter(r => r.standardStatus === "Withdrawn").length,
     };
 
     return NextResponse.json({

@@ -24,6 +24,8 @@ interface DomResult {
   avgDomForType: number;
   domRatio: number;
   tier: "red" | "orange" | "charcoal";
+  standardStatus?: string;
+  prospectCategory: "outreach" | "monitor";
   listingAgentName?: string;
   listingAgentPhone?: string;
   listingAgentEmail?: string;
@@ -35,7 +37,7 @@ interface SearchResult {
   results: DomResult[];
   marketStats: Record<string, Record<string, { avgDom: number; count: number }>>;
   dataSource: string;
-  summary: { red: number; orange: number; charcoal: number };
+  summary: { red: number; orange: number; charcoal: number; outreach?: number; monitor?: number; expired?: number; withdrawn?: number };
   total: number;
 }
 
@@ -386,6 +388,24 @@ export function DomProspectingClient() {
             </div>
           </div>
 
+          {/* Outreach vs Monitor Summary */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <div style={{ padding: "12px 16px", background: "#ecfdf5", border: "2px solid #059669", borderRadius: 10 }}>
+              <div style={{ fontSize: 24, fontWeight: 800, color: "#059669" }}>{result.summary.outreach || 0}</div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "#065f46" }}>Ready for Outreach</div>
+              <div style={{ fontSize: 10, color: "#6b7280", marginTop: 2 }}>
+                {result.summary.expired || 0} Expired, {result.summary.withdrawn || 0} Withdrawn
+              </div>
+              <div style={{ fontSize: 10, color: "#059669", marginTop: 2 }}>Seller is unrepresented — OK to contact</div>
+            </div>
+            <div style={{ padding: "12px 16px", background: "#fffbeb", border: "2px solid #d97706", borderRadius: 10 }}>
+              <div style={{ fontSize: 24, fontWeight: 800, color: "#d97706" }}>{result.summary.monitor || 0}</div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "#92400e" }}>Monitor Only</div>
+              <div style={{ fontSize: 10, color: "#6b7280", marginTop: 2 }}>Active listings over DOM threshold</div>
+              <div style={{ fontSize: 10, color: "#d97706", marginTop: 2 }}>Still under contract — observe until expiration</div>
+            </div>
+          </div>
+
           {/* Market Stats Summary */}
           {Object.keys(result.marketStats).length > 0 && (
             <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 14 }}>
@@ -451,7 +471,27 @@ export function DomProspectingClient() {
                       }}
                     >
                       <div>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: tc.text }}>{r.address}</div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: tc.text }}>{r.address}</div>
+                          {/* Status badge */}
+                          {r.standardStatus && r.standardStatus !== "Active" && (
+                            <span style={{
+                              padding: "1px 6px", borderRadius: 4, fontSize: 10, fontWeight: 700,
+                              background: r.standardStatus === "Expired" ? "#dc2626" : "#f59e0b",
+                              color: "#fff",
+                            }}>
+                              {r.standardStatus}
+                            </span>
+                          )}
+                          {r.standardStatus === "Active" && (
+                            <span style={{
+                              padding: "1px 6px", borderRadius: 4, fontSize: 10, fontWeight: 700,
+                              background: "#e5e7eb", color: "#6b7280",
+                            }}>
+                              Active
+                            </span>
+                          )}
+                        </div>
                         <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
                           {r.city}, {r.state} {r.zipCode}
                           {r.mlsNumber && <span style={{ marginLeft: 8 }}>MLS# {r.mlsNumber}</span>}
@@ -469,6 +509,15 @@ export function DomProspectingClient() {
                             {r.listingOfficeName && ` | ${r.listingOfficeName}`}
                           </div>
                         )}
+                        {/* Ethical prospect category */}
+                        <div style={{
+                          marginTop: 6, fontSize: 11, fontWeight: 600,
+                          color: r.prospectCategory === "outreach" ? "#059669" : "#d97706",
+                        }}>
+                          {r.prospectCategory === "outreach"
+                            ? "Ready for Outreach — seller is unrepresented"
+                            : "Monitor Only — listing still active with another agent"}
+                        </div>
                       </div>
                       <div style={{ textAlign: "right", minWidth: 100 }}>
                         <div style={{ fontSize: 28, fontWeight: 800, color: tc.border }}>{r.daysOnMarket}</div>
@@ -491,7 +540,7 @@ export function DomProspectingClient() {
                             color: "#374151", cursor: "pointer",
                           }}
                         >
-                          Monitor
+                          {r.prospectCategory === "outreach" ? "Add to Outreach" : "Monitor"}
                         </button>
                       </div>
                     </div>

@@ -57,6 +57,14 @@ export interface DomProspectResult {
   avgDomForType: number;
   domRatio: number;
   tier: "red" | "orange" | "charcoal";
+  /** MLS listing status — Active, Expired, or Withdrawn */
+  standardStatus?: "Active" | "Expired" | "Withdrawn" | string;
+  /**
+   * Ethical prospecting category:
+   * - "outreach" = Expired/Withdrawn — seller is unrepresented, OK to contact
+   * - "monitor"  = Active — still under contract, observe only until it expires
+   */
+  prospectCategory: "outreach" | "monitor";
   listingAgentName?: string;
   listingAgentPhone?: string;
   listingAgentEmail?: string;
@@ -221,6 +229,11 @@ async function searchMls(
     const zip = l.PostalCode?.substring(0, 5) || "";
     const propType = normalizeMlsPropertyType(l.PropertyType);
     const dom = l.CumulativeDaysOnMarket ?? l.DaysOnMarket ?? 0;
+    const status = l.StandardStatus || "Active";
+    const isExpiredOrWithdrawn = status === "Expired" || status === "Withdrawn";
+
+    // Determine ethical prospect category
+    const prospectCategory: "outreach" | "monitor" = isExpiredOrWithdrawn ? "outreach" : "monitor";
 
     // Get avg DOM for this property type in this zip
     const zipStats = marketStats[zip];
@@ -228,7 +241,9 @@ async function searchMls(
     if (!typeStats || typeStats.avgDom <= 0) continue;
 
     const tier = classifyTier(dom, typeStats.avgDom, params);
-    if (!tier) continue;
+
+    // Include if: expired/withdrawn (always prospectable) OR active exceeding DOM threshold
+    if (!tier && !isExpiredOrWithdrawn) continue;
 
     const address = l.UnparsedAddress
       || [l.StreetNumber, l.StreetName, l.StreetSuffix].filter(Boolean).join(" ")
@@ -255,7 +270,9 @@ async function searchMls(
       listedDate: l.OnMarketDate,
       avgDomForType: typeStats.avgDom,
       domRatio: Math.round((dom / typeStats.avgDom) * 100) / 100,
-      tier,
+      tier: tier || (isExpiredOrWithdrawn ? "red" : "charcoal"),
+      standardStatus: status,
+      prospectCategory,
       listingAgentName: l.ListAgentFullName,
       listingAgentPhone: l.ListAgentDirectPhone,
       listingAgentEmail: l.ListAgentEmail,
@@ -264,8 +281,15 @@ async function searchMls(
     });
   }
 
-  // Sort by DOM ratio descending (most stale first)
-  results.sort((a, b) => b.domRatio - a.domRatio);
+  // Sort: outreach (expired/withdrawn) first, then by DOM ratio descending
+  results.sort((a, b) => {
+    // Outreach opportunities first
+    if (a.prospectCategory !== b.prospectCategory) {
+      return a.prospectCategory === "outreach" ? -1 : 1;
+    }
+    // Within same category, sort by DOM ratio
+    return b.domRatio - a.domRatio;
+  });
 
   return { listings: results, marketStats };
 }
@@ -369,6 +393,9 @@ async function searchRentcast(
     // Apply property type filter
     if (params.propertyTypes?.length && !params.propertyTypes.includes(propType)) continue;
 
+    const rcStatus = l.status || "Active";
+    const rcIsExpiredOrWithdrawn = rcStatus === "Expired" || rcStatus === "Withdrawn" || rcStatus === "Inactive";
+
     results.push({
       listingKey: l.id,
       mlsNumber: l.mlsNumber,
@@ -391,6 +418,8 @@ async function searchRentcast(
       avgDomForType: typeStats.avgDom,
       domRatio: Math.round((dom / typeStats.avgDom) * 100) / 100,
       tier,
+      standardStatus: rcStatus,
+      prospectCategory: rcIsExpiredOrWithdrawn ? "outreach" : "monitor",
       listingAgentName: l.listingAgent?.name,
       listingAgentPhone: l.listingAgent?.phone,
       listingAgentEmail: l.listingAgent?.email,
