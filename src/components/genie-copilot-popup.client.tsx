@@ -51,12 +51,27 @@ export function GenieCopilotPopup({ isOpen, onClose, actionContext, onClearConte
     }
   }, [isOpen, loading]);
 
-  // Initialize with actionContext on first open
+  // Initialize with actionContext on first open, or greet with property context
   useEffect(() => {
-    if (isOpen && actionContext && !hasInitialized.current) {
+    if (isOpen && !hasInitialized.current) {
       hasInitialized.current = true;
-      sendMessage("", actionContext);
-      onClearContext?.();
+      if (actionContext) {
+        sendMessage("", actionContext);
+        onClearContext?.();
+      } else if (messages.length === 0) {
+        // Check if there's a property in context for a contextual greeting
+        try {
+          const propStr = sessionStorage.getItem("hoku_selected_property");
+          if (propStr) {
+            const prop = JSON.parse(propStr);
+            if (prop?.address) {
+              // Send a context-aware greeting request
+              sendMessage(`I'm looking at this property. Give me a brief overview.`);
+              return;
+            }
+          }
+        } catch {}
+      }
     }
   }, [isOpen, actionContext]);
 

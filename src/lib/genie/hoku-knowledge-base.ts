@@ -212,44 +212,115 @@ export function buildPageContext(pathname: string): string {
 export function buildPropertyContext(property: any): string {
   if (!property) return "";
 
-  const parts: string[] = ["The agent is currently viewing this property:"];
+  const parts: string[] = ["The agent is currently viewing a PROPERTY DETAIL MODAL. Here is everything you know about this property:"];
 
+  // Basic info
   const addr = property.address?.oneLine || property.address || property.UnparsedAddress;
   if (addr) parts.push(`Address: ${addr}`);
 
-  const price = property.ListPrice || property.listPrice || property.avm?.amount?.value;
-  if (price) parts.push(`Price/AVM: $${Number(price).toLocaleString()}`);
+  const city = property.city || property.address?.locality;
+  const state = property.state || property.address?.countrySubd;
+  const zip = property.zip || property.address?.postal1;
+  if (city || zip) parts.push(`Location: ${[city, state, zip].filter(Boolean).join(", ")}`);
 
-  const beds = property.building?.rooms?.beds || property.BedroomsTotal || property.bedrooms;
-  const baths = property.building?.rooms?.bathsFull || property.BathroomsTotalInteger || property.bathrooms;
-  const sqft = property.building?.size?.livingSize || property.LivingArea || property.squareFootage;
-  if (beds || baths || sqft) parts.push(`${beds || "?"}bd/${baths || "?"}ba, ${sqft ? sqft.toLocaleString() + " sqft" : "?"}`);
+  // Pricing
+  const listPrice = property.listPrice || property.ListPrice;
+  const avmValue = property.avmValue || property.avm?.amount?.value;
+  const avmLow = property.avmLow || property.avm?.amount?.low;
+  const avmHigh = property.avmHigh || property.avm?.amount?.high;
+  if (listPrice) parts.push(`List Price: $${Number(listPrice).toLocaleString()}`);
+  if (avmValue) parts.push(`AVM (Estimated Value): $${Number(avmValue).toLocaleString()}`);
+  if (avmLow && avmHigh) parts.push(`AVM Range: $${Number(avmLow).toLocaleString()} - $${Number(avmHigh).toLocaleString()}`);
 
-  const yearBuilt = property.building?.summary?.yearBuilt || property.YearBuilt || property.summary?.yearBuilt;
-  if (yearBuilt) parts.push(`Year Built: ${yearBuilt}`);
+  // Physical
+  const beds = property.beds || property.building?.rooms?.beds || property.BedroomsTotal;
+  const baths = property.baths || property.building?.rooms?.bathsFull || property.BathroomsTotalInteger;
+  const sqft = property.sqft || property.building?.size?.livingSize || property.LivingArea;
+  if (beds || baths || sqft) parts.push(`Size: ${beds || "?"}bd / ${baths || "?"}ba / ${sqft ? sqft.toLocaleString() + " sqft" : "?"}`);
 
-  const owner = property.owner?.owner1?.fullName;
-  if (owner) parts.push(`Owner: ${owner}`);
+  const yearBuilt = property.yearBuilt || property.building?.summary?.yearBuilt || property.YearBuilt;
+  if (yearBuilt) parts.push(`Year Built: ${yearBuilt} (${new Date().getFullYear() - yearBuilt} years old)`);
 
-  const absentee = property.owner?.absenteeOwnerStatus;
-  if (absentee === "A") parts.push("Absentee Owner: Yes");
+  const propType = property.propertyType || property.summary?.propertyType;
+  if (propType) parts.push(`Property Type: ${propType}`);
 
-  const equity = property.homeEquity?.equity;
+  const lotSize = property.lotSize || property.lot?.lotSize1;
+  if (lotSize) parts.push(`Lot Size: ${Number(lotSize).toLocaleString()} sqft`);
+
+  // Financial
+  const lastSalePrice = property.lastSalePrice || property.sale?.amount?.saleAmt;
+  const lastSaleDate = property.lastSaleDate || property.sale?.amount?.saleTransDate;
+  if (lastSalePrice) parts.push(`Last Sale: $${Number(lastSalePrice).toLocaleString()}${lastSaleDate ? ` on ${lastSaleDate}` : ""}`);
+
+  const equity = property.estimatedEquity || property.homeEquity?.equity;
   if (equity != null) parts.push(`Estimated Equity: $${Number(equity).toLocaleString()}`);
 
-  const ltv = property.homeEquity?.ltv || property.mortgage?.ltv;
-  if (ltv != null) parts.push(`LTV: ${ltv}%`);
+  const ltv = property.ltv || property.homeEquity?.ltv;
+  if (ltv != null) parts.push(`Loan-to-Value: ${Number(ltv).toFixed(1)}%`);
 
-  const dom = property.DaysOnMarket || property.daysOnMarket;
+  const taxAmt = property.taxAmount || property.assessment?.tax?.taxAmt;
+  if (taxAmt) parts.push(`Annual Tax: $${Number(taxAmt).toLocaleString()}`);
+
+  const hoaFee = property.hoaFee || property.hoa?.fee;
+  if (hoaFee) parts.push(`HOA: $${Number(hoaFee).toLocaleString()}/month`);
+
+  // Ownership
+  const owner = property.owner1 || property.owner?.owner1?.fullName;
+  if (owner) parts.push(`Owner: ${owner}`);
+
+  const owner2 = property.owner2 || property.owner?.owner2?.fullName;
+  if (owner2) parts.push(`Co-Owner: ${owner2}`);
+
+  const absentee = property.absenteeOwner || property.owner?.absenteeOwnerStatus;
+  if (absentee === "A" || absentee === "Yes") parts.push("Absentee Owner: YES - owner does not live at the property");
+
+  const occupied = property.ownerOccupied || property.owner?.ownerOccupied;
+  if (occupied === "N" || occupied === "No") parts.push("Owner Occupied: No");
+
+  const corporate = property.corporateOwner || property.owner?.corporateIndicator;
+  if (corporate === "Y" || corporate === "Yes") parts.push("Corporate/Trust Owner: YES");
+
+  const mailing = property.mailingAddress || property.owner?.mailingAddressOneLine;
+  if (mailing) parts.push(`Mailing Address: ${mailing}`);
+
+  // MLS Listing info
+  const dom = property.daysOnMarket || property.DaysOnMarket;
   if (dom != null) parts.push(`Days on Market: ${dom}`);
 
-  const status = property.StandardStatus || property.listingStatus;
-  if (status) parts.push(`Status: ${status}`);
+  const status = property.listingStatus || property.StandardStatus;
+  if (status) parts.push(`Listing Status: ${status}`);
 
-  const leasehold = property.OwnershipType;
-  if (leasehold) parts.push(`Land Tenure: ${leasehold}`);
+  const mlsNum = property.mlsNumber || property.ListingId;
+  if (mlsNum) parts.push(`MLS #: ${mlsNum}`);
 
-  parts.push("\nExplain this property's key characteristics and what makes it noteworthy for the agent. If it's a prospecting result, explain why it's a good (or not) candidate for outreach.");
+  const agent = property.listingAgent || property.ListAgentFullName;
+  if (agent) parts.push(`Listing Agent: ${agent}`);
+
+  const office = property.listingOffice || property.ListOfficeName;
+  if (office) parts.push(`Office: ${office}`);
+
+  const tenure = property.ownershipType || property.OwnershipType;
+  if (tenure) parts.push(`Land Tenure: ${tenure}${String(tenure).toLowerCase().includes("lease") ? " WARNING: LEASEHOLD - the land is not owned, only leased. Monthly lease rent may apply." : ""}`);
+
+  // Description excerpt
+  const desc = property.description || property.PublicRemarks;
+  if (desc) parts.push(`Description: ${String(desc).substring(0, 200)}...`);
+
+  // Current tab
+  const tab = property.activeTab;
+  if (tab) parts.push(`\nThe agent is currently viewing the "${tab}" tab.`);
+
+  // Instructions for Hoku
+  parts.push(`
+INSTRUCTIONS: You are looking at the same property the agent is. When they ask questions:
+- If they say "explain this" or "what am I looking at" - describe the property and its key characteristics in plain language
+- If they ask about value - explain the AVM, how it compares to list price, and what the confidence range means
+- If they ask about the owner - explain what you know and whether this looks like a good prospecting target
+- If they ask about a specific tab (financial, comps, sales history, etc.) - explain what that section shows
+- If they ask "is this a good deal?" - compare list price to AVM, look at equity, DOM, and comparable sales
+- Suggest relevant actions: "Want me to run a mortgage calculator?", "Should I pull comps?", "Want to generate a PDF report?"
+- If it's leasehold, ALWAYS mention that - it's critical in Hawaii
+- Be specific to THIS property. Use the actual numbers, don't be generic.`);
 
   return parts.join("\n");
 }

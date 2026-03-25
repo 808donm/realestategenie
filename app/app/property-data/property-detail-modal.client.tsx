@@ -172,6 +172,53 @@ export default function PropertyDetailModal({
   const realieLtv = (p as any).homeEquity?.ltv;
   const ltv = realieLtv ?? (bestValue && mortgageAmt ? (mortgageAmt / bestValue) * 100 : null);
 
+  // Broadcast property context to Hoku so she knows what the agent is viewing
+  useEffect(() => {
+    const ctx = {
+      address: addr,
+      city: p.address?.locality,
+      state: p.address?.countrySubd,
+      zip: p.address?.postal1,
+      propertyType: p.summary?.propertyType || p.summary?.propType,
+      yearBuilt,
+      beds,
+      baths,
+      sqft,
+      lotSize: p.lot?.lotSize1,
+      avmValue: avmVal,
+      avmLow: p.avm?.amount?.low,
+      avmHigh: p.avm?.amount?.high,
+      lastSalePrice: lastSaleAmt,
+      lastSaleDate: p.sale?.amount?.saleTransDate,
+      estimatedEquity: equity,
+      ltv,
+      owner1: p.owner?.owner1?.fullName,
+      owner2: p.owner?.owner2?.fullName,
+      ownerOccupied: p.owner?.ownerOccupied,
+      absenteeOwner: p.owner?.absenteeOwnerStatus,
+      mailingAddress: p.owner?.mailingAddressOneLine,
+      corporateOwner: p.owner?.corporateIndicator,
+      taxAmount: p.assessment?.tax?.taxAmt,
+      hoaFee: p.hoa?.fee,
+      // MLS fields
+      mlsNumber: (p as any).ListingId || (p as any).mlsNumber,
+      listingStatus: (p as any).StandardStatus || (p as any).listingStatus,
+      daysOnMarket: (p as any).DaysOnMarket,
+      listPrice: (p as any).ListPrice || mlsListPrice,
+      listingAgent: (p as any).ListAgentFullName,
+      listingOffice: (p as any).ListOfficeName,
+      ownershipType: (p as any).OwnershipType,
+      description: (p as any).PublicRemarks,
+      activeTab: activeSection,
+    };
+    sessionStorage.setItem("hoku_selected_property", JSON.stringify(ctx));
+
+    return () => {
+      // Clean up when modal closes
+      sessionStorage.removeItem("hoku_selected_property");
+    };
+  }, [p, addr, activeSection, avmVal, equity, ltv, beds, baths, sqft, yearBuilt, lastSaleAmt, mlsListPrice]);
+
   // Fetch Hawaii hazard/environmental zone data on mount (for HI properties with lat/lng)
   useEffect(() => {
     if (hazardData || hazardLoading) return;
