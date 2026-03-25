@@ -11,7 +11,7 @@ const GenieCopilotPopup = dynamic(
 );
 
 const PropertyDetailModal = dynamic(
-  () => import("@/app/app/property-data/property-detail-modal.client"),
+  () => import("../property-data/property-detail-modal.client"),
   { ssr: false }
 );
 
