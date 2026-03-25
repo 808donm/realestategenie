@@ -665,6 +665,9 @@ export function mapRentcastToRealieParcel(rc: RentcastProperty): RealieParcel {
   // Derive transfer date from lastSaleDate or most recent history entry
   let transferDate: string | undefined;
   let transferPrice: number | undefined;
+  if (rc.lastSaleDate || rc.lastSalePrice) {
+    console.log(`[Rentcast→Parcel] ${rc.formattedAddress}: lastSaleDate=${rc.lastSaleDate}, lastSalePrice=${rc.lastSalePrice}`);
+  }
   if (rc.lastSaleDate) {
     transferDate = rc.lastSaleDate;
     transferPrice = rc.lastSalePrice ?? undefined;
