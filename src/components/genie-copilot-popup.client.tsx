@@ -28,9 +28,57 @@ export function GenieCopilotPopup({ isOpen, onClose, actionContext, onClearConte
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const hasInitialized = useRef(false);
+
+  // Speech recognition setup
+  const toggleVoice = useCallback(() => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Voice input is not supported in this browser. Try Chrome or Edge.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
+
+    recognition.onresult = (event: any) => {
+      let transcript = "";
+      for (let i = 0; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      setInput(transcript);
+
+      // Auto-send when speech is final
+      if (event.results[event.results.length - 1].isFinal) {
+        setTimeout(() => {
+          setIsListening(false);
+          if (transcript.trim()) {
+            sendMessage(transcript.trim());
+            setInput("");
+          }
+        }, 300);
+      }
+    };
+
+    recognition.onerror = () => setIsListening(false);
+    recognition.onend = () => setIsListening(false);
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsListening(true);
+  }, [isListening]);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -462,6 +510,22 @@ export function GenieCopilotPopup({ isOpen, onClose, actionContext, onClearConte
           }}
         />
         <button
+          type="button"
+          onClick={toggleVoice}
+          disabled={loading}
+          title={isListening ? "Stop listening" : "Voice input"}
+          style={{
+            padding: "8px 10px", borderRadius: 8, border: "none",
+            background: isListening ? "#dc2626" : "#f3f4f6",
+            color: isListening ? "#fff" : "#6b7280",
+            fontSize: 16, cursor: "pointer",
+            transition: "all 0.2s",
+            animation: isListening ? "pulse 1.5s infinite" : "none",
+          }}
+        >
+          {isListening ? "⏹" : "🎤"}
+        </button>
+        <button
           type="submit"
           disabled={loading || !input.trim()}
           style={{
@@ -474,7 +538,10 @@ export function GenieCopilotPopup({ isOpen, onClose, actionContext, onClearConte
         </button>
       </form>
 
-      <style>{`@keyframes bounce { 0%, 80%, 100% { transform: translateY(0); } 40% { transform: translateY(-6px); } }`}</style>
+      <style>{`
+        @keyframes bounce { 0%, 80%, 100% { transform: translateY(0); } 40% { transform: translateY(-6px); } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+      `}</style>
     </div>
   );
 }
