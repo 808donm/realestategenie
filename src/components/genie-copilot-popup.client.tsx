@@ -155,48 +155,77 @@ export function GenieCopilotPopup({ isOpen, onClose, actionContext, onClearConte
     }
 
     const recognition = new SpeechRecognition();
-    recognition.continuous = true;       // Keep listening through pauses
-    recognition.interimResults = true;   // Show words as they're spoken
+    // Mobile browsers loop with continuous=true, so use single utterance on mobile
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    recognition.continuous = !isMobile;
+    recognition.interimResults = true;
     recognition.lang = "en-US";
 
     let silenceTimer: ReturnType<typeof setTimeout> | null = null;
-    let fullTranscript = "";
+    let maxTimer: ReturnType<typeof setTimeout> | null = null;
+    let finalTranscript = "";
+    let lastInterim = "";
+    let sent = false;
 
-    recognition.onresult = (event: any) => {
-      // Build full transcript from all results
-      let transcript = "";
-      for (let i = 0; i < event.results.length; i++) {
-        transcript += event.results[i][0].transcript;
-      }
-      fullTranscript = transcript;
-      setInput(transcript);
-
-      // Reset the silence timer on every new speech result
-      // Wait 3 seconds of silence before auto-sending
+    const finish = () => {
+      if (sent) return;
+      sent = true;
       if (silenceTimer) clearTimeout(silenceTimer);
-      silenceTimer = setTimeout(() => {
-        recognition.stop();
-        if (fullTranscript.trim()) {
-          sendMessage(fullTranscript.trim());
-          setInput("");
-        }
-        setIsListening(false);
-      }, 3000); // 3 seconds of silence = done speaking
-    };
-
-    recognition.onerror = () => {
-      if (silenceTimer) clearTimeout(silenceTimer);
-      setIsListening(false);
-    };
-    recognition.onend = () => {
-      // If continuous mode ends unexpectedly (browser limit), send what we have
-      if (silenceTimer) clearTimeout(silenceTimer);
-      if (fullTranscript.trim() && isListening) {
-        sendMessage(fullTranscript.trim());
+      if (maxTimer) clearTimeout(maxTimer);
+      try { recognition.stop(); } catch {}
+      const text = finalTranscript.trim() || lastInterim.trim();
+      if (text) {
+        sendMessage(text);
         setInput("");
       }
       setIsListening(false);
     };
+
+    recognition.onresult = (event: any) => {
+      // Separate final from interim results to avoid duplication
+      let finals = "";
+      let interim = "";
+      for (let i = 0; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          finals += event.results[i][0].transcript + " ";
+        } else {
+          interim += event.results[i][0].transcript;
+        }
+      }
+      if (finals.trim()) finalTranscript = finals.trim();
+      lastInterim = interim;
+
+      // Show the current state in the input
+      setInput((finalTranscript + " " + interim).trim());
+
+      // Reset silence timer — wait 3s of silence before sending
+      if (silenceTimer) clearTimeout(silenceTimer);
+      silenceTimer = setTimeout(finish, 3000);
+    };
+
+    recognition.onerror = () => {
+      if (silenceTimer) clearTimeout(silenceTimer);
+      if (maxTimer) clearTimeout(maxTimer);
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      // On mobile (non-continuous), this fires after each utterance
+      if (!sent) {
+        const text = finalTranscript.trim() || lastInterim.trim();
+        if (text) {
+          // Give a moment for any final results, then send
+          setTimeout(() => {
+            if (!sent) finish();
+          }, 500);
+        } else {
+          setIsListening(false);
+        }
+      }
+    };
+
+    // Max recording time: 30 seconds to prevent runaway
+    maxTimer = setTimeout(finish, 30000);
 
     recognitionRef.current = recognition;
     recognition.start();
