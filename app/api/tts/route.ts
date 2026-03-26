@@ -75,6 +75,8 @@ export async function POST(request: NextRequest) {
       .replace(/\bMLS\b/g, "M L S")
       .replace(/\bSFR\b/g, "single family")
       .replace(/\bTMK\b/g, "T M K")
+      // Scores: "15/15" → "15 out of 15"
+      .replace(/(\d+)\/(\d+)/g, "$1 out of $2")
       // Street numbers: "725" → "seven twenty-five" (let TTS handle naturally)
       // But 3-digit numbers at start of address should NOT be read as "seven hundred"
       // Fix: insert a thin pause between digits for 3-4 digit street numbers

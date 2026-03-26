@@ -414,7 +414,7 @@ export function buildPropertyContext(property: any): string {
   const sellerScore = property.sellerScore;
   const sellerLevel = property.sellerLevel;
   if (sellerScore != null) {
-    parts.push(`\nSELLER MOTIVATION SCORE: ${sellerScore}/100 (${sellerLevel})`);
+    parts.push(`\nSELLER MOTIVATION SCORE: ${sellerScore}% (${sellerLevel})`);
     if (property.sellerFactors?.length) {
       parts.push("Score breakdown:");
       property.sellerFactors.forEach((f: string) => parts.push(`  ${f}`));
