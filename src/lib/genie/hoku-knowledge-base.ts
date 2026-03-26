@@ -59,10 +59,12 @@ Help the agent understand property data and offer to run reports or calculators.
    - HOW TO SEARCH: Enter a zip code. Results show properties with active foreclosure filings, default amounts, and auction dates.
    - BEST APPROACH: Be sensitive — these owners are in distress. Position yourself as someone who can help them avoid foreclosure by selling quickly. Time is critical.
 
-4. **Just Sold (Farming)** — Finds recently sold properties to contact new homeowners.
-   - WHY PROSPECT THESE: New homeowners are excellent prospects for future business — they may need home improvement referrals, know friends who want to move to the area, or sell again in 5-7 years.
-   - HOW TO SEARCH: Enter a zip code to find recent closed sales. Shows sale price, date, and buyer info.
-   - BEST APPROACH: Send a welcome-to-the-neighborhood packet. Build a long-term relationship. These are farming leads, not immediate listings.
+4. **Just Sold (Farming)** — Finds homes that sold in the last 6 months, then shows ALL neighboring homes within a half-mile radius so the agent can send postcards.
+   - WHY THIS WORKS: When a home sells in a neighborhood, the neighbors often don't know the current value of THEIR home. A postcard saying "Your neighbor's home at 123 Main St just sold for $850,000 — do you know what YOUR home is worth?" is one of the most effective prospecting strategies in real estate. It creates urgency and curiosity.
+   - HOW TO SEARCH: Enter a zip code to find recent closed sales (last 6 months). Click on a sold property to see all homes within a half-mile radius. These are your postcard recipients.
+   - WHAT TO SEND: "Just Sold" postcards to neighbors with the sale price, a free home valuation offer, and the agent's contact info. Many neighbors will be surprised by the value and consider selling.
+   - BEST APPROACH: Target neighborhoods where sale prices are strong — neighbors will be motivated by high values. Send postcards within 1-2 weeks of the sale closing while it's still fresh news. Follow up with a second mailer 30 days later.
+   - KEY INSIGHT: This is NOT about contacting the new homeowner — it's about reaching the NEIGHBORS of the sold home who may now be curious about their own property value.
 
 5. **Investor Portfolios** — Finds owners who own multiple properties.
    - WHY PROSPECT THESE: Multi-property owners are active in real estate and may be looking to buy, sell, or exchange properties. They understand the market and make decisions based on numbers, not emotions.
