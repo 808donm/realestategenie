@@ -123,6 +123,10 @@ export async function POST(request: NextRequest) {
       // General X.5 pattern for any number of baths
       .replace(/\b(\d+)\.5\s*ba(?:th(?:room)?s?)?\b/gi, (_, n) => `${n} and a half bathrooms`)
       .replace(/\bTMK\b/g, "T M K")
+      // Ranges: "$1,600 - $3,000" → "$1,600 to $3,000"
+      .replace(/(\$[\d,]+(?:\.\d+)?)\s*[-–—]\s*(\$[\d,]+(?:\.\d+)?)/g, "$1 to $2")
+      // Also handle non-dollar ranges: "462,000 - 519,000" → "462,000 to 519,000"
+      .replace(/([\d,]+)\s*[-–—]\s*([\d,]+)/g, "$1 to $2")
       // Scores: "15/15" → "15 out of 15"
       .replace(/(\d+)\/(\d+)/g, "$1 out of $2")
       // Hawaiian hyphenated street numbers FIRST: "94-829" → "ninety-four dash eight twenty-nine"
