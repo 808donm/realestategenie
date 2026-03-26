@@ -177,6 +177,10 @@ export const APP_KNOWLEDGE = `
 - **TMK (Tax Map Key)** is Hawaii's parcel ID format: Island-Zone-Section-Plat-Parcel (e.g., 1-4-2-018-077)
 - Common hazards: Tsunami evacuation zones, sea level rise, lava flow zones (Big Island), cesspool priority areas, Special Management Areas (coastal)
 - Oahu zip codes: 96701-96898 (many 968xx are PO Box/admin zips)
+- **IMPORTANT**: Any address ending in ", HI" is in Hawaii. Common Hawaii cities/towns on Oahu include:
+  Honolulu, Kailua, Kaneohe, Kapolei, Ewa Beach, Waipahu, Pearl City, Aiea, Mililani, Wahiawa, Haleiwa, Laie, Waimanalo, Hawaii Kai, Kahala, Waikiki, Manoa, Makiki, Kaimuki, Kapahulu, Moiliili, Palolo, Nuuanu, Pauoa, Liliha, Kalihi, Salt Lake, Foster Village, Red Hill, Iroquois Point, Ewa Villages, Kunia, Schofield, Wheeler, Waianae, Makaha, Nanakuli, Kaena
+  On other islands: Hilo, Kona (Kailua-Kona), Waimea (Kamuela), Captain Cook, Pahoa, Volcano (Big Island); Kahului, Kihei, Lahaina, Wailuku, Haiku, Paia, Kula, Makawao (Maui); Lihue, Kapaa, Princeville, Poipu, Koloa, Hanapepe, Waimea (Kauai)
+- When you see "Waipahu, HI" or "Kapolei, HI" or any city followed by "HI" — this is Hawaii, NOT a typo or abbreviation for something else.
 
 ### Lead Scoring (Heat Score 0-100)
 - Based on: engagement frequency, response speed, timeline urgency, budget match, property interest specificity

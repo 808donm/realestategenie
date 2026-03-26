@@ -184,8 +184,9 @@ export function PropertyDetailPanel({ property, onClose }: Props) {
       pageContext: "seller-map",
     };
 
-    // Add enriched detail if loaded
+    // Add ALL enriched detail — every tab's data so Hoku has the full picture
     if (detail) {
+      // Financial tab
       if (detail.lastSaleDate) ctx.lastSaleDate = detail.lastSaleDate;
       if (detail.lastSalePrice) ctx.lastSalePrice = detail.lastSalePrice;
       if (detail.avmValue) ctx.avmValue = detail.avmValue;
@@ -193,11 +194,66 @@ export function PropertyDetailPanel({ property, onClose }: Props) {
       if (detail.avmHigh) ctx.avmHigh = detail.avmHigh;
       if (detail.totalLienCount) ctx.lienCount = detail.totalLienCount;
       if (detail.totalLienBalance) ctx.lienBalance = detail.totalLienBalance;
-      if (detail.rentalAvm) ctx.rentalEstimate = detail.rentalAvm;
       if (detail.hoa?.fee) ctx.hoaFee = detail.hoa.fee;
+      if (detail.forecloseCode) ctx.foreclosureStatus = detail.forecloseCode;
+      if (detail.totalMarketValue) ctx.marketValue = detail.totalMarketValue;
+      // Tax assessment
+      if (detail.taxAssessments) {
+        const years = Object.keys(detail.taxAssessments).sort().reverse();
+        if (years.length > 0) {
+          const latest = detail.taxAssessments[years[0]];
+          ctx.assessedTotal = latest.value;
+          ctx.assessedLand = latest.land;
+          ctx.taxYear = latest.year;
+        }
+      }
+      if (detail.propertyTaxes) {
+        const years = Object.keys(detail.propertyTaxes).sort().reverse();
+        if (years.length > 0) ctx.taxAmount = detail.propertyTaxes[years[0]].total;
+      }
+      // Investment tab
+      if (detail.rentalAvm) ctx.rentalEstimate = detail.rentalAvm;
+      if (detail.rentalAvmLow) ctx.rentalLow = detail.rentalAvmLow;
+      if (detail.rentalAvmHigh) ctx.rentalHigh = detail.rentalAvmHigh;
+      if (detail.capRate) ctx.capRate = detail.capRate.toFixed(1) + "%";
+      if (detail.cashOnCash) ctx.cashOnCash = detail.cashOnCash.toFixed(1) + "%";
+      if (detail.annualRent) ctx.annualRent = detail.annualRent;
+      if (detail.monthlyMortgage) ctx.monthlyMortgage = detail.monthlyMortgage;
+      // Building tab
+      if (detail.features) {
+        const f = detail.features;
+        if (f.architectureType) ctx.architectureType = f.architectureType;
+        if (f.roofType) ctx.roofType = f.roofType;
+        if (f.foundationType) ctx.foundationType = f.foundationType;
+        if (f.heatingType) ctx.heatingType = f.heatingType;
+        if (f.coolingType) ctx.coolingType = f.coolingType;
+        if (f.garageSpaces) ctx.parking = `${f.garageSpaces} spaces (${f.garageType || "garage"})`;
+        if (f.pool) ctx.pool = "Yes";
+        if (f.fireplace) ctx.fireplace = "Yes";
+        if (f.floorCount) ctx.stories = f.floorCount;
+      }
+      if (detail.zoning) ctx.zoning = detail.zoning;
+      // Ownership tab
       if (detail.ownerOccupied != null) ctx.ownerOccupied = detail.ownerOccupied ? "Y" : "N";
       if (detail.owner?.mailingAddress?.formattedAddress) ctx.mailingAddress = detail.owner.mailingAddress.formattedAddress;
       if (detail.owner?.type) ctx.corporateOwner = detail.owner.type === "Organization" ? "Y" : "N";
+      if (detail.owner?.names?.length) ctx.ownerNames = detail.owner.names.join(", ");
+      if (detail.ownerParcelCount) ctx.ownerParcelCount = detail.ownerParcelCount;
+      // Market stats
+      if (detail.marketMedianPrice) ctx.marketMedianPrice = detail.marketMedianPrice;
+      if (detail.marketAvgDaysOnMarket) ctx.marketAvgDOM = detail.marketAvgDaysOnMarket;
+      if (detail.marketTotalListings) ctx.marketTotalListings = detail.marketTotalListings;
+      if (detail.marketMedianRent) ctx.marketMedianRent = detail.marketMedianRent;
+      if (detail.marketPriceTrend) ctx.marketPriceTrend = detail.marketPriceTrend.toFixed(1) + "%";
+    }
+
+    // Neighborhood data
+    if (neighborhoodData) {
+      ctx.neighborhood = neighborhoodData;
+    }
+    // Federal/area intel data
+    if (federalData) {
+      ctx.federalData = federalData;
     }
 
     sessionStorage.setItem("hoku_selected_property", JSON.stringify(ctx));
@@ -205,7 +261,7 @@ export function PropertyDetailPanel({ property, onClose }: Props) {
     return () => {
       sessionStorage.removeItem("hoku_selected_property");
     };
-  }, [property, tab, detail]);
+  }, [property, tab, detail, neighborhoodData, federalData]);
 
   const handleDraftOutreach = useCallback(async () => {
     setOutreachLoading(true);
@@ -391,24 +447,52 @@ export function PropertyDetailPanel({ property, onClose }: Props) {
         </div>
       </div>
 
-      {/* Tab bar — horizontally scrollable for narrow panels */}
-      <div className="border-b overflow-x-auto" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
-        <style>{`.hide-scrollbar::-webkit-scrollbar { display: none; }`}</style>
-        <div className="flex text-xs hide-scrollbar" style={{ minWidth: "max-content" }}>
-          {tabs.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              className={`px-3 py-2.5 font-medium transition-colors whitespace-nowrap ${
-                tab === t.key
-                  ? "text-blue-600 border-b-2 border-blue-600"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
+      {/* Tab bar — horizontally scrollable with arrow buttons */}
+      <div className="border-b relative flex items-center">
+        <button
+          onClick={() => {
+            const el = document.getElementById("seller-map-tabs");
+            if (el) el.scrollBy({ left: -120, behavior: "smooth" });
+          }}
+          className="shrink-0 px-1.5 py-2 text-gray-400 hover:text-gray-700 bg-white z-10"
+          style={{ borderRight: "1px solid #e5e7eb" }}
+          aria-label="Scroll tabs left"
+        >
+          &#9664;
+        </button>
+        <div
+          id="seller-map-tabs"
+          className="flex-1 overflow-x-auto"
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+        >
+          <style>{`#seller-map-tabs::-webkit-scrollbar { display: none; }`}</style>
+          <div className="flex text-xs" style={{ minWidth: "max-content" }}>
+            {tabs.map((t) => (
+              <button
+                key={t.key}
+                onClick={() => setTab(t.key)}
+                className={`px-3 py-2.5 font-medium transition-colors whitespace-nowrap ${
+                  tab === t.key
+                    ? "text-blue-600 border-b-2 border-blue-600"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
         </div>
+        <button
+          onClick={() => {
+            const el = document.getElementById("seller-map-tabs");
+            if (el) el.scrollBy({ left: 120, behavior: "smooth" });
+          }}
+          className="shrink-0 px-1.5 py-2 text-gray-400 hover:text-gray-700 bg-white z-10"
+          style={{ borderLeft: "1px solid #e5e7eb" }}
+          aria-label="Scroll tabs right"
+        >
+          &#9654;
+        </button>
       </div>
 
       {/* Tab content */}
