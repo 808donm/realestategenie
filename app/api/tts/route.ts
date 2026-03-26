@@ -18,6 +18,42 @@ const AUDIO_CONFIG = {
 };
 
 /**
+ * Spell a street number the way people say it:
+ *   725 → "seven twenty-five"
+ *   1725 → "seventeen twenty-five"
+ *   829 → "eight twenty-nine"
+ *   94 → "ninety-four"
+ *   6615 → "sixty-six fifteen"
+ */
+const ONES = ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
+  "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen"];
+const TENS = ["", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"];
+
+function spellTwoDigit(n: number): string {
+  if (n < 20) return ONES[n];
+  const t = TENS[Math.floor(n / 10)];
+  const o = n % 10;
+  return o ? `${t}-${ONES[o]}` : t;
+}
+
+function spellStreetNumber(n: number): string {
+  if (n < 1) return String(n);
+  if (n < 100) return spellTwoDigit(n);
+  if (n < 1000) {
+    // 725 → "seven twenty-five"
+    const hi = Math.floor(n / 100);
+    const lo = n % 100;
+    if (lo === 0) return `${ONES[hi]} hundred`;
+    return `${ONES[hi]} ${spellTwoDigit(lo)}`;
+  }
+  // 1725 → "seventeen twenty-five", 6615 → "sixty-six fifteen"
+  const hi = Math.floor(n / 100);
+  const lo = n % 100;
+  if (lo === 0) return `${spellTwoDigit(hi)} hundred`;
+  return `${spellTwoDigit(hi)} ${spellTwoDigit(lo)}`;
+}
+
+/**
  * POST /api/tts
  *
  * Converts text to speech using Google Cloud TTS.
@@ -77,23 +113,14 @@ export async function POST(request: NextRequest) {
       .replace(/\bTMK\b/g, "T M K")
       // Scores: "15/15" → "15 out of 15"
       .replace(/(\d+)\/(\d+)/g, "$1 out of $2")
-      // Street numbers: "725" → "seven twenty-five" (let TTS handle naturally)
-      // But 3-digit numbers at start of address should NOT be read as "seven hundred"
-      // Fix: insert a thin pause between digits for 3-4 digit street numbers
-      .replace(/^(\d{3,4})\s/gm, (_, num) => {
-        const n = parseInt(num);
-        if (n >= 100 && n <= 9999) {
-          // Split into natural speech: 725 → "7 25", 1806 → "18 06"
-          if (n < 1000) return `${Math.floor(n / 100)} ${(n % 100).toString().padStart(2, "0")} `;
-          return `${Math.floor(n / 100)} ${(n % 100).toString().padStart(2, "0")} `;
-        }
-        return num + " ";
+      // Hawaiian hyphenated street numbers FIRST: "94-829" → "ninety-four dash eight twenty-nine"
+      // Must come before general street number handling
+      .replace(/\b(\d{2,3})-(\d{2,4})\b/g, (_, prefix, suffix) => {
+        return `${spellStreetNumber(parseInt(prefix))} dash ${spellStreetNumber(parseInt(suffix))}`;
       })
-      // Hawaiian hyphenated street numbers: "94-224" → "94 2 24"
-      .replace(/\b(\d{2})-(\d{3,4})\b/g, (_, prefix, num) => {
-        const n = parseInt(num);
-        if (n < 1000) return `${prefix}, ${Math.floor(n / 100)} ${(n % 100).toString().padStart(2, "0")}`;
-        return `${prefix}, ${Math.floor(n / 100)} ${(n % 100).toString().padStart(2, "0")}`;
+      // Street numbers 3-4 digits: "725" → "seven twenty-five", "1725" → "seventeen twenty-five"
+      .replace(/^(\d{3,4})\s/gm, (_, num) => {
+        return spellStreetNumber(parseInt(num)) + " ";
       })
       // Remove parentheses but keep content
       .replace(/[()]/g, "")
