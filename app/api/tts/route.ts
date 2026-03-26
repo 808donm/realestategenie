@@ -112,6 +112,10 @@ export async function POST(request: NextRequest) {
       .replace(/\bHOA\b/g, "H O A")
       .replace(/\bMLS\b/g, "M L S")
       .replace(/\bSFR\b/g, "single family")
+      // State abbreviation: "HI" → "Hawaii" (must come before general abbreviations)
+      .replace(/,\s*HI\s+(\d{5})\b/g, ", Hawaii $1")
+      .replace(/,\s*HI\b/g, ", Hawaii")
+      .replace(/\bHI\s+(\d{5})\b/g, "Hawaii $1")
       // Bathroom counts: "1.5 ba" → "one and a half bathrooms"
       .replace(/\b1\.5\s*ba(?:th(?:room)?s?)?\b/gi, "one and a half bathrooms")
       .replace(/\b2\.5\s*ba(?:th(?:room)?s?)?\b/gi, "two and a half bathrooms")
