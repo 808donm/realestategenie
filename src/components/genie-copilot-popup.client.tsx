@@ -533,10 +533,12 @@ export function GenieCopilotPopup({ isOpen, onClose, actionContext, onClearConte
                                 }}
                                 onClick={() => {
                                   // Build the actual property address (not mailing address)
-                                  const propertyAddr = p.address?.oneLine || p.formattedAddress
-                                    || [p.addressLine1, p.city, p.state, p.zipCode].filter(Boolean).join(", ")
+                                  // Try formattedAddress first (RentCast), then addressLine1+city
+                                  const propertyAddr = p.formattedAddress
+                                    || (typeof p.address === "string" ? p.address : p.address?.oneLine)
+                                    || [p.addressLine1 || p.address?.line1, p.address?.locality || p.city, p.address?.countrySubd || p.state, p.address?.postal1 || p.zipCode].filter(Boolean).join(", ")
                                     || addr;
-                                  // Always fetch fresh — don't trust search result data
+                                  console.log("[Hoku] Opening property:", propertyAddr, "raw:", JSON.stringify(p.address)?.substring(0, 100));
                                   window.dispatchEvent(new CustomEvent("open-property-detail", {
                                     detail: { address: propertyAddr },
                                   }));

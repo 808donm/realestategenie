@@ -49,20 +49,30 @@ export default function HokuGlobal() {
     const handler = (e: CustomEvent) => {
       const { address } = e.detail || {};
       if (address) {
-        // Need to fetch full property data by address
+        console.log("[HokuGlobal] Opening property detail for:", address);
         setModalLoading(true);
-        fetch(`/api/integrations/attom/property?endpoint=expanded&address1=${encodeURIComponent(address)}&pagesize=1`)
+
+        // Parse address into address1 (street) and address2 (city, state)
+        const parts = address.split(",").map((s: string) => s.trim());
+        const address1 = parts[0] || address;
+        const address2 = parts.length > 1 ? parts.slice(1).join(", ") : "";
+        const params = new URLSearchParams({ endpoint: "expanded", pagesize: "1" });
+        params.set("address1", address1);
+        if (address2) params.set("address2", address2);
+
+        fetch(`/api/integrations/attom/property?${params}`)
           .then(r => r.ok ? r.json() : null)
           .then(data => {
+            console.log("[HokuGlobal] Property API returned:", data?.property?.[0]?.address?.oneLine || "no data");
             if (data?.property?.[0]) {
               setModalProperty(data.property[0]);
             } else {
-              // Fallback: use the raw property data from search results
-              setModalProperty(property || { address: { oneLine: address } });
+              setModalProperty({ address: { oneLine: address } });
             }
           })
-          .catch(() => {
-            setModalProperty(property || { address: { oneLine: address } });
+          .catch((err) => {
+            console.error("[HokuGlobal] Property fetch error:", err);
+            setModalProperty({ address: { oneLine: address } });
           })
           .finally(() => setModalLoading(false));
       }
