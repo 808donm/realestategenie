@@ -60,6 +60,39 @@ export async function POST(request: NextRequest) {
       .replace(/\b(\d{8,})\b/g, (_, num) => num.split("").join(" "))
       // Fix TMK numbers: "1-4-2-018-077" → read as digits
       .replace(/\b(\d{1,2}-\d{1,2}-\d{1,2}-\d{3}-\d{3})\b/g, (_, tmk) => tmk.replace(/[-]/g, ", ").split("").filter((c: string) => c !== ",").join(" ").replace(/  +/g, ", "))
+      // Abbreviations → full words (before other transforms)
+      .replace(/\bsqft\b/gi, "square feet")
+      .replace(/\bsq\s*ft\b/gi, "square feet")
+      .replace(/\bbd\b/gi, "bedroom")
+      .replace(/\bba\b/gi, "bathroom")
+      .replace(/\bbds\b/gi, "bedrooms")
+      .replace(/\bbas\b/gi, "bathrooms")
+      .replace(/\byr\b/gi, "years")
+      .replace(/\bDOM\b/g, "days on market")
+      .replace(/\bAVM\b/g, "estimated value")
+      .replace(/\bLTV\b/g, "loan to value")
+      .replace(/\bHOA\b/g, "H O A")
+      .replace(/\bMLS\b/g, "M L S")
+      .replace(/\bSFR\b/g, "single family")
+      .replace(/\bTMK\b/g, "T M K")
+      // Street numbers: "725" → "seven twenty-five" (let TTS handle naturally)
+      // But 3-digit numbers at start of address should NOT be read as "seven hundred"
+      // Fix: insert a thin pause between digits for 3-4 digit street numbers
+      .replace(/^(\d{3,4})\s/gm, (_, num) => {
+        const n = parseInt(num);
+        if (n >= 100 && n <= 9999) {
+          // Split into natural speech: 725 → "7 25", 1806 → "18 06"
+          if (n < 1000) return `${Math.floor(n / 100)} ${(n % 100).toString().padStart(2, "0")} `;
+          return `${Math.floor(n / 100)} ${(n % 100).toString().padStart(2, "0")} `;
+        }
+        return num + " ";
+      })
+      // Hawaiian hyphenated street numbers: "94-224" → "94 2 24"
+      .replace(/\b(\d{2})-(\d{3,4})\b/g, (_, prefix, num) => {
+        const n = parseInt(num);
+        if (n < 1000) return `${prefix}, ${Math.floor(n / 100)} ${(n % 100).toString().padStart(2, "0")}`;
+        return `${prefix}, ${Math.floor(n / 100)} ${(n % 100).toString().padStart(2, "0")}`;
+      })
       // Remove parentheses but keep content
       .replace(/[()]/g, "")
       // Remove bullet points and list markers
