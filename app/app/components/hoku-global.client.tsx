@@ -47,11 +47,8 @@ export default function HokuGlobal() {
   // Listen for property detail open requests from Hoku search results
   useEffect(() => {
     const handler = (e: CustomEvent) => {
-      const { property, address } = e.detail || {};
-      if (property && property.address?.oneLine) {
-        // Property already has full data from the search results
-        setModalProperty(property);
-      } else if (address) {
+      const { address } = e.detail || {};
+      if (address) {
         // Need to fetch full property data by address
         setModalLoading(true);
         fetch(`/api/integrations/attom/property?endpoint=expanded&address1=${encodeURIComponent(address)}&pagesize=1`)

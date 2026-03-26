@@ -532,9 +532,13 @@ export function GenieCopilotPopup({ isOpen, onClose, actionContext, onClearConte
                                   cursor: "pointer",
                                 }}
                                 onClick={() => {
-                                  // Dispatch event to open property detail modal in same tab
+                                  // Build the actual property address (not mailing address)
+                                  const propertyAddr = p.address?.oneLine || p.formattedAddress
+                                    || [p.addressLine1, p.city, p.state, p.zipCode].filter(Boolean).join(", ")
+                                    || addr;
+                                  // Always fetch fresh — don't trust search result data
                                   window.dispatchEvent(new CustomEvent("open-property-detail", {
-                                    detail: { property: p, address: addr },
+                                    detail: { address: propertyAddr },
                                   }));
                                 }}
                               >
