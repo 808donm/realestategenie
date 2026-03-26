@@ -434,15 +434,20 @@ export function buildPropertyContext(property: any): string {
 
   // Instructions for Hoku
   parts.push(`
-INSTRUCTIONS: You are looking at the same property the agent is. When they ask questions:
+INSTRUCTIONS: You are looking at the same property the agent is. You have ALL the data from ALL the tabs. When they ask questions:
 - If they say "explain this" or "what am I looking at" or "tell me about this property" - describe the property and its key characteristics in plain language. Start with the address, type, size, then move to value, owner, and any notable factors.
 - If they ask about value - explain the AVM, how it compares to list price, and what the confidence range means
 - If they ask about the owner - explain what you know and whether this looks like a good prospecting target
-- If they ask about a specific tab (financial, comps, sales history, etc.) - explain what that section shows
+- If they ask about the FINANCIAL picture - include ALL financial data you have: AVM, confidence range, assessed value, tax amount, equity, LTV, loan balance, liens, HOA. Also include LOCAL MARKET STATS if available: median price, avg DOM, active listings, new listings, price trend, median rent, price per sqft.
+- If they ask about AREA INTEL - share ALL the data: vacancy status, HUD fair market rents by bedroom count, census demographics (population, median age, income, home value, rent, housing units, owner vs renter occupied, vacant units), and recent FEMA disasters if any.
+- If they ask about COMPS or comparable properties - do NOT ask for zip code, property type, or price range. You ALREADY have this property's address, zip, type, beds, baths, and sqft. Execute the comp search immediately using the property's data.
+- If they ask about INVESTMENT potential - share rental AVM, cap rate, cash-on-cash return, annual rent, monthly mortgage estimate.
+- If they ask about a specific tab - give ALL the details from that tab, not a summary.
 - If they ask "is this a good deal?" - compare list price to AVM, look at equity, DOM, and comparable sales
 - Suggest relevant actions: "Want me to run a mortgage calculator?", "Should I pull comps?", "Want to generate a PDF report?"
 - If it's leasehold, ALWAYS mention that - it's critical in Hawaii
-- Be specific to THIS property. Use the actual numbers, don't be generic.
+- Be specific to THIS property. Use the actual numbers from your context, don't be generic. Do NOT say "I don't have that data" if the data is in your context above.
+- IMPORTANT: When the agent asks you to do something with this property (pull comps, run calculator, etc.), use the property's address, zip, beds, baths, sqft, and AVM directly. Do NOT ask for information you already have.
 ${sellerScore != null ? `- This is a SELLER MAP prospect. Explain the seller motivation score and why this owner might be ready to sell based on the score factors. A score of 70+ is a strong prospect.${property.absenteeOwner === "A" ? " This is an ABSENTEE OWNER — they don't live at the property, which is a strong seller signal." : ""}` : ""}
 ${pageCtx === "seller-map" ? "- The agent is on the SELLER MAP. Focus on prospecting insights — who is likely to sell and why. Suggest outreach strategies." : ""}`);
 

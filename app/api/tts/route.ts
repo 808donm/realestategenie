@@ -105,11 +105,19 @@ export async function POST(request: NextRequest) {
       .replace(/\bbas\b/gi, "bathrooms")
       .replace(/\byr\b/gi, "years")
       .replace(/\bDOM\b/g, "days on market")
-      .replace(/\bAVM\b/g, "estimated value")
+      // AVM cleanup — remove "(AVM)" since context already says estimated value
+      .replace(/\(AVM\)/gi, "")
+      .replace(/\bAVM\b/g, "A V M")
       .replace(/\bLTV\b/g, "loan to value")
       .replace(/\bHOA\b/g, "H O A")
       .replace(/\bMLS\b/g, "M L S")
       .replace(/\bSFR\b/g, "single family")
+      // Bathroom counts: "1.5 ba" → "one and a half bathrooms"
+      .replace(/\b1\.5\s*ba(?:th(?:room)?s?)?\b/gi, "one and a half bathrooms")
+      .replace(/\b2\.5\s*ba(?:th(?:room)?s?)?\b/gi, "two and a half bathrooms")
+      .replace(/\b3\.5\s*ba(?:th(?:room)?s?)?\b/gi, "three and a half bathrooms")
+      // General X.5 pattern for any number of baths
+      .replace(/\b(\d+)\.5\s*ba(?:th(?:room)?s?)?\b/gi, (_, n) => `${n} and a half bathrooms`)
       .replace(/\bTMK\b/g, "T M K")
       // Scores: "15/15" → "15 out of 15"
       .replace(/(\d+)\/(\d+)/g, "$1 out of $2")
