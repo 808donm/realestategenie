@@ -163,7 +163,13 @@ export async function POST(request: NextRequest) {
       const label = ACTION_LABELS[actionContext] || actionContext;
       messages.push({ role: "user", content: `I want to ${label.toLowerCase()}` });
     } else if (message) {
-      messages.push({ role: "user", content: message });
+      // Inject action context reminder into user message so the model stays focused
+      if (effectiveActionContext) {
+        const label = ACTION_LABELS[effectiveActionContext] || effectiveActionContext;
+        messages.push({ role: "user", content: `[Context: We are working on "${label}". Stay focused on this task.]\n\n${message}` });
+      } else {
+        messages.push({ role: "user", content: message });
+      }
     }
 
     // ── Generate AI response ───────────────────────────────────────
