@@ -119,6 +119,7 @@ export interface PropertyReportData {
   // Sales history (recent transactions)
   salesHistory?: Array<{
     date?: string;
+    recordingDate?: string;
     amount?: number;
     buyer?: string;
     seller?: string;
@@ -189,32 +190,84 @@ export function generatePropertyIntelligencePDF(
   doc.setFillColor(...brandGold);
   doc.rect(0, 42, pageW, 2, "F");
 
+  // Broker logo (top-left corner of header, if available)
+  let titleX = margin;
+  if (branding.brokerLogoData) {
+    try {
+      const logoH = 16;  // fixed height in mm
+      const logoW = 32;  // max width — aspect ratio preserved by jsPDF
+      doc.addImage(branding.brokerLogoData, "PNG", margin, 4, logoW, logoH);
+      titleX = margin + logoW + 4;
+    } catch {
+      // Skip if image fails to decode
+    }
+  }
+
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(20);
+  doc.setFontSize(18);
   doc.setFont("helvetica", "bold");
-  doc.text("Property Intelligence Report", margin, 18);
+  doc.text("Property Intelligence Report", titleX, 16);
 
   doc.setFontSize(11);
   doc.setFont("helvetica", "normal");
-  doc.text(data.address, margin, 28);
+  doc.text(data.address, titleX, 26);
 
   const cityLine = [data.city, data.state, data.zip].filter(Boolean).join(", ");
   if (cityLine) {
     doc.setFontSize(10);
-    doc.text(cityLine, margin, 34);
+    doc.text(cityLine, titleX, 33);
   }
 
   // Report date top-right
   doc.setFontSize(8);
   doc.text(data.generatedAt, pageW - margin, 34, { align: "right" });
 
-  y = 52;
+  y = 50;
 
-  // ── Agent branding line ──
-  doc.setTextColor(...textMuted);
-  doc.setFontSize(9);
-  doc.text(`Prepared by ${branding.displayName}${branding.licenseNumber ? ` (Lic# ${branding.licenseNumber})` : ""}`, margin, y);
-  y += 10;
+  // ── Agent branding bar ──
+  doc.setFillColor(248, 250, 252); // very light gray bg
+  doc.rect(0, y - 6, pageW, 22, "F");
+  doc.setDrawColor(226, 232, 240);
+  doc.line(0, y + 16, pageW, y + 16);
+
+  let agentTextX = margin;
+
+  // Agent headshot
+  if (branding.headshotData) {
+    try {
+      const photoSize = 14; // mm
+      const photoX = margin;
+      const photoY = y - 3;
+      // Draw a light border around the photo
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(photoX - 0.5, photoY - 0.5, photoSize + 1, photoSize + 1, 1, 1, "S");
+      doc.addImage(branding.headshotData, "JPEG", photoX, photoY, photoSize, photoSize);
+      agentTextX = margin + photoSize + 4;
+    } catch {
+      // Skip if image fails
+    }
+  }
+
+  // Agent name
+  doc.setTextColor(...textDark);
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "bold");
+  doc.text(branding.displayName, agentTextX, y + 1);
+
+  // License number & phone on second line
+  const agentDetails: string[] = [];
+  if (branding.licenseNumber) agentDetails.push(`Lic# ${branding.licenseNumber}`);
+  if (branding.phone) agentDetails.push(branding.phone);
+  if (branding.brokerageName) agentDetails.push(branding.brokerageName);
+  if (agentDetails.length > 0) {
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...textMuted);
+    doc.text(agentDetails.join("  |  "), agentTextX, y + 7);
+  }
+
+  y += 22;
 
   // ── SECTION HELPER ──
   const sectionTitle = (title: string) => {

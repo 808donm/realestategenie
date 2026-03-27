@@ -43,7 +43,7 @@ interface AttomProperty {
   };
   sale?: { amount?: { saleAmt?: number; saleTransDate?: string; saleRecDate?: string; saleDocType?: string; salePrice?: number; saleCode?: string; pricePerBed?: number; pricePerSizeUnit?: number } };
   avm?: { amount?: { value?: number; high?: number; low?: number; scr?: number; valueRange?: number }; eventDate?: string; _avmSources?: { chosen?: string } };
-  saleHistory?: Array<{ date?: string; amount?: number; buyerName?: string; sellerName?: string; deedType?: string; _source?: string }>;
+  saleHistory?: Array<{ date?: string; recordingDate?: string; amount?: number; buyerName?: string; sellerName?: string; deedType?: string; _source?: string }>;
   mortgage?: { amount?: number; lender?: { fullName?: string }; term?: string; date?: string; dueDate?: string; loanType?: string; interestRateType?: string; lienCount?: number; financingHistoryCount?: number; ltv?: number; ltvPurchase?: number };
   foreclosure?: { actionType?: string; filingDate?: string; recordingDate?: string; auctionDate?: string; auctionLocation?: string; defaultAmount?: number; startingBid?: number; originalLoanAmount?: number; trusteeFullName?: string; caseNumber?: string };
   hoa?: { fee?: number };
@@ -893,6 +893,7 @@ export default function PropertyDetailModal({
       // Sale history from property data
       salesHistory: p.saleHistory?.map(s => ({
         date: s.date,
+        recordingDate: s.recordingDate,
         amount: s.amount,
         buyer: s.buyerName,
         seller: s.sellerName,
@@ -1697,6 +1698,11 @@ export default function PropertyDetailModal({
                                 <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
                                   {[s.date, s.deedType].filter(Boolean).join(" · ")}
                                 </div>
+                                {s.recordingDate && (
+                                  <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>
+                                    Recorded: {s.recordingDate}
+                                  </div>
+                                )}
                               </div>
                               {pricePerSqft != null && pricePerSqft > 0 && (
                                 <div style={{ fontSize: 12, color: "#6b7280" }}>${pricePerSqft.toFixed(0)}/sqft</div>
@@ -3350,6 +3356,9 @@ function SalesHistorySection({ address, publicRecords }: { address?: string; pub
               {s.date && (
                 <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>
                   {s.date}
+                  {s.recordingDate && (
+                    <span style={{ marginLeft: 8, fontSize: 11, color: "#9ca3af" }}>Recorded: {s.recordingDate}</span>
+                  )}
                 </div>
               )}
               {(s.buyerName || s.sellerName || s.deedType) && (

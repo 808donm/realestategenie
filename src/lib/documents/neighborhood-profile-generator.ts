@@ -8,6 +8,11 @@ export interface AgentBranding {
   licenseNumber: string | null;
   photoUrl: string | null;
   brokerageName?: string;
+  brokerLogoUrl?: string | null;
+  /** Pre-fetched base64 data URI for agent headshot (server-side only) */
+  headshotData?: string | null;
+  /** Pre-fetched base64 data URI for broker logo (server-side only) */
+  brokerLogoData?: string | null;
 }
 
 export interface ProfileData {

@@ -362,6 +362,7 @@ export interface RealieParcel {
   transfers?: Array<{
     transferPrice?: number;
     transferDate?: string;
+    recordingDate?: string;
     buyerName?: string;
     sellerName?: string;
     documentType?: string;
@@ -670,7 +671,8 @@ export function mapRealieToAttomShape(parcel: RealieParcel): any {
     saleHistory: parcel.transfers?.length
       ? parcel.transfers
           .map((t) => ({
-            date: formatYMD(t.transferDate) || t.transferDate,
+            date: formatYMD(t.transferDate) || t.transferDate || formatYMD(t.recordingDate) || t.recordingDate,
+            recordingDate: formatYMD(t.recordingDate) || t.recordingDate,
             amount: t.transferPrice,
             buyerName: t.buyerName,
             sellerName: t.sellerName,
