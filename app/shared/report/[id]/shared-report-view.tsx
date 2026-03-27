@@ -281,9 +281,51 @@ export default function SharedReportView({
       {/* Gold accent bar */}
       <div style={{ height: 3, background: "linear-gradient(90deg, #b48228 0%, #d4a542 100%)" }} />
 
+      {/* Responsive layout styles */}
+      <style>{`
+        .shared-report-layout {
+          display: flex;
+          gap: 24px;
+          align-items: flex-start;
+        }
+        .shared-report-main {
+          flex: 1;
+          min-width: 0;
+        }
+        .shared-report-sidebar {
+          flex: 0 0 380px;
+          position: sticky;
+          top: 24px;
+        }
+        .shared-report-calc-box {
+          padding: 20px;
+          background: #fff;
+          border-radius: 12px;
+        }
+        .shared-report-calc-title {
+          border-bottom: 2px solid #e5e7eb;
+        }
+        @media (max-width: 1024px) {
+          .shared-report-layout {
+            flex-direction: column;
+          }
+          .shared-report-sidebar {
+            flex: 1 1 auto;
+            position: static;
+            width: 100%;
+          }
+          .shared-report-calc-box {
+            border: 2px solid #1e40af;
+          }
+          .shared-report-calc-title {
+            border-bottom-color: #1e40af;
+          }
+        }
+      `}</style>
+
       {/* Content */}
-      <div style={{ maxWidth: 760, margin: "0 auto", padding: "24px 20px 60px" }}>
-        {/* Photo Gallery */}
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 20px 60px" }}>
+        {/* Photo Gallery — full width above the two-column layout */}
         {photos.length > 0 && (
           <div style={{ marginBottom: 28 }}>
             {/* Main photo */}
@@ -333,14 +375,14 @@ export default function SharedReportView({
           </div>
         )}
 
-        {/* Value Cards */}
+        {/* Value Cards — full width */}
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 28 }}>
           {d.listPrice != null && <Card label="List Price" value={fmt(d.listPrice)!} />}
           {d.avmValue != null && (
             <Card
               label="AVM Value"
               value={fmt(d.avmValue)!}
-              sub={d.avmLow && d.avmHigh ? `Range: ${fmt(d.avmLow)} – ${fmt(d.avmHigh)}` : undefined}
+              sub={d.avmLow && d.avmHigh ? `Range: ${fmt(d.avmLow)} - ${fmt(d.avmHigh)}` : undefined}
               color="#f0f9ff"
             />
           )}
@@ -350,101 +392,124 @@ export default function SharedReportView({
           {d.yearBuilt != null && <Card label="Year Built" value={String(d.yearBuilt)} color="#fefce8" />}
         </div>
 
-        {/* Property Overview */}
-        <Section title="Property Overview">
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 32px" }}>
-            <Row label="Property Type" value={d.propertyType} />
-            <Row label="Year Built" value={d.yearBuilt} />
-            <Row label="Bedrooms" value={d.beds} />
-            <Row label="Bathrooms" value={d.baths} />
-            <Row label="Living Area" value={d.sqft ? `${d.sqft.toLocaleString()} sqft` : null} />
-            <Row label="Lot Size" value={d.lotSizeSqft ? `${d.lotSizeSqft.toLocaleString()} sqft` : null} />
-            <Row label="Stories" value={d.stories} />
-            <Row label="Parking" value={d.garageSpaces} />
-            <Row label="Pool" value={d.pool != null ? (d.pool ? "Yes" : "No") : null} />
-            <Row label="APN / TMK" value={d.apn} />
-            <Row label="County" value={d.county} />
-            <Row label="Annual Tax" value={fmt(d.taxAmount)} />
-          </div>
-        </Section>
+        {/* Two-column layout: Property data (left) + Mortgage Calculator (right) */}
+        <div className="shared-report-layout">
+          {/* Left column: Property details */}
+          <div className="shared-report-main">
+            {/* Property Overview */}
+            <Section title="Property Overview">
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 32px" }}>
+                <Row label="Property Type" value={d.propertyType} />
+                <Row label="Year Built" value={d.yearBuilt} />
+                <Row label="Bedrooms" value={d.beds} />
+                <Row label="Bathrooms" value={d.baths} />
+                <Row label="Living Area" value={d.sqft ? `${d.sqft.toLocaleString()} sqft` : null} />
+                <Row label="Lot Size" value={d.lotSizeSqft ? `${d.lotSizeSqft.toLocaleString()} sqft` : null} />
+                <Row label="Stories" value={d.stories} />
+                <Row label="Parking" value={d.garageSpaces} />
+                <Row label="Pool" value={d.pool != null ? (d.pool ? "Yes" : "No") : null} />
+                <Row label="APN / TMK" value={d.apn} />
+                <Row label="County" value={d.county} />
+                <Row label="Annual Tax" value={fmt(d.taxAmount)} />
+              </div>
+            </Section>
 
-        {/* Tax Assessment */}
-        {(d.assessedTotal != null || d.taxAmount != null) && (
-          <Section title="Tax Assessment">
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 32px" }}>
-              <Row label="Assessed Total" value={fmt(d.assessedTotal)} />
-              <Row label="Land Value" value={fmt(d.assessedLand)} />
-              <Row label="Improvement Value" value={fmt(d.assessedImpr)} />
-              <Row label="Market Value" value={fmt(d.marketTotal)} />
-              <Row label="Annual Tax" value={fmt(d.taxAmount)} />
-              <Row label="Tax Year" value={d.taxYear} />
-            </div>
-          </Section>
-        )}
+            {/* Tax Assessment */}
+            {(d.assessedTotal != null || d.taxAmount != null) && (
+              <Section title="Tax Assessment">
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 32px" }}>
+                  <Row label="Assessed Total" value={fmt(d.assessedTotal)} />
+                  <Row label="Land Value" value={fmt(d.assessedLand)} />
+                  <Row label="Improvement Value" value={fmt(d.assessedImpr)} />
+                  <Row label="Market Value" value={fmt(d.marketTotal)} />
+                  <Row label="Annual Tax" value={fmt(d.taxAmount)} />
+                  <Row label="Tax Year" value={d.taxYear} />
+                </div>
+              </Section>
+            )}
 
-        {/* Hazard & Environmental */}
-        {d.hazards && d.hazards.length > 0 && (
-          <Section title="Environmental & Hazard Information">
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {d.hazards.map((h: any, i: number) => (
+            {/* Hazard & Environmental */}
+            {d.hazards && d.hazards.length > 0 && (
+              <Section title="Environmental & Hazard Information">
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {d.hazards.map((h: any, i: number) => (
+                    <div
+                      key={i}
+                      style={{
+                        padding: "8px 12px",
+                        background: "#fef2f2",
+                        borderRadius: 8,
+                        borderLeft: "4px solid #dc2626",
+                      }}
+                    >
+                      <div style={{ fontSize: 11, fontWeight: 700, color: "#dc2626", textTransform: "uppercase" }}>
+                        {h.label}
+                      </div>
+                      <div style={{ fontSize: 13, color: "#374151", marginTop: 2 }}>{h.value}</div>
+                    </div>
+                  ))}
+                </div>
+                {d.federalData?.floodZone && (
+                  <div style={{ marginTop: 10 }}>
+                    <Row label="FEMA Flood Zone" value={d.federalData.floodZone} />
+                  </div>
+                )}
+              </Section>
+            )}
+
+            {/* No hazards -- show positive note */}
+            {(!d.hazards || d.hazards.length === 0) && (
+              <Section title="Environmental & Hazard Information">
                 <div
-                  key={i}
+                  style={{ padding: "12px 16px", background: "#f0fdf4", borderRadius: 8, borderLeft: "4px solid #16a34a" }}
+                >
+                  <div style={{ fontSize: 13, color: "#15803d", fontWeight: 600 }}>
+                    No known environmental hazards detected
+                  </div>
+                  <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>
+                    Based on Hawaii state GIS data for tsunami, sea level rise, lava flow, and cesspool zones.
+                  </div>
+                </div>
+                {d.federalData?.floodZone && (
+                  <div style={{ marginTop: 10 }}>
+                    <Row label="FEMA Flood Zone" value={d.federalData.floodZone} />
+                  </div>
+                )}
+              </Section>
+            )}
+          </div>
+
+          {/* Right column: Mortgage Calculator */}
+          {d.listPrice != null && d.listPrice > 0 && (
+            <div className="shared-report-sidebar">
+              <div className="shared-report-calc-box">
+                <h3
+                  className="shared-report-calc-title"
                   style={{
-                    padding: "8px 12px",
-                    background: "#fef2f2",
-                    borderRadius: 8,
-                    borderLeft: "4px solid #dc2626",
+                    fontSize: 16,
+                    fontWeight: 700,
+                    color: "#1e40af",
+                    marginBottom: 16,
+                    paddingBottom: 10,
+                    textTransform: "uppercase",
+                    letterSpacing: 0.5,
+                    textAlign: "center",
                   }}
                 >
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "#dc2626", textTransform: "uppercase" }}>
-                    {h.label}
-                  </div>
-                  <div style={{ fontSize: 13, color: "#374151", marginTop: 2 }}>{h.value}</div>
-                </div>
-              ))}
-            </div>
-            {d.federalData?.floodZone && (
-              <div style={{ marginTop: 10 }}>
-                <Row label="FEMA Flood Zone" value={d.federalData.floodZone} />
-              </div>
-            )}
-          </Section>
-        )}
-
-        {/* No hazards — show positive note */}
-        {(!d.hazards || d.hazards.length === 0) && (
-          <Section title="Environmental & Hazard Information">
-            <div
-              style={{ padding: "12px 16px", background: "#f0fdf4", borderRadius: 8, borderLeft: "4px solid #16a34a" }}
-            >
-              <div style={{ fontSize: 13, color: "#15803d", fontWeight: 600 }}>
-                No known environmental hazards detected
-              </div>
-              <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>
-                Based on Hawaii state GIS data for tsunami, sea level rise, lava flow, and cesspool zones.
+                  Mortgage Calculator
+                </h3>
+                <MortgageCalculator
+                  listPrice={d.listPrice}
+                  taxAnnual={d.taxAmount || d.taxAnnualAmount}
+                  hoaAnnual={d.associationFee}
+                  agentName={agentName}
+                  agentPhone={agentPhone}
+                  agentEmail={agentEmail}
+                />
               </div>
             </div>
-            {d.federalData?.floodZone && (
-              <div style={{ marginTop: 10 }}>
-                <Row label="FEMA Flood Zone" value={d.federalData.floodZone} />
-              </div>
-            )}
-          </Section>
-        )}
-
-        {/* Mortgage Calculator */}
-        {d.listPrice != null && d.listPrice > 0 && (
-          <Section title="Mortgage Calculator">
-            <MortgageCalculator
-              listPrice={d.listPrice}
-              taxAnnual={d.taxAmount || d.taxAnnualAmount}
-              hoaAnnual={d.associationFee}
-              agentName={agentName}
-              agentPhone={agentPhone}
-              agentEmail={agentEmail}
-            />
-          </Section>
-        )}
+          )}
+        </div>
 
         {/* Disclaimer */}
         <div
