@@ -2,13 +2,7 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Users,
-  Calendar,
-  UserCheck,
-  Flame,
-  ThermometerSun,
-} from "lucide-react";
+import { Users, Calendar, UserCheck, Flame, ThermometerSun } from "lucide-react";
 import { checkFeatureAccess } from "@/lib/subscriptions/server-utils";
 
 export const dynamic = "force-dynamic";
@@ -58,8 +52,7 @@ export default async function BrokerDashboardPage() {
     .order("start_at", { ascending: false });
 
   const totalOpenHouses = openHouses?.length || 0;
-  const publishedOpenHouses =
-    openHouses?.filter((oh) => oh.status === "published").length || 0;
+  const publishedOpenHouses = openHouses?.filter((oh) => oh.status === "published").length || 0;
 
   // Get leads for open houses
   const openHouseIds = openHouses?.map((oh) => oh.id) || [];
@@ -100,7 +93,7 @@ export default async function BrokerDashboardPage() {
         totalLeads: agentLeads?.length || 0,
         hotLeads: agentLeads?.filter((l) => l.heat_score >= 80).length || 0,
       };
-    })
+    }),
   );
 
   return (
@@ -108,9 +101,7 @@ export default async function BrokerDashboardPage() {
       {/* Page Header */}
       <div>
         <h2 className="text-3xl font-bold">Broker Dashboard</h2>
-        <p className="text-muted-foreground mt-1">
-          Overview of team performance and lead generation
-        </p>
+        <p className="text-muted-foreground mt-1">Overview of team performance and lead generation</p>
       </div>
 
       {/* Key Metrics Overview */}
@@ -163,9 +154,7 @@ export default async function BrokerDashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">{totalLeads}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {avgLeadsPerOpenHouse.toFixed(1)} per open house
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">{avgLeadsPerOpenHouse.toFixed(1)} per open house</p>
           </CardContent>
         </Card>
       </div>
@@ -183,16 +172,12 @@ export default async function BrokerDashboardPage() {
             <div className="p-4 border rounded-lg">
               <div className="text-sm text-muted-foreground mb-1">Total Open Houses</div>
               <div className="text-2xl font-bold">{totalOpenHouses}</div>
-              <div className="text-xs text-muted-foreground">
-                {publishedOpenHouses} published
-              </div>
+              <div className="text-xs text-muted-foreground">{publishedOpenHouses} published</div>
             </div>
             <div className="p-4 border rounded-lg">
               <div className="text-sm text-muted-foreground mb-1">Total Leads</div>
               <div className="text-2xl font-bold">{totalLeads}</div>
-              <div className="text-xs text-muted-foreground">
-                {avgLeadsPerOpenHouse.toFixed(1)} per open house
-              </div>
+              <div className="text-xs text-muted-foreground">{avgLeadsPerOpenHouse.toFixed(1)} per open house</div>
             </div>
             <div className="p-4 border rounded-lg">
               <div className="text-sm text-muted-foreground mb-1 flex items-center gap-1">
@@ -200,9 +185,7 @@ export default async function BrokerDashboardPage() {
                 Hot Leads
               </div>
               <div className="text-2xl font-bold text-red-600">{hotLeads}</div>
-              <div className="text-xs text-muted-foreground">
-                {avgHotLeadsPerOpenHouse.toFixed(1)} per open house
-              </div>
+              <div className="text-xs text-muted-foreground">{avgHotLeadsPerOpenHouse.toFixed(1)} per open house</div>
             </div>
             <div className="p-4 border rounded-lg">
               <div className="text-sm text-muted-foreground mb-1 flex items-center gap-1">
@@ -210,9 +193,7 @@ export default async function BrokerDashboardPage() {
                 Warm Leads
               </div>
               <div className="text-2xl font-bold text-orange-600">{warmLeads}</div>
-              <div className="text-xs text-muted-foreground">
-                {avgWarmLeadsPerOpenHouse.toFixed(1)} per open house
-              </div>
+              <div className="text-xs text-muted-foreground">{avgWarmLeadsPerOpenHouse.toFixed(1)} per open house</div>
             </div>
           </div>
         </CardContent>
@@ -228,9 +209,7 @@ export default async function BrokerDashboardPage() {
         </CardHeader>
         <CardContent>
           {agentPerformance.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No agents in your team yet
-            </div>
+            <div className="text-center py-8 text-muted-foreground">No agents in your team yet</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">

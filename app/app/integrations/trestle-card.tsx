@@ -6,8 +6,25 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { CheckCircle2, AlertCircle, Loader2, ExternalLink, Database, Building2, Users, Camera, Calendar } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  ExternalLink,
+  Database,
+  Building2,
+  Users,
+  Camera,
+  Calendar,
+} from "lucide-react";
 import { toast } from "sonner";
 
 type Integration = {
@@ -161,13 +178,11 @@ export default function TrestleIntegrationCard({ integration }: { integration: I
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-lg flex items-center justify-center">
                 <svg viewBox="0 0 24 24" className="w-7 h-7 text-white" fill="currentColor">
-                  <path d="M12 2L2 7v10l10 5 10-5V7L12 2zm0 2.18l6.9 3.45L12 11.09 5.1 7.63 12 4.18zM4 8.82l7 3.5v7.36l-7-3.5V8.82zm9 10.86v-7.36l7-3.5v7.36l-7 3.5z"/>
+                  <path d="M12 2L2 7v10l10 5 10-5V7L12 2zm0 2.18l6.9 3.45L12 11.09 5.1 7.63 12 4.18zM4 8.82l7 3.5v7.36l-7-3.5V8.82zm9 10.86v-7.36l7-3.5v7.36l-7 3.5z" />
                 </svg>
               </div>
               <div>
-                <CardTitle className="flex items-center gap-2">
-                  Trestle by CoreLogic
-                </CardTitle>
+                <CardTitle className="flex items-center gap-2">Trestle by CoreLogic</CardTitle>
                 <CardDescription>MLS & IDX Data Exchange</CardDescription>
               </div>
             </div>
@@ -183,15 +198,14 @@ export default function TrestleIntegrationCard({ integration }: { integration: I
                 Error
               </Badge>
             )}
-            {!isConnected && !hasError && (
-              <Badge variant="outline">Not Connected</Badge>
-            )}
+            {!isConnected && !hasError && <Badge variant="outline">Not Connected</Badge>}
           </div>
         </CardHeader>
 
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Connect to the Trestle API for real-time MLS property listings, agent rosters, and RESO Data Dictionary 2.0 standardized data.
+            Connect to the Trestle API for real-time MLS property listings, agent rosters, and RESO Data Dictionary 2.0
+            standardized data.
           </p>
 
           {/* Feature highlights */}
@@ -227,9 +241,7 @@ export default function TrestleIntegrationCard({ integration }: { integration: I
               <Calendar className="w-4 h-4 mt-0.5 text-teal-600" />
               <div>
                 <h4 className="font-medium text-sm">Open Houses</h4>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Scheduled showings with virtual event support
-                </p>
+                <p className="text-xs text-muted-foreground mt-1">Scheduled showings with virtual event support</p>
               </div>
             </div>
           </div>
@@ -262,10 +274,18 @@ export default function TrestleIntegrationCard({ integration }: { integration: I
             <div className="p-3 bg-muted/30 rounded-lg">
               <h4 className="font-medium text-sm mb-2">Technical Details</h4>
               <ul className="text-xs text-muted-foreground space-y-1">
-                <li>• <strong>API:</strong> RESO Web API (OData)</li>
-                <li>• <strong>Auth:</strong> OAuth2 Client Credentials</li>
-                <li>• <strong>Standard:</strong> RESO Data Dictionary 2.0</li>
-                <li>• <strong>Identifier:</strong> CLIP (Cotality Integrated Property)</li>
+                <li>
+                  • <strong>API:</strong> RESO Web API (OData)
+                </li>
+                <li>
+                  • <strong>Auth:</strong> OAuth2 Client Credentials
+                </li>
+                <li>
+                  • <strong>Standard:</strong> RESO Data Dictionary 2.0
+                </li>
+                <li>
+                  • <strong>Identifier:</strong> CLIP (Cotality Integrated Property)
+                </li>
               </ul>
             </div>
           )}
@@ -278,21 +298,11 @@ export default function TrestleIntegrationCard({ integration }: { integration: I
               </Button>
             ) : (
               <>
-                <Button
-                  onClick={handleTest}
-                  disabled={testing}
-                  variant="outline"
-                  className="flex-1"
-                >
+                <Button onClick={handleTest} disabled={testing} variant="outline" className="flex-1">
                   {testing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   Test Connection
                 </Button>
-                <Button
-                  onClick={handleDisconnect}
-                  disabled={disconnecting}
-                  variant="outline"
-                  className="flex-1"
-                >
+                <Button onClick={handleDisconnect} disabled={disconnecting} variant="outline" className="flex-1">
                   {disconnecting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   Disconnect
                 </Button>
@@ -339,9 +349,7 @@ export default function TrestleIntegrationCard({ integration }: { integration: I
                 onChange={(e) => setApiUrl(e.target.value)}
                 disabled={connecting}
               />
-              <p className="text-xs text-muted-foreground">
-                The full WebAPI endpoint URL provided by Trestle
-              </p>
+              <p className="text-xs text-muted-foreground">The full WebAPI endpoint URL provided by Trestle</p>
             </div>
 
             {/* Auth Method Toggle */}
@@ -430,8 +438,8 @@ export default function TrestleIntegrationCard({ integration }: { integration: I
             )}
 
             <div className="p-3 bg-muted/50 rounded-lg text-xs text-muted-foreground">
-              <strong>Note:</strong> Trestle credentials are provided by CoreLogic through your MLS
-              subscription. Contact your MLS or Trestle account manager if you need help.
+              <strong>Note:</strong> Trestle credentials are provided by CoreLogic through your MLS subscription.
+              Contact your MLS or Trestle account manager if you need help.
             </div>
           </div>
 
@@ -450,11 +458,7 @@ export default function TrestleIntegrationCard({ integration }: { integration: I
             >
               Cancel
             </Button>
-            <Button
-              onClick={handleConnect}
-              disabled={connecting}
-              className="bg-teal-600 hover:bg-teal-700"
-            >
+            <Button onClick={handleConnect} disabled={connecting} className="bg-teal-600 hover:bg-teal-700">
               {connecting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Connect
             </Button>

@@ -9,10 +9,7 @@ import { draftFollowUpEmail } from "@/lib/briefing/ai-briefing";
  * Uses AI to draft a stage-aware follow-up email for a lead.
  * Returns { subject, body } that the agent can review and send.
  */
-export async function POST(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: leadId } = await params;
     const supabase = await supabaseServer();
@@ -37,11 +34,7 @@ export async function POST(
     }
 
     // Fetch agent name
-    const { data: agent } = await supabase
-      .from("agents")
-      .select("display_name")
-      .eq("id", user.id)
-      .single();
+    const { data: agent } = await supabase.from("agents").select("display_name").eq("id", user.id).single();
 
     // Fetch event for property address + open house date
     const { data: event } = await supabase
@@ -52,17 +45,14 @@ export async function POST(
 
     const now = new Date();
     const ohDate = event?.start_at ? new Date(event.start_at) : null;
-    const recentOpenHouse =
-      ohDate !== null && now.getTime() - ohDate.getTime() < 7 * 86400000;
+    const recentOpenHouse = ohDate !== null && now.getTime() - ohDate.getTime() < 7 * 86400000;
 
     const draft = await draftFollowUpEmail({
       agentName: agent?.display_name || "Your Agent",
       leadName: lead.payload?.name || "there",
       leadEmail: lead.payload?.email || null,
       pipelineStage: lead.pipeline_stage,
-      pipelineStageLabel:
-        PIPELINE_STAGE_LABELS[lead.pipeline_stage as PipelineStage] ||
-        lead.pipeline_stage,
+      pipelineStageLabel: PIPELINE_STAGE_LABELS[lead.pipeline_stage as PipelineStage] || lead.pipeline_stage,
       heatScore: lead.heat_score,
       property: event?.address || "the property",
       timeline: lead.payload?.timeline || null,

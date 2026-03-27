@@ -7,6 +7,7 @@ This document explains how to set up automated tasks (cron jobs) for the Real Es
 **Endpoint:** `GET /api/cron/lease-status-transitions`
 
 **Purpose:** Automatically updates lease statuses based on dates:
+
 - Activates leases when their start date arrives
 - Converts leases to month-to-month when their end date arrives
 - Updates property/unit occupancy status accordingly
@@ -52,7 +53,7 @@ name: Lease Status Transitions
 on:
   schedule:
     # Runs at 1:00 AM UTC every day
-    - cron: '0 1 * * *'
+    - cron: "0 1 * * *"
   workflow_dispatch: # Allow manual trigger
 
 jobs:
@@ -96,6 +97,7 @@ CRON_SECRET=your-random-secure-string-here
 ```
 
 **Generate a secure secret:**
+
 ```bash
 # Using Node.js
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
@@ -115,6 +117,7 @@ curl -X GET "http://localhost:3000/api/cron/lease-status-transitions" \
 ```
 
 **Response example:**
+
 ```json
 {
   "success": true,
@@ -136,6 +139,7 @@ Check your application logs to see cron job execution:
 - External service: Check service dashboard
 
 **Look for log entries:**
+
 - `🔄 Running lease status transitions for...`
 - `✅ Activated lease {id} for {tenant}`
 - `✅ Converted lease {id} to month-to-month for {tenant}`
@@ -145,14 +149,17 @@ Check your application logs to see cron job execution:
 ## Troubleshooting
 
 **Cron job returns 401 Unauthorized:**
+
 - Verify `CRON_SECRET` environment variable is set
 - Check the Authorization header matches the secret
 
 **Leases not updating:**
+
 - Check that lease dates are in the correct format (YYYY-MM-DD)
 - Verify lease status is `pending_start` or `active`
 - Check application logs for errors
 
 **Too many leases processing:**
+
 - The job only processes leases where dates have passed
 - This is normal if you have many leases starting/ending on the same day

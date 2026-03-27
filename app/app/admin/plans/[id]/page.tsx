@@ -12,11 +12,7 @@ export default async function EditPlanPage({ params }: PageProps) {
   const { id } = await params;
 
   // Get plan details
-  const { data: plan } = await supabaseAdmin
-    .from("subscription_plans")
-    .select("*")
-    .eq("id", id)
-    .single();
+  const { data: plan } = await supabaseAdmin.from("subscription_plans").select("*").eq("id", id).single();
 
   if (!plan) {
     redirect("/app/admin/plans");

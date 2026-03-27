@@ -1,5 +1,16 @@
 import { jsPDF } from "jspdf";
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell, WidthType } from "docx";
+import {
+  Document,
+  Packer,
+  Paragraph,
+  TextRun,
+  HeadingLevel,
+  AlignmentType,
+  Table,
+  TableRow,
+  TableCell,
+  WidthType,
+} from "docx";
 
 export interface AgentBranding {
   displayName: string;
@@ -39,10 +50,7 @@ export interface ProfileData {
 /**
  * Generate a PDF neighborhood profile
  */
-export function generatePDF(
-  profileData: ProfileData,
-  agentBranding: AgentBranding
-): Blob {
+export function generatePDF(profileData: ProfileData, agentBranding: AgentBranding): Blob {
   const doc = new jsPDF();
   let yPosition = 20;
 
@@ -183,7 +191,8 @@ export function generatePDF(
     doc.setFontSize(8);
     doc.setTextColor(100, 100, 100);
 
-    const disclaimerText = "DISCLAIMER: Information obtained from third-party sources has not been verified. " +
+    const disclaimerText =
+      "DISCLAIMER: Information obtained from third-party sources has not been verified. " +
       "No warranty is made regarding accuracy. Prospective buyers should conduct independent verification. " +
       "Complies with Fair Housing Act principles.";
 
@@ -200,10 +209,7 @@ export function generatePDF(
 /**
  * Generate a Word (.docx) neighborhood profile
  */
-export async function generateDOCX(
-  profileData: ProfileData,
-  agentBranding: AgentBranding
-): Promise<Blob> {
+export async function generateDOCX(profileData: ProfileData, agentBranding: AgentBranding): Promise<Blob> {
   const doc = new Document({
     sections: [
       {
@@ -349,7 +355,7 @@ export async function generateDOCX(
               new Paragraph({
                 text: `• ${school}`,
                 spacing: { after: 50 },
-              })
+              }),
           ),
 
           new Paragraph({
@@ -381,7 +387,7 @@ export async function generateDOCX(
                     new Paragraph({
                       text: `• ${park}`,
                       spacing: { after: 50 },
-                    })
+                    }),
                 ),
               ]
             : []),
@@ -397,7 +403,7 @@ export async function generateDOCX(
                     new Paragraph({
                       text: `• ${shop}`,
                       spacing: { after: 50 },
-                    })
+                    }),
                 ),
               ]
             : []),
@@ -413,7 +419,7 @@ export async function generateDOCX(
                     new Paragraph({
                       text: `• ${restaurant}`,
                       spacing: { after: 50 },
-                    })
+                    }),
                 ),
               ]
             : []),

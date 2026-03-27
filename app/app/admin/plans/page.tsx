@@ -18,14 +18,9 @@ export default async function AdminPlansPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold mb-2">Subscription Plans</h1>
-          <p className="text-gray-600">
-            Manage pricing, limits, and plan settings
-          </p>
+          <p className="text-gray-600">Manage pricing, limits, and plan settings</p>
         </div>
-        <Link
-          href="/app/admin"
-          className="px-4 py-2 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700"
-        >
+        <Link href="/app/admin" className="px-4 py-2 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700">
           Back to Admin
         </Link>
       </div>
@@ -34,18 +29,13 @@ export default async function AdminPlansPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {plans?.map((plan) => {
           return (
-            <div
-              key={plan.id}
-              className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden"
-            >
+            <div key={plan.id} className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
               {/* Header */}
               <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-xl font-bold text-white">{plan.name}</h3>
-                    <p className="text-blue-100 text-sm mt-1">
-                      Tier {plan.tier_level}
-                    </p>
+                    <p className="text-blue-100 text-sm mt-1">Tier {plan.tier_level}</p>
                   </div>
                   {plan.is_custom && (
                     <span className="px-3 py-1 bg-yellow-400 text-yellow-900 rounded-full text-xs font-semibold">
@@ -72,25 +62,19 @@ export default async function AdminPlansPage() {
                     >
                       Contact Sales
                     </a>
-                    <p className="text-xs text-gray-500 mt-2">
-                      Schedule a consultation to discuss custom pricing
-                    </p>
+                    <p className="text-xs text-gray-500 mt-2">Schedule a consultation to discuss custom pricing</p>
                   </div>
                 ) : (
                   <div className="mb-6">
                     <div className="text-sm text-gray-500 mb-2">Pricing</div>
                     <div className="flex items-baseline gap-4">
                       <div>
-                        <span className="text-3xl font-bold text-gray-900">
-                          ${plan.monthly_price}
-                        </span>
+                        <span className="text-3xl font-bold text-gray-900">${plan.monthly_price}</span>
                         <span className="text-gray-500">/month</span>
                       </div>
                       {plan.annual_price && (
                         <div>
-                          <span className="text-xl font-semibold text-gray-700">
-                            ${plan.annual_price}
-                          </span>
+                          <span className="text-xl font-semibold text-gray-700">${plan.annual_price}</span>
                           <span className="text-gray-500">/year</span>
                         </div>
                       )}
@@ -105,7 +89,7 @@ export default async function AdminPlansPage() {
                   <div className="flex items-center justify-between py-2 border-b border-gray-100">
                     <span className="text-sm text-gray-600">Max Agents</span>
                     <span className="font-semibold text-gray-900">
-                      {plan.max_agents === 999999 ? 'Unlimited' : plan.max_agents}
+                      {plan.max_agents === 999999 ? "Unlimited" : plan.max_agents}
                     </span>
                   </div>
                 </div>
@@ -114,12 +98,10 @@ export default async function AdminPlansPage() {
                 <div className="mb-4">
                   <span
                     className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                      plan.is_active
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-gray-100 text-gray-800'
+                      plan.is_active ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
                     }`}
                   >
-                    {plan.is_active ? 'Active' : 'Inactive'}
+                    {plan.is_active ? "Active" : "Inactive"}
                   </span>
                 </div>
 

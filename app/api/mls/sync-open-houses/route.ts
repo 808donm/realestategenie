@@ -20,7 +20,9 @@ import { pullOpenHousesFromMLS, getUnsyncedLocalEvents } from "@/lib/mls/open-ho
 export async function POST(request: NextRequest) {
   try {
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await request.json();
@@ -58,10 +60,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, ...response });
   } catch (error) {
     console.error("Error syncing open houses:", error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Sync failed" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Sync failed" }, { status: 500 });
   }
 }
 
@@ -71,7 +70,9 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   try {
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     // Count synced vs unsynced events
@@ -112,7 +113,7 @@ export async function GET() {
     console.error("Error getting sync status:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to get status" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

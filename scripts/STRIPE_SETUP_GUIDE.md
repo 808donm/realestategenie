@@ -1,6 +1,7 @@
 # Stripe Price IDs Setup Guide
 
 ## Issue Found
+
 **Brokerage Growth - Monthly** has a duplicate payment link (same as Team Growth - Yearly). Please provide the correct link.
 
 ## What We Need
@@ -70,6 +71,7 @@ This will automatically list all your Stripe prices and generate the SQL for you
 ## What Happens Next
 
 Once the price IDs are in the database:
+
 1. Admin can choose billing frequency (monthly/yearly) when approving requests
 2. System creates Stripe checkout sessions with proper metadata
 3. Access requests are automatically tracked through the payment process

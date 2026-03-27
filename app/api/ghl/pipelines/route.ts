@@ -10,7 +10,9 @@ import { GHLClient } from "@/lib/integrations/ghl-client";
 export async function GET() {
   try {
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -23,10 +25,13 @@ export async function GET() {
     const ghlConfig = await getValidGHLConfig(ghlAgentId);
 
     if (!ghlConfig) {
-      return NextResponse.json({
-        error: "Unable to get valid GHL credentials. Please reconnect GHL.",
-        pipelines: []
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: "Unable to get valid GHL credentials. Please reconnect GHL.",
+          pipelines: [],
+        },
+        { status: 400 },
+      );
     }
 
     const client = new GHLClient(ghlConfig.access_token, ghlConfig.location_id);
@@ -36,17 +41,13 @@ export async function GET() {
 
     // Return simplified pipeline list
     return NextResponse.json({
-      pipelines: pipelines.map(p => ({
+      pipelines: pipelines.map((p) => ({
         id: p.id,
-        name: p.name
-      }))
+        name: p.name,
+      })),
     });
-
   } catch (error: any) {
     console.error("Error fetching pipelines:", error);
-    return NextResponse.json(
-      { error: error.message, pipelines: [] },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message, pipelines: [] }, { status: 500 });
   }
 }

@@ -40,20 +40,17 @@ export function PropertyCard({ property, compact, onAddToCRM, onGenerateReport, 
         )}
         {p.equity != null && (
           <div>
-            <span className="text-gray-400">Equity:</span>{" "}
-            <span className="font-medium">{fmtPrice(p.equity)}</span>
+            <span className="text-gray-400">Equity:</span> <span className="font-medium">{fmtPrice(p.equity)}</span>
           </div>
         )}
         {p.ltv != null && (
           <div>
-            <span className="text-gray-400">LTV:</span>{" "}
-            <span className="font-medium">{p.ltv}%</span>
+            <span className="text-gray-400">LTV:</span> <span className="font-medium">{p.ltv}%</span>
           </div>
         )}
         {p.ownershipYears != null && (
           <div>
-            <span className="text-gray-400">Owned:</span>{" "}
-            <span className="font-medium">{p.ownershipYears}yr</span>
+            <span className="text-gray-400">Owned:</span> <span className="font-medium">{p.ownershipYears}yr</span>
           </div>
         )}
         {p.lastSaleDate && (
@@ -69,14 +66,12 @@ export function PropertyCard({ property, compact, onAddToCRM, onGenerateReport, 
         )}
         {p.ownerParcelCount != null && p.ownerParcelCount > 1 && (
           <div>
-            <span className="text-gray-400">Properties:</span>{" "}
-            <span className="font-medium">{p.ownerParcelCount}</span>
+            <span className="text-gray-400">Properties:</span> <span className="font-medium">{p.ownerParcelCount}</span>
           </div>
         )}
         {p.owner && (
           <div className="col-span-2">
-            <span className="text-gray-400">Owner:</span>{" "}
-            <span className="font-medium truncate">{p.owner}</span>
+            <span className="text-gray-400">Owner:</span> <span className="font-medium truncate">{p.owner}</span>
           </div>
         )}
         {p.absentee && (
@@ -187,10 +182,7 @@ function ScoreBadge({ score, level }: { score: number; level: ScoredProperty["le
       >
         {score}
       </div>
-      <span
-        className="text-[10px] font-medium mt-0.5"
-        style={{ color: getSellerColor(level) }}
-      >
+      <span className="text-[10px] font-medium mt-0.5" style={{ color: getSellerColor(level) }}>
         {getSellerLabel(level)}
       </span>
     </div>
@@ -205,10 +197,7 @@ function FactorBar({ factor }: { factor: SellerFactor }) {
       <div className="flex items-center gap-2">
         <span className="text-[10px] text-gray-500 w-28 truncate">{factor.name}</span>
         <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-blue-500 rounded-full transition-all"
-            style={{ width: `${pct}%` }}
-          />
+          <div className="h-full bg-blue-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
         </div>
         <span className="text-[10px] text-gray-400 w-8 text-right">
           {factor.points}/{factor.maxPoints}

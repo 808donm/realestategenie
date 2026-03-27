@@ -21,11 +21,9 @@ import type { DomSearchParams } from "@/lib/prospecting/dom-search-engine";
  * Required header: Authorization: Bearer [CRON_SECRET]
  */
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 export async function POST(request: NextRequest) {
   try {
@@ -46,7 +44,9 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     const trestleConfig = trestleInteg?.config
-      ? (typeof trestleInteg.config === "string" ? JSON.parse(trestleInteg.config) : trestleInteg.config)
+      ? typeof trestleInteg.config === "string"
+        ? JSON.parse(trestleInteg.config)
+        : trestleInteg.config
       : null;
 
     // Get RentCast client (fallback)
@@ -81,10 +81,7 @@ export async function POST(request: NextRequest) {
     // STEP 2: Populate all saved searches from cache
     // ═══════════════════════════════════════════════════════════════════
     console.log("[DomCron] Step 2: Populating saved searches...");
-    const { data: searches } = await supabase
-      .from("dom_prospect_searches")
-      .select("*")
-      .eq("is_active", true);
+    const { data: searches } = await supabase.from("dom_prospect_searches").select("*").eq("is_active", true);
 
     stats.searches = { total: searches?.length || 0, success: 0, failed: 0, totalResults: 0 };
 
@@ -107,7 +104,7 @@ export async function POST(request: NextRequest) {
           await supabase.from("dom_prospect_results").delete().eq("search_id", search.id);
 
           if (result.results.length > 0) {
-            const rows = result.results.map(r => ({
+            const rows = result.results.map((r) => ({
               search_id: search.id,
               listing_key: r.listingKey,
               mls_number: r.mlsNumber,
@@ -143,11 +140,14 @@ export async function POST(request: NextRequest) {
             }
           }
 
-          await supabase.from("dom_prospect_searches").update({
-            last_run_at: new Date().toISOString(),
-            next_run_at: new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString(),
-            updated_at: new Date().toISOString(),
-          }).eq("id", search.id);
+          await supabase
+            .from("dom_prospect_searches")
+            .update({
+              last_run_at: new Date().toISOString(),
+              next_run_at: new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", search.id);
 
           stats.searches.success++;
           stats.searches.totalResults += result.results.length;
@@ -177,10 +177,7 @@ export async function POST(request: NextRequest) {
     // ═══════════════════════════════════════════════════════════════════
     // STEP 4: Cleanup expired results
     // ═══════════════════════════════════════════════════════════════════
-    await supabase
-      .from("dom_prospect_results")
-      .delete()
-      .lt("expires_at", new Date().toISOString());
+    await supabase.from("dom_prospect_results").delete().lt("expires_at", new Date().toISOString());
 
     console.log("[DomCron] Weekly refresh complete:", stats);
 
@@ -191,9 +188,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error("[DomCron] Error:", error);
-    return NextResponse.json(
-      { error: error.message || "DOM prospect refresh failed" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message || "DOM prospect refresh failed" }, { status: 500 });
   }
 }

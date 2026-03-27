@@ -35,7 +35,8 @@ export default async function UpgradePage() {
   // Get features for each plan
   const { data: planFeatures } = await supabaseAdmin
     .from("plan_features")
-    .select(`
+    .select(
+      `
       plan_id,
       features (
         id,
@@ -44,7 +45,8 @@ export default async function UpgradePage() {
         description,
         category
       )
-    `)
+    `,
+    )
     .eq("is_enabled", true);
 
   // Group features by plan
@@ -122,18 +124,14 @@ export default async function UpgradePage() {
                   )}
                 </div>
                 <CardTitle className="text-2xl mt-4">{plan.name}</CardTitle>
-                <CardDescription className="text-white/90">
-                  {plan.description}
-                </CardDescription>
+                <CardDescription className="text-white/90">{plan.description}</CardDescription>
               </CardHeader>
 
               <CardContent className="flex-1 pt-6">
                 {/* Pricing */}
                 <div className="mb-6">
                   <div className="flex items-baseline gap-2">
-                    <span className="text-4xl font-bold">
-                      ${plan.monthly_price}
-                    </span>
+                    <span className="text-4xl font-bold">${plan.monthly_price}</span>
                     <span className="text-muted-foreground">/month</span>
                   </div>
                   {plan.annual_price && (
@@ -148,19 +146,13 @@ export default async function UpgradePage() {
                 <div className="space-y-3 mb-6 pb-6 border-b">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Agents</span>
-                    <span className="font-semibold">
-                      {plan.max_agents === 999999 ? "Unlimited" : plan.max_agents}
-                    </span>
+                    <span className="font-semibold">{plan.max_agents === 999999 ? "Unlimited" : plan.max_agents}</span>
                   </div>
-
-
                 </div>
 
                 {/* Features */}
                 <div className="space-y-2 mb-6">
-                  <p className="text-sm font-semibold text-muted-foreground mb-3">
-                    Includes:
-                  </p>
+                  <p className="text-sm font-semibold text-muted-foreground mb-3">Includes:</p>
                   {features.slice(0, 5).map((feature: any) => (
                     <div key={feature.id} className="flex items-start gap-2">
                       <Check className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
@@ -168,9 +160,7 @@ export default async function UpgradePage() {
                     </div>
                   ))}
                   {features.length > 5 && (
-                    <p className="text-sm text-muted-foreground pl-6">
-                      + {features.length - 5} more features
-                    </p>
+                    <p className="text-sm text-muted-foreground pl-6">+ {features.length - 5} more features</p>
                   )}
                 </div>
 
@@ -187,8 +177,8 @@ export default async function UpgradePage() {
                           isUpgrade
                             ? "bg-purple-600 hover:bg-purple-700"
                             : isDowngrade
-                            ? "bg-gray-600 hover:bg-gray-700"
-                            : "bg-blue-600 hover:bg-blue-700"
+                              ? "bg-gray-600 hover:bg-gray-700"
+                              : "bg-blue-600 hover:bg-blue-700"
                         }`}
                       >
                         {isUpgrade ? "Upgrade" : isDowngrade ? "Downgrade" : "Select Plan"}
@@ -215,8 +205,8 @@ export default async function UpgradePage() {
             <div className="flex-1">
               <h3 className="text-2xl font-bold mb-2">Need a Custom Plan?</h3>
               <p className="text-muted-foreground mb-4">
-                For large brokerages with unique requirements, we offer custom enterprise plans with
-                dedicated support, custom integrations, and volume pricing.
+                For large brokerages with unique requirements, we offer custom enterprise plans with dedicated support,
+                custom integrations, and volume pricing.
               </p>
               <div className="flex gap-3">
                 <Link href="mailto:sales@realestategenie.app?subject=Enterprise Plan Inquiry">
@@ -246,8 +236,8 @@ export default async function UpgradePage() {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground">
-              Yes! You can upgrade or downgrade your plan at any time. Changes take effect
-              immediately for upgrades, or at the end of your billing cycle for downgrades.
+              Yes! You can upgrade or downgrade your plan at any time. Changes take effect immediately for upgrades, or
+              at the end of your billing cycle for downgrades.
             </p>
           </CardContent>
         </Card>
@@ -258,9 +248,8 @@ export default async function UpgradePage() {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground">
-              We believe in fair-use limits. If you exceed your plan's limits, you'll receive a
-              notification suggesting an upgrade, but your service won't be interrupted. We'll work
-              with you to find the right plan.
+              We believe in fair-use limits. If you exceed your plan's limits, you'll receive a notification suggesting
+              an upgrade, but your service won't be interrupted. We'll work with you to find the right plan.
             </p>
           </CardContent>
         </Card>
@@ -271,8 +260,8 @@ export default async function UpgradePage() {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground">
-              Yes! Annual billing is available for most plans and includes a discount compared to
-              monthly billing. Contact us to switch to annual billing.
+              Yes! Annual billing is available for most plans and includes a discount compared to monthly billing.
+              Contact us to switch to annual billing.
             </p>
           </CardContent>
         </Card>
@@ -283,8 +272,7 @@ export default async function UpgradePage() {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground">
-              We accept all major credit cards, ACH transfers, and can set up invoicing for
-              enterprise customers.
+              We accept all major credit cards, ACH transfers, and can set up invoicing for enterprise customers.
             </p>
           </CardContent>
         </Card>
@@ -293,9 +281,7 @@ export default async function UpgradePage() {
       {/* Back Link */}
       <div className="text-center">
         <Link href="/app/billing">
-          <Button variant="outline">
-            Back to Billing
-          </Button>
+          <Button variant="outline">Back to Billing</Button>
         </Link>
       </div>
     </div>

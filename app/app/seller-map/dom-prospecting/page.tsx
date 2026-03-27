@@ -4,7 +4,8 @@ import { DomProspectingClient } from "./dom-prospecting.client";
 
 export const metadata = {
   title: "DOM Prospecting | Real Estate Genie",
-  description: "Identify stale listings exceeding average days on market — find agent-switching opportunities before they expire",
+  description:
+    "Identify stale listings exceeding average days on market — find agent-switching opportunities before they expire",
 };
 
 export default async function DomProspectingPage() {
@@ -27,8 +28,13 @@ export default async function DomProspectingPage() {
         <a
           href="/app/seller-map"
           style={{
-            padding: "6px 14px", background: "#f3f4f6", borderRadius: 6,
-            fontSize: 13, fontWeight: 500, textDecoration: "none", color: "#374151",
+            padding: "6px 14px",
+            background: "#f3f4f6",
+            borderRadius: 6,
+            fontSize: 13,
+            fontWeight: 500,
+            textDecoration: "none",
+            color: "#374151",
           }}
         >
           Seller Map

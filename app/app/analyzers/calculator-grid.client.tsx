@@ -60,20 +60,17 @@ export default function CalculatorGrid({ cards }: { cards: CalculatorCard[] }) {
     }
   }, [cards]);
 
-  const handleDragStart = useCallback(
-    (e: React.DragEvent<HTMLDivElement>, index: number) => {
-      setDragIndex(index);
-      dragNode.current = e.currentTarget;
-      e.dataTransfer.effectAllowed = "move";
-      // Make the drag image slightly transparent
-      requestAnimationFrame(() => {
-        if (dragNode.current) {
-          dragNode.current.style.opacity = "0.4";
-        }
-      });
-    },
-    []
-  );
+  const handleDragStart = useCallback((e: React.DragEvent<HTMLDivElement>, index: number) => {
+    setDragIndex(index);
+    dragNode.current = e.currentTarget;
+    e.dataTransfer.effectAllowed = "move";
+    // Make the drag image slightly transparent
+    requestAnimationFrame(() => {
+      if (dragNode.current) {
+        dragNode.current.style.opacity = "0.4";
+      }
+    });
+  }, []);
 
   const handleDragEnd = useCallback(() => {
     if (dragNode.current) {
@@ -91,7 +88,7 @@ export default function CalculatorGrid({ cards }: { cards: CalculatorCard[] }) {
       if (dragIndex === null || dragIndex === index) return;
       setDragOverIndex(index);
     },
-    [dragIndex]
+    [dragIndex],
   );
 
   const handleDrop = useCallback(
@@ -108,7 +105,7 @@ export default function CalculatorGrid({ cards }: { cards: CalculatorCard[] }) {
       setDragIndex(null);
       setDragOverIndex(null);
     },
-    [dragIndex]
+    [dragIndex],
   );
 
   const handleResetOrder = useCallback(() => {
@@ -166,14 +163,10 @@ export default function CalculatorGrid({ cards }: { cards: CalculatorCard[] }) {
               cursor: "grab",
               position: "relative",
               borderRadius: 14,
-              outline:
-                dragOverIndex === index
-                  ? "2px dashed #3b82f6"
-                  : "2px solid transparent",
+              outline: dragOverIndex === index ? "2px dashed #3b82f6" : "2px solid transparent",
               outlineOffset: -2,
               transition: "outline 0.15s, transform 0.15s",
-              transform:
-                dragOverIndex === index ? "scale(1.02)" : "scale(1)",
+              transform: dragOverIndex === index ? "scale(1.02)" : "scale(1)",
             }}
           >
             <div
@@ -198,9 +191,7 @@ export default function CalculatorGrid({ cards }: { cards: CalculatorCard[] }) {
                   alignItems: "flex-start",
                 }}
               >
-                <div style={{ fontSize: 32, marginBottom: 12 }}>
-                  {card.emoji}
-                </div>
+                <div style={{ fontSize: 32, marginBottom: 12 }}>{card.emoji}</div>
                 <div
                   style={{
                     fontSize: 16,

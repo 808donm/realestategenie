@@ -5,24 +5,28 @@ import { PIPELINE_STAGES, PIPELINE_STAGE_LABELS, type PipelineStage } from "@/li
 /** GET /api/reports/pipeline-velocity - Pipeline stage durations & stuck deals */
 export async function GET() {
   const supabase = await supabaseServer();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { data: membership } = await supabase
-    .from("account_members").select("account_id").eq("user_id", user.id).single();
+    .from("account_members")
+    .select("account_id")
+    .eq("user_id", user.id)
+    .single();
   const { data: members } = membership
     ? await supabase.from("account_members").select("user_id").eq("account_id", membership.account_id)
     : { data: null };
-  const agentIds = members ? members.map(m => m.user_id) : [user.id];
+  const agentIds = members ? members.map((m) => m.user_id) : [user.id];
 
   const { data: leads } = await supabase
     .from("lead_submissions")
     .select("id, payload, pipeline_stage, heat_score, event_id, created_at, updated_at")
     .in("agent_id", agentIds);
 
-  const { data: events } = await supabase
-    .from("open_house_events").select("id, address").in("agent_id", agentIds);
-  const eventMap = new Map((events || []).map(e => [e.id, e.address]));
+  const { data: events } = await supabase.from("open_house_events").select("id, address").in("agent_id", agentIds);
+  const eventMap = new Map((events || []).map((e) => [e.id, e.address]));
 
   const now = Date.now();
 
@@ -30,7 +34,7 @@ export async function GET() {
   const stageCounts = new Map<string, number>();
   const stageDays = new Map<string, number[]>();
 
-  (leads || []).forEach(l => {
+  (leads || []).forEach((l) => {
     const stage = l.pipeline_stage;
     stageCounts.set(stage, (stageCounts.get(stage) || 0) + 1);
     const days = Math.max(1, Math.floor((now - new Date(l.updated_at || l.created_at).getTime()) / 86400000));
@@ -42,7 +46,7 @@ export async function GET() {
   const totalLeads = (leads || []).length || 1;
   let remaining = totalLeads;
 
-  const stages = PIPELINE_STAGES.map(key => {
+  const stages = PIPELINE_STAGES.map((key) => {
     const count = stageCounts.get(key) || 0;
     const days = stageDays.get(key) || [];
     const avgDays = days.length > 0 ? Math.round(days.reduce((a, b) => a + b, 0) / days.length) : 0;
@@ -58,7 +62,7 @@ export async function GET() {
 
   // Stuck deals: leads sitting 2x+ the average for their stage
   const stuckDeals = (leads || [])
-    .map(l => {
+    .map((l) => {
       const days = Math.max(1, Math.floor((now - new Date(l.updated_at || l.created_at).getTime()) / 86400000));
       const stageAvgArr = stageDays.get(l.pipeline_stage) || [1];
       const avgForStage = Math.round(stageAvgArr.reduce((a, b) => a + b, 0) / stageAvgArr.length);

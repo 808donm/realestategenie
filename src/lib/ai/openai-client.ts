@@ -30,7 +30,7 @@ export interface NeighborhoodProfileResponse {
  * Generate a Fair Housing compliant neighborhood profile using GPT-4
  */
 export async function generateNeighborhoodProfile(
-  request: NeighborhoodProfileRequest
+  request: NeighborhoodProfileRequest,
 ): Promise<NeighborhoodProfileResponse> {
   const systemPrompt = getComplianceSystemPrompt(request.country);
   const userPrompt = buildUserPrompt(request);
@@ -70,9 +70,7 @@ function extractJSON(text: string): string {
  * Fair Housing compliance system prompt (R.O.D.E.S. Framework)
  */
 function getComplianceSystemPrompt(country: "USA" | "Canada"): string {
-  const lawReference = country === "USA"
-    ? "Fair Housing Act"
-    : "Canadian Human Rights Act";
+  const lawReference = country === "USA" ? "Fair Housing Act" : "Canadian Human Rights Act";
 
   return `You are an expert Real Estate Copywriter and Fair Housing Compliance Officer operating in ${country}. Your goal is to write neighborhood profiles that are engaging, informative, and strictly compliant with the ${lawReference}.
 

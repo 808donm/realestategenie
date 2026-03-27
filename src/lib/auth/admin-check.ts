@@ -43,11 +43,7 @@ export async function requireAdmin() {
 export async function isAdmin(userId: string): Promise<boolean> {
   const supabase = await supabaseServer();
 
-  const { data: agent } = await supabase
-    .from("agents")
-    .select("is_admin, account_status")
-    .eq("id", userId)
-    .single();
+  const { data: agent } = await supabase.from("agents").select("is_admin, account_status").eq("id", userId).single();
 
   return !!(agent?.is_admin && agent.account_status === "active");
 }

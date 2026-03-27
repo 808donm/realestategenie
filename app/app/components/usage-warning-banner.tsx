@@ -13,39 +13,34 @@ export default function UsageWarningBanner({ alerts, plan, suggestedPlan }: Usag
   const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set());
 
   // Filter out dismissed alerts
-  const activeAlerts = alerts.filter(alert => !dismissedAlerts.has(alert.id));
+  const activeAlerts = alerts.filter((alert) => !dismissedAlerts.has(alert.id));
 
   if (activeAlerts.length === 0) {
     return null;
   }
 
   // Get the most severe alert type
-  const hasCritical = activeAlerts.some(a => a.alert_type === 'critical_100');
-  const hasWarning = activeAlerts.some(a => a.alert_type === 'warning_70');
+  const hasCritical = activeAlerts.some((a) => a.alert_type === "critical_100");
+  const hasWarning = activeAlerts.some((a) => a.alert_type === "warning_70");
 
   const dismissAlert = (alertId: string) => {
-    setDismissedAlerts(prev => new Set([...prev, alertId]));
+    setDismissedAlerts((prev) => new Set([...prev, alertId]));
   };
 
   // Critical (100%+) banner - Red, persistent across all pages
   if (hasCritical) {
-    const criticalAlerts = activeAlerts.filter(a => a.alert_type === 'critical_100');
-    const resourcesExceeded = criticalAlerts.map(a => {
-      if (a.resource_type === 'agents') return 'agent';
-      if (a.resource_type === 'properties') return 'property';
-      return 'tenant';
+    const criticalAlerts = activeAlerts.filter((a) => a.alert_type === "critical_100");
+    const resourcesExceeded = criticalAlerts.map((a) => {
+      if (a.resource_type === "agents") return "agent";
+      if (a.resource_type === "properties") return "property";
+      return "tenant";
     });
 
     return (
       <div className="bg-red-600 text-white px-4 py-3 shadow-lg">
         <div className="max-w-7xl mx-auto flex items-start justify-between gap-4">
           <div className="flex items-start gap-3 flex-1">
-            <svg
-              className="w-6 h-6 flex-shrink-0 mt-0.5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="w-6 h-6 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -54,13 +49,11 @@ export default function UsageWarningBanner({ alerts, plan, suggestedPlan }: Usag
               />
             </svg>
             <div className="flex-1">
-              <p className="font-semibold text-sm sm:text-base">
-                You've exceeded your current plan's fair-use limits
-              </p>
+              <p className="font-semibold text-sm sm:text-base">You've exceeded your current plan's fair-use limits</p>
               <p className="text-sm mt-1 opacity-90">
-                You've exceeded the {resourcesExceeded.join(', ')} limit
-                {resourcesExceeded.length > 1 ? 's' : ''} for your <strong>{plan.name}</strong> plan.
-                Nothing will stop working, but let's help you move to the right plan.
+                You've exceeded the {resourcesExceeded.join(", ")} limit
+                {resourcesExceeded.length > 1 ? "s" : ""} for your <strong>{plan.name}</strong> plan. Nothing will stop
+                working, but let's help you move to the right plan.
               </p>
               {suggestedPlan && (
                 <div className="mt-2">
@@ -90,19 +83,16 @@ export default function UsageWarningBanner({ alerts, plan, suggestedPlan }: Usag
 
   // Warning (70%+) banner - Yellow, dismissible
   if (hasWarning) {
-    const warningAlerts = activeAlerts.filter(a => a.alert_type === 'warning_70');
+    const warningAlerts = activeAlerts.filter((a) => a.alert_type === "warning_70");
 
     return (
       <>
-        {warningAlerts.map(alert => {
-          const resourceName = alert.resource_type === 'agents' ? 'agent' :
-                               alert.resource_type === 'properties' ? 'property' : 'tenant';
+        {warningAlerts.map((alert) => {
+          const resourceName =
+            alert.resource_type === "agents" ? "agent" : alert.resource_type === "properties" ? "property" : "tenant";
 
           return (
-            <div
-              key={alert.id}
-              className="bg-yellow-50 border-b border-yellow-200 px-4 py-3"
-            >
+            <div key={alert.id} className="bg-yellow-50 border-b border-yellow-200 px-4 py-3">
               <div className="max-w-7xl mx-auto flex items-start justify-between gap-4">
                 <div className="flex items-start gap-3 flex-1">
                   <svg
@@ -124,13 +114,9 @@ export default function UsageWarningBanner({ alerts, plan, suggestedPlan }: Usag
                     </p>
                     <p className="text-yellow-800 text-sm mt-1">
                       You're currently using {alert.usage_count} of {alert.limit_count} {resourceName}
-                      {alert.usage_count !== 1 ? 's' : ''} ({Math.round(alert.usage_percentage)}%).
-                      Teams with more {resourceName}s typically upgrade to{' '}
-                      {suggestedPlan ? (
-                        <strong>{suggestedPlan.name}</strong>
-                      ) : (
-                        'a higher plan'
-                      )}.
+                      {alert.usage_count !== 1 ? "s" : ""} ({Math.round(alert.usage_percentage)}%). Teams with more{" "}
+                      {resourceName}s typically upgrade to{" "}
+                      {suggestedPlan ? <strong>{suggestedPlan.name}</strong> : "a higher plan"}.
                     </p>
                     {suggestedPlan && (
                       <a

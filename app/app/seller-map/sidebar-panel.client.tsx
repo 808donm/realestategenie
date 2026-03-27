@@ -88,7 +88,7 @@ export function SidebarPanel({
 
   // Show very-likely, likely, and possible sellers
   const qualifiedProperties = properties.filter(
-    (p) => p.level === "very-likely" || p.level === "likely" || p.level === "possible"
+    (p) => p.level === "very-likely" || p.level === "likely" || p.level === "possible",
   );
 
   // Score distribution summary
@@ -107,9 +107,7 @@ export function SidebarPanel({
             type="text"
             placeholder="Zip code or TMK (e.g. 96825 or 1-2-3-004-005)"
             value={filters.zips || ""}
-            onChange={(e) =>
-              onFiltersChange({ ...filters, zips: e.target.value })
-            }
+            onChange={(e) => onFiltersChange({ ...filters, zips: e.target.value })}
             onKeyDown={(e) => {
               if (e.key === "Enter" && filters.zips?.trim()) onSearchArea();
             }}
@@ -132,9 +130,7 @@ export function SidebarPanel({
       <div className="p-4 border-b bg-gray-50">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-semibold">Seller Opportunities</h2>
-          <span className="text-xs text-gray-500">
-            {qualifiedProperties.length} sellers
-          </span>
+          <span className="text-xs text-gray-500">{qualifiedProperties.length} sellers</span>
         </div>
 
         {/* Score Distribution Bar */}
@@ -184,16 +180,12 @@ export function SidebarPanel({
             key={t}
             onClick={() => setTab(t)}
             className={`flex-1 py-2.5 font-medium capitalize transition-colors ${
-              tab === t
-                ? "text-blue-600 border-b-2 border-blue-600"
-                : "text-gray-500 hover:text-gray-700"
+              tab === t ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-500 hover:text-gray-700"
             }`}
           >
             {t}
             {t === "saved" && savedSearches.length > 0 && (
-              <span className="ml-1 text-[10px] bg-gray-100 px-1 rounded">
-                {savedSearches.length}
-              </span>
+              <span className="ml-1 text-[10px] bg-gray-100 px-1 rounded">{savedSearches.length}</span>
             )}
           </button>
         ))}
@@ -205,14 +197,12 @@ export function SidebarPanel({
         {tab === "results" && (
           <div className="divide-y">
             {isLoading && qualifiedProperties.length === 0 ? (
-              <div className="p-8 text-center text-sm text-gray-500">
-                Searching properties...
-              </div>
+              <div className="p-8 text-center text-sm text-gray-500">Searching properties...</div>
             ) : qualifiedProperties.length === 0 ? (
               <div className="p-8 text-center text-sm text-gray-500">
                 {total > 0
                   ? `${total} properties found but none scored above ${filters.minScore || 30}. Try lowering the minimum score filter.`
-                  : "No properties found. Enter a zip code above or pan the map and click \"Search This Area\"."}
+                  : 'No properties found. Enter a zip code above or pan the map and click "Search This Area".'}
               </div>
             ) : (
               qualifiedProperties.map((p) => (
@@ -253,9 +243,7 @@ export function SidebarPanel({
                 max={90}
                 step={10}
                 value={filters.minScore}
-                onChange={(e) =>
-                  onFiltersChange({ ...filters, minScore: Number(e.target.value) })
-                }
+                onChange={(e) => onFiltersChange({ ...filters, minScore: Number(e.target.value) })}
                 className="w-full accent-blue-600"
               />
               <div className="flex justify-between text-[10px] text-gray-400 mt-1">
@@ -273,9 +261,7 @@ export function SidebarPanel({
                 type="checkbox"
                 id="absenteeOnly"
                 checked={filters.absenteeOnly}
-                onChange={(e) =>
-                  onFiltersChange({ ...filters, absenteeOnly: e.target.checked })
-                }
+                onChange={(e) => onFiltersChange({ ...filters, absenteeOnly: e.target.checked })}
                 className="rounded accent-blue-600"
               />
               <label htmlFor="absenteeOnly" className="text-xs text-gray-700">
@@ -294,9 +280,7 @@ export function SidebarPanel({
                 max={40}
                 step={5}
                 value={filters.minOwnership}
-                onChange={(e) =>
-                  onFiltersChange({ ...filters, minOwnership: Number(e.target.value) })
-                }
+                onChange={(e) => onFiltersChange({ ...filters, minOwnership: Number(e.target.value) })}
                 className="w-full accent-blue-600"
               />
               <div className="flex justify-between text-[10px] text-gray-400 mt-1">
@@ -319,9 +303,7 @@ export function SidebarPanel({
                 max={100}
                 step={10}
                 value={filters.minEquity}
-                onChange={(e) =>
-                  onFiltersChange({ ...filters, minEquity: Number(e.target.value) })
-                }
+                onChange={(e) => onFiltersChange({ ...filters, minEquity: Number(e.target.value) })}
                 className="w-full accent-blue-600"
               />
               <div className="flex justify-between text-[10px] text-gray-400 mt-1">
@@ -344,9 +326,7 @@ export function SidebarPanel({
                 max={20}
                 step={1}
                 value={filters.minProperties}
-                onChange={(e) =>
-                  onFiltersChange({ ...filters, minProperties: Number(e.target.value) })
-                }
+                onChange={(e) => onFiltersChange({ ...filters, minProperties: Number(e.target.value) })}
                 className="w-full accent-blue-600"
               />
               <div className="flex justify-between text-[10px] text-gray-400 mt-1">
@@ -360,14 +340,10 @@ export function SidebarPanel({
 
             {/* Property Type */}
             <div>
-              <label className="text-xs font-medium text-gray-700 mb-1.5 block">
-                Property Type
-              </label>
+              <label className="text-xs font-medium text-gray-700 mb-1.5 block">Property Type</label>
               <select
                 value={filters.propertyType || ""}
-                onChange={(e) =>
-                  onFiltersChange({ ...filters, propertyType: e.target.value })
-                }
+                onChange={(e) => onFiltersChange({ ...filters, propertyType: e.target.value })}
                 className="w-full text-xs border rounded px-2.5 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white"
               >
                 <option value="">All Types</option>
@@ -403,12 +379,7 @@ export function SidebarPanel({
                   Zip code boundaries
                 </label>
                 <label className="flex items-center gap-2 text-xs text-gray-600">
-                  <input
-                    type="checkbox"
-                    checked={showTMK}
-                    onChange={onToggleTMK}
-                    className="rounded accent-blue-600"
-                  />
+                  <input type="checkbox" checked={showTMK} onChange={onToggleTMK} className="rounded accent-blue-600" />
                   TMK parcel boundaries (Hawaii)
                 </label>
               </div>
@@ -417,10 +388,7 @@ export function SidebarPanel({
             {/* Map Style */}
             <div>
               <h4 className="text-xs font-medium text-gray-700 mb-2">Map Style</h4>
-              <button
-                onClick={onToggleMapStyle}
-                className="text-xs border px-3 py-1.5 rounded hover:bg-gray-50"
-              >
+              <button onClick={onToggleMapStyle} className="text-xs border px-3 py-1.5 rounded hover:bg-gray-50">
                 Switch to {mapStyle === "streets" ? "Satellite" : "Streets"}
               </button>
             </div>
@@ -504,15 +472,11 @@ function PropertyListItem({ property: p }: { property: ScoredProperty }) {
       <div className="min-w-0 flex-1">
         <p className="text-xs font-medium text-gray-800 truncate">{p.address}</p>
         <div className="flex gap-2 text-[10px] text-gray-500 mt-0.5">
-          {p.estimatedValue && (
-            <span>{fmtPrice(p.estimatedValue)}</span>
-          )}
+          {p.estimatedValue && <span>{fmtPrice(p.estimatedValue)}</span>}
           {p.ownershipYears != null && <span>{p.ownershipYears}yr owned</span>}
           {!p.ownershipYears && p.lastSaleDate && <span>Sold {new Date(p.lastSaleDate).toLocaleDateString()}</span>}
           {!p.ownershipYears && !p.lastSaleDate && <span className="text-orange-400">No sale date</span>}
-          {p.absentee && (
-            <span className="text-amber-600 font-medium">Absentee</span>
-          )}
+          {p.absentee && <span className="text-amber-600 font-medium">Absentee</span>}
         </div>
       </div>
     </div>

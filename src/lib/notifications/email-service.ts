@@ -3,13 +3,13 @@ let resendClient: any = null;
 
 async function getResendClient(): Promise<any> {
   if (!process.env.RESEND_API_KEY) {
-    console.warn('RESEND_API_KEY not configured, skipping email');
+    console.warn("RESEND_API_KEY not configured, skipping email");
     return null;
   }
 
   if (!resendClient) {
     // Dynamic import to prevent build-time initialization
-    const { Resend } = await import('resend');
+    const { Resend } = await import("resend");
     resendClient = new Resend(process.env.RESEND_API_KEY);
   }
 
@@ -46,20 +46,20 @@ export async function sendCheckInConfirmation(params: CheckInConfirmationParams)
 
   try {
     const { data, error } = await resend.emails.send({
-      from: process.env.EMAIL_FROM || 'Open House <noreply@yourdomain.com>',
+      from: process.env.EMAIL_FROM || "Open House <noreply@yourdomain.com>",
       to: params.to,
       subject: `Thank you for visiting ${params.propertyAddress}`,
       html: generateCheckInConfirmationHTML(params),
     });
 
     if (error) {
-      console.error('Failed to send check-in confirmation email:', error);
+      console.error("Failed to send check-in confirmation email:", error);
       throw error;
     }
 
     return data;
   } catch (error) {
-    console.error('Error sending check-in confirmation:', error);
+    console.error("Error sending check-in confirmation:", error);
     throw error;
   }
 }
@@ -73,20 +73,20 @@ export async function sendGreetingEmail(params: GreetingEmailParams) {
 
   try {
     const { data, error } = await resend.emails.send({
-      from: process.env.EMAIL_FROM || 'Open House <noreply@yourdomain.com>',
+      from: process.env.EMAIL_FROM || "Open House <noreply@yourdomain.com>",
       to: params.to,
       subject: `Great meeting you at ${params.propertyAddress}!`,
       html: generateGreetingEmailHTML(params),
     });
 
     if (error) {
-      console.error('Failed to send greeting email:', error);
+      console.error("Failed to send greeting email:", error);
       throw error;
     }
 
     return data;
   } catch (error) {
-    console.error('Error sending greeting email:', error);
+    console.error("Error sending greeting email:", error);
     throw error;
   }
 }
@@ -119,13 +119,17 @@ function generateCheckInConfirmationHTML(params: CheckInConfirmationParams): str
 
     <p style="font-size: 16px;">We appreciate your interest and hope you enjoyed viewing the property!</p>
 
-    ${params.flyerUrl ? `
+    ${
+      params.flyerUrl
+        ? `
     <div style="text-align: center; margin: 30px 0;">
       <a href="${params.flyerUrl}" style="display: inline-block; background: #667eea; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
         📄 Download Property Flyer
       </a>
     </div>
-    ` : ''}
+    `
+        : ""
+    }
 
     <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
 

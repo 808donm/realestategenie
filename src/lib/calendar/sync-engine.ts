@@ -15,19 +15,11 @@
  */
 
 import { createClient } from "@supabase/supabase-js";
-import type {
-  CalendarEvent,
-  CalendarSource,
-  ExternalCalendarEvent,
-  CalendarProvider,
-  SyncResult,
-} from "./types";
+import type { CalendarEvent, CalendarSource, ExternalCalendarEvent, CalendarProvider, SyncResult } from "./types";
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 /**
  * Inbound sync: pull events from a source calendar and upsert into local DB.
@@ -38,7 +30,7 @@ export async function inboundSync(
   source: CalendarSource,
   provider: CalendarProvider,
   timeMin: string,
-  timeMax: string
+  timeMax: string,
 ): Promise<SyncResult> {
   const result: SyncResult = { created: 0, updated: 0, deleted: 0, errors: [] };
 
@@ -54,12 +46,7 @@ export async function inboundSync(
     const syncToken = syncState?.sync_token || undefined;
 
     // Fetch events from external calendar
-    const { events, nextSyncToken, deletedIds } = await provider.fetchEvents(
-      agentId,
-      timeMin,
-      timeMax,
-      syncToken
-    );
+    const { events, nextSyncToken, deletedIds } = await provider.fetchEvents(agentId, timeMin, timeMax, syncToken);
 
     console.log(`[Calendar Sync] ${source}: fetched ${events.length} events, ${deletedIds?.length || 0} deletions`);
 
@@ -111,11 +98,11 @@ export async function inboundSync(
         };
 
         // GHL booked meetings (from online booking page) always take precedence
-        const isGHLBookedMeeting = source === "ghl" && (
-          ext.metadata?.isBookedOnline === true ||
-          ext.metadata?.appointmentStatus === "new" ||
-          ext.metadata?.source === "booking_widget"
-        );
+        const isGHLBookedMeeting =
+          source === "ghl" &&
+          (ext.metadata?.isBookedOnline === true ||
+            ext.metadata?.appointmentStatus === "new" ||
+            ext.metadata?.source === "booking_widget");
 
         // Check if event exists locally
         const { data: existing } = await supabaseAdmin
@@ -138,10 +125,7 @@ export async function inboundSync(
           }
 
           // Source update accepted (either no local edits, or GHL booked meeting wins)
-          const { error } = await supabaseAdmin
-            .from("calendar_events")
-            .update(eventData)
-            .eq("id", existing.id);
+          const { error } = await supabaseAdmin.from("calendar_events").update(eventData).eq("id", existing.id);
 
           if (error) {
             result.errors.push(`Update ${ext.externalId}: ${error.message}`);
@@ -150,9 +134,7 @@ export async function inboundSync(
           }
         } else {
           // New event from source
-          const { error } = await supabaseAdmin
-            .from("calendar_events")
-            .insert(eventData);
+          const { error } = await supabaseAdmin.from("calendar_events").insert(eventData);
 
           if (error) {
             result.errors.push(`Insert ${ext.externalId}: ${error.message}`);
@@ -167,18 +149,16 @@ export async function inboundSync(
 
     // Update sync token
     if (nextSyncToken) {
-      await supabaseAdmin
-        .from("calendar_sync_state")
-        .upsert(
-          {
-            agent_id: agentId,
-            provider: source,
-            sync_token: nextSyncToken,
-            last_incremental_sync_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "agent_id,provider" }
-        );
+      await supabaseAdmin.from("calendar_sync_state").upsert(
+        {
+          agent_id: agentId,
+          provider: source,
+          sync_token: nextSyncToken,
+          last_incremental_sync_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "agent_id,provider" },
+      );
     }
 
     console.log(`[Calendar Sync] ${source} inbound complete:`, result);
@@ -198,7 +178,7 @@ export async function inboundSync(
 export async function outboundSync(
   agentId: string,
   source: CalendarSource,
-  provider: CalendarProvider
+  provider: CalendarProvider,
 ): Promise<SyncResult> {
   const result: SyncResult = { created: 0, updated: 0, deleted: 0, errors: [] };
 
@@ -223,10 +203,7 @@ export async function outboundSync(
           // Delete from source
           await provider.deleteEvent(agentId, event.external_id);
           // Remove local record
-          await supabaseAdmin
-            .from("calendar_events")
-            .delete()
-            .eq("id", event.id);
+          await supabaseAdmin.from("calendar_events").delete().eq("id", event.id);
           result.deleted++;
         } else {
           // Create or update in source
@@ -256,18 +233,14 @@ export async function outboundSync(
 
         // On conflict (409): GHL booked meetings → source wins; everything else → retry later
         if (err.message?.includes("409") || err.message?.includes("conflict")) {
-          const isGHLBookedMeeting = event.source === "ghl" && (
-            (event.metadata as any)?.isBookedOnline === true ||
-            (event.metadata as any)?.source === "booking_widget"
-          );
+          const isGHLBookedMeeting =
+            event.source === "ghl" &&
+            ((event.metadata as any)?.isBookedOnline === true || (event.metadata as any)?.source === "booking_widget");
 
           if (isGHLBookedMeeting) {
             // GHL booked meeting — source wins, discard local edits
             console.log(`[Calendar Sync] Conflict for GHL booked meeting ${event.id} — source wins`);
-            await supabaseAdmin
-              .from("calendar_events")
-              .update({ pending_sync: false })
-              .eq("id", event.id);
+            await supabaseAdmin.from("calendar_events").update({ pending_sync: false }).eq("id", event.id);
           } else {
             // App edit — keep pending so we retry on next sync
             console.log(`[Calendar Sync] Conflict for ${event.id} — app edit preserved, will retry`);
@@ -295,7 +268,7 @@ export async function fullSync(
   source: CalendarSource,
   provider: CalendarProvider,
   timeMin?: string,
-  timeMax?: string
+  timeMax?: string,
 ): Promise<{ inbound: SyncResult; outbound: SyncResult }> {
   const now = new Date();
   const defaultMin = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString(); // 30 days ago
@@ -305,26 +278,18 @@ export async function fullSync(
   const outbound = await outboundSync(agentId, source, provider);
 
   // Step 2: Pull source changes (source wins)
-  const inbound = await inboundSync(
-    agentId,
-    source,
-    provider,
-    timeMin || defaultMin,
-    timeMax || defaultMax
-  );
+  const inbound = await inboundSync(agentId, source, provider, timeMin || defaultMin, timeMax || defaultMax);
 
   // Update last full sync timestamp
-  await supabaseAdmin
-    .from("calendar_sync_state")
-    .upsert(
-      {
-        agent_id: agentId,
-        provider: source,
-        last_full_sync_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "agent_id,provider" }
-    );
+  await supabaseAdmin.from("calendar_sync_state").upsert(
+    {
+      agent_id: agentId,
+      provider: source,
+      last_full_sync_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "agent_id,provider" },
+  );
 
   return { inbound, outbound };
 }
@@ -333,9 +298,7 @@ export async function fullSync(
  * Create a local-only event or an event destined for a specific source calendar.
  * If source is not 'local', marks it as pending_sync so outbound sync pushes it.
  */
-export async function createEvent(
-  event: CalendarEvent
-): Promise<{ id: string } | null> {
+export async function createEvent(event: CalendarEvent): Promise<{ id: string } | null> {
   const isLocal = event.source === "local";
 
   const { data, error } = await supabaseAdmin
@@ -362,16 +325,9 @@ export async function createEvent(
  * Update an existing event. If it's synced to an external source,
  * marks it as pending_sync so the outbound sync pushes the change.
  */
-export async function updateEvent(
-  eventId: string,
-  updates: Partial<CalendarEvent>
-): Promise<boolean> {
+export async function updateEvent(eventId: string, updates: Partial<CalendarEvent>): Promise<boolean> {
   // Get current event to check source
-  const { data: existing } = await supabaseAdmin
-    .from("calendar_events")
-    .select("source")
-    .eq("id", eventId)
-    .single();
+  const { data: existing } = await supabaseAdmin.from("calendar_events").select("source").eq("id", eventId).single();
 
   if (!existing) return false;
 
@@ -409,10 +365,7 @@ export async function deleteEvent(eventId: string): Promise<boolean> {
 
   if (existing.source === "local" || !existing.external_id) {
     // Local-only: hard delete
-    const { error } = await supabaseAdmin
-      .from("calendar_events")
-      .delete()
-      .eq("id", eventId);
+    const { error } = await supabaseAdmin.from("calendar_events").delete().eq("id", eventId);
     return !error;
   }
 

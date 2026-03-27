@@ -14,7 +14,9 @@ import { calculateLiveDom } from "@/lib/prospecting/dom-search-engine";
 export async function GET(request: NextRequest) {
   try {
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -29,7 +31,7 @@ export async function GET(request: NextRequest) {
     if (error) throw error;
 
     // Recalculate live DOM for each property
-    const enriched = (properties || []).map(p => ({
+    const enriched = (properties || []).map((p) => ({
       ...p,
       live_dom: calculateLiveDom(p.on_market_date, p.latest_dom),
     }));
@@ -44,7 +46,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -56,27 +60,30 @@ export async function POST(request: NextRequest) {
 
     const { data: property, error } = await supabase
       .from("dom_monitored_properties")
-      .upsert({
-        agent_id: user.id,
-        listing_key: body.listingKey,
-        listing_id: body.listingId || null,
-        address: body.address,
-        city: body.city || null,
-        zip_code: body.zipCode,
-        property_type: body.propertyType || null,
-        list_price: body.listPrice || null,
-        on_market_date: body.onMarketDate || null,
-        current_tier: body.currentTier || "below",
-        previous_tier: "below",
-        red_multiplier: body.redMultiplier ?? 2.0,
-        orange_multiplier: body.orangeMultiplier ?? 1.5,
-        charcoal_multiplier: body.charcoalMultiplier ?? 1.15,
-        latest_list_price: body.listPrice || null,
-        latest_dom: body.daysOnMarket || null,
-        latest_status: "Active",
-        is_active: true,
-        notes: body.notes || null,
-      }, { onConflict: "agent_id,listing_key" })
+      .upsert(
+        {
+          agent_id: user.id,
+          listing_key: body.listingKey,
+          listing_id: body.listingId || null,
+          address: body.address,
+          city: body.city || null,
+          zip_code: body.zipCode,
+          property_type: body.propertyType || null,
+          list_price: body.listPrice || null,
+          on_market_date: body.onMarketDate || null,
+          current_tier: body.currentTier || "below",
+          previous_tier: "below",
+          red_multiplier: body.redMultiplier ?? 2.0,
+          orange_multiplier: body.orangeMultiplier ?? 1.5,
+          charcoal_multiplier: body.charcoalMultiplier ?? 1.15,
+          latest_list_price: body.listPrice || null,
+          latest_dom: body.daysOnMarket || null,
+          latest_status: "Active",
+          is_active: true,
+          notes: body.notes || null,
+        },
+        { onConflict: "agent_id,listing_key" },
+      )
       .select()
       .single();
 
@@ -92,7 +99,9 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -104,10 +113,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "id or listingKey is required" }, { status: 400 });
     }
 
-    let query = supabase
-      .from("dom_monitored_properties")
-      .delete()
-      .eq("agent_id", user.id);
+    let query = supabase.from("dom_monitored_properties").delete().eq("agent_id", user.id);
 
     if (id) query = query.eq("id", id);
     else if (listingKey) query = query.eq("listing_key", listingKey);
@@ -125,7 +131,9 @@ export async function DELETE(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

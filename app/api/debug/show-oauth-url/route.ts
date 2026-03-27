@@ -11,9 +11,12 @@ export async function GET(req: Request) {
     const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/integrations/crm-callback`;
 
     if (!clientId) {
-      return NextResponse.json({
-        error: "GHL_CLIENT_ID not configured in environment variables"
-      }, { status: 500 });
+      return NextResponse.json(
+        {
+          error: "GHL_CLIENT_ID not configured in environment variables",
+        },
+        { status: 500 },
+      );
     }
 
     // Build the exact OAuth URL that's used in /api/integrations/ghl/connect
@@ -23,7 +26,8 @@ export async function GET(req: Request) {
     ghlAuthUrl.searchParams.append("redirect_uri", redirectUri);
 
     // These are the EXACT scopes from the code
-    const scopeString = "contacts.write contacts.readonly opportunities.write opportunities.readonly locations.readonly locations/customFields.readonly locations/customFields.write conversations.write conversations.readonly conversations/message.readonly conversations/message.write objects/record.readonly objects/record.write objects/schema.readonly objects/schema.write associations.write associations.readonly invoices.write invoices.readonly";
+    const scopeString =
+      "contacts.write contacts.readonly opportunities.write opportunities.readonly locations.readonly locations/customFields.readonly locations/customFields.write conversations.write conversations.readonly conversations/message.readonly conversations/message.write objects/record.readonly objects/record.write objects/schema.readonly objects/schema.write associations.write associations.readonly invoices.write invoices.readonly";
 
     ghlAuthUrl.searchParams.append("scope", scopeString);
     ghlAuthUrl.searchParams.append("state", "test-state-123");
@@ -40,13 +44,13 @@ export async function GET(req: Request) {
         scopes: scopesArray,
       },
       scopeCategories: {
-        contacts: scopesArray.filter(s => s.startsWith('contacts')),
-        opportunities: scopesArray.filter(s => s.startsWith('opportunities')),
-        locations: scopesArray.filter(s => s.startsWith('locations')),
-        conversations: scopesArray.filter(s => s.startsWith('conversations')),
-        objects: scopesArray.filter(s => s.startsWith('objects')),
-        associations: scopesArray.filter(s => s.startsWith('associations')),
-        invoices: scopesArray.filter(s => s.startsWith('invoices')),
+        contacts: scopesArray.filter((s) => s.startsWith("contacts")),
+        opportunities: scopesArray.filter((s) => s.startsWith("opportunities")),
+        locations: scopesArray.filter((s) => s.startsWith("locations")),
+        conversations: scopesArray.filter((s) => s.startsWith("conversations")),
+        objects: scopesArray.filter((s) => s.startsWith("objects")),
+        associations: scopesArray.filter((s) => s.startsWith("associations")),
+        invoices: scopesArray.filter((s) => s.startsWith("invoices")),
       },
       instructions: [
         "1. Copy the 'fullOAuthUrl' value",
@@ -72,11 +76,13 @@ export async function GET(req: Request) {
         ],
       },
     });
-
   } catch (error: any) {
-    return NextResponse.json({
-      error: error.message,
-      stack: error.stack,
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: error.message,
+        stack: error.stack,
+      },
+      { status: 500 },
+    );
   }
 }

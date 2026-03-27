@@ -21,9 +21,7 @@ export default async function PublicListingPage({
     return (
       <div style={{ maxWidth: 720, margin: "60px auto", padding: 16, textAlign: "center" }}>
         <h1 style={{ fontSize: 24, fontWeight: 700 }}>Listing Not Found</h1>
-        <p style={{ marginTop: 12, color: "#6b7280" }}>
-          This listing link is invalid or has expired.
-        </p>
+        <p style={{ marginTop: 12, color: "#6b7280" }}>This listing link is invalid or has expired.</p>
       </div>
     );
   }

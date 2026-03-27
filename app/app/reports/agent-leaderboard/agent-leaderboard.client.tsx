@@ -5,8 +5,19 @@ import Link from "next/link";
 import jsPDF from "jspdf";
 import * as XLSX from "xlsx";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
-  RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+  RadarChart,
+  Radar,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
 } from "recharts";
 
 const fmt = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
@@ -26,12 +37,60 @@ interface AgentRow {
 }
 
 const FALLBACK_DATA: AgentRow[] = [
-  { name: "Sarah Mitchell", closings: 6, callsMade: 312, smsSent: 580, showingsBooked: 28, totalVolume: 2340000, commissionEarned: 70200 },
-  { name: "James Carter", closings: 4, callsMade: 245, smsSent: 410, showingsBooked: 19, totalVolume: 1520000, commissionEarned: 45600 },
-  { name: "Maria Lopez", closings: 5, callsMade: 189, smsSent: 320, showingsBooked: 22, totalVolume: 1975000, commissionEarned: 59250 },
-  { name: "David Kim", closings: 3, callsMade: 410, smsSent: 720, showingsBooked: 14, totalVolume: 1080000, commissionEarned: 32400 },
-  { name: "Ashley Brown", closings: 7, callsMade: 275, smsSent: 490, showingsBooked: 31, totalVolume: 2870000, commissionEarned: 86100 },
-  { name: "Tyler Nguyen", closings: 2, callsMade: 156, smsSent: 280, showingsBooked: 10, totalVolume: 640000, commissionEarned: 19200 },
+  {
+    name: "Sarah Mitchell",
+    closings: 6,
+    callsMade: 312,
+    smsSent: 580,
+    showingsBooked: 28,
+    totalVolume: 2340000,
+    commissionEarned: 70200,
+  },
+  {
+    name: "James Carter",
+    closings: 4,
+    callsMade: 245,
+    smsSent: 410,
+    showingsBooked: 19,
+    totalVolume: 1520000,
+    commissionEarned: 45600,
+  },
+  {
+    name: "Maria Lopez",
+    closings: 5,
+    callsMade: 189,
+    smsSent: 320,
+    showingsBooked: 22,
+    totalVolume: 1975000,
+    commissionEarned: 59250,
+  },
+  {
+    name: "David Kim",
+    closings: 3,
+    callsMade: 410,
+    smsSent: 720,
+    showingsBooked: 14,
+    totalVolume: 1080000,
+    commissionEarned: 32400,
+  },
+  {
+    name: "Ashley Brown",
+    closings: 7,
+    callsMade: 275,
+    smsSent: 490,
+    showingsBooked: 31,
+    totalVolume: 2870000,
+    commissionEarned: 86100,
+  },
+  {
+    name: "Tyler Nguyen",
+    closings: 2,
+    callsMade: 156,
+    smsSent: 280,
+    showingsBooked: 10,
+    totalVolume: 640000,
+    commissionEarned: 19200,
+  },
 ];
 
 const PERIOD_LABELS: Record<Period, string> = {
@@ -87,7 +146,10 @@ export default function AgentLeaderboardClient() {
   }, [data, sortKey, sortDir]);
 
   const topProducer = useMemo(() => [...data].sort((a, b) => b.totalVolume - a.totalVolume)[0], [data]);
-  const mostActive = useMemo(() => [...data].sort((a, b) => (b.callsMade + b.smsSent) - (a.callsMade + a.smsSent))[0], [data]);
+  const mostActive = useMemo(
+    () => [...data].sort((a, b) => b.callsMade + b.smsSent - (a.callsMade + a.smsSent))[0],
+    [data],
+  );
   const highestConversion = useMemo(() => {
     return [...data].sort((a, b) => {
       const rateA = a.showingsBooked > 0 ? a.closings / a.showingsBooked : 0;
@@ -106,9 +168,10 @@ export default function AgentLeaderboardClient() {
     doc.setFontSize(11);
     doc.text(`Top Producer: ${topProducer.name} (${fmt.format(topProducer.totalVolume)})`, 14, 42);
     doc.text(`Most Active: ${mostActive.name} (${mostActive.callsMade + mostActive.smsSent} touches)`, 14, 50);
-    const convRate = highestConversion.showingsBooked > 0
-      ? ((highestConversion.closings / highestConversion.showingsBooked) * 100).toFixed(1)
-      : "0";
+    const convRate =
+      highestConversion.showingsBooked > 0
+        ? ((highestConversion.closings / highestConversion.showingsBooked) * 100).toFixed(1)
+        : "0";
     doc.text(`Highest Conversion: ${highestConversion.name} (${convRate}%)`, 14, 58);
 
     const headers = ["Agent", "Closings", "Calls", "SMS", "Showings", "Volume", "Commission"];
@@ -121,7 +184,10 @@ export default function AgentLeaderboardClient() {
 
     sorted.forEach((row) => {
       y += 8;
-      if (y > 280) { doc.addPage(); y = 20; }
+      if (y > 280) {
+        doc.addPage();
+        y = 20;
+      }
       doc.text(row.name, colX[0], y);
       doc.text(String(row.closings), colX[1], y);
       doc.text(String(row.callsMade), colX[2], y);
@@ -135,7 +201,7 @@ export default function AgentLeaderboardClient() {
   };
 
   const exportToExcel = () => {
-    const rows = sorted.map(row => ({
+    const rows = sorted.map((row) => ({
       Agent: row.name,
       Closings: row.closings,
       "Calls Made": row.callsMade,
@@ -174,22 +240,28 @@ export default function AgentLeaderboardClient() {
   return (
     <div>
       {/* Integration Notice */}
-      <div style={{
-        background: isLive ? "#f0fdf4" : "#eff6ff",
-        border: isLive ? "1px solid #bbf7d0" : "1px solid #bfdbfe",
-        borderRadius: 8,
-        padding: "12px 16px",
-        marginBottom: 20,
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        fontSize: 13,
-      }}>
+      <div
+        style={{
+          background: isLive ? "#f0fdf4" : "#eff6ff",
+          border: isLive ? "1px solid #bbf7d0" : "1px solid #bfdbfe",
+          borderRadius: 8,
+          padding: "12px 16px",
+          marginBottom: 20,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          fontSize: 13,
+        }}
+      >
         <span>
           {isLive ? (
-            <><strong>Live Data</strong> -- Showing live data from your GHL integration.</>
+            <>
+              <strong>Live Data</strong> -- Showing live data from your GHL integration.
+            </>
           ) : (
-            <><strong>Sample Data</strong> -- Connect your GHL integration to see live data.</>
+            <>
+              <strong>Sample Data</strong> -- Connect your GHL integration to see live data.
+            </>
           )}
         </span>
         {!isLive && (
@@ -200,7 +272,16 @@ export default function AgentLeaderboardClient() {
       </div>
 
       {/* Period Selector + Export */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 20,
+          flexWrap: "wrap",
+          gap: 12,
+        }}
+      >
         <div style={{ display: "flex", gap: 8 }}>
           {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
             <button
@@ -237,7 +318,19 @@ export default function AgentLeaderboardClient() {
           >
             Export PDF
           </button>
-          <button onClick={exportToExcel} style={{ padding: "8px 20px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>
+          <button
+            onClick={exportToExcel}
+            style={{
+              padding: "8px 20px",
+              background: "#fff",
+              color: "#374151",
+              border: "1px solid #d1d5db",
+              borderRadius: 8,
+              fontWeight: 600,
+              cursor: "pointer",
+              fontSize: 13,
+            }}
+          >
             Export Excel
           </button>
         </div>
@@ -245,27 +338,53 @@ export default function AgentLeaderboardClient() {
 
       {/* Summary Cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 24 }}>
-        <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 18, borderLeft: "4px solid #10b981" }}>
+        <div
+          style={{
+            background: "#fff",
+            border: "1px solid #e5e7eb",
+            borderRadius: 10,
+            padding: 18,
+            borderLeft: "4px solid #10b981",
+          }}
+        >
           <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>Top Producer</div>
           <div style={{ fontSize: 18, fontWeight: 800 }}>{topProducer.name}</div>
           <div style={{ fontSize: 13, color: "#6b7280", marginTop: 2 }}>
             {topProducer.closings} closings -- {fmt.format(topProducer.totalVolume)} volume
           </div>
         </div>
-        <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 18, borderLeft: "4px solid #3b82f6" }}>
+        <div
+          style={{
+            background: "#fff",
+            border: "1px solid #e5e7eb",
+            borderRadius: 10,
+            padding: 18,
+            borderLeft: "4px solid #3b82f6",
+          }}
+        >
           <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>Most Active</div>
           <div style={{ fontSize: 18, fontWeight: 800 }}>{mostActive.name}</div>
           <div style={{ fontSize: 13, color: "#6b7280", marginTop: 2 }}>
-            {mostActive.callsMade} calls + {mostActive.smsSent} SMS = {mostActive.callsMade + mostActive.smsSent} touches
+            {mostActive.callsMade} calls + {mostActive.smsSent} SMS = {mostActive.callsMade + mostActive.smsSent}{" "}
+            touches
           </div>
         </div>
-        <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 18, borderLeft: "4px solid #f59e0b" }}>
+        <div
+          style={{
+            background: "#fff",
+            border: "1px solid #e5e7eb",
+            borderRadius: 10,
+            padding: 18,
+            borderLeft: "4px solid #f59e0b",
+          }}
+        >
           <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>Highest Conversion</div>
           <div style={{ fontSize: 18, fontWeight: 800 }}>{highestConversion.name}</div>
           <div style={{ fontSize: 13, color: "#6b7280", marginTop: 2 }}>
             {highestConversion.showingsBooked > 0
               ? ((highestConversion.closings / highestConversion.showingsBooked) * 100).toFixed(1)
-              : "0"}% showing-to-close rate
+              : "0"}
+            % showing-to-close rate
           </div>
         </div>
       </div>
@@ -278,8 +397,13 @@ export default function AgentLeaderboardClient() {
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
             <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-15} textAnchor="end" height={50} />
             <YAxis yAxisId="left" tick={{ fontSize: 11 }} />
-            <YAxis yAxisId="right" orientation="right" tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11 }} />
-            <Tooltip formatter={(value: any, name: any) => name === "Commission" ? fmt.format(value) : value} />
+            <YAxis
+              yAxisId="right"
+              orientation="right"
+              tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
+              tick={{ fontSize: 11 }}
+            />
+            <Tooltip formatter={(value: any, name: any) => (name === "Commission" ? fmt.format(value) : value)} />
             <Legend />
             <Bar yAxisId="left" dataKey="closings" name="Closings" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
             <Bar yAxisId="right" dataKey="commissionEarned" name="Commission" fill="#10b981" radius={[4, 4, 0, 0]} />
@@ -309,19 +433,35 @@ export default function AgentLeaderboardClient() {
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>
-              <th style={thStyle("name")} onClick={() => handleSort("name")}>Agent{arrow("name")}</th>
-              <th style={thStyle("closings")} onClick={() => handleSort("closings")}>Closings{arrow("closings")}</th>
-              <th style={thStyle("callsMade")} onClick={() => handleSort("callsMade")}>Calls Made{arrow("callsMade")}</th>
-              <th style={thStyle("smsSent")} onClick={() => handleSort("smsSent")}>SMS Sent{arrow("smsSent")}</th>
-              <th style={thStyle("showingsBooked")} onClick={() => handleSort("showingsBooked")}>Showings{arrow("showingsBooked")}</th>
-              <th style={thStyle("totalVolume")} onClick={() => handleSort("totalVolume")}>Total Volume{arrow("totalVolume")}</th>
-              <th style={thStyle("commissionEarned")} onClick={() => handleSort("commissionEarned")}>Commission{arrow("commissionEarned")}</th>
+              <th style={thStyle("name")} onClick={() => handleSort("name")}>
+                Agent{arrow("name")}
+              </th>
+              <th style={thStyle("closings")} onClick={() => handleSort("closings")}>
+                Closings{arrow("closings")}
+              </th>
+              <th style={thStyle("callsMade")} onClick={() => handleSort("callsMade")}>
+                Calls Made{arrow("callsMade")}
+              </th>
+              <th style={thStyle("smsSent")} onClick={() => handleSort("smsSent")}>
+                SMS Sent{arrow("smsSent")}
+              </th>
+              <th style={thStyle("showingsBooked")} onClick={() => handleSort("showingsBooked")}>
+                Showings{arrow("showingsBooked")}
+              </th>
+              <th style={thStyle("totalVolume")} onClick={() => handleSort("totalVolume")}>
+                Total Volume{arrow("totalVolume")}
+              </th>
+              <th style={thStyle("commissionEarned")} onClick={() => handleSort("commissionEarned")}>
+                Commission{arrow("commissionEarned")}
+              </th>
             </tr>
           </thead>
           <tbody>
             {sorted.map((row, i) => (
               <tr key={row.name} style={{ background: i % 2 === 0 ? "#fff" : "#fafafa" }}>
-                <td style={tdStyle("left")}><strong>{row.name}</strong></td>
+                <td style={tdStyle("left")}>
+                  <strong>{row.name}</strong>
+                </td>
                 <td style={tdStyle()}>{row.closings}</td>
                 <td style={tdStyle()}>{row.callsMade}</td>
                 <td style={tdStyle()}>{row.smsSent}</td>

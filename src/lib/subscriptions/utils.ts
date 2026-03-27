@@ -12,10 +12,12 @@ export async function getAgentSubscriptionPlan(agentId: string): Promise<Subscri
 
   const { data, error } = await supabase
     .from("agent_subscriptions")
-    .select(`
+    .select(
+      `
       subscription_plan_id,
       subscription_plans:subscription_plan_id (*)
-    `)
+    `,
+    )
     .eq("agent_id", agentId)
     .eq("status", "active")
     .single();
@@ -33,18 +35,18 @@ export async function getAgentSubscriptionPlan(agentId: string): Promise<Subscri
 function calculateUsageStatus(current: number, limit: number): UsageStatus {
   const percentage = limit > 0 ? (current / limit) * 100 : 0;
 
-  let status: 'ok' | 'warning' | 'critical' = 'ok';
+  let status: "ok" | "warning" | "critical" = "ok";
   if (percentage >= 100) {
-    status = 'critical';
+    status = "critical";
   } else if (percentage >= 70) {
-    status = 'warning';
+    status = "warning";
   }
 
   return {
     current,
     limit,
     percentage: Math.round(percentage * 100) / 100,
-    status
+    status,
   };
 }
 
@@ -53,20 +55,14 @@ function calculateUsageStatus(current: number, limit: number): UsageStatus {
  */
 export async function getAgentUsage(agentId: string): Promise<AgentUsage | null> {
   // Try to get existing usage record
-  let { data: usage } = await supabaseAdmin
-    .from("agent_usage")
-    .select("*")
-    .eq("agent_id", agentId)
-    .single();
+  let { data: usage } = await supabaseAdmin.from("agent_usage").select("*").eq("agent_id", agentId).single();
 
   // If no usage record exists or it's stale (>1 hour), recalculate
-  const isStale = !usage ||
-    (new Date().getTime() - new Date(usage.last_calculated_at).getTime()) > 3600000;
+  const isStale = !usage || new Date().getTime() - new Date(usage.last_calculated_at).getTime() > 3600000;
 
   if (isStale) {
     // Call the calculate function
-    const { data: calculated } = await supabaseAdmin
-      .rpc("calculate_agent_usage", { agent_uuid: agentId });
+    const { data: calculated } = await supabaseAdmin.rpc("calculate_agent_usage", { agent_uuid: agentId });
 
     if (calculated && calculated.length > 0) {
       const calc = calculated[0];
@@ -74,15 +70,18 @@ export async function getAgentUsage(agentId: string): Promise<AgentUsage | null>
       // Upsert the usage record
       const { data: upserted } = await supabaseAdmin
         .from("agent_usage")
-        .upsert({
-          agent_id: agentId,
-          current_agents: calc.agents_count || 1,
-          current_properties: calc.properties_count || 0,
-          current_tenants: calc.tenants_count || 0,
-          last_calculated_at: new Date().toISOString()
-        }, {
-          onConflict: "agent_id"
-        })
+        .upsert(
+          {
+            agent_id: agentId,
+            current_agents: calc.agents_count || 1,
+            current_properties: calc.properties_count || 0,
+            current_tenants: calc.tenants_count || 0,
+            last_calculated_at: new Date().toISOString(),
+          },
+          {
+            onConflict: "agent_id",
+          },
+        )
         .select()
         .single();
 
@@ -120,7 +119,7 @@ export async function getSubscriptionStatus(agentId: string): Promise<Subscripti
   const [plan, usage, alerts] = await Promise.all([
     getAgentSubscriptionPlan(agentId),
     getAgentUsage(agentId),
-    getActiveUsageAlerts(agentId)
+    getActiveUsageAlerts(agentId),
   ]);
 
   if (!plan || !usage) {
@@ -132,10 +131,10 @@ export async function getSubscriptionStatus(agentId: string): Promise<Subscripti
     usage: {
       agents: calculateUsageStatus(usage.current_agents, plan.max_agents),
       properties: calculateUsageStatus(usage.current_properties, plan.max_properties),
-      tenants: calculateUsageStatus(usage.current_tenants, plan.max_tenants)
+      tenants: calculateUsageStatus(usage.current_tenants, plan.max_tenants),
     },
     alerts,
-    hasActiveAlerts: alerts.length > 0
+    hasActiveAlerts: alerts.length > 0,
   };
 }
 
@@ -143,11 +142,10 @@ export async function getSubscriptionStatus(agentId: string): Promise<Subscripti
  * Check if user has access to a specific feature
  */
 export async function hasFeatureAccess(agentId: string, featureSlug: string): Promise<boolean> {
-  const { data, error } = await supabaseAdmin
-    .rpc("has_feature_access", {
-      agent_uuid: agentId,
-      feature_slug: featureSlug
-    });
+  const { data, error } = await supabaseAdmin.rpc("has_feature_access", {
+    agent_uuid: agentId,
+    feature_slug: featureSlug,
+  });
 
   if (error) {
     console.error("Error checking feature access:", error);
@@ -165,9 +163,11 @@ export async function getPlanFeatures(planId: string): Promise<string[]> {
 
   const { data, error } = await supabase
     .from("plan_features")
-    .select(`
+    .select(
+      `
       features (slug)
-    `)
+    `,
+    )
     .eq("plan_id", planId)
     .eq("is_enabled", true);
 
@@ -214,11 +214,11 @@ export async function getSuggestedUpgradePlan(currentPlanId: string): Promise<Su
  */
 export async function createUsageAlert(
   agentId: string,
-  alertType: 'warning_70' | 'critical_100' | 'admin_notification',
-  resourceType: 'agents' | 'properties' | 'tenants',
+  alertType: "warning_70" | "critical_100" | "admin_notification",
+  resourceType: "agents" | "properties" | "tenants",
   usageCount: number,
   limitCount: number,
-  usagePercentage: number
+  usagePercentage: number,
 ): Promise<UsageAlert | null> {
   // Check if alert already exists for this resource in the last 24 hours
   const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
@@ -247,7 +247,7 @@ export async function createUsageAlert(
       resource_type: resourceType,
       usage_count: usageCount,
       limit_count: limitCount,
-      usage_percentage: usagePercentage
+      usage_percentage: usagePercentage,
     })
     .select()
     .single();
@@ -271,29 +271,29 @@ export async function checkUsageAndCreateAlerts(agentId: string): Promise<void> 
   }
 
   const checks = [
-    { type: 'agents' as const, usage: status.usage.agents },
-    { type: 'properties' as const, usage: status.usage.properties },
-    { type: 'tenants' as const, usage: status.usage.tenants }
+    { type: "agents" as const, usage: status.usage.agents },
+    { type: "properties" as const, usage: status.usage.properties },
+    { type: "tenants" as const, usage: status.usage.tenants },
   ];
 
   for (const check of checks) {
-    if (check.usage.status === 'critical') {
+    if (check.usage.status === "critical") {
       await createUsageAlert(
         agentId,
-        'critical_100',
+        "critical_100",
         check.type,
         check.usage.current,
         check.usage.limit,
-        check.usage.percentage
+        check.usage.percentage,
       );
-    } else if (check.usage.status === 'warning') {
+    } else if (check.usage.status === "warning") {
       await createUsageAlert(
         agentId,
-        'warning_70',
+        "warning_70",
         check.type,
         check.usage.current,
         check.usage.limit,
-        check.usage.percentage
+        check.usage.percentage,
       );
     }
   }
@@ -307,7 +307,7 @@ export async function resolveUsageAlert(alertId: string): Promise<void> {
     .from("usage_alerts")
     .update({
       is_resolved: true,
-      resolved_at: new Date().toISOString()
+      resolved_at: new Date().toISOString(),
     })
     .eq("id", alertId);
 }
@@ -320,7 +320,7 @@ export async function markAlertEmailSent(alertId: string): Promise<void> {
     .from("usage_alerts")
     .update({
       email_sent: true,
-      email_sent_at: new Date().toISOString()
+      email_sent_at: new Date().toISOString(),
     })
     .eq("id", alertId);
 }

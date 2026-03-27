@@ -28,10 +28,7 @@ export default async function ComparePropertiesPage() {
     <div style={{ maxWidth: 1400 }}>
       {/* Navigation Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <Link
-          href="/app/analyzers"
-          style={{ fontSize: 14, opacity: 0.7, textDecoration: "none" }}
-        >
+        <Link href="/app/analyzers" style={{ fontSize: 14, opacity: 0.7, textDecoration: "none" }}>
           ← Back to Analyzers
         </Link>
         <div style={{ display: "flex", gap: 8 }}>
@@ -91,18 +88,13 @@ export default async function ComparePropertiesPage() {
       </div>
 
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 28, fontWeight: 900, marginTop: 0, marginBottom: 8 }}>
-          Compare Properties
-        </h1>
+        <h1 style={{ fontSize: 28, fontWeight: 900, marginTop: 0, marginBottom: 8 }}>Compare Properties</h1>
         <p style={{ margin: 0, opacity: 0.7 }}>
           Compare multiple investment properties side by side to find the best deal
         </p>
       </div>
 
-      <ComparePropertiesClient
-        savedProperties={properties ?? []}
-        savedComparisons={comparisons ?? []}
-      />
+      <ComparePropertiesClient savedProperties={properties ?? []} savedComparisons={comparisons ?? []} />
     </div>
   );
 }

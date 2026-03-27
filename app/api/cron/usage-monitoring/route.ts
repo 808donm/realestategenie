@@ -25,7 +25,8 @@ export async function GET(request: NextRequest) {
     // Get all agents with active subscriptions
     const { data: agents, error: agentsError } = await supabaseAdmin
       .from("agents")
-      .select(`
+      .select(
+        `
         id,
         email,
         display_name,
@@ -33,23 +34,21 @@ export async function GET(request: NextRequest) {
           id,
           status
         )
-      `)
+      `,
+      )
       .eq("is_active", true)
       .eq("agent_subscriptions.status", "active");
 
     if (agentsError) {
       console.error("Error fetching agents:", agentsError);
-      return NextResponse.json(
-        { error: "Failed to fetch agents" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to fetch agents" }, { status: 500 });
     }
 
     const results = {
       total: agents?.length || 0,
       processed: 0,
       errors: [] as string[],
-      alertsCreated: 0
+      alertsCreated: 0,
     };
 
     // Process each agent
@@ -60,7 +59,7 @@ export async function GET(request: NextRequest) {
         results.processed++;
       } catch (error) {
         console.error(`Error processing agent ${agent.id}:`, error);
-        results.errors.push(`${agent.email}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        results.errors.push(`${agent.email}: ${error instanceof Error ? error.message : "Unknown error"}`);
       }
     }
 
@@ -79,16 +78,16 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       ...results,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     console.error("Usage monitoring error:", error);
     return NextResponse.json(
       {
         error: "Internal server error",
-        message: error instanceof Error ? error.message : "Unknown error"
+        message: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

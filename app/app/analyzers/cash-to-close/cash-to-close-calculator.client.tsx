@@ -51,7 +51,12 @@ export default function CashToCloseCalculatorClient() {
   const fmt = (n: number) =>
     n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
   const fmtDecimal = (n: number) =>
-    n.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    n.toLocaleString("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
 
   // Export to Excel
   const exportToExcel = () => {
@@ -191,54 +196,76 @@ export default function CashToCloseCalculatorClient() {
     y += 8;
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    doc.text(`Range: ${fmt(analysis.lowEstimate)} - ${fmt(analysis.highEstimate)}`, pageWidth - 20, y, { align: "right" });
+    doc.text(`Range: ${fmt(analysis.lowEstimate)} - ${fmt(analysis.highEstimate)}`, pageWidth - 20, y, {
+      align: "right",
+    });
 
     // Footer
     const footerY = doc.internal.pageSize.getHeight() - 15;
     doc.setFontSize(8);
-    doc.text(
-      `Generated on ${new Date().toLocaleDateString()} - RealEstateGenie`,
-      pageWidth / 2,
-      footerY,
-      { align: "center" }
-    );
+    doc.text(`Generated on ${new Date().toLocaleDateString()} - RealEstateGenie`, pageWidth / 2, footerY, {
+      align: "center",
+    });
 
     doc.save(`Buyer_Cash_To_Close_${inputs.purchasePrice}.pdf`);
   };
 
   // Generate file as Blob for attach-to-contact
-  const generateFile = useCallback((format: "pdf" | "xlsx"): Blob => {
-    if (format === "xlsx") {
-      const wb = XLSX.utils.book_new();
-      const data: (string | number)[][] = [
-        ["BUYER CASH-TO-CLOSE ESTIMATE"], [],
-        ["Purchase Price", inputs.purchasePrice], ["Down Payment", analysis.downPayment],
-        ["Closing Costs", analysis.closingCosts], ["Total Prepaids", analysis.totalPrepaids],
-        ["Gross Cash Needed", analysis.grossCashNeeded],
-        ["Less: Credits", analysis.totalCredits],
-        ["ESTIMATED CASH TO CLOSE", analysis.estimatedCashToClose],
-        ["Low Estimate", analysis.lowEstimate], ["High Estimate", analysis.highEstimate],
-      ];
-      const sheet = XLSX.utils.aoa_to_sheet(data);
-      XLSX.utils.book_append_sheet(wb, sheet, "Cash to Close");
-      const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-      return new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-    }
-    const doc = new jsPDF();
-    const pw = doc.internal.pageSize.getWidth();
-    let y = 20;
-    doc.setFontSize(18); doc.setFont("helvetica", "bold");
-    doc.text("Buyer Cash-to-Close Estimate", pw / 2, y, { align: "center" }); y += 14;
-    doc.setFontSize(10); doc.setFont("helvetica", "normal");
-    [["Purchase Price:", fmt(inputs.purchasePrice)], ["Down Payment:", fmt(analysis.downPayment)],
-     ["Closing Costs:", fmt(analysis.closingCosts)], ["Prepaids:", fmt(analysis.totalPrepaids)],
-     ["Gross Needed:", fmt(analysis.grossCashNeeded)], ["Credits:", `-${fmt(analysis.totalCredits)}`]
-    ].forEach(([l, v]) => { doc.text(l, 25, y); doc.text(v, pw - 25, y, { align: "right" }); y += 7; });
-    y += 4; doc.setLineWidth(1); doc.line(20, y, pw - 20, y); y += 10;
-    doc.setFontSize(14); doc.setFont("helvetica", "bold");
-    doc.text("Cash to Close:", 20, y); doc.text(fmt(analysis.estimatedCashToClose), pw - 20, y, { align: "right" });
-    return new Blob([doc.output("arraybuffer")], { type: "application/pdf" });
-  }, [inputs, analysis, fmt]);
+  const generateFile = useCallback(
+    (format: "pdf" | "xlsx"): Blob => {
+      if (format === "xlsx") {
+        const wb = XLSX.utils.book_new();
+        const data: (string | number)[][] = [
+          ["BUYER CASH-TO-CLOSE ESTIMATE"],
+          [],
+          ["Purchase Price", inputs.purchasePrice],
+          ["Down Payment", analysis.downPayment],
+          ["Closing Costs", analysis.closingCosts],
+          ["Total Prepaids", analysis.totalPrepaids],
+          ["Gross Cash Needed", analysis.grossCashNeeded],
+          ["Less: Credits", analysis.totalCredits],
+          ["ESTIMATED CASH TO CLOSE", analysis.estimatedCashToClose],
+          ["Low Estimate", analysis.lowEstimate],
+          ["High Estimate", analysis.highEstimate],
+        ];
+        const sheet = XLSX.utils.aoa_to_sheet(data);
+        XLSX.utils.book_append_sheet(wb, sheet, "Cash to Close");
+        const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+        return new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      }
+      const doc = new jsPDF();
+      const pw = doc.internal.pageSize.getWidth();
+      let y = 20;
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      doc.text("Buyer Cash-to-Close Estimate", pw / 2, y, { align: "center" });
+      y += 14;
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      [
+        ["Purchase Price:", fmt(inputs.purchasePrice)],
+        ["Down Payment:", fmt(analysis.downPayment)],
+        ["Closing Costs:", fmt(analysis.closingCosts)],
+        ["Prepaids:", fmt(analysis.totalPrepaids)],
+        ["Gross Needed:", fmt(analysis.grossCashNeeded)],
+        ["Credits:", `-${fmt(analysis.totalCredits)}`],
+      ].forEach(([l, v]) => {
+        doc.text(l, 25, y);
+        doc.text(v, pw - 25, y, { align: "right" });
+        y += 7;
+      });
+      y += 4;
+      doc.setLineWidth(1);
+      doc.line(20, y, pw - 20, y);
+      y += 10;
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text("Cash to Close:", 20, y);
+      doc.text(fmt(analysis.estimatedCashToClose), pw - 20, y, { align: "right" });
+      return new Blob([doc.output("arraybuffer")], { type: "application/pdf" });
+    },
+    [inputs, analysis, fmt],
+  );
 
   const inputStyle: React.CSSProperties = {
     width: "100%",
@@ -262,7 +289,9 @@ export default function CashToCloseCalculatorClient() {
         <MLSImport onImport={handleMLSImport} />
 
         {/* Purchase Details */}
-        <div style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 20 }}>
+        <div
+          style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 20 }}
+        >
           <h2 style={{ margin: "0 0 20px 0", fontSize: 18, fontWeight: 700 }}>Purchase Details</h2>
 
           <div style={{ marginBottom: 16 }}>
@@ -285,9 +314,7 @@ export default function CashToCloseCalculatorClient() {
                 onChange={(e) => handleChange("downPaymentPercent", Number(e.target.value))}
                 style={inputStyle}
               />
-              <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
-                = {fmt(analysis.downPayment)}
-              </div>
+              <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>= {fmt(analysis.downPayment)}</div>
             </div>
             <div>
               <label style={labelStyle}>Interest Rate (%)</label>
@@ -323,14 +350,14 @@ export default function CashToCloseCalculatorClient() {
               onChange={(e) => handleChange("earnestMoney", Number(e.target.value))}
               style={inputStyle}
             />
-            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
-              Credited toward down payment at closing
-            </div>
+            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>Credited toward down payment at closing</div>
           </div>
         </div>
 
         {/* Credits & Concessions */}
-        <div style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 20 }}>
+        <div
+          style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 20 }}
+        >
           <h2 style={{ margin: "0 0 20px 0", fontSize: 18, fontWeight: 700 }}>Credits & Concessions</h2>
 
           <div style={{ marginBottom: 16 }}>
@@ -341,9 +368,7 @@ export default function CashToCloseCalculatorClient() {
               onChange={(e) => handleChange("sellerCredits", Number(e.target.value))}
               style={inputStyle}
             />
-            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
-              Seller contribution toward closing costs
-            </div>
+            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>Seller contribution toward closing costs</div>
           </div>
 
           <div>
@@ -382,9 +407,7 @@ export default function CashToCloseCalculatorClient() {
                 onChange={(e) => handleChange("prepaidInsuranceMonths", Number(e.target.value))}
                 style={inputStyle}
               />
-              <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
-                = {fmt(analysis.prepaidInsurance)}
-              </div>
+              <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>= {fmt(analysis.prepaidInsurance)}</div>
             </div>
           </div>
 
@@ -406,9 +429,7 @@ export default function CashToCloseCalculatorClient() {
                 onChange={(e) => handleChange("prepaidTaxMonths", Number(e.target.value))}
                 style={inputStyle}
               />
-              <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
-                = {fmt(analysis.prepaidTaxes)}
-              </div>
+              <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>= {fmt(analysis.prepaidTaxes)}</div>
             </div>
           </div>
 
@@ -447,19 +468,23 @@ export default function CashToCloseCalculatorClient() {
         </div>
 
         {/* Range Visualization */}
-        <div style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 20 }}>
+        <div
+          style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 20 }}
+        >
           <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>Estimate Range</h3>
           <div style={{ position: "relative", height: 48, marginBottom: 8 }}>
             {/* Track */}
-            <div style={{
-              position: "absolute",
-              top: 18,
-              left: 0,
-              right: 0,
-              height: 12,
-              background: "#f3f4f6",
-              borderRadius: 6,
-            }} />
+            <div
+              style={{
+                position: "absolute",
+                top: 18,
+                left: 0,
+                right: 0,
+                height: 12,
+                background: "#f3f4f6",
+                borderRadius: 6,
+              }}
+            />
             {/* Range bar */}
             {(() => {
               const min = analysis.lowEstimate;
@@ -520,7 +545,9 @@ export default function CashToCloseCalculatorClient() {
         </div>
 
         {/* Full Breakdown */}
-        <div style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 20 }}>
+        <div
+          style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 20 }}
+        >
           <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>Full Breakdown</h3>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <tbody>
@@ -535,23 +562,21 @@ export default function CashToCloseCalculatorClient() {
                   Down Payment
                   <span style={{ fontSize: 12, color: "#6b7280", marginLeft: 6 }}>({inputs.downPaymentPercent}%)</span>
                 </td>
-                <td style={{ padding: "10px 0", textAlign: "right", fontWeight: 600 }}>
-                  {fmt(analysis.downPayment)}
-                </td>
+                <td style={{ padding: "10px 0", textAlign: "right", fontWeight: 600 }}>{fmt(analysis.downPayment)}</td>
               </tr>
               <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
                 <td style={{ padding: "10px 0" }}>
                   Closing Costs
                   <span style={{ fontSize: 12, color: "#6b7280", marginLeft: 6 }}>({inputs.closingCostPercent}%)</span>
                 </td>
-                <td style={{ padding: "10px 0", textAlign: "right", fontWeight: 600 }}>
-                  {fmt(analysis.closingCosts)}
-                </td>
+                <td style={{ padding: "10px 0", textAlign: "right", fontWeight: 600 }}>{fmt(analysis.closingCosts)}</td>
               </tr>
               <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
                 <td style={{ padding: "10px 0" }}>
                   Prepaid Insurance
-                  <span style={{ fontSize: 12, color: "#6b7280", marginLeft: 6 }}>({inputs.prepaidInsuranceMonths} mo)</span>
+                  <span style={{ fontSize: 12, color: "#6b7280", marginLeft: 6 }}>
+                    ({inputs.prepaidInsuranceMonths} mo)
+                  </span>
                 </td>
                 <td style={{ padding: "10px 0", textAlign: "right", fontWeight: 600 }}>
                   {fmt(analysis.prepaidInsurance)}
@@ -562,14 +587,14 @@ export default function CashToCloseCalculatorClient() {
                   Prepaid Taxes
                   <span style={{ fontSize: 12, color: "#6b7280", marginLeft: 6 }}>({inputs.prepaidTaxMonths} mo)</span>
                 </td>
-                <td style={{ padding: "10px 0", textAlign: "right", fontWeight: 600 }}>
-                  {fmt(analysis.prepaidTaxes)}
-                </td>
+                <td style={{ padding: "10px 0", textAlign: "right", fontWeight: 600 }}>{fmt(analysis.prepaidTaxes)}</td>
               </tr>
               <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
                 <td style={{ padding: "10px 0" }}>
                   Prepaid Interest
-                  <span style={{ fontSize: 12, color: "#6b7280", marginLeft: 6 }}>({inputs.prepaidInterestDays} days)</span>
+                  <span style={{ fontSize: 12, color: "#6b7280", marginLeft: 6 }}>
+                    ({inputs.prepaidInterestDays} days)
+                  </span>
                 </td>
                 <td style={{ padding: "10px 0", textAlign: "right", fontWeight: 600 }}>
                   {fmtDecimal(analysis.prepaidInterest)}
@@ -641,9 +666,7 @@ export default function CashToCloseCalculatorClient() {
           <div style={{ padding: 16, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8 }}>
             <div style={{ fontSize: 12, color: "#6b7280" }}>Loan-to-Value</div>
             <div style={{ fontSize: 20, fontWeight: 600 }}>
-              {inputs.purchasePrice > 0
-                ? `${((inputs.loanAmount / inputs.purchasePrice) * 100).toFixed(1)}%`
-                : "0%"}
+              {inputs.purchasePrice > 0 ? `${((inputs.loanAmount / inputs.purchasePrice) * 100).toFixed(1)}%` : "0%"}
             </div>
           </div>
         </div>

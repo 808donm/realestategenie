@@ -126,8 +126,7 @@ export function analyzeBRRR(input: BRRRInput): BRRRAnalysis {
   // === PHASE 2: RENOVATION ===
   // Interest-only payments during renovation (typical for hard money)
   const monthlyHardMoneyInterest = initialLoanAmount * (input.initialInterestRate / 100 / 12);
-  const totalHoldingCosts =
-    (input.holdingCostsDuringReno + monthlyHardMoneyInterest) * input.renovationTimeMonths;
+  const totalHoldingCosts = (input.holdingCostsDuringReno + monthlyHardMoneyInterest) * input.renovationTimeMonths;
 
   const allInCost = totalPurchaseCost + input.renovationCosts + totalHoldingCosts;
   const totalCashInvested = cashAtPurchase + input.renovationCosts + totalHoldingCosts;
@@ -147,7 +146,7 @@ export function analyzeBRRR(input: BRRRInput): BRRRAnalysis {
   const monthlyMortgageAfterRefi = calculateMonthlyMortgage(
     refinanceLoanAmount,
     input.refinanceInterestRate,
-    input.refinanceLoanTermYears
+    input.refinanceLoanTermYears,
   );
 
   // Income calculations
@@ -173,9 +172,7 @@ export function analyzeBRRR(input: BRRRInput): BRRRAnalysis {
   // === KEY BRRR METRICS ===
 
   // Cash-on-Cash return (on remaining cash in deal)
-  const cashOnCashReturn = cashLeftInDeal > 0
-    ? (annualCashFlow / cashLeftInDeal) * 100
-    : Infinity; // Infinite return if no cash left in deal
+  const cashOnCashReturn = cashLeftInDeal > 0 ? (annualCashFlow / cashLeftInDeal) * 100 : Infinity; // Infinite return if no cash left in deal
 
   const isInfiniteReturn = cashLeftInDeal <= 0 || cashOutAtRefinance >= totalCashInvested;
 
@@ -183,9 +180,8 @@ export function analyzeBRRR(input: BRRRInput): BRRRAnalysis {
   const capRate = (noi / input.afterRepairValue) * 100;
 
   // Total ROI on actual cash invested
-  const totalROIOnCashInvested = totalCashInvested > 0
-    ? ((annualCashFlow + equityCaptured) / totalCashInvested) * 100
-    : 0;
+  const totalROIOnCashInvested =
+    totalCashInvested > 0 ? ((annualCashFlow + equityCaptured) / totalCashInvested) * 100 : 0;
 
   // Multi-family metrics
   const pricePerUnit = input.purchasePrice / units;
@@ -227,7 +223,7 @@ export function analyzeBRRR(input: BRRRInput): BRRRAnalysis {
       refinanceLoanAmount,
       input.refinanceInterestRate,
       input.refinanceLoanTermYears,
-      monthsElapsed
+      monthsElapsed,
     );
     const equity = propertyValue - loanBalance;
 
@@ -313,12 +309,7 @@ export function calculate70PercentRule(arv: number, repairCosts: number): number
 /**
  * Calculate Maximum Allowable Offer (MAO)
  */
-export function calculateMAO(
-  arv: number,
-  repairCosts: number,
-  desiredProfit: number,
-  closingCosts: number
-): number {
+export function calculateMAO(arv: number, repairCosts: number, desiredProfit: number, closingCosts: number): number {
   return arv - repairCosts - desiredProfit - closingCosts;
 }
 

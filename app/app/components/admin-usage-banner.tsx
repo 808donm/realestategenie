@@ -13,7 +13,7 @@ export default function AdminUsageBanner({
   agentEmail,
   agentId,
   exceededResources,
-  planName
+  planName,
 }: AdminUsageBannerProps) {
   return (
     <div className="bg-blue-50 border-l-4 border-blue-500 px-4 py-3 mb-4">
@@ -36,8 +36,8 @@ export default function AdminUsageBanner({
             Sales Opportunity: Customer Exceeding Plan Limits
           </p>
           <p className="text-blue-800 text-sm mt-1">
-            <strong>{agentName}</strong> ({agentEmail}) has exceeded their{' '}
-            <strong>{planName}</strong> plan limits for: {exceededResources.join(', ')}.
+            <strong>{agentName}</strong> ({agentEmail}) has exceeded their <strong>{planName}</strong> plan limits for:{" "}
+            {exceededResources.join(", ")}.
           </p>
           <div className="mt-3 flex gap-3">
             <a
@@ -45,7 +45,12 @@ export default function AdminUsageBanner({
               className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md font-medium text-sm hover:bg-blue-700 transition-colors"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                />
               </svg>
               Email Customer
             </a>

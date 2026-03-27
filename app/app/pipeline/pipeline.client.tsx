@@ -39,8 +39,16 @@ const formatCurrency = (value: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value);
 
 const STAGE_COLORS = [
-  "#3b82f6", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981",
-  "#6366f1", "#14b8a6", "#f97316", "#06b6d4", "#84cc16",
+  "#3b82f6",
+  "#8b5cf6",
+  "#ec4899",
+  "#f59e0b",
+  "#10b981",
+  "#6366f1",
+  "#14b8a6",
+  "#f97316",
+  "#06b6d4",
+  "#84cc16",
 ];
 
 export default function PipelineClient() {
@@ -64,9 +72,8 @@ export default function PipelineClient() {
         if (res.ok && data.pipelines) {
           setPipelines(data.pipelines);
           const saved = localStorage.getItem("pipeline_selected_id");
-          const defaultId = saved && data.pipelines.find((p: any) => p.id === saved)
-            ? saved
-            : data.pipelines[0]?.id || "";
+          const defaultId =
+            saved && data.pipelines.find((p: any) => p.id === saved) ? saved : data.pipelines[0]?.id || "";
           setSelectedPipelineId(defaultId);
         } else {
           setError(data.error || "Failed to load pipelines");
@@ -134,19 +141,13 @@ export default function PipelineClient() {
     return (
       <div style={{ padding: 40, textAlign: "center", background: "#fef2f2", borderRadius: 12, color: "#dc2626" }}>
         <p style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>{error}</p>
-        <p style={{ fontSize: 14, color: "#6b7280" }}>
-          Make sure your CRM is connected in your Integrations settings.
-        </p>
+        <p style={{ fontSize: 14, color: "#6b7280" }}>Make sure your CRM is connected in your Integrations settings.</p>
       </div>
     );
   }
 
   if (isLoading) {
-    return (
-      <div style={{ padding: 60, textAlign: "center", color: "#6b7280" }}>
-        Loading pipeline...
-      </div>
-    );
+    return <div style={{ padding: 60, textAlign: "center", color: "#6b7280" }}>Loading pipeline...</div>;
   }
 
   const stages = pipelineData?.stages?.sort((a, b) => a.position - b.position) || [];
@@ -168,7 +169,9 @@ export default function PipelineClient() {
             }}
           >
             {pipelines.map((p) => (
-              <option key={p.id} value={p.id}>{p.name}</option>
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
             ))}
           </select>
         </div>
@@ -176,10 +179,17 @@ export default function PipelineClient() {
 
       {/* Summary Bar */}
       {pipelineData && (
-        <div style={{
-          display: "flex", gap: 20, marginBottom: 20, padding: 16,
-          background: "#f9fafb", borderRadius: 12, flexWrap: "wrap",
-        }}>
+        <div
+          style={{
+            display: "flex",
+            gap: 20,
+            marginBottom: 20,
+            padding: 16,
+            background: "#f9fafb",
+            borderRadius: 12,
+            flexWrap: "wrap",
+          }}
+        >
           <div>
             <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 600 }}>Pipeline</div>
             <div style={{ fontSize: 16, fontWeight: 700 }}>{pipelineData.pipelineName}</div>
@@ -196,15 +206,19 @@ export default function PipelineClient() {
       )}
 
       {/* Kanban Board */}
-      <div style={{
-        overflowX: "auto",
-        paddingBottom: 16,
-      }}>
-        <div style={{
-          display: "flex",
-          gap: 16,
-          minWidth: stages.length * 300,
-        }}>
+      <div
+        style={{
+          overflowX: "auto",
+          paddingBottom: 16,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            gap: 16,
+            minWidth: stages.length * 300,
+          }}
+        >
           {stages.map((stage, idx) => (
             <div
               key={stage.stageId}
@@ -220,45 +234,51 @@ export default function PipelineClient() {
               }}
             >
               {/* Stage Header */}
-              <div style={{
-                padding: "12px 16px",
-                borderBottom: `3px solid ${STAGE_COLORS[idx % STAGE_COLORS.length]}`,
-                borderRadius: "12px 12px 0 0",
-              }}>
+              <div
+                style={{
+                  padding: "12px 16px",
+                  borderBottom: `3px solid ${STAGE_COLORS[idx % STAGE_COLORS.length]}`,
+                  borderRadius: "12px 12px 0 0",
+                }}
+              >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span style={{ fontWeight: 700, fontSize: 14 }}>{stage.stageName}</span>
-                  <span style={{
-                    background: STAGE_COLORS[idx % STAGE_COLORS.length],
-                    color: "#fff",
-                    padding: "2px 8px",
-                    borderRadius: 10,
-                    fontSize: 12,
-                    fontWeight: 600,
-                  }}>
+                  <span
+                    style={{
+                      background: STAGE_COLORS[idx % STAGE_COLORS.length],
+                      color: "#fff",
+                      padding: "2px 8px",
+                      borderRadius: 10,
+                      fontSize: 12,
+                      fontWeight: 600,
+                    }}
+                  >
                     {stage.opportunityCount}
                   </span>
                 </div>
-                <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
-                  {formatCurrency(stage.totalValue)}
-                </div>
+                <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>{formatCurrency(stage.totalValue)}</div>
               </div>
 
               {/* Cards */}
-              <div style={{
-                flex: 1,
-                overflowY: "auto",
-                padding: 12,
-                display: "flex",
-                flexDirection: "column",
-                gap: 8,
-              }}>
+              <div
+                style={{
+                  flex: 1,
+                  overflowY: "auto",
+                  padding: 12,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 8,
+                }}
+              >
                 {stage.opportunities.length === 0 ? (
-                  <div style={{
-                    padding: 20,
-                    textAlign: "center",
-                    color: "#9ca3af",
-                    fontSize: 13,
-                  }}>
+                  <div
+                    style={{
+                      padding: 20,
+                      textAlign: "center",
+                      color: "#9ca3af",
+                      fontSize: 13,
+                    }}
+                  >
                     No deals
                   </div>
                 ) : (
@@ -280,21 +300,22 @@ export default function PipelineClient() {
                       <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4, color: "#111827" }}>
                         {opp.contactName || "Unknown Contact"}
                       </div>
-                      <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 6 }}>
-                        {opp.name}
-                      </div>
+                      <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 6 }}>{opp.name}</div>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <span style={{ fontWeight: 700, fontSize: 14, color: "#059669" }}>
                           {opp.monetaryValue ? formatCurrency(opp.monetaryValue) : "—"}
                         </span>
-                        <span style={{
-                          fontSize: 11,
-                          padding: "2px 6px",
-                          borderRadius: 4,
-                          fontWeight: 600,
-                          background: opp.status === "won" ? "#dcfce7" : opp.status === "lost" ? "#fee2e2" : "#f3f4f6",
-                          color: opp.status === "won" ? "#16a34a" : opp.status === "lost" ? "#dc2626" : "#6b7280",
-                        }}>
+                        <span
+                          style={{
+                            fontSize: 11,
+                            padding: "2px 6px",
+                            borderRadius: 4,
+                            fontWeight: 600,
+                            background:
+                              opp.status === "won" ? "#dcfce7" : opp.status === "lost" ? "#fee2e2" : "#f3f4f6",
+                            color: opp.status === "won" ? "#16a34a" : opp.status === "lost" ? "#dc2626" : "#6b7280",
+                          }}
+                        >
                           {opp.status}
                         </span>
                       </div>
@@ -311,33 +332,53 @@ export default function PipelineClient() {
       {selectedLead && (
         <div
           style={{
-            position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
-            background: "rgba(0,0,0,0.5)", zIndex: 50,
-            display: "flex", justifyContent: "center", alignItems: "flex-start",
-            padding: "40px 16px", overflowY: "auto",
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,0.5)",
+            zIndex: 50,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "flex-start",
+            padding: "40px 16px",
+            overflowY: "auto",
           }}
-          onClick={(e) => { if (e.target === e.currentTarget) closeDetail(); }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) closeDetail();
+          }}
         >
-          <div style={{
-            background: "#fff", borderRadius: 16, maxWidth: 700, width: "100%",
-            maxHeight: "90vh", overflowY: "auto",
-          }}>
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: 16,
+              maxWidth: 700,
+              width: "100%",
+              maxHeight: "90vh",
+              overflowY: "auto",
+            }}
+          >
             <div style={{ padding: 24 }}>
               {/* Header */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
+              <div
+                style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}
+              >
                 <div>
                   <h2 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>
                     {selectedLead.contactName || "Unknown Contact"}
                   </h2>
-                  <p style={{ color: "#6b7280", fontSize: 14, margin: "4px 0 0" }}>
-                    {selectedLead.name}
-                  </p>
+                  <p style={{ color: "#6b7280", fontSize: 14, margin: "4px 0 0" }}>{selectedLead.name}</p>
                 </div>
                 <button
                   onClick={closeDetail}
                   style={{
-                    padding: "6px 12px", border: "1px solid #d1d5db",
-                    borderRadius: 6, background: "#fff", cursor: "pointer", fontSize: 16,
+                    padding: "6px 12px",
+                    border: "1px solid #d1d5db",
+                    borderRadius: 6,
+                    background: "#fff",
+                    cursor: "pointer",
+                    fontSize: 16,
                   }}
                 >
                   ✕
@@ -345,10 +386,17 @@ export default function PipelineClient() {
               </div>
 
               {/* Deal Info */}
-              <div style={{
-                display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12,
-                padding: 16, background: "#f9fafb", borderRadius: 10, marginBottom: 20,
-              }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: 12,
+                  padding: 16,
+                  background: "#f9fafb",
+                  borderRadius: 10,
+                  marginBottom: 20,
+                }}
+              >
                 <div>
                   <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 600 }}>Deal Value</div>
                   <div style={{ fontSize: 20, fontWeight: 700, color: "#059669" }}>
@@ -364,9 +412,7 @@ export default function PipelineClient() {
               </div>
 
               {isLoadingDetail ? (
-                <div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>
-                  Loading contact details...
-                </div>
+                <div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>Loading contact details...</div>
               ) : contactDetail ? (
                 <>
                   {/* Contact Info */}
@@ -375,10 +421,14 @@ export default function PipelineClient() {
                       <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10, color: "#374151" }}>
                         Contact Information
                       </h3>
-                      <div style={{
-                        display: "grid", gridTemplateColumns: "120px 1fr",
-                        gap: "6px 12px", fontSize: 14,
-                      }}>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "120px 1fr",
+                          gap: "6px 12px",
+                          fontSize: 14,
+                        }}
+                      >
                         {contactDetail.contact.name && (
                           <>
                             <span style={{ fontWeight: 600, color: "#374151" }}>Name:</span>
@@ -401,7 +451,14 @@ export default function PipelineClient() {
                           <>
                             <span style={{ fontWeight: 600, color: "#374151" }}>Address:</span>
                             <span style={{ color: "#6b7280" }}>
-                              {[contactDetail.contact.address1, contactDetail.contact.city, contactDetail.contact.state, contactDetail.contact.postalCode].filter(Boolean).join(", ")}
+                              {[
+                                contactDetail.contact.address1,
+                                contactDetail.contact.city,
+                                contactDetail.contact.state,
+                                contactDetail.contact.postalCode,
+                              ]
+                                .filter(Boolean)
+                                .join(", ")}
                             </span>
                           </>
                         )}
@@ -410,10 +467,16 @@ export default function PipelineClient() {
                             <span style={{ fontWeight: 600, color: "#374151" }}>Tags:</span>
                             <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
                               {contactDetail.contact.tags.map((tag: string) => (
-                                <span key={tag} style={{
-                                  padding: "2px 8px", background: "#e0e7ff",
-                                  color: "#4f46e5", borderRadius: 4, fontSize: 12,
-                                }}>
+                                <span
+                                  key={tag}
+                                  style={{
+                                    padding: "2px 8px",
+                                    background: "#e0e7ff",
+                                    color: "#4f46e5",
+                                    borderRadius: 4,
+                                    fontSize: 12,
+                                  }}
+                                >
                                   {tag}
                                 </span>
                               ))}
@@ -434,10 +497,16 @@ export default function PipelineClient() {
                     ) : (
                       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                         {contactDetail.notes.map((note: any, i: number) => (
-                          <div key={note.id || i} style={{
-                            padding: 12, background: "#fffbeb",
-                            border: "1px solid #fef3c7", borderRadius: 8, fontSize: 13,
-                          }}>
+                          <div
+                            key={note.id || i}
+                            style={{
+                              padding: 12,
+                              background: "#fffbeb",
+                              border: "1px solid #fef3c7",
+                              borderRadius: 8,
+                              fontSize: 13,
+                            }}
+                          >
                             <div style={{ whiteSpace: "pre-wrap", color: "#374151" }}>{note.body}</div>
                             {note.dateAdded && (
                               <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 6 }}>
@@ -460,30 +529,41 @@ export default function PipelineClient() {
                     ) : (
                       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                         {contactDetail.conversations.map((conv: any) => (
-                          <div key={conv.id} style={{
-                            border: "1px solid #e5e7eb", borderRadius: 8, overflow: "hidden",
-                          }}>
-                            <div style={{
-                              padding: "8px 12px", background: "#f3f4f6",
-                              fontSize: 12, fontWeight: 600, color: "#374151",
-                            }}>
-                              {conv.type || "Conversation"} — {conv.lastMessageDate
-                                ? new Date(conv.lastMessageDate).toLocaleString()
-                                : ""}
+                          <div
+                            key={conv.id}
+                            style={{
+                              border: "1px solid #e5e7eb",
+                              borderRadius: 8,
+                              overflow: "hidden",
+                            }}
+                          >
+                            <div
+                              style={{
+                                padding: "8px 12px",
+                                background: "#f3f4f6",
+                                fontSize: 12,
+                                fontWeight: 600,
+                                color: "#374151",
+                              }}
+                            >
+                              {conv.type || "Conversation"} —{" "}
+                              {conv.lastMessageDate ? new Date(conv.lastMessageDate).toLocaleString() : ""}
                             </div>
                             {conv.messages && conv.messages.length > 0 ? (
                               <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 6 }}>
                                 {conv.messages.map((msg: any, i: number) => (
-                                  <div key={msg.id || i} style={{
-                                    padding: "6px 10px",
-                                    background: msg.direction === "outbound" ? "#dbeafe" : "#f3f4f6",
-                                    borderRadius: 6, fontSize: 13,
-                                    alignSelf: msg.direction === "outbound" ? "flex-end" : "flex-start",
-                                    maxWidth: "85%",
-                                  }}>
-                                    <div style={{ color: "#374151" }}>
-                                      {msg.body || msg.message || msg.text || ""}
-                                    </div>
+                                  <div
+                                    key={msg.id || i}
+                                    style={{
+                                      padding: "6px 10px",
+                                      background: msg.direction === "outbound" ? "#dbeafe" : "#f3f4f6",
+                                      borderRadius: 6,
+                                      fontSize: 13,
+                                      alignSelf: msg.direction === "outbound" ? "flex-end" : "flex-start",
+                                      maxWidth: "85%",
+                                    }}
+                                  >
+                                    <div style={{ color: "#374151" }}>{msg.body || msg.message || msg.text || ""}</div>
                                     <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 2 }}>
                                       {msg.dateAdded ? new Date(msg.dateAdded).toLocaleString() : ""}
                                     </div>
@@ -491,9 +571,7 @@ export default function PipelineClient() {
                                 ))}
                               </div>
                             ) : (
-                              <div style={{ padding: 12, color: "#9ca3af", fontSize: 13 }}>
-                                No messages loaded.
-                              </div>
+                              <div style={{ padding: 12, color: "#9ca3af", fontSize: 13 }}>No messages loaded.</div>
                             )}
                           </div>
                         ))}

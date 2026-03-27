@@ -2,10 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: memberId } = await params;
     const supabase = await supabaseServer();
@@ -49,7 +46,10 @@ export async function POST(
     }
 
     // Prevent non-owners from resetting owner/admin passwords
-    if (currentMember.account_role === "admin" && (targetMember.account_role === "owner" || targetMember.account_role === "admin")) {
+    if (
+      currentMember.account_role === "admin" &&
+      (targetMember.account_role === "owner" || targetMember.account_role === "admin")
+    ) {
       return NextResponse.json({ error: "Only owners can reset administrator passwords" }, { status: 403 });
     }
 
@@ -60,10 +60,7 @@ export async function POST(
     }
 
     // Reset the password via Supabase admin auth
-    const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(
-      targetMember.agent_id,
-      { password }
-    );
+    const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(targetMember.agent_id, { password });
 
     if (authError) {
       console.error("Error resetting password:", authError);
@@ -71,10 +68,7 @@ export async function POST(
     }
 
     // Flag the user to change their password on next login
-    await supabaseAdmin
-      .from("agents")
-      .update({ must_change_password: true })
-      .eq("id", targetMember.agent_id);
+    await supabaseAdmin.from("agents").update({ must_change_password: true }).eq("id", targetMember.agent_id);
 
     return NextResponse.json({ message: "Password reset successfully" });
   } catch (error) {

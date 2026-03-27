@@ -5,7 +5,9 @@ import { supabaseServer } from "@/lib/supabase/server";
 export async function GET(req: NextRequest) {
   try {
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const url = new URL(req.url);
@@ -55,11 +57,27 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await req.json();
-    const { title, description, priority, due_date, due_time, task_type, linked_lead_id, linked_contact_id, linked_open_house_id, linked_transaction_id, assigned_to, is_recurring, recurrence_rule } = body;
+    const {
+      title,
+      description,
+      priority,
+      due_date,
+      due_time,
+      task_type,
+      linked_lead_id,
+      linked_contact_id,
+      linked_open_house_id,
+      linked_transaction_id,
+      assigned_to,
+      is_recurring,
+      recurrence_rule,
+    } = body;
 
     if (!title?.trim()) {
       return NextResponse.json({ error: "Title is required" }, { status: 400 });

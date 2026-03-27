@@ -22,10 +22,7 @@ type ImpersonationPayload = {
  * Start impersonating a user. Sets the impersonation cookie.
  * Caller must already be verified as admin.
  */
-export async function startImpersonation(
-  adminId: string,
-  targetUserId: string
-) {
+export async function startImpersonation(adminId: string, targetUserId: string) {
   const cookieStore = await cookies();
   const payload: ImpersonationPayload = {
     userId: targetUserId,
@@ -94,17 +91,11 @@ export async function getImpersonationState(): Promise<{
 
   // Check admin status via service role to bypass RLS
   const { createClient } = await import("@supabase/supabase-js");
-  const admin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } }
-  );
+  const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+    auth: { persistSession: false },
+  });
 
-  const { data: agent } = await admin
-    .from("agents")
-    .select("is_admin, account_status")
-    .eq("id", user.id)
-    .single();
+  const { data: agent } = await admin.from("agents").select("is_admin, account_status").eq("id", user.id).single();
 
   if (!agent?.is_admin || agent.account_status !== "active") {
     cookieStore.delete(COOKIE_NAME);

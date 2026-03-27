@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     console.error("Bulk send error:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to send bulk messages" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

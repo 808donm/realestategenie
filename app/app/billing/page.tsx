@@ -52,13 +52,13 @@ export default async function BillingPage({ searchParams }: PageProps) {
     .limit(10);
 
   // Calculate stats
-  const totalPaid = payments
-    ?.filter((p) => p.status === "completed")
-    .reduce((sum, p) => sum + parseFloat(p.amount.toString()), 0) || 0;
+  const totalPaid =
+    payments?.filter((p) => p.status === "completed").reduce((sum, p) => sum + parseFloat(p.amount.toString()), 0) || 0;
 
-  const unpaidInvoices = invoices
-    ?.filter((i) => i.status === "pending")
-    .reduce((sum, i) => sum + parseFloat(i.total_amount.toString()), 0) || 0;
+  const unpaidInvoices =
+    invoices
+      ?.filter((i) => i.status === "pending")
+      .reduce((sum, i) => sum + parseFloat(i.total_amount.toString()), 0) || 0;
 
   const planNames = {
     free: "Free Plan",
@@ -98,8 +98,8 @@ export default async function BillingPage({ searchParams }: PageProps) {
               <div className="text-sm text-green-900">
                 <p className="font-semibold mb-1">Payment Successful!</p>
                 <p>
-                  Your subscription has been activated. You now have access to all features of your plan.
-                  Your subscription will renew automatically each billing period.
+                  Your subscription has been activated. You now have access to all features of your plan. Your
+                  subscription will renew automatically each billing period.
                 </p>
               </div>
             </div>
@@ -116,8 +116,8 @@ export default async function BillingPage({ searchParams }: PageProps) {
               <div className="text-sm text-yellow-900">
                 <p className="font-semibold mb-1">Checkout Canceled</p>
                 <p>
-                  You canceled the checkout process. No charges were made to your account.
-                  You can try again anytime by selecting a plan below.
+                  You canceled the checkout process. No charges were made to your account. You can try again anytime by
+                  selecting a plan below.
                 </p>
               </div>
             </div>
@@ -139,23 +139,17 @@ export default async function BillingPage({ searchParams }: PageProps) {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="flex items-center gap-2 mb-2">
-                    <Badge className="bg-blue-600 text-white">
-                      {subscription.subscription_plans.name}
-                    </Badge>
+                    <Badge className="bg-blue-600 text-white">{subscription.subscription_plans.name}</Badge>
                     <Badge className={statusColors[subscription.status as keyof typeof statusColors]}>
                       {subscription.status.replace("_", " ").toUpperCase()}
                     </Badge>
                   </div>
                   <p className="text-2xl font-bold">
                     ${parseFloat(subscription.monthly_price.toString()).toFixed(2)}
-                    <span className="text-sm font-normal text-muted-foreground">
-                      /{subscription.billing_cycle}
-                    </span>
+                    <span className="text-sm font-normal text-muted-foreground">/{subscription.billing_cycle}</span>
                   </p>
                   {subscription.subscription_plans.description && (
-                    <p className="text-sm text-muted-foreground mt-2">
-                      {subscription.subscription_plans.description}
-                    </p>
+                    <p className="text-sm text-muted-foreground mt-2">{subscription.subscription_plans.description}</p>
                   )}
                 </div>
                 <div className="text-right">
@@ -210,8 +204,6 @@ export default async function BillingPage({ searchParams }: PageProps) {
                         : subscription.subscription_plans.max_offices}
                     </span>
                   </div>
-
-
                 </div>
               </div>
 
@@ -226,9 +218,7 @@ export default async function BillingPage({ searchParams }: PageProps) {
                 {subscription.trial_end_date && (
                   <div>
                     <p className="text-sm text-muted-foreground">Trial Ends</p>
-                    <p className="font-medium">
-                      {new Date(subscription.trial_end_date).toLocaleDateString()}
-                    </p>
+                    <p className="font-medium">{new Date(subscription.trial_end_date).toLocaleDateString()}</p>
                   </div>
                 )}
               </div>
@@ -265,12 +255,8 @@ export default async function BillingPage({ searchParams }: PageProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              ${totalPaid.toFixed(2)}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Lifetime payments
-            </p>
+            <div className="text-2xl font-bold text-green-600">${totalPaid.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground mt-1">Lifetime payments</p>
           </CardContent>
         </Card>
 
@@ -282,9 +268,7 @@ export default async function BillingPage({ searchParams }: PageProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
-              ${unpaidInvoices.toFixed(2)}
-            </div>
+            <div className="text-2xl font-bold text-orange-600">${unpaidInvoices.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground mt-1">
               {invoices?.filter((i) => i.status === "pending").length || 0} pending
             </p>
@@ -303,9 +287,7 @@ export default async function BillingPage({ searchParams }: PageProps) {
               ${subscription?.monthly_price ? parseFloat(subscription.monthly_price.toString()).toFixed(2) : "0.00"}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {subscription?.next_billing_date
-                ? new Date(subscription.next_billing_date).toLocaleDateString()
-                : "N/A"}
+              {subscription?.next_billing_date ? new Date(subscription.next_billing_date).toLocaleDateString() : "N/A"}
             </p>
           </CardContent>
         </Card>
@@ -328,9 +310,7 @@ export default async function BillingPage({ searchParams }: PageProps) {
         </CardHeader>
         <CardContent>
           {!invoices || invoices.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No invoices yet
-            </div>
+            <div className="text-center py-8 text-muted-foreground">No invoices yet</div>
           ) : (
             <div className="space-y-3">
               {invoices.map((invoice) => {
@@ -403,14 +383,9 @@ export default async function BillingPage({ searchParams }: PageProps) {
                 };
 
                 return (
-                  <div
-                    key={payment.id}
-                    className="flex justify-between items-center p-3 border rounded-lg"
-                  >
+                  <div key={payment.id} className="flex justify-between items-center p-3 border rounded-lg">
                     <div>
-                      <div className="font-medium">
-                        {payment.agent_invoices?.invoice_number || "Payment"}
-                      </div>
+                      <div className="font-medium">{payment.agent_invoices?.invoice_number || "Payment"}</div>
                       <div className="text-sm text-muted-foreground">
                         {new Date(payment.payment_date).toLocaleDateString("en-US", {
                           month: "long",
@@ -418,14 +393,10 @@ export default async function BillingPage({ searchParams }: PageProps) {
                           year: "numeric",
                         })}
                       </div>
-                      <div className="text-xs text-muted-foreground capitalize">
-                        via {payment.payment_method}
-                      </div>
+                      <div className="text-xs text-muted-foreground capitalize">via {payment.payment_method}</div>
                     </div>
                     <div className="text-right">
-                      <div className="font-semibold">
-                        ${parseFloat(payment.amount.toString()).toFixed(2)}
-                      </div>
+                      <div className="font-semibold">${parseFloat(payment.amount.toString()).toFixed(2)}</div>
                       <Badge className={statusColors[payment.status as keyof typeof statusColors]}>
                         {payment.status.toUpperCase()}
                       </Badge>

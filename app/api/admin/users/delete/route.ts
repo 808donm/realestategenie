@@ -3,11 +3,9 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { createClient } from "@supabase/supabase-js";
 import { logError } from "@/lib/error-logging";
 
-const admin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,10 +38,7 @@ export async function POST(request: NextRequest) {
 
     // Prevent admins from deleting themselves
     if (userId === user.id) {
-      return NextResponse.json(
-        { error: "You cannot delete your own account" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "You cannot delete your own account" }, { status: 400 });
     }
 
     // Delete user from auth (this will cascade delete related records)
@@ -56,10 +51,7 @@ export async function POST(request: NextRequest) {
         errorMessage: deleteError.message,
         severity: "error",
       });
-      return NextResponse.json(
-        { error: "Failed to delete user" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to delete user" }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
@@ -70,9 +62,6 @@ export async function POST(request: NextRequest) {
       stackTrace: error.stack,
       severity: "error",
     });
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

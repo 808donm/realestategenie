@@ -79,20 +79,14 @@ export default function HeatScoreChart() {
                     <Badge variant="danger">Hot (80-100)</Badge>
                     <span className="text-sm font-medium">{distribution.hot} leads</span>
                   </div>
-                  <span className="text-sm text-muted-foreground">
-                    {hotPercent.toFixed(0)}%
-                  </span>
+                  <span className="text-sm text-muted-foreground">{hotPercent.toFixed(0)}%</span>
                 </div>
                 <div className="w-full bg-muted rounded-full h-4">
                   <div
                     className="bg-danger h-4 rounded-full transition-all flex items-center justify-end pr-2"
                     style={{ width: `${hotPercent}%` }}
                   >
-                    {hotPercent > 15 && (
-                      <span className="text-xs font-bold text-white">
-                        {distribution.hot}
-                      </span>
-                    )}
+                    {hotPercent > 15 && <span className="text-xs font-bold text-white">{distribution.hot}</span>}
                   </div>
                 </div>
               </div>
@@ -104,20 +98,14 @@ export default function HeatScoreChart() {
                     <Badge variant="default">Warm (50-79)</Badge>
                     <span className="text-sm font-medium">{distribution.warm} leads</span>
                   </div>
-                  <span className="text-sm text-muted-foreground">
-                    {warmPercent.toFixed(0)}%
-                  </span>
+                  <span className="text-sm text-muted-foreground">{warmPercent.toFixed(0)}%</span>
                 </div>
                 <div className="w-full bg-muted rounded-full h-4">
                   <div
                     className="bg-primary h-4 rounded-full transition-all flex items-center justify-end pr-2"
                     style={{ width: `${warmPercent}%` }}
                   >
-                    {warmPercent > 15 && (
-                      <span className="text-xs font-bold text-white">
-                        {distribution.warm}
-                      </span>
-                    )}
+                    {warmPercent > 15 && <span className="text-xs font-bold text-white">{distribution.warm}</span>}
                   </div>
                 </div>
               </div>
@@ -129,9 +117,7 @@ export default function HeatScoreChart() {
                     <Badge variant="secondary">Cold (0-49)</Badge>
                     <span className="text-sm font-medium">{distribution.cold} leads</span>
                   </div>
-                  <span className="text-sm text-muted-foreground">
-                    {coldPercent.toFixed(0)}%
-                  </span>
+                  <span className="text-sm text-muted-foreground">{coldPercent.toFixed(0)}%</span>
                 </div>
                 <div className="w-full bg-muted rounded-full h-4">
                   <div
@@ -139,9 +125,7 @@ export default function HeatScoreChart() {
                     style={{ width: `${coldPercent}%` }}
                   >
                     {coldPercent > 15 && (
-                      <span className="text-xs font-bold text-muted-foreground">
-                        {distribution.cold}
-                      </span>
+                      <span className="text-xs font-bold text-muted-foreground">{distribution.cold}</span>
                     )}
                   </div>
                 </div>
@@ -159,9 +143,7 @@ export default function HeatScoreChart() {
                 <div className="text-xs text-muted-foreground">Warm Leads</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-muted-foreground">
-                  {distribution.cold}
-                </div>
+                <div className="text-2xl font-bold text-muted-foreground">{distribution.cold}</div>
                 <div className="text-xs text-muted-foreground">Cold Leads</div>
               </div>
             </div>

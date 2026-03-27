@@ -135,6 +135,7 @@ Marks registration as 'sent'
 4. **Send SMS:**
    - To: `{{contact.phone}}`
    - Message:
+
      ```
      Hi {{contact.first_name}}! Thanks for registering for the open house at {{custom_fields.property_address}}.
 
@@ -151,6 +152,7 @@ Marks registration as 'sent'
 
 **Trigger:** Inbound Message
 **Conditions:**
+
 - Message contains: `YES`, `Y`, `SURE`, `OK`, `PLEASE`, `SEND`
 - Case insensitive
 
@@ -193,6 +195,7 @@ Marks registration as 'sent'
 
 **Trigger:** Inbound Message
 **Conditions:**
+
 - Message is numeric: `1`, `2`, `3`, etc.
 - Contact has been through Workflow B in last 24 hours
 
@@ -249,6 +252,7 @@ Marks registration as 'sent'
 **Purpose:** Handle YES replies, decide single vs multiple flyer offer
 
 **Request:**
+
 ```json
 {
   "contactId": "ghl-contact-id",
@@ -257,6 +261,7 @@ Marks registration as 'sent'
 ```
 
 **Response (Single Property):**
+
 ```json
 {
   "action": "send_single",
@@ -267,6 +272,7 @@ Marks registration as 'sent'
 ```
 
 **Response (Multiple Properties):**
+
 ```json
 {
   "action": "send_choices",
@@ -278,6 +284,7 @@ Marks registration as 'sent'
 ```
 
 **Response (No Pending):**
+
 ```json
 {
   "action": "none",
@@ -292,6 +299,7 @@ Marks registration as 'sent'
 **Purpose:** Handle numeric replies for multi-property offers
 
 **Request:**
+
 ```json
 {
   "contactId": "ghl-contact-id",
@@ -300,6 +308,7 @@ Marks registration as 'sent'
 ```
 
 **Response (Valid):**
+
 ```json
 {
   "action": "send_flyer",
@@ -311,6 +320,7 @@ Marks registration as 'sent'
 ```
 
 **Response (Expired):**
+
 ```json
 {
   "action": "expired",
@@ -319,6 +329,7 @@ Marks registration as 'sent'
 ```
 
 **Response (Out of Range):**
+
 ```json
 {
   "action": "out_of_range",
@@ -327,6 +338,7 @@ Marks registration as 'sent'
 ```
 
 **Response (No Active Offer):**
+
 ```json
 {
   "action": "no_active_offer",
@@ -340,17 +352,17 @@ Marks registration as 'sent'
 
 Create these custom fields in **Settings → Custom Fields:**
 
-| Field Name | Type | Key | Usage |
-|------------|------|-----|-------|
-| Property Address | Text | `property_address` | Full property address |
-| Property Flyer URL | Text | `property_flyer_url` | Direct PDF link |
-| Event Start Time | Text | `event_start_time` | Formatted date/time |
-| Open House Event ID | Text | `open_house_event_id` | Unique event ID |
-| Beds | Number | `beds` | Bedrooms |
-| Baths | Number | `baths` | Bathrooms |
-| Sq Ft | Number | `sqft` | Square footage |
-| Price | Number | `price` | List price |
-| Heat Score | Number | `heat_score` | Lead quality (0-100) |
+| Field Name          | Type   | Key                   | Usage                 |
+| ------------------- | ------ | --------------------- | --------------------- |
+| Property Address    | Text   | `property_address`    | Full property address |
+| Property Flyer URL  | Text   | `property_flyer_url`  | Direct PDF link       |
+| Event Start Time    | Text   | `event_start_time`    | Formatted date/time   |
+| Open House Event ID | Text   | `open_house_event_id` | Unique event ID       |
+| Beds                | Number | `beds`                | Bedrooms              |
+| Baths               | Number | `baths`               | Bathrooms             |
+| Sq Ft               | Number | `sqft`                | Square footage        |
+| Price               | Number | `price`               | List price            |
+| Heat Score          | Number | `heat_score`          | Lead quality (0-100)  |
 
 These are set when the contact is created/updated during check-in.
 
@@ -475,26 +487,31 @@ ORDER BY pending_count DESC;
 ## Benefits of This Architecture
 
 ### ✅ Scalability
+
 - Handle unlimited open houses per contact
 - No contact field overwrites
 - Clean separation of concerns
 
 ### ✅ Reliability
+
 - Token-based validation prevents stale replies
 - Expiration system (24 hours) keeps data fresh
 - Registration events are immutable
 
 ### ✅ Simplicity
+
 - Visual workflow builder in GHL
 - Clear decision logic
 - Easy to debug
 
 ### ✅ Tracking
+
 - Full history per contact
 - Audit trail of all interactions
 - Analytics on flyer delivery
 
 ### ✅ Future-Proof
+
 - Easy to add new registration types
 - Can extend to other event types (seminars, buyer tours, etc.)
 - API-driven architecture
@@ -508,6 +525,7 @@ ORDER BY pending_count DESC;
 **Cause:** Registration record wasn't created during check-in
 
 **Solution:**
+
 1. Check if `syncLeadToGHL()` was called
 2. Verify registration creation in logs
 3. Query database: `SELECT * FROM open_house_registrations WHERE ghl_contact_id = 'contact-id'`
@@ -517,6 +535,7 @@ ORDER BY pending_count DESC;
 **Cause:** Token expires after 24 hours
 
 **Solution:**
+
 - This is expected behavior
 - Contact should reply "YES" again to get a fresh offer
 - Adjust expiration in `/app/api/ghl/flyer-request/route.ts` line 117 if needed
@@ -526,6 +545,7 @@ ORDER BY pending_count DESC;
 **Cause:** Tag not added to contact
 
 **Solution:**
+
 1. Check GHL contact has tag: `open-house-{eventId}`
 2. Verify workflow trigger is set to "Tag Added" with filter "Starts with: open-house-"
 3. Check workflow is published and active

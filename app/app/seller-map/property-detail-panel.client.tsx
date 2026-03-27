@@ -5,7 +5,17 @@ import type { ScoredProperty, SellerFactor } from "@/lib/scoring/seller-motivati
 import { getSellerColor, getSellerLabel } from "@/lib/scoring/seller-motivation-score";
 import { fmtPrice } from "@/lib/utils";
 
-type DetailTab = "overview" | "building" | "financial" | "sales-history" | "investment" | "comps" | "ownership" | "neighborhood" | "federal" | "outreach";
+type DetailTab =
+  | "overview"
+  | "building"
+  | "financial"
+  | "sales-history"
+  | "investment"
+  | "comps"
+  | "ownership"
+  | "neighborhood"
+  | "federal"
+  | "outreach";
 
 interface OutreachDraft {
   address: string;
@@ -179,7 +189,7 @@ export function PropertyDetailPanel({ property, onClose }: Props) {
       ownerParcelCount: property.ownerParcelCount,
       sellerScore: property.score,
       sellerLevel: property.level,
-      sellerFactors: property.factors?.map(f => `${f.name}: ${f.points}/${f.maxPoints} — ${f.description}`),
+      sellerFactors: property.factors?.map((f) => `${f.name}: ${f.points}/${f.maxPoints} — ${f.description}`),
       activeTab: tab,
       pageContext: "seller-map",
     };
@@ -235,7 +245,8 @@ export function PropertyDetailPanel({ property, onClose }: Props) {
       if (detail.zoning) ctx.zoning = detail.zoning;
       // Ownership tab
       if (detail.ownerOccupied != null) ctx.ownerOccupied = detail.ownerOccupied ? "Y" : "N";
-      if (detail.owner?.mailingAddress?.formattedAddress) ctx.mailingAddress = detail.owner.mailingAddress.formattedAddress;
+      if (detail.owner?.mailingAddress?.formattedAddress)
+        ctx.mailingAddress = detail.owner.mailingAddress.formattedAddress;
       if (detail.owner?.type) ctx.corporateOwner = detail.owner.type === "Organization" ? "Y" : "N";
       if (detail.owner?.names?.length) ctx.ownerNames = detail.owner.names.join(", ");
       if (detail.ownerParcelCount) ctx.ownerParcelCount = detail.ownerParcelCount;
@@ -416,10 +427,7 @@ export function PropertyDetailPanel({ property, onClose }: Props) {
               >
                 {property.score}
               </div>
-              <span
-                className="text-[10px] font-medium mt-0.5"
-                style={{ color: getSellerColor(property.level) }}
-              >
+              <span className="text-[10px] font-medium mt-0.5" style={{ color: getSellerColor(property.level) }}>
                 {getSellerLabel(property.level)}
               </span>
             </div>
@@ -440,9 +448,7 @@ export function PropertyDetailPanel({ property, onClose }: Props) {
           {property.sqft && <span>{property.sqft.toLocaleString()} sqft</span>}
           {property.yearBuilt && <span>Built {property.yearBuilt}</span>}
           {(detail?.avmValue || property.estimatedValue) && (
-            <span className="font-medium">
-              {fmtPrice(detail?.avmValue || property.estimatedValue || 0)}
-            </span>
+            <span className="font-medium">{fmtPrice(detail?.avmValue || property.estimatedValue || 0)}</span>
           )}
         </div>
       </div>
@@ -472,9 +478,7 @@ export function PropertyDetailPanel({ property, onClose }: Props) {
                 key={t.key}
                 onClick={() => setTab(t.key)}
                 className={`px-3 py-2.5 font-medium transition-colors whitespace-nowrap ${
-                  tab === t.key
-                    ? "text-blue-600 border-b-2 border-blue-600"
-                    : "text-gray-500 hover:text-gray-700"
+                  tab === t.key ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-500 hover:text-gray-700"
                 }`}
               >
                 {t.label}
@@ -498,13 +502,16 @@ export function PropertyDetailPanel({ property, onClose }: Props) {
       {/* Tab content */}
       <div className="flex-1 overflow-y-auto p-4">
         {loading ? (
-          <div className="flex items-center justify-center h-32 text-sm text-gray-500">
-            Loading details...
-          </div>
+          <div className="flex items-center justify-center h-32 text-sm text-gray-500">Loading details...</div>
         ) : (
           <>
             {tab === "overview" && (
-              <OverviewTab property={property} detail={detail} onDraftOutreach={handleDraftOutreach} outreachLoading={outreachLoading} />
+              <OverviewTab
+                property={property}
+                detail={detail}
+                onDraftOutreach={handleDraftOutreach}
+                outreachLoading={outreachLoading}
+              />
             )}
             {tab === "building" && <BuildingTab detail={detail} />}
             {tab === "financial" && <FinancialTab property={property} detail={detail} />}
@@ -658,7 +665,11 @@ function exportPropertyToExcel(property: ScoredProperty, detail: PropertyDetail 
     add("Building", "Heating", f.heatingType);
     add("Building", "Cooling", f.coolingType);
     add("Building", "Fireplace", f.fireplaceType || (f.fireplace ? "Yes" : undefined));
-    add("Building", "Garage", f.garageType ? `${f.garageType}${f.garageSpaces ? ` (${f.garageSpaces})` : ""}` : (f.garage ? "Yes" : undefined));
+    add(
+      "Building",
+      "Garage",
+      f.garageType ? `${f.garageType}${f.garageSpaces ? ` (${f.garageSpaces})` : ""}` : f.garage ? "Yes" : undefined,
+    );
     add("Building", "Pool", f.poolType || (f.pool ? "Yes" : undefined));
     add("Building", "Stories", f.floorCount);
     add("Building", "Rooms", f.roomCount);
@@ -678,8 +689,20 @@ function exportPropertyToExcel(property: ScoredProperty, detail: PropertyDetail 
   add("Financial", "LTV %", detail?.ltv ?? property.ltv);
   add("Financial", "HOA Fee", detail?.hoa?.fee);
   add("Financial", "Last Sale Date", detail?.lastSaleDate || property.lastSaleDate);
-  add("Financial", "Last Sale Price", detail?.lastSalePrice || (property.lastSalePrice ? `$${property.lastSalePrice.toLocaleString()}` : undefined));
-  add("Financial", "Ownership Duration", property.ownershipYears != null ? `${property.ownershipYears} years` : (detail?.lastSaleDate || property.lastSaleDate ? undefined : "No sale date available (non-disclosure state)"));
+  add(
+    "Financial",
+    "Last Sale Price",
+    detail?.lastSalePrice || (property.lastSalePrice ? `$${property.lastSalePrice.toLocaleString()}` : undefined),
+  );
+  add(
+    "Financial",
+    "Ownership Duration",
+    property.ownershipYears != null
+      ? `${property.ownershipYears} years`
+      : detail?.lastSaleDate || property.lastSaleDate
+        ? undefined
+        : "No sale date available (non-disclosure state)",
+  );
   add("Financial", "Total Market Value", detail?.totalMarketValue);
   add("Financial", "Foreclosure Code", detail?.forecloseCode);
   add("Financial", "Lien Count", detail?.totalLienCount);
@@ -690,7 +713,11 @@ function exportPropertyToExcel(property: ScoredProperty, detail: PropertyDetail 
     add("Investment", "Market Rent", `$${detail.rentalAvm.toLocaleString()}/mo`);
   }
   if (detail?.rentalAvmLow != null && detail?.rentalAvmHigh != null) {
-    add("Investment", "Rent Range", `$${detail.rentalAvmLow.toLocaleString()} – $${detail.rentalAvmHigh.toLocaleString()}/mo`);
+    add(
+      "Investment",
+      "Rent Range",
+      `$${detail.rentalAvmLow.toLocaleString()} – $${detail.rentalAvmHigh.toLocaleString()}/mo`,
+    );
   }
   if (detail?.annualRent) {
     add("Investment", "Annual Rent", `$${detail.annualRent.toLocaleString()}`);
@@ -763,13 +790,19 @@ function exportPropertyToExcel(property: ScoredProperty, detail: PropertyDetail 
   // Comps
   if (detail?.comps) {
     for (const c of detail.comps) {
-      add("Comparable", c.address, `$${c.price.toLocaleString()} | ${c.beds}bd/${c.baths}ba | ${c.sqft?.toLocaleString() || "?"} sqft | ${c.distance?.toFixed(1) || "?"} mi`);
+      add(
+        "Comparable",
+        c.address,
+        `$${c.price.toLocaleString()} | ${c.beds}bd/${c.baths}ba | ${c.sqft?.toLocaleString() || "?"} sqft | ${c.distance?.toFixed(1) || "?"} mi`,
+      );
     }
   }
 
   // Generate CSV
   const header = "Section,Field,Value";
-  const csv = [header, ...rows.map((r) => r.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))].join("\n");
+  const csv = [header, ...rows.map((r) => r.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))].join(
+    "\n",
+  );
 
   // Download
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -810,10 +843,7 @@ function OverviewTab({
           if (!factor) return null;
           const pct = factor.maxPoints > 0 ? (factor.points / factor.maxPoints) * 100 : 0;
           return (
-            <div
-              key={card.name}
-              className={`rounded-lg border p-2.5 ${card.colors.bg} ${card.colors.border}`}
-            >
+            <div key={card.name} className={`rounded-lg border p-2.5 ${card.colors.bg} ${card.colors.border}`}>
               <div className="flex items-center gap-1.5 mb-1">
                 <span className={`text-sm ${card.colors.text}`}>{card.icon}</span>
                 <span className={`text-[10px] font-semibold uppercase tracking-wide ${card.colors.text}`}>
@@ -821,16 +851,11 @@ function OverviewTab({
                 </span>
               </div>
               <div className="flex items-baseline gap-1">
-                <span className={`text-lg font-bold ${card.colors.text}`}>
-                  {factor.points}
-                </span>
+                <span className={`text-lg font-bold ${card.colors.text}`}>{factor.points}</span>
                 <span className="text-[10px] text-gray-400">/ {factor.maxPoints}</span>
               </div>
               <div className="h-1 bg-white/60 rounded-full overflow-hidden mt-1">
-                <div
-                  className={`h-full rounded-full ${card.colors.bar}`}
-                  style={{ width: `${pct}%` }}
-                />
+                <div className={`h-full rounded-full ${card.colors.bar}`} style={{ width: `${pct}%` }} />
               </div>
               <p className="text-[10px] text-gray-500 mt-1 leading-tight">{factor.description}</p>
             </div>
@@ -891,7 +916,12 @@ function OverviewTab({
             className="w-full text-xs bg-indigo-600 text-white py-2 px-3 rounded hover:bg-indigo-700 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+              />
             </svg>
             {outreachLoading ? "Drafting..." : "Draft AI Outreach"}
           </button>
@@ -901,7 +931,12 @@ function OverviewTab({
           className="w-full text-xs border border-gray-300 py-2 px-3 rounded hover:bg-gray-50 transition-colors flex items-center justify-center gap-1.5"
         >
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+            />
           </svg>
           Export to Excel
         </button>
@@ -939,7 +974,16 @@ function BuildingTab({ detail }: { detail: PropertyDetail | null }) {
           <InfoRow label="Heating" value={f.heatingType || (f.heating ? "Yes" : undefined)} />
           <InfoRow label="Cooling" value={f.coolingType || (f.cooling ? "Yes" : undefined)} />
           <InfoRow label="Fireplace" value={f.fireplaceType || (f.fireplace ? "Yes" : undefined)} />
-          <InfoRow label="Garage" value={f.garageType ? `${f.garageType}${f.garageSpaces ? ` (${f.garageSpaces} spaces)` : ""}` : (f.garage ? "Yes" : undefined)} />
+          <InfoRow
+            label="Garage"
+            value={
+              f.garageType
+                ? `${f.garageType}${f.garageSpaces ? ` (${f.garageSpaces} spaces)` : ""}`
+                : f.garage
+                  ? "Yes"
+                  : undefined
+            }
+          />
           <InfoRow label="Pool" value={f.poolType || (f.pool ? "Yes" : undefined)} />
           <InfoRow label="View" value={f.viewType} />
         </Section>
@@ -950,27 +994,18 @@ function BuildingTab({ detail }: { detail: PropertyDetail | null }) {
 
 // ── Financial Tab ──────────────────────────────────────────────────────────
 
-function FinancialTab({
-  property,
-  detail,
-}: {
-  property: ScoredProperty;
-  detail: PropertyDetail | null;
-}) {
+function FinancialTab({ property, detail }: { property: ScoredProperty; detail: PropertyDetail | null }) {
   // Get sorted tax assessments
   const assessments = detail?.taxAssessments
-    ? Object.entries(detail.taxAssessments)
-        .sort(([a], [b]) => b.localeCompare(a))
+    ? Object.entries(detail.taxAssessments).sort(([a], [b]) => b.localeCompare(a))
     : [];
 
   const taxes = detail?.propertyTaxes
-    ? Object.entries(detail.propertyTaxes)
-        .sort(([a], [b]) => b.localeCompare(a))
+    ? Object.entries(detail.propertyTaxes).sort(([a], [b]) => b.localeCompare(a))
     : [];
 
   return (
     <div className="space-y-4">
-
       {/* Value Estimates */}
       <Section title="Value Estimates">
         {detail?.avmValue && (
@@ -979,16 +1014,29 @@ function FinancialTab({
             value={`${fmtPrice(detail.avmValue)}${detail.avmLow && detail.avmHigh ? ` (${fmtPrice(detail.avmLow)}–${fmtPrice(detail.avmHigh)})` : ""}`}
           />
         )}
-        {detail?.avmValue && detail?.avmLow != null && detail?.avmHigh != null && (() => {
-          const range = detail.avmHigh - detail.avmLow;
-          const pct = range / detail.avmValue;
-          // Narrower range = higher confidence: <10% spread = high, >30% = low
-          const confidence = Math.max(0, Math.min(100, Math.round((1 - pct / 0.4) * 100)));
-          const label = confidence >= 80 ? "High" : confidence >= 50 ? "Moderate" : "Low";
-          return <InfoRow label="Confidence Score" value={`${confidence}% (${label})`} />;
-        })()}
-        <InfoRow label="Equity" value={detail?.equity != null || property.equity != null ? fmtPrice((detail?.equity ?? property.equity) || 0) : undefined} />
-        <InfoRow label="LTV" value={detail?.ltv != null || property.ltv != null ? `${detail?.ltv ?? property.ltv}%` : undefined} />
+        {detail?.avmValue &&
+          detail?.avmLow != null &&
+          detail?.avmHigh != null &&
+          (() => {
+            const range = detail.avmHigh - detail.avmLow;
+            const pct = range / detail.avmValue;
+            // Narrower range = higher confidence: <10% spread = high, >30% = low
+            const confidence = Math.max(0, Math.min(100, Math.round((1 - pct / 0.4) * 100)));
+            const label = confidence >= 80 ? "High" : confidence >= 50 ? "Moderate" : "Low";
+            return <InfoRow label="Confidence Score" value={`${confidence}% (${label})`} />;
+          })()}
+        <InfoRow
+          label="Equity"
+          value={
+            detail?.equity != null || property.equity != null
+              ? fmtPrice((detail?.equity ?? property.equity) || 0)
+              : undefined
+          }
+        />
+        <InfoRow
+          label="LTV"
+          value={detail?.ltv != null || property.ltv != null ? `${detail?.ltv ?? property.ltv}%` : undefined}
+        />
         <InfoRow label="HOA" value={detail?.hoa ? `$${detail.hoa.fee}/mo` : undefined} />
       </Section>
 
@@ -997,7 +1045,10 @@ function FinancialTab({
         <Section title="Distress Indicators">
           <InfoRow label="Foreclosure" value={detail.forecloseCode || "None"} />
           <InfoRow label="Liens" value={detail.totalLienCount != null ? String(detail.totalLienCount) : undefined} />
-          <InfoRow label="Lien Balance" value={detail.totalLienBalance ? `$${detail.totalLienBalance.toLocaleString()}` : undefined} />
+          <InfoRow
+            label="Lien Balance"
+            value={detail.totalLienBalance ? `$${detail.totalLienBalance.toLocaleString()}` : undefined}
+          />
         </Section>
       )}
 
@@ -1047,8 +1098,14 @@ function FinancialTab({
       {detail?.marketMedianPrice != null && (
         <Section title="Local Market (Zip)">
           <InfoRow label="Median Price" value={fmtPrice(detail.marketMedianPrice)} />
-          <InfoRow label="$/sqft" value={detail.marketMedianPricePerSqft ? `$${detail.marketMedianPricePerSqft.toFixed(0)}` : undefined} />
-          <InfoRow label="Avg Days on Market" value={detail.marketAvgDaysOnMarket != null ? `${Math.round(detail.marketAvgDaysOnMarket)}` : undefined} />
+          <InfoRow
+            label="$/sqft"
+            value={detail.marketMedianPricePerSqft ? `$${detail.marketMedianPricePerSqft.toFixed(0)}` : undefined}
+          />
+          <InfoRow
+            label="Avg Days on Market"
+            value={detail.marketAvgDaysOnMarket != null ? `${Math.round(detail.marketAvgDaysOnMarket)}` : undefined}
+          />
           <InfoRow label="Active Listings" value={detail.marketTotalListings} />
           <InfoRow label="New Listings" value={detail.marketNewListings} />
           {detail.marketPriceTrend != null && (
@@ -1056,12 +1113,16 @@ function FinancialTab({
               label="Price Trend"
               value={
                 <span className={detail.marketPriceTrend >= 0 ? "text-green-600" : "text-red-600"}>
-                  {detail.marketPriceTrend >= 0 ? "+" : ""}{detail.marketPriceTrend.toFixed(1)}%
+                  {detail.marketPriceTrend >= 0 ? "+" : ""}
+                  {detail.marketPriceTrend.toFixed(1)}%
                 </span>
               }
             />
           )}
-          <InfoRow label="Median Rent" value={detail.marketMedianRent ? `$${detail.marketMedianRent.toLocaleString()}/mo` : undefined} />
+          <InfoRow
+            label="Median Rent"
+            value={detail.marketMedianRent ? `$${detail.marketMedianRent.toLocaleString()}/mo` : undefined}
+          />
         </Section>
       )}
 
@@ -1078,19 +1139,15 @@ function FinancialTab({
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-gray-500">
-                  <span className={`px-1.5 py-0.5 rounded font-medium ${
-                    listing.status === "Active"
-                      ? "bg-green-100 text-green-700"
-                      : "bg-gray-100 text-gray-600"
-                  }`}>
+                  <span
+                    className={`px-1.5 py-0.5 rounded font-medium ${
+                      listing.status === "Active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"
+                    }`}
+                  >
                     {listing.status}
                   </span>
-                  {listing.listedDate && (
-                    <span>Listed {new Date(listing.listedDate).toLocaleDateString()}</span>
-                  )}
-                  {listing.daysOnMarket != null && (
-                    <span>{listing.daysOnMarket} DOM</span>
-                  )}
+                  {listing.listedDate && <span>Listed {new Date(listing.listedDate).toLocaleDateString()}</span>}
+                  {listing.daysOnMarket != null && <span>{listing.daysOnMarket} DOM</span>}
                   {listing.mlsNumber && <span>MLS# {listing.mlsNumber}</span>}
                 </div>
                 {listing.listingAgent?.name && (
@@ -1107,13 +1164,7 @@ function FinancialTab({
 
 // ── Investment Tab ──────────────────────────────────────────────────────────
 
-function InvestmentTab({
-  property,
-  detail,
-}: {
-  property: ScoredProperty;
-  detail: PropertyDetail | null;
-}) {
+function InvestmentTab({ property, detail }: { property: ScoredProperty; detail: PropertyDetail | null }) {
   const hasRental = detail?.rentalAvm != null;
   const hasInvestment = detail?.capRate != null || detail?.cashOnCash != null;
 
@@ -1128,9 +1179,15 @@ function InvestmentTab({
               <span className="text-lg font-bold text-green-700">${detail!.rentalAvm!.toLocaleString()}/mo</span>
             </div>
             {detail?.rentalAvmLow != null && detail?.rentalAvmHigh != null && (
-              <InfoRow label="Rent Range" value={`$${detail.rentalAvmLow.toLocaleString()} – $${detail.rentalAvmHigh.toLocaleString()}/mo`} />
+              <InfoRow
+                label="Rent Range"
+                value={`$${detail.rentalAvmLow.toLocaleString()} – $${detail.rentalAvmHigh.toLocaleString()}/mo`}
+              />
             )}
-            <InfoRow label="Annual Rent" value={detail?.annualRent ? `$${detail.annualRent.toLocaleString()}` : undefined} />
+            <InfoRow
+              label="Annual Rent"
+              value={detail?.annualRent ? `$${detail.annualRent.toLocaleString()}` : undefined}
+            />
             {detail?.rentalAvmSource && (
               <InfoRow label="Source" value={detail.rentalAvmSource === "cache" ? "Cached (30-day)" : "RentCast"} />
             )}
@@ -1149,7 +1206,9 @@ function InvestmentTab({
                 <span className="text-xs font-medium text-gray-700">Cap Rate</span>
                 <p className="text-[10px] text-gray-400">Annual Rent ÷ Property Value</p>
               </div>
-              <span className={`text-sm font-bold ${detail.capRate >= 5 ? "text-green-700" : detail.capRate >= 3 ? "text-amber-600" : "text-red-600"}`}>
+              <span
+                className={`text-sm font-bold ${detail.capRate >= 5 ? "text-green-700" : detail.capRate >= 3 ? "text-amber-600" : "text-red-600"}`}
+              >
                 {detail.capRate}%
               </span>
             </div>
@@ -1160,7 +1219,9 @@ function InvestmentTab({
                 <span className="text-xs font-medium text-gray-700">Cash-on-Cash Return</span>
                 <p className="text-[10px] text-gray-400">(Rent − Mortgage) ÷ Down Payment</p>
               </div>
-              <span className={`text-sm font-bold ${detail.cashOnCash >= 8 ? "text-green-700" : detail.cashOnCash >= 0 ? "text-amber-600" : "text-red-600"}`}>
+              <span
+                className={`text-sm font-bold ${detail.cashOnCash >= 8 ? "text-green-700" : detail.cashOnCash >= 0 ? "text-amber-600" : "text-red-600"}`}
+              >
                 {detail.cashOnCash}%
               </span>
             </div>
@@ -1173,14 +1234,35 @@ function InvestmentTab({
 
       {/* Property Value Context */}
       <Section title="Value Context">
-        <InfoRow label="Estimated Value" value={detail?.avmValue ? fmtPrice(detail.avmValue) : (property.estimatedValue ? fmtPrice(property.estimatedValue) : undefined)} />
-        <InfoRow label="Equity" value={detail?.equity != null ? fmtPrice(detail.equity) : (property.equity != null ? fmtPrice(property.equity) : undefined)} />
-        <InfoRow label="LTV" value={detail?.ltv != null ? `${detail.ltv}%` : (property.ltv != null ? `${property.ltv}%` : undefined)} />
+        <InfoRow
+          label="Estimated Value"
+          value={
+            detail?.avmValue
+              ? fmtPrice(detail.avmValue)
+              : property.estimatedValue
+                ? fmtPrice(property.estimatedValue)
+                : undefined
+          }
+        />
+        <InfoRow
+          label="Equity"
+          value={
+            detail?.equity != null
+              ? fmtPrice(detail.equity)
+              : property.equity != null
+                ? fmtPrice(property.equity)
+                : undefined
+          }
+        />
+        <InfoRow
+          label="LTV"
+          value={detail?.ltv != null ? `${detail.ltv}%` : property.ltv != null ? `${property.ltv}%` : undefined}
+        />
         <InfoRow label="HOA" value={detail?.hoa?.fee ? `$${detail.hoa.fee}/mo` : undefined} />
       </Section>
 
       {/* Owner Portfolio */}
-      {(detail?.ownerParcelCount != null && detail.ownerParcelCount > 1) && (
+      {detail?.ownerParcelCount != null && detail.ownerParcelCount > 1 && (
         <Section title="Owner Portfolio">
           <InfoRow label="Properties Owned" value={String(detail.ownerParcelCount)} />
           {detail?.ownerResCount != null && <InfoRow label="Residential" value={String(detail.ownerResCount)} />}
@@ -1242,9 +1324,10 @@ function SalesHistoryTab({ property }: { property: ScoredProperty }) {
         {history.length} transaction{history.length !== 1 ? "s" : ""} from HiCentral MLS
       </p>
       {history.map((tx: any, i: number) => {
-        const priceDiff = tx.closePrice && tx.originalListPrice
-          ? ((tx.closePrice - tx.originalListPrice) / tx.originalListPrice * 100).toFixed(1)
-          : null;
+        const priceDiff =
+          tx.closePrice && tx.originalListPrice
+            ? (((tx.closePrice - tx.originalListPrice) / tx.originalListPrice) * 100).toFixed(1)
+            : null;
 
         return (
           <div key={tx.listingKey || i} className="border rounded-lg p-3">
@@ -1269,15 +1352,14 @@ function SalesHistoryTab({ property }: { property: ScoredProperty }) {
 
             {/* Price comparison */}
             <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-gray-600 mb-2">
-              {tx.listPrice && (
-                <span>List: ${tx.listPrice.toLocaleString()}</span>
-              )}
+              {tx.listPrice && <span>List: ${tx.listPrice.toLocaleString()}</span>}
               {tx.originalListPrice && tx.originalListPrice !== tx.listPrice && (
                 <span>Original: ${tx.originalListPrice.toLocaleString()}</span>
               )}
               {priceDiff && (
                 <span className={Number(priceDiff) >= 0 ? "text-green-600" : "text-red-600"}>
-                  {Number(priceDiff) >= 0 ? "+" : ""}{priceDiff}% vs ask
+                  {Number(priceDiff) >= 0 ? "+" : ""}
+                  {priceDiff}% vs ask
                 </span>
               )}
             </div>
@@ -1288,7 +1370,11 @@ function SalesHistoryTab({ property }: { property: ScoredProperty }) {
               {tx.baths && <span>{tx.baths} ba</span>}
               {tx.sqft && <span>{tx.sqft.toLocaleString()} sqft</span>}
               {tx.ownershipType && (
-                <span className={tx.ownershipType === "Leasehold" ? "text-amber-600 font-medium" : "text-blue-600 font-medium"}>
+                <span
+                  className={
+                    tx.ownershipType === "Leasehold" ? "text-amber-600 font-medium" : "text-blue-600 font-medium"
+                  }
+                >
                   {tx.ownershipType}
                 </span>
               )}
@@ -1329,20 +1415,16 @@ function CompsTab({ detail }: { detail: PropertyDetail | null }) {
     <div className="space-y-3">
       <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-lg">
         <p className="text-[10px] text-amber-700 leading-relaxed">
-          These comparable properties are estimates only and are not a substitute for official comps generated by a certified real estate appraiser.
+          These comparable properties are estimates only and are not a substitute for official comps generated by a
+          certified real estate appraiser.
         </p>
       </div>
       <p className="text-xs text-gray-500">{comps.length} comparable properties</p>
       {comps.map((c) => (
-        <div
-          key={c.id}
-          className="border rounded-lg p-3 hover:bg-gray-50 transition-colors"
-        >
+        <div key={c.id} className="border rounded-lg p-3 hover:bg-gray-50 transition-colors">
           <div className="flex items-start justify-between gap-2 mb-1.5">
             <p className="text-xs font-medium text-gray-800 flex-1">{c.address}</p>
-            <span className="text-xs font-semibold text-green-700 shrink-0">
-              ${c.price.toLocaleString()}
-            </span>
+            <span className="text-xs font-semibold text-green-700 shrink-0">${c.price.toLocaleString()}</span>
           </div>
           <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-gray-500">
             {c.beds && <span>{c.beds} bd</span>}
@@ -1351,24 +1433,18 @@ function CompsTab({ detail }: { detail: PropertyDetail | null }) {
             {c.yearBuilt && <span>Built {c.yearBuilt}</span>}
             {c.distance != null && <span>{c.distance.toFixed(1)} mi away</span>}
             {c.daysOnMarket != null && <span>{c.daysOnMarket} DOM</span>}
-            {c.correlation != null && (
-              <span>{(c.correlation * 100).toFixed(0)}% match</span>
-            )}
+            {c.correlation != null && <span>{(c.correlation * 100).toFixed(0)}% match</span>}
           </div>
           <div className="flex gap-2 mt-1.5 text-[10px]">
             <span
               className={`px-1.5 py-0.5 rounded font-medium ${
-                c.status === "Active"
-                  ? "bg-green-100 text-green-700"
-                  : "bg-gray-100 text-gray-600"
+                c.status === "Active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"
               }`}
             >
               {c.status}
             </span>
             {c.listingType && c.listingType !== "Standard" && (
-              <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium">
-                {c.listingType}
-              </span>
+              <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium">{c.listingType}</span>
             )}
           </div>
         </div>
@@ -1379,17 +1455,9 @@ function CompsTab({ detail }: { detail: PropertyDetail | null }) {
 
 // ── Ownership Tab ──────────────────────────────────────────────────────────
 
-function OwnershipTab({
-  property,
-  detail,
-}: {
-  property: ScoredProperty;
-  detail: PropertyDetail | null;
-}) {
+function OwnershipTab({ property, detail }: { property: ScoredProperty; detail: PropertyDetail | null }) {
   const owner = detail?.owner;
-  const history = detail?.saleHistory
-    ? Object.entries(detail.saleHistory).sort(([a], [b]) => b.localeCompare(a))
-    : [];
+  const history = detail?.saleHistory ? Object.entries(detail.saleHistory).sort(([a], [b]) => b.localeCompare(a)) : [];
 
   return (
     <div className="space-y-4">
@@ -1399,15 +1467,12 @@ function OwnershipTab({
         <InfoRow label="Type" value={owner?.type} />
         <InfoRow
           label="Absentee"
-          value={
-            property.absentee ? (
-              <span className="text-amber-600 font-medium">Yes</span>
-            ) : (
-              "No"
-            )
-          }
+          value={property.absentee ? <span className="text-amber-600 font-medium">Yes</span> : "No"}
         />
-        <InfoRow label="Ownership" value={property.ownershipYears != null ? `${property.ownershipYears} years` : undefined} />
+        <InfoRow
+          label="Ownership"
+          value={property.ownershipYears != null ? `${property.ownershipYears} years` : undefined}
+        />
       </Section>
 
       {/* Mailing Address */}
@@ -1436,19 +1501,12 @@ function OwnershipTab({
         <Section title="Sale History">
           <div className="space-y-2">
             {history.map(([date, event]) => (
-              <div
-                key={date}
-                className="flex items-center justify-between text-xs border-b border-gray-50 pb-2"
-              >
+              <div key={date} className="flex items-center justify-between text-xs border-b border-gray-50 pb-2">
                 <div>
                   <p className="text-gray-700 font-medium">{event.event}</p>
-                  <p className="text-[10px] text-gray-500">
-                    {new Date(event.date).toLocaleDateString()}
-                  </p>
+                  <p className="text-[10px] text-gray-500">{new Date(event.date).toLocaleDateString()}</p>
                 </div>
-                <span className="font-semibold">
-                  ${event.price.toLocaleString()}
-                </span>
+                <span className="font-semibold">${event.price.toLocaleString()}</span>
               </div>
             ))}
           </div>
@@ -1492,9 +1550,7 @@ function OutreachTab({
   if (error) {
     return (
       <div className="space-y-3">
-        <div className="p-3 bg-red-50 border border-red-200 rounded text-xs text-red-700">
-          {error}
-        </div>
+        <div className="p-3 bg-red-50 border border-red-200 rounded text-xs text-red-700">{error}</div>
         <button
           onClick={onGenerate}
           className="w-full text-xs bg-indigo-600 text-white py-2 px-3 rounded hover:bg-indigo-700 transition-colors"
@@ -1509,7 +1565,12 @@ function OutreachTab({
     return (
       <div className="flex flex-col items-center justify-center h-40">
         <svg className="w-10 h-10 text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.5}
+            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+          />
         </svg>
         <p className="text-sm font-medium text-gray-600 mb-1">No outreach drafted yet</p>
         <p className="text-xs text-gray-400 mb-3 text-center px-4">
@@ -1611,7 +1672,8 @@ function OutreachTab({
 
       {/* AI Disclaimer */}
       <p className="text-[9px] text-gray-400 leading-relaxed text-center mt-3">
-        This content was generated using AI. AI can make mistakes. Check AI generated content against reliable information before using.
+        This content was generated using AI. AI can make mistakes. Check AI generated content against reliable
+        information before using.
       </p>
     </div>
   );
@@ -1633,20 +1695,22 @@ function NeighborhoodTab({ data, loading }: { data: any; loading: boolean }) {
   const hasCommunity = !!(demo || crime || climate);
 
   const d = (key: string) => demo?.[key];
-  const pct = (key: string) => { const v = d(key); return v != null ? `${v}%` : undefined; };
+  const pct = (key: string) => {
+    const v = d(key);
+    return v != null ? `${v}%` : undefined;
+  };
 
   const schoolsRaw = data.schools;
-  const schools = schoolsRaw?.school
-    || schoolsRaw?.response?.result?.package?.item
-    || schoolsRaw?.result?.package?.item
-    || schoolsRaw?.property?.[0]?.school
-    || (Array.isArray(schoolsRaw) ? schoolsRaw : []);
+  const schools =
+    schoolsRaw?.school ||
+    schoolsRaw?.response?.result?.package?.item ||
+    schoolsRaw?.result?.package?.item ||
+    schoolsRaw?.property?.[0]?.school ||
+    (Array.isArray(schoolsRaw) ? schoolsRaw : []);
   const schoolList = Array.isArray(schools) ? schools : schools ? [schools] : [];
 
   const poiRaw = data.poi;
-  const poiItems = poiRaw?.poi
-    || poiRaw?.response?.result?.package?.item
-    || (Array.isArray(poiRaw) ? poiRaw : []);
+  const poiItems = poiRaw?.poi || poiRaw?.response?.result?.package?.item || (Array.isArray(poiRaw) ? poiRaw : []);
   const poiList = Array.isArray(poiItems) ? poiItems : poiItems ? [poiItems] : [];
 
   const trendsRaw = data.salesTrends;
@@ -1656,8 +1720,9 @@ function NeighborhoodTab({ data, loading }: { data: any; loading: boolean }) {
     return <EmptyState text="No neighborhood data found for this property" />;
   }
 
-  const idxColor = (v: number) => v >= 150 ? "text-red-600" : v >= 120 ? "text-amber-600" : v >= 80 ? "text-emerald-600" : "text-blue-600";
-  const idxLabel = (v: number) => v >= 150 ? "High" : v >= 120 ? "Above Avg" : v >= 80 ? "Average" : "Below Avg";
+  const idxColor = (v: number) =>
+    v >= 150 ? "text-red-600" : v >= 120 ? "text-amber-600" : v >= 80 ? "text-emerald-600" : "text-blue-600";
+  const idxLabel = (v: number) => (v >= 150 ? "High" : v >= 120 ? "Above Avg" : v >= 80 ? "Average" : "Below Avg");
 
   return (
     <div className="space-y-4">
@@ -1670,9 +1735,15 @@ function NeighborhoodTab({ data, loading }: { data: any; loading: boolean }) {
 
       {demo && (
         <Section title="Demographics">
-          <InfoRow label="Population" value={d("population") != null ? Number(d("population")).toLocaleString() : undefined} />
+          <InfoRow
+            label="Population"
+            value={d("population") != null ? Number(d("population")).toLocaleString() : undefined}
+          />
           <InfoRow label="Median Age" value={d("median_Age")} />
-          <InfoRow label="Households" value={d("households") != null ? Number(d("households")).toLocaleString() : undefined} />
+          <InfoRow
+            label="Households"
+            value={d("households") != null ? Number(d("households")).toLocaleString() : undefined}
+          />
           <InfoRow label="Owner Occupied" value={pct("housing_Units_Owner_Occupied_Pct")} />
           <InfoRow label="Renter Occupied" value={pct("housing_Units_Renter_Occupied_Pct")} />
         </Section>
@@ -1680,16 +1751,42 @@ function NeighborhoodTab({ data, loading }: { data: any; loading: boolean }) {
 
       {demo && (d("median_Household_Income") || d("population_In_Poverty_Pct")) && (
         <Section title="Income & Economy">
-          <InfoRow label="Median HH Income" value={d("median_Household_Income") != null ? `$${Number(d("median_Household_Income")).toLocaleString()}` : undefined} />
-          <InfoRow label="Per Capita Income" value={d("household_Income_Per_Capita") != null ? `$${Number(d("household_Income_Per_Capita")).toLocaleString()}` : undefined} />
+          <InfoRow
+            label="Median HH Income"
+            value={
+              d("median_Household_Income") != null
+                ? `$${Number(d("median_Household_Income")).toLocaleString()}`
+                : undefined
+            }
+          />
+          <InfoRow
+            label="Per Capita Income"
+            value={
+              d("household_Income_Per_Capita") != null
+                ? `$${Number(d("household_Income_Per_Capita")).toLocaleString()}`
+                : undefined
+            }
+          />
           <InfoRow label="Poverty Rate" value={pct("population_In_Poverty_Pct")} />
         </Section>
       )}
 
       {demo && d("housing_Owner_Households_Median_Value") && (
         <Section title="Housing Market">
-          <InfoRow label="Median Home Value" value={d("housing_Owner_Households_Median_Value") != null ? `$${Number(d("housing_Owner_Households_Median_Value")).toLocaleString()}` : undefined} />
-          <InfoRow label="Median Rent" value={d("housing_Median_Rent") != null ? `$${Number(d("housing_Median_Rent")).toLocaleString()}/mo` : undefined} />
+          <InfoRow
+            label="Median Home Value"
+            value={
+              d("housing_Owner_Households_Median_Value") != null
+                ? `$${Number(d("housing_Owner_Households_Median_Value")).toLocaleString()}`
+                : undefined
+            }
+          />
+          <InfoRow
+            label="Median Rent"
+            value={
+              d("housing_Median_Rent") != null ? `$${Number(d("housing_Median_Rent")).toLocaleString()}/mo` : undefined
+            }
+          />
           <InfoRow label="Median Year Built" value={d("housing_Median_Built_Yr")} />
         </Section>
       )}
@@ -1704,13 +1801,15 @@ function NeighborhoodTab({ data, loading }: { data: any; loading: boolean }) {
               { label: "Vehicle Theft", val: crime.motor_Vehicle_Theft_Index },
               { label: "Assault", val: crime.aggravated_Assault_Index },
               { label: "Robbery", val: crime.forcible_Robbery_Index },
-            ].filter((c) => c.val != null).map((c) => (
-              <div key={c.label} className="p-2 bg-gray-50 rounded text-center">
-                <div className="text-[9px] font-semibold uppercase text-gray-500">{c.label}</div>
-                <div className={`text-lg font-bold ${idxColor(c.val!)}`}>{c.val}</div>
-                <div className={`text-[9px] ${idxColor(c.val!)}`}>{idxLabel(c.val!)}</div>
-              </div>
-            ))}
+            ]
+              .filter((c) => c.val != null)
+              .map((c) => (
+                <div key={c.label} className="p-2 bg-gray-50 rounded text-center">
+                  <div className="text-[9px] font-semibold uppercase text-gray-500">{c.label}</div>
+                  <div className={`text-lg font-bold ${idxColor(c.val!)}`}>{c.val}</div>
+                  <div className={`text-[9px] ${idxColor(c.val!)}`}>{idxLabel(c.val!)}</div>
+                </div>
+              ))}
           </div>
         </Section>
       )}
@@ -1724,64 +1823,76 @@ function NeighborhoodTab({ data, loading }: { data: any; loading: boolean }) {
               { label: "Tornado", val: naturalDisasters.tornado_Index },
               { label: "Hail", val: naturalDisasters.hail_Index },
               { label: "Wind", val: naturalDisasters.wind_Index },
-            ].filter((c) => c.val != null).map((c) => (
-              <div key={c.label} className="p-2 bg-gray-50 rounded text-center">
-                <div className="text-[9px] font-semibold uppercase text-gray-500">{c.label}</div>
-                <div className={`text-lg font-bold ${idxColor(c.val!)}`}>{c.val}</div>
-                <div className={`text-[9px] ${idxColor(c.val!)}`}>{idxLabel(c.val!)}</div>
-              </div>
-            ))}
+            ]
+              .filter((c) => c.val != null)
+              .map((c) => (
+                <div key={c.label} className="p-2 bg-gray-50 rounded text-center">
+                  <div className="text-[9px] font-semibold uppercase text-gray-500">{c.label}</div>
+                  <div className={`text-lg font-bold ${idxColor(c.val!)}`}>{c.val}</div>
+                  <div className={`text-[9px] ${idxColor(c.val!)}`}>{idxLabel(c.val!)}</div>
+                </div>
+              ))}
           </div>
         </Section>
       )}
 
       {climate && (
         <Section title="Climate">
-          <InfoRow label="Avg Annual Temp" value={climate.annual_Avg_Temp != null ? `${climate.annual_Avg_Temp}°F` : undefined} />
-          <InfoRow label="Annual Rainfall" value={climate.annual_Precip_In != null ? `${climate.annual_Precip_In}"` : undefined} />
+          <InfoRow
+            label="Avg Annual Temp"
+            value={climate.annual_Avg_Temp != null ? `${climate.annual_Avg_Temp}°F` : undefined}
+          />
+          <InfoRow
+            label="Annual Rainfall"
+            value={climate.annual_Precip_In != null ? `${climate.annual_Precip_In}"` : undefined}
+          />
           <InfoRow label="Clear Days/Yr" value={climate.clear_Day_Mean} />
         </Section>
       )}
 
-      {trendsList.length > 0 && (() => {
-        const recent = trendsList.slice(-8);
-        const firstMed = recent[0]?.salesTrend?.medSalePrice;
-        const lastMed = recent[recent.length - 1]?.salesTrend?.medSalePrice;
-        const priceChange = (firstMed && lastMed) ? ((lastMed - firstMed) / firstMed * 100) : null;
-        return (
-          <Section title="Sales Trends">
-            {priceChange != null && (
-              <p className={`text-xs font-semibold mb-2 ${priceChange >= 0 ? "text-green-600" : "text-red-600"}`}>
-                {priceChange >= 0 ? "+" : ""}{priceChange.toFixed(1)}% median price change
-              </p>
-            )}
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="text-gray-500 border-b">
-                    <th className="text-left py-1.5 font-medium">Period</th>
-                    <th className="text-right py-1.5 font-medium">Median</th>
-                    <th className="text-right py-1.5 font-medium">Sales</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recent.map((t: any, i: number) => {
-                    const period = t.dateRange?.start || "";
-                    const st = t.salesTrend || t;
-                    return (
-                      <tr key={i} className="border-b border-gray-50">
-                        <td className="py-1.5 text-gray-700">{period}</td>
-                        <td className="py-1.5 text-right">{st.medSalePrice != null ? `$${Number(st.medSalePrice).toLocaleString()}` : "—"}</td>
-                        <td className="py-1.5 text-right">{st.homeSaleCount ?? "—"}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </Section>
-        );
-      })()}
+      {trendsList.length > 0 &&
+        (() => {
+          const recent = trendsList.slice(-8);
+          const firstMed = recent[0]?.salesTrend?.medSalePrice;
+          const lastMed = recent[recent.length - 1]?.salesTrend?.medSalePrice;
+          const priceChange = firstMed && lastMed ? ((lastMed - firstMed) / firstMed) * 100 : null;
+          return (
+            <Section title="Sales Trends">
+              {priceChange != null && (
+                <p className={`text-xs font-semibold mb-2 ${priceChange >= 0 ? "text-green-600" : "text-red-600"}`}>
+                  {priceChange >= 0 ? "+" : ""}
+                  {priceChange.toFixed(1)}% median price change
+                </p>
+              )}
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="text-gray-500 border-b">
+                      <th className="text-left py-1.5 font-medium">Period</th>
+                      <th className="text-right py-1.5 font-medium">Median</th>
+                      <th className="text-right py-1.5 font-medium">Sales</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recent.map((t: any, i: number) => {
+                      const period = t.dateRange?.start || "";
+                      const st = t.salesTrend || t;
+                      return (
+                        <tr key={i} className="border-b border-gray-50">
+                          <td className="py-1.5 text-gray-700">{period}</td>
+                          <td className="py-1.5 text-right">
+                            {st.medSalePrice != null ? `$${Number(st.medSalePrice).toLocaleString()}` : "—"}
+                          </td>
+                          <td className="py-1.5 text-right">{st.homeSaleCount ?? "—"}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </Section>
+          );
+        })()}
 
       {schoolList.length > 0 && (
         <Section title="Nearby Schools">
@@ -1791,14 +1902,22 @@ function NeighborhoodTab({ data, loading }: { data: any; loading: boolean }) {
               const loc = school.location || {};
               const name = det.schoolName || det.InstitutionName || school.schoolName;
               const type = det.institutionType || det.schoolType || school.schoolType;
-              const gradeSpan = (det.gradeSpanLow && det.gradeSpanHigh) ? `${det.gradeSpanLow}–${det.gradeSpanHigh}` : school.gradeRange;
+              const gradeSpan =
+                det.gradeSpanLow && det.gradeSpanHigh ? `${det.gradeSpanLow}–${det.gradeSpanHigh}` : school.gradeRange;
               const students = det.studentCnt || school.enrollment;
               const dist = loc.distance ?? school.distance;
               return (
                 <div key={i} className="p-2 bg-gray-50 rounded">
                   <p className="text-xs font-semibold text-gray-800">{name}</p>
                   <p className="text-[10px] text-gray-500">
-                    {[type, gradeSpan ? `Grades ${gradeSpan}` : null, students ? `${Number(students).toLocaleString()} students` : null, dist != null ? `${Number(dist).toFixed(1)} mi` : null].filter(Boolean).join(" · ")}
+                    {[
+                      type,
+                      gradeSpan ? `Grades ${gradeSpan}` : null,
+                      students ? `${Number(students).toLocaleString()} students` : null,
+                      dist != null ? `${Number(dist).toFixed(1)} mi` : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
                   </p>
                 </div>
               );
@@ -1820,7 +1939,9 @@ function NeighborhoodTab({ data, loading }: { data: any; loading: boolean }) {
               return (
                 <div key={i} className="flex justify-between text-xs py-1 border-b border-gray-50">
                   <span className="text-gray-700">{poiName}</span>
-                  <span className="text-gray-400 text-right">{[category, dist != null ? `${Number(dist).toFixed(1)} mi` : null].filter(Boolean).join(" · ")}</span>
+                  <span className="text-gray-400 text-right">
+                    {[category, dist != null ? `${Number(dist).toFixed(1)} mi` : null].filter(Boolean).join(" · ")}
+                  </span>
                 </div>
               );
             })}
@@ -1911,7 +2032,10 @@ function FederalTab({ data, loading }: { data: any; loading: boolean }) {
         <Section title="HMDA Mortgage Lending">
           <InfoRow label="Applications" value={data.lendingData.totalApplications?.toLocaleString()} />
           <InfoRow label="Originations" value={data.lendingData.totalOriginations?.toLocaleString()} />
-          <InfoRow label="Approval Rate" value={data.lendingData.approvalRate ? `${data.lendingData.approvalRate.toFixed(1)}%` : undefined} />
+          <InfoRow
+            label="Approval Rate"
+            value={data.lendingData.approvalRate ? `${data.lendingData.approvalRate.toFixed(1)}%` : undefined}
+          />
           <InfoRow label="Median Loan" value={fmt(data.lendingData.medianLoanAmount)} />
         </Section>
       )}
@@ -1937,30 +2061,16 @@ function FederalTab({ data, loading }: { data: any; loading: boolean }) {
 
 // ── Shared UI Components ──────────────────────────────────────────────────
 
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <h4 className="text-xs font-semibold text-gray-800 mb-2 uppercase tracking-wide">
-        {title}
-      </h4>
+      <h4 className="text-xs font-semibold text-gray-800 mb-2 uppercase tracking-wide">{title}</h4>
       {children}
     </div>
   );
 }
 
-function InfoRow({
-  label,
-  value,
-}: {
-  label: string;
-  value: React.ReactNode | string | number | null | undefined;
-}) {
+function InfoRow({ label, value }: { label: string; value: React.ReactNode | string | number | null | undefined }) {
   if (value == null || value === "") return null;
   return (
     <div className="flex justify-between text-xs py-1 border-b border-gray-50">
@@ -1971,9 +2081,5 @@ function InfoRow({
 }
 
 function EmptyState({ text }: { text: string }) {
-  return (
-    <div className="flex items-center justify-center h-32 text-sm text-gray-400">
-      {text}
-    </div>
-  );
+  return <div className="flex items-center justify-center h-32 text-sm text-gray-400">{text}</div>;
 }

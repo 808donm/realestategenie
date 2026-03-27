@@ -11,7 +11,9 @@ import { supabaseServer } from "@/lib/supabase/server";
 export async function GET(request: NextRequest) {
   try {
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -54,7 +56,7 @@ export async function GET(request: NextRequest) {
             total: (redCount || 0) + (orangeCount || 0) + (charcoalCount || 0),
           },
         };
-      })
+      }),
     );
 
     return NextResponse.json({ searches: searchesWithCounts });
@@ -67,7 +69,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -109,7 +113,9 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -119,11 +125,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "id is required" }, { status: 400 });
     }
 
-    const { error } = await supabase
-      .from("dom_prospect_searches")
-      .delete()
-      .eq("id", searchId)
-      .eq("agent_id", user.id);
+    const { error } = await supabase.from("dom_prospect_searches").delete().eq("id", searchId).eq("agent_id", user.id);
 
     if (error) throw error;
 

@@ -13,11 +13,9 @@ import {
 
 // Lazy-init admin client to avoid build-time errors (env vars unavailable during build)
 function getAdmin() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } }
-  );
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+    auth: { persistSession: false },
+  });
 }
 
 // Helper: fetch an image URL and return base64 data URI + dimensions
@@ -25,7 +23,7 @@ async function fetchImage(
   url: string,
   defaultWidth: number,
   defaultHeight: number,
-  defaultType = "image/jpeg"
+  defaultType = "image/jpeg",
 ): Promise<{ data: string | null; width: number; height: number }> {
   try {
     const response = await fetch(url);
@@ -54,10 +52,7 @@ async function fetchImage(
   }
 }
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const admin = getAdmin();
@@ -67,7 +62,8 @@ export async function GET(
 
     const result = await admin
       .from("open_house_events")
-      .select(`
+      .select(
+        `
         id,
         address,
         start_at,
@@ -89,18 +85,21 @@ export async function GET(
         status,
         flyer_template_id,
         parking_notes
-      `)
+      `,
+      )
       .eq("id", id)
       .single();
 
     if (result.error && result.error.message?.includes("flyer_template_id")) {
       const fallback = await admin
         .from("open_house_events")
-        .select(`
+        .select(
+          `
           id, address, start_at, end_at, beds, baths, sqft, price,
           key_features, listing_description, property_photo_url,
           latitude, longitude, agent_id, status
-        `)
+        `,
+        )
         .eq("id", id)
         .single();
 
@@ -114,22 +113,40 @@ export async function GET(
 
         if (minFallback.error || !minFallback.data) {
           console.error("Event query error:", minFallback.error);
-          return NextResponse.json({
-            error: "Open house not found",
-            details: minFallback.error?.message,
-            eventId: id
-          }, { status: 404 });
+          return NextResponse.json(
+            {
+              error: "Open house not found",
+              details: minFallback.error?.message,
+              eventId: id,
+            },
+            { status: 404 },
+          );
         }
         event = {
           ...minFallback.data,
-          beds: null, baths: null, sqft: null, price: null,
-          key_features: null, listing_description: null,
-          flyer_template_id: null, secondary_photo_url: null,
-          tertiary_photo_url: null, parking_notes: null,
-          flyer_description: null, flyer_features: null,
+          beds: null,
+          baths: null,
+          sqft: null,
+          price: null,
+          key_features: null,
+          listing_description: null,
+          flyer_template_id: null,
+          secondary_photo_url: null,
+          tertiary_photo_url: null,
+          parking_notes: null,
+          flyer_description: null,
+          flyer_features: null,
         };
       } else {
-        event = { ...fallback.data, flyer_template_id: null, secondary_photo_url: null, tertiary_photo_url: null, parking_notes: null, flyer_description: null, flyer_features: null };
+        event = {
+          ...fallback.data,
+          flyer_template_id: null,
+          secondary_photo_url: null,
+          tertiary_photo_url: null,
+          parking_notes: null,
+          flyer_description: null,
+          flyer_features: null,
+        };
       }
     } else if (result.error || !result.data) {
       // Try with progressively fewer columns in case migrations haven't run yet
@@ -138,11 +155,13 @@ export async function GET(
       // Try without the newest optional columns
       const fallback2 = await admin
         .from("open_house_events")
-        .select(`
+        .select(
+          `
           id, address, start_at, end_at, beds, baths, sqft, price,
           key_features, listing_description, property_photo_url,
           latitude, longitude, agent_id, status
-        `)
+        `,
+        )
         .eq("id", id)
         .single();
 
@@ -152,21 +171,26 @@ export async function GET(
         // Try with only base schema columns (migration 004 columns may not exist)
         const fallback3 = await admin
           .from("open_house_events")
-          .select(`
+          .select(
+            `
             id, address, start_at, end_at,
             property_photo_url, latitude, longitude,
             agent_id, status
-          `)
+          `,
+          )
           .eq("id", id)
           .single();
 
         if (fallback3.error || !fallback3.data) {
           console.error("Fallback3 event query error:", fallback3.error);
-          return NextResponse.json({
-            error: "Open house not found",
-            details: fallback3.error?.message,
-            eventId: id
-          }, { status: 404 });
+          return NextResponse.json(
+            {
+              error: "Open house not found",
+              details: fallback3.error?.message,
+              eventId: id,
+            },
+            { status: 404 },
+          );
         }
         event = {
           ...fallback3.data,
@@ -199,15 +223,18 @@ export async function GET(
     }
 
     // Only allow downloading flyers for published events
-    if (event.status !== 'published') {
-      return NextResponse.json({
-        error: "This open house is not published yet",
-      }, { status: 403 });
+    if (event.status !== "published") {
+      return NextResponse.json(
+        {
+          error: "This open house is not published yet",
+        },
+        { status: 403 },
+      );
     }
 
     // Resolve flyer template settings
     const templateId = event.flyer_template_id || "modern";
-    const template = FLYER_TEMPLATES.find(t => t.id === templateId) || FLYER_TEMPLATES[0];
+    const template = FLYER_TEMPLATES.find((t) => t.id === templateId) || FLYER_TEMPLATES[0];
     const tSettings = template.defaultSettings;
 
     // Parse template colors to RGB
@@ -230,13 +257,7 @@ export async function GET(
       .single();
 
     // Fetch all images in parallel
-    const [
-      propertyPhoto,
-      secondaryPhoto,
-      tertiaryPhoto,
-      headshotPhoto,
-      logoPhoto,
-    ] = await Promise.all([
+    const [propertyPhoto, secondaryPhoto, tertiaryPhoto, headshotPhoto, logoPhoto] = await Promise.all([
       event.property_photo_url
         ? fetchImage(event.property_photo_url, 800, 600)
         : Promise.resolve({ data: null, width: 800, height: 600 }),
@@ -271,10 +292,10 @@ export async function GET(
 
         for (const mapUrl of mapServices) {
           try {
-            console.log("Trying map service:", mapUrl.split('?')[0]);
+            console.log("Trying map service:", mapUrl.split("?")[0]);
             const mapResponse = await fetch(mapUrl, {
-              headers: { 'User-Agent': 'RealEstateGenie/1.0' },
-              signal: AbortSignal.timeout(15000)
+              headers: { "User-Agent": "RealEstateGenie/1.0" },
+              signal: AbortSignal.timeout(15000),
             });
 
             if (mapResponse.ok) {
@@ -309,7 +330,8 @@ export async function GET(
     // Generate QR code for check-in
     let qrCodeData: string | null = null;
     try {
-      const origin = request.headers.get("origin") || request.headers.get("referer")?.split("/").slice(0, 3).join("/") || "";
+      const origin =
+        request.headers.get("origin") || request.headers.get("referer")?.split("/").slice(0, 3).join("/") || "";
       const checkInUrl = `${origin}/oh/${id}`;
       qrCodeData = await QRCode.toDataURL(checkInUrl, {
         errorCorrectionLevel: "M",
@@ -388,9 +410,6 @@ export async function GET(
     });
   } catch (error: any) {
     console.error("PDF generation error:", error);
-    return NextResponse.json(
-      { error: "Failed to generate PDF", details: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to generate PDF", details: error.message }, { status: 500 });
   }
 }

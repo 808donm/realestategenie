@@ -25,7 +25,11 @@ interface ScorecardClientProps {
   contactTrackingEnabled?: boolean;
 }
 
-export default function ScorecardClient({ eventId, leads: initialLeads, contactTrackingEnabled = true }: ScorecardClientProps) {
+export default function ScorecardClient({
+  eventId,
+  leads: initialLeads,
+  contactTrackingEnabled = true,
+}: ScorecardClientProps) {
   const [leads, setLeads] = useState<Lead[]>(initialLeads);
   const [updating, setUpdating] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -51,12 +55,7 @@ export default function ScorecardClient({ eventId, leads: initialLeads, contactT
     const lookingForAgent = leads.filter((l) => {
       const rep = (l.payload?.representation || "").toLowerCase();
       return (
-        !rep ||
-        rep.includes("no") ||
-        rep.includes("looking") ||
-        rep.includes("need") ||
-        rep === "" ||
-        rep === "none"
+        !rep || rep.includes("no") || rep.includes("looking") || rep.includes("need") || rep === "" || rep === "none"
       );
     });
 
@@ -97,10 +96,8 @@ export default function ScorecardClient({ eventId, leads: initialLeads, contactT
       // Update local state
       setLeads((prev) =>
         prev.map((l) =>
-          l.id === leadId
-            ? { ...l, contacted_at: new Date().toISOString(), contact_method: method }
-            : l
-        )
+          l.id === leadId ? { ...l, contacted_at: new Date().toISOString(), contact_method: method } : l,
+        ),
       );
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to mark contacted");
@@ -150,15 +147,9 @@ export default function ScorecardClient({ eventId, leads: initialLeads, contactT
             textAlign: "center",
           }}
         >
-          <div style={{ fontSize: 14, color: "#6b7280", marginBottom: 8 }}>
-            Sign-Ins Captured
-          </div>
-          <div style={{ fontSize: 36, fontWeight: 700, color: "#111827" }}>
-            {metrics.totalSignIns}
-          </div>
-          <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 4 }}>
-            Total attendees
-          </div>
+          <div style={{ fontSize: 14, color: "#6b7280", marginBottom: 8 }}>Sign-Ins Captured</div>
+          <div style={{ fontSize: 36, fontWeight: 700, color: "#111827" }}>{metrics.totalSignIns}</div>
+          <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 4 }}>Total attendees</div>
         </div>
 
         {/* Contacted Within 5 Min */}
@@ -171,9 +162,7 @@ export default function ScorecardClient({ eventId, leads: initialLeads, contactT
             textAlign: "center",
           }}
         >
-          <div style={{ fontSize: 14, color: "#6b7280", marginBottom: 8 }}>
-            Contacted Within 5 Min
-          </div>
+          <div style={{ fontSize: 14, color: "#6b7280", marginBottom: 8 }}>Contacted Within 5 Min</div>
           <div
             style={{
               fontSize: 36,
@@ -198,9 +187,7 @@ export default function ScorecardClient({ eventId, leads: initialLeads, contactT
             textAlign: "center",
           }}
         >
-          <div style={{ fontSize: 14, color: "#6b7280", marginBottom: 8 }}>
-            Represented by Realtor
-          </div>
+          <div style={{ fontSize: 14, color: "#6b7280", marginBottom: 8 }}>Represented by Realtor</div>
           <div
             style={{
               fontSize: 36,
@@ -225,9 +212,7 @@ export default function ScorecardClient({ eventId, leads: initialLeads, contactT
             textAlign: "center",
           }}
         >
-          <div style={{ fontSize: 14, color: "#6b7280", marginBottom: 8 }}>
-            Looking for an Agent
-          </div>
+          <div style={{ fontSize: 14, color: "#6b7280", marginBottom: 8 }}>Looking for an Agent</div>
           <div
             style={{
               fontSize: 36,
@@ -254,14 +239,12 @@ export default function ScorecardClient({ eventId, leads: initialLeads, contactT
           marginBottom: 32,
         }}
       >
-        <div style={{ fontSize: 16, opacity: 0.9, marginBottom: 8 }}>
-          Overall Performance Score
-        </div>
+        <div style={{ fontSize: 16, opacity: 0.9, marginBottom: 8 }}>Overall Performance Score</div>
         <div style={{ fontSize: 48, fontWeight: 700 }}>
           {Math.round(
-            (metrics.percentWithin5Min * 0.4 +
+            metrics.percentWithin5Min * 0.4 +
               metrics.percentLookingForAgent * 0.3 +
-              (100 - metrics.percentHasRealtor) * 0.3)
+              (100 - metrics.percentHasRealtor) * 0.3,
           )}
           /100
         </div>
@@ -272,9 +255,7 @@ export default function ScorecardClient({ eventId, leads: initialLeads, contactT
 
       {/* Lead Contact Tracking Table */}
       <div style={{ marginBottom: 16 }}>
-        <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 12 }}>
-          Contact Tracking
-        </h2>
+        <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 12 }}>Contact Tracking</h2>
         <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 16 }}>
           Mark leads as contacted to track your 5-minute response rate. Speed to lead matters!
         </p>
@@ -297,24 +278,12 @@ export default function ScorecardClient({ eventId, leads: initialLeads, contactT
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: "#f9fafb" }}>
-                <th style={{ padding: 12, textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>
-                  Name
-                </th>
-                <th style={{ padding: 12, textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>
-                  Contact Info
-                </th>
-                <th style={{ padding: 12, textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>
-                  Sign-In Time
-                </th>
-                <th style={{ padding: 12, textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>
-                  Representation
-                </th>
-                <th style={{ padding: 12, textAlign: "center", borderBottom: "1px solid #e5e7eb" }}>
-                  Status
-                </th>
-                <th style={{ padding: 12, textAlign: "center", borderBottom: "1px solid #e5e7eb" }}>
-                  Actions
-                </th>
+                <th style={{ padding: 12, textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>Name</th>
+                <th style={{ padding: 12, textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>Contact Info</th>
+                <th style={{ padding: 12, textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>Sign-In Time</th>
+                <th style={{ padding: 12, textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>Representation</th>
+                <th style={{ padding: 12, textAlign: "center", borderBottom: "1px solid #e5e7eb" }}>Status</th>
+                <th style={{ padding: 12, textAlign: "center", borderBottom: "1px solid #e5e7eb" }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -358,13 +327,11 @@ export default function ScorecardClient({ eventId, leads: initialLeads, contactT
                           borderRadius: 4,
                           fontSize: 12,
                           background:
-                            lead.payload?.representation?.toLowerCase().includes("no") ||
-                            !lead.payload?.representation
+                            lead.payload?.representation?.toLowerCase().includes("no") || !lead.payload?.representation
                               ? "#dcfce7"
                               : "#fef3c7",
                           color:
-                            lead.payload?.representation?.toLowerCase().includes("no") ||
-                            !lead.payload?.representation
+                            lead.payload?.representation?.toLowerCase().includes("no") || !lead.payload?.representation
                               ? "#166534"
                               : "#92400e",
                         }}

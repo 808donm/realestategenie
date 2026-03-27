@@ -3,13 +3,11 @@ import { createClient } from "@supabase/supabase-js";
 import { logError } from "@/lib/error-logging";
 
 // Force dynamic rendering for API routes
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
-const admin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,19 +15,13 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (!fullName || !email || !phone) {
-      return NextResponse.json(
-        { error: "Name, email, and phone are required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Name, email, and phone are required" }, { status: 400 });
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return NextResponse.json(
-        { error: "Invalid email address" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
     }
 
     // Check if there's already a pending request from this email
@@ -43,41 +35,31 @@ export async function POST(request: NextRequest) {
       if (existingRequest.status === "pending") {
         return NextResponse.json(
           { error: "You already have a pending access request. We'll be in touch soon!" },
-          { status: 400 }
+          { status: 400 },
         );
       }
       if (existingRequest.status === "approved" || existingRequest.status === "payment_sent") {
         return NextResponse.json(
           { error: "Your application has already been approved. Check your email for next steps." },
-          { status: 400 }
+          { status: 400 },
         );
       }
       if (existingRequest.status === "completed") {
-        return NextResponse.json(
-          { error: "You already have an account. Please sign in instead." },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: "You already have an account. Please sign in instead." }, { status: 400 });
       }
       if (existingRequest.status === "rejected") {
         // Allow resubmission if previously rejected
-        await admin
-          .from("access_requests")
-          .delete()
-          .eq("id", existingRequest.id);
+        await admin.from("access_requests").delete().eq("id", existingRequest.id);
       }
     }
 
     // Check if user already exists
-    const { data: existingUser } = await admin
-      .from("agents")
-      .select("id")
-      .eq("email", email)
-      .maybeSingle();
+    const { data: existingUser } = await admin.from("agents").select("id").eq("email", email).maybeSingle();
 
     if (existingUser) {
       return NextResponse.json(
         { error: "An account with this email already exists. Please sign in." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -102,10 +84,7 @@ export async function POST(request: NextRequest) {
         errorMessage: createError?.message || "Failed to create access request",
         severity: "error",
       });
-      return NextResponse.json(
-        { error: "Failed to submit access request. Please try again." },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to submit access request. Please try again." }, { status: 500 });
     }
 
     // Send email notification to admin
@@ -146,9 +125,6 @@ export async function POST(request: NextRequest) {
       stackTrace: error.stack,
       severity: "error",
     });
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

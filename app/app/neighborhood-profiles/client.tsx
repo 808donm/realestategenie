@@ -126,9 +126,7 @@ export default function NeighborhoodProfilesClient() {
       {profiles.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground mb-4">
-              You haven't generated any neighborhood profiles yet.
-            </p>
+            <p className="text-muted-foreground mb-4">You haven't generated any neighborhood profiles yet.</p>
             <Button onClick={() => setGenerateModalOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
               Create Your First Profile
@@ -150,9 +148,7 @@ export default function NeighborhoodProfilesClient() {
               </CardHeader>
 
               <CardContent className="flex-1">
-                <p className="text-sm text-muted-foreground line-clamp-3">
-                  {profile.profile_data.lifestyleVibe}
-                </p>
+                <p className="text-sm text-muted-foreground line-clamp-3">{profile.profile_data.lifestyleVibe}</p>
 
                 <div className="mt-4 flex items-center gap-4 text-xs text-muted-foreground">
                   <div className="flex items-center gap-1">
@@ -167,12 +163,7 @@ export default function NeighborhoodProfilesClient() {
               </CardContent>
 
               <CardFooter className="gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPreviewProfile(profile)}
-                  className="flex-1"
-                >
+                <Button variant="outline" size="sm" onClick={() => setPreviewProfile(profile)} className="flex-1">
                   <Eye className="mr-2 h-4 w-4" />
                   Preview
                 </Button>

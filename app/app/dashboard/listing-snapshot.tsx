@@ -61,10 +61,7 @@ export default function ListingSnapshot({ stats }: { stats: ListingStat }) {
         {stats.totalActive === 0 && (
           <p className="text-sm text-muted-foreground">
             No active listings.{" "}
-            <Link
-              href="/app/open-houses/new"
-              className="text-primary underline"
-            >
+            <Link href="/app/open-houses/new" className="text-primary underline">
               Create one
             </Link>
           </p>

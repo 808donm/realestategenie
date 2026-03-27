@@ -3,7 +3,7 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 
 // Force dynamic rendering
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 // Lazy initialization
 let admin: ReturnType<typeof createAdminClient> | null = null;
@@ -17,11 +17,7 @@ function getAdmin() {
       throw new Error("Missing Supabase credentials");
     }
 
-    admin = createAdminClient(
-      supabaseUrl,
-      serviceRoleKey,
-      { auth: { persistSession: false } }
-    );
+    admin = createAdminClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
   }
   return admin;
 }
@@ -40,11 +36,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Use admin client to check role
-    const { data: agentData } = await getAdmin()
-      .from("agents")
-      .select("id, role")
-      .eq("id", user.id)
-      .single();
+    const { data: agentData } = await getAdmin().from("agents").select("id, role").eq("id", user.id).single();
 
     const agent = agentData as any;
 
@@ -56,32 +48,20 @@ export async function POST(request: NextRequest) {
     const { requestId } = await request.json();
 
     if (!requestId) {
-      return NextResponse.json(
-        { error: "Request ID is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Request ID is required" }, { status: 400 });
     }
 
     // Delete the access request
-    const { error: deleteError } = await getAdmin()
-      .from("access_requests")
-      .delete()
-      .eq("id", requestId);
+    const { error: deleteError } = await getAdmin().from("access_requests").delete().eq("id", requestId);
 
     if (deleteError) {
       console.error("Error deleting access request:", deleteError);
-      return NextResponse.json(
-        { error: "Failed to delete access request" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to delete access request" }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error("Error in delete-access-request API:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

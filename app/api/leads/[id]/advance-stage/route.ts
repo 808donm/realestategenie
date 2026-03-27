@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
-import {
-  PIPELINE_STAGES,
-  PIPELINE_STAGE_LABELS,
-  type PipelineStage,
-} from "@/lib/pipeline-stages";
+import { PIPELINE_STAGES, PIPELINE_STAGE_LABELS, type PipelineStage } from "@/lib/pipeline-stages";
 
 /**
  * POST /api/leads/[id]/advance-stage
@@ -16,10 +12,7 @@ import {
  *   { "direction": "forward" }     — advance one step forward (default)
  *   { "direction": "backward" }    — move one step backward
  */
-export async function POST(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: leadId } = await params;
     const supabase = await supabaseServer();
@@ -49,40 +42,26 @@ export async function POST(
     if (body.stage) {
       // Explicit stage move
       if (!PIPELINE_STAGES.includes(body.stage)) {
-        return NextResponse.json(
-          { error: `Invalid stage: ${body.stage}` },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: `Invalid stage: ${body.stage}` }, { status: 400 });
       }
       newStage = body.stage;
     } else {
       // Direction-based move
-      const currentIdx = PIPELINE_STAGES.indexOf(
-        lead.pipeline_stage as PipelineStage
-      );
+      const currentIdx = PIPELINE_STAGES.indexOf(lead.pipeline_stage as PipelineStage);
       const direction = body.direction || "forward";
 
       if (direction === "forward") {
         if (currentIdx >= PIPELINE_STAGES.length - 1) {
-          return NextResponse.json(
-            { error: "Lead is already at the final stage" },
-            { status: 400 }
-          );
+          return NextResponse.json({ error: "Lead is already at the final stage" }, { status: 400 });
         }
         newStage = PIPELINE_STAGES[currentIdx + 1];
       } else if (direction === "backward") {
         if (currentIdx <= 0) {
-          return NextResponse.json(
-            { error: "Lead is already at the first stage" },
-            { status: 400 }
-          );
+          return NextResponse.json({ error: "Lead is already at the first stage" }, { status: 400 });
         }
         newStage = PIPELINE_STAGES[currentIdx - 1];
       } else {
-        return NextResponse.json(
-          { error: `Invalid direction: ${direction}` },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: `Invalid direction: ${direction}` }, { status: 400 });
       }
     }
 
@@ -99,17 +78,11 @@ export async function POST(
       .maybeSingle();
 
     if (updateError) {
-      return NextResponse.json(
-        { error: updateError.message },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
 
     if (!updated) {
-      return NextResponse.json(
-        { error: "Lead not found or access denied" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Lead not found or access denied" }, { status: 404 });
     }
 
     return NextResponse.json({

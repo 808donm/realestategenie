@@ -51,12 +51,8 @@ export default function LeadsInsightsCharts({
           border: "1px solid #e5e7eb",
         }}
       >
-        <h3 style={{ margin: "0 0 4px 0", fontSize: 16, fontWeight: 700 }}>
-          Heat Score Distribution
-        </h3>
-        <p style={{ margin: "0 0 16px 0", fontSize: 13, color: "#6b7280" }}>
-          Lead temperature breakdown
-        </p>
+        <h3 style={{ margin: "0 0 4px 0", fontSize: 16, fontWeight: 700 }}>Heat Score Distribution</h3>
+        <p style={{ margin: "0 0 16px 0", fontSize: 13, color: "#6b7280" }}>Lead temperature breakdown</p>
         {heatDistribution.every((d) => d.count === 0) ? (
           <p style={{ color: "#9ca3af", textAlign: "center", padding: 40 }}>No lead data yet</p>
         ) : (
@@ -85,21 +81,13 @@ export default function LeadsInsightsCharts({
           border: "1px solid #e5e7eb",
         }}
       >
-        <h3 style={{ margin: "0 0 4px 0", fontSize: 16, fontWeight: 700 }}>
-          Pipeline Stages
-        </h3>
-        <p style={{ margin: "0 0 16px 0", fontSize: 13, color: "#6b7280" }}>
-          Leads by current stage
-        </p>
+        <h3 style={{ margin: "0 0 4px 0", fontSize: 16, fontWeight: 700 }}>Pipeline Stages</h3>
+        <p style={{ margin: "0 0 16px 0", fontSize: 13, color: "#6b7280" }}>Leads by current stage</p>
         {byPipelineStage.length === 0 ? (
           <p style={{ color: "#9ca3af", textAlign: "center", padding: 40 }}>No lead data yet</p>
         ) : (
           <ResponsiveContainer width="100%" height={280}>
-            <BarChart
-              data={byPipelineStage}
-              layout="vertical"
-              margin={{ top: 5, right: 20, bottom: 5, left: 10 }}
-            >
+            <BarChart data={byPipelineStage} layout="vertical" margin={{ top: 5, right: 20, bottom: 5, left: 10 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
               <XAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} />
               <YAxis
@@ -129,12 +117,8 @@ export default function LeadsInsightsCharts({
           border: "1px solid #e5e7eb",
         }}
       >
-        <h3 style={{ margin: "0 0 4px 0", fontSize: 16, fontWeight: 700 }}>
-          Leads Over Time
-        </h3>
-        <p style={{ margin: "0 0 16px 0", fontSize: 13, color: "#6b7280" }}>
-          Weekly lead acquisition trend
-        </p>
+        <h3 style={{ margin: "0 0 4px 0", fontSize: 16, fontWeight: 700 }}>Leads Over Time</h3>
+        <p style={{ margin: "0 0 16px 0", fontSize: 13, color: "#6b7280" }}>Weekly lead acquisition trend</p>
         {leadsOverTime.length === 0 ? (
           <p style={{ color: "#9ca3af", textAlign: "center", padding: 40 }}>No lead data yet</p>
         ) : (
@@ -150,13 +134,7 @@ export default function LeadsInsightsCharts({
               <XAxis dataKey="week" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
               <Tooltip formatter={(value: any) => [value, "Leads"]} />
-              <Area
-                type="monotone"
-                dataKey="count"
-                stroke="#8b5cf6"
-                strokeWidth={2}
-                fill="url(#leadGradient)"
-              />
+              <Area type="monotone" dataKey="count" stroke="#8b5cf6" strokeWidth={2} fill="url(#leadGradient)" />
             </AreaChart>
           </ResponsiveContainer>
         )}
@@ -171,12 +149,8 @@ export default function LeadsInsightsCharts({
           border: "1px solid #e5e7eb",
         }}
       >
-        <h3 style={{ margin: "0 0 4px 0", fontSize: 16, fontWeight: 700 }}>
-          Buyer Readiness
-        </h3>
-        <p style={{ margin: "0 0 16px 0", fontSize: 13, color: "#6b7280" }}>
-          Pre-approval status of leads
-        </p>
+        <h3 style={{ margin: "0 0 4px 0", fontSize: 16, fontWeight: 700 }}>Buyer Readiness</h3>
+        <p style={{ margin: "0 0 16px 0", fontSize: 13, color: "#6b7280" }}>Pre-approval status of leads</p>
         {buyerReadiness.length === 0 ? (
           <p style={{ color: "#9ca3af", textAlign: "center", padding: 40 }}>No lead data yet</p>
         ) : (

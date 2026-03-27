@@ -10,7 +10,10 @@ import type { CopilotActionResult } from "./types";
 
 /** Get base URL for internal API calls */
 function getBaseUrl() {
-  return process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+  return (
+    process.env.NEXT_PUBLIC_APP_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
+  );
 }
 
 /** Internal fetch with service-role auth header for server-to-server calls */
@@ -46,7 +49,7 @@ export function stripExecuteTags(text: string): string {
 export async function executeCopilotAction(
   userId: string,
   action: string,
-  params: Record<string, any>
+  params: Record<string, any>,
 ): Promise<CopilotActionResult> {
   try {
     switch (action) {
@@ -111,7 +114,8 @@ export async function executeCopilotAction(
 
       case "create_calendar_event": {
         const { title, startAt, endAt } = params;
-        if (!title || !startAt || !endAt) return { action, success: false, error: "title, startAt, and endAt are required" };
+        if (!title || !startAt || !endAt)
+          return { action, success: false, error: "title, startAt, and endAt are required" };
 
         const { data: event, error } = await supabaseAdmin
           .from("calendar_events")
@@ -163,7 +167,14 @@ export async function executeCopilotAction(
         const data = await res.json();
         const properties = data.property || (data.address ? [data] : []);
 
-        return { action, success: true, data: { properties: Array.isArray(properties) ? properties.slice(0, 5) : [properties], total: Array.isArray(properties) ? properties.length : 1 } };
+        return {
+          action,
+          success: true,
+          data: {
+            properties: Array.isArray(properties) ? properties.slice(0, 5) : [properties],
+            total: Array.isArray(properties) ? properties.length : 1,
+          },
+        };
       }
 
       case "search_mls": {
@@ -184,7 +195,11 @@ export async function executeCopilotAction(
         const res = await internalFetch(`${baseUrl}/api/mls/farm-search?${searchParams}`);
         const data = await res.json();
 
-        return { action, success: true, data: { properties: (data.properties || []).slice(0, 10), totalCount: data.totalCount || 0 } };
+        return {
+          action,
+          success: true,
+          data: { properties: (data.properties || []).slice(0, 10), totalCount: data.totalCount || 0 },
+        };
       }
 
       case "run_calculator": {
@@ -225,7 +240,8 @@ export async function executeCopilotAction(
         const data = await res.json();
         // Include navigateUrl so the popup can open the seller map with auto-search
         return {
-          action, success: true,
+          action,
+          success: true,
           data: {
             properties: (data.properties || []).slice(0, 10),
             total: data.total || 0,
@@ -243,7 +259,11 @@ export async function executeCopilotAction(
           body: JSON.stringify({ zipCodes: Array.isArray(zips) ? zips : zips.split(",").map((z: string) => z.trim()) }),
         });
         const data = await res.json();
-        return { action, success: true, data: { results: (data.results || []).slice(0, 10), summary: data.summary, total: data.total || 0 } };
+        return {
+          action,
+          success: true,
+          data: { results: (data.results || []).slice(0, 10), summary: data.summary, total: data.total || 0 },
+        };
       }
 
       case "search_absentee":
@@ -281,7 +301,9 @@ export async function executeCopilotAction(
         console.log(`[Copilot] ${action}: got ${properties.length} properties for zip ${zip}`);
         if (properties.length > 0) {
           const sample = properties[0];
-          console.log(`[Copilot] Sample property: ${sample.address?.oneLine || "no address"}, state: ${sample.address?.countrySubd || "?"}, zip: ${sample.address?.postal1 || "?"}`);
+          console.log(
+            `[Copilot] Sample property: ${sample.address?.oneLine || "no address"}, state: ${sample.address?.countrySubd || "?"}, zip: ${sample.address?.postal1 || "?"}`,
+          );
         }
 
         // Filter out properties not in the requested zip (safety check)
@@ -299,12 +321,16 @@ export async function executeCopilotAction(
           properties = properties.filter((p: any) => {
             const avm = p.avm?.amount?.value || p.assessment?.market?.mktTtlValue || 0;
             const sale = p.sale?.amount?.saleAmt || 0;
-            return avm > 0 && sale > 0 && ((avm - sale) / avm) > 0.3;
+            return avm > 0 && sale > 0 && (avm - sale) / avm > 0.3;
           });
         } else if (action === "search_foreclosure") {
           properties = properties.filter((p: any) => p.foreclosure?.actionType || p.foreclosure?.filingDate);
         } else if (action === "search_investor") {
-          properties = properties.filter((p: any) => p.owner?.corporateIndicator === "Y" || (p.owner?.absenteeOwnerStatus === "A" && p.owner?.owner1?.fullName));
+          properties = properties.filter(
+            (p: any) =>
+              p.owner?.corporateIndicator === "Y" ||
+              (p.owner?.absenteeOwnerStatus === "A" && p.owner?.owner1?.fullName),
+          );
         }
 
         // Apply beds/baths filter
@@ -442,11 +468,20 @@ export async function executeCopilotAction(
 
       case "save_seller_search": {
         const { name, centerLat, centerLng } = params;
-        if (!name || !centerLat || !centerLng) return { action, success: false, error: "name, centerLat, centerLng required" };
+        if (!name || !centerLat || !centerLng)
+          return { action, success: false, error: "name, centerLat, centerLng required" };
         const { data: search, error } = await supabaseAdmin
           .from("seller_map_saved_searches")
-          .insert({ agent_id: userId, name, center_lat: centerLat, center_lng: centerLng, radius_miles: params.radiusMiles || 2, filters: params.filters || {} })
-          .select().single();
+          .insert({
+            agent_id: userId,
+            name,
+            center_lat: centerLat,
+            center_lng: centerLng,
+            radius_miles: params.radiusMiles || 2,
+            filters: params.filters || {},
+          })
+          .select()
+          .single();
         if (error) return { action, success: false, error: error.message };
         return { action, success: true, data: { search } };
       }
@@ -463,8 +498,12 @@ export async function executeCopilotAction(
         if (!contactId || !templateId) return { action, success: false, error: "contactId and templateId required" };
 
         const { data: ghlInteg } = await supabaseAdmin
-          .from("integrations").select("config")
-          .eq("agent_id", userId).eq("provider", "ghl").eq("status", "connected").single();
+          .from("integrations")
+          .select("config")
+          .eq("agent_id", userId)
+          .eq("provider", "ghl")
+          .eq("status", "connected")
+          .single();
 
         if (!ghlInteg?.config) return { action, success: false, error: "GoHighLevel not connected" };
         const config = typeof ghlInteg.config === "string" ? JSON.parse(ghlInteg.config) : ghlInteg.config;
@@ -472,7 +511,8 @@ export async function executeCopilotAction(
         const ghl = new GHLClient(config.access_token, config.location_id);
 
         const docResult = await ghl.sendDocumentTemplate({
-          templateId, contactId,
+          templateId,
+          contactId,
           documentName: params.documentName || "Document for Signature",
           mergeFields: params.mergeFields || {},
           medium: "email",
@@ -491,7 +531,8 @@ export async function executeCopilotAction(
         const { data: lead } = await supabaseAdmin
           .from("lead_submissions")
           .select("*, open_house_events!inner(address, start_at)")
-          .eq("id", leadId).single();
+          .eq("id", leadId)
+          .single();
 
         if (!lead) return { action, success: false, error: "Lead not found" };
 
@@ -528,7 +569,11 @@ export async function executeCopilotAction(
         const ghl = new GHLClient(config.access_token, config.location_id);
 
         if (action === "send_email") {
-          const result = await ghl.sendEmail({ contactId: ghlContactId, subject: subject || "Follow up", html: body.replace(/\n/g, "<br>") });
+          const result = await ghl.sendEmail({
+            contactId: ghlContactId,
+            subject: subject || "Follow up",
+            html: body.replace(/\n/g, "<br>"),
+          });
           return { action, success: true, data: { messageId: result.messageId } };
         } else {
           const result = await ghl.sendSMS({ contactId: ghlContactId, message: body });

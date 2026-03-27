@@ -97,23 +97,14 @@ export default function ContactSearch() {
       {/* Results Dropdown */}
       {showResults && (
         <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto">
-          {error && (
-            <div className="px-4 py-3 text-sm text-red-600 bg-red-50">
-              {error}
-            </div>
-          )}
+          {error && <div className="px-4 py-3 text-sm text-red-600 bg-red-50">{error}</div>}
 
           {!loading && contacts.length === 0 && query.length >= 2 && !error && (
-            <div className="px-4 py-3 text-sm text-gray-500">
-              No contacts found
-            </div>
+            <div className="px-4 py-3 text-sm text-gray-500">No contacts found</div>
           )}
 
           {contacts.map((contact) => (
-            <div
-              key={contact.id}
-              className="px-4 py-3 border-b border-gray-100 last:border-b-0 hover:bg-gray-50"
-            >
+            <div key={contact.id} className="px-4 py-3 border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
               <div className="font-semibold text-sm">{contact.name}</div>
 
               {contact.email && (
@@ -139,10 +130,7 @@ export default function ContactSearch() {
                   >
                     Copy
                   </button>
-                  <a
-                    href={`tel:${contact.phone}`}
-                    className="text-xs text-green-600 hover:text-green-800"
-                  >
+                  <a href={`tel:${contact.phone}`} className="text-xs text-green-600 hover:text-green-800">
                     Call
                   </a>
                 </div>
@@ -151,17 +139,12 @@ export default function ContactSearch() {
               {contact.tags && contact.tags.length > 0 && (
                 <div className="flex gap-1 mt-2 flex-wrap">
                   {contact.tags.slice(0, 3).map((tag, i) => (
-                    <span
-                      key={i}
-                      className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full"
-                    >
+                    <span key={i} className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full">
                       {tag}
                     </span>
                   ))}
                   {contact.tags.length > 3 && (
-                    <span className="text-xs text-gray-400">
-                      +{contact.tags.length - 3} more
-                    </span>
+                    <span className="text-xs text-gray-400">+{contact.tags.length - 3} more</span>
                   )}
                 </div>
               )}

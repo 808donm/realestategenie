@@ -1,8 +1,9 @@
-import twilio from 'twilio';
+import twilio from "twilio";
 
-const twilioClient = process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN
-  ? twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
-  : null;
+const twilioClient =
+  process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN
+    ? twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
+    : null;
 
 export interface CheckInSMSParams {
   to: string;
@@ -22,12 +23,12 @@ export interface GreetingSMSParams {
 
 export async function sendCheckInSMS(params: CheckInSMSParams) {
   if (!twilioClient) {
-    console.warn('Twilio not configured, skipping SMS');
+    console.warn("Twilio not configured, skipping SMS");
     return null;
   }
 
   if (!process.env.TWILIO_PHONE_NUMBER) {
-    console.warn('TWILIO_PHONE_NUMBER not set, skipping SMS');
+    console.warn("TWILIO_PHONE_NUMBER not set, skipping SMS");
     return null;
   }
 
@@ -42,19 +43,19 @@ export async function sendCheckInSMS(params: CheckInSMSParams) {
 
     return result;
   } catch (error) {
-    console.error('Error sending check-in SMS:', error);
+    console.error("Error sending check-in SMS:", error);
     throw error;
   }
 }
 
 export async function sendGreetingSMS(params: GreetingSMSParams) {
   if (!twilioClient) {
-    console.warn('Twilio not configured, skipping SMS');
+    console.warn("Twilio not configured, skipping SMS");
     return null;
   }
 
   if (!process.env.TWILIO_PHONE_NUMBER) {
-    console.warn('TWILIO_PHONE_NUMBER not set, skipping SMS');
+    console.warn("TWILIO_PHONE_NUMBER not set, skipping SMS");
     return null;
   }
 
@@ -69,7 +70,7 @@ export async function sendGreetingSMS(params: GreetingSMSParams) {
 
     return result;
   } catch (error) {
-    console.error('Error sending greeting SMS:', error);
+    console.error("Error sending greeting SMS:", error);
     throw error;
   }
 }

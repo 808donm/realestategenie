@@ -1,13 +1,7 @@
 "use client";
 
 import { useRef, useCallback, useEffect, useState, useMemo } from "react";
-import {
-  APIProvider,
-  Map,
-  AdvancedMarker,
-  InfoWindow,
-  useMap,
-} from "@vis.gl/react-google-maps";
+import { APIProvider, Map, AdvancedMarker, InfoWindow, useMap } from "@vis.gl/react-google-maps";
 import type { ScoredProperty } from "@/lib/scoring/seller-motivation-score";
 import { getSellerColor } from "@/lib/scoring/seller-motivation-score";
 import { PropertyCard } from "./property-card.client";
@@ -16,11 +10,7 @@ type Props = {
   properties: ScoredProperty[];
   selectedProperty: ScoredProperty | null;
   onSelectProperty: (p: ScoredProperty | null) => void;
-  onBoundsChange: (bounds: {
-    lat: number;
-    lng: number;
-    radius: number;
-  }) => void;
+  onBoundsChange: (bounds: { lat: number; lng: number; radius: number }) => void;
   showHeatMap: boolean;
   showTMK: boolean;
   tmkGeojson: GeoJSON.FeatureCollection | null;
@@ -33,7 +23,7 @@ type Props = {
 };
 
 // Default to downtown Honolulu, Hawaii (96813)
-const DEFAULT_CENTER = { lat: 21.3113, lng: -157.8600 };
+const DEFAULT_CENTER = { lat: 21.3113, lng: -157.86 };
 const DEFAULT_ZOOM = 12;
 
 const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
@@ -199,10 +189,7 @@ function SellerMapInner({
 
       // Style per feature: searched zips get a visible boundary, others are invisible
       zipLayer.setStyle((feature) => {
-        const zipCode =
-          feature.getProperty("ZCTA5") ||
-          feature.getProperty("BASENAME") ||
-          "";
+        const zipCode = feature.getProperty("ZCTA5") || feature.getProperty("BASENAME") || "";
         const isSearched = searchedSet.has(String(zipCode));
         const isHovered = feature === hoveredFeatureRef.current;
 
@@ -237,10 +224,7 @@ function SellerMapInner({
       // Show zip code bubble + boundary on hover
       const infoWindow = new google.maps.InfoWindow();
       zipLayer.addListener("mouseover", (event: google.maps.Data.MouseEvent) => {
-        const zipCode =
-          event.feature.getProperty("ZCTA5") ||
-          event.feature.getProperty("BASENAME") ||
-          "";
+        const zipCode = event.feature.getProperty("ZCTA5") || event.feature.getProperty("BASENAME") || "";
         hoveredFeatureRef.current = event.feature;
         // Trigger re-style so the hovered feature gets outlined
         zipLayer.overrideStyle(event.feature, {
@@ -253,7 +237,7 @@ function SellerMapInner({
 
         if (zipCode && event.latLng) {
           infoWindow.setContent(
-            `<div style="font-size:13px;font-weight:600;padding:2px 4px;cursor:pointer">${zipCode}<div style="font-size:10px;font-weight:400;color:#6b7280;margin-top:2px">Click to search</div></div>`
+            `<div style="font-size:13px;font-weight:600;padding:2px 4px;cursor:pointer">${zipCode}<div style="font-size:10px;font-weight:400;color:#6b7280;margin-top:2px">Click to search</div></div>`,
           );
           infoWindow.setPosition(event.latLng);
           infoWindow.open(map);
@@ -267,10 +251,7 @@ function SellerMapInner({
 
       // Click on zip code boundary to search that zip
       zipLayer.addListener("click", (event: google.maps.Data.MouseEvent) => {
-        const zipCode =
-          event.feature.getProperty("ZCTA5") ||
-          event.feature.getProperty("BASENAME") ||
-          "";
+        const zipCode = event.feature.getProperty("ZCTA5") || event.feature.getProperty("BASENAME") || "";
         if (zipCode && onZipClick) {
           onZipClick(String(zipCode));
         }
@@ -283,10 +264,7 @@ function SellerMapInner({
         const bounds = new google.maps.LatLngBounds();
         let hasMatchedFeature = false;
         zipLayer.forEach((feature) => {
-          const zipCode =
-            feature.getProperty("ZCTA5") ||
-            feature.getProperty("BASENAME") ||
-            "";
+          const zipCode = feature.getProperty("ZCTA5") || feature.getProperty("BASENAME") || "";
           if (searchedSet.has(String(zipCode))) {
             hasMatchedFeature = true;
             feature.getGeometry()?.forEachLatLng((latlng) => {
@@ -363,18 +341,12 @@ export function SellerMapView(props: Props) {
     return (
       <div className="flex items-center justify-center h-full bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
         <div className="text-center p-8">
-          <h3 className="text-lg font-semibold text-gray-700 mb-2">
-            Google Maps API Key Required
-          </h3>
+          <h3 className="text-lg font-semibold text-gray-700 mb-2">Google Maps API Key Required</h3>
           <p className="text-sm text-gray-500 max-w-md">
             Add your Google Maps API key as{" "}
-            <code className="bg-gray-100 px-1 rounded">
-              NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-            </code>{" "}
-            to your{" "}
-            <code className="bg-gray-100 px-1 rounded">.env.local</code> file.
-            Ensure the Maps JavaScript API and Visualization library are enabled
-            in your{" "}
+            <code className="bg-gray-100 px-1 rounded">NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code> to your{" "}
+            <code className="bg-gray-100 px-1 rounded">.env.local</code> file. Ensure the Maps JavaScript API and
+            Visualization library are enabled in your{" "}
             <a
               href="https://console.cloud.google.com/apis/library"
               className="text-blue-600 underline"
@@ -399,9 +371,7 @@ export function SellerMapView(props: Props) {
           defaultCenter={DEFAULT_CENTER}
           defaultZoom={DEFAULT_ZOOM}
           mapId={mapId}
-          mapTypeId={
-            props.mapStyle === "satellite" ? "hybrid" : "roadmap"
-          }
+          mapTypeId={props.mapStyle === "satellite" ? "hybrid" : "roadmap"}
           gestureHandling="greedy"
           disableDefaultUI={false}
           zoomControl={true}

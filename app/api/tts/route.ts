@@ -13,7 +13,7 @@ const DEFAULT_VOICE = {
 
 const AUDIO_CONFIG = {
   audioEncoding: "MP3",
-  speakingRate: 0.92,  // slightly slower for clarity, especially for older users
+  speakingRate: 0.92, // slightly slower for clarity, especially for older users
   pitch: 1.0,
 };
 
@@ -25,8 +25,28 @@ const AUDIO_CONFIG = {
  *   94 → "ninety-four"
  *   6615 → "sixty-six fifteen"
  */
-const ONES = ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
-  "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen"];
+const ONES = [
+  "",
+  "one",
+  "two",
+  "three",
+  "four",
+  "five",
+  "six",
+  "seven",
+  "eight",
+  "nine",
+  "ten",
+  "eleven",
+  "twelve",
+  "thirteen",
+  "fourteen",
+  "fifteen",
+  "sixteen",
+  "seventeen",
+  "eighteen",
+  "nineteen",
+];
 const TENS = ["", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"];
 
 function spellTwoDigit(n: number): string {
@@ -65,7 +85,9 @@ export async function POST(request: NextRequest) {
   try {
     // Auth check
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -95,7 +117,14 @@ export async function POST(request: NextRequest) {
       // Fix MLS numbers: "202605791" → "2 0 2 6 0 5 7 9 1"
       .replace(/\b(\d{8,})\b/g, (_, num) => num.split("").join(" "))
       // Fix TMK numbers: "1-4-2-018-077" → read as digits
-      .replace(/\b(\d{1,2}-\d{1,2}-\d{1,2}-\d{3}-\d{3})\b/g, (_, tmk) => tmk.replace(/[-]/g, ", ").split("").filter((c: string) => c !== ",").join(" ").replace(/  +/g, ", "))
+      .replace(/\b(\d{1,2}-\d{1,2}-\d{1,2}-\d{3}-\d{3})\b/g, (_, tmk) =>
+        tmk
+          .replace(/[-]/g, ", ")
+          .split("")
+          .filter((c: string) => c !== ",")
+          .join(" ")
+          .replace(/  +/g, ", "),
+      )
       // Abbreviations → full words (before other transforms)
       .replace(/\bsqft\b/gi, "square feet")
       .replace(/\bsq\s*ft\b/gi, "square feet")
@@ -184,10 +213,7 @@ export async function POST(request: NextRequest) {
     if (!response.ok) {
       const error = await response.text();
       console.error("[TTS] Google API error:", response.status, error);
-      return NextResponse.json(
-        { error: "TTS generation failed" },
-        { status: response.status }
-      );
+      return NextResponse.json({ error: "TTS generation failed" }, { status: response.status });
     }
 
     const data = await response.json();

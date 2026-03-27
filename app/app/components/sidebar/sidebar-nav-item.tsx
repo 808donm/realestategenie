@@ -23,15 +23,10 @@ export default function SidebarNavItem({
 
   // Active detection: exact match for dashboard, startsWith for nested routes
   const isActive =
-    href === "/app/dashboard"
-      ? pathname === "/app/dashboard"
-      : pathname === href || pathname.startsWith(href + "/");
+    href === "/app/dashboard" ? pathname === "/app/dashboard" : pathname === href || pathname.startsWith(href + "/");
 
-  const baseClasses =
-    "flex items-center gap-3 rounded-lg text-sm transition-colors relative group";
-  const sizeClasses = isCollapsed
-    ? "justify-center px-2 py-2 mx-1"
-    : "px-3 py-2 mx-2";
+  const baseClasses = "flex items-center gap-3 rounded-lg text-sm transition-colors relative group";
+  const sizeClasses = isCollapsed ? "justify-center px-2 py-2 mx-1" : "px-3 py-2 mx-2";
 
   if (disabled) {
     return (
@@ -55,9 +50,7 @@ export default function SidebarNavItem({
       }`}
       title={isCollapsed ? label : undefined}
     >
-      {isActive && (
-        <span className="absolute left-0 top-1 bottom-1 w-0.5 bg-blue-600 rounded-r" />
-      )}
+      {isActive && <span className="absolute left-0 top-1 bottom-1 w-0.5 bg-blue-600 rounded-r" />}
       <Icon className="w-4 h-4 shrink-0" />
       {!isCollapsed && <span className="truncate">{label}</span>}
     </Link>

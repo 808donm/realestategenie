@@ -45,9 +45,7 @@ export default function ProfileForm({ agent }: { agent: Agent }) {
   const [licenseNumber, setLicenseNumber] = useState(agent.license_number ?? "");
   const [agencyName, setAgencyName] = useState(agent.agency_name ?? "");
   const [phoneInput, setPhoneInput] = useState(agent.phone_e164 ?? "");
-  const [locationsCsv, setLocationsCsv] = useState(
-    (agent.locations_served ?? []).join(", ")
-  );
+  const [locationsCsv, setLocationsCsv] = useState((agent.locations_served ?? []).join(", "));
   const [timezone, setTimezone] = useState(agent.timezone ?? "America/New_York");
 
   const [saving, setSaving] = useState(false);
@@ -216,9 +214,7 @@ export default function ProfileForm({ agent }: { agent: Agent }) {
       <div style={{ display: "grid", gap: 14 }}>
         {/* Agent Headshot */}
         <div>
-          <label style={{ display: "block", fontSize: 12, marginBottom: 6, fontWeight: 600 }}>
-            Agent Photo
-          </label>
+          <label style={{ display: "block", fontSize: 12, marginBottom: 6, fontWeight: 600 }}>Agent Photo</label>
           {headshotUrl ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <img
@@ -230,7 +226,15 @@ export default function ProfileForm({ agent }: { agent: Agent }) {
                 type="button"
                 onClick={handleHeadshotDelete}
                 disabled={uploadingHeadshot}
-                style={{ padding: "8px 12px", width: 150, background: "#ef4444", color: "white", border: "none", borderRadius: 6, cursor: "pointer" }}
+                style={{
+                  padding: "8px 12px",
+                  width: 150,
+                  background: "#ef4444",
+                  color: "white",
+                  border: "none",
+                  borderRadius: 6,
+                  cursor: "pointer",
+                }}
               >
                 {uploadingHeadshot ? "Deleting..." : "Delete Photo"}
               </button>
@@ -249,21 +253,35 @@ export default function ProfileForm({ agent }: { agent: Agent }) {
 
         {/* Company Logo */}
         <div>
-          <label style={{ display: "block", fontSize: 12, marginBottom: 6, fontWeight: 600 }}>
-            Company Logo
-          </label>
+          <label style={{ display: "block", fontSize: 12, marginBottom: 6, fontWeight: 600 }}>Company Logo</label>
           {logoUrl ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <img
                 src={logoUrl}
                 alt="Company logo"
-                style={{ width: 200, height: 100, objectFit: "contain", borderRadius: 8, border: "2px solid #e5e7eb", padding: 10, background: "white" }}
+                style={{
+                  width: 200,
+                  height: 100,
+                  objectFit: "contain",
+                  borderRadius: 8,
+                  border: "2px solid #e5e7eb",
+                  padding: 10,
+                  background: "white",
+                }}
               />
               <button
                 type="button"
                 onClick={handleLogoDelete}
                 disabled={uploadingLogo}
-                style={{ padding: "8px 12px", width: 150, background: "#ef4444", color: "white", border: "none", borderRadius: 6, cursor: "pointer" }}
+                style={{
+                  padding: "8px 12px",
+                  width: 150,
+                  background: "#ef4444",
+                  color: "white",
+                  border: "none",
+                  borderRadius: 6,
+                  cursor: "pointer",
+                }}
               >
                 {uploadingLogo ? "Deleting..." : "Delete Logo"}
               </button>
@@ -278,9 +296,7 @@ export default function ProfileForm({ agent }: { agent: Agent }) {
             />
           )}
           {uploadingLogo && <p style={{ fontSize: 12, opacity: 0.7, margin: "6px 0 0 0" }}>Uploading...</p>}
-          <p style={{ fontSize: 11, opacity: 0.6, margin: "6px 0 0 0" }}>
-            SVG, PNG, JPG, or WebP (5MB max)
-          </p>
+          <p style={{ fontSize: 11, opacity: 0.6, margin: "6px 0 0 0" }}>SVG, PNG, JPG, or WebP (5MB max)</p>
         </div>
 
         <hr style={{ border: "none", borderTop: "1px solid #e5e7eb", margin: "10px 0" }} />
@@ -304,11 +320,17 @@ export default function ProfileForm({ agent }: { agent: Agent }) {
             style={{ width: "100%", padding: 10 }}
           />
           <div style={{ fontSize: 12, opacity: 0.7, marginTop: 6 }}>
-            {phoneInput.trim()
-              ? normalizedPhone
-                ? <>Will save as: <code>{normalizedPhone}</code></>
-                : <>Not a valid number yet</>
-              : <>Optional for now, but recommended</>}
+            {phoneInput.trim() ? (
+              normalizedPhone ? (
+                <>
+                  Will save as: <code>{normalizedPhone}</code>
+                </>
+              ) : (
+                <>Not a valid number yet</>
+              )
+            ) : (
+              <>Optional for now, but recommended</>
+            )}
           </div>
         </div>
 
@@ -336,9 +358,7 @@ export default function ProfileForm({ agent }: { agent: Agent }) {
         </div>
 
         <div>
-          <label style={{ display: "block", fontSize: 12, marginBottom: 6 }}>
-            Locations served (comma-separated)
-          </label>
+          <label style={{ display: "block", fontSize: 12, marginBottom: 6 }}>Locations served (comma-separated)</label>
           <input
             value={locationsCsv}
             onChange={(e) => setLocationsCsv(e.target.value)}
@@ -348,9 +368,7 @@ export default function ProfileForm({ agent }: { agent: Agent }) {
         </div>
 
         <div>
-          <label style={{ display: "block", fontSize: 12, marginBottom: 6, fontWeight: 600 }}>
-            Timezone
-          </label>
+          <label style={{ display: "block", fontSize: 12, marginBottom: 6, fontWeight: 600 }}>Timezone</label>
           <select
             value={timezone}
             onChange={(e) => setTimezone(e.target.value)}
@@ -365,15 +383,12 @@ export default function ProfileForm({ agent }: { agent: Agent }) {
             <option value="Pacific/Honolulu">Hawaii-Aleutian Time (HST)</option>
           </select>
           <p style={{ fontSize: 11, opacity: 0.6, margin: "6px 0 0 0" }}>
-            Your timezone is used for dashboard greetings and to generate monthly rent invoices at midnight on the 1st of each month in your local time
+            Your timezone is used for dashboard greetings and to generate monthly rent invoices at midnight on the 1st
+            of each month in your local time
           </p>
         </div>
 
-        <button
-          type="submit"
-          disabled={saving}
-          style={{ padding: 12, fontWeight: 600 }}
-        >
+        <button type="submit" disabled={saving} style={{ padding: 12, fontWeight: 600 }}>
           {saving ? "Saving..." : "Save profile"}
         </button>
 

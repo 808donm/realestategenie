@@ -13,11 +13,7 @@ export default async function ChangePasswordPage() {
   }
 
   // Check if user actually needs to change password
-  const { data: agent } = await supabase
-    .from("agents")
-    .select("must_change_password")
-    .eq("id", data.user.id)
-    .single();
+  const { data: agent } = await supabase.from("agents").select("must_change_password").eq("id", data.user.id).single();
 
   if (!agent?.must_change_password) {
     redirect("/app/dashboard");

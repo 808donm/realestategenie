@@ -4,14 +4,23 @@ import { useState, useMemo } from "react";
 import jsPDF from "jspdf";
 import * as XLSX from "xlsx";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell,
-  LineChart, Line,
-  PieChart, Pie,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+  Cell,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
 } from "recharts";
 import { KAUAI_MONTHLY_DATA } from "@/lib/data/kauai-monthly-data";
 
-const fmt = (n: number) =>
-  n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+const fmt = (n: number) => n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 
 const COLORS = {
   sf: "#8b5cf6",
@@ -25,12 +34,12 @@ const COLORS = {
 };
 
 export default function KauaiStatisticsClient() {
-  const [selectedMonth, setSelectedMonth] = useState(
-    KAUAI_MONTHLY_DATA[KAUAI_MONTHLY_DATA.length - 1].month
-  );
+  const [selectedMonth, setSelectedMonth] = useState(KAUAI_MONTHLY_DATA[KAUAI_MONTHLY_DATA.length - 1].month);
 
   const data = useMemo(() => {
-    return KAUAI_MONTHLY_DATA.find((m) => m.month === selectedMonth) ?? KAUAI_MONTHLY_DATA[KAUAI_MONTHLY_DATA.length - 1];
+    return (
+      KAUAI_MONTHLY_DATA.find((m) => m.month === selectedMonth) ?? KAUAI_MONTHLY_DATA[KAUAI_MONTHLY_DATA.length - 1]
+    );
   }, [selectedMonth]);
 
   const hasMultipleMonths = KAUAI_MONTHLY_DATA.length > 1;
@@ -106,11 +115,26 @@ export default function KauaiStatisticsClient() {
     const exportData = [
       { Metric: "Median Sales Price", "Single-Family": sf.medianPrice, Condo: cd.medianPrice, Land: ld.medianPrice },
       { Metric: "Days on Market", "Single-Family": sf.dom, Condo: cd.dom, Land: ld.dom },
-      { Metric: "Active Listings", "Single-Family": sf.activeListings, Condo: cd.activeListings, Land: ld.activeListings },
+      {
+        Metric: "Active Listings",
+        "Single-Family": sf.activeListings,
+        Condo: cd.activeListings,
+        Land: ld.activeListings,
+      },
       { Metric: "New Listings", "Single-Family": sf.newListings, Condo: cd.newListings, Land: ld.newListings },
-      { Metric: "New Listings (prev year)", "Single-Family": sf.prevYearNewListings, Condo: cd.prevYearNewListings, Land: ld.prevYearNewListings },
+      {
+        Metric: "New Listings (prev year)",
+        "Single-Family": sf.prevYearNewListings,
+        Condo: cd.prevYearNewListings,
+        Land: ld.prevYearNewListings,
+      },
       { Metric: "Sold Listings", "Single-Family": sf.soldListings, Condo: cd.soldListings, Land: ld.soldListings },
-      { Metric: "Sold Listings (prev year)", "Single-Family": sf.prevYearSoldListings, Condo: cd.prevYearSoldListings, Land: ld.prevYearSoldListings },
+      {
+        Metric: "Sold Listings (prev year)",
+        "Single-Family": sf.prevYearSoldListings,
+        Condo: cd.prevYearSoldListings,
+        Land: ld.prevYearSoldListings,
+      },
     ];
 
     if (format === "xlsx") {
@@ -140,7 +164,10 @@ export default function KauaiStatisticsClient() {
       doc.setFont("helvetica", "normal");
 
       exportData.forEach((row) => {
-        if (y > 280) { doc.addPage(); y = 20; }
+        if (y > 280) {
+          doc.addPage();
+          y = 20;
+        }
         const vals = [row.Metric, String(row["Single-Family"]), String(row.Condo), String(row.Land)];
         vals.forEach((v, i) => doc.text(v, 10 + i * colW, y));
         y += 5;
@@ -160,36 +187,91 @@ export default function KauaiStatisticsClient() {
   return (
     <div>
       {/* Header */}
-      <div style={{ padding: "20px 24px", background: "linear-gradient(135deg, #4c1d95 0%, #8b5cf6 100%)", borderRadius: 12, color: "#fff", marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+      <div
+        style={{
+          padding: "20px 24px",
+          background: "linear-gradient(135deg, #4c1d95 0%, #8b5cf6 100%)",
+          borderRadius: 12,
+          color: "#fff",
+          marginBottom: 24,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: 12,
+        }}
+      >
         <div>
           <div style={{ fontSize: 22, fontWeight: 800, marginBottom: 8 }}>{data.label}</div>
-          <div style={{ fontSize: 14, opacity: 0.9 }}>
-            Kaua&apos;i Market: {data.headline}
-          </div>
-          <div style={{ fontSize: 11, opacity: 0.7, marginTop: 8 }}>
-            Source: Hawaii Information Service
-          </div>
+          <div style={{ fontSize: 14, opacity: 0.9 }}>Kaua&apos;i Market: {data.headline}</div>
+          <div style={{ fontSize: 11, opacity: 0.7, marginTop: 8 }}>Source: Hawaii Information Service</div>
         </div>
         {hasMultipleMonths && (
           <select
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(e.target.value)}
-            style={{ padding: "8px 14px", borderRadius: 8, border: "none", fontSize: 14, fontWeight: 600, cursor: "pointer", background: "rgba(255,255,255,0.2)", color: "#fff" }}
+            style={{
+              padding: "8px 14px",
+              borderRadius: 8,
+              border: "none",
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: "pointer",
+              background: "rgba(255,255,255,0.2)",
+              color: "#fff",
+            }}
           >
             {KAUAI_MONTHLY_DATA.map((m) => (
-              <option key={m.month} value={m.month} style={{ color: "#4c1d95" }}>{m.label}</option>
+              <option key={m.month} value={m.month} style={{ color: "#4c1d95" }}>
+                {m.label}
+              </option>
             ))}
           </select>
         )}
       </div>
 
       <div className="noprint" style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginBottom: 16 }}>
-        <button onClick={() => exportReport("xlsx")} style={{ padding: "6px 14px", fontSize: 12, fontWeight: 600, border: "1px solid #d1d5db", borderRadius: 6, background: "#fff", color: "#374151", cursor: "pointer" }}>Export Excel</button>
-        <button onClick={() => exportReport("pdf")} style={{ padding: "6px 14px", fontSize: 12, fontWeight: 600, border: "none", borderRadius: 6, background: "#dc2626", color: "#fff", cursor: "pointer" }}>Export PDF</button>
+        <button
+          onClick={() => exportReport("xlsx")}
+          style={{
+            padding: "6px 14px",
+            fontSize: 12,
+            fontWeight: 600,
+            border: "1px solid #d1d5db",
+            borderRadius: 6,
+            background: "#fff",
+            color: "#374151",
+            cursor: "pointer",
+          }}
+        >
+          Export Excel
+        </button>
+        <button
+          onClick={() => exportReport("pdf")}
+          style={{
+            padding: "6px 14px",
+            fontSize: 12,
+            fontWeight: 600,
+            border: "none",
+            borderRadius: 6,
+            background: "#dc2626",
+            color: "#fff",
+            cursor: "pointer",
+          }}
+        >
+          Export PDF
+        </button>
       </div>
 
       {/* KPI Cards — Row 1: Median Prices */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16, marginBottom: 16 }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+          gap: 16,
+          marginBottom: 16,
+        }}
+      >
         <div style={{ ...cardStyle, borderLeft: `4px solid ${COLORS.sf}` }}>
           <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600 }}>SF Median Price</div>
           <div style={{ fontSize: 26, fontWeight: 800 }}>{fmt(sf.medianPrice)}</div>
@@ -214,21 +296,36 @@ export default function KauaiStatisticsClient() {
       </div>
 
       {/* KPI Cards — Row 2: Sales & Inventory */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16, marginBottom: 24 }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+          gap: 16,
+          marginBottom: 24,
+        }}
+      >
         <div style={{ ...cardStyle, borderLeft: `4px solid ${COLORS.amber}` }}>
           <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600 }}>Total Sold Listings</div>
           <div style={{ fontSize: 26, fontWeight: 800 }}>{sf.soldListings + cd.soldListings + ld.soldListings}</div>
-          <div style={{ fontSize: 12, color: "#6b7280" }}>SF: {sf.soldListings} | Condo: {cd.soldListings} | Land: {ld.soldListings}</div>
+          <div style={{ fontSize: 12, color: "#6b7280" }}>
+            SF: {sf.soldListings} | Condo: {cd.soldListings} | Land: {ld.soldListings}
+          </div>
         </div>
         <div style={{ ...cardStyle, borderLeft: `4px solid ${COLORS.green}` }}>
           <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600 }}>Total New Listings</div>
           <div style={{ fontSize: 26, fontWeight: 800 }}>{sf.newListings + cd.newListings + ld.newListings}</div>
-          <div style={{ fontSize: 12, color: "#6b7280" }}>SF: {sf.newListings} | Condo: {cd.newListings} | Land: {ld.newListings}</div>
+          <div style={{ fontSize: 12, color: "#6b7280" }}>
+            SF: {sf.newListings} | Condo: {cd.newListings} | Land: {ld.newListings}
+          </div>
         </div>
         <div style={{ ...cardStyle, borderLeft: "4px solid #6366f1" }}>
           <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600 }}>Total Active Listings</div>
-          <div style={{ fontSize: 26, fontWeight: 800 }}>{sf.activeListings + cd.activeListings + ld.activeListings}</div>
-          <div style={{ fontSize: 12, color: "#6b7280" }}>SF: {sf.activeListings} | Condo: {cd.activeListings} | Land: {ld.activeListings}</div>
+          <div style={{ fontSize: 26, fontWeight: 800 }}>
+            {sf.activeListings + cd.activeListings + ld.activeListings}
+          </div>
+          <div style={{ fontSize: 12, color: "#6b7280" }}>
+            SF: {sf.activeListings} | Condo: {cd.activeListings} | Land: {ld.activeListings}
+          </div>
         </div>
       </div>
 
@@ -254,9 +351,30 @@ export default function KauaiStatisticsClient() {
                 <YAxis tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11 }} />
                 <Tooltip formatter={(value: any) => fmt(value)} />
                 <Legend />
-                <Line type="monotone" dataKey="sfMedianPrice" name="Single-Family" stroke={COLORS.sf} strokeWidth={3} dot={{ r: 5 }} />
-                <Line type="monotone" dataKey="condoMedianPrice" name="Condo" stroke={COLORS.condo} strokeWidth={3} dot={{ r: 5 }} />
-                <Line type="monotone" dataKey="landMedianPrice" name="Land" stroke={COLORS.land} strokeWidth={3} dot={{ r: 5 }} />
+                <Line
+                  type="monotone"
+                  dataKey="sfMedianPrice"
+                  name="Single-Family"
+                  stroke={COLORS.sf}
+                  strokeWidth={3}
+                  dot={{ r: 5 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="condoMedianPrice"
+                  name="Condo"
+                  stroke={COLORS.condo}
+                  strokeWidth={3}
+                  dot={{ r: 5 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="landMedianPrice"
+                  name="Land"
+                  stroke={COLORS.land}
+                  strokeWidth={3}
+                  dot={{ r: 5 }}
+                />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -270,9 +388,30 @@ export default function KauaiStatisticsClient() {
                   <YAxis tick={{ fontSize: 11 }} />
                   <Tooltip />
                   <Legend />
-                  <Line type="monotone" dataKey="sfSold" name="SF Sold" stroke={COLORS.sf} strokeWidth={2} dot={{ r: 4 }} />
-                  <Line type="monotone" dataKey="condoSold" name="Condo Sold" stroke={COLORS.condo} strokeWidth={2} dot={{ r: 4 }} />
-                  <Line type="monotone" dataKey="landSold" name="Land Sold" stroke={COLORS.land} strokeWidth={2} dot={{ r: 4 }} />
+                  <Line
+                    type="monotone"
+                    dataKey="sfSold"
+                    name="SF Sold"
+                    stroke={COLORS.sf}
+                    strokeWidth={2}
+                    dot={{ r: 4 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="condoSold"
+                    name="Condo Sold"
+                    stroke={COLORS.condo}
+                    strokeWidth={2}
+                    dot={{ r: 4 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="landSold"
+                    name="Land Sold"
+                    stroke={COLORS.land}
+                    strokeWidth={2}
+                    dot={{ r: 4 }}
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -285,9 +424,30 @@ export default function KauaiStatisticsClient() {
                   <YAxis tick={{ fontSize: 11 }} />
                   <Tooltip formatter={(value: any) => `${value} days`} />
                   <Legend />
-                  <Line type="monotone" dataKey="sfDOM" name="SF DOM" stroke={COLORS.sf} strokeWidth={2} dot={{ r: 4 }} />
-                  <Line type="monotone" dataKey="condoDOM" name="Condo DOM" stroke={COLORS.condo} strokeWidth={2} dot={{ r: 4 }} />
-                  <Line type="monotone" dataKey="landDOM" name="Land DOM" stroke={COLORS.land} strokeWidth={2} dot={{ r: 4 }} />
+                  <Line
+                    type="monotone"
+                    dataKey="sfDOM"
+                    name="SF DOM"
+                    stroke={COLORS.sf}
+                    strokeWidth={2}
+                    dot={{ r: 4 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="condoDOM"
+                    name="Condo DOM"
+                    stroke={COLORS.condo}
+                    strokeWidth={2}
+                    dot={{ r: 4 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="landDOM"
+                    name="Land DOM"
+                    stroke={COLORS.land}
+                    strokeWidth={2}
+                    dot={{ r: 4 }}
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -305,7 +465,9 @@ export default function KauaiStatisticsClient() {
             <YAxis tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11 }} />
             <Tooltip formatter={(value: any) => fmt(value)} />
             <Bar dataKey="value" name="Median Price" radius={[6, 6, 0, 0]}>
-              {medianPriceData.map((d, i) => <Cell key={i} fill={d.color} />)}
+              {medianPriceData.map((d, i) => (
+                <Cell key={i} fill={d.color} />
+              ))}
             </Bar>
           </BarChart>
         </ResponsiveContainer>
@@ -356,7 +518,9 @@ export default function KauaiStatisticsClient() {
               <YAxis tick={{ fontSize: 11 }} />
               <Tooltip formatter={(value: any) => `${value} days`} />
               <Bar dataKey="value" name="Days" radius={[6, 6, 0, 0]}>
-                {domData.map((d, i) => <Cell key={i} fill={d.color} />)}
+                {domData.map((d, i) => (
+                  <Cell key={i} fill={d.color} />
+                ))}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
@@ -376,7 +540,9 @@ export default function KauaiStatisticsClient() {
                 label={(props: any) => `${props.name}: ${props.value}`}
                 labelLine
               >
-                {inventoryPie.map((d, i) => <Cell key={i} fill={d.color} />)}
+                {inventoryPie.map((d, i) => (
+                  <Cell key={i} fill={d.color} />
+                ))}
               </Pie>
               <Tooltip />
             </PieChart>
@@ -393,29 +559,102 @@ export default function KauaiStatisticsClient() {
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
           <thead>
             <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
-              <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 700, fontSize: 12, color: "#6b7280" }}>Metric</th>
-              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: COLORS.sf }}>Single-Family</th>
-              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: COLORS.condo }}>Condo</th>
-              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: COLORS.land }}>Land</th>
+              <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 700, fontSize: 12, color: "#6b7280" }}>
+                Metric
+              </th>
+              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: COLORS.sf }}>
+                Single-Family
+              </th>
+              <th
+                style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: COLORS.condo }}
+              >
+                Condo
+              </th>
+              <th
+                style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: COLORS.land }}
+              >
+                Land
+              </th>
             </tr>
           </thead>
           <tbody>
             {[
-              { label: "Median Sales Price", sfVal: fmt(sf.medianPrice), cdVal: fmt(cd.medianPrice), ldVal: fmt(ld.medianPrice) },
+              {
+                label: "Median Sales Price",
+                sfVal: fmt(sf.medianPrice),
+                cdVal: fmt(cd.medianPrice),
+                ldVal: fmt(ld.medianPrice),
+              },
               { label: "Days on Market", sfVal: `${sf.dom} days`, cdVal: `${cd.dom} days`, ldVal: `${ld.dom} days` },
-              { label: "Active Listings", sfVal: sf.activeListings.toString(), cdVal: cd.activeListings.toString(), ldVal: ld.activeListings.toString() },
-              { label: `New Listings (${data.label})`, sfVal: sf.newListings.toString(), cdVal: cd.newListings.toString(), ldVal: ld.newListings.toString() },
-              { label: `New Listings (prev year)`, sfVal: sf.prevYearNewListings.toString(), cdVal: cd.prevYearNewListings.toString(), ldVal: ld.prevYearNewListings.toString() },
-              { label: "New Listings YoY", sfVal: yoyText(sfNewListingsYoY), cdVal: yoyText(cdNewListingsYoY), ldVal: yoyText(ldNewListingsYoY), sfColor: yoyColor(sfNewListingsYoY), cdColor: yoyColor(cdNewListingsYoY), ldColor: yoyColor(ldNewListingsYoY) },
-              { label: `Sold Listings (${data.label})`, sfVal: sf.soldListings.toString(), cdVal: cd.soldListings.toString(), ldVal: ld.soldListings.toString() },
-              { label: `Sold Listings (prev year)`, sfVal: sf.prevYearSoldListings.toString(), cdVal: cd.prevYearSoldListings.toString(), ldVal: ld.prevYearSoldListings.toString() },
-              { label: "Sold Listings YoY", sfVal: yoyText(sfSoldYoY), cdVal: yoyText(cdSoldYoY), ldVal: yoyText(ldSoldYoY), sfColor: yoyColor(sfSoldYoY), cdColor: yoyColor(cdSoldYoY), ldColor: yoyColor(ldSoldYoY) },
+              {
+                label: "Active Listings",
+                sfVal: sf.activeListings.toString(),
+                cdVal: cd.activeListings.toString(),
+                ldVal: ld.activeListings.toString(),
+              },
+              {
+                label: `New Listings (${data.label})`,
+                sfVal: sf.newListings.toString(),
+                cdVal: cd.newListings.toString(),
+                ldVal: ld.newListings.toString(),
+              },
+              {
+                label: `New Listings (prev year)`,
+                sfVal: sf.prevYearNewListings.toString(),
+                cdVal: cd.prevYearNewListings.toString(),
+                ldVal: ld.prevYearNewListings.toString(),
+              },
+              {
+                label: "New Listings YoY",
+                sfVal: yoyText(sfNewListingsYoY),
+                cdVal: yoyText(cdNewListingsYoY),
+                ldVal: yoyText(ldNewListingsYoY),
+                sfColor: yoyColor(sfNewListingsYoY),
+                cdColor: yoyColor(cdNewListingsYoY),
+                ldColor: yoyColor(ldNewListingsYoY),
+              },
+              {
+                label: `Sold Listings (${data.label})`,
+                sfVal: sf.soldListings.toString(),
+                cdVal: cd.soldListings.toString(),
+                ldVal: ld.soldListings.toString(),
+              },
+              {
+                label: `Sold Listings (prev year)`,
+                sfVal: sf.prevYearSoldListings.toString(),
+                cdVal: cd.prevYearSoldListings.toString(),
+                ldVal: ld.prevYearSoldListings.toString(),
+              },
+              {
+                label: "Sold Listings YoY",
+                sfVal: yoyText(sfSoldYoY),
+                cdVal: yoyText(cdSoldYoY),
+                ldVal: yoyText(ldSoldYoY),
+                sfColor: yoyColor(sfSoldYoY),
+                cdColor: yoyColor(cdSoldYoY),
+                ldColor: yoyColor(ldSoldYoY),
+              },
             ].map((row: any, i) => (
-              <tr key={row.label} style={{ borderBottom: "1px solid #f3f4f6", background: i % 2 === 0 ? "#fff" : "#fafafa" }}>
+              <tr
+                key={row.label}
+                style={{ borderBottom: "1px solid #f3f4f6", background: i % 2 === 0 ? "#fff" : "#fafafa" }}
+              >
                 <td style={{ padding: "10px 12px", fontWeight: 600 }}>{row.label}</td>
-                <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: row.sfColor || "inherit" }}>{row.sfVal}</td>
-                <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: row.cdColor || "inherit" }}>{row.cdVal}</td>
-                <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: row.ldColor || "inherit" }}>{row.ldVal}</td>
+                <td
+                  style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: row.sfColor || "inherit" }}
+                >
+                  {row.sfVal}
+                </td>
+                <td
+                  style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: row.cdColor || "inherit" }}
+                >
+                  {row.cdVal}
+                </td>
+                <td
+                  style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: row.ldColor || "inherit" }}
+                >
+                  {row.ldVal}
+                </td>
               </tr>
             ))}
           </tbody>

@@ -21,20 +21,14 @@ export async function POST(request: NextRequest) {
     const { webhookUrl, test } = await request.json();
 
     if (!webhookUrl) {
-      return NextResponse.json(
-        { error: "Webhook URL is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Webhook URL is required" }, { status: 400 });
     }
 
     // Validate URL format
     try {
       new URL(webhookUrl);
     } catch {
-      return NextResponse.json(
-        { error: "Invalid webhook URL format" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid webhook URL format" }, { status: 400 });
     }
 
     // Test webhook if requested
@@ -48,7 +42,7 @@ export async function POST(request: NextRequest) {
             error: "Webhook test failed",
             details: testResult.error,
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
@@ -62,10 +56,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (fetchError || !integration) {
-      return NextResponse.json(
-        { error: "GHL integration not found. Please connect GHL first." },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "GHL integration not found. Please connect GHL first." }, { status: 404 });
     }
 
     // Update config with webhook URL
@@ -84,10 +75,7 @@ export async function POST(request: NextRequest) {
 
     if (updateError) {
       console.error("Failed to update webhook URL:", updateError);
-      return NextResponse.json(
-        { error: "Failed to save webhook URL" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to save webhook URL" }, { status: 500 });
     }
 
     // Log to audit
@@ -102,16 +90,11 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: test
-        ? "Webhook URL saved and tested successfully"
-        : "Webhook URL saved successfully",
+      message: test ? "Webhook URL saved and tested successfully" : "Webhook URL saved successfully",
     });
   } catch (error: any) {
     console.error("Save webhook URL error:", error);
-    return NextResponse.json(
-      { error: "Failed to save webhook URL", details: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to save webhook URL", details: error.message }, { status: 500 });
   }
 }
 
@@ -149,9 +132,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error("Get webhook URL error:", error);
-    return NextResponse.json(
-      { error: "Failed to get webhook URL" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to get webhook URL" }, { status: 500 });
   }
 }

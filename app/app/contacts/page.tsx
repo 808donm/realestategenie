@@ -20,11 +20,16 @@ export default async function ContactsPage() {
       <div style={{ marginBottom: 24 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <h1 style={{ fontSize: 28, fontWeight: 700, margin: 0 }}>Contacts</h1>
-          <PageHelp title="Contacts" description="Your CRM contacts synced from GoHighLevel. Search, view details, and take action on any contact." tips={["Use Call, Text, or Email buttons for quick outreach", "Click a contact to view full details and history"]} />
+          <PageHelp
+            title="Contacts"
+            description="Your CRM contacts synced from GoHighLevel. Search, view details, and take action on any contact."
+            tips={[
+              "Use Call, Text, or Email buttons for quick outreach",
+              "Click a contact to view full details and history",
+            ]}
+          />
         </div>
-        <p style={{ opacity: 0.7, marginTop: 4 }}>
-          Manage your contacts
-        </p>
+        <p style={{ opacity: 0.7, marginTop: 4 }}>Manage your contacts</p>
       </div>
 
       {!isGHLConnected ? (
@@ -37,12 +42,8 @@ export default async function ContactsPage() {
             textAlign: "center",
           }}
         >
-          <h2 style={{ fontSize: 20, fontWeight: 600, marginBottom: 8 }}>
-            CRM Not Connected
-          </h2>
-          <p style={{ marginBottom: 16, color: "#92400e" }}>
-            Connect your CRM account to sync and manage contacts.
-          </p>
+          <h2 style={{ fontSize: 20, fontWeight: 600, marginBottom: 8 }}>CRM Not Connected</h2>
+          <p style={{ marginBottom: 16, color: "#92400e" }}>Connect your CRM account to sync and manage contacts.</p>
           <a
             href="/app/integrations"
             style={{

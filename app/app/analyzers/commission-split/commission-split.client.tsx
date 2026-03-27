@@ -33,7 +33,12 @@ export default function CommissionSplitClient() {
   const fmt = (n: number) =>
     n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
   const fmtDecimal = (n: number) =>
-    n.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    n.toLocaleString("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
 
   // Common split presets
   const splitPresets = [
@@ -105,7 +110,11 @@ export default function CommissionSplitClient() {
       ["Sale Price:", fmt(inputs.salePrice)],
       ["Commission:", `${inputs.commissionPercent}% = ${fmt(analysis.grossCommission)}`],
       ["Split:", `${inputs.agentSplitPercent}/${100 - inputs.agentSplitPercent} (Agent/Brokerage)`],
-    ].forEach(([l, v]) => { doc.text(l, 25, y); doc.text(v, pw - 25, y, { align: "right" }); y += 6; });
+    ].forEach(([l, v]) => {
+      doc.text(l, 25, y);
+      doc.text(v, pw - 25, y, { align: "right" });
+      y += 6;
+    });
     y += 8;
 
     doc.setFontSize(12);
@@ -120,7 +129,11 @@ export default function CommissionSplitClient() {
     ];
     if (analysis.teamOverrideAmount > 0) rows.push(["Team Override:", `-${fmt(analysis.teamOverrideAmount)}`]);
     if (analysis.totalFees > 0) rows.push(["Fees:", `-${fmt(analysis.totalFees)}`]);
-    rows.forEach(([l, v]) => { doc.text(l, 25, y); doc.text(v, pw - 25, y, { align: "right" }); y += 6; });
+    rows.forEach(([l, v]) => {
+      doc.text(l, 25, y);
+      doc.text(v, pw - 25, y, { align: "right" });
+      y += 6;
+    });
     y += 4;
 
     doc.setLineWidth(1);
@@ -141,37 +154,59 @@ export default function CommissionSplitClient() {
     doc.save(`Commission_Split_${inputs.salePrice}.pdf`);
   };
 
-  const generateFile = useCallback((format: "pdf" | "xlsx"): Blob => {
-    if (format === "xlsx") {
-      const wb = XLSX.utils.book_new();
-      const data: (string | number)[][] = [
-        ["COMMISSION SPLIT"], [],
-        ["Sale Price", inputs.salePrice], ["Commission %", `${inputs.commissionPercent}%`],
-        ["Gross Commission", analysis.grossCommission],
-        ["Split", `${inputs.agentSplitPercent}/${100 - inputs.agentSplitPercent}`],
-        ["Brokerage Share", analysis.brokerageShare],
-        ["Team Override", analysis.teamOverrideAmount],
-        ["Fees", analysis.totalFees],
-        ["Agent Net", analysis.agentNet], ["Brokerage Gross", analysis.brokerageGross],
-      ];
-      const sheet = XLSX.utils.aoa_to_sheet(data);
-      XLSX.utils.book_append_sheet(wb, sheet, "Commission Split");
-      const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-      return new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-    }
-    const doc = new jsPDF();
-    const pw = doc.internal.pageSize.getWidth();
-    let y = 20;
-    doc.setFontSize(18); doc.setFont("helvetica", "bold");
-    doc.text("Commission Split Summary", pw / 2, y, { align: "center" }); y += 14;
-    doc.setFontSize(10); doc.setFont("helvetica", "normal");
-    [["Sale Price:", fmt(inputs.salePrice)], ["Gross Commission:", fmt(analysis.grossCommission)],
-     ["Agent Net:", fmt(analysis.agentNet)], ["Brokerage Gross:", fmt(analysis.brokerageGross)]
-    ].forEach(([l, v]) => { doc.text(l, 25, y); doc.text(v, pw - 25, y, { align: "right" }); y += 7; });
-    return new Blob([doc.output("arraybuffer")], { type: "application/pdf" });
-  }, [inputs, analysis, fmt]);
+  const generateFile = useCallback(
+    (format: "pdf" | "xlsx"): Blob => {
+      if (format === "xlsx") {
+        const wb = XLSX.utils.book_new();
+        const data: (string | number)[][] = [
+          ["COMMISSION SPLIT"],
+          [],
+          ["Sale Price", inputs.salePrice],
+          ["Commission %", `${inputs.commissionPercent}%`],
+          ["Gross Commission", analysis.grossCommission],
+          ["Split", `${inputs.agentSplitPercent}/${100 - inputs.agentSplitPercent}`],
+          ["Brokerage Share", analysis.brokerageShare],
+          ["Team Override", analysis.teamOverrideAmount],
+          ["Fees", analysis.totalFees],
+          ["Agent Net", analysis.agentNet],
+          ["Brokerage Gross", analysis.brokerageGross],
+        ];
+        const sheet = XLSX.utils.aoa_to_sheet(data);
+        XLSX.utils.book_append_sheet(wb, sheet, "Commission Split");
+        const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+        return new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      }
+      const doc = new jsPDF();
+      const pw = doc.internal.pageSize.getWidth();
+      let y = 20;
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      doc.text("Commission Split Summary", pw / 2, y, { align: "center" });
+      y += 14;
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      [
+        ["Sale Price:", fmt(inputs.salePrice)],
+        ["Gross Commission:", fmt(analysis.grossCommission)],
+        ["Agent Net:", fmt(analysis.agentNet)],
+        ["Brokerage Gross:", fmt(analysis.brokerageGross)],
+      ].forEach(([l, v]) => {
+        doc.text(l, 25, y);
+        doc.text(v, pw - 25, y, { align: "right" });
+        y += 7;
+      });
+      return new Blob([doc.output("arraybuffer")], { type: "application/pdf" });
+    },
+    [inputs, analysis, fmt],
+  );
 
-  const inputStyle: React.CSSProperties = { width: "100%", padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 16 };
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    padding: "10px 12px",
+    border: "1px solid #d1d5db",
+    borderRadius: 6,
+    fontSize: 16,
+  };
   const labelStyle: React.CSSProperties = { display: "block", fontSize: 13, fontWeight: 600, marginBottom: 6 };
 
   return (
@@ -180,24 +215,39 @@ export default function CommissionSplitClient() {
       <div>
         <MLSImport onImport={handleMLSImport} />
 
-        <div style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 20 }}>
+        <div
+          style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 20 }}
+        >
           <h2 style={{ margin: "0 0 20px 0", fontSize: 18, fontWeight: 700 }}>Deal Details</h2>
 
           <div style={{ marginBottom: 16 }}>
             <label style={labelStyle}>Sale Price</label>
-            <input type="number" value={inputs.salePrice} onChange={(e) => handleChange("salePrice", Number(e.target.value))} style={inputStyle} />
+            <input
+              type="number"
+              value={inputs.salePrice}
+              onChange={(e) => handleChange("salePrice", Number(e.target.value))}
+              style={inputStyle}
+            />
           </div>
 
           <div style={{ marginBottom: 16 }}>
             <label style={labelStyle}>Commission Rate (%)</label>
-            <input type="number" step="0.25" value={inputs.commissionPercent} onChange={(e) => handleChange("commissionPercent", Number(e.target.value))} style={inputStyle} />
+            <input
+              type="number"
+              step="0.25"
+              value={inputs.commissionPercent}
+              onChange={(e) => handleChange("commissionPercent", Number(e.target.value))}
+              style={inputStyle}
+            />
             <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
               Your side only = {fmt(analysis.grossCommission)}
             </div>
           </div>
         </div>
 
-        <div style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 20 }}>
+        <div
+          style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 20 }}
+        >
           <h2 style={{ margin: "0 0 20px 0", fontSize: 18, fontWeight: 700 }}>Split & Cap</h2>
 
           <div style={{ marginBottom: 16 }}>
@@ -222,7 +272,12 @@ export default function CommissionSplitClient() {
                 </button>
               ))}
             </div>
-            <input type="number" value={inputs.agentSplitPercent} onChange={(e) => handleChange("agentSplitPercent", Number(e.target.value))} style={inputStyle} />
+            <input
+              type="number"
+              value={inputs.agentSplitPercent}
+              onChange={(e) => handleChange("agentSplitPercent", Number(e.target.value))}
+              style={inputStyle}
+            />
             <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
               Agent gets {inputs.agentSplitPercent}%, brokerage gets {100 - inputs.agentSplitPercent}%
             </div>
@@ -231,12 +286,22 @@ export default function CommissionSplitClient() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div>
               <label style={labelStyle}>Brokerage Cap ($)</label>
-              <input type="number" value={inputs.brokerageCap} onChange={(e) => handleChange("brokerageCap", Number(e.target.value))} style={inputStyle} />
+              <input
+                type="number"
+                value={inputs.brokerageCap}
+                onChange={(e) => handleChange("brokerageCap", Number(e.target.value))}
+                style={inputStyle}
+              />
               <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>0 = no cap</div>
             </div>
             <div>
               <label style={labelStyle}>Already Paid to Cap ($)</label>
-              <input type="number" value={inputs.capAlreadyPaid} onChange={(e) => handleChange("capAlreadyPaid", Number(e.target.value))} style={inputStyle} />
+              <input
+                type="number"
+                value={inputs.capAlreadyPaid}
+                onChange={(e) => handleChange("capAlreadyPaid", Number(e.target.value))}
+                style={inputStyle}
+              />
               <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>YTD toward cap</div>
             </div>
           </div>
@@ -248,19 +313,36 @@ export default function CommissionSplitClient() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
             <div>
               <label style={labelStyle}>Transaction Fee ($)</label>
-              <input type="number" value={inputs.transactionFee} onChange={(e) => handleChange("transactionFee", Number(e.target.value))} style={inputStyle} />
+              <input
+                type="number"
+                value={inputs.transactionFee}
+                onChange={(e) => handleChange("transactionFee", Number(e.target.value))}
+                style={inputStyle}
+              />
             </div>
             <div>
               <label style={labelStyle}>Other Fees (E&O, etc.)</label>
-              <input type="number" value={inputs.otherFees} onChange={(e) => handleChange("otherFees", Number(e.target.value))} style={inputStyle} />
+              <input
+                type="number"
+                value={inputs.otherFees}
+                onChange={(e) => handleChange("otherFees", Number(e.target.value))}
+                style={inputStyle}
+              />
             </div>
           </div>
 
           <div>
             <label style={labelStyle}>Team Override (%)</label>
-            <input type="number" step="1" value={inputs.teamOverridePercent} onChange={(e) => handleChange("teamOverridePercent", Number(e.target.value))} style={inputStyle} />
+            <input
+              type="number"
+              step="1"
+              value={inputs.teamOverridePercent}
+              onChange={(e) => handleChange("teamOverridePercent", Number(e.target.value))}
+              style={inputStyle}
+            />
             <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
-              % of agent share that goes to team lead{inputs.teamOverridePercent > 0 ? ` = ${fmt(analysis.teamOverrideAmount)}` : ""}
+              % of agent share that goes to team lead
+              {inputs.teamOverridePercent > 0 ? ` = ${fmt(analysis.teamOverrideAmount)}` : ""}
             </div>
           </div>
         </div>
@@ -269,28 +351,49 @@ export default function CommissionSplitClient() {
       {/* Results */}
       <div>
         {/* Agent Net Hero */}
-        <div style={{ padding: 24, background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)", borderRadius: 12, color: "#fff", marginBottom: 20 }}>
+        <div
+          style={{
+            padding: 24,
+            background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)",
+            borderRadius: 12,
+            color: "#fff",
+            marginBottom: 20,
+          }}
+        >
           <div style={{ fontSize: 14, opacity: 0.9, marginBottom: 4 }}>Agent Net</div>
           <div style={{ fontSize: 42, fontWeight: 700 }}>{fmt(analysis.agentNet)}</div>
           <div style={{ fontSize: 14, opacity: 0.8, marginTop: 4 }}>
-            {analysis.agentNetPercent.toFixed(1)}% of gross commission &bull; {analysis.effectiveSplitPercent.toFixed(3)}% of sale price
+            {analysis.agentNetPercent.toFixed(1)}% of gross commission &bull;{" "}
+            {analysis.effectiveSplitPercent.toFixed(3)}% of sale price
           </div>
         </div>
 
         {/* Brokerage Gross */}
-        <div style={{ padding: 20, background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 20 }}>
+        <div
+          style={{
+            padding: 20,
+            background: "#f9fafb",
+            border: "1px solid #e5e7eb",
+            borderRadius: 12,
+            marginBottom: 20,
+          }}
+        >
           <div style={{ fontSize: 13, color: "#6b7280" }}>Brokerage Gross</div>
           <div style={{ fontSize: 28, fontWeight: 700 }}>{fmt(analysis.brokerageGross)}</div>
         </div>
 
         {/* Waterfall Breakdown */}
-        <div style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 20 }}>
+        <div
+          style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 20 }}
+        >
           <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>Commission Waterfall</h3>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <tbody>
               <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
                 <td style={{ padding: "10px 0" }}>Gross Commission</td>
-                <td style={{ padding: "10px 0", textAlign: "right", fontWeight: 600 }}>{fmtDecimal(analysis.grossCommission)}</td>
+                <td style={{ padding: "10px 0", textAlign: "right", fontWeight: 600 }}>
+                  {fmtDecimal(analysis.grossCommission)}
+                </td>
               </tr>
               <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
                 <td style={{ padding: "10px 0" }}>
@@ -335,22 +438,68 @@ export default function CommissionSplitClient() {
         </div>
 
         {/* Visual Split Bar */}
-        <div style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 20 }}>
+        <div
+          style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 20 }}
+        >
           <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>Split Visualization</h3>
           <div style={{ display: "flex", borderRadius: 8, overflow: "hidden", height: 32, marginBottom: 12 }}>
             {analysis.grossCommission > 0 && (
               <>
-                <div style={{ width: `${(analysis.agentNet / analysis.grossCommission) * 100}%`, background: "#3b82f6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600, color: "#fff" }}>
+                <div
+                  style={{
+                    width: `${(analysis.agentNet / analysis.grossCommission) * 100}%`,
+                    background: "#3b82f6",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: "#fff",
+                  }}
+                >
                   {((analysis.agentNet / analysis.grossCommission) * 100).toFixed(0)}%
                 </div>
-                <div style={{ width: `${(analysis.brokerageShare / analysis.grossCommission) * 100}%`, background: "#f59e0b", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600, color: "#fff" }}>
+                <div
+                  style={{
+                    width: `${(analysis.brokerageShare / analysis.grossCommission) * 100}%`,
+                    background: "#f59e0b",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: "#fff",
+                  }}
+                >
                   {((analysis.brokerageShare / analysis.grossCommission) * 100).toFixed(0)}%
                 </div>
                 {analysis.totalFees > 0 && (
-                  <div style={{ width: `${(analysis.totalFees / analysis.grossCommission) * 100}%`, background: "#6b7280", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600, color: "#fff" }} />
+                  <div
+                    style={{
+                      width: `${(analysis.totalFees / analysis.grossCommission) * 100}%`,
+                      background: "#6b7280",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: "#fff",
+                    }}
+                  />
                 )}
                 {analysis.teamOverrideAmount > 0 && (
-                  <div style={{ width: `${(analysis.teamOverrideAmount / analysis.grossCommission) * 100}%`, background: "#8b5cf6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600, color: "#fff" }} />
+                  <div
+                    style={{
+                      width: `${(analysis.teamOverrideAmount / analysis.grossCommission) * 100}%`,
+                      background: "#8b5cf6",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: "#fff",
+                    }}
+                  />
                 )}
               </>
             )}
@@ -381,21 +530,33 @@ export default function CommissionSplitClient() {
 
         {/* Cap Status */}
         {inputs.brokerageCap > 0 && (
-          <div style={{ padding: 20, background: analysis.capApplied ? "#ecfdf5" : "#fff", border: `1px solid ${analysis.capApplied ? "#a7f3d0" : "#e5e7eb"}`, borderRadius: 12, marginBottom: 20 }}>
+          <div
+            style={{
+              padding: 20,
+              background: analysis.capApplied ? "#ecfdf5" : "#fff",
+              border: `1px solid ${analysis.capApplied ? "#a7f3d0" : "#e5e7eb"}`,
+              borderRadius: 12,
+              marginBottom: 20,
+            }}
+          >
             <h3 style={{ margin: "0 0 8px 0", fontSize: 14, fontWeight: 700 }}>
               Cap Status {analysis.capApplied && <span style={{ color: "#059669" }}> - Cap Hit!</span>}
             </h3>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
               <span>Paid toward cap:</span>
-              <span style={{ fontWeight: 600 }}>{fmt(inputs.capAlreadyPaid + analysis.brokerageShare)} / {fmt(inputs.brokerageCap)}</span>
+              <span style={{ fontWeight: 600 }}>
+                {fmt(inputs.capAlreadyPaid + analysis.brokerageShare)} / {fmt(inputs.brokerageCap)}
+              </span>
             </div>
             <div style={{ marginTop: 8, height: 8, background: "#e5e7eb", borderRadius: 4, overflow: "hidden" }}>
-              <div style={{
-                height: "100%",
-                width: `${Math.min(100, ((inputs.capAlreadyPaid + analysis.brokerageShare) / inputs.brokerageCap) * 100)}%`,
-                background: analysis.capApplied ? "#10b981" : "#3b82f6",
-                borderRadius: 4,
-              }} />
+              <div
+                style={{
+                  height: "100%",
+                  width: `${Math.min(100, ((inputs.capAlreadyPaid + analysis.brokerageShare) / inputs.brokerageCap) * 100)}%`,
+                  background: analysis.capApplied ? "#10b981" : "#3b82f6",
+                  borderRadius: 4,
+                }}
+              />
             </div>
             {analysis.capRemaining > 0 && (
               <div style={{ fontSize: 12, color: "#6b7280", marginTop: 6 }}>
@@ -407,10 +568,34 @@ export default function CommissionSplitClient() {
 
         {/* Export */}
         <div style={{ display: "flex", gap: 12 }}>
-          <button onClick={exportToExcel} style={{ flex: 1, padding: "12px 20px", background: "#10b981", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer" }}>
+          <button
+            onClick={exportToExcel}
+            style={{
+              flex: 1,
+              padding: "12px 20px",
+              background: "#10b981",
+              color: "#fff",
+              border: "none",
+              borderRadius: 8,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
             Export Excel
           </button>
-          <button onClick={exportToPDF} style={{ flex: 1, padding: "12px 20px", background: "#dc2626", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer" }}>
+          <button
+            onClick={exportToPDF}
+            style={{
+              flex: 1,
+              padding: "12px 20px",
+              background: "#dc2626",
+              color: "#fff",
+              border: "none",
+              borderRadius: 8,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
             Export PDF
           </button>
         </div>

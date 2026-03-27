@@ -203,9 +203,7 @@ export async function sendOpenHouseEmail(params: SendOpenHouseEmailParams) {
   // Get Resend client (will throw if API key not configured)
   const resend = await getResendClient();
 
-  const subject = isReturnVisit
-    ? `🔥 Welcome Back! ${propertyAddress}`
-    : `Thank You for Visiting ${propertyAddress}`;
+  const subject = isReturnVisit ? `🔥 Welcome Back! ${propertyAddress}` : `Thank You for Visiting ${propertyAddress}`;
 
   try {
     const { data, error } = await resend.emails.send({
@@ -275,13 +273,7 @@ export async function sendAccessRequestNotification(params: SendAccessRequestNot
   }
 }
 
-function getVerificationEmailHtml({
-  code,
-  expiresInMinutes,
-}: {
-  code: string;
-  expiresInMinutes: number;
-}) {
+function getVerificationEmailHtml({ code, expiresInMinutes }: { code: string; expiresInMinutes: number }) {
   return `
 <!DOCTYPE html>
 <html>
@@ -479,13 +471,7 @@ function getInvitationEmailHtml({
   `.trim();
 }
 
-function getVerificationEmailText({
-  code,
-  expiresInMinutes,
-}: {
-  code: string;
-  expiresInMinutes: number;
-}) {
+function getVerificationEmailText({ code, expiresInMinutes }: { code: string; expiresInMinutes: number }) {
   return `
 The Real Estate Genie
 Verify Your Email
@@ -599,7 +585,7 @@ function getTenantInvitationEmailHtml({
                     </p>
                     <p style="margin: 0; font-size: 14px; color: #6b7280;">
                       <strong>Lease Start:</strong> ${leaseStartDate}<br>
-                      <strong>Monthly Rent:</strong> $${monthlyRent.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}<br>
+                      <strong>Monthly Rent:</strong> $${monthlyRent.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}<br>
                       <strong>Property Manager:</strong> ${landlordName}
                     </p>
                   </td>
@@ -711,7 +697,7 @@ Congratulations on your new lease! We're excited to have you as a tenant.
 YOUR PROPERTY
 ${propertyAddress}
 Lease Start: ${leaseStartDate}
-Monthly Rent: $${monthlyRent.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+Monthly Rent: $${monthlyRent.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
 Property Manager: ${landlordName}
 
 Your tenant portal is now ready! Click the link below to set up your password and access your account:
@@ -903,7 +889,7 @@ function getReturnVisitEmailHtml({
                 <tr>
                   <td style="padding: 20px;">
                     <p style="margin: 0; font-size: 16px; color: #92400e; font-weight: 600;">
-                      🔥 We noticed this is your ${visitCount === 2 ? '2nd' : visitCount === 3 ? '3rd' : visitCount + 'th'} visit today to ${propertyAddress}! We're excited about your interest in this property.
+                      🔥 We noticed this is your ${visitCount === 2 ? "2nd" : visitCount === 3 ? "3rd" : visitCount + "th"} visit today to ${propertyAddress}! We're excited about your interest in this property.
                     </p>
                   </td>
                 </tr>
@@ -992,7 +978,7 @@ ${propertyAddress}
 
 Hi ${name},
 
-We noticed this is your ${visitCount === 2 ? '2nd' : visitCount === 3 ? '3rd' : visitCount + 'th'} visit today to ${propertyAddress}! We're excited about your interest in this property.
+We noticed this is your ${visitCount === 2 ? "2nd" : visitCount === 3 ? "3rd" : visitCount + "th"} visit today to ${propertyAddress}! We're excited about your interest in this property.
 
 Your enthusiasm tells us you're seriously considering making this your new home. We'd love to help make that happen!
 
@@ -1079,9 +1065,13 @@ function getAccessRequestNotificationHtml({
                     <p style="margin: 0 0 10px; font-size: 15px; color: #1f2937;">
                       <strong>Phone:</strong> <a href="tel:${applicantPhone}" style="color: #667eea; text-decoration: none;">${applicantPhone}</a>
                     </p>
-                    ${company ? `<p style="margin: 0 0 10px; font-size: 15px; color: #1f2937;">
+                    ${
+                      company
+                        ? `<p style="margin: 0 0 10px; font-size: 15px; color: #1f2937;">
                       <strong>Company:</strong> ${company}
-                    </p>` : ''}
+                    </p>`
+                        : ""
+                    }
                     <p style="margin: 0; font-size: 13px; color: #6b7280;">
                       <strong>Request ID:</strong> ${requestId}
                     </p>
@@ -1089,7 +1079,9 @@ function getAccessRequestNotificationHtml({
                 </tr>
               </table>
 
-              ${message ? `
+              ${
+                message
+                  ? `
               <!-- Message -->
               <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f0fdf4; border-radius: 8px; border-left: 4px solid #10b981; margin: 0 0 30px;">
                 <tr>
@@ -1101,7 +1093,9 @@ function getAccessRequestNotificationHtml({
                   </td>
                 </tr>
               </table>
-              ` : ''}
+              `
+                  : ""
+              }
 
               <!-- CTA Button -->
               <table width="100%" cellpadding="0" cellspacing="0">
@@ -1167,15 +1161,14 @@ APPLICANT INFORMATION:
 Name: ${applicantName}
 Email: ${applicantEmail}
 Phone: ${applicantPhone}
-${company ? `Company: ${company}\n` : ''}Request ID: ${requestId}
+${company ? `Company: ${company}\n` : ""}Request ID: ${requestId}
 
-${message ? `THEIR MESSAGE:\n${message}\n\n` : ''}Review and approve this application:
+${message ? `THEIR MESSAGE:\n${message}\n\n` : ""}Review and approve this application:
 ${reviewUrl}
 
 © ${new Date().getFullYear()} Real Estate Genie. All rights reserved.
   `.trim();
 }
-
 
 // Payment Link Email
 
@@ -1195,7 +1188,11 @@ export interface SendPaymentLinkParams {
 }
 
 export async function sendPaymentLinkEmail(params: SendPaymentLinkParams) {
-  console.log("sendPaymentLinkEmail called with params:", { to: params.to, name: params.name, planName: params.planName });
+  console.log("sendPaymentLinkEmail called with params:", {
+    to: params.to,
+    name: params.name,
+    planName: params.planName,
+  });
 
   const { to, name, planName, monthlyPrice, annualPrice, billingFrequency, paymentUrl, planDetails } = params;
 
@@ -1291,15 +1288,19 @@ function getPaymentLinkHtml({
 
                 <div style="border-top: 1px solid #bae6fd; padding-top: 16px; margin-top: 16px;">
                   <p style="margin: 0 0 12px; font-size: 14px; font-weight: 600; color: #0c4a6e;">Plan includes:</p>
-                  ${isUnlimited ? `
+                  ${
+                    isUnlimited
+                      ? `
                     <p style="margin: 0 0 8px; font-size: 14px; color: #475569;">✓ <strong>Unlimited</strong> team members</p>
                     <p style="margin: 0 0 8px; font-size: 14px; color: #475569;">✓ <strong>Unlimited</strong> properties</p>
                     <p style="margin: 0 0 8px; font-size: 14px; color: #475569;">✓ <strong>Unlimited</strong> tenants</p>
-                  ` : `
+                  `
+                      : `
                     <p style="margin: 0 0 8px; font-size: 14px; color: #475569;">✓ Up to <strong>${planDetails.maxAgents}</strong> team members</p>
                     <p style="margin: 0 0 8px; font-size: 14px; color: #475569;">✓ Up to <strong>${planDetails.maxProperties}</strong> properties</p>
                     <p style="margin: 0 0 8px; font-size: 14px; color: #475569;">✓ Up to <strong>${planDetails.maxTenants}</strong> tenants</p>
-                  `}
+                  `
+                  }
                   <p style="margin: 0 0 8px; font-size: 14px; color: #475569;">✓ Open house management</p>
                   <p style="margin: 0 0 8px; font-size: 14px; color: #475569;">✓ Lead tracking & scoring</p>
                   <p style="margin: 0 0 8px; font-size: 14px; color: #475569;">✓ GHL integration</p>
@@ -1387,18 +1388,22 @@ Hi ${name},
 You've been approved to join Real Estate Genie! Complete your payment to activate your account and start using the platform.
 
 YOUR PLAN: ${planName}
-Price: $${displayPrice}/${displayInterval}${savings ? ` (Save $${savings} with annual billing!)` : ''}
+Price: $${displayPrice}/${displayInterval}${savings ? ` (Save $${savings} with annual billing!)` : ""}
 
 Plan includes:
-${isUnlimited ? `
+${
+  isUnlimited
+    ? `
 - Unlimited team members
 - Unlimited properties
 - Unlimited tenants
-` : `
+`
+    : `
 - Up to ${planDetails.maxAgents} team members
 - Up to ${planDetails.maxProperties} properties
 - Up to ${planDetails.maxTenants} tenants
-`}
+`
+}
 - Open house management
 - Lead tracking & scoring
 - GHL integration

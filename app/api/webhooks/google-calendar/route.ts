@@ -10,11 +10,9 @@ import { createClient } from "@supabase/supabase-js";
 import { GoogleCalendarProvider } from "@/lib/integrations/google-calendar-client";
 import { fullSync } from "@/lib/calendar/sync-engine";
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 export async function POST(request: NextRequest) {
   // Google sends channel ID and resource state in headers

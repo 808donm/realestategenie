@@ -7,11 +7,9 @@ import { GHLClient } from "./ghl-client";
 import { createClient } from "@supabase/supabase-js";
 import { logError } from "@/lib/error-logging";
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 /**
  * Create a GHL sub-account for a new agent
@@ -124,11 +122,7 @@ export async function createGHLSubAccount(agentId: string): Promise<{
  * Check if agent already has a GHL sub-account
  */
 export async function hasGHLSubAccount(agentId: string): Promise<boolean> {
-  const { data: agent } = await supabaseAdmin
-    .from("agents")
-    .select("ghl_location_id")
-    .eq("id", agentId)
-    .single();
+  const { data: agent } = await supabaseAdmin.from("agents").select("ghl_location_id").eq("id", agentId).single();
 
   return !!agent?.ghl_location_id;
 }

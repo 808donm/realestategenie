@@ -23,9 +23,7 @@ export default async function AdminFeaturesPage() {
   ]);
 
   // Get all plan-feature mappings
-  const { data: planFeatures } = await adminSupabase
-    .from("plan_features")
-    .select("*");
+  const { data: planFeatures } = await adminSupabase.from("plan_features").select("*");
 
   // Create a map for quick lookup
   const featureMap = new Map<string, Set<string>>();
@@ -43,23 +41,14 @@ export default async function AdminFeaturesPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold mb-2">Feature Management</h1>
-          <p className="text-gray-600">
-            Add, edit, and manage features available across subscription plans
-          </p>
+          <p className="text-gray-600">Add, edit, and manage features available across subscription plans</p>
         </div>
-        <Link
-          href="/app/admin"
-          className="px-4 py-2 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700"
-        >
+        <Link href="/app/admin" className="px-4 py-2 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700">
           Back to Admin
         </Link>
       </div>
 
-      <FeaturesManager
-        initialFeatures={features || []}
-        plans={plans || []}
-        featureMap={featureMap}
-      />
+      <FeaturesManager initialFeatures={features || []} plans={plans || []} featureMap={featureMap} />
 
       {/* Legend */}
       <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -80,9 +69,9 @@ export default async function AdminFeaturesPage() {
           <div className="text-sm text-blue-800">
             <p className="font-semibold mb-1">About Feature Management</p>
             <p>
-              This matrix shows which features are enabled for each subscription plan.
-              Click "Edit" to modify feature details, or "Add New Feature" to create additional features.
-              To control which plans have access to each feature, visit the individual plan's feature management page.
+              This matrix shows which features are enabled for each subscription plan. Click "Edit" to modify feature
+              details, or "Add New Feature" to create additional features. To control which plans have access to each
+              feature, visit the individual plan's feature management page.
             </p>
           </div>
         </div>

@@ -189,14 +189,17 @@ export default function ContactsClient() {
   };
 
   // Group contacts alphabetically
-  const groupedContacts = contacts.reduce((acc, contact) => {
-    const name = getDisplayName(contact);
-    const firstLetter = name.charAt(0).toUpperCase();
-    const key = /[A-Z]/.test(firstLetter) ? firstLetter : "#";
-    if (!acc[key]) acc[key] = [];
-    acc[key].push(contact);
-    return acc;
-  }, {} as Record<string, Contact[]>);
+  const groupedContacts = contacts.reduce(
+    (acc, contact) => {
+      const name = getDisplayName(contact);
+      const firstLetter = name.charAt(0).toUpperCase();
+      const key = /[A-Z]/.test(firstLetter) ? firstLetter : "#";
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(contact);
+      return acc;
+    },
+    {} as Record<string, Contact[]>,
+  );
 
   const sortedKeys = Object.keys(groupedContacts).sort((a, b) => {
     if (a === "#") return 1;
@@ -228,7 +231,9 @@ export default function ContactsClient() {
       y += 8;
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
-      doc.text(`Generated ${new Date().toLocaleDateString()} | ${rows.length} contacts`, pw / 2, y, { align: "center" });
+      doc.text(`Generated ${new Date().toLocaleDateString()} | ${rows.length} contacts`, pw / 2, y, {
+        align: "center",
+      });
       y += 12;
       doc.setFontSize(8);
       doc.setFont("helvetica", "bold");
@@ -239,7 +244,10 @@ export default function ContactsClient() {
       y += 5;
       doc.setFont("helvetica", "normal");
       rows.forEach((r) => {
-        if (y > 275) { doc.addPage(); y = 20; }
+        if (y > 275) {
+          doc.addPage();
+          y = 20;
+        }
         doc.text(r.name.slice(0, 20), cols[0], y);
         doc.text(r.email.slice(0, 22), cols[1], y);
         doc.text(r.phone.slice(0, 18), cols[2], y);
@@ -279,13 +287,15 @@ export default function ContactsClient() {
             { key: "location", label: "Location", width: 2 },
             { key: "tags", label: "Tags", width: 1.5 },
           ]}
-          getData={() => contacts.map((c) => ({
-            name: c.name || `${c.firstName || ""} ${c.lastName || ""}`.trim() || "Unknown",
-            email: c.email || "",
-            phone: c.phone || "",
-            location: [c.city, c.state].filter(Boolean).join(", "),
-            tags: (c.tags || []).join(", "),
-          }))}
+          getData={() =>
+            contacts.map((c) => ({
+              name: c.name || `${c.firstName || ""} ${c.lastName || ""}`.trim() || "Unknown",
+              email: c.email || "",
+              phone: c.phone || "",
+              location: [c.city, c.state].filter(Boolean).join(", "),
+              tags: (c.tags || []).join(", "),
+            }))
+          }
           compact
         />
         <button
@@ -306,20 +316,54 @@ export default function ContactsClient() {
 
       {/* Bulk Action Bar */}
       {selectedIds.size > 0 && (
-        <div style={{ padding: 12, background: "#eff6ff", border: "1px solid #93c5fd", borderRadius: 8, marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+        <div
+          style={{
+            padding: 12,
+            background: "#eff6ff",
+            border: "1px solid #93c5fd",
+            borderRadius: 8,
+            marginBottom: 16,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: 8,
+          }}
+        >
           <div style={{ fontSize: 14, fontWeight: 600, color: "#1d4ed8" }}>
             {selectedIds.size} contact{selectedIds.size !== 1 ? "s" : ""} selected
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <button
               onClick={() => setShowBulkPanel(!showBulkPanel)}
-              style={{ padding: "6px 14px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+              style={{
+                padding: "6px 14px",
+                background: "#3b82f6",
+                color: "#fff",
+                border: "none",
+                borderRadius: 6,
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
             >
               {showBulkPanel ? "Hide Compose" : "Bulk Email/SMS"}
             </button>
             <button
-              onClick={() => { setSelectedIds(new Set()); setShowBulkPanel(false); }}
-              style={{ padding: "6px 14px", background: "#fff", color: "#6b7280", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+              onClick={() => {
+                setSelectedIds(new Set());
+                setShowBulkPanel(false);
+              }}
+              style={{
+                padding: "6px 14px",
+                background: "#fff",
+                color: "#6b7280",
+                border: "1px solid #d1d5db",
+                borderRadius: 6,
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
             >
               Clear Selection
             </button>
@@ -329,20 +373,42 @@ export default function ContactsClient() {
 
       {/* Bulk Compose Panel */}
       {showBulkPanel && selectedIds.size > 0 && (
-        <div style={{ padding: 20, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 16 }}>
+        <div
+          style={{ padding: 20, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 16 }}
+        >
           <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>
             Send to {selectedIds.size} Contact{selectedIds.size !== 1 ? "s" : ""}
           </h3>
           <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
             <button
               onClick={() => setBulkType("email")}
-              style={{ flex: 1, padding: "8px 12px", borderRadius: 6, border: "none", fontWeight: 600, fontSize: 13, cursor: "pointer", background: bulkType === "email" ? "#3b82f6" : "#f3f4f6", color: bulkType === "email" ? "#fff" : "#374151" }}
+              style={{
+                flex: 1,
+                padding: "8px 12px",
+                borderRadius: 6,
+                border: "none",
+                fontWeight: 600,
+                fontSize: 13,
+                cursor: "pointer",
+                background: bulkType === "email" ? "#3b82f6" : "#f3f4f6",
+                color: bulkType === "email" ? "#fff" : "#374151",
+              }}
             >
               Email
             </button>
             <button
               onClick={() => setBulkType("sms")}
-              style={{ flex: 1, padding: "8px 12px", borderRadius: 6, border: "none", fontWeight: 600, fontSize: 13, cursor: "pointer", background: bulkType === "sms" ? "#10b981" : "#f3f4f6", color: bulkType === "sms" ? "#fff" : "#374151" }}
+              style={{
+                flex: 1,
+                padding: "8px 12px",
+                borderRadius: 6,
+                border: "none",
+                fontWeight: 600,
+                fontSize: 13,
+                cursor: "pointer",
+                background: bulkType === "sms" ? "#10b981" : "#f3f4f6",
+                color: bulkType === "sms" ? "#fff" : "#374151",
+              }}
             >
               SMS
             </button>
@@ -353,7 +419,14 @@ export default function ContactsClient() {
               value={bulkSubject}
               onChange={(e) => setBulkSubject(e.target.value)}
               placeholder="Email subject..."
-              style={{ width: "100%", padding: 10, border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 14, marginBottom: 8 }}
+              style={{
+                width: "100%",
+                padding: 10,
+                border: "1px solid #e5e7eb",
+                borderRadius: 8,
+                fontSize: 14,
+                marginBottom: 8,
+              }}
             />
           )}
           <textarea
@@ -361,10 +434,28 @@ export default function ContactsClient() {
             onChange={(e) => setBulkMessage(e.target.value)}
             placeholder={`Write your ${bulkType} message...`}
             rows={4}
-            style={{ width: "100%", padding: 12, border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 14, resize: "vertical", fontFamily: "inherit", marginBottom: 8 }}
+            style={{
+              width: "100%",
+              padding: 12,
+              border: "1px solid #e5e7eb",
+              borderRadius: 8,
+              fontSize: 14,
+              resize: "vertical",
+              fontFamily: "inherit",
+              marginBottom: 8,
+            }}
           />
           {bulkResult && (
-            <div style={{ padding: 8, borderRadius: 6, marginBottom: 8, fontSize: 13, background: bulkResult.failed === 0 ? "#ecfdf5" : "#fefce8", color: bulkResult.failed === 0 ? "#059669" : "#a16207" }}>
+            <div
+              style={{
+                padding: 8,
+                borderRadius: 6,
+                marginBottom: 8,
+                fontSize: 13,
+                background: bulkResult.failed === 0 ? "#ecfdf5" : "#fefce8",
+                color: bulkResult.failed === 0 ? "#059669" : "#a16207",
+              }}
+            >
               Sent: {bulkResult.sent} | Failed: {bulkResult.failed}
             </div>
           )}
@@ -372,7 +463,17 @@ export default function ContactsClient() {
             <button
               onClick={handleBulkSend}
               disabled={isBulkSending || !bulkMessage.trim()}
-              style={{ padding: "8px 24px", fontSize: 13, fontWeight: 600, border: "none", borderRadius: 6, background: bulkType === "email" ? "#3b82f6" : "#10b981", color: "#fff", cursor: isBulkSending ? "wait" : "pointer", opacity: isBulkSending || !bulkMessage.trim() ? 0.6 : 1 }}
+              style={{
+                padding: "8px 24px",
+                fontSize: 13,
+                fontWeight: 600,
+                border: "none",
+                borderRadius: 6,
+                background: bulkType === "email" ? "#3b82f6" : "#10b981",
+                color: "#fff",
+                cursor: isBulkSending ? "wait" : "pointer",
+                opacity: isBulkSending || !bulkMessage.trim() ? 0.6 : 1,
+              }}
             >
               {isBulkSending ? "Sending..." : `Send ${bulkType === "email" ? "Email" : "SMS"} to ${selectedIds.size}`}
             </button>
@@ -391,9 +492,7 @@ export default function ContactsClient() {
             marginBottom: 20,
           }}
         >
-          <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 16 }}>
-            Add New Contact
-          </h3>
+          <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 16 }}>Add New Contact</h3>
           {addError && (
             <div style={{ padding: 12, background: "#fee2e2", color: "#dc2626", borderRadius: 6, marginBottom: 16 }}>
               {addError}
@@ -402,9 +501,7 @@ export default function ContactsClient() {
           <form onSubmit={handleAddContact}>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
               <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 500, marginBottom: 4 }}>
-                  First Name
-                </label>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 500, marginBottom: 4 }}>First Name</label>
                 <input
                   type="text"
                   value={newContact.firstName}
@@ -413,9 +510,7 @@ export default function ContactsClient() {
                 />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 500, marginBottom: 4 }}>
-                  Last Name
-                </label>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 500, marginBottom: 4 }}>Last Name</label>
                 <input
                   type="text"
                   value={newContact.lastName}
@@ -424,9 +519,7 @@ export default function ContactsClient() {
                 />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 500, marginBottom: 4 }}>
-                  Email
-                </label>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 500, marginBottom: 4 }}>Email</label>
                 <input
                   type="email"
                   value={newContact.email}
@@ -435,9 +528,7 @@ export default function ContactsClient() {
                 />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 500, marginBottom: 4 }}>
-                  Phone
-                </label>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 500, marginBottom: 4 }}>Phone</label>
                 <input
                   type="tel"
                   value={newContact.phone}
@@ -447,9 +538,7 @@ export default function ContactsClient() {
                 />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 500, marginBottom: 4 }}>
-                  Address
-                </label>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 500, marginBottom: 4 }}>Address</label>
                 <input
                   type="text"
                   value={newContact.address1}
@@ -458,9 +547,7 @@ export default function ContactsClient() {
                 />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 500, marginBottom: 4 }}>
-                  City
-                </label>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 500, marginBottom: 4 }}>City</label>
                 <input
                   type="text"
                   value={newContact.city}
@@ -469,9 +556,7 @@ export default function ContactsClient() {
                 />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 500, marginBottom: 4 }}>
-                  State
-                </label>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 500, marginBottom: 4 }}>State</label>
                 <input
                   type="text"
                   value={newContact.state}
@@ -480,9 +565,7 @@ export default function ContactsClient() {
                 />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 500, marginBottom: 4 }}>
-                  Postal Code
-                </label>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 500, marginBottom: 4 }}>Postal Code</label>
                 <input
                   type="text"
                   value={newContact.postalCode}
@@ -494,7 +577,9 @@ export default function ContactsClient() {
             <div style={{ marginTop: 16, display: "flex", gap: 10 }}>
               <button
                 type="submit"
-                disabled={isAdding || (!newContact.firstName && !newContact.lastName && !newContact.email && !newContact.phone)}
+                disabled={
+                  isAdding || (!newContact.firstName && !newContact.lastName && !newContact.email && !newContact.phone)
+                }
                 style={{
                   padding: "10px 20px",
                   background: "#10b981",
@@ -522,9 +607,7 @@ export default function ContactsClient() {
 
       {/* Loading State */}
       {isLoading ? (
-        <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>
-          Loading contacts...
-        </div>
+        <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>Loading contacts...</div>
       ) : contacts.length === 0 ? (
         <div
           style={{
@@ -545,11 +628,31 @@ export default function ContactsClient() {
       ) : (
         /* Contacts List */
         <div>
-          <div style={{ marginBottom: 12, fontSize: 14, color: "#6b7280", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span>Showing {contacts.length} contact{contacts.length !== 1 ? "s" : ""}</span>
+          <div
+            style={{
+              marginBottom: 12,
+              fontSize: 14,
+              color: "#6b7280",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <span>
+              Showing {contacts.length} contact{contacts.length !== 1 ? "s" : ""}
+            </span>
             <button
               onClick={selectAll}
-              style={{ padding: "4px 10px", fontSize: 11, fontWeight: 600, border: "1px solid #e5e7eb", borderRadius: 4, background: "#fff", cursor: "pointer", color: "#6b7280" }}
+              style={{
+                padding: "4px 10px",
+                fontSize: 11,
+                fontWeight: 600,
+                border: "1px solid #e5e7eb",
+                borderRadius: 4,
+                background: "#fff",
+                cursor: "pointer",
+                color: "#6b7280",
+              }}
             >
               {selectedIds.size === contacts.length ? "Deselect All" : "Select All"}
             </button>
@@ -600,7 +703,10 @@ export default function ContactsClient() {
                       e.currentTarget.style.boxShadow = "none";
                     }}
                   >
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }} onClick={(e) => e.stopPropagation()}>
+                    <div
+                      style={{ display: "flex", alignItems: "center", gap: 10 }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <input
                         type="checkbox"
                         checked={selectedIds.has(contact.id)}
@@ -609,22 +715,50 @@ export default function ContactsClient() {
                       />
                     </div>
                     <div style={{ minWidth: 200, flex: 1 }}>
-                      <div style={{ fontWeight: 600, fontSize: 15 }}>
-                        {getDisplayName(contact)}
-                      </div>
+                      <div style={{ fontWeight: 600, fontSize: 15 }}>{getDisplayName(contact)}</div>
                       {contact.email && (
                         <div style={{ fontSize: 13, color: "#6b7280", marginTop: 2 }}>
-                          <a href={`mailto:${contact.email}`} onClick={(e) => e.stopPropagation()} style={{ color: "#3b82f6" }}>
+                          <a
+                            href={`mailto:${contact.email}`}
+                            onClick={(e) => e.stopPropagation()}
+                            style={{ color: "#3b82f6" }}
+                          >
                             {contact.email}
                           </a>
                         </div>
                       )}
                       {contact.phone && (
-                        <div style={{ fontSize: 13, color: "#6b7280", marginTop: 2, display: "flex", alignItems: "center", gap: 6 }}>
-                          <a href={`tel:${contact.phone}`} onClick={(e) => e.stopPropagation()} style={{ color: "#3b82f6" }}>
+                        <div
+                          style={{
+                            fontSize: 13,
+                            color: "#6b7280",
+                            marginTop: 2,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 6,
+                          }}
+                        >
+                          <a
+                            href={`tel:${contact.phone}`}
+                            onClick={(e) => e.stopPropagation()}
+                            style={{ color: "#3b82f6" }}
+                          >
                             {contact.phone}
                           </a>
-                          <a href={`sms:${contact.phone}`} onClick={(e) => e.stopPropagation()} title="Text" style={{ padding: "2px 6px", background: "#eff6ff", color: "#2563eb", borderRadius: 4, fontSize: 10, fontWeight: 600, textDecoration: "none" }}>
+                          <a
+                            href={`sms:${contact.phone}`}
+                            onClick={(e) => e.stopPropagation()}
+                            title="Text"
+                            style={{
+                              padding: "2px 6px",
+                              background: "#eff6ff",
+                              color: "#2563eb",
+                              borderRadius: 4,
+                              fontSize: 10,
+                              fontWeight: 600,
+                              textDecoration: "none",
+                            }}
+                          >
                             Text
                           </a>
                           <span onClick={(e) => e.stopPropagation()}>
@@ -646,7 +780,15 @@ export default function ContactsClient() {
                         </div>
                       )}
                       {contact.tags && contact.tags.length > 0 && (
-                        <div style={{ marginTop: 4, display: "flex", gap: 4, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                        <div
+                          style={{
+                            marginTop: 4,
+                            display: "flex",
+                            gap: 4,
+                            flexWrap: "wrap",
+                            justifyContent: "flex-end",
+                          }}
+                        >
                           {contact.tags.slice(0, 3).map((tag, idx) => (
                             <span
                               key={idx}
@@ -662,9 +804,7 @@ export default function ContactsClient() {
                             </span>
                           ))}
                           {contact.tags.length > 3 && (
-                            <span style={{ fontSize: 11, color: "#6b7280" }}>
-                              +{contact.tags.length - 3} more
-                            </span>
+                            <span style={{ fontSize: 11, color: "#6b7280" }}>+{contact.tags.length - 3} more</span>
                           )}
                         </div>
                       )}

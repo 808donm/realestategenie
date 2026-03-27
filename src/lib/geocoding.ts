@@ -30,7 +30,7 @@ async function geocodeWithGoogle(address: string): Promise<GeocodingResult | nul
     url.searchParams.set("key", apiKey);
 
     const response = await fetch(url.toString(), {
-      signal: AbortSignal.timeout(15000) // 15 second timeout
+      signal: AbortSignal.timeout(15000), // 15 second timeout
     });
 
     if (!response.ok) {
@@ -43,7 +43,9 @@ async function geocodeWithGoogle(address: string): Promise<GeocodingResult | nul
     if (data.status !== "OK") {
       // Only log as warning for expected API issues, not full errors
       if (data.status === "REQUEST_DENIED") {
-        console.warn("Google Geocoding API not available (REQUEST_DENIED). Enable Google Geocoding API in Google Cloud Console or check API key restrictions.");
+        console.warn(
+          "Google Geocoding API not available (REQUEST_DENIED). Enable Google Geocoding API in Google Cloud Console or check API key restrictions.",
+        );
       } else if (data.status === "ZERO_RESULTS") {
         console.log("Google geocoding: No results found for address:", address);
       } else {
@@ -88,7 +90,7 @@ async function geocodeWithOSM(address: string): Promise<GeocodingResult | null> 
       headers: {
         "User-Agent": "RealEstateGenie/1.0",
       },
-      signal: AbortSignal.timeout(15000) // 15 second timeout
+      signal: AbortSignal.timeout(15000), // 15 second timeout
     });
 
     if (!response.ok) {
@@ -122,9 +124,7 @@ async function geocodeWithOSM(address: string): Promise<GeocodingResult | null> 
  * @param address - Full address string (e.g., "123 Main St, Honolulu, HI 96813")
  * @returns GeocodingResult or null if geocoding fails
  */
-export async function geocodeAddress(
-  address: string
-): Promise<GeocodingResult | null> {
+export async function geocodeAddress(address: string): Promise<GeocodingResult | null> {
   if (!address || address.trim().length === 0) {
     console.error("Cannot geocode empty address");
     return null;
@@ -147,17 +147,16 @@ export async function geocodeAddress(
     return osmResult;
   }
 
-  console.warn("⚠️  Geocoding services could not locate this address. The open house will be saved without coordinates. The property map will not be available on the flyer.");
+  console.warn(
+    "⚠️  Geocoding services could not locate this address. The open house will be saved without coordinates. The property map will not be available on the flyer.",
+  );
   return null;
 }
 
 /**
  * Reverse geocode using Google Maps API
  */
-async function reverseGeocodeWithGoogle(
-  latitude: number,
-  longitude: number
-): Promise<string | null> {
+async function reverseGeocodeWithGoogle(latitude: number, longitude: number): Promise<string | null> {
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
 
   if (!apiKey) {
@@ -191,10 +190,7 @@ async function reverseGeocodeWithGoogle(
 /**
  * Reverse geocode using OpenStreetMap
  */
-async function reverseGeocodeWithOSM(
-  latitude: number,
-  longitude: number
-): Promise<string | null> {
+async function reverseGeocodeWithOSM(latitude: number, longitude: number): Promise<string | null> {
   try {
     const url = new URL("https://nominatim.openstreetmap.org/reverse");
     url.searchParams.set("lat", latitude.toString());
@@ -223,10 +219,7 @@ async function reverseGeocodeWithOSM(
  * Reverse geocode: convert coordinates to address
  * Tries Google Maps API first, falls back to OpenStreetMap
  */
-export async function reverseGeocode(
-  latitude: number,
-  longitude: number
-): Promise<string | null> {
+export async function reverseGeocode(latitude: number, longitude: number): Promise<string | null> {
   // Try Google first
   const googleResult = await reverseGeocodeWithGoogle(latitude, longitude);
   if (googleResult) {

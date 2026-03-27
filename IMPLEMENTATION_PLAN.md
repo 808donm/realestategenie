@@ -1,6 +1,7 @@
 # Real Estate Open House AI App - Implementation Plan
 
 ## Project Overview
+
 Building a comprehensive SaaS platform for real estate agents to manage open houses, capture leads, and automate follow-ups through GoHighLevel (GHL) and n8n integrations.
 
 **Target Users:** Solo agents and small real estate teams
@@ -10,6 +11,7 @@ Building a comprehensive SaaS platform for real estate agents to manage open hou
 ## 📐 Phase 1: Design System & Foundation (Days 1-2)
 
 ### 1.1 UI Component Library Setup
+
 - Install & configure **shadcn/ui** or **Tailwind UI** components
 - Professional component library:
   - Buttons (primary, secondary, ghost, outline)
@@ -23,6 +25,7 @@ Building a comprehensive SaaS platform for real estate agents to manage open hou
   - Tabs & accordions
 
 ### 1.2 Design System
+
 - **Color Palette:**
   - Primary brand color (customizable per agent theme)
   - Secondary colors
@@ -51,6 +54,7 @@ Building a comprehensive SaaS platform for real estate agents to manage open hou
 ### 1.3 Database Schema Updates
 
 #### Feature Flags Table
+
 ```sql
 CREATE TABLE feature_flags (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -70,6 +74,7 @@ CREATE TABLE feature_flags (
 ```
 
 #### Enhanced Agents Table
+
 ```sql
 ALTER TABLE agents ADD COLUMN IF NOT EXISTS
   headshot_url TEXT,
@@ -82,6 +87,7 @@ ALTER TABLE agents ADD COLUMN IF NOT EXISTS
 ```
 
 #### Teams/Workspaces Table
+
 ```sql
 CREATE TABLE teams (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -102,6 +108,7 @@ CREATE TABLE team_members (
 ```
 
 #### Property Fact Sheet Fields (Open House Events)
+
 ```sql
 ALTER TABLE open_house_events ADD COLUMN IF NOT EXISTS
   beds INTEGER,
@@ -122,6 +129,7 @@ ALTER TABLE open_house_events ADD COLUMN IF NOT EXISTS
 ```
 
 #### Lead Handling Rules & Consent
+
 ```sql
 ALTER TABLE open_house_events ADD COLUMN IF NOT EXISTS
   represented_send_info_only BOOLEAN DEFAULT true,
@@ -134,6 +142,7 @@ ALTER TABLE open_house_events ADD COLUMN IF NOT EXISTS
 ```
 
 #### Integrations Table
+
 ```sql
 CREATE TABLE integrations (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -168,6 +177,7 @@ CREATE TABLE integration_mappings (
 ### 2.1 GoHighLevel (GHL) Integration
 
 #### OAuth Connection Flow
+
 - **OAuth 2.0 Authorization:**
   - Redirect to GHL OAuth consent page
   - Handle callback with authorization code
@@ -186,7 +196,9 @@ CREATE TABLE integration_mappings (
   - `src/lib/integrations/ghl-client.ts` - GHL API client
 
 #### GHL API Client
+
 Features:
+
 - Contact creation/update
 - Pipeline & stage management
 - Opportunity creation
@@ -195,19 +207,21 @@ Features:
 - Note/activity logging
 
 **Key Functions:**
+
 ```typescript
 class GHLClient {
-  async createContact(data: ContactData): Promise<Contact>
-  async updateContact(id: string, data: Partial<ContactData>): Promise<Contact>
-  async createOpportunity(contactId: string, data: OpportunityData): Promise<Opportunity>
-  async getPipelines(): Promise<Pipeline[]>
-  async moveToStage(opportunityId: string, stageId: string): Promise<void>
-  async addTag(contactId: string, tag: string): Promise<void>
-  async addNote(contactId: string, note: string): Promise<void>
+  async createContact(data: ContactData): Promise<Contact>;
+  async updateContact(id: string, data: Partial<ContactData>): Promise<Contact>;
+  async createOpportunity(contactId: string, data: OpportunityData): Promise<Opportunity>;
+  async getPipelines(): Promise<Pipeline[]>;
+  async moveToStage(opportunityId: string, stageId: string): Promise<void>;
+  async addTag(contactId: string, tag: string): Promise<void>;
+  async addNote(contactId: string, note: string): Promise<void>;
 }
 ```
 
 #### Lead Sync Automation
+
 - **Trigger:** Lead submission (on `/api/leads/submit`)
 - **Process:**
   1. Push lead to GHL as contact
@@ -226,6 +240,7 @@ class GHLClient {
 ### 2.2 n8n Integration
 
 #### Webhook System
+
 - **Event Dispatcher:**
   - Centralized webhook publisher
   - Configurable per agent
@@ -247,6 +262,7 @@ class GHLClient {
   - Agent notification
 
 #### Event Types
+
 1. **`lead.submitted`**
    - Payload: Full lead data + event details
    - Triggered: On successful intake submission
@@ -272,6 +288,7 @@ class GHLClient {
    - Triggered: On successful OAuth connection
 
 **Implementation:**
+
 - `src/lib/webhooks/dispatcher.ts` - Webhook publisher
 - `app/api/webhooks/n8n/test/route.ts` - Test endpoint
 - `app/api/webhooks/deliver/route.ts` - Background job for delivery
@@ -283,6 +300,7 @@ class GHLClient {
 ### 3.1 Enhanced Dashboard (Screen 2)
 
 **Layout:**
+
 - **Stats Cards (Row A):**
   1. Today's Open Houses
      - Count of open houses happening today
@@ -318,6 +336,7 @@ class GHLClient {
   - Large "+ Create Open House" button
 
 **Implementation:**
+
 - `app/app/dashboard/page.tsx` - Enhanced dashboard
 - `app/app/dashboard/stats-cards.tsx` - Stats component
 - `app/app/dashboard/activity-feed.tsx` - Activity component
@@ -326,6 +345,7 @@ class GHLClient {
 ### 3.2 Agent Branding Settings (Screen B1)
 
 **Fields:**
+
 - **Headshot/Logo Upload:**
   - Drag & drop or file picker
   - Crop/resize UI
@@ -343,6 +363,7 @@ class GHLClient {
 - **Disclaimer/Footer Text:** Textarea (editable, versioned)
 
 **Live Preview Panel:**
+
 - Split-screen or modal preview
 - Shows how attendee will see:
   - Landing page header
@@ -351,6 +372,7 @@ class GHLClient {
 - Updates in real-time as agent edits
 
 **Implementation:**
+
 - `app/app/settings/branding/page.tsx` - Branding settings page
 - `app/app/settings/branding/branding-form.tsx` - Form component
 - `app/app/settings/branding/preview-panel.tsx` - Live preview
@@ -359,12 +381,14 @@ class GHLClient {
 ### 3.3 Multi-step Open House Wizard (Screens 4.1-4.5)
 
 **Wizard Structure:**
+
 - Progress indicator at top (Step 1/5, 2/5, etc.)
 - Back/Next buttons
 - Save Draft button (always visible)
 - Form state preservation
 
 **Step 1: Basics**
+
 - Event name (default: address)
 - Property address (required, autocomplete)
 - Date picker
@@ -373,6 +397,7 @@ class GHLClient {
 - Optional: Listing link
 
 **Step 2: Property Fact Sheet**
+
 - Three input methods (tabs):
   1. **Upload Flyer:** PDF/Image upload → AI extraction (future)
   2. **Paste Listing:** Textarea → AI extraction (future)
@@ -395,6 +420,7 @@ class GHLClient {
   - Shows verification status badge
 
 **Step 3: Lead Handling Rules**
+
 - **Represented Visitor Behavior:**
   - Toggle: "Send property info only (no outreach)"
   - Message snippet preview (editable)
@@ -405,6 +431,7 @@ class GHLClient {
   - Toggle: "Start follow-up workflows" (if Yes)
 
 **Step 4: Consent Language**
+
 - **SMS Consent Text:** Textarea (editable)
 - **Email Consent Text:** Textarea (editable)
 - Version label (auto-increment: v1, v2, v3...)
@@ -412,6 +439,7 @@ class GHLClient {
 - "Reset to Default" button
 
 **Step 5: Integrations Mapping**
+
 - **GHL Configuration:**
   - Select pipeline (dropdown)
   - Default stage for new leads
@@ -431,6 +459,7 @@ class GHLClient {
   - Redirects to event detail page
 
 **Implementation:**
+
 - `app/app/open-houses/new/wizard/page.tsx` - Wizard container
 - `app/app/open-houses/new/wizard/step-1.tsx` - Basics step
 - `app/app/open-houses/new/wizard/step-2.tsx` - Fact sheet step
@@ -442,6 +471,7 @@ class GHLClient {
 ### 3.4 Open House Detail with Tabs (Screen 5)
 
 **Header:**
+
 - Address (large, bold)
 - Date/time range
 - Status badge (draft/published/archived)
@@ -450,6 +480,7 @@ class GHLClient {
 **Tabs:**
 
 **Tab 1: Overview**
+
 - **Stats Tiles:**
   - Leads collected (total count)
   - Hot/Warm/Cold breakdown
@@ -463,6 +494,7 @@ class GHLClient {
   - Edit event button
 
 **Tab 2: Live Leads**
+
 - Real-time list (Supabase Realtime subscription)
 - Columns:
   - Name
@@ -483,12 +515,14 @@ class GHLClient {
 - Filter by: Heat, Representation, Reach-out
 
 **Tab 3: QR & Link**
+
 - Large QR code display (canvas or SVG)
 - Short link display + copy button
 - Download QR PNG button (high-res)
 - Optional: Print sign button (generates PDF with QR + property info)
 
 **Tab 4: Settings**
+
 - Edit fact sheet (inline editing or modal)
 - Edit routing rules
 - Edit consent language (shows version)
@@ -496,6 +530,7 @@ class GHLClient {
 - Save changes button
 
 **Implementation:**
+
 - `app/app/open-houses/[id]/page.tsx` - Detail page with tabs
 - `app/app/open-houses/[id]/overview-tab.tsx`
 - `app/app/open-houses/[id]/leads-tab.tsx`
@@ -505,6 +540,7 @@ class GHLClient {
 ### 3.5 Leads List with Filters (Screen 6)
 
 **Filters (Top Bar):**
+
 - Date range (date picker, presets: Today, Last 7 days, Last 30 days, All time)
 - Heat (multi-select: Hot, Warm, Cold)
 - Representation (multi-select: Yes, No, Unsure)
@@ -513,6 +549,7 @@ class GHLClient {
 - Search (by name, email, phone)
 
 **Table Columns:**
+
 - Name (clickable → lead detail)
 - Event (address, clickable)
 - Heat (badge)
@@ -524,17 +561,21 @@ class GHLClient {
 - Created time
 
 **Row Actions:**
+
 - View (→ lead detail page)
 - Call/Text/Email shortcuts (icon buttons)
 
 **Pagination:**
+
 - 25/50/100 per page
 - Page numbers
 
 **Export:**
+
 - "Export to CSV" button (all filtered results)
 
 **Implementation:**
+
 - `app/app/leads/page.tsx` - Enhanced leads list
 - `app/app/leads/filters.tsx` - Filter component
 - `app/app/leads/table.tsx` - Table component
@@ -543,6 +584,7 @@ class GHLClient {
 ### 3.6 Lead Detail with Tabs (Screen 7)
 
 **Header:**
+
 - Lead name (large)
 - Created time
 - Event address (link)
@@ -550,6 +592,7 @@ class GHLClient {
 **Tabs:**
 
 **Tab 1: Overview**
+
 - **Contact Card:**
   - Name, email, phone
   - Call/Text/Email buttons
@@ -567,6 +610,7 @@ class GHLClient {
   - Must-haves
 
 **Tab 2: Responses**
+
 - All intake form responses (formatted)
 - Name, Email, Phone
 - Consent (SMS, Email with version)
@@ -577,6 +621,7 @@ class GHLClient {
 - Submitted at
 
 **Tab 3: Automations**
+
 - **GHL Integration:**
   - Push status (success/failed)
   - Contact ID (link to GHL)
@@ -601,6 +646,7 @@ class GHLClient {
   - Started at
 
 **Tab 4: Audit**
+
 - **Consent Captured:**
   - Channel (SMS/Email)
   - Timestamp
@@ -619,6 +665,7 @@ class GHLClient {
   - Changed at
 
 **Implementation:**
+
 - `app/app/leads/[id]/page.tsx` - Lead detail page
 - `app/app/leads/[id]/overview-tab.tsx`
 - `app/app/leads/[id]/responses-tab.tsx`
@@ -630,6 +677,7 @@ class GHLClient {
 **Layout: Integration Cards**
 
 **GHL Card:**
+
 - **Header:** GoHighLevel logo + status badge
 - **Status:** Connected ✅ / Disconnected ❌ / Error ⚠️
 - **Info:**
@@ -649,6 +697,7 @@ class GHLClient {
   - Custom field mapping (expand/collapse)
 
 **n8n Card:**
+
 - **Header:** n8n logo + status badge
 - **Status:** Configured ✅ / Not configured ❌
 - **Info:**
@@ -671,16 +720,19 @@ class GHLClient {
     - Consent captured
 
 **IDX Broker Card (Coming Soon):**
+
 - Placeholder card
 - "Coming Soon" badge
 - Description of planned features
 
 **Webhook Log Modal:**
+
 - Table of last 10 webhook deliveries
 - Columns: Event type, Status, Payload (expandable), Response, Timestamp
 - Retry button per failed delivery
 
 **Implementation:**
+
 - `app/app/integrations/page.tsx` - Integrations page
 - `app/app/integrations/ghl-card.tsx` - GHL card component
 - `app/app/integrations/n8n-card.tsx` - n8n card component
@@ -691,6 +743,7 @@ class GHLClient {
 ### 3.8 Audit Log with Filters (Screen 9)
 
 **Filters:**
+
 - Date range (date picker)
 - Event (dropdown)
 - Lead (search/dropdown)
@@ -698,6 +751,7 @@ class GHLClient {
 - Actor (system/agent)
 
 **Table:**
+
 - Timestamp (sortable)
 - Actor (system icon or agent name)
 - Action (badge with color coding)
@@ -705,12 +759,15 @@ class GHLClient {
 - Details (expandable JSON or formatted text)
 
 **Pagination:**
+
 - 50/100 per page
 
 **Export:**
+
 - "Export to CSV" button
 
 **Implementation:**
+
 - `app/app/audit-log/page.tsx` - Audit log page
 - `app/app/audit-log/filters.tsx` - Filter component
 - `app/app/audit-log/table.tsx` - Table component
@@ -727,6 +784,7 @@ class GHLClient {
 **Layout:**
 
 **Header (Branded):**
+
 - Agent headshot/logo (large, centered or left-aligned)
 - Agent name (large, bold)
 - License # (smaller, gray)
@@ -734,6 +792,7 @@ class GHLClient {
 - Brokerage name (optional, smaller)
 
 **Body:**
+
 - Property address (very large, bold, centered)
 - Open house date/time (medium, gray)
 - **Primary CTA button:**
@@ -743,11 +802,13 @@ class GHLClient {
   - Clicks → navigates to intake form
 
 **Footer:**
+
 - Small print: Privacy policy link
 - Consent context: "By continuing, you agree to our terms..."
 - MLS/IDX disclaimer (if applicable)
 
 **Styling:**
+
 - Clean, modern, mobile-first
 - Agent's theme color for accents
 - White/light gray background
@@ -755,6 +816,7 @@ class GHLClient {
 - Professional photography (if property photo available)
 
 **Implementation:**
+
 - `app/oh/[eventId]/welcome/page.tsx` - Welcome page
 - Fetch agent branding + event details
 - Apply theme color dynamically
@@ -764,12 +826,14 @@ class GHLClient {
 **URL:** `/oh/{eventId}` (replaces current intake)
 
 **Header Bar (Sticky):**
+
 - Agent headshot/logo (small)
 - Agent name + license #
 - Locations served (collapsed, expandable)
 - Theme color accent
 
 **Chat UI:**
+
 - Messages appear as bubbles (agent on left, user input on right)
 - Progressive disclosure (one question at a time)
 - Smooth scroll animations
@@ -822,17 +886,20 @@ class GHLClient {
     - User: Text input → Submit or Skip
 
 **Submit:**
+
 - Bot: "All set! Submitting your info..."
 - Loading animation
 - On success → Redirect to Thank You page
 
 **Features:**
+
 - Skip buttons on optional questions
 - Back button (bottom left) to edit previous answers
 - Keyboard support (Enter to submit)
 - Mobile-optimized (large touch targets)
 
 **Implementation:**
+
 - `app/oh/[eventId]/page.tsx` - Chat intake page
 - `app/oh/[eventId]/chat-intake.tsx` - Chat UI component
 - State management for question flow
@@ -843,12 +910,14 @@ class GHLClient {
 **URL:** `/oh/{eventId}/thank-you`
 
 **Header (Branded):**
+
 - Agent headshot/logo
 - Agent name + license #
 
 **Body (Conditional Messaging):**
 
 **If opted-in for follow-up:**
+
 - "Thanks, {name}!"
 - "We'll send property details to:"
   - Email: {email} (if provided)
@@ -856,25 +925,30 @@ class GHLClient {
 - "The listing agent will reach out soon."
 
 **If represented:**
+
 - "Thanks for visiting!"
 - "Since you're working with an agent, please coordinate offers and next steps through them."
 - "Feel free to contact us via your agent if you have questions."
 
 **If just browsing (no opt-in):**
+
 - "Thanks for stopping by!"
 - "We hope you enjoyed the property."
 - "If you change your mind, feel free to reach out."
 
 **CTAs:**
+
 - **Primary:** "View Property Details" button → navigates to `/oh/{eventId}/details`
 - **Secondary:** "Save Agent Contact" button → downloads vCard
 
 **Footer:**
+
 - Brokerage info
 - MLS disclaimer
 - Privacy policy link
 
 **Implementation:**
+
 - `app/oh/[eventId]/thank-you/page.tsx` - Thank you page
 - Read lead submission from session/URL param
 - Conditional rendering based on consent/representation
@@ -884,6 +958,7 @@ class GHLClient {
 **URL:** `/oh/{eventId}/details`
 
 **Header (Sticky, Branded):**
+
 - Agent headshot/logo
 - Agent name + license #
 - Agent phone number (tap-to-call button)
@@ -893,52 +968,62 @@ class GHLClient {
 **Body:**
 
 **Property Address:**
+
 - Large, bold
 - Open house date/time below
 
 **Key Facts (Cards):**
+
 - Beds (icon + number)
 - Baths (icon + number)
 - Sqft (icon + number)
 - Price (optional, large, formatted: $XXX,XXX)
 
 **Highlights:**
+
 - Bulleted list from verified fact sheet
 - Clean, readable font
 - Icons for visual interest
 
 **Showing Notes:**
+
 - Parking instructions
 - Entry instructions
 - Pet policy
 - Other important info
 
 **Disclosures:**
+
 - Link to disclosure documents (if provided)
 - "View Disclosures" button
 
 **Downloads:**
+
 - "Download Flyer" button (if enabled)
   - Shows PDF icon
   - File size (e.g., 2.3 MB)
   - Last updated date
 
 **CTA Block:**
+
 - "Request a Showing" button → routes back to intake or mailto agent
 - "Ask a Question" button → mailto agent
 
 **Footer:**
+
 - Brokerage info
 - MLS/IDX attribution placeholder
 - Privacy policy link
 - Powered by Real Estate Genie (small, discreet)
 
 **Agent Controls (in Open House Settings):**
+
 - Toggle: Enable Property Details Page (default ON)
 - Toggle: Enable PDF download (default OFF until PDF uploaded, then ON)
 - Toggle: Show Price (optional)
 
 **Implementation:**
+
 - `app/oh/[eventId]/details/page.tsx` - Property details page
 - Fetch event + fact sheet + agent branding
 - Apply theme color
@@ -951,6 +1036,7 @@ class GHLClient {
 ### 5.1 Feature Flag System
 
 **Navigation Logic:**
+
 - Read agent's feature flags from database
 - Show/hide nav items based on enabled features:
   - Dashboard (always visible)
@@ -962,6 +1048,7 @@ class GHLClient {
   - Settings (always visible)
 
 **Deep Link Protection:**
+
 - Middleware checks feature flags for protected routes
 - If feature disabled:
   - Redirect to `/app/not-enabled` page
@@ -969,10 +1056,12 @@ class GHLClient {
   - Link back to dashboard
 
 **Admin UI (Optional):**
+
 - Super admin can toggle flags for agents
 - Agent settings page shows "Request Feature" button
 
 **Implementation:**
+
 - `src/middleware.ts` - Feature flag checks
 - `app/app/not-enabled/page.tsx` - Not enabled page
 - `src/lib/feature-flags.ts` - Helper functions
@@ -980,6 +1069,7 @@ class GHLClient {
 ### 5.2 Team/Workspace Support
 
 **Features:**
+
 - Agents can create teams
 - Invite team members (via email)
 - Shared open houses (team members can view/edit)
@@ -989,6 +1079,7 @@ class GHLClient {
   - Member: View assigned events, view own leads
 
 **Implementation:**
+
 - `app/app/team/page.tsx` - Team management page
 - `app/app/team/invite/page.tsx` - Invite members
 - `app/api/team/invite/route.ts` - Send invitation
@@ -997,11 +1088,13 @@ class GHLClient {
 ### 5.3 Real-time Updates
 
 **Supabase Realtime Subscriptions:**
+
 - Dashboard: Subscribe to `lead_submissions` for new leads
 - Open House Detail: Subscribe to `lead_submissions` filtered by event_id
 - Toast notifications for new leads (during open house)
 
 **Implementation:**
+
 - `src/lib/realtime/subscriptions.ts` - Realtime helpers
 - `app/app/dashboard/use-realtime-leads.tsx` - Custom hook
 - Toast library (e.g., sonner, react-hot-toast)
@@ -1009,22 +1102,26 @@ class GHLClient {
 ### 5.4 Testing & Monitoring
 
 **Integration Testing:**
+
 - "Test GHL" button: Sends dummy contact to GHL, verifies response
 - "Test n8n" button: Sends sample webhook, displays response
 - Visual indicators (green ✅, red ❌, yellow ⚠️)
 
 **Webhook Debugging:**
+
 - Webhook log shows last 10 deliveries
 - Payload preview (JSON viewer)
 - Response status code + body
 - Retry button for failed deliveries
 
 **Error Logging:**
+
 - Log all integration errors to `integrations.last_error`
 - Log webhook failures to `webhook_log` table
 - Optional: Integrate Sentry for error tracking
 
 **Implementation:**
+
 - `app/api/integrations/test/route.ts` - Test endpoints
 - `app/app/integrations/webhook-log/page.tsx` - Webhook log UI
 - Error boundary components
@@ -1032,22 +1129,26 @@ class GHLClient {
 ### 5.5 Mobile Responsiveness
 
 **Goals:**
+
 - All pages work on mobile (320px+)
 - Touch-friendly buttons (min 44px)
 - Optimized forms for mobile input
 - QR scanning experience (camera access if building native app)
 
 **Key Pages:**
+
 - Attendee welcome: Mobile-first design
 - Chat intake: Optimized for thumb typing
 - Dashboard: Responsive grid
 - Open house detail: Collapsible sections
 
 **Testing:**
+
 - Test on iPhone, Android devices
 - Use responsive design mode in browser
 
 **Implementation:**
+
 - Tailwind responsive utilities (sm:, md:, lg:)
 - Mobile navigation (hamburger menu if needed)
 - Touch event handlers
@@ -1057,6 +1158,7 @@ class GHLClient {
 ## 🎯 Technology Stack
 
 ### Frontend
+
 - **Framework:** Next.js 14+ (App Router)
 - **Language:** TypeScript
 - **UI Library:** React 19
@@ -1067,6 +1169,7 @@ class GHLClient {
 - **Animations:** Framer Motion or CSS transitions
 
 ### Backend
+
 - **API:** Next.js API routes (serverless)
 - **Database:** Supabase (PostgreSQL)
 - **Auth:** Supabase Auth (OAuth, Magic Link, MFA)
@@ -1074,17 +1177,20 @@ class GHLClient {
 - **Realtime:** Supabase Realtime (websockets)
 
 ### Integrations
+
 - **GoHighLevel:** OAuth 2.0, REST API v2
 - **n8n:** Webhooks, custom event dispatcher
 - **Future:** IDX Broker, Stripe (billing)
 
 ### Deployment
+
 - **Hosting:** Vercel
 - **CDN:** Vercel Edge Network
 - **Domain:** Custom domain + SSL
 - **Environment:** Preview + Production
 
 ### Monitoring
+
 - **Analytics:** Vercel Analytics (optional: Posthog, Mixpanel)
 - **Error Tracking:** Sentry (optional)
 - **Logging:** Supabase logs + custom logging
@@ -1094,18 +1200,21 @@ class GHLClient {
 ## 🔐 Security & Compliance
 
 ### Authentication
+
 - Supabase Auth with Row-Level Security (RLS)
 - Multi-factor authentication (TOTP)
 - OAuth with Google, Facebook, LinkedIn
 - Magic link email authentication
 
 ### Data Protection
+
 - RLS policies on all tables (agent can only see own data)
 - Encrypted OAuth tokens (AES-256)
 - Secure webhook signatures (HMAC-SHA256)
 - Rate limiting on public endpoints (Vercel Edge Middleware)
 
 ### Compliance
+
 - **Consent Management:**
   - Versioned consent text
   - Audit trail for all consents
@@ -1122,6 +1231,7 @@ class GHLClient {
   - Fair housing language guardrails
 
 ### Audit Logging
+
 - All critical actions logged:
   - Event created/updated
   - Lead submitted
@@ -1135,6 +1245,7 @@ class GHLClient {
 ## 📦 Deliverables
 
 ### MVP (Weeks 1-3)
+
 - ✅ Professional UI design system
 - ✅ Feature flags infrastructure
 - ✅ Enhanced agent branding
@@ -1147,6 +1258,7 @@ class GHLClient {
 - ✅ Audit logging
 
 ### Phase 2 (Weeks 4-6)
+
 - ✅ Team/workspace support
 - ✅ Real-time updates
 - ✅ Advanced integrations (IDX Broker)
@@ -1155,6 +1267,7 @@ class GHLClient {
 - ✅ Mobile app (React Native or PWA)
 
 ### Phase 3 (Weeks 7-10)
+
 - ✅ Billing & subscriptions (Stripe)
 - ✅ Broker/agency admin portal
 - ✅ Advanced analytics & reporting
@@ -1166,14 +1279,14 @@ class GHLClient {
 
 ## 📅 Estimated Timeline
 
-| Phase | Duration | Deliverables |
-|-------|----------|--------------|
-| **Phase 1: Foundation** | 2 days | Design system, database schema |
-| **Phase 2: Integrations** | 3 days | GHL OAuth, n8n webhooks, API clients |
-| **Phase 3: Agent Dashboard** | 5 days | Dashboard, branding, wizard, leads, audit log |
-| **Phase 4: Attendee Experience** | 3 days | Welcome, chat intake, thank you, property details |
-| **Phase 5: Polish** | 3 days | Feature flags, realtime, mobile, testing |
-| **Total MVP** | **16 days** | Full-featured SaaS platform |
+| Phase                            | Duration    | Deliverables                                      |
+| -------------------------------- | ----------- | ------------------------------------------------- |
+| **Phase 1: Foundation**          | 2 days      | Design system, database schema                    |
+| **Phase 2: Integrations**        | 3 days      | GHL OAuth, n8n webhooks, API clients              |
+| **Phase 3: Agent Dashboard**     | 5 days      | Dashboard, branding, wizard, leads, audit log     |
+| **Phase 4: Attendee Experience** | 3 days      | Welcome, chat intake, thank you, property details |
+| **Phase 5: Polish**              | 3 days      | Feature flags, realtime, mobile, testing          |
+| **Total MVP**                    | **16 days** | Full-featured SaaS platform                       |
 
 ---
 
@@ -1189,6 +1302,7 @@ class GHLClient {
 ## 📞 Support & Questions
 
 For questions during implementation:
+
 - Review wireframe documentation
 - Check Supabase docs for database/auth
 - Check GHL API docs for integration

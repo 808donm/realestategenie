@@ -10,10 +10,7 @@ export async function POST() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { error } = await supabaseAdmin
-    .from("agents")
-    .update({ must_change_password: false })
-    .eq("id", data.user.id);
+  const { error } = await supabaseAdmin.from("agents").update({ must_change_password: false }).eq("id", data.user.id);
 
   if (error) {
     return NextResponse.json({ error: "Failed to clear flag" }, { status: 500 });

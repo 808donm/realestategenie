@@ -6,12 +6,7 @@ import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useSidebarState } from "./use-sidebar-state";
 import SidebarNavSection from "./sidebar-nav-section";
 import SidebarNavItem from "./sidebar-nav-item";
-import {
-  NAV_SECTIONS,
-  CONDITIONAL_ITEMS,
-  SETTINGS_ITEMS,
-  HELP_ICON,
-} from "./sidebar-config";
+import { NAV_SECTIONS, CONDITIONAL_ITEMS, SETTINGS_ITEMS, HELP_ICON } from "./sidebar-config";
 import { HelpPanel } from "../help-panel.client";
 import SignOutButton from "../../dashboard/signout-button";
 
@@ -32,13 +27,7 @@ export default function AppSidebar({
   hasBrokerDashboard,
   displayName,
 }: AppSidebarProps) {
-  const {
-    isCollapsed,
-    toggleCollapse,
-    openSections,
-    toggleSection,
-    hydrated,
-  } = useSidebarState();
+  const { isCollapsed, toggleCollapse, openSections, toggleSection, hydrated } = useSidebarState();
 
   // Filter conditional items based on user permissions
   const visibleConditionalItems = CONDITIONAL_ITEMS.filter((item) => {
@@ -71,18 +60,14 @@ export default function AppSidebar({
       {/* Logo / Header */}
       <div className="flex items-center gap-2 px-3 py-4 border-b border-gray-100 dark:border-gray-800">
         <Link href="/app/dashboard" className="flex items-center gap-2 no-underline shrink-0">
-          <Image
-            src="/logo.png"
-            alt="The Real Estate Genie"
-            width={36}
-            height={36}
-            style={{ borderRadius: 4 }}
-          />
+          <Image src="/logo.png" alt="The Real Estate Genie" width={36} height={36} style={{ borderRadius: 4 }} />
           {!isCollapsed && (
             <span className="text-sm font-bold tracking-tight text-gray-900 dark:text-gray-100 leading-tight">
               Real Estate
               <br />
-              <span className="text-xs font-semibold">Genie<span className="text-[8px] align-super">™</span></span>
+              <span className="text-xs font-semibold">
+                Genie<span className="text-[8px] align-super">™</span>
+              </span>
             </span>
           )}
         </Link>
@@ -94,11 +79,7 @@ export default function AppSidebar({
         className="flex items-center justify-center py-2 mx-2 mt-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
         title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
       >
-        {isCollapsed ? (
-          <PanelLeftOpen className="w-4 h-4" />
-        ) : (
-          <PanelLeftClose className="w-4 h-4" />
-        )}
+        {isCollapsed ? <PanelLeftOpen className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
       </button>
 
       {/* Main Navigation */}
@@ -153,9 +134,7 @@ export default function AppSidebar({
           trigger={
             <button
               className={`flex items-center gap-3 rounded-lg text-sm transition-colors text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 w-full ${
-                isCollapsed
-                  ? "justify-center px-2 py-2 mx-1"
-                  : "px-3 py-2 mx-2"
+                isCollapsed ? "justify-center px-2 py-2 mx-1" : "px-3 py-2 mx-2"
               }`}
               title={isCollapsed ? "Help" : undefined}
             >
@@ -168,11 +147,7 @@ export default function AppSidebar({
 
       {/* User Footer */}
       <div className="border-t border-gray-100 dark:border-gray-800 px-3 py-3">
-        {!isCollapsed && (
-          <div className="text-xs text-gray-500 dark:text-gray-400 truncate mb-1">
-            {displayName}
-          </div>
-        )}
+        {!isCollapsed && <div className="text-xs text-gray-500 dark:text-gray-400 truncate mb-1">{displayName}</div>}
         <SignOutButton />
       </div>
     </aside>

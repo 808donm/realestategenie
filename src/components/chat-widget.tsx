@@ -79,10 +79,7 @@ export default function ChatWidget({
       const data = await res.json();
 
       if (data.reply) {
-        setMessages((prev) => [
-          ...prev,
-          { role: "assistant", content: data.reply },
-        ]);
+        setMessages((prev) => [...prev, { role: "assistant", content: data.reply }]);
       }
 
       if (data.sessionId) {
@@ -278,21 +275,12 @@ export default function ChatWidget({
       <div className="reg-chat-widget">
         {isOpen && (
           <div className="reg-chat-window">
-            <div
-              className="reg-chat-header"
-              style={{ background: primaryColor }}
-            >
+            <div className="reg-chat-header" style={{ background: primaryColor }}>
               <div>
                 <div className="reg-chat-header-title">Chat with {agentName}</div>
-                <div className="reg-chat-header-sub">
-                  Typically replies instantly
-                </div>
+                <div className="reg-chat-header-sub">Typically replies instantly</div>
               </div>
-              <button
-                className="reg-chat-close"
-                onClick={() => setIsOpen(false)}
-                aria-label="Close chat"
-              >
+              <button className="reg-chat-close" onClick={() => setIsOpen(false)} aria-label="Close chat">
                 ✕
               </button>
             </div>
@@ -301,16 +289,8 @@ export default function ChatWidget({
               {messages.map((msg, i) => (
                 <div
                   key={i}
-                  className={`reg-chat-msg ${
-                    msg.role === "user"
-                      ? "reg-chat-msg-user"
-                      : "reg-chat-msg-assistant"
-                  }`}
-                  style={
-                    msg.role === "user"
-                      ? { background: primaryColor }
-                      : undefined
-                  }
+                  className={`reg-chat-msg ${msg.role === "user" ? "reg-chat-msg-user" : "reg-chat-msg-assistant"}`}
+                  style={msg.role === "user" ? { background: primaryColor } : undefined}
                 >
                   {msg.content}
                 </div>
@@ -358,9 +338,7 @@ export default function ChatWidget({
               </button>
             </form>
 
-            <div className="reg-chat-powered">
-              Powered by Real Estate Genie
-            </div>
+            <div className="reg-chat-powered">Powered by Real Estate Genie</div>
           </div>
         )}
 

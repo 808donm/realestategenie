@@ -53,12 +53,8 @@ export default async function UsersManagementPage() {
   return (
     <div>
       <div style={{ marginBottom: 32 }}>
-        <h1 style={{ fontSize: 32, fontWeight: 800, margin: 0 }}>
-          User Management
-        </h1>
-        <p style={{ color: "#6b7280", marginTop: 8 }}>
-          Manage agent accounts, permissions, and plan assignments
-        </p>
+        <h1 style={{ fontSize: 32, fontWeight: 800, margin: 0 }}>User Management</h1>
+        <p style={{ color: "#6b7280", marginTop: 8 }}>Manage agent accounts, permissions, and plan assignments</p>
       </div>
 
       <div
@@ -78,9 +74,7 @@ export default async function UsersManagementPage() {
             alignItems: "center",
           }}
         >
-          <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>
-            All Users ({users?.length || 0})
-          </h2>
+          <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>All Users ({users?.length || 0})</h2>
           <Link
             href="/app/admin/invitations"
             style={{
@@ -97,11 +91,7 @@ export default async function UsersManagementPage() {
           </Link>
         </div>
 
-        <UserManagementClient
-          users={users || []}
-          plans={plans || []}
-          subscriptionMap={subscriptionMap}
-        />
+        <UserManagementClient users={users || []} plans={plans || []} subscriptionMap={subscriptionMap} />
       </div>
     </div>
   );

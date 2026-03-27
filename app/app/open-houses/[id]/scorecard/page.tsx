@@ -2,11 +2,7 @@ import Link from "next/link";
 import { getEffectiveClient } from "@/lib/supabase/effective-client";
 import ScorecardClient from "./scorecard.client";
 
-export default async function OpenHouseScorecardPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function OpenHouseScorecardPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { supabase } = await getEffectiveClient();
 
@@ -18,11 +14,7 @@ export default async function OpenHouseScorecardPage({
     .single();
 
   if (eventErr || !event) {
-    return (
-      <div style={{ padding: 24, color: "crimson" }}>
-        {eventErr?.message ?? "Open house not found"}
-      </div>
-    );
+    return <div style={{ padding: 24, color: "crimson" }}>{eventErr?.message ?? "Open house not found"}</div>;
   }
 
   // Get all leads for this event with contact info
@@ -46,25 +38,17 @@ export default async function OpenHouseScorecardPage({
       .order("created_at", { ascending: true });
 
     if (basicErr) {
-      return (
-        <div style={{ padding: 24, color: "crimson" }}>
-          Error loading leads: {basicErr.message}
-        </div>
-      );
+      return <div style={{ padding: 24, color: "crimson" }}>Error loading leads: {basicErr.message}</div>;
     }
     // Add null contact fields to match expected shape
-    leads = (basicLeads ?? []).map(l => ({
+    leads = (basicLeads ?? []).map((l) => ({
       ...l,
       contacted_at: null,
       contact_method: null,
       contact_notes: null,
     }));
   } else if (leadsErr) {
-    return (
-      <div style={{ padding: 24, color: "crimson" }}>
-        Error loading leads: {leadsErr.message}
-      </div>
-    );
+    return <div style={{ padding: 24, color: "crimson" }}>Error loading leads: {leadsErr.message}</div>;
   } else {
     leads = leadsWithContact;
   }
@@ -74,18 +58,15 @@ export default async function OpenHouseScorecardPage({
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
         <div>
-          <Link
-            href={`/app/open-houses/${id}`}
-            style={{ fontSize: 14, opacity: 0.7 }}
-          >
+          <Link href={`/app/open-houses/${id}`} style={{ fontSize: 14, opacity: 0.7 }}>
             &larr; Back to Open House
           </Link>
-          <h1 style={{ fontSize: 28, fontWeight: 700, margin: "8px 0 0 0" }}>
-            Open House Scorecard
-          </h1>
+          <h1 style={{ fontSize: 28, fontWeight: 700, margin: "8px 0 0 0" }}>Open House Scorecard</h1>
           <p style={{ opacity: 0.75, marginTop: 4 }}>{event.address}</p>
           <p style={{ opacity: 0.6, fontSize: 14 }}>
-            {new Date(event.start_at).toLocaleDateString()} {new Date(event.start_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(event.end_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            {new Date(event.start_at).toLocaleDateString()}{" "}
+            {new Date(event.start_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} -{" "}
+            {new Date(event.end_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
           </p>
         </div>
         <div style={{ display: "flex", gap: 10 }}>

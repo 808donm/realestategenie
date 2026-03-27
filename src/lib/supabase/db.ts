@@ -9,7 +9,7 @@ let sql: ReturnType<typeof postgres> | null = null;
 export function getDirectDb() {
   if (!process.env.DATABASE_URL) {
     throw new Error(
-      "DATABASE_URL is required. Get it from Supabase Dashboard > Settings > Database > Connection string (URI)."
+      "DATABASE_URL is required. Get it from Supabase Dashboard > Settings > Database > Connection string (URI).",
     );
   }
 

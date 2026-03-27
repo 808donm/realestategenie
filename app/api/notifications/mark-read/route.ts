@@ -5,7 +5,9 @@ import { supabaseServer } from "@/lib/supabase/server";
 export async function POST(req: NextRequest) {
   try {
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { notification_ids, mark_all } = await req.json();

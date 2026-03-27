@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-const admin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 /**
  * Fetch available pipelines and stages from GHL
@@ -14,7 +12,7 @@ const admin = createClient(
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    let agentId = searchParams.get('agentId');
+    let agentId = searchParams.get("agentId");
 
     if (!agentId) {
       const { data: agent } = await admin
@@ -47,40 +45,45 @@ export async function GET(req: Request) {
     const locationId = config.ghl_location_id || config.location_id;
 
     // Fetch pipelines
-    console.log('[Pipelines] Fetching pipelines for location:', locationId);
+    console.log("[Pipelines] Fetching pipelines for location:", locationId);
     const pipelinesResponse = await fetch(
       `https://services.leadconnectorhq.com/opportunities/pipelines?locationId=${locationId}`,
       {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-          'Version': '2021-07-28',
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+          Version: "2021-07-28",
         },
-      }
+      },
     );
 
     if (!pipelinesResponse.ok) {
       const errorText = await pipelinesResponse.text();
-      return NextResponse.json({
-        error: "Failed to fetch pipelines",
-        status: pipelinesResponse.status,
-        details: errorText,
-      }, { status: pipelinesResponse.status });
+      return NextResponse.json(
+        {
+          error: "Failed to fetch pipelines",
+          status: pipelinesResponse.status,
+          details: errorText,
+        },
+        { status: pipelinesResponse.status },
+      );
     }
 
     const pipelinesData = await pipelinesResponse.json();
 
     // Format for easy selection
-    const formattedPipelines = pipelinesData.pipelines?.map((pipeline: any) => ({
-      pipelineId: pipeline.id,
-      pipelineName: pipeline.name,
-      stages: pipeline.stages?.map((stage: any) => ({
-        stageId: stage.id,
-        stageName: stage.name,
-        position: stage.position,
-      })) || [],
-    })) || [];
+    const formattedPipelines =
+      pipelinesData.pipelines?.map((pipeline: any) => ({
+        pipelineId: pipeline.id,
+        pipelineName: pipeline.name,
+        stages:
+          pipeline.stages?.map((stage: any) => ({
+            stageId: stage.id,
+            stageName: stage.name,
+            position: stage.position,
+          })) || [],
+      })) || [];
 
     return NextResponse.json({
       success: true,
@@ -96,11 +99,13 @@ export async function GET(req: Request) {
         step3: "Use the Update Pipeline Config endpoint to save these IDs",
       },
     });
-
   } catch (error: any) {
-    return NextResponse.json({
-      error: error.message,
-      stack: error.stack,
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: error.message,
+        stack: error.stack,
+      },
+      { status: 500 },
+    );
   }
 }

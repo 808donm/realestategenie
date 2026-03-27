@@ -26,10 +26,7 @@ export async function GET(req: NextRequest) {
   const ghlAuthUrl = new URL("https://marketplace.gohighlevel.com/oauth/chooselocation");
   ghlAuthUrl.searchParams.append("response_type", "code");
   ghlAuthUrl.searchParams.append("client_id", process.env.GHL_CLIENT_ID!);
-  ghlAuthUrl.searchParams.append(
-    "redirect_uri",
-    `${process.env.NEXT_PUBLIC_APP_URL}/api/integrations/crm-callback`
-  );
+  ghlAuthUrl.searchParams.append("redirect_uri", `${process.env.NEXT_PUBLIC_APP_URL}/api/integrations/crm-callback`);
   // Request all necessary scopes for Real Estate Genie
   // Required scopes:
   // - contacts.* for contact management
@@ -42,7 +39,7 @@ export async function GET(req: NextRequest) {
   // - documents_contracts/* for lease contract creation via templates (note: camelCase sendLink)
   ghlAuthUrl.searchParams.append(
     "scope",
-    "contacts.write contacts.readonly opportunities.write opportunities.readonly locations.readonly locations/customFields.readonly locations/customFields.write conversations.write conversations.readonly conversations/message.readonly conversations/message.write objects/record.readonly objects/record.write objects/schema.readonly objects/schema.write associations.write associations.readonly invoices.write invoices.readonly documents_contracts/sendLink.write documents_contracts_template/sendLink.write"
+    "contacts.write contacts.readonly opportunities.write opportunities.readonly locations.readonly locations/customFields.readonly locations/customFields.write conversations.write conversations.readonly conversations/message.readonly conversations/message.write objects/record.readonly objects/record.write objects/schema.readonly objects/schema.write associations.write associations.readonly invoices.write invoices.readonly documents_contracts/sendLink.write documents_contracts_template/sendLink.write",
   );
   ghlAuthUrl.searchParams.append("state", state);
 

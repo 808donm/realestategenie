@@ -23,13 +23,7 @@ export default function SidebarNavSection({
     return (
       <div className="py-1">
         {section.items.map((item) => (
-          <SidebarNavItem
-            key={item.href}
-            href={item.href}
-            icon={item.icon}
-            label={item.label}
-            isCollapsed={true}
-          />
+          <SidebarNavItem key={item.href} href={item.href} icon={item.icon} label={item.label} isCollapsed={true} />
         ))}
       </div>
     );
@@ -44,11 +38,7 @@ export default function SidebarNavSection({
       >
         <Icon className="w-3.5 h-3.5" />
         <span className="flex-1 text-left">{section.label}</span>
-        {isOpen ? (
-          <ChevronDown className="w-3 h-3" />
-        ) : (
-          <ChevronRight className="w-3 h-3" />
-        )}
+        {isOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
       </button>
 
       {/* Section items with animated collapse */}
@@ -58,13 +48,7 @@ export default function SidebarNavSection({
         }`}
       >
         {section.items.map((item) => (
-          <SidebarNavItem
-            key={item.href}
-            href={item.href}
-            icon={item.icon}
-            label={item.label}
-            isCollapsed={false}
-          />
+          <SidebarNavItem key={item.href} href={item.href} icon={item.icon} label={item.label} isCollapsed={false} />
         ))}
       </div>
     </div>

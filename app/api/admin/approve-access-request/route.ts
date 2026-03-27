@@ -5,8 +5,8 @@ import { logError } from "@/lib/error-logging";
 import Stripe from "stripe";
 
 // Force dynamic rendering and Node.js runtime
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 // Lazy initialization to prevent build-time evaluation
 let admin: ReturnType<typeof createAdminClient> | null = null;
@@ -26,11 +26,7 @@ function getAdmin() {
       throw new Error("Missing Supabase credentials");
     }
 
-    admin = createAdminClient(
-      supabaseUrl,
-      serviceRoleKey,
-      { auth: { persistSession: false } }
-    );
+    admin = createAdminClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
     console.log("Admin client created successfully");
   }
   return admin;
@@ -63,7 +59,7 @@ export async function POST(request: NextRequest) {
     const { data: agentData } = await getAdmin()
       .from("agents")
       .select("id, role")
-      .eq("id", user.id)  // Changed from user_id to id
+      .eq("id", user.id) // Changed from user_id to id
       .single();
 
     const agent = agentData as any;
@@ -75,24 +71,15 @@ export async function POST(request: NextRequest) {
     const { requestId, planId, billingFrequency, adminNotes } = await request.json();
 
     if (!requestId) {
-      return NextResponse.json(
-        { error: "Request ID is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Request ID is required" }, { status: 400 });
     }
 
     if (!planId) {
-      return NextResponse.json(
-        { error: "Plan ID is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Plan ID is required" }, { status: 400 });
     }
 
     if (!billingFrequency || !["monthly", "yearly"].includes(billingFrequency)) {
-      return NextResponse.json(
-        { error: "Valid billing frequency is required (monthly or yearly)" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Valid billing frequency is required (monthly or yearly)" }, { status: 400 });
     }
 
     // Get the access request
@@ -103,48 +90,33 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (fetchError || !accessRequest) {
-      return NextResponse.json(
-        { error: "Access request not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Access request not found" }, { status: 404 });
     }
 
     // Type assertion to help TypeScript understand the shape
     const accessReq = accessRequest as any;
 
     if (accessReq.status !== "pending") {
-      return NextResponse.json(
-        { error: "This request has already been processed" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "This request has already been processed" }, { status: 400 });
     }
 
     // Get the selected subscription plan
-    const { data: plans } = await getAdmin()
-      .from("subscription_plans")
-      .select("*")
-      .eq("id", planId)
-      .single();
+    const { data: plans } = await getAdmin().from("subscription_plans").select("*").eq("id", planId).single();
 
     if (!plans) {
-      return NextResponse.json(
-        { error: "No subscription plans found" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "No subscription plans found" }, { status: 500 });
     }
 
     // Type assertion to help TypeScript understand the shape
     const plan = plans as any;
 
     // Select the appropriate Stripe price ID based on billing frequency
-    const stripePriceId = billingFrequency === "yearly"
-      ? plan.stripe_yearly_price_id
-      : plan.stripe_price_id;
+    const stripePriceId = billingFrequency === "yearly" ? plan.stripe_yearly_price_id : plan.stripe_price_id;
 
     if (!stripePriceId) {
       return NextResponse.json(
         { error: `Stripe price ID not configured for ${billingFrequency} billing on this plan` },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -165,16 +137,13 @@ export async function POST(request: NextRequest) {
     if (!stripeIntegration?.config) {
       return NextResponse.json(
         { error: "Stripe not connected. Please connect your Stripe account in the Integrations page." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const stripeConfig = stripeIntegration.config as any;
     if (!stripeConfig.stripe_secret_key) {
-      return NextResponse.json(
-        { error: "Stripe secret key not found in integration config." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Stripe secret key not found in integration config." }, { status: 400 });
     }
 
     console.log("Initializing Stripe client with credentials from database");
@@ -208,8 +177,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Update access request
-    await (getAdmin()
-      .from("access_requests") as any)
+    await (getAdmin().from("access_requests") as any)
       .update({
         status: "approved",
         admin_notes: adminNotes || null,
@@ -269,9 +237,6 @@ export async function POST(request: NextRequest) {
       stackTrace: error.stack,
       severity: "error",
     });
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

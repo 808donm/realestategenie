@@ -24,13 +24,15 @@ export default function OpenHousesExport({ events }: { events: OpenHouseEvent[] 
         { key: "start", label: "Start", width: 2 },
         { key: "end", label: "End", width: 2 },
       ]}
-      getData={() => events.map((e) => ({
-        address: e.address,
-        type: e.event_type === "rental" ? "Rental" : e.event_type === "both" ? "Both" : "Sales",
-        status: e.status,
-        start: new Date(e.start_at).toLocaleString(),
-        end: new Date(e.end_at).toLocaleString(),
-      }))}
+      getData={() =>
+        events.map((e) => ({
+          address: e.address,
+          type: e.event_type === "rental" ? "Rental" : e.event_type === "both" ? "Both" : "Sales",
+          status: e.status,
+          start: new Date(e.start_at).toLocaleString(),
+          end: new Date(e.end_at).toLocaleString(),
+        }))
+      }
       compact
     />
   );

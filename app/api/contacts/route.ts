@@ -7,7 +7,10 @@ import { getValidGHLConfig, resolveGHLAgentId } from "@/lib/integrations/ghl-tok
 export async function GET(request: NextRequest) {
   try {
     const supabase = await supabaseServer();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -25,7 +28,7 @@ export async function GET(request: NextRequest) {
     if (!ghlConfig) {
       return NextResponse.json(
         { error: "GHL integration not found. Please connect GoHighLevel first." },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -38,25 +41,19 @@ export async function GET(request: NextRequest) {
       params.append("query", search);
     }
 
-    const response = await fetch(
-      `https://services.leadconnectorhq.com/contacts?${params.toString()}`,
-      {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${ghlConfig.access_token}`,
-          "Content-Type": "application/json",
-          Version: "2021-07-28",
-        },
-      }
-    );
+    const response = await fetch(`https://services.leadconnectorhq.com/contacts?${params.toString()}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${ghlConfig.access_token}`,
+        "Content-Type": "application/json",
+        Version: "2021-07-28",
+      },
+    });
 
     if (!response.ok) {
       const errorText = await response.text();
       console.error("GHL API error:", errorText);
-      return NextResponse.json(
-        { error: "Failed to fetch contacts from GHL" },
-        { status: response.status }
-      );
+      return NextResponse.json({ error: "Failed to fetch contacts from GHL" }, { status: response.status });
     }
 
     const data = await response.json();
@@ -74,7 +71,7 @@ export async function GET(request: NextRequest) {
     console.error("Contacts API error:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -83,7 +80,10 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const supabase = await supabaseServer();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
     if (!firstName && !lastName && !email && !phone) {
       return NextResponse.json(
         { error: "At least one of firstName, lastName, email, or phone is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
     if (!ghlConfig) {
       return NextResponse.json(
         { error: "GHL integration not found. Please connect GoHighLevel first." },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
     console.error("Create contact error:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to create contact" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

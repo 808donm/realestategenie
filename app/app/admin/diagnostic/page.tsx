@@ -41,20 +41,14 @@ export default async function AdminDiagnosticPage() {
   };
 
   try {
-    const { error: inviteError } = await supabase
-      .from("user_invitations")
-      .select("id")
-      .limit(1);
+    const { error: inviteError } = await supabase.from("user_invitations").select("id").limit(1);
     tablesExist.userInvitations = !inviteError;
   } catch (e) {
     tablesExist.userInvitations = false;
   }
 
   try {
-    const { error: logError } = await supabase
-      .from("error_logs")
-      .select("id")
-      .limit(1);
+    const { error: logError } = await supabase.from("error_logs").select("id").limit(1);
     tablesExist.errorLogs = !logError;
   } catch (e) {
     tablesExist.errorLogs = false;
@@ -62,14 +56,10 @@ export default async function AdminDiagnosticPage() {
 
   return (
     <div style={{ padding: 32, maxWidth: 800 }}>
-      <h1 style={{ fontSize: 32, fontWeight: 800, marginBottom: 24 }}>
-        Admin System Diagnostic
-      </h1>
+      <h1 style={{ fontSize: 32, fontWeight: 800, marginBottom: 24 }}>Admin System Diagnostic</h1>
 
       <div style={{ background: "white", borderRadius: 12, padding: 24, marginBottom: 20 }}>
-        <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 16 }}>
-          User Status
-        </h2>
+        <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 16 }}>User Status</h2>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <tbody>
             <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
@@ -80,9 +70,7 @@ export default async function AdminDiagnosticPage() {
             </tr>
             <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
               <td style={{ padding: "12px 0", fontWeight: 600 }}>Email</td>
-              <td style={{ padding: "12px 0", fontFamily: "monospace" }}>
-                {checks.userEmail}
-              </td>
+              <td style={{ padding: "12px 0", fontFamily: "monospace" }}>{checks.userEmail}</td>
             </tr>
             <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
               <td style={{ padding: "12px 0", fontWeight: 600 }}>Agent Record</td>
@@ -98,18 +86,14 @@ export default async function AdminDiagnosticPage() {
             </tr>
             <tr>
               <td style={{ padding: "12px 0", fontWeight: 600 }}>Account Status</td>
-              <td style={{ padding: "12px 0", fontFamily: "monospace" }}>
-                {checks.accountStatus || "N/A"}
-              </td>
+              <td style={{ padding: "12px 0", fontFamily: "monospace" }}>{checks.accountStatus || "N/A"}</td>
             </tr>
           </tbody>
         </table>
       </div>
 
       <div style={{ background: "white", borderRadius: 12, padding: 24, marginBottom: 20 }}>
-        <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 16 }}>
-          Database Tables
-        </h2>
+        <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 16 }}>Database Tables</h2>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <tbody>
             <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
@@ -144,12 +128,12 @@ export default async function AdminDiagnosticPage() {
           <p style={{ color: "#92400e", margin: "0 0 12px 0" }}>
             The admin system database tables are missing. You need to run migration 014.
           </p>
-          <p style={{ color: "#92400e", margin: "0 0 8px 0", fontWeight: 600 }}>
-            Steps to fix:
-          </p>
+          <p style={{ color: "#92400e", margin: "0 0 8px 0", fontWeight: 600 }}>Steps to fix:</p>
           <ol style={{ color: "#92400e", margin: "0", paddingLeft: 20 }}>
             <li>Go to Supabase Dashboard → SQL Editor</li>
-            <li>Open the file: <code>supabase/migrations/014_admin_system.sql</code></li>
+            <li>
+              Open the file: <code>supabase/migrations/014_admin_system.sql</code>
+            </li>
             <li>Copy the entire contents and run it in the SQL Editor</li>
             <li>Refresh this page</li>
           </ol>
@@ -165,15 +149,11 @@ export default async function AdminDiagnosticPage() {
             padding: 20,
           }}
         >
-          <h3 style={{ fontSize: 16, fontWeight: 700, color: "#991b1b", margin: "0 0 8px 0" }}>
-            🚫 Not an Admin
-          </h3>
+          <h3 style={{ fontSize: 16, fontWeight: 700, color: "#991b1b", margin: "0 0 8px 0" }}>🚫 Not an Admin</h3>
           <p style={{ color: "#991b1b", margin: "0 0 12px 0" }}>
             Your account exists but does not have admin privileges.
           </p>
-          <p style={{ color: "#991b1b", margin: "0 0 8px 0", fontWeight: 600 }}>
-            To grant admin access, run this SQL:
-          </p>
+          <p style={{ color: "#991b1b", margin: "0 0 8px 0", fontWeight: 600 }}>To grant admin access, run this SQL:</p>
           <pre
             style={{
               background: "#fef2f2",
@@ -201,9 +181,7 @@ WHERE email = '${user.email}';`}
             padding: 20,
           }}
         >
-          <h3 style={{ fontSize: 16, fontWeight: 700, color: "#065f46", margin: "0 0 8px 0" }}>
-            ✓ All Checks Passed
-          </h3>
+          <h3 style={{ fontSize: 16, fontWeight: 700, color: "#065f46", margin: "0 0 8px 0" }}>✓ All Checks Passed</h3>
           <p style={{ color: "#065f46", margin: 0 }}>
             Your admin system is properly configured. You can access the admin panel at{" "}
             <a href="/app/admin" style={{ color: "#059669", fontWeight: 600 }}>

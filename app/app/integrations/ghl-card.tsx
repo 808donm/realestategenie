@@ -5,13 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ExternalLink, CheckCircle2, XCircle, AlertCircle, Loader2, Save, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
@@ -36,14 +30,10 @@ export default function GHLIntegrationCard({ integration }: { integration: Integ
   // Pipeline state
   const [pipelines, setPipelines] = useState<Pipeline[]>([]);
   const [loadingPipelines, setLoadingPipelines] = useState(false);
-  const [selectedPipelineId, setSelectedPipelineId] = useState(
-    integration?.config?.ghl_pipeline_id || ""
-  );
-  const [selectedStageId, setSelectedStageId] = useState(
-    integration?.config?.ghl_new_lead_stage || ""
-  );
+  const [selectedPipelineId, setSelectedPipelineId] = useState(integration?.config?.ghl_pipeline_id || "");
+  const [selectedStageId, setSelectedStageId] = useState(integration?.config?.ghl_new_lead_stage || "");
   const [selectedContactedStageId, setSelectedContactedStageId] = useState(
-    integration?.config?.ghl_contacted_stage || ""
+    integration?.config?.ghl_contacted_stage || "",
   );
   const [savingPipeline, setSavingPipeline] = useState(false);
 
@@ -217,25 +207,20 @@ export default function GHLIntegrationCard({ integration }: { integration: Integ
               Error
             </Badge>
           )}
-          {!isConnected && !hasError && (
-            <Badge variant="outline">Not Connected</Badge>
-          )}
+          {!isConnected && !hasError && <Badge variant="outline">Not Connected</Badge>}
         </div>
       </CardHeader>
 
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          Automatically sync leads to your CRM. Create contacts, opportunities, and
-          trigger workflows.
+          Automatically sync leads to your CRM. Create contacts, opportunities, and trigger workflows.
         </p>
 
         {isConnected && integration?.config && (
           <div className="space-y-2">
             <div className="text-sm">
               <span className="text-muted-foreground">Location ID:</span>{" "}
-              <code className="text-xs bg-muted px-1 py-0.5 rounded">
-                {integration.config.ghl_location_id}
-              </code>
+              <code className="text-xs bg-muted px-1 py-0.5 rounded">{integration.config.ghl_location_id}</code>
             </div>
             {integration.last_sync_at && (
               <div className="text-sm text-muted-foreground">
@@ -249,9 +234,7 @@ export default function GHLIntegrationCard({ integration }: { integration: Integ
         {isConnected && (
           <div className="space-y-3 pt-4 border-t">
             <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium">
-                Pipeline Configuration
-              </Label>
+              <Label className="text-sm font-medium">Pipeline Configuration</Label>
               {pipelineConfigured && (
                 <Badge variant="success" className="text-xs gap-1">
                   <CheckCircle2 className="w-3 h-3" />
@@ -366,12 +349,7 @@ export default function GHLIntegrationCard({ integration }: { integration: Integ
                     )}
                     Save Pipeline Config
                   </Button>
-                  <Button
-                    onClick={fetchPipelines}
-                    disabled={loadingPipelines}
-                    variant="outline"
-                    size="sm"
-                  >
+                  <Button onClick={fetchPipelines} disabled={loadingPipelines} variant="outline" size="sm">
                     {loadingPipelines ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
@@ -404,21 +382,11 @@ export default function GHLIntegrationCard({ integration }: { integration: Integ
             </Button>
           ) : (
             <>
-              <Button
-                onClick={handleTest}
-                disabled={testing}
-                variant="outline"
-                className="flex-1"
-              >
+              <Button onClick={handleTest} disabled={testing} variant="outline" className="flex-1">
                 {testing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Test Connection
               </Button>
-              <Button
-                onClick={handleDisconnect}
-                disabled={disconnecting}
-                variant="outline"
-                className="flex-1"
-              >
+              <Button onClick={handleDisconnect} disabled={disconnecting} variant="outline" className="flex-1">
                 {disconnecting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Disconnect
               </Button>
@@ -427,8 +395,7 @@ export default function GHLIntegrationCard({ integration }: { integration: Integ
         </div>
 
         <div className="text-xs text-muted-foreground">
-          <strong>Features:</strong> Contact sync, opportunity creation, pipeline mapping, tag
-          management, notes
+          <strong>Features:</strong> Contact sync, opportunity creation, pipeline mapping, tag management, notes
         </div>
       </CardContent>
     </Card>

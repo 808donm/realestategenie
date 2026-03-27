@@ -10,7 +10,9 @@ import { supabaseServer } from "@/lib/supabase/server";
 export async function GET(request: NextRequest) {
   try {
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
@@ -30,30 +32,27 @@ export async function GET(request: NextRequest) {
 
     // Decode the JWT token to check scopes
     const token = integration.config.ghl_access_token;
-    const parts = token.split('.');
+    const parts = token.split(".");
 
     if (parts.length !== 3) {
       return NextResponse.json({ error: "Invalid JWT format" }, { status: 400 });
     }
 
-    const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
+    const payload = JSON.parse(Buffer.from(parts[1], "base64").toString());
 
     return NextResponse.json({
       success: true,
       scopes: payload.oauthMeta?.scopes || [],
       scopeCount: payload.oauthMeta?.scopes?.length || 0,
-      hasInvoicesRead: payload.oauthMeta?.scopes?.includes('invoices.readonly') || false,
-      hasInvoicesWrite: payload.oauthMeta?.scopes?.includes('invoices.write') || false,
+      hasInvoicesRead: payload.oauthMeta?.scopes?.includes("invoices.readonly") || false,
+      hasInvoicesWrite: payload.oauthMeta?.scopes?.includes("invoices.write") || false,
       locationId: integration.config.ghl_location_id,
       userId: payload.oauthMeta?.userId,
       companyId: payload.oauthMeta?.companyId,
-      allScopes: payload.oauthMeta?.scopes || []
+      allScopes: payload.oauthMeta?.scopes || [],
     });
   } catch (error) {
     console.error("Error checking scopes:", error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unknown error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Unknown error" }, { status: 500 });
   }
 }

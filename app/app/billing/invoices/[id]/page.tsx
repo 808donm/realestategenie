@@ -9,11 +9,7 @@ import { ArrowLeft, Download, CreditCard, FileText } from "lucide-react";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export default async function AgentInvoiceDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function AgentInvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await supabaseServer();
   const { data: userData } = await supabase.auth.getUser();
@@ -89,7 +85,8 @@ export default async function AgentInvoiceDetailPage({
               <div>
                 <div className="font-semibold text-red-900">Payment Overdue</div>
                 <p className="text-sm text-red-700">
-                  This invoice was due on {dueDate.toLocaleDateString()}. Please pay as soon as possible to avoid service interruption.
+                  This invoice was due on {dueDate.toLocaleDateString()}. Please pay as soon as possible to avoid
+                  service interruption.
                 </p>
               </div>
             </div>
@@ -113,9 +110,7 @@ export default async function AgentInvoiceDetailPage({
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Invoice Date</p>
-                  <p className="font-medium">
-                    {new Date(invoice.invoice_date).toLocaleDateString()}
-                  </p>
+                  <p className="font-medium">{new Date(invoice.invoice_date).toLocaleDateString()}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Due Date</p>
@@ -127,9 +122,7 @@ export default async function AgentInvoiceDetailPage({
                 {invoice.paid_at && (
                   <div>
                     <p className="text-sm text-muted-foreground">Paid On</p>
-                    <p className="font-medium text-green-600">
-                      {new Date(invoice.paid_at).toLocaleDateString()}
-                    </p>
+                    <p className="font-medium text-green-600">{new Date(invoice.paid_at).toLocaleDateString()}</p>
                   </div>
                 )}
                 {invoice.payment_method && (
@@ -165,17 +158,13 @@ export default async function AgentInvoiceDetailPage({
                           Quantity: {item.quantity} × ${parseFloat(item.unit_price).toFixed(2)}
                         </div>
                       </div>
-                      <div className="font-semibold">
-                        ${parseFloat(item.amount).toFixed(2)}
-                      </div>
+                      <div className="font-semibold">${parseFloat(item.amount).toFixed(2)}</div>
                     </div>
                   ))
                 ) : (
                   <div className="p-3 border rounded-lg">
                     <div className="font-medium">{invoice.description || "Platform Subscription"}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {invoice.agent_subscriptions?.plan_type} plan
-                    </div>
+                    <div className="text-sm text-muted-foreground">{invoice.agent_subscriptions?.plan_type} plan</div>
                   </div>
                 )}
 
@@ -183,15 +172,11 @@ export default async function AgentInvoiceDetailPage({
                 <div className="space-y-2 pt-4 border-t">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Subtotal</span>
-                    <span className="font-medium">
-                      ${parseFloat(invoice.amount.toString()).toFixed(2)}
-                    </span>
+                    <span className="font-medium">${parseFloat(invoice.amount.toString()).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Tax</span>
-                    <span className="font-medium">
-                      ${parseFloat(invoice.tax_amount.toString()).toFixed(2)}
-                    </span>
+                    <span className="font-medium">${parseFloat(invoice.tax_amount.toString()).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-lg font-bold pt-2 border-t">
                     <span>Total</span>
@@ -225,11 +210,7 @@ export default async function AgentInvoiceDetailPage({
               <div className={`text-3xl font-bold ${isPaid ? "text-green-600" : "text-orange-600"}`}>
                 ${parseFloat(invoice.total_amount.toString()).toFixed(2)}
               </div>
-              {!isPaid && (
-                <p className="text-sm text-muted-foreground mt-2">
-                  Due by {dueDate.toLocaleDateString()}
-                </p>
-              )}
+              {!isPaid && <p className="text-sm text-muted-foreground mt-2">Due by {dueDate.toLocaleDateString()}</p>}
             </CardContent>
           </Card>
 

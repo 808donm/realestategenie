@@ -30,12 +30,12 @@ This guide shows you how to set up a GHL workflow that automatically sends email
 
 Go to **Settings** → **Custom Fields** and create these:
 
-| Field Name | Type | Key | Purpose |
-|------------|------|-----|---------|
-| Open House Event ID | Text | `open_house_event_id` | Unique ID for the event |
-| Property Address | Text | `property_address` | Full property address |
-| Property Flyer URL | Text | `property_flyer_url` | Direct link to PDF flyer |
-| Event Start Time | Date/Time | `event_start_time` | When the open house starts |
+| Field Name          | Type      | Key                   | Purpose                        |
+| ------------------- | --------- | --------------------- | ------------------------------ |
+| Open House Event ID | Text      | `open_house_event_id` | Unique ID for the event        |
+| Property Address    | Text      | `property_address`    | Full property address          |
+| Property Flyer URL  | Text      | `property_flyer_url`  | Direct link to PDF flyer       |
+| Event Start Time    | Date/Time | `event_start_time`    | When the open house starts     |
 | Attended Properties | Long Text | `attended_properties` | List of all properties visited |
 
 ---
@@ -65,6 +65,7 @@ The webhook URL can also be stored per-agent in their GHL integration config. We
 **Action Type:** Update Contact
 
 **Fields to Update:**
+
 - Custom Field: `open_house_event_id` = `{{webhook.event_id}}`
 - Custom Field: `property_address` = `{{webhook.property_address}}`
 - Custom Field: `property_flyer_url` = `{{webhook.flyer_url}}`
@@ -73,6 +74,7 @@ The webhook URL can also be stored per-agent in their GHL integration config. We
 - Add Tag: `{{webhook.property_address}}`
 
 **Append to Custom Field:**
+
 - `attended_properties` += `{{webhook.property_address}} ({{webhook.event_start_time}})\n`
 
 ### Action 2: Send Email with Flyer
@@ -86,49 +88,70 @@ The webhook URL can also be stored per-agent in their GHL integration config. We
 **Subject:** Thank you for registering for the open house at {{custom_values.property_address}}
 
 **Body:**
+
 ```html
 <!DOCTYPE html>
 <html>
-<head>
+  <head>
     <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; }
-        .header { background: #667eea; color: white; padding: 20px; text-align: center; }
-        .content { padding: 20px; }
-        .button { background: #667eea; color: white; padding: 12px 24px;
-                  text-decoration: none; border-radius: 5px; display: inline-block; }
-        .footer { padding: 20px; font-size: 12px; color: #666; }
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+      }
+      .header {
+        background: #667eea;
+        color: white;
+        padding: 20px;
+        text-align: center;
+      }
+      .content {
+        padding: 20px;
+      }
+      .button {
+        background: #667eea;
+        color: white;
+        padding: 12px 24px;
+        text-decoration: none;
+        border-radius: 5px;
+        display: inline-block;
+      }
+      .footer {
+        padding: 20px;
+        font-size: 12px;
+        color: #666;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="header">
-        <h1>Thank You for Registering!</h1>
+      <h1>Thank You for Registering!</h1>
     </div>
     <div class="content">
-        <p>Hi {{contact.first_name}},</p>
+      <p>Hi {{contact.first_name}},</p>
 
-        <p>Thank you for registering for the open house at:</p>
-        <p><strong>{{custom_values.property_address}}</strong></p>
-        <p><strong>{{custom_values.event_start_time}}</strong></p>
+      <p>Thank you for registering for the open house at:</p>
+      <p><strong>{{custom_values.property_address}}</strong></p>
+      <p><strong>{{custom_values.event_start_time}}</strong></p>
 
-        <p>We've prepared a detailed property flyer for you to review before your visit.</p>
+      <p>We've prepared a detailed property flyer for you to review before your visit.</p>
 
-        <p style="text-align: center; margin: 30px 0;">
-            <a href="{{custom_values.property_flyer_url}}" class="button">
-                Download Property Flyer
-            </a>
-        </p>
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="{{custom_values.property_flyer_url}}" class="button"> Download Property Flyer </a>
+      </p>
 
-        <p>Looking forward to seeing you at the open house!</p>
+      <p>Looking forward to seeing you at the open house!</p>
 
-        <p>Best regards,<br>
-        {{user.name}}<br>
-        {{user.phone}}<br>
-        {{user.email}}</p>
+      <p>
+        Best regards,<br />
+        {{user.name}}<br />
+        {{user.phone}}<br />
+        {{user.email}}
+      </p>
     </div>
     <div class="footer">
-        <p>If you have any questions, please don't hesitate to reach out.</p>
+      <p>If you have any questions, please don't hesitate to reach out.</p>
     </div>
-</body>
+  </body>
 </html>
 ```
 
@@ -141,6 +164,7 @@ The webhook URL can also be stored per-agent in their GHL integration config. We
 **To:** `{{contact.phone}}`
 
 **Message:**
+
 ```
 Hi {{contact.first_name}}! Thanks for registering for the open house at {{custom_values.property_address}}.
 
@@ -158,6 +182,7 @@ Would you like me to text you the property flyer link? Reply YES if interested.
 **Timeout:** 7 days
 
 **Continue If:** Reply contains (case-insensitive):
+
 - `YES`
 - `Y`
 - `SURE`
@@ -180,6 +205,7 @@ If timeout or "NO" → End workflow
 **Action Type:** Send SMS
 
 **Message:**
+
 ```
 Great! I see you've visited multiple properties:
 
@@ -201,6 +227,7 @@ Which property flyer would you like? Reply with the address or number.
 **Action Type:** Send SMS
 
 **Message:**
+
 ```
 Here's your property flyer for {{custom_values.property_address}}:
 
@@ -232,11 +259,9 @@ Now we need to modify the code to send data TO the GHL webhook instead of sendin
 
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 export interface GHLWebhookPayload {
   event_id: string;
@@ -264,7 +289,7 @@ export interface GHLWebhookPayload {
  */
 export async function sendToGHLWorkflow(
   agentId: string,
-  payload: GHLWebhookPayload
+  payload: GHLWebhookPayload,
 ): Promise<{ success: boolean; error?: string }> {
   try {
     // Get GHL integration to find webhook URL
@@ -417,6 +442,7 @@ Else:
 ### Option B: Use Custom Field for Each Property
 
 Create indexed custom fields:
+
 - `property_1_address`
 - `property_1_flyer_url`
 - `property_1_event_id`

@@ -71,9 +71,15 @@ export default function PropertyDetailPage() {
           <button
             onClick={() => window.history.back()}
             style={{
-              marginTop: 16, padding: "8px 20px", borderRadius: 6,
-              background: "#4f46e5", color: "#fff", border: "none",
-              fontSize: 13, fontWeight: 600, cursor: "pointer",
+              marginTop: 16,
+              padding: "8px 20px",
+              borderRadius: 6,
+              background: "#4f46e5",
+              color: "#fff",
+              border: "none",
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: "pointer",
             }}
           >
             Go Back
@@ -85,25 +91,33 @@ export default function PropertyDetailPage() {
 
   return (
     <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, padding: "0 4px" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 16,
+          padding: "0 4px",
+        }}
+      >
         <button
           onClick={() => window.history.back()}
           style={{
-            padding: "6px 16px", borderRadius: 6,
-            background: "#f3f4f6", color: "#374151", border: "1px solid #d1d5db",
-            fontSize: 13, fontWeight: 600, cursor: "pointer",
+            padding: "6px 16px",
+            borderRadius: 6,
+            background: "#f3f4f6",
+            color: "#374151",
+            border: "1px solid #d1d5db",
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: "pointer",
           }}
         >
           &larr; Back
         </button>
-        <div style={{ fontSize: 12, color: "#9ca3af" }}>
-          Property Intelligence
-        </div>
+        <div style={{ fontSize: 12, color: "#9ca3af" }}>Property Intelligence</div>
       </div>
-      <PropertyDetailModal
-        property={property}
-        onClose={() => window.history.back()}
-      />
+      <PropertyDetailModal property={property} onClose={() => window.history.back()} />
     </div>
   );
 }

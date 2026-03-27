@@ -19,24 +19,11 @@ export default async function AnalyzersPage() {
     { count: brrrCount },
     { count: flipCount },
   ] = await Promise.all([
-    supabase
-      .from("investment_properties")
-      .select("*", { count: "exact", head: true })
-      .eq("is_active", true),
-    supabase
-      .from("exchange_1031")
-      .select("*", { count: "exact", head: true }),
-    supabase
-      .from("property_comparisons")
-      .select("*", { count: "exact", head: true }),
-    supabase
-      .from("brrr_analyses")
-      .select("*", { count: "exact", head: true })
-      .eq("is_active", true),
-    supabase
-      .from("flip_analyses")
-      .select("*", { count: "exact", head: true })
-      .eq("is_active", true),
+    supabase.from("investment_properties").select("*", { count: "exact", head: true }).eq("is_active", true),
+    supabase.from("exchange_1031").select("*", { count: "exact", head: true }),
+    supabase.from("property_comparisons").select("*", { count: "exact", head: true }),
+    supabase.from("brrr_analyses").select("*", { count: "exact", head: true }).eq("is_active", true),
+    supabase.from("flip_analyses").select("*", { count: "exact", head: true }).eq("is_active", true),
   ]);
 
   // Default order: most-used agent calculators first, investment calculators last
@@ -66,8 +53,7 @@ export default async function AnalyzersPage() {
       href: "/app/analyzers/commission-split",
       emoji: "🤝",
       title: "Commission Split Calculator",
-      description:
-        "Calculate agent net and brokerage gross after splits, caps, transaction fees, and team overrides.",
+      description: "Calculate agent net and brokerage gross after splits, caps, transaction fees, and team overrides.",
       footerText: "Cap tracking • Split presets",
       background: "linear-gradient(135deg, #dbeafe 0%, #ffffff 100%)",
     },
@@ -107,8 +93,7 @@ export default async function AnalyzersPage() {
       href: "/app/analyzers/quick-flip",
       emoji: "⚡",
       title: "Quick Flip Analyzer",
-      description:
-        "Fast flip deal analysis with profit, ROI, 70% rule MAO, and deal scoring. All costs in one view.",
+      description: "Fast flip deal analysis with profit, ROI, 70% rule MAO, and deal scoring. All costs in one view.",
       footerText: "Deal score • 70% rule check",
       background: "linear-gradient(135deg, #ffedd5 0%, #ffffff 100%)",
     },
@@ -162,8 +147,7 @@ export default async function AnalyzersPage() {
       href: "/app/analyzers/investment",
       emoji: "📊",
       title: "Investment Property Analyzer",
-      description:
-        "Calculate ROI, Cap Rate, IRR, and Cash-on-Cash returns for rental and investment properties.",
+      description: "Calculate ROI, Cap Rate, IRR, and Cash-on-Cash returns for rental and investment properties.",
       footerCount: propertyCount || 0,
       footerCountLabel: "saved properties",
       footerText: "",
@@ -183,19 +167,22 @@ export default async function AnalyzersPage() {
         >
           Calculators
         </h1>
-        <PageHelp title="Analyzers" description="Real estate calculators for investment analysis, mortgage estimates, and deal evaluation. Share results directly with clients." tips={["Use 'Attach to Contact' to save results to your CRM", "Email reports directly to clients with one click"]} />
+        <PageHelp
+          title="Analyzers"
+          description="Real estate calculators for investment analysis, mortgage estimates, and deal evaluation. Share results directly with clients."
+          tips={[
+            "Use 'Attach to Contact' to save results to your CRM",
+            "Email reports directly to clients with one click",
+          ]}
+        />
       </div>
-      <p style={{ margin: "0 0 24px 0", opacity: 0.7 }}>
-        Real Estate Calculators — drag cards to reorder
-      </p>
+      <p style={{ margin: "0 0 24px 0", opacity: 0.7 }}>Real Estate Calculators — drag cards to reorder</p>
 
       <CalculatorGrid cards={cards} />
 
       {/* Feature Overview */}
       <div style={{ marginTop: 40 }}>
-        <h2 style={{ fontSize: 20, fontWeight: 800, marginBottom: 16 }}>
-          Key Metrics Calculated
-        </h2>
+        <h2 style={{ fontSize: 20, fontWeight: 800, marginBottom: 16 }}>Key Metrics Calculated</h2>
         <div
           style={{
             display: "grid",
@@ -257,18 +244,10 @@ export default async function AnalyzersPage() {
   );
 }
 
-function FeatureItem({
-  title,
-  description,
-}: {
-  title: string;
-  description: string;
-}) {
+function FeatureItem({ title, description }: { title: string; description: string }) {
   return (
     <div style={{ padding: 16, background: "#fafafa", borderRadius: 8 }}>
-      <h3 style={{ margin: "0 0 8px 0", fontSize: 14, fontWeight: 700 }}>
-        {title}
-      </h3>
+      <h3 style={{ margin: "0 0 8px 0", fontSize: 14, fontWeight: 700 }}>{title}</h3>
       <p style={{ margin: 0, fontSize: 13, opacity: 0.7 }}>{description}</p>
     </div>
   );

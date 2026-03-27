@@ -97,9 +97,7 @@ export default function UserManagementClient({ users, plans, subscriptionMap }: 
   }
 
   async function deleteUser(userId: string, email: string) {
-    const confirmation = prompt(
-      `Are you sure you want to DELETE this user?\nType "${email}" to confirm:`
-    );
+    const confirmation = prompt(`Are you sure you want to DELETE this user?\nType "${email}" to confirm:`);
 
     if (confirmation !== email) {
       return;
@@ -242,14 +240,9 @@ export default function UserManagementClient({ users, plans, subscriptionMap }: 
             {users.map((user) => {
               const sub = subscriptionMap[user.id];
               return (
-                <tr
-                  key={user.id}
-                  style={{ borderBottom: "1px solid #e5e7eb" }}
-                >
+                <tr key={user.id} style={{ borderBottom: "1px solid #e5e7eb" }}>
                   <Td>
-                    <div style={{ fontWeight: 600 }}>
-                      {user.display_name || "No name"}
-                    </div>
+                    <div style={{ fontWeight: 600 }}>{user.display_name || "No name"}</div>
                   </Td>
                   <Td>{user.email}</Td>
                   <Td>
@@ -306,29 +299,23 @@ export default function UserManagementClient({ users, plans, subscriptionMap }: 
                           user.account_status === "active"
                             ? "#d1fae5"
                             : user.account_status === "disabled"
-                            ? "#fee2e2"
-                            : "#fef3c7",
+                              ? "#fee2e2"
+                              : "#fef3c7",
                         color:
                           user.account_status === "active"
                             ? "#065f46"
                             : user.account_status === "disabled"
-                            ? "#991b1b"
-                            : "#92400e",
+                              ? "#991b1b"
+                              : "#92400e",
                       }}
                     >
                       {user.account_status}
                     </span>
                   </Td>
-                  <Td>
-                    {new Date(user.created_at).toLocaleDateString()}
-                  </Td>
+                  <Td>{new Date(user.created_at).toLocaleDateString()}</Td>
                   <Td>
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                      <ActionButton
-                        onClick={() => viewAsUser(user.id)}
-                        disabled={loading === user.id}
-                        color="#0891b2"
-                      >
+                      <ActionButton onClick={() => viewAsUser(user.id)} disabled={loading === user.id} color="#0891b2">
                         View as User
                       </ActionButton>
                       <Link
@@ -441,9 +428,7 @@ export default function UserManagementClient({ users, plans, subscriptionMap }: 
               boxShadow: "0 25px 50px rgba(0,0,0,0.25)",
             }}
           >
-            <h3 style={{ margin: "0 0 4px 0", fontSize: 20, fontWeight: 700 }}>
-              Assign Plan
-            </h3>
+            <h3 style={{ margin: "0 0 4px 0", fontSize: 20, fontWeight: 700 }}>Assign Plan</h3>
             <p style={{ margin: "0 0 20px 0", color: "#6b7280", fontSize: 14 }}>
               {assigningUser.display_name || assigningUser.email}
             </p>
@@ -507,8 +492,7 @@ export default function UserManagementClient({ users, plans, subscriptionMap }: 
                 {plans.map((plan) => (
                   <option key={plan.id} value={plan.id}>
                     {plan.name} - ${plan.monthly_price}/mo
-                    {plan.annual_price ? ` or $${plan.annual_price}/yr` : ""}
-                    {" "}(Tier {plan.tier_level})
+                    {plan.annual_price ? ` or $${plan.annual_price}/yr` : ""} (Tier {plan.tier_level})
                   </option>
                 ))}
               </select>

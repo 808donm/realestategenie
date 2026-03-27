@@ -36,17 +36,17 @@ export const PIPELINE_STAGE_LABELS: Record<PipelineStage, string> = {
 };
 
 export const PIPELINE_STAGE_COLORS: Record<PipelineStage, string> = {
-  new_lead: "#6366f1",            // indigo
-  initial_contact: "#3b82f6",     // blue
-  qualification: "#8b5cf6",       // violet
+  new_lead: "#6366f1", // indigo
+  initial_contact: "#3b82f6", // blue
+  qualification: "#8b5cf6", // violet
   initial_consultation: "#a855f7", // purple
   property_search_listing_prep: "#ec4899", // pink
   open_houses_and_tours: "#f59e0b", // amber
   offer_and_negotiation: "#f97316", // orange
   under_contract_escrow: "#14b8a6", // teal
-  closing_coordination: "#06b6d4",  // cyan
-  closed_and_followup: "#10b981",   // emerald
-  review_request: "#84cc16",        // lime
+  closing_coordination: "#06b6d4", // cyan
+  closed_and_followup: "#10b981", // emerald
+  review_request: "#84cc16", // lime
 };
 
 /**

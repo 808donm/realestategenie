@@ -5,8 +5,16 @@ import Link from "next/link";
 import jsPDF from "jspdf";
 import * as XLSX from "xlsx";
 import {
-  PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
-  BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
 } from "recharts";
 
 /* ---------- types ---------- */
@@ -24,26 +32,166 @@ interface AuditEvent {
 
 /* ---------- fallback sample data ---------- */
 const FALLBACK_DATA: AuditEvent[] = [
-  { id: 1, date: "2025-12-18", eventType: "Document Signed", property: "742 Evergreen Terrace", agent: "Sarah Chen", status: "Complete" },
-  { id: 2, date: "2025-12-18", eventType: "ID Verified", property: "742 Evergreen Terrace", agent: "Sarah Chen", status: "Complete" },
-  { id: 3, date: "2025-12-17", eventType: "Wire Instructions Sent", property: "1600 Pennsylvania Ave", agent: "James Rivera", status: "Pending" },
-  { id: 4, date: "2025-12-17", eventType: "Disclosure Submitted", property: "221B Baker Street", agent: "Maria Lopez", status: "Complete" },
-  { id: 5, date: "2025-12-16", eventType: "Document Signed", property: "1600 Pennsylvania Ave", agent: "James Rivera", status: "Complete" },
-  { id: 6, date: "2025-12-16", eventType: "ID Verified", property: "350 Fifth Avenue", agent: "Kevin Patel", status: "Missing" },
-  { id: 7, date: "2025-12-15", eventType: "Wire Instructions Sent", property: "221B Baker Street", agent: "Maria Lopez", status: "Complete" },
-  { id: 8, date: "2025-12-15", eventType: "Disclosure Submitted", property: "742 Evergreen Terrace", agent: "Sarah Chen", status: "Pending" },
-  { id: 9, date: "2025-12-14", eventType: "Document Signed", property: "350 Fifth Avenue", agent: "Kevin Patel", status: "Missing" },
-  { id: 10, date: "2025-12-14", eventType: "ID Verified", property: "10 Downing Street", agent: "Aisha Johnson", status: "Complete" },
-  { id: 11, date: "2025-12-13", eventType: "Wire Instructions Sent", property: "10 Downing Street", agent: "Aisha Johnson", status: "Complete" },
-  { id: 12, date: "2025-12-13", eventType: "Disclosure Submitted", property: "1600 Pennsylvania Ave", agent: "James Rivera", status: "Missing" },
-  { id: 13, date: "2025-12-12", eventType: "Document Signed", property: "4 Privet Drive", agent: "Tom Bradley", status: "Complete" },
-  { id: 14, date: "2025-12-12", eventType: "ID Verified", property: "4 Privet Drive", agent: "Tom Bradley", status: "Pending" },
-  { id: 15, date: "2025-12-11", eventType: "Wire Instructions Sent", property: "350 Fifth Avenue", agent: "Kevin Patel", status: "Missing" },
-  { id: 16, date: "2025-12-11", eventType: "Disclosure Submitted", property: "4 Privet Drive", agent: "Tom Bradley", status: "Complete" },
-  { id: 17, date: "2025-12-10", eventType: "Document Signed", property: "10 Downing Street", agent: "Aisha Johnson", status: "Complete" },
-  { id: 18, date: "2025-12-10", eventType: "ID Verified", property: "1600 Pennsylvania Ave", agent: "James Rivera", status: "Complete" },
-  { id: 19, date: "2025-12-09", eventType: "Wire Instructions Sent", property: "742 Evergreen Terrace", agent: "Sarah Chen", status: "Complete" },
-  { id: 20, date: "2025-12-09", eventType: "Disclosure Submitted", property: "350 Fifth Avenue", agent: "Kevin Patel", status: "Pending" },
+  {
+    id: 1,
+    date: "2025-12-18",
+    eventType: "Document Signed",
+    property: "742 Evergreen Terrace",
+    agent: "Sarah Chen",
+    status: "Complete",
+  },
+  {
+    id: 2,
+    date: "2025-12-18",
+    eventType: "ID Verified",
+    property: "742 Evergreen Terrace",
+    agent: "Sarah Chen",
+    status: "Complete",
+  },
+  {
+    id: 3,
+    date: "2025-12-17",
+    eventType: "Wire Instructions Sent",
+    property: "1600 Pennsylvania Ave",
+    agent: "James Rivera",
+    status: "Pending",
+  },
+  {
+    id: 4,
+    date: "2025-12-17",
+    eventType: "Disclosure Submitted",
+    property: "221B Baker Street",
+    agent: "Maria Lopez",
+    status: "Complete",
+  },
+  {
+    id: 5,
+    date: "2025-12-16",
+    eventType: "Document Signed",
+    property: "1600 Pennsylvania Ave",
+    agent: "James Rivera",
+    status: "Complete",
+  },
+  {
+    id: 6,
+    date: "2025-12-16",
+    eventType: "ID Verified",
+    property: "350 Fifth Avenue",
+    agent: "Kevin Patel",
+    status: "Missing",
+  },
+  {
+    id: 7,
+    date: "2025-12-15",
+    eventType: "Wire Instructions Sent",
+    property: "221B Baker Street",
+    agent: "Maria Lopez",
+    status: "Complete",
+  },
+  {
+    id: 8,
+    date: "2025-12-15",
+    eventType: "Disclosure Submitted",
+    property: "742 Evergreen Terrace",
+    agent: "Sarah Chen",
+    status: "Pending",
+  },
+  {
+    id: 9,
+    date: "2025-12-14",
+    eventType: "Document Signed",
+    property: "350 Fifth Avenue",
+    agent: "Kevin Patel",
+    status: "Missing",
+  },
+  {
+    id: 10,
+    date: "2025-12-14",
+    eventType: "ID Verified",
+    property: "10 Downing Street",
+    agent: "Aisha Johnson",
+    status: "Complete",
+  },
+  {
+    id: 11,
+    date: "2025-12-13",
+    eventType: "Wire Instructions Sent",
+    property: "10 Downing Street",
+    agent: "Aisha Johnson",
+    status: "Complete",
+  },
+  {
+    id: 12,
+    date: "2025-12-13",
+    eventType: "Disclosure Submitted",
+    property: "1600 Pennsylvania Ave",
+    agent: "James Rivera",
+    status: "Missing",
+  },
+  {
+    id: 13,
+    date: "2025-12-12",
+    eventType: "Document Signed",
+    property: "4 Privet Drive",
+    agent: "Tom Bradley",
+    status: "Complete",
+  },
+  {
+    id: 14,
+    date: "2025-12-12",
+    eventType: "ID Verified",
+    property: "4 Privet Drive",
+    agent: "Tom Bradley",
+    status: "Pending",
+  },
+  {
+    id: 15,
+    date: "2025-12-11",
+    eventType: "Wire Instructions Sent",
+    property: "350 Fifth Avenue",
+    agent: "Kevin Patel",
+    status: "Missing",
+  },
+  {
+    id: 16,
+    date: "2025-12-11",
+    eventType: "Disclosure Submitted",
+    property: "4 Privet Drive",
+    agent: "Tom Bradley",
+    status: "Complete",
+  },
+  {
+    id: 17,
+    date: "2025-12-10",
+    eventType: "Document Signed",
+    property: "10 Downing Street",
+    agent: "Aisha Johnson",
+    status: "Complete",
+  },
+  {
+    id: 18,
+    date: "2025-12-10",
+    eventType: "ID Verified",
+    property: "1600 Pennsylvania Ave",
+    agent: "James Rivera",
+    status: "Complete",
+  },
+  {
+    id: 19,
+    date: "2025-12-09",
+    eventType: "Wire Instructions Sent",
+    property: "742 Evergreen Terrace",
+    agent: "Sarah Chen",
+    status: "Complete",
+  },
+  {
+    id: 20,
+    date: "2025-12-09",
+    eventType: "Disclosure Submitted",
+    property: "350 Fifth Avenue",
+    agent: "Kevin Patel",
+    status: "Pending",
+  },
 ];
 
 const EVENT_TYPES: EventType[] = ["Document Signed", "ID Verified", "Wire Instructions Sent", "Disclosure Submitted"];
@@ -109,7 +257,11 @@ export default function ComplianceAuditClient() {
     doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 28);
 
     doc.setFontSize(11);
-    doc.text(`Total Events: ${totalEvents}  |  Complete: ${completePct.toFixed(1)}%  |  Pending: ${pendingCount}  |  Missing: ${missingCount}`, 14, 38);
+    doc.text(
+      `Total Events: ${totalEvents}  |  Complete: ${completePct.toFixed(1)}%  |  Pending: ${pendingCount}  |  Missing: ${missingCount}`,
+      14,
+      38,
+    );
 
     let y = 50;
     doc.setFontSize(8);
@@ -120,7 +272,10 @@ export default function ComplianceAuditClient() {
 
     filtered.forEach((e) => {
       y += 6;
-      if (y > 280) { doc.addPage(); y = 20; }
+      if (y > 280) {
+        doc.addPage();
+        y = 20;
+      }
       doc.text(e.date, cols[0], y);
       doc.text(e.eventType, cols[1], y);
       doc.text(e.property, cols[2], y);
@@ -132,7 +287,7 @@ export default function ComplianceAuditClient() {
   };
 
   const exportToExcel = () => {
-    const rows = filtered.map(e => ({
+    const rows = filtered.map((e) => ({
       Date: e.date,
       "Event Type": e.eventType,
       Property: e.property,
@@ -166,14 +321,31 @@ export default function ComplianceAuditClient() {
   return (
     <div>
       {/* integration banner */}
-      <div style={{ background: isLive ? "#E8F5E9" : "#FFF8E1", border: `1px solid ${isLive ? "#A5D6A7" : "#FFE082"}`, borderRadius: 10, padding: "12px 18px", marginBottom: 24, display: "flex", alignItems: "center", gap: 10 }}>
+      <div
+        style={{
+          background: isLive ? "#E8F5E9" : "#FFF8E1",
+          border: `1px solid ${isLive ? "#A5D6A7" : "#FFE082"}`,
+          borderRadius: 10,
+          padding: "12px 18px",
+          marginBottom: 24,
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+        }}
+      >
         <span style={{ fontSize: 18 }}>{isLive ? "\u2705" : "\u26A0"}</span>
         <span style={{ fontSize: 14 }}>
           {isLive ? (
-            <>This report is showing <strong>live data</strong> from your connected integrations.</>
+            <>
+              This report is showing <strong>live data</strong> from your connected integrations.
+            </>
           ) : (
-            <>This report uses <strong>sample data</strong>. Connect GHL and configure your brokerage to see live compliance events.{" "}
-              <Link href="/app/integrations" style={{ color: "#1565C0", fontWeight: 600 }}>Set up integrations &rarr;</Link>
+            <>
+              This report uses <strong>sample data</strong>. Connect GHL and configure your brokerage to see live
+              compliance events.{" "}
+              <Link href="/app/integrations" style={{ color: "#1565C0", fontWeight: 600 }}>
+                Set up integrations &rarr;
+              </Link>
             </>
           )}
         </span>
@@ -201,7 +373,9 @@ export default function ComplianceAuditClient() {
 
       {/* Status + Event Type Charts */}
       <div style={{ display: "flex", gap: 16, marginBottom: 24, flexWrap: "wrap" }}>
-        <div style={{ flex: "1 1 280px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}>
+        <div
+          style={{ flex: "1 1 280px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}
+        >
           <h3 style={{ margin: "0 0 12px 0", fontSize: 15, fontWeight: 700 }}>Status Breakdown</h3>
           {(() => {
             const statusData = [
@@ -212,8 +386,19 @@ export default function ComplianceAuditClient() {
             return (
               <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
-                  <Pie data={statusData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={75} innerRadius={35} label={(props: any) => `${props.name}: ${props.value}`}>
-                    {statusData.map((d, i) => <Cell key={i} fill={d.color} />)}
+                  <Pie
+                    data={statusData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={75}
+                    innerRadius={35}
+                    label={(props: any) => `${props.name}: ${props.value}`}
+                  >
+                    {statusData.map((d, i) => (
+                      <Cell key={i} fill={d.color} />
+                    ))}
                   </Pie>
                   <Tooltip />
                 </PieChart>
@@ -221,7 +406,9 @@ export default function ComplianceAuditClient() {
             );
           })()}
         </div>
-        <div style={{ flex: "2 1 400px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}>
+        <div
+          style={{ flex: "2 1 400px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}
+        >
           <h3 style={{ margin: "0 0 12px 0", fontSize: 15, fontWeight: 700 }}>Events by Type</h3>
           {(() => {
             const typeData = EVENT_TYPES.map((t) => ({
@@ -249,27 +436,67 @@ export default function ComplianceAuditClient() {
 
       {/* filters + export */}
       <div style={{ display: "flex", gap: 10, marginBottom: 20, flexWrap: "wrap", alignItems: "center" }}>
-        <select style={selectStyle} value={filterType} onChange={(e) => setFilterType(e.target.value as EventType | "All")}>
+        <select
+          style={selectStyle}
+          value={filterType}
+          onChange={(e) => setFilterType(e.target.value as EventType | "All")}
+        >
           <option value="All">All Event Types</option>
-          {EVENT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+          {EVENT_TYPES.map((t) => (
+            <option key={t} value={t}>
+              {t}
+            </option>
+          ))}
         </select>
         <select style={selectStyle} value={filterAgent} onChange={(e) => setFilterAgent(e.target.value)}>
           <option value="All">All Agents</option>
-          {AGENTS.map((a) => <option key={a} value={a}>{a}</option>)}
+          {AGENTS.map((a) => (
+            <option key={a} value={a}>
+              {a}
+            </option>
+          ))}
         </select>
-        <select style={selectStyle} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as Status | "All")}>
+        <select
+          style={selectStyle}
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value as Status | "All")}
+        >
           <option value="All">All Statuses</option>
-          {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+          {STATUSES.map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
         </select>
         <div style={{ flex: 1 }} />
         <div style={{ display: "flex", gap: 8 }}>
           <button
             onClick={exportPDF}
-            style={{ padding: "7px 18px", borderRadius: 8, border: "1px solid #ddd", background: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer" }}
+            style={{
+              padding: "7px 18px",
+              borderRadius: 8,
+              border: "1px solid #ddd",
+              background: "#fff",
+              fontWeight: 600,
+              fontSize: 13,
+              cursor: "pointer",
+            }}
           >
             Export PDF
           </button>
-          <button onClick={exportToExcel} style={{ padding: "8px 20px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>
+          <button
+            onClick={exportToExcel}
+            style={{
+              padding: "8px 20px",
+              background: "#fff",
+              color: "#374151",
+              border: "1px solid #d1d5db",
+              borderRadius: 8,
+              fontWeight: 600,
+              cursor: "pointer",
+              fontSize: 13,
+            }}
+          >
             Export Excel
           </button>
         </div>
@@ -281,7 +508,17 @@ export default function ComplianceAuditClient() {
           <thead>
             <tr style={{ background: "#f5f5f5" }}>
               {["Date", "Event Type", "Property", "Agent", "Status"].map((h) => (
-                <th key={h} style={{ textAlign: "left", padding: "10px 12px", fontWeight: 700, borderBottom: "2px solid #e0e0e0" }}>{h}</th>
+                <th
+                  key={h}
+                  style={{
+                    textAlign: "left",
+                    padding: "10px 12px",
+                    fontWeight: 700,
+                    borderBottom: "2px solid #e0e0e0",
+                  }}
+                >
+                  {h}
+                </th>
               ))}
             </tr>
           </thead>
@@ -299,15 +536,17 @@ export default function ComplianceAuditClient() {
                 <td style={{ padding: "10px 12px", fontWeight: 500 }}>{e.property}</td>
                 <td style={{ padding: "10px 12px" }}>{e.agent}</td>
                 <td style={{ padding: "10px 12px" }}>
-                  <span style={{
-                    display: "inline-block",
-                    padding: "3px 10px",
-                    borderRadius: 20,
-                    fontSize: 12,
-                    fontWeight: 700,
-                    background: statusColor[e.status].bg,
-                    color: statusColor[e.status].color,
-                  }}>
+                  <span
+                    style={{
+                      display: "inline-block",
+                      padding: "3px 10px",
+                      borderRadius: 20,
+                      fontSize: 12,
+                      fontWeight: 700,
+                      background: statusColor[e.status].bg,
+                      color: statusColor[e.status].color,
+                    }}
+                  >
                     {e.status}
                   </span>
                 </td>
@@ -315,7 +554,9 @@ export default function ComplianceAuditClient() {
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={5} style={{ padding: 24, textAlign: "center", opacity: 0.5 }}>No events match current filters.</td>
+                <td colSpan={5} style={{ padding: 24, textAlign: "center", opacity: 0.5 }}>
+                  No events match current filters.
+                </td>
               </tr>
             )}
           </tbody>

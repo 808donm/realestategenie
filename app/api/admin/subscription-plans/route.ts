@@ -3,8 +3,8 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 
 // Force dynamic rendering
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 // Lazy initialization
 let admin: ReturnType<typeof createAdminClient> | null = null;
@@ -23,11 +23,7 @@ function getAdmin() {
       throw new Error("Missing Supabase credentials");
     }
 
-    admin = createAdminClient(
-      supabaseUrl,
-      serviceRoleKey,
-      { auth: { persistSession: false } }
-    );
+    admin = createAdminClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
     console.log("Admin client created successfully");
   }
   return admin;
@@ -54,7 +50,7 @@ export async function GET(request: NextRequest) {
     const { data: agentData, error: agentError } = await getAdmin()
       .from("agents")
       .select("id, role")
-      .eq("id", user.id)  // Changed from user_id to id
+      .eq("id", user.id) // Changed from user_id to id
       .single();
 
     console.log("Agent query result:", { agentData, agentError });
@@ -89,19 +85,13 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error("Error fetching plans:", error);
-      return NextResponse.json(
-        { error: "Failed to fetch plans" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to fetch plans" }, { status: 500 });
     }
 
     console.log("Plans fetched successfully:", plans?.length);
     return NextResponse.json({ plans: plans || [] });
   } catch (error: any) {
     console.error("Error in subscription-plans API:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

@@ -8,7 +8,9 @@ import { supabaseServer } from "@/lib/supabase/server";
 export async function POST(req: NextRequest) {
   try {
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -39,9 +41,18 @@ export async function POST(req: NextRequest) {
 
     // Build CSV
     const headers = [
-      "Rank", "Address", "Owner", "AI Score", "Tier", "AVM Value",
-      "Equity", "Mortgage", "Years Owned", "Mailing Address",
-      "AI Reasoning", "Suggested Approach",
+      "Rank",
+      "Address",
+      "Owner",
+      "AI Score",
+      "Tier",
+      "AVM Value",
+      "Equity",
+      "Mortgage",
+      "Years Owned",
+      "Mailing Address",
+      "AI Reasoning",
+      "Suggested Approach",
     ];
 
     const rows = prospects.map((p, i) => [
@@ -71,10 +82,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (err: unknown) {
     console.error("[prospecting-ai/export]", err);
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Export failed" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Export failed" }, { status: 500 });
   }
 }
 

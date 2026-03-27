@@ -20,23 +20,19 @@ import {
   ReferenceLine,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  OAHU_RESALES_DATA,
-  COMPARATIVE_STATS,
-  computeYoYChanges,
-} from "@/lib/data/oahu-resales-data";
+import { OAHU_RESALES_DATA, COMPARATIVE_STATS, computeYoYChanges } from "@/lib/data/oahu-resales-data";
 
 type TimeRange = "all" | "10yr" | "20yr" | "5yr";
 
 const COLORS = {
-  sfPrimary: "#2563eb",   // blue-600
-  sfLight: "#93c5fd",     // blue-300
+  sfPrimary: "#2563eb", // blue-600
+  sfLight: "#93c5fd", // blue-300
   condoPrimary: "#059669", // emerald-600
-  condoLight: "#6ee7b7",  // emerald-300
-  total: "#7c3aed",       // violet-600
-  positive: "#16a34a",    // green-600
-  negative: "#dc2626",    // red-600
-  grid: "#e5e7eb",        // gray-200
+  condoLight: "#6ee7b7", // emerald-300
+  total: "#7c3aed", // violet-600
+  positive: "#16a34a", // green-600
+  negative: "#dc2626", // red-600
+  grid: "#e5e7eb", // gray-200
 };
 
 function formatPrice(value: number) {
@@ -62,10 +58,14 @@ export default function MarketStatisticsClient() {
   const filteredData = useMemo(() => {
     const now = 2025;
     switch (timeRange) {
-      case "5yr": return allData.filter((d) => d.year >= now - 5);
-      case "10yr": return allData.filter((d) => d.year >= now - 10);
-      case "20yr": return allData.filter((d) => d.year >= now - 20);
-      default: return allData;
+      case "5yr":
+        return allData.filter((d) => d.year >= now - 5);
+      case "10yr":
+        return allData.filter((d) => d.year >= now - 10);
+      case "20yr":
+        return allData.filter((d) => d.year >= now - 20);
+      default:
+        return allData;
     }
   }, [allData, timeRange]);
 
@@ -100,9 +100,11 @@ export default function MarketStatisticsClient() {
   // Latest year stats for KPI cards
   const latest = OAHU_RESALES_DATA[OAHU_RESALES_DATA.length - 1];
   const prevYear = OAHU_RESALES_DATA[OAHU_RESALES_DATA.length - 2];
-  const sfMedianChange = ((latest.singleFamily.medianPrice - prevYear.singleFamily.medianPrice) / prevYear.singleFamily.medianPrice * 100);
-  const condoMedianChange = ((latest.condo.medianPrice - prevYear.condo.medianPrice) / prevYear.condo.medianPrice * 100);
-  const totalSalesChange = ((latest.totalSales - prevYear.totalSales) / prevYear.totalSales * 100);
+  const sfMedianChange =
+    ((latest.singleFamily.medianPrice - prevYear.singleFamily.medianPrice) / prevYear.singleFamily.medianPrice) * 100;
+  const condoMedianChange =
+    ((latest.condo.medianPrice - prevYear.condo.medianPrice) / prevYear.condo.medianPrice) * 100;
+  const totalSalesChange = ((latest.totalSales - prevYear.totalSales) / prevYear.totalSales) * 100;
 
   const exportReport = (format: "pdf" | "xlsx") => {
     const exportData = filteredData.map((d) => ({
@@ -143,7 +145,10 @@ export default function MarketStatisticsClient() {
       doc.setFont("helvetica", "normal");
 
       exportData.forEach((row) => {
-        if (y > 280) { doc.addPage(); y = 20; }
+        if (y > 280) {
+          doc.addPage();
+          y = 20;
+        }
         const vals = [
           String(row.Year),
           `$${(row["SF Median Price"] / 1000).toFixed(0)}K`,
@@ -166,12 +171,14 @@ export default function MarketStatisticsClient() {
     <div className="space-y-6">
       {/* Time Range Selector */}
       <div className="flex gap-2">
-        {([
-          ["all", "All Years (1985-2025)"],
-          ["20yr", "Last 20 Years"],
-          ["10yr", "Last 10 Years"],
-          ["5yr", "Last 5 Years"],
-        ] as [TimeRange, string][]).map(([value, label]) => (
+        {(
+          [
+            ["all", "All Years (1985-2025)"],
+            ["20yr", "Last 20 Years"],
+            ["10yr", "Last 10 Years"],
+            ["5yr", "Last 5 Years"],
+          ] as [TimeRange, string][]
+        ).map(([value, label]) => (
           <button
             key={value}
             onClick={() => setTimeRange(value)}
@@ -187,8 +194,36 @@ export default function MarketStatisticsClient() {
       </div>
 
       <div className="noprint" style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginBottom: 16 }}>
-        <button onClick={() => exportReport("xlsx")} style={{ padding: "6px 14px", fontSize: 12, fontWeight: 600, border: "1px solid #d1d5db", borderRadius: 6, background: "#fff", color: "#374151", cursor: "pointer" }}>Export Excel</button>
-        <button onClick={() => exportReport("pdf")} style={{ padding: "6px 14px", fontSize: 12, fontWeight: 600, border: "none", borderRadius: 6, background: "#dc2626", color: "#fff", cursor: "pointer" }}>Export PDF</button>
+        <button
+          onClick={() => exportReport("xlsx")}
+          style={{
+            padding: "6px 14px",
+            fontSize: 12,
+            fontWeight: 600,
+            border: "1px solid #d1d5db",
+            borderRadius: 6,
+            background: "#fff",
+            color: "#374151",
+            cursor: "pointer",
+          }}
+        >
+          Export Excel
+        </button>
+        <button
+          onClick={() => exportReport("pdf")}
+          style={{
+            padding: "6px 14px",
+            fontSize: 12,
+            fontWeight: 600,
+            border: "none",
+            borderRadius: 6,
+            background: "#dc2626",
+            color: "#fff",
+            cursor: "pointer",
+          }}
+        >
+          Export PDF
+        </button>
       </div>
 
       {/* KPI Summary Cards */}
@@ -224,15 +259,8 @@ export default function MarketStatisticsClient() {
           <LineChart data={medianPriceData}>
             <CartesianGrid strokeDasharray="3 3" stroke={COLORS.grid} />
             <XAxis dataKey="year" tick={{ fontSize: 12 }} />
-            <YAxis
-              tickFormatter={formatPrice}
-              tick={{ fontSize: 12 }}
-              width={70}
-            />
-            <Tooltip
-              formatter={(value: any) => formatPrice(value)}
-              labelFormatter={(label) => `Year: ${label}`}
-            />
+            <YAxis tickFormatter={formatPrice} tick={{ fontSize: 12 }} width={70} />
+            <Tooltip formatter={(value: any) => formatPrice(value)} labelFormatter={(label) => `Year: ${label}`} />
             <Legend />
             <Line
               type="monotone"
@@ -260,15 +288,8 @@ export default function MarketStatisticsClient() {
           <AreaChart data={avgPriceData}>
             <CartesianGrid strokeDasharray="3 3" stroke={COLORS.grid} />
             <XAxis dataKey="year" tick={{ fontSize: 12 }} />
-            <YAxis
-              tickFormatter={formatPrice}
-              tick={{ fontSize: 12 }}
-              width={70}
-            />
-            <Tooltip
-              formatter={(value: any) => formatPrice(value)}
-              labelFormatter={(label) => `Year: ${label}`}
-            />
+            <YAxis tickFormatter={formatPrice} tick={{ fontSize: 12 }} width={70} />
+            <Tooltip formatter={(value: any) => formatPrice(value)} labelFormatter={(label) => `Year: ${label}`} />
             <Legend />
             <Area
               type="monotone"
@@ -297,10 +318,7 @@ export default function MarketStatisticsClient() {
             <CartesianGrid strokeDasharray="3 3" stroke={COLORS.grid} />
             <XAxis dataKey="year" tick={{ fontSize: 12 }} />
             <YAxis tickFormatter={formatSales} tick={{ fontSize: 12 }} width={55} />
-            <Tooltip
-              formatter={(value: any) => formatSales(value)}
-              labelFormatter={(label) => `Year: ${label}`}
-            />
+            <Tooltip formatter={(value: any) => formatSales(value)} labelFormatter={(label) => `Year: ${label}`} />
             <Legend />
             <Bar dataKey="Single Family" fill={COLORS.sfPrimary} radius={[2, 2, 0, 0]} />
             <Bar dataKey="Condo" fill={COLORS.condoPrimary} radius={[2, 2, 0, 0]} />
@@ -314,15 +332,8 @@ export default function MarketStatisticsClient() {
           <ComposedChart data={yoyData.filter((d) => d["SF Median %"] !== null)}>
             <CartesianGrid strokeDasharray="3 3" stroke={COLORS.grid} />
             <XAxis dataKey="year" tick={{ fontSize: 12 }} />
-            <YAxis
-              tickFormatter={(v) => `${v}%`}
-              tick={{ fontSize: 12 }}
-              width={50}
-            />
-            <Tooltip
-              formatter={(value: any) => `${value.toFixed(1)}%`}
-              labelFormatter={(label) => `Year: ${label}`}
-            />
+            <YAxis tickFormatter={(v) => `${v}%`} tick={{ fontSize: 12 }} width={50} />
+            <Tooltip formatter={(value: any) => `${value.toFixed(1)}%`} labelFormatter={(label) => `Year: ${label}`} />
             <Legend />
             <ReferenceLine y={0} stroke="#9ca3af" strokeWidth={1} />
             <Bar dataKey="SF Median %" fill={COLORS.sfPrimary} radius={[2, 2, 0, 0]} />
@@ -337,19 +348,24 @@ export default function MarketStatisticsClient() {
           <BarChart data={yoyData.filter((d) => d["SF Sales %"] !== null)}>
             <CartesianGrid strokeDasharray="3 3" stroke={COLORS.grid} />
             <XAxis dataKey="year" tick={{ fontSize: 12 }} />
-            <YAxis
-              tickFormatter={(v) => `${v}%`}
-              tick={{ fontSize: 12 }}
-              width={50}
-            />
-            <Tooltip
-              formatter={(value: any) => `${value.toFixed(1)}%`}
-              labelFormatter={(label) => `Year: ${label}`}
-            />
+            <YAxis tickFormatter={(v) => `${v}%`} tick={{ fontSize: 12 }} width={50} />
+            <Tooltip formatter={(value: any) => `${value.toFixed(1)}%`} labelFormatter={(label) => `Year: ${label}`} />
             <Legend />
             <ReferenceLine y={0} stroke="#9ca3af" strokeWidth={1} />
-            <Bar dataKey="SF Sales %" fill={COLORS.sfLight} stroke={COLORS.sfPrimary} strokeWidth={1} radius={[2, 2, 0, 0]} />
-            <Bar dataKey="Condo Sales %" fill={COLORS.condoLight} stroke={COLORS.condoPrimary} strokeWidth={1} radius={[2, 2, 0, 0]} />
+            <Bar
+              dataKey="SF Sales %"
+              fill={COLORS.sfLight}
+              stroke={COLORS.sfPrimary}
+              strokeWidth={1}
+              radius={[2, 2, 0, 0]}
+            />
+            <Bar
+              dataKey="Condo Sales %"
+              fill={COLORS.condoLight}
+              stroke={COLORS.condoPrimary}
+              strokeWidth={1}
+              radius={[2, 2, 0, 0]}
+            />
           </BarChart>
         </ResponsiveContainer>
       </ChartCard>
@@ -368,10 +384,7 @@ export default function MarketStatisticsClient() {
             <CartesianGrid strokeDasharray="3 3" stroke={COLORS.grid} />
             <XAxis dataKey="year" tick={{ fontSize: 12 }} />
             <YAxis tickFormatter={formatPrice} tick={{ fontSize: 12 }} width={70} />
-            <Tooltip
-              formatter={(value: any) => formatPrice(value)}
-              labelFormatter={(label) => `Year: ${label}`}
-            />
+            <Tooltip formatter={(value: any) => formatPrice(value)} labelFormatter={(label) => `Year: ${label}`} />
             <Legend />
             <Area
               type="monotone"
@@ -481,10 +494,7 @@ export default function MarketStatisticsClient() {
               </thead>
               <tbody>
                 {filteredData.map((row, i) => (
-                  <tr
-                    key={row.year}
-                    className={`border-b ${i % 2 === 0 ? "" : "bg-gray-50/50 dark:bg-gray-900/50"}`}
-                  >
+                  <tr key={row.year} className={`border-b ${i % 2 === 0 ? "" : "bg-gray-50/50 dark:bg-gray-900/50"}`}>
                     <td className="py-1.5 px-2 font-medium">{row.year}</td>
                     <td className="text-right py-1.5 px-2">{row.singleFamily.sales.toLocaleString()}</td>
                     <td className="text-right py-1.5 px-2">{formatPrice(row.singleFamily.medianPrice)}</td>
@@ -525,39 +535,23 @@ function KPICard({
         <div className="text-xs text-muted-foreground mb-1">{label}</div>
         <div className="text-2xl font-bold">{value}</div>
         {change !== undefined && (
-          <div
-            className={`text-xs font-medium mt-1 ${
-              change >= 0 ? "text-green-600" : "text-red-600"
-            }`}
-          >
+          <div className={`text-xs font-medium mt-1 ${change >= 0 ? "text-green-600" : "text-red-600"}`}>
             {change >= 0 ? "+" : ""}
             {change.toFixed(1)}% vs {(year || 2025) - 1}
           </div>
         )}
-        {subtitle && (
-          <div className="text-xs text-muted-foreground mt-1">{subtitle}</div>
-        )}
+        {subtitle && <div className="text-xs text-muted-foreground mt-1">{subtitle}</div>}
       </CardContent>
     </Card>
   );
 }
 
-function ChartCard({
-  title,
-  subtitle,
-  children,
-}: {
-  title: string;
-  subtitle?: string;
-  children: React.ReactNode;
-}) {
+function ChartCard({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
     <Card>
       <CardHeader className="pb-2">
         <CardTitle className="text-lg">{title}</CardTitle>
-        {subtitle && (
-          <p className="text-sm text-muted-foreground">{subtitle}</p>
-        )}
+        {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
       </CardHeader>
       <CardContent className="pt-0">{children}</CardContent>
     </Card>

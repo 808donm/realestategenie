@@ -8,11 +8,7 @@ export default function SignInPage() {
       <Suspense fallback={<div style={{ padding: 24 }}>Loading…</div>}>
         <SignInClient />
       </Suspense>
-      <Script
-        src="https://www.realestategenie.app/js/sales-chat.js"
-        data-color="#6366f1"
-        strategy="lazyOnload"
-      />
+      <Script src="https://www.realestategenie.app/js/sales-chat.js" data-color="#6366f1" strategy="lazyOnload" />
     </>
   );
 }

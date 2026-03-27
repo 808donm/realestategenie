@@ -6,11 +6,7 @@ import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import AttachToContact from "@/components/attach-to-contact";
 import CalculatorBrandedExport from "../../components/calculator-branded-export";
-import {
-  PropertyInput,
-  PropertyAnalysis,
-  analyzeProperty,
-} from "@/lib/calculators/investment";
+import { PropertyInput, PropertyAnalysis, analyzeProperty } from "@/lib/calculators/investment";
 import MLSImport, { type MLSPropertyData } from "@/components/mls-import";
 
 interface SavedProperty {
@@ -113,10 +109,7 @@ export default function InvestmentAnalyzerClient({ savedProperties }: Props) {
 
   const analysis = useMemo(() => analyzeProperty(input), [input]);
 
-  const updateField = <K extends keyof PropertyInput>(
-    field: K,
-    value: PropertyInput[K]
-  ) => {
+  const updateField = <K extends keyof PropertyInput>(field: K, value: PropertyInput[K]) => {
     setInput((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -170,7 +163,9 @@ export default function InvestmentAnalyzerClient({ savedProperties }: Props) {
     const supabase = supabaseBrowser();
 
     // Get current user ID for RLS
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       setMessage("Error: Not authenticated");
       setSaving(false);
@@ -207,10 +202,7 @@ export default function InvestmentAnalyzerClient({ savedProperties }: Props) {
     };
 
     if (selectedPropertyId) {
-      const { error } = await supabase
-        .from("investment_properties")
-        .update(propertyData)
-        .eq("id", selectedPropertyId);
+      const { error } = await supabase.from("investment_properties").update(propertyData).eq("id", selectedPropertyId);
 
       if (error) {
         setMessage("Error updating property: " + error.message);
@@ -218,9 +210,7 @@ export default function InvestmentAnalyzerClient({ savedProperties }: Props) {
         setMessage("Property updated!");
       }
     } else {
-      const { error } = await supabase
-        .from("investment_properties")
-        .insert(propertyData);
+      const { error } = await supabase.from("investment_properties").insert(propertyData);
 
       if (error) {
         setMessage("Error saving property: " + error.message);
@@ -242,57 +232,68 @@ export default function InvestmentAnalyzerClient({ savedProperties }: Props) {
     setMessage("");
   };
 
-  const generateFile = useCallback((format: "pdf" | "xlsx"): Blob => {
-    if (format === "xlsx") {
-      const wb = XLSX.utils.book_new();
-      const data: (string | number)[][] = [
-        ["INVESTMENT PROPERTY ANALYSIS"], [],
-        ["Property", propertyName || "Untitled"],
-        ["Address", propertyAddress || "N/A"],
-        [],
-        ["Purchase Price", input.purchasePrice],
-        ["Down Payment", analysis.downPayment],
-        ["Loan Amount", analysis.loanAmount],
-        [],
-        ["NOI", analysis.noi],
-        ["Cap Rate", `${analysis.capRate.toFixed(2)}%`],
-        ["Cash-on-Cash Return", `${analysis.cashOnCash.toFixed(2)}%`],
-        ["IRR", `${analysis.irr.toFixed(2)}%`],
-        ["Total ROI", `${analysis.totalROI.toFixed(2)}%`],
-        [],
-        ["Monthly Cash Flow", analysis.annualCashFlow / 12],
-        ["Annual Cash Flow", analysis.annualCashFlow],
-        ["Total Profit", analysis.totalProfit],
-      ];
-      const sheet = XLSX.utils.aoa_to_sheet(data);
-      XLSX.utils.book_append_sheet(wb, sheet, "Investment Summary");
-      const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-      return new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-    }
-    const doc = new jsPDF();
-    const pw = doc.internal.pageSize.getWidth();
-    let y = 20;
-    doc.setFontSize(18); doc.setFont("helvetica", "bold");
-    doc.text("Investment Property Analysis", pw / 2, y, { align: "center" }); y += 14;
-    doc.setFontSize(10); doc.setFont("helvetica", "normal");
-    [
-      ["Property:", propertyName || "Untitled"],
-      ["Purchase Price:", formatCurrency(input.purchasePrice)],
-      ["Down Payment:", formatCurrency(analysis.downPayment)],
-      ["Loan Amount:", formatCurrency(analysis.loanAmount)],
-      ["", ""],
-      ["NOI:", formatCurrency(analysis.noi)],
-      ["Cap Rate:", formatPercent(analysis.capRate)],
-      ["Cash-on-Cash:", formatPercent(analysis.cashOnCash)],
-      ["IRR:", formatPercent(analysis.irr)],
-      ["Total ROI:", formatPercent(analysis.totalROI)],
-      ["", ""],
-      ["Monthly Cash Flow:", formatCurrency(analysis.annualCashFlow / 12)],
-      ["Annual Cash Flow:", formatCurrency(analysis.annualCashFlow)],
-      ["Total Profit:", formatCurrency(analysis.totalProfit)],
-    ].forEach(([l, v]) => { doc.text(l, 25, y); doc.text(v, pw - 25, y, { align: "right" }); y += 7; });
-    return new Blob([doc.output("arraybuffer")], { type: "application/pdf" });
-  }, [propertyName, propertyAddress, input, analysis]);
+  const generateFile = useCallback(
+    (format: "pdf" | "xlsx"): Blob => {
+      if (format === "xlsx") {
+        const wb = XLSX.utils.book_new();
+        const data: (string | number)[][] = [
+          ["INVESTMENT PROPERTY ANALYSIS"],
+          [],
+          ["Property", propertyName || "Untitled"],
+          ["Address", propertyAddress || "N/A"],
+          [],
+          ["Purchase Price", input.purchasePrice],
+          ["Down Payment", analysis.downPayment],
+          ["Loan Amount", analysis.loanAmount],
+          [],
+          ["NOI", analysis.noi],
+          ["Cap Rate", `${analysis.capRate.toFixed(2)}%`],
+          ["Cash-on-Cash Return", `${analysis.cashOnCash.toFixed(2)}%`],
+          ["IRR", `${analysis.irr.toFixed(2)}%`],
+          ["Total ROI", `${analysis.totalROI.toFixed(2)}%`],
+          [],
+          ["Monthly Cash Flow", analysis.annualCashFlow / 12],
+          ["Annual Cash Flow", analysis.annualCashFlow],
+          ["Total Profit", analysis.totalProfit],
+        ];
+        const sheet = XLSX.utils.aoa_to_sheet(data);
+        XLSX.utils.book_append_sheet(wb, sheet, "Investment Summary");
+        const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+        return new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      }
+      const doc = new jsPDF();
+      const pw = doc.internal.pageSize.getWidth();
+      let y = 20;
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      doc.text("Investment Property Analysis", pw / 2, y, { align: "center" });
+      y += 14;
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      [
+        ["Property:", propertyName || "Untitled"],
+        ["Purchase Price:", formatCurrency(input.purchasePrice)],
+        ["Down Payment:", formatCurrency(analysis.downPayment)],
+        ["Loan Amount:", formatCurrency(analysis.loanAmount)],
+        ["", ""],
+        ["NOI:", formatCurrency(analysis.noi)],
+        ["Cap Rate:", formatPercent(analysis.capRate)],
+        ["Cash-on-Cash:", formatPercent(analysis.cashOnCash)],
+        ["IRR:", formatPercent(analysis.irr)],
+        ["Total ROI:", formatPercent(analysis.totalROI)],
+        ["", ""],
+        ["Monthly Cash Flow:", formatCurrency(analysis.annualCashFlow / 12)],
+        ["Annual Cash Flow:", formatCurrency(analysis.annualCashFlow)],
+        ["Total Profit:", formatCurrency(analysis.totalProfit)],
+      ].forEach(([l, v]) => {
+        doc.text(l, 25, y);
+        doc.text(v, pw - 25, y, { align: "right" });
+        y += 7;
+      });
+      return new Blob([doc.output("arraybuffer")], { type: "application/pdf" });
+    },
+    [propertyName, propertyAddress, input, analysis],
+  );
 
   const exportToExcel = () => {
     const wb = XLSX.utils.book_new();
@@ -722,11 +723,7 @@ export default function InvestmentAnalyzerClient({ savedProperties }: Props) {
 
         {/* Save Button */}
         <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-          <button
-            onClick={saveProperty}
-            disabled={saving}
-            style={{ padding: "12px 24px", fontWeight: 700 }}
-          >
+          <button onClick={saveProperty} disabled={saving} style={{ padding: "12px 24px", fontWeight: 700 }}>
             {saving ? "Saving..." : selectedPropertyId ? "Update Property" : "Save Property"}
           </button>
           <button
@@ -743,7 +740,9 @@ export default function InvestmentAnalyzerClient({ savedProperties }: Props) {
           >
             Export to Excel
           </button>
-          {message && <span style={{ fontSize: 14, color: message.includes("Error") ? "red" : "green" }}>{message}</span>}
+          {message && (
+            <span style={{ fontSize: 14, color: message.includes("Error") ? "red" : "green" }}>{message}</span>
+          )}
         </div>
         <div style={{ marginTop: 12 }}>
           <AttachToContact generateFile={generateFile} reportTitle="Investment Property Analysis" />
@@ -753,19 +752,19 @@ export default function InvestmentAnalyzerClient({ savedProperties }: Props) {
             calculatorName="Investment Analysis"
             propertyAddress={propertyAddress}
             summaryData={{
-              "Property": propertyName || "Untitled",
+              Property: propertyName || "Untitled",
               "Purchase Price": formatCurrency(input.purchasePrice),
               "Down Payment": formatCurrency(analysis.downPayment),
               "Loan Amount": formatCurrency(analysis.loanAmount),
-              "NOI": formatCurrency(analysis.noi),
+              NOI: formatCurrency(analysis.noi),
               "Cap Rate": formatPercent(analysis.capRate),
               "Cash-on-Cash Return": formatPercent(analysis.cashOnCash),
-              "IRR": formatPercent(analysis.irr),
+              IRR: formatPercent(analysis.irr),
               "Total ROI": formatPercent(analysis.totalROI),
               "Monthly Cash Flow": formatCurrency(analysis.annualCashFlow / 12),
               "Annual Cash Flow": formatCurrency(analysis.annualCashFlow),
               "Total Profit": formatCurrency(analysis.totalProfit),
-              "Verdict": getVerdict(analysis),
+              Verdict: getVerdict(analysis),
             }}
           />
         </div>
@@ -806,28 +805,68 @@ export default function InvestmentAnalyzerClient({ savedProperties }: Props) {
         </div>
 
         {/* Key Metrics */}
-        <div style={{ marginBottom: 20, padding: 20, border: "2px solid #000", borderRadius: 12, background: "#fafafa" }}>
+        <div
+          style={{ marginBottom: 20, padding: 20, border: "2px solid #000", borderRadius: 12, background: "#fafafa" }}
+        >
           <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 800 }}>Key Investment Metrics</h3>
 
           {/* Primary Metrics - Large Display */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 16 }}>
-            <div style={{ padding: 16, background: "#fff", borderRadius: 8, border: "1px solid #e6e6e6", textAlign: "center" }}>
+            <div
+              style={{
+                padding: 16,
+                background: "#fff",
+                borderRadius: 8,
+                border: "1px solid #e6e6e6",
+                textAlign: "center",
+              }}
+            >
               <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 4, textTransform: "uppercase" }}>NOI</div>
               <div style={{ fontSize: 22, fontWeight: 800, color: analysis.noi >= 0 ? "#16a34a" : "#dc2626" }}>
                 {formatCurrency(analysis.noi)}
               </div>
               <div style={{ fontSize: 10, opacity: 0.5 }}>Net Operating Income</div>
             </div>
-            <div style={{ padding: 16, background: "#fff", borderRadius: 8, border: "1px solid #e6e6e6", textAlign: "center" }}>
+            <div
+              style={{
+                padding: 16,
+                background: "#fff",
+                borderRadius: 8,
+                border: "1px solid #e6e6e6",
+                textAlign: "center",
+              }}
+            >
               <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 4, textTransform: "uppercase" }}>Cap Rate</div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: analysis.capRate >= 5 ? "#16a34a" : analysis.capRate >= 3 ? "#ca8a04" : "#dc2626" }}>
+              <div
+                style={{
+                  fontSize: 22,
+                  fontWeight: 800,
+                  color: analysis.capRate >= 5 ? "#16a34a" : analysis.capRate >= 3 ? "#ca8a04" : "#dc2626",
+                }}
+              >
                 {formatPercent(analysis.capRate)}
               </div>
               <div style={{ fontSize: 10, opacity: 0.5 }}>NOI / Price</div>
             </div>
-            <div style={{ padding: 16, background: "#fff", borderRadius: 8, border: "1px solid #e6e6e6", textAlign: "center" }}>
-              <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 4, textTransform: "uppercase" }}>Cash-on-Cash</div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: analysis.cashOnCash >= 8 ? "#16a34a" : analysis.cashOnCash >= 4 ? "#ca8a04" : "#dc2626" }}>
+            <div
+              style={{
+                padding: 16,
+                background: "#fff",
+                borderRadius: 8,
+                border: "1px solid #e6e6e6",
+                textAlign: "center",
+              }}
+            >
+              <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 4, textTransform: "uppercase" }}>
+                Cash-on-Cash
+              </div>
+              <div
+                style={{
+                  fontSize: 22,
+                  fontWeight: 800,
+                  color: analysis.cashOnCash >= 8 ? "#16a34a" : analysis.cashOnCash >= 4 ? "#ca8a04" : "#dc2626",
+                }}
+              >
                 {formatPercent(analysis.cashOnCash)}
               </div>
               <div style={{ fontSize: 10, opacity: 0.5 }}>Cash Flow / Invested</div>
@@ -852,7 +891,15 @@ export default function InvestmentAnalyzerClient({ savedProperties }: Props) {
 
           {/* Quick Stats Bar */}
           <div style={{ marginTop: 16, padding: 12, background: "#fff", borderRadius: 8, border: "1px solid #e6e6e6" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 8, textAlign: "center", fontSize: 12 }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr 1fr 1fr",
+                gap: 8,
+                textAlign: "center",
+                fontSize: 12,
+              }}
+            >
               <div>
                 <div style={{ opacity: 0.6 }}>Annual Cash Flow</div>
                 <div style={{ fontWeight: 700, color: analysis.annualCashFlow >= 0 ? "#16a34a" : "#dc2626" }}>
@@ -882,7 +929,10 @@ export default function InvestmentAnalyzerClient({ savedProperties }: Props) {
           <h3 style={{ margin: "0 0 12px 0", fontSize: 14, fontWeight: 700 }}>Investment Summary</h3>
           <div style={{ display: "grid", gap: 8 }}>
             <SummaryRow label="Down Payment" value={formatCurrency(analysis.downPayment)} />
-            <SummaryRow label="Closing + Renovation" value={formatCurrency(input.closingCosts + input.renovationCosts)} />
+            <SummaryRow
+              label="Closing + Renovation"
+              value={formatCurrency(input.closingCosts + input.renovationCosts)}
+            />
             <SummaryRow label="Total Cash Invested" value={formatCurrency(analysis.totalInvestment)} bold />
             <SummaryRow label="Loan Amount" value={formatCurrency(analysis.loanAmount)} />
             <SummaryRow label="Monthly Mortgage (P&I)" value={formatCurrency(analysis.monthlyMortgage)} />
@@ -894,7 +944,11 @@ export default function InvestmentAnalyzerClient({ savedProperties }: Props) {
           <h3 style={{ margin: "0 0 12px 0", fontSize: 14, fontWeight: 700 }}>Annual Cash Flow (Year 1)</h3>
           <div style={{ display: "grid", gap: 8 }}>
             <SummaryRow label="Gross Annual Income" value={formatCurrency(analysis.grossAnnualIncome)} />
-            <SummaryRow label="Less Vacancy" value={formatCurrency(analysis.grossAnnualIncome - analysis.effectiveGrossIncome)} negative />
+            <SummaryRow
+              label="Less Vacancy"
+              value={formatCurrency(analysis.grossAnnualIncome - analysis.effectiveGrossIncome)}
+              negative
+            />
             <SummaryRow label="Effective Gross Income" value={formatCurrency(analysis.effectiveGrossIncome)} />
             <SummaryRow label="Operating Expenses" value={formatCurrency(analysis.annualOperatingExpenses)} negative />
             <SummaryRow label="Net Operating Income (NOI)" value={formatCurrency(analysis.noi)} bold />
@@ -946,12 +1000,19 @@ export default function InvestmentAnalyzerClient({ savedProperties }: Props) {
 
         {/* Exit Analysis */}
         <div style={{ padding: 16, border: "1px solid #e6e6e6", borderRadius: 12 }}>
-          <h3 style={{ margin: "0 0 12px 0", fontSize: 14, fontWeight: 700 }}>Exit Analysis (After {input.holdingPeriodYears} Years)</h3>
+          <h3 style={{ margin: "0 0 12px 0", fontSize: 14, fontWeight: 700 }}>
+            Exit Analysis (After {input.holdingPeriodYears} Years)
+          </h3>
           <div style={{ display: "grid", gap: 8 }}>
             <SummaryRow label="Projected Sale Price" value={formatCurrency(analysis.projectedSalePrice)} />
             <SummaryRow label="Total Cash Flow Received" value={formatCurrency(analysis.totalCashFlow)} />
             <SummaryRow label="Net Sale Proceeds" value={formatCurrency(analysis.projectedEquity)} />
-            <SummaryRow label="Total Profit" value={formatCurrency(analysis.totalProfit)} bold good={analysis.totalProfit > 0} />
+            <SummaryRow
+              label="Total Profit"
+              value={formatCurrency(analysis.totalProfit)}
+              bold
+              good={analysis.totalProfit > 0}
+            />
           </div>
         </div>
       </div>
@@ -995,9 +1056,7 @@ function SummaryRow({
   return (
     <div style={{ display: "flex", justifyContent: "space-between", fontWeight: bold ? 700 : 400 }}>
       <span>{label}</span>
-      <span style={{ color: good ? "green" : negative ? "#999" : undefined }}>
-        {negative ? `(${value})` : value}
-      </span>
+      <span style={{ color: good ? "green" : negative ? "#999" : undefined }}>{negative ? `(${value})` : value}</span>
     </div>
   );
 }

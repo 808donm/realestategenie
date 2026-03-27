@@ -23,10 +23,7 @@ export default async function FlipAnalyzerPage() {
     <div style={{ maxWidth: 1200 }}>
       {/* Navigation Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-        <Link
-          href="/app/analyzers"
-          style={{ fontSize: 14, opacity: 0.7, textDecoration: "none" }}
-        >
+        <Link href="/app/analyzers" style={{ fontSize: 14, opacity: 0.7, textDecoration: "none" }}>
           ← Back to Analyzers
         </Link>
         <div style={{ display: "flex", gap: 8 }}>
@@ -85,15 +82,11 @@ export default async function FlipAnalyzerPage() {
         </div>
       </div>
 
-      <h1 style={{ fontSize: 28, fontWeight: 900, marginTop: 0, marginBottom: 8 }}>
-        House Flip Analyzer
-      </h1>
-      <p style={{ margin: "0 0 8px 0", opacity: 0.7 }}>
-        Fix &amp; Flip Investment Calculator
-      </p>
+      <h1 style={{ fontSize: 28, fontWeight: 900, marginTop: 0, marginBottom: 8 }}>House Flip Analyzer</h1>
+      <p style={{ margin: "0 0 8px 0", opacity: 0.7 }}>Fix &amp; Flip Investment Calculator</p>
       <p style={{ margin: "0 0 24px 0", opacity: 0.6, fontSize: 14 }}>
-        Analyze fix-and-flip deals with the 70% rule, calculate ROI, and estimate profits.
-        Includes financing options and holding cost projections.
+        Analyze fix-and-flip deals with the 70% rule, calculate ROI, and estimate profits. Includes financing options
+        and holding cost projections.
       </p>
 
       <FlipAnalyzerClient savedAnalyses={savedAnalyses || []} />

@@ -28,34 +28,22 @@ export async function POST(request: NextRequest) {
     // Validate file type
     const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
     if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json(
-        { error: "Invalid file type. Only JPEG, PNG, and WebP are allowed." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid file type. Only JPEG, PNG, and WebP are allowed." }, { status: 400 });
     }
 
     // Validate file size (5MB max)
     const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
-      return NextResponse.json(
-        { error: "File too large. Maximum size is 5MB." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "File too large. Maximum size is 5MB." }, { status: 400 });
     }
 
     // Delete old headshot if it exists
-    const { data: agent } = await supabase
-      .from("agents")
-      .select("headshot_url")
-      .eq("id", user.id)
-      .single();
+    const { data: agent } = await supabase.from("agents").select("headshot_url").eq("id", user.id).single();
 
     if (agent?.headshot_url) {
       const oldPath = agent.headshot_url.split("/").pop();
       if (oldPath) {
-        await supabase.storage
-          .from("agent-photos")
-          .remove([`headshots/${oldPath}`]);
+        await supabase.storage.from("agent-photos").remove([`headshots/${oldPath}`]);
       }
     }
 
@@ -74,10 +62,7 @@ export async function POST(request: NextRequest) {
 
     if (uploadError) {
       console.error("Upload error:", uploadError);
-      return NextResponse.json(
-        { error: "Failed to upload file" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to upload file" }, { status: 500 });
     }
 
     // Get public URL
@@ -86,26 +71,17 @@ export async function POST(request: NextRequest) {
     } = supabase.storage.from("agent-photos").getPublicUrl(filePath);
 
     // Update agent record
-    const { error: updateError } = await supabase
-      .from("agents")
-      .update({ headshot_url: publicUrl })
-      .eq("id", user.id);
+    const { error: updateError } = await supabase.from("agents").update({ headshot_url: publicUrl }).eq("id", user.id);
 
     if (updateError) {
       console.error("Database update error:", updateError);
-      return NextResponse.json(
-        { error: "Failed to update profile" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to update profile" }, { status: 500 });
     }
 
     return NextResponse.json({ url: publicUrl });
   } catch (error: any) {
     console.error("Agent headshot upload error:", error);
-    return NextResponse.json(
-      { error: error.message || "Upload failed" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message || "Upload failed" }, { status: 500 });
   }
 }
 
@@ -126,33 +102,21 @@ export async function DELETE(request: NextRequest) {
 
   try {
     // Get current headshot
-    const { data: agent } = await supabase
-      .from("agents")
-      .select("headshot_url")
-      .eq("id", user.id)
-      .single();
+    const { data: agent } = await supabase.from("agents").select("headshot_url").eq("id", user.id).single();
 
     if (agent?.headshot_url) {
       const filePath = agent.headshot_url.split("/").pop();
       if (filePath) {
-        await supabase.storage
-          .from("agent-photos")
-          .remove([`headshots/${filePath}`]);
+        await supabase.storage.from("agent-photos").remove([`headshots/${filePath}`]);
       }
     }
 
     // Remove from database
-    await supabase
-      .from("agents")
-      .update({ headshot_url: null })
-      .eq("id", user.id);
+    await supabase.from("agents").update({ headshot_url: null }).eq("id", user.id);
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error("Delete headshot error:", error);
-    return NextResponse.json(
-      { error: error.message || "Delete failed" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message || "Delete failed" }, { status: 500 });
   }
 }

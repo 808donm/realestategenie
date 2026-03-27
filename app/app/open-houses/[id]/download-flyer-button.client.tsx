@@ -59,9 +59,7 @@ export default function DownloadFlyerButton({ eventId }: { eventId: string }) {
       >
         {downloading ? "Downloading..." : "📄 Download Flyer"}
       </button>
-      {error && (
-        <p style={{ color: "crimson", fontSize: 12, marginTop: 4 }}>{error}</p>
-      )}
+      {error && <p style={{ color: "crimson", fontSize: 12, marginTop: 4 }}>{error}</p>}
     </div>
   );
 }

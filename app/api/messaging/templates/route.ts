@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         id: `custom-${Date.now()}`,
-        note: "Template saved in memory (DB table pending migration)"
+        note: "Template saved in memory (DB table pending migration)",
       });
     }
 
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to save template" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

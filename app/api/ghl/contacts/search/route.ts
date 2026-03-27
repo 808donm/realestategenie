@@ -30,10 +30,7 @@ export async function GET(req: NextRequest) {
     const ghlConfig = await getValidGHLConfig(ghlAgentId);
 
     if (!ghlConfig) {
-      return NextResponse.json(
-        { error: "GHL not connected", contacts: [] },
-        { status: 200 }
-      );
+      return NextResponse.json({ error: "GHL not connected", contacts: [] }, { status: 200 });
     }
 
     const client = new GHLClient(ghlConfig.access_token, ghlConfig.location_id);
@@ -56,9 +53,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ contacts });
   } catch (error: any) {
     console.error("GHL contact search error:", error);
-    return NextResponse.json(
-      { error: error.message || "Search failed", contacts: [] },
-      { status: 200 }
-    );
+    return NextResponse.json({ error: error.message || "Search failed", contacts: [] }, { status: 200 });
   }
 }

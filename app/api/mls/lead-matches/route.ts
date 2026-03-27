@@ -18,7 +18,9 @@ import { matchLeadsToListings, type LeadCriteria } from "@/lib/mls/matching-engi
 export async function GET(request: NextRequest) {
   try {
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const client = await getTrestleClient(supabase, user.id);
@@ -89,7 +91,7 @@ export async function GET(request: NextRequest) {
             includeMedia: true,
             skipCount: true,
           });
-        })
+        }),
       );
       // Deduplicate by ListingKey
       const seen = new Set<string>();
@@ -148,9 +150,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("Error running lead-listing matching:", error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Matching failed" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Matching failed" }, { status: 500 });
   }
 }

@@ -10,13 +10,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { UserPlus, AlertCircle, Copy, Check } from "lucide-react";
@@ -159,7 +153,8 @@ export default function CreateMemberButton({
         <DialogHeader>
           <DialogTitle>Create Team Member</DialogTitle>
           <DialogDescription>
-            Create an account directly with a temporary password. The member will be required to change it on first login.
+            Create an account directly with a temporary password. The member will be required to change it on first
+            login.
           </DialogDescription>
         </DialogHeader>
 
@@ -169,8 +164,12 @@ export default function CreateMemberButton({
               <p className="text-sm font-semibold text-green-900">Member created successfully!</p>
               <p className="text-sm text-green-800 mt-2">Share these credentials with the new member:</p>
               <div className="mt-3 bg-white border rounded-lg p-3 font-mono text-sm">
-                <p><span className="text-gray-500">Email:</span> {email}</p>
-                <p><span className="text-gray-500">Password:</span> {password}</p>
+                <p>
+                  <span className="text-gray-500">Email:</span> {email}
+                </p>
+                <p>
+                  <span className="text-gray-500">Password:</span> {password}
+                </p>
               </div>
               <p className="text-xs text-green-700 mt-2">
                 They will be required to change their password on first login.
@@ -221,17 +220,13 @@ export default function CreateMemberButton({
                   <SelectItem value="agent">
                     Agent
                     {usage && (
-                      <span className="text-xs text-gray-500 ml-2">
-                        ({usage.agents_available} seats available)
-                      </span>
+                      <span className="text-xs text-gray-500 ml-2">({usage.agents_available} seats available)</span>
                     )}
                   </SelectItem>
                   <SelectItem value="assistant">
                     Assistant
                     {usage && (
-                      <span className="text-xs text-gray-500 ml-2">
-                        ({usage.assistants_available} seats available)
-                      </span>
+                      <span className="text-xs text-gray-500 ml-2">({usage.assistants_available} seats available)</span>
                     )}
                   </SelectItem>
                   <SelectItem value="admin">
@@ -263,9 +258,7 @@ export default function CreateMemberButton({
                   Generate
                 </Button>
               </div>
-              <p className="text-xs text-gray-500">
-                The member will be required to change this on first login.
-              </p>
+              <p className="text-xs text-gray-500">The member will be required to change this on first login.</p>
             </div>
 
             {offices.length > 0 && (
@@ -295,12 +288,7 @@ export default function CreateMemberButton({
             )}
 
             <div className="flex justify-end gap-2 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleClose}
-                disabled={loading}
-              >
+              <Button type="button" variant="outline" onClick={handleClose} disabled={loading}>
                 Cancel
               </Button>
               <Button type="submit" disabled={loading || !canCreateRole(role)}>

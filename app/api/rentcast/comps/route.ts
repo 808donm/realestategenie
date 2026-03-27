@@ -3,8 +3,11 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { RentcastClient, createRentcastClient } from "@/lib/integrations/rentcast-client";
 import {
-  buildPropertyCacheKey, propertyCacheGet, propertyCacheSet,
-  propertyDbRead, propertyDbWrite,
+  buildPropertyCacheKey,
+  propertyCacheGet,
+  propertyCacheSet,
+  propertyDbRead,
+  propertyDbWrite,
 } from "@/lib/integrations/property-data-cache";
 
 /**
@@ -41,7 +44,8 @@ export async function GET(request: NextRequest) {
 
     // Check property data cache first (7-day TTL)
     const cacheKey = buildPropertyCacheKey("rentcast", "comps", {
-      address, compCount: String(compCount),
+      address,
+      compCount: String(compCount),
       ...(bedrooms ? { bedrooms } : {}),
       ...(bathrooms ? { bathrooms } : {}),
       ...(squareFootage ? { squareFootage } : {}),
@@ -93,10 +97,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(result);
   } catch (error: any) {
     console.error("[RentCast Comps] Error:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to fetch comparables" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message || "Failed to fetch comparables" }, { status: 500 });
   }
 }
 
@@ -111,10 +112,7 @@ async function getRentcastClient(): Promise<RentcastClient | null> {
       .maybeSingle();
 
     if (integration?.config) {
-      const config =
-        typeof integration.config === "string"
-          ? JSON.parse(integration.config)
-          : integration.config;
+      const config = typeof integration.config === "string" ? JSON.parse(integration.config) : integration.config;
       if (config.api_key) return new RentcastClient({ apiKey: config.api_key });
     }
 

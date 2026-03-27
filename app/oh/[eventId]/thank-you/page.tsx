@@ -2,11 +2,7 @@ import { supabaseServer } from "@/lib/supabase/server";
 import Link from "next/link";
 import DownloadButton from "../download-button.client";
 
-export default async function ThankYouPage({
-  params,
-}: {
-  params: Promise<{ eventId: string }>;
-}) {
+export default async function ThankYouPage({ params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = await params;
   const supabase = await supabaseServer();
 
@@ -54,29 +50,25 @@ export default async function ThankYouPage({
               borderRadius: "50%",
               objectFit: "cover",
               border: "3px solid #e5e7eb",
-              margin: "0 auto"
+              margin: "0 auto",
             }}
           />
         </div>
       )}
 
       {/* Success Message */}
-      <div style={{
-        background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-        padding: "40px 30px",
-        borderRadius: 16,
-        marginBottom: 32,
-        color: "white"
-      }}>
-        <h1 style={{ fontSize: 36, fontWeight: 800, margin: "0 0 12px 0" }}>
-          Thank You! ✓
-        </h1>
-        <p style={{ fontSize: 18, margin: 0, opacity: 0.95 }}>
-          You're all checked in for
-        </p>
-        <p style={{ fontSize: 20, fontWeight: 700, margin: "8px 0 0 0" }}>
-          {event.address}
-        </p>
+      <div
+        style={{
+          background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+          padding: "40px 30px",
+          borderRadius: 16,
+          marginBottom: 32,
+          color: "white",
+        }}
+      >
+        <h1 style={{ fontSize: 36, fontWeight: 800, margin: "0 0 12px 0" }}>Thank You! ✓</h1>
+        <p style={{ fontSize: 18, margin: 0, opacity: 0.95 }}>You're all checked in for</p>
+        <p style={{ fontSize: 20, fontWeight: 700, margin: "8px 0 0 0" }}>{event.address}</p>
       </div>
 
       {/* Download Flyer Button */}
@@ -85,17 +77,17 @@ export default async function ThankYouPage({
       </div>
 
       {/* Info Box */}
-      <div style={{
-        background: "#f0fdf4",
-        border: "2px solid #10b981",
-        borderRadius: 12,
-        padding: 24,
-        marginBottom: 32,
-        textAlign: "left"
-      }}>
-        <h2 style={{ fontSize: 18, fontWeight: 700, margin: "0 0 12px 0", color: "#059669" }}>
-          What's Next?
-        </h2>
+      <div
+        style={{
+          background: "#f0fdf4",
+          border: "2px solid #10b981",
+          borderRadius: 12,
+          padding: 24,
+          marginBottom: 32,
+          textAlign: "left",
+        }}
+      >
+        <h2 style={{ fontSize: 18, fontWeight: 700, margin: "0 0 12px 0", color: "#059669" }}>What's Next?</h2>
         <ul style={{ margin: 0, paddingLeft: 20, color: "#047857" }}>
           <li style={{ marginBottom: 8 }}>
             Check your <strong>email and phone</strong> for a confirmation message
@@ -103,12 +95,8 @@ export default async function ThankYouPage({
           <li style={{ marginBottom: 8 }}>
             The message includes a link to <strong>download the property fact sheet</strong>
           </li>
-          <li style={{ marginBottom: 8 }}>
-            {event.display_name || "Your agent"} will follow up with you soon
-          </li>
-          <li>
-            Feel free to explore the property and ask questions!
-          </li>
+          <li style={{ marginBottom: 8 }}>{event.display_name || "Your agent"} will follow up with you soon</li>
+          <li>Feel free to explore the property and ask questions!</li>
         </ul>
       </div>
 
@@ -120,7 +108,7 @@ export default async function ThankYouPage({
           color: "#6b7280",
           fontSize: 14,
           textDecoration: "underline",
-          marginTop: 16
+          marginTop: 16,
         }}
       >
         ← Back to Open House Page

@@ -11,6 +11,7 @@ We've already built an **automated webhook-based system** for you (Option 1), bu
 **This is already implemented and working!** When a lead checks in to an open house:
 
 ### What Happens Automatically:
+
 1. ✅ Lead syncs to GHL as a contact
 2. ✅ SMS sent: "Hi [Name]! Thanks for visiting [Address]. Would you like the property flyer? Reply YES if interested."
 3. ✅ When they reply "YES":
@@ -19,12 +20,14 @@ We've already built an **automated webhook-based system** for you (Option 1), bu
 4. ✅ All tracked in database with full audit trail
 
 ### How It Works:
+
 - Uses **GHL custom fields** to store the open house ID
 - **Webhook** receives their replies and processes them
 - **Smart logic** handles multiple property attendance
 - Works even if they reply **days or weeks later**
 
 ### Setup Required:
+
 **Only need to configure the GHL webhook once:**
 
 1. **In GHL:** Settings → Integrations → Webhooks
@@ -35,16 +38,20 @@ We've already built an **automated webhook-based system** for you (Option 1), bu
 3. **Save** - That's it!
 
 ### Custom Fields in GHL:
+
 When leads sync, these custom fields are automatically populated:
+
 - `representation` - Buyer representation status
 - `wants_reach_out` - If they want agent to reach out
 - `neighborhoods` - Neighborhoods they're interested in
 - `must_haves` - Property must-haves
 
 ### How Multiple Open Houses Are Handled:
+
 The system uses the `contact_open_house_attendance` table to track every property a contact visits:
 
 **Example:**
+
 ```
 Contact ID: abc123
 - Attended: 123 Main St (Jan 15)
@@ -53,6 +60,7 @@ Contact ID: abc123
 ```
 
 When they reply "YES" on Jan 25:
+
 1. System queries attendance table
 2. Finds 3 properties
 3. Sends: "Which flyer? Reply 1, 2, or 3"
@@ -60,6 +68,7 @@ When they reply "YES" on Jan 25:
 5. System sends flyer for 456 Oak Ave
 
 ### Database Tables:
+
 ```sql
 -- Tracks each follow-up conversation
 open_house_flyer_followups
@@ -86,12 +95,12 @@ If you prefer to use GHL's workflow builder instead:
 
 Go to **Settings → Custom Fields** and create:
 
-| Field Name | Field Type | API Key |
-|------------|------------|---------|
-| Open House ID | Text | `open_house_id` |
-| Open House Address | Text | `open_house_address` |
-| Property Flyer URL | Text | `property_flyer_url` |
-| Attended Properties | Text Area | `attended_properties` |
+| Field Name          | Field Type | API Key               |
+| ------------------- | ---------- | --------------------- |
+| Open House ID       | Text       | `open_house_id`       |
+| Open House Address  | Text       | `open_house_address`  |
+| Property Flyer URL  | Text       | `property_flyer_url`  |
+| Attended Properties | Text Area  | `attended_properties` |
 
 ### Step 2: Update Lead Sync Code
 
@@ -125,21 +134,14 @@ customFields: {
 1. **Send Email** (Immediate)
    - Subject: "Thank you for visiting {{custom_fields.open_house_address}}"
    - Body:
+
    ```html
-   Hi {{first_name}},
-
-   Thanks for visiting the open house at {{custom_fields.open_house_address}}!
-
-   Here's the property flyer:
-   {{custom_fields.property_flyer_url}}
-
-   Feel free to reach out with any questions.
-
-   Best regards,
-   {{user.name}}
+   Hi {{first_name}}, Thanks for visiting the open house at {{custom_fields.open_house_address}}! Here's the property
+   flyer: {{custom_fields.property_flyer_url}} Feel free to reach out with any questions. Best regards, {{user.name}}
    ```
 
 2. **Send SMS** (Immediate)
+
    ```
    Hi {{first_name}}! Thanks for visiting {{custom_fields.open_house_address}}.
    Would you like the property flyer? Reply YES if interested. - {{user.name}}
@@ -154,6 +156,7 @@ customFields: {
    - Else → Go to Step 6
 
 5. **Ask Which Property** (Send SMS)
+
    ```
    You've visited multiple properties! Which flyer would you like?
 
@@ -161,9 +164,11 @@ customFields: {
 
    Reply with the property number
    ```
+
    - **Wait for reply** → Extract number → Store in custom field
 
 6. **Send Flyer Link** (Send SMS)
+
    ```
    Here's your property flyer: {{custom_fields.property_flyer_url}}
 
@@ -183,21 +188,22 @@ customFields: {
 
 ## 🔍 Comparison: Which Option Should You Use?
 
-| Feature | Option 1 (Webhook) | Option 2 (GHL Workflow) |
-|---------|-------------------|------------------------|
-| **Setup Time** | 2 minutes | 30-60 minutes |
-| **Maintenance** | Zero - fully automated | Manual workflow updates |
-| **Multiple Properties** | ✅ Automatic | 🟡 Complex conditions needed |
-| **Delayed Responses** | ✅ Works perfectly | ✅ Works perfectly |
-| **Tracking** | ✅ Full database audit | 🟡 GHL logs only |
-| **Customization** | Code changes needed | Easy via GHL UI |
-| **Testing** | Via webhook logs | Via GHL workflow tester |
+| Feature                 | Option 1 (Webhook)     | Option 2 (GHL Workflow)      |
+| ----------------------- | ---------------------- | ---------------------------- |
+| **Setup Time**          | 2 minutes              | 30-60 minutes                |
+| **Maintenance**         | Zero - fully automated | Manual workflow updates      |
+| **Multiple Properties** | ✅ Automatic           | 🟡 Complex conditions needed |
+| **Delayed Responses**   | ✅ Works perfectly     | ✅ Works perfectly           |
+| **Tracking**            | ✅ Full database audit | 🟡 GHL logs only             |
+| **Customization**       | Code changes needed    | Easy via GHL UI              |
+| **Testing**             | Via webhook logs       | Via GHL workflow tester      |
 
 ---
 
 ## 📊 Monitoring Active System
 
 ### Check Follow-up Status:
+
 ```sql
 -- See all pending follow-ups
 SELECT * FROM open_house_flyer_followups
@@ -212,6 +218,7 @@ HAVING COUNT(*) > 1;
 ```
 
 ### View in GHL:
+
 1. Go to **Contacts**
 2. Find the contact
 3. View **Conversation** tab
@@ -222,6 +229,7 @@ HAVING COUNT(*) > 1;
 ## 🚀 Recommended Approach
 
 **Use Option 1 (Automated Webhook System)** because:
+
 - ✅ Already built and tested
 - ✅ Handles complexity automatically
 - ✅ Zero maintenance
@@ -229,6 +237,7 @@ HAVING COUNT(*) > 1;
 - ✅ Just needs 2-minute webhook setup
 
 **Use Option 2 (GHL Workflow)** only if:
+
 - You want to customize messages frequently
 - You prefer visual workflow builder
 - You have GHL workflow expertise

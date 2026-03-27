@@ -34,14 +34,7 @@ function ProviderButton({
   };
 
   return (
-    <Button
-      type="button"
-      variant="outline"
-      size="lg"
-      onClick={handleClick}
-      disabled={loading}
-      className={className}
-    >
+    <Button type="button" variant="outline" size="lg" onClick={handleClick} disabled={loading} className={className}>
       {icon}
       {loading ? "Connecting..." : label}
     </Button>

@@ -10,7 +10,9 @@ export async function POST(req: NextRequest) {
 
     if (!isServiceCall) {
       const supabase = await supabaseServer();
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
@@ -32,9 +34,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(analysis);
   } catch (err: unknown) {
     console.error("[prospecting-ai/analyze]", err);
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "AI analysis failed" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: err instanceof Error ? err.message : "AI analysis failed" }, { status: 500 });
   }
 }

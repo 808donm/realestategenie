@@ -47,18 +47,11 @@ export async function POST(request: NextRequest) {
     const { name, center_lat, center_lng, radius_miles, filters } = body;
 
     if (!name?.trim() || center_lat == null || center_lng == null) {
-      return NextResponse.json(
-        { error: "name, center_lat, center_lng are required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "name, center_lat, center_lng are required" }, { status: 400 });
     }
 
     // Get team_id from agents table
-    const { data: agent } = await supabase
-      .from("agents")
-      .select("team_id")
-      .eq("id", user.id)
-      .single();
+    const { data: agent } = await supabase.from("agents").select("team_id").eq("id", user.id).single();
 
     const { data, error } = await supabase
       .from("seller_map_saved_searches")
@@ -78,7 +71,7 @@ export async function POST(request: NextRequest) {
       if (error.code === "42P01" || error.message?.includes("does not exist")) {
         return NextResponse.json(
           { error: "Saved searches not available — run migration 20260310300000" },
-          { status: 503 }
+          { status: 503 },
         );
       }
       throw error;
@@ -100,11 +93,7 @@ export async function DELETE(request: NextRequest) {
     const id = request.nextUrl.searchParams.get("id");
     if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
 
-    const { error } = await supabase
-      .from("seller_map_saved_searches")
-      .delete()
-      .eq("id", id)
-      .eq("agent_id", user.id);
+    const { error } = await supabase.from("seller_map_saved_searches").delete().eq("id", id).eq("agent_id", user.id);
 
     if (error) throw error;
     return NextResponse.json({ success: true });

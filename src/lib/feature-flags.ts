@@ -27,11 +27,7 @@ export async function getFeatureFlags(): Promise<FeatureFlags | null> {
     return null;
   }
 
-  const { data, error } = await supabase
-    .from("feature_flags")
-    .select("*")
-    .eq("agent_id", user.id)
-    .single();
+  const { data, error } = await supabase.from("feature_flags").select("*").eq("agent_id", user.id).single();
 
   if (error || !data) {
     // Return default flags if not found
@@ -66,9 +62,7 @@ export async function getFeatureFlags(): Promise<FeatureFlags | null> {
 /**
  * Check if a specific feature is enabled
  */
-export async function isFeatureEnabled(
-  feature: keyof FeatureFlags
-): Promise<boolean> {
+export async function isFeatureEnabled(feature: keyof FeatureFlags): Promise<boolean> {
   const flags = await getFeatureFlags();
   return flags?.[feature] ?? false;
 }

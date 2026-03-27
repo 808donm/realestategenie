@@ -29,11 +29,11 @@ export interface POISearchResult {
  */
 function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 3959;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon / 2) ** 2;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
@@ -154,8 +154,10 @@ out center ${maxResults * 2};
           subcategory: tags.cuisine || tags.denomination || tags.sport || undefined,
           latitude: lat,
           longitude: lon,
-          distanceMiles: lat && lon ? Math.round(haversineDistance(latitude, longitude, lat, lon) * 100) / 100 : undefined,
-          address: [tags["addr:housenumber"], tags["addr:street"], tags["addr:city"]].filter(Boolean).join(" ") || undefined,
+          distanceMiles:
+            lat && lon ? Math.round(haversineDistance(latitude, longitude, lat, lon) * 100) / 100 : undefined,
+          address:
+            [tags["addr:housenumber"], tags["addr:street"], tags["addr:city"]].filter(Boolean).join(" ") || undefined,
           phone: tags.phone || tags["contact:phone"] || undefined,
         };
       })

@@ -11,6 +11,7 @@ The Real Estate Genie uses a strict invitation-only authentication system to con
 **Path**: Admin Dashboard → Invitations → Create New Invitation
 
 **Process**:
+
 - Admin enters the email address of the person to invite
 - System generates:
   - Unique invitation ID (UUID)
@@ -26,12 +27,14 @@ The Real Estate Genie uses a strict invitation-only authentication system to con
 **Path**: User clicks email link → `/accept-invite/[id]?token=[token]`
 
 **Validation Steps**:
+
 1. ✓ Invitation ID exists in database
 2. ✓ Token matches invitation record
 3. ✓ Invitation has not expired
 4. ✓ Invitation status is `pending` (not already used)
 
 **Registration Flow**:
+
 1. User enters full name and password
 2. User receives email verification code (6 digits, expires in 15 minutes)
 3. User enters verification code
@@ -48,6 +51,7 @@ The Real Estate Genie uses a strict invitation-only authentication system to con
 **Function**: `create_agent_profile()`
 
 **Logic**:
+
 ```sql
 1. Check if agent profile already exists
    - If YES: Allow (existing user signing back in)
@@ -75,10 +79,12 @@ The Real Estate Genie uses a strict invitation-only authentication system to con
 **Path**: `/signin`
 
 **Methods Available**:
+
 - OAuth (Google, Facebook, LinkedIn)
 - Magic link (email OTP)
 
 **How It Works**:
+
 - User clicks sign-in method
 - Supabase checks if auth.users record exists
 - **If EXISTS**: Sign in successful (no trigger fired)
@@ -87,27 +93,32 @@ The Real Estate Genie uses a strict invitation-only authentication system to con
 ## Security Features
 
 ### ✅ Prevents Unauthorized Access
+
 - OAuth sign-in only works for existing accounts
 - Magic links only work for existing accounts
 - New accounts MUST have valid invitation
 
 ### ✅ Invitation Expiration
+
 - Invitations expire after set time (default: 7 days)
 - Expired invitations automatically marked with status='expired'
 - Cannot be used after expiration
 
 ### ✅ One-Time Use
+
 - Invitations can only be accepted once
 - Status changes from 'pending' → 'accepted'
 - Subsequent attempts redirect to login
 
 ### ✅ Email Verification
+
 - 6-digit verification code sent to email
 - Code expires in 15 minutes
 - Maximum 5 verification attempts
 - Prevents automated abuse
 
 ### ✅ Security Logging
+
 - Failed account creation attempts logged to `error_logs` table
 - Includes email address and timestamp
 - Severity level: 'warning'
@@ -116,6 +127,7 @@ The Real Estate Genie uses a strict invitation-only authentication system to con
 ## Database Tables
 
 ### `user_invitations`
+
 ```sql
 - id: UUID (primary key)
 - email: TEXT (invited user's email)
@@ -132,6 +144,7 @@ The Real Estate Genie uses a strict invitation-only authentication system to con
 ```
 
 ### `agents`
+
 ```sql
 - id: UUID (references auth.users.id)
 - email: TEXT
@@ -144,6 +157,7 @@ The Real Estate Genie uses a strict invitation-only authentication system to con
 ## User Flows
 
 ### New User (First Time)
+
 ```
 1. Admin sends invitation
    ↓
@@ -167,6 +181,7 @@ The Real Estate Genie uses a strict invitation-only authentication system to con
 ```
 
 ### Existing User (Returning)
+
 ```
 1. User goes to /signin
    ↓
@@ -180,6 +195,7 @@ The Real Estate Genie uses a strict invitation-only authentication system to con
 ```
 
 ### Unauthorized User (No Invitation)
+
 ```
 1. User goes to /signin
    ↓
@@ -201,6 +217,7 @@ The Real Estate Genie uses a strict invitation-only authentication system to con
 ## Admin Management
 
 ### Creating Invitations
+
 - Navigate to: `/app/admin/invitations`
 - Click "Create Invitation"
 - Enter email address
@@ -208,12 +225,14 @@ The Real Estate Genie uses a strict invitation-only authentication system to con
 - Invitation appears in admin table
 
 ### Viewing Invitations
+
 - Filter by status (pending, accepted, expired)
 - See who created each invitation
 - View creation and expiration dates
 - Check if/when invitation was accepted
 
 ### Cancelling Invitations
+
 - Click delete/cancel on invitation
 - Status changes to 'cancelled'
 - Link becomes invalid
@@ -222,53 +241,64 @@ The Real Estate Genie uses a strict invitation-only authentication system to con
 ## Troubleshooting
 
 ### "Account creation requires a valid invitation"
+
 **Cause**: User tried to sign in without a valid invitation
 **Solution**: Admin must create invitation for that email address
 
 ### "Invitation has expired"
+
 **Cause**: Invitation link is older than expiration period (7 days)
 **Solution**: Admin must create a new invitation
 
 ### "Invalid verification code"
+
 **Cause**: User entered wrong 6-digit code
 **Solution**: Request new code or check email for correct code
 
 ### "Too many failed attempts"
+
 **Cause**: User failed verification code 5+ times
 **Solution**: Request new verification code
 
 ## Configuration
 
 ### Invitation Expiration
+
 Default: 7 days from creation
 To change: Update expiration logic in `/api/admin/invitations/create/route.ts`
 
 ### Verification Code Expiration
+
 Default: 15 minutes
 To change: Update logic in `/api/accept-invite/send-code/route.ts`
 
 ### Max Verification Attempts
+
 Default: 5 attempts
 To change: Update logic in `/api/accept-invite/route.ts`
 
 ## Related Files
 
 ### Database
+
 - `supabase/migrations/014_admin_system.sql` - Creates user_invitations table
 - `supabase/migrations/016_add_verification_codes.sql` - Adds verification code fields
 - `supabase/migrations/038_invitation_only_auth.sql` - Enforces invitation validation
 
 ### API Routes
+
 - `/app/api/admin/invitations/create/route.ts` - Create invitations
 - `/app/api/accept-invite/route.ts` - Accept invitation and create account
 - `/app/api/accept-invite/send-code/route.ts` - Send verification code
 
 ### Frontend
+
 - `/app/signin/signin-client.tsx` - Sign-in page with invitation notice
 - `/app/accept-invite/[id]/page.tsx` - Invitation acceptance page
 - `/app/accept-invite/[id]/accept-invite.client.tsx` - Acceptance form
 - `/app/app/admin/invitations/page.tsx` - Admin invitation management
 
 ### Database Functions
+
 - `create_agent_profile()` - Trigger function with invitation validation
 - `on_auth_user_created` - Trigger that fires after auth user creation

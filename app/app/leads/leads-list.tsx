@@ -57,19 +57,21 @@ export default function LeadsList({ leads, eventMap }: LeadsListProps) {
   };
 
   const exportLeads = (format: "pdf" | "xlsx") => {
-    const rows = leads.filter((l) => !isDNC(l)).map((l) => {
-      const p: any = l.payload ?? {};
-      return {
-        name: p.name || "Unknown",
-        email: p.email || "",
-        phone: p.phone_e164 || "",
-        property: eventMap.get(l.event_id) || (l.event_id ? l.event_id : "Direct Lead"),
-        score: l.heat_score,
-        heat: getHeatLevel(l.heat_score),
-        timeline: p.timeline || "",
-        date: new Date(l.created_at).toLocaleDateString(),
-      };
-    });
+    const rows = leads
+      .filter((l) => !isDNC(l))
+      .map((l) => {
+        const p: any = l.payload ?? {};
+        return {
+          name: p.name || "Unknown",
+          email: p.email || "",
+          phone: p.phone_e164 || "",
+          property: eventMap.get(l.event_id) || (l.event_id ? l.event_id : "Direct Lead"),
+          score: l.heat_score,
+          heat: getHeatLevel(l.heat_score),
+          timeline: p.timeline || "",
+          date: new Date(l.created_at).toLocaleDateString(),
+        };
+      });
 
     if (format === "xlsx") {
       const ws = XLSX.utils.json_to_sheet(rows);
@@ -97,7 +99,10 @@ export default function LeadsList({ leads, eventMap }: LeadsListProps) {
       y += 5;
       doc.setFont("helvetica", "normal");
       rows.forEach((r) => {
-        if (y > 275) { doc.addPage(); y = 20; }
+        if (y > 275) {
+          doc.addPage();
+          y = 20;
+        }
         doc.text(r.name.slice(0, 18), cols[0], y);
         doc.text(r.email.slice(0, 20), cols[1], y);
         doc.text(r.phone.slice(0, 14), cols[2], y);
@@ -129,16 +134,25 @@ export default function LeadsList({ leads, eventMap }: LeadsListProps) {
 
   const tabs: { key: Tab; label: string; count: number; color: string; icon: React.ReactNode }[] = [
     { key: "hot", label: "Hot", count: hotLeads.length, color: "#ef4444", icon: <Flame className="w-4 h-4" /> },
-    { key: "warm", label: "Warm", count: warmLeads.length, color: "#f59e0b", icon: <Thermometer className="w-4 h-4" /> },
+    {
+      key: "warm",
+      label: "Warm",
+      count: warmLeads.length,
+      color: "#f59e0b",
+      icon: <Thermometer className="w-4 h-4" />,
+    },
     { key: "cold", label: "Cold", count: coldLeads.length, color: "#3b82f6", icon: <Snowflake className="w-4 h-4" /> },
-    { key: "dnc", label: "Do Not Contact", count: dncLeads.length, color: "#6b7280", icon: <Ban className="w-4 h-4" /> },
+    {
+      key: "dnc",
+      label: "Do Not Contact",
+      count: dncLeads.length,
+      color: "#6b7280",
+      icon: <Ban className="w-4 h-4" />,
+    },
   ];
 
   const currentLeads =
-    activeTab === "hot" ? hotLeads :
-    activeTab === "warm" ? warmLeads :
-    activeTab === "cold" ? coldLeads :
-    dncLeads;
+    activeTab === "hot" ? hotLeads : activeTab === "warm" ? warmLeads : activeTab === "cold" ? coldLeads : dncLeads;
 
   return (
     <>
@@ -155,18 +169,22 @@ export default function LeadsList({ leads, eventMap }: LeadsListProps) {
             { key: "timeline", label: "Timeline", width: 1.2 },
             { key: "date", label: "Date", width: 1.2 },
           ]}
-          getData={() => leads.filter((l) => !isDNC(l)).map((l) => {
-            const p: any = l.payload ?? {};
-            return {
-              name: p.name || "Unknown",
-              email: p.email || "",
-              phone: p.phone_e164 || "",
-              property: eventMap.get(l.event_id) || (l.event_id ? l.event_id : "Direct Lead"),
-              score: l.heat_score,
-              timeline: p.timeline || "",
-              date: new Date(l.created_at).toLocaleDateString(),
-            };
-          })}
+          getData={() =>
+            leads
+              .filter((l) => !isDNC(l))
+              .map((l) => {
+                const p: any = l.payload ?? {};
+                return {
+                  name: p.name || "Unknown",
+                  email: p.email || "",
+                  phone: p.phone_e164 || "",
+                  property: eventMap.get(l.event_id) || (l.event_id ? l.event_id : "Direct Lead"),
+                  score: l.heat_score,
+                  timeline: p.timeline || "",
+                  date: new Date(l.created_at).toLocaleDateString(),
+                };
+              })
+          }
         />
       </div>
 
@@ -205,16 +223,18 @@ export default function LeadsList({ leads, eventMap }: LeadsListProps) {
         ) : (
           <div style={{ border: "1px solid #e5e7eb", borderRadius: 12, overflow: "hidden" }}>
             {/* Table Header */}
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: activeTab === "dnc" ? "2fr 1.5fr 2fr 1fr 1.5fr" : "2fr 1.5fr 2fr 1fr 1fr 1.5fr",
-              padding: "10px 16px",
-              background: "#f9fafb",
-              fontWeight: 700,
-              fontSize: 12,
-              color: "#6b7280",
-              borderBottom: "1px solid #e5e7eb",
-            }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: activeTab === "dnc" ? "2fr 1.5fr 2fr 1fr 1.5fr" : "2fr 1.5fr 2fr 1fr 1fr 1.5fr",
+                padding: "10px 16px",
+                background: "#f9fafb",
+                fontWeight: 700,
+                fontSize: 12,
+                color: "#6b7280",
+                borderBottom: "1px solid #e5e7eb",
+              }}
+            >
               <span>Name</span>
               <span>Contact</span>
               <span>Property</span>
@@ -234,16 +254,21 @@ export default function LeadsList({ leads, eventMap }: LeadsListProps) {
               const p: any = l.payload ?? {};
               const address = eventMap.get(l.event_id) || (l.event_id ? l.event_id : "Direct Lead");
               const heatColor =
-                activeTab === "dnc" ? "#6b7280" :
-                getHeatLevel(l.heat_score) === "hot" ? "#ef4444" :
-                getHeatLevel(l.heat_score) === "warm" ? "#f59e0b" : "#3b82f6";
+                activeTab === "dnc"
+                  ? "#6b7280"
+                  : getHeatLevel(l.heat_score) === "hot"
+                    ? "#ef4444"
+                    : getHeatLevel(l.heat_score) === "warm"
+                      ? "#f59e0b"
+                      : "#3b82f6";
 
               return (
                 <div
                   key={l.id}
                   style={{
                     display: "grid",
-                    gridTemplateColumns: activeTab === "dnc" ? "2fr 1.5fr 2fr 1fr 1.5fr" : "2fr 1.5fr 2fr 1fr 1fr 1.5fr",
+                    gridTemplateColumns:
+                      activeTab === "dnc" ? "2fr 1.5fr 2fr 1fr 1.5fr" : "2fr 1.5fr 2fr 1fr 1fr 1.5fr",
                     padding: "12px 16px",
                     borderBottom: "1px solid #f3f4f6",
                     fontSize: 13,
@@ -259,27 +284,65 @@ export default function LeadsList({ leads, eventMap }: LeadsListProps) {
                   {/* Name */}
                   <div>
                     <div style={{ fontWeight: 600, color: "#111827" }}>{p.name || "Unknown"}</div>
-                    {p.financing && (
-                      <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>
-                        {p.financing}
-                      </div>
-                    )}
+                    {p.financing && <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>{p.financing}</div>}
                   </div>
 
                   {/* Contact */}
-                  <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }} onClick={(e) => e.stopPropagation()}>
+                  <div
+                    style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     {p.phone_e164 && (
-                      <a href={`tel:${p.phone_e164}`} title="Call" style={{ padding: "4px 8px", background: "#ecfdf5", color: "#059669", borderRadius: 6, fontSize: 11, fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap" }}>
+                      <a
+                        href={`tel:${p.phone_e164}`}
+                        title="Call"
+                        style={{
+                          padding: "4px 8px",
+                          background: "#ecfdf5",
+                          color: "#059669",
+                          borderRadius: 6,
+                          fontSize: 11,
+                          fontWeight: 600,
+                          textDecoration: "none",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
                         Call
                       </a>
                     )}
                     {p.phone_e164 && (
-                      <a href={`sms:${p.phone_e164}`} title="Text" style={{ padding: "4px 8px", background: "#eff6ff", color: "#2563eb", borderRadius: 6, fontSize: 11, fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap" }}>
+                      <a
+                        href={`sms:${p.phone_e164}`}
+                        title="Text"
+                        style={{
+                          padding: "4px 8px",
+                          background: "#eff6ff",
+                          color: "#2563eb",
+                          borderRadius: 6,
+                          fontSize: 11,
+                          fontWeight: 600,
+                          textDecoration: "none",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
                         Text
                       </a>
                     )}
                     {p.email && (
-                      <a href={`mailto:${p.email}`} title="Email" style={{ padding: "4px 8px", background: "#fef3c7", color: "#d97706", borderRadius: 6, fontSize: 11, fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap" }}>
+                      <a
+                        href={`mailto:${p.email}`}
+                        title="Email"
+                        style={{
+                          padding: "4px 8px",
+                          background: "#fef3c7",
+                          color: "#d97706",
+                          borderRadius: 6,
+                          fontSize: 11,
+                          fontWeight: 600,
+                          textDecoration: "none",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
                         Email
                       </a>
                     )}
@@ -306,30 +369,28 @@ export default function LeadsList({ leads, eventMap }: LeadsListProps) {
                     <>
                       {/* Score */}
                       <div>
-                        <span style={{
-                          display: "inline-block",
-                          padding: "2px 10px",
-                          borderRadius: 10,
-                          fontSize: 12,
-                          fontWeight: 700,
-                          background: heatColor + "18",
-                          color: heatColor,
-                        }}>
+                        <span
+                          style={{
+                            display: "inline-block",
+                            padding: "2px 10px",
+                            borderRadius: 10,
+                            fontSize: 12,
+                            fontWeight: 700,
+                            background: heatColor + "18",
+                            color: heatColor,
+                          }}
+                        >
                           {l.heat_score}
                         </span>
                       </div>
 
                       {/* Timeline */}
-                      <div style={{ fontSize: 12, color: "#6b7280" }}>
-                        {p.timeline || "—"}
-                      </div>
+                      <div style={{ fontSize: 12, color: "#6b7280" }}>{p.timeline || "—"}</div>
                     </>
                   )}
 
                   {/* Date */}
-                  <div style={{ fontSize: 12, color: "#9ca3af" }}>
-                    {new Date(l.created_at).toLocaleDateString()}
-                  </div>
+                  <div style={{ fontSize: 12, color: "#9ca3af" }}>{new Date(l.created_at).toLocaleDateString()}</div>
                 </div>
               );
             })}

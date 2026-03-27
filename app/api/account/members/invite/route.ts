@@ -43,18 +43,11 @@ export async function POST(request: NextRequest) {
     });
 
     if (!canAdd) {
-      return NextResponse.json(
-        { error: `No ${role} seats available. Please upgrade your plan.` },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: `No ${role} seats available. Please upgrade your plan.` }, { status: 400 });
     }
 
     // Check if user already exists with this email
-    const { data: existingAgent } = await supabaseAdmin
-      .from("agents")
-      .select("id")
-      .eq("email", email)
-      .single();
+    const { data: existingAgent } = await supabaseAdmin.from("agents").select("id").eq("email", email).single();
 
     // If user already exists, check if they're already in this account
     if (existingAgent) {
@@ -66,10 +59,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (existingMember) {
-        return NextResponse.json(
-          { error: "This user is already a member of your team" },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: "This user is already a member of your team" }, { status: 400 });
       }
     }
 

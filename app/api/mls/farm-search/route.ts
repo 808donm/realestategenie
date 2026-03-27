@@ -55,14 +55,11 @@ export async function GET(request: NextRequest) {
     if (!integration || integration.status !== "connected") {
       return NextResponse.json(
         { error: "Trestle MLS is not connected. Go to Integrations to set it up." },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
-    const config =
-      typeof integration.config === "string"
-        ? JSON.parse(integration.config)
-        : integration.config;
+    const config = typeof integration.config === "string" ? JSON.parse(integration.config) : integration.config;
 
     const searchParams = request.nextUrl.searchParams;
 
@@ -87,11 +84,7 @@ export async function GET(request: NextRequest) {
 
     // If farmAreaId provided, load saved search params
     if (farmAreaId) {
-      const { data: farmArea } = await supabase
-        .from("mls_farm_areas")
-        .select("*")
-        .eq("id", farmAreaId)
-        .single();
+      const { data: farmArea } = await supabase.from("mls_farm_areas").select("*").eq("id", farmAreaId).single();
 
       if (farmArea) {
         searchType = farmArea.search_type;
@@ -196,7 +189,7 @@ export async function GET(request: NextRequest) {
     console.error("Farm search error:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to search farm area" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -204,19 +197,13 @@ export async function GET(request: NextRequest) {
 /**
  * Haversine distance in miles between two lat/lng points.
  */
-function haversineDistance(
-  lat1: number, lng1: number,
-  lat2: number, lng2: number
-): number {
+function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 3959; // Earth radius in miles
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLng = ((lng2 - lng1) * Math.PI) / 180;
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLng / 2) *
-      Math.sin(dLng / 2);
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
@@ -237,11 +224,11 @@ async function resolveTMKToZipCodes(tmkPrefix: string): Promise<string[]> {
     "2": ["96813", "96814", "96826"], // Makiki/Manoa
     "3": ["96815", "96816", "96822"], // Waikiki/Kapahulu
     "4": ["96816", "96821", "96825"], // Kahala/Hawaii Kai
-    "5": ["96734", "96730"],          // Kailua
-    "6": ["96744"],                    // Kaneohe
+    "5": ["96734", "96730"], // Kailua
+    "6": ["96744"], // Kaneohe
     "7": ["96762", "96717", "96730"], // Laie/Hauula
-    "8": ["96791", "96792"],          // Waianae
-    "9": ["96797", "96789"],          // Mililani/Waipahu
+    "8": ["96791", "96792"], // Waianae
+    "9": ["96797", "96789"], // Mililani/Waipahu
   };
 
   return oahuZoneZips[zone] || [];

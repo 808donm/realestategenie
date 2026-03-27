@@ -3,13 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
 
-export default function QRPanel({
-  eventId,
-  status,
-}: {
-  eventId: string;
-  status: string;
-}) {
+export default function QRPanel({ eventId, status }: { eventId: string; status: string }) {
   const [origin, setOrigin] = useState<string>("");
   const [dataUrl, setDataUrl] = useState<string>("");
   const [msg, setMsg] = useState<string>("");
@@ -32,12 +26,12 @@ export default function QRPanel({
           const data = await response.json();
           setSecureToken(data.token);
         } else {
-          console.error('Failed to fetch QR token');
-          setMsg('⚠️ Failed to generate secure QR code');
+          console.error("Failed to fetch QR token");
+          setMsg("⚠️ Failed to generate secure QR code");
         }
       } catch (error) {
-        console.error('Error fetching QR token:', error);
-        setMsg('⚠️ Error generating secure QR code');
+        console.error("Error fetching QR token:", error);
+        setMsg("⚠️ Error generating secure QR code");
       } finally {
         setTokenLoading(false);
       }
@@ -156,7 +150,9 @@ export default function QRPanel({
 
       <div style={{ marginTop: 12 }}>
         <div style={{ fontSize: 12, opacity: 0.8 }}>Check-in URL</div>
-        <code style={{ display: "block", padding: 10, background: "#f6f6f6", borderRadius: 12, wordBreak: "break-all" }}>
+        <code
+          style={{ display: "block", padding: 10, background: "#f6f6f6", borderRadius: 12, wordBreak: "break-all" }}
+        >
           {checkInUrl || "Loading…"}
         </code>
       </div>

@@ -29,10 +29,7 @@ export default function PipelineStats({
             <GitBranch className="w-4 h-4" />
             Pipeline
           </CardTitle>
-          <Link
-            href="/app/pipeline"
-            className="text-xs text-primary hover:underline"
-          >
+          <Link href="/app/pipeline" className="text-xs text-primary hover:underline">
             View all
           </Link>
         </div>
@@ -54,34 +51,22 @@ export default function PipelineStats({
         {activeStages.length > 0 ? (
           <div className="space-y-2">
             {activeStages.map((stage) => {
-              const color =
-                PIPELINE_STAGE_COLORS[stage.stage as PipelineStage] || "#6b7280";
-              const pct =
-                totalLeads > 0
-                  ? Math.round((stage.count / totalLeads) * 100)
-                  : 0;
+              const color = PIPELINE_STAGE_COLORS[stage.stage as PipelineStage] || "#6b7280";
+              const pct = totalLeads > 0 ? Math.round((stage.count / totalLeads) * 100) : 0;
               return (
                 <div key={stage.stage} className="flex items-center gap-2">
-                  <div
-                    className="w-2 h-2 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: color }}
-                  />
+                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
                   <span className="text-xs flex-1 truncate">{stage.label}</span>
                   <span className="text-xs font-semibold">{stage.count}</span>
                   <div className="w-16 h-1.5 rounded-full bg-muted overflow-hidden">
-                    <div
-                      className="h-full rounded-full"
-                      style={{ width: `${pct}%`, backgroundColor: color }}
-                    />
+                    <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: color }} />
                   </div>
                 </div>
               );
             })}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">
-            No leads in pipeline yet.
-          </p>
+          <p className="text-sm text-muted-foreground">No leads in pipeline yet.</p>
         )}
       </CardContent>
     </Card>

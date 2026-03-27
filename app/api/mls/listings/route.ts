@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     console.error("Error fetching listings:", err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Failed to fetch listings" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -60,17 +60,15 @@ export async function POST(request: NextRequest) {
 
     // Required fields
     if (!body.city || !body.postal_code || !body.list_price) {
-      return NextResponse.json(
-        { error: "City, postal code, and list price are required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "City, postal code, and list price are required" }, { status: 400 });
     }
 
     // Build unparsed address
     const addressParts = [body.street_number, body.street_name, body.street_suffix].filter(Boolean);
-    const unparsed = addressParts.length > 0
-      ? `${addressParts.join(" ")}${body.unit_number ? ` #${body.unit_number}` : ""}, ${body.city}, ${body.state_or_province || "NJ"} ${body.postal_code}`
-      : `${body.city}, ${body.state_or_province || "NJ"} ${body.postal_code}`;
+    const unparsed =
+      addressParts.length > 0
+        ? `${addressParts.join(" ")}${body.unit_number ? ` #${body.unit_number}` : ""}, ${body.city}, ${body.state_or_province || "NJ"} ${body.postal_code}`
+        : `${body.city}, ${body.state_or_province || "NJ"} ${body.postal_code}`;
 
     const listing = {
       user_id: userData.user.id,
@@ -117,11 +115,7 @@ export async function POST(request: NextRequest) {
       photos: body.photos || [],
     };
 
-    const { data, error } = await supabase
-      .from("agent_listings")
-      .insert(listing)
-      .select()
-      .single();
+    const { data, error } = await supabase.from("agent_listings").insert(listing).select().single();
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
@@ -132,7 +126,7 @@ export async function POST(request: NextRequest) {
     console.error("Error creating listing:", err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Failed to create listing" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

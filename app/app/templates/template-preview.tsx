@@ -47,20 +47,13 @@ function QrCodePlaceholder({ size = "md", label = "Scan to Check In" }: { size?:
 // Generic footer shared across standard templates
 function GenericFooter({ settings, agentInfo }: { settings: TemplateSettings; agentInfo: any }) {
   return (
-    <div
-      className="p-6 mt-auto border-t"
-      style={{ borderColor: settings.primary_color + "30" }}
-    >
+    <div className="p-6 mt-auto border-t" style={{ borderColor: settings.primary_color + "30" }}>
       {settings.footer_style === "contact" && (
         <div className="flex items-center gap-6 justify-center flex-wrap text-sm">
-          {settings.show_agent_photo && (
-            <div className="w-16 h-16 rounded-full bg-gray-300" />
-          )}
+          {settings.show_agent_photo && <div className="w-16 h-16 rounded-full bg-gray-300" />}
           <div className="flex-1 min-w-[200px]">
             <p className="font-bold text-lg">{agentInfo?.display_name || "Agent Name"}</p>
-            {agentInfo?.company_name && (
-              <p className="text-gray-600">{agentInfo.company_name}</p>
-            )}
+            {agentInfo?.company_name && <p className="text-gray-600">{agentInfo.company_name}</p>}
             <div className="mt-2 space-y-1 text-xs">
               {settings.show_agent_phone && agentInfo?.phone && (
                 <div className="flex items-center gap-1">
@@ -117,20 +110,13 @@ function JustListedPreview({ settings, agentInfo }: { settings: TemplateSettings
   return (
     <>
       {/* Banner */}
-      <div
-        className="relative py-4 text-center"
-        style={{ backgroundColor: settings.primary_color }}
-      >
+      <div className="relative py-4 text-center" style={{ backgroundColor: settings.primary_color }}>
         <div className="absolute inset-0 opacity-10 bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,rgba(255,255,255,0.1)_10px,rgba(255,255,255,0.1)_20px)]" />
         <div className="relative">
-          {settings.logo_url && (
-            <img src={settings.logo_url} alt="Logo" className="h-8 mx-auto mb-2" />
-          )}
+          {settings.logo_url && <img src={settings.logo_url} alt="Logo" className="h-8 mx-auto mb-2" />}
           <p className="text-white/80 text-xs font-semibold tracking-[0.3em] uppercase">Exclusively</p>
           <h2 className="text-4xl font-extrabold text-white tracking-wide">JUST LISTED</h2>
-          {settings.custom_tagline && (
-            <p className="text-white/80 text-sm mt-1">{settings.custom_tagline}</p>
-          )}
+          {settings.custom_tagline && <p className="text-white/80 text-sm mt-1">{settings.custom_tagline}</p>}
         </div>
       </div>
 
@@ -203,17 +189,21 @@ function JustListedPreview({ settings, agentInfo }: { settings: TemplateSettings
         className="p-5 flex items-center gap-4"
         style={{ backgroundColor: settings.secondary_color, color: "white" }}
       >
-        {settings.show_agent_photo && (
-          <div className="w-14 h-14 rounded-full bg-white/20 shrink-0" />
-        )}
+        {settings.show_agent_photo && <div className="w-14 h-14 rounded-full bg-white/20 shrink-0" />}
         <div className="flex-1 min-w-0">
           <p className="font-bold text-base">{agentInfo?.display_name || "Agent Name"}</p>
           <div className="space-y-0.5 text-xs text-white/80">
             {settings.show_agent_phone && agentInfo?.phone && (
-              <div className="flex items-center gap-1"><Phone className="w-3 h-3" />{agentInfo.phone}</div>
+              <div className="flex items-center gap-1">
+                <Phone className="w-3 h-3" />
+                {agentInfo.phone}
+              </div>
             )}
             {settings.show_agent_email && agentInfo?.email && (
-              <div className="flex items-center gap-1"><Mail className="w-3 h-3" />{agentInfo.email}</div>
+              <div className="flex items-center gap-1">
+                <Mail className="w-3 h-3" />
+                {agentInfo.email}
+              </div>
             )}
           </div>
         </div>
@@ -240,8 +230,10 @@ function ShowcasePreview({ settings, agentInfo }: { settings: TemplateSettings; 
         {/* Dark overlay gradient */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
         {/* Top badge */}
-        <div className="absolute top-4 left-4 px-3 py-1 text-xs font-bold tracking-wider uppercase"
-          style={{ backgroundColor: settings.secondary_color, color: settings.primary_color }}>
+        <div
+          className="absolute top-4 left-4 px-3 py-1 text-xs font-bold tracking-wider uppercase"
+          style={{ backgroundColor: settings.secondary_color, color: settings.primary_color }}
+        >
           Open House
         </div>
         {/* Logo */}
@@ -266,25 +258,33 @@ function ShowcasePreview({ settings, agentInfo }: { settings: TemplateSettings; 
       <div className="grid grid-cols-4 border-b" style={{ borderColor: settings.secondary_color + "40" }}>
         {settings.show_bedrooms && (
           <div className="py-4 text-center border-r" style={{ borderColor: settings.secondary_color + "20" }}>
-            <p className="text-2xl font-bold" style={{ color: settings.primary_color }}>{SAMPLE_PROPERTY.bedrooms}</p>
+            <p className="text-2xl font-bold" style={{ color: settings.primary_color }}>
+              {SAMPLE_PROPERTY.bedrooms}
+            </p>
             <p className="text-xs text-gray-500 uppercase tracking-wider">Beds</p>
           </div>
         )}
         {settings.show_bathrooms && (
           <div className="py-4 text-center border-r" style={{ borderColor: settings.secondary_color + "20" }}>
-            <p className="text-2xl font-bold" style={{ color: settings.primary_color }}>{SAMPLE_PROPERTY.bathrooms}</p>
+            <p className="text-2xl font-bold" style={{ color: settings.primary_color }}>
+              {SAMPLE_PROPERTY.bathrooms}
+            </p>
             <p className="text-xs text-gray-500 uppercase tracking-wider">Baths</p>
           </div>
         )}
         {settings.show_square_feet && (
           <div className="py-4 text-center border-r" style={{ borderColor: settings.secondary_color + "20" }}>
-            <p className="text-2xl font-bold" style={{ color: settings.primary_color }}>{SAMPLE_PROPERTY.square_feet.toLocaleString()}</p>
+            <p className="text-2xl font-bold" style={{ color: settings.primary_color }}>
+              {SAMPLE_PROPERTY.square_feet.toLocaleString()}
+            </p>
             <p className="text-xs text-gray-500 uppercase tracking-wider">Sq Ft</p>
           </div>
         )}
         {settings.show_lot_size && (
           <div className="py-4 text-center">
-            <p className="text-lg font-bold" style={{ color: settings.primary_color }}>{SAMPLE_PROPERTY.lot_size}</p>
+            <p className="text-lg font-bold" style={{ color: settings.primary_color }}>
+              {SAMPLE_PROPERTY.lot_size}
+            </p>
             <p className="text-xs text-gray-500 uppercase tracking-wider">Lot Size</p>
           </div>
         )}
@@ -294,37 +294,52 @@ function ShowcasePreview({ settings, agentInfo }: { settings: TemplateSettings; 
       <div className="p-6 flex-1">
         <div className="flex items-center gap-2 mb-3">
           <Star className="w-4 h-4" style={{ color: settings.secondary_color }} />
-          <span className="text-sm font-semibold uppercase tracking-wider" style={{ color: settings.secondary_color }}>Property Highlights</span>
+          <span className="text-sm font-semibold uppercase tracking-wider" style={{ color: settings.secondary_color }}>
+            Property Highlights
+          </span>
         </div>
         <div className="flex flex-wrap gap-2 mb-3">
           {settings.show_property_type && (
-            <Badge className="text-white text-xs" style={{ backgroundColor: settings.primary_color }}>{SAMPLE_PROPERTY.property_type}</Badge>
+            <Badge className="text-white text-xs" style={{ backgroundColor: settings.primary_color }}>
+              {SAMPLE_PROPERTY.property_type}
+            </Badge>
           )}
           {settings.show_year_built && (
-            <Badge className="text-white text-xs" style={{ backgroundColor: settings.primary_color }}>Built {SAMPLE_PROPERTY.year_built}</Badge>
+            <Badge className="text-white text-xs" style={{ backgroundColor: settings.primary_color }}>
+              Built {SAMPLE_PROPERTY.year_built}
+            </Badge>
           )}
           {settings.show_mls_number && (
-            <Badge variant="outline" className="text-xs">MLS# {SAMPLE_PROPERTY.mls_number}</Badge>
+            <Badge variant="outline" className="text-xs">
+              MLS# {SAMPLE_PROPERTY.mls_number}
+            </Badge>
           )}
         </div>
-        {settings.custom_tagline && (
-          <p className="text-sm text-gray-600 italic">{settings.custom_tagline}</p>
-        )}
+        {settings.custom_tagline && <p className="text-sm text-gray-600 italic">{settings.custom_tagline}</p>}
       </div>
 
       {/* Footer */}
       <div className="p-5 flex items-center gap-4" style={{ backgroundColor: settings.primary_color }}>
         {settings.show_agent_photo && (
-          <div className="w-14 h-14 rounded-full bg-white/20 shrink-0 border-2" style={{ borderColor: settings.secondary_color }} />
+          <div
+            className="w-14 h-14 rounded-full bg-white/20 shrink-0 border-2"
+            style={{ borderColor: settings.secondary_color }}
+          />
         )}
         <div className="flex-1 min-w-0 text-white">
           <p className="font-bold text-base">{agentInfo?.display_name || "Agent Name"}</p>
           <div className="space-y-0.5 text-xs text-white/70">
             {settings.show_agent_phone && agentInfo?.phone && (
-              <div className="flex items-center gap-1"><Phone className="w-3 h-3" />{agentInfo.phone}</div>
+              <div className="flex items-center gap-1">
+                <Phone className="w-3 h-3" />
+                {agentInfo.phone}
+              </div>
             )}
             {settings.show_agent_email && agentInfo?.email && (
-              <div className="flex items-center gap-1"><Mail className="w-3 h-3" />{agentInfo.email}</div>
+              <div className="flex items-center gap-1">
+                <Mail className="w-3 h-3" />
+                {agentInfo.email}
+              </div>
             )}
           </div>
         </div>
@@ -350,21 +365,23 @@ function SpotlightPreview({ settings, agentInfo }: { settings: TemplateSettings;
 
       <div className="flex-1 flex flex-col">
         {/* Header Bar */}
-        <div className="px-5 py-3 flex items-center justify-between" style={{ backgroundColor: settings.primary_color }}>
+        <div
+          className="px-5 py-3 flex items-center justify-between"
+          style={{ backgroundColor: settings.primary_color }}
+        >
           <div className="flex items-center gap-3">
-            {settings.logo_url && (
-              <img src={settings.logo_url} alt="Logo" className="h-8" />
-            )}
+            {settings.logo_url && <img src={settings.logo_url} alt="Logo" className="h-8" />}
             <div className="text-white">
               <h2 className="text-lg font-bold tracking-wide">PROPERTY SPOTLIGHT</h2>
-              {settings.custom_tagline && (
-                <p className="text-xs text-white/70">{settings.custom_tagline}</p>
-              )}
+              {settings.custom_tagline && <p className="text-xs text-white/70">{settings.custom_tagline}</p>}
             </div>
           </div>
           <div className="text-white text-right text-xs">
             {settings.show_agent_phone && agentInfo?.phone && (
-              <div className="flex items-center gap-1 justify-end"><Phone className="w-3 h-3" />{agentInfo.phone}</div>
+              <div className="flex items-center gap-1 justify-end">
+                <Phone className="w-3 h-3" />
+                {agentInfo.phone}
+              </div>
             )}
           </div>
         </div>
@@ -405,25 +422,37 @@ function SpotlightPreview({ settings, agentInfo }: { settings: TemplateSettings;
           {/* Feature Grid */}
           <div className="grid grid-cols-2 gap-2 mb-3">
             {settings.show_bedrooms && (
-              <div className="flex items-center gap-2 p-2 rounded" style={{ backgroundColor: settings.primary_color + "08" }}>
+              <div
+                className="flex items-center gap-2 p-2 rounded"
+                style={{ backgroundColor: settings.primary_color + "08" }}
+              >
                 <Bed className="w-4 h-4" style={{ color: settings.primary_color }} />
                 <span className="text-sm font-medium">{SAMPLE_PROPERTY.bedrooms} Bedrooms</span>
               </div>
             )}
             {settings.show_bathrooms && (
-              <div className="flex items-center gap-2 p-2 rounded" style={{ backgroundColor: settings.primary_color + "08" }}>
+              <div
+                className="flex items-center gap-2 p-2 rounded"
+                style={{ backgroundColor: settings.primary_color + "08" }}
+              >
                 <Bath className="w-4 h-4" style={{ color: settings.primary_color }} />
                 <span className="text-sm font-medium">{SAMPLE_PROPERTY.bathrooms} Bathrooms</span>
               </div>
             )}
             {settings.show_square_feet && (
-              <div className="flex items-center gap-2 p-2 rounded" style={{ backgroundColor: settings.primary_color + "08" }}>
+              <div
+                className="flex items-center gap-2 p-2 rounded"
+                style={{ backgroundColor: settings.primary_color + "08" }}
+              >
                 <Ruler className="w-4 h-4" style={{ color: settings.primary_color }} />
                 <span className="text-sm font-medium">{SAMPLE_PROPERTY.square_feet.toLocaleString()} Sq Ft</span>
               </div>
             )}
             {settings.show_lot_size && (
-              <div className="flex items-center gap-2 p-2 rounded" style={{ backgroundColor: settings.primary_color + "08" }}>
+              <div
+                className="flex items-center gap-2 p-2 rounded"
+                style={{ backgroundColor: settings.primary_color + "08" }}
+              >
                 <MapPin className="w-4 h-4" style={{ color: settings.primary_color }} />
                 <span className="text-sm font-medium">{SAMPLE_PROPERTY.lot_size}</span>
               </div>
@@ -438,25 +467,34 @@ function SpotlightPreview({ settings, agentInfo }: { settings: TemplateSettings;
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-4 border-t flex items-center gap-4" style={{ borderColor: settings.primary_color + "30" }}>
-          {settings.show_agent_photo && (
-            <div className="w-12 h-12 rounded-full bg-gray-300 shrink-0" />
-          )}
+        <div
+          className="px-5 py-4 border-t flex items-center gap-4"
+          style={{ borderColor: settings.primary_color + "30" }}
+        >
+          {settings.show_agent_photo && <div className="w-12 h-12 rounded-full bg-gray-300 shrink-0" />}
           <div className="flex-1 min-w-0">
             <p className="font-bold">{agentInfo?.display_name || "Agent Name"}</p>
             <div className="text-xs text-gray-500 space-y-0.5">
               {settings.show_agent_email && agentInfo?.email && (
-                <div className="flex items-center gap-1"><Mail className="w-3 h-3" />{agentInfo.email}</div>
+                <div className="flex items-center gap-1">
+                  <Mail className="w-3 h-3" />
+                  {agentInfo.email}
+                </div>
               )}
               {settings.show_agent_website && (
-                <div className="flex items-center gap-1"><Globe className="w-3 h-3" />www.youragentsite.com</div>
+                <div className="flex items-center gap-1">
+                  <Globe className="w-3 h-3" />
+                  www.youragentsite.com
+                </div>
               )}
             </div>
           </div>
           {settings.show_qr_code && (
             <div className="flex flex-col items-center shrink-0">
-              <div className="w-14 h-14 bg-gray-100 border-2 rounded flex items-center justify-center"
-                style={{ borderColor: settings.primary_color }}>
+              <div
+                className="w-14 h-14 bg-gray-100 border-2 rounded flex items-center justify-center"
+                style={{ borderColor: settings.primary_color }}
+              >
                 <QrCode className="w-9 h-9" style={{ color: settings.primary_color }} />
               </div>
               <p className="text-[9px] text-gray-500 mt-1">Scan to Check In</p>
@@ -478,17 +516,15 @@ function GenericPreview({ settings, agentInfo }: { settings: TemplateSettings; a
           settings.header_style === "centered"
             ? "text-center"
             : settings.header_style === "left"
-            ? "text-left"
-            : "flex justify-between items-center"
+              ? "text-left"
+              : "flex justify-between items-center"
         }`}
         style={{ backgroundColor: settings.primary_color, color: "white" }}
       >
         {settings.header_style === "split" ? (
           <>
             <div>
-              {settings.logo_url && (
-                <img src={settings.logo_url} alt="Logo" className="h-12 mb-2" />
-              )}
+              {settings.logo_url && <img src={settings.logo_url} alt="Logo" className="h-12 mb-2" />}
               <h2 className="text-2xl font-bold">OPEN HOUSE</h2>
             </div>
             <div className="text-right text-sm">
@@ -516,9 +552,7 @@ function GenericPreview({ settings, agentInfo }: { settings: TemplateSettings; a
               />
             )}
             <h2 className="text-3xl font-bold">OPEN HOUSE</h2>
-            {settings.custom_tagline && (
-              <p className="text-sm mt-1 opacity-90">{settings.custom_tagline}</p>
-            )}
+            {settings.custom_tagline && <p className="text-sm mt-1 opacity-90">{settings.custom_tagline}</p>}
           </div>
         )}
       </div>
@@ -529,8 +563,8 @@ function GenericPreview({ settings, agentInfo }: { settings: TemplateSettings; a
           settings.image_layout === "hero"
             ? "h-64 bg-gray-200"
             : settings.image_layout === "grid"
-            ? "grid grid-cols-3 gap-1 h-48"
-            : "grid grid-cols-2 gap-2 h-48"
+              ? "grid grid-cols-3 gap-1 h-48"
+              : "grid grid-cols-2 gap-2 h-48"
         }
       >
         {settings.image_layout === "hero" ? (
@@ -539,10 +573,7 @@ function GenericPreview({ settings, agentInfo }: { settings: TemplateSettings; a
           </div>
         ) : (
           Array.from({ length: settings.image_layout === "grid" ? 6 : 2 }).map((_, i) => (
-            <div
-              key={i}
-              className="bg-gradient-to-br from-gray-300 to-gray-400 flex items-center justify-center"
-            >
+            <div key={i} className="bg-gradient-to-br from-gray-300 to-gray-400 flex items-center justify-center">
               <Home className="w-8 h-8 text-gray-500" />
             </div>
           ))
@@ -598,9 +629,7 @@ function GenericPreview({ settings, agentInfo }: { settings: TemplateSettings; a
 
         {/* Additional Details */}
         <div className="flex flex-wrap gap-2 mb-4">
-          {settings.show_property_type && (
-            <Badge variant="outline">{SAMPLE_PROPERTY.property_type}</Badge>
-          )}
+          {settings.show_property_type && <Badge variant="outline">{SAMPLE_PROPERTY.property_type}</Badge>}
           {settings.show_year_built && <Badge variant="outline">Built {SAMPLE_PROPERTY.year_built}</Badge>}
           {settings.show_mls_number && <Badge variant="outline">MLS# {SAMPLE_PROPERTY.mls_number}</Badge>}
         </div>
@@ -625,18 +654,10 @@ export default function TemplatePreview({ settings, agentInfo, compact = false }
         transformOrigin: "top center",
       }}
     >
-      {settings.template_id === "just-listed" && (
-        <JustListedPreview settings={settings} agentInfo={agentInfo} />
-      )}
-      {settings.template_id === "showcase" && (
-        <ShowcasePreview settings={settings} agentInfo={agentInfo} />
-      )}
-      {settings.template_id === "spotlight" && (
-        <SpotlightPreview settings={settings} agentInfo={agentInfo} />
-      )}
-      {!isCustomTemplate && (
-        <GenericPreview settings={settings} agentInfo={agentInfo} />
-      )}
+      {settings.template_id === "just-listed" && <JustListedPreview settings={settings} agentInfo={agentInfo} />}
+      {settings.template_id === "showcase" && <ShowcasePreview settings={settings} agentInfo={agentInfo} />}
+      {settings.template_id === "spotlight" && <SpotlightPreview settings={settings} agentInfo={agentInfo} />}
+      {!isCustomTemplate && <GenericPreview settings={settings} agentInfo={agentInfo} />}
     </div>
   );
 }

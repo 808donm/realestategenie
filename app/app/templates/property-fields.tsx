@@ -38,9 +38,7 @@ export default function PropertyFields({ settings, onUpdate }: Props) {
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold mb-2">Property Fields</h3>
-        <p className="text-sm text-muted-foreground">
-          Choose which property information to display on your flyers
-        </p>
+        <p className="text-sm text-muted-foreground">Choose which property information to display on your flyers</p>
       </div>
 
       {/* Property Information */}
@@ -49,10 +47,7 @@ export default function PropertyFields({ settings, onUpdate }: Props) {
           <h4 className="font-semibold mb-4">Property Information</h4>
           <div className="space-y-4">
             {propertyFields.map((field) => (
-              <div
-                key={field.key}
-                className="flex items-center justify-between py-2 border-b last:border-0"
-              >
+              <div key={field.key} className="flex items-center justify-between py-2 border-b last:border-0">
                 <div className="flex-1">
                   <Label htmlFor={field.key} className="text-sm font-medium">
                     {field.label}
@@ -76,10 +71,7 @@ export default function PropertyFields({ settings, onUpdate }: Props) {
           <h4 className="font-semibold mb-4">Agent Contact Information</h4>
           <div className="space-y-4">
             {agentFields.map((field) => (
-              <div
-                key={field.key}
-                className="flex items-center justify-between py-2 border-b last:border-0"
-              >
+              <div key={field.key} className="flex items-center justify-between py-2 border-b last:border-0">
                 <div className="flex-1">
                   <Label htmlFor={field.key} className="text-sm font-medium">
                     {field.label}

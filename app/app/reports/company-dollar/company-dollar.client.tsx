@@ -87,10 +87,7 @@ export default function CompanyDollarClient() {
       const res = await fetch("/api/reports/company-dollar");
       if (!res.ok) throw new Error("API error");
       const json: Record<Period, MonthRow[]> = await res.json();
-      const hasData =
-        json.this_quarter?.length > 0 ||
-        json.this_year?.length > 0 ||
-        json.last_year?.length > 0;
+      const hasData = json.this_quarter?.length > 0 || json.this_year?.length > 0 || json.last_year?.length > 0;
       if (hasData) {
         setData(json);
         setIsLive(true);
@@ -142,7 +139,10 @@ export default function CompanyDollarClient() {
 
     rows.forEach((r) => {
       y += 7;
-      if (y > 280) { doc.addPage(); y = 20; }
+      if (y > 280) {
+        doc.addPage();
+        y = 20;
+      }
       doc.text(r.month, cols[0], y);
       doc.text(fmt.format(r.grossRevenue), cols[1], y);
       doc.text(fmt.format(r.agentSplits), cols[2], y);
@@ -155,7 +155,7 @@ export default function CompanyDollarClient() {
   };
 
   const exportToExcel = () => {
-    const excelRows = rows.map(r => ({
+    const excelRows = rows.map((r) => ({
       Month: r.month,
       "Gross Revenue": r.grossRevenue,
       "Agent Splits": r.agentSplits,
@@ -181,21 +181,46 @@ export default function CompanyDollarClient() {
   return (
     <div>
       {/* integration banner */}
-      <div style={{ background: isLive ? "#E8F5E9" : "#FFF8E1", border: `1px solid ${isLive ? "#A5D6A7" : "#FFE082"}`, borderRadius: 10, padding: "12px 18px", marginBottom: 24, display: "flex", alignItems: "center", gap: 10 }}>
+      <div
+        style={{
+          background: isLive ? "#E8F5E9" : "#FFF8E1",
+          border: `1px solid ${isLive ? "#A5D6A7" : "#FFE082"}`,
+          borderRadius: 10,
+          padding: "12px 18px",
+          marginBottom: 24,
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+        }}
+      >
         <span style={{ fontSize: 18 }}>{isLive ? "\u2705" : "\u26A0"}</span>
         <span style={{ fontSize: 14 }}>
           {isLive ? (
-            <>This report is showing <strong>live data</strong> from your connected integrations.</>
+            <>
+              This report is showing <strong>live data</strong> from your connected integrations.
+            </>
           ) : (
-            <>This report uses <strong>sample data</strong>. Connect your QuickBooks Online account to see real numbers.{" "}
-              <Link href="/app/integrations" style={{ color: "#1565C0", fontWeight: 600 }}>Set up integrations &rarr;</Link>
+            <>
+              This report uses <strong>sample data</strong>. Connect your QuickBooks Online account to see real numbers.{" "}
+              <Link href="/app/integrations" style={{ color: "#1565C0", fontWeight: 600 }}>
+                Set up integrations &rarr;
+              </Link>
             </>
           )}
         </span>
       </div>
 
       {/* toolbar */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 20,
+          flexWrap: "wrap",
+          gap: 10,
+        }}
+      >
         <div style={{ display: "flex", gap: 6 }}>
           {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
             <button
@@ -219,11 +244,31 @@ export default function CompanyDollarClient() {
         <div style={{ display: "flex", gap: 8 }}>
           <button
             onClick={exportPDF}
-            style={{ padding: "7px 18px", borderRadius: 8, border: "1px solid #ddd", background: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer" }}
+            style={{
+              padding: "7px 18px",
+              borderRadius: 8,
+              border: "1px solid #ddd",
+              background: "#fff",
+              fontWeight: 600,
+              fontSize: 13,
+              cursor: "pointer",
+            }}
           >
             Export PDF
           </button>
-          <button onClick={exportToExcel} style={{ padding: "8px 20px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>
+          <button
+            onClick={exportToExcel}
+            style={{
+              padding: "8px 20px",
+              background: "#fff",
+              color: "#374151",
+              border: "1px solid #d1d5db",
+              borderRadius: 8,
+              fontWeight: 600,
+              cursor: "pointer",
+              fontSize: 13,
+            }}
+          >
             Export Excel
           </button>
         </div>
@@ -253,7 +298,15 @@ export default function CompanyDollarClient() {
       <div style={{ marginBottom: 28 }}>
         <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Monthly Revenue Breakdown</h3>
         <ResponsiveContainer width="100%" height={320}>
-          <BarChart data={rows.map((r) => ({ name: r.month.slice(0, 3), "Agent Splits": r.agentSplits, Fees: r.fees, OpEx: r.opEx, "Company Dollar": r.companyDollar }))}>
+          <BarChart
+            data={rows.map((r) => ({
+              name: r.month.slice(0, 3),
+              "Agent Splits": r.agentSplits,
+              Fees: r.fees,
+              OpEx: r.opEx,
+              "Company Dollar": r.companyDollar,
+            }))}
+          >
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
             <XAxis dataKey="name" tick={{ fontSize: 12 }} />
             <YAxis tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`} tick={{ fontSize: 12 }} width={55} />
@@ -271,7 +324,13 @@ export default function CompanyDollarClient() {
       <div style={{ marginBottom: 28 }}>
         <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Company Dollar Trend</h3>
         <ResponsiveContainer width="100%" height={280}>
-          <LineChart data={rows.map((r) => ({ name: r.month.slice(0, 3), "Company Dollar": r.companyDollar, "Gross Revenue": r.grossRevenue }))}>
+          <LineChart
+            data={rows.map((r) => ({
+              name: r.month.slice(0, 3),
+              "Company Dollar": r.companyDollar,
+              "Gross Revenue": r.grossRevenue,
+            }))}
+          >
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
             <XAxis dataKey="name" tick={{ fontSize: 12 }} />
             <YAxis tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`} tick={{ fontSize: 12 }} width={55} />
@@ -289,7 +348,17 @@ export default function CompanyDollarClient() {
           <thead>
             <tr style={{ background: "#f5f5f5" }}>
               {["Month", "Gross Revenue", "Agent Splits", "Fees", "OpEx", "Company Dollar"].map((h) => (
-                <th key={h} style={{ textAlign: "left", padding: "10px 12px", fontWeight: 700, borderBottom: "2px solid #e0e0e0" }}>{h}</th>
+                <th
+                  key={h}
+                  style={{
+                    textAlign: "left",
+                    padding: "10px 12px",
+                    fontWeight: 700,
+                    borderBottom: "2px solid #e0e0e0",
+                  }}
+                >
+                  {h}
+                </th>
               ))}
             </tr>
           </thead>
@@ -301,7 +370,9 @@ export default function CompanyDollarClient() {
                 <td style={{ padding: "10px 12px" }}>{fmt.format(r.agentSplits)}</td>
                 <td style={{ padding: "10px 12px" }}>{fmt.format(r.fees)}</td>
                 <td style={{ padding: "10px 12px" }}>{fmt.format(r.opEx)}</td>
-                <td style={{ padding: "10px 12px", fontWeight: 700, color: "#2E7D32" }}>{fmt.format(r.companyDollar)}</td>
+                <td style={{ padding: "10px 12px", fontWeight: 700, color: "#2E7D32" }}>
+                  {fmt.format(r.companyDollar)}
+                </td>
               </tr>
             ))}
           </tbody>

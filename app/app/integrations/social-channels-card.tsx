@@ -1,13 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -48,7 +42,12 @@ const CHANNELS: Record<string, ChannelConfig> = {
     description: "Respond to leads from Facebook ads and page messages",
     fields: [
       { key: "page_id", label: "Page ID", type: "text", placeholder: "Your Facebook Page ID" },
-      { key: "page_access_token", label: "Page Access Token", type: "password", placeholder: "Long-lived page access token" },
+      {
+        key: "page_access_token",
+        label: "Page Access Token",
+        type: "password",
+        placeholder: "Long-lived page access token",
+      },
       { key: "app_secret", label: "App Secret", type: "password", placeholder: "Facebook App Secret" },
       { key: "verify_token", label: "Verify Token", type: "text", placeholder: "Custom verify token for webhook" },
     ],
@@ -60,7 +59,12 @@ const CHANNELS: Record<string, ChannelConfig> = {
     description: "Respond to leads from Instagram ads and DMs",
     fields: [
       { key: "page_id", label: "Instagram Business Account ID", type: "text", placeholder: "Linked Facebook Page ID" },
-      { key: "page_access_token", label: "Page Access Token", type: "password", placeholder: "Long-lived page access token" },
+      {
+        key: "page_access_token",
+        label: "Page Access Token",
+        type: "password",
+        placeholder: "Long-lived page access token",
+      },
       { key: "app_secret", label: "App Secret", type: "password", placeholder: "Facebook App Secret" },
     ],
     webhookParam: "instagram",
@@ -81,7 +85,12 @@ const CHANNELS: Record<string, ChannelConfig> = {
     description: "Respond to leads from Google Maps and Search",
     fields: [
       { key: "agent_id", label: "GBM Agent ID", type: "text", placeholder: "Business Messages agent ID" },
-      { key: "service_account_key", label: "Service Account Key", type: "password", placeholder: "JSON service account key" },
+      {
+        key: "service_account_key",
+        label: "Service Account Key",
+        type: "password",
+        placeholder: "JSON service account key",
+      },
     ],
     webhookParam: "google_business",
     docsUrl: "https://developers.google.com/business-communications",
@@ -149,10 +158,7 @@ function ChannelSection({
   async function handleDisconnect() {
     setDisconnecting(true);
     try {
-      const res = await fetch(
-        `/api/integrations/social-channels?channel=${channelKey}`,
-        { method: "DELETE" }
-      );
+      const res = await fetch(`/api/integrations/social-channels?channel=${channelKey}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to disconnect");
       toast.success(`${channel.label} disconnected`);
     } catch {
@@ -187,11 +193,7 @@ function ChannelSection({
               Not Connected
             </Badge>
           )}
-          {expanded ? (
-            <ChevronUp className="h-4 w-4" />
-          ) : (
-            <ChevronDown className="h-4 w-4" />
-          )}
+          {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         </div>
       </button>
 
@@ -203,11 +205,7 @@ function ChannelSection({
               Webhook URL (paste into your platform settings)
             </Label>
             <div className="flex gap-2">
-              <Input
-                readOnly
-                value={webhookUrl}
-                className="text-xs font-mono bg-muted"
-              />
+              <Input readOnly value={webhookUrl} className="text-xs font-mono bg-muted" />
               <Button
                 variant="outline"
                 size="sm"
@@ -229,29 +227,18 @@ function ChannelSection({
                 type={field.type}
                 placeholder={field.placeholder}
                 value={values[field.key] || ""}
-                onChange={(e) =>
-                  setValues((v) => ({ ...v, [field.key]: e.target.value }))
-                }
+                onChange={(e) => setValues((v) => ({ ...v, [field.key]: e.target.value }))}
               />
             </div>
           ))}
 
           <div className="flex gap-2 pt-2">
             <Button onClick={handleSave} disabled={saving} size="sm">
-              {saving ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-1" />
-              ) : (
-                <Save className="h-4 w-4 mr-1" />
-              )}
+              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />}
               {isConnected ? "Update" : "Connect"}
             </Button>
             {isConnected && (
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={handleDisconnect}
-                disabled={disconnecting}
-              >
+              <Button variant="danger" size="sm" onClick={handleDisconnect} disabled={disconnecting}>
                 {disconnecting ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-1" />
                 ) : (
@@ -280,9 +267,7 @@ export default function SocialChannelsCard() {
   const [config, setConfig] = useState<Record<string, any> | null>(null);
 
   const webhookBaseUrl =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/api/webhooks/social`
-      : "/api/webhooks/social";
+    typeof window !== "undefined" ? `${window.location.origin}/api/webhooks/social` : "/api/webhooks/social";
 
   useEffect(() => {
     fetch("/api/integrations/social-channels")
@@ -293,9 +278,7 @@ export default function SocialChannelsCard() {
       .finally(() => setLoading(false));
   }, []);
 
-  const connectedCount = config
-    ? Object.values(config).filter((c: any) => c?.enabled).length
-    : 0;
+  const connectedCount = config ? Object.values(config).filter((c: any) => c?.enabled).length : 0;
 
   return (
     <Card>
@@ -312,8 +295,8 @@ export default function SocialChannelsCard() {
           )}
         </CardTitle>
         <CardDescription>
-          AI-powered instant response to leads from ads and messages on Facebook,
-          Instagram, LinkedIn, Google Business, and WhatsApp
+          AI-powered instant response to leads from ads and messages on Facebook, Instagram, LinkedIn, Google Business,
+          and WhatsApp
         </CardDescription>
       </CardHeader>
       <CardContent>

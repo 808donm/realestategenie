@@ -27,9 +27,8 @@ export default function AIBriefingCard({
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            Your AI briefing will appear here once you have leads in your
-            pipeline. Add leads through open houses or manual entry to get
-            started.
+            Your AI briefing will appear here once you have leads in your pipeline. Add leads through open houses or
+            manual entry to get started.
           </p>
         </CardContent>
       </Card>
@@ -67,15 +66,14 @@ export default function AIBriefingCard({
               </div>
               <div className="flex-1">
                 <div className="text-sm font-semibold">{priority.title}</div>
-                <div className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                  {priority.description}
-                </div>
+                <div className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{priority.description}</div>
               </div>
             </div>
           ))}
         </div>
         <p className="text-[9px] text-gray-400 leading-relaxed text-center mt-4">
-          This content was generated using AI. AI can make mistakes. Check AI generated content against reliable information before using.
+          This content was generated using AI. AI can make mistakes. Check AI generated content against reliable
+          information before using.
         </p>
       </CardContent>
     </Card>

@@ -113,14 +113,16 @@ export default function FarmClient({ trestleConnected }: { trestleConnected: boo
   const [saving, setSaving] = useState(false);
 
   // Watch rule form
-  const [newRules, setNewRules] = useState<{
-    trigger_type: string;
-    threshold_value: string;
-    status_triggers: string[];
-    notify_push: boolean;
-    notify_email: boolean;
-    notify_sms: boolean;
-  }[]>([]);
+  const [newRules, setNewRules] = useState<
+    {
+      trigger_type: string;
+      threshold_value: string;
+      status_triggers: string[];
+      notify_push: boolean;
+      notify_email: boolean;
+      notify_sms: boolean;
+    }[]
+  >([]);
 
   const loadFarmAreas = useCallback(async () => {
     const res = await fetch("/api/mls/farm-areas");
@@ -270,11 +272,16 @@ export default function FarmClient({ trestleConnected }: { trestleConnected: boo
   // Sort listings
   const sortedListings = [...listings].sort((a, b) => {
     switch (sortBy) {
-      case "dom": return (b.DaysOnMarket || 0) - (a.DaysOnMarket || 0);
-      case "priceAsc": return a.ListPrice - b.ListPrice;
-      case "priceDesc": return b.ListPrice - a.ListPrice;
-      case "priceDrop": return b._priceDropPct - a._priceDropPct;
-      default: return 0;
+      case "dom":
+        return (b.DaysOnMarket || 0) - (a.DaysOnMarket || 0);
+      case "priceAsc":
+        return a.ListPrice - b.ListPrice;
+      case "priceDesc":
+        return b.ListPrice - a.ListPrice;
+      case "priceDrop":
+        return b._priceDropPct - a._priceDropPct;
+      default:
+        return 0;
     }
   });
 
@@ -311,9 +318,7 @@ export default function FarmClient({ trestleConnected }: { trestleConnected: boo
             key={t}
             onClick={() => setTab(t)}
             className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              tab === t
-                ? "border-indigo-600 text-indigo-600"
-                : "border-transparent text-gray-500 hover:text-gray-700"
+              tab === t ? "border-indigo-600 text-indigo-600" : "border-transparent text-gray-500 hover:text-gray-700"
             }`}
           >
             {t === "search" ? "Search" : t === "farms" ? "My Farm Areas" : "Alerts"}
@@ -477,9 +482,7 @@ export default function FarmClient({ trestleConnected }: { trestleConnected: boo
           </div>
 
           {listings.length === 0 && !searching && (
-            <div className="text-center py-12 text-gray-400">
-              Search a farm area to see active MLS listings
-            </div>
+            <div className="text-center py-12 text-gray-400">Search a farm area to see active MLS listings</div>
           )}
 
           {/* Save Farm Area Modal */}
@@ -502,16 +505,15 @@ export default function FarmClient({ trestleConnected }: { trestleConnected: boo
                 <div className="mb-4">
                   <div className="flex items-center justify-between mb-2">
                     <label className="text-sm font-medium text-gray-700">Watch Rules</label>
-                    <button
-                      onClick={addRule}
-                      className="text-xs text-indigo-600 font-medium hover:text-indigo-700"
-                    >
+                    <button onClick={addRule} className="text-xs text-indigo-600 font-medium hover:text-indigo-700">
                       + Add Rule
                     </button>
                   </div>
 
                   {newRules.length === 0 && (
-                    <p className="text-xs text-gray-400 italic">No watch rules — add rules to get alerts when listings change.</p>
+                    <p className="text-xs text-gray-400 italic">
+                      No watch rules — add rules to get alerts when listings change.
+                    </p>
                   )}
 
                   {newRules.map((rule, idx) => (
@@ -528,15 +530,19 @@ export default function FarmClient({ trestleConnected }: { trestleConnected: boo
                           <option value="status_change">Status Change</option>
                           <option value="new_listing">New Listing</option>
                         </select>
-                        <button onClick={() => removeRule(idx)} className="text-red-400 text-xs hover:text-red-600">Remove</button>
+                        <button onClick={() => removeRule(idx)} className="text-red-400 text-xs hover:text-red-600">
+                          Remove
+                        </button>
                       </div>
 
                       {rule.trigger_type !== "new_listing" && rule.trigger_type !== "status_change" && (
                         <div className="mb-2">
                           <label className="block text-xs text-gray-500 mb-1">
-                            {rule.trigger_type === "dom_threshold" ? "Days" :
-                             rule.trigger_type === "price_drop_amount" ? "Dollar amount ($)" :
-                             "Percentage (%)"}
+                            {rule.trigger_type === "dom_threshold"
+                              ? "Days"
+                              : rule.trigger_type === "price_drop_amount"
+                                ? "Dollar amount ($)"
+                                : "Percentage (%)"}
                           </label>
                           <input
                             type="number"
@@ -572,15 +578,27 @@ export default function FarmClient({ trestleConnected }: { trestleConnected: boo
 
                       <div className="flex gap-3 text-xs">
                         <label className="flex items-center gap-1">
-                          <input type="checkbox" checked={rule.notify_push} onChange={(e) => updateRule(idx, "notify_push", e.target.checked)} />
+                          <input
+                            type="checkbox"
+                            checked={rule.notify_push}
+                            onChange={(e) => updateRule(idx, "notify_push", e.target.checked)}
+                          />
                           Push
                         </label>
                         <label className="flex items-center gap-1">
-                          <input type="checkbox" checked={rule.notify_email} onChange={(e) => updateRule(idx, "notify_email", e.target.checked)} />
+                          <input
+                            type="checkbox"
+                            checked={rule.notify_email}
+                            onChange={(e) => updateRule(idx, "notify_email", e.target.checked)}
+                          />
                           Email
                         </label>
                         <label className="flex items-center gap-1">
-                          <input type="checkbox" checked={rule.notify_sms} onChange={(e) => updateRule(idx, "notify_sms", e.target.checked)} />
+                          <input
+                            type="checkbox"
+                            checked={rule.notify_sms}
+                            onChange={(e) => updateRule(idx, "notify_sms", e.target.checked)}
+                          />
                           SMS
                         </label>
                       </div>
@@ -590,7 +608,10 @@ export default function FarmClient({ trestleConnected }: { trestleConnected: boo
 
                 <div className="flex gap-2 justify-end">
                   <button
-                    onClick={() => { setShowCreateForm(false); setNewRules([]); }}
+                    onClick={() => {
+                      setShowCreateForm(false);
+                      setNewRules([]);
+                    }}
                     className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
                   >
                     Cancel
@@ -658,10 +679,22 @@ export default function FarmClient({ trestleConnected }: { trestleConnected: boo
 
                   {/* Filters Summary */}
                   <div className="flex flex-wrap gap-1 mb-3">
-                    {farm.min_price && <span className="text-xs bg-gray-100 px-2 py-0.5 rounded">${(farm.min_price / 1000).toFixed(0)}k+</span>}
-                    {farm.max_price && <span className="text-xs bg-gray-100 px-2 py-0.5 rounded">${(farm.max_price / 1000).toFixed(0)}k max</span>}
-                    {farm.min_beds && <span className="text-xs bg-gray-100 px-2 py-0.5 rounded">{farm.min_beds}+ beds</span>}
-                    {farm.property_types?.length > 0 && <span className="text-xs bg-gray-100 px-2 py-0.5 rounded">{farm.property_types[0]}</span>}
+                    {farm.min_price && (
+                      <span className="text-xs bg-gray-100 px-2 py-0.5 rounded">
+                        ${(farm.min_price / 1000).toFixed(0)}k+
+                      </span>
+                    )}
+                    {farm.max_price && (
+                      <span className="text-xs bg-gray-100 px-2 py-0.5 rounded">
+                        ${(farm.max_price / 1000).toFixed(0)}k max
+                      </span>
+                    )}
+                    {farm.min_beds && (
+                      <span className="text-xs bg-gray-100 px-2 py-0.5 rounded">{farm.min_beds}+ beds</span>
+                    )}
+                    {farm.property_types?.length > 0 && (
+                      <span className="text-xs bg-gray-100 px-2 py-0.5 rounded">{farm.property_types[0]}</span>
+                    )}
                   </div>
 
                   <div className="flex gap-2">
@@ -725,13 +758,14 @@ export default function FarmClient({ trestleConnected }: { trestleConnected: boo
                     </p>
                     <p className="text-xs text-gray-400 mt-0.5">
                       {new Date(alert.created_at).toLocaleDateString("en-US", {
-                        month: "short", day: "numeric", hour: "numeric", minute: "2-digit",
+                        month: "short",
+                        day: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit",
                       })}
                       {alert.postal_code && ` · ${alert.postal_code}`}
                     </p>
-                    {alert.alert_details && (
-                      <AlertDetails type={alert.alert_type} details={alert.alert_details} />
-                    )}
+                    {alert.alert_details && <AlertDetails type={alert.alert_type} details={alert.alert_details} />}
                   </div>
                   <div className="flex gap-1 flex-shrink-0">
                     {alert.status === "new" && (
@@ -788,7 +822,9 @@ function ListingCard({ listing }: { listing: MlsListing }) {
           )}
         </div>
         <p className="text-sm text-gray-600 mb-1">{address}</p>
-        <p className="text-xs text-gray-400">{listing.City}, {listing.PostalCode}</p>
+        <p className="text-xs text-gray-400">
+          {listing.City}, {listing.PostalCode}
+        </p>
 
         <div className="flex gap-3 mt-2 text-xs text-gray-500">
           {listing.BedroomsTotal && <span>{listing.BedroomsTotal} bd</span>}
@@ -801,12 +837,16 @@ function ListingCard({ listing }: { listing: MlsListing }) {
         {(listing.OwnershipType || listing.AssociationFee) && (
           <div className="flex flex-wrap gap-2 mt-1.5">
             {listing.OwnershipType && (
-              <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
-                listing.OwnershipType === "Leasehold" ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"
-              }`}>
+              <span
+                className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                  listing.OwnershipType === "Leasehold" ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"
+                }`}
+              >
                 {listing.OwnershipType}
                 {listing.OwnershipType === "Leasehold" && listing.LeaseAmount ? ` ($${listing.LeaseAmount}/mo)` : ""}
-                {listing.OwnershipType === "Leasehold" && listing.LeaseExpiration ? ` exp ${listing.LeaseExpiration}` : ""}
+                {listing.OwnershipType === "Leasehold" && listing.LeaseExpiration
+                  ? ` exp ${listing.LeaseExpiration}`
+                  : ""}
               </span>
             )}
             {listing.AssociationFee && (
@@ -820,12 +860,17 @@ function ListingCard({ listing }: { listing: MlsListing }) {
         <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
           <div className="flex gap-2">
             {listing.DaysOnMarket != null && (
-              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                listing.DaysOnMarket > 90 ? "bg-red-100 text-red-700" :
-                listing.DaysOnMarket > 60 ? "bg-orange-100 text-orange-700" :
-                listing.DaysOnMarket > 30 ? "bg-yellow-100 text-yellow-700" :
-                "bg-green-100 text-green-700"
-              }`}>
+              <span
+                className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                  listing.DaysOnMarket > 90
+                    ? "bg-red-100 text-red-700"
+                    : listing.DaysOnMarket > 60
+                      ? "bg-orange-100 text-orange-700"
+                      : listing.DaysOnMarket > 30
+                        ? "bg-yellow-100 text-yellow-700"
+                        : "bg-green-100 text-green-700"
+                }`}
+              >
                 {listing.DaysOnMarket} DOM
                 {listing.CumulativeDaysOnMarket != null && listing.CumulativeDaysOnMarket > listing.DaysOnMarket
                   ? ` (${listing.CumulativeDaysOnMarket} cumulative)`
@@ -843,7 +888,8 @@ function ListingCard({ listing }: { listing: MlsListing }) {
 
         {listing.ListAgentFullName && (
           <p className="text-xs text-gray-400 mt-2">
-            {listing.ListAgentFullName}{listing.ListOfficeName ? ` · ${listing.ListOfficeName}` : ""}
+            {listing.ListAgentFullName}
+            {listing.ListOfficeName ? ` · ${listing.ListOfficeName}` : ""}
           </p>
         )}
       </div>
@@ -917,11 +963,17 @@ function AlertDetails({ type, details }: { type: string; details: Record<string,
 
 function formatRuleLabel(rule: WatchRule): string {
   switch (rule.trigger_type) {
-    case "dom_threshold": return `DOM > ${rule.threshold_value}`;
-    case "price_drop_amount": return `Drop > $${rule.threshold_value?.toLocaleString()}`;
-    case "price_drop_pct": return `Drop > ${rule.threshold_value}%`;
-    case "status_change": return `Status: ${rule.status_triggers.join(", ")}`;
-    case "new_listing": return "New listings";
-    default: return rule.trigger_type;
+    case "dom_threshold":
+      return `DOM > ${rule.threshold_value}`;
+    case "price_drop_amount":
+      return `Drop > $${rule.threshold_value?.toLocaleString()}`;
+    case "price_drop_pct":
+      return `Drop > ${rule.threshold_value}%`;
+    case "status_change":
+      return `Status: ${rule.status_triggers.join(", ")}`;
+    case "new_listing":
+      return "New listings";
+    default:
+      return rule.trigger_type;
   }
 }

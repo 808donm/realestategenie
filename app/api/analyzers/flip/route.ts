@@ -4,7 +4,9 @@ import { supabaseServer } from "@/lib/supabase/server";
 export async function POST(request: Request) {
   try {
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -48,11 +50,7 @@ export async function POST(request: Request) {
       notes: body.notes || null,
     };
 
-    const { data, error } = await supabase
-      .from("flip_analyses")
-      .insert(analysisData)
-      .select()
-      .single();
+    const { data, error } = await supabase.from("flip_analyses").insert(analysisData).select().single();
 
     if (error) {
       console.error("Error saving flip analysis:", error);
@@ -69,7 +67,9 @@ export async function POST(request: Request) {
 export async function GET() {
   try {
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

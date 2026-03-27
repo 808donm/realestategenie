@@ -21,7 +21,13 @@ const QUICK_TYPES = [
   { value: "meeting", label: "Meeting", icon: MessageSquare },
 ];
 
-export default function AddFollowUpButton({ leadId, contactId, openHouseId, entityName, compact }: AddFollowUpButtonProps) {
+export default function AddFollowUpButton({
+  leadId,
+  contactId,
+  openHouseId,
+  entityName,
+  compact,
+}: AddFollowUpButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [dueDate, setDueDate] = useState("");
@@ -50,10 +56,16 @@ export default function AddFollowUpButton({ leadId, contactId, openHouseId, enti
       if (res.ok) {
         setToast("Follow-up created!");
         setTimeout(() => setToast(null), 2500);
-        setTitle(""); setDueDate(""); setTaskType("follow_up"); setPriority("medium");
+        setTitle("");
+        setDueDate("");
+        setTaskType("follow_up");
+        setPriority("medium");
         setIsOpen(false);
       }
-    } catch {} finally { setIsCreating(false); }
+    } catch {
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const btnStyle = compact
@@ -93,7 +105,9 @@ export default function AddFollowUpButton({ leadId, contactId, openHouseId, enti
                     key={t.value}
                     onClick={() => setTaskType(t.value)}
                     className={`flex-1 flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg text-[10px] font-semibold transition-colors ${
-                      taskType === t.value ? "bg-purple-100 text-purple-700" : "bg-gray-50 text-gray-500 hover:bg-gray-100"
+                      taskType === t.value
+                        ? "bg-purple-100 text-purple-700"
+                        : "bg-gray-50 text-gray-500 hover:bg-gray-100"
                     }`}
                   >
                     <Icon className="w-3 h-3" />
@@ -117,7 +131,11 @@ export default function AddFollowUpButton({ leadId, contactId, openHouseId, enti
                 onChange={(e) => setDueDate(e.target.value)}
                 className="flex-1 px-2 py-1.5 text-xs border border-gray-200 rounded-lg"
               />
-              <select value={priority} onChange={(e) => setPriority(e.target.value)} className="w-20 px-2 py-1.5 text-xs border border-gray-200 rounded-lg">
+              <select
+                value={priority}
+                onChange={(e) => setPriority(e.target.value)}
+                className="w-20 px-2 py-1.5 text-xs border border-gray-200 rounded-lg"
+              >
                 <option value="urgent">Urgent</option>
                 <option value="high">High</option>
                 <option value="medium">Medium</option>

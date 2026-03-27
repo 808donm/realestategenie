@@ -5,7 +5,9 @@ import { supabaseServer } from "@/lib/supabase/server";
 export async function POST(req: NextRequest) {
   try {
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { action, task_ids, snoozed_until } = await req.json();
@@ -40,11 +42,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === "delete") {
-      const { error } = await supabase
-        .from("tasks")
-        .delete()
-        .in("id", task_ids)
-        .eq("agent_id", user.id);
+      const { error } = await supabase.from("tasks").delete().in("id", task_ids).eq("agent_id", user.id);
 
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });
       return NextResponse.json({ success: true, action: "deleted", count: task_ids.length });

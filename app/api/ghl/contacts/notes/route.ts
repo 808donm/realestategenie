@@ -7,7 +7,9 @@ import { getValidGHLConfig, resolveGHLAgentId } from "@/lib/integrations/ghl-tok
 export async function GET(req: NextRequest) {
   try {
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const contactId = new URL(req.url).searchParams.get("contactId");
@@ -30,7 +32,9 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { contactId, body: noteBody } = await req.json();

@@ -119,9 +119,7 @@ export default function SecurityClient() {
 
       <div style={{ padding: 16, border: "1px solid #ddd", borderRadius: 12 }}>
         <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>Authenticator app (TOTP)</h2>
-        <p style={{ marginTop: 6, opacity: 0.75 }}>
-          Recommended if you use freemail. Adds a second step at login.
-        </p>
+        <p style={{ marginTop: 6, opacity: 0.75 }}>Recommended if you use freemail. Adds a second step at login.</p>
 
         {totpFactorId ? (
           <div>
@@ -147,9 +145,7 @@ export default function SecurityClient() {
       {enrollData && (
         <div style={{ marginTop: 16, padding: 16, border: "1px solid #ddd", borderRadius: 12 }}>
           <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>Step 1: Scan QR</h3>
-          <p style={{ opacity: 0.75 }}>
-            Scan with Google Authenticator / Authy / 1Password.
-          </p>
+          <p style={{ opacity: 0.75 }}>Scan with Google Authenticator / Authy / 1Password.</p>
 
           {qrSvg ? (
             <div
@@ -157,9 +153,7 @@ export default function SecurityClient() {
               dangerouslySetInnerHTML={{ __html: qrSvg }}
             />
           ) : (
-            <p style={{ color: "crimson" }}>
-              QR code not available. (We can fall back to secret key if needed.)
-            </p>
+            <p style={{ color: "crimson" }}>QR code not available. (We can fall back to secret key if needed.)</p>
           )}
 
           {enrollData.totp?.secret && (

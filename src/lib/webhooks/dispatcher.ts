@@ -5,11 +5,9 @@
 
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 export type WebhookEventType =
   | "lead.submitted"
@@ -29,11 +27,7 @@ export type WebhookPayload = {
 /**
  * Dispatch webhook event to n8n or other configured endpoints
  */
-export async function dispatchWebhook(
-  agentId: string,
-  event: WebhookEventType,
-  data: any
-): Promise<void> {
+export async function dispatchWebhook(agentId: string, event: WebhookEventType, data: any): Promise<void> {
   try {
     // Fetch n8n integration
     const { data: integration } = await supabaseAdmin
@@ -114,7 +108,7 @@ export async function dispatchWebhook(
 async function sendWebhookWithRetry(
   url: string,
   payload: WebhookPayload,
-  secretKey?: string
+  secretKey?: string,
 ): Promise<{
   success: boolean;
   statusCode?: number;
@@ -195,19 +189,11 @@ async function sendWebhookWithRetry(
  */
 async function generateSignature(payload: string, secret: string): Promise<string> {
   const encoder = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    "raw",
-    encoder.encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"]
-  );
+  const key = await crypto.subtle.importKey("raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, [
+    "sign",
+  ]);
 
-  const signature = await crypto.subtle.sign(
-    "HMAC",
-    key,
-    encoder.encode(payload)
-  );
+  const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(payload));
 
   return Array.from(new Uint8Array(signature))
     .map((b) => b.toString(16).padStart(2, "0"))

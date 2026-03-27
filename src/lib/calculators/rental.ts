@@ -85,12 +85,7 @@ export function calculateRental(input: RentalInput): RentalAnalysis {
   const managementMonthly = monthlyRent * (managementPercent / 100);
 
   const totalOperatingExpensesMonthly =
-    propertyTaxMonthly +
-    insuranceMonthly +
-    hoaMonthly +
-    maintenanceMonthly +
-    managementMonthly +
-    otherExpensesMonthly;
+    propertyTaxMonthly + insuranceMonthly + hoaMonthly + maintenanceMonthly + managementMonthly + otherExpensesMonthly;
   const totalOperatingExpensesAnnual = totalOperatingExpensesMonthly * 12;
 
   // NOI
@@ -109,8 +104,7 @@ export function calculateRental(input: RentalInput): RentalAnalysis {
   let monthlyMortgage = 0;
   if (loanAmount > 0 && monthlyRate > 0) {
     monthlyMortgage =
-      loanAmount *
-      (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) /
+      (loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, numPayments))) /
       (Math.pow(1 + monthlyRate, numPayments) - 1);
   } else if (loanAmount > 0) {
     monthlyMortgage = loanAmount / numPayments;
@@ -137,9 +131,7 @@ export function calculateRental(input: RentalInput): RentalAnalysis {
 
   // Expense ratio
   const operatingExpenseRatio =
-    effectiveGrossIncomeAnnual > 0
-      ? (totalOperatingExpensesAnnual / effectiveGrossIncomeAnnual) * 100
-      : 0;
+    effectiveGrossIncomeAnnual > 0 ? (totalOperatingExpensesAnnual / effectiveGrossIncomeAnnual) * 100 : 0;
 
   // GRM
   const grm = monthlyRent > 0 ? purchasePrice / (monthlyRent * 12) : 0;

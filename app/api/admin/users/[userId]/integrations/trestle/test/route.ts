@@ -7,10 +7,7 @@ import { createTrestleClient } from "@/lib/integrations/trestle-client";
  * Admin: Test the stored Trestle integration for a specific user
  * POST /api/admin/users/[userId]/integrations/trestle/test
  */
-export async function POST(
-  _request: NextRequest,
-  { params }: { params: Promise<{ userId: string }> }
-) {
+export async function POST(_request: NextRequest, { params }: { params: Promise<{ userId: string }> }) {
   try {
     await requireAdmin();
     const { userId } = await params;

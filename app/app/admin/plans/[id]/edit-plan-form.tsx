@@ -156,15 +156,9 @@ export default function EditPlanForm({ plan, subscriberCount }: EditPlanFormProp
       </div>
 
       {/* Alert Messages */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
-          {error}
-        </div>
-      )}
+      {error && <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">{error}</div>}
       {success && (
-        <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">
-          {success}
-        </div>
+        <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">{success}</div>
       )}
 
       {/* Edit Form */}
@@ -178,9 +172,7 @@ export default function EditPlanForm({ plan, subscriberCount }: EditPlanFormProp
               {/* Basic Information */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Plan Name *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Plan Name *</label>
                   <input
                     type="text"
                     name="name"
@@ -193,9 +185,7 @@ export default function EditPlanForm({ plan, subscriberCount }: EditPlanFormProp
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Slug *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Slug *</label>
                   <input
                     type="text"
                     name="slug"
@@ -210,9 +200,7 @@ export default function EditPlanForm({ plan, subscriberCount }: EditPlanFormProp
 
               {/* Description */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Description
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
                 <textarea
                   name="description"
                   value={formData.description}
@@ -226,9 +214,7 @@ export default function EditPlanForm({ plan, subscriberCount }: EditPlanFormProp
               {/* Pricing */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Monthly Price ($) *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Monthly Price ($) *</label>
                   <input
                     type="number"
                     name="monthly_price"
@@ -242,9 +228,7 @@ export default function EditPlanForm({ plan, subscriberCount }: EditPlanFormProp
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Annual Price ($)
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Annual Price ($)</label>
                   <input
                     type="number"
                     name="annual_price"
@@ -258,9 +242,7 @@ export default function EditPlanForm({ plan, subscriberCount }: EditPlanFormProp
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tier Level *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Tier Level *</label>
                   <input
                     type="number"
                     name="tier_level"
@@ -277,9 +259,7 @@ export default function EditPlanForm({ plan, subscriberCount }: EditPlanFormProp
               {/* Limits */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Max Agents *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Max Agents *</label>
                   <input
                     type="number"
                     name="max_agents"

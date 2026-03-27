@@ -25,9 +25,7 @@ export default async function PaymentMethodsPage() {
       {/* Page Header */}
       <div>
         <h1 className="text-3xl font-bold mb-2">Payment Methods</h1>
-        <p className="text-muted-foreground">
-          Manage your payment methods and billing information
-        </p>
+        <p className="text-muted-foreground">Manage your payment methods and billing information</p>
       </div>
 
       {/* Coming Soon Notice */}
@@ -42,20 +40,15 @@ export default async function PaymentMethodsPage() {
             <div>
               <h3 className="text-lg font-semibold mb-2">Payment Integration Coming Soon</h3>
               <p className="text-muted-foreground mb-4">
-                We're currently setting up secure payment processing with Stripe. In the meantime,
-                you can continue using your existing payment method or contact our billing team
-                for manual updates.
+                We're currently setting up secure payment processing with Stripe. In the meantime, you can continue
+                using your existing payment method or contact our billing team for manual updates.
               </p>
               <div className="flex gap-3">
                 <Link href="mailto:billing@realestategenie.app?subject=Payment Method Update">
-                  <Button variant="default">
-                    Contact Billing Support
-                  </Button>
+                  <Button variant="default">Contact Billing Support</Button>
                 </Link>
                 <Link href="/app/billing">
-                  <Button variant="outline">
-                    Back to Billing
-                  </Button>
+                  <Button variant="outline">Back to Billing</Button>
                 </Link>
               </div>
             </div>
@@ -76,17 +69,13 @@ export default async function PaymentMethodsPage() {
               Add Payment Method
             </Button>
           </div>
-          <CardDescription>
-            Credit cards, debit cards, and bank accounts
-          </CardDescription>
+          <CardDescription>Credit cards, debit cards, and bank accounts</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-center py-12 text-muted-foreground">
             <CreditCard className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <p className="mb-2">No payment methods saved yet</p>
-            <p className="text-sm">
-              Payment method management will be available once Stripe integration is complete
-            </p>
+            <p className="text-sm">Payment method management will be available once Stripe integration is complete</p>
           </div>
         </CardContent>
       </Card>
@@ -104,27 +93,20 @@ export default async function PaymentMethodsPage() {
             <div className="flex items-start gap-3">
               <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
               <p>
-                All payment information is encrypted and securely stored using Stripe, a
-                PCI-compliant payment processor
+                All payment information is encrypted and securely stored using Stripe, a PCI-compliant payment processor
               </p>
             </div>
             <div className="flex items-start gap-3">
               <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
-              <p>
-                We never store your full card details on our servers
-              </p>
+              <p>We never store your full card details on our servers</p>
             </div>
             <div className="flex items-start gap-3">
               <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
-              <p>
-                Your payment data is protected by bank-level security
-              </p>
+              <p>Your payment data is protected by bank-level security</p>
             </div>
             <div className="flex items-start gap-3">
               <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
-              <p>
-                All transactions are monitored for fraud prevention
-              </p>
+              <p>All transactions are monitored for fraud prevention</p>
             </div>
           </div>
         </CardContent>
@@ -137,16 +119,12 @@ export default async function PaymentMethodsPage() {
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground mb-4">
-            Our billing team is here to help with payment questions, invoice issues, or account
-            updates.
+            Our billing team is here to help with payment questions, invoice issues, or account updates.
           </p>
           <div className="space-y-2 text-sm">
             <div>
               <span className="font-medium">Email:</span>{" "}
-              <a
-                href="mailto:billing@realestategenie.app"
-                className="text-blue-600 hover:underline"
-              >
+              <a href="mailto:billing@realestategenie.app" className="text-blue-600 hover:underline">
                 billing@realestategenie.app
               </a>
             </div>

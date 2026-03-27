@@ -43,9 +43,7 @@ export async function GET() {
           id: `lead-${lead.id}`,
           type: "lead",
           title: `New lead: ${payload.name || "Anonymous"}`,
-          description: `Heat score: ${lead.heat_score}/100${
-            payload.email ? ` • ${payload.email}` : ""
-          }`,
+          description: `Heat score: ${lead.heat_score}/100${payload.email ? ` • ${payload.email}` : ""}`,
           timestamp: lead.created_at,
           metadata: {
             heatScore: lead.heat_score,

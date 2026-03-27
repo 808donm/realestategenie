@@ -28,10 +28,7 @@ export async function POST(request: NextRequest) {
 
     if (updateError) {
       console.error("Error disconnecting Trestle:", updateError);
-      return NextResponse.json(
-        { error: "Failed to disconnect" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to disconnect" }, { status: 500 });
     }
 
     return NextResponse.json({
@@ -40,9 +37,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Error in Trestle disconnect:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

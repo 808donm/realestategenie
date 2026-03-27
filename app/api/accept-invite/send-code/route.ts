@@ -4,23 +4,18 @@ import { logError } from "@/lib/error-logging";
 import crypto from "crypto";
 
 // Force dynamic rendering for API routes
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
-const admin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 export async function POST(request: NextRequest) {
   try {
     const { invitationId, token, fullName, password } = await request.json();
 
     if (!invitationId || !token || !fullName || !password) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
     // Verify invitation
@@ -31,10 +26,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (inviteError || !invitation) {
-      return NextResponse.json(
-        { error: "Invalid invitation" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Invalid invitation" }, { status: 404 });
     }
 
     // Verify token
@@ -44,23 +36,14 @@ export async function POST(request: NextRequest) {
 
     // Check if invitation is still pending
     if (invitation.status !== "pending") {
-      return NextResponse.json(
-        { error: "Invitation already used" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invitation already used" }, { status: 400 });
     }
 
     // Check expiration
     if (new Date(invitation.expires_at) < new Date()) {
-      await admin
-        .from("user_invitations")
-        .update({ status: "expired" })
-        .eq("id", invitationId);
+      await admin.from("user_invitations").update({ status: "expired" }).eq("id", invitationId);
 
-      return NextResponse.json(
-        { error: "Invitation expired" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invitation expired" }, { status: 400 });
     }
 
     // Generate 6-digit verification code
@@ -80,10 +63,7 @@ export async function POST(request: NextRequest) {
 
     if (updateError) {
       console.error("Failed to store verification code:", updateError);
-      return NextResponse.json(
-        { error: "Failed to generate verification code" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to generate verification code" }, { status: 500 });
     }
 
     // Send verification code via email
@@ -109,10 +89,7 @@ export async function POST(request: NextRequest) {
         severity: "error",
       });
 
-      return NextResponse.json(
-        { error: "Failed to send verification code. Please try again." },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to send verification code. Please try again." }, { status: 500 });
     }
   } catch (error: any) {
     await logError({
@@ -121,9 +98,6 @@ export async function POST(request: NextRequest) {
       stackTrace: error.stack,
       severity: "error",
     });
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

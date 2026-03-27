@@ -72,12 +72,14 @@ export default function MlsRefreshButton({ eventId, mlsListingKey }: { eventId: 
         {loading ? "Refreshing..." : "Refresh from MLS"}
       </button>
       {result && (
-        <span style={{
-          marginLeft: 12,
-          fontSize: 13,
-          color: result.ok ? "#059669" : "#dc2626",
-          fontWeight: 500,
-        }}>
+        <span
+          style={{
+            marginLeft: 12,
+            fontSize: 13,
+            color: result.ok ? "#059669" : "#dc2626",
+            fontWeight: 500,
+          }}
+        >
           {result.message}
         </span>
       )}

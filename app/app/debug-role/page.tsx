@@ -29,7 +29,8 @@ export default async function DebugRolePage() {
   // Check subscription
   const { data: subscription } = await supabaseAdmin
     .from("agent_subscriptions")
-    .select(`
+    .select(
+      `
       id,
       status,
       agent_id,
@@ -40,7 +41,8 @@ export default async function DebugRolePage() {
         slug,
         tier_level
       )
-    `)
+    `,
+    )
     .eq("agent_id", userData.user.id)
     .eq("status", "active")
     .single();
@@ -55,7 +57,8 @@ export default async function DebugRolePage() {
   // Check plan features for user's plan
   const { data: planFeatures } = await supabaseAdmin
     .from("plan_features")
-    .select(`
+    .select(
+      `
       plan_id,
       feature_id,
       is_enabled,
@@ -64,18 +67,18 @@ export default async function DebugRolePage() {
         name,
         slug
       )
-    `)
+    `,
+    )
     .eq("plan_id", subscription?.subscription_plan_id || "")
     .eq("is_enabled", true);
 
   // Check RPC function
   let rpcResult = null;
   try {
-    const { data: rpcData, error: rpcError } = await supabaseAdmin
-      .rpc("has_feature_access", {
-        agent_uuid: userData.user.id,
-        feature_slug: "broker-dashboard"
-      });
+    const { data: rpcData, error: rpcError } = await supabaseAdmin.rpc("has_feature_access", {
+      agent_uuid: userData.user.id,
+      feature_slug: "broker-dashboard",
+    });
     rpcResult = { data: rpcData, error: rpcError };
   } catch (e: any) {
     rpcResult = { error: e.message };
@@ -88,51 +91,37 @@ export default async function DebugRolePage() {
       <div className="space-y-6">
         <div className="bg-white p-4 rounded border">
           <h2 className="font-semibold mb-2">Auth User ID</h2>
-          <pre className="text-sm bg-gray-50 p-2 rounded overflow-auto">
-            {userData.user.id}
-          </pre>
+          <pre className="text-sm bg-gray-50 p-2 rounded overflow-auto">{userData.user.id}</pre>
         </div>
 
         <div className="bg-white p-4 rounded border">
           <h2 className="font-semibold mb-2">Agent Info (Regular Client)</h2>
-          <pre className="text-sm bg-gray-50 p-2 rounded overflow-auto">
-            {JSON.stringify(agent, null, 2)}
-          </pre>
+          <pre className="text-sm bg-gray-50 p-2 rounded overflow-auto">{JSON.stringify(agent, null, 2)}</pre>
         </div>
 
         <div className="bg-white p-4 rounded border">
           <h2 className="font-semibold mb-2">Agent Info (Admin Client)</h2>
-          <pre className="text-sm bg-gray-50 p-2 rounded overflow-auto">
-            {JSON.stringify(agentAdmin, null, 2)}
-          </pre>
+          <pre className="text-sm bg-gray-50 p-2 rounded overflow-auto">{JSON.stringify(agentAdmin, null, 2)}</pre>
         </div>
 
         <div className="bg-white p-4 rounded border">
           <h2 className="font-semibold mb-2">Active Subscription</h2>
-          <pre className="text-sm bg-gray-50 p-2 rounded overflow-auto">
-            {JSON.stringify(subscription, null, 2)}
-          </pre>
+          <pre className="text-sm bg-gray-50 p-2 rounded overflow-auto">{JSON.stringify(subscription, null, 2)}</pre>
         </div>
 
         <div className="bg-white p-4 rounded border">
           <h2 className="font-semibold mb-2">Broker Dashboard Feature</h2>
-          <pre className="text-sm bg-gray-50 p-2 rounded overflow-auto">
-            {JSON.stringify(brokerFeature, null, 2)}
-          </pre>
+          <pre className="text-sm bg-gray-50 p-2 rounded overflow-auto">{JSON.stringify(brokerFeature, null, 2)}</pre>
         </div>
 
         <div className="bg-white p-4 rounded border">
           <h2 className="font-semibold mb-2">Plan Features (for your plan)</h2>
-          <pre className="text-sm bg-gray-50 p-2 rounded overflow-auto">
-            {JSON.stringify(planFeatures, null, 2)}
-          </pre>
+          <pre className="text-sm bg-gray-50 p-2 rounded overflow-auto">{JSON.stringify(planFeatures, null, 2)}</pre>
         </div>
 
         <div className="bg-white p-4 rounded border">
           <h2 className="font-semibold mb-2">RPC has_feature_access Result</h2>
-          <pre className="text-sm bg-gray-50 p-2 rounded overflow-auto">
-            {JSON.stringify(rpcResult, null, 2)}
-          </pre>
+          <pre className="text-sm bg-gray-50 p-2 rounded overflow-auto">{JSON.stringify(rpcResult, null, 2)}</pre>
         </div>
 
         <div className="bg-white p-4 rounded border">
@@ -140,9 +129,7 @@ export default async function DebugRolePage() {
           <div className="space-y-2 text-sm">
             <p>
               <strong>Is broker or admin?</strong>{" "}
-              {agent && (agent.role === "broker" || agent.role === "admin")
-                ? "✅ YES"
-                : "❌ NO"}
+              {agent && (agent.role === "broker" || agent.role === "admin") ? "✅ YES" : "❌ NO"}
             </p>
             <p>
               <strong>Current role:</strong> {agent?.role || "NOT FOUND"}

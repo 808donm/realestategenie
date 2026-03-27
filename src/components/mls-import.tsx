@@ -48,9 +48,10 @@ export default function MLSImport({ onImport }: MLSImportProps) {
     setAddressResults(null);
 
     try {
-      const param = searchMode === "mls"
-        ? `mlsNumber=${encodeURIComponent(query.trim())}`
-        : `address=${encodeURIComponent(query.trim())}`;
+      const param =
+        searchMode === "mls"
+          ? `mlsNumber=${encodeURIComponent(query.trim())}`
+          : `address=${encodeURIComponent(query.trim())}`;
       const res = await fetch(`/api/mls/calculator-lookup?${param}`);
       const data = await res.json();
 
@@ -111,9 +112,7 @@ export default function MLSImport({ onImport }: MLSImportProps) {
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: "#1d4ed8", whiteSpace: "nowrap" }}>
-          Import from MLS
-        </span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: "#1d4ed8", whiteSpace: "nowrap" }}>Import from MLS</span>
 
         {/* Search mode toggle */}
         <div
@@ -126,7 +125,13 @@ export default function MLSImport({ onImport }: MLSImportProps) {
           }}
         >
           <button
-            onClick={() => { setSearchMode("mls"); setQuery(""); setError(""); setAddressResults(null); setImported(null); }}
+            onClick={() => {
+              setSearchMode("mls");
+              setQuery("");
+              setError("");
+              setAddressResults(null);
+              setImported(null);
+            }}
             style={{
               padding: "4px 10px",
               fontSize: 12,
@@ -140,7 +145,13 @@ export default function MLSImport({ onImport }: MLSImportProps) {
             MLS #
           </button>
           <button
-            onClick={() => { setSearchMode("address"); setQuery(""); setError(""); setAddressResults(null); setImported(null); }}
+            onClick={() => {
+              setSearchMode("address");
+              setQuery("");
+              setError("");
+              setAddressResults(null);
+              setImported(null);
+            }}
             style={{
               padding: "4px 10px",
               fontSize: 12,
@@ -190,14 +201,8 @@ export default function MLSImport({ onImport }: MLSImportProps) {
         </button>
       </div>
 
-      {error && (
-        <div style={{ marginTop: 6, fontSize: 12, color: "#dc2626" }}>{error}</div>
-      )}
-      {imported && (
-        <div style={{ marginTop: 6, fontSize: 12, color: "#16a34a" }}>
-          Imported: {imported}
-        </div>
-      )}
+      {error && <div style={{ marginTop: 6, fontSize: 12, color: "#dc2626" }}>{error}</div>}
+      {imported && <div style={{ marginTop: 6, fontSize: 12, color: "#16a34a" }}>Imported: {imported}</div>}
 
       {/* Multiple address results — let user pick */}
       {addressResults && addressResults.length > 0 && (

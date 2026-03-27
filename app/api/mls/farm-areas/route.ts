@@ -55,7 +55,7 @@ export async function GET() {
     console.error("Farm areas GET error:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to load farm areas" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -87,10 +87,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!name || !search_type) {
-      return NextResponse.json(
-        { error: "name and search_type are required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "name and search_type are required" }, { status: 400 });
     }
 
     // Validate search_type has required fields
@@ -141,9 +138,7 @@ export async function POST(request: NextRequest) {
         notify_sms: rule.notify_sms ?? false,
       }));
 
-      const { error: rulesError } = await supabase
-        .from("mls_watch_rules")
-        .insert(rules);
+      const { error: rulesError } = await supabase.from("mls_watch_rules").insert(rules);
 
       if (rulesError) {
         console.error("Watch rules insert error:", rulesError);
@@ -162,7 +157,7 @@ export async function POST(request: NextRequest) {
     console.error("Farm areas POST error:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to create farm area" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -196,11 +191,7 @@ export async function PATCH(request: NextRequest) {
     // Replace watch rules if provided
     if (watch_rules !== undefined) {
       // Delete existing rules
-      await supabase
-        .from("mls_watch_rules")
-        .delete()
-        .eq("farm_area_id", id)
-        .eq("agent_id", userData.user.id);
+      await supabase.from("mls_watch_rules").delete().eq("farm_area_id", id).eq("agent_id", userData.user.id);
 
       // Insert new rules
       if (watch_rules.length > 0) {
@@ -230,7 +221,7 @@ export async function PATCH(request: NextRequest) {
     console.error("Farm areas PATCH error:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to update farm area" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -248,11 +239,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "id is required" }, { status: 400 });
     }
 
-    const { error } = await supabase
-      .from("mls_farm_areas")
-      .delete()
-      .eq("id", id)
-      .eq("agent_id", userData.user.id);
+    const { error } = await supabase.from("mls_farm_areas").delete().eq("id", id).eq("agent_id", userData.user.id);
 
     if (error) throw error;
 
@@ -261,7 +248,7 @@ export async function DELETE(request: NextRequest) {
     console.error("Farm areas DELETE error:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to delete farm area" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

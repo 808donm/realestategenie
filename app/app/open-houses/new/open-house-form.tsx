@@ -52,11 +52,7 @@ interface AddressCandidate {
 
 type SearchMode = "mls" | "address";
 
-export default function OpenHouseForm({
-  startDefault,
-  endDefault,
-  onSubmit,
-}: OpenHouseFormProps) {
+export default function OpenHouseForm({ startDefault, endDefault, onSubmit }: OpenHouseFormProps) {
   const [address, setAddress] = useState<string>("");
   const [eventType, setEventType] = useState<"sales" | "rental" | "both">("sales");
   const [submitting, setSubmitting] = useState(false);
@@ -112,9 +108,7 @@ export default function OpenHouseForm({
     setCandidates([]);
 
     try {
-      const body = searchMode === "mls"
-        ? { mlsNumber: query }
-        : { address: query };
+      const body = searchMode === "mls" ? { mlsNumber: query } : { address: query };
 
       const res = await fetch("/api/mls/lookup-listing", {
         method: "POST",
@@ -229,11 +223,11 @@ export default function OpenHouseForm({
       <div>
         <label style={{ display: "block", fontSize: 12, marginBottom: 6 }}>Event Type</label>
         <div style={{ display: "flex", gap: 0 }}>
-          {([
+          {[
             { value: "sales" as const, label: "Open House (Sales)" },
             { value: "rental" as const, label: "Rental Showing" },
             { value: "both" as const, label: "Both" },
-          ]).map((opt) => (
+          ].map((opt) => (
             <button
               key={opt.value}
               type="button"
@@ -268,15 +262,15 @@ export default function OpenHouseForm({
       ))}
 
       {/* MLS Import Section */}
-      <div style={{
-        background: "#f0f9ff",
-        border: "1px solid #bae6fd",
-        borderRadius: 10,
-        padding: 16,
-      }}>
-        <div style={{ fontWeight: 700, fontSize: 14, color: "#0369a1", marginBottom: 8 }}>
-          Import from MLS
-        </div>
+      <div
+        style={{
+          background: "#f0f9ff",
+          border: "1px solid #bae6fd",
+          borderRadius: 10,
+          padding: 16,
+        }}
+      >
+        <div style={{ fontWeight: 700, fontSize: 14, color: "#0369a1", marginBottom: 8 }}>Import from MLS</div>
         <p style={{ fontSize: 12, color: "#6b7280", margin: "0 0 10px 0" }}>
           Look up a listing by MLS number or address to auto-fill property details.
         </p>
@@ -286,7 +280,10 @@ export default function OpenHouseForm({
           <div style={{ display: "flex", gap: 0, marginBottom: 10 }}>
             <button
               type="button"
-              onClick={() => { setSearchMode("mls"); setMlsError(null); }}
+              onClick={() => {
+                setSearchMode("mls");
+                setMlsError(null);
+              }}
               style={{
                 padding: "6px 16px",
                 fontSize: 12,
@@ -303,7 +300,10 @@ export default function OpenHouseForm({
             </button>
             <button
               type="button"
-              onClick={() => { setSearchMode("address"); setMlsError(null); }}
+              onClick={() => {
+                setSearchMode("address");
+                setMlsError(null);
+              }}
               style={{
                 padding: "6px 16px",
                 fontSize: 12,
@@ -326,7 +326,12 @@ export default function OpenHouseForm({
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleMlsLookup(); } }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleMlsLookup();
+                }
+              }}
               placeholder={searchMode === "mls" ? "e.g. H12345678" : "e.g. 123 Main St, Honolulu"}
               disabled={mlsLoading || submitting || isLocked}
               style={{
@@ -381,9 +386,7 @@ export default function OpenHouseForm({
           )}
         </div>
 
-        {mlsError && (
-          <p style={{ margin: "8px 0 0 0", color: "#dc2626", fontSize: 12, fontWeight: 600 }}>{mlsError}</p>
-        )}
+        {mlsError && <p style={{ margin: "8px 0 0 0", color: "#dc2626", fontSize: 12, fontWeight: 600 }}>{mlsError}</p>}
 
         {/* Address search — multiple results to pick from */}
         {candidates.length > 0 && !mlsResult && (
@@ -411,7 +414,9 @@ export default function OpenHouseForm({
                     opacity: selectingCandidate ? 0.6 : 1,
                     transition: "border-color 0.15s",
                   }}
-                  onMouseEnter={(e) => { if (!selectingCandidate) e.currentTarget.style.borderColor = "#93c5fd"; }}
+                  onMouseEnter={(e) => {
+                    if (!selectingCandidate) e.currentTarget.style.borderColor = "#93c5fd";
+                  }}
                   onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#e5e7eb")}
                 >
                   {c.photoUrl && (
@@ -436,16 +441,20 @@ export default function OpenHouseForm({
                         c.baths != null ? `${c.baths} bath` : null,
                         c.sqft ? `${c.sqft.toLocaleString()} sqft` : null,
                         c.price ? `$${c.price.toLocaleString()}` : null,
-                      ].filter(Boolean).join(" · ")}
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
                     </div>
                   </div>
                   <div style={{ textAlign: "right", flexShrink: 0 }}>
                     <div style={{ fontSize: 10, color: "#9ca3af" }}>MLS# {c.listingId}</div>
-                    <div style={{
-                      fontSize: 10,
-                      fontWeight: 600,
-                      color: c.status === "Active" ? "#059669" : c.status === "Pending" ? "#d97706" : "#6b7280",
-                    }}>
+                    <div
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 600,
+                        color: c.status === "Active" ? "#059669" : c.status === "Pending" ? "#d97706" : "#6b7280",
+                      }}
+                    >
                       {c.status}
                     </div>
                   </div>
@@ -457,13 +466,15 @@ export default function OpenHouseForm({
 
         {/* MLS Preview Card — selected listing */}
         {mlsResult && (
-          <div style={{
-            marginTop: 12,
-            background: "#fff",
-            border: "1px solid #d1fae5",
-            borderRadius: 8,
-            padding: 14,
-          }}>
+          <div
+            style={{
+              marginTop: 12,
+              background: "#fff",
+              border: "1px solid #d1fae5",
+              borderRadius: 8,
+              padding: 14,
+            }}
+          >
             <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
               {mlsResult.mappedFields.property_photo_url && (
                 <img
@@ -480,13 +491,13 @@ export default function OpenHouseForm({
                 />
               )}
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 2 }}>
-                  {mlsResult.mappedFields.address}
-                </div>
+                <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 2 }}>{mlsResult.mappedFields.address}</div>
                 <div style={{ fontSize: 12, color: "#6b7280", display: "flex", flexWrap: "wrap", gap: 8 }}>
                   {mlsResult.mappedFields.beds != null && <span>{mlsResult.mappedFields.beds} bed</span>}
                   {mlsResult.mappedFields.baths != null && <span>{mlsResult.mappedFields.baths} bath</span>}
-                  {mlsResult.mappedFields.sqft != null && <span>{mlsResult.mappedFields.sqft.toLocaleString()} sqft</span>}
+                  {mlsResult.mappedFields.sqft != null && (
+                    <span>{mlsResult.mappedFields.sqft.toLocaleString()} sqft</span>
+                  )}
                   {mlsResult.mappedFields.price != null && (
                     <span style={{ color: "#059669", fontWeight: 600 }}>{fmt(mlsResult.mappedFields.price)}</span>
                   )}
@@ -497,16 +508,19 @@ export default function OpenHouseForm({
                 </div>
               </div>
             </div>
-            <div style={{
-              marginTop: 8,
-              padding: "6px 10px",
-              background: "#f0fdf4",
-              borderRadius: 6,
-              fontSize: 11,
-              color: "#166534",
-              fontWeight: 600,
-            }}>
-              Property details will be auto-filled: address, beds, baths, sqft, price, description, photo, and coordinates.
+            <div
+              style={{
+                marginTop: 8,
+                padding: "6px 10px",
+                background: "#f0fdf4",
+                borderRadius: 6,
+                fontSize: 11,
+                color: "#166534",
+                fontWeight: 600,
+              }}
+            >
+              Property details will be auto-filled: address, beds, baths, sqft, price, description, photo, and
+              coordinates.
             </div>
           </div>
         )}
@@ -556,21 +570,26 @@ export default function OpenHouseForm({
       </div>
 
       {error && (
-        <div style={{
-          margin: 0,
-          padding: "10px 14px",
-          background: "#fef2f2",
-          border: "1px solid #fecaca",
-          borderRadius: 8,
-          color: "#dc2626",
-          fontSize: 13,
-          fontWeight: 600,
-        }}>
+        <div
+          style={{
+            margin: 0,
+            padding: "10px 14px",
+            background: "#fef2f2",
+            border: "1px solid #fecaca",
+            borderRadius: 8,
+            color: "#dc2626",
+            fontSize: 13,
+            fontWeight: 600,
+          }}
+        >
           {error}
         </div>
       )}
 
-      <button disabled={submitting} style={{ padding: 12, fontWeight: 900, opacity: submitting ? 0.6 : 1, cursor: submitting ? "wait" : "pointer" }}>
+      <button
+        disabled={submitting}
+        style={{ padding: 12, fontWeight: 900, opacity: submitting ? 0.6 : 1, cursor: submitting ? "wait" : "pointer" }}
+      >
         {submitting ? "Creating..." : "Create"}
       </button>
       <p style={{ margin: 0, opacity: 0.7, fontSize: 12 }}>

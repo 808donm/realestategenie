@@ -65,13 +65,22 @@ export default function AutoResponseSettings() {
   return (
     <div>
       {toast && (
-        <div style={{
-          position: "fixed", top: 20, right: 20, zIndex: 100, padding: "12px 20px", borderRadius: 8,
-          background: toast.type === "success" ? "#ecfdf5" : "#fef2f2",
-          border: `1px solid ${toast.type === "success" ? "#a7f3d0" : "#fca5a5"}`,
-          color: toast.type === "success" ? "#059669" : "#dc2626",
-          fontSize: 14, fontWeight: 600, boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-        }}>
+        <div
+          style={{
+            position: "fixed",
+            top: 20,
+            right: 20,
+            zIndex: 100,
+            padding: "12px 20px",
+            borderRadius: 8,
+            background: toast.type === "success" ? "#ecfdf5" : "#fef2f2",
+            border: `1px solid ${toast.type === "success" ? "#a7f3d0" : "#fca5a5"}`,
+            color: toast.type === "success" ? "#059669" : "#dc2626",
+            fontSize: 14,
+            fontWeight: 600,
+            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+          }}
+        >
           {toast.message}
         </div>
       )}
@@ -92,14 +101,31 @@ export default function AutoResponseSettings() {
               onChange={(e) => setConfig({ ...config, enabled: e.target.checked })}
               style={{ opacity: 0, width: 0, height: 0 }}
             />
-            <span style={{
-              position: "absolute", cursor: "pointer", top: 0, left: 0, right: 0, bottom: 0,
-              background: config.enabled ? "#3b82f6" : "#d1d5db", borderRadius: 26, transition: "0.3s",
-            }}>
-              <span style={{
-                position: "absolute", height: 20, width: 20, left: config.enabled ? 24 : 3, bottom: 3,
-                background: "#fff", borderRadius: "50%", transition: "0.3s",
-              }} />
+            <span
+              style={{
+                position: "absolute",
+                cursor: "pointer",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: config.enabled ? "#3b82f6" : "#d1d5db",
+                borderRadius: 26,
+                transition: "0.3s",
+              }}
+            >
+              <span
+                style={{
+                  position: "absolute",
+                  height: 20,
+                  width: 20,
+                  left: config.enabled ? 24 : 3,
+                  bottom: 3,
+                  background: "#fff",
+                  borderRadius: "50%",
+                  transition: "0.3s",
+                }}
+              />
             </span>
           </label>
         </div>
@@ -107,9 +133,7 @@ export default function AutoResponseSettings() {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>AI Email Auto-Response</h3>
-            <p style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>
-              Auto-respond to inbound emails (via GHL)
-            </p>
+            <p style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>Auto-respond to inbound emails (via GHL)</p>
           </div>
           <label style={{ position: "relative", display: "inline-block", width: 48, height: 26 }}>
             <input
@@ -118,14 +142,31 @@ export default function AutoResponseSettings() {
               onChange={(e) => setConfig({ ...config, autoReplyEmail: e.target.checked })}
               style={{ opacity: 0, width: 0, height: 0 }}
             />
-            <span style={{
-              position: "absolute", cursor: "pointer", top: 0, left: 0, right: 0, bottom: 0,
-              background: config.autoReplyEmail ? "#3b82f6" : "#d1d5db", borderRadius: 26, transition: "0.3s",
-            }}>
-              <span style={{
-                position: "absolute", height: 20, width: 20, left: config.autoReplyEmail ? 24 : 3, bottom: 3,
-                background: "#fff", borderRadius: "50%", transition: "0.3s",
-              }} />
+            <span
+              style={{
+                position: "absolute",
+                cursor: "pointer",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: config.autoReplyEmail ? "#3b82f6" : "#d1d5db",
+                borderRadius: 26,
+                transition: "0.3s",
+              }}
+            >
+              <span
+                style={{
+                  position: "absolute",
+                  height: 20,
+                  width: 20,
+                  left: config.autoReplyEmail ? 24 : 3,
+                  bottom: 3,
+                  background: "#fff",
+                  borderRadius: "50%",
+                  transition: "0.3s",
+                }}
+              />
             </span>
           </label>
         </div>
@@ -148,7 +189,9 @@ export default function AutoResponseSettings() {
         {config.afterHoursOnly && (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>Business Hours Start</label>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>
+                Business Hours Start
+              </label>
               <input
                 type="time"
                 value={config.businessHoursStart}
@@ -157,7 +200,9 @@ export default function AutoResponseSettings() {
               />
             </div>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>Business Hours End</label>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>
+                Business Hours End
+              </label>
               <input
                 type="time"
                 value={config.businessHoursEnd}
@@ -175,7 +220,9 @@ export default function AutoResponseSettings() {
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>Max Auto-Replies Per Contact</label>
+            <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>
+              Max Auto-Replies Per Contact
+            </label>
             <input
               type="number"
               value={config.maxAutoRepliesPerContact}
@@ -186,7 +233,9 @@ export default function AutoResponseSettings() {
             />
           </div>
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>Escalate to Agent After</label>
+            <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>
+              Escalate to Agent After
+            </label>
             <input
               type="number"
               value={config.escalateAfterReplies}
@@ -208,7 +257,15 @@ export default function AutoResponseSettings() {
           onChange={(e) => setConfig({ ...config, greeting: e.target.value })}
           rows={3}
           placeholder="Custom greeting for first-time contacts..."
-          style={{ width: "100%", padding: 12, border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 14, resize: "vertical", fontFamily: "inherit" }}
+          style={{
+            width: "100%",
+            padding: 12,
+            border: "1px solid #e5e7eb",
+            borderRadius: 8,
+            fontSize: 14,
+            resize: "vertical",
+            fontFamily: "inherit",
+          }}
         />
         <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>
           This greeting is sent as the first message when a new contact texts you.
@@ -221,8 +278,14 @@ export default function AutoResponseSettings() {
           onClick={handleSave}
           disabled={isSaving}
           style={{
-            padding: "12px 32px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 8,
-            fontWeight: 600, fontSize: 14, cursor: isSaving ? "wait" : "pointer",
+            padding: "12px 32px",
+            background: "#3b82f6",
+            color: "#fff",
+            border: "none",
+            borderRadius: 8,
+            fontWeight: 600,
+            fontSize: 14,
+            cursor: isSaving ? "wait" : "pointer",
           }}
         >
           {isSaving ? "Saving..." : "Save Settings"}

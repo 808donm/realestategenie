@@ -9,7 +9,9 @@ export default async function DiagnosticPage() {
     "use server";
 
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
       return;
@@ -23,7 +25,7 @@ export default async function DiagnosticPage() {
         display_name: user.email ?? null,
         updated_at: new Date().toISOString(),
       },
-      { onConflict: "id" }
+      { onConflict: "id" },
     );
 
     // Revalidate the diagnostic page to show updated status
@@ -52,10 +54,7 @@ export default async function DiagnosticPage() {
     }
 
     // Check 2: Agents table exists
-    const { error: agentsError } = await supabase
-      .from("agents")
-      .select("id")
-      .limit(1);
+    const { error: agentsError } = await supabase.from("agents").select("id").limit(1);
 
     if (!agentsError) {
       checks.agentsTable = true;
@@ -64,10 +63,7 @@ export default async function DiagnosticPage() {
     }
 
     // Check 3: Open house events table exists
-    const { error: eventsError } = await supabase
-      .from("open_house_events")
-      .select("id")
-      .limit(1);
+    const { error: eventsError } = await supabase.from("open_house_events").select("id").limit(1);
 
     if (!eventsError) {
       checks.openHouseEventsTable = true;
@@ -95,9 +91,7 @@ export default async function DiagnosticPage() {
 
   return (
     <div style={{ maxWidth: 700, margin: "40px auto", padding: 16 }}>
-      <h1 style={{ fontSize: 28, fontWeight: 900, marginTop: 0 }}>
-        Database Diagnostic
-      </h1>
+      <h1 style={{ fontSize: 28, fontWeight: 900, marginTop: 0 }}>Database Diagnostic</h1>
 
       <div style={{ marginTop: 20 }}>
         <h2 style={{ fontSize: 18, fontWeight: 700 }}>System Checks</h2>
@@ -112,13 +106,9 @@ export default async function DiagnosticPage() {
               background: checks.authenticated ? "#d4edda" : "#f8d7da",
             }}
           >
-            <div style={{ fontWeight: 700 }}>
-              {checks.authenticated ? "✅" : "❌"} Authentication
-            </div>
+            <div style={{ fontWeight: 700 }}>{checks.authenticated ? "✅" : "❌"} Authentication</div>
             <div style={{ fontSize: 14, marginTop: 4 }}>
-              {checks.authenticated
-                ? "User is authenticated"
-                : "User is not authenticated - please sign in"}
+              {checks.authenticated ? "User is authenticated" : "User is not authenticated - please sign in"}
             </div>
           </div>
 
@@ -131,13 +121,9 @@ export default async function DiagnosticPage() {
               background: checks.agentsTable ? "#d4edda" : "#f8d7da",
             }}
           >
-            <div style={{ fontWeight: 700 }}>
-              {checks.agentsTable ? "✅" : "❌"} Agents Table
-            </div>
+            <div style={{ fontWeight: 700 }}>{checks.agentsTable ? "✅" : "❌"} Agents Table</div>
             <div style={{ fontSize: 14, marginTop: 4 }}>
-              {checks.agentsTable
-                ? "Table exists and is accessible"
-                : "Table does not exist - run database migration"}
+              {checks.agentsTable ? "Table exists and is accessible" : "Table does not exist - run database migration"}
             </div>
           </div>
 
@@ -150,10 +136,7 @@ export default async function DiagnosticPage() {
               background: checks.openHouseEventsTable ? "#d4edda" : "#f8d7da",
             }}
           >
-            <div style={{ fontWeight: 700 }}>
-              {checks.openHouseEventsTable ? "✅" : "❌"} Open House Events
-              Table
-            </div>
+            <div style={{ fontWeight: 700 }}>{checks.openHouseEventsTable ? "✅" : "❌"} Open House Events Table</div>
             <div style={{ fontSize: 14, marginTop: 4 }}>
               {checks.openHouseEventsTable
                 ? "Table exists and is accessible"
@@ -170,9 +153,7 @@ export default async function DiagnosticPage() {
               background: checks.agentProfile ? "#d4edda" : "#f8d7da",
             }}
           >
-            <div style={{ fontWeight: 700 }}>
-              {checks.agentProfile ? "✅" : "❌"} Agent Profile
-            </div>
+            <div style={{ fontWeight: 700 }}>{checks.agentProfile ? "✅" : "❌"} Agent Profile</div>
             <div style={{ fontSize: 14, marginTop: 4 }}>
               {checks.agentProfile
                 ? "Your agent profile exists"
@@ -209,9 +190,7 @@ export default async function DiagnosticPage() {
               borderRadius: 8,
             }}
           >
-            <div style={{ fontWeight: 700, color: "#856404" }}>
-              ⚠️ Error Details
-            </div>
+            <div style={{ fontWeight: 700, color: "#856404" }}>⚠️ Error Details</div>
             <pre
               style={{
                 fontSize: 12,
@@ -240,8 +219,7 @@ export default async function DiagnosticPage() {
             {!checks.agentsTable || !checks.openHouseEventsTable ? (
               <>
                 <p style={{ margin: "8px 0" }}>
-                  <strong>Your database tables are not set up yet.</strong> You
-                  need to run the database migration:
+                  <strong>Your database tables are not set up yet.</strong> You need to run the database migration:
                 </p>
                 <ol style={{ marginLeft: 20, marginTop: 8 }}>
                   <li>
@@ -257,8 +235,7 @@ export default async function DiagnosticPage() {
                   </li>
                   <li>Click on "SQL Editor" in the left sidebar</li>
                   <li>
-                    Copy the contents of{" "}
-                    <code>supabase/complete_setup.sql</code>
+                    Copy the contents of <code>supabase/complete_setup.sql</code>
                   </li>
                   <li>Paste into the SQL Editor</li>
                   <li>Click "Run"</li>
@@ -266,22 +243,20 @@ export default async function DiagnosticPage() {
                 </ol>
               </>
             ) : !checks.authenticated ? (
-              <p style={{ margin: "8px 0" }}>
-                Please sign in to continue using the app.
-              </p>
+              <p style={{ margin: "8px 0" }}>Please sign in to continue using the app.</p>
             ) : !checks.agentProfile ? (
               <>
                 <p style={{ margin: "8px 0" }}>
-                  <strong>Your agent profile is missing.</strong> Click the "Fix Agent Profile Now" button above to create it automatically.
+                  <strong>Your agent profile is missing.</strong> Click the "Fix Agent Profile Now" button above to
+                  create it automatically.
                 </p>
                 <p style={{ margin: "8px 0", fontSize: 12, opacity: 0.8 }}>
-                  After fixing, your published open houses will immediately become visible to visitors via QR code and direct links.
+                  After fixing, your published open houses will immediately become visible to visitors via QR code and
+                  direct links.
                 </p>
               </>
             ) : (
-              <p style={{ margin: "8px 0" }}>
-                ✅ All checks passed! You're ready to create open houses.
-              </p>
+              <p style={{ margin: "8px 0" }}>✅ All checks passed! You're ready to create open houses.</p>
             )}
           </div>
         </div>

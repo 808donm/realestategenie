@@ -15,18 +15,14 @@ export default async function proxy(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            request.cookies.set(name, value)
-          );
+          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value));
           supabaseResponse = NextResponse.next({
             request,
           });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          );
+          cookiesToSet.forEach(({ name, value, options }) => supabaseResponse.cookies.set(name, value, options));
         },
       },
-    }
+    },
   );
 
   // IMPORTANT: Avoid writing any logic between createServerClient and
@@ -41,7 +37,13 @@ export default async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   if (pathname.startsWith("/app") || pathname.startsWith("/auth")) {
     console.log(`[Proxy] ${pathname} - User authenticated:`, !!user, user?.email || "none");
-    console.log(`[Proxy] Cookies:`, request.cookies.getAll().filter(c => c.name.startsWith("sb-")).map(c => c.name));
+    console.log(
+      `[Proxy] Cookies:`,
+      request.cookies
+        .getAll()
+        .filter((c) => c.name.startsWith("sb-"))
+        .map((c) => c.name),
+    );
   }
 
   // Refresh session if user is authenticated
@@ -64,9 +66,7 @@ export default async function proxy(request: NextRequest) {
     "/mfa",
   ];
 
-  const isPublicRoute = publicRoutes.some((route) =>
-    request.nextUrl.pathname.startsWith(route)
-  );
+  const isPublicRoute = publicRoutes.some((route) => request.nextUrl.pathname.startsWith(route));
 
   // Protect /app routes - redirect to signin if not authenticated
   if (request.nextUrl.pathname.startsWith("/app") && !isPublicRoute) {
@@ -80,11 +80,7 @@ export default async function proxy(request: NextRequest) {
   }
 
   // Redirect authenticated users away from signin/signup pages
-  if (
-    (request.nextUrl.pathname === "/signin" ||
-      request.nextUrl.pathname === "/signup") &&
-    user
-  ) {
+  if ((request.nextUrl.pathname === "/signin" || request.nextUrl.pathname === "/signup") && user) {
     const redirectPath = request.nextUrl.searchParams.get("redirect") || "/app/dashboard";
     const url = request.nextUrl.clone();
     url.pathname = redirectPath;

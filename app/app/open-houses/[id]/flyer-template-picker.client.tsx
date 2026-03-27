@@ -117,7 +117,9 @@ export default function FlyerTemplatePicker({ eventId, currentTemplateId }: Prop
               <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
                 <div
                   style={{
-                    width: 18, height: 18, borderRadius: 4,
+                    width: 18,
+                    height: 18,
+                    borderRadius: 4,
                     background: t.defaultSettings.primaryColor,
                     border: "1px solid rgba(0,0,0,0.1)",
                   }}
@@ -125,7 +127,9 @@ export default function FlyerTemplatePicker({ eventId, currentTemplateId }: Prop
                 />
                 <div
                   style={{
-                    width: 18, height: 18, borderRadius: 4,
+                    width: 18,
+                    height: 18,
+                    borderRadius: 4,
                     background: t.defaultSettings.secondaryColor,
                     border: "1px solid rgba(0,0,0,0.1)",
                   }}
@@ -134,30 +138,24 @@ export default function FlyerTemplatePicker({ eventId, currentTemplateId }: Prop
               </div>
 
               {isActive && (
-                <div style={{ marginTop: 8, fontSize: 11, color: "#3b82f6", fontWeight: 700 }}>
-                  Selected
-                </div>
+                <div style={{ marginTop: 8, fontSize: 11, color: "#3b82f6", fontWeight: 700 }}>Selected</div>
               )}
             </button>
           );
         })}
       </div>
 
-      {saving && (
-        <p style={{ marginTop: 8, fontSize: 12, opacity: 0.7 }}>Saving...</p>
-      )}
+      {saving && <p style={{ marginTop: 8, fontSize: 12, opacity: 0.7 }}>Saving...</p>}
       {msg && (
-        <p style={{ marginTop: 8, fontSize: 12, color: msg === "Template saved" ? "#16a34a" : "crimson" }}>
-          {msg}
-        </p>
+        <p style={{ marginTop: 8, fontSize: 12, color: msg === "Template saved" ? "#16a34a" : "crimson" }}>{msg}</p>
       )}
 
       {/* Image upload section for templates that need multiple images */}
       {imageSlots && (
-        <div style={{ marginTop: 24, padding: 20, background: "#f9fafb", borderRadius: 10, border: "1px solid #e5e7eb" }}>
-          <h3 style={{ fontSize: 16, fontWeight: 700, marginTop: 0, marginBottom: 4 }}>
-            Flyer Images
-          </h3>
+        <div
+          style={{ marginTop: 24, padding: 20, background: "#f9fafb", borderRadius: 10, border: "1px solid #e5e7eb" }}
+        >
+          <h3 style={{ fontSize: 16, fontWeight: 700, marginTop: 0, marginBottom: 4 }}>Flyer Images</h3>
           <p style={{ fontSize: 12, opacity: 0.7, marginTop: 0, marginBottom: 16 }}>
             Upload images for your flyer. Follow the recommended dimensions for best results.
           </p>
@@ -177,21 +175,17 @@ export default function FlyerTemplatePicker({ eventId, currentTemplateId }: Prop
                 }}
               >
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 2 }}>
-                    {slotConfig.label}
-                  </div>
-                  <div style={{ fontSize: 11, opacity: 0.6 }}>
-                    Recommended: {slotConfig.recommendation}
-                  </div>
-                  <div style={{ fontSize: 10, opacity: 0.5, marginTop: 2 }}>
-                    Accepted: JPEG, PNG, WebP (max 5MB)
-                  </div>
+                  <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 2 }}>{slotConfig.label}</div>
+                  <div style={{ fontSize: 11, opacity: 0.6 }}>Recommended: {slotConfig.recommendation}</div>
+                  <div style={{ fontSize: 10, opacity: 0.5, marginTop: 2 }}>Accepted: JPEG, PNG, WebP (max 5MB)</div>
                 </div>
 
                 <input
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
-                  ref={(el) => { fileInputRefs.current[slotConfig.slot] = el; }}
+                  ref={(el) => {
+                    fileInputRefs.current[slotConfig.slot] = el;
+                  }}
                   style={{ display: "none" }}
                   onChange={(e) => {
                     const file = e.target.files?.[0];
@@ -222,11 +216,13 @@ export default function FlyerTemplatePicker({ eventId, currentTemplateId }: Prop
           </div>
 
           {uploadMsg && (
-            <p style={{
-              marginTop: 10,
-              fontSize: 12,
-              color: uploadMsg.includes("successfully") ? "#16a34a" : "crimson",
-            }}>
+            <p
+              style={{
+                marginTop: 10,
+                fontSize: 12,
+                color: uploadMsg.includes("successfully") ? "#16a34a" : "crimson",
+              }}
+            >
               {uploadMsg}
             </p>
           )}

@@ -7,11 +7,9 @@ import { GHLClient, GHLContact, GHLOpportunity } from "./ghl-client";
 import { createClient } from "@supabase/supabase-js";
 import { getValidGHLConfig } from "./ghl-token-refresh";
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 export type LeadData = {
   id: string;
@@ -141,9 +139,9 @@ export async function syncLeadToGHL(leadId: string): Promise<{
       phone: payload.phone_e164 || undefined,
       tags: [
         `open-house-${lead.event_id}`, // Primary trigger tag
-        "open-house",                   // Category tag
-        propertyAddress,                // For filtering
-        getHeatLevel(lead.heat_score),  // hot/warm/cold
+        "open-house", // Category tag
+        propertyAddress, // For filtering
+        getHeatLevel(lead.heat_score), // hot/warm/cold
         payload.timeline || "",
         payload.financing || "",
       ].filter(Boolean),
@@ -222,16 +220,16 @@ export async function syncLeadToGHL(leadId: string): Promise<{
             objectType: "custom_objects.openhouses",
             properties: {
               // Property keys use internal field names WITHOUT the custom_objects.openhouses prefix
-              "openhouseid": lead.event_id,
-              "address": propertyAddress,
-              "startdatetime": event.start_at,
-              "enddatetime": event.end_at,
-              "flyerurl": flyerUrl,
-              "agentid": lead.agent_id,
-              "beds": event.beds?.toString() || "",
-              "baths": event.baths?.toString() || "",
-              "sqft": event.sqft?.toString() || "",
-              "price": event.price?.toString() || "",
+              openhouseid: lead.event_id,
+              address: propertyAddress,
+              startdatetime: event.start_at,
+              enddatetime: event.end_at,
+              flyerurl: flyerUrl,
+              agentid: lead.agent_id,
+              beds: event.beds?.toString() || "",
+              baths: event.baths?.toString() || "",
+              sqft: event.sqft?.toString() || "",
+              price: event.price?.toString() || "",
             },
           });
 
@@ -258,11 +256,11 @@ export async function syncLeadToGHL(leadId: string): Promise<{
           objectType: "custom_objects.registrations",
           properties: {
             // Property keys use internal field names WITHOUT the custom_objects.registrations prefix
-            "registrationid": `reg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-            "contactid": contactId,
-            "openhouseid": lead.event_id,
-            "registerdat": new Date().toISOString(),
-            "flyerstatus": ["pending"], // Multi-select field requires array
+            registrationid: `reg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+            contactid: contactId,
+            openhouseid: lead.event_id,
+            registerdat: new Date().toISOString(),
+            flyerstatus: ["pending"], // Multi-select field requires array
           },
           // Note: Relationships tracked via contactid and openhouseid properties
         });
@@ -275,18 +273,16 @@ export async function syncLeadToGHL(leadId: string): Promise<{
       }
 
       // Create local registration tracking record
-      const { error: regError } = await supabaseAdmin
-        .from("open_house_registrations")
-        .insert({
-          agent_id: lead.agent_id,
-          event_id: lead.event_id,
-          lead_id: leadId,
-          ghl_contact_id: contactId,
-          ghl_registration_id: ghlRegistrationId,
-          ghl_open_house_id: ghlOpenHouseId,
-          registered_at: new Date().toISOString(),
-          flyer_status: "pending",
-        });
+      const { error: regError } = await supabaseAdmin.from("open_house_registrations").insert({
+        agent_id: lead.agent_id,
+        event_id: lead.event_id,
+        lead_id: leadId,
+        ghl_contact_id: contactId,
+        ghl_registration_id: ghlRegistrationId,
+        ghl_open_house_id: ghlOpenHouseId,
+        registered_at: new Date().toISOString(),
+        flyer_status: "pending",
+      });
 
       if (regError) {
         console.error("Failed to create local registration record:", regError);
@@ -319,8 +315,8 @@ export async function syncLeadToGHL(leadId: string): Promise<{
         heatLevel === "hot"
           ? mapping.ghl_stage_hot
           : heatLevel === "warm"
-          ? mapping.ghl_stage_warm
-          : mapping.ghl_stage_cold;
+            ? mapping.ghl_stage_warm
+            : mapping.ghl_stage_cold;
 
       if (stageId) {
         const opportunity: GHLOpportunity = {

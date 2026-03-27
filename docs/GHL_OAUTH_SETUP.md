@@ -17,6 +17,7 @@ This guide explains how to configure GoHighLevel OAuth integration for your Open
 ## Step 2: Configure OAuth Settings
 
 ### Basic Information
+
 - **App Name:** Your app name (e.g., "Open House AI App")
 - **App Description:** Brief description of your app
 - **App Icon:** Upload your app icon (optional)
@@ -24,14 +25,17 @@ This guide explains how to configure GoHighLevel OAuth integration for your Open
 ### OAuth Configuration
 
 1. **Redirect URI:** This is critical for the OAuth flow to work
+
    ```
    https://yourdomain.com/api/integrations/crm-callback
    ```
+
    Replace `yourdomain.com` with your actual Vercel production domain.
 
    **Important:** Don't use "ghl" or "gohighlevel" in the callback URL as GHL's system may reject it.
 
    For testing locally:
+
    ```
    http://localhost:3000/api/integrations/crm-callback
    ```
@@ -50,6 +54,7 @@ This guide explains how to configure GoHighLevel OAuth integration for your Open
 ## Step 3: Get Your Credentials
 
 After saving your app, you'll see:
+
 - **Client ID** - Copy this value
 - **Client Secret** - Copy this value (keep it secure!)
 
@@ -64,6 +69,7 @@ NEXT_PUBLIC_APP_URL=https://yourdomain.com
 ```
 
 **For Vercel:**
+
 1. Go to your project settings
 2. Navigate to **Environment Variables**
 3. Add each variable for **Production**, **Preview**, and **Development**
@@ -86,6 +92,7 @@ NEXT_PUBLIC_APP_URL=https://yourdomain.com
 **Problem:** After authorizing, you're taken to your GHL agency dashboard instead of back to your app.
 
 **Solution:**
+
 1. Check that the **Redirect URI** in your GHL app settings **exactly matches** your callback URL
 2. Make sure `NEXT_PUBLIC_APP_URL` environment variable is set correctly
 3. Ensure you're NOT using "ghl" or "gohighlevel" in the callback URL
@@ -96,6 +103,7 @@ NEXT_PUBLIC_APP_URL=https://yourdomain.com
 **Problem:** OAuth flow shows an error about invalid redirect URI.
 
 **Solution:**
+
 1. Ensure the redirect URI in your GHL app settings is exactly:
    ```
    https://yourdomain.com/api/integrations/crm-callback
@@ -110,6 +118,7 @@ NEXT_PUBLIC_APP_URL=https://yourdomain.com
 **Problem:** Some features don't work after connecting.
 
 **Solution:**
+
 1. Go back to your GHL Marketplace app settings
 2. Ensure all required scopes are selected (see Step 2 above)
 3. Save the changes
@@ -121,6 +130,7 @@ NEXT_PUBLIC_APP_URL=https://yourdomain.com
 
 **Solution:**
 The app automatically refreshes tokens, but if you see this error:
+
 1. Go to the Integrations page
 2. Click **Disconnect**
 3. Click **Connect GoHighLevel** again
@@ -129,12 +139,14 @@ The app automatically refreshes tokens, but if you see this error:
 ## Notification Behavior
 
 When GHL is connected:
+
 - ✅ **Emails** are sent via GHL Conversations API
 - ✅ **SMS** messages are sent via GHL Conversations API
 - ✅ Contacts are automatically created/updated in GHL
 - ✅ All communication is tracked in your GHL location
 
 When GHL is not connected:
+
 - 📧 Emails fall back to Resend (if configured)
 - 📱 SMS falls back to Twilio (if configured)
 - ⚠️ If neither is configured, notifications are skipped

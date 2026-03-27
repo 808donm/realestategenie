@@ -15,8 +15,7 @@
  * No API key required — this is public open data.
  */
 
-const ARCGIS_BASE =
-  "https://services.arcgis.com/tNJpAOha4mODLkXz/arcgis/rest/services";
+const ARCGIS_BASE = "https://services.arcgis.com/tNJpAOha4mODLkXz/arcgis/rest/services";
 
 // Default service/layer names — updated March 2026 after city renamed services
 // Old: OWNALL_Table/0, Tax_Parcels/0, All_Parcels/0 (now return 400 Invalid URL)
@@ -88,23 +87,10 @@ export class HonoluluTaxClient {
   private taxParcelsUrl: string;
   private allParcelsUrl: string;
 
-  constructor(config?: {
-    ownallUrl?: string;
-    taxParcelsUrl?: string;
-    allParcelsUrl?: string;
-  }) {
-    this.ownallUrl =
-      config?.ownallUrl ||
-      process.env.HONOLULU_OWNALL_URL ||
-      DEFAULT_OWNALL_URL;
-    this.taxParcelsUrl =
-      config?.taxParcelsUrl ||
-      process.env.HONOLULU_TAX_PARCELS_URL ||
-      DEFAULT_TAX_PARCELS_URL;
-    this.allParcelsUrl =
-      config?.allParcelsUrl ||
-      process.env.HONOLULU_ALL_PARCELS_URL ||
-      DEFAULT_ALL_PARCELS_URL;
+  constructor(config?: { ownallUrl?: string; taxParcelsUrl?: string; allParcelsUrl?: string }) {
+    this.ownallUrl = config?.ownallUrl || process.env.HONOLULU_OWNALL_URL || DEFAULT_OWNALL_URL;
+    this.taxParcelsUrl = config?.taxParcelsUrl || process.env.HONOLULU_TAX_PARCELS_URL || DEFAULT_TAX_PARCELS_URL;
+    this.allParcelsUrl = config?.allParcelsUrl || process.env.HONOLULU_ALL_PARCELS_URL || DEFAULT_ALL_PARCELS_URL;
   }
 
   /**
@@ -119,22 +105,16 @@ export class HonoluluTaxClient {
       resultOffset?: number;
       orderByFields?: string;
       returnGeometry?: boolean;
-    }
+    },
   ): Promise<ArcGISQueryResponse> {
     const url = new URL(`${serviceUrl}/query`);
     url.searchParams.set("where", where);
     url.searchParams.set("outFields", options?.outFields || "*");
     url.searchParams.set("f", "json");
-    url.searchParams.set(
-      "returnGeometry",
-      String(options?.returnGeometry ?? false)
-    );
+    url.searchParams.set("returnGeometry", String(options?.returnGeometry ?? false));
 
     if (options?.resultRecordCount) {
-      url.searchParams.set(
-        "resultRecordCount",
-        String(options.resultRecordCount)
-      );
+      url.searchParams.set("resultRecordCount", String(options.resultRecordCount));
     }
     if (options?.resultOffset) {
       url.searchParams.set("resultOffset", String(options.resultOffset));
@@ -151,22 +131,15 @@ export class HonoluluTaxClient {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(
-        `[HonoluluTax] Query FAILED (${response.status}):`,
-        errorText
-      );
-      throw new Error(
-        `ArcGIS query error: ${response.status} - ${errorText}`
-      );
+      console.error(`[HonoluluTax] Query FAILED (${response.status}):`, errorText);
+      throw new Error(`ArcGIS query error: ${response.status} - ${errorText}`);
     }
 
     const data: ArcGISQueryResponse = await response.json();
 
     if (data.error) {
       console.error(`[HonoluluTax] ArcGIS error:`, data.error);
-      throw new Error(
-        `ArcGIS error ${data.error.code}: ${data.error.message}`
-      );
+      throw new Error(`ArcGIS error ${data.error.code}: ${data.error.message}`);
     }
 
     return data;
@@ -182,27 +155,23 @@ export class HonoluluTaxClient {
     const cleanTmk = tmk.replace(/[-\s]/g, "");
 
     // Try exact match first, then a LIKE match for partial TMKs
-    const where = cleanTmk.length >= 9
-      ? `tmk='${cleanTmk}' OR PARID='${cleanTmk}'`
-      : `tmk LIKE '%${cleanTmk}%' OR PARID LIKE '%${cleanTmk}%'`;
+    const where =
+      cleanTmk.length >= 9
+        ? `tmk='${cleanTmk}' OR PARID='${cleanTmk}'`
+        : `tmk LIKE '%${cleanTmk}%' OR PARID LIKE '%${cleanTmk}%'`;
 
     const result = await this.query(this.ownallUrl, where, {
       resultRecordCount: 50,
       orderByFields: "tmk ASC",
     });
 
-    return (result.features || []).map((f) =>
-      this.normalizeAttributes(f.attributes) as HonoluluOwner
-    );
+    return (result.features || []).map((f) => this.normalizeAttributes(f.attributes) as HonoluluOwner);
   }
 
   /**
    * Search owners by name (partial match)
    */
-  async searchOwnersByName(
-    name: string,
-    options?: { limit?: number; offset?: number }
-  ): Promise<HonoluluOwner[]> {
+  async searchOwnersByName(name: string, options?: { limit?: number; offset?: number }): Promise<HonoluluOwner[]> {
     const safeName = name.replace(/'/g, "''").toUpperCase();
     const where = `UPPER(owner) LIKE '%${safeName}%'`;
 
@@ -212,9 +181,7 @@ export class HonoluluTaxClient {
       orderByFields: "owner ASC",
     });
 
-    return (result.features || []).map((f) =>
-      this.normalizeAttributes(f.attributes) as HonoluluOwner
-    );
+    return (result.features || []).map((f) => this.normalizeAttributes(f.attributes) as HonoluluOwner);
   }
 
   // ── Parcel Lookup ───────────────────────────────────────────────────────
@@ -231,9 +198,7 @@ export class HonoluluTaxClient {
     });
 
     if (!result.features?.length) return null;
-    return this.normalizeAttributes(
-      result.features[0].attributes
-    ) as HonoluluParcel;
+    return this.normalizeAttributes(result.features[0].attributes) as HonoluluParcel;
   }
 
   /**
@@ -248,9 +213,7 @@ export class HonoluluTaxClient {
     });
 
     if (!result.features?.length) return null;
-    return this.normalizeAttributes(
-      result.features[0].attributes
-    ) as HonoluluParcel;
+    return this.normalizeAttributes(result.features[0].attributes) as HonoluluParcel;
   }
 
   // ── Combined Lookup ─────────────────────────────────────────────────────
@@ -269,7 +232,7 @@ export class HonoluluTaxClient {
     return {
       tmk: cleanTmk,
       owners: owners.status === "fulfilled" ? owners.value : [],
-      parcel: parcel.status === "fulfilled" ? parcel.value ?? undefined : undefined,
+      parcel: parcel.status === "fulfilled" ? (parcel.value ?? undefined) : undefined,
     };
   }
 
@@ -278,7 +241,7 @@ export class HonoluluTaxClient {
    */
   async searchParcelsByAddress(
     address: string,
-    options?: { limit?: number; offset?: number }
+    options?: { limit?: number; offset?: number },
   ): Promise<HonoluluParcel[]> {
     const safeAddr = address.replace(/'/g, "''").toUpperCase();
     // Try common address field names used in Honolulu parcel data
@@ -291,9 +254,7 @@ export class HonoluluTaxClient {
         orderByFields: "tmk ASC",
       });
 
-      return (result.features || []).map((f) =>
-        this.normalizeAttributes(f.attributes) as HonoluluParcel
-      );
+      return (result.features || []).map((f) => this.normalizeAttributes(f.attributes) as HonoluluParcel);
     } catch {
       // If address field doesn't exist, fall back to the all-parcels layer
       const altWhere = `UPPER(fulladdr) LIKE '%${safeAddr}%' OR UPPER(situsaddr) LIKE '%${safeAddr}%' OR UPPER(address) LIKE '%${safeAddr}%'`;
@@ -304,9 +265,7 @@ export class HonoluluTaxClient {
           orderByFields: "tmk ASC",
         });
 
-        return (result.features || []).map((f) =>
-          this.normalizeAttributes(f.attributes) as HonoluluParcel
-        );
+        return (result.features || []).map((f) => this.normalizeAttributes(f.attributes) as HonoluluParcel);
       } catch {
         return [];
       }
@@ -319,9 +278,7 @@ export class HonoluluTaxClient {
    * Normalize ArcGIS attribute keys to lowercase for consistent access.
    * ArcGIS field names can be mixed case (TMK, Tmk, tmk, PARID, etc.)
    */
-  private normalizeAttributes(
-    attrs: Record<string, unknown>
-  ): Record<string, unknown> {
+  private normalizeAttributes(attrs: Record<string, unknown>): Record<string, unknown> {
     const result: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(attrs)) {
       result[key.toLowerCase()] = value;
@@ -348,15 +305,13 @@ export class HonoluluTaxClient {
   }> {
     const testEndpoint = async (
       url: string,
-      name: string
+      name: string,
     ): Promise<{ success: boolean; message: string; sampleFields?: string[] }> => {
       try {
         const result = await this.query(url, "1=1", {
           resultRecordCount: 1,
         });
-        const fields = result.features?.[0]
-          ? Object.keys(result.features[0].attributes)
-          : [];
+        const fields = result.features?.[0] ? Object.keys(result.features[0].attributes) : [];
         return {
           success: true,
           message: `${name}: Connected (${result.features?.length || 0} sample records)`,
@@ -377,18 +332,9 @@ export class HonoluluTaxClient {
     ]);
 
     return {
-      ownall:
-        ownall.status === "fulfilled"
-          ? ownall.value
-          : { success: false, message: "Test failed" },
-      taxParcels:
-        taxParcels.status === "fulfilled"
-          ? taxParcels.value
-          : { success: false, message: "Test failed" },
-      allParcels:
-        allParcels.status === "fulfilled"
-          ? allParcels.value
-          : { success: false, message: "Test failed" },
+      ownall: ownall.status === "fulfilled" ? ownall.value : { success: false, message: "Test failed" },
+      taxParcels: taxParcels.status === "fulfilled" ? taxParcels.value : { success: false, message: "Test failed" },
+      allParcels: allParcels.status === "fulfilled" ? allParcels.value : { success: false, message: "Test failed" },
     };
   }
 }

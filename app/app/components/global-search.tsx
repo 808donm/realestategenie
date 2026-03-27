@@ -78,7 +78,9 @@ export default function GlobalSearch() {
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => search(query), 250);
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
   }, [query, search]);
 
   const handleSelect = (result: SearchResult) => {
@@ -106,7 +108,11 @@ export default function GlobalSearch() {
           ref={inputRef}
           type="text"
           value={query}
-          onChange={(e) => { setQuery(e.target.value); setIsOpen(true); setSelectedIndex(-1); }}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setIsOpen(true);
+            setSelectedIndex(-1);
+          }}
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
           placeholder="Search leads, contacts, listings... (Ctrl+K)"
@@ -123,7 +129,12 @@ export default function GlobalSearch() {
         />
         <svg
           style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", opacity: 0.4 }}
-          width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
         >
           <circle cx="11" cy="11" r="8" />
           <path d="m21 21-4.3-4.3" />
@@ -146,9 +157,7 @@ export default function GlobalSearch() {
             overflowY: "auto",
           }}
         >
-          {isSearching && (
-            <div style={{ padding: "12px 16px", fontSize: 13, color: "#9ca3af" }}>Searching...</div>
-          )}
+          {isSearching && <div style={{ padding: "12px 16px", fontSize: 13, color: "#9ca3af" }}>Searching...</div>}
           {!isSearching && results.length === 0 && query.length >= 2 && (
             <div style={{ padding: "12px 16px", fontSize: 13, color: "#9ca3af" }}>No results found</div>
           )}
@@ -172,12 +181,44 @@ export default function GlobalSearch() {
                   fontSize: 13,
                 }}
               >
-                <span style={{ padding: "2px 8px", borderRadius: 4, fontSize: 10, fontWeight: 700, background: style.bg, color: style.color, whiteSpace: "nowrap" }}>
+                <span
+                  style={{
+                    padding: "2px 8px",
+                    borderRadius: 4,
+                    fontSize: 10,
+                    fontWeight: 700,
+                    background: style.bg,
+                    color: style.color,
+                    whiteSpace: "nowrap",
+                  }}
+                >
                   {style.label}
                 </span>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 600, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.title}</div>
-                  {r.subtitle && <div style={{ fontSize: 11, color: "#9ca3af", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.subtitle}</div>}
+                  <div
+                    style={{
+                      fontWeight: 600,
+                      color: "#111827",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {r.title}
+                  </div>
+                  {r.subtitle && (
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: "#9ca3af",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {r.subtitle}
+                    </div>
+                  )}
                 </div>
                 {r.meta && <span style={{ fontSize: 11, color: "#9ca3af", whiteSpace: "nowrap" }}>{r.meta}</span>}
               </button>

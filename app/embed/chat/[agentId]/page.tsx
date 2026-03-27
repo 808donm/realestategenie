@@ -1,11 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
 import ChatWidgetEmbed from "./chat-embed.client";
 
-const admin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 /**
  * Embeddable chat page for real estate agent websites.
@@ -26,11 +24,7 @@ export default async function EmbedChatPage({
   const { color, greeting } = await searchParams;
 
   // Look up agent
-  const { data: agent } = await admin
-    .from("agents")
-    .select("id, display_name")
-    .eq("id", agentId)
-    .single();
+  const { data: agent } = await admin.from("agents").select("id, display_name").eq("id", agentId).single();
 
   if (!agent) {
     return (

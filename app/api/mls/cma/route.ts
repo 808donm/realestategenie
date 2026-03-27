@@ -27,7 +27,9 @@ import { generateCMA } from "@/lib/mls/cma-engine";
 export async function POST(request: NextRequest) {
   try {
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await request.json();
@@ -89,7 +91,7 @@ export async function POST(request: NextRequest) {
     console.error("Error generating CMA:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "CMA generation failed" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -100,7 +102,9 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   try {
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { data: reports } = await supabase
@@ -115,7 +119,7 @@ export async function GET() {
     console.error("Error listing CMA reports:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to list reports" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

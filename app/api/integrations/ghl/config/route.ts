@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     if (fetchError || !integration) {
       return NextResponse.json(
         { error: "GHL integration not found. Please connect your own GHL account in Integrations." },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -53,10 +53,7 @@ export async function POST(req: NextRequest) {
 
     if (updateError) {
       console.error("[GHL Config] Update error:", updateError);
-      return NextResponse.json(
-        { error: `Failed to update config: ${updateError.message}` },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: `Failed to update config: ${updateError.message}` }, { status: 500 });
     }
 
     console.log("[GHL Config] Configuration updated successfully");
@@ -68,10 +65,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: any) {
     console.error("[GHL Config] Error:", error);
-    return NextResponse.json(
-      { error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
@@ -102,7 +96,7 @@ export async function GET(req: NextRequest) {
     if (error || !integration) {
       return NextResponse.json(
         { error: "GHL integration not found. Please connect your own GHL account in Integrations." },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -112,9 +106,6 @@ export async function GET(req: NextRequest) {
     });
   } catch (error: any) {
     console.error("[GHL Config] Error:", error);
-    return NextResponse.json(
-      { error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

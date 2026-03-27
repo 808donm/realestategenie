@@ -24,9 +24,13 @@ export async function generateAgentBriefing(data: AgentBriefingData): Promise<{
   priorities: { title: string; description: string; leadId?: string }[];
   htmlBody: string;
 }> {
-  const followUpSummary = data.followUps.slice(0, 15).map((f) =>
-    `- ${f.name} | Score: ${f.heatScore} | Stage: ${f.pipelineStageLabel} | Property: ${f.property} | Days since touch: ${f.daysSinceLastTouch} | Timeline: ${f.timeline || "unknown"} | Financing: ${f.financing || "unknown"} | Recent OH: ${f.recentOpenHouse ? "yes (" + f.openHouseDate + ")" : "no"}`
-  ).join("\n");
+  const followUpSummary = data.followUps
+    .slice(0, 15)
+    .map(
+      (f) =>
+        `- ${f.name} | Score: ${f.heatScore} | Stage: ${f.pipelineStageLabel} | Property: ${f.property} | Days since touch: ${f.daysSinceLastTouch} | Timeline: ${f.timeline || "unknown"} | Financing: ${f.financing || "unknown"} | Recent OH: ${f.recentOpenHouse ? "yes (" + f.openHouseDate + ")" : "no"}`,
+    )
+    .join("\n");
 
   const pipelineSummary = data.pipelineSnapshot
     .filter((s) => s.count > 0)
@@ -69,13 +73,20 @@ TOP LEAD SOURCES:
 ${data.leadSourceBreakdown.map((s) => `${s.source}: ${s.count} leads`).join(", ") || "No data."}
 
 MLS LISTING MATCHES FOR YOUR LEADS:
-${data.mlsMatches.length > 0
-  ? data.mlsMatches.map((m) =>
-      `- ${m.leadName}: ${m.matchCount} new listing${m.matchCount !== 1 ? "s" : ""} match their criteria${
-        m.topMatch ? ` (top: ${m.topMatch.address} at $${m.topMatch.listPrice.toLocaleString()}, ${m.topMatch.matchScore}% match)` : ""
-      }`
-    ).join("\n")
-  : "No MLS matches (Trestle not connected or no matching listings)."}
+${
+  data.mlsMatches.length > 0
+    ? data.mlsMatches
+        .map(
+          (m) =>
+            `- ${m.leadName}: ${m.matchCount} new listing${m.matchCount !== 1 ? "s" : ""} match their criteria${
+              m.topMatch
+                ? ` (top: ${m.topMatch.address} at $${m.topMatch.listPrice.toLocaleString()}, ${m.topMatch.matchScore}% match)`
+                : ""
+            }`,
+        )
+        .join("\n")
+    : "No MLS matches (Trestle not connected or no matching listings)."
+}
 
 Generate the 3 highest-revenue-impact priorities for today. If there are MLS matches, one priority should be about sending matched listings to the appropriate leads — this is a high-conversion activity.`,
     temperature: 0.7,
@@ -101,13 +112,14 @@ export async function generateTeamBriefing(data: TeamBriefingData): Promise<{
   htmlBody: string;
 }> {
   const leaderboardSummary = data.leaderboard
-    .map((a, i) =>
-      `${i + 1}. ${a.name} — ${a.leadsCount} leads, ${a.hotLeads} hot, ${a.pipelineAdvances} advances`
-    )
+    .map((a, i) => `${i + 1}. ${a.name} — ${a.leadsCount} leads, ${a.hotLeads} hot, ${a.pipelineAdvances} advances`)
     .join("\n");
 
   const fairnessSummary = data.fairness
-    .map((f) => `${f.agentName}: ${f.leadsReceived} leads (${f.deviationFromAvg > 0 ? "+" : ""}${f.deviationFromAvg}% from avg)`)
+    .map(
+      (f) =>
+        `${f.agentName}: ${f.leadsReceived} leads (${f.deviationFromAvg > 0 ? "+" : ""}${f.deviationFromAvg}% from avg)`,
+    )
     .join("\n");
 
   const { text } = await trackedGenerateText({
@@ -147,17 +159,17 @@ Generate personalized messages for each agent and a summary for the team lead.`,
   const parsed = JSON.parse(extractJSON(text));
 
   // Map agent messages to emails
-  const agentEmails = (parsed.agents || []).map((a: any) => {
-    const match = data.leaderboard.find(
-      (lb) => lb.name.toLowerCase() === a.name.toLowerCase()
-    );
-    return {
-      agentName: a.name,
-      agentEmail: match?.email || "",
-      message: a.message,
-      isTopAgent: a.isTopAgent || false,
-    };
-  }).filter((a: any) => a.agentEmail);
+  const agentEmails = (parsed.agents || [])
+    .map((a: any) => {
+      const match = data.leaderboard.find((lb) => lb.name.toLowerCase() === a.name.toLowerCase());
+      return {
+        agentName: a.name,
+        agentEmail: match?.email || "",
+        message: a.message,
+        isTopAgent: a.isTopAgent || false,
+      };
+    })
+    .filter((a: any) => a.agentEmail);
 
   const htmlBody = buildTeamBriefingHtml(data.teamLeadName, data.leaderboard, agentEmails);
 
@@ -274,10 +286,7 @@ Draft the follow-up email.`,
 
 // ─── HTML email builders ─────────────────────────────────────────────────────
 
-function buildAgentBriefingHtml(
-  agentName: string,
-  priorities: { title: string; description: string }[]
-): string {
+function buildAgentBriefingHtml(agentName: string, priorities: { title: string; description: string }[]): string {
   const priorityRows = priorities
     .map(
       (p, i) => `
@@ -295,7 +304,7 @@ function buildAgentBriefingHtml(
             </div>
           </div>
         </td>
-      </tr>`
+      </tr>`,
     )
     .join("");
 
@@ -310,14 +319,14 @@ function buildAgentBriefingHtml(
     </table>
     <p style="margin: 20px 0 0; font-size: 14px; color: #6b7280;">
       Log in to your pipeline to take action on these items.
-    </p>`
+    </p>`,
   );
 }
 
 function buildTeamBriefingHtml(
   teamLeadName: string,
   leaderboard: { name: string; leadsCount: number; hotLeads: number }[],
-  agentEmails: { agentName: string; message: string; isTopAgent: boolean }[]
+  agentEmails: { agentName: string; message: string; isTopAgent: boolean }[],
 ): string {
   const leaderboardRows = leaderboard
     .slice(0, 5)
@@ -329,7 +338,7 @@ function buildTeamBriefingHtml(
         </td>
         <td style="padding: 10px 16px; border-bottom: 1px solid #f3f4f6; text-align: center;">${a.leadsCount}</td>
         <td style="padding: 10px 16px; border-bottom: 1px solid #f3f4f6; text-align: center; color: #ef4444; font-weight: 600;">${a.hotLeads}</td>
-      </tr>`
+      </tr>`,
     )
     .join("");
 
@@ -346,7 +355,7 @@ function buildTeamBriefingHtml(
     </table>
     <p style="font-size: 14px; color: #6b7280; margin: 0 0 8px;">
       Personalized coaching emails have been sent to each agent.
-    </p>`
+    </p>`,
   );
 }
 
@@ -354,7 +363,7 @@ function buildBrokerBriefingHtml(
   brokerName: string,
   execSummary: string,
   actions: { title: string; description: string }[],
-  data: BrokerBriefingData
+  data: BrokerBriefingData,
 ): string {
   const actionRows = actions
     .map(
@@ -364,7 +373,7 @@ function buildBrokerBriefingHtml(
           <div style="font-weight: 700; font-size: 14px; color: #111827; margin-bottom: 4px;">${a.title}</div>
           <div style="font-size: 13px; line-height: 1.6; color: #4b5563;">${a.description}</div>
         </td>
-      </tr>`
+      </tr>`,
     )
     .join("");
 
@@ -397,7 +406,7 @@ function buildBrokerBriefingHtml(
     <h3 style="margin: 0 0 12px; font-size: 16px; font-weight: 700; color: #111827;">Recommended Actions</h3>
     <table width="100%" cellpadding="0" cellspacing="0" style="background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; overflow: hidden;">
       ${actionRows}
-    </table>`
+    </table>`,
   );
 }
 

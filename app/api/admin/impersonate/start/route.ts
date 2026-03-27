@@ -15,17 +15,11 @@ export async function POST(request: NextRequest) {
 
     // Verify admin status using service role (bypasses RLS)
     const { createClient } = await import("@supabase/supabase-js");
-    const admin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { persistSession: false } }
-    );
+    const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+      auth: { persistSession: false },
+    });
 
-    const { data: agent } = await admin
-      .from("agents")
-      .select("is_admin, account_status")
-      .eq("id", user.id)
-      .single();
+    const { data: agent } = await admin.from("agents").select("is_admin, account_status").eq("id", user.id).single();
 
     if (!agent?.is_admin || agent.account_status !== "active") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -34,10 +28,7 @@ export async function POST(request: NextRequest) {
     const { userId } = await request.json();
 
     if (!userId || typeof userId !== "string") {
-      return NextResponse.json(
-        { error: "userId is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "userId is required" }, { status: 400 });
     }
 
     // Verify the target user exists
@@ -48,10 +39,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (!targetAgent) {
-      return NextResponse.json(
-        { error: "Target user not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Target user not found" }, { status: 404 });
     }
 
     await startImpersonation(user.id, userId);
@@ -66,9 +54,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error("Impersonation start error:", error);
-    return NextResponse.json(
-      { error: "Failed to start impersonation" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to start impersonation" }, { status: 500 });
   }
 }

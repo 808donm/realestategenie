@@ -3,11 +3,9 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { createClient } from "@supabase/supabase-js";
 import type { PropertyReportData } from "@/lib/documents/property-intelligence-report";
 
-const admin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } },
-);
+const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 /**
  * POST /api/property-intelligence/save
@@ -33,10 +31,7 @@ export async function POST(request: NextRequest) {
     const property: PropertyReportData = body.property;
 
     if (!property || !property.address) {
-      return NextResponse.json(
-        { error: "property.address is required" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "property.address is required" }, { status: 400 });
     }
 
     // Fetch agent branding for the report record
@@ -79,10 +74,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      return NextResponse.json(
-        { error: `Failed to save report: ${error.message}` },
-        { status: 500 },
-      );
+      return NextResponse.json({ error: `Failed to save report: ${error.message}` }, { status: 500 });
     }
 
     const origin = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://realestategenie.app";
@@ -92,10 +84,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (err: any) {
     console.error("[property-intelligence/save] Error:", err);
-    return NextResponse.json(
-      { error: err.message || "Failed to save report" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: err.message || "Failed to save report" }, { status: 500 });
   }
 }
 
@@ -110,11 +99,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "id is required" }, { status: 400 });
   }
 
-  const { data: report, error } = await admin
-    .from("property_intelligence_reports")
-    .select("*")
-    .eq("id", id)
-    .single();
+  const { data: report, error } = await admin.from("property_intelligence_reports").select("*").eq("id", id).single();
 
   if (error || !report) {
     return NextResponse.json({ error: "Report not found" }, { status: 404 });

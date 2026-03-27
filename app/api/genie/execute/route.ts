@@ -16,7 +16,9 @@ import type { QuickActionType } from "@/lib/genie/types";
 export async function POST(request: NextRequest) {
   try {
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -75,7 +77,17 @@ export async function POST(request: NextRequest) {
       }
 
       case "create_task": {
-        const { title, description, priority, dueDate, dueTime, taskType, linkedLeadId, linkedContactId, linkedOpenHouseId } = params;
+        const {
+          title,
+          description,
+          priority,
+          dueDate,
+          dueTime,
+          taskType,
+          linkedLeadId,
+          linkedContactId,
+          linkedOpenHouseId,
+        } = params;
         if (!title) return NextResponse.json({ error: "title is required" }, { status: 400 });
 
         const { data: task, error: taskErr } = await supabase
@@ -130,7 +142,11 @@ export async function POST(request: NextRequest) {
 
       case "create_open_house": {
         // Return link — open house creation has a complex form
-        result = { success: true, redirect: "/app/open-houses/new", message: "Redirecting to open house creation form" };
+        result = {
+          success: true,
+          redirect: "/app/open-houses/new",
+          message: "Redirecting to open house creation form",
+        };
         break;
       }
 
@@ -159,13 +175,21 @@ export async function POST(request: NextRequest) {
           searchParams.set("postalcode", zipCode);
         }
 
-        result = { success: true, redirect: `/app/property-data?${searchParams}`, message: "Redirecting to property search" };
+        result = {
+          success: true,
+          redirect: `/app/property-data?${searchParams}`,
+          message: "Redirecting to property search",
+        };
         break;
       }
 
       case "generate_property_report": {
         // Return link to property data page where report can be generated
-        result = { success: true, redirect: "/app/property-data", message: "Open Property Intel, search a property, then click 'Generate Report'" };
+        result = {
+          success: true,
+          redirect: "/app/property-data",
+          message: "Open Property Intel, search a property, then click 'Generate Report'",
+        };
         break;
       }
 
@@ -209,7 +233,11 @@ export async function POST(request: NextRequest) {
       }
 
       case "export_calculator_report": {
-        result = { success: true, redirect: "/app/analyzers", message: "Open a calculator, run the analysis, then use the Export button to generate and email the report" };
+        result = {
+          success: true,
+          redirect: "/app/analyzers",
+          message: "Open a calculator, run the analysis, then use the Export button to generate and email the report",
+        };
         break;
       }
 
@@ -222,7 +250,11 @@ export async function POST(request: NextRequest) {
         const searchParams = new URLSearchParams();
         if (zips) searchParams.set("zips", Array.isArray(zips) ? zips.join(",") : zips);
         if (propType) searchParams.set("propertyType", propType);
-        result = { success: true, redirect: `/app/seller-map?${searchParams}`, message: "Opening Seller Opportunity Map" };
+        result = {
+          success: true,
+          redirect: `/app/seller-map?${searchParams}`,
+          message: "Opening Seller Opportunity Map",
+        };
         break;
       }
 
@@ -332,7 +364,11 @@ export async function POST(request: NextRequest) {
       }
 
       case "create_mls_search_profile": {
-        result = { success: true, redirect: "/app/farm", message: "Use Farm Search to create an MLS search profile for a client's criteria" };
+        result = {
+          success: true,
+          redirect: "/app/farm",
+          message: "Use Farm Search to create an MLS search profile for a client's criteria",
+        };
         break;
       }
 
@@ -349,7 +385,9 @@ export async function POST(request: NextRequest) {
         action_detail: { params, result },
         status: result?.success ? "completed" : "failed",
       });
-    } catch { /* ignore logging errors */ }
+    } catch {
+      /* ignore logging errors */
+    }
 
     return NextResponse.json(result);
   } catch (error: any) {

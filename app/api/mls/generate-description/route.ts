@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     if (!body.propertyType || !body.bedrooms || !body.bathrooms || !body.sqft) {
       return NextResponse.json(
         { error: "Property type, bedrooms, bathrooms, and square footage are required." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -54,10 +54,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!text) {
-      return NextResponse.json(
-        { error: "No response from AI model. Please try again." },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "No response from AI model. Please try again." }, { status: 500 });
     }
 
     const jsonText = extractJSON(text);
@@ -71,16 +68,10 @@ export async function POST(request: NextRequest) {
     console.error("Error generating listing description:", error);
 
     if (error.message?.includes("JSON")) {
-      return NextResponse.json(
-        { error: "AI returned an unexpected format. Please try again." },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "AI returned an unexpected format. Please try again." }, { status: 500 });
     }
 
-    return NextResponse.json(
-      { error: error.message || "Failed to generate description" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message || "Failed to generate description" }, { status: 500 });
   }
 }
 
@@ -180,7 +171,7 @@ function buildUserPrompt(input: PropertyInput): string {
 
   lines.push(
     ``,
-    `Write 3 variants: Professional (clean MLS copy), Warm & Inviting (lifestyle-focused), and Luxury (aspirational). All must comply with Fair Housing rules. Return ONLY the JSON.`
+    `Write 3 variants: Professional (clean MLS copy), Warm & Inviting (lifestyle-focused), and Luxury (aspirational). All must comply with Fair Housing rules. Return ONLY the JSON.`,
   );
 
   return lines.join("\n");

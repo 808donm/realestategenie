@@ -72,11 +72,11 @@ export interface TrestleProperty {
   AssociationFee?: number;
   NumberOfUnitsTotal?: number;
   // Building / condo details
-  SubdivisionName?: string;      // Building/condo name (e.g., "Park Lane", "The Century")
+  SubdivisionName?: string; // Building/condo name (e.g., "Park Lane", "The Century")
   // Hawaii-critical: Land tenure
-  OwnershipType?: string;       // "Fee Simple", "Leasehold"
-  LeaseAmount?: number;          // Monthly lease rent
-  LeaseExpiration?: string;      // Lease expiration date
+  OwnershipType?: string; // "Fee Simple", "Leasehold"
+  LeaseAmount?: number; // Monthly lease rent
+  LeaseExpiration?: string; // Lease expiration date
   LeaseAmountFrequency?: string; // "Monthly", "Annually"
 }
 
@@ -263,7 +263,9 @@ export class TrestleClient {
     if (!response.ok) {
       const errorText = await response.text();
       if (response.status === 400 && errorText.includes("invalid_scope")) {
-        console.warn("[Trestle] scope=api rejected (invalid_scope) — retrying without scope. Contact Trestle to enable api scope for this client.");
+        console.warn(
+          "[Trestle] scope=api rejected (invalid_scope) — retrying without scope. Contact Trestle to enable api scope for this client.",
+        );
         response = await fetch(tokenUrl, {
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -296,10 +298,7 @@ export class TrestleClient {
   /**
    * Make authenticated request to Trestle API
    */
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
+  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const authHeader = await this.getAuthHeader();
 
     const baseUrl = this.normalizeApiUrl();
@@ -310,8 +309,8 @@ export class TrestleClient {
     const response = await fetch(url, {
       ...options,
       headers: {
-        "Authorization": authHeader,
-        "Accept": "application/json",
+        Authorization: authHeader,
+        Accept: "application/json",
         "OData-Version": "4.0",
         "OData-MaxVersion": "4.0",
         ...options.headers,
@@ -322,8 +321,16 @@ export class TrestleClient {
     try {
       const { logApiCall } = await import("@/lib/api-call-logger");
       const ep = endpoint.split("?")[0]; // strip query params
-      logApiCall({ provider: "trestle", endpoint: ep, method: options.method || "GET", statusCode: response.status, responseTimeMs: Date.now() - start });
-    } catch { /* ignore */ }
+      logApiCall({
+        provider: "trestle",
+        endpoint: ep,
+        method: options.method || "GET",
+        statusCode: response.status,
+        responseTimeMs: Date.now() - start,
+      });
+    } catch {
+      /* ignore */
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -391,7 +398,7 @@ export class TrestleClient {
     const filters: string[] = [];
 
     if (options.status?.length) {
-      const statusFilter = options.status.map(s => `StandardStatus eq '${s}'`).join(" or ");
+      const statusFilter = options.status.map((s) => `StandardStatus eq '${s}'`).join(" or ");
       filters.push(`(${statusFilter})`);
     }
 
@@ -461,7 +468,7 @@ export class TrestleClient {
   async getPropertyMedia(listingKey: string): Promise<ODataResponse<TrestleMedia>> {
     console.log(`[Trestle] Fetching media for listing ${listingKey}`);
     const result = await this.request<ODataResponse<TrestleMedia>>(
-      `/Media?$filter=ResourceRecordKey eq '${listingKey}'&$orderby=Order&$select=MediaKey,MediaURL,MediaType,Order,ShortDescription`
+      `/Media?$filter=ResourceRecordKey eq '${listingKey}'&$orderby=Order&$select=MediaKey,MediaURL,MediaType,Order,ShortDescription`,
     );
     console.log(`[Trestle] Media result: ${result.value?.length || 0} items`);
     return result;
@@ -558,10 +565,7 @@ export class TrestleClient {
     futureDate.setDate(futureDate.getDate() + (options?.daysAhead || 14));
     const futureDateStr = futureDate.toISOString().split("T")[0];
 
-    const filters: string[] = [
-      `OpenHouseDate ge ${today}`,
-      `OpenHouseDate le ${futureDateStr}`,
-    ];
+    const filters: string[] = [`OpenHouseDate ge ${today}`, `OpenHouseDate le ${futureDateStr}`];
 
     if (options?.listingKey) {
       filters.push(`ListingKey eq '${options.listingKey}'`);
@@ -593,7 +597,10 @@ export class TrestleClient {
    * Get sales history for a property address — queries closed listings
    * Returns all past transactions with close price, dates, agents, and offices
    */
-  async getSalesHistory(address: string, options?: { limit?: number }): Promise<{ unit: TrestleProperty[]; building: TrestleProperty[]; unitNumber?: string }> {
+  async getSalesHistory(
+    address: string,
+    options?: { limit?: number },
+  ): Promise<{ unit: TrestleProperty[]; building: TrestleProperty[]; unitNumber?: string }> {
     // Parse the address: extract street portion (before city/state/zip)
     // Input formats: "45-535 Luluku Road #G5, Kaneohe, HI 96744" or "469 Ena Road 1806"
     const parts = address.split(",");
@@ -619,7 +626,9 @@ export class TrestleClient {
       streetName = rawMatch[2];
 
       // Check for bare trailing unit number (no prefix): "Ena Road 1806"
-      const suffixUnitMatch = streetName.match(/\s+(road|rd|street|st|avenue|ave|drive|dr|lane|ln|place|pl|boulevard|blvd|court|ct|way|loop|circle|cir|terrace|ter|trail|trl|parkway|pkwy|highway|hwy)\s+(\S+)$/i);
+      const suffixUnitMatch = streetName.match(
+        /\s+(road|rd|street|st|avenue|ave|drive|dr|lane|ln|place|pl|boulevard|blvd|court|ct|way|loop|circle|cir|terrace|ter|trail|trl|parkway|pkwy|highway|hwy)\s+(\S+)$/i,
+      );
       if (suffixUnitMatch && !unitNumber) {
         unitNumber = suffixUnitMatch[2];
       }
@@ -630,10 +639,20 @@ export class TrestleClient {
       }
 
       // Remove trailing unit numbers after street suffix
-      streetName = streetName.replace(/\s+(road|rd|street|st|avenue|ave|drive|dr|lane|ln|place|pl|boulevard|blvd|court|ct|way|loop|circle|cir|terrace|ter|trail|trl|parkway|pkwy|highway|hwy)\s+\S+$/i, (m, suffix) => ` ${suffix}`).trim();
+      streetName = streetName
+        .replace(
+          /\s+(road|rd|street|st|avenue|ave|drive|dr|lane|ln|place|pl|boulevard|blvd|court|ct|way|loop|circle|cir|terrace|ter|trail|trl|parkway|pkwy|highway|hwy)\s+\S+$/i,
+          (m, suffix) => ` ${suffix}`,
+        )
+        .trim();
       streetName = streetName.replace(/\s+\d+$/, "").trim();
       // Strip street suffix — Trestle stores StreetName and StreetSuffix separately
-      streetName = streetName.replace(/\s+(road|rd|street|st|avenue|ave|drive|dr|lane|ln|place|pl|boulevard|blvd|court|ct|way|loop|circle|cir|terrace|ter|trail|trl|parkway|pkwy|highway|hwy)$/i, "").trim();
+      streetName = streetName
+        .replace(
+          /\s+(road|rd|street|st|avenue|ave|drive|dr|lane|ln|place|pl|boulevard|blvd|court|ct|way|loop|circle|cir|terrace|ter|trail|trl|parkway|pkwy|highway|hwy)$/i,
+          "",
+        )
+        .trim();
     }
 
     const escapedName = streetName.replace(/'/g, "''").toLowerCase();
@@ -651,7 +670,8 @@ export class TrestleClient {
     console.log(`[Trestle] Sales history (building): ${baseFilter}`);
     if (unitNumber) console.log(`[Trestle] Unit number detected: ${unitNumber}`);
 
-    const selectFields = "ListingKey,ListingId,StandardStatus,ListPrice,OriginalListPrice,ClosePrice,CloseDate,OnMarketDate,DaysOnMarket,CumulativeDaysOnMarket,UnparsedAddress,StreetNumber,StreetName,StreetSuffix,UnitNumber,City,PostalCode,BedroomsTotal,BathroomsTotalInteger,LivingArea,PropertyType,PropertySubType,ListAgentFullName,BuyerAgentFullName,ListOfficeName,BuyerOfficeName,OwnershipType";
+    const selectFields =
+      "ListingKey,ListingId,StandardStatus,ListPrice,OriginalListPrice,ClosePrice,CloseDate,OnMarketDate,DaysOnMarket,CumulativeDaysOnMarket,UnparsedAddress,StreetNumber,StreetName,StreetSuffix,UnitNumber,City,PostalCode,BedroomsTotal,BathroomsTotalInteger,LivingArea,PropertyType,PropertySubType,ListAgentFullName,BuyerAgentFullName,ListOfficeName,BuyerOfficeName,OwnershipType";
 
     if (unitNumber) {
       // Two parallel queries: exact unit + building-wide
@@ -746,7 +766,7 @@ export class TrestleClient {
    */
   async getPropertyUnits(listingKey: string): Promise<ODataResponse<TrestlePropertyUnitType>> {
     return this.request<ODataResponse<TrestlePropertyUnitType>>(
-      `/PropertyUnitTypes?$filter=ListingKey eq '${listingKey}'`
+      `/PropertyUnitTypes?$filter=ListingKey eq '${listingKey}'`,
     );
   }
 
@@ -756,7 +776,9 @@ export class TrestleClient {
    */
   async testConnection(): Promise<{ success: boolean; message?: string; data?: any }> {
     try {
-      console.log(`[Trestle] Testing connection (method: ${this.authConfig.method}, apiUrl: ${this.authConfig.apiUrl})`);
+      console.log(
+        `[Trestle] Testing connection (method: ${this.authConfig.method}, apiUrl: ${this.authConfig.apiUrl})`,
+      );
 
       const authHeader = await this.getAuthHeader();
       console.log(`[Trestle] Auth header obtained: ${authHeader.substring(0, 15)}...`);
@@ -766,8 +788,8 @@ export class TrestleClient {
       // Step 1 — OData service root (always accessible once authenticated)
       const rootResp = await fetch(baseUrl, {
         headers: {
-          "Authorization": authHeader,
-          "Accept": "application/json",
+          Authorization: authHeader,
+          Accept: "application/json",
           "OData-Version": "4.0",
           "OData-MaxVersion": "4.0",
         },
@@ -785,8 +807,8 @@ export class TrestleClient {
       try {
         const propResp = await fetch(`${baseUrl}/Property?$top=1&$select=ListingKey`, {
           headers: {
-            "Authorization": authHeader,
-            "Accept": "application/json",
+            Authorization: authHeader,
+            Accept: "application/json",
             "OData-Version": "4.0",
             "OData-MaxVersion": "4.0",
           },
@@ -794,7 +816,7 @@ export class TrestleClient {
         console.log(`[Trestle] Property query response: ${propResp.status}`);
         if (propResp.ok) {
           const data = await propResp.json();
-          totalListings = data["@odata.count"] ?? (data.value?.length ?? 0);
+          totalListings = data["@odata.count"] ?? data.value?.length ?? 0;
         } else {
           const body = await propResp.text();
           console.warn(`[Trestle] Property query returned ${propResp.status} (data may not be provisioned yet):`, body);
@@ -826,8 +848,8 @@ export class TrestleClient {
 
     const response = await fetch(`${baseUrl}/$metadata`, {
       headers: {
-        "Authorization": authHeader,
-        "Accept": "application/xml",
+        Authorization: authHeader,
+        Accept: "application/xml",
       },
     });
 

@@ -36,11 +36,11 @@ export interface SchoolSearchResult {
  */
 function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 3959; // Earth's radius in miles
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon / 2) ** 2;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
@@ -49,9 +49,21 @@ function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
  */
 function gradeRangeLabel(loGrade: string | number | null, hiGrade: string | number | null): string {
   const map: Record<string, string> = {
-    "-1": "PK", "0": "K", "1": "1", "2": "2", "3": "3", "4": "4",
-    "5": "5", "6": "6", "7": "7", "8": "8", "9": "9", "10": "10",
-    "11": "11", "12": "12", "13": "UG",
+    "-1": "PK",
+    "0": "K",
+    "1": "1",
+    "2": "2",
+    "3": "3",
+    "4": "4",
+    "5": "5",
+    "6": "6",
+    "7": "7",
+    "8": "8",
+    "9": "9",
+    "10": "10",
+    "11": "11",
+    "12": "12",
+    "13": "UG",
   };
   const lo = map[String(loGrade)] || String(loGrade ?? "");
   const hi = map[String(hiGrade)] || String(hiGrade ?? "");
@@ -66,11 +78,16 @@ function gradeRangeLabel(loGrade: string | number | null, hiGrade: string | numb
 function schoolTypeLabel(level: number | null, charterStatus: number | null): string {
   if (charterStatus === 1) return "Charter";
   switch (level) {
-    case 1: return "Primary";
-    case 2: return "Middle";
-    case 3: return "High";
-    case 4: return "Other";
-    default: return "Public";
+    case 1:
+      return "Primary";
+    case 2:
+      return "Middle";
+    case 3:
+      return "High";
+    case 4:
+      return "Other";
+    default:
+      return "Public";
   }
 }
 
@@ -88,14 +105,14 @@ export async function searchSchoolsByLocation(
     // NCES API doesn't support radius search directly, so we query by state/zip
     // and filter by distance. Use a bounding box approach.
     const latDelta = radiusMiles / 69; // ~69 miles per degree latitude
-    const lonDelta = radiusMiles / (69 * Math.cos(latitude * Math.PI / 180));
+    const lonDelta = radiusMiles / (69 * Math.cos((latitude * Math.PI) / 180));
 
     // Use the most recent year available (2022-2023 school year)
     const year = 2022;
     const url = `${BASE_URL}/schools/ccd/directory/${year}/?latitude__gte=${(latitude - latDelta).toFixed(4)}&latitude__lte=${(latitude + latDelta).toFixed(4)}&longitude__gte=${(longitude - lonDelta).toFixed(4)}&longitude__lte=${(longitude + lonDelta).toFixed(4)}&per_page=100`;
 
     const response = await fetch(url, {
-      headers: { "Accept": "application/json" },
+      headers: { Accept: "application/json" },
       signal: AbortSignal.timeout(15000),
     });
 
@@ -141,16 +158,13 @@ export async function searchSchoolsByLocation(
 /**
  * Search schools by ZIP code (simpler — no lat/lng needed)
  */
-export async function searchSchoolsByZip(
-  zipCode: string,
-  maxResults: number = 20,
-): Promise<SchoolSearchResult> {
+export async function searchSchoolsByZip(zipCode: string, maxResults: number = 20): Promise<SchoolSearchResult> {
   try {
     const year = 2022;
     const url = `${BASE_URL}/schools/ccd/directory/${year}/?zip_location=${zipCode}&per_page=100`;
 
     const response = await fetch(url, {
-      headers: { "Accept": "application/json" },
+      headers: { Accept: "application/json" },
       signal: AbortSignal.timeout(15000),
     });
 

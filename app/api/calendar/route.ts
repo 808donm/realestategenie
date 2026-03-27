@@ -27,10 +27,7 @@ export async function GET(request: NextRequest) {
   const source = searchParams.get("source"); // optional filter
 
   if (!startDate || !endDate) {
-    return NextResponse.json(
-      { error: "start and end query params are required" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "start and end query params are required" }, { status: 400 });
   }
 
   let query = supabase
@@ -68,10 +65,7 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
 
   if (!body.title || !body.start_at || !body.end_at) {
-    return NextResponse.json(
-      { error: "title, start_at, and end_at are required" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "title, start_at, and end_at are required" }, { status: 400 });
   }
 
   const event: CalendarEvent = {

@@ -16,17 +16,16 @@ import { getTrestleClient } from "@/lib/mls/trestle-helpers";
 export async function GET(request: NextRequest) {
   try {
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const listingKey = request.nextUrl.searchParams.get("listingKey");
     const listingId = request.nextUrl.searchParams.get("listingId");
 
     if (!listingKey && !listingId) {
-      return NextResponse.json(
-        { error: "listingKey or listingId is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "listingKey or listingId is required" }, { status: 400 });
     }
 
     const client = await getTrestleClient(supabase, user.id);
@@ -67,10 +66,9 @@ export async function GET(request: NextRequest) {
 
     // Build address
     const address = property
-      ? (property.UnparsedAddress ||
-         [property.StreetNumber, property.StreetName, property.StreetSuffix]
-           .filter(Boolean).join(" ") +
-         `, ${property.City}, ${property.StateOrProvince} ${property.PostalCode}`)
+      ? property.UnparsedAddress ||
+        [property.StreetNumber, property.StreetName, property.StreetSuffix].filter(Boolean).join(" ") +
+          `, ${property.City}, ${property.StateOrProvince} ${property.PostalCode}`
       : "";
 
     // Calculate totals from units
@@ -135,7 +133,7 @@ export async function GET(request: NextRequest) {
     console.error("Error fetching property units:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to fetch property units" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

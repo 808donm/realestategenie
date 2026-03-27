@@ -5,8 +5,16 @@ import Link from "next/link";
 import jsPDF from "jspdf";
 import * as XLSX from "xlsx";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
-  PieChart, Pie,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+  PieChart,
+  Pie,
 } from "recharts";
 
 /* ---------- helpers ---------- */
@@ -71,8 +79,7 @@ export default function BrokerageMarketShareClient() {
       const res = await fetch("/api/reports/brokerage-market-share");
       if (!res.ok) throw new Error("API error");
       const json: Record<string, Brokerage[]> = await res.json();
-      const hasData = Object.keys(json).length > 0 &&
-        Object.values(json).some((arr) => arr.length > 0);
+      const hasData = Object.keys(json).length > 0 && Object.values(json).some((arr) => arr.length > 0);
       if (hasData) {
         setData(json);
         setIsLive(true);
@@ -116,7 +123,11 @@ export default function BrokerageMarketShareClient() {
 
     if (yours) {
       doc.setFontSize(12);
-      doc.text(`Your Rank: #${yours.rank}  |  Market Share: ${pct(yours.marketShare)}  |  Transactions: ${yours.transactions}`, 14, 40);
+      doc.text(
+        `Your Rank: #${yours.rank}  |  Market Share: ${pct(yours.marketShare)}  |  Transactions: ${yours.transactions}`,
+        14,
+        40,
+      );
       doc.text(`Total Market Volume: ${fmt.format(totalVol)}`, 14, 48);
     }
 
@@ -129,7 +140,10 @@ export default function BrokerageMarketShareClient() {
 
     leaderboard.forEach((b) => {
       y += 7;
-      if (y > 280) { doc.addPage(); y = 20; }
+      if (y > 280) {
+        doc.addPage();
+        y = 20;
+      }
       doc.text(`#${b.rank}`, cols[0], y);
       doc.text(b.name, cols[1], y);
       doc.text(String(b.transactions), cols[2], y);
@@ -141,7 +155,7 @@ export default function BrokerageMarketShareClient() {
   };
 
   const exportToExcel = () => {
-    const rows = leaderboard.map(b => ({
+    const rows = leaderboard.map((b) => ({
       Rank: b.rank,
       "Brokerage Name": b.name,
       Transactions: b.transactions,
@@ -165,39 +179,97 @@ export default function BrokerageMarketShareClient() {
   return (
     <div>
       {/* integration banner */}
-      <div style={{ background: isLive ? "#E8F5E9" : "#FFF8E1", border: `1px solid ${isLive ? "#A5D6A7" : "#FFE082"}`, borderRadius: 10, padding: "12px 18px", marginBottom: 24, display: "flex", alignItems: "center", gap: 10 }}>
+      <div
+        style={{
+          background: isLive ? "#E8F5E9" : "#FFF8E1",
+          border: `1px solid ${isLive ? "#A5D6A7" : "#FFE082"}`,
+          borderRadius: 10,
+          padding: "12px 18px",
+          marginBottom: 24,
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+        }}
+      >
         <span style={{ fontSize: 18 }}>{isLive ? "\u2705" : "\u26A0"}</span>
         <span style={{ fontSize: 14 }}>
           {isLive ? (
-            <>This report is showing <strong>live data</strong> from your connected integrations.</>
+            <>
+              This report is showing <strong>live data</strong> from your connected integrations.
+            </>
           ) : (
-            <>This report uses <strong>sample data</strong>. Connect your MLS/Trestle feed to see actual market share data.{" "}
-              <Link href="/app/integrations" style={{ color: "#1565C0", fontWeight: 600 }}>Set up integrations &rarr;</Link>
+            <>
+              This report uses <strong>sample data</strong>. Connect your MLS/Trestle feed to see actual market share
+              data.{" "}
+              <Link href="/app/integrations" style={{ color: "#1565C0", fontWeight: 600 }}>
+                Set up integrations &rarr;
+              </Link>
             </>
           )}
         </span>
       </div>
 
       {/* toolbar */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 20,
+          flexWrap: "wrap",
+          gap: 10,
+        }}
+      >
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <label style={{ fontSize: 13, fontWeight: 600 }}>Zip Code:</label>
           <select
             value={zip}
             onChange={(e) => setZip(e.target.value)}
-            style={{ padding: "7px 12px", borderRadius: 8, border: "1px solid #ddd", fontSize: 13, fontWeight: 500, background: "#fff", cursor: "pointer" }}
+            style={{
+              padding: "7px 12px",
+              borderRadius: 8,
+              border: "1px solid #ddd",
+              fontSize: 13,
+              fontWeight: 500,
+              background: "#fff",
+              cursor: "pointer",
+            }}
           >
-            {ZIP_CODES.map((z) => <option key={z} value={z}>{z}</option>)}
+            {ZIP_CODES.map((z) => (
+              <option key={z} value={z}>
+                {z}
+              </option>
+            ))}
           </select>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button
             onClick={exportPDF}
-            style={{ padding: "7px 18px", borderRadius: 8, border: "1px solid #ddd", background: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer" }}
+            style={{
+              padding: "7px 18px",
+              borderRadius: 8,
+              border: "1px solid #ddd",
+              background: "#fff",
+              fontWeight: 600,
+              fontSize: 13,
+              cursor: "pointer",
+            }}
           >
             Export PDF
           </button>
-          <button onClick={exportToExcel} style={{ padding: "8px 20px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>
+          <button
+            onClick={exportToExcel}
+            style={{
+              padding: "8px 20px",
+              background: "#fff",
+              color: "#374151",
+              border: "1px solid #d1d5db",
+              borderRadius: 8,
+              fontWeight: 600,
+              cursor: "pointer",
+              fontSize: 13,
+            }}
+          >
             Export Excel
           </button>
         </div>
@@ -225,7 +297,9 @@ export default function BrokerageMarketShareClient() {
 
       {/* Market Share Pie Chart */}
       <div style={{ display: "flex", gap: 16, marginBottom: 28, flexWrap: "wrap" }}>
-        <div style={{ flex: "1 1 300px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}>
+        <div
+          style={{ flex: "1 1 300px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}
+        >
           <h3 style={{ margin: "0 0 12px 0", fontSize: 15, fontWeight: 700 }}>Market Share by Volume</h3>
           <ResponsiveContainer width="100%" height={260}>
             <PieChart>
@@ -237,18 +311,29 @@ export default function BrokerageMarketShareClient() {
                 cy="50%"
                 outerRadius={90}
                 innerRadius={40}
-                label={(props: any) => props.marketShare > 8 ? `${props.name.split(" ")[0]} ${pct(props.marketShare)}` : ""}
+                label={(props: any) =>
+                  props.marketShare > 8 ? `${props.name.split(" ")[0]} ${pct(props.marketShare)}` : ""
+                }
                 labelLine={false}
               >
                 {leaderboard.map((b, i) => (
-                  <Cell key={i} fill={b.isYours ? "#1565C0" : ["#90CAF9", "#64B5F6", "#42A5F5", "#29B6F6", "#26C6DA", "#4DB6AC", "#81C784"][i % 7]} />
+                  <Cell
+                    key={i}
+                    fill={
+                      b.isYours
+                        ? "#1565C0"
+                        : ["#90CAF9", "#64B5F6", "#42A5F5", "#29B6F6", "#26C6DA", "#4DB6AC", "#81C784"][i % 7]
+                    }
+                  />
                 ))}
               </Pie>
               <Tooltip formatter={(value: any) => pct(value)} />
             </PieChart>
           </ResponsiveContainer>
         </div>
-        <div style={{ flex: "2 1 400px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}>
+        <div
+          style={{ flex: "2 1 400px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}
+        >
           <h3 style={{ margin: "0 0 12px 0", fontSize: 15, fontWeight: 700 }}>Transactions by Brokerage</h3>
           <ResponsiveContainer width="100%" height={260}>
             <BarChart data={leaderboard} layout="vertical" margin={{ top: 5, right: 20, bottom: 5, left: 80 }}>
@@ -286,7 +371,10 @@ export default function BrokerageMarketShareClient() {
                   }}
                 >
                   <div style={{ fontSize: 11, opacity: 0.6, marginBottom: 2 }}>#{b.rank}</div>
-                  <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 8 }}>{b.name}{isYou ? " (You)" : ""}</div>
+                  <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 8 }}>
+                    {b.name}
+                    {isYou ? " (You)" : ""}
+                  </div>
                   <div style={{ fontSize: 13 }}>{b.transactions} transactions</div>
                   <div style={{ fontSize: 13 }}>{fmt.format(b.volume)} volume</div>
                   <div style={{ fontSize: 13, fontWeight: 700, marginTop: 4 }}>{pct(b.marketShare)} share</div>
@@ -321,7 +409,17 @@ export default function BrokerageMarketShareClient() {
           <thead>
             <tr style={{ background: "#f5f5f5" }}>
               {["Rank", "Brokerage Name", "Transactions", "Volume", "Market Share %"].map((h) => (
-                <th key={h} style={{ textAlign: "left", padding: "10px 12px", fontWeight: 700, borderBottom: "2px solid #e0e0e0" }}>{h}</th>
+                <th
+                  key={h}
+                  style={{
+                    textAlign: "left",
+                    padding: "10px 12px",
+                    fontWeight: 700,
+                    borderBottom: "2px solid #e0e0e0",
+                  }}
+                >
+                  {h}
+                </th>
               ))}
             </tr>
           </thead>
@@ -339,7 +437,17 @@ export default function BrokerageMarketShareClient() {
                 <td style={{ padding: "10px 12px" }}>
                   {b.name}
                   {b.isYours && (
-                    <span style={{ marginLeft: 8, background: "#1565C0", color: "#fff", fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 10 }}>
+                    <span
+                      style={{
+                        marginLeft: 8,
+                        background: "#1565C0",
+                        color: "#fff",
+                        fontSize: 10,
+                        fontWeight: 700,
+                        padding: "2px 8px",
+                        borderRadius: 10,
+                      }}
+                    >
                       YOU
                     </span>
                   )}
@@ -349,7 +457,14 @@ export default function BrokerageMarketShareClient() {
                 <td style={{ padding: "10px 12px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <div style={{ width: 80, height: 8, background: "#e0e0e0", borderRadius: 4, overflow: "hidden" }}>
-                      <div style={{ width: `${Math.min(b.marketShare * 3, 100)}%`, height: "100%", background: b.isYours ? "#1565C0" : "#90CAF9", borderRadius: 4 }} />
+                      <div
+                        style={{
+                          width: `${Math.min(b.marketShare * 3, 100)}%`,
+                          height: "100%",
+                          background: b.isYours ? "#1565C0" : "#90CAF9",
+                          borderRadius: 4,
+                        }}
+                      />
                     </div>
                     <span>{pct(b.marketShare)}</span>
                   </div>

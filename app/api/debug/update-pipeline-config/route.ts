@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-const admin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 /**
  * Update pipeline configuration in GHL integration
@@ -18,10 +16,13 @@ export async function POST(req: Request) {
     const { agentId, pipelineId, newLeadStageId } = body;
 
     if (!agentId || !pipelineId || !newLeadStageId) {
-      return NextResponse.json({
-        error: "Missing required fields",
-        required: ["agentId", "pipelineId", "newLeadStageId"],
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: "Missing required fields",
+          required: ["agentId", "pipelineId", "newLeadStageId"],
+        },
+        { status: 400 },
+      );
     }
 
     // Get integration
@@ -33,10 +34,13 @@ export async function POST(req: Request) {
       .single();
 
     if (fetchError || !integration) {
-      return NextResponse.json({
-        error: "No GHL integration found",
-        details: fetchError?.message,
-      }, { status: 404 });
+      return NextResponse.json(
+        {
+          error: "No GHL integration found",
+          details: fetchError?.message,
+        },
+        { status: 404 },
+      );
     }
 
     const config = integration.config as any;
@@ -58,10 +62,13 @@ export async function POST(req: Request) {
       .eq("id", integration.id);
 
     if (updateError) {
-      return NextResponse.json({
-        error: "Failed to update config",
-        details: updateError.message,
-      }, { status: 500 });
+      return NextResponse.json(
+        {
+          error: "Failed to update config",
+          details: updateError.message,
+        },
+        { status: 500 },
+      );
     }
 
     return NextResponse.json({
@@ -78,11 +85,13 @@ export async function POST(req: Request) {
         "🔥 Heat tags (Hot Lead, Warm Lead, Cold Lead) will be applied based on registration behavior",
       ],
     });
-
   } catch (error: any) {
-    return NextResponse.json({
-      error: error.message,
-      stack: error.stack,
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: error.message,
+        stack: error.stack,
+      },
+      { status: 500 },
+    );
   }
 }

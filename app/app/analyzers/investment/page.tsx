@@ -22,10 +22,7 @@ export default async function InvestmentAnalyzerPage() {
     <div style={{ maxWidth: 1200 }}>
       {/* Navigation Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <Link
-          href="/app/analyzers"
-          style={{ fontSize: 14, opacity: 0.7, textDecoration: "none" }}
-        >
+        <Link href="/app/analyzers" style={{ fontSize: 14, opacity: 0.7, textDecoration: "none" }}>
           ← Back to Analyzers
         </Link>
         <div style={{ display: "flex", gap: 8 }}>
@@ -85,12 +82,8 @@ export default async function InvestmentAnalyzerPage() {
       </div>
 
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 28, fontWeight: 900, marginTop: 0, marginBottom: 8 }}>
-          Investment Property Analyzer
-        </h1>
-        <p style={{ margin: 0, opacity: 0.7 }}>
-          Calculate ROI, Cap Rate, IRR, and Cash-on-Cash returns
-        </p>
+        <h1 style={{ fontSize: 28, fontWeight: 900, marginTop: 0, marginBottom: 8 }}>Investment Property Analyzer</h1>
+        <p style={{ margin: 0, opacity: 0.7 }}>Calculate ROI, Cap Rate, IRR, and Cash-on-Cash returns</p>
       </div>
 
       <InvestmentAnalyzerClient savedProperties={properties ?? []} />

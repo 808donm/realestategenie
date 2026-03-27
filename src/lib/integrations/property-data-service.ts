@@ -14,15 +14,8 @@
  */
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import {
-  RentcastClient,
-  createRentcastClient,
-  mapRentcastToRealieParcel,
-} from "./rentcast-client";
-import {
-  RealieClient,
-  createRealieClient,
-} from "./realie-client";
+import { RentcastClient, createRentcastClient, mapRentcastToRealieParcel } from "./rentcast-client";
+import { RealieClient, createRealieClient } from "./realie-client";
 import type { RealieParcel } from "./realie-client";
 
 // ── Shared client helpers ─────────────────────────────────────────────────
@@ -45,10 +38,7 @@ export async function getConfiguredRentcastClient(): Promise<RentcastClient | nu
     }
 
     if (integration?.config) {
-      const config =
-        typeof integration.config === "string"
-          ? JSON.parse(integration.config)
-          : integration.config;
+      const config = typeof integration.config === "string" ? JSON.parse(integration.config) : integration.config;
 
       if (config.api_key) {
         return new RentcastClient({ apiKey: config.api_key });
@@ -80,10 +70,7 @@ export async function getConfiguredRealieClient(): Promise<RealieClient | null> 
     }
 
     if (integration?.config) {
-      const config =
-        typeof integration.config === "string"
-          ? JSON.parse(integration.config)
-          : integration.config;
+      const config = typeof integration.config === "string" ? JSON.parse(integration.config) : integration.config;
 
       if (config.api_key) {
         return new RealieClient({ apiKey: config.api_key });
@@ -118,9 +105,7 @@ export function normalizeAddress(addr: string): string {
 /**
  * Build a lookup map from RealieParcel[] keyed by normalized address.
  */
-export function buildAddressMap(
-  properties: RealieParcel[]
-): Map<string, RealieParcel> {
+export function buildAddressMap(properties: RealieParcel[]): Map<string, RealieParcel> {
   const map = new Map<string, RealieParcel>();
   for (const p of properties) {
     const addr = p.address || p.addressFull;
@@ -143,7 +128,7 @@ function pickBestAvm(
   avmB: number | undefined,
   assessedValue: number | undefined,
   labelA: string,
-  labelB: string
+  labelB: string,
 ): {
   value: number | undefined;
   low?: number;
@@ -165,8 +150,8 @@ function pickBestAvm(
     const chosen = devB <= devA ? labelB : labelA;
     console.log(
       `[PropertyData] AVM: chose ${chosen} ($${(chosen === labelA ? avmA! : avmB!).toLocaleString()}) — ` +
-      `assessed: $${assessedValue.toLocaleString()}, ` +
-      `${labelA} ratio: ${ratioA.toFixed(2)}, ${labelB} ratio: ${ratioB.toFixed(2)}`
+        `assessed: $${assessedValue.toLocaleString()}, ` +
+        `${labelA} ratio: ${ratioA.toFixed(2)}, ${labelB} ratio: ${ratioB.toFixed(2)}`,
     );
     return {
       value: chosen === labelA ? avmA : avmB,
@@ -200,10 +185,7 @@ function pickBestAvm(
  * - Parcel geometry (geometry)
  * - Assessment history (assessments[])
  */
-export function mergeParcelData(
-  parcel: RealieParcel,
-  realieMatch: RealieParcel
-): RealieParcel {
+export function mergeParcelData(parcel: RealieParcel, realieMatch: RealieParcel): RealieParcel {
   const merged = { ...parcel };
 
   // ── AVM sanity check ──
@@ -285,10 +267,7 @@ export function mergeParcelData(
  * Match and merge Realie data into an array of parcels by normalized address.
  * Used by both seller map bulk searches and prospecting searches.
  */
-export function bulkMergeRealieData(
-  parcels: RealieParcel[],
-  realieData: RealieParcel[]
-): RealieParcel[] {
+export function bulkMergeRealieData(parcels: RealieParcel[], realieData: RealieParcel[]): RealieParcel[] {
   if (!realieData.length) return parcels;
   if (!parcels.length) return realieData;
 
@@ -336,10 +315,7 @@ export function deduplicateParcels(parcels: RealieParcel[]): RealieParcel[] {
  * AVM proxy, which can be decades stale. This calls the dedicated AVM endpoint
  * for a proper statistical valuation, then applies the assessed-value sanity check.
  */
-export async function enrichWithRentcastAvm(
-  client: RentcastClient,
-  parcel: RealieParcel
-): Promise<RealieParcel> {
+export async function enrichWithRentcastAvm(client: RentcastClient, parcel: RealieParcel): Promise<RealieParcel> {
   const address = parcel.addressFull || parcel.address;
   if (!address) return parcel;
 
@@ -366,7 +342,7 @@ export async function enrichWithRentcastAvm(
         // RentCast real AVM is closer to assessed — use it
         console.log(
           `[PropertyData] RentCast AVM ($${newAvmValue.toLocaleString()}) closer to assessed ` +
-          `($${assessedValue.toLocaleString()}) than existing ($${existingAvm.toLocaleString()})`
+            `($${assessedValue.toLocaleString()}) than existing ($${existingAvm.toLocaleString()})`,
         );
         return { ...parcel, modelValue: newAvmValue };
       }
@@ -394,7 +370,7 @@ export async function fetchAndMergeByZipCodes(
     limit?: number;
     propertyType?: string;
     realiePropertyType?: string;
-  } = {}
+  } = {},
 ): Promise<RealieParcel[]> {
   const rentcast = await getConfiguredRentcastClient();
   const realie = await getConfiguredRealieClient();
@@ -425,7 +401,7 @@ export async function fetchAndMergeByZipCodes(
             console.warn(`[PropertyData] RentCast zip ${zipCode} failed: ${err.message}`);
           }
           return [] as RealieParcel[];
-        })
+        }),
       );
       return results.flatMap((r) => (r.status === "fulfilled" ? r.value : []));
     })(),
@@ -475,7 +451,7 @@ export async function fetchAndMergeByCoords(
     page?: number;
     propertyType?: string;
     realiePropertyType?: string;
-  } = {}
+  } = {},
 ): Promise<RealieParcel[]> {
   const rentcast = await getConfiguredRentcastClient();
   const realie = await getConfiguredRealieClient();
@@ -547,7 +523,7 @@ export async function fetchAndMergeSingleProperty(
     lat?: number;
     lng?: number;
     state?: string;
-  } = {}
+  } = {},
 ): Promise<RealieParcel | null> {
   const rentcast = await getConfiguredRentcastClient();
   const realie = await getConfiguredRealieClient();
@@ -605,18 +581,13 @@ export async function fetchAndMergeSingleProperty(
 
   // Apply RentCast real AVM (with sanity check against assessed value)
   if (avmResult?.price) {
-    merged = await enrichWithRentcastAvm(
-      rentcast!,
-      { ...merged, modelValue: merged.modelValue }
-    );
+    merged = await enrichWithRentcastAvm(rentcast!, { ...merged, modelValue: merged.modelValue });
 
     // If the RentCast AVM won the sanity check OR there was no existing AVM,
     // apply the full AVM data
     const assessedValue = merged.totalAssessedValue || merged.totalMarketValue;
     if (assessedValue && assessedValue > 0 && avmResult.price) {
-      const existingDev = merged.modelValue
-        ? Math.abs(Math.log(merged.modelValue / assessedValue))
-        : Infinity;
+      const existingDev = merged.modelValue ? Math.abs(Math.log(merged.modelValue / assessedValue)) : Infinity;
       const rcDev = Math.abs(Math.log(avmResult.price / assessedValue));
 
       if (rcDev < existingDev || !merged.modelValue) {

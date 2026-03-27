@@ -24,10 +24,7 @@ export async function GET() {
     return NextResponse.json({ settings: settings || null });
   } catch (error: any) {
     console.error("Error fetching template settings:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to fetch settings" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message || "Failed to fetch settings" }, { status: 500 });
   }
 }
 
@@ -105,9 +102,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ settings: result.data });
   } catch (error: any) {
     console.error("Error saving template settings:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to save settings" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message || "Failed to save settings" }, { status: 500 });
   }
 }

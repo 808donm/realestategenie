@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-const admin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 /**
  * Diagnostic endpoint to show exactly what's stored in the GHL integration config
@@ -14,15 +12,11 @@ const admin = createClient(
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    let agentId = searchParams.get('agentId');
+    let agentId = searchParams.get("agentId");
 
     if (!agentId) {
       // Try to get first agent
-      const { data: agent } = await admin
-        .from("agents")
-        .select("id, email")
-        .limit(1)
-        .single();
+      const { data: agent } = await admin.from("agents").select("id, email").limit(1).single();
 
       if (agent) {
         agentId = agent.id;
@@ -30,9 +24,12 @@ export async function GET(req: Request) {
     }
 
     if (!agentId) {
-      return NextResponse.json({
-        error: "No agent found. Provide agentId parameter."
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: "No agent found. Provide agentId parameter.",
+        },
+        { status: 400 },
+      );
     }
 
     // Fetch integration
@@ -44,11 +41,14 @@ export async function GET(req: Request) {
       .single();
 
     if (error || !integration) {
-      return NextResponse.json({
-        error: "No GHL integration found",
-        details: error?.message,
-        recommendation: "Reconnect GHL at /app/integrations"
-      }, { status: 404 });
+      return NextResponse.json(
+        {
+          error: "No GHL integration found",
+          details: error?.message,
+          recommendation: "Reconnect GHL at /app/integrations",
+        },
+        { status: 404 },
+      );
     }
 
     const config = integration.config as any;
@@ -84,21 +84,24 @@ export async function GET(req: Request) {
         expiresAt: config.ghl_expires_at,
         isExpired: config.ghl_expires_at ? new Date(config.ghl_expires_at) < new Date() : null,
         missingFields: [
-          !config.ghl_access_token && 'ghl_access_token',
-          !config.ghl_refresh_token && 'ghl_refresh_token',
-          !config.ghl_expires_at && 'ghl_expires_at',
-          !config.ghl_location_id && 'ghl_location_id',
+          !config.ghl_access_token && "ghl_access_token",
+          !config.ghl_refresh_token && "ghl_refresh_token",
+          !config.ghl_expires_at && "ghl_expires_at",
+          !config.ghl_location_id && "ghl_location_id",
         ].filter(Boolean),
       },
-      recommendation: (!config.ghl_access_token || !config.ghl_refresh_token || !config.ghl_expires_at)
-        ? "Token data is incomplete. Try reconnecting GHL at /app/integrations"
-        : "Token data looks good. If scopes are still failing, check GHL marketplace app settings.",
+      recommendation:
+        !config.ghl_access_token || !config.ghl_refresh_token || !config.ghl_expires_at
+          ? "Token data is incomplete. Try reconnecting GHL at /app/integrations"
+          : "Token data looks good. If scopes are still failing, check GHL marketplace app settings.",
     });
-
   } catch (error: any) {
-    return NextResponse.json({
-      error: error.message,
-      stack: error.stack,
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: error.message,
+        stack: error.stack,
+      },
+      { status: 500 },
+    );
   }
 }

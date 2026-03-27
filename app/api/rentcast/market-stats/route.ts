@@ -61,10 +61,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(marketData);
   } catch (error: any) {
     console.error("[RentCast Market Stats] Error:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to fetch market statistics" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message || "Failed to fetch market statistics" }, { status: 500 });
   }
 }
 
@@ -79,10 +76,7 @@ async function getRentcastClient(): Promise<RentcastClient | null> {
       .maybeSingle();
 
     if (integration?.config) {
-      const config =
-        typeof integration.config === "string"
-          ? JSON.parse(integration.config)
-          : integration.config;
+      const config = typeof integration.config === "string" ? JSON.parse(integration.config) : integration.config;
       if (config.api_key) return new RentcastClient({ apiKey: config.api_key });
     }
 

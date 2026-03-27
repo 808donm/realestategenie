@@ -102,7 +102,7 @@ export interface BatchOutreach {
 export async function analyzeProspects(
   mode: ProspectMode,
   properties: ProspectProperty[],
-  market: MarketContext
+  market: MarketContext,
 ): Promise<ProspectAnalysis> {
   const modeContext = getModeContext(mode);
   const propsSlice = properties.slice(0, 25); // Limit to control token usage
@@ -180,7 +180,7 @@ export async function generateOutreach(
   properties: ProspectProperty[],
   market: MarketContext,
   agentName: string,
-  agentPhone?: string
+  agentPhone?: string,
 ): Promise<BatchOutreach> {
   const modeContext = getModeContext(mode);
   const propsSlice = properties.slice(0, 10); // Limit for outreach generation

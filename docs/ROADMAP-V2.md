@@ -33,6 +33,7 @@ Create a reusable agent execution layer using Vercel AI SDK that all AI features
 Shared data model for the timeline tracker, AI agents, and analytics.
 
 - **`supabase/migrations/xxx_deals.sql`**:
+
   ```
   deals (
     id uuid PK, agent_id FK, contact_id text, ghl_opportunity_id text,
@@ -75,6 +76,7 @@ Route GHL webhooks and internal events to the right AI agent.
 **The real estate assistant that handles tasks agents would otherwise do manually.**
 
 ### What it does
+
 - Prepares contracts for signing (using GHL contracts and document signing)
 - Performs web searches for property research, comps, market data
 - Schedules tasks and reminders on the buying/selling timeline
@@ -91,6 +93,7 @@ Route GHL webhooks and internal events to the right AI agent.
 - **Human-in-the-loop:** Sensitive actions (send contract, move to "Closed" stage, send offer) require agent approval via the task queue. Non-sensitive actions (draft message, search, schedule reminder) execute immediately.
 
 ### GHL-specific
+
 - Use existing `GHLClient.createContract()` and `sendContractForSignature()`
 - Use existing `GHLClient.createOpportunity()` and `updateOpportunityStage()`
 - Use existing `GHLClient.sendSMS()` and `sendEmail()` for outreach
@@ -103,6 +106,7 @@ Route GHL webhooks and internal events to the right AI agent.
 **Answers phone calls, pre-qualifies leads, provides basic info, forwards to agent when needed.**
 
 ### What it does
+
 - Answers inbound calls with a natural AI voice
 - Pre-qualifies leads: timeline, budget, pre-approval status, buying/selling
 - Answers deal status questions using synced data on the GHL contact record
@@ -148,12 +152,14 @@ The Voice AI reads data from GHL contact records — it does NOT access ATTOM or
 4. **Agent-curated FAQ →** Business hours, office location, general process questions
 
 **What the Voice AI can answer:**
+
 - "Where is my deal?" → reads `deal_status` and `next_milestone` from contact
 - "What properties are we looking at?" → reads active property notes from contact
 - "What are your office hours?" → reads from knowledge base
 - "How does the closing process work?" → reads from FAQ knowledge base
 
 **What the Voice AI forwards to the agent:**
+
 - Pricing advice, negotiation strategy, legal questions
 - Anything requiring ATTOM/MLS deep data
 - Any question it can't answer confidently
@@ -167,18 +173,22 @@ The Voice AI reads data from GHL contact records — it does NOT access ATTOM or
 ### Milestone Templates
 
 **Buying timeline (14 milestones):**
+
 1. Pre-Approval → 2. Agent Consultation → 3. Home Search Active → 4. Property Tours → 5. Offer Submitted → 6. Offer Accepted → 7. Earnest Money Deposited → 8. Inspection Scheduled → 9. Inspection Completed → 10. Appraisal Ordered → 11. Appraisal Completed → 12. Final Loan Approval → 13. Final Walkthrough → 14. Closing Day
 
 **Selling timeline (12 milestones):**
+
 1. Listing Consultation → 2. Pre-Listing Prep → 3. Photos & Marketing → 4. Listed on MLS → 5. Showings Active → 6. Offer Received → 7. Offer Accepted → 8. Buyer Inspection → 9. Appraisal → 10. Buyer Final Approval → 11. Final Walkthrough → 12. Closing Day
 
 ### Agent-Facing UI
+
 - **`app/app/deals/page.tsx`** — Deal list with status filters, search, sort by closing date
 - **`app/app/deals/[id]/page.tsx`** — Deal detail with visual timeline (horizontal stepper), milestone management, activity log, documents, contact info
 - **`app/app/deals/[id]/timeline.tsx`** — The tracker component: visual progress bar with milestone dots, current step highlighted, click to expand details/notes
 - **`app/app/deals/new/page.tsx`** — Create deal form (link to GHL contact/opportunity, set deal type, enter property details)
 
 ### Client Portal (Public)
+
 - **`app/portal/[token]/page.tsx`** — Unauthenticated client view using `client_portal_token`
   - Shows: property photo, address, deal type, agent info
   - Visual timeline tracker (read-only) showing current progress
@@ -189,6 +199,7 @@ The Voice AI reads data from GHL contact records — it does NOT access ATTOM or
 - No login required — the unique token in the URL provides access
 
 ### AI Integration
+
 - AI Employee can update milestones via `deal-tracker-tools.ts`
 - Voice AI can read deal status to answer "Where is my closing?"
 - Milestone changes trigger notification to client (email via Resend + SMS via GHL)
@@ -303,6 +314,7 @@ The Voice AI reads data from GHL contact records — it does NOT access ATTOM or
     - AI insight: "4 deals are missing seller disclosure forms — all are past the 5-day deadline. 2 agent licenses expire within 60 days. Flag these immediately to avoid liability."
 
 ### AI Analysis Engine
+
 - **`src/lib/ai/report-analyzer.ts`** — Takes report data as structured JSON, generates actionable insights via `generateText`
 - **`app/api/ai/analyze-report/route.ts`** — API endpoint that accepts report type + data, returns AI analysis
 - Each report page has an "AI Insights" card that auto-generates on load
@@ -388,12 +400,14 @@ The Voice AI reads data from GHL contact records — it does NOT access ATTOM or
 **Native iOS and Android apps replacing the current Capacitor web wrapper.**
 
 ### Architecture
+
 - **Monorepo structure:** Add `mobile/` directory alongside existing `app/`
 - **Framework:** React Native with Expo for faster development
 - **Shared logic:** Extract API client layer from Next.js into shared `packages/api-client/` used by both web and mobile
 - **Auth:** Supabase Auth with deep link magic links + biometric unlock (FaceID/TouchID)
 
 ### Core Mobile Screens
+
 1. **Dashboard** — Today's tasks, upcoming appointments, new leads, deal updates
 2. **Deals** — Deal list + timeline tracker (swipe through milestones)
 3. **Inbox** — Unified messaging (GHL conversations) with quick AI-reply
@@ -405,6 +419,7 @@ The Voice AI reads data from GHL contact records — it does NOT access ATTOM or
 9. **Notifications** — Push notifications for: new leads, deal updates, AI task completions, messages
 
 ### Native Features
+
 - **Push notifications** via Firebase Cloud Messaging / APNs
 - **Camera** for property photos, document scanning, address sign OCR
 - **Location** for nearby property lookups
@@ -413,6 +428,7 @@ The Voice AI reads data from GHL contact records — it does NOT access ATTOM or
 - **Share extension** for sharing listings via native share sheet
 
 ### Migration from Capacitor
+
 - Keep Capacitor config as fallback during transition
 - Gradually replace with React Native screens
 - Target: iOS App Store + Google Play Store submission
@@ -436,6 +452,7 @@ Phase 1: Foundation (Weeks 1-3)     <- Everything depends on this
 This is the highest-value chain: shared infra → deal tracking → automated deal management.
 
 **Quick wins to ship early:**
+
 - AI Employee chat (Phase 2) — usable as soon as GHL tools are wired up
 - Client portal (Phase 4) — high client-facing impact, simple to build
 - AI report insights (Phase 6) — add to existing 14 reports with minimal UI work
@@ -444,14 +461,14 @@ This is the highest-value chain: shared infra → deal tracking → automated de
 
 ## Key Technical Decisions
 
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| AI SDK | Vercel AI SDK (`ai@6`) | Already in stack, supports streaming, tool calling, multi-provider |
-| LLM | OpenAI GPT-4o via `@ai-sdk/openai` | Already integrated, best tool-calling support |
-| Voice AI | GHL Conversation AI | Native GHL integration, no separate telephony to manage |
-| Document Signing | GHL Documents (exclusively) | Cost savings, keeps everything in GHL ecosystem |
-| Mobile | React Native + Expo | True native experience, shared JS logic, better than Capacitor wrapper |
-| Client Portal Auth | Token-based (no login) | Minimal friction for clients checking deal status |
-| Ad Management | GHL ad integrations + direct OAuth | Leverage GHL where possible, supplement with direct API for gaps |
-| Background Jobs | Vercel Cron + Supabase pg_cron | No additional infra needed |
-| Real-time Updates | Supabase Realtime | Already using Supabase, free real-time subscriptions |
+| Decision           | Choice                             | Rationale                                                              |
+| ------------------ | ---------------------------------- | ---------------------------------------------------------------------- |
+| AI SDK             | Vercel AI SDK (`ai@6`)             | Already in stack, supports streaming, tool calling, multi-provider     |
+| LLM                | OpenAI GPT-4o via `@ai-sdk/openai` | Already integrated, best tool-calling support                          |
+| Voice AI           | GHL Conversation AI                | Native GHL integration, no separate telephony to manage                |
+| Document Signing   | GHL Documents (exclusively)        | Cost savings, keeps everything in GHL ecosystem                        |
+| Mobile             | React Native + Expo                | True native experience, shared JS logic, better than Capacitor wrapper |
+| Client Portal Auth | Token-based (no login)             | Minimal friction for clients checking deal status                      |
+| Ad Management      | GHL ad integrations + direct OAuth | Leverage GHL where possible, supplement with direct API for gaps       |
+| Background Jobs    | Vercel Cron + Supabase pg_cron     | No additional infra needed                                             |
+| Real-time Updates  | Supabase Realtime                  | Already using Supabase, free real-time subscriptions                   |

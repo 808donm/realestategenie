@@ -35,7 +35,7 @@ const LAYERS = {
   femaFloodHawaiiCounty: 14,
 
   // Infrastructure MapServer
-  cesspoolPriority: 34,  // HCPT Priority Census Block Groups
+  cesspoolPriority: 34, // HCPT Priority Census Block Groups
   osdsKauai: 25,
   osdsHawaii: 26,
 
@@ -102,7 +102,7 @@ export class HawaiiHazardsClient {
     serviceUrl: string,
     layerId: number,
     lat: number,
-    lng: number
+    lng: number,
   ): Promise<HazardZoneResult | null> {
     const url = new URL(`${serviceUrl}/${layerId}/query`);
     url.searchParams.set("geometry", `${lng},${lat}`);
@@ -144,19 +144,8 @@ export class HawaiiHazardsClient {
    * Get the full hazard/environmental profile for a property by lat/lng.
    * Runs all spatial queries in parallel for performance.
    */
-  async getPropertyHazardProfile(
-    lat: number,
-    lng: number
-  ): Promise<PropertyHazardProfile> {
-    const [
-      tsunami,
-      lavaFlow,
-      seaLevelRise,
-      dhhl,
-      sma,
-      stateLandUse,
-      cesspoolPriority,
-    ] = await Promise.allSettled([
+  async getPropertyHazardProfile(lat: number, lng: number): Promise<PropertyHazardProfile> {
+    const [tsunami, lavaFlow, seaLevelRise, dhhl, sma, stateLandUse, cesspoolPriority] = await Promise.allSettled([
       this.spatialQuery(HAZARDS, LAYERS.tsunamiAllZones, lat, lng),
       this.spatialQuery(HAZARDS, LAYERS.lavaFlowZones, lat, lng),
       this.spatialQuery(HAZARDS, LAYERS.floodCoastalSLR_Statewide, lat, lng),
@@ -206,7 +195,7 @@ export class HawaiiHazardsClient {
             message: `${ep.name}: ${error instanceof Error ? error.message : "Failed"}`,
           };
         }
-      })
+      }),
     );
 
     return results;

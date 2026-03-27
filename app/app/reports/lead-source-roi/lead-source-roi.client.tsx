@@ -5,8 +5,18 @@ import Link from "next/link";
 import jsPDF from "jspdf";
 import * as XLSX from "xlsx";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
-  ScatterChart, Scatter, ZAxis, Cell,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+  ScatterChart,
+  Scatter,
+  ZAxis,
+  Cell,
 } from "recharts";
 
 interface LeadSource {
@@ -106,7 +116,12 @@ export default function LeadSourceROIClient() {
     y += 10;
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    doc.text(`Generated ${new Date().toLocaleDateString()} | Range: ${DATE_RANGES.find((d) => d.value === dateRange)?.label}`, pw / 2, y, { align: "center" });
+    doc.text(
+      `Generated ${new Date().toLocaleDateString()} | Range: ${DATE_RANGES.find((d) => d.value === dateRange)?.label}`,
+      pw / 2,
+      y,
+      { align: "center" },
+    );
     y += 14;
 
     // Summary
@@ -116,9 +131,20 @@ export default function LeadSourceROIClient() {
     y += 8;
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    doc.text(`Best Conversion: ${bestConversion ? `${bestConversion.name} (${bestConversion.conversionRate.toFixed(1)}%)` : "N/A"}`, 25, y); y += 6;
-    doc.text(`Lowest Cost/Closing: ${lowestCostPerClosing ? `${lowestCostPerClosing.name} (${fmt(lowestCostPerClosing.costPerClosing)})` : "N/A"}`, 25, y); y += 6;
-    doc.text(`Highest ROI: ${highestROI ? `${highestROI.name} (${highestROI.roi.toFixed(0)}%)` : "N/A"}`, 25, y); y += 12;
+    doc.text(
+      `Best Conversion: ${bestConversion ? `${bestConversion.name} (${bestConversion.conversionRate.toFixed(1)}%)` : "N/A"}`,
+      25,
+      y,
+    );
+    y += 6;
+    doc.text(
+      `Lowest Cost/Closing: ${lowestCostPerClosing ? `${lowestCostPerClosing.name} (${fmt(lowestCostPerClosing.costPerClosing)})` : "N/A"}`,
+      25,
+      y,
+    );
+    y += 6;
+    doc.text(`Highest ROI: ${highestROI ? `${highestROI.name} (${highestROI.roi.toFixed(0)}%)` : "N/A"}`, 25, y);
+    y += 12;
 
     // Table header
     doc.setFontSize(9);
@@ -134,7 +160,10 @@ export default function LeadSourceROIClient() {
     // Table rows
     doc.setFont("helvetica", "normal");
     sources.forEach((s) => {
-      if (y > 270) { doc.addPage(); y = 20; }
+      if (y > 270) {
+        doc.addPage();
+        y = 20;
+      }
       const row = [
         s.name,
         String(s.leads),
@@ -154,7 +183,16 @@ export default function LeadSourceROIClient() {
     doc.line(20, y, pw - 20, y);
     y += 6;
     doc.setFont("helvetica", "bold");
-    const totals = ["TOTAL", String(totalLeads), String(totalClosings), ((totalClosings / totalLeads) * 100).toFixed(1) + "%", fmt(totalSpend), fmt(totalRevenue), fmt(totalSpend / totalLeads), (((totalRevenue - totalSpend) / totalSpend) * 100).toFixed(0) + "%"];
+    const totals = [
+      "TOTAL",
+      String(totalLeads),
+      String(totalClosings),
+      ((totalClosings / totalLeads) * 100).toFixed(1) + "%",
+      fmt(totalSpend),
+      fmt(totalRevenue),
+      fmt(totalSpend / totalLeads),
+      (((totalRevenue - totalSpend) / totalSpend) * 100).toFixed(0) + "%",
+    ];
     totals.forEach((val, i) => doc.text(val, cols[i], y));
 
     const footerY = doc.internal.pageSize.getHeight() - 15;
@@ -166,7 +204,7 @@ export default function LeadSourceROIClient() {
   };
 
   const exportToExcel = () => {
-    const rows = sources.map(s => ({
+    const rows = sources.map((s) => ({
       Source: s.name,
       Leads: s.leads,
       Closings: s.closings,
@@ -194,19 +232,56 @@ export default function LeadSourceROIClient() {
     <div>
       {/* Integration Notice */}
       {isLive ? (
-        <div style={{ padding: 16, background: "#ecfdf5", border: "1px solid #a7f3d0", borderRadius: 10, marginBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div
+          style={{
+            padding: 16,
+            background: "#ecfdf5",
+            border: "1px solid #a7f3d0",
+            borderRadius: 10,
+            marginBottom: 20,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
           <div>
             <strong style={{ fontSize: 14 }}>Live Data</strong>
-            <span style={{ fontSize: 13, opacity: 0.8, marginLeft: 8 }}>Showing real lead source ROI from your integrations.</span>
+            <span style={{ fontSize: 13, opacity: 0.8, marginLeft: 8 }}>
+              Showing real lead source ROI from your integrations.
+            </span>
           </div>
         </div>
       ) : (
-        <div style={{ padding: 16, background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10, marginBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div
+          style={{
+            padding: 16,
+            background: "#fffbeb",
+            border: "1px solid #fde68a",
+            borderRadius: 10,
+            marginBottom: 20,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
           <div>
             <strong style={{ fontSize: 14 }}>Sample Data</strong>
-            <span style={{ fontSize: 13, opacity: 0.8, marginLeft: 8 }}>Connect GHL + QuickBooks to see your real lead source ROI.</span>
+            <span style={{ fontSize: 13, opacity: 0.8, marginLeft: 8 }}>
+              Connect GHL + QuickBooks to see your real lead source ROI.
+            </span>
           </div>
-          <Link href="/app/integrations" style={{ padding: "6px 14px", background: "#f59e0b", color: "#fff", borderRadius: 6, fontSize: 13, fontWeight: 600, textDecoration: "none" }}>
+          <Link
+            href="/app/integrations"
+            style={{
+              padding: "6px 14px",
+              background: "#f59e0b",
+              color: "#fff",
+              borderRadius: 6,
+              fontSize: 13,
+              fontWeight: 600,
+              textDecoration: "none",
+            }}
+          >
             Connect Integration
           </Link>
         </div>
@@ -235,11 +310,32 @@ export default function LeadSourceROIClient() {
         <div style={{ flex: 1 }} />
         <button
           onClick={exportToPDF}
-          style={{ padding: "8px 20px", background: "#dc2626", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 13 }}
+          style={{
+            padding: "8px 20px",
+            background: "#dc2626",
+            color: "#fff",
+            border: "none",
+            borderRadius: 8,
+            fontWeight: 600,
+            cursor: "pointer",
+            fontSize: 13,
+          }}
         >
           Export PDF
         </button>
-        <button onClick={exportToExcel} style={{ padding: "8px 20px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>
+        <button
+          onClick={exportToExcel}
+          style={{
+            padding: "8px 20px",
+            background: "#fff",
+            color: "#374151",
+            border: "1px solid #d1d5db",
+            borderRadius: 8,
+            fontWeight: 600,
+            cursor: "pointer",
+            fontSize: 13,
+          }}
+        >
           Export Excel
         </button>
       </div>
@@ -249,17 +345,23 @@ export default function LeadSourceROIClient() {
         <div style={{ ...cardStyle, borderLeft: "4px solid #10b981" }}>
           <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Best Conversion Rate</div>
           <div style={{ fontSize: 24, fontWeight: 700 }}>{bestConversion?.name ?? "N/A"}</div>
-          <div style={{ fontSize: 14, color: "#10b981", fontWeight: 600 }}>{bestConversion ? `${bestConversion.conversionRate.toFixed(1)}%` : "—"}</div>
+          <div style={{ fontSize: 14, color: "#10b981", fontWeight: 600 }}>
+            {bestConversion ? `${bestConversion.conversionRate.toFixed(1)}%` : "—"}
+          </div>
         </div>
         <div style={{ ...cardStyle, borderLeft: "4px solid #3b82f6" }}>
           <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Lowest Cost per Closing</div>
           <div style={{ fontSize: 24, fontWeight: 700 }}>{lowestCostPerClosing?.name ?? "N/A"}</div>
-          <div style={{ fontSize: 14, color: "#3b82f6", fontWeight: 600 }}>{lowestCostPerClosing ? fmt(lowestCostPerClosing.costPerClosing) : "—"}</div>
+          <div style={{ fontSize: 14, color: "#3b82f6", fontWeight: 600 }}>
+            {lowestCostPerClosing ? fmt(lowestCostPerClosing.costPerClosing) : "—"}
+          </div>
         </div>
         <div style={{ ...cardStyle, borderLeft: "4px solid #8b5cf6" }}>
           <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Highest ROI</div>
           <div style={{ fontSize: 24, fontWeight: 700 }}>{highestROI?.name ?? "N/A"}</div>
-          <div style={{ fontSize: 14, color: "#8b5cf6", fontWeight: 600 }}>{highestROI ? `${highestROI.roi.toFixed(0)}%` : "—"}</div>
+          <div style={{ fontSize: 14, color: "#8b5cf6", fontWeight: 600 }}>
+            {highestROI ? `${highestROI.roi.toFixed(0)}%` : "—"}
+          </div>
         </div>
       </div>
 
@@ -267,7 +369,10 @@ export default function LeadSourceROIClient() {
       <div style={{ ...cardStyle, marginBottom: 24 }}>
         <h3 style={{ margin: "0 0 20px 0", fontSize: 16, fontWeight: 700 }}>Revenue vs Spend by Lead Source</h3>
         <ResponsiveContainer width="100%" height={320}>
-          <BarChart data={[...sources].sort((a, b) => b.revenue - a.revenue)} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
+          <BarChart
+            data={[...sources].sort((a, b) => b.revenue - a.revenue)}
+            margin={{ top: 5, right: 20, bottom: 5, left: 20 }}
+          >
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
             <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-20} textAnchor="end" height={60} />
             <YAxis tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11 }} />
@@ -299,7 +404,10 @@ export default function LeadSourceROIClient() {
             />
             <Scatter name="Lead Sources" data={sources}>
               {sources.map((s, i) => (
-                <Cell key={i} fill={s.roi > 500 ? "#10b981" : s.roi > 200 ? "#3b82f6" : s.roi > 0 ? "#f59e0b" : "#ef4444"} />
+                <Cell
+                  key={i}
+                  fill={s.roi > 500 ? "#10b981" : s.roi > 200 ? "#3b82f6" : s.roi > 0 ? "#f59e0b" : "#ef4444"}
+                />
               ))}
             </Scatter>
           </ScatterChart>
@@ -326,8 +434,27 @@ export default function LeadSourceROIClient() {
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
           <thead>
             <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
-              {["Source", "Leads", "Closings", "Conv %", "Total Spend", "Revenue", "Cost/Lead", "Cost/Close", "ROI %"].map((h) => (
-                <th key={h} style={{ padding: "10px 8px", textAlign: h === "Source" ? "left" : "right", fontWeight: 700, fontSize: 12, color: "#6b7280" }}>
+              {[
+                "Source",
+                "Leads",
+                "Closings",
+                "Conv %",
+                "Total Spend",
+                "Revenue",
+                "Cost/Lead",
+                "Cost/Close",
+                "ROI %",
+              ].map((h) => (
+                <th
+                  key={h}
+                  style={{
+                    padding: "10px 8px",
+                    textAlign: h === "Source" ? "left" : "right",
+                    fontWeight: 700,
+                    fontSize: 12,
+                    color: "#6b7280",
+                  }}
+                >
                   {h}
                 </th>
               ))}
@@ -341,14 +468,27 @@ export default function LeadSourceROIClient() {
                   <td style={{ padding: "10px 8px", fontWeight: 600 }}>{s.name}</td>
                   <td style={{ padding: "10px 8px", textAlign: "right" }}>{s.leads}</td>
                   <td style={{ padding: "10px 8px", textAlign: "right" }}>{s.closings}</td>
-                  <td style={{ padding: "10px 8px", textAlign: "right", color: s.conversionRate > 20 ? "#059669" : s.conversionRate > 5 ? "#1d4ed8" : "#dc2626" }}>
+                  <td
+                    style={{
+                      padding: "10px 8px",
+                      textAlign: "right",
+                      color: s.conversionRate > 20 ? "#059669" : s.conversionRate > 5 ? "#1d4ed8" : "#dc2626",
+                    }}
+                  >
                     {s.conversionRate.toFixed(1)}%
                   </td>
                   <td style={{ padding: "10px 8px", textAlign: "right" }}>{fmt(s.totalSpend)}</td>
                   <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 600 }}>{fmt(s.revenue)}</td>
                   <td style={{ padding: "10px 8px", textAlign: "right" }}>{fmt(s.costPerLead)}</td>
                   <td style={{ padding: "10px 8px", textAlign: "right" }}>{fmt(s.costPerClosing)}</td>
-                  <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 700, color: s.roi > 500 ? "#059669" : s.roi > 200 ? "#1d4ed8" : "#dc2626" }}>
+                  <td
+                    style={{
+                      padding: "10px 8px",
+                      textAlign: "right",
+                      fontWeight: 700,
+                      color: s.roi > 500 ? "#059669" : s.roi > 200 ? "#1d4ed8" : "#dc2626",
+                    }}
+                  >
                     {s.roi.toFixed(0)}%
                   </td>
                 </tr>
@@ -359,12 +499,20 @@ export default function LeadSourceROIClient() {
               <td style={{ padding: "10px 8px", fontWeight: 700 }}>TOTAL</td>
               <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 700 }}>{totalLeads}</td>
               <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 700 }}>{totalClosings}</td>
-              <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 700 }}>{totalLeads > 0 ? ((totalClosings / totalLeads) * 100).toFixed(1) + "%" : "—"}</td>
+              <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 700 }}>
+                {totalLeads > 0 ? ((totalClosings / totalLeads) * 100).toFixed(1) + "%" : "—"}
+              </td>
               <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 700 }}>{fmt(totalSpend)}</td>
               <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 700 }}>{fmt(totalRevenue)}</td>
-              <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 700 }}>{totalLeads > 0 ? fmt(totalSpend / totalLeads) : "—"}</td>
-              <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 700 }}>{totalClosings > 0 ? fmt(totalSpend / totalClosings) : "—"}</td>
-              <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 700 }}>{totalSpend > 0 ? (((totalRevenue - totalSpend) / totalSpend) * 100).toFixed(0) + "%" : "—"}</td>
+              <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 700 }}>
+                {totalLeads > 0 ? fmt(totalSpend / totalLeads) : "—"}
+              </td>
+              <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 700 }}>
+                {totalClosings > 0 ? fmt(totalSpend / totalClosings) : "—"}
+              </td>
+              <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 700 }}>
+                {totalSpend > 0 ? (((totalRevenue - totalSpend) / totalSpend) * 100).toFixed(0) + "%" : "—"}
+              </td>
             </tr>
           </tfoot>
         </table>

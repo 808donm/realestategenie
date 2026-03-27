@@ -4,7 +4,9 @@ import { supabaseServer } from "@/lib/supabase/server";
 /** GET /api/reports/tax-savings-reserve - Monthly commission and tax reserve data */
 export async function GET() {
   const supabase = await supabaseServer();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   // Get leads that reached closed stage (proxy for commission events)
@@ -24,7 +26,7 @@ export async function GET() {
     monthMap.set(key, 0);
   }
 
-  (leads || []).forEach(l => {
+  (leads || []).forEach((l) => {
     const d = new Date(l.created_at);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
     if (monthMap.has(key)) {

@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getEffectiveClient, getEventWithAdminFallback } from "@/lib/supabase/effective-client";
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
 
@@ -21,7 +18,7 @@ export async function PATCH(
       console.error("[Property Details] Auth error:", authError.message);
       return NextResponse.json(
         { error: "Authentication failed. Please refresh the page and try again." },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -37,18 +34,9 @@ export async function PATCH(
 
     // Parse request body
     const body = await request.json();
-    const {
-      beds,
-      baths,
-      sqft,
-      price,
-      listing_description,
-      key_features,
-      flyer_description,
-      flyer_features,
-    } = body;
+    const { beds, baths, sqft, price, listing_description, key_features, flyer_description, flyer_features } = body;
 
-    console.log('[Property Details] Update request:', {
+    console.log("[Property Details] Update request:", {
       eventId: id,
       userId,
       isImpersonating,
@@ -84,16 +72,13 @@ export async function PATCH(
       console.error("[Property Details] Update error:", updateError);
       return NextResponse.json(
         { error: "Failed to update property details", details: updateError.message },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error("[Property Details] Unexpected error:", error);
-    return NextResponse.json(
-      { error: "Failed to update property details", details: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to update property details", details: error.message }, { status: 500 });
   }
 }

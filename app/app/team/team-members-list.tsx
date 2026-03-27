@@ -3,20 +3,8 @@
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Trash2, Shield, User, UserCheck, UserCog, KeyRound, Copy, Check, AlertCircle } from "lucide-react";
@@ -242,10 +230,7 @@ export default function TeamMembersList({
       ) : (
         <div className="space-y-2">
           {members.map((member) => (
-            <div
-              key={member.id}
-              className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
-            >
+            <div key={member.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
               <div className="flex-1">
                 <div className="flex items-center gap-3">
                   <div className={`p-2 rounded-full ${getRoleBadgeColor(member.account_role)}`}>
@@ -253,9 +238,7 @@ export default function TeamMembersList({
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold">
-                        {member.agents.display_name || member.agents.email}
-                      </span>
+                      <span className="font-semibold">{member.agents.display_name || member.agents.email}</span>
                       {member.agents.id === currentUserId && (
                         <Badge variant="outline" className="text-xs">
                           You
@@ -263,9 +246,7 @@ export default function TeamMembersList({
                       )}
                     </div>
                     <p className="text-sm text-gray-500">{member.agents.email}</p>
-                    {member.offices && (
-                      <p className="text-xs text-gray-400 mt-1">📍 {member.offices.name}</p>
-                    )}
+                    {member.offices && <p className="text-xs text-gray-400 mt-1">📍 {member.offices.name}</p>}
                   </div>
                 </div>
               </div>
@@ -282,9 +263,7 @@ export default function TeamMembersList({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {accountRole === "owner" && (
-                          <SelectItem value="admin">Administrator</SelectItem>
-                        )}
+                        {accountRole === "owner" && <SelectItem value="admin">Administrator</SelectItem>}
                         <SelectItem value="agent">Agent</SelectItem>
                         <SelectItem value="assistant">Assistant</SelectItem>
                       </SelectContent>
@@ -293,9 +272,7 @@ export default function TeamMembersList({
                     {offices.length > 0 && (
                       <Select
                         value={member.office_id || "none"}
-                        onValueChange={(value) =>
-                          handleOfficeChange(member.id, value === "none" ? null : value)
-                        }
+                        onValueChange={(value) => handleOfficeChange(member.id, value === "none" ? null : value)}
                         disabled={loading === member.id}
                       >
                         <SelectTrigger className="w-[180px]">
@@ -335,9 +312,7 @@ export default function TeamMembersList({
                     </Button>
                   </>
                 ) : (
-                  <Badge className={getRoleBadgeColor(member.account_role)}>
-                    {getRoleLabel(member.account_role)}
-                  </Badge>
+                  <Badge className={getRoleBadgeColor(member.account_role)}>{getRoleLabel(member.account_role)}</Badge>
                 )}
               </div>
             </div>
@@ -351,10 +326,8 @@ export default function TeamMembersList({
             <DialogTitle>Reset Password</DialogTitle>
             <DialogDescription>
               Set a new temporary password for{" "}
-              <span className="font-semibold">
-                {resetTarget?.agents.display_name || resetTarget?.agents.email}
-              </span>
-              . They will be required to change it on next login.
+              <span className="font-semibold">{resetTarget?.agents.display_name || resetTarget?.agents.email}</span>.
+              They will be required to change it on next login.
             </DialogDescription>
           </DialogHeader>
 
@@ -364,8 +337,12 @@ export default function TeamMembersList({
                 <p className="text-sm font-semibold text-green-900">Password reset successfully!</p>
                 <p className="text-sm text-green-800 mt-2">Share the new credentials with the team member:</p>
                 <div className="mt-3 bg-white border rounded-lg p-3 font-mono text-sm">
-                  <p><span className="text-gray-500">Email:</span> {resetTarget?.agents.email}</p>
-                  <p><span className="text-gray-500">Password:</span> {resetPassword}</p>
+                  <p>
+                    <span className="text-gray-500">Email:</span> {resetTarget?.agents.email}
+                  </p>
+                  <p>
+                    <span className="text-gray-500">Password:</span> {resetPassword}
+                  </p>
                 </div>
                 <p className="text-xs text-green-700 mt-2">
                   They will be required to change their password on next login.
@@ -397,9 +374,7 @@ export default function TeamMembersList({
                     Generate
                   </Button>
                 </div>
-                <p className="text-xs text-gray-500">
-                  The member will be required to change this on next login.
-                </p>
+                <p className="text-xs text-gray-500">The member will be required to change this on next login.</p>
               </div>
 
               {resetError && (
@@ -413,10 +388,7 @@ export default function TeamMembersList({
                 <Button variant="outline" onClick={closeResetDialog} disabled={resetLoading}>
                   Cancel
                 </Button>
-                <Button
-                  onClick={handleResetPassword}
-                  disabled={resetLoading || resetPassword.length < 12}
-                >
+                <Button onClick={handleResetPassword} disabled={resetLoading || resetPassword.length < 12}>
                   {resetLoading ? "Resetting..." : "Reset Password"}
                 </Button>
               </div>

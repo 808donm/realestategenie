@@ -79,9 +79,7 @@ export default function LayoutOptions({ settings, onUpdate }: Props) {
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold mb-2">Layout Options</h3>
-        <p className="text-sm text-muted-foreground">
-          Customize the layout and structure of your flyers
-        </p>
+        <p className="text-sm text-muted-foreground">Customize the layout and structure of your flyers</p>
       </div>
 
       {/* Header Style */}

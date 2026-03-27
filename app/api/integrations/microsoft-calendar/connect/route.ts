@@ -6,8 +6,11 @@ import crypto from "crypto";
 export async function GET(request: NextRequest) {
   if (!process.env.MICROSOFT_CALENDAR_CLIENT_ID || !process.env.MICROSOFT_CALENDAR_CLIENT_SECRET) {
     return NextResponse.json(
-      { error: "Microsoft Calendar integration is not configured. Please set MICROSOFT_CALENDAR_CLIENT_ID and MICROSOFT_CALENDAR_CLIENT_SECRET environment variables." },
-      { status: 503 }
+      {
+        error:
+          "Microsoft Calendar integration is not configured. Please set MICROSOFT_CALENDAR_CLIENT_ID and MICROSOFT_CALENDAR_CLIENT_SECRET environment variables.",
+      },
+      { status: 503 },
     );
   }
 
@@ -20,9 +23,7 @@ export async function GET(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.redirect(
-      new URL("/login", appOrigin)
-    );
+    return NextResponse.redirect(new URL("/login", appOrigin));
   }
 
   const state = crypto.randomUUID();
@@ -35,13 +36,13 @@ export async function GET(request: NextRequest) {
       status: "disconnected",
       config: { oauth_state: state },
     },
-    { onConflict: "agent_id,provider" }
+    { onConflict: "agent_id,provider" },
   );
 
   if (upsertError) {
     console.error("[Microsoft Calendar] Failed to create integration row:", upsertError);
     return NextResponse.redirect(
-      `${appOrigin}/app/integrations?error=microsoft_oauth_failed&message=${encodeURIComponent("Failed to initialize: " + upsertError.message)}`
+      `${appOrigin}/app/integrations?error=microsoft_oauth_failed&message=${encodeURIComponent("Failed to initialize: " + upsertError.message)}`,
     );
   }
 
@@ -57,7 +58,5 @@ export async function GET(request: NextRequest) {
     response_mode: "query",
   });
 
-  return NextResponse.redirect(
-    `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/authorize?${params}`
-  );
+  return NextResponse.redirect(`https://login.microsoftonline.com/${tenant}/oauth2/v2.0/authorize?${params}`);
 }

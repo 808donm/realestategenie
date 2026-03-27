@@ -45,9 +45,7 @@ export default function PipelineTabs() {
               color: activeTab === tab.key ? "#111827" : "#6b7280",
               background: "transparent",
               border: "none",
-              borderBottom: activeTab === tab.key
-                ? "2px solid #6366f1"
-                : "2px solid transparent",
+              borderBottom: activeTab === tab.key ? "2px solid #6366f1" : "2px solid transparent",
               cursor: "pointer",
               transition: "all 0.15s",
               marginBottom: -1,

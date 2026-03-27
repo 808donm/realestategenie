@@ -28,16 +28,16 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       ...results,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     console.error("Send usage alerts error:", error);
     return NextResponse.json(
       {
         error: "Internal server error",
-        message: error instanceof Error ? error.message : "Unknown error"
+        message: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

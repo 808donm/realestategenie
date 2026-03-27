@@ -42,52 +42,40 @@ export default async function DashboardPage() {
   if (!profile.display_name?.trim()) missing.push("name");
   if (!profile.phone_e164) missing.push("phone");
   if (!profile.license_number) missing.push("license");
-  if (!profile.locations_served || profile.locations_served.length === 0)
-    missing.push("locations");
+  if (!profile.locations_served || profile.locations_served.length === 0) missing.push("locations");
 
   // Fetch data in parallel
   const now = new Date();
-  const todayStart = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate()
-  ).toISOString();
-  const todayEnd = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate() + 1
-  ).toISOString();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+  const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toISOString();
   const sevenDaysAgo = new Date(now.getTime() - 7 * 86400000).toISOString();
 
-  const [{ data: todayEvents }, { data: allLeads }, { data: activeListings }] =
-    await Promise.all([
-      // Today's events
-      supabase
-        .from("open_house_events")
-        .select("id, address, start_at, end_at, status, event_type")
-        .eq("agent_id", userId)
-        .gte("start_at", todayStart)
-        .lt("start_at", todayEnd)
-        .order("start_at", { ascending: true })
-        .limit(10),
-      // All leads for pipeline + follow-ups
-      supabase
-        .from("lead_submissions")
-        .select(
-          "id, event_id, payload, heat_score, pipeline_stage, created_at, updated_at"
-        )
-        .eq("agent_id", userId)
-        .order("heat_score", { ascending: false })
-        .limit(200),
-      // Active listings (open houses as proxy)
-      supabase
-        .from("open_house_events")
-        .select("id, address, start_at, created_at, status")
-        .eq("agent_id", userId)
-        .eq("status", "published")
-        .order("created_at", { ascending: false })
-        .limit(50),
-    ]);
+  const [{ data: todayEvents }, { data: allLeads }, { data: activeListings }] = await Promise.all([
+    // Today's events
+    supabase
+      .from("open_house_events")
+      .select("id, address, start_at, end_at, status, event_type")
+      .eq("agent_id", userId)
+      .gte("start_at", todayStart)
+      .lt("start_at", todayEnd)
+      .order("start_at", { ascending: true })
+      .limit(10),
+    // All leads for pipeline + follow-ups
+    supabase
+      .from("lead_submissions")
+      .select("id, event_id, payload, heat_score, pipeline_stage, created_at, updated_at")
+      .eq("agent_id", userId)
+      .order("heat_score", { ascending: false })
+      .limit(200),
+    // Active listings (open houses as proxy)
+    supabase
+      .from("open_house_events")
+      .select("id, address, start_at, created_at, status")
+      .eq("agent_id", userId)
+      .eq("status", "published")
+      .order("created_at", { ascending: false })
+      .limit(50),
+  ]);
 
   // Build pipeline data
   const leads = allLeads || [];
@@ -104,9 +92,7 @@ export default async function DashboardPage() {
   const urgentFollowUps = leads
     .filter((l) => {
       const lastTouched = l.updated_at || l.created_at;
-      const daysSince = Math.floor(
-        (now.getTime() - new Date(lastTouched).getTime()) / 86400000
-      );
+      const daysSince = Math.floor((now.getTime() - new Date(lastTouched).getTime()) / 86400000);
       return daysSince >= 3 && l.heat_score >= 50;
     })
     .slice(0, 5)
@@ -115,28 +101,15 @@ export default async function DashboardPage() {
       name: (l.payload as any)?.name || "Unknown",
       heatScore: l.heat_score,
       pipelineStageLabel:
-        PIPELINE_STAGE_LABELS[
-          l.pipeline_stage as keyof typeof PIPELINE_STAGE_LABELS
-        ] || l.pipeline_stage,
+        PIPELINE_STAGE_LABELS[l.pipeline_stage as keyof typeof PIPELINE_STAGE_LABELS] || l.pipeline_stage,
       property: l.event_id,
-      daysSinceLastTouch: Math.floor(
-        (now.getTime() -
-          new Date(l.updated_at || l.created_at).getTime()) /
-          86400000
-      ),
+      daysSinceLastTouch: Math.floor((now.getTime() - new Date(l.updated_at || l.created_at).getTime()) / 86400000),
     }));
 
   // Build listing snapshot
   const listings = activeListings || [];
-  const domValues = listings.map((l) =>
-    Math.floor(
-      (now.getTime() - new Date(l.created_at).getTime()) / 86400000
-    )
-  );
-  const avgDOM =
-    domValues.length > 0
-      ? Math.round(domValues.reduce((a, b) => a + b, 0) / domValues.length)
-      : 0;
+  const domValues = listings.map((l) => Math.floor((now.getTime() - new Date(l.created_at).getTime()) / 86400000));
+  const avgDOM = domValues.length > 0 ? Math.round(domValues.reduce((a, b) => a + b, 0) / domValues.length) : 0;
   const staleListings = listings
     .map((l, i) => ({
       id: l.id,
@@ -154,34 +127,33 @@ export default async function DashboardPage() {
   };
 
   // Market pulse — placeholder until ATTOM/MLS integrations feed real data
-  const marketStats =
-    profile.locations_served?.length
-      ? [
-          {
-            label: "Your Areas",
-            value: `${profile.locations_served.length}`,
-            trend: "flat" as const,
-          },
-          {
-            label: "Active Leads",
-            value: `${totalLeads}`,
-            trend: totalLeads > 0 ? ("up" as const) : ("flat" as const),
-          },
-        ]
-      : [];
+  const marketStats = profile.locations_served?.length
+    ? [
+        {
+          label: "Your Areas",
+          value: `${profile.locations_served.length}`,
+          trend: "flat" as const,
+        },
+        {
+          label: "Active Leads",
+          value: `${totalLeads}`,
+          trend: totalLeads > 0 ? ("up" as const) : ("flat" as const),
+        },
+      ]
+    : [];
 
   // AI Briefing — generate priorities from real data
-  let briefingPriorities: {
-    title: string;
-    description: string;
-    leadId?: string;
-  }[] | null = null;
+  let briefingPriorities:
+    | {
+        title: string;
+        description: string;
+        leadId?: string;
+      }[]
+    | null = null;
   let briefingGeneratedAt: string | null = null;
 
   if (leads.length > 0) {
-    const newLeadCount = leads.filter(
-      (l) => new Date(l.created_at) >= new Date(sevenDaysAgo)
-    ).length;
+    const newLeadCount = leads.filter((l) => new Date(l.created_at) >= new Date(sevenDaysAgo)).length;
 
     briefingPriorities = [];
 
@@ -221,7 +193,11 @@ export default async function DashboardPage() {
     <div className="space-y-6">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <h1 style={{ fontSize: 28, fontWeight: 900, margin: 0 }}>Dashboard</h1>
-        <PageHelp title="Dashboard" description="Your daily command center showing key metrics, upcoming open houses, and recent lead activity." tips={["Hot leads (score 80+) need immediate follow-up", "Click any metric card to see details"]} />
+        <PageHelp
+          title="Dashboard"
+          description="Your daily command center showing key metrics, upcoming open houses, and recent lead activity."
+          tips={["Hot leads (score 80+) need immediate follow-up", "Click any metric card to see details"]}
+        />
       </div>
 
       {/* Profile completion alert */}
@@ -242,8 +218,7 @@ export default async function DashboardPage() {
               You&apos;re missing: <strong>{missing.join(", ")}</strong>
             </p>
             <p className="text-sm text-muted-foreground mt-1">
-              Your attendee pages look more professional when your profile is
-              complete.
+              Your attendee pages look more professional when your profile is complete.
             </p>
           </CardContent>
         </Card>
@@ -268,20 +243,13 @@ export default async function DashboardPage() {
       <GenieCopilotWrapper />
 
       {/* AI Briefing (email priorities) */}
-      <AIBriefingCard
-        priorities={briefingPriorities}
-        generatedAt={briefingGeneratedAt}
-      />
+      <AIBriefingCard priorities={briefingPriorities} generatedAt={briefingGeneratedAt} />
 
       {/* Two-column layout for desktop */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Left column */}
         <div className="space-y-6">
-          <PipelineStats
-            stages={pipelineStages}
-            totalLeads={totalLeads}
-            hotLeads={hotLeads}
-          />
+          <PipelineStats stages={pipelineStages} totalLeads={totalLeads} hotLeads={hotLeads} />
           <ListingSnapshot stats={listingStats} />
           <MarketPulse stats={marketStats} />
         </div>

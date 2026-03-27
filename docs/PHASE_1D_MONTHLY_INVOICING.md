@@ -13,6 +13,7 @@ Automated recurring rent invoice generation and payment tracking for active leas
 **Schedule:** 1st of every month at midnight (configured in `vercel.json`)
 
 **What it does:**
+
 - Finds all active leases with `auto_invoice_enabled = true`
 - Creates rent invoice in GoHighLevel for each lease
 - Sends invoice to tenant automatically
@@ -20,6 +21,7 @@ Automated recurring rent invoice generation and payment tracking for active leas
 - Skips if invoice already exists for current month
 
 **Cron Schedule:**
+
 ```json
 {
   "path": "/api/cron/monthly-invoices",
@@ -34,6 +36,7 @@ Automated recurring rent invoice generation and payment tracking for active leas
 **Schedule:** Daily at 9 AM (configured in `vercel.json`)
 
 **What it does:**
+
 - Finds unpaid rent payments past grace period (default: 5 days)
 - Calculates late fee based on lease configuration:
   - **Flat:** $50 (default)
@@ -45,6 +48,7 @@ Automated recurring rent invoice generation and payment tracking for active leas
 - Optionally adds late fee line item to GHL invoice
 
 **Cron Schedule:**
+
 ```json
 {
   "path": "/api/cron/assess-late-fees",
@@ -59,19 +63,21 @@ Automated recurring rent invoice generation and payment tracking for active leas
 **Triggered by:** GoHighLevel when invoice is paid
 
 **What it does:**
+
 - Receives webhook from GHL when tenant pays invoice
 - Updates `pm_rent_payments` status to `paid`
 - Records payment method and timestamp
 - Adds confirmation note to tenant contact in GHL
 
 **Webhook Payload:**
+
 ```json
 {
   "type": "invoice.paid",
   "locationId": "...",
   "invoiceId": "...",
   "contactId": "...",
-  "amount": 1500.00,
+  "amount": 1500.0,
   "paidAt": "2024-01-15T10:30:00Z",
   "paymentMethod": "card"
 }
@@ -82,6 +88,7 @@ Automated recurring rent invoice generation and payment tracking for active leas
 **Table:** `pm_rent_payments`
 
 **Schema:**
+
 ```sql
 - id: UUID (primary key)
 - lease_id: Reference to pm_leases
@@ -104,6 +111,7 @@ Automated recurring rent invoice generation and payment tracking for active leas
 **Route:** `/app/pm/payments`
 
 **Features:**
+
 - Revenue stats (total collected, outstanding balance)
 - Overdue payment count
 - Payment history with status badges
@@ -180,11 +188,13 @@ Deploy to Vercel and crons will run automatically.
 ### 3. Set CRON_SECRET Environment Variable
 
 In Vercel dashboard:
+
 1. Go to Settings → Environment Variables
 2. Add `CRON_SECRET` with a random secure string
 3. Redeploy
 
 Example:
+
 ```bash
 CRON_SECRET=your_secure_random_string_here_min_32_chars
 ```
@@ -192,6 +202,7 @@ CRON_SECRET=your_secure_random_string_here_min_32_chars
 ### 4. Configure GHL Webhook
 
 In GoHighLevel dashboard:
+
 1. Go to Settings → Webhooks
 2. Add webhook for `invoice.paid` event
 3. URL: `https://www.realestategenie.app/api/webhooks/ghl/invoice-paid`
@@ -202,12 +213,14 @@ In GoHighLevel dashboard:
 ### Manual Testing
 
 #### Test Monthly Invoice Generation:
+
 ```bash
 curl -X POST https://www.realestategenie.app/api/cron/monthly-invoices \
   -H "Authorization: Bearer YOUR_CRON_SECRET"
 ```
 
 Expected response:
+
 ```json
 {
   "success": true,
@@ -223,12 +236,14 @@ Expected response:
 ```
 
 #### Test Late Fee Assessment:
+
 ```bash
 curl -X POST https://www.realestategenie.app/api/cron/assess-late-fees \
   -H "Authorization: Bearer YOUR_CRON_SECRET"
 ```
 
 Expected response:
+
 ```json
 {
   "success": true,
@@ -243,6 +258,7 @@ Expected response:
 ```
 
 #### Test Invoice Paid Webhook:
+
 ```bash
 curl -X POST https://www.realestategenie.app/api/webhooks/ghl/invoice-paid \
   -H "Content-Type: application/json" \
@@ -257,6 +273,7 @@ curl -X POST https://www.realestategenie.app/api/webhooks/ghl/invoice-paid \
 ```
 
 Expected response:
+
 ```json
 {
   "success": true,
@@ -296,6 +313,7 @@ Expected response:
 ## Next Steps
 
 **Phase 1E: Tenant Portal** will allow tenants to:
+
 - View invoices in their portal
 - Pay rent via Stripe or PayPal
 - See payment history

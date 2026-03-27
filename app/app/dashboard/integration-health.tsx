@@ -137,9 +137,7 @@ export default function IntegrationHealth() {
               <div>
                 <div className="font-semibold">CRM</div>
                 <div className="text-sm text-muted-foreground">
-                  {health.ghl.connected
-                    ? `Last sync: ${formatLastUpdated(health.ghl.lastUpdated)}`
-                    : "Not configured"}
+                  {health.ghl.connected ? `Last sync: ${formatLastUpdated(health.ghl.lastUpdated)}` : "Not configured"}
                 </div>
               </div>
             </div>
@@ -208,9 +206,7 @@ export default function IntegrationHealth() {
               </div>
               <div>
                 <div className="font-semibold text-muted-foreground">MLS / IDX Feed</div>
-                <div className="text-sm text-muted-foreground">
-                  Property listings & search
-                </div>
+                <div className="text-sm text-muted-foreground">Property listings & search</div>
               </div>
             </div>
             <Badge variant="outline" className="text-muted-foreground border-muted-foreground/40">
@@ -225,8 +221,7 @@ export default function IntegrationHealth() {
               <div className="flex-1">
                 <div className="font-medium text-sm">Action Required</div>
                 <div className="text-sm text-muted-foreground mt-1">
-                  Connect your CRM to automatically sync leads and enable automated
-                  follow-ups.
+                  Connect your CRM to automatically sync leads and enable automated follow-ups.
                 </div>
                 <Link href="/app/integrations">
                   <Button variant="outline" size="sm" className="mt-2">

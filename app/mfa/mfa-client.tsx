@@ -52,10 +52,7 @@ export default function MfaClient() {
           style={{ width: "100%", padding: 10, fontSize: 18, letterSpacing: 4 }}
           required
         />
-        <button
-          disabled={loading || code.length !== 6}
-          style={{ width: "100%", padding: 12, marginTop: 12 }}
-        >
+        <button disabled={loading || code.length !== 6} style={{ width: "100%", padding: 12, marginTop: 12 }}>
           Verify
         </button>
       </form>

@@ -4,11 +4,9 @@ import { calculateHeatScore } from "@/lib/lead-scoring";
 
 export const dynamic = "force-dynamic";
 
-const admin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 /**
  * Zillow Tech Connect webhook endpoint.
@@ -24,15 +22,10 @@ export async function POST(req: Request) {
   try {
     // Verify webhook secret (passed as query param or header)
     const url = new URL(req.url);
-    const secret =
-      url.searchParams.get("secret") ??
-      req.headers.get("x-zillow-secret");
+    const secret = url.searchParams.get("secret") ?? req.headers.get("x-zillow-secret");
 
     if (!secret || secret !== process.env.ZILLOW_WEBHOOK_SECRET) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Zillow Tech Connect sends URL-encoded form data
@@ -51,16 +44,12 @@ export async function POST(req: Request) {
     const name = data.name || data.contactName || data.contact_name || "";
     const email = data.email || data.contactEmail || data.contact_email || "";
     const phone = data.phone || data.contactPhone || data.contact_phone || "";
-    const propertyAddress =
-      data.propertyAddress || data.property_address || data.listing_address || "";
+    const propertyAddress = data.propertyAddress || data.property_address || data.listing_address || "";
     const propertyPrice = data.propertyPrice || data.property_price || data.price || "";
     const message = data.message || data.comments || "";
 
     if (!name && !email && !phone) {
-      return NextResponse.json(
-        { error: "No contact information provided" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "No contact information provided" }, { status: 400 });
     }
 
     // Look up the agent by matching Zillow account email or use a default
@@ -68,28 +57,18 @@ export async function POST(req: Request) {
     let agentId: string | null = null;
 
     if (agentEmail) {
-      const { data: agent } = await admin
-        .from("agents")
-        .select("id")
-        .eq("email", agentEmail)
-        .single();
+      const { data: agent } = await admin.from("agents").select("id").eq("email", agentEmail).single();
       agentId = agent?.id ?? null;
     }
 
     // If no agent matched, find the first agent (single-agent account)
     if (!agentId) {
-      const { data: agents } = await admin
-        .from("agents")
-        .select("id")
-        .limit(1);
+      const { data: agents } = await admin.from("agents").select("id").limit(1);
       agentId = agents?.[0]?.id ?? null;
     }
 
     if (!agentId) {
-      return NextResponse.json(
-        { error: "No agent found to assign lead" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "No agent found to assign lead" }, { status: 400 });
     }
 
     // Build the lead payload matching the open house lead structure
@@ -143,10 +122,7 @@ export async function POST(req: Request) {
 
       if (updErr || !updated) {
         console.error("[Zillow Webhook] Update error:", updErr?.message);
-        return NextResponse.json(
-          { error: updErr?.message || "Failed to update lead" },
-          { status: 500 }
-        );
+        return NextResponse.json({ error: updErr?.message || "Failed to update lead" }, { status: 500 });
       }
       lead = updated;
       console.log(`[Zillow Webhook] Updated existing lead ${existingLead.id} instead of creating duplicate`);
@@ -167,10 +143,7 @@ export async function POST(req: Request) {
 
       if (insErr || !inserted) {
         console.error("[Zillow Webhook] Insert error:", insErr?.message);
-        return NextResponse.json(
-          { error: insErr?.message || "Failed to create lead" },
-          { status: 500 }
-        );
+        return NextResponse.json({ error: insErr?.message || "Failed to create lead" }, { status: 500 });
       }
       lead = inserted;
     }
@@ -187,9 +160,7 @@ export async function POST(req: Request) {
       },
     });
 
-    console.log(
-      `[Zillow Webhook] Lead created: ${lead.id} | ${name} | Score: ${heatScore}`
-    );
+    console.log(`[Zillow Webhook] Lead created: ${lead.id} | ${name} | Score: ${heatScore}`);
 
     // Auto-match: try to link this lead to an agent listing by address
     let matchedListingId: string | null = null;
@@ -198,7 +169,9 @@ export async function POST(req: Request) {
         const normalised = propertyAddress.toLowerCase().replace(/[^a-z0-9]/g, "");
         const { data: listings } = await admin
           .from("agent_listings")
-          .select("id, unparsed_address, street_number, street_name, city, postal_code, list_price, bedrooms_total, bathrooms_total, living_area, property_type, mls_listing_key, mls_listing_id")
+          .select(
+            "id, unparsed_address, street_number, street_name, city, postal_code, list_price, bedrooms_total, bathrooms_total, living_area, property_type, mls_listing_key, mls_listing_id",
+          )
           .eq("user_id", agentId);
 
         if (listings && listings.length > 0) {
@@ -254,9 +227,6 @@ export async function POST(req: Request) {
     });
   } catch (err: unknown) {
     console.error("[Zillow Webhook] Error:", err);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

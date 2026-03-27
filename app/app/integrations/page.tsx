@@ -24,19 +24,12 @@ export default async function IntegrationsPage() {
   }
 
   // Check if user is platform admin
-  const { data: agent } = await supabase
-    .from("agents")
-    .select("role")
-    .eq("id", user.id)
-    .single();
+  const { data: agent } = await supabase.from("agents").select("role").eq("id", user.id).single();
 
   const isPlatformAdmin = agent?.role === "admin";
 
   // Fetch integrations
-  const { data: integrations } = await supabase
-    .from("integrations")
-    .select("*")
-    .eq("agent_id", user.id);
+  const { data: integrations } = await supabase.from("integrations").select("*").eq("agent_id", user.id);
 
   const ghlIntegration = integrations?.find((i) => i.provider === "ghl");
   const stripeIntegration = integrations?.find((i) => i.provider === "stripe");
@@ -69,9 +62,7 @@ export default async function IntegrationsPage() {
 
       <div>
         <h1 className="text-3xl font-bold">Integrations</h1>
-        <p className="text-muted-foreground mt-2">
-          Connect your tools to automate lead management and follow-up
-        </p>
+        <p className="text-muted-foreground mt-2">Connect your tools to automate lead management and follow-up</p>
       </div>
 
       {/* Primary Integrations — GHL & Trestle */}
@@ -103,8 +94,8 @@ export default async function IntegrationsPage() {
               <CardTitle className="flex items-center gap-2">
                 <div className="h-10 w-10 rounded bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center">
                   <svg viewBox="0 0 24 24" className="w-6 h-6 text-white" fill="currentColor">
-                    <path d="M12 3L4 9v12h16V9l-8-6zm0 2.5L18 10v9H6v-9l6-4.5z"/>
-                    <path d="M10 14h4v5h-4z"/>
+                    <path d="M12 3L4 9v12h16V9l-8-6zm0 2.5L18 10v9H6v-9l6-4.5z" />
+                    <path d="M10 14h4v5h-4z" />
                   </svg>
                 </div>
                 <span>Bridge Interactive / Zillow</span>
@@ -112,12 +103,13 @@ export default async function IntegrationsPage() {
                   Coming Soon
                 </span>
               </CardTitle>
-              <CardDescription>
-                Property valuations, rental estimates, and market data
-              </CardDescription>
+              <CardDescription>Property valuations, rental estimates, and market data</CardDescription>
             </CardHeader>
             <CardContent>
-              <button disabled className="w-full py-2 px-4 border rounded-md text-sm font-medium text-muted-foreground bg-muted/50 cursor-not-allowed">
+              <button
+                disabled
+                className="w-full py-2 px-4 border rounded-md text-sm font-medium text-muted-foreground bg-muted/50 cursor-not-allowed"
+              >
                 Connect Bridge Interactive
               </button>
             </CardContent>

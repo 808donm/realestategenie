@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-const admin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 /**
  * Decode GHL JWT token to inspect scopes
@@ -14,7 +12,7 @@ const admin = createClient(
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    let agentId = searchParams.get('agentId');
+    let agentId = searchParams.get("agentId");
 
     if (!agentId) {
       // Try to get first agent
@@ -31,9 +29,12 @@ export async function GET(req: Request) {
     }
 
     if (!agentId) {
-      return NextResponse.json({
-        error: "No agent found. Provide agentId parameter."
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: "No agent found. Provide agentId parameter.",
+        },
+        { status: 400 },
+      );
     }
 
     // Fetch integration
@@ -45,34 +46,41 @@ export async function GET(req: Request) {
       .single();
 
     if (error || !integration) {
-      return NextResponse.json({
-        error: "No GHL integration found",
-        agentId,
-      }, { status: 404 });
+      return NextResponse.json(
+        {
+          error: "No GHL integration found",
+          agentId,
+        },
+        { status: 404 },
+      );
     }
 
     const config = integration.config as any;
     const accessToken = config.ghl_access_token || config.access_token;
 
     if (!accessToken) {
-      return NextResponse.json({
-        error: "No access token found in config"
-      }, { status: 404 });
+      return NextResponse.json(
+        {
+          error: "No access token found in config",
+        },
+        { status: 404 },
+      );
     }
 
     // Decode JWT (it's base64 encoded, split by dots)
-    const parts = accessToken.split('.');
+    const parts = accessToken.split(".");
 
     if (parts.length !== 3) {
-      return NextResponse.json({
-        error: "Invalid JWT format"
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: "Invalid JWT format",
+        },
+        { status: 400 },
+      );
     }
 
     // Decode the payload (second part)
-    const payload = JSON.parse(
-      Buffer.from(parts[1], 'base64').toString('utf-8')
-    );
+    const payload = JSON.parse(Buffer.from(parts[1], "base64").toString("utf-8"));
 
     return NextResponse.json({
       success: true,
@@ -94,19 +102,21 @@ export async function GET(req: Request) {
         issuedAt: new Date(payload.iat * 1000).toISOString(),
       },
       scopeAnalysis: {
-        hasContacts: payload.oauthMeta?.scopes?.some((s: string) => s.includes('contacts')),
-        hasAssociations: payload.oauthMeta?.scopes?.some((s: string) => s.includes('associations')),
-        hasConversations: payload.oauthMeta?.scopes?.some((s: string) => s.includes('conversations')),
-        hasMessages: payload.oauthMeta?.scopes?.some((s: string) => s.includes('message')),
-        hasObjects: payload.oauthMeta?.scopes?.some((s: string) => s.includes('objects')),
+        hasContacts: payload.oauthMeta?.scopes?.some((s: string) => s.includes("contacts")),
+        hasAssociations: payload.oauthMeta?.scopes?.some((s: string) => s.includes("associations")),
+        hasConversations: payload.oauthMeta?.scopes?.some((s: string) => s.includes("conversations")),
+        hasMessages: payload.oauthMeta?.scopes?.some((s: string) => s.includes("message")),
+        hasObjects: payload.oauthMeta?.scopes?.some((s: string) => s.includes("objects")),
       },
       allScopes: payload.oauthMeta?.scopes || [],
     });
-
   } catch (error: any) {
-    return NextResponse.json({
-      error: error.message,
-      stack: error.stack,
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: error.message,
+        stack: error.stack,
+      },
+      { status: 500 },
+    );
   }
 }

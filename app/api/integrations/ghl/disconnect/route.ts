@@ -18,11 +18,7 @@ export async function POST(req: NextRequest) {
 
   try {
     // Delete integration record
-    const { error } = await supabase
-      .from("integrations")
-      .delete()
-      .eq("agent_id", user.id)
-      .eq("provider", "ghl");
+    const { error } = await supabase.from("integrations").delete().eq("agent_id", user.id).eq("provider", "ghl");
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });

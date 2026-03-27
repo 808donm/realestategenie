@@ -22,23 +22,11 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const {
-      auth_method,
-      username,
-      password,
-      client_id,
-      client_secret,
-      bearer_token,
-      api_url,
-      token_url,
-    } = body;
+    const { auth_method, username, password, client_id, client_secret, bearer_token, api_url, token_url } = body;
 
     // Validate required fields
     if (!api_url) {
-      return NextResponse.json(
-        { error: "WebAPI URL is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "WebAPI URL is required" }, { status: 400 });
     }
 
     // Determine auth method and validate credentials
@@ -53,7 +41,7 @@ export async function POST(request: NextRequest) {
     } else {
       return NextResponse.json(
         { error: "Please provide either username/password or client credentials" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -74,7 +62,7 @@ export async function POST(request: NextRequest) {
     if (!testResult.success) {
       return NextResponse.json(
         { error: testResult.message || "Invalid credentials or connection failed" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -114,7 +102,7 @@ export async function POST(request: NextRequest) {
       console.error("Error saving Trestle integration:", dbError);
       return NextResponse.json(
         { error: "Failed to save integration: " + (dbError.message || "Database error") },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -125,9 +113,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Error in Trestle connect:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

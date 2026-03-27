@@ -28,15 +28,12 @@ export async function GET(request: NextRequest) {
     if (!integration || integration.status !== "connected") {
       return NextResponse.json(
         { error: "Trestle MLS is not connected. Go to Integrations to set it up." },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     // Ensure config is parsed as an object (direct SQL may store it as a JSON string)
-    const config =
-      typeof integration.config === "string"
-        ? JSON.parse(integration.config)
-        : integration.config;
+    const config = typeof integration.config === "string" ? JSON.parse(integration.config) : integration.config;
 
     // Parse search parameters
     const searchParams = request.nextUrl.searchParams;
@@ -48,7 +45,9 @@ export async function GET(request: NextRequest) {
     const minBeds = searchParams.get("minBeds") ? parseInt(searchParams.get("minBeds")!) : undefined;
     const minBaths = searchParams.get("minBaths") ? parseInt(searchParams.get("minBaths")!) : undefined;
     const propertyType = searchParams.get("propertyType") || undefined;
-    const minDaysOnMarket = searchParams.get("minDaysOnMarket") ? parseInt(searchParams.get("minDaysOnMarket")!) : undefined;
+    const minDaysOnMarket = searchParams.get("minDaysOnMarket")
+      ? parseInt(searchParams.get("minDaysOnMarket")!)
+      : undefined;
     const statusParam = searchParams.get("status");
     const status: ("Active" | "Pending" | "Closed")[] = statusParam
       ? (statusParam.split(",") as ("Active" | "Pending" | "Closed")[])
@@ -92,7 +91,8 @@ export async function GET(request: NextRequest) {
 
     // For the "latest listings" case (no location/price/beds filters), narrow the query
     // so it stays under Trestle's 5,000-record threshold for ad-hoc queries.
-    const isLatestQuery = !hasLocationFilter && !minPrice && !maxPrice && !minBeds && !minBaths && !propertyType && !minDaysOnMarket;
+    const isLatestQuery =
+      !hasLocationFilter && !minPrice && !maxPrice && !minBeds && !minBaths && !propertyType && !minDaysOnMarket;
 
     let result;
 
@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
       const filters: string[] = [];
 
       // Status filter
-      const statusFilter = status.map(s => `StandardStatus eq '${s}'`).join(" or ");
+      const statusFilter = status.map((s) => `StandardStatus eq '${s}'`).join(" or ");
       filters.push(status.length === 1 ? `StandardStatus eq '${status[0]}'` : `(${statusFilter})`);
 
       // Address filter
@@ -166,7 +166,7 @@ export async function GET(request: NextRequest) {
 
     // Enrich properties that have no Media with separate Media endpoint fetch
     const properties = result.value;
-    const noMediaProps = properties.filter(p => !p.Media || p.Media.length === 0);
+    const noMediaProps = properties.filter((p) => !p.Media || p.Media.length === 0);
 
     if (noMediaProps.length > 0 && noMediaProps.length <= 25) {
       console.log(`[MLS Search] ${noMediaProps.length} properties have no Media, fetching separately...`);
@@ -187,7 +187,7 @@ export async function GET(request: NextRequest) {
           } catch {
             // Silent — no media available
           }
-        })
+        }),
       );
     }
 
@@ -201,7 +201,7 @@ export async function GET(request: NextRequest) {
     console.error("MLS search error:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to search MLS" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

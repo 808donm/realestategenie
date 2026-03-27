@@ -3,13 +3,7 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-export default function AcceptInviteClient({
-  email,
-  invitationId,
-}: {
-  email: string;
-  invitationId: string;
-}) {
+export default function AcceptInviteClient({ email, invitationId }: { email: string; invitationId: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
@@ -162,21 +156,11 @@ export default function AcceptInviteClient({
     <div style={{ maxWidth: 500, margin: "100px auto", padding: 24 }}>
       <div style={{ textAlign: "center", marginBottom: 32 }}>
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
-          <img
-            src="/logo.png"
-            alt="The Real Estate Genie"
-            width={200}
-            height={200}
-            style={{ borderRadius: 12 }}
-          />
+          <img src="/logo.png" alt="The Real Estate Genie" width={200} height={200} style={{ borderRadius: 12 }} />
         </div>
-        <h1 style={{ fontSize: 32, fontWeight: 800, margin: 0 }}>
-          Welcome to Real Estate Genie! ⚡
-        </h1>
+        <h1 style={{ fontSize: 32, fontWeight: 800, margin: 0 }}>Welcome to Real Estate Genie! ⚡</h1>
         <p style={{ color: "#6b7280", marginTop: 8 }}>
-          {step === "register"
-            ? "Create your account to get started"
-            : "Verify your email address"}
+          {step === "register" ? "Create your account to get started" : "Verify your email address"}
         </p>
       </div>
 
@@ -191,9 +175,7 @@ export default function AcceptInviteClient({
         {step === "register" ? (
           <form onSubmit={handleRegisterSubmit} style={{ display: "grid", gap: 20 }}>
             <div>
-              <label style={{ display: "block", fontSize: 14, fontWeight: 600, marginBottom: 8 }}>
-                Email
-              </label>
+              <label style={{ display: "block", fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Email</label>
               <input
                 type="email"
                 value={email}
@@ -210,9 +192,7 @@ export default function AcceptInviteClient({
             </div>
 
             <div>
-              <label style={{ display: "block", fontSize: 14, fontWeight: 600, marginBottom: 8 }}>
-                Full Name
-              </label>
+              <label style={{ display: "block", fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Full Name</label>
               <input
                 type="text"
                 value={fullName}
@@ -231,9 +211,7 @@ export default function AcceptInviteClient({
 
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                <label style={{ fontSize: 14, fontWeight: 600 }}>
-                  Password
-                </label>
+                <label style={{ fontSize: 14, fontWeight: 600 }}>Password</label>
                 <button
                   type="button"
                   onClick={generateStrongPassword}

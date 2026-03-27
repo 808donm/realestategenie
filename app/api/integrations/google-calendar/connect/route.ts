@@ -9,9 +9,7 @@ export async function GET() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.redirect(
-      new URL("/login", process.env.NEXT_PUBLIC_APP_URL!)
-    );
+    return NextResponse.redirect(new URL("/login", process.env.NEXT_PUBLIC_APP_URL!));
   }
 
   const state = crypto.randomUUID();
@@ -24,7 +22,7 @@ export async function GET() {
       status: "disconnected",
       config: { oauth_state: state },
     },
-    { onConflict: "agent_id,provider" }
+    { onConflict: "agent_id,provider" },
   );
 
   const params = new URLSearchParams({
@@ -37,7 +35,5 @@ export async function GET() {
     state,
   });
 
-  return NextResponse.redirect(
-    `https://accounts.google.com/o/oauth2/v2/auth?${params}`
-  );
+  return NextResponse.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params}`);
 }

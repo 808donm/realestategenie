@@ -5,13 +5,11 @@ import { logError } from "@/lib/error-logging";
 import crypto from "crypto";
 
 // Force dynamic rendering for API routes
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
-const admin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 export async function POST(request: NextRequest) {
   try {
@@ -43,17 +41,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already exists
-    const { data: existingAgent } = await admin
-      .from("agents")
-      .select("id")
-      .eq("email", email)
-      .single();
+    const { data: existingAgent } = await admin.from("agents").select("id").eq("email", email).single();
 
     if (existingAgent) {
-      return NextResponse.json(
-        { error: "User with this email already exists" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "User with this email already exists" }, { status: 400 });
     }
 
     // Check if there's already a pending invitation
@@ -65,10 +56,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (existingInvite) {
-      return NextResponse.json(
-        { error: "There is already a pending invitation for this email" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "There is already a pending invitation for this email" }, { status: 400 });
     }
 
     // Generate secure token
@@ -96,10 +84,7 @@ export async function POST(request: NextRequest) {
         errorMessage: inviteError?.message || "Failed to create invitation",
         severity: "error",
       });
-      return NextResponse.json(
-        { error: "Failed to create invitation" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to create invitation" }, { status: 500 });
     }
 
     // Generate invitation URL
@@ -154,9 +139,6 @@ export async function POST(request: NextRequest) {
       stackTrace: error.stack,
       severity: "error",
     });
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

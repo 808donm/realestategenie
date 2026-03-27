@@ -15,11 +15,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data: admin } = await supabase
-      .from("agents")
-      .select("is_admin, account_status")
-      .eq("id", user.id)
-      .single();
+    const { data: admin } = await supabase.from("agents").select("is_admin, account_status").eq("id", user.id).single();
 
     if (!admin?.is_admin || admin.account_status !== "active") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -28,25 +24,16 @@ export async function POST(request: NextRequest) {
     const { userId, isAdmin } = await request.json();
 
     if (!userId || typeof isAdmin !== "boolean") {
-      return NextResponse.json(
-        { error: "Missing userId or isAdmin" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing userId or isAdmin" }, { status: 400 });
     }
 
     // Prevent admins from removing their own admin status
     if (userId === user.id && !isAdmin) {
-      return NextResponse.json(
-        { error: "You cannot remove your own admin status" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "You cannot remove your own admin status" }, { status: 400 });
     }
 
     // Update admin status
-    const { error: updateError } = await supabase
-      .from("agents")
-      .update({ is_admin: isAdmin })
-      .eq("id", userId);
+    const { error: updateError } = await supabase.from("agents").update({ is_admin: isAdmin }).eq("id", userId);
 
     if (updateError) {
       await logError({
@@ -55,10 +42,7 @@ export async function POST(request: NextRequest) {
         errorMessage: updateError.message,
         severity: "error",
       });
-      return NextResponse.json(
-        { error: "Failed to update admin status" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to update admin status" }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
@@ -69,9 +53,6 @@ export async function POST(request: NextRequest) {
       stackTrace: error.stack,
       severity: "error",
     });
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

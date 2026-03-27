@@ -70,10 +70,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ received: true });
   } catch (error: any) {
     console.error("Webhook error:", error);
-    return NextResponse.json(
-      { error: error.message || "Webhook handler failed" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message || "Webhook handler failed" }, { status: 500 });
   }
 }
 
@@ -105,11 +102,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
   const subscriptionId = session.subscription as string;
 
   // Get plan details
-  const { data: plan } = await supabaseAdmin
-    .from("subscription_plans")
-    .select("*")
-    .eq("id", planId)
-    .single();
+  const { data: plan } = await supabaseAdmin.from("subscription_plans").select("*").eq("id", planId).single();
 
   if (!plan) {
     console.error("Plan not found:", planId);
@@ -152,9 +145,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       .eq("id", existingSubscription.id);
   } else {
     // Create new subscription
-    await supabaseAdmin
-      .from("agent_subscriptions")
-      .insert(subscriptionData);
+    await supabaseAdmin.from("agent_subscriptions").insert(subscriptionData);
   }
 
   console.log(`Subscription activated for agent ${agentId} on plan ${plan.name}`);
@@ -272,9 +263,7 @@ async function handlePmAddonCheckout(session: Stripe.Checkout.Session) {
       .eq("id", existingAddonId);
   } else {
     // Upsert: handles both new and replacement (unique on agent_id)
-    await supabaseAdmin
-      .from("pm_addon_subscriptions")
-      .upsert(addonData, { onConflict: "agent_id" });
+    await supabaseAdmin.from("pm_addon_subscriptions").upsert(addonData, { onConflict: "agent_id" });
   }
 
   console.log(`PM add-on subscription activated for agent ${agentId} on plan ${pmAddonPlanId}`);
@@ -309,13 +298,13 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
   const currentPeriodEnd = subAny.current_period_end
     ? new Date(subAny.current_period_end * 1000)
     : subAny.current_billing_cycle_end_at
-    ? new Date(subAny.current_billing_cycle_end_at)
-    : new Date();
+      ? new Date(subAny.current_billing_cycle_end_at)
+      : new Date();
   const currentPeriodStart = subAny.current_period_start
     ? new Date(subAny.current_period_start * 1000)
     : subAny.current_billing_cycle_start_at
-    ? new Date(subAny.current_billing_cycle_start_at)
-    : new Date();
+      ? new Date(subAny.current_billing_cycle_start_at)
+      : new Date();
 
   await supabaseAdmin
     .from("agent_subscriptions")

@@ -29,10 +29,7 @@ export async function GET(request: NextRequest) {
 
     if (fetchError) {
       console.error("Error fetching Realie integration:", fetchError);
-      return NextResponse.json(
-        { error: "Failed to fetch integration" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to fetch integration" }, { status: 500 });
     }
 
     if (!integration) {
@@ -53,10 +50,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const config =
-      typeof integration.config === "string"
-        ? JSON.parse(integration.config)
-        : integration.config;
+    const config = typeof integration.config === "string" ? JSON.parse(integration.config) : integration.config;
 
     if (!config.api_key) {
       return NextResponse.json({
@@ -110,9 +104,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("Error in Realie test:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

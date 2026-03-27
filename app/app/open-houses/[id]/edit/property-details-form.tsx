@@ -66,9 +66,7 @@ export default function PropertyDetailsForm({ eventId, initialData }: PropertyDe
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(
-          mlsSearchMode === "mlsNumber"
-            ? { mlsNumber: mlsQuery.trim() }
-            : { address: mlsQuery.trim() }
+          mlsSearchMode === "mlsNumber" ? { mlsNumber: mlsQuery.trim() } : { address: mlsQuery.trim() },
         ),
       });
       const data = await res.json();
@@ -130,9 +128,7 @@ export default function PropertyDetailsForm({ eventId, initialData }: PropertyDe
   const [price, setPrice] = useState(initialData.price?.toString() || "");
   const [description, setDescription] = useState(initialData.listing_description || "");
   const [flyerDescription, setFlyerDescription] = useState(initialData.flyer_description || "");
-  const [features, setFeatures] = useState(
-    initialData.key_features?.join("\n") || ""
-  );
+  const [features, setFeatures] = useState(initialData.key_features?.join("\n") || "");
 
   // Initialize flyer features from saved data or defaults, pre-populating beds/baths from specs
   const initFlyerFeatures = (): FlyerFeature[] => {
@@ -232,9 +228,7 @@ export default function PropertyDetailsForm({ eventId, initialData }: PropertyDe
           sqft: sqft ? parseInt(sqft) : null,
           price: price ? parseFloat(price) : null,
           listing_description: description || null,
-          key_features: features
-            ? features.split("\n").filter((f) => f.trim())
-            : null,
+          key_features: features ? features.split("\n").filter((f) => f.trim()) : null,
           flyer_description: flyerDescription || null,
           flyer_features: flyerFeatures.filter((f) => f.value.trim()),
         }),
@@ -266,9 +260,17 @@ export default function PropertyDetailsForm({ eventId, initialData }: PropertyDe
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => { setMlsSearchMode("mlsNumber"); setMlsCandidates([]); setMlsMessage(null); }}
+              onClick={() => {
+                setMlsSearchMode("mlsNumber");
+                setMlsCandidates([]);
+                setMlsMessage(null);
+              }}
               style={{
-                padding: "6px 14px", fontSize: 13, fontWeight: 600, borderRadius: 6, cursor: "pointer",
+                padding: "6px 14px",
+                fontSize: 13,
+                fontWeight: 600,
+                borderRadius: 6,
+                cursor: "pointer",
                 background: mlsSearchMode === "mlsNumber" ? "#3b82f6" : "#f3f4f6",
                 color: mlsSearchMode === "mlsNumber" ? "#fff" : "#374151",
                 border: "none",
@@ -278,9 +280,17 @@ export default function PropertyDetailsForm({ eventId, initialData }: PropertyDe
             </button>
             <button
               type="button"
-              onClick={() => { setMlsSearchMode("address"); setMlsCandidates([]); setMlsMessage(null); }}
+              onClick={() => {
+                setMlsSearchMode("address");
+                setMlsCandidates([]);
+                setMlsMessage(null);
+              }}
               style={{
-                padding: "6px 14px", fontSize: 13, fontWeight: 600, borderRadius: 6, cursor: "pointer",
+                padding: "6px 14px",
+                fontSize: 13,
+                fontWeight: 600,
+                borderRadius: 6,
+                cursor: "pointer",
                 background: mlsSearchMode === "address" ? "#3b82f6" : "#f3f4f6",
                 color: mlsSearchMode === "address" ? "#fff" : "#374151",
                 border: "none",
@@ -302,9 +312,16 @@ export default function PropertyDetailsForm({ eventId, initialData }: PropertyDe
               onClick={handleMlsLookup}
               disabled={mlsLooking || !mlsQuery.trim()}
               style={{
-                padding: "8px 18px", fontWeight: 700, fontSize: 14, background: "#0891b2", color: "#fff",
-                border: "none", borderRadius: 6, cursor: mlsLooking ? "not-allowed" : "pointer",
-                opacity: mlsLooking ? 0.7 : 1, whiteSpace: "nowrap",
+                padding: "8px 18px",
+                fontWeight: 700,
+                fontSize: 14,
+                background: "#0891b2",
+                color: "#fff",
+                border: "none",
+                borderRadius: 6,
+                cursor: mlsLooking ? "not-allowed" : "pointer",
+                opacity: mlsLooking ? 0.7 : 1,
+                whiteSpace: "nowrap",
               }}
             >
               {mlsLooking ? "Searching..." : "Look Up"}
@@ -314,7 +331,9 @@ export default function PropertyDetailsForm({ eventId, initialData }: PropertyDe
           {/* Address search candidates */}
           {mlsCandidates.length > 0 && (
             <div style={{ border: "1px solid #e5e7eb", borderRadius: 8, overflow: "hidden" }}>
-              <div style={{ padding: "8px 12px", background: "#f9fafb", fontSize: 12, color: "#6b7280", fontWeight: 600 }}>
+              <div
+                style={{ padding: "8px 12px", background: "#f9fafb", fontSize: 12, color: "#6b7280", fontWeight: 600 }}
+              >
                 {mlsCandidates.length} matches — select one:
               </div>
               {mlsCandidates.map((c: any) => (
@@ -323,14 +342,22 @@ export default function PropertyDetailsForm({ eventId, initialData }: PropertyDe
                   type="button"
                   onClick={() => handleCandidateSelect(c.listingKey)}
                   style={{
-                    display: "block", width: "100%", textAlign: "left",
-                    padding: "10px 12px", background: "#fff", border: "none",
-                    borderTop: "1px solid #f3f4f6", cursor: "pointer", fontSize: 13,
+                    display: "block",
+                    width: "100%",
+                    textAlign: "left",
+                    padding: "10px 12px",
+                    background: "#fff",
+                    border: "none",
+                    borderTop: "1px solid #f3f4f6",
+                    cursor: "pointer",
+                    fontSize: 13,
                   }}
                 >
                   <span style={{ fontWeight: 600 }}>{c.address}</span>
                   {c.listingId && <span style={{ color: "#6b7280", marginLeft: 8 }}>MLS# {c.listingId}</span>}
-                  {c.price && <span style={{ color: "#059669", marginLeft: 8 }}>${Number(c.price).toLocaleString()}</span>}
+                  {c.price && (
+                    <span style={{ color: "#059669", marginLeft: 8 }}>${Number(c.price).toLocaleString()}</span>
+                  )}
                   {c.beds && <span style={{ color: "#6b7280", marginLeft: 8 }}>{c.beds}bd</span>}
                   {c.baths && <span style={{ color: "#6b7280", marginLeft: 4 }}>{c.baths}ba</span>}
                 </button>
@@ -339,11 +366,15 @@ export default function PropertyDetailsForm({ eventId, initialData }: PropertyDe
           )}
 
           {mlsMessage && (
-            <div style={{
-              padding: "8px 12px", borderRadius: 6, fontSize: 13,
-              background: mlsMessage.ok ? "#d1fae5" : "#fee2e2",
-              color: mlsMessage.ok ? "#065f46" : "#991b1b",
-            }}>
+            <div
+              style={{
+                padding: "8px 12px",
+                borderRadius: 6,
+                fontSize: 13,
+                background: mlsMessage.ok ? "#d1fae5" : "#fee2e2",
+                color: mlsMessage.ok ? "#065f46" : "#991b1b",
+              }}
+            >
               {mlsMessage.text}
             </div>
           )}
@@ -424,13 +455,7 @@ export default function PropertyDetailsForm({ eventId, initialData }: PropertyDe
                   className="rounded-lg object-cover w-full"
                 />
               </div>
-              <Button
-                type="button"
-                variant="danger"
-                onClick={handlePhotoDelete}
-                disabled={uploadingPhoto}
-                size="sm"
-              >
+              <Button type="button" variant="danger" onClick={handlePhotoDelete} disabled={uploadingPhoto} size="sm">
                 {uploadingPhoto ? "Deleting..." : "Delete Photo"}
               </Button>
             </div>
@@ -451,9 +476,7 @@ export default function PropertyDetailsForm({ eventId, initialData }: PropertyDe
               <p className="text-sm text-muted-foreground mt-2">
                 Upload a high-quality photo of the property. Maximum size: 5MB. Formats: JPEG, PNG, WebP.
               </p>
-              {uploadingPhoto && (
-                <p className="text-sm text-blue-600 mt-2">Uploading photo...</p>
-              )}
+              {uploadingPhoto && <p className="text-sm text-blue-600 mt-2">Uploading photo...</p>}
             </div>
           )}
         </CardContent>
@@ -491,9 +514,7 @@ export default function PropertyDetailsForm({ eventId, initialData }: PropertyDe
             className="min-h-20"
             maxLength={300}
           />
-          <p className="text-sm text-muted-foreground mt-2">
-            {flyerDescription.length}/300 characters
-          </p>
+          <p className="text-sm text-muted-foreground mt-2">{flyerDescription.length}/300 characters</p>
         </CardContent>
       </Card>
 
@@ -511,9 +532,7 @@ export default function PropertyDetailsForm({ eventId, initialData }: PropertyDe
             placeholder="Enter one feature per line:&#10;Hardwood floors&#10;Granite countertops&#10;Walk-in closet&#10;Mountain views"
             className="min-h-32 font-mono text-sm"
           />
-          <p className="text-sm text-muted-foreground mt-2">
-            Enter one feature per line.
-          </p>
+          <p className="text-sm text-muted-foreground mt-2">Enter one feature per line.</p>
         </CardContent>
       </Card>
 
@@ -521,7 +540,8 @@ export default function PropertyDetailsForm({ eventId, initialData }: PropertyDe
         <CardHeader>
           <CardTitle>Flyer Feature Highlights</CardTitle>
           <CardDescription>
-            Up to 4 key features displayed as icons on the flyer. Bedrooms, bathrooms, and parking are standard — customize the 4th.
+            Up to 4 key features displayed as icons on the flyer. Bedrooms, bathrooms, and parking are standard —
+            customize the 4th.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -572,15 +592,7 @@ export default function PropertyDetailsForm({ eventId, initialData }: PropertyDe
                   <Input
                     value={feat.value}
                     onChange={(e) => updateFlyerFeature(i, "value", e.target.value)}
-                    placeholder={
-                      i === 0
-                        ? "e.g. 3"
-                        : i === 1
-                        ? "e.g. 2.5"
-                        : i === 2
-                        ? "e.g. 2-Car Garage"
-                        : "e.g. Yes"
-                    }
+                    placeholder={i === 0 ? "e.g. 3" : i === 1 ? "e.g. 2.5" : i === 2 ? "e.g. 2-Car Garage" : "e.g. Yes"}
                     className="mt-1"
                   />
                 </div>
@@ -594,11 +606,7 @@ export default function PropertyDetailsForm({ eventId, initialData }: PropertyDe
         <Button type="submit" disabled={saving}>
           {saving ? "Saving..." : "Save Property Details"}
         </Button>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => router.push(`/app/open-houses/${eventId}`)}
-        >
+        <Button type="button" variant="outline" onClick={() => router.push(`/app/open-houses/${eventId}`)}>
           Cancel
         </Button>
       </div>

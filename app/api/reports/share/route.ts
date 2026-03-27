@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-const admin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 // Public-facing URL for shareable links — use custom domain, not Vercel internal URL
 const PUBLIC_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://realestategenie.app";
@@ -52,21 +50,19 @@ export async function POST(request: NextRequest) {
     // Generate a unique share ID
     const shareId = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
 
-    const { error } = await admin
-      .from("shared_reports")
-      .insert({
-        share_id: shareId,
-        agent_id: userData.user.id,
-        report_data: report,
-        agent_name: resolvedName || null,
-        agent_email: resolvedEmail || null,
-        agent_phone: resolvedPhone || null,
-        brand_color: brandColor || "#3b82f6",
-        logo_url: logoUrl || null,
-        created_at: new Date().toISOString(),
-        expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
-        view_count: 0,
-      });
+    const { error } = await admin.from("shared_reports").insert({
+      share_id: shareId,
+      agent_id: userData.user.id,
+      report_data: report,
+      agent_name: resolvedName || null,
+      agent_email: resolvedEmail || null,
+      agent_phone: resolvedPhone || null,
+      brand_color: brandColor || "#3b82f6",
+      logo_url: logoUrl || null,
+      created_at: new Date().toISOString(),
+      expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
+      view_count: 0,
+    });
 
     if (error) {
       // Table might not exist yet
@@ -87,7 +83,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to create share link" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -99,11 +95,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "id is required" }, { status: 400 });
     }
 
-    const { data: report, error } = await admin
-      .from("shared_reports")
-      .select("*")
-      .eq("share_id", shareId)
-      .single();
+    const { data: report, error } = await admin.from("shared_reports").select("*").eq("share_id", shareId).single();
 
     if (error || !report) {
       return NextResponse.json({ error: "Report not found or expired" }, { status: 404 });
@@ -132,7 +124,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to load report" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

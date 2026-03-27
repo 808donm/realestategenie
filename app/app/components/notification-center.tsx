@@ -86,9 +86,7 @@ export default function NotificationCenter() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ notification_ids: [notif.id] }),
         });
-        setNotifications((prev) =>
-          prev.map((n) => (n.id === notif.id ? { ...n, is_read: true } : n))
-        );
+        setNotifications((prev) => prev.map((n) => (n.id === notif.id ? { ...n, is_read: true } : n)));
         setUnreadCount((c) => Math.max(0, c - 1));
       } catch {}
     }
@@ -113,7 +111,10 @@ export default function NotificationCenter() {
     <div ref={containerRef} className="relative noprint">
       {/* Bell Button */}
       <button
-        onClick={() => { setIsOpen(!isOpen); if (!isOpen) fetchNotifications(); }}
+        onClick={() => {
+          setIsOpen(!isOpen);
+          if (!isOpen) fetchNotifications();
+        }}
         className="relative flex items-center justify-center w-9 h-9 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
         title="Notifications"
       >
@@ -141,10 +142,7 @@ export default function NotificationCenter() {
                   Mark all read
                 </button>
               )}
-              <button
-                onClick={() => setIsOpen(false)}
-                className="text-gray-400 hover:text-gray-600 p-0.5"
-              >
+              <button onClick={() => setIsOpen(false)} className="text-gray-400 hover:text-gray-600 p-0.5">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -180,16 +178,14 @@ export default function NotificationCenter() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
-                      <p className={`text-sm truncate ${!notif.is_read ? "font-semibold text-gray-900" : "text-gray-700"}`}>
+                      <p
+                        className={`text-sm truncate ${!notif.is_read ? "font-semibold text-gray-900" : "text-gray-700"}`}
+                      >
                         {notif.title}
                       </p>
-                      {!notif.is_read && (
-                        <span className="flex-shrink-0 w-2 h-2 bg-blue-500 rounded-full mt-1.5" />
-                      )}
+                      {!notif.is_read && <span className="flex-shrink-0 w-2 h-2 bg-blue-500 rounded-full mt-1.5" />}
                     </div>
-                    {notif.body && (
-                      <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{notif.body}</p>
-                    )}
+                    {notif.body && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{notif.body}</p>}
                     <p className="text-[10px] text-gray-400 mt-1">{timeAgo(notif.created_at)}</p>
                   </div>
                 </button>

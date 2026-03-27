@@ -26,7 +26,8 @@ export default async function ManageUserSubscriptionPage({ params }: PageProps) 
   // Get agent details with subscription
   const { data: agent } = await supabaseAdmin
     .from("agents")
-    .select(`
+    .select(
+      `
       id,
       email,
       display_name,
@@ -58,7 +59,8 @@ export default async function ManageUserSubscriptionPage({ params }: PageProps) 
         current_tenants,
         last_calculated_at
       )
-    `)
+    `,
+    )
     .eq("id", agentId)
     .single();
 
@@ -91,9 +93,7 @@ export default async function ManageUserSubscriptionPage({ params }: PageProps) 
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold mb-2">Manage Subscription</h1>
-          <p className="text-muted-foreground">
-            {agent.display_name || agent.email}
-          </p>
+          <p className="text-muted-foreground">{agent.display_name || agent.email}</p>
         </div>
         <Link
           href="/app/admin/subscriptions"
@@ -124,9 +124,7 @@ export default async function ManageUserSubscriptionPage({ params }: PageProps) 
             <div>
               <span
                 className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                  agent.is_active
-                    ? "bg-green-100 text-green-800"
-                    : "bg-gray-100 text-gray-800"
+                  agent.is_active ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
                 }`}
               >
                 {agent.is_active ? "Active" : "Inactive"}
@@ -153,14 +151,11 @@ export default async function ManageUserSubscriptionPage({ params }: PageProps) 
                     usage.current_agents > currentPlan.max_agents
                       ? "bg-red-600"
                       : usage.current_agents / currentPlan.max_agents > 0.7
-                      ? "bg-yellow-500"
-                      : "bg-green-600"
+                        ? "bg-yellow-500"
+                        : "bg-green-600"
                   }`}
                   style={{
-                    width: `${Math.min(
-                      100,
-                      (usage.current_agents / currentPlan.max_agents) * 100
-                    )}%`,
+                    width: `${Math.min(100, (usage.current_agents / currentPlan.max_agents) * 100)}%`,
                   }}
                 />
               </div>
@@ -183,20 +178,14 @@ export default async function ManageUserSubscriptionPage({ params }: PageProps) 
               <div
                 key={alert.id}
                 className={`p-3 rounded-lg ${
-                  alert.alert_type === "critical_100"
-                    ? "bg-red-100 text-red-900"
-                    : "bg-yellow-100 text-yellow-900"
+                  alert.alert_type === "critical_100" ? "bg-red-100 text-red-900" : "bg-yellow-100 text-yellow-900"
                 }`}
               >
                 <div className="font-semibold">
-                  {alert.alert_type === "critical_100"
-                    ? "🚨 Critical"
-                    : "⚠️ Warning"}{" "}
-                  - {alert.resource_type}
+                  {alert.alert_type === "critical_100" ? "🚨 Critical" : "⚠️ Warning"} - {alert.resource_type}
                 </div>
                 <div className="text-sm">
-                  {alert.usage_count} / {alert.limit_count} (
-                  {alert.usage_percentage.toFixed(0)}%)
+                  {alert.usage_count} / {alert.limit_count} ({alert.usage_percentage.toFixed(0)}%)
                 </div>
               </div>
             ))}

@@ -14,11 +14,9 @@ import { MicrosoftCalendarProvider } from "@/lib/integrations/microsoft-calendar
 import { GHLCalendarProvider } from "@/lib/integrations/ghl-calendar-sync";
 import { renewMicrosoftSubscription } from "@/lib/integrations/microsoft-calendar-client";
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 export async function POST(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
@@ -71,10 +69,7 @@ export async function POST(request: NextRequest) {
         });
         results.processed++;
       } catch (err: any) {
-        console.error(
-          `[Calendar Sync Cron] Failed for ${integration.agent_id}/${integration.provider}:`,
-          err.message
-        );
+        console.error(`[Calendar Sync Cron] Failed for ${integration.agent_id}/${integration.provider}:`, err.message);
         results.errors.push(`${integration.agent_id}/${integration.provider}: ${err.message}`);
       }
     }

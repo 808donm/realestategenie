@@ -101,9 +101,7 @@ export default function StatsTiles() {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{stats.openHouses.total}</div>
-          <p className="text-xs text-muted-foreground">
-            {stats.openHouses.active} active right now
-          </p>
+          <p className="text-xs text-muted-foreground">{stats.openHouses.active} active right now</p>
           <div className="flex gap-2 mt-2">
             <Badge variant="success" className="text-xs">
               {stats.openHouses.published} published
@@ -129,9 +127,7 @@ export default function StatsTiles() {
             <div
               className="bg-danger h-2 rounded-full transition-all"
               style={{
-                width: stats.leads.total > 0
-                  ? `${(stats.leads.hot / stats.leads.total) * 100}%`
-                  : "0%",
+                width: stats.leads.total > 0 ? `${(stats.leads.hot / stats.leads.total) * 100}%` : "0%",
               }}
             />
           </div>

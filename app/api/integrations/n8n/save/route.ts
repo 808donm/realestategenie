@@ -32,9 +32,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Upsert n8n integration
-    const { error } = await supabase
-      .from("integrations")
-      .upsert({
+    const { error } = await supabase.from("integrations").upsert(
+      {
         agent_id: user.id,
         provider: "n8n",
         status: "connected",
@@ -44,9 +43,11 @@ export async function POST(req: NextRequest) {
           enabled_events: enabled_events || [],
         },
         updated_at: new Date().toISOString(),
-      }, {
+      },
+      {
         onConflict: "agent_id,provider",
-      });
+      },
+    );
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });

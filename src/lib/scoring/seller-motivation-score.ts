@@ -123,9 +123,7 @@ function scoreOwnershipDuration(parcel: RealieParcel): SellerFactor {
   const dateStr = parcel.ownershipStartDate || parcel.transferDate;
   if (dateStr) {
     const formatted =
-      dateStr.length === 8
-        ? `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}`
-        : dateStr;
+      dateStr.length === 8 ? `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}` : dateStr;
     const ownerSince = new Date(formatted);
     if (!isNaN(ownerSince.getTime())) {
       const years = (Date.now() - ownerSince.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
@@ -159,9 +157,7 @@ function scoreAbsentee(parcel: RealieParcel): SellerFactor {
   let description = "Owner-occupied or unknown";
 
   const outOfState =
-    parcel.ownerState &&
-    parcel.state &&
-    parcel.ownerState.toUpperCase() !== parcel.state.toUpperCase();
+    parcel.ownerState && parcel.state && parcel.ownerState.toUpperCase() !== parcel.state.toUpperCase();
 
   // Prefer the direct ownerOccupied boolean from RentCast when available.
   if (parcel.ownerOccupied === true) {
@@ -200,8 +196,8 @@ function scoreAbsentee(parcel: RealieParcel): SellerFactor {
     if (isPoBox) {
       // P.O. Box in the same zip code is not a reliable absentee signal —
       // the owner likely lives nearby and picks up mail at the local post office.
-      const sameZip = parcel.ownerZipCode && parcel.zipCode
-        && parcel.ownerZipCode.slice(0, 5) === parcel.zipCode.slice(0, 5);
+      const sameZip =
+        parcel.ownerZipCode && parcel.zipCode && parcel.ownerZipCode.slice(0, 5) === parcel.zipCode.slice(0, 5);
       if (sameZip) {
         // Not absentee — local P.O. Box
       } else if (outOfState) {
@@ -235,12 +231,9 @@ function scoreDistress(parcel: RealieParcel): SellerFactor {
 
   // Distinguish between "no data available" (Realie not connected) and
   // "checked and clean" (data exists but no distress found)
-  const hasDistressData = parcel.forecloseCode !== undefined
-    || parcel.totalLienCount !== undefined
-    || parcel.totalLienBalance !== undefined;
-  let description = hasDistressData
-    ? "No distress signals found"
-    : "No distress data available";
+  const hasDistressData =
+    parcel.forecloseCode !== undefined || parcel.totalLienCount !== undefined || parcel.totalLienBalance !== undefined;
+  let description = hasDistressData ? "No distress signals found" : "No distress data available";
 
   if (parcel.forecloseCode) {
     points = max;
@@ -248,11 +241,7 @@ function scoreDistress(parcel: RealieParcel): SellerFactor {
   } else if (parcel.totalLienCount && parcel.totalLienCount > 3) {
     points = 12;
     description = `${parcel.totalLienCount} liens on property`;
-  } else if (
-    parcel.totalLienBalance &&
-    parcel.modelValue &&
-    parcel.totalLienBalance > parcel.modelValue * 0.9
-  ) {
+  } else if (parcel.totalLienBalance && parcel.modelValue && parcel.totalLienBalance > parcel.modelValue * 0.9) {
     points = 10;
     description = "Lien balance near or exceeding property value";
   } else if (parcel.totalLienCount && parcel.totalLienCount > 1) {
@@ -266,9 +255,7 @@ function scoreDistress(parcel: RealieParcel): SellerFactor {
 function scorePortfolio(parcel: RealieParcel): SellerFactor {
   const max = WEIGHTS.portfolio;
   let points = 0;
-  let description = parcel.ownerParcelCount != null
-    ? "Single-property owner"
-    : "No portfolio data available";
+  let description = parcel.ownerParcelCount != null ? "Single-property owner" : "No portfolio data available";
 
   const count = parcel.ownerParcelCount;
   if (count != null) {
@@ -298,9 +285,7 @@ function scoreTransferRecency(parcel: RealieParcel): SellerFactor {
   const dateStr = parcel.transferDate || parcel.ownershipStartDate;
   if (dateStr) {
     const formatted =
-      dateStr.length === 8
-        ? `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}`
-        : dateStr;
+      dateStr.length === 8 ? `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}` : dateStr;
     const transferDate = new Date(formatted);
     if (!isNaN(transferDate.getTime())) {
       const years = (Date.now() - transferDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
@@ -385,9 +370,7 @@ function scoreMarketTrend(parcel: RealieParcel): SellerFactor {
 function scoreOwnerType(parcel: RealieParcel): SellerFactor {
   const max = WEIGHTS.ownerType;
   let points = 0;
-  let description = parcel.ownerName
-    ? `Individual owner (${parcel.ownerName})`
-    : "Individual owner or unknown";
+  let description = parcel.ownerName ? `Individual owner (${parcel.ownerName})` : "Individual owner or unknown";
 
   const type = parcel.ownerType;
   if (type) {
@@ -508,20 +491,16 @@ function scoreHoaBurden(parcel: RealieParcel): SellerFactor {
   const hoa = parcel.hoaFee;
   if (hoa && hoa > 0) {
     // Check if absentee — HOA burden is more significant for non-occupants
-    const isAbsentee = parcel.ownerOccupied === false ||
-      (parcel.ownerState && parcel.state &&
-       parcel.ownerState.toUpperCase() !== parcel.state.toUpperCase());
+    const isAbsentee =
+      parcel.ownerOccupied === false ||
+      (parcel.ownerState && parcel.state && parcel.ownerState.toUpperCase() !== parcel.state.toUpperCase());
 
     if (hoa >= 800) {
       points = isAbsentee ? max : 3;
-      description = isAbsentee
-        ? `High HOA ($${hoa}/mo) + absentee — costly to hold`
-        : `High HOA ($${hoa}/mo)`;
+      description = isAbsentee ? `High HOA ($${hoa}/mo) + absentee — costly to hold` : `High HOA ($${hoa}/mo)`;
     } else if (hoa >= 500) {
       points = isAbsentee ? 3 : 2;
-      description = isAbsentee
-        ? `Moderate HOA ($${hoa}/mo) + absentee`
-        : `Moderate HOA ($${hoa}/mo)`;
+      description = isAbsentee ? `Moderate HOA ($${hoa}/mo) + absentee` : `Moderate HOA ($${hoa}/mo)`;
     } else if (hoa >= 300) {
       points = isAbsentee ? 2 : 1;
       description = `HOA $${hoa}/mo${isAbsentee ? " + absentee" : ""}`;
@@ -567,9 +546,7 @@ export function calculateSellerMotivationScore(parcel: RealieParcel): SellerScor
   }, 0);
 
   // Scale: if only 65 of 100 points are achievable, 40 raw → 62 normalized
-  const score = achievableMax > 0
-    ? Math.min(Math.round((rawScore / achievableMax) * 100), 100)
-    : 0;
+  const score = achievableMax > 0 ? Math.min(Math.round((rawScore / achievableMax) * 100), 100) : 0;
   const level = getSellerLevel(score);
 
   return { score, level, factors };
@@ -622,16 +599,18 @@ export function scoreParcel(parcel: RealieParcel): ScoredProperty | null {
   if (ownerAddr && propAddr) {
     const isPoBox = /\bp\.?\s*o\.?\s*box\b/i.test(ownerAddr);
     const outOfState =
-      parcel.ownerState &&
-      parcel.state &&
-      parcel.ownerState.toUpperCase() !== parcel.state.toUpperCase();
+      parcel.ownerState && parcel.state && parcel.ownerState.toUpperCase() !== parcel.state.toUpperCase();
 
     if (isPoBox) {
       // Same-area P.O. Box is not absentee; only out-of-state P.O. Box counts
       absentee = !!outOfState;
     } else {
       const normalize = (s: string) =>
-        s.toLowerCase().replace(/\bapt\b.*$/i, "").replace(/\b0+(\d)/g, "$1").replace(/[^a-z0-9]/g, "");
+        s
+          .toLowerCase()
+          .replace(/\bapt\b.*$/i, "")
+          .replace(/\b0+(\d)/g, "$1")
+          .replace(/[^a-z0-9]/g, "");
       absentee = normalize(ownerAddr) !== normalize(propAddr);
     }
   } else if (parcel.ownerOccupied === false) {
@@ -643,9 +622,7 @@ export function scoreParcel(parcel: RealieParcel): ScoredProperty | null {
   const dateStr = parcel.ownershipStartDate || parcel.transferDate;
   if (dateStr) {
     const formatted =
-      dateStr.length === 8
-        ? `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}`
-        : dateStr;
+      dateStr.length === 8 ? `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}` : dateStr;
     const d = new Date(formatted);
     if (!isNaN(d.getTime())) {
       ownershipYears = Math.round(((Date.now() - d.getTime()) / (365.25 * 24 * 60 * 60 * 1000)) * 10) / 10;

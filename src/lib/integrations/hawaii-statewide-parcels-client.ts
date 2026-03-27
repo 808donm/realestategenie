@@ -22,8 +22,7 @@
  * No API key required — this is public open data.
  */
 
-const DEFAULT_STATEWIDE_URL =
-  "https://geodata.hawaii.gov/arcgis/rest/services/ParcelsZoning/MapServer/25";
+const DEFAULT_STATEWIDE_URL = "https://geodata.hawaii.gov/arcgis/rest/services/ParcelsZoning/MapServer/25";
 
 // ── Response types ──────────────────────────────────────────────────────────
 
@@ -77,10 +76,7 @@ export class HawaiiStatewideParcelClient {
   private serviceUrl: string;
 
   constructor(config?: { serviceUrl?: string }) {
-    this.serviceUrl =
-      config?.serviceUrl ||
-      process.env.HAWAII_STATEWIDE_PARCELS_URL ||
-      DEFAULT_STATEWIDE_URL;
+    this.serviceUrl = config?.serviceUrl || process.env.HAWAII_STATEWIDE_PARCELS_URL || DEFAULT_STATEWIDE_URL;
   }
 
   /**
@@ -95,7 +91,7 @@ export class HawaiiStatewideParcelClient {
       orderByFields?: string;
       returnGeometry?: boolean;
       outSR?: number;
-    }
+    },
   ): Promise<ArcGISQueryResponse> {
     const url = new URL(`${this.serviceUrl}/query`);
     url.searchParams.set("where", where);
@@ -106,16 +102,10 @@ export class HawaiiStatewideParcelClient {
     if (options?.returnGeometry) {
       url.searchParams.set("outSR", String(options?.outSR ?? 4326));
     }
-    url.searchParams.set(
-      "returnGeometry",
-      String(options?.returnGeometry ?? false)
-    );
+    url.searchParams.set("returnGeometry", String(options?.returnGeometry ?? false));
 
     if (options?.resultRecordCount) {
-      url.searchParams.set(
-        "resultRecordCount",
-        String(options.resultRecordCount)
-      );
+      url.searchParams.set("resultRecordCount", String(options.resultRecordCount));
     }
     if (options?.resultOffset) {
       url.searchParams.set("resultOffset", String(options.resultOffset));
@@ -132,22 +122,15 @@ export class HawaiiStatewideParcelClient {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(
-        `[HawaiiParcels] Query FAILED (${response.status}):`,
-        errorText
-      );
-      throw new Error(
-        `ArcGIS query error: ${response.status} - ${errorText}`
-      );
+      console.error(`[HawaiiParcels] Query FAILED (${response.status}):`, errorText);
+      throw new Error(`ArcGIS query error: ${response.status} - ${errorText}`);
     }
 
     const data: ArcGISQueryResponse = await response.json();
 
     if (data.error) {
       console.error(`[HawaiiParcels] ArcGIS error:`, data.error);
-      throw new Error(
-        `ArcGIS error ${data.error.code}: ${data.error.message}`
-      );
+      throw new Error(`ArcGIS error ${data.error.code}: ${data.error.message}`);
     }
 
     return data;
@@ -171,17 +154,13 @@ export class HawaiiStatewideParcelClient {
     const result = await this.query(where, { resultRecordCount: 1 });
 
     if (!result.features?.length) return null;
-    return this.normalizeAttributes(
-      result.features[0].attributes
-    ) as StateParcel;
+    return this.normalizeAttributes(result.features[0].attributes) as StateParcel;
   }
 
   /**
    * Get a parcel with geometry (polygon boundaries) by TMK
    */
-  async getParcelWithGeometry(
-    tmk: string
-  ): Promise<StateParcelFeature | null> {
+  async getParcelWithGeometry(tmk: string): Promise<StateParcelFeature | null> {
     const cleanTmk = tmk.replace(/[-\s.]/g, "");
     const where =
       cleanTmk.length >= 9
@@ -195,9 +174,7 @@ export class HawaiiStatewideParcelClient {
 
     if (!result.features?.length) return null;
     return {
-      attributes: this.normalizeAttributes(
-        result.features[0].attributes
-      ) as StateParcel,
+      attributes: this.normalizeAttributes(result.features[0].attributes) as StateParcel,
       geometry: result.features[0].geometry,
     };
   }
@@ -208,10 +185,7 @@ export class HawaiiStatewideParcelClient {
    * Get parcels by county name.
    * County values: "HAWAII", "MAUI", "KAUAI", "HONOLULU"
    */
-  async getParcelsByCounty(
-    county: string,
-    options?: { limit?: number; offset?: number }
-  ): Promise<StateParcel[]> {
+  async getParcelsByCounty(county: string, options?: { limit?: number; offset?: number }): Promise<StateParcel[]> {
     const safeCounty = county.replace(/'/g, "''").toUpperCase();
     const where = `UPPER(county)='${safeCounty}'`;
 
@@ -221,18 +195,13 @@ export class HawaiiStatewideParcelClient {
       orderByFields: "tmk ASC",
     });
 
-    return (result.features || []).map(
-      (f) => this.normalizeAttributes(f.attributes) as StateParcel
-    );
+    return (result.features || []).map((f) => this.normalizeAttributes(f.attributes) as StateParcel);
   }
 
   /**
    * Get parcels by island name.
    */
-  async getParcelsByIsland(
-    island: string,
-    options?: { limit?: number; offset?: number }
-  ): Promise<StateParcel[]> {
+  async getParcelsByIsland(island: string, options?: { limit?: number; offset?: number }): Promise<StateParcel[]> {
     const safeIsland = island.replace(/'/g, "''").toUpperCase();
     const where = `UPPER(island)='${safeIsland}'`;
 
@@ -242,9 +211,7 @@ export class HawaiiStatewideParcelClient {
       orderByFields: "tmk ASC",
     });
 
-    return (result.features || []).map(
-      (f) => this.normalizeAttributes(f.attributes) as StateParcel
-    );
+    return (result.features || []).map((f) => this.normalizeAttributes(f.attributes) as StateParcel);
   }
 
   // ── Zone / Section Lookup ─────────────────────────────────────────────
@@ -254,7 +221,7 @@ export class HawaiiStatewideParcelClient {
    */
   async getParcelsByZone(
     zone: string,
-    options?: { limit?: number; offset?: number; county?: string }
+    options?: { limit?: number; offset?: number; county?: string },
   ): Promise<StateParcel[]> {
     const safeZone = zone.replace(/'/g, "''");
     let where = `zone='${safeZone}'`;
@@ -269,9 +236,7 @@ export class HawaiiStatewideParcelClient {
       orderByFields: "tmk ASC",
     });
 
-    return (result.features || []).map(
-      (f) => this.normalizeAttributes(f.attributes) as StateParcel
-    );
+    return (result.features || []).map((f) => this.normalizeAttributes(f.attributes) as StateParcel);
   }
 
   /**
@@ -280,7 +245,7 @@ export class HawaiiStatewideParcelClient {
   async getParcelsBySection(
     zone: string,
     section: string,
-    options?: { limit?: number; offset?: number; county?: string }
+    options?: { limit?: number; offset?: number; county?: string },
   ): Promise<StateParcel[]> {
     const safeZone = zone.replace(/'/g, "''");
     const safeSection = section.replace(/'/g, "''");
@@ -296,9 +261,7 @@ export class HawaiiStatewideParcelClient {
       orderByFields: "tmk ASC",
     });
 
-    return (result.features || []).map(
-      (f) => this.normalizeAttributes(f.attributes) as StateParcel
-    );
+    return (result.features || []).map((f) => this.normalizeAttributes(f.attributes) as StateParcel);
   }
 
   // ── Acreage Lookup ────────────────────────────────────────────────────
@@ -313,7 +276,7 @@ export class HawaiiStatewideParcelClient {
       offset?: number;
       county?: string;
       island?: string;
-    }
+    },
   ): Promise<StateParcel[]> {
     let where = `gisacres >= ${minAcres}`;
     if (options?.county) {
@@ -331,9 +294,7 @@ export class HawaiiStatewideParcelClient {
       orderByFields: "gisacres DESC",
     });
 
-    return (result.features || []).map(
-      (f) => this.normalizeAttributes(f.attributes) as StateParcel
-    );
+    return (result.features || []).map((f) => this.normalizeAttributes(f.attributes) as StateParcel);
   }
 
   // ── Spatial Query ─────────────────────────────────────────────────────
@@ -342,10 +303,7 @@ export class HawaiiStatewideParcelClient {
    * Find parcels that intersect a point (lat/lng).
    * Uses ArcGIS geometry query to identify which parcel a coordinate falls in.
    */
-  async getParcelAtPoint(
-    lat: number,
-    lng: number
-  ): Promise<StateParcel | null> {
+  async getParcelAtPoint(lat: number, lng: number): Promise<StateParcel | null> {
     const url = new URL(`${this.serviceUrl}/query`);
     url.searchParams.set("geometry", `${lng},${lat}`);
     url.searchParams.set("geometryType", "esriGeometryPoint");
@@ -369,15 +327,11 @@ export class HawaiiStatewideParcelClient {
     const data: ArcGISQueryResponse = await response.json();
 
     if (data.error) {
-      throw new Error(
-        `ArcGIS error ${data.error.code}: ${data.error.message}`
-      );
+      throw new Error(`ArcGIS error ${data.error.code}: ${data.error.message}`);
     }
 
     if (!data.features?.length) return null;
-    return this.normalizeAttributes(
-      data.features[0].attributes
-    ) as StateParcel;
+    return this.normalizeAttributes(data.features[0].attributes) as StateParcel;
   }
 
   // ── Utility ───────────────────────────────────────────────────────────
@@ -386,9 +340,7 @@ export class HawaiiStatewideParcelClient {
    * Normalize ArcGIS attribute keys to lowercase for consistent access.
    * Also maps st_area(shape) and st_perimeter(shape) to cleaner keys.
    */
-  private normalizeAttributes(
-    attrs: Record<string, unknown>
-  ): Record<string, unknown> {
+  private normalizeAttributes(attrs: Record<string, unknown>): Record<string, unknown> {
     const result: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(attrs)) {
       const lowerKey = key.toLowerCase();
@@ -415,13 +367,9 @@ export class HawaiiStatewideParcelClient {
   }> {
     try {
       const result = await this.query("1=1", { resultRecordCount: 1 });
-      const fields = result.features?.[0]
-        ? Object.keys(result.features[0].attributes)
-        : [];
+      const fields = result.features?.[0] ? Object.keys(result.features[0].attributes) : [];
       const sample = result.features?.[0]
-        ? (this.normalizeAttributes(
-            result.features[0].attributes
-          ) as StateParcel)
+        ? (this.normalizeAttributes(result.features[0].attributes) as StateParcel)
         : undefined;
 
       return {

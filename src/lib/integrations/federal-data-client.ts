@@ -330,7 +330,7 @@ export class FederalDataClient {
     streetAddress: string,
     city: string,
     state: string,
-    zipCode: string
+    zipCode: string,
   ): Promise<USPSValidationResult> {
     try {
       const token = await this.getUSPSToken();
@@ -341,15 +341,12 @@ export class FederalDataClient {
         ZIPCode: zipCode,
       });
 
-      const response = await fetch(
-        `https://apis.usps.com/addresses/v3/address?${params}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: "application/json",
-          },
-        }
-      );
+      const response = await fetch(`https://apis.usps.com/addresses/v3/address?${params}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+      });
 
       if (!response.ok) {
         const err = await response.text();
@@ -412,10 +409,7 @@ export class FederalDataClient {
       const results = data?.data?.results || data?.results || (Array.isArray(data) ? data : data?.data);
       if (Array.isArray(results) && results.length > 0) {
         // Pick the county with the highest total ratio (most addresses overlap)
-        const best = results.reduce(
-          (a: any, b: any) => ((b.tot_ratio ?? 0) > (a.tot_ratio ?? 0) ? b : a),
-          results[0]
-        );
+        const best = results.reduce((a: any, b: any) => ((b.tot_ratio ?? 0) > (a.tot_ratio ?? 0) ? b : a), results[0]);
         const geoid: string = best.geoid || best.county || "";
         if (geoid.length === 5) return `${geoid}99999`;
         if (geoid.length === 10 && geoid.endsWith("99999")) return geoid;
@@ -470,12 +464,8 @@ export class FederalDataClient {
       const msaEntry = bd.find((e: any) => e.zip_code === "MSA level");
       const zipEntries = bd.filter((e: any) => e.zip_code !== "MSA level");
       return {
-        basicdata: msaEntry
-          ? this.normalizeHUDFMRRecord({ ...topLevel, ...msaEntry })
-          : undefined,
-        smallAreaData: zipEntries.map((e: any) =>
-          this.normalizeHUDFMRRecord({ ...topLevel, ...e })
-        ),
+        basicdata: msaEntry ? this.normalizeHUDFMRRecord({ ...topLevel, ...msaEntry }) : undefined,
+        smallAreaData: zipEntries.map((e: any) => this.normalizeHUDFMRRecord({ ...topLevel, ...e })),
       };
     }
 
@@ -498,14 +488,13 @@ export class FederalDataClient {
    * API: https://www.huduser.gov/portal/dataset/fmr-api.html
    * Requires free HUD USER API token (register at huduser.gov/hudapi/public/register)
    */
-  async getFairMarketRents(
-    zipCode: string,
-    stateFips?: string,
-    countyFips?: string
-  ): Promise<HUDFMRResult> {
+  async getFairMarketRents(zipCode: string, stateFips?: string, countyFips?: string): Promise<HUDFMRResult> {
     try {
       if (!this.config.hudToken) {
-        return { success: false, error: "HUD API token not configured. Get a free token at huduser.gov/hudapi/public/register" };
+        return {
+          success: false,
+          error: "HUD API token not configured. Get a free token at huduser.gov/hudapi/public/register",
+        };
       }
 
       // Build the 10-digit entity ID the FMR API expects
@@ -532,9 +521,16 @@ export class FederalDataClient {
 
         if (!response.ok) {
           let body = "";
-          try { body = await response.text(); } catch { /* ignore */ }
+          try {
+            body = await response.text();
+          } catch {
+            /* ignore */
+          }
           if (response.status === 401 || response.status === 403) {
-            return { success: false, error: `HUD API auth failed (${response.status}): Your HUD token is invalid or expired. HUD requires its own Bearer token (separate from HMDA/CFPB). Log in at huduser.gov/hudapi/public/login and click "Create New Token".${body ? ` — ${body.slice(0, 200)}` : ""}` };
+            return {
+              success: false,
+              error: `HUD API auth failed (${response.status}): Your HUD token is invalid or expired. HUD requires its own Bearer token (separate from HMDA/CFPB). Log in at huduser.gov/hudapi/public/login and click "Create New Token".${body ? ` — ${body.slice(0, 200)}` : ""}`,
+            };
           }
           // 400 may mean data not available for this year — try next
           if (response.status === 400) continue;
@@ -552,13 +548,15 @@ export class FederalDataClient {
       }
 
       // If year-parameterized calls failed, try without year as final fallback
-      const response = await this.hudFetch(
-        `https://www.huduser.gov/hudapi/public/fmr/data/${entityId}`
-      );
+      const response = await this.hudFetch(`https://www.huduser.gov/hudapi/public/fmr/data/${entityId}`);
 
       if (!response.ok) {
         let body = "";
-        try { body = await response.text(); } catch { /* ignore */ }
+        try {
+          body = await response.text();
+        } catch {
+          /* ignore */
+        }
         return { success: false, error: `HUD API error ${response.status}${body ? `: ${body.slice(0, 200)}` : ""}` };
       }
 
@@ -578,23 +576,31 @@ export class FederalDataClient {
    */
   async getIncomeLimits(
     stateCode: string,
-    countyCode: string
+    countyCode: string,
   ): Promise<{ success: boolean; data?: any; error?: string }> {
     try {
       if (!this.config.hudToken) {
-        return { success: false, error: "HUD API token not configured. Get a free token at huduser.gov/hudapi/public/register" };
+        return {
+          success: false,
+          error: "HUD API token not configured. Get a free token at huduser.gov/hudapi/public/register",
+        };
       }
 
       const entityId = `${stateCode}${countyCode}99999`;
-      const response = await this.hudFetch(
-        `https://www.huduser.gov/hudapi/public/il/data/${entityId}`
-      );
+      const response = await this.hudFetch(`https://www.huduser.gov/hudapi/public/il/data/${entityId}`);
 
       if (!response.ok) {
         let body = "";
-        try { body = await response.text(); } catch { /* ignore */ }
+        try {
+          body = await response.text();
+        } catch {
+          /* ignore */
+        }
         if (response.status === 401 || response.status === 403) {
-          return { success: false, error: `HUD IL API auth failed (${response.status}): Token may be invalid or expired${body ? ` — ${body.slice(0, 200)}` : ""}` };
+          return {
+            success: false,
+            error: `HUD IL API auth failed (${response.status}): Token may be invalid or expired${body ? ` — ${body.slice(0, 200)}` : ""}`,
+          };
         }
         return { success: false, error: `HUD IL API error ${response.status}${body ? `: ${body.slice(0, 200)}` : ""}` };
       }
@@ -626,11 +632,7 @@ export class FederalDataClient {
    * B01003_001E = Total population
    * B01002_001E = Median age
    */
-  async getHousingData(
-    state: string,
-    zipCode?: string,
-    county?: string
-  ): Promise<CensusResult> {
+  async getHousingData(state: string, zipCode?: string, county?: string): Promise<CensusResult> {
     try {
       const variables = [
         "B25002_001E", // Total housing units
@@ -654,9 +656,7 @@ export class FederalDataClient {
         geo = `state:${state}`;
       }
 
-      const keyParam = this.config.censusApiKey
-        ? `&key=${this.config.censusApiKey}`
-        : "";
+      const keyParam = this.config.censusApiKey ? `&key=${this.config.censusApiKey}` : "";
 
       const url = `https://api.census.gov/data/2023/acs/acs5?get=NAME,${variables}&for=${geo}${keyParam}`;
       const response = await fetch(url);
@@ -723,11 +723,11 @@ export class FederalDataClient {
         if (policies.length > 0) {
           const totalPremium = policies.reduce(
             (sum: number, p: any) => sum + (p.totalInsurancePremiumOfThePolicy || 0),
-            0
+            0,
           );
           const totalCoverage = policies.reduce(
             (sum: number, p: any) => sum + (p.totalBuildingInsuranceCoverage || 0),
-            0
+            0,
           );
 
           floodData = {
@@ -751,23 +751,21 @@ export class FederalDataClient {
 
       if (disasterResponse.ok) {
         const disasterJson = await disasterResponse.json();
-        disasters = (disasterJson.DisasterDeclarationsSummaries || []).map(
-          (d: any) => ({
-            disasterNumber: d.disasterNumber,
-            declarationDate: d.declarationDate,
-            disasterType: d.declarationType,
-            incidentType: d.incidentType,
-            title: d.declarationTitle,
-            state: d.state,
-            declaredCountyArea: d.designatedArea,
-            incidentBeginDate: d.incidentBeginDate,
-            incidentEndDate: d.incidentEndDate,
-            ihProgramDeclared: d.ihProgramDeclared,
-            iaProgramDeclared: d.iaProgramDeclared,
-            paProgramDeclared: d.paProgramDeclared,
-            hmProgramDeclared: d.hmProgramDeclared,
-          })
-        );
+        disasters = (disasterJson.DisasterDeclarationsSummaries || []).map((d: any) => ({
+          disasterNumber: d.disasterNumber,
+          declarationDate: d.declarationDate,
+          disasterType: d.declarationType,
+          incidentType: d.incidentType,
+          title: d.declarationTitle,
+          state: d.state,
+          declaredCountyArea: d.designatedArea,
+          incidentBeginDate: d.incidentBeginDate,
+          incidentEndDate: d.incidentEndDate,
+          ihProgramDeclared: d.ihProgramDeclared,
+          iaProgramDeclared: d.iaProgramDeclared,
+          paProgramDeclared: d.paProgramDeclared,
+          hmProgramDeclared: d.hmProgramDeclared,
+        }));
       }
 
       return { success: true, floodData, disasters };
@@ -781,7 +779,7 @@ export class FederalDataClient {
    */
   async getDisasterDeclarations(
     stateCode: string,
-    countyName?: string
+    countyName?: string,
   ): Promise<{ success: boolean; disasters?: FEMADisaster[]; error?: string }> {
     try {
       let filter = `state eq '${stateCode}'`;
@@ -796,23 +794,21 @@ export class FederalDataClient {
       }
 
       const data = await response.json();
-      const disasters = (data.DisasterDeclarationsSummaries || []).map(
-        (d: any) => ({
-          disasterNumber: d.disasterNumber,
-          declarationDate: d.declarationDate,
-          disasterType: d.declarationType,
-          incidentType: d.incidentType,
-          title: d.declarationTitle,
-          state: d.state,
-          declaredCountyArea: d.designatedArea,
-          incidentBeginDate: d.incidentBeginDate,
-          incidentEndDate: d.incidentEndDate,
-          ihProgramDeclared: d.ihProgramDeclared,
-          iaProgramDeclared: d.iaProgramDeclared,
-          paProgramDeclared: d.paProgramDeclared,
-          hmProgramDeclared: d.hmProgramDeclared,
-        })
-      );
+      const disasters = (data.DisasterDeclarationsSummaries || []).map((d: any) => ({
+        disasterNumber: d.disasterNumber,
+        declarationDate: d.declarationDate,
+        disasterType: d.declarationType,
+        incidentType: d.incidentType,
+        title: d.declarationTitle,
+        state: d.state,
+        declaredCountyArea: d.designatedArea,
+        incidentBeginDate: d.incidentBeginDate,
+        incidentEndDate: d.incidentEndDate,
+        ihProgramDeclared: d.ihProgramDeclared,
+        iaProgramDeclared: d.iaProgramDeclared,
+        paProgramDeclared: d.paProgramDeclared,
+        hmProgramDeclared: d.hmProgramDeclared,
+      }));
 
       return { success: true, disasters };
     } catch (error: any) {
@@ -827,10 +823,7 @@ export class FederalDataClient {
    * Data source: FHFA published limits (we store/proxy current year data)
    * Free, no key needed
    */
-  async getConformingLoanLimits(
-    stateFips: string,
-    countyFips: string
-  ): Promise<FHFAResult> {
+  async getConformingLoanLimits(stateFips: string, countyFips: string): Promise<FHFAResult> {
     try {
       // FHFA publishes loan limits as a downloadable dataset.
       // We query their API endpoint for the current year.
@@ -908,9 +901,7 @@ export class FederalDataClient {
    *
    * Series ID format for local area unemployment: LAUST${stateCode}00000000000003
    */
-  async getEmploymentData(
-    seriesIds: string[]
-  ): Promise<BLSResult> {
+  async getEmploymentData(seriesIds: string[]): Promise<BLSResult> {
     try {
       const version = this.config.blsApiKey ? "v2" : "v1";
       const url = `https://api.bls.gov/publicAPI/${version}/timeseries/data/`;
@@ -954,9 +945,7 @@ export class FederalDataClient {
    * Get local area unemployment rate by state FIPS
    * Series format: LASST${stateCode}0000000000003 (unemployment rate)
    */
-  async getUnemploymentRate(
-    stateFips: string
-  ): Promise<{ success: boolean; rate?: string; error?: string }> {
+  async getUnemploymentRate(stateFips: string): Promise<{ success: boolean; rate?: string; error?: string }> {
     const seriesId = `LASST${stateFips.padStart(2, "0")}0000000000003`;
     const result = await this.getEmploymentData([seriesId]);
 
@@ -992,9 +981,7 @@ export class FederalDataClient {
    * API: https://www.epa.gov/enviro/envirofacts-data-service-api
    * Free, no key needed
    */
-  async getEnvironmentalSites(
-    zipCode: string
-  ): Promise<EPAResult> {
+  async getEnvironmentalSites(zipCode: string): Promise<EPAResult> {
     try {
       const sites: EPASite[] = [];
       const fetches: Promise<void>[] = [];
@@ -1004,7 +991,7 @@ export class FederalDataClient {
         (async () => {
           try {
             const sfResp = await this.fetchEPA(
-              `https://enviro.epa.gov/enviro/efservice/SEMS_ACTIVE_SITES/SITE_ZIP_CODE/${zipCode}/JSON/ROWS/0:20`
+              `https://enviro.epa.gov/enviro/efservice/SEMS_ACTIVE_SITES/SITE_ZIP_CODE/${zipCode}/JSON/ROWS/0:20`,
             );
             if (sfResp.ok) {
               const sfData = await sfResp.json();
@@ -1027,7 +1014,7 @@ export class FederalDataClient {
           } catch {
             // Superfund lookup failed, continue
           }
-        })()
+        })(),
       );
 
       // Brownfield sites
@@ -1035,7 +1022,7 @@ export class FederalDataClient {
         (async () => {
           try {
             const bfResp = await this.fetchEPA(
-              `https://enviro.epa.gov/enviro/efservice/BROWNFIELDS_ASSESSMENTS/ASSESSMENT_ZIP/${zipCode}/JSON/ROWS/0:20`
+              `https://enviro.epa.gov/enviro/efservice/BROWNFIELDS_ASSESSMENTS/ASSESSMENT_ZIP/${zipCode}/JSON/ROWS/0:20`,
             );
             if (bfResp.ok) {
               const bfData = await bfResp.json();
@@ -1057,7 +1044,7 @@ export class FederalDataClient {
           } catch {
             // Brownfield lookup failed, continue
           }
-        })()
+        })(),
       );
 
       // Toxic Release Inventory (TRI) facilities
@@ -1065,7 +1052,7 @@ export class FederalDataClient {
         (async () => {
           try {
             const triResp = await this.fetchEPA(
-              `https://enviro.epa.gov/enviro/efservice/TRI_FACILITY/ZIP_CODE/${zipCode}/JSON/ROWS/0:20`
+              `https://enviro.epa.gov/enviro/efservice/TRI_FACILITY/ZIP_CODE/${zipCode}/JSON/ROWS/0:20`,
             );
             if (triResp.ok) {
               const triData = await triResp.json();
@@ -1088,7 +1075,7 @@ export class FederalDataClient {
           } catch {
             // TRI lookup failed, continue
           }
-        })()
+        })(),
       );
 
       // FRS (Facility Registry Service) as a reliable fallback/supplement
@@ -1096,13 +1083,13 @@ export class FederalDataClient {
         (async () => {
           try {
             const frsResp = await this.fetchEPA(
-              `https://enviro.epa.gov/enviro/efservice/FRS_PROGRAM_FACILITY/POSTAL_CODE/${zipCode}/JSON/ROWS/0:20`
+              `https://enviro.epa.gov/enviro/efservice/FRS_PROGRAM_FACILITY/POSTAL_CODE/${zipCode}/JSON/ROWS/0:20`,
             );
             if (frsResp.ok) {
               const frsData = await frsResp.json();
               if (Array.isArray(frsData)) {
                 // Only add FRS facilities not already captured by other sources
-                const existingIds = new Set(sites.map(s => s.registryId).filter(Boolean));
+                const existingIds = new Set(sites.map((s) => s.registryId).filter(Boolean));
                 for (const f of frsData.slice(0, 20)) {
                   const regId = f.REGISTRY_ID || f.PGM_SYS_ID || "";
                   if (regId && existingIds.has(regId)) continue;
@@ -1122,7 +1109,7 @@ export class FederalDataClient {
           } catch {
             // FRS lookup failed, continue
           }
-        })()
+        })(),
       );
 
       await Promise.allSettled(fetches);
@@ -1143,20 +1130,14 @@ export class FederalDataClient {
    * HMDA data is typically published ~18 months after the reporting year closes.
    * We try the most recent likely year first, then fall back to older years.
    */
-  async getMortgageLendingData(
-    stateFips: string,
-    countyFips: string,
-    year?: number
-  ): Promise<HMDAResult> {
+  async getMortgageLendingData(stateFips: string, countyFips: string, year?: number): Promise<HMDAResult> {
     const fipsCode = `${stateFips}${countyFips}`;
 
     // HMDA data availability: typically current year - 2 is the most recent
     // available dataset (e.g., in 2026, 2023 is most likely available).
     // We try progressively older years to find available data.
     const currentYear = new Date().getFullYear();
-    const yearsToTry = year
-      ? [year]
-      : [currentYear - 2, currentYear - 3, currentYear - 1, currentYear - 4];
+    const yearsToTry = year ? [year] : [currentYear - 2, currentYear - 3, currentYear - 1, currentYear - 4];
 
     for (const queryYear of yearsToTry) {
       try {
@@ -1215,13 +1196,9 @@ export class FederalDataClient {
             totalApplications,
             totalOriginations,
             totalDenials,
-            medianLoanAmount: totalOriginations > 0
-              ? Math.round(originationLoanSum / totalOriginations)
-              : 0,
+            medianLoanAmount: totalOriginations > 0 ? Math.round(originationLoanSum / totalOriginations) : 0,
             medianIncome: 0,
-            approvalRate: totalApplications > 0
-              ? Math.round((totalOriginations / totalApplications) * 10000) / 100
-              : 0,
+            approvalRate: totalApplications > 0 ? Math.round((totalOriginations / totalApplications) * 10000) / 100 : 0,
           },
         };
       } catch (error: any) {
@@ -1230,7 +1207,10 @@ export class FederalDataClient {
       }
     }
 
-    return { success: false, error: `No HMDA data found for county ${fipsCode} (tried years: ${yearsToTry.join(", ")})` };
+    return {
+      success: false,
+      error: `No HMDA data found for county ${fipsCode} (tried years: ${yearsToTry.join(", ")})`,
+    };
   }
 
   // ── Composite / Supplement ───────────────────────────────────────────────
@@ -1273,7 +1253,7 @@ export class FederalDataClient {
               };
             }
           })
-          .catch(() => {})
+          .catch(() => {}),
       );
     }
 
@@ -1285,14 +1265,12 @@ export class FederalDataClient {
             supplement.fairMarketRent = r.data.basicdata;
           } else if (r.success && r.data?.smallAreaData?.length) {
             // Use ZIP-level SAFMR if available
-            const zipFmr = r.data.smallAreaData.find(
-              (d) => d.zipCode === zipCode
-            );
+            const zipFmr = r.data.smallAreaData.find((d) => d.zipCode === zipCode);
             if (zipFmr) supplement.fairMarketRent = zipFmr;
             else supplement.fairMarketRent = r.data.smallAreaData[0];
           }
         })
-        .catch(() => {})
+        .catch(() => {}),
     );
 
     // Census ACS Data
@@ -1307,13 +1285,12 @@ export class FederalDataClient {
                 supplement.vacancy = {
                   vacant: false, // area-level, not property-level
                   source: "census",
-                  vacancyRate:
-                    (r.data.vacantUnits / r.data.totalHousingUnits) * 100,
+                  vacancyRate: (r.data.vacantUnits / r.data.totalHousingUnits) * 100,
                 };
               }
             }
           })
-          .catch(() => {})
+          .catch(() => {}),
       );
     }
 
@@ -1326,7 +1303,7 @@ export class FederalDataClient {
             if (r.disasters?.length) supplement.recentDisasters = r.disasters;
           }
         })
-        .catch(() => {})
+        .catch(() => {}),
     );
 
     // FHFA Conforming Loan Limits
@@ -1338,7 +1315,7 @@ export class FederalDataClient {
               supplement.conformingLoanLimit = r.loanLimits;
             }
           })
-          .catch(() => {})
+          .catch(() => {}),
       );
     }
 
@@ -1351,7 +1328,7 @@ export class FederalDataClient {
             if (r.airQuality) supplement.airQuality = r.airQuality;
           }
         })
-        .catch(() => {})
+        .catch(() => {}),
     );
 
     // BLS Unemployment
@@ -1366,7 +1343,7 @@ export class FederalDataClient {
               };
             }
           })
-          .catch(() => {})
+          .catch(() => {}),
       );
     }
 
@@ -1379,7 +1356,7 @@ export class FederalDataClient {
               supplement.lendingData = r.data;
             }
           })
-          .catch(() => {})
+          .catch(() => {}),
       );
     }
 
@@ -1405,7 +1382,10 @@ export class FederalDataClient {
     tests.push(
       (async () => {
         if (!this.config.hudToken) {
-          sources.hud = { available: false, error: "No HUD token configured. Get a free token at huduser.gov/hudapi/public/register" };
+          sources.hud = {
+            available: false,
+            error: "No HUD token configured. Get a free token at huduser.gov/hudapi/public/register",
+          };
           return;
         }
         try {
@@ -1414,58 +1394,61 @@ export class FederalDataClient {
           const testEntityId = "1500399999";
           const now = new Date();
           const currentFY = now.getMonth() >= 9 ? now.getFullYear() + 1 : now.getFullYear();
-          let r = await this.hudFetch(`https://www.huduser.gov/hudapi/public/fmr/data/${testEntityId}?year=${currentFY}`);
+          let r = await this.hudFetch(
+            `https://www.huduser.gov/hudapi/public/fmr/data/${testEntityId}?year=${currentFY}`,
+          );
           if (!r.ok && r.status === 400) {
             // Try prior fiscal year
-            r = await this.hudFetch(`https://www.huduser.gov/hudapi/public/fmr/data/${testEntityId}?year=${currentFY - 1}`);
+            r = await this.hudFetch(
+              `https://www.huduser.gov/hudapi/public/fmr/data/${testEntityId}?year=${currentFY - 1}`,
+            );
           }
           if (r.ok) {
             sources.hud = { available: true };
           } else {
             let body = "";
-            try { body = await r.text(); } catch { /* ignore */ }
+            try {
+              body = await r.text();
+            } catch {
+              /* ignore */
+            }
             sources.hud = {
               available: false,
-              error: r.status === 401 || r.status === 403
-                ? `HUD token rejected (${r.status}). HUD requires its own separate token — not the same as HMDA/CFPB. Log in at huduser.gov/hudapi/public/login and click "Create New Token".${body ? ` — ${body.slice(0, 150)}` : ""}`
-                : `HTTP ${r.status}${body ? `: ${body.slice(0, 150)}` : ""}`,
+              error:
+                r.status === 401 || r.status === 403
+                  ? `HUD token rejected (${r.status}). HUD requires its own separate token — not the same as HMDA/CFPB. Log in at huduser.gov/hudapi/public/login and click "Create New Token".${body ? ` — ${body.slice(0, 150)}` : ""}`
+                  : `HTTP ${r.status}${body ? `: ${body.slice(0, 150)}` : ""}`,
             };
           }
         } catch (e: any) {
           sources.hud = { available: false, error: e.message };
         }
-      })()
+      })(),
     );
 
     // Census (key optional)
-    const censusKey = this.config.censusApiKey
-      ? `&key=${this.config.censusApiKey}`
-      : "";
+    const censusKey = this.config.censusApiKey ? `&key=${this.config.censusApiKey}` : "";
     tests.push(
-      fetch(
-        `https://api.census.gov/data/2023/acs/acs5?get=NAME,B01003_001E&for=state:15${censusKey}`
-      )
+      fetch(`https://api.census.gov/data/2023/acs/acs5?get=NAME,B01003_001E&for=state:15${censusKey}`)
         .then((r) => {
           sources.census = { available: r.ok };
           if (!r.ok) sources.census.error = `HTTP ${r.status}`;
         })
         .catch((e) => {
           sources.census = { available: false, error: e.message };
-        })
+        }),
     );
 
     // FEMA (no key needed)
     tests.push(
-      fetch(
-        "https://www.fema.gov/api/open/v2/DisasterDeclarationsSummaries?$top=1"
-      )
+      fetch("https://www.fema.gov/api/open/v2/DisasterDeclarationsSummaries?$top=1")
         .then((r) => {
           sources.fema = { available: r.ok };
           if (!r.ok) sources.fema.error = `HTTP ${r.status}`;
         })
         .catch((e) => {
           sources.fema = { available: false, error: e.message };
-        })
+        }),
     );
 
     // BLS (key optional)
@@ -1477,9 +1460,7 @@ export class FederalDataClient {
           seriesid: ["LASST150000000000003"],
           startyear: String(new Date().getFullYear() - 1),
           endyear: String(new Date().getFullYear()),
-          ...(this.config.blsApiKey
-            ? { registrationkey: this.config.blsApiKey }
-            : {}),
+          ...(this.config.blsApiKey ? { registrationkey: this.config.blsApiKey } : {}),
         }),
       })
         .then((r) => {
@@ -1488,15 +1469,12 @@ export class FederalDataClient {
         })
         .catch((e) => {
           sources.bls = { available: false, error: e.message };
-        })
+        }),
     );
 
     // EPA (no key needed) — use FRS as the most reliable Envirofacts table
     tests.push(
-      this.fetchEPA(
-        "https://enviro.epa.gov/enviro/efservice/FRS_PROGRAM_FACILITY/STATE_CODE/HI/JSON/ROWS/0:1",
-        10000
-      )
+      this.fetchEPA("https://enviro.epa.gov/enviro/efservice/FRS_PROGRAM_FACILITY/STATE_CODE/HI/JSON/ROWS/0:1", 10000)
         .then((r) => {
           sources.epa = { available: r.ok };
           if (!r.ok) sources.epa.error = `HTTP ${r.status}`;
@@ -1505,7 +1483,7 @@ export class FederalDataClient {
           // If FRS fails, try a simpler SEMS endpoint as fallback
           return this.fetchEPA(
             "https://enviro.epa.gov/enviro/efservice/SEMS_ACTIVE_SITES/SITE_STATE_CODE/HI/JSON/ROWS/0:1",
-            10000
+            10000,
           )
             .then((r) => {
               sources.epa = { available: r.ok };
@@ -1514,7 +1492,7 @@ export class FederalDataClient {
             .catch((e2) => {
               sources.epa = { available: false, error: e2.message || e.message };
             });
-        })
+        }),
     );
 
     // USPS (requires OAuth credentials)
@@ -1526,7 +1504,7 @@ export class FederalDataClient {
           })
           .catch((e) => {
             sources.usps = { available: false, error: e.message };
-          })
+          }),
       );
     } else {
       sources.usps = {
@@ -1547,7 +1525,7 @@ export class FederalDataClient {
             try {
               const r = await fetch(
                 `https://ffiec.cfpb.gov/v2/data-browser-api/view/aggregations?states=MD&years=${yr}&actions_taken=1`,
-                { headers: { Accept: "application/json" } }
+                { headers: { Accept: "application/json" } },
               );
               if (r.ok) {
                 sources.cfpb_hmda = { available: true };
@@ -1564,15 +1542,13 @@ export class FederalDataClient {
             }
           }
           sources.cfpb_hmda = { available: false, error: `No data for years ${hmdaYears.join(", ")}` };
-        })()
+        })(),
       );
     }
 
     await Promise.allSettled(tests);
 
-    const availableCount = Object.values(sources).filter(
-      (s) => s.available
-    ).length;
+    const availableCount = Object.values(sources).filter((s) => s.available).length;
     const totalCount = Object.keys(sources).length;
 
     return {
@@ -1585,18 +1561,12 @@ export class FederalDataClient {
 
 // ── Factory ──────────────────────────────────────────────────────────────────
 
-export function createFederalDataClient(
-  config?: FederalDataConfig
-): FederalDataClient {
+export function createFederalDataClient(config?: FederalDataConfig): FederalDataClient {
   return new FederalDataClient({
-    uspsClientId:
-      config?.uspsClientId || process.env.USPS_CLIENT_ID,
-    uspsClientSecret:
-      config?.uspsClientSecret || process.env.USPS_CLIENT_SECRET,
-    hudToken:
-      config?.hudToken || process.env.HUD_API_TOKEN,
-    censusApiKey:
-      config?.censusApiKey || process.env.CENSUS_API_KEY,
+    uspsClientId: config?.uspsClientId || process.env.USPS_CLIENT_ID,
+    uspsClientSecret: config?.uspsClientSecret || process.env.USPS_CLIENT_SECRET,
+    hudToken: config?.hudToken || process.env.HUD_API_TOKEN,
+    censusApiKey: config?.censusApiKey || process.env.CENSUS_API_KEY,
     blsApiKey: config?.blsApiKey || process.env.BLS_API_KEY,
     epaAqsEmail: config?.epaAqsEmail || process.env.EPA_AQS_EMAIL,
     epaAqsKey: config?.epaAqsKey || process.env.EPA_AQS_KEY,

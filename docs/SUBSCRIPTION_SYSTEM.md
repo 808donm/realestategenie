@@ -36,12 +36,14 @@ Complete subscription and feature management system with usage monitoring, capac
 ### Warning Banners
 
 **Yellow Warning (70% capacity)**
+
 - Soft, dismissible banner
 - "You're approaching the limit" messaging
 - Suggests upgrade with next tier plan
 - Shows on all pages until dismissed
 
 **Red Critical (100%+ capacity)**
+
 - Persistent, non-dismissible banner
 - "You've exceeded your plan" messaging
 - Urges immediate upgrade or sales contact
@@ -58,6 +60,7 @@ Complete subscription and feature management system with usage monitoring, capac
 ### Email Notifications
 
 Automated email system for capacity warnings:
+
 - HTML email templates for 70% warnings
 - HTML email templates for 100% critical alerts
 - Includes upgrade suggestions and CTAs
@@ -66,6 +69,7 @@ Automated email system for capacity warnings:
 ### Feature Gating
 
 Components and utilities for restricting features by plan:
+
 - `FeatureGate` - Greys out UI with upgrade overlay
 - `InlineFeatureGate` - Simple opacity/disable
 - `UpgradeBadge` - Shows "Upgrade Required" badge
@@ -142,10 +146,10 @@ Edit `/src/lib/email/usage-alerts.ts` and uncomment your email provider:
 // Example with Resend
 const resend = new Resend(process.env.RESEND_API_KEY);
 await resend.emails.send({
-  from: 'Real Estate Genie <notifications@realestategenie.app>',
+  from: "Real Estate Genie <notifications@realestategenie.app>",
   to: agent.email,
   subject,
-  html
+  html,
 });
 ```
 
@@ -248,6 +252,7 @@ if (status) {
 ### 1. View Sales Opportunities
 
 Navigate to `/app/admin` - accounts exceeding limits are highlighted at the top with:
+
 - Customer contact information
 - Exceeded resources
 - Email/view account buttons
@@ -255,6 +260,7 @@ Navigate to `/app/admin` - accounts exceeding limits are highlighted at the top 
 ### 2. Manage User Subscription
 
 Go to `/app/admin/subscriptions` to:
+
 - View all active subscriptions
 - See usage vs. limits for each account
 - Click "Manage" to change a user's plan
@@ -262,6 +268,7 @@ Go to `/app/admin/subscriptions` to:
 ### 3. Update Plan Pricing
 
 Go to `/app/admin/plans` to:
+
 - View all subscription plans
 - See subscriber counts
 - Edit pricing and limits (future feature)
@@ -269,6 +276,7 @@ Go to `/app/admin/plans` to:
 ### 4. Manage Features
 
 Go to `/app/admin/features` to:
+
 - View feature matrix
 - See which features are in each plan
 - Enable/disable features per plan (future feature)
@@ -278,6 +286,7 @@ Go to `/app/admin/features` to:
 ### Dashboard Cards
 
 Admin overview shows:
+
 - **Critical Alerts**: Accounts at/over 100% capacity
 - **Warning Alerts**: Accounts at 70-99% capacity
 
@@ -293,6 +302,7 @@ Admin overview shows:
 ### Alert Resolution
 
 Alerts are marked as resolved when:
+
 - User upgrades to a higher plan
 - User reduces usage below threshold
 - Admin manually resolves via database
@@ -314,6 +324,7 @@ Alerts are marked as resolved when:
 ### Alerts Not Creating
 
 Check that:
+
 - Migration 065 ran successfully
 - Agent has an active subscription
 - Usage monitoring cron is configured
@@ -322,6 +333,7 @@ Check that:
 ### Emails Not Sending
 
 Check that:
+
 - Email service API key is configured
 - Email sending code is uncommented in `usage-alerts.ts`
 - Send alerts cron is configured
@@ -330,6 +342,7 @@ Check that:
 ### Feature Gates Not Working
 
 Check that:
+
 - Plan has features assigned in `plan_features` table
 - Agent has active subscription
 - Feature slugs match exactly
@@ -338,6 +351,7 @@ Check that:
 ### Usage Not Calculating
 
 Check that:
+
 - `calculate_agent_usage()` function exists
 - Agent has properties/leases in database
 - RPC function has SECURITY DEFINER
@@ -346,6 +360,7 @@ Check that:
 ## Support
 
 For issues or questions about the subscription system:
+
 1. Check database logs in Supabase
 2. Review cron job logs in Vercel
 3. Check email service logs

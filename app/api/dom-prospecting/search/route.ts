@@ -24,7 +24,9 @@ import { RentcastClient, createRentcastClient } from "@/lib/integrations/rentcas
 export async function POST(request: NextRequest) {
   try {
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -62,7 +64,9 @@ export async function POST(request: NextRequest) {
         .maybeSingle();
 
       const trestleConfig = trestleInteg?.config
-        ? (typeof trestleInteg.config === "string" ? JSON.parse(trestleInteg.config) : trestleInteg.config)
+        ? typeof trestleInteg.config === "string"
+          ? JSON.parse(trestleInteg.config)
+          : trestleInteg.config
         : null;
 
       let rentcastClient: RentcastClient | null = null;
@@ -80,7 +84,9 @@ export async function POST(request: NextRequest) {
           if (config.api_key) rentcastClient = new RentcastClient({ apiKey: config.api_key });
         }
         if (!rentcastClient) rentcastClient = createRentcastClient();
-      } catch { /* RentCast unavailable */ }
+      } catch {
+        /* RentCast unavailable */
+      }
 
       searchResult = await runDomSearch(params, {
         trestleConfig,
@@ -91,13 +97,10 @@ export async function POST(request: NextRequest) {
     // Save results if saveSearchId provided
     if (body.saveSearchId) {
       try {
-        await supabaseAdmin
-          .from("dom_prospect_results")
-          .delete()
-          .eq("search_id", body.saveSearchId);
+        await supabaseAdmin.from("dom_prospect_results").delete().eq("search_id", body.saveSearchId);
 
         if (searchResult.results.length > 0) {
-          const rows = searchResult.results.map(r => ({
+          const rows = searchResult.results.map((r) => ({
             search_id: body.saveSearchId,
             listing_key: r.listingKey,
             mls_number: r.mlsNumber,
@@ -144,13 +147,13 @@ export async function POST(request: NextRequest) {
     }
 
     const summary = {
-      red: searchResult.results.filter(r => r.tier === "red").length,
-      orange: searchResult.results.filter(r => r.tier === "orange").length,
-      charcoal: searchResult.results.filter(r => r.tier === "charcoal").length,
-      outreach: searchResult.results.filter(r => r.prospectCategory === "outreach").length,
-      monitor: searchResult.results.filter(r => r.prospectCategory === "monitor").length,
-      expired: searchResult.results.filter(r => r.standardStatus === "Expired").length,
-      withdrawn: searchResult.results.filter(r => r.standardStatus === "Withdrawn").length,
+      red: searchResult.results.filter((r) => r.tier === "red").length,
+      orange: searchResult.results.filter((r) => r.tier === "orange").length,
+      charcoal: searchResult.results.filter((r) => r.tier === "charcoal").length,
+      outreach: searchResult.results.filter((r) => r.prospectCategory === "outreach").length,
+      monitor: searchResult.results.filter((r) => r.prospectCategory === "monitor").length,
+      expired: searchResult.results.filter((r) => r.standardStatus === "Expired").length,
+      withdrawn: searchResult.results.filter((r) => r.standardStatus === "Withdrawn").length,
     };
 
     return NextResponse.json({
@@ -161,9 +164,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error("[DomSearch] Error:", error);
-    return NextResponse.json(
-      { error: error.message || "DOM prospecting search failed" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message || "DOM prospecting search failed" }, { status: 500 });
   }
 }

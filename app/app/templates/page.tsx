@@ -32,9 +32,7 @@ export default async function TemplatesPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Flyer Templates</h1>
-        <p className="text-muted-foreground">
-          Customize your open house flyer templates with your brand
-        </p>
+        <p className="text-muted-foreground">Customize your open house flyer templates with your brand</p>
       </div>
 
       <TemplateCustomizer initialSettings={settings} agentInfo={agent} />

@@ -3,9 +3,26 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import {
-  Plus, Check, Clock, AlertCircle, Calendar, ChevronDown, Trash2,
-  CheckCheck, AlarmClock, Filter, Phone, Mail, MessageSquare,
-  Repeat, MoreHorizontal, CircleDot, User, Home, UserCheck, Link as LinkIcon,
+  Plus,
+  Check,
+  Clock,
+  AlertCircle,
+  Calendar,
+  ChevronDown,
+  Trash2,
+  CheckCheck,
+  AlarmClock,
+  Filter,
+  Phone,
+  Mail,
+  MessageSquare,
+  Repeat,
+  MoreHorizontal,
+  CircleDot,
+  User,
+  Home,
+  UserCheck,
+  Link as LinkIcon,
 } from "lucide-react";
 import ExportToolbar from "../components/export-toolbar";
 import type { ExportColumn } from "../components/export-toolbar";
@@ -108,7 +125,10 @@ export default function TasksClient() {
   // Snooze dropdown
   const [snoozeDropdownId, setSnoozeDropdownId] = useState<string | null>(null);
 
-  const showToastMsg = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
+  const showToastMsg = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
+  };
 
   // Build lookup maps from options
   const leadMap = new Map(leadOptions.map((l) => [l.id, l.label]));
@@ -161,7 +181,10 @@ export default function TasksClient() {
     }
   }, [activeTab]);
 
-  useEffect(() => { setIsLoading(true); fetchTasks(); }, [fetchTasks]);
+  useEffect(() => {
+    setIsLoading(true);
+    fetchTasks();
+  }, [fetchTasks]);
 
   const createTask = async () => {
     if (!newTitle.trim()) return;
@@ -186,13 +209,23 @@ export default function TasksClient() {
       });
       if (res.ok) {
         showToastMsg("Task created");
-        setNewTitle(""); setNewDescription(""); setNewPriority("medium");
-        setNewDueDate(""); setNewDueTime(""); setNewTaskType("general"); setNewRecurrence("");
-        setNewLinkedLeadId(""); setNewLinkedOpenHouseId(""); setNewAssignedTo("");
+        setNewTitle("");
+        setNewDescription("");
+        setNewPriority("medium");
+        setNewDueDate("");
+        setNewDueTime("");
+        setNewTaskType("general");
+        setNewRecurrence("");
+        setNewLinkedLeadId("");
+        setNewLinkedOpenHouseId("");
+        setNewAssignedTo("");
         setShowCreateForm(false);
         fetchTasks();
       }
-    } catch {} finally { setIsCreating(false); }
+    } catch {
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const updateTaskStatus = async (id: string, status: string) => {
@@ -215,7 +248,10 @@ export default function TasksClient() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "snoozed", snoozed_until }),
       });
-      if (res.ok) { showToastMsg(`Snoozed for ${days} day${days > 1 ? "s" : ""}`); fetchTasks(); }
+      if (res.ok) {
+        showToastMsg(`Snoozed for ${days} day${days > 1 ? "s" : ""}`);
+        fetchTasks();
+      }
     } catch {}
   };
 
@@ -239,7 +275,9 @@ export default function TasksClient() {
           ...(action === "snooze" ? { snoozed_until: new Date(Date.now() + 86400000).toISOString() } : {}),
         }),
       });
-      showToastMsg(`${ids.length} task${ids.length > 1 ? "s" : ""} ${action === "complete" ? "completed" : action === "snooze" ? "snoozed" : "deleted"}`);
+      showToastMsg(
+        `${ids.length} task${ids.length > 1 ? "s" : ""} ${action === "complete" ? "completed" : action === "snooze" ? "snoozed" : "deleted"}`,
+      );
       setSelectedIds(new Set());
       fetchTasks();
     } catch {}
@@ -248,7 +286,8 @@ export default function TasksClient() {
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   };
@@ -276,16 +315,17 @@ export default function TasksClient() {
     return null;
   };
 
-  const getExportData = () => tasks.map((t) => ({
-    title: t.title,
-    priority: PRIORITY_COLORS[t.priority]?.label || t.priority,
-    status: t.status,
-    due_date: t.due_date || "No date",
-    task_type: TASK_TYPES.find((tt) => tt.value === t.task_type)?.label || t.task_type,
-    linked_to: getLinkedLabel(t) || "—",
-    assigned_to: (t.assigned_to && memberMap.get(t.assigned_to)) || "Me",
-    recurrence: t.is_recurring ? "Yes" : "No",
-  }));
+  const getExportData = () =>
+    tasks.map((t) => ({
+      title: t.title,
+      priority: PRIORITY_COLORS[t.priority]?.label || t.priority,
+      status: t.status,
+      due_date: t.due_date || "No date",
+      task_type: TASK_TYPES.find((tt) => tt.value === t.task_type)?.label || t.task_type,
+      linked_to: getLinkedLabel(t) || "—",
+      assigned_to: (t.assigned_to && memberMap.get(t.assigned_to)) || "Me",
+      recurrence: t.is_recurring ? "Yes" : "No",
+    }));
 
   return (
     <div>
@@ -309,7 +349,9 @@ export default function TasksClient() {
             >
               {tab.label}
               {tab.count !== undefined && tab.count > 0 && (
-                <span className="ml-1.5 px-1.5 py-0.5 text-[10px] bg-red-100 text-red-600 rounded-full font-bold">{tab.count}</span>
+                <span className="ml-1.5 px-1.5 py-0.5 text-[10px] bg-red-100 text-red-600 rounded-full font-bold">
+                  {tab.count}
+                </span>
               )}
             </button>
           ))}
@@ -321,24 +363,31 @@ export default function TasksClient() {
         {selectedIds.size > 0 && (
           <div className="flex items-center gap-2">
             <span className="text-xs text-gray-500 font-medium">{selectedIds.size} selected</span>
-            <button onClick={() => bulkAction("complete")} className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100">
-              <CheckCheck className="w-3.5 h-3.5" />Complete
+            <button
+              onClick={() => bulkAction("complete")}
+              className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100"
+            >
+              <CheckCheck className="w-3.5 h-3.5" />
+              Complete
             </button>
-            <button onClick={() => bulkAction("snooze")} className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 rounded-lg hover:bg-amber-100">
-              <AlarmClock className="w-3.5 h-3.5" />Snooze 1d
+            <button
+              onClick={() => bulkAction("snooze")}
+              className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 rounded-lg hover:bg-amber-100"
+            >
+              <AlarmClock className="w-3.5 h-3.5" />
+              Snooze 1d
             </button>
-            <button onClick={() => bulkAction("delete")} className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold bg-red-50 text-red-700 border border-red-200 rounded-lg hover:bg-red-100">
-              <Trash2 className="w-3.5 h-3.5" />Delete
+            <button
+              onClick={() => bulkAction("delete")}
+              className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold bg-red-50 text-red-700 border border-red-200 rounded-lg hover:bg-red-100"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Delete
             </button>
           </div>
         )}
 
-        <ExportToolbar
-          title="Tasks"
-          columns={EXPORT_COLUMNS}
-          getData={getExportData}
-          compact
-        />
+        <ExportToolbar title="Tasks" columns={EXPORT_COLUMNS} getData={getExportData} compact />
 
         <button
           onClick={() => setShowCreateForm(!showCreateForm)}
@@ -373,7 +422,11 @@ export default function TasksClient() {
             </div>
             <div>
               <label className="block text-xs font-semibold text-gray-500 mb-1">Priority</label>
-              <select value={newPriority} onChange={(e) => setNewPriority(e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg">
+              <select
+                value={newPriority}
+                onChange={(e) => setNewPriority(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg"
+              >
                 <option value="urgent">Urgent</option>
                 <option value="high">High</option>
                 <option value="medium">Medium</option>
@@ -382,29 +435,63 @@ export default function TasksClient() {
             </div>
             <div>
               <label className="block text-xs font-semibold text-gray-500 mb-1">Type</label>
-              <select value={newTaskType} onChange={(e) => setNewTaskType(e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg">
-                {TASK_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+              <select
+                value={newTaskType}
+                onChange={(e) => setNewTaskType(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg"
+              >
+                {TASK_TYPES.map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
               <label className="block text-xs font-semibold text-gray-500 mb-1">Due Date</label>
-              <input type="date" value={newDueDate} onChange={(e) => setNewDueDate(e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg" />
+              <input
+                type="date"
+                value={newDueDate}
+                onChange={(e) => setNewDueDate(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg"
+              />
             </div>
             <div>
               <label className="block text-xs font-semibold text-gray-500 mb-1">Due Time</label>
-              <input type="time" value={newDueTime} onChange={(e) => setNewDueTime(e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg" />
+              <input
+                type="time"
+                value={newDueTime}
+                onChange={(e) => setNewDueTime(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg"
+              />
             </div>
             <div>
               <label className="block text-xs font-semibold text-gray-500 mb-1">Recurrence</label>
-              <select value={newRecurrence} onChange={(e) => setNewRecurrence(e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg">
-                {RECURRENCE_OPTIONS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+              <select
+                value={newRecurrence}
+                onChange={(e) => setNewRecurrence(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg"
+              >
+                {RECURRENCE_OPTIONS.map((r) => (
+                  <option key={r.value} value={r.value}>
+                    {r.label}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
               <label className="block text-xs font-semibold text-gray-500 mb-1">Assign To</label>
-              <select value={newAssignedTo} onChange={(e) => setNewAssignedTo(e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg">
+              <select
+                value={newAssignedTo}
+                onChange={(e) => setNewAssignedTo(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg"
+              >
                 <option value="">Me (default)</option>
-                {teamMemberOptions.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
+                {teamMemberOptions.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.label}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -416,7 +503,11 @@ export default function TasksClient() {
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 mb-1">Lead</label>
-                  <select value={newLinkedLeadId} onChange={(e) => setNewLinkedLeadId(e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg">
+                  <select
+                    value={newLinkedLeadId}
+                    onChange={(e) => setNewLinkedLeadId(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg"
+                  >
                     <option value="">No lead linked</option>
                     {leadOptions.map((l) => (
                       <option key={l.id} value={l.id}>
@@ -427,10 +518,16 @@ export default function TasksClient() {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 mb-1">Open House</label>
-                  <select value={newLinkedOpenHouseId} onChange={(e) => setNewLinkedOpenHouseId(e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg">
+                  <select
+                    value={newLinkedOpenHouseId}
+                    onChange={(e) => setNewLinkedOpenHouseId(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg"
+                  >
                     <option value="">No open house linked</option>
                     {openHouseOptions.map((oh) => (
-                      <option key={oh.id} value={oh.id}>{oh.label}</option>
+                      <option key={oh.id} value={oh.id}>
+                        {oh.label}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -438,10 +535,17 @@ export default function TasksClient() {
             </div>
           </div>
           <div className="flex justify-end gap-2 mt-4">
-            <button onClick={() => setShowCreateForm(false)} className="px-3 py-1.5 text-xs font-semibold text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50">
+            <button
+              onClick={() => setShowCreateForm(false)}
+              className="px-3 py-1.5 text-xs font-semibold text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50"
+            >
               Cancel
             </button>
-            <button onClick={createTask} disabled={isCreating || !newTitle.trim()} className="px-4 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50">
+            <button
+              onClick={createTask}
+              disabled={isCreating || !newTitle.trim()}
+              className="px-4 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+            >
               {isCreating ? "Creating..." : "Create Task"}
             </button>
           </div>
@@ -507,33 +611,45 @@ export default function TasksClient() {
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`text-sm font-semibold ${task.status === "completed" ? "line-through text-gray-400" : "text-gray-900"}`}>
+                    <span
+                      className={`text-sm font-semibold ${task.status === "completed" ? "line-through text-gray-400" : "text-gray-900"}`}
+                    >
                       {task.title}
                     </span>
-                    <span className="px-1.5 py-0.5 text-[10px] font-bold rounded" style={{ background: pri.bg, color: pri.text }}>
+                    <span
+                      className="px-1.5 py-0.5 text-[10px] font-bold rounded"
+                      style={{ background: pri.bg, color: pri.text }}
+                    >
                       {pri.label}
                     </span>
                     {task.is_recurring && (
-                      <span title="Recurring"><Repeat className="w-3 h-3 text-purple-500" /></span>
+                      <span title="Recurring">
+                        <Repeat className="w-3 h-3 text-purple-500" />
+                      </span>
                     )}
                     {task.status === "snoozed" && (
-                      <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-amber-50 text-amber-600">Snoozed</span>
+                      <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-amber-50 text-amber-600">
+                        Snoozed
+                      </span>
                     )}
                   </div>
-                  {task.description && (
-                    <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{task.description}</p>
-                  )}
+                  {task.description && <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{task.description}</p>}
                   <div className="flex items-center gap-3 mt-1 text-[11px] text-gray-400 flex-wrap">
                     {task.due_date && (
-                      <span className={`flex items-center gap-0.5 ${isOverdue ? "text-red-500 font-semibold" : isToday ? "text-blue-600 font-semibold" : ""}`}>
+                      <span
+                        className={`flex items-center gap-0.5 ${isOverdue ? "text-red-500 font-semibold" : isToday ? "text-blue-600 font-semibold" : ""}`}
+                      >
                         <Calendar className="w-3 h-3" />
-                        {isOverdue ? "Overdue: " : isToday ? "Today " : ""}{task.due_date}
+                        {isOverdue ? "Overdue: " : isToday ? "Today " : ""}
+                        {task.due_date}
                         {task.due_time && ` at ${task.due_time}`}
                       </span>
                     )}
                     <span className="capitalize">{task.task_type.replace("_", " ")}</span>
                     {task.is_recurring && task.recurrence_rule && (
-                      <span>{RECURRENCE_OPTIONS.find((r) => r.value === task.recurrence_rule)?.label || "Recurring"}</span>
+                      <span>
+                        {RECURRENCE_OPTIONS.find((r) => r.value === task.recurrence_rule)?.label || "Recurring"}
+                      </span>
                     )}
                     {linkedLabel && (
                       <span className="flex items-center gap-0.5 text-indigo-500">
@@ -587,7 +703,11 @@ export default function TasksClient() {
                       </div>
                     </>
                   )}
-                  <button onClick={() => deleteTask(task.id)} title="Delete" className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                  <button
+                    onClick={() => deleteTask(task.id)}
+                    title="Delete"
+                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>

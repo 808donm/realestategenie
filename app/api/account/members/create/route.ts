@@ -48,18 +48,11 @@ export async function POST(request: NextRequest) {
     });
 
     if (!canAdd) {
-      return NextResponse.json(
-        { error: `No ${role} seats available. Please upgrade your plan.` },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: `No ${role} seats available. Please upgrade your plan.` }, { status: 400 });
     }
 
     // Check if user already exists
-    const { data: existingAgent } = await supabaseAdmin
-      .from("agents")
-      .select("id")
-      .eq("email", email)
-      .single();
+    const { data: existingAgent } = await supabaseAdmin.from("agents").select("id").eq("email", email).single();
 
     if (existingAgent) {
       // Check if they're already in this account
@@ -71,21 +64,16 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (existingMember) {
-        return NextResponse.json(
-          { error: "This user is already a member of your team" },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: "This user is already a member of your team" }, { status: 400 });
       }
 
       // Existing user not in this account — add them as a member
-      const { error: addError } = await supabaseAdmin
-        .from("account_members")
-        .insert({
-          account_id: accountMember.account_id,
-          agent_id: existingAgent.id,
-          account_role: role,
-          office_id: office_id || null,
-        });
+      const { error: addError } = await supabaseAdmin.from("account_members").insert({
+        account_id: accountMember.account_id,
+        agent_id: existingAgent.id,
+        account_role: role,
+        office_id: office_id || null,
+      });
 
       if (addError) {
         console.error("Error adding existing user to account:", addError);
@@ -97,18 +85,16 @@ export async function POST(request: NextRequest) {
 
     // Create a system invitation so the auth trigger allows account creation
     const token = crypto.randomUUID();
-    const { error: inviteError } = await supabaseAdmin
-      .from("user_invitations")
-      .insert({
-        email,
-        invitation_token: token,
-        invited_by: userData.user.id,
-        status: "pending",
-        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-        account_id: accountMember.account_id,
-        invited_role: role,
-        office_id: office_id || null,
-      });
+    const { error: inviteError } = await supabaseAdmin.from("user_invitations").insert({
+      email,
+      invitation_token: token,
+      invited_by: userData.user.id,
+      status: "pending",
+      expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      account_id: accountMember.account_id,
+      invited_role: role,
+      office_id: office_id || null,
+    });
 
     if (inviteError) {
       console.error("Error creating system invitation:", inviteError);
@@ -129,39 +115,25 @@ export async function POST(request: NextRequest) {
     if (authError || !newUser.user) {
       console.error("Error creating auth user:", authError);
       // Clean up the invitation
-      await supabaseAdmin
-        .from("user_invitations")
-        .update({ status: "cancelled" })
-        .eq("invitation_token", token);
-      return NextResponse.json(
-        { error: authError?.message || "Failed to create user" },
-        { status: 500 }
-      );
+      await supabaseAdmin.from("user_invitations").update({ status: "cancelled" }).eq("invitation_token", token);
+      return NextResponse.json({ error: authError?.message || "Failed to create user" }, { status: 500 });
     }
 
     // Update agent profile with display name
     if (display_name) {
-      await supabaseAdmin
-        .from("agents")
-        .update({ display_name })
-        .eq("id", newUser.user.id);
+      await supabaseAdmin.from("agents").update({ display_name }).eq("id", newUser.user.id);
     }
 
     // Flag agent to change password on first login
-    await supabaseAdmin
-      .from("agents")
-      .update({ must_change_password: true })
-      .eq("id", newUser.user.id);
+    await supabaseAdmin.from("agents").update({ must_change_password: true }).eq("id", newUser.user.id);
 
     // Add to account as a member
-    const { error: memberError } = await supabaseAdmin
-      .from("account_members")
-      .insert({
-        account_id: accountMember.account_id,
-        agent_id: newUser.user.id,
-        account_role: role,
-        office_id: office_id || null,
-      });
+    const { error: memberError } = await supabaseAdmin.from("account_members").insert({
+      account_id: accountMember.account_id,
+      agent_id: newUser.user.id,
+      account_role: role,
+      office_id: office_id || null,
+    });
 
     if (memberError) {
       console.error("Error adding member to account:", memberError);

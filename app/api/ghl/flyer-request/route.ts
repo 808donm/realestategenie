@@ -3,11 +3,9 @@ import { createClient } from "@supabase/supabase-js";
 import { randomBytes } from "crypto";
 import { GHLClient } from "@/lib/integrations/ghl-client";
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 const FLYER_EXPIRATION_DAYS = 3;
 
@@ -24,10 +22,7 @@ export async function POST(request: NextRequest) {
     const { contactId } = body;
 
     if (!contactId) {
-      return NextResponse.json(
-        { error: "contactId is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "contactId is required" }, { status: 400 });
     }
 
     console.log("Processing flyer request for contact:", contactId);
@@ -35,7 +30,8 @@ export async function POST(request: NextRequest) {
     // Find all pending registrations for this contact
     const { data: registrations, error: regError } = await supabaseAdmin
       .from("open_house_registrations")
-      .select(`
+      .select(
+        `
         id,
         event_id,
         ghl_contact_id,
@@ -53,17 +49,15 @@ export async function POST(request: NextRequest) {
           start_at,
           created_at
         )
-      `)
+      `,
+      )
       .eq("ghl_contact_id", contactId)
       .eq("flyer_status", "pending")
       .order("registered_at", { ascending: false });
 
     if (regError) {
       console.error("Error fetching registrations:", regError);
-      return NextResponse.json(
-        { error: "Database error" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Database error" }, { status: 500 });
     }
 
     if (!registrations || registrations.length === 0) {
@@ -95,10 +89,7 @@ export async function POST(request: NextRequest) {
 
     if (!integration) {
       console.error("No active GHL integration for agent:", agentId);
-      return NextResponse.json(
-        { error: "GHL integration not found" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "GHL integration not found" }, { status: 500 });
     }
 
     const config = integration.config as any;
@@ -171,24 +162,19 @@ export async function POST(request: NextRequest) {
       // Create offer session
       const registrationIds = activeRegistrations.map((r) => r.id);
 
-      const { error: sessionError } = await supabaseAdmin
-        .from("flyer_offer_sessions")
-        .insert({
-          agent_id: agentId,
-          ghl_contact_id: contactId,
-          offer_token: offerToken,
-          registration_ids: registrationIds,
-          offer_count: activeRegistrations.length,
-          expires_at: expiresAt.toISOString(),
-          status: "active",
-        });
+      const { error: sessionError } = await supabaseAdmin.from("flyer_offer_sessions").insert({
+        agent_id: agentId,
+        ghl_contact_id: contactId,
+        offer_token: offerToken,
+        registration_ids: registrationIds,
+        offer_count: activeRegistrations.length,
+        expires_at: expiresAt.toISOString(),
+        status: "active",
+      });
 
       if (sessionError) {
         console.error("Error creating offer session:", sessionError);
-        return NextResponse.json(
-          { error: "Failed to create offer session" },
-          { status: 500 }
-        );
+        return NextResponse.json({ error: "Failed to create offer session" }, { status: 500 });
       }
 
       // Update all registrations with the offer token
@@ -216,9 +202,7 @@ export async function POST(request: NextRequest) {
       activeRegistrations.forEach((reg, index) => {
         const event = reg.open_house_events as any;
         const address = `${event.street_address}, ${event.city}`;
-        const details = [event.beds && `${event.beds}bd`, event.baths && `${event.baths}ba`]
-          .filter(Boolean)
-          .join(", ");
+        const details = [event.beds && `${event.beds}bd`, event.baths && `${event.baths}ba`].filter(Boolean).join(", ");
         choiceMessage += `${index + 1}. ${address}${details ? ` (${details})` : ""}\n`;
       });
 
@@ -241,9 +225,6 @@ export async function POST(request: NextRequest) {
     }
   } catch (error: any) {
     console.error("Flyer request error:", error);
-    return NextResponse.json(
-      { error: "Internal server error", details: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error", details: error.message }, { status: 500 });
   }
 }

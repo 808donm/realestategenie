@@ -5,7 +5,9 @@ import { supabaseServer } from "@/lib/supabase/server";
 export async function GET() {
   try {
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const [{ data: leads }, { data: openHouses }, { data: teamMembers }] = await Promise.all([
@@ -21,11 +23,7 @@ export async function GET() {
         .eq("agent_id", user.id)
         .order("start_at", { ascending: false })
         .limit(50),
-      supabase
-        .from("agents")
-        .select("id, display_name")
-        .eq("is_active", true)
-        .limit(50),
+      supabase.from("agents").select("id, display_name").eq("is_active", true).limit(50),
     ]);
 
     return NextResponse.json({

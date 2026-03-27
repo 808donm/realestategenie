@@ -67,20 +67,13 @@ export interface AgentBriefingData {
   }[];
 }
 
-export async function aggregateAgentData(
-  supabase: SupabaseClient,
-  agentId: string
-): Promise<AgentBriefingData | null> {
+export async function aggregateAgentData(supabase: SupabaseClient, agentId: string): Promise<AgentBriefingData | null> {
   const now = new Date();
   const sevenDaysAgo = new Date(now.getTime() - 7 * 86400000).toISOString();
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000).toISOString();
 
   // Fetch agent profile
-  const { data: agent } = await supabase
-    .from("agents")
-    .select("display_name, email")
-    .eq("id", agentId)
-    .single();
+  const { data: agent } = await supabase.from("agents").select("display_name, email").eq("id", agentId).single();
 
   if (!agent) return null;
 
@@ -109,13 +102,9 @@ export async function aggregateAgentData(
     .map((l) => {
       const ev = eventMap[l.event_id];
       const lastTouched = l.updated_at || l.created_at;
-      const daysSince = Math.floor(
-        (now.getTime() - new Date(lastTouched).getTime()) / 86400000
-      );
+      const daysSince = Math.floor((now.getTime() - new Date(lastTouched).getTime()) / 86400000);
       const ohDate = ev?.startAt ? new Date(ev.startAt) : null;
-      const recentOpenHouse =
-        ohDate !== null &&
-        now.getTime() - ohDate.getTime() < 3 * 86400000; // within 3 days
+      const recentOpenHouse = ohDate !== null && now.getTime() - ohDate.getTime() < 3 * 86400000; // within 3 days
 
       return {
         leadId: l.id,
@@ -124,9 +113,7 @@ export async function aggregateAgentData(
         phone: l.payload?.phone_e164 || null,
         heatScore: l.heat_score,
         pipelineStage: l.pipeline_stage,
-        pipelineStageLabel:
-          PIPELINE_STAGE_LABELS[l.pipeline_stage as PipelineStage] ||
-          l.pipeline_stage,
+        pipelineStageLabel: PIPELINE_STAGE_LABELS[l.pipeline_stage as PipelineStage] || l.pipeline_stage,
         property: ev?.address || l.event_id,
         timeline: l.payload?.timeline || null,
         financing: l.payload?.financing || null,
@@ -151,12 +138,8 @@ export async function aggregateAgentData(
   }));
 
   // Speed-to-lead: count leads from last 7 days, measure avg response
-  const recentLeads = (leads || []).filter(
-    (l) => new Date(l.created_at) >= new Date(sevenDaysAgo)
-  );
-  const noResponseLeads = recentLeads.filter(
-    (l) => l.pipeline_stage === "new_lead"
-  );
+  const recentLeads = (leads || []).filter((l) => new Date(l.created_at) >= new Date(sevenDaysAgo));
+  const noResponseLeads = recentLeads.filter((l) => l.pipeline_stage === "new_lead");
 
   // Lead source breakdown (from open house events)
   const sourceMap = new Map<string, number>();
@@ -258,14 +241,10 @@ export interface TeamBriefingData {
 
 export async function aggregateTeamData(
   supabase: SupabaseClient,
-  teamLeadId: string
+  teamLeadId: string,
 ): Promise<TeamBriefingData | null> {
   // Get team lead profile
-  const { data: lead } = await supabase
-    .from("agents")
-    .select("display_name, email")
-    .eq("id", teamLeadId)
-    .single();
+  const { data: lead } = await supabase.from("agents").select("display_name, email").eq("id", teamLeadId).single();
 
   if (!lead) return null;
 
@@ -291,9 +270,7 @@ export async function aggregateTeamData(
     .select("id, display_name, email")
     .in("id", agentIds.length > 0 ? agentIds : ["__none__"]);
 
-  const agentMap = new Map(
-    (agents || []).map((a) => [a.id, { name: a.display_name || a.email, email: a.email }])
-  );
+  const agentMap = new Map((agents || []).map((a) => [a.id, { name: a.display_name || a.email, email: a.email }]));
 
   // Get leads per agent (last 30 days)
   const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString();
@@ -304,10 +281,7 @@ export async function aggregateTeamData(
     .gte("created_at", thirtyDaysAgo);
 
   // Build leaderboard
-  const agentLeadCounts = new Map<
-    string,
-    { leadsCount: number; hotLeads: number; pipelineAdvances: number }
-  >();
+  const agentLeadCounts = new Map<string, { leadsCount: number; hotLeads: number; pipelineAdvances: number }>();
 
   (allLeads || []).forEach((l) => {
     const entry = agentLeadCounts.get(l.agent_id) || {
@@ -339,9 +313,7 @@ export async function aggregateTeamData(
   const fairness = leaderboard.map((a) => ({
     agentName: a.name,
     leadsReceived: a.leadsCount,
-    deviationFromAvg: avgPerAgent > 0
-      ? Math.round(((a.leadsCount - avgPerAgent) / avgPerAgent) * 100)
-      : 0,
+    deviationFromAvg: avgPerAgent > 0 ? Math.round(((a.leadsCount - avgPerAgent) / avgPerAgent) * 100) : 0,
   }));
 
   // Listing inventory: query open_house_events as proxy for active listings
@@ -352,13 +324,8 @@ export async function aggregateTeamData(
     .eq("status", "published");
 
   const now = Date.now();
-  const domValues = (activeListings || []).map((l) =>
-    Math.floor((now - new Date(l.created_at).getTime()) / 86400000)
-  );
-  const avgDOM =
-    domValues.length > 0
-      ? Math.round(domValues.reduce((a, b) => a + b, 0) / domValues.length)
-      : 0;
+  const domValues = (activeListings || []).map((l) => Math.floor((now - new Date(l.created_at).getTime()) / 86400000));
+  const avgDOM = domValues.length > 0 ? Math.round(domValues.reduce((a, b) => a + b, 0) / domValues.length) : 0;
   const staleListings = domValues.filter((d) => d > 21).length;
 
   return {
@@ -417,13 +384,9 @@ export interface BrokerBriefingData {
 
 export async function aggregateBrokerData(
   supabase: SupabaseClient,
-  brokerId: string
+  brokerId: string,
 ): Promise<BrokerBriefingData | null> {
-  const { data: broker } = await supabase
-    .from("agents")
-    .select("display_name, email")
-    .eq("id", brokerId)
-    .single();
+  const { data: broker } = await supabase.from("agents").select("display_name, email").eq("id", brokerId).single();
 
   if (!broker) return null;
 
@@ -449,9 +412,7 @@ export async function aggregateBrokerData(
     .select("id, display_name, email")
     .in("id", agentIds.length > 0 ? agentIds : ["__none__"]);
 
-  const agentMap = new Map(
-    (agents || []).map((a) => [a.id, a.display_name || a.email])
-  );
+  const agentMap = new Map((agents || []).map((a) => [a.id, a.display_name || a.email]));
 
   // Compliance: count audit log events
   const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString();

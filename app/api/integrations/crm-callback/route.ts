@@ -15,14 +15,12 @@ export async function GET(req: NextRequest) {
   // Handle OAuth errors
   if (error) {
     return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL}/app/integrations?error=ghl_oauth_failed&message=${error}`
+      `${process.env.NEXT_PUBLIC_APP_URL}/app/integrations?error=ghl_oauth_failed&message=${error}`,
     );
   }
 
   if (!code) {
-    return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL}/app/integrations?error=ghl_no_code`
-    );
+    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/app/integrations?error=ghl_no_code`);
   }
 
   const supabase = await supabaseServer();
@@ -33,9 +31,7 @@ export async function GET(req: NextRequest) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL}/signin?error=unauthorized`
-    );
+    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/signin?error=unauthorized`);
   }
 
   try {
@@ -63,7 +59,7 @@ export async function GET(req: NextRequest) {
         error: errorData,
       });
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/app/integrations?error=ghl_token_exchange_failed&message=${encodeURIComponent(errorData)}`
+        `${process.env.NEXT_PUBLIC_APP_URL}/app/integrations?error=ghl_token_exchange_failed&message=${encodeURIComponent(errorData)}`,
       );
     }
 
@@ -84,9 +80,9 @@ export async function GET(req: NextRequest) {
     // Decode JWT to see scopes and auth details
     if (tokenData.access_token) {
       try {
-        const tokenParts = tokenData.access_token.split('.');
+        const tokenParts = tokenData.access_token.split(".");
         if (tokenParts.length === 3) {
-          const payload = JSON.parse(Buffer.from(tokenParts[1], 'base64').toString());
+          const payload = JSON.parse(Buffer.from(tokenParts[1], "base64").toString());
           console.log("JWT Payload authClass:", payload.authClass);
           console.log("JWT Payload authClassId:", payload.authClassId);
           console.log("JWT Payload primaryAuthClassId:", payload.primaryAuthClassId);
@@ -136,7 +132,7 @@ export async function GET(req: NextRequest) {
     };
 
     // Remove undefined values to keep config clean
-    Object.keys(newConfig).forEach(key => {
+    Object.keys(newConfig).forEach((key) => {
       if (newConfig[key as keyof typeof newConfig] === undefined) {
         delete newConfig[key as keyof typeof newConfig];
       }
@@ -146,20 +142,23 @@ export async function GET(req: NextRequest) {
 
     const { data: upsertData, error: upsertError } = await supabase
       .from("integrations")
-      .upsert({
-        agent_id: user.id,
-        provider: "ghl",
-        status: "connected",
-        config: newConfig, // Use the clean config with only new field names
-      }, {
-        onConflict: "agent_id,provider",
-      })
+      .upsert(
+        {
+          agent_id: user.id,
+          provider: "ghl",
+          status: "connected",
+          config: newConfig, // Use the clean config with only new field names
+        },
+        {
+          onConflict: "agent_id,provider",
+        },
+      )
       .select();
 
     if (upsertError) {
       console.error("Failed to store GHL tokens:", upsertError);
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/app/integrations?error=ghl_save_failed&message=${encodeURIComponent(upsertError.message)}`
+        `${process.env.NEXT_PUBLIC_APP_URL}/app/integrations?error=ghl_save_failed&message=${encodeURIComponent(upsertError.message)}`,
       );
     }
 
@@ -195,13 +194,9 @@ export async function GET(req: NextRequest) {
     }
 
     // Success - redirect to integrations page
-    return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL}/app/integrations?success=ghl_connected`
-    );
+    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/app/integrations?success=ghl_connected`);
   } catch (error: any) {
     console.error("GHL OAuth callback error:", error);
-    return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL}/app/integrations?error=ghl_unexpected_error`
-    );
+    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/app/integrations?error=ghl_unexpected_error`);
   }
 }

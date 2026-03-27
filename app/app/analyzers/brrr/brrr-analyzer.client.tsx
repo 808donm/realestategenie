@@ -138,7 +138,7 @@ export default function BRRRAnalyzerClient({ savedAnalyses }: BRRRAnalyzerClient
   const verdict = useMemo(() => getBRRRVerdict(analysis), [analysis]);
   const maxPurchase70 = useMemo(
     () => calculate70PercentRule(formData.afterRepairValue, formData.renovationCosts),
-    [formData.afterRepairValue, formData.renovationCosts]
+    [formData.afterRepairValue, formData.renovationCosts],
   );
 
   const handleSave = async () => {
@@ -282,7 +282,10 @@ export default function BRRRAnalyzerClient({ savedAnalyses }: BRRRAnalyzerClient
       ["Monthly Cash Flow", analysis.monthlyCashFlow],
       ["Annual Cash Flow", analysis.annualCashFlow],
       ["Cap Rate", `${analysis.capRate.toFixed(2)}%`],
-      ["Cash-on-Cash Return", isFinite(analysis.cashOnCashReturn) ? `${analysis.cashOnCashReturn.toFixed(2)}%` : "Infinite"],
+      [
+        "Cash-on-Cash Return",
+        isFinite(analysis.cashOnCashReturn) ? `${analysis.cashOnCashReturn.toFixed(2)}%` : "Infinite",
+      ],
       [],
       ["DEAL SCORE"],
       ["Score", `${analysis.dealScore.toFixed(1)} / 5`],
@@ -309,13 +312,7 @@ export default function BRRRAnalyzerClient({ savedAnalyses }: BRRRAnalyzerClient
       ];
 
       const projectionsSheet = XLSX.utils.aoa_to_sheet(projectionsData);
-      projectionsSheet["!cols"] = [
-        { wch: 8 },
-        { wch: 15 },
-        { wch: 15 },
-        { wch: 15 },
-        { wch: 20 },
-      ];
+      projectionsSheet["!cols"] = [{ wch: 8 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 20 }];
       XLSX.utils.book_append_sheet(wb, projectionsSheet, "Projections");
     }
 
@@ -330,7 +327,12 @@ export default function BRRRAnalyzerClient({ savedAnalyses }: BRRRAnalyzerClient
       [],
       ["PROJECTED EXIT"],
       ["Projected Sale Price", analysis.projectedSalePrice],
-      ["Total Cash Flow Received", analysis.yearlyProjections.length > 0 ? analysis.yearlyProjections[analysis.yearlyProjections.length - 1].cumulativeCashFlow : 0],
+      [
+        "Total Cash Flow Received",
+        analysis.yearlyProjections.length > 0
+          ? analysis.yearlyProjections[analysis.yearlyProjections.length - 1].cumulativeCashFlow
+          : 0,
+      ],
       ["Total Profit", analysis.totalProfit],
       [],
       ["MULTI-FAMILY METRICS"],
@@ -350,60 +352,74 @@ export default function BRRRAnalyzerClient({ savedAnalyses }: BRRRAnalyzerClient
     XLSX.writeFile(wb, fileName);
   };
 
-  const generateFile = useCallback((format: "pdf" | "xlsx"): Blob => {
-    if (format === "xlsx") {
-      const wb = XLSX.utils.book_new();
-      const data: (string | number)[][] = [
-        ["BRRR STRATEGY ANALYSIS"], [],
-        ["Property", formData.name || "Untitled"],
-        ["Address", formData.address || "N/A"],
-        [],
-        ["Purchase Price", formData.purchasePrice],
-        ["Renovation Costs", formData.renovationCosts],
-        ["After Repair Value", formData.afterRepairValue],
-        [],
-        ["Total Cash Invested", analysis.totalCashInvested],
-        ["Cash Out at Refinance", analysis.cashOutAtRefinance],
-        ["Cash Left in Deal", analysis.cashLeftInDeal],
-        ["Equity Captured", analysis.equityCaptured],
-        ["Infinite Return?", analysis.isInfiniteReturn ? "YES" : "No"],
-        [],
-        ["Monthly Cash Flow", analysis.monthlyCashFlow],
-        ["Annual Cash Flow", analysis.annualCashFlow],
-        ["Cap Rate", `${analysis.capRate.toFixed(2)}%`],
-        ["Cash-on-Cash Return", isFinite(analysis.cashOnCashReturn) ? `${analysis.cashOnCashReturn.toFixed(2)}%` : "Infinite"],
-        ["Deal Score", `${analysis.dealScore.toFixed(1)} / 5`],
-      ];
-      const sheet = XLSX.utils.aoa_to_sheet(data);
-      XLSX.utils.book_append_sheet(wb, sheet, "BRRR Summary");
-      const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-      return new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-    }
-    const doc = new jsPDF();
-    const pw = doc.internal.pageSize.getWidth();
-    let y = 20;
-    doc.setFontSize(18); doc.setFont("helvetica", "bold");
-    doc.text("BRRR Strategy Analysis", pw / 2, y, { align: "center" }); y += 14;
-    doc.setFontSize(10); doc.setFont("helvetica", "normal");
-    [
-      ["Property:", formData.name || "Untitled"],
-      ["Purchase Price:", formatCurrency(formData.purchasePrice)],
-      ["Renovation:", formatCurrency(formData.renovationCosts)],
-      ["ARV:", formatCurrency(formData.afterRepairValue)],
-      ["", ""],
-      ["Total Cash Invested:", formatCurrency(analysis.totalCashInvested)],
-      ["Cash Out at Refi:", formatCurrency(analysis.cashOutAtRefinance)],
-      ["Cash Left in Deal:", formatCurrency(analysis.cashLeftInDeal)],
-      ["Infinite Return:", analysis.isInfiniteReturn ? "YES" : "No"],
-      ["", ""],
-      ["Monthly Cash Flow:", formatCurrency(analysis.monthlyCashFlow)],
-      ["Annual Cash Flow:", formatCurrency(analysis.annualCashFlow)],
-      ["Cap Rate:", formatPercent(analysis.capRate)],
-      ["Cash-on-Cash:", isFinite(analysis.cashOnCashReturn) ? formatPercent(analysis.cashOnCashReturn) : "Infinite"],
-      ["Deal Score:", `${analysis.dealScore.toFixed(1)} / 5`],
-    ].forEach(([l, v]) => { doc.text(l, 25, y); doc.text(v, pw - 25, y, { align: "right" }); y += 7; });
-    return new Blob([doc.output("arraybuffer")], { type: "application/pdf" });
-  }, [formData, analysis, verdict]);
+  const generateFile = useCallback(
+    (format: "pdf" | "xlsx"): Blob => {
+      if (format === "xlsx") {
+        const wb = XLSX.utils.book_new();
+        const data: (string | number)[][] = [
+          ["BRRR STRATEGY ANALYSIS"],
+          [],
+          ["Property", formData.name || "Untitled"],
+          ["Address", formData.address || "N/A"],
+          [],
+          ["Purchase Price", formData.purchasePrice],
+          ["Renovation Costs", formData.renovationCosts],
+          ["After Repair Value", formData.afterRepairValue],
+          [],
+          ["Total Cash Invested", analysis.totalCashInvested],
+          ["Cash Out at Refinance", analysis.cashOutAtRefinance],
+          ["Cash Left in Deal", analysis.cashLeftInDeal],
+          ["Equity Captured", analysis.equityCaptured],
+          ["Infinite Return?", analysis.isInfiniteReturn ? "YES" : "No"],
+          [],
+          ["Monthly Cash Flow", analysis.monthlyCashFlow],
+          ["Annual Cash Flow", analysis.annualCashFlow],
+          ["Cap Rate", `${analysis.capRate.toFixed(2)}%`],
+          [
+            "Cash-on-Cash Return",
+            isFinite(analysis.cashOnCashReturn) ? `${analysis.cashOnCashReturn.toFixed(2)}%` : "Infinite",
+          ],
+          ["Deal Score", `${analysis.dealScore.toFixed(1)} / 5`],
+        ];
+        const sheet = XLSX.utils.aoa_to_sheet(data);
+        XLSX.utils.book_append_sheet(wb, sheet, "BRRR Summary");
+        const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+        return new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      }
+      const doc = new jsPDF();
+      const pw = doc.internal.pageSize.getWidth();
+      let y = 20;
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      doc.text("BRRR Strategy Analysis", pw / 2, y, { align: "center" });
+      y += 14;
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      [
+        ["Property:", formData.name || "Untitled"],
+        ["Purchase Price:", formatCurrency(formData.purchasePrice)],
+        ["Renovation:", formatCurrency(formData.renovationCosts)],
+        ["ARV:", formatCurrency(formData.afterRepairValue)],
+        ["", ""],
+        ["Total Cash Invested:", formatCurrency(analysis.totalCashInvested)],
+        ["Cash Out at Refi:", formatCurrency(analysis.cashOutAtRefinance)],
+        ["Cash Left in Deal:", formatCurrency(analysis.cashLeftInDeal)],
+        ["Infinite Return:", analysis.isInfiniteReturn ? "YES" : "No"],
+        ["", ""],
+        ["Monthly Cash Flow:", formatCurrency(analysis.monthlyCashFlow)],
+        ["Annual Cash Flow:", formatCurrency(analysis.annualCashFlow)],
+        ["Cap Rate:", formatPercent(analysis.capRate)],
+        ["Cash-on-Cash:", isFinite(analysis.cashOnCashReturn) ? formatPercent(analysis.cashOnCashReturn) : "Infinite"],
+        ["Deal Score:", `${analysis.dealScore.toFixed(1)} / 5`],
+      ].forEach(([l, v]) => {
+        doc.text(l, 25, y);
+        doc.text(v, pw - 25, y, { align: "right" });
+        y += 7;
+      });
+      return new Blob([doc.output("arraybuffer")], { type: "application/pdf" });
+    },
+    [formData, analysis, verdict],
+  );
 
   const inputStyle = {
     width: "100%",
@@ -513,9 +529,7 @@ export default function BRRRAnalyzerClient({ savedAnalyses }: BRRRAnalyzerClient
                       )}
                     </div>
                   </div>
-                  <div
-                    style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginTop: 12 }}
-                  >
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginTop: 12 }}>
                     <div>
                       <div style={{ fontSize: 12, color: "#6b7280" }}>Purchase</div>
                       <div style={{ fontWeight: 600 }}>{formatCurrency(item.purchase_price)}</div>
@@ -577,9 +591,7 @@ export default function BRRRAnalyzerClient({ savedAnalyses }: BRRRAnalyzerClient
 
             {/* Phase 1: Purchase */}
             <div style={sectionStyle}>
-              <h3 style={{ margin: "0 0 12px", fontSize: 16, fontWeight: 600, color: "#dc2626" }}>
-                Phase 1: Buy
-              </h3>
+              <h3 style={{ margin: "0 0 12px", fontSize: 16, fontWeight: 600, color: "#dc2626" }}>Phase 1: Buy</h3>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <div>
                   <label style={labelStyle}>Purchase Price</label>
@@ -631,9 +643,7 @@ export default function BRRRAnalyzerClient({ savedAnalyses }: BRRRAnalyzerClient
 
             {/* Phase 2: Renovation */}
             <div style={sectionStyle}>
-              <h3 style={{ margin: "0 0 12px", fontSize: 16, fontWeight: 600, color: "#ea580c" }}>
-                Phase 2: Renovate
-              </h3>
+              <h3 style={{ margin: "0 0 12px", fontSize: 16, fontWeight: 600, color: "#ea580c" }}>Phase 2: Renovate</h3>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
                 <div>
                   <label style={labelStyle}>Renovation Costs</label>
@@ -722,9 +732,7 @@ export default function BRRRAnalyzerClient({ savedAnalyses }: BRRRAnalyzerClient
 
             {/* Phase 4: Rent */}
             <div style={sectionStyle}>
-              <h3 style={{ margin: "0 0 12px", fontSize: 16, fontWeight: 600, color: "#16a34a" }}>
-                Phase 4: Rent
-              </h3>
+              <h3 style={{ margin: "0 0 12px", fontSize: 16, fontWeight: 600, color: "#16a34a" }}>Phase 4: Rent</h3>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <div>
                   <label style={labelStyle}>Monthly Rent {formData.numberOfUnits > 1 && "(per unit)"}</label>
@@ -811,9 +819,7 @@ export default function BRRRAnalyzerClient({ savedAnalyses }: BRRRAnalyzerClient
                     type="number"
                     step={0.5}
                     value={formData.annualAppreciationPercent}
-                    onChange={(e) =>
-                      handleInputChange("annualAppreciationPercent", parseFloat(e.target.value) || 0)
-                    }
+                    onChange={(e) => handleInputChange("annualAppreciationPercent", parseFloat(e.target.value) || 0)}
                     style={inputStyle}
                   />
                 </div>
@@ -823,9 +829,7 @@ export default function BRRRAnalyzerClient({ savedAnalyses }: BRRRAnalyzerClient
                     type="number"
                     step={0.5}
                     value={formData.annualRentIncreasePercent}
-                    onChange={(e) =>
-                      handleInputChange("annualRentIncreasePercent", parseFloat(e.target.value) || 0)
-                    }
+                    onChange={(e) => handleInputChange("annualRentIncreasePercent", parseFloat(e.target.value) || 0)}
                     style={inputStyle}
                   />
                 </div>
@@ -892,7 +896,7 @@ export default function BRRRAnalyzerClient({ savedAnalyses }: BRRRAnalyzerClient
                 calculatorName="BRRR Analysis"
                 propertyAddress={formData.address}
                 summaryData={{
-                  "Property": formData.name || "Untitled",
+                  Property: formData.name || "Untitled",
                   "Purchase Price": formatCurrency(formData.purchasePrice),
                   "After Repair Value": formatCurrency(formData.afterRepairValue),
                   "Renovation Costs": formatCurrency(formData.renovationCosts),
@@ -903,7 +907,7 @@ export default function BRRRAnalyzerClient({ savedAnalyses }: BRRRAnalyzerClient
                   "Refinance Loan Amount": formatCurrency(analysis.refinanceLoanAmount),
                   "Deal Score": `${analysis.dealScore}/10`,
                   "Infinite Return": analysis.isInfiniteReturn ? "Yes" : "No",
-                  "Verdict": verdict.verdict,
+                  Verdict: verdict.verdict,
                 }}
               />
             </div>
@@ -958,9 +962,7 @@ export default function BRRRAnalyzerClient({ savedAnalyses }: BRRRAnalyzerClient
                 marginBottom: 16,
               }}
             >
-              <h4 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "#6b7280" }}>
-                KEY BRRR METRICS
-              </h4>
+              <h4 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "#6b7280" }}>KEY BRRR METRICS</h4>
               <div style={{ display: "grid", gap: 12 }}>
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
                   <span>Total Cash Invested</span>
@@ -1000,9 +1002,7 @@ export default function BRRRAnalyzerClient({ savedAnalyses }: BRRRAnalyzerClient
                 marginBottom: 16,
               }}
             >
-              <h4 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "#6b7280" }}>
-                RENTAL RETURNS
-              </h4>
+              <h4 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "#6b7280" }}>RENTAL RETURNS</h4>
               <div style={{ display: "grid", gap: 12 }}>
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
                   <span>Monthly Cash Flow</span>
@@ -1070,12 +1070,8 @@ export default function BRRRAnalyzerClient({ savedAnalyses }: BRRRAnalyzerClient
                       {analysis.yearlyProjections.map((year) => (
                         <tr key={year.year} style={{ borderBottom: "1px solid #f3f4f6" }}>
                           <td style={{ padding: "4px 0" }}>Year {year.year}</td>
-                          <td style={{ textAlign: "right", padding: "4px 0" }}>
-                            {formatCurrency(year.cashFlow)}
-                          </td>
-                          <td style={{ textAlign: "right", padding: "4px 0" }}>
-                            {formatCurrency(year.equity)}
-                          </td>
+                          <td style={{ textAlign: "right", padding: "4px 0" }}>{formatCurrency(year.cashFlow)}</td>
+                          <td style={{ textAlign: "right", padding: "4px 0" }}>{formatCurrency(year.equity)}</td>
                         </tr>
                       ))}
                     </tbody>

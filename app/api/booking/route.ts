@@ -28,7 +28,9 @@ export async function POST(request: NextRequest) {
       .insert({
         agent_id: userData.user.id,
         title,
-        description: notes ? `Contact: ${contactName || "Unknown"}\n${contactPhone ? `Phone: ${contactPhone}\n` : ""}${contactEmail ? `Email: ${contactEmail}\n` : ""}\n${notes}` : `Appointment with ${contactName || "Unknown"}`,
+        description: notes
+          ? `Contact: ${contactName || "Unknown"}\n${contactPhone ? `Phone: ${contactPhone}\n` : ""}${contactEmail ? `Email: ${contactEmail}\n` : ""}\n${notes}`
+          : `Appointment with ${contactName || "Unknown"}`,
         start_at: new Date(startAt).toISOString(),
         end_at: new Date(endAt).toISOString(),
         location: location || null,
@@ -72,15 +74,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       eventId: event.id,
-      message: source && source !== "local"
-        ? `Appointment booked. Will sync to ${source} calendar on next sync.`
-        : "Appointment booked successfully.",
+      message:
+        source && source !== "local"
+          ? `Appointment booked. Will sync to ${source} calendar on next sync.`
+          : "Appointment booked successfully.",
     });
   } catch (error) {
     console.error("Booking error:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to book appointment" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -110,7 +113,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to load appointments" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

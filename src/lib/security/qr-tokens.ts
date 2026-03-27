@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import crypto from "crypto";
 
 /**
  * Security tokens for open house QR code access control
@@ -22,17 +22,24 @@ function getSecretKey(): string {
 
     if (!secret) {
       throw new Error(
-        'QR_TOKEN_SECRET or NEXTAUTH_SECRET must be set in environment variables. ' +
-        'Generate a secure random string: openssl rand -base64 32'
+        "QR_TOKEN_SECRET or NEXTAUTH_SECRET must be set in environment variables. " +
+          "Generate a secure random string: openssl rand -base64 32",
       );
     }
 
     SECRET_KEY = secret;
 
     // Warn once in development if using NEXTAUTH_SECRET instead of dedicated QR_TOKEN_SECRET
-    if (!process.env.QR_TOKEN_SECRET && process.env.NEXTAUTH_SECRET && !hasWarned && process.env.NODE_ENV !== 'production') {
+    if (
+      !process.env.QR_TOKEN_SECRET &&
+      process.env.NEXTAUTH_SECRET &&
+      !hasWarned &&
+      process.env.NODE_ENV !== "production"
+    ) {
       hasWarned = true;
-      console.warn('💡 Using NEXTAUTH_SECRET for QR tokens. Consider setting QR_TOKEN_SECRET for better security isolation.');
+      console.warn(
+        "💡 Using NEXTAUTH_SECRET for QR tokens. Consider setting QR_TOKEN_SECRET for better security isolation.",
+      );
     }
   }
 
@@ -54,7 +61,7 @@ export interface QRTokenPayload {
  */
 export function generateQRToken(eventId: string, validityHours: number = 72): string {
   const now = Date.now();
-  const expiresAt = now + (validityHours * 60 * 60 * 1000);
+  const expiresAt = now + validityHours * 60 * 60 * 1000;
 
   const payload: QRTokenPayload = {
     eventId,
@@ -66,13 +73,10 @@ export function generateQRToken(eventId: string, validityHours: number = 72): st
   const payloadString = `${payload.eventId}:${payload.expiresAt}:${payload.generatedAt}`;
 
   // Generate HMAC signature
-  const signature = crypto
-    .createHmac('sha256', getSecretKey())
-    .update(payloadString)
-    .digest('base64url'); // base64url is URL-safe (no +, /, =)
+  const signature = crypto.createHmac("sha256", getSecretKey()).update(payloadString).digest("base64url"); // base64url is URL-safe (no +, /, =)
 
   // Combine payload and signature: payload.signature
-  const token = `${Buffer.from(payloadString).toString('base64url')}.${signature}`;
+  const token = `${Buffer.from(payloadString).toString("base64url")}.${signature}`;
 
   return token;
 }
@@ -90,29 +94,26 @@ export function validateQRToken(token: string): {
 } {
   try {
     // Split token into payload and signature
-    const parts = token.split('.');
+    const parts = token.split(".");
     if (parts.length !== 2) {
-      return { valid: false, error: 'Invalid token format' };
+      return { valid: false, error: "Invalid token format" };
     }
 
     const [payloadEncoded, signature] = parts;
 
     // Decode payload
-    const payloadString = Buffer.from(payloadEncoded, 'base64url').toString('utf-8');
-    const [eventId, expiresAtStr, generatedAtStr] = payloadString.split(':');
+    const payloadString = Buffer.from(payloadEncoded, "base64url").toString("utf-8");
+    const [eventId, expiresAtStr, generatedAtStr] = payloadString.split(":");
 
     if (!eventId || !expiresAtStr || !generatedAtStr) {
-      return { valid: false, error: 'Invalid token payload' };
+      return { valid: false, error: "Invalid token payload" };
     }
 
     // Verify signature
-    const expectedSignature = crypto
-      .createHmac('sha256', getSecretKey())
-      .update(payloadString)
-      .digest('base64url');
+    const expectedSignature = crypto.createHmac("sha256", getSecretKey()).update(payloadString).digest("base64url");
 
     if (signature !== expectedSignature) {
-      return { valid: false, error: 'Invalid signature - token may have been tampered with' };
+      return { valid: false, error: "Invalid signature - token may have been tampered with" };
     }
 
     // Parse timestamps
@@ -120,7 +121,7 @@ export function validateQRToken(token: string): {
     const generatedAt = parseInt(generatedAtStr, 10);
 
     if (isNaN(expiresAt) || isNaN(generatedAt)) {
-      return { valid: false, error: 'Invalid timestamp in token' };
+      return { valid: false, error: "Invalid timestamp in token" };
     }
 
     // Check expiration

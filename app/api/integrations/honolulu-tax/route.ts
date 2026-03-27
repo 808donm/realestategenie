@@ -30,12 +30,8 @@ export async function GET(request: NextRequest) {
     const tmk = searchParams.get("tmk");
     const name = searchParams.get("name");
     const address = searchParams.get("address");
-    const limit = searchParams.get("limit")
-      ? parseInt(searchParams.get("limit")!, 10)
-      : undefined;
-    const offset = searchParams.get("offset")
-      ? parseInt(searchParams.get("offset")!, 10)
-      : undefined;
+    const limit = searchParams.get("limit") ? parseInt(searchParams.get("limit")!, 10) : undefined;
+    const offset = searchParams.get("offset") ? parseInt(searchParams.get("offset")!, 10) : undefined;
 
     const client = new HonoluluTaxClient();
 
@@ -52,18 +48,12 @@ export async function GET(request: NextRequest) {
           });
           return NextResponse.json({ success: true, name, owners });
         }
-        return NextResponse.json(
-          { error: "Provide tmk or name parameter" },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: "Provide tmk or name parameter" }, { status: 400 });
       }
 
       case "parcel": {
         if (!tmk) {
-          return NextResponse.json(
-            { error: "tmk parameter required" },
-            { status: 400 }
-          );
+          return NextResponse.json({ error: "tmk parameter required" }, { status: 400 });
         }
         const parcel = await client.getTaxParcelByTMK(tmk);
         return NextResponse.json({ success: true, tmk, parcel });
@@ -71,10 +61,7 @@ export async function GET(request: NextRequest) {
 
       case "record": {
         if (!tmk) {
-          return NextResponse.json(
-            { error: "tmk parameter required" },
-            { status: 400 }
-          );
+          return NextResponse.json({ error: "tmk parameter required" }, { status: 400 });
         }
         const record = await client.getTaxRecord(tmk);
         return NextResponse.json({ success: true, ...record });
@@ -82,10 +69,7 @@ export async function GET(request: NextRequest) {
 
       case "search": {
         if (!address) {
-          return NextResponse.json(
-            { error: "address parameter required" },
-            { status: 400 }
-          );
+          return NextResponse.json({ error: "address parameter required" }, { status: 400 });
         }
         const parcels = await client.searchParcelsByAddress(address, {
           limit,
@@ -104,19 +88,16 @@ export async function GET(request: NextRequest) {
           {
             error: `Unknown endpoint: ${endpoint}. Use: owners, parcel, record, search, test`,
           },
-          { status: 400 }
+          { status: 400 },
         );
     }
   } catch (error) {
     console.error("Error fetching Honolulu tax data:", error);
     return NextResponse.json(
       {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Failed to fetch Honolulu tax data",
+        error: error instanceof Error ? error.message : "Failed to fetch Honolulu tax data",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

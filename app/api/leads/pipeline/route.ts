@@ -34,9 +34,11 @@ export async function GET() {
     // Use email or phone as primary identity (more reliable than name).
     // Keep the entry with the most advanced pipeline stage (or most recently updated).
     const stageOrder: Record<string, number> = {};
-    PIPELINE_STAGES.forEach((s, i) => { stageOrder[s] = i; });
+    PIPELINE_STAGES.forEach((s, i) => {
+      stageOrder[s] = i;
+    });
 
-    const dedupeMap = new Map<string, typeof leads[0]>();
+    const dedupeMap = new Map<string, (typeof leads)[0]>();
     for (const lead of leads || []) {
       const email = (lead.payload?.email || "").trim().toLowerCase();
       const phone = (lead.payload?.phone_e164 || "").trim();
@@ -51,9 +53,11 @@ export async function GET() {
         // Keep the one with the more advanced stage, or if same stage, most recently updated
         const existingStageIdx = stageOrder[existing.pipeline_stage] ?? 0;
         const newStageIdx = stageOrder[lead.pipeline_stage] ?? 0;
-        if (newStageIdx > existingStageIdx ||
-            (newStageIdx === existingStageIdx &&
-             (lead.updated_at || lead.created_at) > (existing.updated_at || existing.created_at))) {
+        if (
+          newStageIdx > existingStageIdx ||
+          (newStageIdx === existingStageIdx &&
+            (lead.updated_at || lead.created_at) > (existing.updated_at || existing.created_at))
+        ) {
           dedupeMap.set(key, lead);
         }
       }
@@ -74,9 +78,7 @@ export async function GET() {
 
     // Group leads by pipeline stage
     const stages = PIPELINE_STAGES.map((stageKey) => {
-      const stageLeads = dedupedLeads.filter(
-        (l) => l.pipeline_stage === stageKey
-      );
+      const stageLeads = dedupedLeads.filter((l) => l.pipeline_stage === stageKey);
       return {
         key: stageKey,
         label: PIPELINE_STAGE_LABELS[stageKey as PipelineStage],

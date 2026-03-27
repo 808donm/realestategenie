@@ -10,13 +10,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { UserPlus, AlertCircle } from "lucide-react";
@@ -155,17 +149,13 @@ export default function InviteMemberButton({
                 <SelectItem value="agent">
                   Agent
                   {usage && (
-                    <span className="text-xs text-gray-500 ml-2">
-                      ({usage.agents_available} seats available)
-                    </span>
+                    <span className="text-xs text-gray-500 ml-2">({usage.agents_available} seats available)</span>
                   )}
                 </SelectItem>
                 <SelectItem value="assistant">
                   Assistant
                   {usage && (
-                    <span className="text-xs text-gray-500 ml-2">
-                      ({usage.assistants_available} seats available)
-                    </span>
+                    <span className="text-xs text-gray-500 ml-2">({usage.assistants_available} seats available)</span>
                   )}
                 </SelectItem>
                 <SelectItem value="admin">
@@ -218,12 +208,7 @@ export default function InviteMemberButton({
           )}
 
           <div className="flex justify-end gap-2 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setOpen(false)}
-              disabled={loading}
-            >
+            <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={loading}>
               Cancel
             </Button>
             <Button type="submit" disabled={loading || !canInviteRole(role)}>

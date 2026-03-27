@@ -27,10 +27,7 @@ export async function GET(request: NextRequest) {
 
     if (fetchError) {
       console.error("Error fetching Trestle integration:", fetchError);
-      return NextResponse.json(
-        { error: "Failed to fetch integration" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to fetch integration" }, { status: 500 });
     }
 
     if (!integration) {
@@ -41,10 +38,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Ensure config is parsed as an object (direct SQL may store it as a JSON string)
-    const config =
-      typeof integration.config === "string"
-        ? JSON.parse(integration.config)
-        : integration.config;
+    const config = typeof integration.config === "string" ? JSON.parse(integration.config) : integration.config;
 
     if (integration.status !== "connected" || !config.api_url) {
       return NextResponse.json({
@@ -89,9 +83,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("Error in Trestle test:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

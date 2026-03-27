@@ -17,7 +17,9 @@ import { PIPELINE_STAGE_LABELS } from "@/lib/pipeline-stages";
 export async function POST(request: NextRequest) {
   try {
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -30,11 +32,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get agent name
-    const { data: agent } = await supabase
-      .from("agents")
-      .select("display_name")
-      .eq("id", user.id)
-      .single();
+    const { data: agent } = await supabase.from("agents").select("display_name").eq("id", user.id).single();
 
     const agentName = agent?.display_name || "Agent";
 

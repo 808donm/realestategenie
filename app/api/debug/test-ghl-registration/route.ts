@@ -1,13 +1,15 @@
 import { NextResponse } from "next/server";
 import { getValidGHLConfig } from "@/lib/integrations/ghl-token-refresh";
-import { createOrUpdateGHLContact, createGHLOpenHouseRecord, createGHLRegistrationRecord } from "@/lib/notifications/ghl-service";
+import {
+  createOrUpdateGHLContact,
+  createGHLOpenHouseRecord,
+  createGHLRegistrationRecord,
+} from "@/lib/notifications/ghl-service";
 import { createClient } from "@supabase/supabase-js";
 
-const admin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 /**
  * Diagnostic endpoint to test GHL registration creation
@@ -27,10 +29,13 @@ export async function POST(req: Request) {
     const eventId = body.eventId;
 
     if (!eventId) {
-      return NextResponse.json({
-        error: "Missing eventId in request body",
-        diagnostics,
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: "Missing eventId in request body",
+          diagnostics,
+        },
+        { status: 400 },
+      );
     }
 
     diagnostics.steps.push(`Testing with eventId: ${eventId}`);
@@ -44,7 +49,7 @@ export async function POST(req: Request) {
       .single();
 
     if (evtErr || !evt) {
-      diagnostics.errors.push(`Event not found: ${evtErr?.message || 'Unknown error'}`);
+      diagnostics.errors.push(`Event not found: ${evtErr?.message || "Unknown error"}`);
       return NextResponse.json({ error: "Event not found", diagnostics }, { status: 404 });
     }
 
@@ -57,11 +62,14 @@ export async function POST(req: Request) {
 
     if (!ghlConfig) {
       diagnostics.errors.push("GHL integration not connected or token invalid");
-      return NextResponse.json({
-        error: "GHL not connected for this agent",
-        diagnostics,
-        recommendation: "Ensure the agent has connected their GHL account at /app/integrations"
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: "GHL not connected for this agent",
+          diagnostics,
+          recommendation: "Ensure the agent has connected their GHL account at /app/integrations",
+        },
+        { status: 400 },
+      );
     }
 
     diagnostics.steps.push("✓ GHL integration active");
@@ -92,10 +100,13 @@ export async function POST(req: Request) {
 
       if (!contactId) {
         diagnostics.errors.push("Contact created but no ID returned");
-        return NextResponse.json({
-          error: "Contact creation failed - no ID returned",
-          diagnostics,
-        }, { status: 500 });
+        return NextResponse.json(
+          {
+            error: "Contact creation failed - no ID returned",
+            diagnostics,
+          },
+          { status: 500 },
+        );
       }
 
       diagnostics.steps.push(`✓ Test contact created: ${contactId}`);
@@ -103,7 +114,7 @@ export async function POST(req: Request) {
 
       // Step 4: Create OpenHouse custom object
       diagnostics.steps.push("Step 4: Creating OpenHouse custom object...");
-      const origin = process.env.NEXT_PUBLIC_APP_URL || 'https://www.realestategenie.app';
+      const origin = process.env.NEXT_PUBLIC_APP_URL || "https://www.realestategenie.app";
       const flyerUrl = `${origin}/api/open-houses/${eventId}/flyer`;
 
       let openHouseRecordId: string;
@@ -112,7 +123,7 @@ export async function POST(req: Request) {
           locationId: ghlConfig.location_id,
           accessToken: ghlConfig.access_token,
           eventId: eventId,
-          address: evt.address || '',
+          address: evt.address || "",
           startDateTime: evt.start_at,
           endDateTime: evt.end_at,
           flyerUrl,
@@ -127,11 +138,15 @@ export async function POST(req: Request) {
         diagnostics.openHouseRecordId = openHouseRecordId;
       } catch (openHouseError: any) {
         diagnostics.errors.push(`OpenHouse creation failed: ${openHouseError.message}`);
-        return NextResponse.json({
-          error: "OpenHouse custom object creation failed",
-          diagnostics,
-          recommendation: "Verify that 'openhouses' custom object exists in GHL at Settings > Custom Objects. Field names must match exactly: openhouseid, address, startdatetime, enddatetime, flyerUrl, agentId, beds, baths, sqft, price",
-        }, { status: 500 });
+        return NextResponse.json(
+          {
+            error: "OpenHouse custom object creation failed",
+            diagnostics,
+            recommendation:
+              "Verify that 'openhouses' custom object exists in GHL at Settings > Custom Objects. Field names must match exactly: openhouseid, address, startdatetime, enddatetime, flyerUrl, agentId, beds, baths, sqft, price",
+          },
+          { status: 500 },
+        );
       }
 
       // Step 5: Create Registration custom object
@@ -161,25 +176,36 @@ export async function POST(req: Request) {
         });
       } catch (registrationError: any) {
         diagnostics.errors.push(`Registration creation failed: ${registrationError.message}`);
-        return NextResponse.json({
-          error: "Registration custom object creation failed",
-          diagnostics,
-          recommendation: "Verify that 'registrations' custom object exists in GHL at Settings > Custom Objects. Field names must match: registrationid, contactid, openhouseid, registerdat, flyerstatus. Also verify associations are configured: registrations → contact and registrations → openhouses",
-        }, { status: 500 });
+        return NextResponse.json(
+          {
+            error: "Registration custom object creation failed",
+            diagnostics,
+            recommendation:
+              "Verify that 'registrations' custom object exists in GHL at Settings > Custom Objects. Field names must match: registrationid, contactid, openhouseid, registerdat, flyerstatus. Also verify associations are configured: registrations → contact and registrations → openhouses",
+          },
+          { status: 500 },
+        );
       }
     } catch (contactError: any) {
       diagnostics.errors.push(`Contact creation failed: ${contactError.message}`);
-      return NextResponse.json({
-        error: "Contact creation failed",
-        diagnostics,
-        recommendation: "Verify GHL access token has 'contacts.write' permission. Check GHL API logs for more details.",
-      }, { status: 500 });
+      return NextResponse.json(
+        {
+          error: "Contact creation failed",
+          diagnostics,
+          recommendation:
+            "Verify GHL access token has 'contacts.write' permission. Check GHL API logs for more details.",
+        },
+        { status: 500 },
+      );
     }
   } catch (error: any) {
     diagnostics.errors.push(`Unexpected error: ${error.message}`);
-    return NextResponse.json({
-      error: error.message,
-      diagnostics,
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: error.message,
+        diagnostics,
+      },
+      { status: 500 },
+    );
   }
 }

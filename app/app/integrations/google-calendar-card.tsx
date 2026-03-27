@@ -16,11 +16,7 @@ type Integration = {
   last_error: string | null;
 } | null;
 
-export default function GoogleCalendarCard({
-  integration,
-}: {
-  integration: Integration;
-}) {
+export default function GoogleCalendarCard({ integration }: { integration: Integration }) {
   const [disconnecting, setDisconnecting] = useState(false);
   const isConnected = integration?.status === "connected";
   const hasError = integration?.status === "error";
@@ -82,16 +78,14 @@ export default function GoogleCalendarCard({
               Error
             </Badge>
           )}
-          {!isConnected && !hasError && (
-            <Badge variant="outline">Not Connected</Badge>
-          )}
+          {!isConnected && !hasError && <Badge variant="outline">Not Connected</Badge>}
         </div>
       </CardHeader>
 
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          Sync events between your Google Calendar and the merged calendar.
-          Google Calendar takes precedence on conflicts.
+          Sync events between your Google Calendar and the merged calendar. Google Calendar takes precedence on
+          conflicts.
         </p>
 
         {isConnected && integration?.last_sync_at && (
@@ -113,12 +107,7 @@ export default function GoogleCalendarCard({
               Connect Google Calendar
             </Button>
           ) : (
-            <Button
-              onClick={handleDisconnect}
-              disabled={disconnecting}
-              variant="outline"
-              className="w-full"
-            >
+            <Button onClick={handleDisconnect} disabled={disconnecting} variant="outline" className="w-full">
               {disconnecting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Disconnect
             </Button>

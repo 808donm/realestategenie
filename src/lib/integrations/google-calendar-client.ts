@@ -6,18 +6,11 @@
  */
 
 import { createClient } from "@supabase/supabase-js";
-import type {
-  CalendarProvider,
-  CalendarEvent,
-  ExternalCalendarEvent,
-  CalendarEventStatus,
-} from "@/lib/calendar/types";
+import type { CalendarProvider, CalendarEvent, ExternalCalendarEvent, CalendarEventStatus } from "@/lib/calendar/types";
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 const GOOGLE_API_BASE = "https://www.googleapis.com/calendar/v3";
 
@@ -94,14 +87,8 @@ export async function getValidGoogleCalendarTokens(agentId: string): Promise<{
 
 // --- API Helpers ---
 
-async function googleRequest<T>(
-  accessToken: string,
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
-  const url = endpoint.startsWith("http")
-    ? endpoint
-    : `${GOOGLE_API_BASE}${endpoint}`;
+async function googleRequest<T>(accessToken: string, endpoint: string, options: RequestInit = {}): Promise<T> {
+  const url = endpoint.startsWith("http") ? endpoint : `${GOOGLE_API_BASE}${endpoint}`;
 
   const response = await fetch(url, {
     ...options,
@@ -125,10 +112,14 @@ async function googleRequest<T>(
 
 function mapGoogleStatus(status?: string): CalendarEventStatus {
   switch (status) {
-    case "confirmed": return "confirmed";
-    case "tentative": return "tentative";
-    case "cancelled": return "cancelled";
-    default: return "confirmed";
+    case "confirmed":
+      return "confirmed";
+    case "tentative":
+      return "tentative";
+    case "cancelled":
+      return "cancelled";
+    default:
+      return "confirmed";
   }
 }
 
@@ -140,12 +131,8 @@ function mapGoogleEvent(event: any): ExternalCalendarEvent {
     title: event.summary || "(No title)",
     description: event.description || undefined,
     location: event.location || undefined,
-    startAt: isAllDay
-      ? new Date(event.start.date).toISOString()
-      : event.start.dateTime,
-    endAt: isAllDay
-      ? new Date(event.end.date).toISOString()
-      : event.end.dateTime,
+    startAt: isAllDay ? new Date(event.start.date).toISOString() : event.start.dateTime,
+    endAt: isAllDay ? new Date(event.end.date).toISOString() : event.end.dateTime,
     allDay: isAllDay,
     status: mapGoogleStatus(event.status),
     attendees: (event.attendees || []).map((a: any) => ({
@@ -207,7 +194,7 @@ export class GoogleCalendarProvider implements CalendarProvider {
     agentId: string,
     timeMin: string,
     timeMax: string,
-    syncToken?: string
+    syncToken?: string,
   ): Promise<{ events: ExternalCalendarEvent[]; nextSyncToken?: string; deletedIds?: string[] }> {
     const tokens = await getValidGoogleCalendarTokens(agentId);
     if (!tokens) throw new Error("Google Calendar not connected");
@@ -235,10 +222,7 @@ export class GoogleCalendarProvider implements CalendarProvider {
       if (pageToken) params.set("pageToken", pageToken);
 
       try {
-        const data = await googleRequest<any>(
-          tokens.access_token,
-          `/calendars/primary/events?${params}`
-        );
+        const data = await googleRequest<any>(tokens.access_token, `/calendars/primary/events?${params}`);
 
         for (const item of data.items || []) {
           if (item.status === "cancelled") {
@@ -271,19 +255,17 @@ export class GoogleCalendarProvider implements CalendarProvider {
 
     if (event.external_id) {
       // Update existing
-      const data = await googleRequest<any>(
-        tokens.access_token,
-        `/calendars/primary/events/${event.external_id}`,
-        { method: "PUT", body: JSON.stringify(body) }
-      );
+      const data = await googleRequest<any>(tokens.access_token, `/calendars/primary/events/${event.external_id}`, {
+        method: "PUT",
+        body: JSON.stringify(body),
+      });
       return { externalId: data.id, etag: data.etag };
     } else {
       // Create new
-      const data = await googleRequest<any>(
-        tokens.access_token,
-        `/calendars/primary/events`,
-        { method: "POST", body: JSON.stringify(body) }
-      );
+      const data = await googleRequest<any>(tokens.access_token, `/calendars/primary/events`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
       return { externalId: data.id, etag: data.etag };
     }
   }
@@ -292,13 +274,10 @@ export class GoogleCalendarProvider implements CalendarProvider {
     const tokens = await getValidGoogleCalendarTokens(agentId);
     if (!tokens) throw new Error("Google Calendar not connected");
 
-    await fetch(
-      `${GOOGLE_API_BASE}/calendars/primary/events/${externalId}`,
-      {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${tokens.access_token}` },
-      }
-    );
+    await fetch(`${GOOGLE_API_BASE}/calendars/primary/events/${externalId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${tokens.access_token}` },
+    });
   }
 }
 
@@ -306,7 +285,7 @@ export class GoogleCalendarProvider implements CalendarProvider {
 
 export async function setupGooglePushChannel(
   agentId: string,
-  webhookUrl: string
+  webhookUrl: string,
 ): Promise<{ channelId: string; expiration: string } | null> {
   const tokens = await getValidGoogleCalendarTokens(agentId);
   if (!tokens) return null;
@@ -314,40 +293,32 @@ export async function setupGooglePushChannel(
   const channelId = crypto.randomUUID();
   const expiration = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
-  const data = await googleRequest<any>(
-    tokens.access_token,
-    `/calendars/primary/events/watch`,
-    {
-      method: "POST",
-      body: JSON.stringify({
-        id: channelId,
-        type: "web_hook",
-        address: webhookUrl,
-        expiration: expiration.getTime(),
-      }),
-    }
-  );
+  const data = await googleRequest<any>(tokens.access_token, `/calendars/primary/events/watch`, {
+    method: "POST",
+    body: JSON.stringify({
+      id: channelId,
+      type: "web_hook",
+      address: webhookUrl,
+      expiration: expiration.getTime(),
+    }),
+  });
 
   // Save channel info to sync state
-  await supabaseAdmin
-    .from("calendar_sync_state")
-    .upsert(
-      {
-        agent_id: agentId,
-        provider: "google",
-        channel_id: data.id,
-        channel_expiration: new Date(parseInt(data.expiration)).toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "agent_id,provider" }
-    );
+  await supabaseAdmin.from("calendar_sync_state").upsert(
+    {
+      agent_id: agentId,
+      provider: "google",
+      channel_id: data.id,
+      channel_expiration: new Date(parseInt(data.expiration)).toISOString(),
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "agent_id,provider" },
+  );
 
   return { channelId: data.id, expiration: data.expiration };
 }
 
-export async function stopGooglePushChannel(
-  agentId: string
-): Promise<void> {
+export async function stopGooglePushChannel(agentId: string): Promise<void> {
   const tokens = await getValidGoogleCalendarTokens(agentId);
   if (!tokens) return;
 

@@ -70,10 +70,7 @@ export default function QuickActions() {
               const Icon = action.icon;
               return (
                 <Link key={action.href} href={action.href} className="no-underline">
-                  <Button
-                    variant="outline"
-                    className="w-full h-auto flex flex-col gap-1.5 py-3 px-2"
-                  >
+                  <Button variant="outline" className="w-full h-auto flex flex-col gap-1.5 py-3 px-2">
                     <Icon className="w-4 h-4" />
                     <span className="text-xs font-medium">{action.label}</span>
                   </Button>

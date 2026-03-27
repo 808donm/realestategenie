@@ -17,7 +17,9 @@ export default function CalculatorDrawer({ isOpen, onClose, href, title }: Calcu
     } else {
       document.body.style.overflow = "";
     }
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [isOpen]);
 
   // Close on Escape key

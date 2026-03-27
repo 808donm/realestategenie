@@ -15,11 +15,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data: admin } = await supabase
-      .from("agents")
-      .select("is_admin, account_status")
-      .eq("id", user.id)
-      .single();
+    const { data: admin } = await supabase.from("agents").select("is_admin, account_status").eq("id", user.id).single();
 
     if (!admin?.is_admin || admin.account_status !== "active") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -28,10 +24,7 @@ export async function POST(request: NextRequest) {
     const { userId, status } = await request.json();
 
     if (!userId || !status) {
-      return NextResponse.json(
-        { error: "Missing userId or status" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing userId or status" }, { status: 400 });
     }
 
     if (!["active", "disabled", "pending"].includes(status)) {
@@ -39,10 +32,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update user status
-    const { error: updateError } = await supabase
-      .from("agents")
-      .update({ account_status: status })
-      .eq("id", userId);
+    const { error: updateError } = await supabase.from("agents").update({ account_status: status }).eq("id", userId);
 
     if (updateError) {
       await logError({
@@ -51,10 +41,7 @@ export async function POST(request: NextRequest) {
         errorMessage: updateError.message,
         severity: "error",
       });
-      return NextResponse.json(
-        { error: "Failed to update user status" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to update user status" }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
@@ -65,9 +52,6 @@ export async function POST(request: NextRequest) {
       stackTrace: error.stack,
       severity: "error",
     });
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

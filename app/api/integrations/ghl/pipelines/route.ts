@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
     if (!ghlConfig) {
       return NextResponse.json(
         { error: "GHL integration not found or credentials invalid. Please reconnect GHL." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -37,16 +37,13 @@ export async function GET(req: NextRequest) {
           "Content-Type": "application/json",
           Version: "2021-07-28",
         },
-      }
+      },
     );
 
     if (!response.ok) {
       const errorText = await response.text();
       console.error("[GHL Pipelines] API error:", response.status, errorText);
-      return NextResponse.json(
-        { error: "Failed to fetch pipelines from GHL" },
-        { status: response.status }
-      );
+      return NextResponse.json({ error: "Failed to fetch pipelines from GHL" }, { status: response.status });
     }
 
     const data = await response.json();

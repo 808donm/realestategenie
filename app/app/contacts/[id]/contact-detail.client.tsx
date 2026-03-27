@@ -72,7 +72,9 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
-  const [activeTab, setActiveTab] = useState<"details" | "notes" | "timeline" | "compose" | "property" | "booking">("details");
+  const [activeTab, setActiveTab] = useState<"details" | "notes" | "timeline" | "compose" | "property" | "booking">(
+    "details",
+  );
 
   // Note creation state
   const [newNote, setNewNote] = useState("");
@@ -156,8 +158,10 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
         const data = await res.json();
         setTimeline(data.timeline || []);
       }
-    } catch {}
-    finally { setTimelineLoading(false); }
+    } catch {
+    } finally {
+      setTimelineLoading(false);
+    }
   }, [contactId]);
 
   // Load timeline when tab switches
@@ -177,7 +181,11 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
     if (!dateStr) return "";
     try {
       return new Date(dateStr).toLocaleDateString("en-US", {
-        month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit",
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
       });
     } catch {
       return dateStr;
@@ -186,9 +194,7 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
 
   const applyTemplate = (template: Template) => {
     const name = contact ? getDisplayName(contact) : "there";
-    let body = template.body
-      .replace(/\{\{name\}\}/g, name)
-      .replace(/\{\{property\}\}/g, "the property");
+    let body = template.body.replace(/\{\{name\}\}/g, name).replace(/\{\{property\}\}/g, "the property");
     setComposeMessage(body);
     if (template.subject) {
       setComposeSubject(template.subject);
@@ -268,22 +274,19 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
   };
 
   if (isLoading) {
-    return (
-      <div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>
-        Loading contact details...
-      </div>
-    );
+    return <div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>Loading contact details...</div>;
   }
 
   if (error) {
     return (
       <div>
-        <Link href="/app/contacts" style={{ color: "#3b82f6", fontSize: 14, textDecoration: "none", display: "inline-block", marginBottom: 16 }}>
+        <Link
+          href="/app/contacts"
+          style={{ color: "#3b82f6", fontSize: 14, textDecoration: "none", display: "inline-block", marginBottom: 16 }}
+        >
           &larr; Back to Contacts
         </Link>
-        <div style={{ padding: 16, background: "#fee2e2", color: "#dc2626", borderRadius: 8 }}>
-          {error}
-        </div>
+        <div style={{ padding: 16, background: "#fee2e2", color: "#dc2626", borderRadius: 8 }}>{error}</div>
       </div>
     );
   }
@@ -291,7 +294,10 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
   if (!contact) {
     return (
       <div>
-        <Link href="/app/contacts" style={{ color: "#3b82f6", fontSize: 14, textDecoration: "none", display: "inline-block", marginBottom: 16 }}>
+        <Link
+          href="/app/contacts"
+          style={{ color: "#3b82f6", fontSize: 14, textDecoration: "none", display: "inline-block", marginBottom: 16 }}
+        >
           &larr; Back to Contacts
         </Link>
         <div style={{ padding: 32, textAlign: "center", color: "#6b7280", background: "#f9fafb", borderRadius: 12 }}>
@@ -346,25 +352,42 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
       {toast && (
         <div
           style={{
-            position: "fixed", top: 20, right: 20, zIndex: 100,
-            padding: "12px 20px", borderRadius: 8,
+            position: "fixed",
+            top: 20,
+            right: 20,
+            zIndex: 100,
+            padding: "12px 20px",
+            borderRadius: 8,
             background: toast.type === "error" ? "#fef2f2" : "#ecfdf5",
             border: `1px solid ${toast.type === "error" ? "#fca5a5" : "#a7f3d0"}`,
             color: toast.type === "error" ? "#dc2626" : "#059669",
-            fontSize: 14, fontWeight: 600, boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+            fontSize: 14,
+            fontWeight: 600,
+            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
           }}
         >
           {toast.message}
         </div>
       )}
 
-      <Link href="/app/contacts" style={{ color: "#3b82f6", fontSize: 14, textDecoration: "none", display: "inline-block", marginBottom: 16 }}>
+      <Link
+        href="/app/contacts"
+        style={{ color: "#3b82f6", fontSize: 14, textDecoration: "none", display: "inline-block", marginBottom: 16 }}
+      >
         &larr; Back to Contacts
       </Link>
 
       {/* Header */}
       <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 24, marginBottom: 20 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 16 }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            flexWrap: "wrap",
+            gap: 16,
+          }}
+        >
           <div>
             <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>{getDisplayName(contact)}</h1>
             {contact.source && (
@@ -377,16 +400,40 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {contact.email && (
               <button
-                onClick={() => { setActiveTab("compose"); setComposeType("email"); }}
-                style={{ padding: "8px 16px", background: "#3b82f6", color: "#fff", borderRadius: 6, border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+                onClick={() => {
+                  setActiveTab("compose");
+                  setComposeType("email");
+                }}
+                style={{
+                  padding: "8px 16px",
+                  background: "#3b82f6",
+                  color: "#fff",
+                  borderRadius: 6,
+                  border: "none",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
               >
                 Compose Email
               </button>
             )}
             {contact.phone && (
               <button
-                onClick={() => { setActiveTab("compose"); setComposeType("sms"); }}
-                style={{ padding: "8px 16px", background: "#10b981", color: "#fff", borderRadius: 6, border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+                onClick={() => {
+                  setActiveTab("compose");
+                  setComposeType("sms");
+                }}
+                style={{
+                  padding: "8px 16px",
+                  background: "#10b981",
+                  color: "#fff",
+                  borderRadius: 6,
+                  border: "none",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
               >
                 Send SMS
               </button>
@@ -394,14 +441,31 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
             {contact.phone && (
               <a
                 href={`tel:${contact.phone}`}
-                style={{ padding: "8px 16px", background: "#f59e0b", color: "#fff", borderRadius: 6, textDecoration: "none", fontSize: 13, fontWeight: 600 }}
+                style={{
+                  padding: "8px 16px",
+                  background: "#f59e0b",
+                  color: "#fff",
+                  borderRadius: 6,
+                  textDecoration: "none",
+                  fontSize: 13,
+                  fontWeight: 600,
+                }}
               >
                 Call
               </a>
             )}
             <button
               onClick={() => setActiveTab("booking")}
-              style={{ padding: "8px 16px", background: "#8b5cf6", color: "#fff", borderRadius: 6, border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+              style={{
+                padding: "8px 16px",
+                background: "#8b5cf6",
+                color: "#fff",
+                borderRadius: 6,
+                border: "none",
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
             >
               Book Appt
             </button>
@@ -444,7 +508,15 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
           >
             {tab.label}
             {tab.count !== undefined && (
-              <span style={{ marginLeft: 6, padding: "1px 7px", background: activeTab === tab.key ? "#dbeafe" : "#f3f4f6", borderRadius: 10, fontSize: 11 }}>
+              <span
+                style={{
+                  marginLeft: 6,
+                  padding: "1px 7px",
+                  background: activeTab === tab.key ? "#dbeafe" : "#f3f4f6",
+                  borderRadius: 10,
+                  fontSize: 11,
+                }}
+              >
                 {tab.count}
               </span>
             )}
@@ -458,7 +530,11 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 20 }}>
             <InfoField label="First Name" value={contact.firstName} />
             <InfoField label="Last Name" value={contact.lastName} />
-            <InfoField label="Email" value={contact.email} href={contact.email ? `mailto:${contact.email}` : undefined} />
+            <InfoField
+              label="Email"
+              value={contact.email}
+              href={contact.email ? `mailto:${contact.email}` : undefined}
+            />
             <InfoField label="Phone" value={contact.phone} href={contact.phone ? `tel:${contact.phone}` : undefined} />
             {location && <InfoField label="Address" value={location} />}
             {contact.source && <InfoField label="Source" value={contact.source} />}
@@ -476,7 +552,13 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
               onClick={() => setComposeType("email")}
               disabled={!contact.email}
               style={{
-                flex: 1, padding: "10px 16px", borderRadius: 8, border: "none", fontWeight: 600, fontSize: 14, cursor: contact.email ? "pointer" : "not-allowed",
+                flex: 1,
+                padding: "10px 16px",
+                borderRadius: 8,
+                border: "none",
+                fontWeight: 600,
+                fontSize: 14,
+                cursor: contact.email ? "pointer" : "not-allowed",
                 background: composeType === "email" ? "#3b82f6" : "#f3f4f6",
                 color: composeType === "email" ? "#fff" : contact.email ? "#374151" : "#9ca3af",
               }}
@@ -487,7 +569,13 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
               onClick={() => setComposeType("sms")}
               disabled={!contact.phone}
               style={{
-                flex: 1, padding: "10px 16px", borderRadius: 8, border: "none", fontWeight: 600, fontSize: 14, cursor: contact.phone ? "pointer" : "not-allowed",
+                flex: 1,
+                padding: "10px 16px",
+                borderRadius: 8,
+                border: "none",
+                fontWeight: 600,
+                fontSize: 14,
+                cursor: contact.phone ? "pointer" : "not-allowed",
                 background: composeType === "sms" ? "#10b981" : "#f3f4f6",
                 color: composeType === "sms" ? "#fff" : contact.phone ? "#374151" : "#9ca3af",
               }}
@@ -501,8 +589,14 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
             <button
               onClick={() => setShowTemplates(!showTemplates)}
               style={{
-                padding: "6px 14px", fontSize: 12, fontWeight: 600, border: "1px solid #e5e7eb",
-                borderRadius: 6, background: showTemplates ? "#f0f9ff" : "#fff", color: "#3b82f6", cursor: "pointer",
+                padding: "6px 14px",
+                fontSize: 12,
+                fontWeight: 600,
+                border: "1px solid #e5e7eb",
+                borderRadius: 6,
+                background: showTemplates ? "#f0f9ff" : "#fff",
+                color: "#3b82f6",
+                cursor: "pointer",
               }}
             >
               {showTemplates ? "Hide Templates" : "Use Template"}
@@ -516,8 +610,13 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
                       key={t.id}
                       onClick={() => applyTemplate(t)}
                       style={{
-                        padding: "5px 12px", fontSize: 12, border: "1px solid #e5e7eb", borderRadius: 6,
-                        background: "#fff", cursor: "pointer", color: "#374151",
+                        padding: "5px 12px",
+                        fontSize: 12,
+                        border: "1px solid #e5e7eb",
+                        borderRadius: 6,
+                        background: "#fff",
+                        cursor: "pointer",
+                        color: "#374151",
                       }}
                       title={t.body}
                     >
@@ -534,14 +633,21 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
           {/* Subject (email only) */}
           {composeType === "email" && (
             <div style={{ marginBottom: 12 }}>
-              <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>Subject</label>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>
+                Subject
+              </label>
               <input
                 type="text"
                 value={composeSubject}
                 onChange={(e) => setComposeSubject(e.target.value)}
                 placeholder="Email subject..."
                 style={{
-                  width: "100%", padding: 10, border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 14, fontFamily: "inherit",
+                  width: "100%",
+                  padding: 10,
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 8,
+                  fontSize: 14,
+                  fontFamily: "inherit",
                 }}
               />
             </div>
@@ -550,7 +656,8 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
           {/* Message Body */}
           <div style={{ marginBottom: 12 }}>
             <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>
-              Message {composeType === "sms" && <span style={{ fontWeight: 400 }}>({composeMessage.length}/300 chars)</span>}
+              Message{" "}
+              {composeType === "sms" && <span style={{ fontWeight: 400 }}>({composeMessage.length}/300 chars)</span>}
             </label>
             <textarea
               value={composeMessage}
@@ -558,19 +665,29 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
               placeholder={composeType === "email" ? "Write your email..." : "Write your text message..."}
               rows={composeType === "email" ? 8 : 4}
               style={{
-                width: "100%", padding: 12, border: "1px solid #e5e7eb", borderRadius: 8,
-                fontSize: 14, resize: "vertical", fontFamily: "inherit",
+                width: "100%",
+                padding: 12,
+                border: "1px solid #e5e7eb",
+                borderRadius: 8,
+                fontSize: 14,
+                resize: "vertical",
+                fontFamily: "inherit",
               }}
             />
           </div>
 
           {/* Send Result */}
           {sendResult && (
-            <div style={{
-              padding: 10, borderRadius: 6, marginBottom: 12, fontSize: 13,
-              background: sendResult.type === "success" ? "#ecfdf5" : "#fef2f2",
-              color: sendResult.type === "success" ? "#059669" : "#dc2626",
-            }}>
+            <div
+              style={{
+                padding: 10,
+                borderRadius: 6,
+                marginBottom: 12,
+                fontSize: 13,
+                background: sendResult.type === "success" ? "#ecfdf5" : "#fef2f2",
+                color: sendResult.type === "success" ? "#059669" : "#dc2626",
+              }}
+            >
               {sendResult.message}
             </div>
           )}
@@ -578,8 +695,20 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
           {/* Actions */}
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
             <button
-              onClick={() => { setComposeMessage(""); setComposeSubject(""); setSendResult(null); }}
-              style={{ padding: "8px 16px", fontSize: 13, border: "1px solid #e5e7eb", borderRadius: 6, background: "#fff", cursor: "pointer", color: "#6b7280" }}
+              onClick={() => {
+                setComposeMessage("");
+                setComposeSubject("");
+                setSendResult(null);
+              }}
+              style={{
+                padding: "8px 16px",
+                fontSize: 13,
+                border: "1px solid #e5e7eb",
+                borderRadius: 6,
+                background: "#fff",
+                cursor: "pointer",
+                color: "#6b7280",
+              }}
             >
               Clear
             </button>
@@ -587,8 +716,14 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
               onClick={handleSend}
               disabled={isSending || !composeMessage.trim()}
               style={{
-                padding: "8px 24px", fontSize: 13, fontWeight: 600, border: "none", borderRadius: 6, cursor: isSending ? "wait" : "pointer",
-                background: composeType === "email" ? "#3b82f6" : "#10b981", color: "#fff",
+                padding: "8px 24px",
+                fontSize: 13,
+                fontWeight: 600,
+                border: "none",
+                borderRadius: 6,
+                cursor: isSending ? "wait" : "pointer",
+                background: composeType === "email" ? "#3b82f6" : "#10b981",
+                color: "#fff",
                 opacity: isSending || !composeMessage.trim() ? 0.6 : 1,
               }}
             >
@@ -606,7 +741,16 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
             <button
               onClick={loadTimeline}
               disabled={timelineLoading}
-              style={{ padding: "6px 14px", fontSize: 12, fontWeight: 600, border: "1px solid #e5e7eb", borderRadius: 6, background: "#fff", cursor: "pointer", color: "#3b82f6" }}
+              style={{
+                padding: "6px 14px",
+                fontSize: 12,
+                fontWeight: 600,
+                border: "1px solid #e5e7eb",
+                borderRadius: 6,
+                background: "#fff",
+                cursor: "pointer",
+                color: "#3b82f6",
+              }}
             >
               {timelineLoading ? "Loading..." : "Refresh"}
             </button>
@@ -617,7 +761,9 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
           )}
 
           {!timelineLoading && timeline.length === 0 && (
-            <div style={{ padding: 32, textAlign: "center", color: "#6b7280", background: "#f9fafb", borderRadius: 12 }}>
+            <div
+              style={{ padding: 32, textAlign: "center", color: "#6b7280", background: "#f9fafb", borderRadius: 12 }}
+            >
               <div style={{ marginBottom: 8, fontWeight: 600 }}>No conversations yet</div>
               <div style={{ fontSize: 13 }}>Send an email or SMS to start a conversation with this contact.</div>
             </div>
@@ -632,40 +778,78 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
                 const isOutbound = event.direction === "outbound";
                 const isNote = event.type === "note";
                 const channelColors: Record<string, string> = {
-                  email: "#3b82f6", sms: "#10b981", call: "#f59e0b", note: "#8b5cf6", other: "#6b7280",
+                  email: "#3b82f6",
+                  sms: "#10b981",
+                  call: "#f59e0b",
+                  note: "#8b5cf6",
+                  other: "#6b7280",
                 };
                 const color = channelColors[event.type] || "#6b7280";
 
                 return (
                   <div key={event.id} style={{ position: "relative", marginBottom: 16 }}>
                     {/* Timeline dot */}
-                    <div style={{
-                      position: "absolute", left: -20, top: 4, width: 12, height: 12, borderRadius: "50%",
-                      background: color, border: "2px solid #fff", boxShadow: "0 0 0 2px #e5e7eb",
-                    }} />
+                    <div
+                      style={{
+                        position: "absolute",
+                        left: -20,
+                        top: 4,
+                        width: 12,
+                        height: 12,
+                        borderRadius: "50%",
+                        background: color,
+                        border: "2px solid #fff",
+                        boxShadow: "0 0 0 2px #e5e7eb",
+                      }}
+                    />
 
-                    <div style={{
-                      background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, padding: 12,
-                      borderLeft: `3px solid ${color}`,
-                    }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                    <div
+                      style={{
+                        background: "#fff",
+                        border: "1px solid #e5e7eb",
+                        borderRadius: 8,
+                        padding: 12,
+                        borderLeft: `3px solid ${color}`,
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          marginBottom: 4,
+                        }}
+                      >
                         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                          <span style={{
-                            fontSize: 10, fontWeight: 700, textTransform: "uppercase", padding: "2px 6px",
-                            borderRadius: 4, background: `${color}15`, color,
-                          }}>
+                          <span
+                            style={{
+                              fontSize: 10,
+                              fontWeight: 700,
+                              textTransform: "uppercase",
+                              padding: "2px 6px",
+                              borderRadius: 4,
+                              background: `${color}15`,
+                              color,
+                            }}
+                          >
                             {event.type}
                           </span>
-                          <span style={{
-                            fontSize: 10, fontWeight: 600, color: isOutbound ? "#3b82f6" : isNote ? "#8b5cf6" : "#059669",
-                          }}>
+                          <span
+                            style={{
+                              fontSize: 10,
+                              fontWeight: 600,
+                              color: isOutbound ? "#3b82f6" : isNote ? "#8b5cf6" : "#059669",
+                            }}
+                          >
                             {isNote ? "Internal" : isOutbound ? "Sent" : "Received"}
                           </span>
                         </div>
                         <span style={{ fontSize: 11, color: "#9ca3af" }}>{formatDate(event.timestamp)}</span>
                       </div>
                       {event.subject && (
-                        <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 4 }}>{event.subject}</div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 4 }}>
+                          {event.subject}
+                        </div>
                       )}
                       <div style={{ fontSize: 13, color: "#4b5563", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>
                         {event.body || <span style={{ color: "#9ca3af", fontStyle: "italic" }}>No content</span>}
@@ -682,15 +866,22 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
       {/* Notes Tab */}
       {activeTab === "notes" && (
         <div>
-          <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 16, marginBottom: 16 }}>
+          <div
+            style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 16, marginBottom: 16 }}
+          >
             <textarea
               value={newNote}
               onChange={(e) => setNewNote(e.target.value)}
               placeholder="Add a note..."
               rows={3}
               style={{
-                width: "100%", padding: 12, border: "1px solid #e5e7eb", borderRadius: 8,
-                fontSize: 14, resize: "vertical", fontFamily: "inherit",
+                width: "100%",
+                padding: 12,
+                border: "1px solid #e5e7eb",
+                borderRadius: 8,
+                fontSize: 14,
+                resize: "vertical",
+                fontFamily: "inherit",
               }}
             />
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 8 }}>
@@ -712,13 +903,21 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
                       setNewNote("");
                       showToast("Note added", "success");
                     }
-                  } catch {}
-                  finally { setIsAddingNote(false); }
+                  } catch {
+                  } finally {
+                    setIsAddingNote(false);
+                  }
                 }}
                 disabled={isAddingNote || !newNote.trim()}
                 style={{
-                  padding: "8px 20px", background: "#3b82f6", color: "#fff", border: "none",
-                  borderRadius: 6, fontWeight: 600, fontSize: 13, cursor: isAddingNote ? "wait" : "pointer",
+                  padding: "8px 20px",
+                  background: "#3b82f6",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 6,
+                  fontWeight: 600,
+                  fontSize: 13,
+                  cursor: isAddingNote ? "wait" : "pointer",
                   opacity: isAddingNote || !newNote.trim() ? 0.6 : 1,
                 }}
               >
@@ -728,7 +927,9 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
           </div>
 
           {notes.length === 0 ? (
-            <div style={{ padding: 32, textAlign: "center", color: "#6b7280", background: "#f9fafb", borderRadius: 12 }}>
+            <div
+              style={{ padding: 32, textAlign: "center", color: "#6b7280", background: "#f9fafb", borderRadius: 12 }}
+            >
               No notes for this contact yet. Add one above.
             </div>
           ) : (
@@ -739,13 +940,9 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
                   style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, padding: 16 }}
                 >
                   {note.dateAdded && (
-                    <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6 }}>
-                      {formatDate(note.dateAdded)}
-                    </div>
+                    <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6 }}>{formatDate(note.dateAdded)}</div>
                   )}
-                  <div style={{ fontSize: 14, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>
-                    {note.body}
-                  </div>
+                  <div style={{ fontSize: 14, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{note.body}</div>
                 </div>
               ))}
             </div>
@@ -762,7 +959,9 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>Title</label>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>
+                Title
+              </label>
               <input
                 type="text"
                 value={bookingTitle}
@@ -772,7 +971,9 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
               />
             </div>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>Location</label>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>
+                Location
+              </label>
               <input
                 type="text"
                 value={bookingLocation}
@@ -785,7 +986,9 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>Date</label>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>
+                Date
+              </label>
               <input
                 type="date"
                 value={bookingDate}
@@ -795,7 +998,9 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
               />
             </div>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>Time</label>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>
+                Time
+              </label>
               <input
                 type="time"
                 value={bookingTime}
@@ -804,11 +1009,20 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
               />
             </div>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>Duration</label>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>
+                Duration
+              </label>
               <select
                 value={bookingDuration}
                 onChange={(e) => setBookingDuration(e.target.value)}
-                style={{ width: "100%", padding: 10, border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 14, background: "#fff" }}
+                style={{
+                  width: "100%",
+                  padding: 10,
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 8,
+                  fontSize: 14,
+                  background: "#fff",
+                }}
               >
                 <option value="15">15 min</option>
                 <option value="30">30 min</option>
@@ -820,22 +1034,37 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
           </div>
 
           <div style={{ marginBottom: 16 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>Notes</label>
+            <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>
+              Notes
+            </label>
             <textarea
               value={bookingNotes}
               onChange={(e) => setBookingNotes(e.target.value)}
               placeholder="Any notes for the appointment..."
               rows={3}
-              style={{ width: "100%", padding: 12, border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 14, resize: "vertical", fontFamily: "inherit" }}
+              style={{
+                width: "100%",
+                padding: 12,
+                border: "1px solid #e5e7eb",
+                borderRadius: 8,
+                fontSize: 14,
+                resize: "vertical",
+                fontFamily: "inherit",
+              }}
             />
           </div>
 
           {bookingResult && (
-            <div style={{
-              padding: 10, borderRadius: 6, marginBottom: 12, fontSize: 13,
-              background: bookingResult.type === "success" ? "#ecfdf5" : "#fef2f2",
-              color: bookingResult.type === "success" ? "#059669" : "#dc2626",
-            }}>
+            <div
+              style={{
+                padding: 10,
+                borderRadius: 6,
+                marginBottom: 12,
+                fontSize: 13,
+                background: bookingResult.type === "success" ? "#ecfdf5" : "#fef2f2",
+                color: bookingResult.type === "success" ? "#059669" : "#dc2626",
+              }}
+            >
               {bookingResult.message}
             </div>
           )}
@@ -845,8 +1074,14 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
               onClick={handleBookAppointment}
               disabled={isBooking || !bookingTitle.trim() || !bookingDate}
               style={{
-                padding: "10px 24px", fontSize: 14, fontWeight: 600, border: "none", borderRadius: 8,
-                background: "#8b5cf6", color: "#fff", cursor: isBooking ? "wait" : "pointer",
+                padding: "10px 24px",
+                fontSize: 14,
+                fontWeight: 600,
+                border: "none",
+                borderRadius: 8,
+                background: "#8b5cf6",
+                color: "#fff",
+                cursor: isBooking ? "wait" : "pointer",
                 opacity: isBooking || !bookingTitle.trim() || !bookingDate ? 0.6 : 1,
               }}
             >
@@ -860,7 +1095,9 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
       {activeTab === "property" && (
         <div>
           {!hasAddress && !propertySearched && (
-            <div style={{ padding: 32, textAlign: "center", color: "#6b7280", background: "#f9fafb", borderRadius: 12 }}>
+            <div
+              style={{ padding: 32, textAlign: "center", color: "#6b7280", background: "#f9fafb", borderRadius: 12 }}
+            >
               <div style={{ marginBottom: 8, fontWeight: 600 }}>No address on file</div>
               <div style={{ fontSize: 13 }}>Add an address to this contact to look up their property data.</div>
             </div>
@@ -871,14 +1108,18 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
               <div style={{ fontSize: 14, color: "#374151", marginBottom: 4, fontWeight: 600 }}>
                 Look up property data for this contact
               </div>
-              <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 16 }}>
-                {location}
-              </div>
+              <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 16 }}>{location}</div>
               <button
                 onClick={lookupProperty}
                 style={{
-                  padding: "10px 24px", background: "#3b82f6", color: "#fff", borderRadius: 8, border: "none",
-                  fontWeight: 600, fontSize: 14, cursor: "pointer",
+                  padding: "10px 24px",
+                  background: "#3b82f6",
+                  color: "#fff",
+                  borderRadius: 8,
+                  border: "none",
+                  fontWeight: 600,
+                  fontSize: 14,
+                  cursor: "pointer",
                 }}
               >
                 Look Up Property
@@ -891,12 +1132,30 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
           )}
 
           {propertyError && (
-            <div style={{ padding: 16, background: "#fee2e2", color: "#dc2626", borderRadius: 8, marginBottom: 16, fontSize: 14 }}>
+            <div
+              style={{
+                padding: 16,
+                background: "#fee2e2",
+                color: "#dc2626",
+                borderRadius: 8,
+                marginBottom: 16,
+                fontSize: 14,
+              }}
+            >
               {propertyError}
               {hasAddress && (
                 <button
                   onClick={lookupProperty}
-                  style={{ marginLeft: 12, padding: "4px 12px", background: "#dc2626", color: "#fff", borderRadius: 6, border: "none", fontSize: 12, cursor: "pointer" }}
+                  style={{
+                    marginLeft: 12,
+                    padding: "4px 12px",
+                    background: "#dc2626",
+                    color: "#fff",
+                    borderRadius: 6,
+                    border: "none",
+                    fontSize: 12,
+                    cursor: "pointer",
+                  }}
                 >
                   Retry
                 </button>
@@ -909,16 +1168,41 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
                 {propertyData.avm?.amount?.value != null && (
                   <div style={{ padding: 16, background: "#ecfdf5", borderRadius: 10, textAlign: "center" }}>
-                    <div style={{ fontSize: 11, color: "#059669", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>AVM Value</div>
-                    <div style={{ fontSize: 20, fontWeight: 700, color: "#059669" }}>${propertyData.avm.amount.value.toLocaleString()}</div>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: "#059669",
+                        fontWeight: 600,
+                        textTransform: "uppercase",
+                        letterSpacing: 0.5,
+                      }}
+                    >
+                      AVM Value
+                    </div>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: "#059669" }}>
+                      ${propertyData.avm.amount.value.toLocaleString()}
+                    </div>
                     {propertyData.avm.amount.low != null && propertyData.avm.amount.high != null && (
-                      <div style={{ fontSize: 11, color: "#6b7280" }}>${propertyData.avm.amount.low.toLocaleString()} - ${propertyData.avm.amount.high.toLocaleString()}</div>
+                      <div style={{ fontSize: 11, color: "#6b7280" }}>
+                        ${propertyData.avm.amount.low.toLocaleString()} - $
+                        {propertyData.avm.amount.high.toLocaleString()}
+                      </div>
                     )}
                   </div>
                 )}
                 {(propertyData.sale?.amount?.saleAmt || propertyData.sale?.amount?.salePrice) != null && (
                   <div style={{ padding: 16, background: "#eff6ff", borderRadius: 10, textAlign: "center" }}>
-                    <div style={{ fontSize: 11, color: "#3b82f6", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Last Sale</div>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: "#3b82f6",
+                        fontWeight: 600,
+                        textTransform: "uppercase",
+                        letterSpacing: 0.5,
+                      }}
+                    >
+                      Last Sale
+                    </div>
                     <div style={{ fontSize: 20, fontWeight: 700, color: "#3b82f6" }}>
                       ${(propertyData.sale.amount.saleAmt || propertyData.sale.amount.salePrice).toLocaleString()}
                     </div>
@@ -929,44 +1213,125 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
                 )}
                 {propertyData.assessment?.assessed?.assdTtlValue != null && (
                   <div style={{ padding: 16, background: "#f5f3ff", borderRadius: 10, textAlign: "center" }}>
-                    <div style={{ fontSize: 11, color: "#7c3aed", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Assessed Value</div>
-                    <div style={{ fontSize: 20, fontWeight: 700, color: "#7c3aed" }}>${propertyData.assessment.assessed.assdTtlValue.toLocaleString()}</div>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: "#7c3aed",
+                        fontWeight: 600,
+                        textTransform: "uppercase",
+                        letterSpacing: 0.5,
+                      }}
+                    >
+                      Assessed Value
+                    </div>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: "#7c3aed" }}>
+                      ${propertyData.assessment.assessed.assdTtlValue.toLocaleString()}
+                    </div>
                     {propertyData.assessment.tax?.taxAmt != null && (
-                      <div style={{ fontSize: 11, color: "#6b7280" }}>Tax: ${propertyData.assessment.tax.taxAmt.toLocaleString()}/yr</div>
+                      <div style={{ fontSize: 11, color: "#6b7280" }}>
+                        Tax: ${propertyData.assessment.tax.taxAmt.toLocaleString()}/yr
+                      </div>
                     )}
                   </div>
                 )}
-                {propertyData.avm?.amount?.value != null && (propertyData.sale?.amount?.saleAmt || propertyData.sale?.amount?.salePrice) != null && (
-                  <div style={{ padding: 16, background: "#fefce8", borderRadius: 10, textAlign: "center" }}>
-                    <div style={{ fontSize: 11, color: "#a16207", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Est. Equity</div>
-                    <div style={{ fontSize: 20, fontWeight: 700, color: "#a16207" }}>
-                      ${(propertyData.avm.amount.value - (propertyData.sale.amount.saleAmt || propertyData.sale.amount.salePrice)).toLocaleString()}
+                {propertyData.avm?.amount?.value != null &&
+                  (propertyData.sale?.amount?.saleAmt || propertyData.sale?.amount?.salePrice) != null && (
+                    <div style={{ padding: 16, background: "#fefce8", borderRadius: 10, textAlign: "center" }}>
+                      <div
+                        style={{
+                          fontSize: 11,
+                          color: "#a16207",
+                          fontWeight: 600,
+                          textTransform: "uppercase",
+                          letterSpacing: 0.5,
+                        }}
+                      >
+                        Est. Equity
+                      </div>
+                      <div style={{ fontSize: 20, fontWeight: 700, color: "#a16207" }}>
+                        $
+                        {(
+                          propertyData.avm.amount.value -
+                          (propertyData.sale.amount.saleAmt || propertyData.sale.amount.salePrice)
+                        ).toLocaleString()}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
               </div>
 
               <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20 }}>
                 <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: "#374151" }}>Property Details</h3>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "8px 20px" }}>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
+                    gap: "8px 20px",
+                  }}
+                >
                   <PropertyField label="Address" value={propertyData.address?.oneLine} />
-                  <PropertyField label="Type" value={propertyData.summary?.propertyType || propertyData.summary?.propType} />
+                  <PropertyField
+                    label="Type"
+                    value={propertyData.summary?.propertyType || propertyData.summary?.propType}
+                  />
                   <PropertyField label="Beds" value={propertyData.building?.rooms?.beds} />
-                  <PropertyField label="Baths" value={propertyData.building?.rooms?.bathsFull ?? propertyData.building?.rooms?.bathsTotal} />
-                  <PropertyField label="Sqft" value={propertyData.building?.size?.livingSize || propertyData.building?.size?.universalSize ? `${(propertyData.building.size.livingSize || propertyData.building.size.universalSize).toLocaleString()}` : undefined} />
-                  <PropertyField label="Year Built" value={propertyData.building?.summary?.yearBuilt || propertyData.summary?.yearBuilt} />
-                  <PropertyField label="Lot Size" value={propertyData.lot?.lotSize2 ? `${propertyData.lot.lotSize2.toFixed(2)} acres` : propertyData.lot?.lotSize1 ? `${propertyData.lot.lotSize1.toLocaleString()} sqft` : undefined} />
-                  <PropertyField label="Stories" value={propertyData.building?.summary?.storyDesc || propertyData.building?.summary?.levels} />
+                  <PropertyField
+                    label="Baths"
+                    value={propertyData.building?.rooms?.bathsFull ?? propertyData.building?.rooms?.bathsTotal}
+                  />
+                  <PropertyField
+                    label="Sqft"
+                    value={
+                      propertyData.building?.size?.livingSize || propertyData.building?.size?.universalSize
+                        ? `${(propertyData.building.size.livingSize || propertyData.building.size.universalSize).toLocaleString()}`
+                        : undefined
+                    }
+                  />
+                  <PropertyField
+                    label="Year Built"
+                    value={propertyData.building?.summary?.yearBuilt || propertyData.summary?.yearBuilt}
+                  />
+                  <PropertyField
+                    label="Lot Size"
+                    value={
+                      propertyData.lot?.lotSize2
+                        ? `${propertyData.lot.lotSize2.toFixed(2)} acres`
+                        : propertyData.lot?.lotSize1
+                          ? `${propertyData.lot.lotSize1.toLocaleString()} sqft`
+                          : undefined
+                    }
+                  />
+                  <PropertyField
+                    label="Stories"
+                    value={propertyData.building?.summary?.storyDesc || propertyData.building?.summary?.levels}
+                  />
                 </div>
               </div>
 
               {propertyData.owner && (
                 <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20 }}>
                   <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: "#374151" }}>Ownership</h3>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "8px 20px" }}>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
+                      gap: "8px 20px",
+                    }}
+                  >
                     <PropertyField label="Owner" value={propertyData.owner.owner1?.fullName} />
-                    {propertyData.owner.owner2?.fullName && <PropertyField label="Owner 2" value={propertyData.owner.owner2.fullName} />}
-                    <PropertyField label="Absentee" value={propertyData.owner.absenteeOwnerStatus || (propertyData.summary?.absenteeInd === "O" ? "Yes" : propertyData.summary?.absenteeInd === "S" ? "No" : undefined)} />
+                    {propertyData.owner.owner2?.fullName && (
+                      <PropertyField label="Owner 2" value={propertyData.owner.owner2.fullName} />
+                    )}
+                    <PropertyField
+                      label="Absentee"
+                      value={
+                        propertyData.owner.absenteeOwnerStatus ||
+                        (propertyData.summary?.absenteeInd === "O"
+                          ? "Yes"
+                          : propertyData.summary?.absenteeInd === "S"
+                            ? "No"
+                            : undefined)
+                      }
+                    />
                     <PropertyField label="Mailing Address" value={propertyData.owner.mailingAddressOneLine} />
                   </div>
                 </div>
@@ -975,7 +1340,13 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
               {propertyData.mortgage?.amount != null && (
                 <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20 }}>
                   <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: "#374151" }}>Mortgage</h3>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "8px 20px" }}>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
+                      gap: "8px 20px",
+                    }}
+                  >
                     <PropertyField label="Loan Amount" value={`$${propertyData.mortgage.amount.toLocaleString()}`} />
                     <PropertyField label="Lender" value={propertyData.mortgage.lender?.fullName} />
                     <PropertyField label="Loan Type" value={propertyData.mortgage.loanType} />
@@ -997,7 +1368,9 @@ function InfoField({ label, value, href }: { label: string; value?: string; href
     <div>
       <div style={{ fontSize: 12, fontWeight: 500, color: "#6b7280", marginBottom: 2 }}>{label}</div>
       {href ? (
-        <a href={href} style={{ fontSize: 14, color: "#3b82f6", textDecoration: "none" }}>{value}</a>
+        <a href={href} style={{ fontSize: 14, color: "#3b82f6", textDecoration: "none" }}>
+          {value}
+        </a>
       ) : (
         <div style={{ fontSize: 14, color: "#111827" }}>{value}</div>
       )}
@@ -1009,7 +1382,9 @@ function PropertyField({ label, value }: { label: string; value?: string | numbe
   if (value == null || value === "") return null;
   return (
     <div>
-      <div style={{ fontSize: 11, fontWeight: 500, color: "#9ca3af", textTransform: "uppercase", letterSpacing: 0.5 }}>{label}</div>
+      <div style={{ fontSize: 11, fontWeight: 500, color: "#9ca3af", textTransform: "uppercase", letterSpacing: 0.5 }}>
+        {label}
+      </div>
       <div style={{ fontSize: 14, color: "#111827", fontWeight: 500 }}>{value}</div>
     </div>
   );

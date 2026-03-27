@@ -60,21 +60,14 @@ interface MortgageInputs {
 
 // ─── Helpers ──────────────────────────────────────────────────
 
-const fmt = (n: number) =>
-  n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+const fmt = (n: number) => n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 
 const fmtDec = (n: number) =>
   n.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 // ─── Inline Mortgage Calculator ───────────────────────────────
 
-function ListingMortgageCalculator({
-  property,
-  agent,
-}: {
-  property: Property;
-  agent: AgentInfo | null;
-}) {
+function ListingMortgageCalculator({ property, agent }: { property: Property; agent: AgentInfo | null }) {
   const [inputs, setInputs] = useState<MortgageInputs>(() => {
     const price = property.ListPrice || 400000;
     const dpPercent = 20;
@@ -164,17 +157,13 @@ function ListingMortgageCalculator({
           color: "white",
         }}
       >
-        <div style={{ fontSize: 14, fontWeight: 500, opacity: 0.9 }}>
-          Estimated Monthly Payment
-        </div>
+        <div style={{ fontSize: 14, fontWeight: 500, opacity: 0.9 }}>Estimated Monthly Payment</div>
         <div style={{ fontSize: 32, fontWeight: 800, marginTop: 2 }}>
           {fmt(results.total)}
           <span style={{ fontSize: 14, fontWeight: 400, opacity: 0.8 }}>/mo</span>
         </div>
         {mlsBadges.length > 0 && (
-          <div style={{ fontSize: 11, marginTop: 6, opacity: 0.8 }}>
-            Auto-filled from MLS: {mlsBadges.join(", ")}
-          </div>
+          <div style={{ fontSize: 11, marginTop: 6, opacity: 0.8 }}>Auto-filled from MLS: {mlsBadges.join(", ")}</div>
         )}
       </div>
 
@@ -188,7 +177,10 @@ function ListingMortgageCalculator({
         </div>
 
         {breakdown.map((b) => (
-          <div key={b.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0" }}>
+          <div
+            key={b.label}
+            style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0" }}
+          >
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <div style={{ width: 8, height: 8, borderRadius: "50%", background: b.color }} />
               <span style={{ fontSize: 13, color: "#374151" }}>{b.label}</span>
@@ -200,20 +192,27 @@ function ListingMortgageCalculator({
 
       {/* Editable Inputs */}
       <div style={{ padding: "0 20px 16px", borderTop: "1px solid #f3f4f6" }}>
-        <div
-          style={{ fontSize: 13, fontWeight: 600, color: "#374151", padding: "12px 0 8px" }}
-        >
+        <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", padding: "12px 0 8px" }}>
           Adjust Your Numbers
         </div>
 
         {/* Offer Price */}
         <div style={{ marginBottom: 10 }}>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <label style={{ fontSize: 12, color: "#6b7280", width: 85, flexShrink: 0 }}>
-              Offer Price
-            </label>
+            <label style={{ fontSize: 12, color: "#6b7280", width: 85, flexShrink: 0 }}>Offer Price</label>
             <div style={{ position: "relative", flex: 1 }}>
-              <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", fontSize: 13, color: "#6b7280" }}>$</span>
+              <span
+                style={{
+                  position: "absolute",
+                  left: 10,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  fontSize: 13,
+                  color: "#6b7280",
+                }}
+              >
+                $
+              </span>
               <input
                 type="number"
                 value={inputs.purchasePrice}
@@ -230,27 +229,29 @@ function ListingMortgageCalculator({
             </div>
           </div>
           {inputs.purchasePrice !== property.ListPrice && (
-            <div style={{ marginLeft: 93, fontSize: 11, marginTop: 2, color: inputs.purchasePrice < property.ListPrice ? "#dc2626" : "#059669" }}>
+            <div
+              style={{
+                marginLeft: 93,
+                fontSize: 11,
+                marginTop: 2,
+                color: inputs.purchasePrice < property.ListPrice ? "#dc2626" : "#059669",
+              }}
+            >
               {inputs.purchasePrice < property.ListPrice
                 ? `${fmt(property.ListPrice - inputs.purchasePrice)} below list (${((1 - inputs.purchasePrice / property.ListPrice) * 100).toFixed(1)}% less)`
-                : `${fmt(inputs.purchasePrice - property.ListPrice)} above list (+${(((inputs.purchasePrice / property.ListPrice) - 1) * 100).toFixed(1)}%)`}
+                : `${fmt(inputs.purchasePrice - property.ListPrice)} above list (+${((inputs.purchasePrice / property.ListPrice - 1) * 100).toFixed(1)}%)`}
             </div>
           )}
         </div>
 
         {/* Down Payment */}
         <div style={{ display: "flex", gap: 8, marginBottom: 10, alignItems: "center" }}>
-          <label style={{ fontSize: 12, color: "#6b7280", width: 85, flexShrink: 0 }}>
-            Down Payment
-          </label>
+          <label style={{ fontSize: 12, color: "#6b7280", width: 85, flexShrink: 0 }}>Down Payment</label>
           <input
             type="number"
             value={usePercentDP ? inputs.downPaymentPercent : inputs.downPaymentAmount}
             onChange={(e) =>
-              handleChange(
-                usePercentDP ? "downPaymentPercent" : "downPaymentAmount",
-                parseFloat(e.target.value) || 0
-              )
+              handleChange(usePercentDP ? "downPaymentPercent" : "downPaymentAmount", parseFloat(e.target.value) || 0)
             }
             style={{
               flex: 1,
@@ -279,9 +280,7 @@ function ListingMortgageCalculator({
 
         {/* Interest Rate */}
         <div style={{ display: "flex", gap: 8, marginBottom: 10, alignItems: "center" }}>
-          <label style={{ fontSize: 12, color: "#6b7280", width: 85, flexShrink: 0 }}>
-            Rate
-          </label>
+          <label style={{ fontSize: 12, color: "#6b7280", width: 85, flexShrink: 0 }}>Rate</label>
           <input
             type="number"
             value={inputs.interestRate}
@@ -300,9 +299,7 @@ function ListingMortgageCalculator({
 
         {/* Loan Term */}
         <div style={{ display: "flex", gap: 8, marginBottom: 10, alignItems: "center" }}>
-          <label style={{ fontSize: 12, color: "#6b7280", width: 85, flexShrink: 0 }}>
-            Loan Term
-          </label>
+          <label style={{ fontSize: 12, color: "#6b7280", width: 85, flexShrink: 0 }}>Loan Term</label>
           <div style={{ display: "flex", gap: 4, flex: 1 }}>
             {[30, 20, 15].map((yr) => (
               <button
@@ -327,9 +324,7 @@ function ListingMortgageCalculator({
 
         {/* Property Tax */}
         <div style={{ display: "flex", gap: 8, marginBottom: 10, alignItems: "center" }}>
-          <label style={{ fontSize: 12, color: "#6b7280", width: 85, flexShrink: 0 }}>
-            Tax (annual)
-          </label>
+          <label style={{ fontSize: 12, color: "#6b7280", width: 85, flexShrink: 0 }}>Tax (annual)</label>
           <input
             type="number"
             value={inputs.propertyTaxAnnual}
@@ -347,9 +342,7 @@ function ListingMortgageCalculator({
 
         {/* Insurance */}
         <div style={{ display: "flex", gap: 8, marginBottom: 10, alignItems: "center" }}>
-          <label style={{ fontSize: 12, color: "#6b7280", width: 85, flexShrink: 0 }}>
-            Insurance (yr)
-          </label>
+          <label style={{ fontSize: 12, color: "#6b7280", width: 85, flexShrink: 0 }}>Insurance (yr)</label>
           <input
             type="number"
             value={inputs.insuranceAnnual}
@@ -367,9 +360,7 @@ function ListingMortgageCalculator({
 
         {/* HOA */}
         <div style={{ display: "flex", gap: 8, marginBottom: 10, alignItems: "center" }}>
-          <label style={{ fontSize: 12, color: "#6b7280", width: 85, flexShrink: 0 }}>
-            HOA (mo)
-          </label>
+          <label style={{ fontSize: 12, color: "#6b7280", width: 85, flexShrink: 0 }}>HOA (mo)</label>
           <input
             type="number"
             value={inputs.hoaMonthly}
@@ -423,9 +414,7 @@ function ListingMortgageCalculator({
             textAlign: "center",
           }}
         >
-          <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 8 }}>
-            Ready to make an offer?
-          </div>
+          <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 8 }}>Ready to make an offer?</div>
           <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
             {agent.phone && (
               <a
@@ -474,13 +463,7 @@ function ListingMortgageCalculator({
 
 // ─── Main Listing View ────────────────────────────────────────
 
-export default function ListingView({
-  listingKey,
-  agentId,
-}: {
-  listingKey: string;
-  agentId: string;
-}) {
+export default function ListingView({ listingKey, agentId }: { listingKey: string; agentId: string }) {
   const [property, setProperty] = useState<Property | null>(null);
   const [media, setMedia] = useState<Media[]>([]);
   const [agent, setAgent] = useState<AgentInfo | null>(null);
@@ -492,7 +475,7 @@ export default function ListingView({
     const fetchListing = async () => {
       try {
         const res = await fetch(
-          `/api/public/listing?key=${encodeURIComponent(listingKey)}&agentId=${encodeURIComponent(agentId)}`
+          `/api/public/listing?key=${encodeURIComponent(listingKey)}&agentId=${encodeURIComponent(agentId)}`,
         );
         const data = await res.json();
 
@@ -536,9 +519,7 @@ export default function ListingView({
     );
   }
 
-  const address = [property.StreetNumber, property.StreetName, property.StreetSuffix]
-    .filter(Boolean)
-    .join(" ");
+  const address = [property.StreetNumber, property.StreetName, property.StreetSuffix].filter(Boolean).join(" ");
   const fullAddress = [address, property.City, property.StateOrProvince, property.PostalCode]
     .filter(Boolean)
     .join(", ");
@@ -572,22 +553,62 @@ export default function ListingView({
                 style={{ width: "100%", height: 420, objectFit: "cover", display: "block" }}
               />
               {media.length > 1 && (
-                <div style={{ display: "flex", justifyContent: "space-between", position: "absolute", top: "50%", left: 0, right: 0, transform: "translateY(-50%)", padding: "0 8px" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    position: "absolute",
+                    top: "50%",
+                    left: 0,
+                    right: 0,
+                    transform: "translateY(-50%)",
+                    padding: "0 8px",
+                  }}
+                >
                   <button
                     onClick={() => setCurrentPhoto((p) => (p === 0 ? media.length - 1 : p - 1))}
-                    style={{ background: "rgba(0,0,0,0.5)", color: "#fff", border: "none", borderRadius: "50%", width: 40, height: 40, cursor: "pointer", fontSize: 20 }}
+                    style={{
+                      background: "rgba(0,0,0,0.5)",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: "50%",
+                      width: 40,
+                      height: 40,
+                      cursor: "pointer",
+                      fontSize: 20,
+                    }}
                   >
                     &lsaquo;
                   </button>
                   <button
                     onClick={() => setCurrentPhoto((p) => (p === media.length - 1 ? 0 : p + 1))}
-                    style={{ background: "rgba(0,0,0,0.5)", color: "#fff", border: "none", borderRadius: "50%", width: 40, height: 40, cursor: "pointer", fontSize: 20 }}
+                    style={{
+                      background: "rgba(0,0,0,0.5)",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: "50%",
+                      width: 40,
+                      height: 40,
+                      cursor: "pointer",
+                      fontSize: 20,
+                    }}
                   >
                     &rsaquo;
                   </button>
                 </div>
               )}
-              <div style={{ position: "absolute", bottom: 12, right: 12, background: "rgba(0,0,0,0.6)", color: "#fff", padding: "4px 10px", borderRadius: 16, fontSize: 13 }}>
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: 12,
+                  right: 12,
+                  background: "rgba(0,0,0,0.6)",
+                  color: "#fff",
+                  padding: "4px 10px",
+                  borderRadius: 16,
+                  fontSize: 13,
+                }}
+              >
                 {currentPhoto + 1} / {media.length}
               </div>
             </div>
@@ -618,19 +639,30 @@ export default function ListingView({
           {/* Key Details */}
           <div style={{ display: "flex", gap: 24, flexWrap: "wrap", marginBottom: 24, fontSize: 15, color: "#374151" }}>
             {property.BedroomsTotal != null && (
-              <span><strong>{property.BedroomsTotal}</strong> Beds</span>
+              <span>
+                <strong>{property.BedroomsTotal}</strong> Beds
+              </span>
             )}
             {property.BathroomsTotalInteger != null && (
-              <span><strong>{property.BathroomsTotalInteger}</strong> Baths</span>
+              <span>
+                <strong>{property.BathroomsTotalInteger}</strong> Baths
+              </span>
             )}
             {property.LivingArea != null && (
-              <span><strong>{property.LivingArea.toLocaleString()}</strong> Sq Ft</span>
+              <span>
+                <strong>{property.LivingArea.toLocaleString()}</strong> Sq Ft
+              </span>
             )}
             {property.YearBuilt != null && (
-              <span>Built <strong>{property.YearBuilt}</strong></span>
+              <span>
+                Built <strong>{property.YearBuilt}</strong>
+              </span>
             )}
             {property.PropertyType && (
-              <span>{property.PropertyType}{property.PropertySubType ? ` - ${property.PropertySubType}` : ""}</span>
+              <span>
+                {property.PropertyType}
+                {property.PropertySubType ? ` - ${property.PropertySubType}` : ""}
+              </span>
             )}
           </div>
 
@@ -645,12 +677,34 @@ export default function ListingView({
           {/* Listing Details */}
           <div style={{ background: "#f9fafb", borderRadius: 8, padding: 16, fontSize: 14, color: "#6b7280" }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-              <div>MLS #: <strong>{property.ListingId || property.ListingKey}</strong></div>
-              {property.ListAgentFullName && <div>Agent: <strong>{property.ListAgentFullName}</strong></div>}
-              {property.ListOfficeName && <div>Office: <strong>{property.ListOfficeName}</strong></div>}
-              {property.OnMarketDate && <div>Listed: <strong>{new Date(property.OnMarketDate).toLocaleDateString()}</strong></div>}
-              {property.TaxAnnualAmount != null && <div>Annual Tax: <strong>{fmt(property.TaxAnnualAmount)}</strong></div>}
-              {property.AssociationFee != null && property.AssociationFee > 0 && <div>HOA Fee: <strong>{fmt(property.AssociationFee)}/mo</strong></div>}
+              <div>
+                MLS #: <strong>{property.ListingId || property.ListingKey}</strong>
+              </div>
+              {property.ListAgentFullName && (
+                <div>
+                  Agent: <strong>{property.ListAgentFullName}</strong>
+                </div>
+              )}
+              {property.ListOfficeName && (
+                <div>
+                  Office: <strong>{property.ListOfficeName}</strong>
+                </div>
+              )}
+              {property.OnMarketDate && (
+                <div>
+                  Listed: <strong>{new Date(property.OnMarketDate).toLocaleDateString()}</strong>
+                </div>
+              )}
+              {property.TaxAnnualAmount != null && (
+                <div>
+                  Annual Tax: <strong>{fmt(property.TaxAnnualAmount)}</strong>
+                </div>
+              )}
+              {property.AssociationFee != null && property.AssociationFee > 0 && (
+                <div>
+                  HOA Fee: <strong>{fmt(property.AssociationFee)}/mo</strong>
+                </div>
+              )}
             </div>
           </div>
 
@@ -676,7 +730,16 @@ export default function ListingView({
       </div>
 
       {/* Footer */}
-      <div style={{ marginTop: 32, paddingTop: 16, borderTop: "1px solid #e5e7eb", fontSize: 12, color: "#9ca3af", textAlign: "center" }}>
+      <div
+        style={{
+          marginTop: 32,
+          paddingTop: 16,
+          borderTop: "1px solid #e5e7eb",
+          fontSize: 12,
+          color: "#9ca3af",
+          textAlign: "center",
+        }}
+      >
         Listing shared via Real Estate Genie
       </div>
 

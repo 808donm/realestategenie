@@ -2,15 +2,7 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Users,
-  TrendingUp,
-  Calendar,
-  UserCheck,
-  Flame,
-  ThermometerSun,
-  Target,
-} from "lucide-react";
+import { Users, TrendingUp, Calendar, UserCheck, Flame, ThermometerSun, Target } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -67,7 +59,7 @@ export default async function TeamLeadDashboardPage() {
       `
       *,
       agents (id, display_name, email)
-    `
+    `,
     )
     .eq("team_id", team.id)
     .eq("is_active", true);
@@ -173,7 +165,6 @@ export default async function TeamLeadDashboardPage() {
             <p className="text-xs text-muted-foreground mt-1">{totalLeads} total leads</p>
           </CardContent>
         </Card>
-
       </div>
 
       {/* Team Performance Summary */}
@@ -234,7 +225,8 @@ export default async function TeamLeadDashboardPage() {
               </div>
               <div className="text-right">
                 <div className="text-sm text-muted-foreground">
-                  {topPerformer.hotLeads} hot leads | {topPerformer.totalLeads} total | {topPerformer.openHouses} open houses
+                  {topPerformer.hotLeads} hot leads | {topPerformer.totalLeads} total | {topPerformer.openHouses} open
+                  houses
                 </div>
               </div>
             </div>
@@ -252,9 +244,7 @@ export default async function TeamLeadDashboardPage() {
         </CardHeader>
         <CardContent>
           {agentPerformance.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No agents in your team yet
-            </div>
+            <div className="text-center py-8 text-muted-foreground">No agents in your team yet</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -274,14 +264,10 @@ export default async function TeamLeadDashboardPage() {
                     >
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
-                          {index === 0 && (
-                            <Badge className="bg-yellow-500 text-white">★</Badge>
-                          )}
+                          {index === 0 && <Badge className="bg-yellow-500 text-white">★</Badge>}
                           <div>
                             <div className="font-medium">{agent.agent_name}</div>
-                            <div className="text-xs text-muted-foreground">
-                              {agent.agent_email}
-                            </div>
+                            <div className="text-xs text-muted-foreground">{agent.agent_email}</div>
                           </div>
                         </div>
                       </td>

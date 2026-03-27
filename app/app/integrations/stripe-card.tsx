@@ -127,24 +127,21 @@ export default function StripeIntegrationCard({ integration }: { integration: In
               Error
             </Badge>
           )}
-          {!isConnected && !hasError && (
-            <Badge variant="outline">Not Connected</Badge>
-          )}
+          {!isConnected && !hasError && <Badge variant="outline">Not Connected</Badge>}
         </div>
       </CardHeader>
 
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          Accept invoice payments from tenants via credit card. Payments are processed securely through Stripe and automatically update invoice status.
+          Accept invoice payments from tenants via credit card. Payments are processed securely through Stripe and
+          automatically update invoice status.
         </p>
 
         {isConnected && integration?.config && (
           <div className="space-y-2">
             <div className="text-sm">
               <span className="text-muted-foreground">Mode:</span>{" "}
-              <code className="text-xs bg-muted px-1 py-0.5 rounded">
-                {integration.config.stripe_mode || "test"}
-              </code>
+              <code className="text-xs bg-muted px-1 py-0.5 rounded">{integration.config.stripe_mode || "test"}</code>
             </div>
             <div className="text-sm">
               <span className="text-muted-foreground">Publishable Key:</span>{" "}
@@ -222,11 +219,7 @@ export default function StripeIntegrationCard({ integration }: { integration: In
                 </Button>
               ) : (
                 <>
-                  <Button
-                    onClick={handleConnect}
-                    disabled={connecting}
-                    className="flex-1"
-                  >
+                  <Button onClick={handleConnect} disabled={connecting} className="flex-1">
                     {connecting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                     Save & Connect
                   </Button>
@@ -245,12 +238,7 @@ export default function StripeIntegrationCard({ integration }: { integration: In
               )}
             </>
           ) : (
-            <Button
-              onClick={handleDisconnect}
-              disabled={disconnecting}
-              variant="outline"
-              className="w-full"
-            >
+            <Button onClick={handleDisconnect} disabled={disconnecting} variant="outline" className="w-full">
               {disconnecting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Disconnect
             </Button>

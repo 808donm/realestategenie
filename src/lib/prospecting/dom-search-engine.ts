@@ -11,15 +11,8 @@
  *   - Charcoal: DOM >= avg × charcoalMultiplier  (Monitor)
  */
 
-import {
-  TrestleClient,
-  TrestleProperty,
-  createTrestleClient,
-} from "@/lib/integrations/trestle-client";
-import {
-  RentcastClient,
-  createRentcastClient,
-} from "@/lib/integrations/rentcast-client";
+import { TrestleClient, TrestleProperty, createTrestleClient } from "@/lib/integrations/trestle-client";
+import { RentcastClient, createRentcastClient } from "@/lib/integrations/rentcast-client";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -27,10 +20,10 @@ import {
 
 export interface DomSearchParams {
   zipCodes: string[];
-  redMultiplier: number;     // e.g., 2.0
-  orangeMultiplier: number;  // e.g., 1.5
+  redMultiplier: number; // e.g., 2.0
+  orangeMultiplier: number; // e.g., 1.5
   charcoalMultiplier: number; // e.g., 1.15
-  propertyTypes?: string[];  // e.g., ["Single Family", "Condo"]
+  propertyTypes?: string[]; // e.g., ["Single Family", "Condo"]
   minPrice?: number;
   maxPrice?: number;
 }
@@ -104,10 +97,12 @@ export function calculateLiveDom(onMarketDate: string | Date | null | undefined,
 export function normalizeMlsPropertyType(type?: string): string {
   if (!type) return "Other";
   const t = type.toLowerCase();
-  if (t.includes("single") || t.includes("sfr") || t.includes("house") || t.includes("residential")) return "Single Family";
+  if (t.includes("single") || t.includes("sfr") || t.includes("house") || t.includes("residential"))
+    return "Single Family";
   if (t.includes("condo") || t.includes("condominium")) return "Condo";
   if (t.includes("town") || t.includes("townhome") || t.includes("townhouse")) return "Townhouse";
-  if (t.includes("multi") || t.includes("duplex") || t.includes("triplex") || t.includes("fourplex")) return "Multi-Family";
+  if (t.includes("multi") || t.includes("duplex") || t.includes("triplex") || t.includes("fourplex"))
+    return "Multi-Family";
   if (t.includes("land") || t.includes("lot") || t.includes("vacant")) return "Land";
   return type;
 }
@@ -129,7 +124,7 @@ export function normalizeRentcastPropertyType(type?: string): string {
 // ---------------------------------------------------------------------------
 
 export function computeAvgDomByType(
-  listings: Array<{ propertyType: string; dom: number }>
+  listings: Array<{ propertyType: string; dom: number }>,
 ): Record<string, { avgDom: number; count: number }> {
   const groups: Record<string, number[]> = {};
 
@@ -155,7 +150,7 @@ export function computeAvgDomByType(
 export function classifyTier(
   dom: number,
   avgDom: number,
-  params: Pick<DomSearchParams, "redMultiplier" | "orangeMultiplier" | "charcoalMultiplier">
+  params: Pick<DomSearchParams, "redMultiplier" | "orangeMultiplier" | "charcoalMultiplier">,
 ): "red" | "orange" | "charcoal" | null {
   if (avgDom <= 0) return null;
   const ratio = dom / avgDom;
@@ -171,8 +166,11 @@ export function classifyTier(
 
 async function searchMls(
   client: TrestleClient,
-  params: DomSearchParams
-): Promise<{ listings: DomProspectResult[]; marketStats: Record<string, Record<string, { avgDom: number; count: number }>> }> {
+  params: DomSearchParams,
+): Promise<{
+  listings: DomProspectResult[];
+  marketStats: Record<string, Record<string, { avgDom: number; count: number }>>;
+}> {
   const allListings: TrestleProperty[] = [];
   const marketStats: Record<string, Record<string, { avgDom: number; count: number }>> = {};
 
@@ -182,7 +180,7 @@ async function searchMls(
       // Build property type filter for OData
       let propTypeFilter = "";
       if (params.propertyTypes?.length) {
-        const typeFilters = params.propertyTypes.map(t => `PropertyType eq '${t}'`);
+        const typeFilters = params.propertyTypes.map((t) => `PropertyType eq '${t}'`);
         propTypeFilter = ` and (${typeFilters.join(" or ")})`;
       }
 
@@ -192,17 +190,38 @@ async function searchMls(
       if (params.maxPrice) priceFilter += ` and ListPrice le ${params.maxPrice}`;
 
       // Include Active, Withdrawn, and Expired listings for DOM prospecting
-      const statusFilter = "(StandardStatus eq 'Active' or StandardStatus eq 'Withdrawn' or StandardStatus eq 'Expired')";
+      const statusFilter =
+        "(StandardStatus eq 'Active' or StandardStatus eq 'Withdrawn' or StandardStatus eq 'Expired')";
       const result = await client.getProperties({
         $filter: `${statusFilter} and startswith(PostalCode, '${zip}')${propTypeFilter}${priceFilter}`,
         $select: [
-          "ListingKey", "ListingId", "StandardStatus", "PropertyType",
-          "ListPrice", "OriginalListPrice", "UnparsedAddress", "StreetNumber",
-          "StreetName", "StreetSuffix", "City", "StateOrProvince", "PostalCode",
-          "Latitude", "Longitude", "BedroomsTotal", "BathroomsTotalInteger",
-          "LivingArea", "YearBuilt", "DaysOnMarket", "CumulativeDaysOnMarket",
-          "OnMarketDate", "ListAgentFullName", "ListAgentDirectPhone",
-          "ListAgentEmail", "ListOfficeName", "OwnershipType",
+          "ListingKey",
+          "ListingId",
+          "StandardStatus",
+          "PropertyType",
+          "ListPrice",
+          "OriginalListPrice",
+          "UnparsedAddress",
+          "StreetNumber",
+          "StreetName",
+          "StreetSuffix",
+          "City",
+          "StateOrProvince",
+          "PostalCode",
+          "Latitude",
+          "Longitude",
+          "BedroomsTotal",
+          "BathroomsTotalInteger",
+          "LivingArea",
+          "YearBuilt",
+          "DaysOnMarket",
+          "CumulativeDaysOnMarket",
+          "OnMarketDate",
+          "ListAgentFullName",
+          "ListAgentDirectPhone",
+          "ListAgentEmail",
+          "ListOfficeName",
+          "OwnershipType",
         ].join(","),
         $orderby: "DaysOnMarket desc",
         $top: 500,
@@ -210,7 +229,7 @@ async function searchMls(
       });
 
       // Compute average DOM by property type for this zip
-      const zipListings = result.value.map(l => ({
+      const zipListings = result.value.map((l) => ({
         propertyType: normalizeMlsPropertyType(l.PropertyType),
         dom: l.DaysOnMarket ?? l.CumulativeDaysOnMarket ?? 0,
       }));
@@ -245,9 +264,10 @@ async function searchMls(
     // Include if: expired/withdrawn (always prospectable) OR active exceeding DOM threshold
     if (!tier && !isExpiredOrWithdrawn) continue;
 
-    const address = l.UnparsedAddress
-      || [l.StreetNumber, l.StreetName, l.StreetSuffix].filter(Boolean).join(" ")
-      || "Unknown Address";
+    const address =
+      l.UnparsedAddress ||
+      [l.StreetNumber, l.StreetName, l.StreetSuffix].filter(Boolean).join(" ") ||
+      "Unknown Address";
 
     results.push({
       listingKey: l.ListingKey,
@@ -301,8 +321,11 @@ async function searchMls(
 async function searchRentcast(
   client: RentcastClient,
   params: DomSearchParams,
-  cachedMarketStats?: Record<string, any>
-): Promise<{ listings: DomProspectResult[]; marketStats: Record<string, Record<string, { avgDom: number; count: number }>> }> {
+  cachedMarketStats?: Record<string, any>,
+): Promise<{
+  listings: DomProspectResult[];
+  marketStats: Record<string, Record<string, { avgDom: number; count: number }>>;
+}> {
   const marketStats: Record<string, Record<string, { avgDom: number; count: number }>> = {};
   const allListings: any[] = [];
 
@@ -334,7 +357,7 @@ async function searchRentcast(
 
       // If no cached stats or missing types, compute from the listings themselves
       if (Object.keys(zipAvgDomByType).length === 0 && listings.length > 0) {
-        const listingDoms = listings.map(l => ({
+        const listingDoms = listings.map((l) => ({
           propertyType: normalizeRentcastPropertyType(l.propertyType),
           dom: l.daysOnMarket || 0,
         }));
@@ -443,7 +466,7 @@ export async function runDomSearch(
     trestleConfig?: any;
     rentcastClient?: RentcastClient | null;
     cachedMarketStats?: Record<string, any>;
-  }
+  },
 ): Promise<DomSearchResult> {
   let mlsResults: DomProspectResult[] = [];
   let rentcastResults: DomProspectResult[] = [];
@@ -465,17 +488,13 @@ export async function runDomSearch(
   }
 
   // 2. For zips with no MLS results, supplement with RentCast
-  const mlsZips = new Set(mlsResults.map(r => r.zipCode));
-  const missingZips = params.zipCodes.filter(z => !mlsZips.has(z));
+  const mlsZips = new Set(mlsResults.map((r) => r.zipCode));
+  const missingZips = params.zipCodes.filter((z) => !mlsZips.has(z));
 
   if (missingZips.length > 0 && options.rentcastClient) {
     try {
       const rcParams = { ...params, zipCodes: missingZips };
-      const rcSearch = await searchRentcast(
-        options.rentcastClient,
-        rcParams,
-        options.cachedMarketStats
-      );
+      const rcSearch = await searchRentcast(options.rentcastClient, rcParams, options.cachedMarketStats);
       rentcastResults = rcSearch.listings;
 
       // Merge market stats
@@ -489,16 +508,16 @@ export async function runDomSearch(
         dataSource = "rentcast";
       }
 
-      console.log(`[DomEngine] RentCast supplemented ${rentcastResults.length} listings for ${missingZips.length} zips`);
+      console.log(
+        `[DomEngine] RentCast supplemented ${rentcastResults.length} listings for ${missingZips.length} zips`,
+      );
     } catch (err: any) {
       console.warn("[DomEngine] RentCast fallback also failed:", err.message);
     }
   }
 
   // 3. Combine and sort by DOM ratio
-  const combined = [...mlsResults, ...rentcastResults].sort(
-    (a, b) => b.domRatio - a.domRatio
-  );
+  const combined = [...mlsResults, ...rentcastResults].sort((a, b) => b.domRatio - a.domRatio);
 
   return {
     results: combined,

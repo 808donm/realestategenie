@@ -1,19 +1,11 @@
 import { trackedGenerateText } from "@/lib/ai/ai-call-logger";
 import { createClient } from "@supabase/supabase-js";
 
-const admin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
-export type MessageChannel =
-  | "sms"
-  | "facebook"
-  | "instagram"
-  | "linkedin"
-  | "google_business"
-  | "whatsapp";
+export type MessageChannel = "sms" | "facebook" | "instagram" | "linkedin" | "google_business" | "whatsapp";
 
 export interface ConversationMessage {
   role: "user" | "assistant";
@@ -61,12 +53,10 @@ function getSystemPrompt(
   agentName: string,
   channel: MessageChannel,
   propertyAddress?: string,
-  leadSource?: string
+  leadSource?: string,
 ): string {
   const channelGuidance = getChannelGuidance(channel);
-  const sourceContext = leadSource
-    ? `\n- The lead came from: ${leadSource} (e.g. an ad, a post, or a listing).`
-    : "";
+  const sourceContext = leadSource ? `\n- The lead came from: ${leadSource} (e.g. an ad, a post, or a listing).` : "";
 
   return `You are a friendly and professional real estate assistant messaging on behalf of ${agentName}. ${channelGuidance}
 
@@ -98,15 +88,7 @@ export async function generateChannelResponse(params: {
   propertyAddress?: string;
   leadSource?: string;
 }): Promise<{ reply: string; conversationId: string }> {
-  const {
-    externalContactId,
-    agentId,
-    agentName,
-    inboundMessage,
-    channel,
-    propertyAddress,
-    leadSource,
-  } = params;
+  const { externalContactId, agentId, agentName, inboundMessage, channel, propertyAddress, leadSource } = params;
 
   // Load or create conversation thread
   const { data: existingConvo } = await admin
@@ -173,9 +155,7 @@ export async function generateChannelResponse(params: {
     maxOutputTokens: getMaxTokens(channel),
   });
 
-  const reply =
-    text?.trim() ||
-    "Thanks for your message! Let me get back to you shortly.";
+  const reply = text?.trim() || "Thanks for your message! Let me get back to you shortly.";
 
   // Append assistant reply to history
   history.push({
@@ -201,10 +181,7 @@ export async function generateChannelResponse(params: {
 /**
  * Mark a conversation as handed off to the human agent.
  */
-export async function handoffChannelConversation(
-  conversationId: string,
-  reason: string
-): Promise<void> {
+export async function handoffChannelConversation(conversationId: string, reason: string): Promise<void> {
   await admin
     .from("ai_channel_conversations")
     .update({

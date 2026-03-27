@@ -67,11 +67,9 @@ export interface CompMatch {
 export async function analyzeComparables(
   subject: CompProperty,
   neighbors: CompProperty[],
-  stateAbbrev: string
+  stateAbbrev: string,
 ): Promise<CompGenieResult> {
-  const neighborSlice = neighbors
-    .filter((n) => n.address !== subject.address)
-    .slice(0, 20);
+  const neighborSlice = neighbors.filter((n) => n.address !== subject.address).slice(0, 20);
 
   if (neighborSlice.length === 0) {
     return {
@@ -88,9 +86,7 @@ export async function analyzeComparables(
   }
 
   const subjectSummary = formatProperty(subject, "SUBJECT");
-  const neighborData = neighborSlice
-    .map((n, i) => formatProperty(n, `#${i + 1}`))
-    .join("\n");
+  const neighborData = neighborSlice.map((n, i) => formatProperty(n, `#${i + 1}`)).join("\n");
 
   const { text } = await trackedGenerateText({
     model: getCompModelId(),

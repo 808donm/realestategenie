@@ -8,11 +8,7 @@ export const metadata: Metadata = {
   description: "Calculate your monthly mortgage payment, view amortization schedule, and explore affordability",
 };
 
-export default async function PortalMortgagePage({
-  params,
-}: {
-  params: Promise<{ agentId: string }>;
-}) {
+export default async function PortalMortgagePage({ params }: { params: Promise<{ agentId: string }> }) {
   const { agentId } = await params;
 
   const { data: agent } = await supabaseAdmin
@@ -49,25 +45,14 @@ export default async function PortalMortgagePage({
           }}
         >
           <div>
-            <Link
-              href={`/portal/${agentId}`}
-              style={{ fontSize: 13, color: "#6b7280", textDecoration: "none" }}
-            >
+            <Link href={`/portal/${agentId}`} style={{ fontSize: 13, color: "#6b7280", textDecoration: "none" }}>
               &larr; Back to Portal
             </Link>
-            <h1 style={{ fontSize: 20, fontWeight: 700, margin: "4px 0 0" }}>
-              Mortgage Calculator
-            </h1>
+            <h1 style={{ fontSize: 20, fontWeight: 700, margin: "4px 0 0" }}>Mortgage Calculator</h1>
           </div>
           <div style={{ textAlign: "right" }}>
-            <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>
-              Provided by {agent.full_name}
-            </p>
-            {agent.brokerage && (
-              <p style={{ fontSize: 12, color: "#9ca3af", margin: 0 }}>
-                {agent.brokerage}
-              </p>
-            )}
+            <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>Provided by {agent.full_name}</p>
+            {agent.brokerage && <p style={{ fontSize: 12, color: "#9ca3af", margin: 0 }}>{agent.brokerage}</p>}
           </div>
         </div>
       </header>

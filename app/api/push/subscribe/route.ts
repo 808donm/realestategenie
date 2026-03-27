@@ -19,24 +19,19 @@ export async function POST(request: NextRequest) {
     const { endpoint, keys } = await request.json();
 
     if (!endpoint || !keys?.p256dh || !keys?.auth) {
-      return NextResponse.json(
-        { error: "endpoint and keys (p256dh, auth) are required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "endpoint and keys (p256dh, auth) are required" }, { status: 400 });
     }
 
-    const { error } = await supabase
-      .from("push_subscriptions")
-      .upsert(
-        {
-          agent_id: userData.user.id,
-          endpoint,
-          p256dh: keys.p256dh,
-          auth: keys.auth,
-          user_agent: request.headers.get("user-agent") || null,
-        },
-        { onConflict: "endpoint" }
-      );
+    const { error } = await supabase.from("push_subscriptions").upsert(
+      {
+        agent_id: userData.user.id,
+        endpoint,
+        p256dh: keys.p256dh,
+        auth: keys.auth,
+        user_agent: request.headers.get("user-agent") || null,
+      },
+      { onConflict: "endpoint" },
+    );
 
     if (error) throw error;
 
@@ -45,7 +40,7 @@ export async function POST(request: NextRequest) {
     console.error("Push subscribe error:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to subscribe" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -64,18 +59,14 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "endpoint is required" }, { status: 400 });
     }
 
-    await supabase
-      .from("push_subscriptions")
-      .delete()
-      .eq("endpoint", endpoint)
-      .eq("agent_id", userData.user.id);
+    await supabase.from("push_subscriptions").delete().eq("endpoint", endpoint).eq("agent_id", userData.user.id);
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Push unsubscribe error:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to unsubscribe" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

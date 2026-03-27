@@ -11,11 +11,9 @@ import { createClient } from "@supabase/supabase-js";
 import { MicrosoftCalendarProvider } from "@/lib/integrations/microsoft-calendar-client";
 import { fullSync } from "@/lib/calendar/sync-engine";
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 export async function POST(request: NextRequest) {
   const url = new URL(request.url);
@@ -33,11 +31,7 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const notifications = body.value || [];
 
-  console.log(
-    "[Microsoft Calendar Webhook] Received",
-    notifications.length,
-    "notifications"
-  );
+  console.log("[Microsoft Calendar Webhook] Received", notifications.length, "notifications");
 
   for (const notification of notifications) {
     // Verify client state

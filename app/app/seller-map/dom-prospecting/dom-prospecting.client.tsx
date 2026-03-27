@@ -37,7 +37,15 @@ interface SearchResult {
   results: DomResult[];
   marketStats: Record<string, Record<string, { avgDom: number; count: number }>>;
   dataSource: string;
-  summary: { red: number; orange: number; charcoal: number; outreach?: number; monitor?: number; expired?: number; withdrawn?: number };
+  summary: {
+    red: number;
+    orange: number;
+    charcoal: number;
+    outreach?: number;
+    monitor?: number;
+    expired?: number;
+    withdrawn?: number;
+  };
   total: number;
 }
 
@@ -80,8 +88,8 @@ export function DomProspectingClient() {
     if (activeTab !== "monitored" || monitoredLoading) return;
     setMonitoredLoading(true);
     fetch("/api/dom-prospecting/monitor")
-      .then(r => r.json())
-      .then(data => setMonitoredProps(data.properties || []))
+      .then((r) => r.json())
+      .then((data) => setMonitoredProps(data.properties || []))
       .catch(() => {})
       .finally(() => setMonitoredLoading(false));
   }, [activeTab]);
@@ -91,8 +99,8 @@ export function DomProspectingClient() {
     if (activeTab !== "alerts" || alertsLoading) return;
     setAlertsLoading(true);
     fetch("/api/dom-prospecting/alerts")
-      .then(r => r.json())
-      .then(data => {
+      .then((r) => r.json())
+      .then((data) => {
         setAlerts(data.alerts || []);
         setUnreadAlerts(data.unreadCount || 0);
       })
@@ -103,37 +111,45 @@ export function DomProspectingClient() {
   // Check unread alert count on mount
   useEffect(() => {
     fetch("/api/dom-prospecting/alerts?limit=1")
-      .then(r => r.json())
-      .then(data => setUnreadAlerts(data.unreadCount || 0))
+      .then((r) => r.json())
+      .then((data) => setUnreadAlerts(data.unreadCount || 0))
       .catch(() => {});
   }, []);
 
-  const monitorProperty = useCallback(async (r: DomResult) => {
-    try {
-      await fetch("/api/dom-prospecting/monitor", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          listingKey: r.listingKey,
-          listingId: r.mlsNumber,
-          address: r.address,
-          city: r.city,
-          zipCode: r.zipCode,
-          propertyType: r.propertyType,
-          listPrice: r.listPrice,
-          onMarketDate: r.listedDate,
-          currentTier: r.tier,
-          daysOnMarket: r.daysOnMarket,
-          redMultiplier: parseFloat(redMult) || 2.0,
-          orangeMultiplier: parseFloat(orangeMult) || 1.5,
-          charcoalMultiplier: parseFloat(charcoalMult) || 1.15,
-        }),
-      });
-    } catch { /* silent */ }
-  }, [redMult, orangeMult, charcoalMult]);
+  const monitorProperty = useCallback(
+    async (r: DomResult) => {
+      try {
+        await fetch("/api/dom-prospecting/monitor", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            listingKey: r.listingKey,
+            listingId: r.mlsNumber,
+            address: r.address,
+            city: r.city,
+            zipCode: r.zipCode,
+            propertyType: r.propertyType,
+            listPrice: r.listPrice,
+            onMarketDate: r.listedDate,
+            currentTier: r.tier,
+            daysOnMarket: r.daysOnMarket,
+            redMultiplier: parseFloat(redMult) || 2.0,
+            orangeMultiplier: parseFloat(orangeMult) || 1.5,
+            charcoalMultiplier: parseFloat(charcoalMult) || 1.15,
+          }),
+        });
+      } catch {
+        /* silent */
+      }
+    },
+    [redMult, orangeMult, charcoalMult],
+  );
 
   const runSearch = useCallback(async () => {
-    const zips = zipCodes.split(",").map(z => z.trim()).filter(Boolean);
+    const zips = zipCodes
+      .split(",")
+      .map((z) => z.trim())
+      .filter(Boolean);
     if (!zips.length) {
       setError("Enter at least one zip code");
       return;
@@ -175,7 +191,10 @@ export function DomProspectingClient() {
   }, [zipCodes, redMult, orangeMult, charcoalMult, propertyTypes, minPrice, maxPrice]);
 
   const saveSearch = useCallback(async () => {
-    const zips = zipCodes.split(",").map(z => z.trim()).filter(Boolean);
+    const zips = zipCodes
+      .split(",")
+      .map((z) => z.trim())
+      .filter(Boolean);
     if (!zips.length) return;
 
     setSaving(true);
@@ -210,9 +229,7 @@ export function DomProspectingClient() {
     }
   }, [zipCodes, redMult, orangeMult, charcoalMult, propertyTypes, minPrice, maxPrice]);
 
-  const filteredResults = result?.results.filter(
-    r => tierFilter === "all" || r.tier === tierFilter
-  ) || [];
+  const filteredResults = result?.results.filter((r) => tierFilter === "all" || r.tier === tierFilter) || [];
 
   const propTypeOptions = ["Single Family", "Condo", "Townhouse", "Multi-Family"];
 
@@ -220,16 +237,18 @@ export function DomProspectingClient() {
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       {/* Tab Switcher */}
       <div style={{ display: "flex", gap: 0 }}>
-        {([
+        {[
           { id: "search" as const, label: "Search" },
           { id: "monitored" as const, label: "Monitored" },
           { id: "alerts" as const, label: `Alerts${unreadAlerts > 0 ? ` (${unreadAlerts})` : ""}` },
-        ]).map((tab, i) => (
+        ].map((tab, i) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             style={{
-              padding: "8px 20px", fontSize: 13, fontWeight: 600,
+              padding: "8px 20px",
+              fontSize: 13,
+              fontWeight: 600,
               border: "1px solid #d1d5db",
               borderLeft: i === 0 ? "1px solid #d1d5db" : "none",
               borderRadius: i === 0 ? "8px 0 0 8px" : i === 2 ? "0 8px 8px 0" : "0",
@@ -243,315 +262,476 @@ export function DomProspectingClient() {
         ))}
       </div>
 
-      {activeTab === "search" && (<>
-      {/* Search Controls */}
-      <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 16 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12 }}>
-          <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>Zip Codes</label>
-            <input
-              value={zipCodes}
-              onChange={e => setZipCodes(e.target.value)}
-              placeholder="96815, 96816, 96817"
-              style={{ width: "100%", padding: "8px 10px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13 }}
-            />
-          </div>
-          <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>Property Types</label>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-              {propTypeOptions.map(t => (
-                <button
-                  key={t}
-                  onClick={() => setPropertyTypes(prev =>
-                    prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]
-                  )}
-                  style={{
-                    padding: "4px 8px", fontSize: 11, borderRadius: 4,
-                    border: "1px solid #d1d5db", cursor: "pointer",
-                    background: propertyTypes.includes(t) ? "#1e40af" : "#fff",
-                    color: propertyTypes.includes(t) ? "#fff" : "#374151",
-                  }}
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>Price Range</label>
-            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              <input
-                value={minPrice}
-                onChange={e => setMinPrice(e.target.value)}
-                placeholder="Min"
-                style={{ width: "50%", padding: "8px 10px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13 }}
-              />
-              <span style={{ color: "#9ca3af" }}>–</span>
-              <input
-                value={maxPrice}
-                onChange={e => setMaxPrice(e.target.value)}
-                placeholder="Max"
-                style={{ width: "50%", padding: "8px 10px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13 }}
-              />
-            </div>
-          </div>
-          <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>DOM Thresholds (× Avg)</label>
-            <div style={{ display: "flex", gap: 6 }}>
-              <div style={{ flex: 1, textAlign: "center" }}>
-                <div style={{ fontSize: 10, color: "#dc2626", fontWeight: 600 }}>Red</div>
-                <input
-                  value={redMult}
-                  onChange={e => setRedMult(e.target.value)}
-                  style={{ width: "100%", padding: "4px 6px", border: "1px solid #fca5a5", borderRadius: 4, fontSize: 12, textAlign: "center" }}
-                />
-              </div>
-              <div style={{ flex: 1, textAlign: "center" }}>
-                <div style={{ fontSize: 10, color: "#ea580c", fontWeight: 600 }}>Orange</div>
-                <input
-                  value={orangeMult}
-                  onChange={e => setOrangeMult(e.target.value)}
-                  style={{ width: "100%", padding: "4px 6px", border: "1px solid #fdba74", borderRadius: 4, fontSize: 12, textAlign: "center" }}
-                />
-              </div>
-              <div style={{ flex: 1, textAlign: "center" }}>
-                <div style={{ fontSize: 10, color: "#4b5563", fontWeight: 600 }}>Charcoal</div>
-                <input
-                  value={charcoalMult}
-                  onChange={e => setCharcoalMult(e.target.value)}
-                  style={{ width: "100%", padding: "4px 6px", border: "1px solid #9ca3af", borderRadius: 4, fontSize: 12, textAlign: "center" }}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div style={{ display: "flex", gap: 8, marginTop: 14, alignItems: "center" }}>
-          <button
-            onClick={runSearch}
-            disabled={loading}
-            style={{
-              padding: "8px 20px", background: loading ? "#9ca3af" : "#1e40af", color: "#fff",
-              borderRadius: 6, fontWeight: 600, fontSize: 13, border: "none", cursor: loading ? "default" : "pointer",
-            }}
-          >
-            {loading ? "Searching..." : "Search DOM Prospects"}
-          </button>
-          <button
-            onClick={saveSearch}
-            disabled={saving}
-            style={{
-              padding: "8px 16px", background: "#fff", color: "#1e40af", border: "1px solid #1e40af",
-              borderRadius: 6, fontWeight: 600, fontSize: 13, cursor: "pointer",
-            }}
-          >
-            {saving ? "Saving..." : "Save Weekly Search"}
-          </button>
-          {saveMsg && <span style={{ fontSize: 12, color: saveMsg.includes("Saved") ? "#059669" : "#dc2626" }}>{saveMsg}</span>}
-        </div>
-      </div>
-
-      {error && (
-        <div style={{ padding: 12, background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: 8, color: "#991b1b", fontSize: 13 }}>
-          {error}
-        </div>
-      )}
-
-      {/* Results */}
-      {result && (
+      {activeTab === "search" && (
         <>
-          {/* Summary Cards */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10 }}>
-            {(["red", "orange", "charcoal"] as const).map(tier => {
-              const t = TIER_COLORS[tier];
-              const count = result.summary[tier];
-              return (
-                <button
-                  key={tier}
-                  onClick={() => setTierFilter(tierFilter === tier ? "all" : tier)}
+          {/* Search Controls */}
+          <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 16 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12 }}>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>
+                  Zip Codes
+                </label>
+                <input
+                  value={zipCodes}
+                  onChange={(e) => setZipCodes(e.target.value)}
+                  placeholder="96815, 96816, 96817"
                   style={{
-                    padding: "14px 16px", background: tierFilter === tier ? t.bg : "#fff",
-                    border: `2px solid ${tierFilter === tier ? t.border : "#e5e7eb"}`,
-                    borderRadius: 10, cursor: "pointer", textAlign: "left",
+                    width: "100%",
+                    padding: "8px 10px",
+                    border: "1px solid #d1d5db",
+                    borderRadius: 6,
+                    fontSize: 13,
                   }}
-                >
-                  <div style={{ fontSize: 28, fontWeight: 800, color: t.border }}>{count}</div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: t.text }}>{t.label}</div>
-                  <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 2 }}>{tier === "red" ? `≥${redMult}× avg DOM` : tier === "orange" ? `≥${orangeMult}× avg DOM` : `≥${charcoalMult}× avg DOM`}</div>
-                </button>
-              );
-            })}
-            <div style={{ padding: "14px 16px", background: "#f0f9ff", border: "2px solid #3b82f6", borderRadius: 10 }}>
-              <div style={{ fontSize: 28, fontWeight: 800, color: "#1e40af" }}>{result.total}</div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "#1e3a5f" }}>Total Prospects</div>
-              <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 2 }}>Source: {result.dataSource}</div>
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>
+                  Property Types
+                </label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                  {propTypeOptions.map((t) => (
+                    <button
+                      key={t}
+                      onClick={() =>
+                        setPropertyTypes((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]))
+                      }
+                      style={{
+                        padding: "4px 8px",
+                        fontSize: 11,
+                        borderRadius: 4,
+                        border: "1px solid #d1d5db",
+                        cursor: "pointer",
+                        background: propertyTypes.includes(t) ? "#1e40af" : "#fff",
+                        color: propertyTypes.includes(t) ? "#fff" : "#374151",
+                      }}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>
+                  Price Range
+                </label>
+                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <input
+                    value={minPrice}
+                    onChange={(e) => setMinPrice(e.target.value)}
+                    placeholder="Min"
+                    style={{
+                      width: "50%",
+                      padding: "8px 10px",
+                      border: "1px solid #d1d5db",
+                      borderRadius: 6,
+                      fontSize: 13,
+                    }}
+                  />
+                  <span style={{ color: "#9ca3af" }}>–</span>
+                  <input
+                    value={maxPrice}
+                    onChange={(e) => setMaxPrice(e.target.value)}
+                    placeholder="Max"
+                    style={{
+                      width: "50%",
+                      padding: "8px 10px",
+                      border: "1px solid #d1d5db",
+                      borderRadius: 6,
+                      fontSize: 13,
+                    }}
+                  />
+                </div>
+              </div>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>
+                  DOM Thresholds (× Avg)
+                </label>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <div style={{ flex: 1, textAlign: "center" }}>
+                    <div style={{ fontSize: 10, color: "#dc2626", fontWeight: 600 }}>Red</div>
+                    <input
+                      value={redMult}
+                      onChange={(e) => setRedMult(e.target.value)}
+                      style={{
+                        width: "100%",
+                        padding: "4px 6px",
+                        border: "1px solid #fca5a5",
+                        borderRadius: 4,
+                        fontSize: 12,
+                        textAlign: "center",
+                      }}
+                    />
+                  </div>
+                  <div style={{ flex: 1, textAlign: "center" }}>
+                    <div style={{ fontSize: 10, color: "#ea580c", fontWeight: 600 }}>Orange</div>
+                    <input
+                      value={orangeMult}
+                      onChange={(e) => setOrangeMult(e.target.value)}
+                      style={{
+                        width: "100%",
+                        padding: "4px 6px",
+                        border: "1px solid #fdba74",
+                        borderRadius: 4,
+                        fontSize: 12,
+                        textAlign: "center",
+                      }}
+                    />
+                  </div>
+                  <div style={{ flex: 1, textAlign: "center" }}>
+                    <div style={{ fontSize: 10, color: "#4b5563", fontWeight: 600 }}>Charcoal</div>
+                    <input
+                      value={charcoalMult}
+                      onChange={(e) => setCharcoalMult(e.target.value)}
+                      style={{
+                        width: "100%",
+                        padding: "4px 6px",
+                        border: "1px solid #9ca3af",
+                        borderRadius: 4,
+                        fontSize: 12,
+                        textAlign: "center",
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", gap: 8, marginTop: 14, alignItems: "center" }}>
+              <button
+                onClick={runSearch}
+                disabled={loading}
+                style={{
+                  padding: "8px 20px",
+                  background: loading ? "#9ca3af" : "#1e40af",
+                  color: "#fff",
+                  borderRadius: 6,
+                  fontWeight: 600,
+                  fontSize: 13,
+                  border: "none",
+                  cursor: loading ? "default" : "pointer",
+                }}
+              >
+                {loading ? "Searching..." : "Search DOM Prospects"}
+              </button>
+              <button
+                onClick={saveSearch}
+                disabled={saving}
+                style={{
+                  padding: "8px 16px",
+                  background: "#fff",
+                  color: "#1e40af",
+                  border: "1px solid #1e40af",
+                  borderRadius: 6,
+                  fontWeight: 600,
+                  fontSize: 13,
+                  cursor: "pointer",
+                }}
+              >
+                {saving ? "Saving..." : "Save Weekly Search"}
+              </button>
+              {saveMsg && (
+                <span style={{ fontSize: 12, color: saveMsg.includes("Saved") ? "#059669" : "#dc2626" }}>
+                  {saveMsg}
+                </span>
+              )}
             </div>
           </div>
 
-          {/* Outreach vs Monitor Summary */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            <div style={{ padding: "12px 16px", background: "#ecfdf5", border: "2px solid #059669", borderRadius: 10 }}>
-              <div style={{ fontSize: 24, fontWeight: 800, color: "#059669" }}>{result.summary.outreach || 0}</div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "#065f46" }}>Ready for Outreach</div>
-              <div style={{ fontSize: 10, color: "#6b7280", marginTop: 2 }}>
-                {result.summary.expired || 0} Expired, {result.summary.withdrawn || 0} Withdrawn
-              </div>
-              <div style={{ fontSize: 10, color: "#059669", marginTop: 2 }}>Seller is unrepresented — OK to contact</div>
-            </div>
-            <div style={{ padding: "12px 16px", background: "#fffbeb", border: "2px solid #d97706", borderRadius: 10 }}>
-              <div style={{ fontSize: 24, fontWeight: 800, color: "#d97706" }}>{result.summary.monitor || 0}</div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "#92400e" }}>Monitor Only</div>
-              <div style={{ fontSize: 10, color: "#6b7280", marginTop: 2 }}>Active listings over DOM threshold</div>
-              <div style={{ fontSize: 10, color: "#d97706", marginTop: 2 }}>Still under contract — observe until expiration</div>
-            </div>
-          </div>
-
-          {/* Market Stats Summary */}
-          {Object.keys(result.marketStats).length > 0 && (
-            <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 14 }}>
-              <h3 style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 8 }}>Average DOM by Property Type & Zip</h3>
-              <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
-                  <thead>
-                    <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
-                      <th style={{ textAlign: "left", padding: "4px 8px", color: "#6b7280", fontWeight: 600 }}>Zip</th>
-                      <th style={{ textAlign: "left", padding: "4px 8px", color: "#6b7280", fontWeight: 600 }}>Property Type</th>
-                      <th style={{ textAlign: "right", padding: "4px 8px", color: "#6b7280", fontWeight: 600 }}>Avg DOM</th>
-                      <th style={{ textAlign: "right", padding: "4px 8px", color: "#6b7280", fontWeight: 600 }}>Listings</th>
-                      <th style={{ textAlign: "right", padding: "4px 8px", color: "#dc2626", fontWeight: 600 }}>Red ≥</th>
-                      <th style={{ textAlign: "right", padding: "4px 8px", color: "#ea580c", fontWeight: 600 }}>Orange ≥</th>
-                      <th style={{ textAlign: "right", padding: "4px 8px", color: "#4b5563", fontWeight: 600 }}>Charcoal ≥</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {Object.entries(result.marketStats).map(([zip, types]) =>
-                      Object.entries(types).map(([type, stats], i) => (
-                        <tr key={`${zip}-${type}`} style={{ borderBottom: "1px solid #f3f4f6", background: i % 2 === 0 ? "#fff" : "#f9fafb" }}>
-                          <td style={{ padding: "4px 8px", fontWeight: 500 }}>{zip}</td>
-                          <td style={{ padding: "4px 8px" }}>{type}</td>
-                          <td style={{ padding: "4px 8px", textAlign: "right", fontWeight: 600 }}>{stats.avgDom}</td>
-                          <td style={{ padding: "4px 8px", textAlign: "right" }}>{stats.count}</td>
-                          <td style={{ padding: "4px 8px", textAlign: "right", color: "#dc2626" }}>{Math.round(stats.avgDom * (parseFloat(redMult) || 2))}</td>
-                          <td style={{ padding: "4px 8px", textAlign: "right", color: "#ea580c" }}>{Math.round(stats.avgDom * (parseFloat(orangeMult) || 1.5))}</td>
-                          <td style={{ padding: "4px 8px", textAlign: "right", color: "#4b5563" }}>{Math.round(stats.avgDom * (parseFloat(charcoalMult) || 1.15))}</td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+          {error && (
+            <div
+              style={{
+                padding: 12,
+                background: "#fef2f2",
+                border: "1px solid #fca5a5",
+                borderRadius: 8,
+                color: "#991b1b",
+                fontSize: 13,
+              }}
+            >
+              {error}
             </div>
           )}
 
-          {/* Results List */}
-          <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 14 }}>
-            <h3 style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 10 }}>
-              {tierFilter === "all" ? "All Prospects" : `${TIER_COLORS[tierFilter].label} Prospects`}
-              <span style={{ fontWeight: 400, color: "#9ca3af", marginLeft: 8 }}>({filteredResults.length})</span>
-            </h3>
-
-            {filteredResults.length === 0 ? (
-              <div style={{ textAlign: "center", padding: 20, color: "#9ca3af" }}>
-                No prospects found matching the current filters.
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {filteredResults.map((r, i) => {
-                  const tc = TIER_COLORS[r.tier];
+          {/* Results */}
+          {result && (
+            <>
+              {/* Summary Cards */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10 }}>
+                {(["red", "orange", "charcoal"] as const).map((tier) => {
+                  const t = TIER_COLORS[tier];
+                  const count = result.summary[tier];
                   return (
-                    <div
-                      key={r.listingKey || i}
+                    <button
+                      key={tier}
+                      onClick={() => setTierFilter(tierFilter === tier ? "all" : tier)}
                       style={{
-                        padding: "12px 14px", borderRadius: 8,
-                        border: `2px solid ${tc.border}`,
-                        background: tc.bg,
-                        display: "grid",
-                        gridTemplateColumns: "1fr auto",
-                        gap: 12,
+                        padding: "14px 16px",
+                        background: tierFilter === tier ? t.bg : "#fff",
+                        border: `2px solid ${tierFilter === tier ? t.border : "#e5e7eb"}`,
+                        borderRadius: 10,
+                        cursor: "pointer",
+                        textAlign: "left",
                       }}
                     >
-                      <div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <div style={{ fontSize: 14, fontWeight: 700, color: tc.text }}>{r.address}</div>
-                          {/* Status badge */}
-                          {r.standardStatus && r.standardStatus !== "Active" && (
-                            <span style={{
-                              padding: "1px 6px", borderRadius: 4, fontSize: 10, fontWeight: 700,
-                              background: r.standardStatus === "Expired" ? "#dc2626" : "#f59e0b",
-                              color: "#fff",
-                            }}>
-                              {r.standardStatus}
-                            </span>
-                          )}
-                          {r.standardStatus === "Active" && (
-                            <span style={{
-                              padding: "1px 6px", borderRadius: 4, fontSize: 10, fontWeight: 700,
-                              background: "#e5e7eb", color: "#6b7280",
-                            }}>
-                              Active
-                            </span>
-                          )}
-                        </div>
-                        <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
-                          {r.city}, {r.state} {r.zipCode}
-                          {r.mlsNumber && <span style={{ marginLeft: 8 }}>MLS# {r.mlsNumber}</span>}
-                        </div>
-                        <div style={{ display: "flex", gap: 12, marginTop: 6, flexWrap: "wrap" }}>
-                          <span style={{ fontSize: 12 }}>{r.propertyType}</span>
-                          {r.beds != null && <span style={{ fontSize: 12 }}>{r.beds} bd</span>}
-                          {r.baths != null && <span style={{ fontSize: 12 }}>{r.baths} ba</span>}
-                          {r.sqft != null && <span style={{ fontSize: 12 }}>{r.sqft.toLocaleString()} sqft</span>}
-                          {r.listPrice != null && <span style={{ fontSize: 12, fontWeight: 600, color: "#059669" }}>{fmt(r.listPrice)}</span>}
-                        </div>
-                        {r.listingAgentName && (
-                          <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>
-                            Agent: {r.listingAgentName}
-                            {r.listingOfficeName && ` | ${r.listingOfficeName}`}
-                          </div>
-                        )}
-                        {/* Ethical prospect category */}
-                        <div style={{
-                          marginTop: 6, fontSize: 11, fontWeight: 600,
-                          color: r.prospectCategory === "outreach" ? "#059669" : "#d97706",
-                        }}>
-                          {r.prospectCategory === "outreach"
-                            ? "Ready for Outreach — seller is unrepresented"
-                            : "Monitor Only — listing still active with another agent"}
-                        </div>
+                      <div style={{ fontSize: 28, fontWeight: 800, color: t.border }}>{count}</div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: t.text }}>{t.label}</div>
+                      <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 2 }}>
+                        {tier === "red"
+                          ? `≥${redMult}× avg DOM`
+                          : tier === "orange"
+                            ? `≥${orangeMult}× avg DOM`
+                            : `≥${charcoalMult}× avg DOM`}
                       </div>
-                      <div style={{ textAlign: "right", minWidth: 100 }}>
-                        <div style={{ fontSize: 28, fontWeight: 800, color: tc.border }}>{r.daysOnMarket}</div>
-                        <div style={{ fontSize: 10, color: "#6b7280" }}>DOM</div>
-                        <div style={{ fontSize: 11, color: tc.text, fontWeight: 600, marginTop: 4 }}>
-                          {r.domRatio}× avg ({r.avgDomForType}d)
-                        </div>
-                        <div style={{
-                          marginTop: 4, padding: "2px 8px", borderRadius: 4,
-                          background: tc.border, color: "#fff", fontSize: 10, fontWeight: 700,
-                          display: "inline-block",
-                        }}>
-                          {tc.label}
-                        </div>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); monitorProperty(r); }}
-                          style={{
-                            marginTop: 6, padding: "3px 8px", borderRadius: 4, fontSize: 10,
-                            fontWeight: 600, border: "1px solid #d1d5db", background: "#fff",
-                            color: "#374151", cursor: "pointer",
-                          }}
-                        >
-                          {r.prospectCategory === "outreach" ? "Add to Outreach" : "Monitor"}
-                        </button>
-                      </div>
-                    </div>
+                    </button>
                   );
                 })}
+                <div
+                  style={{ padding: "14px 16px", background: "#f0f9ff", border: "2px solid #3b82f6", borderRadius: 10 }}
+                >
+                  <div style={{ fontSize: 28, fontWeight: 800, color: "#1e40af" }}>{result.total}</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "#1e3a5f" }}>Total Prospects</div>
+                  <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 2 }}>Source: {result.dataSource}</div>
+                </div>
               </div>
-            )}
-          </div>
+
+              {/* Outreach vs Monitor Summary */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <div
+                  style={{ padding: "12px 16px", background: "#ecfdf5", border: "2px solid #059669", borderRadius: 10 }}
+                >
+                  <div style={{ fontSize: 24, fontWeight: 800, color: "#059669" }}>{result.summary.outreach || 0}</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "#065f46" }}>Ready for Outreach</div>
+                  <div style={{ fontSize: 10, color: "#6b7280", marginTop: 2 }}>
+                    {result.summary.expired || 0} Expired, {result.summary.withdrawn || 0} Withdrawn
+                  </div>
+                  <div style={{ fontSize: 10, color: "#059669", marginTop: 2 }}>
+                    Seller is unrepresented — OK to contact
+                  </div>
+                </div>
+                <div
+                  style={{ padding: "12px 16px", background: "#fffbeb", border: "2px solid #d97706", borderRadius: 10 }}
+                >
+                  <div style={{ fontSize: 24, fontWeight: 800, color: "#d97706" }}>{result.summary.monitor || 0}</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "#92400e" }}>Monitor Only</div>
+                  <div style={{ fontSize: 10, color: "#6b7280", marginTop: 2 }}>Active listings over DOM threshold</div>
+                  <div style={{ fontSize: 10, color: "#d97706", marginTop: 2 }}>
+                    Still under contract — observe until expiration
+                  </div>
+                </div>
+              </div>
+
+              {/* Market Stats Summary */}
+              {Object.keys(result.marketStats).length > 0 && (
+                <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 14 }}>
+                  <h3 style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 8 }}>
+                    Average DOM by Property Type & Zip
+                  </h3>
+                  <div style={{ overflowX: "auto" }}>
+                    <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
+                      <thead>
+                        <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
+                          <th style={{ textAlign: "left", padding: "4px 8px", color: "#6b7280", fontWeight: 600 }}>
+                            Zip
+                          </th>
+                          <th style={{ textAlign: "left", padding: "4px 8px", color: "#6b7280", fontWeight: 600 }}>
+                            Property Type
+                          </th>
+                          <th style={{ textAlign: "right", padding: "4px 8px", color: "#6b7280", fontWeight: 600 }}>
+                            Avg DOM
+                          </th>
+                          <th style={{ textAlign: "right", padding: "4px 8px", color: "#6b7280", fontWeight: 600 }}>
+                            Listings
+                          </th>
+                          <th style={{ textAlign: "right", padding: "4px 8px", color: "#dc2626", fontWeight: 600 }}>
+                            Red ≥
+                          </th>
+                          <th style={{ textAlign: "right", padding: "4px 8px", color: "#ea580c", fontWeight: 600 }}>
+                            Orange ≥
+                          </th>
+                          <th style={{ textAlign: "right", padding: "4px 8px", color: "#4b5563", fontWeight: 600 }}>
+                            Charcoal ≥
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Object.entries(result.marketStats).map(([zip, types]) =>
+                          Object.entries(types).map(([type, stats], i) => (
+                            <tr
+                              key={`${zip}-${type}`}
+                              style={{
+                                borderBottom: "1px solid #f3f4f6",
+                                background: i % 2 === 0 ? "#fff" : "#f9fafb",
+                              }}
+                            >
+                              <td style={{ padding: "4px 8px", fontWeight: 500 }}>{zip}</td>
+                              <td style={{ padding: "4px 8px" }}>{type}</td>
+                              <td style={{ padding: "4px 8px", textAlign: "right", fontWeight: 600 }}>
+                                {stats.avgDom}
+                              </td>
+                              <td style={{ padding: "4px 8px", textAlign: "right" }}>{stats.count}</td>
+                              <td style={{ padding: "4px 8px", textAlign: "right", color: "#dc2626" }}>
+                                {Math.round(stats.avgDom * (parseFloat(redMult) || 2))}
+                              </td>
+                              <td style={{ padding: "4px 8px", textAlign: "right", color: "#ea580c" }}>
+                                {Math.round(stats.avgDom * (parseFloat(orangeMult) || 1.5))}
+                              </td>
+                              <td style={{ padding: "4px 8px", textAlign: "right", color: "#4b5563" }}>
+                                {Math.round(stats.avgDom * (parseFloat(charcoalMult) || 1.15))}
+                              </td>
+                            </tr>
+                          )),
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Results List */}
+              <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 14 }}>
+                <h3 style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 10 }}>
+                  {tierFilter === "all" ? "All Prospects" : `${TIER_COLORS[tierFilter].label} Prospects`}
+                  <span style={{ fontWeight: 400, color: "#9ca3af", marginLeft: 8 }}>({filteredResults.length})</span>
+                </h3>
+
+                {filteredResults.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: 20, color: "#9ca3af" }}>
+                    No prospects found matching the current filters.
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {filteredResults.map((r, i) => {
+                      const tc = TIER_COLORS[r.tier];
+                      return (
+                        <div
+                          key={r.listingKey || i}
+                          style={{
+                            padding: "12px 14px",
+                            borderRadius: 8,
+                            border: `2px solid ${tc.border}`,
+                            background: tc.bg,
+                            display: "grid",
+                            gridTemplateColumns: "1fr auto",
+                            gap: 12,
+                          }}
+                        >
+                          <div>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <div style={{ fontSize: 14, fontWeight: 700, color: tc.text }}>{r.address}</div>
+                              {/* Status badge */}
+                              {r.standardStatus && r.standardStatus !== "Active" && (
+                                <span
+                                  style={{
+                                    padding: "1px 6px",
+                                    borderRadius: 4,
+                                    fontSize: 10,
+                                    fontWeight: 700,
+                                    background: r.standardStatus === "Expired" ? "#dc2626" : "#f59e0b",
+                                    color: "#fff",
+                                  }}
+                                >
+                                  {r.standardStatus}
+                                </span>
+                              )}
+                              {r.standardStatus === "Active" && (
+                                <span
+                                  style={{
+                                    padding: "1px 6px",
+                                    borderRadius: 4,
+                                    fontSize: 10,
+                                    fontWeight: 700,
+                                    background: "#e5e7eb",
+                                    color: "#6b7280",
+                                  }}
+                                >
+                                  Active
+                                </span>
+                              )}
+                            </div>
+                            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
+                              {r.city}, {r.state} {r.zipCode}
+                              {r.mlsNumber && <span style={{ marginLeft: 8 }}>MLS# {r.mlsNumber}</span>}
+                            </div>
+                            <div style={{ display: "flex", gap: 12, marginTop: 6, flexWrap: "wrap" }}>
+                              <span style={{ fontSize: 12 }}>{r.propertyType}</span>
+                              {r.beds != null && <span style={{ fontSize: 12 }}>{r.beds} bd</span>}
+                              {r.baths != null && <span style={{ fontSize: 12 }}>{r.baths} ba</span>}
+                              {r.sqft != null && <span style={{ fontSize: 12 }}>{r.sqft.toLocaleString()} sqft</span>}
+                              {r.listPrice != null && (
+                                <span style={{ fontSize: 12, fontWeight: 600, color: "#059669" }}>
+                                  {fmt(r.listPrice)}
+                                </span>
+                              )}
+                            </div>
+                            {r.listingAgentName && (
+                              <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>
+                                Agent: {r.listingAgentName}
+                                {r.listingOfficeName && ` | ${r.listingOfficeName}`}
+                              </div>
+                            )}
+                            {/* Ethical prospect category */}
+                            <div
+                              style={{
+                                marginTop: 6,
+                                fontSize: 11,
+                                fontWeight: 600,
+                                color: r.prospectCategory === "outreach" ? "#059669" : "#d97706",
+                              }}
+                            >
+                              {r.prospectCategory === "outreach"
+                                ? "Ready for Outreach — seller is unrepresented"
+                                : "Monitor Only — listing still active with another agent"}
+                            </div>
+                          </div>
+                          <div style={{ textAlign: "right", minWidth: 100 }}>
+                            <div style={{ fontSize: 28, fontWeight: 800, color: tc.border }}>{r.daysOnMarket}</div>
+                            <div style={{ fontSize: 10, color: "#6b7280" }}>DOM</div>
+                            <div style={{ fontSize: 11, color: tc.text, fontWeight: 600, marginTop: 4 }}>
+                              {r.domRatio}× avg ({r.avgDomForType}d)
+                            </div>
+                            <div
+                              style={{
+                                marginTop: 4,
+                                padding: "2px 8px",
+                                borderRadius: 4,
+                                background: tc.border,
+                                color: "#fff",
+                                fontSize: 10,
+                                fontWeight: 700,
+                                display: "inline-block",
+                              }}
+                            >
+                              {tc.label}
+                            </div>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                monitorProperty(r);
+                              }}
+                              style={{
+                                marginTop: 6,
+                                padding: "3px 8px",
+                                borderRadius: 4,
+                                fontSize: 10,
+                                fontWeight: 600,
+                                border: "1px solid #d1d5db",
+                                background: "#fff",
+                                color: "#374151",
+                                cursor: "pointer",
+                              }}
+                            >
+                              {r.prospectCategory === "outreach" ? "Add to Outreach" : "Monitor"}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </>
-      )}
-      </>
       )}
 
       {/* Monitored Properties Tab */}
@@ -567,17 +747,33 @@ export function DomProspectingClient() {
           {monitoredProps.map((p: any) => {
             const tierColor = TIER_COLORS[p.current_tier] || TIER_COLORS.charcoal;
             return (
-              <div key={p.id} style={{
-                padding: "12px 14px", borderRadius: 8, marginBottom: 8,
-                border: `2px solid ${tierColor.border}`, background: tierColor.bg,
-                display: "grid", gridTemplateColumns: "1fr auto", gap: 12,
-              }}>
+              <div
+                key={p.id}
+                style={{
+                  padding: "12px 14px",
+                  borderRadius: 8,
+                  marginBottom: 8,
+                  border: `2px solid ${tierColor.border}`,
+                  background: tierColor.bg,
+                  display: "grid",
+                  gridTemplateColumns: "1fr auto",
+                  gap: 12,
+                }}
+              >
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 700, color: tierColor.text }}>{p.address}</div>
-                  <div style={{ fontSize: 12, color: "#6b7280" }}>{p.city} {p.zip_code} | {p.property_type}</div>
-                  {p.latest_list_price && <div style={{ fontSize: 12, fontWeight: 600, color: "#059669", marginTop: 4 }}>{fmt(p.latest_list_price)}</div>}
+                  <div style={{ fontSize: 12, color: "#6b7280" }}>
+                    {p.city} {p.zip_code} | {p.property_type}
+                  </div>
+                  {p.latest_list_price && (
+                    <div style={{ fontSize: 12, fontWeight: 600, color: "#059669", marginTop: 4 }}>
+                      {fmt(p.latest_list_price)}
+                    </div>
+                  )}
                   {p.latest_status && p.latest_status !== "Active" && (
-                    <div style={{ fontSize: 11, color: "#dc2626", fontWeight: 600, marginTop: 2 }}>Status: {p.latest_status}</div>
+                    <div style={{ fontSize: 11, color: "#dc2626", fontWeight: 600, marginTop: 2 }}>
+                      Status: {p.latest_status}
+                    </div>
                   )}
                   {p.previous_tier && p.previous_tier !== p.current_tier && (
                     <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>
@@ -586,24 +782,40 @@ export function DomProspectingClient() {
                   )}
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: 28, fontWeight: 800, color: tierColor.border }}>{p.live_dom || p.latest_dom || "—"}</div>
+                  <div style={{ fontSize: 28, fontWeight: 800, color: tierColor.border }}>
+                    {p.live_dom || p.latest_dom || "—"}
+                  </div>
                   <div style={{ fontSize: 10, color: "#6b7280" }}>DOM</div>
-                  <div style={{
-                    marginTop: 4, padding: "2px 8px", borderRadius: 4,
-                    background: tierColor.border, color: "#fff", fontSize: 10, fontWeight: 700,
-                    display: "inline-block",
-                  }}>
+                  <div
+                    style={{
+                      marginTop: 4,
+                      padding: "2px 8px",
+                      borderRadius: 4,
+                      background: tierColor.border,
+                      color: "#fff",
+                      fontSize: 10,
+                      fontWeight: 700,
+                      display: "inline-block",
+                    }}
+                  >
                     {tierColor.label}
                   </div>
                   <button
                     onClick={async () => {
                       await fetch(`/api/dom-prospecting/monitor?id=${p.id}`, { method: "DELETE" });
-                      setMonitoredProps(prev => prev.filter(x => x.id !== p.id));
+                      setMonitoredProps((prev) => prev.filter((x) => x.id !== p.id));
                     }}
                     style={{
-                      display: "block", marginTop: 6, padding: "3px 8px", borderRadius: 4, fontSize: 10,
-                      fontWeight: 600, border: "1px solid #fca5a5", background: "#fff",
-                      color: "#dc2626", cursor: "pointer",
+                      display: "block",
+                      marginTop: 6,
+                      padding: "3px 8px",
+                      borderRadius: 4,
+                      fontSize: 10,
+                      fontWeight: 600,
+                      border: "1px solid #fca5a5",
+                      background: "#fff",
+                      color: "#dc2626",
+                      cursor: "pointer",
                     }}
                   >
                     Remove
@@ -628,12 +840,18 @@ export function DomProspectingClient() {
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ markAllRead: true }),
                   });
-                  setAlerts(prev => prev.map(a => ({ ...a, status: a.status === "new" ? "viewed" : a.status })));
+                  setAlerts((prev) => prev.map((a) => ({ ...a, status: a.status === "new" ? "viewed" : a.status })));
                   setUnreadAlerts(0);
                 }}
                 style={{
-                  padding: "4px 12px", borderRadius: 4, fontSize: 11, fontWeight: 600,
-                  border: "1px solid #d1d5db", background: "#fff", color: "#374151", cursor: "pointer",
+                  padding: "4px 12px",
+                  borderRadius: 4,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  border: "1px solid #d1d5db",
+                  background: "#fff",
+                  color: "#374151",
+                  cursor: "pointer",
                 }}
               >
                 Mark all read
@@ -650,11 +868,16 @@ export function DomProspectingClient() {
             const details = a.alert_details || {};
             const newTierColor = TIER_COLORS[details.newTier] || TIER_COLORS.charcoal;
             return (
-              <div key={a.id} style={{
-                padding: "10px 14px", borderRadius: 8, marginBottom: 6,
-                border: `1px solid ${a.status === "new" ? newTierColor.border : "#e5e7eb"}`,
-                background: a.status === "new" ? newTierColor.bg : "#fff",
-              }}>
+              <div
+                key={a.id}
+                style={{
+                  padding: "10px 14px",
+                  borderRadius: 8,
+                  marginBottom: 6,
+                  border: `1px solid ${a.status === "new" ? newTierColor.border : "#e5e7eb"}`,
+                  background: a.status === "new" ? newTierColor.bg : "#fff",
+                }}
+              >
                 <div style={{ fontSize: 13, fontWeight: a.status === "new" ? 700 : 500, color: "#111827" }}>
                   {a.alert_title}
                 </div>

@@ -45,7 +45,7 @@ export interface PmAddonSubscription {
   pm_addon_plan_id: string;
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
-  status: 'active' | 'canceled' | 'past_due' | 'suspended' | 'trial' | 'pending' | 'paused';
+  status: "active" | "canceled" | "past_due" | "suspended" | "trial" | "pending" | "paused";
   current_period_start: string | null;
   current_period_end: string | null;
   next_billing_date: string | null;
@@ -96,8 +96,8 @@ export interface AgentUsage {
   updated_at: string;
 }
 
-export type UsageAlertType = 'warning_70' | 'critical_100' | 'admin_notification';
-export type ResourceType = 'agents' | 'properties' | 'tenants';
+export type UsageAlertType = "warning_70" | "critical_100" | "admin_notification";
+export type ResourceType = "agents" | "properties" | "tenants";
 
 export interface UsageAlert {
   id: string;
@@ -119,7 +119,7 @@ export interface AdminNote {
   id: string;
   agent_id: string;
   admin_id: string;
-  note_type: 'general' | 'billing' | 'support' | 'sales_opportunity';
+  note_type: "general" | "billing" | "support" | "sales_opportunity";
   content: string;
   is_urgent: boolean;
   created_at: string;
@@ -130,7 +130,7 @@ export interface UsageStatus {
   current: number;
   limit: number;
   percentage: number;
-  status: 'ok' | 'warning' | 'critical';
+  status: "ok" | "warning" | "critical";
 }
 
 export interface SubscriptionStatus {

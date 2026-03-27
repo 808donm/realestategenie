@@ -34,8 +34,7 @@ export async function GET() {
     // Get leads from last 7 days
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const leadsThisWeek =
-      allLeads?.filter((l) => new Date(l.created_at) >= sevenDaysAgo).length || 0;
+    const leadsThisWeek = allLeads?.filter((l) => new Date(l.created_at) >= sevenDaysAgo).length || 0;
 
     // Get open house statistics
     const { data: openHouses, error: ohError } = await supabase
@@ -51,9 +50,7 @@ export async function GET() {
     // Active open houses (published and not ended)
     const now = new Date();
     const activeOpenHouses =
-      openHouses?.filter(
-        (oh) => oh.status === "published" && new Date(oh.end_at) > now
-      ).length || 0;
+      openHouses?.filter((oh) => oh.status === "published" && new Date(oh.end_at) > now).length || 0;
 
     // Get integration health
     const { data: integrations, error: intError } = await supabase

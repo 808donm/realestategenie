@@ -20,9 +20,7 @@ type Props = {
 
 export default function TemplateCustomizer({ initialSettings, agentInfo }: Props) {
   const [activeStep, setActiveStep] = useState(0);
-  const [settings, setSettings] = useState<TemplateSettings>(
-    initialSettings || DEFAULT_TEMPLATE_SETTINGS
-  );
+  const [settings, setSettings] = useState<TemplateSettings>(initialSettings || DEFAULT_TEMPLATE_SETTINGS);
   const [showPreview, setShowPreview] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -98,26 +96,18 @@ export default function TemplateCustomizer({ initialSettings, agentInfo }: Props
                         index === activeStep
                           ? "bg-blue-600 text-white"
                           : index < activeStep
-                          ? "bg-green-600 text-white"
-                          : "bg-gray-200 text-gray-600"
+                            ? "bg-green-600 text-white"
+                            : "bg-gray-200 text-gray-600"
                       }`}
                     >
                       {step.icon}
                     </div>
-                    <p
-                      className={`text-sm mt-2 ${
-                        index === activeStep ? "font-semibold" : "text-muted-foreground"
-                      }`}
-                    >
+                    <p className={`text-sm mt-2 ${index === activeStep ? "font-semibold" : "text-muted-foreground"}`}>
                       {step.label}
                     </p>
                   </div>
                   {index < steps.length - 1 && (
-                    <div
-                      className={`h-1 flex-1 mx-2 ${
-                        index < activeStep ? "bg-green-600" : "bg-gray-200"
-                      }`}
-                    />
+                    <div className={`h-1 flex-1 mx-2 ${index < activeStep ? "bg-green-600" : "bg-gray-200"}`} />
                   )}
                 </div>
               ))}
@@ -129,23 +119,14 @@ export default function TemplateCustomizer({ initialSettings, agentInfo }: Props
         <Card>
           <CardContent className="pt-6">
             {activeStep === 0 && (
-              <TemplateSelector
-                selectedTemplate={settings.template_id}
-                onSelect={handleTemplateSelect}
-              />
+              <TemplateSelector selectedTemplate={settings.template_id} onSelect={handleTemplateSelect} />
             )}
 
-            {activeStep === 1 && (
-              <BrandSettings settings={settings} onUpdate={updateSettings} />
-            )}
+            {activeStep === 1 && <BrandSettings settings={settings} onUpdate={updateSettings} />}
 
-            {activeStep === 2 && (
-              <PropertyFields settings={settings} onUpdate={updateSettings} />
-            )}
+            {activeStep === 2 && <PropertyFields settings={settings} onUpdate={updateSettings} />}
 
-            {activeStep === 3 && (
-              <LayoutOptions settings={settings} onUpdate={updateSettings} />
-            )}
+            {activeStep === 3 && <LayoutOptions settings={settings} onUpdate={updateSettings} />}
           </CardContent>
         </Card>
 
@@ -153,11 +134,7 @@ export default function TemplateCustomizer({ initialSettings, agentInfo }: Props
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
-              <Button
-                variant="outline"
-                onClick={() => setActiveStep((prev) => prev - 1)}
-                disabled={!canGoPrev}
-              >
+              <Button variant="outline" onClick={() => setActiveStep((prev) => prev - 1)} disabled={!canGoPrev}>
                 <ChevronLeft className="w-4 h-4 mr-2" />
                 Previous
               </Button>

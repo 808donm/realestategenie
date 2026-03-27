@@ -7,26 +7,15 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { getValidGHLConfig } from "./ghl-token-refresh";
-import type {
-  CalendarProvider,
-  CalendarEvent,
-  ExternalCalendarEvent,
-  CalendarEventStatus,
-} from "@/lib/calendar/types";
+import type { CalendarProvider, CalendarEvent, ExternalCalendarEvent, CalendarEventStatus } from "@/lib/calendar/types";
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 const GHL_BASE = "https://services.leadconnectorhq.com";
 
-async function ghlRequest<T>(
-  accessToken: string,
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
+async function ghlRequest<T>(accessToken: string, endpoint: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`${GHL_BASE}${endpoint}`, {
     ...options,
     headers: {
@@ -49,10 +38,13 @@ async function ghlRequest<T>(
 
 function mapGHLStatus(status?: string): CalendarEventStatus {
   switch (status) {
-    case "confirmed": return "confirmed";
+    case "confirmed":
+      return "confirmed";
     case "cancelled":
-    case "no_show": return "cancelled";
-    default: return "confirmed";
+    case "no_show":
+      return "cancelled";
+    default:
+      return "confirmed";
   }
 }
 
@@ -67,9 +59,7 @@ function mapGHLAppointment(appt: any): ExternalCalendarEvent {
     endAt: appt.endTime || appt.end_time,
     allDay: false,
     status: mapGHLStatus(appt.appointmentStatus || appt.status),
-    attendees: appt.contactId
-      ? [{ email: appt.contactId, name: appt.contactName }]
-      : [],
+    attendees: appt.contactId ? [{ email: appt.contactId, name: appt.contactName }] : [],
     etag: appt.updatedAt || appt.updated_at,
     metadata: {
       contactId: appt.contactId,
@@ -97,12 +87,7 @@ function toGHLAppointment(event: CalendarEvent, locationId: string): any {
 export class GHLCalendarProvider implements CalendarProvider {
   source = "ghl" as const;
 
-  async fetchEvents(
-    agentId: string,
-    timeMin: string,
-    timeMax: string,
-    _syncToken?: string
-  ) {
+  async fetchEvents(agentId: string, timeMin: string, timeMax: string, _syncToken?: string) {
     const config = await getValidGHLConfig(agentId);
     if (!config) throw new Error("GHL not connected");
 
@@ -117,10 +102,7 @@ export class GHLCalendarProvider implements CalendarProvider {
     });
 
     try {
-      const data = await ghlRequest<any>(
-        config.access_token,
-        `/calendars/events?${params}`
-      );
+      const data = await ghlRequest<any>(config.access_token, `/calendars/events?${params}`);
 
       for (const appt of data.events || data.appointments || []) {
         events.push(mapGHLAppointment(appt));
@@ -129,10 +111,7 @@ export class GHLCalendarProvider implements CalendarProvider {
       // Try alternative endpoint
       console.log("[GHL Calendar] Trying alternative appointments endpoint");
       try {
-        const altData = await ghlRequest<any>(
-          config.access_token,
-          `/contacts/appointments?${params}`
-        );
+        const altData = await ghlRequest<any>(config.access_token, `/contacts/appointments?${params}`);
 
         for (const appt of altData.appointments || []) {
           events.push(mapGHLAppointment(appt));
@@ -155,19 +134,17 @@ export class GHLCalendarProvider implements CalendarProvider {
 
     if (event.external_id) {
       // Update existing appointment
-      const data = await ghlRequest<any>(
-        config.access_token,
-        `/calendars/events/appointments/${event.external_id}`,
-        { method: "PUT", body: JSON.stringify(body) }
-      );
+      const data = await ghlRequest<any>(config.access_token, `/calendars/events/appointments/${event.external_id}`, {
+        method: "PUT",
+        body: JSON.stringify(body),
+      });
       return { externalId: data.id || event.external_id, etag: data.updatedAt };
     } else {
       // Create new appointment
-      const data = await ghlRequest<any>(
-        config.access_token,
-        `/calendars/events/appointments`,
-        { method: "POST", body: JSON.stringify(body) }
-      );
+      const data = await ghlRequest<any>(config.access_token, `/calendars/events/appointments`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
       return { externalId: data.id, etag: data.updatedAt };
     }
   }
@@ -176,10 +153,6 @@ export class GHLCalendarProvider implements CalendarProvider {
     const config = await getValidGHLConfig(agentId);
     if (!config) throw new Error("GHL not connected");
 
-    await ghlRequest(
-      config.access_token,
-      `/calendars/events/appointments/${externalId}`,
-      { method: "DELETE" }
-    );
+    await ghlRequest(config.access_token, `/calendars/events/appointments/${externalId}`, { method: "DELETE" });
   }
 }

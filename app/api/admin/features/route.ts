@@ -14,11 +14,7 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { data: agent } = await supabase
-    .from("agents")
-    .select("role")
-    .eq("id", userData.user.id)
-    .single();
+  const { data: agent } = await supabase.from("agents").select("role").eq("id", userData.user.id).single();
 
   if (agent?.role !== "admin") {
     return NextResponse.json({ error: "Admin access required" }, { status: 403 });
@@ -48,11 +44,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { data: agent } = await supabase
-    .from("agents")
-    .select("role")
-    .eq("id", userData.user.id)
-    .single();
+  const { data: agent } = await supabase.from("agents").select("role").eq("id", userData.user.id).single();
 
   if (agent?.role !== "admin") {
     return NextResponse.json({ error: "Admin access required" }, { status: 403 });
@@ -64,10 +56,7 @@ export async function POST(request: NextRequest) {
 
   // Validate required fields
   if (!name || !slug || !category) {
-    return NextResponse.json(
-      { error: "Missing required fields: name, slug, category" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Missing required fields: name, slug, category" }, { status: 400 });
   }
 
   // Create feature

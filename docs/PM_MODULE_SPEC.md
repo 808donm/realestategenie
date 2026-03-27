@@ -7,6 +7,7 @@ The Real Estate Genie Property Management (PM) module is a **lightweight add-on*
 ## Core Philosophy
 
 **What PM Does:**
+
 - Manage rental properties and units
 - Track rental applications from open house events
 - Manage leases and automate rent invoicing
@@ -14,6 +15,7 @@ The Real Estate Genie Property Management (PM) module is a **lightweight add-on*
 - Sync to QuickBooks Online for accounting
 
 **What PM Does NOT Do:**
+
 - Trust/escrow accounting
 - Full general ledger
 - Complex owner distributions
@@ -33,6 +35,7 @@ The Real Estate Genie Property Management (PM) module is a **lightweight add-on*
 ### Systems of Record
 
 **GHL (System of Action)**
+
 - CRM (contacts, conversations)
 - Automations and workflows
 - **Invoices and payments** (rent collection)
@@ -40,6 +43,7 @@ The Real Estate Genie Property Management (PM) module is a **lightweight add-on*
 - Custom objects (synced from our DB)
 
 **Our App (Logic + Glue)**
+
 - PM business logic
 - Property/unit/lease orchestration
 - Open house event extensions
@@ -47,6 +51,7 @@ The Real Estate Genie Property Management (PM) module is a **lightweight add-on*
 - Idempotency and error handling
 
 **QuickBooks Online (Accounting System)**
+
 - Official books
 - Income tracking
 - Payment reconciliation
@@ -57,6 +62,7 @@ The Real Estate Genie Property Management (PM) module is a **lightweight add-on*
 ### Core PM Tables
 
 #### `pm_properties`
+
 Rental properties in the portfolio (NOT sales listings).
 
 ```sql
@@ -83,6 +89,7 @@ Rental properties in the portfolio (NOT sales listings).
 ```
 
 #### `pm_units`
+
 Individual rentable units (for multi-unit properties like duplexes).
 
 ```sql
@@ -101,6 +108,7 @@ Individual rentable units (for multi-unit properties like duplexes).
 ```
 
 #### `pm_applications`
+
 Rental applications submitted via rental open house check-ins.
 
 ```sql
@@ -142,6 +150,7 @@ Rental applications submitted via rental open house check-ins.
 ```
 
 #### `pm_leases`
+
 Active lease agreements. Created after application approval.
 
 ```sql
@@ -184,6 +193,7 @@ Active lease agreements. Created after application approval.
 ```
 
 #### `pm_work_orders`
+
 Maintenance requests and work orders.
 
 ```sql
@@ -231,6 +241,7 @@ ADD COLUMN pm_property_id UUID REFERENCES pm_properties(id) ON DELETE SET NULL;
 ```
 
 **Logic:**
+
 - `event_type = 'sales'`: Traditional open house (current behavior)
 - `event_type = 'rental'`: Rental showing → check-in includes rental application
 - `event_type = 'both'`: Attendee chooses sales lead OR rental application
@@ -238,11 +249,13 @@ ADD COLUMN pm_property_id UUID REFERENCES pm_properties(id) ON DELETE SET NULL;
 ## Naming Conventions
 
 ### Database Tables
+
 - Prefix: `pm_` for all PM tables
 - Snake_case for all table and column names
 - Timestamps: Always `created_at` and `updated_at`
 
 ### GHL Custom Objects
+
 - `Property` (synced from `pm_properties`)
 - `Unit` (synced from `pm_units`)
 - `Lease` (synced from `pm_leases`)
@@ -251,12 +264,14 @@ ADD COLUMN pm_property_id UUID REFERENCES pm_properties(id) ON DELETE SET NULL;
 ### Status Enums
 
 **Property/Unit Status:**
+
 - `available` - Ready to rent
 - `rented` - Currently occupied
 - `maintenance` - Under repair
 - `unavailable` - Off market
 
 **Application Status:**
+
 - `pending` - Submitted, not yet reviewed
 - `screening` - Under review
 - `approved` - Ready to create lease
@@ -264,6 +279,7 @@ ADD COLUMN pm_property_id UUID REFERENCES pm_properties(id) ON DELETE SET NULL;
 - `withdrawn` - Applicant withdrew
 
 **Lease Status:**
+
 - `draft` - Being created
 - `pending_start` - Signed but not yet started
 - `active` - Current lease
@@ -272,6 +288,7 @@ ADD COLUMN pm_property_id UUID REFERENCES pm_properties(id) ON DELETE SET NULL;
 - `terminated` - Lease terminated early
 
 **Work Order Status:**
+
 - `new` - Just reported
 - `assigned` - Assigned to vendor
 - `in_progress` - Work underway
@@ -282,6 +299,7 @@ ADD COLUMN pm_property_id UUID REFERENCES pm_properties(id) ON DELETE SET NULL;
 ## Scale Limits (v1)
 
 Designed for agencies managing:
+
 - **50-100 units** across the agency (e.g., 10 agents managing 10 units each)
 - **Individual agents managing 10-20 units**
 - **10-50 properties** total
@@ -294,11 +312,13 @@ If a customer needs large-scale apartment complex management (200+ units), they 
 ### Sync Scope (v1)
 
 **What Syncs:**
+
 1. Tenant (Contact) → QBO Customer
 2. Rent Invoice → QBO Invoice
 3. Payment → QBO Payment (applied to invoice)
 
 **What Does NOT Sync:**
+
 - Properties (QBO doesn't have a property concept)
 - Work orders as expenses (phase 2)
 - Owner distributions
@@ -336,15 +356,18 @@ Per-agent configuration stored in `integrations` table:
 ### Lease-Driven Invoicing (Default)
 
 **When lease status → `active`:**
+
 1. Generate first rent invoice (due on `lease_start_date`)
 2. Schedule recurring monthly invoices (due on `rent_due_day`)
 
 **Invoice Automation:**
+
 - Daily cron job checks for leases needing invoices
 - Creates GHL invoice via API
 - Optionally syncs to QBO if enabled
 
 **Reminders:**
+
 - 3 days before due: "Rent due soon"
 - On due date: "Rent is due today"
 - 3 days overdue: "Rent is overdue"
@@ -352,6 +375,7 @@ Per-agent configuration stored in `integrations` table:
 ### Manual Invoices (Fallback)
 
 Agents can create one-off invoices for:
+
 - Late fees
 - Repair charges
 - Pet fees
@@ -361,6 +385,7 @@ Agents can create one-off invoices for:
 ### Navigation Structure
 
 **Main App Navigation:**
+
 - Dashboard
 - Open Houses (handles both sales AND rental events)
 - Leads (sales leads)
@@ -369,9 +394,11 @@ Agents can create one-off invoices for:
 - Settings
 
 **Dashboard Button:**
+
 - "Property Management" → `/app/pm`
 
 **PM Section (`/app/pm`) Navigation:**
+
 - Properties
 - Applications
 - Leases
@@ -381,9 +408,11 @@ Agents can create one-off invoices for:
 ### Check-in Form Behavior
 
 **Sales Event (`event_type = 'sales'`):**
+
 - Current behavior (name, email, phone, preferences)
 
 **Rental Event (`event_type = 'rental'`):**
+
 - Name, email, phone
 - Employment status, employer, income
 - Current address, move-in date
@@ -393,38 +422,45 @@ Agents can create one-off invoices for:
 - Credit authorization checkbox
 
 **Both Event (`event_type = 'both'`):**
+
 - First question: "Are you interested in buying or renting?"
 - Then show appropriate form
 
 ## Phase 1 Implementation Plan
 
 ### Phase 1A: Database + Documentation
+
 - ✅ Create this spec document
 - Create database migrations for all PM tables
 - Extend `open_house_events` table
 
 ### Phase 1B: PM Section Structure
+
 - Create `/app/pm` layout with PM navigation
 - Add "Property Management" button to dashboard
 - Create empty pages for Properties, Applications, Leases, Work Orders
 
 ### Phase 1C: Properties UI
+
 - Properties list page
 - Create property form
 - Edit property form
 - Property detail page
 
 ### Phase 1D: Open House Extensions
+
 - Update "New Open House" form with event type selector
 - If rental event, link to PM property
 - Extend check-in form for rental applications
 
 ### Phase 1E: Applications
+
 - Applications list page (with status filters)
 - Application detail page
 - "Approve" → Create Lease workflow
 
 ### Phase 1F: Leases
+
 - Leases list page
 - Create lease form
 - Lease detail page
@@ -433,12 +469,14 @@ Agents can create one-off invoices for:
 ## Future Phases
 
 **Phase 2: Lease-Driven Billing**
+
 - Automated rent invoice generation
 - GHL invoice creation via API
 - Payment tracking
 - Reminders and notifications
 
 **Phase 3: QuickBooks Online Integration**
+
 - OAuth connection
 - Mapping UI
 - Tenant → Customer sync
@@ -447,6 +485,7 @@ Agents can create one-off invoices for:
 - Idempotency and error handling
 
 **Phase 4: Work Orders**
+
 - Work order intake (tenant-facing form)
 - Work order management UI
 - Vendor assignment
@@ -454,6 +493,7 @@ Agents can create one-off invoices for:
 - Completion tracking
 
 **Phase 5: Owner Features**
+
 - Owner statement PDF
 - CSV export for accountant
 - Simple monthly summary
@@ -474,18 +514,21 @@ Agents can create one-off invoices for:
 ### Integration Boundaries
 
 **GHL is for:**
+
 - Contact management
 - Invoicing and payments
 - Workflows and automation
 - SMS/email messaging
 
 **QBO is for:**
+
 - Accounting records
 - Financial reporting
 - Tax preparation
 - Accountant access
 
 **Our App is for:**
+
 - PM business logic
 - Property/unit/lease management
 - Application processing
@@ -494,6 +537,7 @@ Agents can create one-off invoices for:
 ## Success Metrics
 
 **Product is successful if:**
+
 - Agents can manage 10-20 units without spreadsheets
 - Rent invoices are automated
 - Payments are collected via GHL
@@ -501,6 +545,7 @@ Agents can create one-off invoices for:
 - Support tickets are minimal
 
 **Product needs reevaluation if:**
+
 - Customers want 100+ units
 - Support costs exceed development costs
 - Feature requests drift toward AppFolio territory

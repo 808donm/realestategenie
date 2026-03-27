@@ -36,8 +36,7 @@ export default function TodayView({
   const hour = timezone
     ? parseInt(now.toLocaleString("en-US", { hour: "numeric", hour12: false, timeZone: timezone }), 10)
     : now.getHours();
-  const greeting =
-    hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
   const todayStr = now.toLocaleDateString("en-US", {
     weekday: "long",
@@ -68,10 +67,7 @@ export default function TodayView({
           {todayEvents.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               No events scheduled today.{" "}
-              <Link
-                href="/app/open-houses/new"
-                className="text-primary underline"
-              >
+              <Link href="/app/open-houses/new" className="text-primary underline">
                 Create an open house
               </Link>
             </p>
@@ -91,9 +87,7 @@ export default function TodayView({
                     })}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-sm truncate">
-                      {event.address}
-                    </div>
+                    <div className="font-semibold text-sm truncate">{event.address}</div>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-xs text-muted-foreground">
                         {new Date(event.start_at).toLocaleTimeString("en-US", {
@@ -107,9 +101,7 @@ export default function TodayView({
                         })}
                       </span>
                       <Badge
-                        variant={
-                          event.status === "published" ? "default" : "secondary"
-                        }
+                        variant={event.status === "published" ? "default" : "secondary"}
                         className="text-[10px] px-1.5 py-0"
                       >
                         {event.status}
@@ -145,13 +137,9 @@ export default function TodayView({
                 >
                   <div>
                     <span className="text-sm font-medium">{lead.name}</span>
-                    <span className="text-xs text-muted-foreground ml-2">
-                      {lead.pipelineStageLabel}
-                    </span>
+                    <span className="text-xs text-muted-foreground ml-2">{lead.pipelineStageLabel}</span>
                   </div>
-                  <div className="text-xs text-amber-700 font-medium">
-                    {lead.daysSinceLastTouch}d ago
-                  </div>
+                  <div className="text-xs text-amber-700 font-medium">{lead.daysSinceLastTouch}d ago</div>
                 </Link>
               ))}
             </div>

@@ -16,12 +16,8 @@ export default function AdminSidebar() {
       }}
     >
       <div style={{ padding: "0 24px", marginBottom: 32 }}>
-        <h1 style={{ fontSize: 20, fontWeight: 800, margin: 0 }}>
-          ⚡ Admin Panel
-        </h1>
-        <p style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>
-          Real Estate Genie
-        </p>
+        <h1 style={{ fontSize: 20, fontWeight: 800, margin: 0 }}>⚡ Admin Panel</h1>
+        <p style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>Real Estate Genie</p>
       </div>
 
       <nav>
@@ -87,15 +83,7 @@ export default function AdminSidebar() {
   );
 }
 
-function NavLink({
-  href,
-  active,
-  children,
-}: {
-  href: string;
-  active: boolean;
-  children: React.ReactNode;
-}) {
+function NavLink({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) {
   return (
     <Link
       href={href}

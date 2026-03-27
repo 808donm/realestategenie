@@ -3,10 +3,12 @@
 ## Why This Is Needed
 
 The GHL OAuth integration now requests additional scopes for document/contract creation:
+
 - `documents_contracts/sendLink.write` - Send existing documents (note: camelCase "sendLink")
 - `documents_contracts_template/sendLink.write` - Create and send documents from templates (note: camelCase "sendLink", singular "template")
 
 Your existing OAuth token doesn't have these scopes, which is why you're getting the 401 error:
+
 ```
 "The token is not authorized for this scope."
 ```

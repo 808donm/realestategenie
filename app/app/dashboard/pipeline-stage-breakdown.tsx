@@ -117,7 +117,7 @@ export default function PipelineStageBreakdown() {
   };
 
   const toggleStage = (stageId: string) => {
-    setExpandedStages(prev => {
+    setExpandedStages((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(stageId)) {
         newSet.delete(stageId);
@@ -129,9 +129,9 @@ export default function PipelineStageBreakdown() {
   };
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(value);
@@ -230,14 +230,12 @@ export default function PipelineStageBreakdown() {
                       <div className="text-left">
                         <div className="font-semibold">{stage.stageName}</div>
                         <div className="text-sm text-muted-foreground">
-                          {stage.opportunityCount} {stage.opportunityCount === 1 ? 'opportunity' : 'opportunities'}
+                          {stage.opportunityCount} {stage.opportunityCount === 1 ? "opportunity" : "opportunities"}
                         </div>
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="font-bold text-primary">
-                        {formatCurrency(stage.totalValue)}
-                      </div>
+                      <div className="font-bold text-primary">{formatCurrency(stage.totalValue)}</div>
                       {stage.opportunityCount > 0 && (
                         <div className="text-xs text-muted-foreground">
                           avg {formatCurrency(stage.totalValue / stage.opportunityCount)}
@@ -259,14 +257,10 @@ export default function PipelineStageBreakdown() {
                             <div key={opp.id} className="p-4 flex items-center justify-between">
                               <div>
                                 <div className="font-medium">{opp.name}</div>
-                                <div className="text-sm text-muted-foreground">
-                                  {opp.contactName}
-                                </div>
+                                <div className="text-sm text-muted-foreground">{opp.contactName}</div>
                               </div>
                               <div className="text-right">
-                                <div className="font-semibold">
-                                  {formatCurrency(opp.monetaryValue)}
-                                </div>
+                                <div className="font-semibold">{formatCurrency(opp.monetaryValue)}</div>
                                 <Badge variant="secondary" className="text-xs">
                                   {opp.status}
                                 </Badge>

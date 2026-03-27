@@ -13,6 +13,7 @@ Agent ID: {{registration.openHouses.agentid}}
 ```
 
 **Important:** Field names are **case-sensitive** and must match exactly as defined in your GHL custom object:
+
 - `flyerurl` is all lowercase (not `flyerUrl`)
 - `agentid` is all lowercase (not `agentId`)
 - These fields are accessed through the **association** between Registration and OpenHouse custom objects
@@ -23,13 +24,14 @@ Agent ID: {{registration.openHouses.agentid}}
 
 The following fields must exist in your **OpenHouse** custom object in GHL:
 
-| Field Name | Internal Name | Type | Description |
-|------------|---------------|------|-------------|
-| Address | `address` | Text | Property address (e.g., "123 Main St, Honolulu, HI") |
-| Flyer URL | `flyerurl` | Text | URL to download the property flyer PDF |
-| Agent ID | `agentid` | Text | Agent's unique ID in the system |
+| Field Name | Internal Name | Type | Description                                          |
+| ---------- | ------------- | ---- | ---------------------------------------------------- |
+| Address    | `address`     | Text | Property address (e.g., "123 Main St, Honolulu, HI") |
+| Flyer URL  | `flyerurl`    | Text | URL to download the property flyer PDF               |
+| Agent ID   | `agentid`     | Text | Agent's unique ID in the system                      |
 
 **Important:** The internal field names must use the **exact casing** shown above (all lowercase):
+
 - `address` (all lowercase)
 - `flyerurl` (all lowercase, not camelCase)
 - `agentid` (all lowercase, not camelCase)
@@ -47,7 +49,10 @@ The following fields must exist in your **OpenHouse** custom object in GHL:
 <p>Thank you for visiting the open house at <strong>{{registration.openHouses.address}}</strong>!</p>
 
 <p>
-  <a href="{{registration.openHouses.flyerurl}}" style="background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+  <a
+    href="{{registration.openHouses.flyerurl}}"
+    style="background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;"
+  >
     Download Property Fact Sheet
   </a>
 </p>
@@ -71,11 +76,13 @@ The following fields must exist in your **OpenHouse** custom object in GHL:
 ## Flyer URL Format
 
 The flyer URL follows this format:
+
 ```
 https://www.realestategenie.app/api/open-houses/{eventId}/flyer
 ```
 
 This generates a PDF with:
+
 - Property photos
 - Address and details (beds, baths, sqft, price)
 - Agent contact information
@@ -91,6 +98,7 @@ To verify the setup works:
 4. **Click the flyer URL** to ensure it downloads the PDF
 
 If fields show as blank:
+
 - Verify field names in OpenHouse object match exactly (case-sensitive): `address`, `flyerurl`, `agentid`
 - Check that both OpenHouse and Registration records were created (view in GHL custom objects)
 - Verify the association exists between Registration → OpenHouse
@@ -99,22 +107,27 @@ If fields show as blank:
 ## Troubleshooting
 
 ### Merge tags showing blank
+
 **Cause**: Field names don't match exactly or association is missing
 
 **Fix**:
+
 - Verify OpenHouse custom object has fields with exact names: `address`, `flyerurl`, `agentid` (case-sensitive, all lowercase)
 - Check that the association between Registration → OpenHouse exists in GHL
 - Test merge tag syntax: `{{registration.openHouses.address}}` (note the plural "openHouses")
 
 ### Flyer URL returns 404
+
 **Cause**: Event ID is invalid or event has been deleted
 
 **Fix**: Check that the open house event still exists in the database
 
 ### Association errors in GHL logs
+
 **Cause**: Association between Registration → OpenHouse is missing
 
 **Fix**:
+
 - Check that both custom objects exist in GHL
 - Verify the association is created (code creates it automatically)
 - You can manually create the association in GHL Settings → Custom Objects → Associations
@@ -124,6 +137,7 @@ If fields show as blank:
 The merge tags access OpenHouse fields through the Registration association:
 
 **Correct format:**
+
 ```
 {{registration.openHouses.address}}     ✅ Works
 {{registration.openHouses.flyerurl}}    ✅ Works (lowercase)
@@ -131,6 +145,7 @@ The merge tags access OpenHouse fields through the Registration association:
 ```
 
 **Incorrect formats:**
+
 ```
 {{openhouse.address}}                   ❌ Missing registration context
 {{registration.openHouse.address}}      ❌ Singular "openHouse" (should be plural)

@@ -18,17 +18,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user is platform admin
-    const { data: agent } = await supabase
-      .from("agents")
-      .select("role")
-      .eq("id", userData.user.id)
-      .single();
+    const { data: agent } = await supabase.from("agents").select("role").eq("id", userData.user.id).single();
 
     if (agent?.role !== "admin") {
-      return NextResponse.json(
-        { error: "Only platform admins can disconnect Realie.ai" },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "Only platform admins can disconnect Realie.ai" }, { status: 403 });
     }
 
     const { error: updateError } = await supabaseAdmin
@@ -42,10 +35,7 @@ export async function POST(request: NextRequest) {
 
     if (updateError) {
       console.error("Error disconnecting Realie:", updateError);
-      return NextResponse.json(
-        { error: "Failed to disconnect" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to disconnect" }, { status: 500 });
     }
 
     return NextResponse.json({
@@ -54,9 +44,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Error in Realie disconnect:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

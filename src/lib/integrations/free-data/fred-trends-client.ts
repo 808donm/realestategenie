@@ -13,12 +13,12 @@ const BASE_URL = "https://api.stlouisfed.org/fred";
 // Key FRED series IDs for housing
 const SERIES = {
   // National
-  NATIONAL_MEDIAN_PRICE: "MSPUS",        // Median Sales Price of Houses Sold (US)
-  NATIONAL_HOMES_SOLD: "HSN1F",          // New One Family Houses Sold
-  NATIONAL_SUPPLY: "MSACSR",             // Monthly Supply of New Houses
-  NATIONAL_CASE_SHILLER: "CSUSHPINSA",   // S&P/Case-Shiller Home Price Index
+  NATIONAL_MEDIAN_PRICE: "MSPUS", // Median Sales Price of Houses Sold (US)
+  NATIONAL_HOMES_SOLD: "HSN1F", // New One Family Houses Sold
+  NATIONAL_SUPPLY: "MSACSR", // Monthly Supply of New Houses
+  NATIONAL_CASE_SHILLER: "CSUSHPINSA", // S&P/Case-Shiller Home Price Index
   // State-level HPI
-  STATE_HPI_PREFIX: "STHPI",             // e.g., HISTHPI for Hawaii
+  STATE_HPI_PREFIX: "STHPI", // e.g., HISTHPI for Hawaii
 };
 
 // ---------------------------------------------------------------------------
@@ -30,13 +30,22 @@ const SERIES = {
 //   MEDDAYONMAR{CBSA}  — Median Days on Market (monthly)
 // ---------------------------------------------------------------------------
 
-function msaHpiSeries(cbsa: string): string { return `ATNHPIUS${cbsa}Q`; }
-function msaMedianListPriceSeries(cbsa: string): string { return `MEDLISPRI${cbsa}`; }
-function msaActiveListingSeries(cbsa: string): string { return `ACTLISCOU${cbsa}`; }
+function msaHpiSeries(cbsa: string): string {
+  return `ATNHPIUS${cbsa}Q`;
+}
+function msaMedianListPriceSeries(cbsa: string): string {
+  return `MEDLISPRI${cbsa}`;
+}
+function msaActiveListingSeries(cbsa: string): string {
+  return `ACTLISCOU${cbsa}`;
+}
 
 // County FIPS (5-digit) → CBSA code + metro name
 // Covers major US metros; add more as needed.
-interface CbsaEntry { cbsa: string; name: string }
+interface CbsaEntry {
+  cbsa: string;
+  name: string;
+}
 const COUNTY_FIPS_TO_CBSA: Record<string, CbsaEntry> = {
   // Hawaii
   "15003": { cbsa: "46520", name: "Urban Honolulu" },
@@ -102,24 +111,64 @@ const COUNTY_FIPS_TO_CBSA: Record<string, CbsaEntry> = {
 
 // State abbreviation to FRED series suffix mapping
 const STATE_HPI_SERIES: Record<string, string> = {
-  AL: "ALSTHPI", AK: "AKSTHPI", AZ: "AZSTHPI", AR: "ARSTHPI", CA: "CASTHPI",
-  CO: "COSTHPI", CT: "CTSTHPI", DE: "DESTHPI", FL: "FLSTHPI", GA: "GASTHPI",
-  HI: "HISTHPI", ID: "IDSTHPI", IL: "ILSTHPI", IN: "INSTHPI", IA: "IASTHPI",
-  KS: "KSSTHPI", KY: "KYSTHPI", LA: "LASTHPI", ME: "MESTHPI", MD: "MDSTHPI",
-  MA: "MASTHPI", MI: "MISTHPI", MN: "MNSTHPI", MS: "MSSTHPI", MO: "MOSTHPI",
-  MT: "MTSTHPI", NE: "NESTHPI", NV: "NVSTHPI", NH: "NHSTHPI", NJ: "NJSTHPI",
-  NM: "NMSTHPI", NY: "NYSTHPI", NC: "NCSTHPI", ND: "NDSTHPI", OH: "OHSTHPI",
-  OK: "OKSTHPI", OR: "ORSTHPI", PA: "PASTHPI", RI: "RISTHPI", SC: "SCSTHPI",
-  SD: "SDSTHPI", TN: "TNSTHPI", TX: "TXSTHPI", UT: "UTSTHPI", VT: "VTSTHPI",
-  VA: "VASTHPI", WA: "WASTHPI", WV: "WVSTHPI", WI: "WISTHPI", WY: "WYSTHPI",
+  AL: "ALSTHPI",
+  AK: "AKSTHPI",
+  AZ: "AZSTHPI",
+  AR: "ARSTHPI",
+  CA: "CASTHPI",
+  CO: "COSTHPI",
+  CT: "CTSTHPI",
+  DE: "DESTHPI",
+  FL: "FLSTHPI",
+  GA: "GASTHPI",
+  HI: "HISTHPI",
+  ID: "IDSTHPI",
+  IL: "ILSTHPI",
+  IN: "INSTHPI",
+  IA: "IASTHPI",
+  KS: "KSSTHPI",
+  KY: "KYSTHPI",
+  LA: "LASTHPI",
+  ME: "MESTHPI",
+  MD: "MDSTHPI",
+  MA: "MASTHPI",
+  MI: "MISTHPI",
+  MN: "MNSTHPI",
+  MS: "MSSTHPI",
+  MO: "MOSTHPI",
+  MT: "MTSTHPI",
+  NE: "NESTHPI",
+  NV: "NVSTHPI",
+  NH: "NHSTHPI",
+  NJ: "NJSTHPI",
+  NM: "NMSTHPI",
+  NY: "NYSTHPI",
+  NC: "NCSTHPI",
+  ND: "NDSTHPI",
+  OH: "OHSTHPI",
+  OK: "OKSTHPI",
+  OR: "ORSTHPI",
+  PA: "PASTHPI",
+  RI: "RISTHPI",
+  SC: "SCSTHPI",
+  SD: "SDSTHPI",
+  TN: "TNSTHPI",
+  TX: "TXSTHPI",
+  UT: "UTSTHPI",
+  VT: "VTSTHPI",
+  VA: "VASTHPI",
+  WA: "WASTHPI",
+  WV: "WVSTHPI",
+  WI: "WISTHPI",
+  WY: "WYSTHPI",
 };
 
 export interface SalesTrendData {
-  period: string;       // "2024-Q1", "2024-01", etc.
+  period: string; // "2024-Q1", "2024-01", etc.
   medianSalePrice?: number;
   avgSalePrice?: number;
   homeSaleCount?: number;
-  hpi?: number;          // House Price Index
+  hpi?: number; // House Price Index
   monthsSupply?: number;
 }
 
@@ -167,7 +216,9 @@ async function fetchFREDSeries(
 ): Promise<any[]> {
   const apiKey = await getFredApiKey();
   if (!apiKey) {
-    console.warn("[FRED] No API key — set FRED_API_KEY env var or add key via Federal Data integration. Free at https://fred.stlouisfed.org/docs/api/api_key.html");
+    console.warn(
+      "[FRED] No API key — set FRED_API_KEY env var or add key via Federal Data integration. Free at https://fred.stlouisfed.org/docs/api/api_key.html",
+    );
     return [];
   }
 
@@ -233,7 +284,7 @@ export async function getNationalSalesTrends(
     const year = date.split("-")[0];
     const quarter = Math.ceil(month / 3);
     const period = `${year}-Q${quarter}`;
-    const existing = trends.find(t => t.period === period);
+    const existing = trends.find((t) => t.period === period);
     if (existing && !existing.monthsSupply) {
       existing.monthsSupply = parseFloat(obs.value);
     }
@@ -369,14 +420,12 @@ export async function getMsaSalesTrends(
  * Get sales trends for an area.
  * Resolution chain: MSA (county FIPS) → State → National.
  */
-export async function getSalesTrends(
-  params: {
-    countyFips?: string;
-    stateAbbrev?: string;
-    startYear?: number;
-    endYear?: number;
-  },
-): Promise<SalesTrendsResult> {
+export async function getSalesTrends(params: {
+  countyFips?: string;
+  stateAbbrev?: string;
+  startYear?: number;
+  endYear?: number;
+}): Promise<SalesTrendsResult> {
   const { countyFips, stateAbbrev, startYear = 2022, endYear = 2026 } = params;
 
   // Try MSA-level first if county FIPS is provided

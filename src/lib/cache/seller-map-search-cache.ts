@@ -71,9 +71,7 @@ export interface SearchCacheEntry {
 /**
  * Read cached search results. Returns null on miss or expiry.
  */
-export async function searchCacheGet(
-  key: string
-): Promise<SearchCacheEntry | null> {
+export async function searchCacheGet(key: string): Promise<SearchCacheEntry | null> {
   const sb = getSupabase();
   if (!sb) return null;
 
@@ -91,7 +89,10 @@ export async function searchCacheGet(
     const expiresAt = new Date(row.expires_at).getTime();
     if (Date.now() > expiresAt) {
       // Async cleanup
-      sb.from("seller_map_search_cache").delete().eq("cache_key", hash).then(() => {});
+      sb.from("seller_map_search_cache")
+        .delete()
+        .eq("cache_key", hash)
+        .then(() => {});
       console.log(`[SearchCache] EXPIRED: key=${hash.slice(0, 8)}…`);
       return null;
     }
@@ -117,7 +118,7 @@ export async function searchCacheGet(
 export async function searchCacheSet(
   key: string,
   entry: SearchCacheEntry,
-  geo?: { lat?: number; lng?: number; radius?: number; zip?: string }
+  geo?: { lat?: number; lng?: number; radius?: number; zip?: string },
 ): Promise<void> {
   const sb = getSupabase();
   if (!sb) return;
@@ -126,23 +127,21 @@ export async function searchCacheSet(
   const expiresAt = new Date(Date.now() + CACHE_TTL).toISOString();
 
   try {
-    const { error } = await sb
-      .from("seller_map_search_cache")
-      .upsert(
-        {
-          cache_key: hash,
-          properties: entry.properties,
-          total: entry.total,
-          market_data: entry.marketData,
-          center_lat: geo?.lat,
-          center_lng: geo?.lng,
-          radius: geo?.radius,
-          zip: geo?.zip,
-          raw_key: key.length <= 500 ? key : key.slice(0, 500),
-          expires_at: expiresAt,
-        },
-        { onConflict: "cache_key" }
-      );
+    const { error } = await sb.from("seller_map_search_cache").upsert(
+      {
+        cache_key: hash,
+        properties: entry.properties,
+        total: entry.total,
+        market_data: entry.marketData,
+        center_lat: geo?.lat,
+        center_lng: geo?.lng,
+        radius: geo?.radius,
+        zip: geo?.zip,
+        raw_key: key.length <= 500 ? key : key.slice(0, 500),
+        expires_at: expiresAt,
+      },
+      { onConflict: "cache_key" },
+    );
 
     if (error) {
       console.error("[SearchCache] Write error:", error.message);

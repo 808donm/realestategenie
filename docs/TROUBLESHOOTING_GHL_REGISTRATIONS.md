@@ -17,6 +17,7 @@ curl -X POST https://www.realestategenie.app/api/debug/test-ghl-registration \
 Replace `YOUR_OPEN_HOUSE_EVENT_ID` with an actual open house event ID from your database.
 
 The diagnostic will tell you:
+
 - ✅ Which steps succeeded
 - ❌ Where the process is failing
 - 💡 Specific recommendations to fix the issue
@@ -24,6 +25,7 @@ The diagnostic will tell you:
 ### Step 2: Check Server Logs
 
 If you're on Vercel:
+
 1. Go to Vercel Dashboard
 2. Select your project
 3. Click on "Logs" in the left sidebar
@@ -31,10 +33,12 @@ If you're on Vercel:
 5. Look for messages with ❌ CRITICAL
 
 If you're running locally:
+
 1. Check your terminal/console where the Next.js dev server is running
 2. Look for log messages when someone registers for an open house
 
 **Key Log Messages:**
+
 - `❌ CRITICAL: Failed to create GHL OpenHouse` - OpenHouse custom object creation failed
 - `❌ CRITICAL: Failed to create GHL Registration` - Registration custom object creation failed
 - `❌ CRITICAL: Skipping Registration creation - OpenHouse record was not created` - Registration skipped because OpenHouse failed
@@ -44,10 +48,12 @@ If you're running locally:
 ### Issue 1: Custom Objects Not Created in GHL
 
 **Symptoms:**
+
 - Logs show: `Failed to create OpenHouse` or `Failed to create Registration`
 - Error message includes: `custom object not found`
 
 **Solution:**
+
 1. Log in to your GHL account
 2. Go to **Settings → Custom Objects**
 3. Verify these custom objects exist:
@@ -76,11 +82,13 @@ If you're running locally:
 ### Issue 2: Associations Not Configured
 
 **Symptoms:**
+
 - OpenHouse and Registration objects are created
 - Email merge tags like `{{registration.openHouses.address}}` show blank
 - Logs show: `Failed to create OpenHouse association` or `Failed to create Contact association`
 
 **Solution:**
+
 1. In GHL, go to **Settings → Custom Objects**
 2. Click on the **registrations** custom object
 3. Click on **Associations** tab
@@ -93,10 +101,12 @@ If you're running locally:
 ### Issue 3: GHL Integration Not Connected
 
 **Symptoms:**
+
 - Logs show: `GHL not connected, skipping notifications`
 - No GHL logs appear at all
 
 **Solution:**
+
 1. Go to **Real Estate Genie → Integrations** page
 2. Connect your GHL account
 3. Ensure the integration status shows "Connected"
@@ -105,6 +115,7 @@ If you're running locally:
 ### Issue 4: Missing Associations Scope (MOST COMMON)
 
 **Symptoms:**
+
 - OpenHouse and Registration records ARE created successfully
 - Email merge tags show blank values
 - Logs show: `Failed to create Contact association (non-critical): The token is not authorized for this scope`
@@ -114,6 +125,7 @@ If you're running locally:
 The GHL OAuth token is missing the `associations.write` scope, which is required to link Registration → OpenHouse.
 
 **Solution:**
+
 1. Go to **GHL Developer Portal**: https://marketplace.gohighlevel.com/
 2. Click **Apps** → Select your OAuth app
 3. Go to **Settings** → **Scopes**
@@ -136,6 +148,7 @@ The GHL OAuth token is missing the `associations.write` scope, which is required
 7. Test by registering for an open house again
 
 **Verify Fix:**
+
 ```bash
 curl https://www.realestategenie.app/api/debug/check-ghl-scopes?agentId=YOUR_AGENT_ID
 ```
@@ -143,6 +156,7 @@ curl https://www.realestategenie.app/api/debug/check-ghl-scopes?agentId=YOUR_AGE
 ### Issue 5: Other API Token Permissions
 
 **Symptoms:**
+
 - Logs show: `401 Unauthorized` or `403 Forbidden`
 - OpenHouse or Registration creation fails with permission errors
 
@@ -152,6 +166,7 @@ Ensure ALL required scopes are enabled in your GHL OAuth app (see Issue 4 above 
 ### Issue 6: Field Name Casing Issues
 
 **Symptoms:**
+
 - Objects are created but email merge tags show blank values
 - Logs show objects created successfully but data not accessible
 
@@ -159,10 +174,12 @@ Ensure ALL required scopes are enabled in your GHL OAuth app (see Issue 4 above 
 The field names in GHL are **case-sensitive**. Verify your GHL custom object field names match exactly:
 
 **For OpenHouse:**
+
 - `flyerUrl` (camelCase, not `flyerurl` or `Flyerurl`)
 - `agentId` (camelCase, not `agentid` or `Agentid`)
 
 **In your GHL email templates, use:**
+
 ```
 {{registration.openHouses.address}}
 {{registration.openHouses.flyerUrl}}

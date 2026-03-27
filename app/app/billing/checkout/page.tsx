@@ -34,11 +34,7 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
   }
 
   // Get selected plan
-  const { data: selectedPlan } = await supabaseAdmin
-    .from("subscription_plans")
-    .select("*")
-    .eq("id", planId)
-    .single();
+  const { data: selectedPlan } = await supabaseAdmin.from("subscription_plans").select("*").eq("id", planId).single();
 
   if (!selectedPlan) {
     redirect("/app/billing/upgrade");
@@ -67,14 +63,16 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
   // Get features for selected plan
   const { data: planFeatures } = await supabaseAdmin
     .from("plan_features")
-    .select(`
+    .select(
+      `
       features (
         id,
         name,
         description,
         category
       )
-    `)
+    `,
+    )
     .eq("plan_id", planId)
     .eq("is_enabled", true);
 
@@ -105,9 +103,7 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
         <h1 className="text-3xl font-bold mb-2">
           {isUpgrade ? "Upgrade" : isDowngrade ? "Downgrade" : "Change"} Your Plan
         </h1>
-        <p className="text-muted-foreground">
-          Review your plan change and confirm
-        </p>
+        <p className="text-muted-foreground">Review your plan change and confirm</p>
       </div>
 
       {/* Canceled Notification */}
@@ -119,8 +115,8 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
               <div className="text-sm text-yellow-900">
                 <p className="font-semibold mb-1">Checkout Canceled</p>
                 <p>
-                  You canceled the checkout process. No changes were made to your subscription.
-                  You can try again by clicking the checkout button below.
+                  You canceled the checkout process. No changes were made to your subscription. You can try again by
+                  clicking the checkout button below.
                 </p>
               </div>
             </div>
@@ -146,9 +142,7 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
                         <p className="text-lg font-semibold">{currentPlan.name}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-lg font-semibold">
-                          ${currentPlan.monthly_price}/mo
-                        </p>
+                        <p className="text-lg font-semibold">${currentPlan.monthly_price}/mo</p>
                       </div>
                     </div>
 
@@ -174,9 +168,7 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
                     )}
                   </div>
                   <div className="text-right">
-                    <p className="text-lg font-semibold">
-                      ${selectedPlan.monthly_price}/mo
-                    </p>
+                    <p className="text-lg font-semibold">${selectedPlan.monthly_price}/mo</p>
                   </div>
                 </div>
               </div>
@@ -203,9 +195,6 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
                     </span>
                   </div>
                 </div>
-
-
-
               </div>
             </CardContent>
           </Card>
@@ -225,9 +214,7 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
                 ))}
               </div>
               {features.length > 8 && (
-                <p className="text-sm text-muted-foreground mt-4">
-                  + {features.length - 8} more features
-                </p>
+                <p className="text-sm text-muted-foreground mt-4">+ {features.length - 8} more features</p>
               )}
             </CardContent>
           </Card>
@@ -269,9 +256,7 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
                     <span className="font-semibold">
                       {isUpgrade && proratedDays > 0 ? "Starting Next Cycle" : "Monthly Total"}
                     </span>
-                    <span className="font-semibold text-lg">
-                      ${selectedPlan.monthly_price.toFixed(2)}
-                    </span>
+                    <span className="font-semibold text-lg">${selectedPlan.monthly_price.toFixed(2)}</span>
                   </div>
                 </div>
 
@@ -305,8 +290,8 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
                     <div className="text-sm text-green-900">
                       <p className="font-semibold mb-1">Secure Payment via Stripe</p>
                       <p className="text-xs">
-                        You'll be redirected to Stripe's secure checkout to complete your payment.
-                        Your subscription will activate automatically.
+                        You'll be redirected to Stripe's secure checkout to complete your payment. Your subscription
+                        will activate automatically.
                       </p>
                     </div>
                   </div>
@@ -326,21 +311,15 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
               </div>
               <div className="flex items-start gap-2">
                 <Check className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
-                <p className="text-xs text-muted-foreground">
-                  Cancel or change plans anytime
-                </p>
+                <p className="text-xs text-muted-foreground">Cancel or change plans anytime</p>
               </div>
               <div className="flex items-start gap-2">
                 <Check className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
-                <p className="text-xs text-muted-foreground">
-                  Secure payment processing with Stripe
-                </p>
+                <p className="text-xs text-muted-foreground">Secure payment processing with Stripe</p>
               </div>
               <div className="flex items-start gap-2">
                 <Check className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
-                <p className="text-xs text-muted-foreground">
-                  24/7 billing support available
-                </p>
+                <p className="text-xs text-muted-foreground">24/7 billing support available</p>
               </div>
             </CardContent>
           </Card>

@@ -32,16 +32,17 @@ function renderMarkdown(md: string): string {
       }
 
       if (!inTable) {
-        if (inList) { html.push("</ul>"); inList = false; }
+        if (inList) {
+          html.push("</ul>");
+          inList = false;
+        }
         html.push('<table class="help-table">');
         inTable = true;
         tableHeader = true;
       }
 
       const tag = tableHeader ? "th" : "td";
-      html.push(
-        "<tr>" + cells.map((c) => `<${tag}>${inlineFormat(c)}</${tag}>`).join("") + "</tr>"
-      );
+      html.push("<tr>" + cells.map((c) => `<${tag}>${inlineFormat(c)}</${tag}>`).join("") + "</tr>");
       continue;
     } else if (inTable) {
       html.push("</table>");
@@ -50,19 +51,28 @@ function renderMarkdown(md: string): string {
 
     // Headings
     if (line.startsWith("### ")) {
-      if (inList) { html.push("</ul>"); inList = false; }
+      if (inList) {
+        html.push("</ul>");
+        inList = false;
+      }
       html.push(`<h4>${inlineFormat(line.slice(4))}</h4>`);
       continue;
     }
     if (line.startsWith("## ")) {
-      if (inList) { html.push("</ul>"); inList = false; }
+      if (inList) {
+        html.push("</ul>");
+        inList = false;
+      }
       html.push(`<h3>${inlineFormat(line.slice(3))}</h3>`);
       continue;
     }
 
     // Unordered list
     if (/^[-*] /.test(line)) {
-      if (!inList) { html.push("<ul>"); inList = true; }
+      if (!inList) {
+        html.push("<ul>");
+        inList = true;
+      }
       html.push(`<li>${inlineFormat(line.slice(2))}</li>`);
       continue;
     }
@@ -70,7 +80,10 @@ function renderMarkdown(md: string): string {
     // Ordered list
     if (/^\d+\.\s/.test(line)) {
       // Treat as unordered for simplicity
-      if (!inList) { html.push('<ol class="help-ol">'); inList = true; }
+      if (!inList) {
+        html.push('<ol class="help-ol">');
+        inList = true;
+      }
       html.push(`<li>${inlineFormat(line.replace(/^\d+\.\s/, ""))}</li>`);
       continue;
     }
@@ -110,10 +123,7 @@ function inlineFormat(text: string): string {
     .replace(/`([^`]+)`/g, "<code>$1</code>")
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
     .replace(/\*([^*]+)\*/g, "<em>$1</em>")
-    .replace(
-      /\[([^\]]+)\]\(([^)]+)\)/g,
-      '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>'
-    );
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
 }
 
 export function HelpPanel({ trigger }: { trigger?: React.ReactNode }) {
@@ -166,12 +176,7 @@ export function HelpPanel({ trigger }: { trigger?: React.ReactNode }) {
           onClick={() => setIsOpen(true)}
           className="no-underline font-bold py-2 px-3 border border-blue-300 rounded-xl bg-blue-50 text-blue-700 text-center text-sm md:text-base hover:bg-blue-100 transition-colors flex items-center justify-center gap-1.5"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            className="w-4 h-4 shrink-0"
-          >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 shrink-0">
             <path
               fillRule="evenodd"
               d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM8.94 6.94a.75.75 0 11-1.061-1.061 3 3 0 112.871 5.026v.345a.75.75 0 01-1.5 0v-.5c0-.72.57-1.172 1.081-1.287A1.5 1.5 0 108.94 6.94zM10 15a1 1 0 100-2 1 1 0 000 2z"
@@ -183,12 +188,7 @@ export function HelpPanel({ trigger }: { trigger?: React.ReactNode }) {
       )}
 
       {/* Backdrop */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black/30 z-40 transition-opacity"
-          onClick={() => setIsOpen(false)}
-        />
-      )}
+      {isOpen && <div className="fixed inset-0 bg-black/30 z-40 transition-opacity" onClick={() => setIsOpen(false)} />}
 
       {/* Slide-out Panel */}
       <div
@@ -224,12 +224,8 @@ export function HelpPanel({ trigger }: { trigger?: React.ReactNode }) {
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b bg-white shrink-0">
             <div>
-              <h2 className="text-lg font-bold text-gray-900">
-                Help Guide
-              </h2>
-              <p className="text-xs text-gray-500">
-                The Real Estate Genie &mdash; Version 1.0
-              </p>
+              <h2 className="text-lg font-bold text-gray-900">Help Guide</h2>
+              <p className="text-xs text-gray-500">The Real Estate Genie &mdash; Version 1.0</p>
             </div>
             <button
               onClick={() => setIsOpen(false)}
@@ -272,7 +268,6 @@ export function HelpPanel({ trigger }: { trigger?: React.ReactNode }) {
           </div>
         </div>
       </div>
-
     </>
   );
 }

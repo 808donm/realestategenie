@@ -1,11 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
 import { createTrestleClient, TrestleProperty } from "@/lib/integrations/trestle-client";
 
-const admin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -118,9 +116,7 @@ export async function runWatchdogScan(): Promise<{
   }
 
   // Filter to farm areas that have at least one active watch rule
-  const activeFarms = farmAreas.filter(
-    (fa: any) => fa.mls_watch_rules?.some((r: any) => r.is_active)
-  );
+  const activeFarms = farmAreas.filter((fa: any) => fa.mls_watch_rules?.some((r: any) => r.is_active));
 
   if (activeFarms.length === 0) {
     return results;
@@ -151,10 +147,7 @@ export async function runWatchdogScan(): Promise<{
         continue;
       }
 
-      const config =
-        typeof integration.config === "string"
-          ? JSON.parse(integration.config)
-          : integration.config;
+      const config = typeof integration.config === "string" ? JSON.parse(integration.config) : integration.config;
 
       const client = createTrestleClient(config);
 
@@ -165,9 +158,7 @@ export async function runWatchdogScan(): Promise<{
           results.listingsScanned += alerts.listingsScanned;
 
           if (alerts.newAlerts.length > 0) {
-            const { error: insertError } = await admin
-              .from("mls_watchdog_alerts")
-              .insert(alerts.newAlerts);
+            const { error: insertError } = await admin.from("mls_watchdog_alerts").insert(alerts.newAlerts);
 
             if (insertError) {
               results.errors.push(`Alert insert error for farm ${farm.id}: ${insertError.message}`);
@@ -191,7 +182,7 @@ export async function runWatchdogScan(): Promise<{
 
 async function processFarmArea(
   client: ReturnType<typeof createTrestleClient>,
-  farm: FarmArea & { mls_watch_rules: WatchRule[] }
+  farm: FarmArea & { mls_watch_rules: WatchRule[] },
 ): Promise<{ listingsScanned: number; newAlerts: AlertToCreate[] }> {
   const activeRules = farm.mls_watch_rules.filter((r) => r.is_active);
   if (activeRules.length === 0) return { listingsScanned: 0, newAlerts: [] };
@@ -203,9 +194,7 @@ async function processFarmArea(
   const statuses = farm.statuses?.length > 0 ? farm.statuses : ["Active"];
   // For status_change rules, we also need to check Expired/Withdrawn/Canceled
   const hasStatusChangeRule = activeRules.some((r) => r.trigger_type === "status_change");
-  const allStatuses = hasStatusChangeRule
-    ? [...new Set([...statuses, "Expired", "Withdrawn", "Canceled"])]
-    : statuses;
+  const allStatuses = hasStatusChangeRule ? [...new Set([...statuses, "Expired", "Withdrawn", "Canceled"])] : statuses;
 
   if (allStatuses.length === 1) {
     filters.push(`StandardStatus eq '${allStatuses[0]}'`);
@@ -298,9 +287,7 @@ async function processFarmArea(
   }));
 
   if (snapshots.length > 0) {
-    await admin
-      .from("mls_listing_snapshots")
-      .upsert(snapshots, { onConflict: "listing_key,snapshot_date" });
+    await admin.from("mls_listing_snapshots").upsert(snapshots, { onConflict: "listing_key,snapshot_date" });
   }
 
   // Evaluate rules against each listing
@@ -372,7 +359,7 @@ function evaluateRule(
   listing: TrestleProperty,
   prev: Snapshot | undefined,
   farmAreaId: string,
-  address: string
+  address: string,
 ): AlertToCreate | null {
   const threshold = rule.threshold_value || 0;
 
@@ -474,9 +461,7 @@ function evaluateRule(
       if (prevStatus !== newStatus && rule.status_triggers.includes(newStatus)) {
         // Special case: "Active" in status_triggers means "back on market"
         const isBackOnMarket = newStatus === "Active" && ["Pending", "Withdrawn", "Canceled"].includes(prevStatus);
-        const title = isBackOnMarket
-          ? `Back on market: ${address}`
-          : `Status changed to ${newStatus}: ${address}`;
+        const title = isBackOnMarket ? `Back on market: ${address}` : `Status changed to ${newStatus}: ${address}`;
 
         return {
           agent_id: rule.agent_id,
@@ -509,18 +494,12 @@ function evaluateRule(
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-function haversineDistance(
-  lat1: number, lng1: number,
-  lat2: number, lng2: number
-): number {
+function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 3959;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLng = ((lng2 - lng1) * Math.PI) / 180;
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLng / 2) *
-      Math.sin(dLng / 2);
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }

@@ -38,11 +38,7 @@ const categoryOptions = [
   { value: "support", label: "Support & Services" },
 ];
 
-export default function FeaturesManager({
-  initialFeatures,
-  plans,
-  featureMap,
-}: FeaturesManagerProps) {
+export default function FeaturesManager({ initialFeatures, plans, featureMap }: FeaturesManagerProps) {
   const router = useRouter();
   const [features, setFeatures] = useState(initialFeatures);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -124,9 +120,7 @@ export default function FeaturesManager({
           throw new Error(data.error || "Failed to update feature");
         }
 
-        setFeatures(
-          features.map((f) => (f.id === editingId ? data.feature : f))
-        );
+        setFeatures(features.map((f) => (f.id === editingId ? data.feature : f)));
         setSuccess("Feature updated successfully!");
       }
 
@@ -143,11 +137,7 @@ export default function FeaturesManager({
   };
 
   const handleDelete = async (featureId: string, featureName: string) => {
-    if (
-      !confirm(
-        `Are you sure you want to delete the feature "${featureName}"? This action cannot be undone.`
-      )
-    ) {
+    if (!confirm(`Are you sure you want to delete the feature "${featureName}"? This action cannot be undone.`)) {
       return;
     }
 
@@ -180,27 +170,26 @@ export default function FeaturesManager({
   };
 
   // Group features by category
-  const groupedFeatures = features.reduce((acc, feature) => {
-    const category = feature.category || "Other";
-    if (!acc[category]) {
-      acc[category] = [];
-    }
-    acc[category].push(feature);
-    return acc;
-  }, {} as Record<string, Feature[]>);
+  const groupedFeatures = features.reduce(
+    (acc, feature) => {
+      const category = feature.category || "Other";
+      if (!acc[category]) {
+        acc[category] = [];
+      }
+      acc[category].push(feature);
+      return acc;
+    },
+    {} as Record<string, Feature[]>,
+  );
 
   const categoryLabels: Record<string, string> = Object.fromEntries(
-    categoryOptions.map((opt) => [opt.value, opt.label])
+    categoryOptions.map((opt) => [opt.value, opt.label]),
   );
 
   return (
     <div className="space-y-6">
       {/* Alert Messages */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
-          {error}
-        </div>
-      )}
+      {error && <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">{error}</div>}
       {success && (
         <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg flex items-center gap-2">
           <Check className="h-4 w-4" />
@@ -215,56 +204,40 @@ export default function FeaturesManager({
             <h3 className="text-lg font-semibold mb-4">Add New Feature</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Feature Name *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Feature Name *</label>
                 <input
                   type="text"
                   value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="e.g., SMS Notifications"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Slug *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Slug *</label>
                 <input
                   type="text"
                   value={formData.slug}
-                  onChange={(e) =>
-                    setFormData({ ...formData, slug: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="e.g., sms-notifications"
                 />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Description
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
                 <textarea
                   value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   rows={2}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Brief description of the feature"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Category *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Category *</label>
                 <select
                   value={formData.category}
-                  onChange={(e) =>
-                    setFormData({ ...formData, category: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   {categoryOptions.map((opt) => (
@@ -329,199 +302,163 @@ export default function FeaturesManager({
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {Object.entries(groupedFeatures).map(
-                ([category, categoryFeatures]) => (
-                  <>
-                    {/* Category Header */}
-                    <tr key={`category-${category}`} className="bg-gray-100">
-                      <td
-                        colSpan={plans.length + 2}
-                        className="px-6 py-3 text-sm font-bold text-gray-700 sticky left-0 bg-gray-100"
-                      >
-                        {categoryLabels[category] || category}
-                      </td>
-                    </tr>
+              {Object.entries(groupedFeatures).map(([category, categoryFeatures]) => (
+                <>
+                  {/* Category Header */}
+                  <tr key={`category-${category}`} className="bg-gray-100">
+                    <td
+                      colSpan={plans.length + 2}
+                      className="px-6 py-3 text-sm font-bold text-gray-700 sticky left-0 bg-gray-100"
+                    >
+                      {categoryLabels[category] || category}
+                    </td>
+                  </tr>
 
-                    {/* Features in this category */}
-                    {categoryFeatures.map((feature) => {
-                      const enabledPlans = featureMap.get(feature.id) || new Set();
-                      const isEditing = editingId === feature.id;
+                  {/* Features in this category */}
+                  {categoryFeatures.map((feature) => {
+                    const enabledPlans = featureMap.get(feature.id) || new Set();
+                    const isEditing = editingId === feature.id;
 
-                      return (
-                        <tr
-                          key={feature.id}
-                          className={isEditing ? "bg-blue-50" : ""}
-                        >
-                          {isEditing ? (
-                            <>
-                              <td
-                                colSpan={plans.length + 2}
-                                className="px-6 py-4"
-                              >
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                  <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                      Feature Name *
-                                    </label>
-                                    <input
-                                      type="text"
-                                      value={formData.name}
-                                      onChange={(e) =>
-                                        setFormData({
-                                          ...formData,
-                                          name: e.target.value,
-                                        })
-                                      }
-                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                      Slug *
-                                    </label>
-                                    <input
-                                      type="text"
-                                      value={formData.slug}
-                                      onChange={(e) =>
-                                        setFormData({
-                                          ...formData,
-                                          slug: e.target.value,
-                                        })
-                                      }
-                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    />
-                                  </div>
-                                  <div className="md:col-span-2">
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                      Description
-                                    </label>
-                                    <textarea
-                                      value={formData.description}
-                                      onChange={(e) =>
-                                        setFormData({
-                                          ...formData,
-                                          description: e.target.value,
-                                        })
-                                      }
-                                      rows={2}
-                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                      Category *
-                                    </label>
-                                    <select
-                                      value={formData.category}
-                                      onChange={(e) =>
-                                        setFormData({
-                                          ...formData,
-                                          category: e.target.value,
-                                        })
-                                      }
-                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    >
-                                      {categoryOptions.map((opt) => (
-                                        <option key={opt.value} value={opt.value}>
-                                          {opt.label}
-                                        </option>
-                                      ))}
-                                    </select>
-                                  </div>
-                                </div>
-                                <div className="flex gap-3 mt-4">
-                                  <Button
-                                    onClick={handleSave}
-                                    disabled={isSaving}
-                                    size="sm"
-                                  >
-                                    {isSaving ? (
-                                      <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        Saving...
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Save className="mr-2 h-4 w-4" />
-                                        Save
-                                      </>
-                                    )}
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    onClick={handleCancel}
-                                    size="sm"
-                                  >
-                                    <X className="mr-2 h-4 w-4" />
-                                    Cancel
-                                  </Button>
-                                </div>
-                              </td>
-                            </>
-                          ) : (
-                            <>
-                              <td className="px-6 py-4 whitespace-nowrap sticky left-0 bg-white">
-                                <div className="text-sm font-medium text-gray-900">
-                                  {feature.name}
-                                </div>
-                                {feature.description && (
-                                  <div className="text-xs text-gray-500 mt-1">
-                                    {feature.description}
-                                  </div>
-                                )}
-                                <div className="text-xs text-gray-400 mt-1">
-                                  {feature.slug}
-                                </div>
-                              </td>
-                              {plans.map((plan) => {
-                                const isEnabled = enabledPlans.has(plan.id);
-                                return (
-                                  <td key={plan.id} className="px-6 py-4 text-center">
-                                    {isEnabled ? (
-                                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-100">
-                                        <Check className="w-4 h-4 text-green-600" />
-                                      </span>
-                                    ) : (
-                                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100">
-                                        <X className="w-4 h-4 text-gray-400" />
-                                      </span>
-                                    )}
-                                  </td>
-                                );
-                              })}
-                              <td className="px-6 py-4 whitespace-nowrap text-right">
-                                <div className="flex items-center justify-end gap-2">
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleEdit(feature)}
-                                  >
-                                    <Edit2 className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() =>
-                                      handleDelete(feature.id, feature.name)
+                    return (
+                      <tr key={feature.id} className={isEditing ? "bg-blue-50" : ""}>
+                        {isEditing ? (
+                          <>
+                            <td colSpan={plans.length + 2} className="px-6 py-4">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-2">Feature Name *</label>
+                                  <input
+                                    type="text"
+                                    value={formData.name}
+                                    onChange={(e) =>
+                                      setFormData({
+                                        ...formData,
+                                        name: e.target.value,
+                                      })
                                     }
-                                    disabled={isDeleting === feature.id}
-                                  >
-                                    {isDeleting === feature.id ? (
-                                      <Loader2 className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                      <Trash2 className="h-4 w-4 text-red-600" />
-                                    )}
-                                  </Button>
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                  />
                                 </div>
-                              </td>
-                            </>
-                          )}
-                        </tr>
-                      );
-                    })}
-                  </>
-                )
-              )}
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-2">Slug *</label>
+                                  <input
+                                    type="text"
+                                    value={formData.slug}
+                                    onChange={(e) =>
+                                      setFormData({
+                                        ...formData,
+                                        slug: e.target.value,
+                                      })
+                                    }
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                  />
+                                </div>
+                                <div className="md:col-span-2">
+                                  <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                                  <textarea
+                                    value={formData.description}
+                                    onChange={(e) =>
+                                      setFormData({
+                                        ...formData,
+                                        description: e.target.value,
+                                      })
+                                    }
+                                    rows={2}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-2">Category *</label>
+                                  <select
+                                    value={formData.category}
+                                    onChange={(e) =>
+                                      setFormData({
+                                        ...formData,
+                                        category: e.target.value,
+                                      })
+                                    }
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                  >
+                                    {categoryOptions.map((opt) => (
+                                      <option key={opt.value} value={opt.value}>
+                                        {opt.label}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                              </div>
+                              <div className="flex gap-3 mt-4">
+                                <Button onClick={handleSave} disabled={isSaving} size="sm">
+                                  {isSaving ? (
+                                    <>
+                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                      Saving...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Save className="mr-2 h-4 w-4" />
+                                      Save
+                                    </>
+                                  )}
+                                </Button>
+                                <Button variant="outline" onClick={handleCancel} size="sm">
+                                  <X className="mr-2 h-4 w-4" />
+                                  Cancel
+                                </Button>
+                              </div>
+                            </td>
+                          </>
+                        ) : (
+                          <>
+                            <td className="px-6 py-4 whitespace-nowrap sticky left-0 bg-white">
+                              <div className="text-sm font-medium text-gray-900">{feature.name}</div>
+                              {feature.description && (
+                                <div className="text-xs text-gray-500 mt-1">{feature.description}</div>
+                              )}
+                              <div className="text-xs text-gray-400 mt-1">{feature.slug}</div>
+                            </td>
+                            {plans.map((plan) => {
+                              const isEnabled = enabledPlans.has(plan.id);
+                              return (
+                                <td key={plan.id} className="px-6 py-4 text-center">
+                                  {isEnabled ? (
+                                    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-100">
+                                      <Check className="w-4 h-4 text-green-600" />
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100">
+                                      <X className="w-4 h-4 text-gray-400" />
+                                    </span>
+                                  )}
+                                </td>
+                              );
+                            })}
+                            <td className="px-6 py-4 whitespace-nowrap text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <Button variant="outline" size="sm" onClick={() => handleEdit(feature)}>
+                                  <Edit2 className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleDelete(feature.id, feature.name)}
+                                  disabled={isDeleting === feature.id}
+                                >
+                                  {isDeleting === feature.id ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="h-4 w-4 text-red-600" />
+                                  )}
+                                </Button>
+                              </div>
+                            </td>
+                          </>
+                        )}
+                      </tr>
+                    );
+                  })}
+                </>
+              ))}
             </tbody>
           </table>
         </div>

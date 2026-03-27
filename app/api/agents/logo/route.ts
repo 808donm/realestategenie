@@ -30,32 +30,23 @@ export async function POST(request: NextRequest) {
     if (!allowedTypes.includes(file.type)) {
       return NextResponse.json(
         { error: "Invalid file type. Only JPEG, PNG, WebP, and SVG are allowed." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Validate file size (5MB max)
     const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
-      return NextResponse.json(
-        { error: "File too large. Maximum size is 5MB." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "File too large. Maximum size is 5MB." }, { status: 400 });
     }
 
     // Delete old logo if it exists
-    const { data: agent } = await supabase
-      .from("agents")
-      .select("company_logo_url")
-      .eq("id", user.id)
-      .single();
+    const { data: agent } = await supabase.from("agents").select("company_logo_url").eq("id", user.id).single();
 
     if (agent?.company_logo_url) {
       const oldPath = agent.company_logo_url.split("/").pop();
       if (oldPath) {
-        await supabase.storage
-          .from("agent-photos")
-          .remove([`logos/${oldPath}`]);
+        await supabase.storage.from("agent-photos").remove([`logos/${oldPath}`]);
       }
     }
 
@@ -74,10 +65,7 @@ export async function POST(request: NextRequest) {
 
     if (uploadError) {
       console.error("Upload error:", uploadError);
-      return NextResponse.json(
-        { error: "Failed to upload file" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to upload file" }, { status: 500 });
     }
 
     // Get public URL
@@ -93,19 +81,13 @@ export async function POST(request: NextRequest) {
 
     if (updateError) {
       console.error("Database update error:", updateError);
-      return NextResponse.json(
-        { error: "Failed to update profile" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to update profile" }, { status: 500 });
     }
 
     return NextResponse.json({ url: publicUrl });
   } catch (error: any) {
     console.error("Company logo upload error:", error);
-    return NextResponse.json(
-      { error: error.message || "Upload failed" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message || "Upload failed" }, { status: 500 });
   }
 }
 
@@ -126,33 +108,21 @@ export async function DELETE(request: NextRequest) {
 
   try {
     // Get current logo
-    const { data: agent } = await supabase
-      .from("agents")
-      .select("company_logo_url")
-      .eq("id", user.id)
-      .single();
+    const { data: agent } = await supabase.from("agents").select("company_logo_url").eq("id", user.id).single();
 
     if (agent?.company_logo_url) {
       const filePath = agent.company_logo_url.split("/").pop();
       if (filePath) {
-        await supabase.storage
-          .from("agent-photos")
-          .remove([`logos/${filePath}`]);
+        await supabase.storage.from("agent-photos").remove([`logos/${filePath}`]);
       }
     }
 
     // Remove from database
-    await supabase
-      .from("agents")
-      .update({ company_logo_url: null })
-      .eq("id", user.id);
+    await supabase.from("agents").update({ company_logo_url: null }).eq("id", user.id);
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error("Delete logo error:", error);
-    return NextResponse.json(
-      { error: error.message || "Delete failed" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message || "Delete failed" }, { status: 500 });
   }
 }

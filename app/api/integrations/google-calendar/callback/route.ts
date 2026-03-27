@@ -59,9 +59,7 @@ export async function GET(request: NextRequest) {
     }
 
     const tokens = await response.json();
-    const expiresAt = new Date(
-      Date.now() + tokens.expires_in * 1000
-    ).toISOString();
+    const expiresAt = new Date(Date.now() + tokens.expires_in * 1000).toISOString();
 
     await supabase
       .from("integrations")

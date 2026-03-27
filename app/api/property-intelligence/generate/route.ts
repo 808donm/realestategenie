@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
-import {
-  generatePropertyIntelligencePDF,
-  type PropertyReportData,
-} from "@/lib/documents/property-intelligence-report";
+import { generatePropertyIntelligencePDF, type PropertyReportData } from "@/lib/documents/property-intelligence-report";
 import type { AgentBranding } from "@/lib/documents/neighborhood-profile-generator";
 
 /** Fetch an image URL and return a base64 data URI, or null on failure. */
@@ -46,16 +43,15 @@ export async function POST(request: NextRequest) {
     const property: PropertyReportData = body.property;
 
     if (!property || !property.address) {
-      return NextResponse.json(
-        { error: "property.address is required" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "property.address is required" }, { status: 400 });
     }
 
     // Fetch agent branding
     const { data: agent } = await supabase
       .from("agents")
-      .select("display_name, email, phone_e164, license_number, photo_url, headshot_url, company_logo_url, brokerage_name")
+      .select(
+        "display_name, email, phone_e164, license_number, photo_url, headshot_url, company_logo_url, brokerage_name",
+      )
       .eq("id", user.id)
       .single();
 
@@ -110,9 +106,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (err: any) {
     console.error("[property-intelligence/generate] Error:", err);
-    return NextResponse.json(
-      { error: err.message || "Failed to generate report" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: err.message || "Failed to generate report" }, { status: 500 });
   }
 }

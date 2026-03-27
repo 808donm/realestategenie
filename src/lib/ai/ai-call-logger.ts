@@ -11,12 +11,12 @@ import { logApiCall } from "@/lib/api-call-logger";
 
 // Token pricing per 1M tokens (as of 2026)
 const TOKEN_PRICING: Record<string, { input: number; output: number }> = {
-  "openai/gpt-4o-mini": { input: 0.15, output: 0.60 },
-  "openai/gpt-4o": { input: 2.50, output: 10.00 },
-  "openai/gpt-4-turbo": { input: 10.00, output: 30.00 },
-  "anthropic/claude-opus-4": { input: 15.00, output: 75.00 },
-  "anthropic/claude-sonnet-4": { input: 3.00, output: 15.00 },
-  "anthropic/claude-haiku-4": { input: 0.80, output: 4.00 },
+  "openai/gpt-4o-mini": { input: 0.15, output: 0.6 },
+  "openai/gpt-4o": { input: 2.5, output: 10.0 },
+  "openai/gpt-4-turbo": { input: 10.0, output: 30.0 },
+  "anthropic/claude-opus-4": { input: 15.0, output: 75.0 },
+  "anthropic/claude-sonnet-4": { input: 3.0, output: 15.0 },
+  "anthropic/claude-haiku-4": { input: 0.8, output: 4.0 },
 };
 
 function estimateCost(model: string, promptTokens: number, completionTokens: number): number {
@@ -53,7 +53,8 @@ export async function trackedGenerateText(params: {
   if (params.system) genParams.system = params.system;
   if (params.messages) genParams.messages = params.messages;
   else if (params.prompt) genParams.prompt = params.prompt;
-  if (params.maxTokens || params.maxOutputTokens) genParams.maxOutputTokens = params.maxTokens || params.maxOutputTokens;
+  if (params.maxTokens || params.maxOutputTokens)
+    genParams.maxOutputTokens = params.maxTokens || params.maxOutputTokens;
 
   const result = await generateText(genParams);
 
@@ -137,7 +138,7 @@ async function flushAiBuffer(): Promise<void> {
     const { supabaseAdmin } = await import("@/lib/supabase/admin");
 
     // Write to ai_token_usage table (detailed token tracking)
-    const tokenRows = entries.map(e => ({
+    const tokenRows = entries.map((e) => ({
       model: e.model,
       prompt_tokens: e.promptTokens,
       completion_tokens: e.completionTokens,

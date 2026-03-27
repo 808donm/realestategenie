@@ -5,12 +5,26 @@ import Link from "next/link";
 import jsPDF from "jspdf";
 import * as XLSX from "xlsx";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
-  PieChart, Pie, Cell,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+  PieChart,
+  Pie,
+  Cell,
 } from "recharts";
 
 const fmt = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
-const fmtPrecise = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtPrecise = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
 
 type Period = "this_month" | "last_30" | "this_quarter" | "ytd";
 
@@ -24,14 +38,70 @@ interface Deal {
 }
 
 const FALLBACK_DATA: Deal[] = [
-  { propertyAddress: "1234 Oak Ridge Dr", salePrice: 425000, commission: 12750, agentName: "Sarah Mitchell", agentSplitPct: 70, closeDate: "2025-01-15" },
-  { propertyAddress: "567 Maple Ave #202", salePrice: 310000, commission: 9300, agentName: "James Carter", agentSplitPct: 65, closeDate: "2025-01-18" },
-  { propertyAddress: "890 Pine Valley Ct", salePrice: 575000, commission: 17250, agentName: "Ashley Brown", agentSplitPct: 75, closeDate: "2025-01-22" },
-  { propertyAddress: "2100 Sunset Blvd", salePrice: 380000, commission: 11400, agentName: "Maria Lopez", agentSplitPct: 70, closeDate: "2025-01-25" },
-  { propertyAddress: "45 Lakeview Terrace", salePrice: 695000, commission: 20850, agentName: "Ashley Brown", agentSplitPct: 75, closeDate: "2025-02-01" },
-  { propertyAddress: "333 Elm Street", salePrice: 260000, commission: 7800, agentName: "Tyler Nguyen", agentSplitPct: 60, closeDate: "2025-02-04" },
-  { propertyAddress: "1678 Birch Lane", salePrice: 440000, commission: 13200, agentName: "Sarah Mitchell", agentSplitPct: 70, closeDate: "2025-02-08" },
-  { propertyAddress: "912 Willow Creek Rd", salePrice: 520000, commission: 15600, agentName: "David Kim", agentSplitPct: 65, closeDate: "2025-02-12" },
+  {
+    propertyAddress: "1234 Oak Ridge Dr",
+    salePrice: 425000,
+    commission: 12750,
+    agentName: "Sarah Mitchell",
+    agentSplitPct: 70,
+    closeDate: "2025-01-15",
+  },
+  {
+    propertyAddress: "567 Maple Ave #202",
+    salePrice: 310000,
+    commission: 9300,
+    agentName: "James Carter",
+    agentSplitPct: 65,
+    closeDate: "2025-01-18",
+  },
+  {
+    propertyAddress: "890 Pine Valley Ct",
+    salePrice: 575000,
+    commission: 17250,
+    agentName: "Ashley Brown",
+    agentSplitPct: 75,
+    closeDate: "2025-01-22",
+  },
+  {
+    propertyAddress: "2100 Sunset Blvd",
+    salePrice: 380000,
+    commission: 11400,
+    agentName: "Maria Lopez",
+    agentSplitPct: 70,
+    closeDate: "2025-01-25",
+  },
+  {
+    propertyAddress: "45 Lakeview Terrace",
+    salePrice: 695000,
+    commission: 20850,
+    agentName: "Ashley Brown",
+    agentSplitPct: 75,
+    closeDate: "2025-02-01",
+  },
+  {
+    propertyAddress: "333 Elm Street",
+    salePrice: 260000,
+    commission: 7800,
+    agentName: "Tyler Nguyen",
+    agentSplitPct: 60,
+    closeDate: "2025-02-04",
+  },
+  {
+    propertyAddress: "1678 Birch Lane",
+    salePrice: 440000,
+    commission: 13200,
+    agentName: "Sarah Mitchell",
+    agentSplitPct: 70,
+    closeDate: "2025-02-08",
+  },
+  {
+    propertyAddress: "912 Willow Creek Rd",
+    salePrice: 520000,
+    commission: 15600,
+    agentName: "David Kim",
+    agentSplitPct: 65,
+    closeDate: "2025-02-12",
+  },
 ];
 
 const PERIOD_LABELS: Record<Period, string> = {
@@ -109,8 +179,12 @@ export default function TeamCommissionSplitClient() {
 
     data.forEach((deal) => {
       y += 7;
-      if (y > 280) { doc.addPage(); y = 20; }
-      const addr = deal.propertyAddress.length > 22 ? deal.propertyAddress.substring(0, 22) + "..." : deal.propertyAddress;
+      if (y > 280) {
+        doc.addPage();
+        y = 20;
+      }
+      const addr =
+        deal.propertyAddress.length > 22 ? deal.propertyAddress.substring(0, 22) + "..." : deal.propertyAddress;
       doc.text(addr, colX[0], y);
       doc.text(fmt.format(deal.salePrice), colX[1], y);
       doc.text(fmt.format(deal.commission), colX[2], y);
@@ -124,7 +198,7 @@ export default function TeamCommissionSplitClient() {
   };
 
   const exportToExcel = () => {
-    const rows = data.map(deal => ({
+    const rows = data.map((deal) => ({
       Property: deal.propertyAddress,
       "Sale Price": deal.salePrice,
       Commission: deal.commission,
@@ -143,22 +217,28 @@ export default function TeamCommissionSplitClient() {
   return (
     <div>
       {/* Integration Notice */}
-      <div style={{
-        background: isLive ? "#f0fdf4" : "#eff6ff",
-        border: isLive ? "1px solid #bbf7d0" : "1px solid #bfdbfe",
-        borderRadius: 8,
-        padding: "12px 16px",
-        marginBottom: 20,
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        fontSize: 13,
-      }}>
+      <div
+        style={{
+          background: isLive ? "#f0fdf4" : "#eff6ff",
+          border: isLive ? "1px solid #bbf7d0" : "1px solid #bfdbfe",
+          borderRadius: 8,
+          padding: "12px 16px",
+          marginBottom: 20,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          fontSize: 13,
+        }}
+      >
         <span>
           {isLive ? (
-            <><strong>Live Data</strong> -- Showing live data from your QuickBooks Online integration.</>
+            <>
+              <strong>Live Data</strong> -- Showing live data from your QuickBooks Online integration.
+            </>
           ) : (
-            <><strong>Sample Data</strong> -- Connect your QuickBooks Online integration to see live data.</>
+            <>
+              <strong>Sample Data</strong> -- Connect your QuickBooks Online integration to see live data.
+            </>
           )}
         </span>
         {!isLive && (
@@ -169,7 +249,16 @@ export default function TeamCommissionSplitClient() {
       </div>
 
       {/* Period Selector + Export */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 20,
+          flexWrap: "wrap",
+          gap: 12,
+        }}
+      >
         <div style={{ display: "flex", gap: 8 }}>
           {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
             <button
@@ -206,7 +295,19 @@ export default function TeamCommissionSplitClient() {
           >
             Export PDF
           </button>
-          <button onClick={exportToExcel} style={{ padding: "8px 20px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>
+          <button
+            onClick={exportToExcel}
+            style={{
+              padding: "8px 20px",
+              background: "#fff",
+              color: "#374151",
+              border: "1px solid #d1d5db",
+              borderRadius: 8,
+              fontWeight: 600,
+              cursor: "pointer",
+              fontSize: 13,
+            }}
+          >
             Export Excel
           </button>
         </div>
@@ -214,19 +315,51 @@ export default function TeamCommissionSplitClient() {
 
       {/* Summary Cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 24 }}>
-        <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 16, borderTop: "3px solid #8b5cf6" }}>
+        <div
+          style={{
+            background: "#fff",
+            border: "1px solid #e5e7eb",
+            borderRadius: 10,
+            padding: 16,
+            borderTop: "3px solid #8b5cf6",
+          }}
+        >
           <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>Total Commission</div>
           <div style={{ fontSize: 20, fontWeight: 800 }}>{fmt.format(totals.totalComm)}</div>
         </div>
-        <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 16, borderTop: "3px solid #10b981" }}>
+        <div
+          style={{
+            background: "#fff",
+            border: "1px solid #e5e7eb",
+            borderRadius: 10,
+            padding: 16,
+            borderTop: "3px solid #10b981",
+          }}
+        >
           <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>Agent Portion</div>
           <div style={{ fontSize: 20, fontWeight: 800, color: "#059669" }}>{fmt.format(totals.totalAgent)}</div>
         </div>
-        <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 16, borderTop: "3px solid #3b82f6" }}>
+        <div
+          style={{
+            background: "#fff",
+            border: "1px solid #e5e7eb",
+            borderRadius: 10,
+            padding: 16,
+            borderTop: "3px solid #3b82f6",
+          }}
+        >
           <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>House Portion</div>
           <div style={{ fontSize: 20, fontWeight: 800, color: "#2563eb" }}>{fmt.format(totals.totalHouse)}</div>
         </div>
-        <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 16, borderTop: "3px solid #f59e0b" }}>
+        <div
+          style={{
+            background: "#fff",
+            border: "1px solid #e5e7eb",
+            borderRadius: 10,
+            padding: 16,
+            borderTop: "3px solid #f59e0b",
+          }}
+        >
           <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>House %</div>
           <div style={{ fontSize: 20, fontWeight: 800, color: "#d97706" }}>{totals.housePct.toFixed(1)}%</div>
         </div>
@@ -234,7 +367,9 @@ export default function TeamCommissionSplitClient() {
 
       {/* Commission Split Charts */}
       <div style={{ display: "flex", gap: 16, marginBottom: 20, flexWrap: "wrap" }}>
-        <div style={{ flex: "1 1 280px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20 }}>
+        <div
+          style={{ flex: "1 1 280px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20 }}
+        >
           <h3 style={{ margin: "0 0 12px 0", fontSize: 15, fontWeight: 700 }}>Agent vs House Split</h3>
           {(() => {
             const splitData = [
@@ -244,8 +379,19 @@ export default function TeamCommissionSplitClient() {
             return (
               <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
-                  <Pie data={splitData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} innerRadius={40} label={(props: any) => `${props.name}: ${fmt.format(props.value)}`}>
-                    {splitData.map((d, i) => <Cell key={i} fill={d.color} />)}
+                  <Pie
+                    data={splitData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    innerRadius={40}
+                    label={(props: any) => `${props.name}: ${fmt.format(props.value)}`}
+                  >
+                    {splitData.map((d, i) => (
+                      <Cell key={i} fill={d.color} />
+                    ))}
                   </Pie>
                   <Tooltip formatter={(value: any) => fmt.format(value)} />
                 </PieChart>
@@ -253,10 +399,19 @@ export default function TeamCommissionSplitClient() {
             );
           })()}
         </div>
-        <div style={{ flex: "2 1 400px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20 }}>
+        <div
+          style={{ flex: "2 1 400px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20 }}
+        >
           <h3 style={{ margin: "0 0 12px 0", fontSize: 15, fontWeight: 700 }}>Commission by Deal</h3>
           <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={data.map((d) => ({ address: d.propertyAddress.split(" ").slice(0, 2).join(" "), agent: agentPortion(d), house: housePortion(d) }))} margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>
+            <BarChart
+              data={data.map((d) => ({
+                address: d.propertyAddress.split(" ").slice(0, 2).join(" "),
+                agent: agentPortion(d),
+                house: housePortion(d),
+              }))}
+              margin={{ top: 5, right: 10, bottom: 5, left: 10 }}
+            >
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis dataKey="address" tick={{ fontSize: 9 }} interval={0} angle={-20} textAnchor="end" height={50} />
               <YAxis tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 10 }} />
@@ -271,16 +426,18 @@ export default function TeamCommissionSplitClient() {
 
       {/* Top Agent */}
       {topAgentByVolume && (
-        <div style={{
-          background: "#f0fdf4",
-          border: "1px solid #bbf7d0",
-          borderRadius: 10,
-          padding: "14px 20px",
-          marginBottom: 20,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}>
+        <div
+          style={{
+            background: "#f0fdf4",
+            border: "1px solid #bbf7d0",
+            borderRadius: 10,
+            padding: "14px 20px",
+            marginBottom: 20,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
           <div>
             <div style={{ fontSize: 12, fontWeight: 600, color: "#166534" }}>Top Agent by Commission Volume</div>
             <div style={{ fontSize: 18, fontWeight: 800, color: "#14532d" }}>{topAgentByVolume.name}</div>
@@ -294,13 +451,83 @@ export default function TeamCommissionSplitClient() {
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>
-              <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 700, fontSize: 12, borderBottom: "2px solid #e5e7eb" }}>Property</th>
-              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, borderBottom: "2px solid #e5e7eb" }}>Sale Price</th>
-              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, borderBottom: "2px solid #e5e7eb" }}>Commission</th>
-              <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 700, fontSize: 12, borderBottom: "2px solid #e5e7eb" }}>Agent</th>
-              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, borderBottom: "2px solid #e5e7eb" }}>Split %</th>
-              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, borderBottom: "2px solid #e5e7eb" }}>Agent Portion</th>
-              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, borderBottom: "2px solid #e5e7eb" }}>House Portion</th>
+              <th
+                style={{
+                  padding: "10px 12px",
+                  textAlign: "left",
+                  fontWeight: 700,
+                  fontSize: 12,
+                  borderBottom: "2px solid #e5e7eb",
+                }}
+              >
+                Property
+              </th>
+              <th
+                style={{
+                  padding: "10px 12px",
+                  textAlign: "right",
+                  fontWeight: 700,
+                  fontSize: 12,
+                  borderBottom: "2px solid #e5e7eb",
+                }}
+              >
+                Sale Price
+              </th>
+              <th
+                style={{
+                  padding: "10px 12px",
+                  textAlign: "right",
+                  fontWeight: 700,
+                  fontSize: 12,
+                  borderBottom: "2px solid #e5e7eb",
+                }}
+              >
+                Commission
+              </th>
+              <th
+                style={{
+                  padding: "10px 12px",
+                  textAlign: "left",
+                  fontWeight: 700,
+                  fontSize: 12,
+                  borderBottom: "2px solid #e5e7eb",
+                }}
+              >
+                Agent
+              </th>
+              <th
+                style={{
+                  padding: "10px 12px",
+                  textAlign: "right",
+                  fontWeight: 700,
+                  fontSize: 12,
+                  borderBottom: "2px solid #e5e7eb",
+                }}
+              >
+                Split %
+              </th>
+              <th
+                style={{
+                  padding: "10px 12px",
+                  textAlign: "right",
+                  fontWeight: 700,
+                  fontSize: 12,
+                  borderBottom: "2px solid #e5e7eb",
+                }}
+              >
+                Agent Portion
+              </th>
+              <th
+                style={{
+                  padding: "10px 12px",
+                  textAlign: "right",
+                  fontWeight: 700,
+                  fontSize: 12,
+                  borderBottom: "2px solid #e5e7eb",
+                }}
+              >
+                House Portion
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -310,22 +537,52 @@ export default function TeamCommissionSplitClient() {
                   <strong>{deal.propertyAddress}</strong>
                   <div style={{ fontSize: 11, color: "#9ca3af" }}>{deal.closeDate}</div>
                 </td>
-                <td style={{ padding: "10px 12px", textAlign: "right", fontSize: 13, borderBottom: "1px solid #f3f4f6" }}>
+                <td
+                  style={{ padding: "10px 12px", textAlign: "right", fontSize: 13, borderBottom: "1px solid #f3f4f6" }}
+                >
                   {fmt.format(deal.salePrice)}
                 </td>
-                <td style={{ padding: "10px 12px", textAlign: "right", fontSize: 13, borderBottom: "1px solid #f3f4f6", fontWeight: 600 }}>
+                <td
+                  style={{
+                    padding: "10px 12px",
+                    textAlign: "right",
+                    fontSize: 13,
+                    borderBottom: "1px solid #f3f4f6",
+                    fontWeight: 600,
+                  }}
+                >
                   {fmtPrecise.format(deal.commission)}
                 </td>
                 <td style={{ padding: "10px 12px", fontSize: 13, borderBottom: "1px solid #f3f4f6" }}>
                   {deal.agentName}
                 </td>
-                <td style={{ padding: "10px 12px", textAlign: "right", fontSize: 13, borderBottom: "1px solid #f3f4f6" }}>
+                <td
+                  style={{ padding: "10px 12px", textAlign: "right", fontSize: 13, borderBottom: "1px solid #f3f4f6" }}
+                >
                   {deal.agentSplitPct}%
                 </td>
-                <td style={{ padding: "10px 12px", textAlign: "right", fontSize: 13, borderBottom: "1px solid #f3f4f6", color: "#059669", fontWeight: 600 }}>
+                <td
+                  style={{
+                    padding: "10px 12px",
+                    textAlign: "right",
+                    fontSize: 13,
+                    borderBottom: "1px solid #f3f4f6",
+                    color: "#059669",
+                    fontWeight: 600,
+                  }}
+                >
                   {fmtPrecise.format(agentPortion(deal))}
                 </td>
-                <td style={{ padding: "10px 12px", textAlign: "right", fontSize: 13, borderBottom: "1px solid #f3f4f6", color: "#2563eb", fontWeight: 600 }}>
+                <td
+                  style={{
+                    padding: "10px 12px",
+                    textAlign: "right",
+                    fontSize: 13,
+                    borderBottom: "1px solid #f3f4f6",
+                    color: "#2563eb",
+                    fontWeight: 600,
+                  }}
+                >
                   {fmtPrecise.format(housePortion(deal))}
                 </td>
               </tr>
@@ -344,10 +601,26 @@ export default function TeamCommissionSplitClient() {
               </td>
               <td style={{ padding: "12px 12px", borderTop: "2px solid #e5e7eb" }} />
               <td style={{ padding: "12px 12px", borderTop: "2px solid #e5e7eb" }} />
-              <td style={{ padding: "12px 12px", textAlign: "right", fontSize: 13, borderTop: "2px solid #e5e7eb", color: "#059669" }}>
+              <td
+                style={{
+                  padding: "12px 12px",
+                  textAlign: "right",
+                  fontSize: 13,
+                  borderTop: "2px solid #e5e7eb",
+                  color: "#059669",
+                }}
+              >
                 {fmtPrecise.format(totals.totalAgent)}
               </td>
-              <td style={{ padding: "12px 12px", textAlign: "right", fontSize: 13, borderTop: "2px solid #e5e7eb", color: "#2563eb" }}>
+              <td
+                style={{
+                  padding: "12px 12px",
+                  textAlign: "right",
+                  fontSize: 13,
+                  borderTop: "2px solid #e5e7eb",
+                  color: "#2563eb",
+                }}
+              >
                 {fmtPrecise.format(totals.totalHouse)}
               </td>
             </tr>

@@ -8,7 +8,9 @@ export async function GET(req: NextRequest) {
   }
 
   const supabase = await supabaseServer();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const searchTerm = `%${q}%`;
@@ -18,7 +20,9 @@ export async function GET(req: NextRequest) {
     .from("lead_submissions")
     .select("id, event_id, payload, heat_score, pipeline_stage, created_at")
     .eq("agent_id", user.id)
-    .or(`payload->>name.ilike.${searchTerm},payload->>email.ilike.${searchTerm},payload->>phone_e164.ilike.${searchTerm}`)
+    .or(
+      `payload->>name.ilike.${searchTerm},payload->>email.ilike.${searchTerm},payload->>phone_e164.ilike.${searchTerm}`,
+    )
     .order("created_at", { ascending: false })
     .limit(5);
 

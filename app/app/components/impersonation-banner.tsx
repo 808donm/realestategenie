@@ -7,11 +7,9 @@ export default async function ImpersonationBanner() {
   if (!state) return null;
 
   // Look up the target user's name/email for display
-  const admin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } }
-  );
+  const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+    auth: { persistSession: false },
+  });
 
   const { data: target } = await admin
     .from("agents")

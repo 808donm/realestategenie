@@ -66,7 +66,9 @@ export default function PageHelp({ title, description, tips }: PageHelpProps) {
               <div style={{ fontWeight: 600, fontSize: 12, color: "#6b7280", marginBottom: 6 }}>Tips:</div>
               <ul style={{ margin: 0, paddingLeft: 16 }}>
                 {tips.map((tip, i) => (
-                  <li key={i} style={{ color: "#4b5563", lineHeight: 1.6, marginBottom: 4, fontSize: 12 }}>{tip}</li>
+                  <li key={i} style={{ color: "#4b5563", lineHeight: 1.6, marginBottom: 4, fontSize: 12 }}>
+                    {tip}
+                  </li>
                 ))}
               </ul>
             </>

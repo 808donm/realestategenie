@@ -252,7 +252,9 @@ export function buildPageContext(pathname: string): string {
 export function buildPropertyContext(property: any): string {
   if (!property) return "";
 
-  const parts: string[] = ["The agent is currently viewing a PROPERTY DETAIL MODAL. Here is everything you know about this property:"];
+  const parts: string[] = [
+    "The agent is currently viewing a PROPERTY DETAIL MODAL. Here is everything you know about this property:",
+  ];
 
   // Basic info
   const addr = property.address?.oneLine || property.address || property.UnparsedAddress;
@@ -270,13 +272,15 @@ export function buildPropertyContext(property: any): string {
   const avmHigh = property.avmHigh || property.avm?.amount?.high;
   if (listPrice) parts.push(`List Price: $${Number(listPrice).toLocaleString()}`);
   if (avmValue) parts.push(`AVM (Estimated Value): $${Number(avmValue).toLocaleString()}`);
-  if (avmLow && avmHigh) parts.push(`AVM Range: $${Number(avmLow).toLocaleString()} - $${Number(avmHigh).toLocaleString()}`);
+  if (avmLow && avmHigh)
+    parts.push(`AVM Range: $${Number(avmLow).toLocaleString()} - $${Number(avmHigh).toLocaleString()}`);
 
   // Physical
   const beds = property.beds || property.building?.rooms?.beds || property.BedroomsTotal;
   const baths = property.baths || property.building?.rooms?.bathsFull || property.BathroomsTotalInteger;
   const sqft = property.sqft || property.building?.size?.livingSize || property.LivingArea;
-  if (beds || baths || sqft) parts.push(`Size: ${beds || "?"}bd / ${baths || "?"}ba / ${sqft ? sqft.toLocaleString() + " sqft" : "?"}`);
+  if (beds || baths || sqft)
+    parts.push(`Size: ${beds || "?"}bd / ${baths || "?"}ba / ${sqft ? sqft.toLocaleString() + " sqft" : "?"}`);
 
   const yearBuilt = property.yearBuilt || property.building?.summary?.yearBuilt || property.YearBuilt;
   if (yearBuilt) parts.push(`Year Built: ${yearBuilt} (${new Date().getFullYear() - yearBuilt} years old)`);
@@ -290,7 +294,8 @@ export function buildPropertyContext(property: any): string {
   // Financial
   const lastSalePrice = property.lastSalePrice || property.sale?.amount?.saleAmt;
   const lastSaleDate = property.lastSaleDate || property.sale?.amount?.saleTransDate;
-  if (lastSalePrice) parts.push(`Last Sale: $${Number(lastSalePrice).toLocaleString()}${lastSaleDate ? ` on ${lastSaleDate}` : ""}`);
+  if (lastSalePrice)
+    parts.push(`Last Sale: $${Number(lastSalePrice).toLocaleString()}${lastSaleDate ? ` on ${lastSaleDate}` : ""}`);
 
   const equity = property.estimatedEquity || property.homeEquity?.equity;
   if (equity != null) parts.push(`Estimated Equity: $${Number(equity).toLocaleString()}`);
@@ -340,7 +345,10 @@ export function buildPropertyContext(property: any): string {
   if (office) parts.push(`Office: ${office}`);
 
   const tenure = property.ownershipType || property.OwnershipType;
-  if (tenure) parts.push(`Land Tenure: ${tenure}${String(tenure).toLowerCase().includes("lease") ? " WARNING: LEASEHOLD - the land is not owned, only leased. Monthly lease rent may apply." : ""}`);
+  if (tenure)
+    parts.push(
+      `Land Tenure: ${tenure}${String(tenure).toLowerCase().includes("lease") ? " WARNING: LEASEHOLD - the land is not owned, only leased. Monthly lease rent may apply." : ""}`,
+    );
 
   // Description excerpt
   const desc = property.description || property.PublicRemarks;
@@ -351,14 +359,16 @@ export function buildPropertyContext(property: any): string {
   if (rentalEst) parts.push(`\nRental Estimate: $${Number(rentalEst).toLocaleString()}/month`);
   const rentalLow = property.rentalLow;
   const rentalHigh = property.rentalHigh;
-  if (rentalLow && rentalHigh) parts.push(`Rental Range: $${Number(rentalLow).toLocaleString()} - $${Number(rentalHigh).toLocaleString()}/month`);
+  if (rentalLow && rentalHigh)
+    parts.push(`Rental Range: $${Number(rentalLow).toLocaleString()} - $${Number(rentalHigh).toLocaleString()}/month`);
   if (property.grossYield) parts.push(`Gross Yield: ${property.grossYield}`);
   if (property.capRate) parts.push(`Cap Rate: ${property.capRate}`);
 
   // Loan details
   if (property.loanBalance) parts.push(`Est. Loan Balance: $${Number(property.loanBalance).toLocaleString()}`);
   if (property.loanCount) parts.push(`Active Loans: ${property.loanCount}`);
-  if (property.monthlyPayment) parts.push(`Est. Monthly Mortgage: $${Number(property.monthlyPayment).toLocaleString()}`);
+  if (property.monthlyPayment)
+    parts.push(`Est. Monthly Mortgage: $${Number(property.monthlyPayment).toLocaleString()}`);
 
   // Tax assessment detail
   if (property.assessedTotal) parts.push(`Assessed Value: $${Number(property.assessedTotal).toLocaleString()}`);
@@ -378,7 +388,9 @@ export function buildPropertyContext(property: any): string {
   if (property.saleHistory?.length) {
     parts.push(`\nSale History (${property.saleHistory.length} transactions):`);
     property.saleHistory.forEach((s: any) => {
-      parts.push(`  ${s.date || "?"}: ${s.amount ? "$" + Number(s.amount).toLocaleString() : "Price not disclosed"} (${s.source || "?"})`);
+      parts.push(
+        `  ${s.date || "?"}: ${s.amount ? "$" + Number(s.amount).toLocaleString() : "Price not disclosed"} (${s.source || "?"})`,
+      );
     });
   }
 
@@ -386,7 +398,9 @@ export function buildPropertyContext(property: any): string {
   if (property.comparableSales?.length) {
     parts.push(`\nComparable Sales (${property.comparableSales.length} comps):`);
     property.comparableSales.forEach((c: any) => {
-      parts.push(`  ${c.address || "?"}: ${c.price ? "$" + Number(c.price).toLocaleString() : "?"} | ${c.beds || "?"}bd/${c.baths || "?"}ba | ${c.sqft ? c.sqft.toLocaleString() + " sqft" : "?"} | Match: ${c.correlation ? Math.round(c.correlation <= 1 ? c.correlation * 100 : c.correlation) + "%" : "?"}`);
+      parts.push(
+        `  ${c.address || "?"}: ${c.price ? "$" + Number(c.price).toLocaleString() : "?"} | ${c.beds || "?"}bd/${c.baths || "?"}ba | ${c.sqft ? c.sqft.toLocaleString() + " sqft" : "?"} | Match: ${c.correlation ? Math.round(c.correlation <= 1 ? c.correlation * 100 : c.correlation) + "%" : "?"}`,
+      );
     });
   }
 

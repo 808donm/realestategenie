@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getEffectiveClient, getEventWithAdminFallback } from "@/lib/supabase/effective-client";
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
 
@@ -21,7 +18,7 @@ export async function POST(
       console.error("[Photo Upload] Auth error:", authError.message);
       return NextResponse.json(
         { error: "Authentication failed. Please refresh the page and try again." },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -45,19 +42,13 @@ export async function POST(
     // Validate file type
     const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
     if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json(
-        { error: "Invalid file type. Only JPEG, PNG, and WebP are allowed." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid file type. Only JPEG, PNG, and WebP are allowed." }, { status: 400 });
     }
 
     // Validate file size (max 5MB)
     const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
-      return NextResponse.json(
-        { error: "File too large. Maximum size is 5MB." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "File too large. Maximum size is 5MB." }, { status: 400 });
     }
 
     // Determine which photo slot to update
@@ -65,10 +56,7 @@ export async function POST(
     const slot = url.searchParams.get("slot") || "primary";
     const validSlots = ["primary", "secondary", "tertiary"];
     if (!validSlots.includes(slot)) {
-      return NextResponse.json(
-        { error: "Invalid slot. Must be primary, secondary, or tertiary." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid slot. Must be primary, secondary, or tertiary." }, { status: 400 });
     }
 
     const columnMap: Record<string, string> = {
@@ -93,10 +81,7 @@ export async function POST(
 
     if (uploadError) {
       console.error("[Photo Upload] Upload error:", uploadError);
-      return NextResponse.json(
-        { error: "Failed to upload file", details: uploadError.message },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to upload file", details: uploadError.message }, { status: 500 });
     }
 
     // Get the public URL
@@ -117,26 +102,17 @@ export async function POST(
       console.error("[Photo Upload] Update error:", updateError);
       // Try to delete the uploaded file if DB update fails
       await supabase.storage.from("property-photos").remove([filePath]);
-      return NextResponse.json(
-        { error: "Failed to update property", details: updateError.message },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to update property", details: updateError.message }, { status: 500 });
     }
 
     return NextResponse.json({ success: true, url: publicUrl });
   } catch (error: any) {
     console.error("[Photo Upload] Unexpected error:", error);
-    return NextResponse.json(
-      { error: "Failed to upload photo", details: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to upload photo", details: error.message }, { status: 500 });
   }
 }
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
 
@@ -153,7 +129,7 @@ export async function DELETE(
       console.error("[Photo Delete] Auth error:", authError.message);
       return NextResponse.json(
         { error: "Authentication failed. Please refresh the page and try again." },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -162,10 +138,7 @@ export async function DELETE(
     const slot = url.searchParams.get("slot") || "primary";
     const validSlots = ["primary", "secondary", "tertiary"];
     if (!validSlots.includes(slot)) {
-      return NextResponse.json(
-        { error: "Invalid slot. Must be primary, secondary, or tertiary." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid slot. Must be primary, secondary, or tertiary." }, { status: 400 });
     }
 
     const columnMap: Record<string, string> = {
@@ -199,9 +172,7 @@ export async function DELETE(
     const filePath = `property-photos/${urlParts[1]}`;
 
     // Delete from storage
-    const { error: deleteError } = await supabase.storage
-      .from("property-photos")
-      .remove([filePath]);
+    const { error: deleteError } = await supabase.storage.from("property-photos").remove([filePath]);
 
     if (deleteError) {
       console.error("[Photo Delete] Storage delete error:", deleteError);
@@ -219,18 +190,12 @@ export async function DELETE(
 
     if (updateError) {
       console.error("[Photo Delete] Update error:", updateError);
-      return NextResponse.json(
-        { error: "Failed to update property", details: updateError.message },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to update property", details: updateError.message }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error("[Photo Delete] Unexpected error:", error);
-    return NextResponse.json(
-      { error: "Failed to delete photo", details: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to delete photo", details: error.message }, { status: 500 });
   }
 }

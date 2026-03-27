@@ -22,7 +22,9 @@ const MAX_HISTORY = 20; // messages sent to AI
 export async function POST(request: NextRequest) {
   try {
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -59,11 +61,7 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Get agent info and integrations ─────────────────────────────
-    const { data: agent } = await supabase
-      .from("agents")
-      .select("display_name")
-      .eq("id", user.id)
-      .single();
+    const { data: agent } = await supabase.from("agents").select("display_name").eq("id", user.id).single();
 
     const agentName = agent?.display_name || "Agent";
 
@@ -73,7 +71,7 @@ export async function POST(request: NextRequest) {
       .eq("agent_id", user.id)
       .eq("status", "connected");
 
-    const connectedIntegrations = (integrations || []).map(i => i.provider);
+    const connectedIntegrations = (integrations || []).map((i) => i.provider);
 
     // ── Determine action context (new or persisted from session) ────
     const effectiveActionContext = actionContext || persistedActionContext;
@@ -88,25 +86,37 @@ export async function POST(request: NextRequest) {
         const zip = enrichedProperty.zip;
         const lat = enrichedProperty.latitude;
         const lng = enrichedProperty.longitude;
-        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000";
+        const baseUrl =
+          process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL
+            ? `https://${process.env.VERCEL_URL}`
+            : "http://localhost:3000";
 
         // Fetch comps, sales history, and market stats in parallel
         const [compsRes, salesRes, marketRes] = await Promise.allSettled([
           // Comps
-          (lat && lng)
-            ? fetch(`${baseUrl}/api/comps?address=${encodeURIComponent(addr)}&latitude=${lat}&longitude=${lng}&compCount=5`, {
-                headers: { Cookie: request.headers.get("cookie") || "" },
-              }).then(r => r.ok ? r.json() : null).catch(() => null)
+          lat && lng
+            ? fetch(
+                `${baseUrl}/api/comps?address=${encodeURIComponent(addr)}&latitude=${lat}&longitude=${lng}&compCount=5`,
+                {
+                  headers: { Cookie: request.headers.get("cookie") || "" },
+                },
+              )
+                .then((r) => (r.ok ? r.json() : null))
+                .catch(() => null)
             : Promise.resolve(null),
           // Sales history
           fetch(`${baseUrl}/api/mls/sales-history?address=${encodeURIComponent(addr)}`, {
             headers: { Cookie: request.headers.get("cookie") || "" },
-          }).then(r => r.ok ? r.json() : null).catch(() => null),
+          })
+            .then((r) => (r.ok ? r.json() : null))
+            .catch(() => null),
           // Market stats
           zip
             ? fetch(`${baseUrl}/api/rentcast/market-stats?zipCode=${zip}`, {
                 headers: { Cookie: request.headers.get("cookie") || "" },
-              }).then(r => r.ok ? r.json() : null).catch(() => null)
+              })
+                .then((r) => (r.ok ? r.json() : null))
+                .catch(() => null)
             : Promise.resolve(null),
         ]);
 
@@ -125,11 +135,13 @@ export async function POST(request: NextRequest) {
 
         const sales = salesRes.status === "fulfilled" ? salesRes.value : null;
         if (sales?.unitHistory?.length || sales?.buildingHistory?.length) {
-          enrichedProperty.saleHistory = (sales.unitHistory || sales.buildingHistory || []).slice(0, 5).map((s: any) => ({
-            date: s.CloseDate || s.date,
-            amount: s.ClosePrice || s.amount,
-            source: s.ListAgentFullName ? "MLS" : (s._source || "public records"),
-          }));
+          enrichedProperty.saleHistory = (sales.unitHistory || sales.buildingHistory || [])
+            .slice(0, 5)
+            .map((s: any) => ({
+              date: s.CloseDate || s.date,
+              amount: s.ClosePrice || s.amount,
+              source: s.ListAgentFullName ? "MLS" : s._source || "public records",
+            }));
         }
 
         const market = marketRes.status === "fulfilled" ? marketRes.value : null;
@@ -166,7 +178,10 @@ export async function POST(request: NextRequest) {
       // Inject action context reminder into user message so the model stays focused
       if (effectiveActionContext) {
         const label = ACTION_LABELS[effectiveActionContext] || effectiveActionContext;
-        messages.push({ role: "user", content: `[Context: We are working on "${label}". Stay focused on this task.]\n\n${message}` });
+        messages.push({
+          role: "user",
+          content: `[Context: We are working on "${label}". Stay focused on this task.]\n\n${message}`,
+        });
       } else {
         messages.push({ role: "user", content: message });
       }
@@ -178,7 +193,7 @@ export async function POST(request: NextRequest) {
     const aiResult = await trackedGenerateText({
       model: MODEL,
       system: systemPrompt,
-      messages: historyForAI.map(m => ({ role: m.role as any, content: m.content })),
+      messages: historyForAI.map((m) => ({ role: m.role as any, content: m.content })),
       temperature: 0.7,
       source: "hoku-copilot",
       agentId: user.id,
@@ -201,18 +216,23 @@ export async function POST(request: NextRequest) {
       } else if (actionResult.data?.properties?.length) {
         // Format property results clearly for the AI
         const props = actionResult.data.properties.slice(0, 15);
-        const formatted = props.map((p: any, i: number) => {
-          const addr = p.address?.oneLine || p.address || "Unknown";
-          const beds = p.building?.rooms?.beds || p.beds || "?";
-          const baths = p.building?.rooms?.bathsFull || p.baths || "?";
-          const avm = p.avm?.amount?.value || p.score ? `Score: ${p.score}` : "";
-          const owner = p.owner?.owner1?.fullName || p.ownerName || "";
-          const absentee = p.owner?.absenteeOwnerStatus === "A" || p.owner?.absenteeOwnerStatus?.includes("Absentee") ? "Absentee" : "";
-          const mailing = p.owner?.mailingAddressOneLine || "";
-          const tier = p.tier || "";
-          const reasoning = p.reasoning || "";
-          return `${i + 1}. ${addr} | ${beds}bd ${baths}ba | ${owner} ${absentee} ${mailing ? `(Mailing: ${mailing})` : ""} ${avm} ${tier} ${reasoning}`.trim();
-        }).join("\n");
+        const formatted = props
+          .map((p: any, i: number) => {
+            const addr = p.address?.oneLine || p.address || "Unknown";
+            const beds = p.building?.rooms?.beds || p.beds || "?";
+            const baths = p.building?.rooms?.bathsFull || p.baths || "?";
+            const avm = p.avm?.amount?.value || p.score ? `Score: ${p.score}` : "";
+            const owner = p.owner?.owner1?.fullName || p.ownerName || "";
+            const absentee =
+              p.owner?.absenteeOwnerStatus === "A" || p.owner?.absenteeOwnerStatus?.includes("Absentee")
+                ? "Absentee"
+                : "";
+            const mailing = p.owner?.mailingAddressOneLine || "";
+            const tier = p.tier || "";
+            const reasoning = p.reasoning || "";
+            return `${i + 1}. ${addr} | ${beds}bd ${baths}ba | ${owner} ${absentee} ${mailing ? `(Mailing: ${mailing})` : ""} ${avm} ${tier} ${reasoning}`.trim();
+          })
+          .join("\n");
         const total = actionResult.data.total || props.length;
         const aiScored = actionResult.data.aiScored ? " (AI-scored by seller likelihood)" : "";
         const summary = actionResult.data.summary || actionResult.data.topInsight || "";
@@ -229,8 +249,10 @@ export async function POST(request: NextRequest) {
       const followUpHistory = messages.slice(-MAX_HISTORY);
       const { text: followUp } = await trackedGenerateText({
         model: MODEL,
-        system: systemPrompt + "\n\nThe action has been executed. Summarize the results briefly — mention total found and top insights. The property cards are already displayed visually below your message, so do NOT list individual properties again. Instead, highlight the key patterns (e.g., 'Most are long-term holds with high equity' or 'Several have out-of-state mailing addresses'). Suggest ONE specific next step. Do NOT include another <execute> tag. Keep response under 60 words.",
-        messages: followUpHistory.map(m => ({ role: m.role as any, content: m.content })),
+        system:
+          systemPrompt +
+          "\n\nThe action has been executed. Summarize the results briefly — mention total found and top insights. The property cards are already displayed visually below your message, so do NOT list individual properties again. Instead, highlight the key patterns (e.g., 'Most are long-term holds with high equity' or 'Several have out-of-state mailing addresses'). Suggest ONE specific next step. Do NOT include another <execute> tag. Keep response under 60 words.",
+        messages: followUpHistory.map((m) => ({ role: m.role as any, content: m.content })),
         temperature: 0.7,
         source: "hoku-copilot-followup",
         agentId: user.id,
@@ -287,7 +309,9 @@ export async function POST(request: NextRequest) {
           },
           status: actionResult.success ? "completed" : "failed",
         });
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
 
     return NextResponse.json({

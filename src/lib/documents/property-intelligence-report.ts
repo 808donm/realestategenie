@@ -145,10 +145,7 @@ const pct = (n?: number) => (n != null ? `${n.toFixed(1)}%` : "—");
  * Generate a branded Property Intelligence Report PDF.
  * All data is pre-gathered by the API route; this function just lays it out.
  */
-export function generatePropertyIntelligencePDF(
-  data: PropertyReportData,
-  branding: AgentBranding,
-): Blob {
+export function generatePropertyIntelligencePDF(data: PropertyReportData, branding: AgentBranding): Blob {
   const doc = new jsPDF();
   const pageW = doc.internal.pageSize.getWidth();
   const margin = 16;
@@ -156,11 +153,11 @@ export function generatePropertyIntelligencePDF(
   let y = 0;
 
   // ── Colors ──
-  const brandBlue = [30, 64, 175] as const;   // #1e40af
-  const brandGold = [180, 130, 40] as const;   // #b48228
+  const brandBlue = [30, 64, 175] as const; // #1e40af
+  const brandGold = [180, 130, 40] as const; // #b48228
   const textDark = [17, 24, 39] as const;
   const textMuted = [107, 114, 128] as const;
-  const sectionBg = [243, 244, 246] as const;  // #f3f4f6
+  const sectionBg = [243, 244, 246] as const; // #f3f4f6
 
   const checkNewPage = (needed: number) => {
     if (y + needed > 275) {
@@ -177,7 +174,9 @@ export function generatePropertyIntelligencePDF(
     doc.setTextColor(...textMuted);
     doc.text(
       "DISCLAIMER: Data obtained from third-party sources. No warranty regarding accuracy. Verify independently. Complies with Fair Housing Act.",
-      margin, 284, { maxWidth: contentW },
+      margin,
+      284,
+      { maxWidth: contentW },
     );
     doc.text(`${branding.displayName} | ${branding.email}${branding.phone ? ` | ${branding.phone}` : ""}`, margin, 290);
     doc.text(`Page ${pg}`, pageW - margin, 290, { align: "right" });
@@ -194,8 +193,8 @@ export function generatePropertyIntelligencePDF(
   let titleX = margin;
   if (branding.brokerLogoData) {
     try {
-      const logoH = 16;  // fixed height in mm
-      const logoW = 32;  // max width — aspect ratio preserved by jsPDF
+      const logoH = 16; // fixed height in mm
+      const logoW = 32; // max width — aspect ratio preserved by jsPDF
       doc.addImage(branding.brokerLogoData, "PNG", margin, 4, logoW, logoH);
       titleX = margin + logoW + 4;
     } catch {
@@ -298,7 +297,7 @@ export function generatePropertyIntelligencePDF(
 
   // ── VALUE CARDS (like the summary bar in the modal) ──
   const valueCards = (cards: Array<{ label: string; value: string; sub?: string }>) => {
-    const available = cards.filter(c => c.value && c.value !== "—");
+    const available = cards.filter((c) => c.value && c.value !== "—");
     if (available.length === 0) return;
     checkNewPage(22);
 
@@ -328,7 +327,10 @@ export function generatePropertyIntelligencePDF(
   valueCards([
     { label: "AVM VALUE", value: $(data.avmValue), sub: data.avmDate ? `As of ${data.avmDate}` : undefined },
     { label: "LAST SALE", value: $(data.lastSalePrice), sub: data.lastSaleDate || undefined },
-    { label: "EST. EQUITY", value: data.estimatedEquity != null ? `${data.estimatedEquity >= 0 ? "+" : ""}${$(data.estimatedEquity)}` : "—" },
+    {
+      label: "EST. EQUITY",
+      value: data.estimatedEquity != null ? `${data.estimatedEquity >= 0 ? "+" : ""}${$(data.estimatedEquity)}` : "—",
+    },
     { label: "LTV", value: data.ltv != null ? pct(data.ltv) : "—" },
   ]);
 
@@ -351,7 +353,12 @@ export function generatePropertyIntelligencePDF(
   row("Bedrooms", data.beds != null ? String(data.beds) : null);
   row("Bathrooms", data.baths != null ? String(data.baths) : null);
   row("Living Area", data.sqft != null ? `${num(data.sqft)} sqft` : null);
-  row("Lot Size", data.lotSizeSqft != null ? `${num(data.lotSizeSqft)} sqft${data.lotSizeAcres ? ` (${data.lotSizeAcres.toFixed(2)} acres)` : ""}` : null);
+  row(
+    "Lot Size",
+    data.lotSizeSqft != null
+      ? `${num(data.lotSizeSqft)} sqft${data.lotSizeAcres ? ` (${data.lotSizeAcres.toFixed(2)} acres)` : ""}`
+      : null,
+  );
   row("Stories", data.stories != null ? String(data.stories) : null);
   row("Parking", data.garageSpaces);
   row("Pool", data.pool != null ? (data.pool ? "Yes" : "No") : null);
@@ -361,7 +368,15 @@ export function generatePropertyIntelligencePDF(
   y += 4;
 
   // ── 2b. BUILDING DETAILS ──
-  if (data.constructionType || data.roofType || data.heatingType || data.coolingType || data.fireplaceCount || data.basementType || data.architectureStyle) {
+  if (
+    data.constructionType ||
+    data.roofType ||
+    data.heatingType ||
+    data.coolingType ||
+    data.fireplaceCount ||
+    data.basementType ||
+    data.architectureStyle
+  ) {
     sectionTitle("BUILDING DETAILS");
     row("Architecture", data.architectureStyle);
     row("Construction", data.constructionType);
@@ -371,8 +386,16 @@ export function generatePropertyIntelligencePDF(
     row("Heating", data.heatingType);
     row("Cooling", data.coolingType);
     if (data.fireplaceCount) row("Fireplaces", String(data.fireplaceCount));
-    if (data.basementType) row("Basement", `${data.basementType}${data.basementSize ? ` (${num(data.basementSize)} sqft)` : ""}`);
-    row("Parking", data.parkingType ? `${data.parkingType}${data.parkingSpaces ? ` (${data.parkingSpaces} spaces)` : ""}` : data.parkingSpaces ? `${data.parkingSpaces} spaces` : null);
+    if (data.basementType)
+      row("Basement", `${data.basementType}${data.basementSize ? ` (${num(data.basementSize)} sqft)` : ""}`);
+    row(
+      "Parking",
+      data.parkingType
+        ? `${data.parkingType}${data.parkingSpaces ? ` (${data.parkingSpaces} spaces)` : ""}`
+        : data.parkingSpaces
+          ? `${data.parkingSpaces} spaces`
+          : null,
+    );
     y += 4;
   }
 
@@ -438,9 +461,11 @@ export function generatePropertyIntelligencePDF(
       const loanAmount = price - downPayment;
       const monthlyRate = rate / 100 / 12;
       const numPayments = termYears * 12;
-      const monthlyPI = monthlyRate > 0
-        ? loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / (Math.pow(1 + monthlyRate, numPayments) - 1)
-        : loanAmount / numPayments;
+      const monthlyPI =
+        monthlyRate > 0
+          ? (loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, numPayments))) /
+            (Math.pow(1 + monthlyRate, numPayments) - 1)
+          : loanAmount / numPayments;
       const monthlyTax = (data.taxAmount || data.taxAnnualAmount || 0) / 12;
       const monthlyHOA = (data.associationFee || 0) / 12;
       const monthlyTotal = monthlyPI + monthlyTax + monthlyHOA;
@@ -541,7 +566,10 @@ export function generatePropertyIntelligencePDF(
     if (data.owner2) row("Co-Owner", data.owner2);
     row("Owner Occupied", data.ownerOccupied === "Y" ? "Yes" : data.ownerOccupied === "N" ? "No" : data.ownerOccupied);
     row("Absentee Owner", data.absenteeOwner === "A" ? "Yes" : data.absenteeOwner);
-    row("Corporate Owner", data.corporateOwner === "Y" ? "Yes" : data.corporateOwner === "N" ? "No" : data.corporateOwner);
+    row(
+      "Corporate Owner",
+      data.corporateOwner === "Y" ? "Yes" : data.corporateOwner === "N" ? "No" : data.corporateOwner,
+    );
     row("Mailing Address", data.mailingAddress);
     y += 4;
   }
@@ -576,7 +604,13 @@ export function generatePropertyIntelligencePDF(
       doc.text(`${comp.beds || "?"}/${comp.baths || "?"}`, margin + 95, y);
       doc.text(comp.sqft != null ? num(comp.sqft) : "—", margin + 115, y);
       doc.text(comp.closeDate || "—", margin + 135, y);
-      doc.text(comp.correlation != null ? `${Math.round(comp.correlation <= 1 ? comp.correlation * 100 : comp.correlation)}%` : "—", margin + 160, y);
+      doc.text(
+        comp.correlation != null
+          ? `${Math.round(comp.correlation <= 1 ? comp.correlation * 100 : comp.correlation)}%`
+          : "—",
+        margin + 160,
+        y,
+      );
       y += 6;
     });
     y += 4;

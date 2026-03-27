@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-const admin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 /**
  * Diagnostic endpoint to clear GHL integration and force re-authorization
@@ -18,9 +16,12 @@ export async function POST(req: Request) {
     const agentId = body.agentId;
 
     if (!agentId) {
-      return NextResponse.json({
-        error: "Missing agentId in request body"
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: "Missing agentId in request body",
+        },
+        { status: 400 },
+      );
     }
 
     // Fetch current integration
@@ -41,16 +42,16 @@ export async function POST(req: Request) {
     const config = integration.config as any;
 
     // Delete the integration record completely
-    const { error: deleteError } = await admin
-      .from("integrations")
-      .delete()
-      .eq("id", integration.id);
+    const { error: deleteError } = await admin.from("integrations").delete().eq("id", integration.id);
 
     if (deleteError) {
-      return NextResponse.json({
-        error: "Failed to delete integration",
-        details: deleteError.message,
-      }, { status: 500 });
+      return NextResponse.json(
+        {
+          error: "Failed to delete integration",
+          details: deleteError.message,
+        },
+        { status: 500 },
+      );
     }
 
     return NextResponse.json({
@@ -72,10 +73,13 @@ export async function POST(req: Request) {
       ],
     });
   } catch (error: any) {
-    return NextResponse.json({
-      error: error.message,
-      stack: error.stack,
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: error.message,
+        stack: error.stack,
+      },
+      { status: 500 },
+    );
   }
 }
 
@@ -85,12 +89,15 @@ export async function POST(req: Request) {
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const agentId = searchParams.get('agentId');
+    const agentId = searchParams.get("agentId");
 
     if (!agentId) {
-      return NextResponse.json({
-        error: "Missing agentId parameter"
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: "Missing agentId parameter",
+        },
+        { status: 400 },
+      );
     }
 
     // Fetch current integration
@@ -129,12 +136,16 @@ export async function GET(req: Request) {
         hasPipeline: !!config?.ghl_pipeline_id,
         pipelineId: config?.ghl_pipeline_id,
       },
-      recommendation: "If you added new scopes to your OAuth app, use POST /api/debug/clear-ghl-token to force re-authorization with new scopes",
+      recommendation:
+        "If you added new scopes to your OAuth app, use POST /api/debug/clear-ghl-token to force re-authorization with new scopes",
     });
   } catch (error: any) {
-    return NextResponse.json({
-      error: error.message,
-      stack: error.stack,
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: error.message,
+        stack: error.stack,
+      },
+      { status: 500 },
+    );
   }
 }

@@ -69,7 +69,7 @@ export interface CalendarProvider {
     agentId: string,
     timeMin: string,
     timeMax: string,
-    syncToken?: string
+    syncToken?: string,
   ): Promise<{
     events: ExternalCalendarEvent[];
     nextSyncToken?: string;
@@ -77,10 +77,7 @@ export interface CalendarProvider {
   }>;
 
   /** Push a locally created/updated event to the external calendar */
-  pushEvent(
-    agentId: string,
-    event: CalendarEvent
-  ): Promise<{ externalId: string; etag?: string }>;
+  pushEvent(agentId: string, event: CalendarEvent): Promise<{ externalId: string; etag?: string }>;
 
   /** Delete an event from the external calendar */
   deleteEvent(agentId: string, externalId: string): Promise<void>;

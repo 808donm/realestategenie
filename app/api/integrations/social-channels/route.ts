@@ -44,10 +44,7 @@ export async function POST(req: Request) {
   const { channel, config } = body;
 
   if (!channel || !config) {
-    return NextResponse.json(
-      { error: "Missing channel or config" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Missing channel or config" }, { status: 400 });
   }
 
   // Load existing integration
@@ -120,9 +117,7 @@ export async function DELETE(req: Request) {
   const existingConfig = (existing.config || {}) as Record<string, any>;
   delete existingConfig[channel];
 
-  const hasAnyEnabled = Object.values(existingConfig).some(
-    (c: any) => c?.enabled
-  );
+  const hasAnyEnabled = Object.values(existingConfig).some((c: any) => c?.enabled);
 
   await supabaseAdmin
     .from("integrations")

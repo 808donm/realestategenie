@@ -6,12 +6,7 @@ import jsPDF from "jspdf";
 import AttachToContact from "@/components/attach-to-contact";
 import CalculatorBrandedExport from "../../components/calculator-branded-export";
 import { supabaseBrowser } from "@/lib/supabase/browser";
-import {
-  PropertyInput,
-  analyzeProperty,
-  compareProperties,
-  PropertyComparison,
-} from "@/lib/calculators/investment";
+import { PropertyInput, analyzeProperty, compareProperties, PropertyComparison } from "@/lib/calculators/investment";
 
 interface SavedProperty {
   id: string;
@@ -109,9 +104,7 @@ export default function ComparePropertiesClient({ savedProperties, savedComparis
 
   const toggleProperty = (propertyId: string) => {
     setSelectedPropertyIds((prev) =>
-      prev.includes(propertyId)
-        ? prev.filter((id) => id !== propertyId)
-        : [...prev, propertyId]
+      prev.includes(propertyId) ? prev.filter((id) => id !== propertyId) : [...prev, propertyId],
     );
   };
 
@@ -136,7 +129,9 @@ export default function ComparePropertiesClient({ savedProperties, savedComparis
     const supabase = supabaseBrowser();
 
     // Get current user ID for RLS
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       setMessage("Error: Not authenticated");
       setSaving(false);
@@ -191,10 +186,13 @@ export default function ComparePropertiesClient({ savedProperties, savedComparis
     // Data rows
     summaryData.push(["Rank", ...comparisons.map((_, i) => `#${i + 1}`)]);
     summaryData.push(["Purchase Price", ...comparisons.map((c) => c.analysis.totalInvestment)]);
-    summaryData.push(["Monthly Rent", ...comparisons.map((c) => {
-      const prop = savedProperties.find(p => p.id === c.propertyId);
-      return prop ? prop.monthly_rent : 0;
-    })]);
+    summaryData.push([
+      "Monthly Rent",
+      ...comparisons.map((c) => {
+        const prop = savedProperties.find((p) => p.id === c.propertyId);
+        return prop ? prop.monthly_rent : 0;
+      }),
+    ]);
     summaryData.push(["Monthly Cash Flow", ...comparisons.map((c) => c.analysis.annualCashFlow / 12)]);
     summaryData.push(["Annual Cash Flow", ...comparisons.map((c) => c.analysis.annualCashFlow)]);
     summaryData.push(["NOI", ...comparisons.map((c) => c.analysis.noi)]);
@@ -206,10 +204,7 @@ export default function ComparePropertiesClient({ savedProperties, savedComparis
     summaryData.push(["Projected Sale Price", ...comparisons.map((c) => c.analysis.projectedSalePrice)]);
 
     const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
-    summarySheet["!cols"] = [
-      { wch: 20 },
-      ...comparisons.map(() => ({ wch: 18 })),
-    ];
+    summarySheet["!cols"] = [{ wch: 20 }, ...comparisons.map(() => ({ wch: 18 }))];
     XLSX.utils.book_append_sheet(wb, summarySheet, "Comparison");
 
     // Sheet 2: Detailed Analysis per property
@@ -281,58 +276,75 @@ export default function ComparePropertiesClient({ savedProperties, savedComparis
     XLSX.writeFile(wb, fileName);
   };
 
-  const generateFile = useCallback((format: "pdf" | "xlsx"): Blob => {
-    if (format === "xlsx") {
-      const wb = XLSX.utils.book_new();
-      const data: (string | number)[][] = [
-        ["PROPERTY COMPARISON REPORT"],
-        ["Generated", new Date().toLocaleString()],
-        ["Comparison", comparisonName || "Untitled Comparison"],
-        [],
-        ["Metric", ...comparisons.map((c) => c.name)],
-        ["Purchase Price", ...comparisons.map((c) => c.analysis.totalInvestment)],
-        ["Monthly Cash Flow", ...comparisons.map((c) => c.analysis.annualCashFlow / 12)],
-        ["Annual Cash Flow", ...comparisons.map((c) => c.analysis.annualCashFlow)],
-        ["NOI", ...comparisons.map((c) => c.analysis.noi)],
-        ["Cap Rate", ...comparisons.map((c) => `${c.analysis.capRate.toFixed(2)}%`)],
-        ["Cash-on-Cash", ...comparisons.map((c) => `${c.analysis.cashOnCash.toFixed(2)}%`)],
-        ["IRR", ...comparisons.map((c) => `${c.analysis.irr.toFixed(2)}%`)],
-        ["Total ROI", ...comparisons.map((c) => `${c.analysis.totalROI.toFixed(2)}%`)],
-        ["Total Profit", ...comparisons.map((c) => c.analysis.totalProfit)],
-        ["Projected Sale Price", ...comparisons.map((c) => c.analysis.projectedSalePrice)],
-      ];
-      const sheet = XLSX.utils.aoa_to_sheet(data);
-      XLSX.utils.book_append_sheet(wb, sheet, "Comparison");
-      const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-      return new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-    }
-    const doc = new jsPDF();
-    const pw = doc.internal.pageSize.getWidth();
-    let y = 20;
-    doc.setFontSize(18); doc.setFont("helvetica", "bold");
-    doc.text("Compare Properties", pw / 2, y, { align: "center" }); y += 10;
-    doc.setFontSize(10); doc.setFont("helvetica", "normal");
-    doc.text(comparisonName || "Untitled Comparison", pw / 2, y, { align: "center" }); y += 14;
-    comparisons.forEach((comp) => {
-      doc.setFontSize(12); doc.setFont("helvetica", "bold");
-      doc.text(comp.name, 25, y); y += 8;
-      doc.setFontSize(10); doc.setFont("helvetica", "normal");
-      const rows: [string, string][] = [
-        ["Total Investment:", formatCurrency(comp.analysis.totalInvestment)],
-        ["Monthly Cash Flow:", formatCurrency(comp.analysis.annualCashFlow / 12)],
-        ["NOI:", formatCurrency(comp.analysis.noi)],
-        ["Cap Rate:", formatPercent(comp.analysis.capRate)],
-        ["Cash-on-Cash:", formatPercent(comp.analysis.cashOnCash)],
-        ["IRR:", formatPercent(comp.analysis.irr)],
-        ["Total ROI:", formatPercent(comp.analysis.totalROI)],
-        ["Total Profit:", formatCurrency(comp.analysis.totalProfit)],
-      ];
-      rows.forEach(([l, v]) => { doc.text(l, 30, y); doc.text(v, pw - 25, y, { align: "right" }); y += 7; });
-      y += 6;
-      if (y > 260) { doc.addPage(); y = 20; }
-    });
-    return new Blob([doc.output("arraybuffer")], { type: "application/pdf" });
-  }, [comparisons, comparisonName]);
+  const generateFile = useCallback(
+    (format: "pdf" | "xlsx"): Blob => {
+      if (format === "xlsx") {
+        const wb = XLSX.utils.book_new();
+        const data: (string | number)[][] = [
+          ["PROPERTY COMPARISON REPORT"],
+          ["Generated", new Date().toLocaleString()],
+          ["Comparison", comparisonName || "Untitled Comparison"],
+          [],
+          ["Metric", ...comparisons.map((c) => c.name)],
+          ["Purchase Price", ...comparisons.map((c) => c.analysis.totalInvestment)],
+          ["Monthly Cash Flow", ...comparisons.map((c) => c.analysis.annualCashFlow / 12)],
+          ["Annual Cash Flow", ...comparisons.map((c) => c.analysis.annualCashFlow)],
+          ["NOI", ...comparisons.map((c) => c.analysis.noi)],
+          ["Cap Rate", ...comparisons.map((c) => `${c.analysis.capRate.toFixed(2)}%`)],
+          ["Cash-on-Cash", ...comparisons.map((c) => `${c.analysis.cashOnCash.toFixed(2)}%`)],
+          ["IRR", ...comparisons.map((c) => `${c.analysis.irr.toFixed(2)}%`)],
+          ["Total ROI", ...comparisons.map((c) => `${c.analysis.totalROI.toFixed(2)}%`)],
+          ["Total Profit", ...comparisons.map((c) => c.analysis.totalProfit)],
+          ["Projected Sale Price", ...comparisons.map((c) => c.analysis.projectedSalePrice)],
+        ];
+        const sheet = XLSX.utils.aoa_to_sheet(data);
+        XLSX.utils.book_append_sheet(wb, sheet, "Comparison");
+        const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+        return new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      }
+      const doc = new jsPDF();
+      const pw = doc.internal.pageSize.getWidth();
+      let y = 20;
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      doc.text("Compare Properties", pw / 2, y, { align: "center" });
+      y += 10;
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(comparisonName || "Untitled Comparison", pw / 2, y, { align: "center" });
+      y += 14;
+      comparisons.forEach((comp) => {
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text(comp.name, 25, y);
+        y += 8;
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        const rows: [string, string][] = [
+          ["Total Investment:", formatCurrency(comp.analysis.totalInvestment)],
+          ["Monthly Cash Flow:", formatCurrency(comp.analysis.annualCashFlow / 12)],
+          ["NOI:", formatCurrency(comp.analysis.noi)],
+          ["Cap Rate:", formatPercent(comp.analysis.capRate)],
+          ["Cash-on-Cash:", formatPercent(comp.analysis.cashOnCash)],
+          ["IRR:", formatPercent(comp.analysis.irr)],
+          ["Total ROI:", formatPercent(comp.analysis.totalROI)],
+          ["Total Profit:", formatCurrency(comp.analysis.totalProfit)],
+        ];
+        rows.forEach(([l, v]) => {
+          doc.text(l, 30, y);
+          doc.text(v, pw - 25, y, { align: "right" });
+          y += 7;
+        });
+        y += 6;
+        if (y > 260) {
+          doc.addPage();
+          y = 20;
+        }
+      });
+      return new Blob([doc.output("arraybuffer")], { type: "application/pdf" });
+    },
+    [comparisons, comparisonName],
+  );
 
   if (savedProperties.length === 0) {
     return (
@@ -408,9 +420,7 @@ export default function ComparePropertiesClient({ savedProperties, savedComparis
                 }}
               >
                 <div style={{ fontWeight: 700, marginBottom: 4 }}>{property.name}</div>
-                <div style={{ fontSize: 12, opacity: 0.7 }}>
-                  {formatCurrency(Number(property.purchase_price))}
-                </div>
+                <div style={{ fontSize: 12, opacity: 0.7 }}>{formatCurrency(Number(property.purchase_price))}</div>
                 <div style={{ fontSize: 12, opacity: 0.7 }}>
                   Rent: {formatCurrency(Number(property.monthly_rent))}/mo
                 </div>
@@ -451,11 +461,7 @@ export default function ComparePropertiesClient({ savedProperties, savedComparis
         >
           Export to Excel
         </button>
-        {message && (
-          <span style={{ fontSize: 14, color: message.includes("Error") ? "red" : "green" }}>
-            {message}
-          </span>
-        )}
+        {message && <span style={{ fontSize: 14, color: message.includes("Error") ? "red" : "green" }}>{message}</span>}
       </div>
       <div style={{ marginBottom: 20 }}>
         <AttachToContact generateFile={generateFile} reportTitle="Property Comparison" />
@@ -472,9 +478,9 @@ export default function ComparePropertiesClient({ savedProperties, savedComparis
                     [`Property ${i + 1} Cash-on-Cash`, formatPercent(comp.analysis.cashOnCash)],
                     [`Property ${i + 1} IRR`, formatPercent(comp.analysis.irr)],
                     [`Property ${i + 1} Total Profit`, formatCurrency(comp.analysis.totalProfit)],
-                  ])
+                  ]),
                 )
-              : { "Status": "Select at least 2 properties to compare" }
+              : { Status: "Select at least 2 properties to compare" }
           }
         />
       </div>
@@ -483,7 +489,9 @@ export default function ComparePropertiesClient({ savedProperties, savedComparis
       {comparisons.length >= 2 && (
         <>
           {/* Overall Rankings */}
-          <div style={{ marginBottom: 20, padding: 20, border: "2px solid #000", borderRadius: 12, background: "#fafafa" }}>
+          <div
+            style={{ marginBottom: 20, padding: 20, border: "2px solid #000", borderRadius: 12, background: "#fafafa" }}
+          >
             <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 800 }}>Overall Rankings</h3>
             <div style={{ display: "grid", gridTemplateColumns: `repeat(${comparisons.length}, 1fr)`, gap: 16 }}>
               {comparisons.map((comp, index) => {
@@ -498,7 +506,9 @@ export default function ComparePropertiesClient({ savedProperties, savedComparis
                       border: index === 0 ? "2px solid #22c55e" : "1px solid #e6e6e6",
                     }}
                   >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: 8 }}>
+                    <div
+                      style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: 8 }}
+                    >
                       <span
                         style={{
                           padding: "4px 8px",
@@ -541,9 +551,7 @@ export default function ComparePropertiesClient({ savedProperties, savedComparis
                   <td style={{ padding: 12, fontWeight: 600 }}>Purchase Price</td>
                   {comparisons.map((comp) => (
                     <td key={comp.propertyId} style={{ textAlign: "right", padding: 12 }}>
-                      {formatCurrency(
-                        savedProperties.find((p) => p.id === comp.propertyId)?.purchase_price ?? 0
-                      )}
+                      {formatCurrency(savedProperties.find((p) => p.id === comp.propertyId)?.purchase_price ?? 0)}
                     </td>
                   ))}
                 </tr>
@@ -695,16 +703,13 @@ export default function ComparePropertiesClient({ savedProperties, savedComparis
           {/* Winner Summary */}
           {comparisons.length > 0 && (
             <div style={{ padding: 20, background: "#dcfce7", borderRadius: 12, border: "2px solid #22c55e" }}>
-              <h3 style={{ margin: "0 0 12px 0", fontSize: 16, fontWeight: 800, color: "#16a34a" }}>
-                Recommendation
-              </h3>
+              <h3 style={{ margin: "0 0 12px 0", fontSize: 16, fontWeight: 800, color: "#16a34a" }}>Recommendation</h3>
               <p style={{ margin: 0, fontSize: 14 }}>
-                Based on the overall analysis, <strong>{comparisons[0].name}</strong> appears to be the
-                best investment opportunity with an IRR of{" "}
-                <strong>{formatPercent(comparisons[0].analysis.irr)}</strong>, Cash-on-Cash return of{" "}
-                <strong>{formatPercent(comparisons[0].analysis.cashOnCash)}</strong>, and projected total
-                profit of <strong>{formatCurrency(comparisons[0].analysis.totalProfit)}</strong> over the
-                holding period.
+                Based on the overall analysis, <strong>{comparisons[0].name}</strong> appears to be the best investment
+                opportunity with an IRR of <strong>{formatPercent(comparisons[0].analysis.irr)}</strong>, Cash-on-Cash
+                return of <strong>{formatPercent(comparisons[0].analysis.cashOnCash)}</strong>, and projected total
+                profit of <strong>{formatCurrency(comparisons[0].analysis.totalProfit)}</strong> over the holding
+                period.
               </p>
             </div>
           )}
@@ -736,9 +741,5 @@ function RankIndicator({
   const best = comparisons.find((c) => c.rankings[metric] === 1);
   if (!best) return null;
 
-  return (
-    <span style={{ fontSize: 11, opacity: 0.6, marginLeft: 8 }}>
-      (Best: {best.name})
-    </span>
-  );
+  return <span style={{ fontSize: 11, opacity: 0.6, marginLeft: 8 }}>(Best: {best.name})</span>;
 }

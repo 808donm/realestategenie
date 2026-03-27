@@ -59,7 +59,7 @@ export function SellerMapClient() {
 
   // Current map viewport (updated on pan/zoom, but does NOT trigger fetches)
   // Default to downtown Honolulu (96813) area
-  const boundsRef = useRef({ lat: 21.3113, lng: -157.8600, radius: 10 });
+  const boundsRef = useRef({ lat: 21.3113, lng: -157.86, radius: 10 });
   const [hasFetched, setHasFetched] = useState(false);
 
   // Load saved searches on mount
@@ -101,58 +101,57 @@ export function SellerMapClient() {
   /**
    * Fetch TMK parcel overlay by TMK number and zoom map to it.
    */
-  const fetchTMKOverlay = useCallback(
-    async (tmkInput: string) => {
-      try {
-        const res = await fetch(
-          `/api/seller-map/tmk-overlay?tmk=${encodeURIComponent(tmkInput)}&limit=50`
-        );
-        const geojson = await res.json();
+  const fetchTMKOverlay = useCallback(async (tmkInput: string) => {
+    try {
+      const res = await fetch(`/api/seller-map/tmk-overlay?tmk=${encodeURIComponent(tmkInput)}&limit=50`);
+      const geojson = await res.json();
 
-        if (geojson.error || !geojson.features?.length) {
-          console.warn("[SellerMap] No TMK parcels found for:", tmkInput);
-          setTmkGeojson(null);
-          return;
-        }
+      if (geojson.error || !geojson.features?.length) {
+        console.warn("[SellerMap] No TMK parcels found for:", tmkInput);
+        setTmkGeojson(null);
+        return;
+      }
 
-        setTmkGeojson(geojson);
-        setShowTMK(true);
+      setTmkGeojson(geojson);
+      setShowTMK(true);
 
-        // Compute bounding box of returned features to zoom the map
-        let minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
-        for (const feature of geojson.features) {
-          const coords = feature.geometry?.type === "Polygon"
+      // Compute bounding box of returned features to zoom the map
+      let minLat = 90,
+        maxLat = -90,
+        minLng = 180,
+        maxLng = -180;
+      for (const feature of geojson.features) {
+        const coords =
+          feature.geometry?.type === "Polygon"
             ? feature.geometry.coordinates[0]
             : feature.geometry?.type === "MultiPolygon"
               ? feature.geometry.coordinates.flat(1).flat(0)
               : [];
-          for (const coord of coords) {
-            const [lng, lat] = Array.isArray(coord[0]) ? coord[0] : coord;
-            if (lat < minLat) minLat = lat;
-            if (lat > maxLat) maxLat = lat;
-            if (lng < minLng) minLng = lng;
-            if (lng > maxLng) maxLng = lng;
-          }
+        for (const coord of coords) {
+          const [lng, lat] = Array.isArray(coord[0]) ? coord[0] : coord;
+          if (lat < minLat) minLat = lat;
+          if (lat > maxLat) maxLat = lat;
+          if (lng < minLng) minLng = lng;
+          if (lng > maxLng) maxLng = lng;
         }
-
-        if (minLat < maxLat && minLng < maxLng) {
-          const centerLat = (minLat + maxLat) / 2;
-          const centerLng = (minLng + maxLng) / 2;
-          const latSpan = maxLat - minLat;
-          const lngSpan = maxLng - minLng;
-          const radiusMiles = Math.max(latSpan, lngSpan) * 69 / 2;
-          boundsRef.current = {
-            lat: centerLat,
-            lng: centerLng,
-            radius: Math.max(radiusMiles, 0.5),
-          };
-        }
-      } catch (err) {
-        console.error("[SellerMap] TMK overlay fetch error:", err);
       }
-    },
-    []
-  );
+
+      if (minLat < maxLat && minLng < maxLng) {
+        const centerLat = (minLat + maxLat) / 2;
+        const centerLng = (minLng + maxLng) / 2;
+        const latSpan = maxLat - minLat;
+        const lngSpan = maxLng - minLng;
+        const radiusMiles = (Math.max(latSpan, lngSpan) * 69) / 2;
+        boundsRef.current = {
+          lat: centerLat,
+          lng: centerLng,
+          radius: Math.max(radiusMiles, 0.5),
+        };
+      }
+    } catch (err) {
+      console.error("[SellerMap] TMK overlay fetch error:", err);
+    }
+  }, []);
 
   // Fetch properties — only called explicitly (button click, saved search, initial load)
   const fetchProperties = useCallback(
@@ -223,7 +222,17 @@ export function SellerMapClient() {
         setIsLoading(false);
       }
     },
-    [filters.minScore, filters.absenteeOnly, filters.minOwnership, filters.minEquity, filters.minProperties, filters.zips, filters.propertyType, isTMKInput, fetchTMKOverlay]
+    [
+      filters.minScore,
+      filters.absenteeOnly,
+      filters.minOwnership,
+      filters.minEquity,
+      filters.minProperties,
+      filters.zips,
+      filters.propertyType,
+      isTMKInput,
+      fetchTMKOverlay,
+    ],
   );
 
   // Initial load — fetch once on mount
@@ -232,12 +241,9 @@ export function SellerMapClient() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Track viewport bounds (no auto-fetch)
-  const handleBoundsChange = useCallback(
-    (bounds: { lat: number; lng: number; radius: number }) => {
-      boundsRef.current = bounds;
-    },
-    []
-  );
+  const handleBoundsChange = useCallback((bounds: { lat: number; lng: number; radius: number }) => {
+    boundsRef.current = bounds;
+  }, []);
 
   // Manual search — user clicks "Search This Area"
   const handleSearchThisArea = useCallback(() => {
@@ -263,7 +269,7 @@ export function SellerMapClient() {
         setSavedSearches((prev) => [data.search, ...prev]);
       }
     },
-    [filters]
+    [filters],
   );
 
   const handleLoadSearch = useCallback(
@@ -274,11 +280,16 @@ export function SellerMapClient() {
         radius: search.radius_miles,
       };
       if (search.filters) {
-        setFilters({ ...DEFAULT_FILTERS, ...search.filters, zips: search.filters.zips || "", propertyType: search.filters.propertyType || "" });
+        setFilters({
+          ...DEFAULT_FILTERS,
+          ...search.filters,
+          zips: search.filters.zips || "",
+          propertyType: search.filters.propertyType || "",
+        });
       }
       fetchProperties(boundsRef.current);
     },
-    [fetchProperties]
+    [fetchProperties],
   );
 
   const handleDeleteSearch = useCallback(async (id: string) => {
@@ -310,12 +321,9 @@ export function SellerMapClient() {
   }, []);
 
   // Handle zip code click on the map — set the zip as search filter and trigger search
-  const handleZipClick = useCallback(
-    (zipCode: string) => {
-      setFilters((prev) => ({ ...prev, zips: zipCode }));
-    },
-    []
-  );
+  const handleZipClick = useCallback((zipCode: string) => {
+    setFilters((prev) => ({ ...prev, zips: zipCode }));
+  }, []);
 
   // When filters.zips changes from a zip click, auto-fetch
   const prevZipsRef = useRef(filters.zips);
@@ -421,9 +429,7 @@ export function SellerMapClient() {
           <button
             onClick={() => setMobileView("map")}
             className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
-              mobileView === "map"
-                ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50/50"
-                : "text-gray-500"
+              mobileView === "map" ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50/50" : "text-gray-500"
             }`}
           >
             Map
@@ -431,9 +437,7 @@ export function SellerMapClient() {
           <button
             onClick={() => setMobileView("list")}
             className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
-              mobileView === "list"
-                ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50/50"
-                : "text-gray-500"
+              mobileView === "list" ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50/50" : "text-gray-500"
             }`}
           >
             List {total > 0 && `(${total})`}

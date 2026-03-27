@@ -40,10 +40,13 @@ export async function GET(request: NextRequest) {
           latitude = match.coordinates.y;
           longitude = match.coordinates.x;
         } else {
-          return NextResponse.json({
-            error: "Could not geocode address. Try providing lat/lng directly.",
-            ejIndex: null,
-          }, { status: 404 });
+          return NextResponse.json(
+            {
+              error: "Could not geocode address. Try providing lat/lng directly.",
+              ejIndex: null,
+            },
+            { status: 404 },
+          );
         }
       } catch {
         return NextResponse.json({ error: "Geocoding service unavailable" }, { status: 502 });
@@ -55,7 +58,7 @@ export async function GET(request: NextRequest) {
     try {
       const ejUrl = `https://ejscreen.epa.gov/mapper/ejscreenRESTbroker.aspx?namestr=&geometry=${longitude}%2C${latitude}&distance=1&unit=9035&aession=&f=json`;
       const ejRes = await fetch(ejUrl, {
-        headers: { "Accept": "application/json" },
+        headers: { Accept: "application/json" },
       });
 
       if (!ejRes.ok) {
@@ -121,7 +124,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to fetch EJScreen data" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

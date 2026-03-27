@@ -58,8 +58,8 @@ async function testAuth() {
 
     const apiResponse = await fetch(apiUrl, {
       headers: {
-        "Authorization": `Bearer ${accessToken}`,
-        "Accept": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+        Accept: "application/json",
       },
     });
 
@@ -88,8 +88,8 @@ async function testAuth() {
         console.log(`\nTrying: ${url}`);
         const resp = await fetch(url, {
           headers: {
-            "Authorization": `Bearer ${accessToken}`,
-            "Accept": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+            Accept: "application/json",
           },
         });
         const body = await resp.text();

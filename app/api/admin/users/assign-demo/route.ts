@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     if (!plan) {
       return NextResponse.json(
         { error: "Demo plan (solo-agent-pro) not found. Please create it first." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -63,10 +63,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (existingSub) {
-      return NextResponse.json(
-        { error: "User already has an active subscription" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "User already has an active subscription" }, { status: 400 });
     }
 
     // Activate the user account
@@ -79,11 +76,7 @@ export async function POST(request: NextRequest) {
       .eq("id", userId);
 
     // Check if user already has an account
-    const { data: existingAccount } = await supabaseAdmin
-      .from("accounts")
-      .select("id")
-      .eq("owner_id", userId)
-      .single();
+    const { data: existingAccount } = await supabaseAdmin.from("accounts").select("id").eq("owner_id", userId).single();
 
     let accountId = existingAccount?.id;
 
@@ -119,19 +112,17 @@ export async function POST(request: NextRequest) {
     const now = new Date();
     const trialEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
-    const { error: subError } = await supabaseAdmin
-      .from("agent_subscriptions")
-      .insert({
-        agent_id: userId,
-        subscription_plan_id: plan.id,
-        status: "trial",
-        billing_cycle: "monthly",
-        monthly_price: 0,
-        current_period_start: now.toISOString(),
-        current_period_end: trialEnd.toISOString(),
-        trial_end_date: trialEnd.toISOString(),
-        account_id: accountId,
-      });
+    const { error: subError } = await supabaseAdmin.from("agent_subscriptions").insert({
+      agent_id: userId,
+      subscription_plan_id: plan.id,
+      status: "trial",
+      billing_cycle: "monthly",
+      monthly_price: 0,
+      current_period_start: now.toISOString(),
+      current_period_end: trialEnd.toISOString(),
+      trial_end_date: trialEnd.toISOString(),
+      account_id: accountId,
+    });
 
     if (subError) {
       throw new Error(`Failed to create subscription: ${subError.message}`);
@@ -143,9 +134,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error("Assign demo error:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to assign demo account" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message || "Failed to assign demo account" }, { status: 500 });
   }
 }

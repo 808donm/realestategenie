@@ -40,7 +40,7 @@ export default async function EventAttendeesPage({ params }: { params: Promise<{
       <div style={{ display: "flex", gap: 12, marginTop: 12 }}>
         <Link href={`/app/open-houses/${id}`}>View attendees</Link>
         <Link href={`/app/open-houses/${id}/attendees/export`}>Export CSV</Link>
-     </div>
+      </div>
 
       {error && <p style={{ color: "crimson" }}>{error.message}</p>}
 
@@ -60,20 +60,28 @@ export default async function EventAttendeesPage({ params }: { params: Promise<{
                 </span>
               </div>
               <div style={{ fontSize: 12, opacity: 0.85, marginTop: 6 }}>
-                {p.email ? <>Email: <code>{p.email}</code></> : null}
-                {p.phone_e164 ? <> &nbsp; Phone: <code>{p.phone_e164}</code></> : null}
+                {p.email ? (
+                  <>
+                    Email: <code>{p.email}</code>
+                  </>
+                ) : null}
+                {p.phone_e164 ? (
+                  <>
+                    {" "}
+                    &nbsp; Phone: <code>{p.phone_e164}</code>
+                  </>
+                ) : null}
               </div>
               <div style={{ marginTop: 8, fontSize: 12, opacity: 0.85 }}>
-                Rep: <strong>{p.representation ?? "n/a"}</strong> • Timeline: <strong>{p.timeline ?? "n/a"}</strong> • Financing: <strong>{p.financing ?? "n/a"}</strong>
+                Rep: <strong>{p.representation ?? "n/a"}</strong> • Timeline: <strong>{p.timeline ?? "n/a"}</strong> •
+                Financing: <strong>{p.financing ?? "n/a"}</strong>
               </div>
             </div>
           );
         })}
 
         {(!leads || leads.length === 0) && (
-          <p style={{ opacity: 0.7 }}>
-            No attendees yet. Publish the event and test the QR check-in page.
-          </p>
+          <p style={{ opacity: 0.7 }}>No attendees yet. Publish the event and test the QR check-in page.</p>
         )}
       </div>
     </div>

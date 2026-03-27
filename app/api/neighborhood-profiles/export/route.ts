@@ -3,11 +3,9 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { createClient } from "@supabase/supabase-js";
 import { generatePDF, generateDOCX, AgentBranding, ProfileData } from "@/lib/documents/neighborhood-profile-generator";
 
-const admin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 export async function POST(request: NextRequest) {
   try {
@@ -111,9 +109,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error("Error exporting neighborhood profile:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to export profile" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message || "Failed to export profile" }, { status: 500 });
   }
 }

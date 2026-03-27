@@ -13,11 +13,9 @@ import { runWatchdogScan } from "@/lib/mls/watchdog-engine";
  * Required header: Authorization: Bearer [CRON_SECRET]
  */
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 export async function POST(request: NextRequest) {
   try {
@@ -50,10 +48,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error("MLS Watchdog cron error:", error);
-    return NextResponse.json(
-      { error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
@@ -104,11 +99,13 @@ async function sendAlertNotifications() {
           const resend = new Resend(process.env.RESEND_API_KEY!);
 
           const alertRows = agentAlertList
-            .map((a) => `<tr>
+            .map(
+              (a) => `<tr>
               <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;">${a.alert_title}</td>
               <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;">${a.address || ""}, ${a.city || ""}</td>
               <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;">${a.alert_type.replace(/_/g, " ")}</td>
-            </tr>`)
+            </tr>`,
+            )
             .join("");
 
           await resend.emails.send({
@@ -153,10 +150,7 @@ async function sendAlertNotifications() {
 
           // Mark emails as sent
           const alertIds = agentAlertList.map((a) => a.id);
-          await supabase
-            .from("mls_watchdog_alerts")
-            .update({ email_sent: true })
-            .in("id", alertIds);
+          await supabase.from("mls_watchdog_alerts").update({ email_sent: true }).in("id", alertIds);
         } catch (emailErr: any) {
           console.error(`Email notification error for ${agentId}:`, emailErr.message);
         }
@@ -165,17 +159,14 @@ async function sendAlertNotifications() {
       // Push notification
       if (rule?.notify_push) {
         try {
-          const { data: subscriptions } = await supabase
-            .from("push_subscriptions")
-            .select("*")
-            .eq("agent_id", agentId);
+          const { data: subscriptions } = await supabase.from("push_subscriptions").select("*").eq("agent_id", agentId);
 
           if (subscriptions && subscriptions.length > 0) {
             const webpush = await import("web-push");
             webpush.setVapidDetails(
               `mailto:${process.env.VAPID_EMAIL || "support@realestategenie.app"}`,
               process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-              process.env.VAPID_PRIVATE_KEY!
+              process.env.VAPID_PRIVATE_KEY!,
             );
 
             const payload = JSON.stringify({
@@ -189,7 +180,7 @@ async function sendAlertNotifications() {
               try {
                 await webpush.sendNotification(
                   { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-                  payload
+                  payload,
                 );
               } catch (pushErr: any) {
                 // Remove expired subscriptions
@@ -200,10 +191,7 @@ async function sendAlertNotifications() {
             }
 
             const alertIds = agentAlertList.map((a) => a.id);
-            await supabase
-              .from("mls_watchdog_alerts")
-              .update({ push_sent: true })
-              .in("id", alertIds);
+            await supabase.from("mls_watchdog_alerts").update({ push_sent: true }).in("id", alertIds);
           }
         } catch (pushErr: any) {
           console.error(`Push notification error for ${agentId}:`, pushErr.message);
@@ -224,9 +212,7 @@ async function sendAlertNotifications() {
 
           if (ghlIntegration) {
             const ghlConfig =
-              typeof ghlIntegration.config === "string"
-                ? JSON.parse(ghlIntegration.config)
-                : ghlIntegration.config;
+              typeof ghlIntegration.config === "string" ? JSON.parse(ghlIntegration.config) : ghlIntegration.config;
 
             const message = `MLS Watchdog: ${agentAlertList.length} new alert${agentAlertList.length > 1 ? "s" : ""} in your farm area. ${agentAlertList[0].alert_title}. View at ${process.env.NEXT_PUBLIC_APP_URL || "https://www.realestategenie.app"}/app/farm`;
 
@@ -248,10 +234,7 @@ async function sendAlertNotifications() {
 
             if (res.ok) {
               const alertIds = agentAlertList.map((a) => a.id);
-              await supabase
-                .from("mls_watchdog_alerts")
-                .update({ sms_sent: true })
-                .in("id", alertIds);
+              await supabase.from("mls_watchdog_alerts").update({ sms_sent: true }).in("id", alertIds);
             }
           }
         } catch (smsErr: any) {

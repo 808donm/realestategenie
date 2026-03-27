@@ -5,7 +5,15 @@ import Link from "next/link";
 import jsPDF from "jspdf";
 import * as XLSX from "xlsx";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+  ReferenceLine,
 } from "recharts";
 
 type Period = "this_month" | "last_30" | "this_quarter" | "ytd";
@@ -63,14 +71,14 @@ export default function LeadAssignmentClient() {
 
   const fairnessIssues = useMemo(() => {
     const threshold = avgLeads * 0.25;
-    return data.filter(
-      (a) => Math.abs(a.leadsReceived - avgLeads) > threshold
-    ).map((a) => ({
-      name: a.name,
-      leads: a.leadsReceived,
-      deviation: a.leadsReceived - avgLeads,
-      direction: a.leadsReceived > avgLeads ? "over" : "under",
-    }));
+    return data
+      .filter((a) => Math.abs(a.leadsReceived - avgLeads) > threshold)
+      .map((a) => ({
+        name: a.name,
+        leads: a.leadsReceived,
+        deviation: a.leadsReceived - avgLeads,
+        direction: a.leadsReceived > avgLeads ? "over" : "under",
+      }));
   }, [data, avgLeads]);
 
   const topConverter = useMemo(() => {
@@ -103,7 +111,7 @@ export default function LeadAssignmentClient() {
         doc.text(
           `  - ${issue.name}: ${issue.leads} leads (${sign}${issue.deviation.toFixed(1)} from avg)`,
           14,
-          78 + i * 8
+          78 + i * 8,
         );
       });
     }
@@ -118,7 +126,10 @@ export default function LeadAssignmentClient() {
 
     data.forEach((row) => {
       y += 8;
-      if (y > 280) { doc.addPage(); y = 20; }
+      if (y > 280) {
+        doc.addPage();
+        y = 20;
+      }
       doc.text(row.name, colX[0], y);
       doc.text(String(row.leadsReceived), colX[1], y);
       doc.text(String(row.leadsContacted), colX[2], y);
@@ -131,7 +142,7 @@ export default function LeadAssignmentClient() {
   };
 
   const exportToExcel = () => {
-    const rows = data.map(row => ({
+    const rows = data.map((row) => ({
       Agent: row.name,
       "Leads Received": row.leadsReceived,
       "Leads Contacted": row.leadsContacted,
@@ -155,22 +166,28 @@ export default function LeadAssignmentClient() {
   return (
     <div>
       {/* Integration Notice */}
-      <div style={{
-        background: isLive ? "#f0fdf4" : "#eff6ff",
-        border: isLive ? "1px solid #bbf7d0" : "1px solid #bfdbfe",
-        borderRadius: 8,
-        padding: "12px 16px",
-        marginBottom: 20,
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        fontSize: 13,
-      }}>
+      <div
+        style={{
+          background: isLive ? "#f0fdf4" : "#eff6ff",
+          border: isLive ? "1px solid #bbf7d0" : "1px solid #bfdbfe",
+          borderRadius: 8,
+          padding: "12px 16px",
+          marginBottom: 20,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          fontSize: 13,
+        }}
+      >
         <span>
           {isLive ? (
-            <><strong>Live Data</strong> -- Showing live data from your GHL integration.</>
+            <>
+              <strong>Live Data</strong> -- Showing live data from your GHL integration.
+            </>
           ) : (
-            <><strong>Sample Data</strong> -- Connect your GHL integration to see live data.</>
+            <>
+              <strong>Sample Data</strong> -- Connect your GHL integration to see live data.
+            </>
           )}
         </span>
         {!isLive && (
@@ -181,7 +198,16 @@ export default function LeadAssignmentClient() {
       </div>
 
       {/* Period Selector + Export */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 20,
+          flexWrap: "wrap",
+          gap: 12,
+        }}
+      >
         <div style={{ display: "flex", gap: 8 }}>
           {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
             <button
@@ -218,7 +244,19 @@ export default function LeadAssignmentClient() {
           >
             Export PDF
           </button>
-          <button onClick={exportToExcel} style={{ padding: "8px 20px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>
+          <button
+            onClick={exportToExcel}
+            style={{
+              padding: "8px 20px",
+              background: "#fff",
+              color: "#374151",
+              border: "1px solid #d1d5db",
+              borderRadius: 8,
+              fontWeight: 600,
+              cursor: "pointer",
+              fontSize: 13,
+            }}
+          >
             Export Excel
           </button>
         </div>
@@ -228,13 +266,21 @@ export default function LeadAssignmentClient() {
       <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20, marginBottom: 20 }}>
         <h3 style={{ margin: "0 0 16px 0", fontSize: 15, fontWeight: 700 }}>Lead Distribution</h3>
         <ResponsiveContainer width="100%" height={280}>
-          <BarChart data={data.map((a) => ({ ...a, firstName: a.name.split(" ")[0] }))} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
+          <BarChart
+            data={data.map((a) => ({ ...a, firstName: a.name.split(" ")[0] }))}
+            margin={{ top: 5, right: 20, bottom: 5, left: 20 }}
+          >
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
             <XAxis dataKey="firstName" tick={{ fontSize: 12 }} />
             <YAxis tick={{ fontSize: 11 }} />
             <Tooltip />
             <Legend />
-            <ReferenceLine y={avgLeads} stroke="#6b7280" strokeDasharray="5 5" label={{ value: `Avg: ${avgLeads.toFixed(1)}`, position: "right", style: { fontSize: 11 } }} />
+            <ReferenceLine
+              y={avgLeads}
+              stroke="#6b7280"
+              strokeDasharray="5 5"
+              label={{ value: `Avg: ${avgLeads.toFixed(1)}`, position: "right", style: { fontSize: 11 } }}
+            />
             <Bar dataKey="leadsReceived" name="Leads Received" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
             <Bar dataKey="leadsConverted" name="Converted" fill="#10b981" radius={[4, 4, 0, 0]} />
           </BarChart>
@@ -245,30 +291,116 @@ export default function LeadAssignmentClient() {
       <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20, marginBottom: 20 }}>
         <h3 style={{ margin: "0 0 16px 0", fontSize: 15, fontWeight: 700 }}>Conversion Rate & Response Time</h3>
         <ResponsiveContainer width="100%" height={260}>
-          <BarChart data={data.map((a) => ({ name: a.name.split(" ")[0], convRate: parseFloat(conversionRate(a)), avgResponseTime: a.avgResponseTime }))} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
+          <BarChart
+            data={data.map((a) => ({
+              name: a.name.split(" ")[0],
+              convRate: parseFloat(conversionRate(a)),
+              avgResponseTime: a.avgResponseTime,
+            }))}
+            margin={{ top: 5, right: 20, bottom: 5, left: 20 }}
+          >
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
             <XAxis dataKey="name" tick={{ fontSize: 12 }} />
             <YAxis yAxisId="left" tickFormatter={(v: number) => `${v}%`} tick={{ fontSize: 11 }} />
-            <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} label={{ value: "min", angle: 90, position: "insideRight", style: { fontSize: 11 } }} />
+            <YAxis
+              yAxisId="right"
+              orientation="right"
+              tick={{ fontSize: 11 }}
+              label={{ value: "min", angle: 90, position: "insideRight", style: { fontSize: 11 } }}
+            />
             <Tooltip />
             <Legend />
             <Bar yAxisId="left" dataKey="convRate" name="Conv. Rate %" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-            <Bar yAxisId="right" dataKey="avgResponseTime" name="Avg Response (min)" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+            <Bar
+              yAxisId="right"
+              dataKey="avgResponseTime"
+              name="Avg Response (min)"
+              fill="#f59e0b"
+              radius={[4, 4, 0, 0]}
+            />
           </BarChart>
         </ResponsiveContainer>
       </div>
 
       {/* Data Table */}
-      <div style={{ overflowX: "auto", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, marginBottom: 20 }}>
+      <div
+        style={{
+          overflowX: "auto",
+          background: "#fff",
+          border: "1px solid #e5e7eb",
+          borderRadius: 10,
+          marginBottom: 20,
+        }}
+      >
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>
-              <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 700, fontSize: 12, borderBottom: "2px solid #e5e7eb" }}>Agent</th>
-              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, borderBottom: "2px solid #e5e7eb" }}>Leads Received</th>
-              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, borderBottom: "2px solid #e5e7eb" }}>Contacted</th>
-              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, borderBottom: "2px solid #e5e7eb" }}>Converted</th>
-              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, borderBottom: "2px solid #e5e7eb" }}>Conv. Rate</th>
-              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, borderBottom: "2px solid #e5e7eb" }}>Avg Response</th>
+              <th
+                style={{
+                  padding: "10px 12px",
+                  textAlign: "left",
+                  fontWeight: 700,
+                  fontSize: 12,
+                  borderBottom: "2px solid #e5e7eb",
+                }}
+              >
+                Agent
+              </th>
+              <th
+                style={{
+                  padding: "10px 12px",
+                  textAlign: "right",
+                  fontWeight: 700,
+                  fontSize: 12,
+                  borderBottom: "2px solid #e5e7eb",
+                }}
+              >
+                Leads Received
+              </th>
+              <th
+                style={{
+                  padding: "10px 12px",
+                  textAlign: "right",
+                  fontWeight: 700,
+                  fontSize: 12,
+                  borderBottom: "2px solid #e5e7eb",
+                }}
+              >
+                Contacted
+              </th>
+              <th
+                style={{
+                  padding: "10px 12px",
+                  textAlign: "right",
+                  fontWeight: 700,
+                  fontSize: 12,
+                  borderBottom: "2px solid #e5e7eb",
+                }}
+              >
+                Converted
+              </th>
+              <th
+                style={{
+                  padding: "10px 12px",
+                  textAlign: "right",
+                  fontWeight: 700,
+                  fontSize: 12,
+                  borderBottom: "2px solid #e5e7eb",
+                }}
+              >
+                Conv. Rate
+              </th>
+              <th
+                style={{
+                  padding: "10px 12px",
+                  textAlign: "right",
+                  fontWeight: 700,
+                  fontSize: 12,
+                  borderBottom: "2px solid #e5e7eb",
+                }}
+              >
+                Avg Response
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -277,25 +409,48 @@ export default function LeadAssignmentClient() {
                 <td style={{ padding: "10px 12px", fontSize: 13, borderBottom: "1px solid #f3f4f6" }}>
                   <strong>{row.name}</strong>
                 </td>
-                <td style={{ padding: "10px 12px", textAlign: "right", fontSize: 13, borderBottom: "1px solid #f3f4f6" }}>
-                  <span style={{
-                    fontWeight: 600,
-                    color: Math.abs(row.leadsReceived - avgLeads) > avgLeads * 0.25 ? "#ef4444" : "inherit",
-                  }}>
+                <td
+                  style={{ padding: "10px 12px", textAlign: "right", fontSize: 13, borderBottom: "1px solid #f3f4f6" }}
+                >
+                  <span
+                    style={{
+                      fontWeight: 600,
+                      color: Math.abs(row.leadsReceived - avgLeads) > avgLeads * 0.25 ? "#ef4444" : "inherit",
+                    }}
+                  >
                     {row.leadsReceived}
                   </span>
                 </td>
-                <td style={{ padding: "10px 12px", textAlign: "right", fontSize: 13, borderBottom: "1px solid #f3f4f6" }}>
+                <td
+                  style={{ padding: "10px 12px", textAlign: "right", fontSize: 13, borderBottom: "1px solid #f3f4f6" }}
+                >
                   {row.leadsContacted}
                 </td>
-                <td style={{ padding: "10px 12px", textAlign: "right", fontSize: 13, borderBottom: "1px solid #f3f4f6" }}>
+                <td
+                  style={{ padding: "10px 12px", textAlign: "right", fontSize: 13, borderBottom: "1px solid #f3f4f6" }}
+                >
                   {row.leadsConverted}
                 </td>
-                <td style={{ padding: "10px 12px", textAlign: "right", fontSize: 13, borderBottom: "1px solid #f3f4f6", fontWeight: 600 }}>
+                <td
+                  style={{
+                    padding: "10px 12px",
+                    textAlign: "right",
+                    fontSize: 13,
+                    borderBottom: "1px solid #f3f4f6",
+                    fontWeight: 600,
+                  }}
+                >
                   {conversionRate(row)}%
                 </td>
-                <td style={{ padding: "10px 12px", textAlign: "right", fontSize: 13, borderBottom: "1px solid #f3f4f6" }}>
-                  <span style={{ color: row.avgResponseTime > 10 ? "#ef4444" : row.avgResponseTime > 5 ? "#f59e0b" : "#10b981", fontWeight: 600 }}>
+                <td
+                  style={{ padding: "10px 12px", textAlign: "right", fontSize: 13, borderBottom: "1px solid #f3f4f6" }}
+                >
+                  <span
+                    style={{
+                      color: row.avgResponseTime > 10 ? "#ef4444" : row.avgResponseTime > 5 ? "#f59e0b" : "#10b981",
+                      fontWeight: 600,
+                    }}
+                  >
                     {row.avgResponseTime} min
                   </span>
                 </td>
@@ -307,16 +462,16 @@ export default function LeadAssignmentClient() {
 
       {/* Fairness Alert / Recommendation */}
       {fairnessIssues.length > 0 && (
-        <div style={{
-          background: "#fffbeb",
-          border: "1px solid #fde68a",
-          borderRadius: 10,
-          padding: 20,
-          marginBottom: 20,
-        }}>
-          <h3 style={{ margin: "0 0 8px 0", fontSize: 15, fontWeight: 700, color: "#92400e" }}>
-            Fairness Alerts
-          </h3>
+        <div
+          style={{
+            background: "#fffbeb",
+            border: "1px solid #fde68a",
+            borderRadius: 10,
+            padding: 20,
+            marginBottom: 20,
+          }}
+        >
+          <h3 style={{ margin: "0 0 8px 0", fontSize: 15, fontWeight: 700, color: "#92400e" }}>Fairness Alerts</h3>
           <ul style={{ margin: "0 0 12px 0", padding: "0 0 0 18px", fontSize: 13, lineHeight: 1.8 }}>
             {fairnessIssues.map((issue) => (
               <li key={issue.name} style={{ color: "#78350f" }}>
@@ -337,21 +492,21 @@ export default function LeadAssignmentClient() {
       )}
 
       {/* Recommendation Card */}
-      <div style={{
-        background: "#f0fdf4",
-        border: "1px solid #bbf7d0",
-        borderRadius: 10,
-        padding: 20,
-      }}>
-        <h3 style={{ margin: "0 0 8px 0", fontSize: 15, fontWeight: 700, color: "#166534" }}>
-          Recommendation
-        </h3>
+      <div
+        style={{
+          background: "#f0fdf4",
+          border: "1px solid #bbf7d0",
+          borderRadius: 10,
+          padding: 20,
+        }}
+      >
+        <h3 style={{ margin: "0 0 8px 0", fontSize: 15, fontWeight: 700, color: "#166534" }}>Recommendation</h3>
         <p style={{ margin: 0, fontSize: 13, lineHeight: 1.7, color: "#14532d" }}>
           Consider enabling round-robin lead assignment in GHL to ensure equal distribution.
           <strong> {topConverter.name}</strong> has the highest conversion rate at{" "}
-          <strong>{conversionRate(topConverter)}%</strong> -- routing higher-intent leads to top converters
-          while maintaining base fairness can optimize team outcomes. Agents with response times
-          above 5 minutes should be coached on speed-to-lead best practices.
+          <strong>{conversionRate(topConverter)}%</strong> -- routing higher-intent leads to top converters while
+          maintaining base fairness can optimize team outcomes. Agents with response times above 5 minutes should be
+          coached on speed-to-lead best practices.
         </p>
       </div>
     </div>

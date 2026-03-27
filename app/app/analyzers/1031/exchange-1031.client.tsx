@@ -77,9 +77,7 @@ export default function Exchange1031Client({ savedExchanges, investmentPropertie
   const [accumulatedDepreciation, setAccumulatedDepreciation] = useState(50000);
   const [sellingCosts, setSellingCosts] = useState(30000);
   const [existingMortgage, setExistingMortgage] = useState(200000);
-  const [saleCloseDate, setSaleCloseDate] = useState(
-    new Date().toISOString().split("T")[0]
-  );
+  const [saleCloseDate, setSaleCloseDate] = useState(new Date().toISOString().split("T")[0]);
 
   // Tax rates
   const [federalRate, setFederalRate] = useState(20);
@@ -120,13 +118,14 @@ export default function Exchange1031Client({ savedExchanges, investmentPropertie
         sellingCosts,
         existingMortgage,
       },
-      replacement: replacementPurchasePrice > 0
-        ? {
-            purchasePrice: replacementPurchasePrice,
-            newMortgage: replacementMortgage,
-            closingCosts: replacementClosingCosts,
-          }
-        : undefined,
+      replacement:
+        replacementPurchasePrice > 0
+          ? {
+              purchasePrice: replacementPurchasePrice,
+              newMortgage: replacementMortgage,
+              closingCosts: replacementClosingCosts,
+            }
+          : undefined,
       taxRates: {
         federalCapitalGainsRate: federalRate,
         stateCapitalGainsRate: stateRate,
@@ -215,7 +214,9 @@ export default function Exchange1031Client({ savedExchanges, investmentPropertie
     const supabase = supabaseBrowser();
 
     // Get current user ID for RLS
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       setMessage("Error: Not authenticated");
       setSaving(false);
@@ -249,10 +250,7 @@ export default function Exchange1031Client({ savedExchanges, investmentPropertie
     };
 
     if (selectedExchangeId) {
-      const { error } = await supabase
-        .from("exchange_1031")
-        .update(exchangeData)
-        .eq("id", selectedExchangeId);
+      const { error } = await supabase.from("exchange_1031").update(exchangeData).eq("id", selectedExchangeId);
 
       if (error) {
         setMessage("Error updating exchange: " + error.message);
@@ -361,7 +359,7 @@ export default function Exchange1031Client({ savedExchanges, investmentPropertie
         ["Purchase Price", replacementPurchasePrice],
         ["New Mortgage", replacementMortgage],
         ["Closing Costs", replacementClosingCosts],
-        ["New Property Basis", taxAnalysis.newPropertyBasis]
+        ["New Property Basis", taxAnalysis.newPropertyBasis],
       );
     }
 
@@ -398,10 +396,30 @@ export default function Exchange1031Client({ savedExchanges, investmentPropertie
       ["Tax Comparison: With vs Without 1031 Exchange"],
       [],
       ["Scenario", "Without Exchange", "With Exchange", "Difference"],
-      ["Federal Capital Gains", taxAnalysis.federalCapitalGainsTax, taxAnalysis.totalBoot > 0 ? (taxAnalysis.taxWithExchange * 0.4) : 0, taxAnalysis.federalCapitalGainsTax - (taxAnalysis.totalBoot > 0 ? (taxAnalysis.taxWithExchange * 0.4) : 0)],
-      ["State Taxes", taxAnalysis.stateCapitalGainsTax, taxAnalysis.totalBoot > 0 ? (taxAnalysis.taxWithExchange * 0.2) : 0, taxAnalysis.stateCapitalGainsTax - (taxAnalysis.totalBoot > 0 ? (taxAnalysis.taxWithExchange * 0.2) : 0)],
-      ["Depreciation Recapture", taxAnalysis.depreciationRecaptureTax, taxAnalysis.totalBoot > 0 ? (taxAnalysis.taxWithExchange * 0.3) : 0, taxAnalysis.depreciationRecaptureTax - (taxAnalysis.totalBoot > 0 ? (taxAnalysis.taxWithExchange * 0.3) : 0)],
-      ["NIIT", taxAnalysis.netInvestmentIncomeTax, taxAnalysis.totalBoot > 0 ? (taxAnalysis.taxWithExchange * 0.1) : 0, taxAnalysis.netInvestmentIncomeTax - (taxAnalysis.totalBoot > 0 ? (taxAnalysis.taxWithExchange * 0.1) : 0)],
+      [
+        "Federal Capital Gains",
+        taxAnalysis.federalCapitalGainsTax,
+        taxAnalysis.totalBoot > 0 ? taxAnalysis.taxWithExchange * 0.4 : 0,
+        taxAnalysis.federalCapitalGainsTax - (taxAnalysis.totalBoot > 0 ? taxAnalysis.taxWithExchange * 0.4 : 0),
+      ],
+      [
+        "State Taxes",
+        taxAnalysis.stateCapitalGainsTax,
+        taxAnalysis.totalBoot > 0 ? taxAnalysis.taxWithExchange * 0.2 : 0,
+        taxAnalysis.stateCapitalGainsTax - (taxAnalysis.totalBoot > 0 ? taxAnalysis.taxWithExchange * 0.2 : 0),
+      ],
+      [
+        "Depreciation Recapture",
+        taxAnalysis.depreciationRecaptureTax,
+        taxAnalysis.totalBoot > 0 ? taxAnalysis.taxWithExchange * 0.3 : 0,
+        taxAnalysis.depreciationRecaptureTax - (taxAnalysis.totalBoot > 0 ? taxAnalysis.taxWithExchange * 0.3 : 0),
+      ],
+      [
+        "NIIT",
+        taxAnalysis.netInvestmentIncomeTax,
+        taxAnalysis.totalBoot > 0 ? taxAnalysis.taxWithExchange * 0.1 : 0,
+        taxAnalysis.netInvestmentIncomeTax - (taxAnalysis.totalBoot > 0 ? taxAnalysis.taxWithExchange * 0.1 : 0),
+      ],
       [],
       ["TOTAL TAX", taxAnalysis.totalTaxWithoutExchange, taxAnalysis.taxWithExchange, taxAnalysis.taxSavings],
       [],
@@ -426,94 +444,133 @@ export default function Exchange1031Client({ savedExchanges, investmentPropertie
     XLSX.writeFile(wb, fileName);
   };
 
-  const generateFile = useCallback((format: "pdf" | "xlsx"): Blob => {
-    if (format === "xlsx") {
-      const wb = XLSX.utils.book_new();
-      const data: (string | number | string)[][] = [
-        ["1031 EXCHANGE ANALYSIS"],
-        ["Generated", new Date().toLocaleString()],
-        ["Exchange Name", exchangeName || "Untitled Exchange"],
-        [],
-        ["RELINQUISHED PROPERTY"],
-        ["Address", relinquishedAddress || "N/A"],
-        ["Sale Price", salePrice],
-        ["Selling Costs", sellingCosts],
-        ["Original Basis", originalBasis],
-        ["Accumulated Depreciation", accumulatedDepreciation],
-        ["Existing Mortgage", existingMortgage],
-        [],
-        ["TIMELINE"],
-        ["Sale Close Date", formatDate(timeline.saleCloseDate)],
-        ["45-Day Identification Deadline", formatDate(timeline.identificationDeadline)],
-        ["180-Day Exchange Deadline", formatDate(timeline.exchangeDeadline)],
-        [],
-        ["TAX ANALYSIS"],
-        ["Adjusted Basis", taxAnalysis.adjustedBasis],
-        ["Realized Gain", taxAnalysis.realizedGain],
-        ["Capital Gain", taxAnalysis.capitalGain],
-        ["Depreciation Recapture", taxAnalysis.depreciationRecapture],
-        [],
-        ["Tax Without Exchange", taxAnalysis.totalTaxWithoutExchange],
-        ["Tax With Exchange", taxAnalysis.taxWithExchange],
-        ["Tax Savings", taxAnalysis.taxSavings],
-        [],
-        ["REPLACEMENT REQUIREMENTS"],
-        ["Minimum Purchase Price", requirements.minimumPurchasePrice],
-        ["Minimum Equity", requirements.minimumEquity],
-        ["Minimum Debt", requirements.minimumDebt],
+  const generateFile = useCallback(
+    (format: "pdf" | "xlsx"): Blob => {
+      if (format === "xlsx") {
+        const wb = XLSX.utils.book_new();
+        const data: (string | number | string)[][] = [
+          ["1031 EXCHANGE ANALYSIS"],
+          ["Generated", new Date().toLocaleString()],
+          ["Exchange Name", exchangeName || "Untitled Exchange"],
+          [],
+          ["RELINQUISHED PROPERTY"],
+          ["Address", relinquishedAddress || "N/A"],
+          ["Sale Price", salePrice],
+          ["Selling Costs", sellingCosts],
+          ["Original Basis", originalBasis],
+          ["Accumulated Depreciation", accumulatedDepreciation],
+          ["Existing Mortgage", existingMortgage],
+          [],
+          ["TIMELINE"],
+          ["Sale Close Date", formatDate(timeline.saleCloseDate)],
+          ["45-Day Identification Deadline", formatDate(timeline.identificationDeadline)],
+          ["180-Day Exchange Deadline", formatDate(timeline.exchangeDeadline)],
+          [],
+          ["TAX ANALYSIS"],
+          ["Adjusted Basis", taxAnalysis.adjustedBasis],
+          ["Realized Gain", taxAnalysis.realizedGain],
+          ["Capital Gain", taxAnalysis.capitalGain],
+          ["Depreciation Recapture", taxAnalysis.depreciationRecapture],
+          [],
+          ["Tax Without Exchange", taxAnalysis.totalTaxWithoutExchange],
+          ["Tax With Exchange", taxAnalysis.taxWithExchange],
+          ["Tax Savings", taxAnalysis.taxSavings],
+          [],
+          ["REPLACEMENT REQUIREMENTS"],
+          ["Minimum Purchase Price", requirements.minimumPurchasePrice],
+          ["Minimum Equity", requirements.minimumEquity],
+          ["Minimum Debt", requirements.minimumDebt],
+        ];
+        const sheet = XLSX.utils.aoa_to_sheet(data);
+        XLSX.utils.book_append_sheet(wb, sheet, "1031 Exchange");
+        const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+        return new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      }
+      const doc = new jsPDF();
+      const pw = doc.internal.pageSize.getWidth();
+      let y = 20;
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      doc.text("1031 Exchange Analysis", pw / 2, y, { align: "center" });
+      y += 10;
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(exchangeName || "Untitled Exchange", pw / 2, y, { align: "center" });
+      y += 14;
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text("Relinquished Property", 25, y);
+      y += 8;
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      const relinquishedRows: [string, string][] = [
+        ["Address:", relinquishedAddress || "N/A"],
+        ["Sale Price:", formatCurrency(salePrice)],
+        ["Selling Costs:", formatCurrency(sellingCosts)],
+        ["Original Basis:", formatCurrency(originalBasis)],
+        ["Accum. Depreciation:", formatCurrency(accumulatedDepreciation)],
+        ["Existing Mortgage:", formatCurrency(existingMortgage)],
       ];
-      const sheet = XLSX.utils.aoa_to_sheet(data);
-      XLSX.utils.book_append_sheet(wb, sheet, "1031 Exchange");
-      const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-      return new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-    }
-    const doc = new jsPDF();
-    const pw = doc.internal.pageSize.getWidth();
-    let y = 20;
-    doc.setFontSize(18); doc.setFont("helvetica", "bold");
-    doc.text("1031 Exchange Analysis", pw / 2, y, { align: "center" }); y += 10;
-    doc.setFontSize(10); doc.setFont("helvetica", "normal");
-    doc.text(exchangeName || "Untitled Exchange", pw / 2, y, { align: "center" }); y += 14;
-    doc.setFontSize(12); doc.setFont("helvetica", "bold");
-    doc.text("Relinquished Property", 25, y); y += 8;
-    doc.setFontSize(10); doc.setFont("helvetica", "normal");
-    const relinquishedRows: [string, string][] = [
-      ["Address:", relinquishedAddress || "N/A"],
-      ["Sale Price:", formatCurrency(salePrice)],
-      ["Selling Costs:", formatCurrency(sellingCosts)],
-      ["Original Basis:", formatCurrency(originalBasis)],
-      ["Accum. Depreciation:", formatCurrency(accumulatedDepreciation)],
-      ["Existing Mortgage:", formatCurrency(existingMortgage)],
-    ];
-    relinquishedRows.forEach(([l, v]) => { doc.text(l, 30, y); doc.text(v, pw - 25, y, { align: "right" }); y += 7; });
-    y += 6;
-    doc.setFontSize(12); doc.setFont("helvetica", "bold");
-    doc.text("Tax Analysis", 25, y); y += 8;
-    doc.setFontSize(10); doc.setFont("helvetica", "normal");
-    const taxRows: [string, string][] = [
-      ["Adjusted Basis:", formatCurrency(taxAnalysis.adjustedBasis)],
-      ["Realized Gain:", formatCurrency(taxAnalysis.realizedGain)],
-      ["Capital Gain:", formatCurrency(taxAnalysis.capitalGain)],
-      ["Depreciation Recapture:", formatCurrency(taxAnalysis.depreciationRecapture)],
-      ["", ""],
-      ["Tax Without Exchange:", formatCurrency(taxAnalysis.totalTaxWithoutExchange)],
-      ["Tax With Exchange:", formatCurrency(taxAnalysis.taxWithExchange)],
-      ["Tax Savings:", formatCurrency(taxAnalysis.taxSavings)],
-    ];
-    taxRows.forEach(([l, v]) => { doc.text(l, 30, y); doc.text(v, pw - 25, y, { align: "right" }); y += 7; });
-    y += 6;
-    doc.setFontSize(12); doc.setFont("helvetica", "bold");
-    doc.text("Replacement Requirements", 25, y); y += 8;
-    doc.setFontSize(10); doc.setFont("helvetica", "normal");
-    const reqRows: [string, string][] = [
-      ["Min Purchase Price:", formatCurrency(requirements.minimumPurchasePrice)],
-      ["Min Equity:", formatCurrency(requirements.minimumEquity)],
-      ["Min Debt:", formatCurrency(requirements.minimumDebt)],
-      ["Net Equity from Sale:", formatCurrency(requirements.netEquityFromSale)],
-    ];
-    reqRows.forEach(([l, v]) => { doc.text(l, 30, y); doc.text(v, pw - 25, y, { align: "right" }); y += 7; });
-    return new Blob([doc.output("arraybuffer")], { type: "application/pdf" });
-  }, [exchangeName, relinquishedAddress, salePrice, sellingCosts, originalBasis, accumulatedDepreciation, existingMortgage, timeline, taxAnalysis, requirements]);
+      relinquishedRows.forEach(([l, v]) => {
+        doc.text(l, 30, y);
+        doc.text(v, pw - 25, y, { align: "right" });
+        y += 7;
+      });
+      y += 6;
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text("Tax Analysis", 25, y);
+      y += 8;
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      const taxRows: [string, string][] = [
+        ["Adjusted Basis:", formatCurrency(taxAnalysis.adjustedBasis)],
+        ["Realized Gain:", formatCurrency(taxAnalysis.realizedGain)],
+        ["Capital Gain:", formatCurrency(taxAnalysis.capitalGain)],
+        ["Depreciation Recapture:", formatCurrency(taxAnalysis.depreciationRecapture)],
+        ["", ""],
+        ["Tax Without Exchange:", formatCurrency(taxAnalysis.totalTaxWithoutExchange)],
+        ["Tax With Exchange:", formatCurrency(taxAnalysis.taxWithExchange)],
+        ["Tax Savings:", formatCurrency(taxAnalysis.taxSavings)],
+      ];
+      taxRows.forEach(([l, v]) => {
+        doc.text(l, 30, y);
+        doc.text(v, pw - 25, y, { align: "right" });
+        y += 7;
+      });
+      y += 6;
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text("Replacement Requirements", 25, y);
+      y += 8;
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      const reqRows: [string, string][] = [
+        ["Min Purchase Price:", formatCurrency(requirements.minimumPurchasePrice)],
+        ["Min Equity:", formatCurrency(requirements.minimumEquity)],
+        ["Min Debt:", formatCurrency(requirements.minimumDebt)],
+        ["Net Equity from Sale:", formatCurrency(requirements.netEquityFromSale)],
+      ];
+      reqRows.forEach(([l, v]) => {
+        doc.text(l, 30, y);
+        doc.text(v, pw - 25, y, { align: "right" });
+        y += 7;
+      });
+      return new Blob([doc.output("arraybuffer")], { type: "application/pdf" });
+    },
+    [
+      exchangeName,
+      relinquishedAddress,
+      salePrice,
+      sellingCosts,
+      originalBasis,
+      accumulatedDepreciation,
+      existingMortgage,
+      timeline,
+      taxAnalysis,
+      requirements,
+    ],
+  );
 
   const getStatusColor = (status: TimelineStatus["status"]) => {
     switch (status) {
@@ -738,7 +795,13 @@ export default function Exchange1031Client({ savedExchanges, investmentPropertie
                 </div>
                 <button
                   onClick={() => removeIdentifiedProperty(prop.id)}
-                  style={{ padding: "4px 8px", fontSize: 12, color: "red", border: "1px solid red", background: "white" }}
+                  style={{
+                    padding: "4px 8px",
+                    fontSize: 12,
+                    color: "red",
+                    border: "1px solid red",
+                    background: "white",
+                  }}
                 >
                   Remove
                 </button>
@@ -886,12 +949,14 @@ export default function Exchange1031Client({ savedExchanges, investmentPropertie
                 style={{
                   fontSize: 14,
                   fontWeight: 600,
-                  color: timeline.identificationExpired ? "#ef4444" : timeline.daysUntilIdentification <= 7 ? "#f59e0b" : "#22c55e",
+                  color: timeline.identificationExpired
+                    ? "#ef4444"
+                    : timeline.daysUntilIdentification <= 7
+                      ? "#f59e0b"
+                      : "#22c55e",
                 }}
               >
-                {timeline.identificationExpired
-                  ? "EXPIRED"
-                  : `${timeline.daysUntilIdentification} days remaining`}
+                {timeline.identificationExpired ? "EXPIRED" : `${timeline.daysUntilIdentification} days remaining`}
               </div>
             </div>
 
@@ -909,7 +974,11 @@ export default function Exchange1031Client({ savedExchanges, investmentPropertie
                 style={{
                   fontSize: 14,
                   fontWeight: 600,
-                  color: timeline.exchangeExpired ? "#ef4444" : timeline.daysUntilExchange <= 30 ? "#f59e0b" : "#22c55e",
+                  color: timeline.exchangeExpired
+                    ? "#ef4444"
+                    : timeline.daysUntilExchange <= 30
+                      ? "#f59e0b"
+                      : "#22c55e",
                 }}
               >
                 {timeline.exchangeExpired ? "EXPIRED" : `${timeline.daysUntilExchange} days remaining`}
@@ -942,7 +1011,9 @@ export default function Exchange1031Client({ savedExchanges, investmentPropertie
         </div>
 
         {/* Tax Comparison */}
-        <div style={{ marginBottom: 20, padding: 20, border: "2px solid #000", borderRadius: 12, background: "#fafafa" }}>
+        <div
+          style={{ marginBottom: 20, padding: 20, border: "2px solid #000", borderRadius: 12, background: "#fafafa" }}
+        >
           <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 800 }}>Tax Comparison</h3>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
             <div style={{ padding: 12, background: "#fee2e2", borderRadius: 8 }}>
@@ -1033,8 +1104,8 @@ export default function Exchange1031Client({ savedExchanges, investmentPropertie
                 <span>{formatCurrency(taxAnalysis.totalBoot)}</span>
               </div>
               <p style={{ margin: "8px 0 0 0", fontSize: 12, opacity: 0.8 }}>
-                Boot is the portion of the exchange that is taxable. To avoid boot, ensure the replacement
-                property price and debt are equal to or greater than the relinquished property.
+                Boot is the portion of the exchange that is taxable. To avoid boot, ensure the replacement property
+                price and debt are equal to or greater than the relinquished property.
               </p>
             </div>
           </div>

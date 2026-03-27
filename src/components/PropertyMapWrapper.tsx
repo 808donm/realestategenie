@@ -6,9 +6,7 @@ import GoogleMapEmbed from "./GoogleMapEmbed";
 // Dynamically import PropertyMap to avoid SSR issues with Leaflet
 const PropertyMap = dynamic(() => import("./PropertyMap"), {
   ssr: false,
-  loading: () => (
-    <div className="h-full bg-muted animate-pulse rounded-lg min-h-[250px]" />
-  ),
+  loading: () => <div className="h-full bg-muted animate-pulse rounded-lg min-h-[250px]" />,
 });
 
 type PropertyMapWrapperProps = {
@@ -20,8 +18,7 @@ type PropertyMapWrapperProps = {
 };
 
 export default function PropertyMapWrapper(props: PropertyMapWrapperProps) {
-  const apiKey =
-    props.googleMapsApiKey || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  const apiKey = props.googleMapsApiKey || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
   if (apiKey) {
     return (
@@ -48,8 +45,7 @@ export default function PropertyMapWrapper(props: PropertyMapWrapperProps) {
 
   return (
     <div className="rounded-lg border bg-muted p-4 text-sm text-muted-foreground">
-      Map not available. Add latitude/longitude or configure the Google Maps
-      API key.
+      Map not available. Add latitude/longitude or configure the Google Maps API key.
     </div>
   );
 }

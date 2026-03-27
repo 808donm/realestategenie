@@ -5,14 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Plus,
-  RefreshCw,
-  Loader2,
-  Calendar as CalendarIcon,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, RefreshCw, Loader2, Calendar as CalendarIcon } from "lucide-react";
 import EventModal from "./event-modal";
 
 type CalendarEvent = {
@@ -39,11 +32,7 @@ const SOURCE_COLORS: Record<string, { bg: string; text: string; label: string }>
 
 type ViewMode = "month" | "week" | "day";
 
-export default function CalendarView({
-  connectedSources,
-}: {
-  connectedSources: string[];
-}) {
+export default function CalendarView({ connectedSources }: { connectedSources: string[] }) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -51,9 +40,7 @@ export default function CalendarView({
   const [syncing, setSyncing] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [activeFilters, setActiveFilters] = useState<Set<string>>(
-    new Set(["google", "microsoft", "ghl", "local"])
-  );
+  const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set(["google", "microsoft", "ghl", "local"]));
 
   const getDateRange = useCallback(() => {
     const year = currentDate.getFullYear();
@@ -213,8 +200,7 @@ export default function CalendarView({
     );
   };
 
-  const isCurrentMonth = (date: Date) =>
-    date.getMonth() === currentDate.getMonth();
+  const isCurrentMonth = (date: Date) => date.getMonth() === currentDate.getMonth();
 
   return (
     <div className="space-y-4">
@@ -241,9 +227,7 @@ export default function CalendarView({
                 key={mode}
                 onClick={() => setViewMode(mode)}
                 className={`px-3 py-1 text-sm capitalize ${
-                  viewMode === mode
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-background hover:bg-muted"
+                  viewMode === mode ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"
                 }`}
               >
                 {mode}
@@ -251,17 +235,8 @@ export default function CalendarView({
             ))}
           </div>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleSync}
-            disabled={syncing || connectedSources.length === 0}
-          >
-            {syncing ? (
-              <Loader2 className="w-4 h-4 animate-spin mr-1" />
-            ) : (
-              <RefreshCw className="w-4 h-4 mr-1" />
-            )}
+          <Button variant="outline" size="sm" onClick={handleSync} disabled={syncing || connectedSources.length === 0}>
+            {syncing ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <RefreshCw className="w-4 h-4 mr-1" />}
             Sync
           </Button>
 
@@ -282,9 +257,7 @@ export default function CalendarView({
               key={source}
               onClick={() => toggleFilter(source)}
               disabled={!isConnected && source !== "local"}
-              className={`px-3 py-1 rounded-full text-xs font-medium transition-opacity ${
-                style.bg
-              } ${style.text} ${
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-opacity ${style.bg} ${style.text} ${
                 isActive ? "opacity-100" : "opacity-40"
               } ${!isConnected && source !== "local" ? "cursor-not-allowed line-through" : "cursor-pointer"}`}
             >
@@ -306,10 +279,7 @@ export default function CalendarView({
             {/* Day headers */}
             <div className="grid grid-cols-7 border-b">
               {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-                <div
-                  key={day}
-                  className="text-center text-xs font-medium text-muted-foreground py-2"
-                >
+                <div key={day} className="text-center text-xs font-medium text-muted-foreground py-2">
                   {day}
                 </div>
               ))}
@@ -332,8 +302,8 @@ export default function CalendarView({
                           isToday(date)
                             ? "bg-primary text-primary-foreground"
                             : isCurrentMonth(date)
-                            ? "text-foreground"
-                            : "text-muted-foreground"
+                              ? "text-foreground"
+                              : "text-muted-foreground"
                         }`}
                       >
                         {date.getDate()}
@@ -347,20 +317,14 @@ export default function CalendarView({
                               onClick={() => setSelectedEvent(event)}
                               className={`w-full text-left px-1 py-0.5 rounded text-[10px] leading-tight truncate ${style.bg} ${style.text}`}
                             >
-                              {!event.all_day && (
-                                <span className="font-medium">
-                                  {formatTime(event.start_at)}{" "}
-                                </span>
-                              )}
+                              {!event.all_day && <span className="font-medium">{formatTime(event.start_at)} </span>}
                               {event.title}
                               {event.pending_sync && " *"}
                             </button>
                           );
                         })}
                         {dayEvents.length > 3 && (
-                          <div className="text-[10px] text-muted-foreground pl-1">
-                            +{dayEvents.length - 3} more
-                          </div>
+                          <div className="text-[10px] text-muted-foreground pl-1">+{dayEvents.length - 3} more</div>
                         )}
                       </div>
                     </div>
@@ -378,11 +342,7 @@ export default function CalendarView({
           onSelectEvent={setSelectedEvent}
         />
       ) : (
-        <DayView
-          events={filteredEvents}
-          currentDate={currentDate}
-          onSelectEvent={setSelectedEvent}
-        />
+        <DayView events={filteredEvents} currentDate={currentDate} onSelectEvent={setSelectedEvent} />
       )}
 
       {/* Event Detail / Edit Modal */}
@@ -463,10 +423,7 @@ function WeekView({
           {/* Header */}
           <div className="border-b border-r" />
           {days.map((d, i) => (
-            <div
-              key={i}
-              className="text-center text-xs font-medium py-2 border-b border-r last:border-r-0"
-            >
+            <div key={i} className="text-center text-xs font-medium py-2 border-b border-r last:border-r-0">
               {d.toLocaleDateString(undefined, { weekday: "short", day: "numeric" })}
             </div>
           ))}
@@ -486,10 +443,7 @@ function WeekView({
                 });
 
                 return (
-                  <div
-                    key={di}
-                    className="border-b border-r last:border-r-0 h-12 relative"
-                  >
+                  <div key={di} className="border-b border-r last:border-r-0 h-12 relative">
                     {slotEvents.map((event) => {
                       const style = SOURCE_COLORS[event.source] || SOURCE_COLORS.local;
                       return (
@@ -535,9 +489,7 @@ function DayView({
     <Card>
       <CardContent className="p-0">
         {hours.map((hour) => {
-          const hourEvents = dayEvents.filter(
-            (e) => new Date(e.start_at).getHours() === hour
-          );
+          const hourEvents = dayEvents.filter((e) => new Date(e.start_at).getHours() === hour);
 
           return (
             <div key={hour} className="flex border-b last:border-b-0 min-h-[48px]">
@@ -560,9 +512,7 @@ function DayView({
                         })}
                       </span>{" "}
                       {event.title}
-                      {event.location && (
-                        <span className="opacity-60 ml-2">{event.location}</span>
-                      )}
+                      {event.location && <span className="opacity-60 ml-2">{event.location}</span>}
                     </button>
                   );
                 })}

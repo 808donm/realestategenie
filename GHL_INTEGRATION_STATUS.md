@@ -1,10 +1,12 @@
 # GHL Integration Status Report
+
 **Date:** 2026-01-06
 **Branch:** claude/fix-missing-form-fields-ymc8s
 
 ## ✅ OAuth Integration - FIXED
 
 ### What Was Fixed:
+
 1. **OAuth Scope Granting** - All 19 scopes now successfully granted
    - Added: `associations.write`, `associations.readonly`
    - Added: `conversations.write`, `conversations.readonly`
@@ -23,6 +25,7 @@
    - All 19 scopes present in JWT token
 
 ### Latest OAuth Callback Logs (2026-01-06 00:10:03):
+
 ```
 ✅ Location ID: gTZBuJqALTmKjETniBEN (CORRECT)
 ✅ authClass: Location (not Agency)
@@ -44,6 +47,7 @@
 ## ✅ Associations API - FIXED
 
 ### What Was Fixed:
+
 1. **Endpoint Format**
    - **Old (404 error):** `POST /objects/custom_objects.registrations/records/{id}/associations`
    - **New (correct):** `POST /associations/relations`
@@ -65,12 +69,14 @@
    - Registration → OpenHouse
 
 ### Code Location:
+
 - File: `src/lib/notifications/ghl-service.ts`
 - Lines: 186-243
 
 ## ✅ Email Sending - FIXED
 
 ### What Was Fixed:
+
 1. **GHL-First Email Strategy**
    - Primary: Send via GHL conversations API (for CRM tracking)
    - Fallback: Send via Resend if GHL fails
@@ -86,6 +92,7 @@
    - Return visit: "RED HOT LEAD!" alert
 
 ### Code Location:
+
 - GHL Service: `src/lib/notifications/ghl-service.ts:372-410`
 - Email Templates: `src/lib/email/resend.ts`
 - Lead Submit: `app/api/leads/submit/route.tsx:280-308`
@@ -93,7 +100,9 @@
 ## ✅ Token Storage - FIXED
 
 ### Field Name Standardization:
+
 All GHL config fields now use `ghl_` prefix:
+
 - `ghl_access_token`
 - `ghl_refresh_token`
 - `ghl_expires_at`
@@ -105,13 +114,16 @@ All GHL config fields now use `ghl_` prefix:
 - `ghl_new_lead_stage` (optional)
 
 ### Backwards Compatibility:
+
 Token refresh utility (`src/lib/integrations/ghl-token-refresh.ts`) supports both:
+
 - New format: `ghl_*` fields
 - Old format: unprefixed fields
 
 ## 🔧 What Needs to Be Tested
 
 ### 1. End-to-End Registration Flow
+
 Test a complete open house registration:
 
 1. **Visit Registration Page**
@@ -137,6 +149,7 @@ Test a complete open house registration:
    - Should see visit count increment
 
 ### 2. Return Visit Test
+
 Submit registration twice for same open house:
 
 1. First visit → should get standard thank you email
@@ -144,6 +157,7 @@ Submit registration twice for same open house:
 3. Verify `visitcount` field increments in Registration record
 
 ### 3. Pipeline Integration (Optional)
+
 If pipeline settings configured:
 
 1. Check if Opportunity created in pipeline
@@ -151,6 +165,7 @@ If pipeline settings configured:
 3. Verify heat level tag applied
 
 ### 4. Webhook Testing (Optional)
+
 User mentioned webhook settings available in GHL:
 
 - Current webhook endpoint exists: `/api/webhooks/ghl`
@@ -160,11 +175,13 @@ User mentioned webhook settings available in GHL:
 ## 📋 Configuration Checklist
 
 ### In GHL Marketplace:
+
 - [x] All 19 scopes enabled in app settings
 - [x] App published/saved with new scopes
 - [ ] Webhook URL configured (optional): `https://yourdomain.com/api/webhooks/ghl`
 
 ### In Application:
+
 - [x] OAuth connected with correct sub-account
 - [x] Location ID verified: `gTZBuJqALTmKjETniBEN`
 - [x] All 19 scopes granted in token
@@ -172,6 +189,7 @@ User mentioned webhook settings available in GHL:
 - [ ] New Lead Stage ID configured (if using pipeline feature)
 
 ### Environment Variables:
+
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=...
 SUPABASE_SERVICE_ROLE_KEY=...
@@ -226,6 +244,7 @@ RESEND_API_KEY=... (for email fallback)
 ## 🐛 Debugging Tools
 
 Available diagnostic endpoints:
+
 - `GET /api/debug/show-oauth-url` - Shows exact OAuth URL with scopes
 - `GET /api/debug/show-ghl-config?agentId=xxx` - Shows stored config
 - `GET /api/debug/check-ghl-scopes?agentId=xxx` - Tests scope access
@@ -254,6 +273,7 @@ Available diagnostic endpoints:
 ## 🎉 Summary
 
 All critical issues have been resolved:
+
 - ✅ All 19 scopes successfully granted
 - ✅ Correct location ID (sub-account) returned
 - ✅ Token stored correctly in database

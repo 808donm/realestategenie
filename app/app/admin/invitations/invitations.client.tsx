@@ -12,13 +12,7 @@ type Invitation = {
   invited_by: { display_name: string } | null;
 };
 
-export default function InvitationsClient({
-  invitations,
-  adminId,
-}: {
-  invitations: Invitation[];
-  adminId: string;
-}) {
+export default function InvitationsClient({ invitations, adminId }: { invitations: Invitation[]; adminId: string }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -115,9 +109,7 @@ export default function InvitationsClient({
           border: "1px solid #e5e7eb",
         }}
       >
-        <h2 style={{ fontSize: 18, fontWeight: 700, margin: "0 0 16px 0" }}>
-          Send New Invitation
-        </h2>
+        <h2 style={{ fontSize: 18, fontWeight: 700, margin: "0 0 16px 0" }}>Send New Invitation</h2>
         <form onSubmit={sendInvitation} style={{ display: "flex", gap: 12 }}>
           <input
             type="email"
@@ -170,9 +162,7 @@ export default function InvitationsClient({
               borderBottom: "1px solid #e5e7eb",
             }}
           >
-            <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>
-              Pending Invitations ({pendingInvites.length})
-            </h2>
+            <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Pending Invitations ({pendingInvites.length})</h2>
           </div>
           <InvitationTable
             invitations={pendingInvites}
@@ -200,9 +190,7 @@ export default function InvitationsClient({
               borderBottom: "1px solid #e5e7eb",
             }}
           >
-            <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>
-              Past Invitations ({otherInvites.length})
-            </h2>
+            <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Past Invitations ({otherInvites.length})</h2>
           </div>
           <InvitationTable
             invitations={otherInvites}
@@ -254,9 +242,7 @@ function InvitationTable({
       <tbody>
         {invitations.map((inv) => (
           <tr key={inv.id} style={{ borderBottom: "1px solid #e5e7eb" }}>
-            <td style={{ padding: "16px 24px", fontSize: 14 }}>
-              {inv.email}
-            </td>
+            <td style={{ padding: "16px 24px", fontSize: 14 }}>{inv.email}</td>
             <td style={{ padding: "16px 24px" }}>
               <StatusBadge status={inv.status} />
             </td>

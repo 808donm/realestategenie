@@ -40,11 +40,15 @@ export default function ExportToolbar({ title, columns, getData, brand, filename
 
   const exportExcel = () => {
     const rows = getData();
-    const ws = XLSX.utils.json_to_sheet(rows.map((row) => {
-      const obj: Record<string, any> = {};
-      columns.forEach((col) => { obj[col.label] = row[col.key] ?? ""; });
-      return obj;
-    }));
+    const ws = XLSX.utils.json_to_sheet(
+      rows.map((row) => {
+        const obj: Record<string, any> = {};
+        columns.forEach((col) => {
+          obj[col.label] = row[col.key] ?? "";
+        });
+        return obj;
+      }),
+    );
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, title.slice(0, 31));
     XLSX.writeFile(wb, `${prefix}_${dateSuffix}.xlsx`);
@@ -53,11 +57,15 @@ export default function ExportToolbar({ title, columns, getData, brand, filename
 
   const exportCSV = () => {
     const rows = getData();
-    const ws = XLSX.utils.json_to_sheet(rows.map((row) => {
-      const obj: Record<string, any> = {};
-      columns.forEach((col) => { obj[col.label] = row[col.key] ?? ""; });
-      return obj;
-    }));
+    const ws = XLSX.utils.json_to_sheet(
+      rows.map((row) => {
+        const obj: Record<string, any> = {};
+        columns.forEach((col) => {
+          obj[col.label] = row[col.key] ?? "";
+        });
+        return obj;
+      }),
+    );
     const csv = XLSX.utils.sheet_to_csv(ws);
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -231,15 +239,24 @@ export default function ExportToolbar({ title, columns, getData, brand, filename
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
           <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[160px]">
-            <button onClick={exportPDF} className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+            <button
+              onClick={exportPDF}
+              className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+            >
               <FileText className="w-4 h-4 text-red-500" />
               Branded PDF
             </button>
-            <button onClick={exportExcel} className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+            <button
+              onClick={exportExcel}
+              className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+            >
               <FileSpreadsheet className="w-4 h-4 text-green-600" />
               Excel (.xlsx)
             </button>
-            <button onClick={exportCSV} className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors rounded-b-lg">
+            <button
+              onClick={exportCSV}
+              className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors rounded-b-lg"
+            >
               <FileText className="w-4 h-4 text-blue-500" />
               CSV
             </button>

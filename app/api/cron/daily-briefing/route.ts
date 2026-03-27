@@ -1,15 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import {
-  aggregateAgentData,
-  aggregateTeamData,
-  aggregateBrokerData,
-} from "@/lib/briefing/report-data";
-import {
-  generateAgentBriefing,
-  generateTeamBriefing,
-  generateBrokerBriefing,
-} from "@/lib/briefing/ai-briefing";
+import { aggregateAgentData, aggregateTeamData, aggregateBrokerData } from "@/lib/briefing/report-data";
+import { generateAgentBriefing, generateTeamBriefing, generateBrokerBriefing } from "@/lib/briefing/ai-briefing";
 
 /**
  * Daily AI Briefing Cron Job
@@ -22,11 +14,9 @@ import {
  * Required header: Authorization: Bearer [CRON_SECRET]
  */
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 export async function POST(request: NextRequest) {
   try {
@@ -48,15 +38,10 @@ export async function POST(request: NextRequest) {
     };
 
     // Get all agents with timezones
-    const { data: allAgents, error: agentsError } = await supabase
-      .from("agents")
-      .select("id, timezone, email");
+    const { data: allAgents, error: agentsError } = await supabase.from("agents").select("id, timezone, email");
 
     if (agentsError || !allAgents) {
-      return NextResponse.json(
-        { error: "Failed to fetch agents" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to fetch agents" }, { status: 500 });
     }
 
     // ── Timezone-aware targeting ──────────────────────────────────
@@ -94,9 +79,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    console.log(
-      `${targetAgentIds.length} agent(s) at 6 AM — generating briefings...`
-    );
+    console.log(`${targetAgentIds.length} agent(s) at 6 AM — generating briefings...`);
 
     // Lazy-load Resend
     const { Resend } = await import("resend");
@@ -109,9 +92,7 @@ export async function POST(request: NextRequest) {
       .in("user_id", targetAgentIds);
 
     const roleMap = new Map<string, string>();
-    (memberships || []).forEach((m) =>
-      roleMap.set(m.user_id, m.account_role)
-    );
+    (memberships || []).forEach((m) => roleMap.set(m.user_id, m.account_role));
 
     // Process each agent
     for (const agentId of targetAgentIds) {
@@ -158,11 +139,7 @@ export async function POST(request: NextRequest) {
                   ? "You're on top — here's how to stay there"
                   : "Your path to the top of the leaderboard";
 
-                const coachHtml = buildCoachingEmailHtml(
-                  ae.agentName,
-                  ae.message,
-                  ae.isTopAgent
-                );
+                const coachHtml = buildCoachingEmailHtml(ae.agentName, ae.message, ae.isTopAgent);
 
                 await resend.emails.send({
                   from: "Real Estate Genie <support@realestategenie.app>",
@@ -213,10 +190,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error("Fatal error in daily briefing cron:", error);
-    return NextResponse.json(
-      { error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
@@ -227,17 +201,11 @@ export async function GET(request: NextRequest) {
 
 // ─── Coaching email HTML ─────────────────────────────────────────────────────
 
-function buildCoachingEmailHtml(
-  agentName: string,
-  message: string,
-  isTopAgent: boolean
-): string {
+function buildCoachingEmailHtml(agentName: string, message: string, isTopAgent: boolean): string {
   const headerColor = isTopAgent
     ? "linear-gradient(135deg, #059669 0%, #10b981 100%)"
     : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)";
-  const headerTitle = isTopAgent
-    ? `Congrats, ${agentName.split(" ")[0]}!`
-    : `Let's Go, ${agentName.split(" ")[0]}!`;
+  const headerTitle = isTopAgent ? `Congrats, ${agentName.split(" ")[0]}!` : `Let's Go, ${agentName.split(" ")[0]}!`;
   const headerSub = isTopAgent
     ? "You're the top producer this period"
     : "Here's your playbook to climb the leaderboard";

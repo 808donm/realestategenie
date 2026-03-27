@@ -1,11 +1,9 @@
 import { trackedGenerateText } from "@/lib/ai/ai-call-logger";
 import { createClient } from "@supabase/supabase-js";
 
-const admin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 export interface ConversationMessage {
   role: "user" | "assistant";
@@ -52,8 +50,7 @@ export async function generateSmsResponse(params: {
   inboundMessage: string;
   propertyAddress?: string;
 }): Promise<{ reply: string; conversationId: string }> {
-  const { ghlContactId, agentId, agentName, inboundMessage, propertyAddress } =
-    params;
+  const { ghlContactId, agentId, agentName, inboundMessage, propertyAddress } = params;
 
   // Load or create conversation thread
   const { data: existingConvo } = await admin
@@ -146,10 +143,7 @@ export async function generateSmsResponse(params: {
  * Mark a conversation as handed off to the human agent.
  * Called when the AI determines the lead needs direct human attention.
  */
-export async function handoffConversation(
-  conversationId: string,
-  reason: string
-): Promise<void> {
+export async function handoffConversation(conversationId: string, reason: string): Promise<void> {
   await admin
     .from("ai_sms_conversations")
     .update({

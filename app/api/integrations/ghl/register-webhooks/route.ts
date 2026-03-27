@@ -37,10 +37,7 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (integrationError || !integration) {
-      return NextResponse.json(
-        { error: "CRM not connected. Please connect your CRM first." },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "CRM not connected. Please connect your CRM first." }, { status: 404 });
     }
 
     const config = integration.config as any;
@@ -48,27 +45,21 @@ export async function POST(req: NextRequest) {
     const locationId = config.ghl_location_id;
 
     if (!accessToken || !locationId) {
-      return NextResponse.json(
-        { error: "CRM integration is missing access token or location ID." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "CRM integration is missing access token or location ID." }, { status: 400 });
     }
 
     const client = new GHLClient(accessToken, locationId);
 
     // Determine the webhook URL for this deployment
     const appUrl =
-      process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL
-        ? `https://${process.env.VERCEL_URL}`
-        : null;
+      process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null;
 
     if (!appUrl) {
       return NextResponse.json(
         {
-          error:
-            "Cannot determine app URL. Set NEXT_PUBLIC_APP_URL in environment variables.",
+          error: "Cannot determine app URL. Set NEXT_PUBLIC_APP_URL in environment variables.",
         },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -84,16 +75,12 @@ export async function POST(req: NextRequest) {
     }
 
     // Find any existing webhook pointing to our URL
-    const existingMatch = existingWebhooks.find(
-      (wh: any) => wh.url === webhookUrl
-    );
+    const existingMatch = existingWebhooks.find((wh: any) => wh.url === webhookUrl);
 
     if (existingMatch) {
       // Check if it already has all the events we need
       const existingEvents: string[] = existingMatch.events || [];
-      const missingEvents = WEBHOOK_EVENTS.filter(
-        (e) => !existingEvents.includes(e)
-      );
+      const missingEvents = WEBHOOK_EVENTS.filter((e) => !existingEvents.includes(e));
 
       if (missingEvents.length === 0) {
         return NextResponse.json({
@@ -115,11 +102,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Register the webhook
-    const result = await client.createWebhook(
-      locationId,
-      webhookUrl,
-      WEBHOOK_EVENTS
-    );
+    const result = await client.createWebhook(locationId, webhookUrl, WEBHOOK_EVENTS);
 
     // Store the webhook ID in integration config for future management
     await supabase
@@ -144,10 +127,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: any) {
     console.error("Webhook registration error:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to register webhooks" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message || "Failed to register webhooks" }, { status: 500 });
   }
 }
 
@@ -171,10 +151,7 @@ export async function GET(req: NextRequest) {
       .single();
 
     if (!integration) {
-      return NextResponse.json(
-        { error: "CRM not connected" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "CRM not connected" }, { status: 404 });
     }
 
     const config = integration.config as any;
@@ -187,9 +164,6 @@ export async function GET(req: NextRequest) {
       registeredWebhookId: config.ghl_webhook_id || null,
     });
   } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message || "Failed to list webhooks" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message || "Failed to list webhooks" }, { status: 500 });
   }
 }

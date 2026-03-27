@@ -127,18 +127,15 @@ export class GHLClient {
   /**
    * Make authenticated API request to GHL
    */
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
+  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
 
     const response = await fetch(url, {
       ...options,
       headers: {
-        "Authorization": `Bearer ${this.accessToken}`,
+        Authorization: `Bearer ${this.accessToken}`,
         "Content-Type": "application/json",
-        "Version": "2021-07-28", // GHL API version
+        Version: "2021-07-28", // GHL API version
         ...options.headers,
       },
     });
@@ -146,22 +143,22 @@ export class GHLClient {
     if (!response.ok) {
       const error = await response.text();
 
-      console.error('[GHL] ========================================');
-      console.error('[GHL] ❌ API ERROR');
-      console.error('[GHL] ========================================');
-      console.error('[GHL] Status:', response.status, response.statusText);
-      console.error('[GHL] Endpoint:', options.method || 'GET', endpoint);
-      console.error('[GHL] URL:', url);
-      console.error('[GHL] === COMPLETE ERROR RESPONSE ===');
+      console.error("[GHL] ========================================");
+      console.error("[GHL] ❌ API ERROR");
+      console.error("[GHL] ========================================");
+      console.error("[GHL] Status:", response.status, response.statusText);
+      console.error("[GHL] Endpoint:", options.method || "GET", endpoint);
+      console.error("[GHL] URL:", url);
+      console.error("[GHL] === COMPLETE ERROR RESPONSE ===");
       console.error(error);
-      console.error('[GHL] === END ERROR RESPONSE ===');
+      console.error("[GHL] === END ERROR RESPONSE ===");
 
       // Try to parse and display structured error if JSON
       try {
         const errorJson = JSON.parse(error);
-        console.error('[GHL] === PARSED ERROR ===');
+        console.error("[GHL] === PARSED ERROR ===");
         console.error(JSON.stringify(errorJson, null, 2));
-        console.error('[GHL] === END PARSED ERROR ===');
+        console.error("[GHL] === END PARSED ERROR ===");
       } catch (e) {
         // Not JSON, already logged as text above
       }
@@ -174,10 +171,10 @@ export class GHLClient {
 
       // Special logging for 400/422 validation errors
       if (response.status === 400 || response.status === 422) {
-        console.error('[GHL] ⚠️  Validation error - check payload structure above');
+        console.error("[GHL] ⚠️  Validation error - check payload structure above");
       }
 
-      console.error('[GHL] ========================================');
+      console.error("[GHL] ========================================");
 
       throw new Error(`GHL API Error (${response.status}): ${error}`);
     }
@@ -292,53 +289,49 @@ export class GHLClient {
 
     const endpoint = `/opportunities/search?${queryParams.toString()}`;
 
-    console.log('[GHL] ========================================');
-    console.log('[GHL] FETCHING ALL OPPORTUNITIES');
-    console.log('[GHL] ========================================');
-    console.log('[GHL] Endpoint:', endpoint);
-    console.log('[GHL] Will filter client-side for:', {
+    console.log("[GHL] ========================================");
+    console.log("[GHL] FETCHING ALL OPPORTUNITIES");
+    console.log("[GHL] ========================================");
+    console.log("[GHL] Endpoint:", endpoint);
+    console.log("[GHL] Will filter client-side for:", {
       pipelineId: params.pipelineId,
       pipelineStageId: params.pipelineStageId,
       status: params.status,
     });
-    console.log('[GHL] ========================================');
+    console.log("[GHL] ========================================");
 
     const result = await this.request<{ opportunities: any[] }>(endpoint);
 
-    console.log('[GHL] Fetched opportunities:', result.opportunities?.length || 0);
+    console.log("[GHL] Fetched opportunities:", result.opportunities?.length || 0);
 
     // Filter client-side by pipeline, stage, and status
     let filteredOpportunities = result.opportunities || [];
 
     if (params.pipelineId) {
-      filteredOpportunities = filteredOpportunities.filter(
-        (opp: any) => opp.pipelineId === params.pipelineId
-      );
-      console.log('[GHL] After pipeline filter:', filteredOpportunities.length);
+      filteredOpportunities = filteredOpportunities.filter((opp: any) => opp.pipelineId === params.pipelineId);
+      console.log("[GHL] After pipeline filter:", filteredOpportunities.length);
     }
 
     if (params.pipelineStageId) {
       filteredOpportunities = filteredOpportunities.filter(
-        (opp: any) => opp.pipelineStageId === params.pipelineStageId
+        (opp: any) => opp.pipelineStageId === params.pipelineStageId,
       );
-      console.log('[GHL] After stage filter:', filteredOpportunities.length);
+      console.log("[GHL] After stage filter:", filteredOpportunities.length);
     }
 
     if (params.status) {
-      filteredOpportunities = filteredOpportunities.filter(
-        (opp: any) => opp.status === params.status
-      );
-      console.log('[GHL] After status filter:', filteredOpportunities.length);
+      filteredOpportunities = filteredOpportunities.filter((opp: any) => opp.status === params.status);
+      console.log("[GHL] After status filter:", filteredOpportunities.length);
     }
 
-    console.log('[GHL] ========================================');
-    console.log('[GHL] FINAL RESULTS');
-    console.log('[GHL] ========================================');
-    console.log('[GHL] Filtered opportunities:', filteredOpportunities.length);
+    console.log("[GHL] ========================================");
+    console.log("[GHL] FINAL RESULTS");
+    console.log("[GHL] ========================================");
+    console.log("[GHL] Filtered opportunities:", filteredOpportunities.length);
     if (filteredOpportunities.length > 0) {
-      console.log('[GHL] First opportunity sample:', JSON.stringify(filteredOpportunities[0], null, 2));
+      console.log("[GHL] First opportunity sample:", JSON.stringify(filteredOpportunities[0], null, 2));
     }
-    console.log('[GHL] ========================================');
+    console.log("[GHL] ========================================");
 
     return { opportunities: filteredOpportunities };
   }
@@ -415,11 +408,7 @@ export class GHLClient {
   /**
    * Update a Custom Object Record
    */
-  async updateCustomObjectRecord(
-    objectType: string,
-    recordId: string,
-    updates: Record<string, any>
-  ): Promise<void> {
+  async updateCustomObjectRecord(objectType: string, recordId: string, updates: Record<string, any>): Promise<void> {
     const endpoint = `/objects/${objectType}/records/${recordId}`;
     await this.request(endpoint, {
       method: "PUT",
@@ -434,7 +423,7 @@ export class GHLClient {
   async queryCustomObjectRecords(
     objectType: string,
     locationId: string,
-    filters: Record<string, any>
+    filters: Record<string, any>,
   ): Promise<{ records: any[] }> {
     const endpoint = `/objects/${objectType}/records/search`;
     return this.request<{ records: any[] }>(endpoint, {
@@ -564,11 +553,14 @@ export class GHLClient {
   /**
    * Mark invoice as paid (manual payment recording)
    */
-  async markInvoicePaid(invoiceId: string, paymentDetails?: {
-    paymentMethod?: string;
-    transactionId?: string;
-    note?: string;
-  }): Promise<void> {
+  async markInvoicePaid(
+    invoiceId: string,
+    paymentDetails?: {
+      paymentMethod?: string;
+      transactionId?: string;
+      note?: string;
+    },
+  ): Promise<void> {
     await this.request(`/invoices/${invoiceId}/paid`, {
       method: "POST",
       body: JSON.stringify(paymentDetails || {}),
@@ -641,17 +633,20 @@ export class GHLClient {
   /**
    * Update location details
    */
-  async updateLocation(locationId: string, updates: Partial<{
-    name: string;
-    email: string;
-    phone: string;
-    address: string;
-    city: string;
-    state: string;
-    country: string;
-    postalCode: string;
-    website: string;
-  }>): Promise<any> {
+  async updateLocation(
+    locationId: string,
+    updates: Partial<{
+      name: string;
+      email: string;
+      phone: string;
+      address: string;
+      city: string;
+      state: string;
+      country: string;
+      postalCode: string;
+      website: string;
+    }>,
+  ): Promise<any> {
     return this.request(`/locations/${locationId}`, {
       method: "PUT",
       body: JSON.stringify(updates),
@@ -694,10 +689,10 @@ export class GHLClient {
   }): Promise<{ documentId: string; document: any; url?: string }> {
     // Validate required fields
     if (!this.locationId) {
-      throw new Error('Location ID is required for document creation. Initialize GHLClient with locationId.');
+      throw new Error("Location ID is required for document creation. Initialize GHLClient with locationId.");
     }
     if (!this.userId) {
-      throw new Error('User ID is required for document creation. Initialize GHLClient with userId.');
+      throw new Error("User ID is required for document creation. Initialize GHLClient with userId.");
     }
 
     // Build payload according to GHL API v2 specification per official documentation
@@ -713,36 +708,36 @@ export class GHLClient {
       medium: params.medium || "link",
     };
 
-    console.log('[GHL] ========================================');
-    console.log('[GHL] SENDING DOCUMENT TEMPLATE');
-    console.log('[GHL] ========================================');
-    console.log('[GHL] Endpoint: POST /proposals/templates/send');
-    console.log('[GHL] Document Name:', params.documentName);
-    console.log('[GHL] Note: Template populates from contact custom fields');
-    console.log('[GHL] === COMPLETE REQUEST PAYLOAD ===');
+    console.log("[GHL] ========================================");
+    console.log("[GHL] SENDING DOCUMENT TEMPLATE");
+    console.log("[GHL] ========================================");
+    console.log("[GHL] Endpoint: POST /proposals/templates/send");
+    console.log("[GHL] Document Name:", params.documentName);
+    console.log("[GHL] Note: Template populates from contact custom fields");
+    console.log("[GHL] === COMPLETE REQUEST PAYLOAD ===");
     console.log(JSON.stringify(payload, null, 2));
-    console.log('[GHL] === END REQUEST PAYLOAD ===');
-    console.log('[GHL] Payload size:', JSON.stringify(payload).length, 'bytes');
-    console.log('[GHL] ========================================');
+    console.log("[GHL] === END REQUEST PAYLOAD ===");
+    console.log("[GHL] Payload size:", JSON.stringify(payload).length, "bytes");
+    console.log("[GHL] ========================================");
 
     // Use the correct GHL API v2 endpoint for sending templates
     const result = await this.request<{ documentId: string; document: any; url?: string; link?: string }>(
-      '/proposals/templates/send',
+      "/proposals/templates/send",
       {
-        method: 'POST',
+        method: "POST",
         body: JSON.stringify(payload),
-      }
+      },
     );
 
-    console.log('[GHL] ========================================');
-    console.log('[GHL] ✅ DOCUMENT CREATED SUCCESSFULLY');
-    console.log('[GHL] ========================================');
-    console.log('[GHL] === COMPLETE RESPONSE ===');
+    console.log("[GHL] ========================================");
+    console.log("[GHL] ✅ DOCUMENT CREATED SUCCESSFULLY");
+    console.log("[GHL] ========================================");
+    console.log("[GHL] === COMPLETE RESPONSE ===");
     console.log(JSON.stringify(result, null, 2));
-    console.log('[GHL] === END RESPONSE ===');
-    console.log('[GHL] Document ID:', result.documentId || result.document?.id);
-    console.log('[GHL] Document URL:', result.url || result.link);
-    console.log('[GHL] ========================================');
+    console.log("[GHL] === END RESPONSE ===");
+    console.log("[GHL] Document ID:", result.documentId || result.document?.id);
+    console.log("[GHL] Document URL:", result.url || result.link);
+    console.log("[GHL] ========================================");
 
     return {
       documentId: result.documentId || result.document?.id,
@@ -811,15 +806,15 @@ export async function refreshGHLToken(refreshToken: string): Promise<{
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('[GHL Token Refresh] ========================================');
-    console.error('[GHL Token Refresh] ❌ REFRESH FAILED');
-    console.error('[GHL Token Refresh] ========================================');
-    console.error('[GHL Token Refresh] Status:', response.status, response.statusText);
-    console.error('[GHL Token Refresh] Error Response:', errorText);
-    console.error('[GHL Token Refresh] Has CLIENT_ID:', !!process.env.GHL_CLIENT_ID);
-    console.error('[GHL Token Refresh] Has CLIENT_SECRET:', !!process.env.GHL_CLIENT_SECRET);
-    console.error('[GHL Token Refresh] Refresh Token Prefix:', refreshToken.substring(0, 20) + '...');
-    console.error('[GHL Token Refresh] ========================================');
+    console.error("[GHL Token Refresh] ========================================");
+    console.error("[GHL Token Refresh] ❌ REFRESH FAILED");
+    console.error("[GHL Token Refresh] ========================================");
+    console.error("[GHL Token Refresh] Status:", response.status, response.statusText);
+    console.error("[GHL Token Refresh] Error Response:", errorText);
+    console.error("[GHL Token Refresh] Has CLIENT_ID:", !!process.env.GHL_CLIENT_ID);
+    console.error("[GHL Token Refresh] Has CLIENT_SECRET:", !!process.env.GHL_CLIENT_SECRET);
+    console.error("[GHL Token Refresh] Refresh Token Prefix:", refreshToken.substring(0, 20) + "...");
+    console.error("[GHL Token Refresh] ========================================");
 
     // Try to parse error as JSON for more details
     try {

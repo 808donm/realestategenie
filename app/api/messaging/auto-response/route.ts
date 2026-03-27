@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
     if (!integration) {
       return NextResponse.json(
         { error: "GHL integration not connected. Connect GHL in Settings first." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to update settings" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -5,8 +5,19 @@ import Link from "next/link";
 import jsPDF from "jspdf";
 import * as XLSX from "xlsx";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
-  PieChart, Pie, Cell, AreaChart, Area,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+  PieChart,
+  Pie,
+  Cell,
+  AreaChart,
+  Area,
 } from "recharts";
 
 interface MonthlyData {
@@ -32,11 +43,21 @@ const FALLBACK_DATA: MonthlyData[] = [
 ];
 
 const TAX_RATE_LOW = 0.25;
-const TAX_RATE_HIGH = 0.30;
+const TAX_RATE_HIGH = 0.3;
 
 const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 export default function TaxSavingsReserveClient() {
@@ -71,7 +92,8 @@ export default function TaxSavingsReserveClient() {
     const taxReserveLow = monthData.grossCommission * TAX_RATE_LOW;
     const taxReserveHigh = monthData.grossCommission * TAX_RATE_HIGH;
     const taxReserveSelected = monthData.grossCommission * taxRate;
-    const netTakeHome = monthData.grossCommission - taxReserveSelected - monthData.businessExpenses - monthData.marketingBudget;
+    const netTakeHome =
+      monthData.grossCommission - taxReserveSelected - monthData.businessExpenses - monthData.marketingBudget;
     const totalDeductions = taxReserveSelected + monthData.businessExpenses + monthData.marketingBudget;
     return { taxReserveLow, taxReserveHigh, taxReserveSelected, netTakeHome, totalDeductions };
   }, [monthData, taxRate]);
@@ -91,10 +113,30 @@ export default function TaxSavingsReserveClient() {
     if (monthData.grossCommission === 0) return [];
     const total = monthData.grossCommission;
     return [
-      { label: "Tax Reserve", value: computed.taxReserveSelected, pct: (computed.taxReserveSelected / total) * 100, color: "#ef4444" },
-      { label: "Business Expenses", value: monthData.businessExpenses, pct: (monthData.businessExpenses / total) * 100, color: "#f59e0b" },
-      { label: "Marketing", value: monthData.marketingBudget, pct: (monthData.marketingBudget / total) * 100, color: "#8b5cf6" },
-      { label: "Net Take-Home", value: computed.netTakeHome, pct: (computed.netTakeHome / total) * 100, color: "#10b981" },
+      {
+        label: "Tax Reserve",
+        value: computed.taxReserveSelected,
+        pct: (computed.taxReserveSelected / total) * 100,
+        color: "#ef4444",
+      },
+      {
+        label: "Business Expenses",
+        value: monthData.businessExpenses,
+        pct: (monthData.businessExpenses / total) * 100,
+        color: "#f59e0b",
+      },
+      {
+        label: "Marketing",
+        value: monthData.marketingBudget,
+        pct: (monthData.marketingBudget / total) * 100,
+        color: "#8b5cf6",
+      },
+      {
+        label: "Net Take-Home",
+        value: computed.netTakeHome,
+        pct: (computed.netTakeHome / total) * 100,
+        color: "#10b981",
+      },
     ];
   }, [monthData, computed]);
 
@@ -117,7 +159,9 @@ export default function TaxSavingsReserveClient() {
     y += 10;
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    doc.text(`${getMonthLabel(selectedMonth)} | Generated ${new Date().toLocaleDateString()}`, pw / 2, y, { align: "center" });
+    doc.text(`${getMonthLabel(selectedMonth)} | Generated ${new Date().toLocaleDateString()}`, pw / 2, y, {
+      align: "center",
+    });
     y += 14;
 
     // Monthly breakdown
@@ -133,7 +177,11 @@ export default function TaxSavingsReserveClient() {
       ["Business Expenses:", `-${fmt(monthData.businessExpenses)}`],
       ["Marketing Budget:", `-${fmt(monthData.marketingBudget)}`],
     ];
-    rows.forEach(([l, v]) => { doc.text(l, 25, y); doc.text(v, pw - 25, y, { align: "right" }); y += 6; });
+    rows.forEach(([l, v]) => {
+      doc.text(l, 25, y);
+      doc.text(v, pw - 25, y, { align: "right" });
+      y += 6;
+    });
     y += 2;
     doc.setLineWidth(1);
     doc.line(20, y, pw - 20, y);
@@ -158,7 +206,11 @@ export default function TaxSavingsReserveClient() {
       ["YTD Marketing:", fmt(ytd.marketingBudget)],
       ["YTD Net Take-Home:", fmt(ytd.netTakeHome)],
     ];
-    ytdRows.forEach(([l, v]) => { doc.text(l, 25, y); doc.text(v, pw - 25, y, { align: "right" }); y += 6; });
+    ytdRows.forEach(([l, v]) => {
+      doc.text(l, 25, y);
+      doc.text(v, pw - 25, y, { align: "right" });
+      y += 6;
+    });
     y += 8;
 
     // Recommendation
@@ -168,7 +220,8 @@ export default function TaxSavingsReserveClient() {
     y += 8;
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    doc.text(`Set aside ${fmt(computed.taxReserveSelected)} this month for taxes.`, 25, y); y += 6;
+    doc.text(`Set aside ${fmt(computed.taxReserveSelected)} this month for taxes.`, 25, y);
+    y += 6;
     doc.text(`Range: ${fmt(computed.taxReserveLow)} (25%) to ${fmt(computed.taxReserveHigh)} (30%)`, 25, y);
 
     const footerY = doc.internal.pageSize.getHeight() - 15;
@@ -178,7 +231,7 @@ export default function TaxSavingsReserveClient() {
   };
 
   const exportToExcel = () => {
-    const rows = monthlyData.map(m => {
+    const rows = monthlyData.map((m) => {
       const taxReserve = m.grossCommission * taxRate;
       const netTakeHome = m.grossCommission - taxReserve - m.businessExpenses - m.marketingBudget;
       return {
@@ -207,19 +260,56 @@ export default function TaxSavingsReserveClient() {
     <div>
       {/* Integration Notice */}
       {isLive ? (
-        <div style={{ padding: 16, background: "#ecfdf5", border: "1px solid #a7f3d0", borderRadius: 10, marginBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div
+          style={{
+            padding: 16,
+            background: "#ecfdf5",
+            border: "1px solid #a7f3d0",
+            borderRadius: 10,
+            marginBottom: 20,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
           <div>
             <strong style={{ fontSize: 14 }}>Live Data</strong>
-            <span style={{ fontSize: 13, opacity: 0.8, marginLeft: 8 }}>Showing real income data from your integrations.</span>
+            <span style={{ fontSize: 13, opacity: 0.8, marginLeft: 8 }}>
+              Showing real income data from your integrations.
+            </span>
           </div>
         </div>
       ) : (
-        <div style={{ padding: 16, background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10, marginBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div
+          style={{
+            padding: 16,
+            background: "#fffbeb",
+            border: "1px solid #fde68a",
+            borderRadius: 10,
+            marginBottom: 20,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
           <div>
             <strong style={{ fontSize: 14 }}>Sample Data</strong>
-            <span style={{ fontSize: 13, opacity: 0.8, marginLeft: 8 }}>Connect Stripe + QuickBooks to see your real income data.</span>
+            <span style={{ fontSize: 13, opacity: 0.8, marginLeft: 8 }}>
+              Connect Stripe + QuickBooks to see your real income data.
+            </span>
           </div>
-          <Link href="/app/integrations" style={{ padding: "6px 14px", background: "#f59e0b", color: "#fff", borderRadius: 6, fontSize: 13, fontWeight: 600, textDecoration: "none" }}>
+          <Link
+            href="/app/integrations"
+            style={{
+              padding: "6px 14px",
+              background: "#f59e0b",
+              color: "#fff",
+              borderRadius: 6,
+              fontSize: 13,
+              fontWeight: 600,
+              textDecoration: "none",
+            }}
+          >
             Connect Integration
           </Link>
         </div>
@@ -228,24 +318,38 @@ export default function TaxSavingsReserveClient() {
       {/* Month Selector & Controls */}
       <div style={{ display: "flex", gap: 12, marginBottom: 24, flexWrap: "wrap", alignItems: "center" }}>
         <div>
-          <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>Month</label>
+          <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>
+            Month
+          </label>
           <select
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(e.target.value)}
-            style={{ padding: "8px 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, fontWeight: 600, background: "#fff", cursor: "pointer" }}
+            style={{
+              padding: "8px 12px",
+              border: "1px solid #d1d5db",
+              borderRadius: 8,
+              fontSize: 14,
+              fontWeight: 600,
+              background: "#fff",
+              cursor: "pointer",
+            }}
           >
             {monthlyData.map((m) => (
-              <option key={m.month} value={m.month}>{getMonthLabel(m.month)}</option>
+              <option key={m.month} value={m.month}>
+                {getMonthLabel(m.month)}
+              </option>
             ))}
           </select>
         </div>
         <div>
-          <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>Tax Rate</label>
+          <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>
+            Tax Rate
+          </label>
           <div style={{ display: "flex", gap: 6 }}>
             {[
               { label: "25%", value: 0.25 },
               { label: "27.5%", value: 0.275 },
-              { label: "30%", value: 0.30 },
+              { label: "30%", value: 0.3 },
             ].map((r) => (
               <button
                 key={r.value}
@@ -270,11 +374,32 @@ export default function TaxSavingsReserveClient() {
         <div style={{ display: "flex", gap: 8, alignSelf: "flex-end" }}>
           <button
             onClick={exportToPDF}
-            style={{ padding: "8px 20px", background: "#dc2626", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 13 }}
+            style={{
+              padding: "8px 20px",
+              background: "#dc2626",
+              color: "#fff",
+              border: "none",
+              borderRadius: 8,
+              fontWeight: 600,
+              cursor: "pointer",
+              fontSize: 13,
+            }}
           >
             Export PDF
           </button>
-          <button onClick={exportToExcel} style={{ padding: "8px 20px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>
+          <button
+            onClick={exportToExcel}
+            style={{
+              padding: "8px 20px",
+              background: "#fff",
+              color: "#374151",
+              border: "1px solid #d1d5db",
+              borderRadius: 8,
+              fontWeight: 600,
+              cursor: "pointer",
+              fontSize: 13,
+            }}
+          >
             Export Excel
           </button>
         </div>
@@ -298,7 +423,9 @@ export default function TaxSavingsReserveClient() {
 
       {/* Income Breakdown Pie Chart */}
       <div style={{ ...cardStyle, marginBottom: 24 }}>
-        <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>Income Breakdown - {getMonthLabel(selectedMonth)}</h3>
+        <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>
+          Income Breakdown - {getMonthLabel(selectedMonth)}
+        </h3>
         <div style={{ display: "flex", gap: 24, alignItems: "center", flexWrap: "wrap" }}>
           <ResponsiveContainer width="100%" height={280} minWidth={280}>
             <PieChart>
@@ -323,7 +450,17 @@ export default function TaxSavingsReserveClient() {
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12, marginTop: 16 }}>
           {breakdownSegments.map((seg) => (
-            <div key={seg.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", background: "#f9fafb", borderRadius: 8 }}>
+            <div
+              key={seg.label}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "10px 12px",
+                background: "#f9fafb",
+                borderRadius: 8,
+              }}
+            >
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ width: 12, height: 12, borderRadius: 3, background: seg.color }} />
                 <span style={{ fontSize: 13, fontWeight: 600 }}>{seg.label}</span>
@@ -338,7 +475,15 @@ export default function TaxSavingsReserveClient() {
       </div>
 
       {/* Set Aside Recommendation */}
-      <div style={{ padding: 24, background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)", borderRadius: 12, color: "#fff", marginBottom: 24 }}>
+      <div
+        style={{
+          padding: 24,
+          background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)",
+          borderRadius: 12,
+          color: "#fff",
+          marginBottom: 24,
+        }}
+      >
         <div style={{ fontSize: 14, opacity: 0.9, marginBottom: 8 }}>Set Aside This Month</div>
         <div style={{ fontSize: 36, fontWeight: 700, marginBottom: 4 }}>{fmt(computed.taxReserveSelected)}</div>
         <div style={{ fontSize: 14, opacity: 0.8, marginBottom: 16 }}>
@@ -377,19 +522,34 @@ export default function TaxSavingsReserveClient() {
           </div>
           <div style={{ padding: 16, background: "#fffbeb", borderRadius: 8 }}>
             <div style={{ fontSize: 12, color: "#6b7280" }}>YTD Expenses + Marketing</div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: "#d97706" }}>{fmt(ytd.businessExpenses + ytd.marketingBudget)}</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: "#d97706" }}>
+              {fmt(ytd.businessExpenses + ytd.marketingBudget)}
+            </div>
           </div>
         </div>
 
         {/* Monthly Gross Commission Chart */}
         <h4 style={{ margin: "0 0 12px 0", fontSize: 14, fontWeight: 700 }}>Monthly Gross Commission</h4>
         <ResponsiveContainer width="100%" height={200}>
-          <AreaChart data={monthlyData.map((m) => ({ ...m, label: MONTH_NAMES[parseInt(m.month.split("-")[1]) - 1].slice(0, 3) }))} margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>
+          <AreaChart
+            data={monthlyData.map((m) => ({
+              ...m,
+              label: MONTH_NAMES[parseInt(m.month.split("-")[1]) - 1].slice(0, 3),
+            }))}
+            margin={{ top: 5, right: 10, bottom: 5, left: 10 }}
+          >
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
             <XAxis dataKey="label" tick={{ fontSize: 11 }} />
             <YAxis tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 10 }} />
             <Tooltip formatter={(value: any) => fmt(value)} />
-            <Area type="monotone" dataKey="grossCommission" name="Gross Commission" fill="#dbeafe" stroke="#3b82f6" strokeWidth={2} />
+            <Area
+              type="monotone"
+              dataKey="grossCommission"
+              name="Gross Commission"
+              fill="#dbeafe"
+              stroke="#3b82f6"
+              strokeWidth={2}
+            />
           </AreaChart>
         </ResponsiveContainer>
       </div>

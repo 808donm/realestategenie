@@ -57,8 +57,10 @@ export default function CombinedReportClient() {
       const res = await fetch(`/api/integrations/hawaii/hazards?address=${encodeURIComponent(report.address)}`);
       const data = await res.json();
       if (res.ok) setFemaData(data);
-    } catch {}
-    finally { setFemaLoading(false); }
+    } catch {
+    } finally {
+      setFemaLoading(false);
+    }
   };
 
   const fetchEpaOverlay = async () => {
@@ -69,8 +71,10 @@ export default function CombinedReportClient() {
       const res = await fetch(`/api/integrations/epa/ejscreen?address=${encodeURIComponent(report.address)}`);
       const data = await res.json();
       if (res.ok) setEpaData(data);
-    } catch {}
-    finally { setEpaLoading(false); }
+    } catch {
+    } finally {
+      setEpaLoading(false);
+    }
   };
 
   const exportPDF = () => {
@@ -98,7 +102,10 @@ export default function CombinedReportClient() {
     y += 14;
 
     const addSection = (title: string, fields: [string, string | undefined][]) => {
-      if (y > 260) { doc.addPage(); y = 20; }
+      if (y > 260) {
+        doc.addPage();
+        y = 20;
+      }
       doc.setFontSize(13);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(17, 24, 39);
@@ -112,7 +119,10 @@ export default function CombinedReportClient() {
       doc.setFont("helvetica", "normal");
       for (const [label, value] of fields) {
         if (!value) continue;
-        if (y > 275) { doc.addPage(); y = 20; }
+        if (y > 275) {
+          doc.addPage();
+          y = 20;
+        }
         doc.setTextColor(107, 114, 128);
         doc.text(`${label}:`, 14, y);
         doc.setTextColor(17, 24, 39);
@@ -124,8 +134,16 @@ export default function CombinedReportClient() {
 
     addSection("Valuation", [
       ["AVM Value", report.valuation.avm ? `$${report.valuation.avm.toLocaleString()}` : undefined],
-      ["AVM Range", report.valuation.avmLow && report.valuation.avmHigh ? `$${report.valuation.avmLow.toLocaleString()} - $${report.valuation.avmHigh.toLocaleString()}` : undefined],
-      ["Assessed Value", report.valuation.assessedValue ? `$${report.valuation.assessedValue.toLocaleString()}` : undefined],
+      [
+        "AVM Range",
+        report.valuation.avmLow && report.valuation.avmHigh
+          ? `$${report.valuation.avmLow.toLocaleString()} - $${report.valuation.avmHigh.toLocaleString()}`
+          : undefined,
+      ],
+      [
+        "Assessed Value",
+        report.valuation.assessedValue ? `$${report.valuation.assessedValue.toLocaleString()}` : undefined,
+      ],
       ["Market Value", report.valuation.marketValue ? `$${report.valuation.marketValue.toLocaleString()}` : undefined],
       ["Est. Equity", report.estimatedEquity != null ? `$${report.estimatedEquity.toLocaleString()}` : undefined],
     ]);
@@ -220,8 +238,10 @@ export default function CombinedReportClient() {
       if (res.ok && data.shareUrl) {
         setShareUrl(data.shareUrl);
       }
-    } catch {}
-    finally { setIsSharing(false); }
+    } catch {
+    } finally {
+      setIsSharing(false);
+    }
   };
 
   return (
@@ -240,8 +260,14 @@ export default function CombinedReportClient() {
           onClick={fetchReport}
           disabled={isLoading || !address.trim()}
           style={{
-            padding: "14px 28px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 8,
-            fontWeight: 600, fontSize: 14, cursor: isLoading ? "wait" : "pointer",
+            padding: "14px 28px",
+            background: "#3b82f6",
+            color: "#fff",
+            border: "none",
+            borderRadius: 8,
+            fontWeight: 600,
+            fontSize: 14,
+            cursor: isLoading ? "wait" : "pointer",
             opacity: isLoading || !address.trim() ? 0.6 : 1,
           }}
         >
@@ -250,7 +276,16 @@ export default function CombinedReportClient() {
       </div>
 
       {error && (
-        <div style={{ padding: 16, background: "#fee2e2", color: "#dc2626", borderRadius: 8, marginBottom: 16, fontSize: 14 }}>
+        <div
+          style={{
+            padding: 16,
+            background: "#fee2e2",
+            color: "#dc2626",
+            borderRadius: 8,
+            marginBottom: 16,
+            fontSize: 14,
+          }}
+        >
           {error}
         </div>
       )}
@@ -268,14 +303,32 @@ export default function CombinedReportClient() {
           <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap", alignItems: "center" }}>
             <button
               onClick={exportPDF}
-              style={{ padding: "8px 16px", background: "#dc2626", color: "#fff", border: "none", borderRadius: 6, fontWeight: 600, fontSize: 13, cursor: "pointer" }}
+              style={{
+                padding: "8px 16px",
+                background: "#dc2626",
+                color: "#fff",
+                border: "none",
+                borderRadius: 6,
+                fontWeight: 600,
+                fontSize: 13,
+                cursor: "pointer",
+              }}
             >
               Export PDF
             </button>
             <button
               onClick={handleShare}
               disabled={isSharing}
-              style={{ padding: "8px 16px", background: "#8b5cf6", color: "#fff", border: "none", borderRadius: 6, fontWeight: 600, fontSize: 13, cursor: "pointer" }}
+              style={{
+                padding: "8px 16px",
+                background: "#8b5cf6",
+                color: "#fff",
+                border: "none",
+                borderRadius: 6,
+                fontWeight: 600,
+                fontSize: 13,
+                cursor: "pointer",
+              }}
             >
               {isSharing ? "Creating Link..." : "Share Link"}
             </button>
@@ -283,7 +336,16 @@ export default function CombinedReportClient() {
               <button
                 onClick={fetchFemaOverlay}
                 disabled={femaLoading}
-                style={{ padding: "8px 16px", background: "#f59e0b", color: "#fff", border: "none", borderRadius: 6, fontWeight: 600, fontSize: 13, cursor: "pointer" }}
+                style={{
+                  padding: "8px 16px",
+                  background: "#f59e0b",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 6,
+                  fontWeight: 600,
+                  fontSize: 13,
+                  cursor: "pointer",
+                }}
               >
                 {femaLoading ? "Loading..." : "+ FEMA Flood Risk"}
               </button>
@@ -292,7 +354,16 @@ export default function CombinedReportClient() {
               <button
                 onClick={fetchEpaOverlay}
                 disabled={epaLoading}
-                style={{ padding: "8px 16px", background: "#059669", color: "#fff", border: "none", borderRadius: 6, fontWeight: 600, fontSize: 13, cursor: "pointer" }}
+                style={{
+                  padding: "8px 16px",
+                  background: "#059669",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 6,
+                  fontWeight: 600,
+                  fontSize: 13,
+                  cursor: "pointer",
+                }}
               >
                 {epaLoading ? "Loading..." : "+ EPA EJScreen"}
               </button>
@@ -303,12 +374,25 @@ export default function CombinedReportClient() {
                   type="text"
                   value={shareUrl}
                   readOnly
-                  style={{ padding: "6px 10px", fontSize: 12, border: "1px solid #e5e7eb", borderRadius: 6, width: 280 }}
+                  style={{
+                    padding: "6px 10px",
+                    fontSize: 12,
+                    border: "1px solid #e5e7eb",
+                    borderRadius: 6,
+                    width: 280,
+                  }}
                   onClick={(e) => (e.target as HTMLInputElement).select()}
                 />
                 <button
                   onClick={() => navigator.clipboard.writeText(shareUrl)}
-                  style={{ padding: "6px 10px", fontSize: 11, border: "1px solid #e5e7eb", borderRadius: 6, background: "#fff", cursor: "pointer" }}
+                  style={{
+                    padding: "6px 10px",
+                    fontSize: 11,
+                    border: "1px solid #e5e7eb",
+                    borderRadius: 6,
+                    background: "#fff",
+                    cursor: "pointer",
+                  }}
                 >
                   Copy
                 </button>
@@ -317,27 +401,64 @@ export default function CombinedReportClient() {
           </div>
 
           {/* Report Header */}
-          <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 24, marginBottom: 16 }}>
+          <div
+            style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 24, marginBottom: 16 }}
+          >
             <h2 style={{ fontSize: 20, fontWeight: 700, margin: "0 0 4px" }}>{report.address}</h2>
-            <div style={{ fontSize: 12, color: "#9ca3af" }}>Generated {new Date(report.generatedAt).toLocaleString()}</div>
+            <div style={{ fontSize: 12, color: "#9ca3af" }}>
+              Generated {new Date(report.generatedAt).toLocaleString()}
+            </div>
           </div>
 
           {/* Value Summary Cards */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 16 }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+              gap: 12,
+              marginBottom: 16,
+            }}
+          >
             {report.valuation.avm != null && (
-              <ValueCard label="AVM Value" value={`$${report.valuation.avm.toLocaleString()}`} color="#059669" bg="#ecfdf5" />
+              <ValueCard
+                label="AVM Value"
+                value={`$${report.valuation.avm.toLocaleString()}`}
+                color="#059669"
+                bg="#ecfdf5"
+              />
             )}
             {report.sale.lastSalePrice != null && (
-              <ValueCard label="Last Sale" value={`$${report.sale.lastSalePrice.toLocaleString()}`} color="#3b82f6" bg="#eff6ff" sub={report.sale.lastSaleDate} />
+              <ValueCard
+                label="Last Sale"
+                value={`$${report.sale.lastSalePrice.toLocaleString()}`}
+                color="#3b82f6"
+                bg="#eff6ff"
+                sub={report.sale.lastSaleDate}
+              />
             )}
             {report.valuation.assessedValue != null && (
-              <ValueCard label="Assessed" value={`$${report.valuation.assessedValue.toLocaleString()}`} color="#7c3aed" bg="#f5f3ff" />
+              <ValueCard
+                label="Assessed"
+                value={`$${report.valuation.assessedValue.toLocaleString()}`}
+                color="#7c3aed"
+                bg="#f5f3ff"
+              />
             )}
             {report.tax.annualTax != null && (
-              <ValueCard label="Annual Tax" value={`$${report.tax.annualTax.toLocaleString()}`} color="#dc2626" bg="#fef2f2" />
+              <ValueCard
+                label="Annual Tax"
+                value={`$${report.tax.annualTax.toLocaleString()}`}
+                color="#dc2626"
+                bg="#fef2f2"
+              />
             )}
             {report.estimatedEquity != null && (
-              <ValueCard label="Est. Equity" value={`$${report.estimatedEquity.toLocaleString()}`} color="#a16207" bg="#fefce8" />
+              <ValueCard
+                label="Est. Equity"
+                value={`$${report.estimatedEquity.toLocaleString()}`}
+                color="#a16207"
+                bg="#fefce8"
+              />
             )}
           </div>
 
@@ -369,7 +490,10 @@ export default function CombinedReportClient() {
           {report.mortgage && (
             <Section title="Mortgage">
               <Grid>
-                <Field label="Loan Amount" value={report.mortgage.loanAmount ? `$${report.mortgage.loanAmount.toLocaleString()}` : undefined} />
+                <Field
+                  label="Loan Amount"
+                  value={report.mortgage.loanAmount ? `$${report.mortgage.loanAmount.toLocaleString()}` : undefined}
+                />
                 <Field label="Lender" value={report.mortgage.lender} />
                 <Field label="Loan Type" value={report.mortgage.loanType} />
                 <Field label="Term" value={report.mortgage.term} />
@@ -403,8 +527,18 @@ export default function CombinedReportClient() {
                 <Field label="Community" value={femaData.community || femaData.communityName} />
                 <Field label="SFHA" value={femaData.sfha || femaData.specialFloodHazardArea} />
               </Grid>
-              <div style={{ marginTop: 8, padding: 10, background: "#fffbeb", borderRadius: 6, fontSize: 12, color: "#92400e" }}>
-                FEMA flood data sourced from National Flood Hazard Layer. Always verify with local flood maps for insurance purposes.
+              <div
+                style={{
+                  marginTop: 8,
+                  padding: 10,
+                  background: "#fffbeb",
+                  borderRadius: 6,
+                  fontSize: 12,
+                  color: "#92400e",
+                }}
+              >
+                FEMA flood data sourced from National Flood Hazard Layer. Always verify with local flood maps for
+                insurance purposes.
               </div>
             </Section>
           )}
@@ -424,8 +558,18 @@ export default function CombinedReportClient() {
                 <Field label="Diesel PM" value={epaData.dieselPM} />
                 <Field label="Traffic Proximity" value={epaData.trafficProximity} />
               </Grid>
-              <div style={{ marginTop: 8, padding: 10, background: "#ecfdf5", borderRadius: 6, fontSize: 12, color: "#065f46" }}>
-                EPA EJScreen data provides environmental justice indices. Higher percentiles indicate greater environmental burden relative to other areas.
+              <div
+                style={{
+                  marginTop: 8,
+                  padding: 10,
+                  background: "#ecfdf5",
+                  borderRadius: 6,
+                  fontSize: 12,
+                  color: "#065f46",
+                }}
+              >
+                EPA EJScreen data provides environmental justice indices. Higher percentiles indicate greater
+                environmental burden relative to other areas.
               </div>
             </Section>
           )}
@@ -448,10 +592,24 @@ export default function CombinedReportClient() {
   );
 }
 
-function ValueCard({ label, value, color, bg, sub }: { label: string; value: string; color: string; bg: string; sub?: string }) {
+function ValueCard({
+  label,
+  value,
+  color,
+  bg,
+  sub,
+}: {
+  label: string;
+  value: string;
+  color: string;
+  bg: string;
+  sub?: string;
+}) {
   return (
     <div style={{ padding: 16, background: bg, borderRadius: 10, textAlign: "center" }}>
-      <div style={{ fontSize: 11, color, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>{label}</div>
+      <div style={{ fontSize: 11, color, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
+        {label}
+      </div>
       <div style={{ fontSize: 20, fontWeight: 700, color }}>{value}</div>
       {sub && <div style={{ fontSize: 11, color: "#6b7280" }}>{sub}</div>}
     </div>
@@ -460,7 +618,16 @@ function ValueCard({ label, value, color, bg, sub }: { label: string; value: str
 
 function Section({ title, children, color }: { title: string; children: React.ReactNode; color?: string }) {
   return (
-    <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20, marginBottom: 16, borderLeft: color ? `4px solid ${color}` : undefined }}>
+    <div
+      style={{
+        background: "#fff",
+        border: "1px solid #e5e7eb",
+        borderRadius: 10,
+        padding: 20,
+        marginBottom: 16,
+        borderLeft: color ? `4px solid ${color}` : undefined,
+      }}
+    >
       <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: color || "#374151" }}>{title}</h3>
       {children}
     </div>
@@ -479,7 +646,9 @@ function Field({ label, value }: { label: string; value?: string | number | null
   if (value == null || value === "") return null;
   return (
     <div>
-      <div style={{ fontSize: 11, fontWeight: 500, color: "#9ca3af", textTransform: "uppercase", letterSpacing: 0.5 }}>{label}</div>
+      <div style={{ fontSize: 11, fontWeight: 500, color: "#9ca3af", textTransform: "uppercase", letterSpacing: 0.5 }}>
+        {label}
+      </div>
       <div style={{ fontSize: 14, color: "#111827", fontWeight: 500 }}>{value}</div>
     </div>
   );

@@ -13,10 +13,9 @@ function generateWarningEmail(
   usage: number,
   limit: number,
   percentage: number,
-  suggestedPlan?: SubscriptionPlan
+  suggestedPlan?: SubscriptionPlan,
 ): string {
-  const resourceLabel = resourceType === 'agents' ? 'agent' :
-                        resourceType === 'properties' ? 'property' : 'tenant';
+  const resourceLabel = resourceType === "agents" ? "agent" : resourceType === "properties" ? "property" : "tenant";
 
   return `
 <!DOCTYPE html>
@@ -42,19 +41,23 @@ function generateWarningEmail(
       Teams with more ${resourceLabel}s typically upgrade to ensure they have room to grow without interruption.
     </p>
 
-    ${suggestedPlan ? `
+    ${
+      suggestedPlan
+        ? `
     <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
       <h3 style="margin-top: 0; color: #1f2937;">Recommended: ${suggestedPlan.name}</h3>
       <ul style="margin: 10px 0; padding-left: 20px;">
-        <li>Up to ${suggestedPlan.max_agents === 999999 ? 'unlimited' : suggestedPlan.max_agents} agents</li>
-        <li>Up to ${suggestedPlan.max_properties === 999999 ? 'unlimited' : suggestedPlan.max_properties} properties</li>
-        <li>Up to ${suggestedPlan.max_tenants === 999999 ? 'unlimited' : suggestedPlan.max_tenants} tenants</li>
+        <li>Up to ${suggestedPlan.max_agents === 999999 ? "unlimited" : suggestedPlan.max_agents} agents</li>
+        <li>Up to ${suggestedPlan.max_properties === 999999 ? "unlimited" : suggestedPlan.max_properties} properties</li>
+        <li>Up to ${suggestedPlan.max_tenants === 999999 ? "unlimited" : suggestedPlan.max_tenants} tenants</li>
       </ul>
       <p style="font-size: 18px; font-weight: bold; color: #1f2937; margin: 15px 0;">
         $${suggestedPlan.monthly_price}/month
       </p>
     </div>
-    ` : ''}
+    `
+        : ""
+    }
 
     <div style="text-align: center; margin: 30px 0;">
       <a href="https://www.realestategenie.app/app/billing" style="display: inline-block; background: #3b82f6; color: white; padding: 12px 30px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
@@ -83,7 +86,7 @@ function generateCriticalEmail(
   agentName: string,
   exceededResources: Array<{ type: string; usage: number; limit: number }>,
   currentPlan: SubscriptionPlan,
-  suggestedPlan?: SubscriptionPlan
+  suggestedPlan?: SubscriptionPlan,
 ): string {
   return `
 <!DOCTYPE html>
@@ -107,12 +110,16 @@ function generateCriticalEmail(
 
     <div style="background: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; margin: 20px 0;">
       <ul style="margin: 0; padding-left: 20px;">
-        ${exceededResources.map(resource => `
+        ${exceededResources
+          .map(
+            (resource) => `
           <li style="margin: 8px 0;">
             <strong>${resource.type.charAt(0).toUpperCase() + resource.type.slice(1)}:</strong>
             ${resource.usage} of ${resource.limit} (${Math.round((resource.usage / resource.limit) * 100)}%)
           </li>
-        `).join('')}
+        `,
+          )
+          .join("")}
       </ul>
     </div>
 
@@ -124,19 +131,23 @@ function generateCriticalEmail(
       We believe in fair-use limits, so your service continues uninterrupted. However, to stay compliant with your subscription terms, let's get you moved to the right plan.
     </p>
 
-    ${suggestedPlan ? `
+    ${
+      suggestedPlan
+        ? `
     <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
       <h3 style="margin-top: 0; color: #1f2937;">Recommended: ${suggestedPlan.name}</h3>
       <ul style="margin: 10px 0; padding-left: 20px;">
-        <li>Up to ${suggestedPlan.max_agents === 999999 ? 'unlimited' : suggestedPlan.max_agents} agents</li>
-        <li>Up to ${suggestedPlan.max_properties === 999999 ? 'unlimited' : suggestedPlan.max_properties} properties</li>
-        <li>Up to ${suggestedPlan.max_tenants === 999999 ? 'unlimited' : suggestedPlan.max_tenants} tenants</li>
+        <li>Up to ${suggestedPlan.max_agents === 999999 ? "unlimited" : suggestedPlan.max_agents} agents</li>
+        <li>Up to ${suggestedPlan.max_properties === 999999 ? "unlimited" : suggestedPlan.max_properties} properties</li>
+        <li>Up to ${suggestedPlan.max_tenants === 999999 ? "unlimited" : suggestedPlan.max_tenants} tenants</li>
       </ul>
       <p style="font-size: 18px; font-weight: bold; color: #1f2937; margin: 15px 0;">
         $${suggestedPlan.monthly_price}/month
       </p>
     </div>
-    ` : ''}
+    `
+        : ""
+    }
 
     <div style="text-align: center; margin: 30px 0;">
       <a href="https://www.realestategenie.app/app/billing" style="display: inline-block; background: #ef4444; color: white; padding: 12px 30px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-right: 10px;">
@@ -168,17 +179,17 @@ export async function sendUsageAlertEmail(
   alert: UsageAlert,
   agent: { email: string; display_name: string | null },
   plan: SubscriptionPlan,
-  suggestedPlan?: SubscriptionPlan | null
+  suggestedPlan?: SubscriptionPlan | null,
 ): Promise<boolean> {
   try {
     const agentName = agent.display_name || agent.email;
 
-    let subject = '';
-    let html = '';
+    let subject = "";
+    let html = "";
 
-    if (alert.alert_type === 'warning_70') {
-      const resourceLabel = alert.resource_type === 'agents' ? 'agent' :
-                           alert.resource_type === 'properties' ? 'property' : 'tenant';
+    if (alert.alert_type === "warning_70") {
+      const resourceLabel =
+        alert.resource_type === "agents" ? "agent" : alert.resource_type === "properties" ? "property" : "tenant";
 
       subject = `⚠️ Approaching ${resourceLabel} limit on your Real Estate Genie plan`;
       html = generateWarningEmail(
@@ -187,22 +198,24 @@ export async function sendUsageAlertEmail(
         alert.usage_count,
         alert.limit_count,
         alert.usage_percentage,
-        suggestedPlan || undefined
+        suggestedPlan || undefined,
       );
-    } else if (alert.alert_type === 'critical_100') {
-      subject = '🚨 Plan limit exceeded - Let\'s get you upgraded';
+    } else if (alert.alert_type === "critical_100") {
+      subject = "🚨 Plan limit exceeded - Let's get you upgraded";
 
       // For critical alerts, we might have multiple resources exceeded
       // For now, send for the single resource
       html = generateCriticalEmail(
         agentName,
-        [{
-          type: alert.resource_type,
-          usage: alert.usage_count,
-          limit: alert.limit_count
-        }],
+        [
+          {
+            type: alert.resource_type,
+            usage: alert.usage_count,
+            limit: alert.limit_count,
+          },
+        ],
         plan,
-        suggestedPlan || undefined
+        suggestedPlan || undefined,
       );
     } else {
       return false;
@@ -230,7 +243,7 @@ export async function sendUsageAlertEmail(
 
     return true;
   } catch (error) {
-    console.error('Error sending usage alert email:', error);
+    console.error("Error sending usage alert email:", error);
     return false;
   }
 }
@@ -246,7 +259,8 @@ export async function processPendingUsageAlerts(): Promise<{
   // Get all unresolved alerts that haven't had emails sent
   const { data: pendingAlerts } = await supabaseAdmin
     .from("usage_alerts")
-    .select(`
+    .select(
+      `
       *,
       agents (
         email,
@@ -256,7 +270,8 @@ export async function processPendingUsageAlerts(): Promise<{
           subscription_plans:subscription_plan_id (*)
         )
       )
-    `)
+    `,
+    )
     .eq("is_resolved", false)
     .eq("email_sent", false)
     .order("created_at", { ascending: true })
@@ -265,7 +280,7 @@ export async function processPendingUsageAlerts(): Promise<{
   const results = {
     processed: 0,
     sent: 0,
-    errors: 0
+    errors: 0,
   };
 
   for (const alert of pendingAlerts || []) {
@@ -301,7 +316,7 @@ export async function processPendingUsageAlerts(): Promise<{
         alert,
         { email: agent.email, display_name: agent.display_name },
         plan,
-        suggestedPlan
+        suggestedPlan,
       );
 
       if (sent) {

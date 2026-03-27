@@ -5,8 +5,16 @@ import jsPDF from "jspdf";
 import * as XLSX from "xlsx";
 import Link from "next/link";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
-  PieChart, Pie,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+  PieChart,
+  Pie,
 } from "recharts";
 
 interface SpeedToLeadData {
@@ -80,20 +88,33 @@ export default function SpeedToLeadClient() {
     const doc = new jsPDF();
     const pw = doc.internal.pageSize.getWidth();
     let y = 20;
-    doc.setFontSize(18); doc.setFont("helvetica", "bold");
-    doc.text("Speed-to-Lead Audit", pw / 2, y, { align: "center" }); y += 12;
-    doc.setFontSize(10); doc.setFont("helvetica", "normal");
-    doc.text(`Period: Last ${period === "7d" ? "7" : period === "30d" ? "30" : "90"} Days`, pw / 2, y, { align: "center" }); y += 14;
-    doc.setFontSize(12); doc.setFont("helvetica", "bold");
-    doc.text("Summary", 20, y); y += 8;
-    doc.setFontSize(10); doc.setFont("helvetica", "normal");
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text("Speed-to-Lead Audit", pw / 2, y, { align: "center" });
+    y += 12;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Period: Last ${period === "7d" ? "7" : period === "30d" ? "30" : "90"} Days`, pw / 2, y, {
+      align: "center",
+    });
+    y += 14;
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("Summary", 20, y);
+    y += 8;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
     [
       ["Grade:", `${grade.letter} - ${grade.label}`],
       ["Average Response:", `${data.avgResponseMin} min`],
       ["Median Response:", `${data.medianResponseMin} min`],
       ["Under 5 min:", `${data.under5min} leads (${under5pct}%)`],
       ["No Response (24hr):", `${data.noResponse24hr} leads`],
-    ].forEach(([l, v]) => { doc.text(l, 25, y); doc.text(v, pw - 25, y, { align: "right" }); y += 6; });
+    ].forEach(([l, v]) => {
+      doc.text(l, 25, y);
+      doc.text(v, pw - 25, y, { align: "right" });
+      y += 6;
+    });
     doc.save(`Speed_To_Lead_Audit.pdf`);
   };
 
@@ -109,7 +130,7 @@ export default function SpeedToLeadClient() {
       { Metric: "Over 60 min", Value: data.over1hr },
       { Metric: "No Response (24hr)", Value: data.noResponse24hr },
     ];
-    const hourlyRows = data.hourlyBreakdown.map(h => ({
+    const hourlyRows = data.hourlyBreakdown.map((h) => ({
       "Time Window": h.hour,
       "Avg Response (min)": h.avg,
       "Lead Count": h.count,
@@ -126,19 +147,61 @@ export default function SpeedToLeadClient() {
     <div>
       {/* Integration Notice */}
       {isLive ? (
-        <div style={{ padding: 12, background: "#ecfdf5", border: "1px solid #a7f3d0", borderRadius: 8, marginBottom: 20, fontSize: 13 }}>
-          Showing live data from your integrations. <Link href="/app/integrations" style={{ color: "#059669", fontWeight: 600 }}>Manage Integrations</Link>
+        <div
+          style={{
+            padding: 12,
+            background: "#ecfdf5",
+            border: "1px solid #a7f3d0",
+            borderRadius: 8,
+            marginBottom: 20,
+            fontSize: 13,
+          }}
+        >
+          Showing live data from your integrations.{" "}
+          <Link href="/app/integrations" style={{ color: "#059669", fontWeight: 600 }}>
+            Manage Integrations
+          </Link>
         </div>
       ) : (
-        <div style={{ padding: 12, background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, marginBottom: 20, fontSize: 13 }}>
-          Showing sample data. <Link href="/app/integrations" style={{ color: "#3b82f6", fontWeight: 600 }}>Connect GHL</Link> to see live response metrics.
+        <div
+          style={{
+            padding: 12,
+            background: "#eff6ff",
+            border: "1px solid #bfdbfe",
+            borderRadius: 8,
+            marginBottom: 20,
+            fontSize: 13,
+          }}
+        >
+          Showing sample data.{" "}
+          <Link href="/app/integrations" style={{ color: "#3b82f6", fontWeight: 600 }}>
+            Connect GHL
+          </Link>{" "}
+          to see live response metrics.
         </div>
       )}
 
       {/* Period Filter */}
       <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
-        {[{ v: "7d", l: "Last 7 Days" }, { v: "30d", l: "Last 30 Days" }, { v: "90d", l: "Last 90 Days" }].map((p) => (
-          <button key={p.v} onClick={() => setPeriod(p.v)} style={{ padding: "6px 14px", fontSize: 13, fontWeight: 600, border: period === p.v ? "2px solid #3b82f6" : "1px solid #d1d5db", borderRadius: 6, background: period === p.v ? "#dbeafe" : "#fff", cursor: "pointer", color: period === p.v ? "#1d4ed8" : "#374151" }}>
+        {[
+          { v: "7d", l: "Last 7 Days" },
+          { v: "30d", l: "Last 30 Days" },
+          { v: "90d", l: "Last 90 Days" },
+        ].map((p) => (
+          <button
+            key={p.v}
+            onClick={() => setPeriod(p.v)}
+            style={{
+              padding: "6px 14px",
+              fontSize: 13,
+              fontWeight: 600,
+              border: period === p.v ? "2px solid #3b82f6" : "1px solid #d1d5db",
+              borderRadius: 6,
+              background: period === p.v ? "#dbeafe" : "#fff",
+              cursor: "pointer",
+              color: period === p.v ? "#1d4ed8" : "#374151",
+            }}
+          >
             {p.l}
           </button>
         ))}
@@ -146,7 +209,16 @@ export default function SpeedToLeadClient() {
 
       {/* Grade + Summary Cards */}
       <div style={{ display: "grid", gridTemplateColumns: "auto 1fr 1fr 1fr 1fr", gap: 16, marginBottom: 24 }}>
-        <div style={{ padding: 24, background: grade.color, borderRadius: 12, color: "#fff", textAlign: "center", minWidth: 100 }}>
+        <div
+          style={{
+            padding: 24,
+            background: grade.color,
+            borderRadius: 12,
+            color: "#fff",
+            textAlign: "center",
+            minWidth: 100,
+          }}
+        >
           <div style={{ fontSize: 48, fontWeight: 900 }}>{grade.letter}</div>
           <div style={{ fontSize: 13, opacity: 0.9 }}>{grade.label}</div>
         </div>
@@ -163,9 +235,18 @@ export default function SpeedToLeadClient() {
           <div style={{ fontSize: 24, fontWeight: 700 }}>{under5pct}%</div>
           <div style={{ fontSize: 11, color: "#6b7280" }}>{data.under5min} leads</div>
         </div>
-        <div style={{ padding: 16, background: data.noResponse24hr > 0 ? "#fef2f2" : "#fff", border: `1px solid ${data.noResponse24hr > 0 ? "#fecaca" : "#e5e7eb"}`, borderRadius: 8 }}>
+        <div
+          style={{
+            padding: 16,
+            background: data.noResponse24hr > 0 ? "#fef2f2" : "#fff",
+            border: `1px solid ${data.noResponse24hr > 0 ? "#fecaca" : "#e5e7eb"}`,
+            borderRadius: 8,
+          }}
+        >
           <div style={{ fontSize: 12, color: "#6b7280" }}>Missed (24hr)</div>
-          <div style={{ fontSize: 24, fontWeight: 700, color: data.noResponse24hr > 0 ? "#dc2626" : "#059669" }}>{data.noResponse24hr}</div>
+          <div style={{ fontSize: 24, fontWeight: 700, color: data.noResponse24hr > 0 ? "#dc2626" : "#059669" }}>
+            {data.noResponse24hr}
+          </div>
         </div>
       </div>
 
@@ -211,7 +292,10 @@ export default function SpeedToLeadClient() {
           <BarChart data={data.hourlyBreakdown} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
             <XAxis dataKey="hour" tick={{ fontSize: 10 }} interval={0} />
-            <YAxis tick={{ fontSize: 11 }} label={{ value: "Minutes", angle: -90, position: "insideLeft", style: { fontSize: 11 } }} />
+            <YAxis
+              tick={{ fontSize: 11 }}
+              label={{ value: "Minutes", angle: -90, position: "insideLeft", style: { fontSize: 11 } }}
+            />
             <Tooltip formatter={(value: any) => `${value} min`} />
             <Bar dataKey="avg" name="Avg Response (min)" radius={[4, 4, 0, 0]}>
               {data.hourlyBreakdown.map((h, i) => (
@@ -223,7 +307,9 @@ export default function SpeedToLeadClient() {
       </div>
 
       {/* Recommendation */}
-      <div style={{ padding: 20, background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 12, marginBottom: 24 }}>
+      <div
+        style={{ padding: 20, background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 12, marginBottom: 24 }}
+      >
         <h3 style={{ margin: "0 0 8px 0", fontSize: 15, fontWeight: 700 }}>Recommendation</h3>
         <p style={{ margin: 0, fontSize: 13, color: "#374151", lineHeight: 1.6 }}>
           {data.avgResponseMin > 15
@@ -233,10 +319,33 @@ export default function SpeedToLeadClient() {
       </div>
 
       <div style={{ display: "flex", gap: 8 }}>
-        <button onClick={exportToPDF} style={{ padding: "12px 24px", background: "#dc2626", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer" }}>
+        <button
+          onClick={exportToPDF}
+          style={{
+            padding: "12px 24px",
+            background: "#dc2626",
+            color: "#fff",
+            border: "none",
+            borderRadius: 8,
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
           Export PDF
         </button>
-        <button onClick={exportToExcel} style={{ padding: "8px 20px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>
+        <button
+          onClick={exportToExcel}
+          style={{
+            padding: "8px 20px",
+            background: "#fff",
+            color: "#374151",
+            border: "1px solid #d1d5db",
+            borderRadius: 8,
+            fontWeight: 600,
+            cursor: "pointer",
+            fontSize: 13,
+          }}
+        >
           Export Excel
         </button>
       </div>

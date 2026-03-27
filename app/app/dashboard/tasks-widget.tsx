@@ -32,11 +32,14 @@ export default function TasksWidget() {
       fetch("/api/tasks?due=overdue").then((r) => r.json()),
       fetch("/api/tasks?due=today").then((r) => r.json()),
       fetch("/api/tasks?due=upcoming").then((r) => r.json()),
-    ]).then(([overdueData, todayData, upcomingData]) => {
-      setOverdueTasks((overdueData.tasks || []).slice(0, 3));
-      setTodayTasks((todayData.tasks || []).slice(0, 3));
-      setUpcomingTasks((upcomingData.tasks || []).slice(0, 3));
-    }).catch(() => {}).finally(() => setIsLoading(false));
+    ])
+      .then(([overdueData, todayData, upcomingData]) => {
+        setOverdueTasks((overdueData.tasks || []).slice(0, 3));
+        setTodayTasks((todayData.tasks || []).slice(0, 3));
+        setUpcomingTasks((upcomingData.tasks || []).slice(0, 3));
+      })
+      .catch(() => {})
+      .finally(() => setIsLoading(false));
   }, []);
 
   const markComplete = async (id: string) => {
@@ -74,11 +77,12 @@ export default function TasksWidget() {
                 className="flex-shrink-0 w-4 h-4 rounded-full border-2 border-gray-300 hover:border-green-400 transition-colors"
                 title="Mark complete"
               />
-              <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full" style={{ background: PRIORITY_DOT[task.priority] || "#2563eb" }} />
+              <span
+                className="flex-shrink-0 w-1.5 h-1.5 rounded-full"
+                style={{ background: PRIORITY_DOT[task.priority] || "#2563eb" }}
+              />
               <span className="text-xs text-gray-700 font-medium truncate flex-1">{task.title}</span>
-              {task.due_date && (
-                <span className="text-[10px] text-gray-400 flex-shrink-0">{task.due_date}</span>
-              )}
+              {task.due_date && <span className="text-[10px] text-gray-400 flex-shrink-0">{task.due_date}</span>}
             </div>
           ))}
         </div>
@@ -94,7 +98,10 @@ export default function TasksWidget() {
             <ListTodo className="w-4 h-4" />
             Tasks
           </CardTitle>
-          <Link href="/app/tasks" className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-0.5 no-underline">
+          <Link
+            href="/app/tasks"
+            className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-0.5 no-underline"
+          >
             View all <ChevronRight className="w-3 h-3" />
           </Link>
         </div>

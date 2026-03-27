@@ -16,11 +16,7 @@ export default async function PlanFeaturesPage({ params }: PageProps) {
   const { id: planId } = await params;
 
   // Get plan details
-  const { data: plan } = await supabaseAdmin
-    .from("subscription_plans")
-    .select("*")
-    .eq("id", planId)
-    .single();
+  const { data: plan } = await supabaseAdmin.from("subscription_plans").select("*").eq("id", planId).single();
 
   if (!plan) {
     redirect("/app/admin/plans");
@@ -34,10 +30,7 @@ export default async function PlanFeaturesPage({ params }: PageProps) {
     .order("name", { ascending: true });
 
   // Get plan-feature mappings for this plan
-  const { data: planFeatures } = await supabaseAdmin
-    .from("plan_features")
-    .select("*")
-    .eq("plan_id", planId);
+  const { data: planFeatures } = await supabaseAdmin.from("plan_features").select("*").eq("plan_id", planId);
 
   // Create a map for quick lookup
   const featureMap = new Map<string, { id: string; is_enabled: boolean }>();
@@ -47,14 +40,17 @@ export default async function PlanFeaturesPage({ params }: PageProps) {
 
   // Group features by category
   type Feature = NonNullable<typeof features>[number];
-  const groupedFeatures = features?.reduce((acc, feature) => {
-    const category = feature.category || "Other";
-    if (!acc[category]) {
-      acc[category] = [];
-    }
-    acc[category].push(feature);
-    return acc;
-  }, {} as Record<string, Feature[]>);
+  const groupedFeatures = features?.reduce(
+    (acc, feature) => {
+      const category = feature.category || "Other";
+      if (!acc[category]) {
+        acc[category] = [];
+      }
+      acc[category].push(feature);
+      return acc;
+    },
+    {} as Record<string, Feature[]>,
+  );
 
   const categoryLabels: Record<string, string> = {
     core: "Core Features",
@@ -123,69 +119,58 @@ export default async function PlanFeaturesPage({ params }: PageProps) {
         <CardContent>
           <div className="space-y-6">
             {groupedFeatures &&
-              (Object.entries(groupedFeatures) as [string, Feature[]][]).map(
-                ([category, categoryFeatures]) => (
-                  <div key={category}>
-                    {/* Category Header */}
-                    <div className="mb-3">
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        {categoryLabels[category] || category}
-                      </h3>
-                      <div className="h-px bg-gray-200 mt-2"></div>
-                    </div>
+              (Object.entries(groupedFeatures) as [string, Feature[]][]).map(([category, categoryFeatures]) => (
+                <div key={category}>
+                  {/* Category Header */}
+                  <div className="mb-3">
+                    <h3 className="text-lg font-semibold text-gray-900">{categoryLabels[category] || category}</h3>
+                    <div className="h-px bg-gray-200 mt-2"></div>
+                  </div>
 
-                    {/* Features in Category */}
-                    <div className="space-y-2">
-                      {categoryFeatures.map((feature) => {
-                        const planFeature = featureMap.get(feature.id);
-                        const isEnabled = planFeature?.is_enabled || false;
+                  {/* Features in Category */}
+                  <div className="space-y-2">
+                    {categoryFeatures.map((feature) => {
+                      const planFeature = featureMap.get(feature.id);
+                      const isEnabled = planFeature?.is_enabled || false;
 
-                        return (
-                          <div
-                            key={feature.id}
-                            className={`p-4 border rounded-lg transition-colors ${
-                              isEnabled
-                                ? "bg-green-50 border-green-200"
-                                : "bg-gray-50 border-gray-200"
-                            }`}
-                          >
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <h4 className="font-medium text-gray-900">{feature.name}</h4>
-                                  <Badge
-                                    variant="outline"
-                                    className="text-xs"
-                                  >
-                                    {feature.slug}
-                                  </Badge>
+                      return (
+                        <div
+                          key={feature.id}
+                          className={`p-4 border rounded-lg transition-colors ${
+                            isEnabled ? "bg-green-50 border-green-200" : "bg-gray-50 border-gray-200"
+                          }`}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h4 className="font-medium text-gray-900">{feature.name}</h4>
+                                <Badge variant="outline" className="text-xs">
+                                  {feature.slug}
+                                </Badge>
+                              </div>
+                              {feature.description && <p className="text-sm text-gray-600">{feature.description}</p>}
+                            </div>
+
+                            <div className="flex items-center gap-2 ml-4">
+                              {isEnabled ? (
+                                <div className="flex items-center gap-2 text-green-700">
+                                  <Check className="h-5 w-5" />
+                                  <span className="text-sm font-medium">Enabled</span>
                                 </div>
-                                {feature.description && (
-                                  <p className="text-sm text-gray-600">{feature.description}</p>
-                                )}
-                              </div>
-
-                              <div className="flex items-center gap-2 ml-4">
-                                {isEnabled ? (
-                                  <div className="flex items-center gap-2 text-green-700">
-                                    <Check className="h-5 w-5" />
-                                    <span className="text-sm font-medium">Enabled</span>
-                                  </div>
-                                ) : (
-                                  <div className="flex items-center gap-2 text-gray-500">
-                                    <X className="h-5 w-5" />
-                                    <span className="text-sm font-medium">Disabled</span>
-                                  </div>
-                                )}
-                              </div>
+                              ) : (
+                                <div className="flex items-center gap-2 text-gray-500">
+                                  <X className="h-5 w-5" />
+                                  <span className="text-sm font-medium">Disabled</span>
+                                </div>
+                              )}
                             </div>
                           </div>
-                        );
-                      })}
-                    </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                )
-              )}
+                </div>
+              ))}
           </div>
         </CardContent>
       </Card>
@@ -195,12 +180,7 @@ export default async function PlanFeaturesPage({ params }: PageProps) {
         <CardContent className="p-6">
           <div className="flex items-start gap-3">
             <div className="flex-shrink-0 mt-0.5">
-              <svg
-                className="h-5 w-5 text-blue-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
+              <svg className="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -216,9 +196,8 @@ export default async function PlanFeaturesPage({ params }: PageProps) {
                 <Link href="/app/admin/features" className="underline font-medium">
                   Features Management page
                 </Link>{" "}
-                to see the full feature matrix across all plans, or use the Supabase dashboard to
-                modify the <code className="bg-blue-100 px-1 rounded">plan_features</code> table
-                directly.
+                to see the full feature matrix across all plans, or use the Supabase dashboard to modify the{" "}
+                <code className="bg-blue-100 px-1 rounded">plan_features</code> table directly.
               </p>
             </div>
           </div>

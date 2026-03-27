@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     if (!ghlConfig) {
       return NextResponse.json(
         { error: "GHL not connected. Please connect your own GHL account in Integrations." },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -72,9 +72,6 @@ export async function POST(req: NextRequest) {
       // Non-critical
     }
 
-    return NextResponse.json(
-      { error: error.message || "GHL test failed" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message || "GHL test failed" }, { status: 500 });
   }
 }

@@ -114,7 +114,7 @@ export async function generateCMA(
     subjectPropertyType?: string;
     subjectAddress?: string;
     maxComps?: number;
-  }
+  },
 ): Promise<CMAReport> {
   const maxComps = options.maxComps || 25;
 
@@ -150,11 +150,7 @@ export async function generateCMA(
     }),
   ]);
 
-  const allProperties = [
-    ...activeResult.value,
-    ...pendingResult.value,
-    ...soldResult.value,
-  ];
+  const allProperties = [...activeResult.value, ...pendingResult.value, ...soldResult.value];
 
   // Convert to CMAComp format
   const comps: CMAComp[] = allProperties.map((p) => {
@@ -198,8 +194,14 @@ export async function generateCMA(
 
   if (options.subjectSqft && medianPricePerSqft > 0) {
     // Price per sqft method
-    const lowPsf = pricesPerSqft.length > 0 ? pricesPerSqft.sort((a, b) => a - b)[Math.floor(pricesPerSqft.length * 0.25)] : medianPricePerSqft * 0.9;
-    const highPsf = pricesPerSqft.length > 0 ? pricesPerSqft.sort((a, b) => a - b)[Math.floor(pricesPerSqft.length * 0.75)] : medianPricePerSqft * 1.1;
+    const lowPsf =
+      pricesPerSqft.length > 0
+        ? pricesPerSqft.sort((a, b) => a - b)[Math.floor(pricesPerSqft.length * 0.25)]
+        : medianPricePerSqft * 0.9;
+    const highPsf =
+      pricesPerSqft.length > 0
+        ? pricesPerSqft.sort((a, b) => a - b)[Math.floor(pricesPerSqft.length * 0.75)]
+        : medianPricePerSqft * 1.1;
     suggestedPriceLow = Math.round(lowPsf * options.subjectSqft);
     suggestedPriceHigh = Math.round(highPsf * options.subjectSqft);
   } else if (closePrices.length > 0) {

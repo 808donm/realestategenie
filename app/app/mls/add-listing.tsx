@@ -18,7 +18,14 @@ interface AddListingFormProps {
 const PROPERTY_TYPES = ["Residential", "Residential Income", "Commercial", "Land", "Farm"] as const;
 
 const PROPERTY_SUB_TYPES: Record<string, string[]> = {
-  Residential: ["Single Family Residence", "Condo/Co-op", "Townhouse", "Multi-Family", "Manufactured Home", "Mobile Home"],
+  Residential: [
+    "Single Family Residence",
+    "Condo/Co-op",
+    "Townhouse",
+    "Multi-Family",
+    "Manufactured Home",
+    "Mobile Home",
+  ],
   "Residential Income": ["Duplex", "Triplex", "Fourplex", "Apartment", "Mixed Use"],
   Commercial: ["Office", "Retail", "Industrial", "Warehouse", "Mixed Use", "Restaurant/Bar"],
   Land: ["Residential Lot", "Commercial Lot", "Farm/Ranch", "Unimproved", "Subdivision"],
@@ -27,14 +34,60 @@ const PROPERTY_SUB_TYPES: Record<string, string[]> = {
 
 const STATUS_OPTIONS = ["Draft", "Active", "Pending", "Closed", "Withdrawn", "Expired", "Canceled"] as const;
 
-const STREET_SUFFIXES = [
-  "Ave", "Blvd", "Cir", "Ct", "Dr", "Hwy", "Ln", "Pkwy", "Pl", "Rd", "St", "Ter", "Trl", "Way",
-];
+const STREET_SUFFIXES = ["Ave", "Blvd", "Cir", "Ct", "Dr", "Hwy", "Ln", "Pkwy", "Pl", "Rd", "St", "Ter", "Trl", "Way"];
 
 const US_STATES = [
-  "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD",
-  "MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC",
-  "SD","TN","TX","UT","VT","VA","WA","WV","WI","WY","DC",
+  "AL",
+  "AK",
+  "AZ",
+  "AR",
+  "CA",
+  "CO",
+  "CT",
+  "DE",
+  "FL",
+  "GA",
+  "HI",
+  "ID",
+  "IL",
+  "IN",
+  "IA",
+  "KS",
+  "KY",
+  "LA",
+  "ME",
+  "MD",
+  "MA",
+  "MI",
+  "MN",
+  "MS",
+  "MO",
+  "MT",
+  "NE",
+  "NV",
+  "NH",
+  "NJ",
+  "NM",
+  "NY",
+  "NC",
+  "ND",
+  "OH",
+  "OK",
+  "OR",
+  "PA",
+  "RI",
+  "SC",
+  "SD",
+  "TN",
+  "TX",
+  "UT",
+  "VT",
+  "VA",
+  "WA",
+  "WV",
+  "WI",
+  "WY",
+  "DC",
 ];
 
 export default function AddListingForm({ onClose, onSuccess, editListing }: AddListingFormProps) {
@@ -86,9 +139,7 @@ export default function AddListingForm({ onClose, onSuccess, editListing }: AddL
     expiration_date: (edit.expiration_date as string) || "",
   });
 
-  const [photos, setPhotos] = useState<ListingPhoto[]>(
-    (edit.photos as ListingPhoto[]) || []
-  );
+  const [photos, setPhotos] = useState<ListingPhoto[]>((edit.photos as ListingPhoto[]) || []);
 
   const updateField = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -155,9 +206,18 @@ export default function AddListingForm({ onClose, onSuccess, editListing }: AddL
   const handleSubmit = async () => {
     setError("");
 
-    if (!form.city.trim()) { setError("City is required"); return; }
-    if (!form.postal_code.trim()) { setError("Postal code is required"); return; }
-    if (!form.list_price.trim()) { setError("List price is required"); return; }
+    if (!form.city.trim()) {
+      setError("City is required");
+      return;
+    }
+    if (!form.postal_code.trim()) {
+      setError("Postal code is required");
+      return;
+    }
+    if (!form.list_price.trim()) {
+      setError("List price is required");
+      return;
+    }
 
     setIsSaving(true);
 
@@ -298,7 +358,9 @@ export default function AddListingForm({ onClose, onSuccess, editListing }: AddL
               }}
             >
               {STATUS_OPTIONS.map((s) => (
-                <option key={s} value={s}>{s}</option>
+                <option key={s} value={s}>
+                  {s}
+                </option>
               ))}
             </select>
             <button
@@ -400,7 +462,9 @@ export default function AddListingForm({ onClose, onSuccess, editListing }: AddL
                   >
                     <option value="">Select</option>
                     {STREET_SUFFIXES.map((s) => (
-                      <option key={s} value={s}>{s}</option>
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -448,7 +512,9 @@ export default function AddListingForm({ onClose, onSuccess, editListing }: AddL
                     style={inputStyle}
                   >
                     {US_STATES.map((s) => (
-                      <option key={s} value={s}>{s}</option>
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -472,7 +538,9 @@ export default function AddListingForm({ onClose, onSuccess, editListing }: AddL
                     style={inputStyle}
                   >
                     {PROPERTY_TYPES.map((t) => (
-                      <option key={t} value={t}>{t}</option>
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -485,7 +553,9 @@ export default function AddListingForm({ onClose, onSuccess, editListing }: AddL
                   >
                     <option value="">Select</option>
                     {(PROPERTY_SUB_TYPES[form.property_type] || []).map((t) => (
-                      <option key={t} value={t}>{t}</option>
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -781,9 +851,7 @@ export default function AddListingForm({ onClose, onSuccess, editListing }: AddL
                 <div style={{ fontSize: 14, fontWeight: 600, color: "#374151", marginBottom: 4 }}>
                   {uploadingPhoto ? "Uploading..." : "Click to upload photos"}
                 </div>
-                <div style={{ fontSize: 12, color: "#9ca3af" }}>
-                  JPEG, PNG, WebP, HEIC — Max 10MB per photo
-                </div>
+                <div style={{ fontSize: 12, color: "#9ca3af" }}>JPEG, PNG, WebP, HEIC — Max 10MB per photo</div>
               </div>
 
               {/* Photo grid */}
@@ -897,7 +965,7 @@ export default function AddListingForm({ onClose, onSuccess, editListing }: AddL
                           value={photo.description}
                           onChange={(e) => {
                             setPhotos((prev) =>
-                              prev.map((p, i) => (i === index ? { ...p, description: e.target.value } : p))
+                              prev.map((p, i) => (i === index ? { ...p, description: e.target.value } : p)),
                             );
                           }}
                           style={{
@@ -934,9 +1002,7 @@ export default function AddListingForm({ onClose, onSuccess, editListing }: AddL
             flexShrink: 0,
           }}
         >
-          <div style={{ fontSize: 12, color: "#9ca3af" }}>
-            * Required fields: City, Postal Code, List Price
-          </div>
+          <div style={{ fontSize: 12, color: "#9ca3af" }}>* Required fields: City, Postal Code, List Price</div>
           <div style={{ display: "flex", gap: 10 }}>
             <button
               onClick={onClose}
@@ -965,11 +1031,7 @@ export default function AddListingForm({ onClose, onSuccess, editListing }: AddL
                 cursor: isSaving ? "wait" : "pointer",
               }}
             >
-              {isSaving
-                ? "Saving..."
-                : editListing
-                  ? "Update Listing"
-                  : "Create Listing"}
+              {isSaving ? "Saving..." : editListing ? "Update Listing" : "Create Listing"}
             </button>
           </div>
         </div>

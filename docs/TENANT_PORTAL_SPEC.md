@@ -18,6 +18,7 @@ Self-service portal for tenants to manage their rental experience, pay rent, sub
 ### 1. Authentication & Onboarding
 
 **Tenant Invitation Flow:**
+
 ```
 1. Lease activated (contract signed) → Trigger
 2. System creates tenant_user record
@@ -28,6 +29,7 @@ Self-service portal for tenants to manage their rental experience, pay rent, sub
 ```
 
 **Database:**
+
 ```sql
 CREATE TABLE tenant_users (
   id UUID PRIMARY KEY REFERENCES auth.users,
@@ -43,6 +45,7 @@ CREATE TABLE tenant_users (
 ```
 
 **Auth Strategy:**
+
 - Unified auth system with role-based access
 - RLS policies: tenants can only see their own lease data
 - Role field in auth metadata: { role: "tenant" }
@@ -52,6 +55,7 @@ CREATE TABLE tenant_users (
 ### 2. Dashboard
 
 **Layout:**
+
 ```
 ┌─────────────────────────────────────────┐
 │  🏠 [Property Address]                  │
@@ -73,6 +77,7 @@ CREATE TABLE tenant_users (
 ```
 
 **Data Sources:**
+
 - Lease info from `pm_leases`
 - Invoices from GHL API
 - Work orders from `pm_work_orders`
@@ -83,6 +88,7 @@ CREATE TABLE tenant_users (
 ### 3. Invoices & Statements
 
 **View Invoices:**
+
 ```typescript
 // Sync GHL invoices to local cache for performance
 CREATE TABLE tenant_invoice_cache (
@@ -105,6 +111,7 @@ CREATE TABLE tenant_invoice_cache (
 ```
 
 **Features:**
+
 - List all invoices (current + historical)
 - Filter: Paid / Unpaid / Overdue
 - Download invoice PDF
@@ -112,6 +119,7 @@ CREATE TABLE tenant_invoice_cache (
 - Payment history with receipts
 
 **Sync Strategy:**
+
 ```typescript
 // Webhook: invoice.created, invoice.updated from GHL
 // → Update tenant_invoice_cache
@@ -125,40 +133,45 @@ CREATE TABLE tenant_invoice_cache (
 **Dual Payment Providers:**
 
 **Stripe Integration:**
+
 ```typescript
 // Use Stripe Payment Intents API
 // Support: Credit/Debit Cards, ACH Bank Transfers
 
 const paymentIntent = await stripe.paymentIntents.create({
   amount: invoice.amount * 100, // cents
-  currency: 'usd',
+  currency: "usd",
   customer: tenant.stripe_customer_id,
   payment_method: savedPaymentMethod.id,
   metadata: {
     lease_id: lease.id,
     ghl_invoice_id: invoice.ghl_invoice_id,
-  }
+  },
 });
 ```
 
 **PayPal Integration:**
+
 ```typescript
 // PayPal Orders API v2
 // Support: PayPal balance, PayPal Credit, Cards via PayPal
 
 const order = await paypal.orders.create({
-  intent: 'CAPTURE',
-  purchase_units: [{
-    reference_id: invoice.ghl_invoice_id,
-    amount: {
-      currency_code: 'USD',
-      value: invoice.amount.toFixed(2)
-    }
-  }]
+  intent: "CAPTURE",
+  purchase_units: [
+    {
+      reference_id: invoice.ghl_invoice_id,
+      amount: {
+        currency_code: "USD",
+        value: invoice.amount.toFixed(2),
+      },
+    },
+  ],
 });
 ```
 
 **Payment Methods Table:**
+
 ```sql
 CREATE TABLE tenant_payment_methods (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -188,6 +201,7 @@ CREATE TABLE tenant_payment_methods (
 ```
 
 **Payment Flow:**
+
 ```
 1. Tenant clicks "Pay Now" on invoice
 2. Select payment method (or add new)
@@ -203,6 +217,7 @@ CREATE TABLE tenant_payment_methods (
 ```
 
 **Autopay:**
+
 ```typescript
 // Cron job runs daily at 6 AM
 // Finds invoices due in 3 days with autopay enabled
@@ -229,13 +244,14 @@ CREATE TABLE autopay_transactions (
 ### 5. Work Orders
 
 **Submit Work Order:**
+
 ```typescript
 // Form fields:
 interface WorkOrderSubmission {
   title: string; // "Kitchen faucet leaking"
   description: string; // Detailed description
-  category: 'plumbing' | 'electrical' | 'hvac' | 'appliance' | 'other';
-  priority: 'normal' | 'urgent' | 'emergency';
+  category: "plumbing" | "electrical" | "hvac" | "appliance" | "other";
+  priority: "normal" | "urgent" | "emergency";
   location: string; // "Kitchen", "Master Bathroom"
   photos: File[]; // Up to 5 photos
   tenant_availability: string; // "Weekdays after 5pm"
@@ -243,6 +259,7 @@ interface WorkOrderSubmission {
 ```
 
 **Database:**
+
 ```sql
 -- Already exists from migration 023, just needs enhancement:
 ALTER TABLE pm_work_orders
@@ -255,6 +272,7 @@ ALTER TABLE pm_work_orders
 ```
 
 **Status Workflow:**
+
 ```
 submitted → assigned → scheduled → in-progress → completed → closed
             ↓
@@ -262,12 +280,14 @@ submitted → assigned → scheduled → in-progress → completed → closed
 ```
 
 **Notifications:**
+
 - Status changes → Email + in-app notification
 - Vendor assigned → SMS to tenant
 - Scheduled date confirmed → Calendar invite
 - Work completed → Request for rating
 
 **Photos:**
+
 ```sql
 -- Store in Supabase Storage
 -- Bucket: work-order-photos
@@ -284,12 +304,14 @@ submitted → assigned → scheduled → in-progress → completed → closed
 ### 6. Messages / Communication
 
 **Architecture:**
+
 ```
 Tenant Portal ←→ pm_messages table ←→ GHL Conversations API
                      (sync)
 ```
 
 **Database:**
+
 ```sql
 CREATE TABLE pm_messages (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -316,6 +338,7 @@ CREATE INDEX idx_pm_messages_unread ON pm_messages(to_user_id, read_at) WHERE re
 **Sync Strategy:**
 
 **Outbound (Tenant → GHL):**
+
 ```typescript
 // When tenant sends message in portal:
 1. Insert into pm_messages
@@ -325,6 +348,7 @@ CREATE INDEX idx_pm_messages_unread ON pm_messages(to_user_id, read_at) WHERE re
 ```
 
 **Inbound (Agent → Tenant):**
+
 ```typescript
 // GHL Webhook: message.created
 1. Check if message is from agent to tenant contact
@@ -335,6 +359,7 @@ CREATE INDEX idx_pm_messages_unread ON pm_messages(to_user_id, read_at) WHERE re
 ```
 
 **Features:**
+
 - Real-time chat interface
 - File attachments (lease questions, inspection photos)
 - Read receipts
@@ -346,6 +371,7 @@ CREATE INDEX idx_pm_messages_unread ON pm_messages(to_user_id, read_at) WHERE re
 ### 7. Lease Information
 
 **Display:**
+
 - Property address, unit number
 - Lease start/end dates
 - Monthly rent amount
@@ -357,6 +383,7 @@ CREATE INDEX idx_pm_messages_unread ON pm_messages(to_user_id, read_at) WHERE re
 - Download signed lease PDF
 
 **Lease Document Access:**
+
 ```sql
 -- Lease documents stored in Supabase Storage
 -- Generate signed URL with 1-hour expiration
@@ -375,21 +402,22 @@ const documentUrl = contract.signedDocumentUrl;
 ### 8. Move-In Report
 
 **Submission Form:**
+
 ```typescript
 interface MoveInReport {
   submitted_at: Date;
   rooms: {
     [roomName: string]: {
-      condition: 'excellent' | 'good' | 'fair' | 'poor';
+      condition: "excellent" | "good" | "fair" | "poor";
       notes: string;
       photos: string[]; // URLs
       items: {
         [itemName: string]: {
           condition: string;
           notes: string;
-        }
-      }
-    }
+        };
+      };
+    };
   };
   overall_condition: string;
   tenant_signature: string; // Base64 signature image
@@ -397,6 +425,7 @@ interface MoveInReport {
 ```
 
 **Database:**
+
 ```sql
 -- Store in pm_leases.move_in_report JSONB field
 UPDATE pm_leases
@@ -407,6 +436,7 @@ WHERE id = $2;
 ```
 
 **Features:**
+
 - Room-by-room checklist
 - Photo upload (before move-in condition)
 - Pre-filled common items per room type
@@ -419,6 +449,7 @@ WHERE id = $2;
 ### 9. Move-Out Process
 
 **Notice Submission:**
+
 ```typescript
 // Tenant submits intent to move out
 interface MoveOutNotice {
@@ -441,6 +472,7 @@ WHERE id = lease_id;
 ```
 
 **Move-Out Checklist:**
+
 ```typescript
 interface MoveOutChecklist {
   tasks: {
@@ -469,6 +501,7 @@ interface MoveOutChecklist {
 ```
 
 **Security Deposit Return:**
+
 ```typescript
 // After agent completes move-out inspection
 interface SecurityDepositStatement {
@@ -495,6 +528,7 @@ interface SecurityDepositStatement {
 ### 10. Notifications & Preferences
 
 **Notification Types:**
+
 ```sql
 CREATE TABLE tenant_notification_preferences (
   tenant_user_id UUID PRIMARY KEY REFERENCES tenant_users,
@@ -518,6 +552,7 @@ CREATE TABLE tenant_notification_preferences (
 ```
 
 **Notification Events:**
+
 - Rent due in X days
 - Payment received confirmation
 - Work order status change
@@ -591,19 +626,25 @@ CREATE TABLE tenant_notification_preferences (
 ## Webhooks
 
 **From GHL:**
+
 ```typescript
 // Invoice webhooks
-/api/webhooks/ghl/invoice-created
-/api/webhooks/ghl/invoice-paid
-/api/webhooks/ghl/invoice-overdue
-
-// Message webhooks
-/api/webhooks/ghl/message-created
+/api/behkoosw / ghl / invoice -
+  created / api / webhooks / ghl / invoice -
+  paid / api / webhooks / ghl / invoice -
+  overdue /
+    // Message webhooks
+    api /
+    webhooks /
+    ghl /
+    message -
+  created;
 ```
 
 **From Stripe:**
+
 ```typescript
-/api/webhooks/stripe
+/api/behkoosw / stripe;
 // Events:
 // - payment_intent.succeeded
 // - payment_intent.failed
@@ -611,8 +652,9 @@ CREATE TABLE tenant_notification_preferences (
 ```
 
 **From PayPal:**
+
 ```typescript
-/api/webhooks/paypal
+/api/behkoosw / paypal;
 // Events:
 // - PAYMENT.CAPTURE.COMPLETED
 // - PAYMENT.CAPTURE.DENIED
@@ -623,6 +665,7 @@ CREATE TABLE tenant_notification_preferences (
 ## Payment Flow Diagrams
 
 ### Stripe Payment Flow
+
 ```
 Tenant clicks "Pay Now"
   ↓
@@ -644,6 +687,7 @@ Add note to tenant GHL contact
 ```
 
 ### PayPal Payment Flow
+
 ```
 Tenant clicks "Pay with PayPal"
   ↓
@@ -665,6 +709,7 @@ Send receipt email
 ```
 
 ### Autopay Flow
+
 ```
 Cron: Daily 6 AM
   ↓
@@ -693,6 +738,7 @@ If failure:
 ## Implementation Phases
 
 ### Phase 1E-1: Foundation (Week 1)
+
 - [ ] Tenant authentication & registration
 - [ ] Tenant invitation email system
 - [ ] Basic dashboard layout
@@ -700,6 +746,7 @@ If failure:
 - [ ] Route structure setup
 
 ### Phase 1E-2: Payments (Week 2)
+
 - [ ] Stripe integration
   - [ ] Payment Intents API
   - [ ] Customer & PaymentMethod management
@@ -712,6 +759,7 @@ If failure:
 - [ ] Receipt generation
 
 ### Phase 1E-3: Work Orders (Week 3)
+
 - [ ] Work order submission form
 - [ ] Photo upload to Supabase Storage
 - [ ] Work order list & detail views
@@ -720,6 +768,7 @@ If failure:
 - [ ] Agent work order management UI
 
 ### Phase 1E-4: Messaging (Week 4)
+
 - [ ] Message UI (inbox + thread view)
 - [ ] GHL conversation sync (bidirectional)
 - [ ] File attachments
@@ -727,6 +776,7 @@ If failure:
 - [ ] Email notifications
 
 ### Phase 1E-5: Lease & Reports (Week 5)
+
 - [ ] Lease information display
 - [ ] Lease document download
 - [ ] Move-in report form with photos
@@ -735,6 +785,7 @@ If failure:
 - [ ] Security deposit statement
 
 ### Phase 1E-6: Autopay & Polish (Week 6)
+
 - [ ] Autopay configuration UI
 - [ ] Autopay cron job
 - [ ] Retry logic for failed payments
@@ -748,6 +799,7 @@ If failure:
 ## Security Considerations
 
 **Row Level Security (RLS):**
+
 ```sql
 -- Tenants can only see their own lease data
 CREATE POLICY tenant_own_lease ON pm_leases
@@ -771,6 +823,7 @@ CREATE POLICY tenant_own_invoices ON tenant_invoice_cache
 ```
 
 **Payment Security:**
+
 - Never store full card numbers
 - Use Stripe/PayPal tokenization
 - PCI DSS compliance via providers
@@ -778,6 +831,7 @@ CREATE POLICY tenant_own_invoices ON tenant_invoice_cache
 - HTTPS only for all routes
 
 **Data Privacy:**
+
 - Tenants can only see their own data
 - Audit log for sensitive operations
 - Secure document URLs (signed, expiring)
@@ -817,20 +871,24 @@ TENANT_PORTAL_URL=https://www.realestategenie.app/tenant
 ## Success Metrics
 
 **Adoption:**
+
 - % of tenants who activate their portal account
 - Average time from invite to activation
 
 **Engagement:**
+
 - % of rent payments made via portal
 - Average work orders submitted per month
 - Message response time (tenant → agent)
 
 **Efficiency:**
+
 - Reduction in phone calls to property manager
 - % of invoices paid on time
 - Autopay enrollment rate
 
 **Satisfaction:**
+
 - Work order completion rating
 - Portal NPS score
 - Feature usage heatmap
@@ -858,24 +916,28 @@ TENANT_PORTAL_URL=https://www.realestategenie.app/tenant
 ## Technical Stack Summary
 
 **Frontend:**
+
 - Next.js 16 App Router
 - React Server Components
 - Shadcn UI components
 - Tailwind CSS
 
 **Backend:**
+
 - Next.js API routes
 - Supabase PostgreSQL
 - Supabase Storage (files)
 - Supabase Auth
 
 **Integrations:**
+
 - GoHighLevel (CRM, invoicing)
 - Stripe (card payments, ACH)
 - PayPal (PayPal payments)
 - SendGrid (transactional emails)
 
 **Infrastructure:**
+
 - Vercel (hosting)
 - Supabase (database, auth, storage)
 - Cron (via Vercel Cron or external)
@@ -893,6 +955,7 @@ TENANT_PORTAL_URL=https://www.realestategenie.app/tenant
 ---
 
 **Questions?**
+
 - Payment provider credentials setup?
 - Email service preference (SendGrid, AWS SES, Postmark)?
 - Mobile app in Phase 2 or Phase 3?

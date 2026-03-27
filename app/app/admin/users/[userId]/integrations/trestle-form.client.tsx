@@ -17,7 +17,7 @@ type Props = {
 
 export default function AdminTrestleForm({ userId, storedConfig, isConnected }: Props) {
   const [authMethod, setAuthMethod] = useState<"basic" | "oauth2">(
-    (storedConfig?.auth_method as "basic" | "oauth2") || "oauth2"
+    (storedConfig?.auth_method as "basic" | "oauth2") || "oauth2",
   );
   const [apiUrl, setApiUrl] = useState(storedConfig?.api_url || "https://api.cotality.com");
   const [username, setUsername] = useState(storedConfig?.username || "");
@@ -46,7 +46,10 @@ export default function AdminTrestleForm({ userId, storedConfig, isConnected }: 
       });
       const data = await res.json();
       if (res.ok) {
-        setMessage({ type: "success", text: `Connected! ${data.totalListings ? `${data.totalListings.toLocaleString()} listings accessible.` : ""}` });
+        setMessage({
+          type: "success",
+          text: `Connected! ${data.totalListings ? `${data.totalListings.toLocaleString()} listings accessible.` : ""}`,
+        });
         setPassword("");
         setClientSecret("");
       } else {
@@ -89,11 +92,16 @@ export default function AdminTrestleForm({ userId, storedConfig, isConnected }: 
   return (
     <div style={{ maxWidth: 560 }}>
       {isConnected && storedConfig && (
-        <div style={{ background: "#ecfdf5", border: "1px solid #6ee7b7", borderRadius: 8, padding: 16, marginBottom: 24 }}>
+        <div
+          style={{ background: "#ecfdf5", border: "1px solid #6ee7b7", borderRadius: 8, padding: 16, marginBottom: 24 }}
+        >
           <p style={{ fontWeight: 600, color: "#065f46", margin: "0 0 8px" }}>Currently Connected</p>
           <p style={{ fontSize: 13, color: "#047857", margin: "2px 0" }}>API URL: {storedConfig.api_url}</p>
           <p style={{ fontSize: 13, color: "#047857", margin: "2px 0" }}>
-            Auth: {storedConfig.auth_method === "oauth2" ? `OAuth2 — Client ID: ${storedConfig.client_id}` : `Basic — ${storedConfig.username}`}
+            Auth:{" "}
+            {storedConfig.auth_method === "oauth2"
+              ? `OAuth2 — Client ID: ${storedConfig.client_id}`
+              : `Basic — ${storedConfig.username}`}
           </p>
           {storedConfig.connected_at && (
             <p style={{ fontSize: 13, color: "#047857", margin: "2px 0" }}>
@@ -105,7 +113,16 @@ export default function AdminTrestleForm({ userId, storedConfig, isConnected }: 
               type="button"
               onClick={handleTest}
               disabled={testing}
-              style={{ padding: "6px 14px", fontSize: 13, fontWeight: 600, background: "#0891b2", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer" }}
+              style={{
+                padding: "6px 14px",
+                fontSize: 13,
+                fontWeight: 600,
+                background: "#0891b2",
+                color: "#fff",
+                border: "none",
+                borderRadius: 6,
+                cursor: "pointer",
+              }}
             >
               {testing ? "Testing..." : "Test Connection"}
             </button>
@@ -113,13 +130,30 @@ export default function AdminTrestleForm({ userId, storedConfig, isConnected }: 
               type="button"
               onClick={handleDisconnect}
               disabled={disconnecting}
-              style={{ padding: "6px 14px", fontSize: 13, fontWeight: 600, background: "#ef4444", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer" }}
+              style={{
+                padding: "6px 14px",
+                fontSize: 13,
+                fontWeight: 600,
+                background: "#ef4444",
+                color: "#fff",
+                border: "none",
+                borderRadius: 6,
+                cursor: "pointer",
+              }}
             >
               {disconnecting ? "Disconnecting..." : "Disconnect"}
             </button>
           </div>
           {testResult && (
-            <div style={{ marginTop: 10, padding: 10, background: testResult.success ? "#d1fae5" : "#fee2e2", borderRadius: 6, fontSize: 13 }}>
+            <div
+              style={{
+                marginTop: 10,
+                padding: 10,
+                background: testResult.success ? "#d1fae5" : "#fee2e2",
+                borderRadius: 6,
+                fontSize: 13,
+              }}
+            >
               <strong>{testResult.success ? "✓ Connected" : "✗ Failed"}:</strong> {testResult.message}
               {testResult.data?.totalListings !== undefined && (
                 <span> — {testResult.data.totalListings.toLocaleString()} listings</span>
@@ -148,7 +182,14 @@ export default function AdminTrestleForm({ userId, storedConfig, isConnected }: 
             type="text"
             value={apiUrl}
             onChange={(e) => setApiUrl(e.target.value)}
-            style={{ width: "100%", padding: "8px 12px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, boxSizing: "border-box" }}
+            style={{
+              width: "100%",
+              padding: "8px 12px",
+              border: "1px solid #d1d5db",
+              borderRadius: 6,
+              fontSize: 14,
+              boxSizing: "border-box",
+            }}
             placeholder="https://api.cotality.com/trestle/odata"
           />
         </div>
@@ -161,19 +202,36 @@ export default function AdminTrestleForm({ userId, storedConfig, isConnected }: 
                 type="text"
                 value={clientId}
                 onChange={(e) => setClientId(e.target.value)}
-                style={{ width: "100%", padding: "8px 12px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, boxSizing: "border-box" }}
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  border: "1px solid #d1d5db",
+                  borderRadius: 6,
+                  fontSize: 14,
+                  boxSizing: "border-box",
+                }}
                 placeholder={storedConfig?.client_id ? `Current: ${storedConfig.client_id}` : "trestle_..."}
               />
             </div>
             <div>
               <label style={{ display: "block", fontWeight: 600, marginBottom: 4, fontSize: 14 }}>
-                Client Secret {isConnected && <span style={{ fontWeight: 400, color: "#6b7280" }}>(leave blank to keep current)</span>}
+                Client Secret{" "}
+                {isConnected && (
+                  <span style={{ fontWeight: 400, color: "#6b7280" }}>(leave blank to keep current)</span>
+                )}
               </label>
               <input
                 type="password"
                 value={clientSecret}
                 onChange={(e) => setClientSecret(e.target.value)}
-                style={{ width: "100%", padding: "8px 12px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, boxSizing: "border-box" }}
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  border: "1px solid #d1d5db",
+                  borderRadius: 6,
+                  fontSize: 14,
+                  boxSizing: "border-box",
+                }}
                 placeholder={isConnected ? "••••••••" : "Enter client secret"}
               />
             </div>
@@ -186,18 +244,35 @@ export default function AdminTrestleForm({ userId, storedConfig, isConnected }: 
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                style={{ width: "100%", padding: "8px 12px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, boxSizing: "border-box" }}
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  border: "1px solid #d1d5db",
+                  borderRadius: 6,
+                  fontSize: 14,
+                  boxSizing: "border-box",
+                }}
               />
             </div>
             <div>
               <label style={{ display: "block", fontWeight: 600, marginBottom: 4, fontSize: 14 }}>
-                Password {isConnected && <span style={{ fontWeight: 400, color: "#6b7280" }}>(leave blank to keep current)</span>}
+                Password{" "}
+                {isConnected && (
+                  <span style={{ fontWeight: 400, color: "#6b7280" }}>(leave blank to keep current)</span>
+                )}
               </label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                style={{ width: "100%", padding: "8px 12px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, boxSizing: "border-box" }}
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  border: "1px solid #d1d5db",
+                  borderRadius: 6,
+                  fontSize: 14,
+                  boxSizing: "border-box",
+                }}
                 placeholder={isConnected ? "••••••••" : "Enter password"}
               />
             </div>
@@ -205,7 +280,15 @@ export default function AdminTrestleForm({ userId, storedConfig, isConnected }: 
         )}
 
         {message && (
-          <div style={{ padding: 12, borderRadius: 6, background: message.type === "success" ? "#d1fae5" : "#fee2e2", color: message.type === "success" ? "#065f46" : "#991b1b", fontSize: 14 }}>
+          <div
+            style={{
+              padding: 12,
+              borderRadius: 6,
+              background: message.type === "success" ? "#d1fae5" : "#fee2e2",
+              color: message.type === "success" ? "#065f46" : "#991b1b",
+              fontSize: 14,
+            }}
+          >
             {message.text}
           </div>
         )}
@@ -213,7 +296,16 @@ export default function AdminTrestleForm({ userId, storedConfig, isConnected }: 
         <button
           type="submit"
           disabled={saving}
-          style={{ padding: "10px 20px", fontWeight: 700, background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 14 }}
+          style={{
+            padding: "10px 20px",
+            fontWeight: 700,
+            background: "#3b82f6",
+            color: "#fff",
+            border: "none",
+            borderRadius: 6,
+            cursor: "pointer",
+            fontSize: 14,
+          }}
         >
           {saving ? "Connecting..." : isConnected ? "Update Connection" : "Connect Trestle"}
         </button>

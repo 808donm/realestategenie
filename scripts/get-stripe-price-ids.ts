@@ -7,21 +7,21 @@
  * Run with: npx tsx scripts/get-stripe-price-ids.ts
  */
 
-import Stripe from 'stripe';
+import Stripe from "stripe";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-12-15.clover',
+  apiVersion: "2025-12-15.clover",
 });
 
 async function getPriceIds() {
-  console.log('Fetching all prices from Stripe...\n');
+  console.log("Fetching all prices from Stripe...\n");
 
   try {
     // List all prices
     const prices = await stripe.prices.list({
       limit: 100,
       active: true,
-      expand: ['data.product'],
+      expand: ["data.product"],
     });
 
     console.log(`Found ${prices.data.length} active prices:\n`);
@@ -43,40 +43,40 @@ async function getPriceIds() {
     // Display organized by product
     for (const [productName, productPrices] of Object.entries(pricesByProduct)) {
       console.log(`\n📦 ${productName}`);
-      console.log('─'.repeat(60));
+      console.log("─".repeat(60));
 
       for (const price of productPrices) {
-        const interval = price.recurring?.interval || 'one-time';
-        const amount = price.unit_amount ? (price.unit_amount / 100).toFixed(2) : '0.00';
+        const interval = price.recurring?.interval || "one-time";
+        const amount = price.unit_amount ? (price.unit_amount / 100).toFixed(2) : "0.00";
         const currency = price.currency.toUpperCase();
 
-        console.log(`  ${interval === 'month' ? '📅 Monthly' : '📆 Yearly'}:`);
+        console.log(`  ${interval === "month" ? "📅 Monthly" : "📆 Yearly"}:`);
         console.log(`     Price ID: ${price.id}`);
         console.log(`     Amount: $${amount} ${currency}`);
         console.log(`     Interval: ${interval}`);
-        console.log('');
+        console.log("");
       }
     }
 
-    console.log('\n\n');
-    console.log('=' .repeat(60));
-    console.log('COPY AND PASTE THE PRICE IDs BELOW:');
-    console.log('=' .repeat(60));
-    console.log('\nTo update your database, run this SQL:\n');
+    console.log("\n\n");
+    console.log("=".repeat(60));
+    console.log("COPY AND PASTE THE PRICE IDs BELOW:");
+    console.log("=".repeat(60));
+    console.log("\nTo update your database, run this SQL:\n");
 
     // Generate SQL for common plan names
     const planMappings: { [key: string]: string } = {
-      'Solo Agent Pro': 'solo-agent-pro',
-      'Team Growth': 'team-growth',
-      'Brokerage Growth': 'brokerage-growth',
-      'Brokerage Scale': 'brokerage-scale',
+      "Solo Agent Pro": "solo-agent-pro",
+      "Team Growth": "team-growth",
+      "Brokerage Growth": "brokerage-growth",
+      "Brokerage Scale": "brokerage-scale",
     };
 
     for (const [productName, slug] of Object.entries(planMappings)) {
       const productPrices = pricesByProduct[productName];
       if (productPrices) {
-        const monthlyPrice = productPrices.find(p => p.recurring?.interval === 'month');
-        const yearlyPrice = productPrices.find(p => p.recurring?.interval === 'year');
+        const monthlyPrice = productPrices.find((p) => p.recurring?.interval === "month");
+        const yearlyPrice = productPrices.find((p) => p.recurring?.interval === "year");
 
         if (monthlyPrice || yearlyPrice) {
           console.log(`UPDATE subscription_plans SET`);
@@ -90,12 +90,11 @@ async function getPriceIds() {
         }
       }
     }
-
   } catch (error: any) {
-    console.error('Error fetching prices:', error.message);
+    console.error("Error fetching prices:", error.message);
 
-    if (error.type === 'StripeAuthenticationError') {
-      console.error('\n❌ Authentication failed. Please check your STRIPE_SECRET_KEY environment variable.');
+    if (error.type === "StripeAuthenticationError") {
+      console.error("\n❌ Authentication failed. Please check your STRIPE_SECRET_KEY environment variable.");
       console.error('   Make sure it starts with "sk_" and is from your Stripe dashboard.\n');
     }
   }

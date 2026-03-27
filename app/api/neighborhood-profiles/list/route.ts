@@ -21,18 +21,12 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error("Failed to fetch profiles:", error);
-      return NextResponse.json(
-        { error: "Failed to fetch profiles" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to fetch profiles" }, { status: 500 });
     }
 
     return NextResponse.json({ profiles });
   } catch (error: any) {
     console.error("Error fetching neighborhood profiles:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

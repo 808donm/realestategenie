@@ -45,7 +45,13 @@ export interface TimelineStatus {
   daysUntilExchange: number;
   identificationExpired: boolean;
   exchangeExpired: boolean;
-  status: 'on_track' | 'identification_urgent' | 'exchange_urgent' | 'identification_expired' | 'exchange_expired' | 'completed';
+  status:
+    | "on_track"
+    | "identification_urgent"
+    | "exchange_urgent"
+    | "identification_expired"
+    | "exchange_expired"
+    | "completed";
 }
 
 export interface TaxAnalysis {
@@ -101,27 +107,23 @@ export function calculateTimeline(saleCloseDate: Date): TimelineStatus {
   exchangeDeadline.setDate(exchangeDeadline.getDate() + 180);
 
   const msPerDay = 24 * 60 * 60 * 1000;
-  const daysUntilIdentification = Math.ceil(
-    (identificationDeadline.getTime() - now.getTime()) / msPerDay
-  );
-  const daysUntilExchange = Math.ceil(
-    (exchangeDeadline.getTime() - now.getTime()) / msPerDay
-  );
+  const daysUntilIdentification = Math.ceil((identificationDeadline.getTime() - now.getTime()) / msPerDay);
+  const daysUntilExchange = Math.ceil((exchangeDeadline.getTime() - now.getTime()) / msPerDay);
 
   const identificationExpired = daysUntilIdentification < 0;
   const exchangeExpired = daysUntilExchange < 0;
 
-  let status: TimelineStatus['status'];
+  let status: TimelineStatus["status"];
   if (exchangeExpired) {
-    status = 'exchange_expired';
+    status = "exchange_expired";
   } else if (identificationExpired) {
-    status = 'identification_expired';
+    status = "identification_expired";
   } else if (daysUntilIdentification <= 7) {
-    status = 'identification_urgent';
+    status = "identification_urgent";
   } else if (daysUntilExchange <= 30) {
-    status = 'exchange_urgent';
+    status = "exchange_urgent";
   } else {
-    status = 'on_track';
+    status = "on_track";
   }
 
   return {
@@ -143,8 +145,7 @@ export function calculateTaxAnalysis(input: Exchange1031Input): TaxAnalysis {
   const { relinquished, replacement, taxRates } = input;
 
   // Adjusted basis = original basis - accumulated depreciation
-  const adjustedBasis =
-    relinquished.originalBasis - relinquished.accumulatedDepreciation;
+  const adjustedBasis = relinquished.originalBasis - relinquished.accumulatedDepreciation;
 
   // Amount realized = sale price - selling costs
   const amountRealized = relinquished.salePrice - relinquished.sellingCosts;
@@ -153,30 +154,17 @@ export function calculateTaxAnalysis(input: Exchange1031Input): TaxAnalysis {
   const realizedGain = amountRealized - adjustedBasis;
 
   // Split gain into capital gain and depreciation recapture
-  const depreciationRecapture = Math.min(
-    relinquished.accumulatedDepreciation,
-    Math.max(0, realizedGain)
-  );
+  const depreciationRecapture = Math.min(relinquished.accumulatedDepreciation, Math.max(0, realizedGain));
   const capitalGain = Math.max(0, realizedGain - depreciationRecapture);
 
   // Tax without exchange
-  const federalCapitalGainsTax =
-    capitalGain * (taxRates.federalCapitalGainsRate / 100);
-  const stateCapitalGainsTax =
-    (capitalGain + depreciationRecapture) *
-    (taxRates.stateCapitalGainsRate / 100);
-  const depreciationRecaptureTax =
-    depreciationRecapture * (taxRates.depreciationRecaptureRate / 100);
-  const netInvestmentIncomeTax =
-    realizedGain > 0
-      ? realizedGain * (taxRates.netInvestmentIncomeTax / 100)
-      : 0;
+  const federalCapitalGainsTax = capitalGain * (taxRates.federalCapitalGainsRate / 100);
+  const stateCapitalGainsTax = (capitalGain + depreciationRecapture) * (taxRates.stateCapitalGainsRate / 100);
+  const depreciationRecaptureTax = depreciationRecapture * (taxRates.depreciationRecaptureRate / 100);
+  const netInvestmentIncomeTax = realizedGain > 0 ? realizedGain * (taxRates.netInvestmentIncomeTax / 100) : 0;
 
   const totalTaxWithoutExchange =
-    federalCapitalGainsTax +
-    stateCapitalGainsTax +
-    depreciationRecaptureTax +
-    netInvestmentIncomeTax;
+    federalCapitalGainsTax + stateCapitalGainsTax + depreciationRecaptureTax + netInvestmentIncomeTax;
 
   // Boot calculations (if replacement property provided)
   let cashBoot = 0;
@@ -186,22 +174,13 @@ export function calculateTaxAnalysis(input: Exchange1031Input): TaxAnalysis {
 
   if (replacement) {
     // Cash boot = net cash received
-    const netEquityFromSale =
-      relinquished.salePrice -
-      relinquished.sellingCosts -
-      relinquished.existingMortgage;
-    const cashNeededForReplacement =
-      replacement.purchasePrice -
-      replacement.newMortgage +
-      replacement.closingCosts;
+    const netEquityFromSale = relinquished.salePrice - relinquished.sellingCosts - relinquished.existingMortgage;
+    const cashNeededForReplacement = replacement.purchasePrice - replacement.newMortgage + replacement.closingCosts;
 
     cashBoot = Math.max(0, netEquityFromSale - cashNeededForReplacement);
 
     // Mortgage boot = debt relief not replaced
-    mortgageBoot = Math.max(
-      0,
-      relinquished.existingMortgage - replacement.newMortgage
-    );
+    mortgageBoot = Math.max(0, relinquished.existingMortgage - replacement.newMortgage);
 
     // Total boot (taxable)
     const totalBoot = cashBoot + mortgageBoot;
@@ -218,8 +197,7 @@ export function calculateTaxAnalysis(input: Exchange1031Input): TaxAnalysis {
 
       taxWithExchange =
         bootCapitalGain * (taxRates.federalCapitalGainsRate / 100) +
-        (bootCapitalGain + bootDepreciationRecapture) *
-          (taxRates.stateCapitalGainsRate / 100) +
+        (bootCapitalGain + bootDepreciationRecapture) * (taxRates.stateCapitalGainsRate / 100) +
         bootDepreciationRecapture * (taxRates.depreciationRecaptureRate / 100) +
         taxableGainFromBoot * (taxRates.netInvestmentIncomeTax / 100);
     }
@@ -227,8 +205,7 @@ export function calculateTaxAnalysis(input: Exchange1031Input): TaxAnalysis {
     // New basis calculation
     // New basis = replacement purchase price - deferred gain + boot paid
     const deferredGain = realizedGain - taxableGainFromBoot;
-    newPropertyBasis =
-      replacement.purchasePrice - deferredGain + replacement.closingCosts;
+    newPropertyBasis = replacement.purchasePrice - deferredGain + replacement.closingCosts;
   }
 
   const totalBoot = cashBoot + mortgageBoot;
@@ -268,17 +245,12 @@ export interface ReplacementRequirements {
   netEquityFromSale: number;
 }
 
-export function calculateReplacementRequirements(
-  relinquished: RelinquishedProperty
-): ReplacementRequirements {
+export function calculateReplacementRequirements(relinquished: RelinquishedProperty): ReplacementRequirements {
   // Minimum purchase price = sale price of relinquished (to avoid cash boot)
   const minimumPurchasePrice = relinquished.salePrice;
 
   // Net equity from sale
-  const netEquityFromSale =
-    relinquished.salePrice -
-    relinquished.sellingCosts -
-    relinquished.existingMortgage;
+  const netEquityFromSale = relinquished.salePrice - relinquished.sellingCosts - relinquished.existingMortgage;
 
   // Minimum equity = net equity from sale (must reinvest all equity)
   const minimumEquity = netEquityFromSale;
@@ -298,11 +270,12 @@ export function calculateReplacementRequirements(
  * Three Property Rule validation
  * Standard identification allows up to 3 properties regardless of value
  */
-export function validateThreePropertyRule(
-  identifiedProperties: IdentifiedProperty[]
-): { valid: boolean; message: string } {
+export function validateThreePropertyRule(identifiedProperties: IdentifiedProperty[]): {
+  valid: boolean;
+  message: string;
+} {
   if (identifiedProperties.length === 0) {
-    return { valid: false, message: 'No properties identified' };
+    return { valid: false, message: "No properties identified" };
   }
 
   if (identifiedProperties.length <= 3) {
@@ -324,12 +297,9 @@ export function validateThreePropertyRule(
  */
 export function validate200PercentRule(
   identifiedProperties: IdentifiedProperty[],
-  relinquishedSalePrice: number
+  relinquishedSalePrice: number,
 ): { valid: boolean; message: string; totalValue: number; maxValue: number } {
-  const totalValue = identifiedProperties.reduce(
-    (sum, p) => sum + p.estimatedValue,
-    0
-  );
+  const totalValue = identifiedProperties.reduce((sum, p) => sum + p.estimatedValue, 0);
   const maxValue = relinquishedSalePrice * 2;
 
   if (totalValue <= maxValue) {
@@ -357,25 +327,21 @@ export interface ReplacementComparison {
   meetsMinimumPrice: boolean;
   estimatedBoot: number;
   estimatedTaxSavings: number;
-  recommendation: 'excellent' | 'good' | 'acceptable' | 'not_recommended';
+  recommendation: "excellent" | "good" | "acceptable" | "not_recommended";
 }
 
 export function compareReplacementProperties(
   relinquished: RelinquishedProperty,
   taxRates: TaxRates,
-  identifiedProperties: IdentifiedProperty[]
+  identifiedProperties: IdentifiedProperty[],
 ): ReplacementComparison[] {
   const requirements = calculateReplacementRequirements(relinquished);
 
   return identifiedProperties.map((property) => {
-    const meetsMinimumPrice =
-      property.estimatedValue >= requirements.minimumPurchasePrice;
+    const meetsMinimumPrice = property.estimatedValue >= requirements.minimumPurchasePrice;
 
     // Estimate boot if property value is less than sale price
-    const priceDifference = Math.max(
-      0,
-      relinquished.salePrice - property.estimatedValue
-    );
+    const priceDifference = Math.max(0, relinquished.salePrice - property.estimatedValue);
     const estimatedBoot = priceDifference;
 
     // Calculate estimated tax savings
@@ -393,15 +359,15 @@ export function compareReplacementProperties(
     const estimatedTaxSavings = fullExchangeAnalysis.taxSavings;
 
     // Recommendation based on how well property meets requirements
-    let recommendation: ReplacementComparison['recommendation'];
+    let recommendation: ReplacementComparison["recommendation"];
     if (meetsMinimumPrice && estimatedBoot === 0) {
-      recommendation = 'excellent';
+      recommendation = "excellent";
     } else if (estimatedBoot < relinquished.salePrice * 0.1) {
-      recommendation = 'good';
+      recommendation = "good";
     } else if (estimatedBoot < relinquished.salePrice * 0.25) {
-      recommendation = 'acceptable';
+      recommendation = "acceptable";
     } else {
-      recommendation = 'not_recommended';
+      recommendation = "not_recommended";
     }
 
     return {

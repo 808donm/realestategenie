@@ -102,10 +102,7 @@ export default function LocalPipelineClient() {
     fetchPipeline();
   }, [fetchPipeline]);
 
-  const advanceLead = async (
-    leadId: string,
-    direction: "forward" | "backward"
-  ) => {
+  const advanceLead = async (leadId: string, direction: "forward" | "backward") => {
     setMovingLeadId(leadId);
     // Compute target stage for optimistic update
     const stageKeys = stages.map((s) => s.key);
@@ -128,7 +125,7 @@ export default function LocalPipelineClient() {
             return { ...s, leads: [...s.leads, movedLead], count: s.count + 1 };
           }
           return s;
-        })
+        }),
       );
     }
 
@@ -146,9 +143,7 @@ export default function LocalPipelineClient() {
       }
       // Update selected lead if it was the one moved
       if (selectedLead?.id === leadId && data?.newStage) {
-        setSelectedLead((prev) =>
-          prev ? { ...prev, pipelineStage: data.newStage } : null
-        );
+        setSelectedLead((prev) => (prev ? { ...prev, pipelineStage: data.newStage } : null));
       }
       await fetchPipeline();
     } catch {
@@ -276,15 +271,17 @@ export default function LocalPipelineClient() {
   const totalLeads = stages.reduce((sum, s) => sum + s.count, 0);
 
   const exportPipeline = (format: "pdf" | "xlsx") => {
-    const allLeads = stages.flatMap((s) => s.leads.map((l) => ({
-      name: l.name,
-      email: l.email || "",
-      phone: l.phone || "",
-      property: l.property,
-      stage: stages.find((st) => st.key === l.pipelineStage)?.label || l.pipelineStage,
-      heatScore: l.heatScore,
-      date: new Date(l.createdAt).toLocaleDateString(),
-    })));
+    const allLeads = stages.flatMap((s) =>
+      s.leads.map((l) => ({
+        name: l.name,
+        email: l.email || "",
+        phone: l.phone || "",
+        property: l.property,
+        stage: stages.find((st) => st.key === l.pipelineStage)?.label || l.pipelineStage,
+        heatScore: l.heatScore,
+        date: new Date(l.createdAt).toLocaleDateString(),
+      })),
+    );
     if (format === "xlsx") {
       const ws = XLSX.utils.json_to_sheet(allLeads);
       const wb = XLSX.utils.book_new();
@@ -300,7 +297,9 @@ export default function LocalPipelineClient() {
       y += 8;
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
-      doc.text(`Generated ${new Date().toLocaleDateString()} | ${allLeads.length} leads`, pw / 2, y, { align: "center" });
+      doc.text(`Generated ${new Date().toLocaleDateString()} | ${allLeads.length} leads`, pw / 2, y, {
+        align: "center",
+      });
       y += 12;
       doc.setFontSize(8);
       doc.setFont("helvetica", "bold");
@@ -311,7 +310,10 @@ export default function LocalPipelineClient() {
       y += 5;
       doc.setFont("helvetica", "normal");
       allLeads.forEach((r) => {
-        if (y > 275) { doc.addPage(); y = 20; }
+        if (y > 275) {
+          doc.addPage();
+          y = 20;
+        }
         doc.text(r.name.slice(0, 16), cols[0], y);
         doc.text(r.email.slice(0, 20), cols[1], y);
         doc.text(r.property.slice(0, 18), cols[2], y);
@@ -335,19 +337,13 @@ export default function LocalPipelineClient() {
           color: "#dc2626",
         }}
       >
-        <p style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>
-          {error}
-        </p>
+        <p style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>{error}</p>
       </div>
     );
   }
 
   if (isLoading) {
-    return (
-      <div style={{ padding: 60, textAlign: "center", color: "#6b7280" }}>
-        Loading pipeline...
-      </div>
-    );
+    return <div style={{ padding: 60, textAlign: "center", color: "#6b7280" }}>Loading pipeline...</div>;
   }
 
   if (totalLeads === 0) {
@@ -361,13 +357,8 @@ export default function LocalPipelineClient() {
           color: "#6b7280",
         }}
       >
-        <p style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>
-          No leads in the pipeline yet
-        </p>
-        <p style={{ fontSize: 14 }}>
-          Publish an open house and have attendees check in via QR to get
-          started.
-        </p>
+        <p style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>No leads in the pipeline yet</p>
+        <p style={{ fontSize: 14 }}>Publish an open house and have attendees check in via QR to get started.</p>
       </div>
     );
   }
@@ -411,9 +402,7 @@ export default function LocalPipelineClient() {
         }}
       >
         <div>
-          <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 600 }}>
-            Total Leads
-          </div>
+          <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 600 }}>Total Leads</div>
           <div style={{ fontSize: 20, fontWeight: 700 }}>{totalLeads}</div>
         </div>
         {/* Mini stage indicator */}
@@ -434,19 +423,14 @@ export default function LocalPipelineClient() {
               style={{
                 flex: 1,
                 height: s.count > 0 ? Math.max(8, Math.min(32, s.count * 8)) : 4,
-                background:
-                  s.count > 0
-                    ? STAGE_COLORS[s.key] || "#d1d5db"
-                    : "#e5e7eb",
+                background: s.count > 0 ? STAGE_COLORS[s.key] || "#d1d5db" : "#e5e7eb",
                 borderRadius: 2,
                 transition: "height 0.2s",
               }}
             />
           ))}
         </div>
-        <div style={{ fontSize: 11, color: "#9ca3af" }}>
-          Drag cards to move between stages
-        </div>
+        <div style={{ fontSize: 11, color: "#9ca3af" }}>Drag cards to move between stages</div>
         <ExportToolbar
           title="Sales Pipeline"
           columns={[
@@ -458,15 +442,19 @@ export default function LocalPipelineClient() {
             { key: "heatScore", label: "Score", width: 0.8 },
             { key: "date", label: "Date", width: 1.2 },
           ]}
-          getData={() => stages.flatMap((s) => s.leads.map((l) => ({
-            name: l.name,
-            email: l.email || "",
-            phone: l.phone || "",
-            property: l.property,
-            stage: stages.find((st) => st.key === l.pipelineStage)?.label || l.pipelineStage,
-            heatScore: l.heatScore,
-            date: new Date(l.createdAt).toLocaleDateString(),
-          })))}
+          getData={() =>
+            stages.flatMap((s) =>
+              s.leads.map((l) => ({
+                name: l.name,
+                email: l.email || "",
+                phone: l.phone || "",
+                property: l.property,
+                stage: stages.find((st) => st.key === l.pipelineStage)?.label || l.pipelineStage,
+                heatScore: l.heatScore,
+                date: new Date(l.createdAt).toLocaleDateString(),
+              })),
+            )
+          }
           compact
         />
       </div>
@@ -593,9 +581,7 @@ export default function LocalPipelineClient() {
                               e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.08)";
                             }
                           }}
-                          onMouseLeave={(e) =>
-                            (e.currentTarget.style.boxShadow = "none")
-                          }
+                          onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "none")}
                         >
                           {/* Name + Heat */}
                           <div
@@ -648,30 +634,79 @@ export default function LocalPipelineClient() {
                           </div>
 
                           {/* Qualification Context */}
-                          {(lead.timeline || lead.financing || lead.priceRange || lead.preApproved || lead.buyerType) && (
+                          {(lead.timeline ||
+                            lead.financing ||
+                            lead.priceRange ||
+                            lead.preApproved ||
+                            lead.buyerType) && (
                             <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginBottom: 4 }}>
                               {lead.timeline && (
-                                <span style={{ fontSize: 9, padding: "1px 5px", background: "#f0f9ff", color: "#0369a1", borderRadius: 3, fontWeight: 600 }}>
+                                <span
+                                  style={{
+                                    fontSize: 9,
+                                    padding: "1px 5px",
+                                    background: "#f0f9ff",
+                                    color: "#0369a1",
+                                    borderRadius: 3,
+                                    fontWeight: 600,
+                                  }}
+                                >
                                   {lead.timeline}
                                 </span>
                               )}
                               {lead.financing && (
-                                <span style={{ fontSize: 9, padding: "1px 5px", background: "#f0fdf4", color: "#15803d", borderRadius: 3, fontWeight: 600 }}>
+                                <span
+                                  style={{
+                                    fontSize: 9,
+                                    padding: "1px 5px",
+                                    background: "#f0fdf4",
+                                    color: "#15803d",
+                                    borderRadius: 3,
+                                    fontWeight: 600,
+                                  }}
+                                >
                                   {lead.financing}
                                 </span>
                               )}
                               {lead.priceRange && (
-                                <span style={{ fontSize: 9, padding: "1px 5px", background: "#fefce8", color: "#a16207", borderRadius: 3, fontWeight: 600 }}>
+                                <span
+                                  style={{
+                                    fontSize: 9,
+                                    padding: "1px 5px",
+                                    background: "#fefce8",
+                                    color: "#a16207",
+                                    borderRadius: 3,
+                                    fontWeight: 600,
+                                  }}
+                                >
                                   {lead.priceRange}
                                 </span>
                               )}
                               {lead.preApproved && lead.preApproved.toLowerCase() !== "no" && (
-                                <span style={{ fontSize: 9, padding: "1px 5px", background: "#ecfdf5", color: "#059669", borderRadius: 3, fontWeight: 600 }}>
+                                <span
+                                  style={{
+                                    fontSize: 9,
+                                    padding: "1px 5px",
+                                    background: "#ecfdf5",
+                                    color: "#059669",
+                                    borderRadius: 3,
+                                    fontWeight: 600,
+                                  }}
+                                >
                                   Pre-approved
                                 </span>
                               )}
                               {lead.buyerType && (
-                                <span style={{ fontSize: 9, padding: "1px 5px", background: "#faf5ff", color: "#7c3aed", borderRadius: 3, fontWeight: 600 }}>
+                                <span
+                                  style={{
+                                    fontSize: 9,
+                                    padding: "1px 5px",
+                                    background: "#faf5ff",
+                                    color: "#7c3aed",
+                                    borderRadius: 3,
+                                    fontWeight: 600,
+                                  }}
+                                >
                                   {lead.buyerType}
                                 </span>
                               )}
@@ -680,15 +715,57 @@ export default function LocalPipelineClient() {
 
                           {/* Quick contact actions */}
                           {(lead.phone || lead.email) && (
-                            <div style={{ display: "flex", gap: 4, marginBottom: 4 }} onClick={(e) => e.stopPropagation()}>
+                            <div
+                              style={{ display: "flex", gap: 4, marginBottom: 4 }}
+                              onClick={(e) => e.stopPropagation()}
+                            >
                               {lead.phone && (
-                                <a href={`tel:${lead.phone}`} style={{ padding: "2px 6px", background: "#ecfdf5", color: "#059669", borderRadius: 4, fontSize: 10, fontWeight: 600, textDecoration: "none" }}>Call</a>
+                                <a
+                                  href={`tel:${lead.phone}`}
+                                  style={{
+                                    padding: "2px 6px",
+                                    background: "#ecfdf5",
+                                    color: "#059669",
+                                    borderRadius: 4,
+                                    fontSize: 10,
+                                    fontWeight: 600,
+                                    textDecoration: "none",
+                                  }}
+                                >
+                                  Call
+                                </a>
                               )}
                               {lead.phone && (
-                                <a href={`sms:${lead.phone}`} style={{ padding: "2px 6px", background: "#eff6ff", color: "#2563eb", borderRadius: 4, fontSize: 10, fontWeight: 600, textDecoration: "none" }}>Text</a>
+                                <a
+                                  href={`sms:${lead.phone}`}
+                                  style={{
+                                    padding: "2px 6px",
+                                    background: "#eff6ff",
+                                    color: "#2563eb",
+                                    borderRadius: 4,
+                                    fontSize: 10,
+                                    fontWeight: 600,
+                                    textDecoration: "none",
+                                  }}
+                                >
+                                  Text
+                                </a>
                               )}
                               {lead.email && (
-                                <a href={`mailto:${lead.email}`} style={{ padding: "2px 6px", background: "#fef3c7", color: "#d97706", borderRadius: 4, fontSize: 10, fontWeight: 600, textDecoration: "none" }}>Email</a>
+                                <a
+                                  href={`mailto:${lead.email}`}
+                                  style={{
+                                    padding: "2px 6px",
+                                    background: "#fef3c7",
+                                    color: "#d97706",
+                                    borderRadius: 4,
+                                    fontSize: 10,
+                                    fontWeight: 600,
+                                    textDecoration: "none",
+                                  }}
+                                >
+                                  Email
+                                </a>
                               )}
                             </div>
                           )}
@@ -711,14 +788,8 @@ export default function LocalPipelineClient() {
                                 border: "1px solid #e5e7eb",
                                 borderRadius: 4,
                                 background: "#fff",
-                                cursor:
-                                  stage.key === "new_lead"
-                                    ? "not-allowed"
-                                    : "pointer",
-                                color:
-                                  stage.key === "new_lead"
-                                    ? "#d1d5db"
-                                    : "#6b7280",
+                                cursor: stage.key === "new_lead" ? "not-allowed" : "pointer",
+                                color: stage.key === "new_lead" ? "#d1d5db" : "#6b7280",
                               }}
                               title="Move back"
                             >
@@ -726,26 +797,15 @@ export default function LocalPipelineClient() {
                             </button>
                             <button
                               onClick={() => advanceLead(lead.id, "forward")}
-                              disabled={
-                                isMoving || stage.key === "review_request"
-                              }
+                              disabled={isMoving || stage.key === "review_request"}
                               style={{
                                 padding: "2px 8px",
                                 fontSize: 11,
                                 border: "1px solid #e5e7eb",
                                 borderRadius: 4,
-                                background:
-                                  stage.key === "review_request"
-                                    ? "#fff"
-                                    : color,
-                                color:
-                                  stage.key === "review_request"
-                                    ? "#d1d5db"
-                                    : "#fff",
-                                cursor:
-                                  stage.key === "review_request"
-                                    ? "not-allowed"
-                                    : "pointer",
+                                background: stage.key === "review_request" ? "#fff" : color,
+                                color: stage.key === "review_request" ? "#d1d5db" : "#fff",
+                                cursor: stage.key === "review_request" ? "not-allowed" : "pointer",
                               }}
                               title="Advance"
                             >
@@ -808,11 +868,7 @@ export default function LocalPipelineClient() {
                 }}
               >
                 <div>
-                  <h2
-                    style={{ fontSize: 20, fontWeight: 700, margin: 0 }}
-                  >
-                    {selectedLead.name}
-                  </h2>
+                  <h2 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>{selectedLead.name}</h2>
                   <p
                     style={{
                       color: "#6b7280",
@@ -870,8 +926,7 @@ export default function LocalPipelineClient() {
                       color: getHeatBadge(selectedLead.heatScore).color,
                     }}
                   >
-                    {selectedLead.heatScore} —{" "}
-                    {getHeatBadge(selectedLead.heatScore).label}
+                    {selectedLead.heatScore} — {getHeatBadge(selectedLead.heatScore).label}
                   </div>
                 </div>
                 <div>
@@ -884,9 +939,7 @@ export default function LocalPipelineClient() {
                   >
                     Timeline
                   </div>
-                  <div style={{ fontSize: 16, fontWeight: 600 }}>
-                    {selectedLead.timeline || "—"}
-                  </div>
+                  <div style={{ fontSize: 16, fontWeight: 600 }}>{selectedLead.timeline || "—"}</div>
                 </div>
                 {selectedLead.email && (
                   <div>
@@ -899,9 +952,7 @@ export default function LocalPipelineClient() {
                     >
                       Email
                     </div>
-                    <div style={{ fontSize: 14, color: "#374151" }}>
-                      {selectedLead.email}
-                    </div>
+                    <div style={{ fontSize: 14, color: "#374151" }}>{selectedLead.email}</div>
                   </div>
                 )}
                 {selectedLead.phone && (
@@ -915,9 +966,7 @@ export default function LocalPipelineClient() {
                     >
                       Phone
                     </div>
-                    <div style={{ fontSize: 14, color: "#374151" }}>
-                      {selectedLead.phone}
-                    </div>
+                    <div style={{ fontSize: 14, color: "#374151" }}>{selectedLead.phone}</div>
                   </div>
                 )}
                 {selectedLead.financing && (
@@ -931,9 +980,7 @@ export default function LocalPipelineClient() {
                     >
                       Financing
                     </div>
-                    <div style={{ fontSize: 14, color: "#374151" }}>
-                      {selectedLead.financing}
-                    </div>
+                    <div style={{ fontSize: 14, color: "#374151" }}>{selectedLead.financing}</div>
                   </div>
                 )}
                 <div>
@@ -965,7 +1012,13 @@ export default function LocalPipelineClient() {
                 {selectedLead.preApproved && (
                   <div>
                     <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 600 }}>Pre-Approved</div>
-                    <div style={{ fontSize: 14, color: selectedLead.preApproved.toLowerCase() !== "no" ? "#059669" : "#374151", fontWeight: selectedLead.preApproved.toLowerCase() !== "no" ? 600 : 400 }}>
+                    <div
+                      style={{
+                        fontSize: 14,
+                        color: selectedLead.preApproved.toLowerCase() !== "no" ? "#059669" : "#374151",
+                        fontWeight: selectedLead.preApproved.toLowerCase() !== "no" ? 600 : 400,
+                      }}
+                    >
                       {selectedLead.preApproved}
                     </div>
                   </div>
@@ -1123,10 +1176,8 @@ export default function LocalPipelineClient() {
                   }}
                 >
                   {stages.map((s) => {
-                    const isCurrentStage =
-                      s.key === selectedLead.pipelineStage;
-                    const stageColor =
-                      STAGE_COLORS[s.key] || "#6b7280";
+                    const isCurrentStage = s.key === selectedLead.pipelineStage;
+                    const stageColor = STAGE_COLORS[s.key] || "#6b7280";
                     return (
                       <button
                         key={s.key}
@@ -1143,13 +1194,9 @@ export default function LocalPipelineClient() {
                           fontWeight: 600,
                           border: `1.5px solid ${stageColor}`,
                           borderRadius: 6,
-                          background: isCurrentStage
-                            ? stageColor
-                            : "#fff",
+                          background: isCurrentStage ? stageColor : "#fff",
                           color: isCurrentStage ? "#fff" : stageColor,
-                          cursor: isCurrentStage
-                            ? "default"
-                            : "pointer",
+                          cursor: isCurrentStage ? "default" : "pointer",
                           transition: "all 0.1s",
                         }}
                       >

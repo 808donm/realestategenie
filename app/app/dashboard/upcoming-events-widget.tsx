@@ -53,9 +53,7 @@ export default function UpcomingEventsWidget() {
     fetch(`/api/calendar?${params}`)
       .then((r) => r.json())
       .then((data) => {
-        const upcoming = (data.events || [])
-          .filter((e: CalendarEvent) => new Date(e.start_at) >= now)
-          .slice(0, 5);
+        const upcoming = (data.events || []).filter((e: CalendarEvent) => new Date(e.start_at) >= now).slice(0, 5);
         setEvents(upcoming);
       })
       .catch(() => {})
@@ -73,7 +71,10 @@ export default function UpcomingEventsWidget() {
             <Calendar className="w-4 h-4" />
             Upcoming Events
           </CardTitle>
-          <Link href="/app/calendar" className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-0.5 no-underline">
+          <Link
+            href="/app/calendar"
+            className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-0.5 no-underline"
+          >
             View calendar <ChevronRight className="w-3 h-3" />
           </Link>
         </div>
@@ -81,18 +82,13 @@ export default function UpcomingEventsWidget() {
       <CardContent>
         <div className="space-y-2">
           {events.map((event) => (
-            <div
-              key={event.id}
-              className="flex items-start gap-2.5 px-3 py-2 bg-gray-50 rounded-lg"
-            >
+            <div key={event.id} className="flex items-start gap-2.5 px-3 py-2 bg-gray-50 rounded-lg">
               <span
                 className="flex-shrink-0 w-2 h-2 rounded-full mt-1.5"
                 style={{ background: SOURCE_DOT[event.source] || "#6b7280" }}
               />
               <div className="flex-1 min-w-0">
-                <div className="text-xs font-semibold text-gray-800 truncate">
-                  {event.title}
-                </div>
+                <div className="text-xs font-semibold text-gray-800 truncate">{event.title}</div>
                 <div className="flex items-center gap-2 mt-0.5 text-[11px] text-gray-500">
                   <span className="flex items-center gap-0.5">
                     <Clock className="w-3 h-3" />

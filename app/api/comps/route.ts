@@ -4,8 +4,11 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { createTrestleClient } from "@/lib/integrations/trestle-client";
 import { RentcastClient, createRentcastClient } from "@/lib/integrations/rentcast-client";
 import {
-  buildPropertyCacheKey, propertyCacheGet, propertyCacheSet,
-  propertyDbRead, propertyDbWrite,
+  buildPropertyCacheKey,
+  propertyCacheGet,
+  propertyCacheSet,
+  propertyDbRead,
+  propertyDbWrite,
 } from "@/lib/integrations/property-data-cache";
 
 /**
@@ -13,8 +16,15 @@ import {
  * Returns 0-1 (1 = perfect match). Weighted by importance to valuation.
  */
 function calculateCorrelation(
-  comp: { bedrooms?: number; bathrooms?: number; squareFootage?: number; yearBuilt?: number; propertyType?: string; lotSize?: number },
-  subject: { beds?: number; baths?: number; sqft?: number; yearBuilt?: number; propertyType?: string }
+  comp: {
+    bedrooms?: number;
+    bathrooms?: number;
+    squareFootage?: number;
+    yearBuilt?: number;
+    propertyType?: string;
+    lotSize?: number;
+  },
+  subject: { beds?: number; baths?: number; sqft?: number; yearBuilt?: number; propertyType?: string },
 ): number {
   let totalWeight = 0;
   let totalScore = 0;
@@ -55,10 +65,11 @@ function calculateCorrelation(
   if (comp.propertyType && subject.propertyType) {
     const compType = (comp.propertyType || "").toLowerCase();
     const subType = (subject.propertyType || "").toLowerCase();
-    const match = compType === subType
-      || (compType.includes("resid") && subType.includes("sfr"))
-      || (compType.includes("sfr") && subType.includes("resid"))
-      || (compType.includes("condo") && subType.includes("condo"));
+    const match =
+      compType === subType ||
+      (compType.includes("resid") && subType.includes("sfr")) ||
+      (compType.includes("sfr") && subType.includes("resid")) ||
+      (compType.includes("condo") && subType.includes("condo"));
     totalWeight += 20;
     totalScore += (match ? 1.0 : 0) * 20;
   }
@@ -86,7 +97,9 @@ function calculateCorrelation(
 export async function GET(request: NextRequest) {
   try {
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -108,8 +121,12 @@ export async function GET(request: NextRequest) {
 
     // Check cache first
     const cacheKey = buildPropertyCacheKey("unified", "comps", {
-      address, zipCode, beds: String(beds || ""), baths: String(baths || ""),
-      propertyType, compCount: String(compCount),
+      address,
+      zipCode,
+      beds: String(beds || ""),
+      baths: String(baths || ""),
+      propertyType,
+      compCount: String(compCount),
     });
 
     const memoryCached = propertyCacheGet(cacheKey);
@@ -139,8 +156,7 @@ export async function GET(request: NextRequest) {
 
     if (trestleInteg?.config) {
       try {
-        const config = typeof trestleInteg.config === "string"
-          ? JSON.parse(trestleInteg.config) : trestleInteg.config;
+        const config = typeof trestleInteg.config === "string" ? JSON.parse(trestleInteg.config) : trestleInteg.config;
         const client = createTrestleClient(config);
 
         // Build filter for closed sales in the area
@@ -154,9 +170,12 @@ export async function GET(request: NextRequest) {
 
         // Property type matching
         if (propertyType) {
-          const mlsType = propertyType.includes("SFR") || propertyType.includes("Single")
-            ? "Residential" : propertyType.includes("Condo")
-            ? "Condominium" : propertyType;
+          const mlsType =
+            propertyType.includes("SFR") || propertyType.includes("Single")
+              ? "Residential"
+              : propertyType.includes("Condo")
+                ? "Condominium"
+                : propertyType;
           filters.push(`PropertyType eq '${mlsType}'`);
         }
 
@@ -176,16 +195,34 @@ export async function GET(request: NextRequest) {
         const result = await client.getProperties({
           $filter: filters.join(" and "),
           $select: [
-            "ListingKey", "ListingId", "StandardStatus", "PropertyType",
-            "ListPrice", "OriginalListPrice", "ClosePrice", "CloseDate",
-            "UnparsedAddress", "StreetNumber", "StreetName", "StreetSuffix",
-            "City", "StateOrProvince", "PostalCode",
-            "Latitude", "Longitude",
-            "BedroomsTotal", "BathroomsTotalInteger", "LivingArea",
-            "YearBuilt", "LotSizeArea",
-            "DaysOnMarket", "CumulativeDaysOnMarket",
-            "ListAgentFullName", "ListOfficeName",
-            "BuyerAgentFullName", "BuyerOfficeName",
+            "ListingKey",
+            "ListingId",
+            "StandardStatus",
+            "PropertyType",
+            "ListPrice",
+            "OriginalListPrice",
+            "ClosePrice",
+            "CloseDate",
+            "UnparsedAddress",
+            "StreetNumber",
+            "StreetName",
+            "StreetSuffix",
+            "City",
+            "StateOrProvince",
+            "PostalCode",
+            "Latitude",
+            "Longitude",
+            "BedroomsTotal",
+            "BathroomsTotalInteger",
+            "LivingArea",
+            "YearBuilt",
+            "LotSizeArea",
+            "DaysOnMarket",
+            "CumulativeDaysOnMarket",
+            "ListAgentFullName",
+            "ListOfficeName",
+            "BuyerAgentFullName",
+            "BuyerOfficeName",
           ].join(","),
           $orderby: "CloseDate desc",
           $top: compCount,
@@ -194,14 +231,19 @@ export async function GET(request: NextRequest) {
 
         if (result.value.length > 0) {
           mlsComps = result.value.map((p) => {
-            const addr = p.UnparsedAddress ||
-              [p.StreetNumber, p.StreetName, p.StreetSuffix].filter(Boolean).join(" ");
-            const pricePerSqft = p.ClosePrice && p.LivingArea
-              ? Math.round(p.ClosePrice / p.LivingArea) : undefined;
+            const addr = p.UnparsedAddress || [p.StreetNumber, p.StreetName, p.StreetSuffix].filter(Boolean).join(" ");
+            const pricePerSqft = p.ClosePrice && p.LivingArea ? Math.round(p.ClosePrice / p.LivingArea) : undefined;
 
             const correlation = calculateCorrelation(
-              { bedrooms: p.BedroomsTotal, bathrooms: p.BathroomsTotalInteger, squareFootage: p.LivingArea, yearBuilt: p.YearBuilt, propertyType: p.PropertyType, lotSize: p.LotSizeArea },
-              { beds, baths, sqft, yearBuilt, propertyType }
+              {
+                bedrooms: p.BedroomsTotal,
+                bathrooms: p.BathroomsTotalInteger,
+                squareFootage: p.LivingArea,
+                yearBuilt: p.YearBuilt,
+                propertyType: p.PropertyType,
+                lotSize: p.LotSizeArea,
+              },
+              { beds, baths, sqft, yearBuilt, propertyType },
             );
 
             return {
@@ -303,8 +345,7 @@ export async function GET(request: NextRequest) {
             squareFootage: c.squareFootage,
             yearBuilt: c.yearBuilt,
             lotSize: c.lotSize,
-            pricePerSqft: c.price && c.squareFootage
-              ? Math.round(c.price / c.squareFootage) : undefined,
+            pricePerSqft: c.price && c.squareFootage ? Math.round(c.price / c.squareFootage) : undefined,
             distance: c.distance,
             correlation: c.correlation,
           }));

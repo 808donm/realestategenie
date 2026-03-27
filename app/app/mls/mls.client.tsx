@@ -73,13 +73,7 @@ interface GHLContact {
 }
 
 const STATUS_OPTIONS = ["Active", "Pending", "Closed"] as const;
-const PROPERTY_TYPES = [
-  "Residential",
-  "Residential Income",
-  "Commercial",
-  "Land",
-  "Farm",
-] as const;
+const PROPERTY_TYPES = ["Residential", "Residential Income", "Commercial", "Land", "Farm"] as const;
 
 const PROPERTY_FEATURES = [
   "Updated Kitchen",
@@ -297,7 +291,12 @@ export default function MLSClient() {
   const [attomError, setAttomError] = useState("");
 
   // Photo lightbox state
-  const [lightboxPhoto, setLightboxPhoto] = useState<{ url: string; index: number; total: number; allPhotos: TrestleMedia[] } | null>(null);
+  const [lightboxPhoto, setLightboxPhoto] = useState<{
+    url: string;
+    index: number;
+    total: number;
+    allPhotos: TrestleMedia[];
+  } | null>(null);
 
   // Remaining ATTOM state variables are handled by PropertyDetailModal (embedded)
 
@@ -369,8 +368,10 @@ export default function MLSClient() {
     };
 
     fetchAttom();
-    return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedProperty]);
 
   // All other ATTOM data (neighborhood, risk, rental AVM, permits, sales history,
@@ -456,7 +457,14 @@ export default function MLSClient() {
   // Search properties
   const searchProperties = useCallback(
     async (newOffset = 0) => {
-      if (!debouncedQuery && !filters.minPrice && !filters.maxPrice && !filters.minBeds && !filters.minBaths && !filters.minDaysOnMarket) {
+      if (
+        !debouncedQuery &&
+        !filters.minPrice &&
+        !filters.maxPrice &&
+        !filters.minBeds &&
+        !filters.minBaths &&
+        !filters.minDaysOnMarket
+      ) {
         return;
       }
 
@@ -493,12 +501,19 @@ export default function MLSClient() {
         setIsLoading(false);
       }
     },
-    [debouncedQuery, filters, limit]
+    [debouncedQuery, filters, limit],
   );
 
   // Trigger search when debounced query or filters change
   useEffect(() => {
-    if (debouncedQuery || filters.minPrice || filters.maxPrice || filters.minBeds || filters.minBaths || filters.minDaysOnMarket) {
+    if (
+      debouncedQuery ||
+      filters.minPrice ||
+      filters.maxPrice ||
+      filters.minBeds ||
+      filters.minBaths ||
+      filters.minDaysOnMarket
+    ) {
       searchProperties(0);
     }
   }, [debouncedQuery, searchProperties]);
@@ -633,9 +648,10 @@ export default function MLSClient() {
 
       setSendResult({
         success: true,
-        message: sendMode === "email"
-          ? "Listing emailed to contact successfully!"
-          : "Listing attached to contact successfully!",
+        message:
+          sendMode === "email"
+            ? "Listing emailed to contact successfully!"
+            : "Listing attached to contact successfully!",
       });
     } catch (err) {
       setSendResult({
@@ -672,7 +688,6 @@ export default function MLSClient() {
     }
     return null;
   };
-
 
   return (
     <div>
@@ -726,590 +741,625 @@ export default function MLSClient() {
       {/* MLS Search Tab */}
       {activeTab === "mls" && (
         <>
-      {/* Search Bar */}
-      <form onSubmit={handleSearch} style={{ marginBottom: 16 }}>
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <div style={{ flex: 1, minWidth: 250 }}>
-            <input
-              type="text"
-              placeholder="Search by city name or zip code..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "12px 16px",
-                border: "1px solid #e5e7eb",
-                borderRadius: 8,
-                fontSize: 15,
-                outline: "none",
-              }}
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={isLoading}
-            style={{
-              padding: "12px 24px",
-              background: "#3b82f6",
-              color: "#fff",
-              border: "none",
-              borderRadius: 8,
-              fontWeight: 600,
-              cursor: isLoading ? "wait" : "pointer",
-              opacity: isLoading ? 0.7 : 1,
-            }}
-          >
-            {isLoading ? "Searching..." : "Search MLS"}
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowFilters(!showFilters)}
-            style={{
-              padding: "12px 16px",
-              background: showFilters ? "#e5e7eb" : "#fff",
-              color: "#374151",
-              border: "1px solid #e5e7eb",
-              borderRadius: 8,
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            Filters {showFilters ? "▲" : "▼"}
-          </button>
-        </div>
-      </form>
+          {/* Search Bar */}
+          <form onSubmit={handleSearch} style={{ marginBottom: 16 }}>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <div style={{ flex: 1, minWidth: 250 }}>
+                <input
+                  type="text"
+                  placeholder="Search by city name or zip code..."
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "12px 16px",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: 8,
+                    fontSize: 15,
+                    outline: "none",
+                  }}
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={isLoading}
+                style={{
+                  padding: "12px 24px",
+                  background: "#3b82f6",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 8,
+                  fontWeight: 600,
+                  cursor: isLoading ? "wait" : "pointer",
+                  opacity: isLoading ? 0.7 : 1,
+                }}
+              >
+                {isLoading ? "Searching..." : "Search MLS"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowFilters(!showFilters)}
+                style={{
+                  padding: "12px 16px",
+                  background: showFilters ? "#e5e7eb" : "#fff",
+                  color: "#374151",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 8,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Filters {showFilters ? "▲" : "▼"}
+              </button>
+            </div>
+          </form>
 
-      {/* Filters Panel */}
-      {showFilters && (
-        <div
-          style={{
-            padding: 20,
-            background: "#f9fafb",
-            border: "1px solid #e5e7eb",
-            borderRadius: 12,
-            marginBottom: 20,
-          }}
-        >
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-              gap: 12,
-            }}
-          >
-            <div>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
-                Status
-              </label>
-              <select
-                value={filters.status}
-                onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-                style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
-              >
-                {STATUS_OPTIONS.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-                <option value="Active,Pending">Active & Pending</option>
-                <option value="Active,Pending,Closed">All</option>
-              </select>
-            </div>
-            <div>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
-                Min Price
-              </label>
-              <input
-                type="number"
-                placeholder="e.g. 200000"
-                value={filters.minPrice}
-                onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })}
-                style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
-              />
-            </div>
-            <div>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
-                Max Price
-              </label>
-              <input
-                type="number"
-                placeholder="e.g. 500000"
-                value={filters.maxPrice}
-                onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
-                style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
-              />
-            </div>
-            <div>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
-                Min Beds
-              </label>
-              <select
-                value={filters.minBeds}
-                onChange={(e) => setFilters({ ...filters, minBeds: e.target.value })}
-                style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
-              >
-                <option value="">Any</option>
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <option key={n} value={n}>
-                    {n}+
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
-                Min Baths
-              </label>
-              <select
-                value={filters.minBaths}
-                onChange={(e) => setFilters({ ...filters, minBaths: e.target.value })}
-                style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
-              >
-                <option value="">Any</option>
-                {[1, 2, 3, 4].map((n) => (
-                  <option key={n} value={n}>
-                    {n}+
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
-                Property Type
-              </label>
-              <select
-                value={filters.propertyType}
-                onChange={(e) => setFilters({ ...filters, propertyType: e.target.value })}
-                style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
-              >
-                <option value="">Any</option>
-                {PROPERTY_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
-                Min Days on Market
-              </label>
-              <select
-                value={filters.minDaysOnMarket}
-                onChange={(e) => setFilters({ ...filters, minDaysOnMarket: e.target.value })}
-                style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
-              >
-                <option value="">Any</option>
-                <option value="7">7+ days</option>
-                <option value="14">14+ days</option>
-                <option value="21">21+ days</option>
-                <option value="30">30+ days</option>
-                <option value="60">60+ days</option>
-                <option value="90">90+ days</option>
-                <option value="120">120+ days</option>
-                <option value="180">180+ days</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Error */}
-      {error && (
-        <div
-          style={{
-            padding: 16,
-            background: "#fee2e2",
-            color: "#dc2626",
-            borderRadius: 8,
-            marginBottom: 20,
-          }}
-        >
-          {error}
-        </div>
-      )}
-
-      {/* Loading */}
-      {isLoading && (
-        <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>
-          Searching MLS listings...
-        </div>
-      )}
-
-      {/* Latest Listings - shown before user searches */}
-      {!isLoading && !hasSearched && (
-        <div>
-          {latestError && (
+          {/* Filters Panel */}
+          {showFilters && (
             <div
               style={{
-                padding: 16,
-                background: "#fef3c7",
-                color: "#92400e",
-                borderRadius: 8,
-                marginBottom: 16,
-                fontSize: 14,
+                padding: 20,
+                background: "#f9fafb",
+                border: "1px solid #e5e7eb",
+                borderRadius: 12,
+                marginBottom: 20,
               }}
             >
-              {latestError}
-            </div>
-          )}
-          {isLoadingLatest ? (
-            <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>
-              Loading latest listings...
-            </div>
-          ) : latestProperties.length > 0 ? (
-            <>
-              <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 14, color: "#374151" }}>
-                Latest Listings
-              </h2>
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-                  gap: 16,
+                  gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+                  gap: 12,
                 }}
               >
-                {latestProperties.map((property) => {
-                  const photoUrl = getPhotoUrl(property);
-                  const statusColor = getStatusColor(property.StandardStatus);
-                  const address = getAddress(property);
+                <div>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                    Status
+                  </label>
+                  <select
+                    value={filters.status}
+                    onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+                    style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
+                  >
+                    {STATUS_OPTIONS.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                    <option value="Active,Pending">Active & Pending</option>
+                    <option value="Active,Pending,Closed">All</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                    Min Price
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 200000"
+                    value={filters.minPrice}
+                    onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })}
+                    style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                    Max Price
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 500000"
+                    value={filters.maxPrice}
+                    onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
+                    style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                    Min Beds
+                  </label>
+                  <select
+                    value={filters.minBeds}
+                    onChange={(e) => setFilters({ ...filters, minBeds: e.target.value })}
+                    style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
+                  >
+                    <option value="">Any</option>
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <option key={n} value={n}>
+                        {n}+
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                    Min Baths
+                  </label>
+                  <select
+                    value={filters.minBaths}
+                    onChange={(e) => setFilters({ ...filters, minBaths: e.target.value })}
+                    style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
+                  >
+                    <option value="">Any</option>
+                    {[1, 2, 3, 4].map((n) => (
+                      <option key={n} value={n}>
+                        {n}+
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                    Property Type
+                  </label>
+                  <select
+                    value={filters.propertyType}
+                    onChange={(e) => setFilters({ ...filters, propertyType: e.target.value })}
+                    style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
+                  >
+                    <option value="">Any</option>
+                    {PROPERTY_TYPES.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                    Min Days on Market
+                  </label>
+                  <select
+                    value={filters.minDaysOnMarket}
+                    onChange={(e) => setFilters({ ...filters, minDaysOnMarket: e.target.value })}
+                    style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
+                  >
+                    <option value="">Any</option>
+                    <option value="7">7+ days</option>
+                    <option value="14">14+ days</option>
+                    <option value="21">21+ days</option>
+                    <option value="30">30+ days</option>
+                    <option value="60">60+ days</option>
+                    <option value="90">90+ days</option>
+                    <option value="120">120+ days</option>
+                    <option value="180">180+ days</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
 
-                  return (
-                    <div
-                      key={property.ListingKey}
-                      style={{
-                        background: "#fff",
-                        border: "1px solid #e5e7eb",
-                        borderRadius: 12,
-                        overflow: "hidden",
-                        cursor: "pointer",
-                        transition: "box-shadow 0.2s",
-                      }}
-                      onClick={() => setSelectedProperty(property)}
-                      onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)")}
-                      onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "none")}
-                    >
-                      <div
-                        style={{
-                          height: 200,
-                          background: photoUrl ? `url(${photoUrl}) center/cover` : "#e5e7eb",
-                          position: "relative",
-                        }}
-                      >
-                        {!photoUrl && (
+          {/* Error */}
+          {error && (
+            <div
+              style={{
+                padding: 16,
+                background: "#fee2e2",
+                color: "#dc2626",
+                borderRadius: 8,
+                marginBottom: 20,
+              }}
+            >
+              {error}
+            </div>
+          )}
+
+          {/* Loading */}
+          {isLoading && (
+            <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>Searching MLS listings...</div>
+          )}
+
+          {/* Latest Listings - shown before user searches */}
+          {!isLoading && !hasSearched && (
+            <div>
+              {latestError && (
+                <div
+                  style={{
+                    padding: 16,
+                    background: "#fef3c7",
+                    color: "#92400e",
+                    borderRadius: 8,
+                    marginBottom: 16,
+                    fontSize: 14,
+                  }}
+                >
+                  {latestError}
+                </div>
+              )}
+              {isLoadingLatest ? (
+                <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>Loading latest listings...</div>
+              ) : latestProperties.length > 0 ? (
+                <>
+                  <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 14, color: "#374151" }}>Latest Listings</h2>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+                      gap: 16,
+                    }}
+                  >
+                    {latestProperties.map((property) => {
+                      const photoUrl = getPhotoUrl(property);
+                      const statusColor = getStatusColor(property.StandardStatus);
+                      const address = getAddress(property);
+
+                      return (
+                        <div
+                          key={property.ListingKey}
+                          style={{
+                            background: "#fff",
+                            border: "1px solid #e5e7eb",
+                            borderRadius: 12,
+                            overflow: "hidden",
+                            cursor: "pointer",
+                            transition: "box-shadow 0.2s",
+                          }}
+                          onClick={() => setSelectedProperty(property)}
+                          onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)")}
+                          onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "none")}
+                        >
                           <div
                             style={{
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              height: "100%",
-                              color: "#9ca3af",
-                              fontSize: 14,
+                              height: 200,
+                              background: photoUrl ? `url(${photoUrl}) center/cover` : "#e5e7eb",
+                              position: "relative",
                             }}
                           >
-                            No Photo Available
+                            {!photoUrl && (
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  height: "100%",
+                                  color: "#9ca3af",
+                                  fontSize: 14,
+                                }}
+                              >
+                                No Photo Available
+                              </div>
+                            )}
+                            <span
+                              style={{
+                                position: "absolute",
+                                top: 10,
+                                left: 10,
+                                padding: "4px 10px",
+                                background: statusColor.bg,
+                                color: statusColor.text,
+                                borderRadius: 6,
+                                fontSize: 12,
+                                fontWeight: 600,
+                              }}
+                            >
+                              {property.StandardStatus}
+                            </span>
                           </div>
-                        )}
-                        <span
-                          style={{
-                            position: "absolute",
-                            top: 10,
-                            left: 10,
-                            padding: "4px 10px",
-                            background: statusColor.bg,
-                            color: statusColor.text,
-                            borderRadius: 6,
-                            fontSize: 12,
-                            fontWeight: 600,
-                          }}
-                        >
-                          {property.StandardStatus}
-                        </span>
-                      </div>
-                      <div style={{ padding: 16 }}>
-                        <div style={{ fontSize: 22, fontWeight: 700, color: "#111827", marginBottom: 4 }}>
-                          {formatPrice(property.ListPrice)}
+                          <div style={{ padding: 16 }}>
+                            <div style={{ fontSize: 22, fontWeight: 700, color: "#111827", marginBottom: 4 }}>
+                              {formatPrice(property.ListPrice)}
+                            </div>
+                            <div style={{ fontSize: 14, fontWeight: 500, color: "#374151", marginBottom: 4 }}>
+                              {address || "Address not available"}
+                            </div>
+                            <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 10 }}>
+                              {property.City}, {property.StateOrProvince} {property.PostalCode}
+                            </div>
+                            <div style={{ display: "flex", gap: 12, fontSize: 13, color: "#6b7280" }}>
+                              {property.BedroomsTotal != null && (
+                                <span>
+                                  <strong>{property.BedroomsTotal}</strong> bed
+                                </span>
+                              )}
+                              {property.BathroomsTotalInteger != null && (
+                                <span>
+                                  <strong>{property.BathroomsTotalInteger}</strong> bath
+                                </span>
+                              )}
+                              {property.LivingArea != null && (
+                                <span>
+                                  <strong>{property.LivingArea.toLocaleString()}</strong> sqft
+                                </span>
+                              )}
+                              {property.YearBuilt != null && <span>Built {property.YearBuilt}</span>}
+                              {(() => {
+                                const dom = getDaysOnMarket(property);
+                                return dom != null ? (
+                                  <span style={{ color: dom > 30 ? "#dc2626" : dom > 14 ? "#d97706" : "#6b7280" }}>
+                                    <strong>{dom}</strong> DOM
+                                  </span>
+                                ) : null;
+                              })()}
+                            </div>
+                            <div
+                              style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 10, flexWrap: "wrap" }}
+                            >
+                              <span style={{ fontSize: 11, color: "#9ca3af" }}>
+                                MLS# {property.ListingId || property.ListingKey}
+                                {property.PropertyType && ` | ${property.PropertyType}`}
+                              </span>
+                              {property.OwnershipType && (
+                                <span
+                                  style={{
+                                    fontSize: 10,
+                                    fontWeight: 700,
+                                    padding: "1px 6px",
+                                    borderRadius: 3,
+                                    background: property.OwnershipType.toLowerCase().includes("lease")
+                                      ? "#fef2f2"
+                                      : "#f0fdf4",
+                                    color: property.OwnershipType.toLowerCase().includes("lease")
+                                      ? "#dc2626"
+                                      : "#059669",
+                                    border: `1px solid ${property.OwnershipType.toLowerCase().includes("lease") ? "#fca5a5" : "#bbf7d0"}`,
+                                  }}
+                                >
+                                  {property.OwnershipType}
+                                </span>
+                              )}
+                              {property.AssociationFee != null && property.AssociationFee > 0 && (
+                                <span style={{ fontSize: 10, color: "#6b7280" }}>
+                                  HOA: ${property.AssociationFee}/mo
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                        <div style={{ fontSize: 14, fontWeight: 500, color: "#374151", marginBottom: 4 }}>
-                          {address || "Address not available"}
-                        </div>
-                        <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 10 }}>
-                          {property.City}, {property.StateOrProvince} {property.PostalCode}
-                        </div>
-                        <div style={{ display: "flex", gap: 12, fontSize: 13, color: "#6b7280" }}>
-                          {property.BedroomsTotal != null && (
-                            <span><strong>{property.BedroomsTotal}</strong> bed</span>
-                          )}
-                          {property.BathroomsTotalInteger != null && (
-                            <span><strong>{property.BathroomsTotalInteger}</strong> bath</span>
-                          )}
-                          {property.LivingArea != null && (
-                            <span><strong>{property.LivingArea.toLocaleString()}</strong> sqft</span>
-                          )}
-                          {property.YearBuilt != null && <span>Built {property.YearBuilt}</span>}
-                          {(() => { const dom = getDaysOnMarket(property); return dom != null ? <span style={{ color: dom > 30 ? "#dc2626" : dom > 14 ? "#d97706" : "#6b7280" }}><strong>{dom}</strong> DOM</span> : null; })()}
-                        </div>
-                        <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 10, flexWrap: "wrap" }}>
-                          <span style={{ fontSize: 11, color: "#9ca3af" }}>
-                            MLS# {property.ListingId || property.ListingKey}
-                            {property.PropertyType && ` | ${property.PropertyType}`}
-                          </span>
-                          {property.OwnershipType && (
-                            <span style={{
-                              fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 3,
-                              background: property.OwnershipType.toLowerCase().includes("lease") ? "#fef2f2" : "#f0fdf4",
-                              color: property.OwnershipType.toLowerCase().includes("lease") ? "#dc2626" : "#059669",
-                              border: `1px solid ${property.OwnershipType.toLowerCase().includes("lease") ? "#fca5a5" : "#bbf7d0"}`,
-                            }}>
-                              {property.OwnershipType}
-                            </span>
-                          )}
-                          {property.AssociationFee != null && property.AssociationFee > 0 && (
-                            <span style={{ fontSize: 10, color: "#6b7280" }}>
-                              HOA: ${property.AssociationFee}/mo
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          ) : (
+                      );
+                    })}
+                  </div>
+                </>
+              ) : (
+                <div
+                  style={{
+                    textAlign: "center",
+                    padding: 60,
+                    background: "#f9fafb",
+                    borderRadius: 12,
+                    color: "#6b7280",
+                  }}
+                >
+                  <p style={{ fontSize: 18, fontWeight: 600, marginBottom: 8, color: "#374151" }}>Search the MLS</p>
+                  <p style={{ fontSize: 14, maxWidth: 400, margin: "0 auto" }}>
+                    Enter a city name or zip code above to search for property listings. Use filters to narrow your
+                    results by price, beds, baths, and more.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* No results */}
+          {!isLoading && hasSearched && properties.length === 0 && (
             <div
               style={{
                 textAlign: "center",
-                padding: 60,
+                padding: 40,
                 background: "#f9fafb",
                 borderRadius: 12,
                 color: "#6b7280",
               }}
             >
-              <p style={{ fontSize: 18, fontWeight: 600, marginBottom: 8, color: "#374151" }}>
-                Search the MLS
-              </p>
-              <p style={{ fontSize: 14, maxWidth: 400, margin: "0 auto" }}>
-                Enter a city name or zip code above to search for property listings.
-                Use filters to narrow your results by price, beds, baths, and more.
-              </p>
+              <p style={{ fontSize: 16, marginBottom: 8 }}>No properties found matching your search.</p>
+              <p style={{ fontSize: 14 }}>Try adjusting your filters or search a different location.</p>
             </div>
           )}
-        </div>
-      )}
 
-      {/* No results */}
-      {!isLoading && hasSearched && properties.length === 0 && (
-        <div
-          style={{
-            textAlign: "center",
-            padding: 40,
-            background: "#f9fafb",
-            borderRadius: 12,
-            color: "#6b7280",
-          }}
-        >
-          <p style={{ fontSize: 16, marginBottom: 8 }}>No properties found matching your search.</p>
-          <p style={{ fontSize: 14 }}>Try adjusting your filters or search a different location.</p>
-        </div>
-      )}
+          {/* Results count + Export */}
+          {!isLoading && hasSearched && properties.length > 0 && (
+            <div
+              style={{
+                marginBottom: 16,
+                fontSize: 14,
+                color: "#6b7280",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <span>
+                Showing {offset + 1}–{Math.min(offset + limit, totalCount)} of {totalCount.toLocaleString()} listings
+              </span>
+              <ExportToolbar
+                title="MLS Listings"
+                columns={[
+                  { key: "address", label: "Address", width: 3 },
+                  { key: "status", label: "Status", width: 1 },
+                  { key: "price", label: "Price", width: 1.5 },
+                  { key: "beds", label: "Beds", width: 0.7 },
+                  { key: "baths", label: "Baths", width: 0.7 },
+                  { key: "sqft", label: "Sq Ft", width: 1 },
+                  { key: "dom", label: "DOM", width: 0.7 },
+                  { key: "agent", label: "List Agent", width: 2 },
+                ]}
+                getData={() =>
+                  properties.map((p) => ({
+                    address:
+                      p.UnparsedAddress ||
+                      `${p.StreetNumber || ""} ${p.StreetName || ""} ${p.StreetSuffix || ""}`.trim() ||
+                      `${p.City}, ${p.StateOrProvince}`,
+                    status: p.StandardStatus,
+                    price: p.ClosePrice ? `$${p.ClosePrice.toLocaleString()}` : `$${p.ListPrice.toLocaleString()}`,
+                    beds: p.BedroomsTotal ?? "",
+                    baths: p.BathroomsTotalInteger ?? "",
+                    sqft: p.LivingArea ? p.LivingArea.toLocaleString() : "",
+                    dom: p.DaysOnMarket ?? p.CumulativeDaysOnMarket ?? "",
+                    agent: p.ListAgentFullName || "",
+                  }))
+                }
+                compact
+              />
+            </div>
+          )}
 
-      {/* Results count + Export */}
-      {!isLoading && hasSearched && properties.length > 0 && (
-        <div style={{ marginBottom: 16, fontSize: 14, color: "#6b7280", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span>
-            Showing {offset + 1}–{Math.min(offset + limit, totalCount)} of{" "}
-            {totalCount.toLocaleString()} listings
-          </span>
-          <ExportToolbar
-            title="MLS Listings"
-            columns={[
-              { key: "address", label: "Address", width: 3 },
-              { key: "status", label: "Status", width: 1 },
-              { key: "price", label: "Price", width: 1.5 },
-              { key: "beds", label: "Beds", width: 0.7 },
-              { key: "baths", label: "Baths", width: 0.7 },
-              { key: "sqft", label: "Sq Ft", width: 1 },
-              { key: "dom", label: "DOM", width: 0.7 },
-              { key: "agent", label: "List Agent", width: 2 },
-            ]}
-            getData={() => properties.map((p) => ({
-              address: p.UnparsedAddress || `${p.StreetNumber || ""} ${p.StreetName || ""} ${p.StreetSuffix || ""}`.trim() || `${p.City}, ${p.StateOrProvince}`,
-              status: p.StandardStatus,
-              price: p.ClosePrice ? `$${p.ClosePrice.toLocaleString()}` : `$${p.ListPrice.toLocaleString()}`,
-              beds: p.BedroomsTotal ?? "",
-              baths: p.BathroomsTotalInteger ?? "",
-              sqft: p.LivingArea ? p.LivingArea.toLocaleString() : "",
-              dom: p.DaysOnMarket ?? p.CumulativeDaysOnMarket ?? "",
-              agent: p.ListAgentFullName || "",
-            }))}
-            compact
-          />
-        </div>
-      )}
+          {/* Property Cards Grid */}
+          {!isLoading && properties.length > 0 && (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+                gap: 16,
+                marginBottom: 24,
+              }}
+            >
+              {properties.map((property) => {
+                const photoUrl = getPhotoUrl(property);
+                const statusColor = getStatusColor(property.StandardStatus);
+                const address = getAddress(property);
 
-      {/* Property Cards Grid */}
-      {!isLoading && properties.length > 0 && (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-            gap: 16,
-            marginBottom: 24,
-          }}
-        >
-          {properties.map((property) => {
-            const photoUrl = getPhotoUrl(property);
-            const statusColor = getStatusColor(property.StandardStatus);
-            const address = getAddress(property);
-
-            return (
-              <div
-                key={property.ListingKey}
-                style={{
-                  background: "#fff",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: 12,
-                  overflow: "hidden",
-                  cursor: "pointer",
-                  transition: "box-shadow 0.2s",
-                }}
-                onClick={() => setSelectedProperty(property)}
-                onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)")}
-                onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "none")}
-              >
-                {/* Photo */}
-                <div
-                  style={{
-                    height: 200,
-                    background: photoUrl ? `url(${photoUrl}) center/cover` : "#e5e7eb",
-                    position: "relative",
-                  }}
-                >
-                  {!photoUrl && (
+                return (
+                  <div
+                    key={property.ListingKey}
+                    style={{
+                      background: "#fff",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: 12,
+                      overflow: "hidden",
+                      cursor: "pointer",
+                      transition: "box-shadow 0.2s",
+                    }}
+                    onClick={() => setSelectedProperty(property)}
+                    onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "none")}
+                  >
+                    {/* Photo */}
                     <div
                       style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        height: "100%",
-                        color: "#9ca3af",
-                        fontSize: 14,
+                        height: 200,
+                        background: photoUrl ? `url(${photoUrl}) center/cover` : "#e5e7eb",
+                        position: "relative",
                       }}
                     >
-                      No Photo Available
+                      {!photoUrl && (
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            height: "100%",
+                            color: "#9ca3af",
+                            fontSize: 14,
+                          }}
+                        >
+                          No Photo Available
+                        </div>
+                      )}
+                      {/* Status badge */}
+                      <span
+                        style={{
+                          position: "absolute",
+                          top: 10,
+                          left: 10,
+                          padding: "4px 10px",
+                          background: statusColor.bg,
+                          color: statusColor.text,
+                          borderRadius: 6,
+                          fontSize: 12,
+                          fontWeight: 600,
+                        }}
+                      >
+                        {property.StandardStatus}
+                      </span>
                     </div>
-                  )}
-                  {/* Status badge */}
-                  <span
-                    style={{
-                      position: "absolute",
-                      top: 10,
-                      left: 10,
-                      padding: "4px 10px",
-                      background: statusColor.bg,
-                      color: statusColor.text,
-                      borderRadius: 6,
-                      fontSize: 12,
-                      fontWeight: 600,
-                    }}
-                  >
-                    {property.StandardStatus}
-                  </span>
-                </div>
 
-                {/* Details */}
-                <div style={{ padding: 16 }}>
-                  <div style={{ fontSize: 22, fontWeight: 700, color: "#111827", marginBottom: 4 }}>
-                    {formatPrice(property.ListPrice)}
-                  </div>
-                  <div style={{ fontSize: 14, fontWeight: 500, color: "#374151", marginBottom: 4 }}>
-                    {address || "Address not available"}
-                  </div>
-                  <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 10 }}>
-                    {property.City}, {property.StateOrProvince} {property.PostalCode}
-                  </div>
+                    {/* Details */}
+                    <div style={{ padding: 16 }}>
+                      <div style={{ fontSize: 22, fontWeight: 700, color: "#111827", marginBottom: 4 }}>
+                        {formatPrice(property.ListPrice)}
+                      </div>
+                      <div style={{ fontSize: 14, fontWeight: 500, color: "#374151", marginBottom: 4 }}>
+                        {address || "Address not available"}
+                      </div>
+                      <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 10 }}>
+                        {property.City}, {property.StateOrProvince} {property.PostalCode}
+                      </div>
 
-                  {/* Specs row */}
-                  <div style={{ display: "flex", gap: 12, fontSize: 13, color: "#6b7280" }}>
-                    {property.BedroomsTotal != null && (
-                      <span>
-                        <strong>{property.BedroomsTotal}</strong> bed
-                      </span>
-                    )}
-                    {property.BathroomsTotalInteger != null && (
-                      <span>
-                        <strong>{property.BathroomsTotalInteger}</strong> bath
-                      </span>
-                    )}
-                    {property.LivingArea != null && (
-                      <span>
-                        <strong>{property.LivingArea.toLocaleString()}</strong> sqft
-                      </span>
-                    )}
-                    {property.YearBuilt != null && <span>Built {property.YearBuilt}</span>}
-                    {(() => { const dom = getDaysOnMarket(property); return dom != null ? <span style={{ color: dom > 30 ? "#dc2626" : dom > 14 ? "#d97706" : "#6b7280" }}><strong>{dom}</strong> DOM</span> : null; })()}
+                      {/* Specs row */}
+                      <div style={{ display: "flex", gap: 12, fontSize: 13, color: "#6b7280" }}>
+                        {property.BedroomsTotal != null && (
+                          <span>
+                            <strong>{property.BedroomsTotal}</strong> bed
+                          </span>
+                        )}
+                        {property.BathroomsTotalInteger != null && (
+                          <span>
+                            <strong>{property.BathroomsTotalInteger}</strong> bath
+                          </span>
+                        )}
+                        {property.LivingArea != null && (
+                          <span>
+                            <strong>{property.LivingArea.toLocaleString()}</strong> sqft
+                          </span>
+                        )}
+                        {property.YearBuilt != null && <span>Built {property.YearBuilt}</span>}
+                        {(() => {
+                          const dom = getDaysOnMarket(property);
+                          return dom != null ? (
+                            <span style={{ color: dom > 30 ? "#dc2626" : dom > 14 ? "#d97706" : "#6b7280" }}>
+                              <strong>{dom}</strong> DOM
+                            </span>
+                          ) : null;
+                        })()}
+                      </div>
+
+                      {/* MLS # */}
+                      <div style={{ marginTop: 10, fontSize: 11, color: "#9ca3af" }}>
+                        MLS# {property.ListingId || property.ListingKey}
+                        {property.PropertyType && ` | ${property.PropertyType}`}
+                      </div>
+                    </div>
                   </div>
+                );
+              })}
+            </div>
+          )}
 
-                  {/* MLS # */}
-                  <div style={{ marginTop: 10, fontSize: 11, color: "#9ca3af" }}>
-                    MLS# {property.ListingId || property.ListingKey}
-                    {property.PropertyType && ` | ${property.PropertyType}`}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Pagination */}
-      {!isLoading && totalCount > limit && (
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            gap: 12,
-            marginBottom: 24,
-          }}
-        >
-          <button
-            disabled={offset === 0}
-            onClick={() => searchProperties(Math.max(0, offset - limit))}
-            style={{
-              padding: "8px 16px",
-              border: "1px solid #d1d5db",
-              borderRadius: 6,
-              background: offset === 0 ? "#f3f4f6" : "#fff",
-              cursor: offset === 0 ? "not-allowed" : "pointer",
-              color: offset === 0 ? "#9ca3af" : "#374151",
-              fontWeight: 500,
-            }}
-          >
-            Previous
-          </button>
-          <span style={{ fontSize: 14, color: "#6b7280" }}>
-            Page {currentPage} of {totalPages}
-          </span>
-          <button
-            disabled={offset + limit >= totalCount}
-            onClick={() => searchProperties(offset + limit)}
-            style={{
-              padding: "8px 16px",
-              border: "1px solid #d1d5db",
-              borderRadius: 6,
-              background: offset + limit >= totalCount ? "#f3f4f6" : "#fff",
-              cursor: offset + limit >= totalCount ? "not-allowed" : "pointer",
-              color: offset + limit >= totalCount ? "#9ca3af" : "#374151",
-              fontWeight: 500,
-            }}
-          >
-            Next
-          </button>
-        </div>
-      )}
-
+          {/* Pagination */}
+          {!isLoading && totalCount > limit && (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                gap: 12,
+                marginBottom: 24,
+              }}
+            >
+              <button
+                disabled={offset === 0}
+                onClick={() => searchProperties(Math.max(0, offset - limit))}
+                style={{
+                  padding: "8px 16px",
+                  border: "1px solid #d1d5db",
+                  borderRadius: 6,
+                  background: offset === 0 ? "#f3f4f6" : "#fff",
+                  cursor: offset === 0 ? "not-allowed" : "pointer",
+                  color: offset === 0 ? "#9ca3af" : "#374151",
+                  fontWeight: 500,
+                }}
+              >
+                Previous
+              </button>
+              <span style={{ fontSize: 14, color: "#6b7280" }}>
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                disabled={offset + limit >= totalCount}
+                onClick={() => searchProperties(offset + limit)}
+                style={{
+                  padding: "8px 16px",
+                  border: "1px solid #d1d5db",
+                  borderRadius: 6,
+                  background: offset + limit >= totalCount ? "#f3f4f6" : "#fff",
+                  cursor: offset + limit >= totalCount ? "not-allowed" : "pointer",
+                  color: offset + limit >= totalCount ? "#9ca3af" : "#374151",
+                  fontWeight: 500,
+                }}
+              >
+                Next
+              </button>
+            </div>
+          )}
         </>
       )}
 
@@ -1327,7 +1377,15 @@ export default function MLSClient() {
             }}
           >
             {!showDescGen ? (
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                  gap: 12,
+                }}
+              >
                 <div>
                   <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 700, color: "#374151" }}>
                     AI Listing Description Generator
@@ -1355,12 +1413,18 @@ export default function MLSClient() {
               </div>
             ) : (
               <>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                <div
+                  style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}
+                >
                   <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#374151" }}>
                     Generate Listing Description
                   </h3>
                   <button
-                    onClick={() => { setShowDescGen(false); setDescResults(null); setDescError(""); }}
+                    onClick={() => {
+                      setShowDescGen(false);
+                      setDescResults(null);
+                      setDescError("");
+                    }}
                     style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "#6b7280" }}
                   >
                     &times;
@@ -1368,23 +1432,35 @@ export default function MLSClient() {
                 </div>
 
                 {/* Compliance notice */}
-                <div style={{
-                  padding: "10px 14px",
-                  background: "#f0fdf4",
-                  border: "1px solid #bbf7d0",
-                  borderRadius: 8,
-                  marginBottom: 20,
-                  fontSize: 12,
-                  color: "#166534",
-                  lineHeight: 1.5,
-                }}>
-                  All generated descriptions are NAR and Fair Housing Act compliant. Always review before posting to your MLS.
+                <div
+                  style={{
+                    padding: "10px 14px",
+                    background: "#f0fdf4",
+                    border: "1px solid #bbf7d0",
+                    borderRadius: 8,
+                    marginBottom: 20,
+                    fontSize: 12,
+                    color: "#166534",
+                    lineHeight: 1.5,
+                  }}
+                >
+                  All generated descriptions are NAR and Fair Housing Act compliant. Always review before posting to
+                  your MLS.
                 </div>
 
                 {/* Form */}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 16 }}>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+                    gap: 12,
+                    marginBottom: 16,
+                  }}
+                >
                   <div>
-                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                    <label
+                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}
+                    >
                       Property Type <span style={{ color: "#ef4444" }}>*</span>
                     </label>
                     <select
@@ -1402,62 +1478,120 @@ export default function MLSClient() {
                     </select>
                   </div>
                   <div>
-                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                    <label
+                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}
+                    >
                       Bedrooms <span style={{ color: "#ef4444" }}>*</span>
                     </label>
                     <input
-                      type="number" min="0" placeholder="3"
+                      type="number"
+                      min="0"
+                      placeholder="3"
                       value={descForm.bedrooms}
                       onChange={(e) => setDescForm({ ...descForm, bedrooms: e.target.value })}
-                      style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, boxSizing: "border-box" }}
+                      style={{
+                        width: "100%",
+                        padding: 10,
+                        border: "1px solid #d1d5db",
+                        borderRadius: 6,
+                        fontSize: 14,
+                        boxSizing: "border-box",
+                      }}
                     />
                   </div>
                   <div>
-                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                    <label
+                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}
+                    >
                       Bathrooms <span style={{ color: "#ef4444" }}>*</span>
                     </label>
                     <input
-                      type="number" min="0" step="0.5" placeholder="2"
+                      type="number"
+                      min="0"
+                      step="0.5"
+                      placeholder="2"
                       value={descForm.bathrooms}
                       onChange={(e) => setDescForm({ ...descForm, bathrooms: e.target.value })}
-                      style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, boxSizing: "border-box" }}
+                      style={{
+                        width: "100%",
+                        padding: 10,
+                        border: "1px solid #d1d5db",
+                        borderRadius: 6,
+                        fontSize: 14,
+                        boxSizing: "border-box",
+                      }}
                     />
                   </div>
                   <div>
-                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                    <label
+                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}
+                    >
                       Square Feet <span style={{ color: "#ef4444" }}>*</span>
                     </label>
                     <input
-                      type="number" min="0" placeholder="2000"
+                      type="number"
+                      min="0"
+                      placeholder="2000"
                       value={descForm.sqft}
                       onChange={(e) => setDescForm({ ...descForm, sqft: e.target.value })}
-                      style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, boxSizing: "border-box" }}
+                      style={{
+                        width: "100%",
+                        padding: 10,
+                        border: "1px solid #d1d5db",
+                        borderRadius: 6,
+                        fontSize: 14,
+                        boxSizing: "border-box",
+                      }}
                     />
                   </div>
                   <div>
-                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                    <label
+                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}
+                    >
                       Year Built
                     </label>
                     <input
-                      type="number" min="1800" max="2030" placeholder="2005"
+                      type="number"
+                      min="1800"
+                      max="2030"
+                      placeholder="2005"
                       value={descForm.yearBuilt}
                       onChange={(e) => setDescForm({ ...descForm, yearBuilt: e.target.value })}
-                      style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, boxSizing: "border-box" }}
+                      style={{
+                        width: "100%",
+                        padding: 10,
+                        border: "1px solid #d1d5db",
+                        borderRadius: 6,
+                        fontSize: 14,
+                        boxSizing: "border-box",
+                      }}
                     />
                   </div>
                   <div>
-                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374141" }}>
+                    <label
+                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374141" }}
+                    >
                       Lot Size
                     </label>
                     <input
-                      type="text" placeholder="0.25 acres"
+                      type="text"
+                      placeholder="0.25 acres"
                       value={descForm.lotSize}
                       onChange={(e) => setDescForm({ ...descForm, lotSize: e.target.value })}
-                      style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, boxSizing: "border-box" }}
+                      style={{
+                        width: "100%",
+                        padding: 10,
+                        border: "1px solid #d1d5db",
+                        borderRadius: 6,
+                        fontSize: 14,
+                        boxSizing: "border-box",
+                      }}
                     />
                   </div>
                   <div style={{ gridColumn: "1 / -1" }}>
-                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                    <label
+                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}
+                    >
                       Architectural Style
                     </label>
                     <select
@@ -1489,7 +1623,9 @@ export default function MLSClient() {
                   <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 8, color: "#374151" }}>
                     Key Features (check all that apply)
                   </label>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 6 }}>
+                  <div
+                    style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 6 }}
+                  >
                     {PROPERTY_FEATURES.map((feature) => (
                       <label
                         key={feature}
@@ -1532,8 +1668,14 @@ export default function MLSClient() {
                     placeholder="E.g., recently renovated kitchen, new HVAC, backs up to greenbelt, corner lot..."
                     rows={2}
                     style={{
-                      width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6,
-                      fontSize: 14, resize: "vertical", fontFamily: "inherit", boxSizing: "border-box",
+                      width: "100%",
+                      padding: 10,
+                      border: "1px solid #d1d5db",
+                      borderRadius: 6,
+                      fontSize: 14,
+                      resize: "vertical",
+                      fontFamily: "inherit",
+                      boxSizing: "border-box",
                     }}
                   />
                 </div>
@@ -1596,10 +1738,16 @@ export default function MLSClient() {
 
                 {/* Error */}
                 {descError && (
-                  <div style={{
-                    padding: 12, background: "#fee2e2", color: "#dc2626",
-                    borderRadius: 8, marginBottom: 16, fontSize: 14,
-                  }}>
+                  <div
+                    style={{
+                      padding: 12,
+                      background: "#fee2e2",
+                      color: "#dc2626",
+                      borderRadius: 8,
+                      marginBottom: 16,
+                      fontSize: 14,
+                    }}
+                  >
                     {descError}
                   </div>
                 )}
@@ -1616,15 +1764,22 @@ export default function MLSClient() {
                           overflow: "hidden",
                         }}
                       >
-                        <div style={{
-                          display: "flex", justifyContent: "space-between", alignItems: "center",
-                          padding: "10px 16px",
-                          background: idx === 0 ? "#eff6ff" : idx === 1 ? "#fef3c7" : "#f5f3ff",
-                        }}>
-                          <span style={{
-                            fontSize: 13, fontWeight: 700,
-                            color: idx === 0 ? "#1d4ed8" : idx === 1 ? "#b45309" : "#7c3aed",
-                          }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            padding: "10px 16px",
+                            background: idx === 0 ? "#eff6ff" : idx === 1 ? "#fef3c7" : "#f5f3ff",
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontSize: 13,
+                              fontWeight: 700,
+                              color: idx === 0 ? "#1d4ed8" : idx === 1 ? "#b45309" : "#7c3aed",
+                            }}
+                          >
                             {variant.label}
                           </span>
                           <button
@@ -1669,7 +1824,15 @@ export default function MLSClient() {
             }}
           >
             {!showSocialGen ? (
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                  gap: 12,
+                }}
+              >
                 <div>
                   <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 700, color: "#374151" }}>
                     AI Social Media Marketing Generator
@@ -1697,12 +1860,18 @@ export default function MLSClient() {
               </div>
             ) : (
               <>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                <div
+                  style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}
+                >
                   <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#374151" }}>
                     Social Media Marketing Generator
                   </h3>
                   <button
-                    onClick={() => { setShowSocialGen(false); setSocialResults(null); setSocialError(""); }}
+                    onClick={() => {
+                      setShowSocialGen(false);
+                      setSocialResults(null);
+                      setSocialError("");
+                    }}
                     style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "#6b7280" }}
                   >
                     &times;
@@ -1710,16 +1879,18 @@ export default function MLSClient() {
                 </div>
 
                 {/* Compliance notice */}
-                <div style={{
-                  padding: "10px 14px",
-                  background: "#f0fdf4",
-                  border: "1px solid #bbf7d0",
-                  borderRadius: 8,
-                  marginBottom: 20,
-                  fontSize: 12,
-                  color: "#166534",
-                  lineHeight: 1.5,
-                }}>
+                <div
+                  style={{
+                    padding: "10px 14px",
+                    background: "#f0fdf4",
+                    border: "1px solid #bbf7d0",
+                    borderRadius: 8,
+                    marginBottom: 20,
+                    fontSize: 12,
+                    color: "#166534",
+                    lineHeight: 1.5,
+                  }}
+                >
                   All generated content is Fair Housing Act compliant. Always review before posting.
                 </div>
 
@@ -1729,12 +1900,14 @@ export default function MLSClient() {
                     Post Type <span style={{ color: "#ef4444" }}>*</span>
                   </label>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    {([
-                      { value: "just_listed", label: "Just Listed", color: "#10b981" },
-                      { value: "open_house", label: "Open House", color: "#3b82f6" },
-                      { value: "price_reduced", label: "Price Reduced", color: "#f59e0b" },
-                      { value: "just_sold", label: "Just Sold", color: "#8b5cf6" },
-                    ] as const).map((type) => (
+                    {(
+                      [
+                        { value: "just_listed", label: "Just Listed", color: "#10b981" },
+                        { value: "open_house", label: "Open House", color: "#3b82f6" },
+                        { value: "price_reduced", label: "Price Reduced", color: "#f59e0b" },
+                        { value: "just_sold", label: "Just Sold", color: "#8b5cf6" },
+                      ] as const
+                    ).map((type) => (
                       <button
                         key={type.value}
                         onClick={() => setSocialForm({ ...socialForm, postType: type.value })}
@@ -1756,9 +1929,18 @@ export default function MLSClient() {
                 </div>
 
                 {/* Property Details Form */}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 16 }}>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+                    gap: 12,
+                    marginBottom: 16,
+                  }}
+                >
                   <div>
-                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                    <label
+                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}
+                    >
                       Property Type <span style={{ color: "#ef4444" }}>*</span>
                     </label>
                     <select
@@ -1776,106 +1958,205 @@ export default function MLSClient() {
                     </select>
                   </div>
                   <div>
-                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                    <label
+                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}
+                    >
                       Bedrooms <span style={{ color: "#ef4444" }}>*</span>
                     </label>
                     <input
-                      type="number" min="0" placeholder="3"
+                      type="number"
+                      min="0"
+                      placeholder="3"
                       value={socialForm.bedrooms}
                       onChange={(e) => setSocialForm({ ...socialForm, bedrooms: e.target.value })}
-                      style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, boxSizing: "border-box" }}
+                      style={{
+                        width: "100%",
+                        padding: 10,
+                        border: "1px solid #d1d5db",
+                        borderRadius: 6,
+                        fontSize: 14,
+                        boxSizing: "border-box",
+                      }}
                     />
                   </div>
                   <div>
-                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                    <label
+                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}
+                    >
                       Bathrooms <span style={{ color: "#ef4444" }}>*</span>
                     </label>
                     <input
-                      type="number" min="0" step="0.5" placeholder="2"
+                      type="number"
+                      min="0"
+                      step="0.5"
+                      placeholder="2"
                       value={socialForm.bathrooms}
                       onChange={(e) => setSocialForm({ ...socialForm, bathrooms: e.target.value })}
-                      style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, boxSizing: "border-box" }}
+                      style={{
+                        width: "100%",
+                        padding: 10,
+                        border: "1px solid #d1d5db",
+                        borderRadius: 6,
+                        fontSize: 14,
+                        boxSizing: "border-box",
+                      }}
                     />
                   </div>
                   <div>
-                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                    <label
+                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}
+                    >
                       Square Feet <span style={{ color: "#ef4444" }}>*</span>
                     </label>
                     <input
-                      type="number" min="0" placeholder="2000"
+                      type="number"
+                      min="0"
+                      placeholder="2000"
                       value={socialForm.sqft}
                       onChange={(e) => setSocialForm({ ...socialForm, sqft: e.target.value })}
-                      style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, boxSizing: "border-box" }}
+                      style={{
+                        width: "100%",
+                        padding: 10,
+                        border: "1px solid #d1d5db",
+                        borderRadius: 6,
+                        fontSize: 14,
+                        boxSizing: "border-box",
+                      }}
                     />
                   </div>
                   <div>
-                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                    <label
+                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}
+                    >
                       Address
                     </label>
                     <input
-                      type="text" placeholder="123 Main St"
+                      type="text"
+                      placeholder="123 Main St"
                       value={socialForm.address}
                       onChange={(e) => setSocialForm({ ...socialForm, address: e.target.value })}
-                      style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, boxSizing: "border-box" }}
+                      style={{
+                        width: "100%",
+                        padding: 10,
+                        border: "1px solid #d1d5db",
+                        borderRadius: 6,
+                        fontSize: 14,
+                        boxSizing: "border-box",
+                      }}
                     />
                   </div>
                   <div>
-                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                    <label
+                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}
+                    >
                       City
                     </label>
                     <input
-                      type="text" placeholder="Austin"
+                      type="text"
+                      placeholder="Austin"
                       value={socialForm.city}
                       onChange={(e) => setSocialForm({ ...socialForm, city: e.target.value })}
-                      style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, boxSizing: "border-box" }}
+                      style={{
+                        width: "100%",
+                        padding: 10,
+                        border: "1px solid #d1d5db",
+                        borderRadius: 6,
+                        fontSize: 14,
+                        boxSizing: "border-box",
+                      }}
                     />
                   </div>
                   <div>
-                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                    <label
+                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}
+                    >
                       State
                     </label>
                     <input
-                      type="text" placeholder="TX"
+                      type="text"
+                      placeholder="TX"
                       value={socialForm.stateOrProvince}
                       onChange={(e) => setSocialForm({ ...socialForm, stateOrProvince: e.target.value })}
-                      style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, boxSizing: "border-box" }}
+                      style={{
+                        width: "100%",
+                        padding: 10,
+                        border: "1px solid #d1d5db",
+                        borderRadius: 6,
+                        fontSize: 14,
+                        boxSizing: "border-box",
+                      }}
                     />
                   </div>
                   <div>
-                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                    <label
+                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}
+                    >
                       List Price
                     </label>
                     <input
-                      type="number" min="0" placeholder="450000"
+                      type="number"
+                      min="0"
+                      placeholder="450000"
                       value={socialForm.price}
                       onChange={(e) => setSocialForm({ ...socialForm, price: e.target.value })}
-                      style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, boxSizing: "border-box" }}
+                      style={{
+                        width: "100%",
+                        padding: 10,
+                        border: "1px solid #d1d5db",
+                        borderRadius: 6,
+                        fontSize: 14,
+                        boxSizing: "border-box",
+                      }}
                     />
                   </div>
                   <div>
-                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                    <label
+                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}
+                    >
                       Year Built
                     </label>
                     <input
-                      type="number" min="1800" max="2030" placeholder="2005"
+                      type="number"
+                      min="1800"
+                      max="2030"
+                      placeholder="2005"
                       value={socialForm.yearBuilt}
                       onChange={(e) => setSocialForm({ ...socialForm, yearBuilt: e.target.value })}
-                      style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, boxSizing: "border-box" }}
+                      style={{
+                        width: "100%",
+                        padding: 10,
+                        border: "1px solid #d1d5db",
+                        borderRadius: 6,
+                        fontSize: 14,
+                        boxSizing: "border-box",
+                      }}
                     />
                   </div>
                   <div>
-                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                    <label
+                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}
+                    >
                       Lot Size
                     </label>
                     <input
-                      type="text" placeholder="0.25 acres"
+                      type="text"
+                      placeholder="0.25 acres"
                       value={socialForm.lotSize}
                       onChange={(e) => setSocialForm({ ...socialForm, lotSize: e.target.value })}
-                      style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, boxSizing: "border-box" }}
+                      style={{
+                        width: "100%",
+                        padding: 10,
+                        border: "1px solid #d1d5db",
+                        borderRadius: 6,
+                        fontSize: 14,
+                        boxSizing: "border-box",
+                      }}
                     />
                   </div>
                   <div>
-                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                    <label
+                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}
+                    >
                       Architectural Style
                     </label>
                     <select
@@ -1906,25 +2187,44 @@ export default function MLSClient() {
                 {socialForm.postType === "open_house" && (
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
                     <div>
-                      <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                      <label
+                        style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}
+                      >
                         Open House Date
                       </label>
                       <input
                         type="date"
                         value={socialForm.openHouseDate}
                         onChange={(e) => setSocialForm({ ...socialForm, openHouseDate: e.target.value })}
-                        style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, boxSizing: "border-box" }}
+                        style={{
+                          width: "100%",
+                          padding: 10,
+                          border: "1px solid #d1d5db",
+                          borderRadius: 6,
+                          fontSize: 14,
+                          boxSizing: "border-box",
+                        }}
                       />
                     </div>
                     <div>
-                      <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                      <label
+                        style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}
+                      >
                         Open House Time
                       </label>
                       <input
-                        type="text" placeholder="1:00 PM - 4:00 PM"
+                        type="text"
+                        placeholder="1:00 PM - 4:00 PM"
                         value={socialForm.openHouseTime}
                         onChange={(e) => setSocialForm({ ...socialForm, openHouseTime: e.target.value })}
-                        style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, boxSizing: "border-box" }}
+                        style={{
+                          width: "100%",
+                          padding: 10,
+                          border: "1px solid #d1d5db",
+                          borderRadius: 6,
+                          fontSize: 14,
+                          boxSizing: "border-box",
+                        }}
                       />
                     </div>
                   </div>
@@ -1935,7 +2235,9 @@ export default function MLSClient() {
                   <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 8, color: "#374151" }}>
                     Key Features (check all that apply)
                   </label>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 6 }}>
+                  <div
+                    style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 6 }}
+                  >
                     {PROPERTY_FEATURES.map((feature) => (
                       <label
                         key={feature}
@@ -1978,8 +2280,14 @@ export default function MLSClient() {
                     placeholder="E.g., highlight the kitchen renovation, mention the sunset views from the primary suite..."
                     rows={2}
                     style={{
-                      width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6,
-                      fontSize: 14, resize: "vertical", fontFamily: "inherit", boxSizing: "border-box",
+                      width: "100%",
+                      padding: 10,
+                      border: "1px solid #d1d5db",
+                      borderRadius: 6,
+                      fontSize: 14,
+                      resize: "vertical",
+                      fontFamily: "inherit",
+                      boxSizing: "border-box",
                     }}
                   />
                 </div>
@@ -1991,9 +2299,7 @@ export default function MLSClient() {
                   style={{
                     width: "100%",
                     padding: "12px 24px",
-                    background: socialLoading
-                      ? "#d1d5db"
-                      : "linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)",
+                    background: socialLoading ? "#d1d5db" : "linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)",
                     color: "#fff",
                     border: "none",
                     borderRadius: 8,
@@ -2008,10 +2314,16 @@ export default function MLSClient() {
 
                 {/* Error */}
                 {socialError && (
-                  <div style={{
-                    padding: 12, background: "#fee2e2", color: "#dc2626",
-                    borderRadius: 8, marginBottom: 16, fontSize: 14,
-                  }}>
+                  <div
+                    style={{
+                      padding: 12,
+                      background: "#fee2e2",
+                      color: "#dc2626",
+                      borderRadius: 8,
+                      marginBottom: 16,
+                      fontSize: 14,
+                    }}
+                  >
                     {socialError}
                   </div>
                 )}
@@ -2032,7 +2344,10 @@ export default function MLSClient() {
                         return (
                           <button
                             key={platform.platform}
-                            onClick={() => { setActiveSocialPlatform(idx); setActiveVideoScript(0); }}
+                            onClick={() => {
+                              setActiveSocialPlatform(idx);
+                              setActiveVideoScript(0);
+                            }}
                             style={{
                               padding: "10px 18px",
                               fontSize: 13,
@@ -2040,7 +2355,8 @@ export default function MLSClient() {
                               color: activeSocialPlatform === idx ? color : "#6b7280",
                               background: "transparent",
                               border: "none",
-                              borderBottom: activeSocialPlatform === idx ? `2px solid ${color}` : "2px solid transparent",
+                              borderBottom:
+                                activeSocialPlatform === idx ? `2px solid ${color}` : "2px solid transparent",
                               cursor: "pointer",
                               textTransform: "capitalize",
                             }}
@@ -2060,19 +2376,32 @@ export default function MLSClient() {
                         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                           {/* Caption */}
                           <div style={{ border: "1px solid #e5e7eb", borderRadius: 10, overflow: "hidden" }}>
-                            <div style={{
-                              display: "flex", justifyContent: "space-between", alignItems: "center",
-                              padding: "10px 16px", background: "#f9fafb",
-                            }}>
+                            <div
+                              style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                padding: "10px 16px",
+                                background: "#f9fafb",
+                              }}
+                            >
                               <span style={{ fontSize: 13, fontWeight: 700, color: "#374151" }}>Caption</span>
                               <button
-                                onClick={() => copySocialText(platform.caption + "\n\n" + platform.hashtags.map(h => `#${h}`).join(" "), `${pKey}-caption`)}
+                                onClick={() =>
+                                  copySocialText(
+                                    platform.caption + "\n\n" + platform.hashtags.map((h) => `#${h}`).join(" "),
+                                    `${pKey}-caption`,
+                                  )
+                                }
                                 style={{
                                   padding: "5px 14px",
                                   background: socialCopied === `${pKey}-caption` ? "#10b981" : "#fff",
                                   color: socialCopied === `${pKey}-caption` ? "#fff" : "#374151",
                                   border: socialCopied === `${pKey}-caption` ? "none" : "1px solid #d1d5db",
-                                  borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer",
+                                  borderRadius: 6,
+                                  fontSize: 12,
+                                  fontWeight: 600,
+                                  cursor: "pointer",
                                 }}
                               >
                                 {socialCopied === `${pKey}-caption` ? "Copied!" : "Copy"}
@@ -2083,10 +2412,17 @@ export default function MLSClient() {
                             </div>
                             <div style={{ padding: "0 16px 16px", display: "flex", flexWrap: "wrap", gap: 6 }}>
                               {platform.hashtags.map((tag) => (
-                                <span key={tag} style={{
-                                  padding: "3px 10px", background: "#eff6ff", color: "#2563eb",
-                                  borderRadius: 12, fontSize: 12, fontWeight: 500,
-                                }}>
+                                <span
+                                  key={tag}
+                                  style={{
+                                    padding: "3px 10px",
+                                    background: "#eff6ff",
+                                    color: "#2563eb",
+                                    borderRadius: 12,
+                                    fontSize: 12,
+                                    fontWeight: 500,
+                                  }}
+                                >
                                   #{tag}
                                 </span>
                               ))}
@@ -2095,22 +2431,32 @@ export default function MLSClient() {
 
                           {/* Static Image Text */}
                           <div style={{ border: "1px solid #e5e7eb", borderRadius: 10, overflow: "hidden" }}>
-                            <div style={{
-                              display: "flex", justifyContent: "space-between", alignItems: "center",
-                              padding: "10px 16px", background: "#f9fafb",
-                            }}>
+                            <div
+                              style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                padding: "10px 16px",
+                                background: "#f9fafb",
+                              }}
+                            >
                               <span style={{ fontSize: 13, fontWeight: 700, color: "#374151" }}>Static Image Text</span>
                               <button
-                                onClick={() => copySocialText(
-                                  `${platform.staticImageText.headline}\n${platform.staticImageText.subtext}\n${platform.staticImageText.cta}`,
-                                  `${pKey}-image`
-                                )}
+                                onClick={() =>
+                                  copySocialText(
+                                    `${platform.staticImageText.headline}\n${platform.staticImageText.subtext}\n${platform.staticImageText.cta}`,
+                                    `${pKey}-image`,
+                                  )
+                                }
                                 style={{
                                   padding: "5px 14px",
                                   background: socialCopied === `${pKey}-image` ? "#10b981" : "#fff",
                                   color: socialCopied === `${pKey}-image` ? "#fff" : "#374151",
                                   border: socialCopied === `${pKey}-image` ? "none" : "1px solid #d1d5db",
-                                  borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer",
+                                  borderRadius: 6,
+                                  fontSize: 12,
+                                  fontWeight: 600,
+                                  cursor: "pointer",
                                 }}
                               >
                                 {socialCopied === `${pKey}-image` ? "Copied!" : "Copy"}
@@ -2123,11 +2469,17 @@ export default function MLSClient() {
                               <div style={{ fontSize: 14, color: "#6b7280", marginBottom: 8 }}>
                                 {platform.staticImageText.subtext}
                               </div>
-                              <div style={{
-                                display: "inline-block", padding: "6px 16px",
-                                background: "#3b82f6", color: "#fff", borderRadius: 6,
-                                fontSize: 13, fontWeight: 600,
-                              }}>
+                              <div
+                                style={{
+                                  display: "inline-block",
+                                  padding: "6px 16px",
+                                  background: "#3b82f6",
+                                  color: "#fff",
+                                  borderRadius: 6,
+                                  fontSize: 13,
+                                  fontWeight: 600,
+                                }}
+                              >
                                 {platform.staticImageText.cta}
                               </div>
                             </div>
@@ -2151,12 +2503,16 @@ export default function MLSClient() {
                                     color: activeVideoScript === sIdx ? "#8b5cf6" : "#6b7280",
                                     background: activeVideoScript === sIdx ? "#f5f3ff" : "transparent",
                                     border: "none",
-                                    borderBottom: activeVideoScript === sIdx ? "2px solid #8b5cf6" : "2px solid transparent",
+                                    borderBottom:
+                                      activeVideoScript === sIdx ? "2px solid #8b5cf6" : "2px solid transparent",
                                     cursor: "pointer",
                                     flex: 1,
                                   }}
                                 >
-                                  {script.style === "traditional" ? "Traditional" : `Creative ${sIdx}`}: {script.concept.length > 20 ? script.concept.substring(0, 20) + "..." : script.concept}
+                                  {script.style === "traditional" ? "Traditional" : `Creative ${sIdx}`}:{" "}
+                                  {script.concept.length > 20
+                                    ? script.concept.substring(0, 20) + "..."
+                                    : script.concept}
                                 </button>
                               ))}
                             </div>
@@ -2170,8 +2526,9 @@ export default function MLSClient() {
                                 `CONCEPT: ${script.concept} (${script.style})`,
                                 `HOOK: ${script.hook}`,
                                 ``,
-                                ...script.shots.map((s, i) =>
-                                  `SHOT ${i + 1}:\n  Camera: ${s.direction}\n  Say: ${s.spokenLine || "(silent)"}\n  Text Overlay: ${s.textOverlay || "(none)"}\n  Tone: ${s.toneCue}`
+                                ...script.shots.map(
+                                  (s, i) =>
+                                    `SHOT ${i + 1}:\n  Camera: ${s.direction}\n  Say: ${s.spokenLine || "(silent)"}\n  Text Overlay: ${s.textOverlay || "(none)"}\n  Tone: ${s.toneCue}`,
                                 ),
                                 ``,
                                 `AUDIO: ${script.suggestedAudio}`,
@@ -2180,14 +2537,27 @@ export default function MLSClient() {
 
                               return (
                                 <div style={{ padding: 16 }}>
-                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      justifyContent: "space-between",
+                                      alignItems: "center",
+                                      marginBottom: 12,
+                                    }}
+                                  >
                                     <div>
-                                      <span style={{
-                                        display: "inline-block", padding: "3px 10px", borderRadius: 12, fontSize: 11, fontWeight: 600,
-                                        background: script.style === "traditional" ? "#dbeafe" : "#fce7f3",
-                                        color: script.style === "traditional" ? "#1d4ed8" : "#be185d",
-                                        marginRight: 8,
-                                      }}>
+                                      <span
+                                        style={{
+                                          display: "inline-block",
+                                          padding: "3px 10px",
+                                          borderRadius: 12,
+                                          fontSize: 11,
+                                          fontWeight: 600,
+                                          background: script.style === "traditional" ? "#dbeafe" : "#fce7f3",
+                                          color: script.style === "traditional" ? "#1d4ed8" : "#be185d",
+                                          marginRight: 8,
+                                        }}
+                                      >
                                         {script.style === "traditional" ? "Traditional" : "Creative"}
                                       </span>
                                       <span style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}>
@@ -2201,7 +2571,10 @@ export default function MLSClient() {
                                         background: socialCopied === scriptKey ? "#10b981" : "#fff",
                                         color: socialCopied === scriptKey ? "#fff" : "#374151",
                                         border: socialCopied === scriptKey ? "none" : "1px solid #d1d5db",
-                                        borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer",
+                                        borderRadius: 6,
+                                        fontSize: 12,
+                                        fontWeight: 600,
+                                        cursor: "pointer",
                                       }}
                                     >
                                       {socialCopied === scriptKey ? "Copied!" : "Copy Script"}
@@ -2209,21 +2582,34 @@ export default function MLSClient() {
                                   </div>
 
                                   {/* Hook */}
-                                  <div style={{
-                                    padding: "10px 14px", background: "#fef3c7", borderRadius: 8,
-                                    marginBottom: 12, fontSize: 13, color: "#92400e",
-                                  }}>
+                                  <div
+                                    style={{
+                                      padding: "10px 14px",
+                                      background: "#fef3c7",
+                                      borderRadius: 8,
+                                      marginBottom: 12,
+                                      fontSize: 13,
+                                      color: "#92400e",
+                                    }}
+                                  >
                                     <strong>Hook (first 2 sec):</strong> {script.hook}
                                   </div>
 
                                   {/* Shots */}
                                   <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
                                     {script.shots.map((shot, shotIdx) => (
-                                      <div key={shotIdx} style={{
-                                        padding: 12, background: "#f9fafb", borderRadius: 8,
-                                        borderLeft: "3px solid #8b5cf6",
-                                      }}>
-                                        <div style={{ fontSize: 11, fontWeight: 700, color: "#8b5cf6", marginBottom: 6 }}>
+                                      <div
+                                        key={shotIdx}
+                                        style={{
+                                          padding: 12,
+                                          background: "#f9fafb",
+                                          borderRadius: 8,
+                                          borderLeft: "3px solid #8b5cf6",
+                                        }}
+                                      >
+                                        <div
+                                          style={{ fontSize: 11, fontWeight: 700, color: "#8b5cf6", marginBottom: 6 }}
+                                        >
                                           SHOT {shotIdx + 1}
                                         </div>
                                         <div style={{ fontSize: 13, color: "#374151", marginBottom: 4 }}>
@@ -2233,7 +2619,10 @@ export default function MLSClient() {
                                           <div style={{ fontSize: 13, color: "#374151", marginBottom: 4 }}>
                                             <strong>Say:</strong> &ldquo;{shot.spokenLine}&rdquo;
                                             {shot.toneCue && (
-                                              <span style={{ color: "#6b7280", fontStyle: "italic" }}> {shot.toneCue}</span>
+                                              <span style={{ color: "#6b7280", fontStyle: "italic" }}>
+                                                {" "}
+                                                {shot.toneCue}
+                                              </span>
                                             )}
                                           </div>
                                         )}
@@ -2248,10 +2637,26 @@ export default function MLSClient() {
 
                                   {/* Audio + Ending */}
                                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                                    <div style={{ padding: 10, background: "#eff6ff", borderRadius: 8, fontSize: 12, color: "#1e40af" }}>
+                                    <div
+                                      style={{
+                                        padding: 10,
+                                        background: "#eff6ff",
+                                        borderRadius: 8,
+                                        fontSize: 12,
+                                        color: "#1e40af",
+                                      }}
+                                    >
                                       <strong>Audio:</strong> {script.suggestedAudio}
                                     </div>
-                                    <div style={{ padding: 10, background: "#f0fdf4", borderRadius: 8, fontSize: 12, color: "#166534" }}>
+                                    <div
+                                      style={{
+                                        padding: 10,
+                                        background: "#f0fdf4",
+                                        borderRadius: 8,
+                                        fontSize: 12,
+                                        color: "#166534",
+                                      }}
+                                    >
                                       <strong>Ending:</strong> {script.ending}
                                     </div>
                                   </div>
@@ -2270,9 +2675,7 @@ export default function MLSClient() {
 
           {/* Existing Listings Grid */}
           {isLoadingMyListings ? (
-            <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>
-              Loading your listings...
-            </div>
+            <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>Loading your listings...</div>
           ) : myListings.length === 0 ? (
             <div
               style={{
@@ -2283,9 +2686,7 @@ export default function MLSClient() {
                 color: "#6b7280",
               }}
             >
-              <p style={{ fontSize: 18, fontWeight: 600, marginBottom: 8, color: "#374151" }}>
-                No Listings Yet
-              </p>
+              <p style={{ fontSize: 18, fontWeight: 600, marginBottom: 8, color: "#374151" }}>No Listings Yet</p>
               <p style={{ fontSize: 14, maxWidth: 400, margin: "0 auto" }}>
                 Your listings from the MLS will appear here.
               </p>
@@ -2365,13 +2766,19 @@ export default function MLSClient() {
                       </div>
                       <div style={{ display: "flex", gap: 12, fontSize: 13, color: "#6b7280" }}>
                         {listing.bedrooms_total != null && (
-                          <span><strong>{listing.bedrooms_total as number}</strong> bed</span>
+                          <span>
+                            <strong>{listing.bedrooms_total as number}</strong> bed
+                          </span>
                         )}
                         {listing.bathrooms_total != null && (
-                          <span><strong>{listing.bathrooms_total as number}</strong> bath</span>
+                          <span>
+                            <strong>{listing.bathrooms_total as number}</strong> bath
+                          </span>
                         )}
                         {listing.living_area != null && (
-                          <span><strong>{(listing.living_area as number).toLocaleString()}</strong> sqft</span>
+                          <span>
+                            <strong>{(listing.living_area as number).toLocaleString()}</strong> sqft
+                          </span>
                         )}
                       </div>
                     </div>
@@ -2418,7 +2825,9 @@ export default function MLSClient() {
             {(() => {
               const photoUrl = getPhotoUrl(selectedProperty);
               return photoUrl ? (
-                <div style={{ height: 300, background: `url(${photoUrl}) center/cover`, borderRadius: "16px 16px 0 0" }} />
+                <div
+                  style={{ height: 300, background: `url(${photoUrl}) center/cover`, borderRadius: "16px 16px 0 0" }}
+                />
               ) : (
                 <div
                   style={{
@@ -2438,7 +2847,9 @@ export default function MLSClient() {
 
             <div style={{ padding: 24 }}>
               {/* Close button */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
+              <div
+                style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}
+              >
                 <div>
                   <div style={{ fontSize: 28, fontWeight: 700, color: "#111827" }}>
                     ${selectedProperty.ListPrice?.toLocaleString()}
@@ -2447,8 +2858,7 @@ export default function MLSClient() {
                     {getAddress(selectedProperty)}
                   </div>
                   <div style={{ fontSize: 14, color: "#6b7280" }}>
-                    {selectedProperty.City}, {selectedProperty.StateOrProvince}{" "}
-                    {selectedProperty.PostalCode}
+                    {selectedProperty.City}, {selectedProperty.StateOrProvince} {selectedProperty.PostalCode}
                   </div>
                 </div>
                 <button
@@ -2513,9 +2923,7 @@ export default function MLSClient() {
                 )}
                 {selectedProperty.LivingArea != null && (
                   <div style={{ textAlign: "center" }}>
-                    <div style={{ fontSize: 20, fontWeight: 700 }}>
-                      {selectedProperty.LivingArea.toLocaleString()}
-                    </div>
+                    <div style={{ fontSize: 20, fontWeight: 700 }}>{selectedProperty.LivingArea.toLocaleString()}</div>
                     <div style={{ fontSize: 12, color: "#6b7280" }}>Sq Ft</div>
                   </div>
                 )}
@@ -2527,9 +2935,7 @@ export default function MLSClient() {
                 )}
                 {selectedProperty.LotSizeArea != null && (
                   <div style={{ textAlign: "center" }}>
-                    <div style={{ fontSize: 20, fontWeight: 700 }}>
-                      {selectedProperty.LotSizeArea.toLocaleString()}
-                    </div>
+                    <div style={{ fontSize: 20, fontWeight: 700 }}>{selectedProperty.LotSizeArea.toLocaleString()}</div>
                     <div style={{ fontSize: 12, color: "#6b7280" }}>Lot Size</div>
                   </div>
                 )}
@@ -2538,7 +2944,13 @@ export default function MLSClient() {
                   if (dom == null) return null;
                   return (
                     <div style={{ textAlign: "center" }}>
-                      <div style={{ fontSize: 20, fontWeight: 700, color: dom > 30 ? "#dc2626" : dom > 14 ? "#d97706" : "#111827" }}>
+                      <div
+                        style={{
+                          fontSize: 20,
+                          fontWeight: 700,
+                          color: dom > 30 ? "#dc2626" : dom > 14 ? "#d97706" : "#111827",
+                        }}
+                      >
                         {dom}
                       </div>
                       <div style={{ fontSize: 12, color: "#6b7280" }}>Days on Market</div>
@@ -2551,9 +2963,7 @@ export default function MLSClient() {
               <div style={{ marginBottom: 16, fontSize: 14, lineHeight: 1.6 }}>
                 <div style={{ display: "grid", gridTemplateColumns: "160px 1fr", gap: "8px 12px" }}>
                   <span style={{ fontWeight: 600, color: "#374151" }}>MLS #:</span>
-                  <span style={{ color: "#6b7280" }}>
-                    {selectedProperty.ListingId || selectedProperty.ListingKey}
-                  </span>
+                  <span style={{ color: "#6b7280" }}>{selectedProperty.ListingId || selectedProperty.ListingKey}</span>
                   <span style={{ fontWeight: 600, color: "#374151" }}>Property Type:</span>
                   <span style={{ color: "#6b7280" }}>
                     {selectedProperty.PropertyType}
@@ -2563,10 +2973,12 @@ export default function MLSClient() {
                   {selectedProperty.OwnershipType && (
                     <>
                       <span style={{ fontWeight: 600, color: "#374151" }}>Land Tenure:</span>
-                      <span style={{
-                        fontWeight: 700,
-                        color: selectedProperty.OwnershipType.toLowerCase().includes("lease") ? "#dc2626" : "#059669",
-                      }}>
+                      <span
+                        style={{
+                          fontWeight: 700,
+                          color: selectedProperty.OwnershipType.toLowerCase().includes("lease") ? "#dc2626" : "#059669",
+                        }}
+                      >
                         {selectedProperty.OwnershipType}
                         {selectedProperty.OwnershipType.toLowerCase().includes("lease") && " ⚠️"}
                       </span>
@@ -2576,7 +2988,8 @@ export default function MLSClient() {
                     <>
                       <span style={{ fontWeight: 600, color: "#374151" }}>Lease Rent:</span>
                       <span style={{ color: "#dc2626", fontWeight: 600 }}>
-                        ${selectedProperty.LeaseAmount.toLocaleString()}/{selectedProperty.LeaseAmountFrequency?.toLowerCase() || "mo"}
+                        ${selectedProperty.LeaseAmount.toLocaleString()}/
+                        {selectedProperty.LeaseAmountFrequency?.toLowerCase() || "mo"}
                       </span>
                     </>
                   )}
@@ -2589,30 +3002,41 @@ export default function MLSClient() {
                     </>
                   )}
                   {/* Price History */}
-                  {selectedProperty.OriginalListPrice != null && selectedProperty.OriginalListPrice !== selectedProperty.ListPrice && (
-                    <>
-                      <span style={{ fontWeight: 600, color: "#374151" }}>Original Price:</span>
-                      <span style={{ color: "#6b7280" }}>
-                        ${selectedProperty.OriginalListPrice.toLocaleString()}
-                        {selectedProperty.ListPrice < selectedProperty.OriginalListPrice && (
-                          <span style={{ color: "#dc2626", fontWeight: 600, marginLeft: 6 }}>
-                            -{Math.round(((selectedProperty.OriginalListPrice - selectedProperty.ListPrice) / selectedProperty.OriginalListPrice) * 100)}% reduction
-                          </span>
-                        )}
-                      </span>
-                    </>
-                  )}
+                  {selectedProperty.OriginalListPrice != null &&
+                    selectedProperty.OriginalListPrice !== selectedProperty.ListPrice && (
+                      <>
+                        <span style={{ fontWeight: 600, color: "#374151" }}>Original Price:</span>
+                        <span style={{ color: "#6b7280" }}>
+                          ${selectedProperty.OriginalListPrice.toLocaleString()}
+                          {selectedProperty.ListPrice < selectedProperty.OriginalListPrice && (
+                            <span style={{ color: "#dc2626", fontWeight: 600, marginLeft: 6 }}>
+                              -
+                              {Math.round(
+                                ((selectedProperty.OriginalListPrice - selectedProperty.ListPrice) /
+                                  selectedProperty.OriginalListPrice) *
+                                  100,
+                              )}
+                              % reduction
+                            </span>
+                          )}
+                        </span>
+                      </>
+                    )}
                   {/* Closed sale info */}
                   {selectedProperty.ClosePrice != null && (
                     <>
                       <span style={{ fontWeight: 600, color: "#374151" }}>Close Price:</span>
-                      <span style={{ fontWeight: 600, color: "#059669" }}>${selectedProperty.ClosePrice.toLocaleString()}</span>
+                      <span style={{ fontWeight: 600, color: "#059669" }}>
+                        ${selectedProperty.ClosePrice.toLocaleString()}
+                      </span>
                     </>
                   )}
                   {selectedProperty.CloseDate && (
                     <>
                       <span style={{ fontWeight: 600, color: "#374151" }}>Close Date:</span>
-                      <span style={{ color: "#6b7280" }}>{new Date(selectedProperty.CloseDate).toLocaleDateString()}</span>
+                      <span style={{ color: "#6b7280" }}>
+                        {new Date(selectedProperty.CloseDate).toLocaleDateString()}
+                      </span>
                     </>
                   )}
                   {/* Agent Info */}
@@ -2651,14 +3075,15 @@ export default function MLSClient() {
                       </span>
                     </>
                   )}
-                  {selectedProperty.CumulativeDaysOnMarket != null && selectedProperty.CumulativeDaysOnMarket !== selectedProperty.DaysOnMarket && (
-                    <>
-                      <span style={{ fontWeight: 600, color: "#374151" }}>Cumulative DOM:</span>
-                      <span style={{ color: selectedProperty.CumulativeDaysOnMarket > 60 ? "#dc2626" : "#6b7280" }}>
-                        {selectedProperty.CumulativeDaysOnMarket} days (includes re-lists)
-                      </span>
-                    </>
-                  )}
+                  {selectedProperty.CumulativeDaysOnMarket != null &&
+                    selectedProperty.CumulativeDaysOnMarket !== selectedProperty.DaysOnMarket && (
+                      <>
+                        <span style={{ fontWeight: 600, color: "#374151" }}>Cumulative DOM:</span>
+                        <span style={{ color: selectedProperty.CumulativeDaysOnMarket > 60 ? "#dc2626" : "#6b7280" }}>
+                          {selectedProperty.CumulativeDaysOnMarket} days (includes re-lists)
+                        </span>
+                      </>
+                    )}
                   {/* Financial */}
                   {selectedProperty.AssociationFee != null && selectedProperty.AssociationFee > 0 && (
                     <>
@@ -2689,9 +3114,15 @@ export default function MLSClient() {
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{
-                      display: "inline-flex", alignItems: "center", gap: 6,
-                      padding: "8px 16px", background: "#4f46e5", color: "#fff",
-                      borderRadius: 6, fontSize: 13, fontWeight: 600,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      padding: "8px 16px",
+                      background: "#4f46e5",
+                      color: "#fff",
+                      borderRadius: 6,
+                      fontSize: 13,
+                      fontWeight: 600,
                       textDecoration: "none",
                     }}
                   >
@@ -2703,78 +3134,92 @@ export default function MLSClient() {
               {/* Remarks */}
               {selectedProperty.PublicRemarks && (
                 <div style={{ marginBottom: 20 }}>
-                  <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, color: "#374151" }}>
-                    Description
-                  </h4>
-                  <p style={{ fontSize: 14, color: "#6b7280", lineHeight: 1.6 }}>
-                    {selectedProperty.PublicRemarks}
-                  </p>
+                  <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, color: "#374151" }}>Description</h4>
+                  <p style={{ fontSize: 14, color: "#6b7280", lineHeight: 1.6 }}>{selectedProperty.PublicRemarks}</p>
                 </div>
               )}
 
               {/* Media gallery thumbnails — click to enlarge */}
-              {selectedProperty.Media && selectedProperty.Media.length > 0 && (() => {
-                const sortedMedia = [...selectedProperty.Media].sort((a, b) => (a.Order || 0) - (b.Order || 0));
-                return (
-                  <div style={{ marginBottom: 20 }}>
-                    <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, color: "#374151" }}>
-                      Photos ({sortedMedia.length})
-                    </h4>
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: 8,
-                        overflowX: "auto",
-                        paddingBottom: 8,
-                      }}
-                    >
-                      {sortedMedia.map((media, idx) => {
-                        const url = media.MediaURL || "";
-                        const isImage = /\.(jpg|jpeg|png|gif|webp|bmp|tiff?)$/i.test(url) || media.MediaType?.toLowerCase().includes("image") || (!url.match(/\.(pdf|doc|docx|xls|xlsx)$/i) && !media.ShortDescription?.toLowerCase().includes("addendum"));
-                        return isImage ? (
-                          <img
-                            key={media.MediaKey}
-                            src={url}
-                            alt={media.ShortDescription || "Property photo"}
-                            onClick={() => setLightboxPhoto({ url, index: idx, total: sortedMedia.length, allPhotos: sortedMedia })}
-                            style={{
-                              width: 120,
-                              height: 80,
-                              objectFit: "cover",
-                              borderRadius: 6,
-                              flexShrink: 0,
-                              cursor: "pointer",
-                              border: "2px solid transparent",
-                              transition: "border-color 0.15s",
-                            }}
-                            onMouseEnter={e => (e.currentTarget.style.borderColor = "#4f46e5")}
-                            onMouseLeave={e => (e.currentTarget.style.borderColor = "transparent")}
-                            onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-                          />
-                        ) : (
-                          <a
-                            key={media.MediaKey}
-                            href={url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{
-                              width: 120, height: 80, borderRadius: 6, flexShrink: 0,
-                              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                              background: "#f3f4f6", border: "2px solid #e5e7eb",
-                              cursor: "pointer", textDecoration: "none",
-                            }}
-                          >
-                            <span style={{ fontSize: 24 }}>📄</span>
-                            <span style={{ fontSize: 9, color: "#6b7280", textAlign: "center", padding: "0 4px" }}>
-                              {media.ShortDescription || "Document"}
-                            </span>
-                          </a>
-                        );
-                      })}
+              {selectedProperty.Media &&
+                selectedProperty.Media.length > 0 &&
+                (() => {
+                  const sortedMedia = [...selectedProperty.Media].sort((a, b) => (a.Order || 0) - (b.Order || 0));
+                  return (
+                    <div style={{ marginBottom: 20 }}>
+                      <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, color: "#374151" }}>
+                        Photos ({sortedMedia.length})
+                      </h4>
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: 8,
+                          overflowX: "auto",
+                          paddingBottom: 8,
+                        }}
+                      >
+                        {sortedMedia.map((media, idx) => {
+                          const url = media.MediaURL || "";
+                          const isImage =
+                            /\.(jpg|jpeg|png|gif|webp|bmp|tiff?)$/i.test(url) ||
+                            media.MediaType?.toLowerCase().includes("image") ||
+                            (!url.match(/\.(pdf|doc|docx|xls|xlsx)$/i) &&
+                              !media.ShortDescription?.toLowerCase().includes("addendum"));
+                          return isImage ? (
+                            <img
+                              key={media.MediaKey}
+                              src={url}
+                              alt={media.ShortDescription || "Property photo"}
+                              onClick={() =>
+                                setLightboxPhoto({ url, index: idx, total: sortedMedia.length, allPhotos: sortedMedia })
+                              }
+                              style={{
+                                width: 120,
+                                height: 80,
+                                objectFit: "cover",
+                                borderRadius: 6,
+                                flexShrink: 0,
+                                cursor: "pointer",
+                                border: "2px solid transparent",
+                                transition: "border-color 0.15s",
+                              }}
+                              onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#4f46e5")}
+                              onMouseLeave={(e) => (e.currentTarget.style.borderColor = "transparent")}
+                              onError={(e) => {
+                                (e.currentTarget as HTMLImageElement).style.display = "none";
+                              }}
+                            />
+                          ) : (
+                            <a
+                              key={media.MediaKey}
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                width: 120,
+                                height: 80,
+                                borderRadius: 6,
+                                flexShrink: 0,
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                background: "#f3f4f6",
+                                border: "2px solid #e5e7eb",
+                                cursor: "pointer",
+                                textDecoration: "none",
+                              }}
+                            >
+                              <span style={{ fontSize: 24 }}>📄</span>
+                              <span style={{ fontSize: 9, color: "#6b7280", textAlign: "center", padding: "0 4px" }}>
+                                {media.ShortDescription || "Document"}
+                              </span>
+                            </a>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                );
-              })()}
+                  );
+                })()}
 
               {/* Property Intelligence — Embedded PropertyDetailModal */}
               {attomLoading && (
@@ -2784,7 +3229,16 @@ export default function MLSClient() {
               )}
 
               {attomError && !attomData && (
-                <div style={{ padding: 10, background: "#f9fafb", borderRadius: 8, fontSize: 13, color: "#9ca3af", marginBottom: 16 }}>
+                <div
+                  style={{
+                    padding: 10,
+                    background: "#f9fafb",
+                    borderRadius: 8,
+                    fontSize: 13,
+                    color: "#9ca3af",
+                    marginBottom: 16,
+                  }}
+                >
                   {attomError}
                 </div>
               )}
@@ -2794,7 +3248,9 @@ export default function MLSClient() {
                   property={attomData}
                   onClose={() => {}}
                   embedded
-                  mlsPhotos={selectedProperty?.Media?.filter((m) => (m.MediaType || "").startsWith("image")).map((m) => m.MediaURL).slice(0, 6)}
+                  mlsPhotos={selectedProperty?.Media?.filter((m) => (m.MediaType || "").startsWith("image"))
+                    .map((m) => m.MediaURL)
+                    .slice(0, 6)}
                   mlsListPrice={selectedProperty?.ListPrice}
                 />
               )}
@@ -2938,8 +3394,8 @@ export default function MLSClient() {
                 ${sendProperty.ListPrice?.toLocaleString()} — {getAddress(sendProperty)}
               </div>
               <div style={{ color: "#6b7280" }}>
-                {sendProperty.City}, {sendProperty.StateOrProvince} |{" "}
-                MLS# {sendProperty.ListingId || sendProperty.ListingKey}
+                {sendProperty.City}, {sendProperty.StateOrProvince} | MLS#{" "}
+                {sendProperty.ListingId || sendProperty.ListingKey}
               </div>
             </div>
 
@@ -3003,10 +3459,16 @@ export default function MLSClient() {
 
             {/* Contact error */}
             {contactError && (
-              <div style={{
-                padding: 12, background: "#fee2e2", color: "#dc2626",
-                borderRadius: 8, marginBottom: 12, fontSize: 13,
-              }}>
+              <div
+                style={{
+                  padding: 12,
+                  background: "#fee2e2",
+                  color: "#dc2626",
+                  borderRadius: 8,
+                  marginBottom: 12,
+                  fontSize: 13,
+                }}
+              >
                 {contactError}
               </div>
             )}
@@ -3040,12 +3502,8 @@ export default function MLSClient() {
                     }}
                   >
                     <div>
-                      <div style={{ fontWeight: 600, fontSize: 14 }}>
-                        {getContactDisplayName(contact)}
-                      </div>
-                      {contact.email && (
-                        <div style={{ fontSize: 12, color: "#6b7280" }}>{contact.email}</div>
-                      )}
+                      <div style={{ fontWeight: 600, fontSize: 14 }}>{getContactDisplayName(contact)}</div>
+                      {contact.email && <div style={{ fontSize: 12, color: "#6b7280" }}>{contact.email}</div>}
                     </div>
                     <button
                       onClick={() => sendToContact(contact.id)}
@@ -3064,8 +3522,12 @@ export default function MLSClient() {
                       }}
                     >
                       {sendingContactId === contact.id
-                        ? (sendMode === "email" ? "Sending..." : "Attaching...")
-                        : (sendMode === "email" ? "Send" : "Attach")}
+                        ? sendMode === "email"
+                          ? "Sending..."
+                          : "Attaching..."
+                        : sendMode === "email"
+                          ? "Send"
+                          : "Attach"}
                     </button>
                   </div>
                 ))}
@@ -3080,9 +3542,17 @@ export default function MLSClient() {
         <div
           onClick={() => setLightboxPhoto(null)}
           style={{
-            position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
-            background: "rgba(0,0,0,0.9)", zIndex: 99999,
-            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,0.9)",
+            zIndex: 99999,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
             cursor: "pointer",
           }}
         >
@@ -3090,10 +3560,17 @@ export default function MLSClient() {
           <button
             onClick={() => setLightboxPhoto(null)}
             style={{
-              position: "absolute", top: 16, right: 16,
-              background: "rgba(255,255,255,0.2)", border: "none",
-              color: "#fff", fontSize: 24, width: 40, height: 40,
-              borderRadius: "50%", cursor: "pointer",
+              position: "absolute",
+              top: 16,
+              right: 16,
+              background: "rgba(255,255,255,0.2)",
+              border: "none",
+              color: "#fff",
+              fontSize: 24,
+              width: 40,
+              height: 40,
+              borderRadius: "50%",
+              cursor: "pointer",
             }}
           >
             &times;
@@ -3108,12 +3585,14 @@ export default function MLSClient() {
           <img
             src={lightboxPhoto.url}
             alt="Property photo"
-            onClick={e => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
             style={{
-              maxWidth: "90vw", maxHeight: "80vh",
-              objectFit: "contain", borderRadius: 8,
+              maxWidth: "90vw",
+              maxHeight: "80vh",
+              objectFit: "contain",
+              borderRadius: 8,
             }}
-            onError={e => {
+            onError={(e) => {
               // If image fails to load (PDF, doc, etc.), show a download link instead
               const el = e.currentTarget;
               el.style.display = "none";
@@ -3133,16 +3612,24 @@ export default function MLSClient() {
           {/* Navigation arrows */}
           {lightboxPhoto.index > 0 && (
             <button
-              onClick={e => {
+              onClick={(e) => {
                 e.stopPropagation();
                 const prev = lightboxPhoto.allPhotos[lightboxPhoto.index - 1];
                 setLightboxPhoto({ ...lightboxPhoto, url: prev.MediaURL, index: lightboxPhoto.index - 1 });
               }}
               style={{
-                position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)",
-                background: "rgba(255,255,255,0.2)", border: "none",
-                color: "#fff", fontSize: 28, width: 48, height: 48,
-                borderRadius: "50%", cursor: "pointer",
+                position: "absolute",
+                left: 16,
+                top: "50%",
+                transform: "translateY(-50%)",
+                background: "rgba(255,255,255,0.2)",
+                border: "none",
+                color: "#fff",
+                fontSize: 28,
+                width: 48,
+                height: 48,
+                borderRadius: "50%",
+                cursor: "pointer",
               }}
             >
               &#8249;
@@ -3150,16 +3637,24 @@ export default function MLSClient() {
           )}
           {lightboxPhoto.index < lightboxPhoto.total - 1 && (
             <button
-              onClick={e => {
+              onClick={(e) => {
                 e.stopPropagation();
                 const next = lightboxPhoto.allPhotos[lightboxPhoto.index + 1];
                 setLightboxPhoto({ ...lightboxPhoto, url: next.MediaURL, index: lightboxPhoto.index + 1 });
               }}
               style={{
-                position: "absolute", right: 16, top: "50%", transform: "translateY(-50%)",
-                background: "rgba(255,255,255,0.2)", border: "none",
-                color: "#fff", fontSize: 28, width: 48, height: 48,
-                borderRadius: "50%", cursor: "pointer",
+                position: "absolute",
+                right: 16,
+                top: "50%",
+                transform: "translateY(-50%)",
+                background: "rgba(255,255,255,0.2)",
+                border: "none",
+                color: "#fff",
+                fontSize: 28,
+                width: 48,
+                height: 48,
+                borderRadius: "50%",
+                cursor: "pointer",
               }}
             >
               &#8250;

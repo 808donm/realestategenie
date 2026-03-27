@@ -463,7 +463,7 @@ export class RentcastClient {
 
   private async request<T>(
     endpoint: string,
-    params?: Record<string, string | number | boolean | undefined>
+    params?: Record<string, string | number | boolean | undefined>,
   ): Promise<T> {
     const url = new URL(`${this.baseUrl}${endpoint}`);
 
@@ -488,17 +488,21 @@ export class RentcastClient {
     // Log API call (non-blocking)
     try {
       const { logApiCall } = await import("@/lib/api-call-logger");
-      logApiCall({ provider: "rentcast", endpoint, method: "GET", statusCode: response.status, responseTimeMs: Date.now() - start });
-    } catch { /* ignore in non-Next.js contexts */ }
+      logApiCall({
+        provider: "rentcast",
+        endpoint,
+        method: "GET",
+        statusCode: response.status,
+        responseTimeMs: Date.now() - start,
+      });
+    } catch {
+      /* ignore in non-Next.js contexts */
+    }
 
     if (!response.ok) {
       const errorBody = await response.text().catch(() => "");
-      console.error(
-        `[Rentcast] API error ${response.status}: ${errorBody.slice(0, 500)}`
-      );
-      throw new Error(
-        `Rentcast API error ${response.status}: ${response.statusText}`
-      );
+      console.error(`[Rentcast] API error ${response.status}: ${errorBody.slice(0, 500)}`);
+      throw new Error(`Rentcast API error ${response.status}: ${response.statusText}`);
     }
 
     return response.json() as Promise<T>;
@@ -509,17 +513,13 @@ export class RentcastClient {
   // -------------------------------------------------------------------------
 
   /** Search property records by area, address, or coordinates. */
-  async searchProperties(
-    params: RentcastPropertySearchParams
-  ): Promise<RentcastProperty[]> {
+  async searchProperties(params: RentcastPropertySearchParams): Promise<RentcastProperty[]> {
     return this.request<RentcastProperty[]>("/properties", params as any);
   }
 
   /** Get a single property record by its Rentcast ID. */
   async getPropertyById(id: string): Promise<RentcastProperty> {
-    return this.request<RentcastProperty>(
-      `/properties/${encodeURIComponent(id)}`
-    );
+    return this.request<RentcastProperty>(`/properties/${encodeURIComponent(id)}`);
   }
 
   /** Get random property records (useful for testing). */
@@ -532,20 +532,13 @@ export class RentcastClient {
   // -------------------------------------------------------------------------
 
   /** Get a sale value estimate with comparables. */
-  async getValueEstimate(
-    params: RentcastAvmParams
-  ): Promise<RentcastValueEstimate> {
+  async getValueEstimate(params: RentcastAvmParams): Promise<RentcastValueEstimate> {
     return this.request<RentcastValueEstimate>("/avm/value", params as any);
   }
 
   /** Get a long-term rent estimate with comparables. */
-  async getRentEstimate(
-    params: RentcastAvmParams
-  ): Promise<RentcastRentEstimate> {
-    return this.request<RentcastRentEstimate>(
-      "/avm/rent/long-term",
-      params as any
-    );
+  async getRentEstimate(params: RentcastAvmParams): Promise<RentcastRentEstimate> {
+    return this.request<RentcastRentEstimate>("/avm/rent/long-term", params as any);
   }
 
   // -------------------------------------------------------------------------
@@ -553,34 +546,23 @@ export class RentcastClient {
   // -------------------------------------------------------------------------
 
   /** Search active/inactive sale listings. */
-  async getSaleListings(
-    params: RentcastListingSearchParams
-  ): Promise<RentcastListing[]> {
+  async getSaleListings(params: RentcastListingSearchParams): Promise<RentcastListing[]> {
     return this.request<RentcastListing[]>("/listings/sale", params as any);
   }
 
   /** Get a single sale listing by ID. */
   async getSaleListingById(id: string): Promise<RentcastListing> {
-    return this.request<RentcastListing>(
-      `/listings/sale/${encodeURIComponent(id)}`
-    );
+    return this.request<RentcastListing>(`/listings/sale/${encodeURIComponent(id)}`);
   }
 
   /** Search active/inactive long-term rental listings. */
-  async getRentalListings(
-    params: RentcastListingSearchParams
-  ): Promise<RentcastListing[]> {
-    return this.request<RentcastListing[]>(
-      "/listings/rental/long-term",
-      params as any
-    );
+  async getRentalListings(params: RentcastListingSearchParams): Promise<RentcastListing[]> {
+    return this.request<RentcastListing[]>("/listings/rental/long-term", params as any);
   }
 
   /** Get a single rental listing by ID. */
   async getRentalListingById(id: string): Promise<RentcastListing> {
-    return this.request<RentcastListing>(
-      `/listings/rental/long-term/${encodeURIComponent(id)}`
-    );
+    return this.request<RentcastListing>(`/listings/rental/long-term/${encodeURIComponent(id)}`);
   }
 
   // -------------------------------------------------------------------------
@@ -588,9 +570,7 @@ export class RentcastClient {
   // -------------------------------------------------------------------------
 
   /** Get aggregate sale & rental market statistics for a zip code / city. */
-  async getMarketData(
-    params: RentcastMarketParams
-  ): Promise<RentcastMarketData> {
+  async getMarketData(params: RentcastMarketParams): Promise<RentcastMarketData> {
     return this.request<RentcastMarketData>("/markets", params as any);
   }
 
@@ -666,7 +646,9 @@ export function mapRentcastToRealieParcel(rc: RentcastProperty): RealieParcel {
   let transferDate: string | undefined;
   let transferPrice: number | undefined;
   if (rc.lastSaleDate || rc.lastSalePrice) {
-    console.log(`[Rentcast→Parcel] ${rc.formattedAddress}: lastSaleDate=${rc.lastSaleDate}, lastSalePrice=${rc.lastSalePrice}`);
+    console.log(
+      `[Rentcast→Parcel] ${rc.formattedAddress}: lastSaleDate=${rc.lastSaleDate}, lastSalePrice=${rc.lastSalePrice}`,
+    );
   }
   if (rc.lastSaleDate) {
     transferDate = rc.lastSaleDate;
@@ -819,16 +801,29 @@ export function createRentcastClient(apiKey?: string): RentcastClient | null {
  */
 export function mapAttomParamsToRentcast(
   endpoint: string,
-  params: Record<string, any>
+  params: Record<string, any>,
 ): RentcastPropertySearchParams | null {
   const propertyEndpoints = [
-    "expanded", "detail", "detailowner", "detailmortgage",
-    "detailmortgageowner", "profile", "snapshot",
-    "assessment", "assessmentsnapshot",
-    "sale", "salesnapshot", "saleshistory", "saleshistorybasic",
-    "saleshistoryexpanded", "saleshistorysnapshot",
-    "avm", "attomavm", "avmhistory",
-    "parcelboundary", "id",
+    "expanded",
+    "detail",
+    "detailowner",
+    "detailmortgage",
+    "detailmortgageowner",
+    "profile",
+    "snapshot",
+    "assessment",
+    "assessmentsnapshot",
+    "sale",
+    "salesnapshot",
+    "saleshistory",
+    "saleshistorybasic",
+    "saleshistoryexpanded",
+    "saleshistorysnapshot",
+    "avm",
+    "attomavm",
+    "avmhistory",
+    "parcelboundary",
+    "id",
     "comparables",
   ];
 
@@ -861,11 +856,11 @@ export function mapAttomParamsToRentcast(
   const propType = params.propertytype || params.propertyType;
   if (propType) {
     const typeMap: Record<string, string> = {
-      "SFR": "Single Family",
-      "CONDO": "Condo",
-      "APARTMENT": "Multi-Family",
-      "MOBILE": "Manufactured",
-      "LAND": "Land",
+      SFR: "Single Family",
+      CONDO: "Condo",
+      APARTMENT: "Multi-Family",
+      MOBILE: "Manufactured",
+      LAND: "Land",
       // ATTOM numeric codes
       "10": "Single Family",
       "11": "Condo",
@@ -934,8 +929,15 @@ export function mapRentcastToAttomShape(rc: RentcastProperty): any {
   // Owner mailing address
   const ownerMailing = rc.owner?.mailingAddress;
   const mailingOneLine = ownerMailing
-    ? [ownerMailing.addressLine1, ownerMailing.addressLine2, ownerMailing.city, ownerMailing.state, ownerMailing.zipCode]
-        .filter(Boolean).join(", ")
+    ? [
+        ownerMailing.addressLine1,
+        ownerMailing.addressLine2,
+        ownerMailing.city,
+        ownerMailing.state,
+        ownerMailing.zipCode,
+      ]
+        .filter(Boolean)
+        .join(", ")
     : undefined;
 
   // Most recent tax assessment
@@ -988,9 +990,7 @@ export function mapRentcastToAttomShape(rc: RentcastProperty): any {
   }
 
   // Price per sqft
-  const pricePerSqft = saleAmt && rc.squareFootage
-    ? Math.round(saleAmt / rc.squareFootage)
-    : undefined;
+  const pricePerSqft = saleAmt && rc.squareFootage ? Math.round(saleAmt / rc.squareFootage) : undefined;
 
   // Generate a stable numeric ID from RentCast string ID
   const numericId = hashStringToNumber(rc.id);
@@ -1059,9 +1059,7 @@ export function mapRentcastToAttomShape(rc: RentcastProperty): any {
       propType: rc.propertyType || undefined,
       propertyType: rc.propertyType || undefined,
       yearBuilt: rc.yearBuilt || undefined,
-      absenteeInd: ownerOccupied === false ? "ABSENTEE OWNER"
-        : ownerOccupied === true ? "OWNER OCCUPIED"
-        : undefined,
+      absenteeInd: ownerOccupied === false ? "ABSENTEE OWNER" : ownerOccupied === true ? "OWNER OCCUPIED" : undefined,
     },
     assessment: {
       assessed: {
@@ -1075,22 +1073,27 @@ export function mapRentcastToAttomShape(rc: RentcastProperty): any {
         taxYear: taxYear || assdYear || undefined,
       },
     },
-    avm: rc.lastSalePrice ? {
-      amount: {
-        value: rc.lastSalePrice,
-      },
-    } : undefined,
-    sale: (saleAmt || saleDate) ? {
-      amount: {
-        saleAmt: saleAmt || undefined,
-        salePrice: saleAmt || undefined,
-        saleTransDate: saleDate || undefined,
-        saleRecDate: saleDate || undefined,
-      },
-      calculation: {
-        pricePerSizeUnit: pricePerSqft || undefined,
-      },
-    } : undefined,
+    avm: rc.lastSalePrice
+      ? {
+          amount: {
+            value: rc.lastSalePrice,
+          },
+        }
+      : undefined,
+    sale:
+      saleAmt || saleDate
+        ? {
+            amount: {
+              saleAmt: saleAmt || undefined,
+              salePrice: saleAmt || undefined,
+              saleTransDate: saleDate || undefined,
+              saleRecDate: saleDate || undefined,
+            },
+            calculation: {
+              pricePerSizeUnit: pricePerSqft || undefined,
+            },
+          }
+        : undefined,
     hoa: rc.hoa?.fee ? { fee: rc.hoa.fee } : undefined,
     homeEquity: undefined,
     assessmenthistory: assessmentHistory,
@@ -1117,7 +1120,7 @@ function hashStringToNumber(str: string): number {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
+    hash = (hash << 5) - hash + char;
     hash = hash & hash; // Convert to 32-bit integer
   }
   return Math.abs(hash);

@@ -23,19 +23,13 @@ export async function POST(request: NextRequest) {
     const message = (formData.get("message") as string) || "";
 
     if (!file || !toEmail) {
-      return NextResponse.json(
-        { error: "File and toEmail are required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "File and toEmail are required" }, { status: 400 });
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(toEmail)) {
-      return NextResponse.json(
-        { error: "Invalid email address" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
     }
 
     // Validate file type
@@ -45,10 +39,7 @@ export async function POST(request: NextRequest) {
       "application/vnd.ms-excel",
     ];
     if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json(
-        { error: "Only PDF and Excel files are allowed" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Only PDF and Excel files are allowed" }, { status: 400 });
     }
 
     // Get sender info for the email
@@ -74,10 +65,7 @@ export async function POST(request: NextRequest) {
     const { Resend } = await import("resend");
     const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) {
-      return NextResponse.json(
-        { error: "Email service not configured. RESEND_API_KEY is missing." },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Email service not configured. RESEND_API_KEY is missing." }, { status: 500 });
     }
 
     const resend = new Resend(apiKey);
@@ -143,7 +131,9 @@ export async function POST(request: NextRequest) {
                 </tr>
               </table>
 
-              ${contactBlock ? `
+              ${
+                contactBlock
+                  ? `
               <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f0fdf4; border-radius: 8px; border-left: 4px solid #10b981; margin: 20px 0;">
                 <tr>
                   <td style="padding: 16px 20px;">
@@ -156,7 +146,9 @@ export async function POST(request: NextRequest) {
                   </td>
                 </tr>
               </table>
-              ` : ""}
+              `
+                  : ""
+              }
 
               <p style="margin: 20px 0 0; font-size: 14px; line-height: 1.6; color: #6b7280;">
                 If you have any questions about this report, please reach out to your agent directly.
@@ -209,7 +201,7 @@ export async function POST(request: NextRequest) {
       console.error("Resend send-report error:", error);
       return NextResponse.json(
         { error: `Failed to send email: ${(error as any).message || "Unknown error"}` },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -221,17 +213,10 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error("Error in send-report route:", error);
-    return NextResponse.json(
-      { error: error.message || "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
   }
 }
 
 function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }

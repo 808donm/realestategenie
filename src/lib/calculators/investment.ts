@@ -85,11 +85,7 @@ export interface YearlyProjection {
 /**
  * Calculate monthly mortgage payment (Principal & Interest)
  */
-export function calculateMonthlyMortgage(
-  loanAmount: number,
-  annualInterestRate: number,
-  termYears: number
-): number {
+export function calculateMonthlyMortgage(loanAmount: number, annualInterestRate: number, termYears: number): number {
   if (loanAmount <= 0 || termYears <= 0) return 0;
   if (annualInterestRate <= 0) return loanAmount / (termYears * 12);
 
@@ -110,7 +106,7 @@ export function calculateLoanBalance(
   originalLoanAmount: number,
   annualInterestRate: number,
   termYears: number,
-  monthsElapsed: number
+  monthsElapsed: number,
 ): number {
   if (originalLoanAmount <= 0 || monthsElapsed <= 0) return originalLoanAmount;
   if (monthsElapsed >= termYears * 12) return 0;
@@ -124,8 +120,7 @@ export function calculateLoanBalance(
 
   const balance =
     originalLoanAmount *
-    ((Math.pow(1 + monthlyRate, numPayments) -
-      Math.pow(1 + monthlyRate, monthsElapsed)) /
+    ((Math.pow(1 + monthlyRate, numPayments) - Math.pow(1 + monthlyRate, monthsElapsed)) /
       (Math.pow(1 + monthlyRate, numPayments) - 1));
 
   return Math.max(0, balance);
@@ -134,11 +129,7 @@ export function calculateLoanBalance(
 /**
  * Calculate Net Operating Income (NOI)
  */
-export function calculateNOI(
-  grossAnnualIncome: number,
-  vacancyRatePercent: number,
-  operatingExpenses: number
-): number {
+export function calculateNOI(grossAnnualIncome: number, vacancyRatePercent: number, operatingExpenses: number): number {
   const effectiveIncome = grossAnnualIncome * (1 - vacancyRatePercent / 100);
   return effectiveIncome - operatingExpenses;
 }
@@ -154,10 +145,7 @@ export function calculateCapRate(noi: number, propertyValue: number): number {
 /**
  * Calculate Cash-on-Cash Return
  */
-export function calculateCashOnCash(
-  annualCashFlow: number,
-  totalCashInvested: number
-): number {
+export function calculateCashOnCash(annualCashFlow: number, totalCashInvested: number): number {
   if (totalCashInvested <= 0) return 0;
   return (annualCashFlow / totalCashInvested) * 100;
 }
@@ -206,27 +194,18 @@ export function analyzeProperty(input: PropertyInput): PropertyAnalysis {
   // Initial Investment
   const downPayment = input.purchasePrice * (input.downPaymentPercent / 100);
   const loanAmount = input.purchasePrice - downPayment;
-  const totalInvestment =
-    downPayment + input.closingCosts + input.renovationCosts;
+  const totalInvestment = downPayment + input.closingCosts + input.renovationCosts;
 
   // Monthly mortgage
-  const monthlyMortgage = calculateMonthlyMortgage(
-    loanAmount,
-    input.loanInterestRate,
-    input.loanTermYears
-  );
+  const monthlyMortgage = calculateMonthlyMortgage(loanAmount, input.loanInterestRate, input.loanTermYears);
 
   // Annual Income
-  const grossAnnualIncome =
-    (input.monthlyRent + input.otherMonthlyIncome) * 12;
-  const effectiveGrossIncome =
-    grossAnnualIncome * (1 - input.vacancyRatePercent / 100);
+  const grossAnnualIncome = (input.monthlyRent + input.otherMonthlyIncome) * 12;
+  const effectiveGrossIncome = grossAnnualIncome * (1 - input.vacancyRatePercent / 100);
 
   // Annual Operating Expenses (excluding debt service)
-  const maintenanceAnnual =
-    input.monthlyRent * 12 * (input.maintenancePercent / 100);
-  const propertyMgmtAnnual =
-    input.monthlyRent * 12 * (input.propertyMgmtPercent / 100);
+  const maintenanceAnnual = input.monthlyRent * 12 * (input.maintenancePercent / 100);
+  const propertyMgmtAnnual = input.monthlyRent * 12 * (input.propertyMgmtPercent / 100);
 
   const annualOperatingExpenses =
     input.propertyTaxAnnual +
@@ -253,18 +232,11 @@ export function analyzeProperty(input: PropertyInput): PropertyAnalysis {
   const cashFlows: number[] = [-totalInvestment]; // Initial investment (negative)
 
   for (let year = 1; year <= input.holdingPeriodYears; year++) {
-    const rentMultiplier = Math.pow(
-      1 + input.annualRentIncreasePercent / 100,
-      year - 1
-    );
-    const appreciationMultiplier = Math.pow(
-      1 + input.annualAppreciationPercent / 100,
-      year
-    );
+    const rentMultiplier = Math.pow(1 + input.annualRentIncreasePercent / 100, year - 1);
+    const appreciationMultiplier = Math.pow(1 + input.annualAppreciationPercent / 100, year);
 
     const yearGrossIncome = grossAnnualIncome * rentMultiplier;
-    const yearEffectiveIncome =
-      yearGrossIncome * (1 - input.vacancyRatePercent / 100);
+    const yearEffectiveIncome = yearGrossIncome * (1 - input.vacancyRatePercent / 100);
 
     // Operating expenses grow with inflation (assume 2%)
     const expenseMultiplier = Math.pow(1.02, year - 1);
@@ -275,12 +247,7 @@ export function analyzeProperty(input: PropertyInput): PropertyAnalysis {
 
     const propertyValue = input.purchasePrice * appreciationMultiplier;
     const monthsElapsed = year * 12;
-    const loanBalance = calculateLoanBalance(
-      loanAmount,
-      input.loanInterestRate,
-      input.loanTermYears,
-      monthsElapsed
-    );
+    const loanBalance = calculateLoanBalance(loanAmount, input.loanInterestRate, input.loanTermYears, monthsElapsed);
     const equity = propertyValue - loanBalance;
 
     cumulativeCashFlow += yearCashFlow;
@@ -357,7 +324,7 @@ export interface PropertyComparison {
 }
 
 export function compareProperties(
-  properties: Array<{ id: string; name: string; input: PropertyInput }>
+  properties: Array<{ id: string; name: string; input: PropertyInput }>,
 ): PropertyComparison[] {
   const analyses = properties.map((p) => ({
     propertyId: p.id,
@@ -366,28 +333,16 @@ export function compareProperties(
   }));
 
   // Sort by each metric to assign rankings
-  const sortedByCapRate = [...analyses].sort(
-    (a, b) => b.analysis.capRate - a.analysis.capRate
-  );
-  const sortedByCashOnCash = [...analyses].sort(
-    (a, b) => b.analysis.cashOnCash - a.analysis.cashOnCash
-  );
-  const sortedByIRR = [...analyses].sort(
-    (a, b) => b.analysis.irr - a.analysis.irr
-  );
-  const sortedByROI = [...analyses].sort(
-    (a, b) => b.analysis.totalROI - a.analysis.totalROI
-  );
+  const sortedByCapRate = [...analyses].sort((a, b) => b.analysis.capRate - a.analysis.capRate);
+  const sortedByCashOnCash = [...analyses].sort((a, b) => b.analysis.cashOnCash - a.analysis.cashOnCash);
+  const sortedByIRR = [...analyses].sort((a, b) => b.analysis.irr - a.analysis.irr);
+  const sortedByROI = [...analyses].sort((a, b) => b.analysis.totalROI - a.analysis.totalROI);
 
   const comparisons: PropertyComparison[] = analyses.map((a) => {
-    const capRateRank =
-      sortedByCapRate.findIndex((x) => x.propertyId === a.propertyId) + 1;
-    const cashOnCashRank =
-      sortedByCashOnCash.findIndex((x) => x.propertyId === a.propertyId) + 1;
-    const irrRank =
-      sortedByIRR.findIndex((x) => x.propertyId === a.propertyId) + 1;
-    const roiRank =
-      sortedByROI.findIndex((x) => x.propertyId === a.propertyId) + 1;
+    const capRateRank = sortedByCapRate.findIndex((x) => x.propertyId === a.propertyId) + 1;
+    const cashOnCashRank = sortedByCashOnCash.findIndex((x) => x.propertyId === a.propertyId) + 1;
+    const irrRank = sortedByIRR.findIndex((x) => x.propertyId === a.propertyId) + 1;
+    const roiRank = sortedByROI.findIndex((x) => x.propertyId === a.propertyId) + 1;
 
     // Overall rank is average of all rankings
     const overallScore = (capRateRank + cashOnCashRank + irrRank + roiRank) / 4;

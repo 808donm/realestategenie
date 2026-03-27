@@ -5,11 +5,7 @@ import dynamic from "next/dynamic";
 import PropertySearch from "./property-search.client";
 
 const Prospecting = dynamic(() => import("./prospecting.client"), {
-  loading: () => (
-    <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>
-      Loading prospecting tools...
-    </div>
-  ),
+  loading: () => <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>Loading prospecting tools...</div>,
 });
 
 const tabs = [
@@ -44,10 +40,7 @@ export default function PropertyDataTabs() {
               color: activeTab === tab.id ? "#3b82f6" : "#6b7280",
               background: "transparent",
               border: "none",
-              borderBottom:
-                activeTab === tab.id
-                  ? "2px solid #3b82f6"
-                  : "2px solid transparent",
+              borderBottom: activeTab === tab.id ? "2px solid #3b82f6" : "2px solid transparent",
               cursor: "pointer",
               whiteSpace: "nowrap",
             }}

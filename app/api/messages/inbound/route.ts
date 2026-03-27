@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-const admin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 /**
  * Get inbound messages from contacts
@@ -14,30 +12,29 @@ const admin = createClient(
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const unreadOnly = searchParams.get('unreadOnly') === 'true';
-    const limit = parseInt(searchParams.get('limit') || '50');
+    const unreadOnly = searchParams.get("unreadOnly") === "true";
+    const limit = parseInt(searchParams.get("limit") || "50");
 
-    let query = admin
-      .from('inbound_messages')
-      .select('*')
-      .order('received_at', { ascending: false })
-      .limit(limit);
+    let query = admin.from("inbound_messages").select("*").order("received_at", { ascending: false }).limit(limit);
 
     if (unreadOnly) {
-      query = query.eq('read', false);
+      query = query.eq("read", false);
     }
 
     const { data: messages, error } = await query;
 
     if (error) {
-      return NextResponse.json({
-        error: error.message,
-      }, { status: 500 });
+      return NextResponse.json(
+        {
+          error: error.message,
+        },
+        { status: 500 },
+      );
     }
 
     // Group by contact for easier review
     const groupedByContact = messages?.reduce((acc: any, msg: any) => {
-      const contactId = msg.contact_id || 'unknown';
+      const contactId = msg.contact_id || "unknown";
       if (!acc[contactId]) {
         acc[contactId] = {
           contactId,
@@ -66,12 +63,14 @@ export async function GET(req: Request) {
       contacts,
       messages: messages || [],
     });
-
   } catch (error: any) {
-    return NextResponse.json({
-      error: error.message,
-      stack: error.stack,
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: error.message,
+        stack: error.stack,
+      },
+      { status: 500 },
+    );
   }
 }
 
@@ -86,30 +85,35 @@ export async function POST(req: Request) {
     const { messageIds } = body;
 
     if (!messageIds || !Array.isArray(messageIds)) {
-      return NextResponse.json({
-        error: 'messageIds array required',
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: "messageIds array required",
+        },
+        { status: 400 },
+      );
     }
 
-    const { error } = await admin
-      .from('inbound_messages')
-      .update({ read: true })
-      .in('id', messageIds);
+    const { error } = await admin.from("inbound_messages").update({ read: true }).in("id", messageIds);
 
     if (error) {
-      return NextResponse.json({
-        error: error.message,
-      }, { status: 500 });
+      return NextResponse.json(
+        {
+          error: error.message,
+        },
+        { status: 500 },
+      );
     }
 
     return NextResponse.json({
       success: true,
       markedAsRead: messageIds.length,
     });
-
   } catch (error: any) {
-    return NextResponse.json({
-      error: error.message,
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: error.message,
+      },
+      { status: 500 },
+    );
   }
 }

@@ -3,11 +3,9 @@ import { createClient } from "@supabase/supabase-js";
 import { logError } from "@/lib/error-logging";
 import crypto from "crypto";
 
-const admin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,19 +13,13 @@ export async function POST(request: NextRequest) {
 
     // Validation
     if (!fullName || !email || !phone) {
-      return NextResponse.json(
-        { error: "All fields are required: Full Name, Email, and Phone" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "All fields are required: Full Name, Email, and Phone" }, { status: 400 });
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return NextResponse.json(
-        { error: "Invalid email address" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
     }
 
     // Check if email already has an invitation
@@ -42,12 +34,12 @@ export async function POST(request: NextRequest) {
       if (existingInvitation.status === "accepted") {
         return NextResponse.json(
           { error: "An account with this email already exists. Please sign in." },
-          { status: 400 }
+          { status: 400 },
         );
       } else {
         return NextResponse.json(
           { error: "A pending invitation already exists for this email. Please check your inbox." },
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
@@ -59,7 +51,7 @@ export async function POST(request: NextRequest) {
     if (existingAuthUser) {
       return NextResponse.json(
         { error: "An account with this email already exists. Please sign in." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -90,10 +82,7 @@ export async function POST(request: NextRequest) {
         severity: "error",
       });
 
-      return NextResponse.json(
-        { error: "Failed to create account invitation" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to create account invitation" }, { status: 500 });
     }
 
     // Store phone and full name in a temporary table or metadata
@@ -118,9 +107,6 @@ export async function POST(request: NextRequest) {
       severity: "error",
     });
 
-    return NextResponse.json(
-      { error: "Registration failed. Please try again." },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Registration failed. Please try again." }, { status: 500 });
   }
 }

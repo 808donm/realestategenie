@@ -7,15 +7,20 @@ import type { TrestleProperty } from "@/lib/integrations/trestle-client";
  * Helper: build the standard response payload from a TrestleProperty
  */
 async function buildPropertyResponse(
-  client: { getPropertyMedia: (key: string) => Promise<{ value: { MediaURL: string; ShortDescription?: string; Order?: number }[] }> },
-  property: TrestleProperty
+  client: {
+    getPropertyMedia: (
+      key: string,
+    ) => Promise<{ value: { MediaURL: string; ShortDescription?: string; Order?: number }[] }>;
+  },
+  property: TrestleProperty,
 ) {
   // Get media separately if not already expanded
   let photos: { url: string; description: string }[] = [];
   if (property.Media && property.Media.length > 0) {
-    photos = property.Media
-      .sort((a, b) => (a.Order || 0) - (b.Order || 0))
-      .map((m) => ({ url: m.MediaURL, description: m.ShortDescription || "" }));
+    photos = property.Media.sort((a, b) => (a.Order || 0) - (b.Order || 0)).map((m) => ({
+      url: m.MediaURL,
+      description: m.ShortDescription || "",
+    }));
     console.log(`[MLS Lookup] Found ${photos.length} photos from expanded Media`);
   } else {
     try {
@@ -29,15 +34,14 @@ async function buildPropertyResponse(
       console.warn(`[MLS Lookup] Media fetch failed:`, mediaErr.message);
     }
   }
-  console.log(`[MLS Lookup] property_photo_url: ${photos.length > 0 ? photos[0].url?.substring(0, 60) + "..." : "NONE"}`);
+  console.log(
+    `[MLS Lookup] property_photo_url: ${photos.length > 0 ? photos[0].url?.substring(0, 60) + "..." : "NONE"}`,
+  );
 
   // Build address string
-  const addressParts = [
-    property.StreetNumber,
-    property.StreetName,
-    property.StreetSuffix,
-  ].filter(Boolean);
-  const fullAddress = property.UnparsedAddress ||
+  const addressParts = [property.StreetNumber, property.StreetName, property.StreetSuffix].filter(Boolean);
+  const fullAddress =
+    property.UnparsedAddress ||
     `${addressParts.join(" ")}, ${property.City}, ${property.StateOrProvince} ${property.PostalCode}`;
 
   // Build key features from available data
@@ -81,12 +85,9 @@ async function buildPropertyResponse(
  * Helper: build a compact summary for address search results list
  */
 function buildAddressCandidate(property: TrestleProperty) {
-  const addressParts = [
-    property.StreetNumber,
-    property.StreetName,
-    property.StreetSuffix,
-  ].filter(Boolean);
-  const fullAddress = property.UnparsedAddress ||
+  const addressParts = [property.StreetNumber, property.StreetName, property.StreetSuffix].filter(Boolean);
+  const fullAddress =
+    property.UnparsedAddress ||
     `${addressParts.join(" ")}, ${property.City}, ${property.StateOrProvince} ${property.PostalCode}`;
 
   return {
@@ -115,7 +116,9 @@ function buildAddressCandidate(property: TrestleProperty) {
 export async function POST(request: NextRequest) {
   try {
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await request.json();
@@ -213,7 +216,7 @@ export async function POST(request: NextRequest) {
     console.error("Error looking up MLS listing:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to look up listing" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -125,14 +125,14 @@ export default function FlipAnalyzerClient({ savedAnalyses }: FlipAnalyzerClient
   const verdict = useMemo(() => getFlipVerdict(analysis), [analysis]);
   const maoCalc = useMemo(
     () => calculateFlipMAO(formData.afterRepairValue, formData.renovationCosts),
-    [formData.afterRepairValue, formData.renovationCosts]
+    [formData.afterRepairValue, formData.renovationCosts],
   );
 
   // Rehab cost estimate
   const [rehabLevel, setRehabLevel] = useState<"cosmetic" | "moderate" | "major" | "gut">("moderate");
   const rehabEstimate = useMemo(
     () => estimateRehabCosts(formData.squareFeet, rehabLevel),
-    [formData.squareFeet, rehabLevel]
+    [formData.squareFeet, rehabLevel],
   );
 
   const handleSave = async () => {
@@ -249,7 +249,7 @@ export default function FlipAnalyzerClient({ savedAnalyses }: FlipAnalyzerClient
         ["Points", `${formData.loanPoints}%`],
         ["Points Cost", analysis.loanPointsCost],
         ["Interest During Hold", analysis.interestCostsDuringHold],
-        ["Down Payment Required", analysis.totalCashRequired]
+        ["Down Payment Required", analysis.totalCashRequired],
       );
     }
 
@@ -301,7 +301,7 @@ export default function FlipAnalyzerClient({ savedAnalyses }: FlipAnalyzerClient
       [],
       ["DEAL SCORE"],
       ["Score", `${analysis.dealScore.toFixed(1)} / 5`],
-      ["Verdict", verdict.verdict]
+      ["Verdict", verdict.verdict],
     );
 
     const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
@@ -315,20 +315,19 @@ export default function FlipAnalyzerClient({ savedAnalyses }: FlipAnalyzerClient
       ["Month", "Holding Costs", formData.useFinancing ? "Interest" : "", "Cumulative Costs"],
     ];
 
-    const monthlyHoldingCost = formData.propertyTaxMonthly + formData.insuranceMonthly +
-      formData.utilitiesMonthly + formData.otherHoldingCostsMonthly;
-    const monthlyInterest = formData.useFinancing ?
-      (formData.purchasePrice * (formData.loanToValuePercent / 100) * (formData.loanInterestRate / 100) / 12) : 0;
+    const monthlyHoldingCost =
+      formData.propertyTaxMonthly +
+      formData.insuranceMonthly +
+      formData.utilitiesMonthly +
+      formData.otherHoldingCostsMonthly;
+    const monthlyInterest = formData.useFinancing
+      ? (formData.purchasePrice * (formData.loanToValuePercent / 100) * (formData.loanInterestRate / 100)) / 12
+      : 0;
 
     let cumulative = 0;
     for (let i = 1; i <= formData.holdingPeriodMonths; i++) {
       cumulative += monthlyHoldingCost + monthlyInterest;
-      monthlyData.push([
-        i,
-        monthlyHoldingCost,
-        formData.useFinancing ? monthlyInterest : "",
-        cumulative,
-      ]);
+      monthlyData.push([i, monthlyHoldingCost, formData.useFinancing ? monthlyInterest : "", cumulative]);
     }
 
     const monthlySheet = XLSX.utils.aoa_to_sheet(monthlyData);
@@ -362,57 +361,68 @@ export default function FlipAnalyzerClient({ savedAnalyses }: FlipAnalyzerClient
     XLSX.writeFile(wb, fileName);
   };
 
-  const generateFile = useCallback((format: "pdf" | "xlsx"): Blob => {
-    if (format === "xlsx") {
-      const wb = XLSX.utils.book_new();
-      const data: (string | number)[][] = [
-        ["FLIP ANALYSIS"], [],
-        ["Property", formData.name || "Untitled"],
-        ["Address", formData.address || "N/A"],
-        [],
-        ["Purchase Price", formData.purchasePrice],
-        ["Renovation Costs", formData.renovationCosts],
-        ["After Repair Value", formData.afterRepairValue],
-        ["All-In Cost", analysis.allInCost],
-        [],
-        ["Gross Profit", analysis.grossProfit],
-        ["Net Profit", analysis.netProfit],
-        ["Profit Margin", `${analysis.profitMargin.toFixed(2)}%`],
-        ["ROI on Cash", `${analysis.roiOnCash.toFixed(2)}%`],
-        ["Annualized ROI", `${analysis.annualizedROI.toFixed(2)}%`],
-        ["Meets 70% Rule", analysis.meetsRule70 ? "YES" : "No"],
-        ["Deal Score", `${analysis.dealScore.toFixed(1)} / 5`],
-      ];
-      const sheet = XLSX.utils.aoa_to_sheet(data);
-      XLSX.utils.book_append_sheet(wb, sheet, "Flip Summary");
-      const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-      return new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-    }
-    const doc = new jsPDF();
-    const pw = doc.internal.pageSize.getWidth();
-    let y = 20;
-    doc.setFontSize(18); doc.setFont("helvetica", "bold");
-    doc.text("House Flip Analysis", pw / 2, y, { align: "center" }); y += 14;
-    doc.setFontSize(10); doc.setFont("helvetica", "normal");
-    [
-      ["Property:", formData.name || "Untitled"],
-      ["Purchase Price:", formatCurrency(formData.purchasePrice)],
-      ["Renovation:", formatCurrency(formData.renovationCosts)],
-      ["ARV:", formatCurrency(formData.afterRepairValue)],
-      ["All-In Cost:", formatCurrency(analysis.allInCost)],
-      ["", ""],
-      ["Gross Profit:", formatCurrency(analysis.grossProfit)],
-      ["Net Profit:", formatCurrency(analysis.netProfit)],
-      ["Profit Margin:", formatPercent(analysis.profitMargin)],
-      ["ROI on Cash:", formatPercent(analysis.roiOnCash)],
-      ["Annualized ROI:", formatPercent(analysis.annualizedROI)],
-      ["", ""],
-      ["Meets 70% Rule:", analysis.meetsRule70 ? "YES" : "No"],
-      ["Deal Score:", `${analysis.dealScore.toFixed(1)} / 5`],
-      ["Verdict:", verdict.verdict],
-    ].forEach(([l, v]) => { doc.text(l, 25, y); doc.text(v, pw - 25, y, { align: "right" }); y += 7; });
-    return new Blob([doc.output("arraybuffer")], { type: "application/pdf" });
-  }, [formData, analysis, verdict]);
+  const generateFile = useCallback(
+    (format: "pdf" | "xlsx"): Blob => {
+      if (format === "xlsx") {
+        const wb = XLSX.utils.book_new();
+        const data: (string | number)[][] = [
+          ["FLIP ANALYSIS"],
+          [],
+          ["Property", formData.name || "Untitled"],
+          ["Address", formData.address || "N/A"],
+          [],
+          ["Purchase Price", formData.purchasePrice],
+          ["Renovation Costs", formData.renovationCosts],
+          ["After Repair Value", formData.afterRepairValue],
+          ["All-In Cost", analysis.allInCost],
+          [],
+          ["Gross Profit", analysis.grossProfit],
+          ["Net Profit", analysis.netProfit],
+          ["Profit Margin", `${analysis.profitMargin.toFixed(2)}%`],
+          ["ROI on Cash", `${analysis.roiOnCash.toFixed(2)}%`],
+          ["Annualized ROI", `${analysis.annualizedROI.toFixed(2)}%`],
+          ["Meets 70% Rule", analysis.meetsRule70 ? "YES" : "No"],
+          ["Deal Score", `${analysis.dealScore.toFixed(1)} / 5`],
+        ];
+        const sheet = XLSX.utils.aoa_to_sheet(data);
+        XLSX.utils.book_append_sheet(wb, sheet, "Flip Summary");
+        const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+        return new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      }
+      const doc = new jsPDF();
+      const pw = doc.internal.pageSize.getWidth();
+      let y = 20;
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      doc.text("House Flip Analysis", pw / 2, y, { align: "center" });
+      y += 14;
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      [
+        ["Property:", formData.name || "Untitled"],
+        ["Purchase Price:", formatCurrency(formData.purchasePrice)],
+        ["Renovation:", formatCurrency(formData.renovationCosts)],
+        ["ARV:", formatCurrency(formData.afterRepairValue)],
+        ["All-In Cost:", formatCurrency(analysis.allInCost)],
+        ["", ""],
+        ["Gross Profit:", formatCurrency(analysis.grossProfit)],
+        ["Net Profit:", formatCurrency(analysis.netProfit)],
+        ["Profit Margin:", formatPercent(analysis.profitMargin)],
+        ["ROI on Cash:", formatPercent(analysis.roiOnCash)],
+        ["Annualized ROI:", formatPercent(analysis.annualizedROI)],
+        ["", ""],
+        ["Meets 70% Rule:", analysis.meetsRule70 ? "YES" : "No"],
+        ["Deal Score:", `${analysis.dealScore.toFixed(1)} / 5`],
+        ["Verdict:", verdict.verdict],
+      ].forEach(([l, v]) => {
+        doc.text(l, 25, y);
+        doc.text(v, pw - 25, y, { align: "right" });
+        y += 7;
+      });
+      return new Blob([doc.output("arraybuffer")], { type: "application/pdf" });
+    },
+    [formData, analysis, verdict],
+  );
 
   const inputStyle = {
     width: "100%",
@@ -522,9 +532,7 @@ export default function FlipAnalyzerClient({ savedAnalyses }: FlipAnalyzerClient
                       )}
                     </div>
                   </div>
-                  <div
-                    style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginTop: 12 }}
-                  >
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginTop: 12 }}>
                     <div>
                       <div style={{ fontSize: 12, color: "#6b7280" }}>Purchase</div>
                       <div style={{ fontWeight: 600 }}>{formatCurrency(item.purchase_price)}</div>
@@ -596,9 +604,7 @@ export default function FlipAnalyzerClient({ savedAnalyses }: FlipAnalyzerClient
 
             {/* Purchase */}
             <div style={sectionStyle}>
-              <h3 style={{ margin: "0 0 12px", fontSize: 16, fontWeight: 600, color: "#dc2626" }}>
-                Purchase
-              </h3>
+              <h3 style={{ margin: "0 0 12px", fontSize: 16, fontWeight: 600, color: "#dc2626" }}>Purchase</h3>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <div>
                   <label style={labelStyle}>Purchase Price</label>
@@ -635,9 +641,7 @@ export default function FlipAnalyzerClient({ savedAnalyses }: FlipAnalyzerClient
             {/* Financing */}
             <div style={sectionStyle}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: "#7c3aed" }}>
-                  Financing (Optional)
-                </h3>
+                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: "#7c3aed" }}>Financing (Optional)</h3>
                 <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
                   <input
                     type="checkbox"
@@ -684,9 +688,7 @@ export default function FlipAnalyzerClient({ savedAnalyses }: FlipAnalyzerClient
 
             {/* Renovation */}
             <div style={sectionStyle}>
-              <h3 style={{ margin: "0 0 12px", fontSize: 16, fontWeight: 600, color: "#ea580c" }}>
-                Renovation
-              </h3>
+              <h3 style={{ margin: "0 0 12px", fontSize: 16, fontWeight: 600, color: "#ea580c" }}>Renovation</h3>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <div>
                   <label style={labelStyle}>Renovation Costs</label>
@@ -742,8 +744,7 @@ export default function FlipAnalyzerClient({ savedAnalyses }: FlipAnalyzerClient
                   </select>
                 </div>
                 <div style={{ fontSize: 12, color: "#6b7280" }}>
-                  Estimate for {formData.squareFeet} sqft:{" "}
-                  <strong>{formatCurrency(rehabEstimate.low)}</strong> -{" "}
+                  Estimate for {formData.squareFeet} sqft: <strong>{formatCurrency(rehabEstimate.low)}</strong> -{" "}
                   <strong>{formatCurrency(rehabEstimate.high)}</strong>
                   <button
                     onClick={() => handleInputChange("renovationCosts", rehabEstimate.mid)}
@@ -809,9 +810,7 @@ export default function FlipAnalyzerClient({ savedAnalyses }: FlipAnalyzerClient
                   <input
                     type="number"
                     value={formData.otherHoldingCostsMonthly}
-                    onChange={(e) =>
-                      handleInputChange("otherHoldingCostsMonthly", parseFloat(e.target.value) || 0)
-                    }
+                    onChange={(e) => handleInputChange("otherHoldingCostsMonthly", parseFloat(e.target.value) || 0)}
                     style={inputStyle}
                   />
                 </div>
@@ -895,7 +894,7 @@ export default function FlipAnalyzerClient({ savedAnalyses }: FlipAnalyzerClient
                 calculatorName="Flip Analysis"
                 propertyAddress={formData.address}
                 summaryData={{
-                  "Property": formData.name || "Untitled",
+                  Property: formData.name || "Untitled",
                   "Purchase Price": formatCurrency(formData.purchasePrice),
                   "After Repair Value": formatCurrency(formData.afterRepairValue),
                   "Renovation Costs": formatCurrency(formData.renovationCosts),
@@ -904,7 +903,7 @@ export default function FlipAnalyzerClient({ savedAnalyses }: FlipAnalyzerClient
                   "Annualized ROI": formatPercent(analysis.annualizedROI),
                   "Deal Score": `${analysis.dealScore}/10`,
                   "Meets 70% Rule": analysis.meetsRule70 ? "Yes" : "No",
-                  "Verdict": verdict.verdict,
+                  Verdict: verdict.verdict,
                 }}
               />
             </div>
@@ -959,9 +958,7 @@ export default function FlipAnalyzerClient({ savedAnalyses }: FlipAnalyzerClient
                 marginBottom: 16,
               }}
             >
-              <h4 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "#6b7280" }}>
-                PROFIT SUMMARY
-              </h4>
+              <h4 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "#6b7280" }}>PROFIT SUMMARY</h4>
               <div style={{ display: "grid", gap: 12 }}>
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
                   <span>Gross Profit</span>
@@ -1038,9 +1035,7 @@ export default function FlipAnalyzerClient({ savedAnalyses }: FlipAnalyzerClient
                 marginBottom: 16,
               }}
             >
-              <h4 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "#6b7280" }}>
-                COST BREAKDOWN
-              </h4>
+              <h4 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "#6b7280" }}>COST BREAKDOWN</h4>
               <div style={{ display: "grid", gap: 8, fontSize: 14 }}>
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
                   <span>Purchase + Closing</span>

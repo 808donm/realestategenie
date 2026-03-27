@@ -3,21 +3,16 @@ import { createClient } from "@supabase/supabase-js";
 import { logError } from "@/lib/error-logging";
 import { createGHLSubAccount } from "@/lib/integrations/ghl-sub-account";
 
-const admin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 export async function POST(request: NextRequest) {
   try {
     const { invitationId, email, password, fullName, verificationCode } = await request.json();
 
     if (!invitationId || !email || !password || !fullName || !verificationCode) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
     // Verify invitation
@@ -30,47 +25,32 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (inviteError || !invitation) {
-      return NextResponse.json(
-        { error: "Invalid or expired invitation" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid or expired invitation" }, { status: 400 });
     }
 
     // Check invitation expiration
     if (new Date(invitation.expires_at) < new Date()) {
-      await admin
-        .from("user_invitations")
-        .update({ status: "expired" })
-        .eq("id", invitationId);
+      await admin.from("user_invitations").update({ status: "expired" }).eq("id", invitationId);
 
-      return NextResponse.json(
-        { error: "Invitation has expired" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invitation has expired" }, { status: 400 });
     }
 
     // Verify the verification code
     if (!invitation.verification_code) {
       return NextResponse.json(
         { error: "Verification code not generated. Please request a new code." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Check verification code expiration
     if (new Date(invitation.verification_code_expires_at) < new Date()) {
-      return NextResponse.json(
-        { error: "Verification code has expired. Please request a new code." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Verification code has expired. Please request a new code." }, { status: 400 });
     }
 
     // Check verification attempts (max 5 attempts)
     if (invitation.verification_attempts >= 5) {
-      return NextResponse.json(
-        { error: "Too many failed attempts. Please request a new code." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Too many failed attempts. Please request a new code." }, { status: 400 });
     }
 
     // Verify code matches
@@ -83,20 +63,13 @@ export async function POST(request: NextRequest) {
         })
         .eq("id", invitationId);
 
-      return NextResponse.json(
-        { error: "Invalid verification code. Please try again." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid verification code. Please try again." }, { status: 400 });
     }
 
     // Check if user already exists as an agent or in auth
     const { data: usersList } = await admin.auth.admin.listUsers();
     const existingAuthUser = usersList?.users?.find((u) => u.email === email);
-    const { data: existingAgent } = await admin
-      .from("agents")
-      .select("id")
-      .eq("email", email)
-      .maybeSingle();
+    const { data: existingAgent } = await admin.from("agents").select("id").eq("email", email).maybeSingle();
 
     // Check if email exists in lead submissions (stored in JSONB payload)
     const { data: existingLeads, error: leadCheckError } = await admin
@@ -168,8 +141,10 @@ export async function POST(request: NextRequest) {
         severity: "error",
       });
       return NextResponse.json(
-        { error: `Database error creating new user: ${authError?.message || "Unknown error"}. Please try again or contact support if the issue persists.` },
-        { status: 500 }
+        {
+          error: `Database error creating new user: ${authError?.message || "Unknown error"}. Please try again or contact support if the issue persists.`,
+        },
+        { status: 500 },
       );
     }
 
@@ -179,16 +154,11 @@ export async function POST(request: NextRequest) {
     // No need to manually insert into agents table
 
     // Auto-admin: if this is the first agent on the site, grant admin privileges
-    const { count: agentCount } = await admin
-      .from("agents")
-      .select("id", { count: "exact", head: true });
+    const { count: agentCount } = await admin.from("agents").select("id", { count: "exact", head: true });
 
     if (agentCount !== null && agentCount <= 1) {
       console.log(`First agent on site — granting admin privileges to ${email}`);
-      await admin
-        .from("agents")
-        .update({ is_admin: true, role: "admin" })
-        .eq("id", authData.user.id);
+      await admin.from("agents").update({ is_admin: true, role: "admin" }).eq("id", authData.user.id);
     }
 
     // Mark invitation as accepted
@@ -266,9 +236,6 @@ export async function POST(request: NextRequest) {
       stackTrace: error.stack,
       severity: "error",
     });
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

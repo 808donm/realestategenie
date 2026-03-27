@@ -96,15 +96,9 @@ export default function ManageSubscriptionForm({
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Alert Messages */}
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
-              {error}
-            </div>
-          )}
+          {error && <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">{error}</div>}
           {success && (
-            <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">
-              {success}
-            </div>
+            <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">{success}</div>
           )}
 
           {/* Current Plan */}
@@ -113,8 +107,7 @@ export default function ManageSubscriptionForm({
               <h3 className="font-semibold text-blue-900 mb-2">Current Subscription</h3>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <span className="text-blue-700">Plan:</span>{" "}
-                  <span className="font-medium">{currentPlan.name}</span>
+                  <span className="text-blue-700">Plan:</span> <span className="font-medium">{currentPlan.name}</span>
                 </div>
                 <div>
                   <span className="text-blue-700">Status:</span>{" "}
@@ -140,9 +133,7 @@ export default function ManageSubscriptionForm({
 
           {/* Plan Selection */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Subscription Plan *
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Subscription Plan *</label>
             <select
               value={formData.plan_id}
               onChange={(e) => setFormData({ ...formData, plan_id: e.target.value })}
@@ -160,9 +151,7 @@ export default function ManageSubscriptionForm({
 
           {/* Status */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Subscription Status *
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Subscription Status *</label>
             <select
               value={formData.status}
               onChange={(e) => setFormData({ ...formData, status: e.target.value })}
@@ -178,14 +167,10 @@ export default function ManageSubscriptionForm({
 
           {/* Billing Cycle */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Billing Cycle *
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Billing Cycle *</label>
             <select
               value={formData.billing_cycle}
-              onChange={(e) =>
-                setFormData({ ...formData, billing_cycle: e.target.value })
-              }
+              onChange={(e) => setFormData({ ...formData, billing_cycle: e.target.value })}
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
@@ -196,11 +181,7 @@ export default function ManageSubscriptionForm({
 
           {/* Action Buttons */}
           <div className="flex justify-between pt-4 border-t">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => router.push("/app/admin/subscriptions")}
-            >
+            <Button type="button" variant="outline" onClick={() => router.push("/app/admin/subscriptions")}>
               Cancel
             </Button>
 
@@ -230,7 +211,7 @@ export default function ManageSubscriptionForm({
                 onClick={() => {
                   if (
                     confirm(
-                      `Send usage warning email to ${agent.email}? This will trigger the usage monitoring system.`
+                      `Send usage warning email to ${agent.email}? This will trigger the usage monitoring system.`,
                     )
                   ) {
                     setSuccess("Email notification feature requires API implementation");
@@ -244,11 +225,7 @@ export default function ManageSubscriptionForm({
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  if (
-                    confirm(
-                      `Reset usage tracking for ${agent.email}? This will recalculate their current usage.`
-                    )
-                  ) {
+                  if (confirm(`Reset usage tracking for ${agent.email}? This will recalculate their current usage.`)) {
                     setSuccess("Usage reset feature requires API implementation");
                   }
                 }}

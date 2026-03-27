@@ -108,7 +108,7 @@ export async function getNeighborhoodProfile(params: {
   // Area name for display
   const areaName = postalCode
     ? `ZIP ${postalCode}`
-    : (params.address2 || (latitude && longitude ? `${latitude.toFixed(2)}, ${longitude.toFixed(2)}` : ""));
+    : params.address2 || (latitude && longitude ? `${latitude.toFixed(2)}, ${longitude.toFixed(2)}` : "");
 
   // Run all free API calls in parallel
   const [schoolsResult, crimeResult, hazardResult, poiResult, trendsResult] = await Promise.allSettled([
@@ -149,88 +149,98 @@ export async function getNeighborhoodProfile(params: {
   const crime = crimeResult.status === "fulfilled" ? crimeResult.value : null;
   const hazards = hazardResult.status === "fulfilled" ? hazardResult.value : null;
 
-  const community = (crime || hazards) ? {
-    community: {
-      geography: { geographyName: areaName, geographyTypeName: "Area" },
-      ...(crime ? {
-        crime: {
-          crime_Index: crime.crimeIndex ?? undefined,
-          burglary_Index: crime.burglaryIndex ?? undefined,
-          larceny_Index: crime.larcenyIndex ?? undefined,
-          motor_Vehicle_Theft_Index: crime.motorVehicleTheftIndex ?? undefined,
-          aggravated_Assault_Index: crime.aggravatedAssaultIndex ?? undefined,
-          forcible_Robbery_Index: crime.robberyIndex ?? undefined,
-        },
-      } : {}),
-      ...(hazards ? {
-        naturalDisasters: {
-          earthquake: hazards.earthquake,
-          flood: hazards.flood,
-          tornado: hazards.tornado,
-          hurricane: hazards.hurricane,
-          wildfire: hazards.wildfire,
-          hail: hazards.hail,
-          wind: hazards.wind,
-          overall: hazards.overall,
-        },
-      } : {}),
-    },
-  } : null;
+  const community =
+    crime || hazards
+      ? {
+          community: {
+            geography: { geographyName: areaName, geographyTypeName: "Area" },
+            ...(crime
+              ? {
+                  crime: {
+                    crime_Index: crime.crimeIndex ?? undefined,
+                    burglary_Index: crime.burglaryIndex ?? undefined,
+                    larceny_Index: crime.larcenyIndex ?? undefined,
+                    motor_Vehicle_Theft_Index: crime.motorVehicleTheftIndex ?? undefined,
+                    aggravated_Assault_Index: crime.aggravatedAssaultIndex ?? undefined,
+                    forcible_Robbery_Index: crime.robberyIndex ?? undefined,
+                  },
+                }
+              : {}),
+            ...(hazards
+              ? {
+                  naturalDisasters: {
+                    earthquake: hazards.earthquake,
+                    flood: hazards.flood,
+                    tornado: hazards.tornado,
+                    hurricane: hazards.hurricane,
+                    wildfire: hazards.wildfire,
+                    hail: hazards.hail,
+                    wind: hazards.wind,
+                    overall: hazards.overall,
+                  },
+                }
+              : {}),
+          },
+        }
+      : null;
 
   // Build schools response
-  const schools = schoolsResult.status === "fulfilled" && schoolsResult.value.schools.length > 0
-    ? {
-        school: schoolsResult.value.schools.map(s => ({
-          InstitutionName: s.schoolName,
-          School_Name: s.schoolName,
-          schoolName: s.schoolName,
-          schoolType: s.schoolType,
-          gradeRange: s.gradeRange,
-          Enrollment: s.enrollment,
-          enrollment: s.enrollment,
-          distance: s.distanceMiles,
-          distanceMiles: s.distanceMiles,
-          latitude: s.latitude,
-          longitude: s.longitude,
-          city: s.city,
-          state: s.state,
-          districtName: s.districtName,
-        })),
-      }
-    : null;
+  const schools =
+    schoolsResult.status === "fulfilled" && schoolsResult.value.schools.length > 0
+      ? {
+          school: schoolsResult.value.schools.map((s) => ({
+            InstitutionName: s.schoolName,
+            School_Name: s.schoolName,
+            schoolName: s.schoolName,
+            schoolType: s.schoolType,
+            gradeRange: s.gradeRange,
+            Enrollment: s.enrollment,
+            enrollment: s.enrollment,
+            distance: s.distanceMiles,
+            distanceMiles: s.distanceMiles,
+            latitude: s.latitude,
+            longitude: s.longitude,
+            city: s.city,
+            state: s.state,
+            districtName: s.districtName,
+          })),
+        }
+      : null;
 
   // Build POI response
-  const poiData = poiResult.status === "fulfilled" && poiResult.value.pois.length > 0
-    ? {
-        poi: poiResult.value.pois.map(p => ({
-          BusinessName: p.name,
-          name: p.name,
-          CategoryName: p.category,
-          category: p.category,
-          Distance: p.distanceMiles,
-          distanceMiles: p.distanceMiles,
-          latitude: p.latitude,
-          longitude: p.longitude,
-        })),
-        categories: poiResult.value.categories,
-      }
-    : null;
+  const poiData =
+    poiResult.status === "fulfilled" && poiResult.value.pois.length > 0
+      ? {
+          poi: poiResult.value.pois.map((p) => ({
+            BusinessName: p.name,
+            name: p.name,
+            CategoryName: p.category,
+            category: p.category,
+            Distance: p.distanceMiles,
+            distanceMiles: p.distanceMiles,
+            latitude: p.latitude,
+            longitude: p.longitude,
+          })),
+          categories: poiResult.value.categories,
+        }
+      : null;
 
   // Build sales trends response (matching ATTOM v4 format)
-  const trends = trendsResult.status === "fulfilled" && trendsResult.value.trends.length > 0
-    ? {
-        salesTrends: trendsResult.value.trends.map(t => ({
-          dateRange: { start: t.period, interval: "quarterly" },
-          location: { geographyName: trendsResult.value.areaName },
-          salesTrend: {
-            medSalePrice: t.medianSalePrice ?? undefined,
-            avgSalePrice: t.avgSalePrice ?? undefined,
-            homeSaleCount: t.homeSaleCount ?? undefined,
-          },
-          vintage: { pubDate: new Date().toISOString().split("T")[0] },
-        })),
-      }
-    : null;
+  const trends =
+    trendsResult.status === "fulfilled" && trendsResult.value.trends.length > 0
+      ? {
+          salesTrends: trendsResult.value.trends.map((t) => ({
+            dateRange: { start: t.period, interval: "quarterly" },
+            location: { geographyName: trendsResult.value.areaName },
+            salesTrend: {
+              medSalePrice: t.medianSalePrice ?? undefined,
+              avgSalePrice: t.avgSalePrice ?? undefined,
+              homeSaleCount: t.homeSaleCount ?? undefined,
+            },
+            vintage: { pubDate: new Date().toISOString().split("T")[0] },
+          })),
+        }
+      : null;
 
   return { community, schools, poi: poiData, salesTrends: trends };
 }

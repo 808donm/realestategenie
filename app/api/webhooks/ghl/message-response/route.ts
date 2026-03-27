@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 /**
  * Webhook handler for GHL message responses
@@ -36,12 +34,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ received: true });
     }
 
-    const {
-      contactId,
-      locationId,
-      body: messageBody,
-      messageId,
-    } = payload;
+    const { contactId, locationId, body: messageBody, messageId } = payload;
 
     if (!contactId || !messageBody) {
       console.log("Missing required fields");
@@ -73,10 +66,12 @@ export async function POST(request: NextRequest) {
     // Find pending follow-ups for this contact
     const { data: followups } = await supabaseAdmin
       .from("open_house_flyer_followups")
-      .select(`
+      .select(
+        `
         *,
         open_house_events!inner(id, address, agent_id)
-      `)
+      `,
+      )
       .eq("ghl_contact_id", contactId)
       .eq("agent_id", agentId)
       .in("status", ["sent", "needs_clarification"])
@@ -101,7 +96,7 @@ export async function POST(request: NextRequest) {
         contactId,
         agentId,
         accessToken,
-        locationId
+        locationId,
       );
     } else if (latestFollowup.status === "needs_clarification") {
       // They're responding to "Which open house do you want the flyer for?"
@@ -113,7 +108,7 @@ export async function POST(request: NextRequest) {
         contactId,
         agentId,
         accessToken,
-        locationId
+        locationId,
       );
     }
 
@@ -121,10 +116,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error("GHL webhook error:", error);
     // Return 200 even on error to prevent GHL from retrying
-    return NextResponse.json(
-      { received: true, error: error.message },
-      { status: 200 }
-    );
+    return NextResponse.json({ received: true, error: error.message }, { status: 200 });
   }
 }
 
@@ -138,20 +130,22 @@ async function handleInitialResponse(
   contactId: string,
   agentId: string,
   accessToken: string,
-  locationId: string
+  locationId: string,
 ) {
-  const isYes = normalizedBody.includes("YES") ||
-                normalizedBody.includes("YEA") ||
-                normalizedBody.includes("YA") ||
-                normalizedBody === "Y" ||
-                normalizedBody.includes("SURE") ||
-                normalizedBody.includes("OK") ||
-                normalizedBody.includes("PLEASE");
+  const isYes =
+    normalizedBody.includes("YES") ||
+    normalizedBody.includes("YEA") ||
+    normalizedBody.includes("YA") ||
+    normalizedBody === "Y" ||
+    normalizedBody.includes("SURE") ||
+    normalizedBody.includes("OK") ||
+    normalizedBody.includes("PLEASE");
 
-  const isNo = normalizedBody.includes("NO") ||
-               normalizedBody.includes("NAH") ||
-               normalizedBody === "N" ||
-               normalizedBody.includes("NOT INTERESTED");
+  const isNo =
+    normalizedBody.includes("NO") ||
+    normalizedBody.includes("NAH") ||
+    normalizedBody === "N" ||
+    normalizedBody.includes("NOT INTERESTED");
 
   // Update followup with response
   await supabaseAdmin
@@ -172,10 +166,12 @@ async function handleInitialResponse(
   // They said YES! Check if they attended multiple open houses
   const { data: attendanceRecords } = await supabaseAdmin
     .from("contact_open_house_attendance")
-    .select(`
+    .select(
+      `
       *,
       open_house_events!inner(id, address, start_at)
-    `)
+    `,
+    )
     .eq("ghl_contact_id", contactId)
     .eq("agent_id", agentId)
     .order("attended_at", { ascending: false })
@@ -188,24 +184,10 @@ async function handleInitialResponse(
 
   if (attendanceRecords.length === 1) {
     // Only attended one open house - send flyer directly
-    await sendFlyer(
-      followup,
-      followup.event_id,
-      contactId,
-      agentId,
-      accessToken,
-      locationId
-    );
+    await sendFlyer(followup, followup.event_id, contactId, agentId, accessToken, locationId);
   } else {
     // Attended multiple - ask which one they want
-    await askForClarification(
-      followup,
-      attendanceRecords,
-      contactId,
-      agentId,
-      accessToken,
-      locationId
-    );
+    await askForClarification(followup, attendanceRecords, contactId, agentId, accessToken, locationId);
   }
 }
 
@@ -218,15 +200,13 @@ async function askForClarification(
   contactId: string,
   agentId: string,
   accessToken: string,
-  locationId: string
+  locationId: string,
 ) {
   // Build message listing the properties
   let message = "You've visited multiple properties! Which flyer would you like?\n\n";
 
   attendanceRecords.forEach((record, index) => {
-    const event = Array.isArray(record.open_house_events)
-      ? record.open_house_events[0]
-      : record.open_house_events;
+    const event = Array.isArray(record.open_house_events) ? record.open_house_events[0] : record.open_house_events;
 
     const date = new Date(event.start_at).toLocaleDateString();
     message += `${index + 1}. ${event.address} (${date})\n`;
@@ -235,23 +215,20 @@ async function askForClarification(
   message += `\nReply with the number (1-${attendanceRecords.length})`;
 
   // Send clarification message
-  const response = await fetch(
-    "https://services.leadconnectorhq.com/conversations/messages",
-    {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-        "Version": "2021-07-28",
-      },
-      body: JSON.stringify({
-        type: "SMS",
-        locationId,
-        contactId,
-        message,
-      }),
-    }
-  );
+  const response = await fetch("https://services.leadconnectorhq.com/conversations/messages", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+      Version: "2021-07-28",
+    },
+    body: JSON.stringify({
+      type: "SMS",
+      locationId,
+      contactId,
+      message,
+    }),
+  });
 
   if (!response.ok) {
     console.error("Failed to send clarification message");
@@ -282,7 +259,7 @@ async function handleClarificationResponse(
   contactId: string,
   agentId: string,
   accessToken: string,
-  locationId: string
+  locationId: string,
 ) {
   // Extract number from response
   const numberMatch = originalBody.match(/(\d+)/);
@@ -296,10 +273,12 @@ async function handleClarificationResponse(
   // Get attendance records again
   const { data: attendanceRecords } = await supabaseAdmin
     .from("contact_open_house_attendance")
-    .select(`
+    .select(
+      `
       *,
       open_house_events!inner(id, address, start_at)
-    `)
+    `,
+    )
     .eq("ghl_contact_id", contactId)
     .eq("agent_id", agentId)
     .order("attended_at", { ascending: false })
@@ -316,14 +295,7 @@ async function handleClarificationResponse(
     : selectedRecord.open_house_events;
 
   // Send the flyer for the selected property
-  await sendFlyer(
-    followup,
-    selectedEvent.id,
-    contactId,
-    agentId,
-    accessToken,
-    locationId
-  );
+  await sendFlyer(followup, selectedEvent.id, contactId, agentId, accessToken, locationId);
 }
 
 /**
@@ -335,14 +307,10 @@ async function sendFlyer(
   contactId: string,
   agentId: string,
   accessToken: string,
-  locationId: string
+  locationId: string,
 ) {
   // Get event details
-  const { data: event } = await supabaseAdmin
-    .from("open_house_events")
-    .select("address")
-    .eq("id", eventId)
-    .single();
+  const { data: event } = await supabaseAdmin.from("open_house_events").select("address").eq("id", eventId).single();
 
   if (!event) {
     console.log("Event not found");
@@ -356,23 +324,20 @@ async function sendFlyer(
   const message = `Here's the property flyer for ${event.address}: ${flyerLink}\n\nFeel free to reach out if you have any questions!`;
 
   // Send message with flyer link
-  const response = await fetch(
-    "https://services.leadconnectorhq.com/conversations/messages",
-    {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-        "Version": "2021-07-28",
-      },
-      body: JSON.stringify({
-        type: "SMS",
-        locationId,
-        contactId,
-        message,
-      }),
-    }
-  );
+  const response = await fetch("https://services.leadconnectorhq.com/conversations/messages", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+      Version: "2021-07-28",
+    },
+    body: JSON.stringify({
+      type: "SMS",
+      locationId,
+      contactId,
+      message,
+    }),
+  });
 
   if (!response.ok) {
     console.error("Failed to send flyer message");

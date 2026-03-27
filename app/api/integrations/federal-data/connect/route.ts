@@ -22,28 +22,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user is platform admin
-    const { data: agent } = await supabase
-      .from("agents")
-      .select("role")
-      .eq("id", userData.user.id)
-      .single();
+    const { data: agent } = await supabase.from("agents").select("role").eq("id", userData.user.id).single();
 
     if (agent?.role !== "admin") {
-      return NextResponse.json(
-        { error: "Only platform admins can configure Federal Data" },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "Only platform admins can configure Federal Data" }, { status: 403 });
     }
 
     const body = await request.json();
-    const {
-      usps_client_id,
-      usps_client_secret,
-      hud_api_token,
-      census_api_key,
-      bls_api_key,
-      fred_api_key,
-    } = body;
+    const { usps_client_id, usps_client_secret, hud_api_token, census_api_key, bls_api_key, fred_api_key } = body;
 
     // Test the connections
     const client = new FederalDataClient({
@@ -57,10 +43,7 @@ export async function POST(request: NextRequest) {
     const testResult = await client.testConnection();
 
     if (!testResult.success) {
-      return NextResponse.json(
-        { error: "No federal data sources could be reached" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "No federal data sources could be reached" }, { status: 400 });
     }
 
     // Store as platform-level integration
@@ -94,7 +77,7 @@ export async function POST(request: NextRequest) {
       console.error("Error saving Federal Data integration:", dbError);
       return NextResponse.json(
         { error: "Failed to save integration: " + (dbError.message || "Database error") },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -105,9 +88,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Error in Federal Data connect:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

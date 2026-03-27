@@ -7,10 +7,7 @@ import { TrestleClient, TrestleAuthMethod } from "@/lib/integrations/trestle-cli
  * Admin: Connect or update Trestle integration for any user
  * POST /api/admin/users/[userId]/integrations/trestle
  */
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ userId: string }> }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ userId: string }> }) {
   try {
     await requireAdmin();
     const { userId } = await params;
@@ -27,7 +24,7 @@ export async function POST(
     else {
       return NextResponse.json(
         { error: "Provide either username/password or client_id/client_secret" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -44,10 +41,7 @@ export async function POST(
 
     const testResult = await client.testConnection();
     if (!testResult.success) {
-      return NextResponse.json(
-        { error: testResult.message || "Connection test failed" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: testResult.message || "Connection test failed" }, { status: 400 });
     }
 
     const config: Record<string, any> = {
@@ -88,10 +82,7 @@ export async function POST(
  * Admin: Disconnect Trestle integration for a user
  * DELETE /api/admin/users/[userId]/integrations/trestle
  */
-export async function DELETE(
-  _request: NextRequest,
-  { params }: { params: Promise<{ userId: string }> }
-) {
+export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ userId: string }> }) {
   try {
     await requireAdmin();
     const { userId } = await params;

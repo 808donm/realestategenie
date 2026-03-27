@@ -2,11 +2,9 @@ import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { createClient } from "@supabase/supabase-js";
 
-const admin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 /**
  * Diagnostic endpoint to show current logged-in user and their GHL integration
@@ -22,10 +20,13 @@ export async function GET() {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json({
-        error: "Not authenticated",
-        recommendation: "Log in at /signin",
-      }, { status: 401 });
+      return NextResponse.json(
+        {
+          error: "Not authenticated",
+          recommendation: "Log in at /signin",
+        },
+        { status: 401 },
+      );
     }
 
     // Get agent details
@@ -64,24 +65,28 @@ export async function GET() {
         displayName: agent?.display_name,
         createdAt: agent?.created_at,
       },
-      ghlIntegration: integration ? {
-        id: integration.id,
-        status: integration.status,
-        locationId: config?.ghl_location_id,
-        createdAt: integration.created_at,
-        updatedAt: integration.updated_at,
-        hasAccessToken: !!config?.ghl_access_token,
-        scopeCount: "Check JWT to see actual scopes",
-      } : null,
+      ghlIntegration: integration
+        ? {
+            id: integration.id,
+            status: integration.status,
+            locationId: config?.ghl_location_id,
+            createdAt: integration.created_at,
+            updatedAt: integration.updated_at,
+            hasAccessToken: !!config?.ghl_access_token,
+            scopeCount: "Check JWT to see actual scopes",
+          }
+        : null,
       systemInfo: {
         isFirstAgent: isFirstAgent,
         firstAgentId: firstAgentId,
         totalAgents: allAgents?.length || 0,
         note: isFirstAgent
           ? "✅ You are the first agent - diagnostic endpoints will show YOUR data by default"
-          : "⚠️ You are NOT the first agent - diagnostic endpoints show a different agent's data by default. Use ?agentId=" + user.id + " parameter."
+          : "⚠️ You are NOT the first agent - diagnostic endpoints show a different agent's data by default. Use ?agentId=" +
+            user.id +
+            " parameter.",
       },
-      allAgents: allAgents?.map(a => ({
+      allAgents: allAgents?.map((a) => ({
         id: a.id,
         email: a.email,
         isYou: a.id === user.id,
@@ -98,11 +103,13 @@ export async function GET() {
           ]
         : ["❌ No GHL integration found - connect at /app/integrations"],
     });
-
   } catch (error: any) {
-    return NextResponse.json({
-      error: error.message,
-      stack: error.stack,
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: error.message,
+        stack: error.stack,
+      },
+      { status: 500 },
+    );
   }
 }

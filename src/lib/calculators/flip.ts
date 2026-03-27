@@ -127,10 +127,7 @@ export function analyzeFlip(input: FlipInput): FlipAnalysis {
 
   // === HOLDING COSTS ===
   const monthlyBaseHolding =
-    input.propertyTaxMonthly +
-    input.insuranceMonthly +
-    input.utilitiesMonthly +
-    input.otherHoldingCostsMonthly;
+    input.propertyTaxMonthly + input.insuranceMonthly + input.utilitiesMonthly + input.otherHoldingCostsMonthly;
 
   // Interest-only loan payments during holding
   const monthlyInterest = loanAmount * (input.loanInterestRate / 100 / 12);
@@ -149,11 +146,7 @@ export function analyzeFlip(input: FlipInput): FlipAnalysis {
     input.stagingCosts;
 
   const totalCashRequired =
-    cashAtPurchase +
-    totalRenovationCost +
-    totalHoldingCosts +
-    interestCostsDuringHold +
-    input.stagingCosts;
+    cashAtPurchase + totalRenovationCost + totalHoldingCosts + interestCostsDuringHold + input.stagingCosts;
 
   // === SALE ===
   const grossSalePrice = input.afterRepairValue;
@@ -199,9 +192,7 @@ export function analyzeFlip(input: FlipInput): FlipAnalysis {
   dealScore = Math.min(5, Math.max(1, dealScore));
 
   // === PROFIT METRICS ===
-  const profitPerMonth = input.holdingPeriodMonths > 0
-    ? netProfit / input.holdingPeriodMonths
-    : netProfit;
+  const profitPerMonth = input.holdingPeriodMonths > 0 ? netProfit / input.holdingPeriodMonths : netProfit;
 
   // === BREAK-EVEN ===
   const breakEvenSalePrice = allInCost + sellingCosts + loanAmount;
@@ -285,7 +276,7 @@ export function calculateFlipMAO(
   repairCosts: number,
   desiredProfitPercent: number = 15,
   closingBuyPercent: number = 3,
-  closingSellPercent: number = 8
+  closingSellPercent: number = 8,
 ): { mao: number; breakdown: Record<string, number> } {
   const desiredProfit = arv * (desiredProfitPercent / 100);
   const closingBuy = arv * (closingBuyPercent / 100);
@@ -366,7 +357,7 @@ export function getFlipVerdict(analysis: FlipAnalysis): {
  */
 export function estimateRehabCosts(
   squareFeet: number,
-  rehabLevel: "cosmetic" | "moderate" | "major" | "gut"
+  rehabLevel: "cosmetic" | "moderate" | "major" | "gut",
 ): { low: number; mid: number; high: number } {
   const costPerSqFt = {
     cosmetic: { low: 15, mid: 25, high: 35 },

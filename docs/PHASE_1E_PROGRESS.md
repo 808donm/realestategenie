@@ -3,6 +3,7 @@
 ## ✅ Completed Features
 
 ### Part 1: Foundation & Authentication
+
 **Committed:** `11c3751`
 
 - ✅ Database schema (Migration 028)
@@ -31,6 +32,7 @@
 - ✅ RLS policies for data isolation
 
 ### Part 2: Dashboard & Payment UI
+
 **Committed:** `edea378`
 
 - ✅ Tenant dashboard (`/tenant/dashboard`)
@@ -54,6 +56,7 @@
   - Payment form component
 
 ### Part 3: Payment Processing (Stripe & PayPal)
+
 **Committed:** `799e11d`
 
 - ✅ Payment APIs
@@ -73,6 +76,7 @@
   - Next steps
 
 ### Part 4: Work Order Submission & Tracking
+
 **Committed:** `cc3a7ef`
 
 - ✅ Work order submission (`/tenant/work-orders/new`)
@@ -94,6 +98,7 @@
   - `POST /api/tenant/work-orders/upload-photo` - Photo upload
 
 ### Part 5: Work Order Detail & Rating
+
 **Committed:** `8711700`
 
 - ✅ Work order detail page (`/tenant/work-orders/[id]`)
@@ -110,6 +115,7 @@
   - Validation (1-5 stars, completed status, no duplicates)
 
 ### Part 6: Lease Information Viewer
+
 **Committed:** `bd2e799`
 
 - ✅ Lease viewer page (`/tenant/lease`)
@@ -124,6 +130,7 @@
   - Lease expiration alert
 
 ### Part 7: Messaging System
+
 **Committed:** `5ff84c4`
 
 - ✅ Messaging inbox (`/tenant/messages`)
@@ -143,6 +150,7 @@
   - GHL sync placeholder
 
 ### Part 8: Payment Methods Management
+
 **Status:** Just completed (pending commit)
 
 - ✅ Payment methods page (`/tenant/payment-methods`)
@@ -168,6 +176,7 @@
 ### Move-In Report
 
 **Pages Needed:**
+
 ```
 /tenant/move-in-report
 - Room-by-room condition checklist
@@ -178,6 +187,7 @@
 ```
 
 **API Routes:**
+
 ```typescript
 /api/tenant/move-in-report
 - POST: Submit move-in report
@@ -189,6 +199,7 @@
 ### Move-Out Process
 
 **Pages Needed:**
+
 ```
 /tenant/move-out
 - Submit move-out notice
@@ -203,6 +214,7 @@
 ```
 
 **API Routes:**
+
 ```typescript
 /api/tenant/move-out/notice
 - POST: Submit move-out notice
@@ -216,6 +228,7 @@
 ### Autopay Configuration
 
 **Pages Needed:**
+
 ```
 /tenant/autopay
 - Enable/disable autopay
@@ -225,6 +238,7 @@
 ```
 
 **Cron Job:**
+
 ```typescript
 /api/cron/process-autopay
 - Runs daily
@@ -378,6 +392,7 @@ npx shadcn-ui@latest add dialog
 ## 🎯 Next Steps
 
 1. **Install Payment Dependencies**
+
    ```bash
    npm install stripe @stripe/stripe-js @paypal/checkout-server-sdk
    ```
@@ -466,6 +481,7 @@ Before deploying tenant portal to production:
 ## 🎉 Core Tenant Portal Features Complete!
 
 All immediate priority features for the tenant portal have been implemented:
+
 - ✅ Authentication & Registration
 - ✅ Dashboard with Rent Due Widget
 - ✅ Payment Processing (Stripe & PayPal)

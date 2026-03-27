@@ -14,11 +14,9 @@ import { GoogleCalendarProvider } from "@/lib/integrations/google-calendar-clien
 import { MicrosoftCalendarProvider } from "@/lib/integrations/microsoft-calendar-client";
 import { GHLCalendarProvider } from "@/lib/integrations/ghl-calendar-sync";
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 export async function POST() {
   const supabase = await supabaseServer();

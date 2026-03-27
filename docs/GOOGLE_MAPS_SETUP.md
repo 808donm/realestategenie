@@ -5,6 +5,7 @@
 Real Estate Genie uses geocoding to convert property addresses into map coordinates (latitude/longitude) so that property maps can be displayed on open house detail pages.
 
 **Geocoding Services (in order of preference):**
+
 1. **Google Maps Geocoding API** (Primary) - Most reliable and accurate
 2. **OpenStreetMap Nominatim** (Fallback) - Free but may be blocked or rate-limited
 
@@ -13,12 +14,14 @@ Real Estate Genie uses geocoding to convert property addresses into map coordina
 ## Why Google Maps?
 
 **Advantages:**
+
 - ✅ **Highly reliable** - Works consistently, rarely blocked
 - ✅ **Accurate** - Especially for US addresses
 - ✅ **Fast** - No rate limit concerns (within free tier)
 - ✅ **Supports all address formats** - Street, city, state, zip, etc.
 
 **OpenStreetMap Issues:**
+
 - ❌ Often blocked by hosting providers (Vercel, AWS, etc.)
 - ❌ Strict rate limits (1 request/second)
 - ❌ Less accurate for some US addresses
@@ -33,6 +36,7 @@ Real Estate Genie uses geocoding to convert property addresses into map coordina
 3. Accept terms of service if prompted
 
 **Note:** Google Cloud requires a credit card, but the Geocoding API has a generous free tier:
+
 - **$200 free credit** for new accounts (first 90 days)
 - **Free tier:** First $200/month of usage is free (ongoing)
 - **Cost:** $5 per 1,000 requests after free tier
@@ -116,10 +120,12 @@ For security, restrict your API key to only work with the Geocoding API and your
 1. Open your `.env.local` file (or create it if it doesn't exist)
 
 2. Add this line:
+
    ```bash
    GOOGLE_MAPS_API_KEY=AIzaSyDaGmWka4JgXSc9sIXlyGQ-dGp6qeWyOmU
    ```
-   *(Replace with your actual API key)*
+
+   _(Replace with your actual API key)_
 
 3. Restart your development server:
    ```bash
@@ -142,14 +148,17 @@ For security, restrict your API key to only work with the Geocoding API and your
 ### For Other Hosting Providers
 
 **Netlify:**
+
 - Go to Site Settings → Build & Deploy → Environment
 - Add `GOOGLE_MAPS_API_KEY` with your key
 
 **AWS Amplify:**
+
 - Go to App Settings → Environment Variables
 - Add `GOOGLE_MAPS_API_KEY` with your key
 
 **Railway:**
+
 - Go to Variables tab
 - Add `GOOGLE_MAPS_API_KEY` with your key
 
@@ -162,6 +171,7 @@ For security, restrict your API key to only work with the Geocoding API and your
    - Start/End times: Any future time
 
 2. **Check the logs** for geocoding success:
+
    ```
    Geocoding address: 1600 Amphitheatre Parkway, Mountain View, CA 94043
    ✓ Geocoded with Google Maps: { latitude: 37.4224, longitude: -122.0856, ... }
@@ -174,6 +184,7 @@ For security, restrict your API key to only work with the Geocoding API and your
    Google Maps API key not found, skipping Google geocoding
    Falling back to OpenStreetMap...
    ```
+
    - This means the API key is not set correctly
 
 ---
@@ -183,6 +194,7 @@ For security, restrict your API key to only work with the Geocoding API and your
 ### Issue: "Geocoding Failed" or No Map Showing
 
 **Check 1: API Key is Set**
+
 ```bash
 # In your terminal (local development)
 echo $GOOGLE_MAPS_API_KEY
@@ -192,11 +204,13 @@ echo $GOOGLE_MAPS_API_KEY
 ```
 
 **Check 2: API is Enabled**
+
 - Go to Google Cloud Console
 - Check **APIs & Services → Dashboard**
 - Verify "Geocoding API" is listed and enabled
 
 **Check 3: API Key Restrictions**
+
 - Go to **APIs & Services → Credentials**
 - Click on your API key
 - Make sure:
@@ -205,6 +219,7 @@ echo $GOOGLE_MAPS_API_KEY
   - ✅ No IP address restrictions (unless you need them)
 
 **Check 4: Billing is Enabled**
+
 - Go to **Billing** in Google Cloud Console
 - Verify billing account is linked to your project
 - You don't need to pay anything (free tier is generous)
@@ -213,6 +228,7 @@ echo $GOOGLE_MAPS_API_KEY
 ### Issue: "API Key Restricted" Error
 
 **Solution:** Check API key restrictions
+
 1. Go to Google Cloud Console → Credentials
 2. Click your API key
 3. Under "API restrictions":
@@ -222,16 +238,19 @@ echo $GOOGLE_MAPS_API_KEY
 ### Issue: "Quota Exceeded" Error
 
 **Check your usage:**
+
 1. Go to Google Cloud Console
 2. Navigate to **APIs & Services → Geocoding API → Quotas**
 3. Check "Requests per day"
 
 **Free tier limits:**
+
 - 40,000 requests per month free
 - Typical usage: 50-100/month for most agents
 - If you exceed, you'll be charged $5 per 1,000 requests
 
 **Solution:** If you're hitting limits unexpectedly:
+
 - Check for geocoding loops in your code
 - Make sure addresses are only geocoded once per open house
 - Consider caching geocoding results
@@ -241,11 +260,13 @@ echo $GOOGLE_MAPS_API_KEY
 **OpenStreetMap may be blocked by your hosting provider**
 
 **Temporary solutions:**
+
 1. Use a different hosting provider
 2. Set up a geocoding proxy
 3. Manually enter coordinates for each property
 
 **Long-term solution:**
+
 - Set up Google Maps API (this guide)
 
 ---
@@ -255,19 +276,23 @@ echo $GOOGLE_MAPS_API_KEY
 ### Typical Monthly Usage
 
 **Average agent:**
+
 - Creates 4 open houses per month
 - Each requires 1 geocoding request
 - **Total:** 4 requests/month = **$0.00** (well within free tier)
 
 **Busy agent:**
+
 - Creates 50 open houses per month
 - **Total:** 50 requests/month = **$0.00** (free tier covers 40,000/month)
 
 **Agency with 100 agents:**
+
 - 100 agents × 50 open houses = 5,000 requests/month
 - **Cost:** $0.00 (free tier covers first 40,000)
 
 ### You'll Only Pay If:
+
 - You exceed 40,000 geocoding requests per month
 - That's **1,333 open houses per month**
 - For a single agent, this is virtually impossible to reach
@@ -281,17 +306,20 @@ If you don't want to set up Google Maps at all:
 **The system will automatically use OpenStreetMap as a fallback**
 
 **Pros:**
+
 - ✅ No API key needed
 - ✅ No billing setup required
 - ✅ Completely free
 
 **Cons:**
+
 - ❌ May be blocked by hosting providers
 - ❌ Less reliable (frequent failures)
 - ❌ Slower response times
 - ❌ Rate limited to 1 request/second
 
 **To use OpenStreetMap only:**
+
 - Simply don't add `GOOGLE_MAPS_API_KEY` to your environment
 - The system will skip Google and go straight to OpenStreetMap
 
@@ -329,11 +357,13 @@ If you don't want to set up Google Maps at all:
 6. ✅ Test by creating a new open house
 
 **With Google Maps API configured:**
+
 - Maps will show reliably for all open houses
 - No more "Map not available" messages
 - Fast, accurate geocoding for US addresses
 
 **Without Google Maps API:**
+
 - System falls back to OpenStreetMap (may work, may not)
 - Maps may fail to load frequently
 - "Map not available" message will show

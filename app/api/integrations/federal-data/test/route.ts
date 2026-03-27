@@ -29,19 +29,13 @@ export async function GET(request: NextRequest) {
 
     if (fetchError) {
       console.error("Error fetching Federal Data integration:", fetchError);
-      return NextResponse.json(
-        { error: "Failed to fetch integration" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to fetch integration" }, { status: 500 });
     }
 
     let clientConfig: any = {};
 
     if (integration?.config) {
-      const config =
-        typeof integration.config === "string"
-          ? JSON.parse(integration.config)
-          : integration.config;
+      const config = typeof integration.config === "string" ? JSON.parse(integration.config) : integration.config;
 
       clientConfig = {
         uspsClientId: config.usps_client_id,
@@ -84,9 +78,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("Error in Federal Data test:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

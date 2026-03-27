@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import {
-  FederalDataClient,
-  FederalDataConfig,
-  createFederalDataClient,
-} from "@/lib/integrations/federal-data-client";
+import { FederalDataClient, FederalDataConfig, createFederalDataClient } from "@/lib/integrations/federal-data-client";
 
 /**
  * Helper: get a working Federal Data client (from DB config or env vars)
@@ -21,10 +17,7 @@ async function getFederalClient(): Promise<FederalDataClient> {
     .maybeSingle();
 
   if (integration?.config) {
-    const config =
-      typeof integration.config === "string"
-        ? JSON.parse(integration.config)
-        : integration.config;
+    const config = typeof integration.config === "string" ? JSON.parse(integration.config) : integration.config;
 
     return new FederalDataClient({
       uspsClientId: config.usps_client_id,
@@ -99,10 +92,7 @@ export async function GET(request: NextRequest) {
         break;
 
       case "disasters":
-        result = await client.getDisasterDeclarations(
-          state || stateFips,
-          searchParams.get("county") || undefined
-        );
+        result = await client.getDisasterDeclarations(state || stateFips, searchParams.get("county") || undefined);
         break;
 
       case "loanlimits":
@@ -125,7 +115,7 @@ export async function GET(request: NextRequest) {
         if (!address || !city || !state) {
           return NextResponse.json(
             { error: "address, city, and state are required for vacancy check" },
-            { status: 400 }
+            { status: 400 },
           );
         }
         result = await client.validateAddress(address, city, state, zipCode);
@@ -151,12 +141,9 @@ export async function GET(request: NextRequest) {
     console.error("Error fetching federal data:", error);
     return NextResponse.json(
       {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Failed to fetch federal data",
+        error: error instanceof Error ? error.message : "Failed to fetch federal data",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

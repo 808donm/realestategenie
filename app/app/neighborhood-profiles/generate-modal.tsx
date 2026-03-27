@@ -13,13 +13,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface GenerateProfileModalProps {
   isOpen: boolean;
@@ -66,9 +60,7 @@ export default function GenerateProfileModal({
           stateProvince,
           country,
           architecturalStyle: architecturalStyle || undefined,
-          nearbyAmenities: nearbyAmenities
-            ? nearbyAmenities.split(",").map((a) => a.trim())
-            : undefined,
+          nearbyAmenities: nearbyAmenities ? nearbyAmenities.split(",").map((a) => a.trim()) : undefined,
           additionalContext: additionalContext || undefined,
         }),
       });
@@ -104,8 +96,8 @@ export default function GenerateProfileModal({
         <DialogHeader>
           <DialogTitle>Generate Neighborhood Profile</DialogTitle>
           <DialogDescription>
-            Create an AI-powered, Fair Housing compliant neighborhood profile for your client.
-            Fill in the details below.
+            Create an AI-powered, Fair Housing compliant neighborhood profile for your client. Fill in the details
+            below.
           </DialogDescription>
         </DialogHeader>
 
@@ -196,9 +188,7 @@ export default function GenerateProfileModal({
                   value={nearbyAmenities}
                   onChange={(e) => setNearbyAmenities(e.target.value)}
                 />
-                <p className="text-xs text-muted-foreground">
-                  List parks, shopping areas, transit stations, etc.
-                </p>
+                <p className="text-xs text-muted-foreground">List parks, shopping areas, transit stations, etc.</p>
               </div>
 
               <div className="space-y-2">

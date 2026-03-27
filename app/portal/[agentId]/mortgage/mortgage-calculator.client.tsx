@@ -37,8 +37,7 @@ interface AmortizationRow {
   totalPrincipal: number;
 }
 
-const fmt = (n: number) =>
-  n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+const fmt = (n: number) => n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 
 const fmtDecimal = (n: number) =>
   n.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -135,7 +134,7 @@ export default function PublicMortgageCalculator({
         if (usePercentDownPayment) {
           newInputs.downPaymentAmount = (value as number) * (prev.downPaymentPercent / 100);
         } else {
-          newInputs.downPaymentPercent = ((prev.downPaymentAmount / (value as number)) * 100);
+          newInputs.downPaymentPercent = (prev.downPaymentAmount / (value as number)) * 100;
         }
       } else if (field === "downPaymentPercent") {
         newInputs.downPaymentAmount = prev.purchasePrice * ((value as number) / 100);
@@ -170,9 +169,7 @@ export default function PublicMortgageCalculator({
 
     const monthlyTax = inputs.propertyTaxAnnual / 12;
     const monthlyInsurance = inputs.insuranceAnnual / 12;
-    const monthlyPMI = inputs.includePmi
-      ? (loanAmount * (inputs.pmiRate / 100)) / 12
-      : 0;
+    const monthlyPMI = inputs.includePmi ? (loanAmount * (inputs.pmiRate / 100)) / 12 : 0;
 
     const totalMonthly = monthlyPI + monthlyTax + monthlyInsurance + inputs.hoaMonthly + monthlyPMI;
     const totalInterest = monthlyPI * numPayments - loanAmount;
@@ -186,7 +183,9 @@ export default function PublicMortgageCalculator({
       monthlyHOA: inputs.hoaMonthly,
       totalMonthly,
       totalInterest,
-      totalCost: monthlyPI * numPayments + inputs.propertyTaxAnnual * inputs.loanTermYears +
+      totalCost:
+        monthlyPI * numPayments +
+        inputs.propertyTaxAnnual * inputs.loanTermYears +
         inputs.insuranceAnnual * inputs.loanTermYears +
         inputs.hoaMonthly * numPayments +
         monthlyPMI * numPayments,
@@ -228,7 +227,17 @@ export default function PublicMortgageCalculator({
   // ─── Affordability Calculation ────────────────────────────────
 
   const affordability = useMemo(() => {
-    const { monthlyBudget, interestRate, loanTermYears, downPaymentPercent, propertyTaxRate, insuranceRate, hoaMonthly, includePmi, pmiRate } = affordInputs;
+    const {
+      monthlyBudget,
+      interestRate,
+      loanTermYears,
+      downPaymentPercent,
+      propertyTaxRate,
+      insuranceRate,
+      hoaMonthly,
+      includePmi,
+      pmiRate,
+    } = affordInputs;
 
     const monthlyRate = interestRate / 100 / 12;
     const numPayments = loanTermYears * 12;
@@ -248,8 +257,7 @@ export default function PublicMortgageCalculator({
     let mortgageFactor = 0;
     if (monthlyRate > 0) {
       mortgageFactor =
-        (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) /
-        (Math.pow(1 + monthlyRate, numPayments) - 1);
+        (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / (Math.pow(1 + monthlyRate, numPayments) - 1);
     } else if (numPayments > 0) {
       mortgageFactor = 1 / numPayments;
     }
@@ -285,9 +293,7 @@ export default function PublicMortgageCalculator({
     { label: "Property Tax", amount: results.monthlyTax, color: "#10b981" },
     { label: "Insurance", amount: results.monthlyInsurance, color: "#f59e0b" },
     { label: "HOA", amount: results.monthlyHOA, color: "#8b5cf6" },
-    ...(results.monthlyPMI > 0
-      ? [{ label: "PMI", amount: results.monthlyPMI, color: "#ef4444" }]
-      : []),
+    ...(results.monthlyPMI > 0 ? [{ label: "PMI", amount: results.monthlyPMI, color: "#ef4444" }] : []),
   ];
 
   const total = pitiBreakdown.reduce((s, b) => s + b.amount, 0);
@@ -297,7 +303,16 @@ export default function PublicMortgageCalculator({
   return (
     <div>
       {/* Tab Switcher */}
-      <div style={{ display: "flex", gap: 0, marginBottom: 24, borderRadius: 8, overflow: "hidden", border: "1px solid #e5e7eb" }}>
+      <div
+        style={{
+          display: "flex",
+          gap: 0,
+          marginBottom: 24,
+          borderRadius: 8,
+          overflow: "hidden",
+          border: "1px solid #e5e7eb",
+        }}
+      >
         {(["calculator", "affordability"] as const).map((tab) => (
           <button
             key={tab}
@@ -329,9 +344,7 @@ export default function PublicMortgageCalculator({
               padding: 24,
             }}
           >
-            <h3 style={{ fontSize: 16, fontWeight: 600, margin: "0 0 16px" }}>
-              Loan Details
-            </h3>
+            <h3 style={{ fontSize: 16, fontWeight: 600, margin: "0 0 16px" }}>Loan Details</h3>
 
             <InputField
               label="Purchase Price"
@@ -347,10 +360,7 @@ export default function PublicMortgageCalculator({
                   label="Down Payment"
                   value={usePercentDownPayment ? inputs.downPaymentPercent : inputs.downPaymentAmount}
                   onChange={(v) =>
-                    handleInputChange(
-                      usePercentDownPayment ? "downPaymentPercent" : "downPaymentAmount",
-                      v
-                    )
+                    handleInputChange(usePercentDownPayment ? "downPaymentPercent" : "downPaymentAmount", v)
                   }
                   prefix={usePercentDownPayment ? undefined : "$"}
                   suffix={usePercentDownPayment ? "%" : undefined}
@@ -455,9 +465,7 @@ export default function PublicMortgageCalculator({
                 marginBottom: 16,
               }}
             >
-              <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 4px" }}>
-                Estimated Monthly Payment
-              </p>
+              <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 4px" }}>Estimated Monthly Payment</p>
               <p style={{ fontSize: 36, fontWeight: 800, margin: "0 0 16px", color: "#111827" }}>
                 {fmt(results.totalMonthly)}
               </p>
@@ -521,9 +529,7 @@ export default function PublicMortgageCalculator({
                 marginBottom: 16,
               }}
             >
-              <h4 style={{ fontSize: 14, fontWeight: 600, margin: "0 0 12px" }}>
-                Loan Summary
-              </h4>
+              <h4 style={{ fontSize: 14, fontWeight: 600, margin: "0 0 12px" }}>Loan Summary</h4>
               {[
                 ["Loan Amount", fmt(results.loanAmount)],
                 ["Down Payment", `${fmt(inputs.downPaymentAmount)} (${inputs.downPaymentPercent.toFixed(1)}%)`],
@@ -573,9 +579,7 @@ export default function PublicMortgageCalculator({
                   textAlign: "center",
                 }}
               >
-                <p style={{ fontSize: 14, fontWeight: 500, margin: "0 0 8px" }}>
-                  Ready to get pre-approved?
-                </p>
+                <p style={{ fontSize: 14, fontWeight: 500, margin: "0 0 8px" }}>Ready to get pre-approved?</p>
                 <a
                   href={`tel:${agentPhone}`}
                   style={{
@@ -607,9 +611,7 @@ export default function PublicMortgageCalculator({
               padding: 24,
             }}
           >
-            <h3 style={{ fontSize: 16, fontWeight: 600, margin: "0 0 16px" }}>
-              What Can You Afford?
-            </h3>
+            <h3 style={{ fontSize: 16, fontWeight: 600, margin: "0 0 16px" }}>What Can You Afford?</h3>
 
             <InputField
               label="Monthly Budget for Housing"
@@ -696,9 +698,7 @@ export default function PublicMortgageCalculator({
                 padding: 24,
               }}
             >
-              <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 4px" }}>
-                Maximum Home Price
-              </p>
+              <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 4px" }}>Maximum Home Price</p>
               <p style={{ fontSize: 36, fontWeight: 800, margin: "0 0 24px", color: "#10b981" }}>
                 {fmt(affordability.maxHomePrice)}
               </p>
@@ -709,9 +709,7 @@ export default function PublicMortgageCalculator({
                 ["Monthly P&I", fmtDecimal(affordability.monthlyPI)],
                 ["Monthly Tax", fmtDecimal(affordability.monthlyTax)],
                 ["Monthly Insurance", fmtDecimal(affordability.monthlyInsurance)],
-                ...(affordability.monthlyPMI > 0
-                  ? [["Monthly PMI", fmtDecimal(affordability.monthlyPMI)]]
-                  : []),
+                ...(affordability.monthlyPMI > 0 ? [["Monthly PMI", fmtDecimal(affordability.monthlyPMI)]] : []),
                 ["Monthly HOA", fmtDecimal(affordInputs.hoaMonthly)],
               ].map(([label, value]) => (
                 <div
@@ -752,9 +750,7 @@ export default function PublicMortgageCalculator({
                   textAlign: "center",
                 }}
               >
-                <p style={{ fontSize: 14, fontWeight: 500, margin: "0 0 8px" }}>
-                  Want to start your home search?
-                </p>
+                <p style={{ fontSize: 14, fontWeight: 500, margin: "0 0 8px" }}>Want to start your home search?</p>
                 <a
                   href={`tel:${agentPhone}`}
                   style={{
@@ -788,9 +784,7 @@ export default function PublicMortgageCalculator({
             overflowX: "auto",
           }}
         >
-          <h3 style={{ fontSize: 16, fontWeight: 600, margin: "0 0 16px" }}>
-            Amortization Schedule
-          </h3>
+          <h3 style={{ fontSize: 16, fontWeight: 600, margin: "0 0 16px" }}>Amortization Schedule</h3>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
               <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
@@ -813,25 +807,12 @@ export default function PublicMortgageCalculator({
               {amortization
                 .filter((_, i) => i % 12 === 0 || i === amortization.length - 1)
                 .map((row) => (
-                  <tr
-                    key={row.month}
-                    style={{ borderBottom: "1px solid #f3f4f6" }}
-                  >
-                    <td style={{ padding: "6px 12px", textAlign: "right" }}>
-                      {row.month}
-                    </td>
-                    <td style={{ padding: "6px 12px", textAlign: "right" }}>
-                      {fmtDecimal(row.payment)}
-                    </td>
-                    <td style={{ padding: "6px 12px", textAlign: "right" }}>
-                      {fmtDecimal(row.principal)}
-                    </td>
-                    <td style={{ padding: "6px 12px", textAlign: "right" }}>
-                      {fmtDecimal(row.interest)}
-                    </td>
-                    <td style={{ padding: "6px 12px", textAlign: "right" }}>
-                      {fmt(row.balance)}
-                    </td>
+                  <tr key={row.month} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                    <td style={{ padding: "6px 12px", textAlign: "right" }}>{row.month}</td>
+                    <td style={{ padding: "6px 12px", textAlign: "right" }}>{fmtDecimal(row.payment)}</td>
+                    <td style={{ padding: "6px 12px", textAlign: "right" }}>{fmtDecimal(row.principal)}</td>
+                    <td style={{ padding: "6px 12px", textAlign: "right" }}>{fmtDecimal(row.interest)}</td>
+                    <td style={{ padding: "6px 12px", textAlign: "right" }}>{fmt(row.balance)}</td>
                   </tr>
                 ))}
             </tbody>
@@ -852,9 +833,8 @@ export default function PublicMortgageCalculator({
           textAlign: "center",
         }}
       >
-        This calculator provides estimates for informational purposes only. Actual payments
-        may vary based on lender terms, credit score, and other factors. Contact a licensed
-        mortgage professional for accurate quotes.
+        This calculator provides estimates for informational purposes only. Actual payments may vary based on lender
+        terms, credit score, and other factors. Contact a licensed mortgage professional for accurate quotes.
       </p>
     </div>
   );

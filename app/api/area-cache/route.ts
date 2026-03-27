@@ -27,17 +27,11 @@ export async function GET(request: NextRequest) {
     const dataType = url.searchParams.get("dataType");
 
     if (!zipCode || !dataType) {
-      return NextResponse.json(
-        { error: "zipCode and dataType are required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "zipCode and dataType are required" }, { status: 400 });
     }
 
     if (!["neighborhood", "federal", "market_stats"].includes(dataType)) {
-      return NextResponse.json(
-        { error: "dataType must be neighborhood, federal, or market_stats" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "dataType must be neighborhood, federal, or market_stats" }, { status: 400 });
     }
 
     // Look up cached data — consider stale after 45 days
@@ -83,7 +77,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -99,16 +95,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid dataType" }, { status: 400 });
     }
 
-    const { error } = await supabaseAdmin
-      .from("area_data_cache")
-      .upsert({
+    const { error } = await supabaseAdmin.from("area_data_cache").upsert(
+      {
         zip_code: zipCode,
         data_type: dataType,
         data,
         fetched_at: new Date().toISOString(),
-      }, {
+      },
+      {
         onConflict: "zip_code,data_type",
-      });
+      },
+    );
 
     if (error) {
       console.error("[AreaCache] Save error:", error.message);

@@ -237,13 +237,14 @@ ACTION_LABELS["send_sms"] = "Send SMS";
 ACTION_LABELS["draft_open_house_reminder"] = "Draft Open House Reminder";
 
 export function buildCopilotPrompt(ctx: PromptContext): string {
-  const integrationStatus = ctx.connectedIntegrations.length > 0
-    ? `Connected integrations: ${ctx.connectedIntegrations.join(", ").toUpperCase()}`
-    : "No integrations connected yet.";
+  const integrationStatus =
+    ctx.connectedIntegrations.length > 0
+      ? `Connected integrations: ${ctx.connectedIntegrations.join(", ").toUpperCase()}`
+      : "No integrations connected yet.";
 
   // Get task-specific flow if an action was clicked
   const taskFlow = ctx.actionContext ? TASK_FLOWS[ctx.actionContext] || null : null;
-  const actionLabel = ctx.actionContext ? (ACTION_LABELS[ctx.actionContext] || ctx.actionContext) : null;
+  const actionLabel = ctx.actionContext ? ACTION_LABELS[ctx.actionContext] || ctx.actionContext : null;
 
   const focusedInstruction = taskFlow
     ? `
@@ -259,15 +260,11 @@ ${taskFlow}
 
   // Build page context
   const pageCtx = ctx.currentPage ? buildPageContext(ctx.currentPage) : "";
-  const pageSection = pageCtx
-    ? `\n═══ CURRENT PAGE CONTEXT ═══\n${pageCtx}\n═══════════════════════════\n`
-    : "";
+  const pageSection = pageCtx ? `\n═══ CURRENT PAGE CONTEXT ═══\n${pageCtx}\n═══════════════════════════\n` : "";
 
   // Build property/lead context
   const propertyCtx = ctx.selectedProperty ? buildPropertyContext(ctx.selectedProperty) : "";
-  const propertySection = propertyCtx
-    ? `\n═══ SELECTED PROPERTY ═══\n${propertyCtx}\n═════════════════════════\n`
-    : "";
+  const propertySection = propertyCtx ? `\n═══ SELECTED PROPERTY ═══\n${propertyCtx}\n═════════════════════════\n` : "";
 
   const leadSection = ctx.selectedLead
     ? `\n═══ SELECTED LEAD ═══\nThe agent has selected lead: ${ctx.selectedLead.name || ctx.selectedLead.full_name || "Unknown"} (${ctx.selectedLead.email || "no email"}, Score: ${ctx.selectedLead.heat_score || "?"})\n═════════════════════\n`

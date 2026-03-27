@@ -7,11 +7,7 @@ export const metadata: Metadata = {
   description: "Your real estate tools and resources",
 };
 
-export default async function ClientPortalPage({
-  params,
-}: {
-  params: Promise<{ agentId: string }>;
-}) {
+export default async function ClientPortalPage({ params }: { params: Promise<{ agentId: string }> }) {
   const { agentId } = await params;
 
   // Fetch agent info for branding
@@ -25,9 +21,7 @@ export default async function ClientPortalPage({
     return (
       <div style={{ maxWidth: 600, margin: "80px auto", padding: 16, textAlign: "center" }}>
         <h1 style={{ fontSize: 24, fontWeight: 700 }}>Portal Not Found</h1>
-        <p style={{ marginTop: 12, color: "#6b7280" }}>
-          This portal link is invalid.
-        </p>
+        <p style={{ marginTop: 12, color: "#6b7280" }}>This portal link is invalid.</p>
       </div>
     );
   }
@@ -52,25 +46,15 @@ export default async function ClientPortalPage({
         }}
       >
         <div style={{ maxWidth: 900, margin: "0 auto" }}>
-          <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>
-            Client Portal
-          </p>
-          <h1 style={{ fontSize: 22, fontWeight: 700, margin: "4px 0 0" }}>
-            {agent.full_name}
-          </h1>
-          {agent.brokerage && (
-            <p style={{ fontSize: 14, color: "#6b7280", margin: "2px 0 0" }}>
-              {agent.brokerage}
-            </p>
-          )}
+          <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>Client Portal</p>
+          <h1 style={{ fontSize: 22, fontWeight: 700, margin: "4px 0 0" }}>{agent.full_name}</h1>
+          {agent.brokerage && <p style={{ fontSize: 14, color: "#6b7280", margin: "2px 0 0" }}>{agent.brokerage}</p>}
         </div>
       </header>
 
       {/* Tools Grid */}
       <main style={{ maxWidth: 900, margin: "0 auto", padding: "32px 24px" }}>
-        <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 20 }}>
-          Real Estate Tools
-        </h2>
+        <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 20 }}>Real Estate Tools</h2>
 
         <div
           style={{
@@ -95,12 +79,8 @@ export default async function ClientPortalPage({
               }}
             >
               <div style={{ fontSize: 32, marginBottom: 12 }}>{tool.icon}</div>
-              <h3 style={{ fontSize: 16, fontWeight: 600, margin: "0 0 6px" }}>
-                {tool.title}
-              </h3>
-              <p style={{ fontSize: 14, color: "#6b7280", margin: 0, lineHeight: 1.5 }}>
-                {tool.description}
-              </p>
+              <h3 style={{ fontSize: 16, fontWeight: 600, margin: "0 0 6px" }}>{tool.title}</h3>
+              <p style={{ fontSize: 14, color: "#6b7280", margin: 0, lineHeight: 1.5 }}>{tool.description}</p>
             </Link>
           ))}
         </div>
@@ -115,9 +95,7 @@ export default async function ClientPortalPage({
             borderRadius: 12,
           }}
         >
-          <h3 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 8px" }}>
-            Need help?
-          </h3>
+          <h3 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 8px" }}>Need help?</h3>
           <p style={{ fontSize: 14, color: "#6b7280", margin: 0 }}>
             Contact {agent.full_name}
             {agent.phone && <> at {agent.phone}</>}

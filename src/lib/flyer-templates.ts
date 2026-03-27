@@ -23,7 +23,8 @@ export const FLYER_TEMPLATES: FlyerTemplate[] = [
   {
     id: "modern",
     name: "Modern Elegance",
-    description: "Clean, contemporary design with bold typography, centered layout, and large hero images. Perfect for showcasing stunning properties.",
+    description:
+      "Clean, contemporary design with bold typography, centered layout, and large hero images. Perfect for showcasing stunning properties.",
     thumbnail: "/templates/modern-thumb.png",
     category: "Contemporary",
     defaultSettings: {
@@ -41,7 +42,8 @@ export const FLYER_TEMPLATES: FlyerTemplate[] = [
   {
     id: "classic",
     name: "Classic Professional",
-    description: "Traditional, timeless layout with elegant serif fonts, split header design, and multi-image grid. Ideal for established agents and luxury markets.",
+    description:
+      "Traditional, timeless layout with elegant serif fonts, split header design, and multi-image grid. Ideal for established agents and luxury markets.",
     thumbnail: "/templates/classic-thumb.png",
     category: "Traditional",
     defaultSettings: {
@@ -59,7 +61,8 @@ export const FLYER_TEMPLATES: FlyerTemplate[] = [
   {
     id: "minimal",
     name: "Minimalist",
-    description: "Ultra-clean design with maximum white space, left-aligned text, and focus on property photography. Less is more approach for modern buyers.",
+    description:
+      "Ultra-clean design with maximum white space, left-aligned text, and focus on property photography. Less is more approach for modern buyers.",
     thumbnail: "/templates/minimal-thumb.png",
     category: "Contemporary",
     defaultSettings: {
@@ -77,7 +80,8 @@ export const FLYER_TEMPLATES: FlyerTemplate[] = [
   {
     id: "luxury",
     name: "Luxury Estate",
-    description: "Premium design with gold accents, centered elegant typography, side-by-side image layout, and QR code for digital integration. For high-end properties.",
+    description:
+      "Premium design with gold accents, centered elegant typography, side-by-side image layout, and QR code for digital integration. For high-end properties.",
     thumbnail: "/templates/luxury-thumb.png",
     category: "Premium",
     defaultSettings: {
@@ -95,7 +99,8 @@ export const FLYER_TEMPLATES: FlyerTemplate[] = [
   {
     id: "bold",
     name: "Bold Impact",
-    description: "High-contrast design with vibrant colors, dynamic split layout, and multi-image grid. Attention-grabbing for competitive markets and quick sales.",
+    description:
+      "High-contrast design with vibrant colors, dynamic split layout, and multi-image grid. Attention-grabbing for competitive markets and quick sales.",
     thumbnail: "/templates/bold-thumb.png",
     category: "Contemporary",
     defaultSettings: {
@@ -113,7 +118,8 @@ export const FLYER_TEMPLATES: FlyerTemplate[] = [
   {
     id: "just-listed",
     name: "Just Listed",
-    description: "Eye-catching 'Just Listed' banner with warm coral accents, large hero photo, and prominent QR code. Great for new listings and generating buzz.",
+    description:
+      "Eye-catching 'Just Listed' banner with warm coral accents, large hero photo, and prominent QR code. Great for new listings and generating buzz.",
     thumbnail: "/templates/just-listed-thumb.png",
     category: "Marketing",
     defaultSettings: {
@@ -131,7 +137,8 @@ export const FLYER_TEMPLATES: FlyerTemplate[] = [
   {
     id: "showcase",
     name: "Showcase",
-    description: "Dark, sophisticated design with a full-bleed property image, overlay text, and clean info cards. Perfect for high-end listings and social media sharing.",
+    description:
+      "Dark, sophisticated design with a full-bleed property image, overlay text, and clean info cards. Perfect for high-end listings and social media sharing.",
     thumbnail: "/templates/showcase-thumb.png",
     category: "Premium",
     defaultSettings: {
@@ -149,7 +156,8 @@ export const FLYER_TEMPLATES: FlyerTemplate[] = [
   {
     id: "spotlight",
     name: "Property Spotlight",
-    description: "Magazine-style layout with a sidebar color accent, large feature photo, and detailed property breakdown. Includes prominent QR code for instant digital access.",
+    description:
+      "Magazine-style layout with a sidebar color accent, large feature photo, and detailed property breakdown. Includes prominent QR code for instant digital access.",
     thumbnail: "/templates/spotlight-thumb.png",
     category: "Contemporary",
     defaultSettings: {

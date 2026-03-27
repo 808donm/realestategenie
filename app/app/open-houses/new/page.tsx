@@ -18,11 +18,7 @@ export default async function NewOpenHousePage() {
     console.log("User ID:", userId, isImpersonating ? "(impersonating)" : "");
 
     // Verify agent profile exists
-    const { data: agent, error: agentError } = await supabase
-      .from("agents")
-      .select("id")
-      .eq("id", user.id)
-      .single();
+    const { data: agent, error: agentError } = await supabase.from("agents").select("id").eq("id", user.id).single();
 
     if (agentError || !agent) {
       throw new Error("Agent profile not found. Please contact an administrator.");
@@ -38,7 +34,9 @@ export default async function NewOpenHousePage() {
     if (!end_at) missing.push("End date/time");
 
     if (missing.length > 0) {
-      throw new Error(`Please fill in the following required field${missing.length > 1 ? "s" : ""}: ${missing.join(", ")}`);
+      throw new Error(
+        `Please fill in the following required field${missing.length > 1 ? "s" : ""}: ${missing.join(", ")}`,
+      );
     }
 
     if (new Date(end_at) <= new Date(start_at)) {
@@ -60,7 +58,9 @@ export default async function NewOpenHousePage() {
     const baths = formData.get("baths") ? Number(formData.get("baths")) : null;
     const sqft = formData.get("sqft") ? Number(formData.get("sqft")) : null;
     const price = formData.get("price") ? Number(formData.get("price")) : null;
-    const listing_description = formData.get("listing_description") ? String(formData.get("listing_description")) : null;
+    const listing_description = formData.get("listing_description")
+      ? String(formData.get("listing_description"))
+      : null;
     const key_features_raw = formData.get("key_features") ? String(formData.get("key_features")) : null;
     const key_features = key_features_raw ? JSON.parse(key_features_raw) : null;
     const property_photo_url = formData.get("property_photo_url") ? String(formData.get("property_photo_url")) : null;
@@ -94,11 +94,7 @@ export default async function NewOpenHousePage() {
     if (mls_listing_id) insertData.mls_listing_id = mls_listing_id;
     if (mls_source) insertData.mls_source = mls_source;
 
-    const { data, error } = await supabase
-      .from("open_house_events")
-      .insert(insertData)
-      .select("id")
-      .single();
+    const { data, error } = await supabase.from("open_house_events").insert(insertData).select("id").single();
 
     if (error) {
       console.error("Error creating open house:", error);
@@ -119,8 +115,7 @@ export default async function NewOpenHousePage() {
   const startDefault = new Date(now.getTime() + 15 * 60 * 1000);
   const endDefault = new Date(startDefault.getTime() + 2 * 60 * 60 * 1000);
 
-  const toLocalInput = (d: Date) =>
-    new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  const toLocalInput = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 
   return (
     <div style={{ maxWidth: 700 }}>

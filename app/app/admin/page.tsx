@@ -12,22 +12,10 @@ export default async function AdminOverviewPage() {
   // Get statistics with error handling
   const results = await Promise.all([
     supabase.from("agents").select("*", { count: "exact", head: true }),
-    supabase
-      .from("agents")
-      .select("*", { count: "exact", head: true })
-      .eq("account_status", "active"),
-    supabase
-      .from("agents")
-      .select("*", { count: "exact", head: true })
-      .eq("account_status", "disabled"),
-    supabase
-      .from("user_invitations")
-      .select("*", { count: "exact", head: true })
-      .eq("status", "pending"),
-    adminSupabase
-      .from("access_requests")
-      .select("*", { count: "exact", head: true })
-      .eq("status", "pending"),
+    supabase.from("agents").select("*", { count: "exact", head: true }).eq("account_status", "active"),
+    supabase.from("agents").select("*", { count: "exact", head: true }).eq("account_status", "disabled"),
+    supabase.from("user_invitations").select("*", { count: "exact", head: true }).eq("status", "pending"),
+    adminSupabase.from("access_requests").select("*", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("open_house_events").select("*", { count: "exact", head: true }),
     supabase.from("lead_submissions").select("*", { count: "exact", head: true }),
     supabase
@@ -60,7 +48,8 @@ export default async function AdminOverviewPage() {
   // Get agents with critical alerts for sales opportunities
   const { data: criticalAlertsData } = await adminSupabase
     .from("usage_alerts")
-    .select(`
+    .select(
+      `
       agent_id,
       resource_type,
       agents (
@@ -70,20 +59,21 @@ export default async function AdminOverviewPage() {
           subscription_plans:subscription_plan_id (name)
         )
       )
-    `)
+    `,
+    )
     .eq("is_resolved", false)
     .eq("alert_type", "critical_100")
     .limit(5);
 
   const salesOpportunities = new Map<string, { agent: any; resources: string[] }>();
-  criticalAlertsData?.forEach(alert => {
+  criticalAlertsData?.forEach((alert) => {
     const existing = salesOpportunities.get(alert.agent_id);
     if (existing) {
       existing.resources.push(alert.resource_type);
     } else {
       salesOpportunities.set(alert.agent_id, {
         agent: alert.agents,
-        resources: [alert.resource_type]
+        resources: [alert.resource_type],
       });
     }
   });
@@ -91,20 +81,14 @@ export default async function AdminOverviewPage() {
   return (
     <div>
       <div style={{ marginBottom: 32 }}>
-        <h1 style={{ fontSize: 32, fontWeight: 800, margin: 0 }}>
-          Admin Overview
-        </h1>
-        <p style={{ color: "#6b7280", marginTop: 8 }}>
-          Real Estate Genie system statistics
-        </p>
+        <h1 style={{ fontSize: 32, fontWeight: 800, margin: 0 }}>Admin Overview</h1>
+        <p style={{ color: "#6b7280", marginTop: 8 }}>Real Estate Genie system statistics</p>
       </div>
 
       {/* Sales Opportunities */}
       {salesOpportunities.size > 0 && (
         <div style={{ marginBottom: 32 }}>
-          <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 16 }}>
-            🚨 Sales Opportunities
-          </h2>
+          <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 16 }}>🚨 Sales Opportunities</h2>
           {Array.from(salesOpportunities.entries()).map(([agentId, data]) => {
             const planName = data.agent?.agent_subscriptions?.[0]?.subscription_plans?.name || "Unknown Plan";
             return (
@@ -129,48 +113,18 @@ export default async function AdminOverviewPage() {
           marginBottom: 32,
         }}
       >
-        <StatCard
-          title="Total Users"
-          value={totalUsers || 0}
-          icon="👥"
-          color="#3b82f6"
-        />
-        <StatCard
-          title="Active Users"
-          value={activeUsers || 0}
-          icon="✓"
-          color="#10b981"
-        />
+        <StatCard title="Total Users" value={totalUsers || 0} icon="👥" color="#3b82f6" />
+        <StatCard title="Active Users" value={activeUsers || 0} icon="✓" color="#10b981" />
         <StatCard
           title="Access Requests"
           value={pendingAccessRequests || 0}
           icon="📋"
           color={pendingAccessRequests && pendingAccessRequests > 0 ? "#f59e0b" : "#10b981"}
         />
-        <StatCard
-          title="Critical Alerts"
-          value={criticalAlerts || 0}
-          icon="🚨"
-          color="#ef4444"
-        />
-        <StatCard
-          title="Warning Alerts"
-          value={warningAlerts || 0}
-          icon="⚠️"
-          color="#f59e0b"
-        />
-        <StatCard
-          title="Open Houses"
-          value={totalOpenHouses || 0}
-          icon="🏠"
-          color="#8b5cf6"
-        />
-        <StatCard
-          title="Total Leads"
-          value={totalLeads || 0}
-          icon="📈"
-          color="#06b6d4"
-        />
+        <StatCard title="Critical Alerts" value={criticalAlerts || 0} icon="🚨" color="#ef4444" />
+        <StatCard title="Warning Alerts" value={warningAlerts || 0} icon="⚠️" color="#f59e0b" />
+        <StatCard title="Open Houses" value={totalOpenHouses || 0} icon="🏠" color="#8b5cf6" />
+        <StatCard title="Total Leads" value={totalLeads || 0} icon="📈" color="#06b6d4" />
         <StatCard
           title="Errors (24h)"
           value={recentErrors || 0}
@@ -180,48 +134,22 @@ export default async function AdminOverviewPage() {
       </div>
 
       <div style={{ background: "white", borderRadius: 12, padding: 24, border: "1px solid #e5e7eb" }}>
-        <h2 style={{ fontSize: 18, fontWeight: 700, margin: "0 0 16px 0" }}>
-          Quick Actions
-        </h2>
+        <h2 style={{ fontSize: 18, fontWeight: 700, margin: "0 0 16px 0" }}>Quick Actions</h2>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-          <QuickActionButton href="/app/admin/users">
-            Manage Users
-          </QuickActionButton>
-          <QuickActionButton href="/app/admin/access-requests">
-            Access Requests
-          </QuickActionButton>
-          <QuickActionButton href="/app/admin/subscriptions">
-            Manage Subscriptions
-          </QuickActionButton>
-          <QuickActionButton href="/app/admin/plans">
-            Manage Plans
-          </QuickActionButton>
-          <QuickActionButton href="/app/admin/features">
-            Manage Features
-          </QuickActionButton>
-          <QuickActionButton href="/app/admin/invitations">
-            Send Invitation
-          </QuickActionButton>
-          <QuickActionButton href="/app/admin/error-logs">
-            View Error Logs
-          </QuickActionButton>
+          <QuickActionButton href="/app/admin/users">Manage Users</QuickActionButton>
+          <QuickActionButton href="/app/admin/access-requests">Access Requests</QuickActionButton>
+          <QuickActionButton href="/app/admin/subscriptions">Manage Subscriptions</QuickActionButton>
+          <QuickActionButton href="/app/admin/plans">Manage Plans</QuickActionButton>
+          <QuickActionButton href="/app/admin/features">Manage Features</QuickActionButton>
+          <QuickActionButton href="/app/admin/invitations">Send Invitation</QuickActionButton>
+          <QuickActionButton href="/app/admin/error-logs">View Error Logs</QuickActionButton>
         </div>
       </div>
     </div>
   );
 }
 
-function StatCard({
-  title,
-  value,
-  icon,
-  color,
-}: {
-  title: string;
-  value: number;
-  icon: string;
-  color: string;
-}) {
+function StatCard({ title, value, icon, color }: { title: string; value: number; icon: string; color: string }) {
   return (
     <div
       style={{
@@ -247,9 +175,7 @@ function StatCard({
           {icon}
         </div>
         <div>
-          <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 500 }}>
-            {title}
-          </div>
+          <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 500 }}>{title}</div>
           <div style={{ fontSize: 28, fontWeight: 800, color }}>{value}</div>
         </div>
       </div>
@@ -257,13 +183,7 @@ function StatCard({
   );
 }
 
-function QuickActionButton({
-  href,
-  children,
-}: {
-  href: string;
-  children: React.ReactNode;
-}) {
+function QuickActionButton({ href, children }: { href: string; children: React.ReactNode }) {
   return (
     <a
       href={href}

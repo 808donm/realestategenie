@@ -13,22 +13,17 @@ export default function TermsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-3xl">Terms of Service</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Last Updated: {new Date().toLocaleDateString()}
-            </p>
+            <p className="text-sm text-muted-foreground">Last Updated: {new Date().toLocaleDateString()}</p>
           </CardHeader>
           <CardContent className="prose prose-sm max-w-none">
             <h2>1. Acceptance of Terms</h2>
             <p>
-              By accessing and using The Real Estate Genie ("Service," "Platform," "we," "us," or "our"),
-              you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms,
-              do not use the Service.
+              By accessing and using The Real Estate Genie ("Service," "Platform," "we," "us," or "our"), you agree to
+              be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, do not use the Service.
             </p>
 
             <h2>2. Description of Service</h2>
-            <p>
-              The Real Estate Genie is an open house management platform that enables real estate agents to:
-            </p>
+            <p>The Real Estate Genie is an open house management platform that enables real estate agents to:</p>
             <ul>
               <li>Create and manage open house events</li>
               <li>Capture and qualify leads through QR code check-ins</li>
@@ -38,9 +33,7 @@ export default function TermsPage() {
             </ul>
 
             <h2>3. Eligibility</h2>
-            <p>
-              You must:
-            </p>
+            <p>You must:</p>
             <ul>
               <li>Be at least 18 years old</li>
               <li>Be a licensed real estate agent or broker (where applicable)</li>
@@ -59,8 +52,8 @@ export default function TermsPage() {
 
             <h3>4.2 Multi-Factor Authentication</h3>
             <p>
-              We strongly recommend enabling multi-factor authentication (MFA) for enhanced security.
-              Some features may require MFA to access.
+              We strongly recommend enabling multi-factor authentication (MFA) for enhanced security. Some features may
+              require MFA to access.
             </p>
 
             <h2>5. Acceptable Use</h2>
@@ -96,15 +89,15 @@ export default function TermsPage() {
 
             <h3>6.2 Consent Versioning</h3>
             <p>
-              Our platform tracks consent versions and timestamps. You are responsible for
-              reviewing and customizing consent language to comply with your local regulations.
+              Our platform tracks consent versions and timestamps. You are responsible for reviewing and customizing
+              consent language to comply with your local regulations.
             </p>
 
             <h2>7. Third-Party Integrations</h2>
             <h3>7.1 Integration Services</h3>
             <p>
-              The Service may integrate with third-party services (GoHighLevel, n8n, IDX Broker, etc.).
-              Your use of these integrations is subject to:
+              The Service may integrate with third-party services (GoHighLevel, n8n, IDX Broker, etc.). Your use of
+              these integrations is subject to:
             </p>
             <ul>
               <li>The third party's own terms of service and privacy policies</li>
@@ -113,9 +106,7 @@ export default function TermsPage() {
             </ul>
 
             <h3>7.2 API Usage</h3>
-            <p>
-              If you use our API or integrate with external services, you must:
-            </p>
+            <p>If you use our API or integrate with external services, you must:</p>
             <ul>
               <li>Keep API keys and credentials secure</li>
               <li>Respect rate limits and usage quotas</li>
@@ -125,14 +116,14 @@ export default function TermsPage() {
             <h2>8. Intellectual Property</h2>
             <h3>8.1 Our Rights</h3>
             <p>
-              The Service, including all content, features, and functionality, is owned by
-              The Real Estate Genie and protected by intellectual property laws.
+              The Service, including all content, features, and functionality, is owned by The Real Estate Genie and
+              protected by intellectual property laws.
             </p>
 
             <h3>8.2 Your Content</h3>
             <p>
-              You retain ownership of content you upload (property photos, flyers, descriptions, etc.).
-              By uploading content, you grant us a license to:
+              You retain ownership of content you upload (property photos, flyers, descriptions, etc.). By uploading
+              content, you grant us a license to:
             </p>
             <ul>
               <li>Store, display, and transmit your content as necessary to provide the Service</li>
@@ -140,9 +131,7 @@ export default function TermsPage() {
             </ul>
 
             <h3>8.3 License Restrictions</h3>
-            <p>
-              You may not:
-            </p>
+            <p>You may not:</p>
             <ul>
               <li>Copy, modify, or reverse engineer the Service</li>
               <li>Remove any copyright or proprietary notices</li>
@@ -166,8 +155,7 @@ export default function TermsPage() {
 
             <h2>10. Feature Flags and Beta Features</h2>
             <p>
-              Some features may be released gradually via feature flags or as beta/preview features.
-              These features:
+              Some features may be released gradually via feature flags or as beta/preview features. These features:
             </p>
             <ul>
               <li>Are provided "as-is" without warranties</li>
@@ -177,19 +165,20 @@ export default function TermsPage() {
 
             <h2>11. Data and Privacy</h2>
             <p>
-              Your use of the Service is also governed by our <Link href="/privacy" className="text-primary hover:underline">Privacy Policy</Link>.
-              By using the Service, you consent to our data practices as described in the Privacy Policy.
+              Your use of the Service is also governed by our{" "}
+              <Link href="/privacy" className="text-primary hover:underline">
+                Privacy Policy
+              </Link>
+              . By using the Service, you consent to our data practices as described in the Privacy Policy.
             </p>
 
             <h2>12. Warranty Disclaimer</h2>
             <p>
-              THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND,
-              EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY,
-              FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+              THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND, EXPRESS OR IMPLIED,
+              INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND
+              NON-INFRINGEMENT.
             </p>
-            <p>
-              We do not warrant that:
-            </p>
+            <p>We do not warrant that:</p>
             <ul>
               <li>The Service will be uninterrupted or error-free</li>
               <li>Defects will be corrected</li>
@@ -198,23 +187,19 @@ export default function TermsPage() {
             </ul>
 
             <h2>13. Limitation of Liability</h2>
-            <p>
-              TO THE MAXIMUM EXTENT PERMITTED BY LAW, THE REAL ESTATE GENIE SHALL NOT BE LIABLE FOR:
-            </p>
+            <p>TO THE MAXIMUM EXTENT PERMITTED BY LAW, THE REAL ESTATE GENIE SHALL NOT BE LIABLE FOR:</p>
             <ul>
               <li>Indirect, incidental, special, consequential, or punitive damages</li>
               <li>Loss of profits, revenue, data, or goodwill</li>
               <li>Service interruptions or data loss</li>
               <li>Third-party integrations or services</li>
             </ul>
-            <p>
-              Our total liability shall not exceed the fees paid by you in the 12 months prior to the claim.
-            </p>
+            <p>Our total liability shall not exceed the fees paid by you in the 12 months prior to the claim.</p>
 
             <h2>14. Indemnification</h2>
             <p>
-              You agree to indemnify and hold harmless The Real Estate Genie from any claims, damages,
-              or expenses arising from:
+              You agree to indemnify and hold harmless The Real Estate Genie from any claims, damages, or expenses
+              arising from:
             </p>
             <ul>
               <li>Your use of the Service</li>
@@ -225,15 +210,10 @@ export default function TermsPage() {
 
             <h2>15. Termination</h2>
             <h3>15.1 By You</h3>
-            <p>
-              You may terminate your account at any time through your account settings or by
-              contacting support.
-            </p>
+            <p>You may terminate your account at any time through your account settings or by contacting support.</p>
 
             <h3>15.2 By Us</h3>
-            <p>
-              We may suspend or terminate your account if:
-            </p>
+            <p>We may suspend or terminate your account if:</p>
             <ul>
               <li>You violate these Terms</li>
               <li>Your account is inactive for an extended period</li>
@@ -251,59 +231,54 @@ export default function TermsPage() {
 
             <h2>16. Changes to Terms</h2>
             <p>
-              We reserve the right to modify these Terms at any time. We will notify you of material
-              changes via email or in-app notification. Continued use of the Service after changes
-              constitutes acceptance of the new Terms.
+              We reserve the right to modify these Terms at any time. We will notify you of material changes via email
+              or in-app notification. Continued use of the Service after changes constitutes acceptance of the new
+              Terms.
             </p>
 
             <h2>17. Governing Law</h2>
             <p>
-              These Terms are governed by the laws of [Your Jurisdiction], without regard to conflict
-              of law provisions. Any disputes shall be resolved in the courts of [Your Jurisdiction].
+              These Terms are governed by the laws of [Your Jurisdiction], without regard to conflict of law provisions.
+              Any disputes shall be resolved in the courts of [Your Jurisdiction].
             </p>
 
             <h2>18. Dispute Resolution</h2>
             <h3>18.1 Informal Resolution</h3>
-            <p>
-              Before filing a claim, you agree to contact us to attempt to resolve the dispute informally.
-            </p>
+            <p>Before filing a claim, you agree to contact us to attempt to resolve the dispute informally.</p>
 
             <h3>18.2 Arbitration</h3>
             <p>
-              Any disputes not resolved informally shall be resolved through binding arbitration in
-              accordance with [Arbitration Rules], except where prohibited by law.
+              Any disputes not resolved informally shall be resolved through binding arbitration in accordance with
+              [Arbitration Rules], except where prohibited by law.
             </p>
 
             <h2>19. Miscellaneous</h2>
             <h3>19.1 Entire Agreement</h3>
             <p>
-              These Terms, together with our Privacy Policy, constitute the entire agreement between
-              you and The Real Estate Genie.
+              These Terms, together with our Privacy Policy, constitute the entire agreement between you and The Real
+              Estate Genie.
             </p>
 
             <h3>19.2 Severability</h3>
             <p>
-              If any provision of these Terms is found to be invalid, the remaining provisions will
-              remain in full force and effect.
+              If any provision of these Terms is found to be invalid, the remaining provisions will remain in full force
+              and effect.
             </p>
 
             <h3>19.3 Waiver</h3>
-            <p>
-              Our failure to enforce any provision of these Terms does not constitute a waiver of that provision.
-            </p>
+            <p>Our failure to enforce any provision of these Terms does not constitute a waiver of that provision.</p>
 
             <h3>19.4 Assignment</h3>
             <p>
-              You may not assign these Terms without our prior written consent. We may assign these
-              Terms at any time without notice.
+              You may not assign these Terms without our prior written consent. We may assign these Terms at any time
+              without notice.
             </p>
 
             <h2>20. Contact Information</h2>
+            <p>For questions about these Terms, please contact us at:</p>
             <p>
-              For questions about these Terms, please contact us at:
-            </p>
-            <p>
-              <strong>Email:</strong> legal@realestategenie.com<br />
+              <strong>Email:</strong> legal@realestategenie.com
+              <br />
               <strong>Address:</strong> [Your Business Address]
             </p>
 

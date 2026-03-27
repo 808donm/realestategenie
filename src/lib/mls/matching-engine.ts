@@ -64,10 +64,7 @@ function remarksContain(property: TrestleProperty, keyword: string): boolean {
  * Score a single listing against lead criteria.
  * Returns 0-100 score and list of reasons.
  */
-export function scoreMatch(
-  lead: LeadCriteria,
-  property: TrestleProperty
-): { score: number; reasons: string[] } {
+export function scoreMatch(lead: LeadCriteria, property: TrestleProperty): { score: number; reasons: string[] } {
   let score = 0;
   const reasons: string[] = [];
 
@@ -136,7 +133,7 @@ export function matchLeadsToListings(
   leads: LeadCriteria[],
   listings: TrestleProperty[],
   maxMatchesPerLead = 5,
-  minScore = 25
+  minScore = 25,
 ): ListingMatch[] {
   const allMatches: ListingMatch[] = [];
 

@@ -58,25 +58,15 @@ export default function RegisterClient() {
           <CardHeader className="text-center space-y-4">
             <div className="flex justify-center">
               <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
-                <svg
-                  className="w-8 h-8 text-green-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
+                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
             </div>
             <CardTitle className="text-2xl">Application Received!</CardTitle>
             <CardDescription className="text-base">
-              Thank you for your interest in Real Estate Genie. We've received your application
-              and will review it shortly.
+              Thank you for your interest in Real Estate Genie. We've received your application and will review it
+              shortly.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -123,24 +113,19 @@ export default function RegisterClient() {
             />
           </div>
           <div>
-            <CardTitle className="text-2xl">
-              Request Access
-            </CardTitle>
+            <CardTitle className="text-2xl">Request Access</CardTitle>
             <p className="mt-2 text-sm font-bold text-foreground">
               Real Estate Deal Flow &amp; Analytics For The Independent Agent
             </p>
-            <CardDescription className="mt-2">
-              Apply for exclusive access to Real Estate Genie
-            </CardDescription>
+            <CardDescription className="mt-2">Apply for exclusive access to Real Estate Genie</CardDescription>
           </div>
         </CardHeader>
 
         <CardContent>
           <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
             <p className="text-sm text-amber-900">
-              <strong>Exclusive Platform:</strong> Real Estate Genie is a curated platform for
-              serious real estate professionals. Submit your application and we'll reach out
-              to schedule a discovery call.
+              <strong>Exclusive Platform:</strong> Real Estate Genie is a curated platform for serious real estate
+              professionals. Submit your application and we'll reach out to schedule a discovery call.
             </p>
           </div>
 
@@ -188,15 +173,11 @@ export default function RegisterClient() {
                 required
                 disabled={loading}
               />
-              <p className="text-xs text-muted-foreground">
-                Include country code (e.g., +1 for US)
-              </p>
+              <p className="text-xs text-muted-foreground">Include country code (e.g., +1 for US)</p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="company">
-                Company/Brokerage
-              </Label>
+              <Label htmlFor="company">Company/Brokerage</Label>
               <Input
                 id="company"
                 type="text"
@@ -208,9 +189,7 @@ export default function RegisterClient() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="message">
-                Tell us about your real estate business
-              </Label>
+              <Label htmlFor="message">Tell us about your real estate business</Label>
               <Textarea
                 id="message"
                 placeholder="What type of real estate do you specialize in? How many transactions per year? What are you looking for in a platform?"
@@ -227,9 +206,7 @@ export default function RegisterClient() {
           </form>
 
           {error && (
-            <div className="mt-4 p-3 text-sm text-danger bg-danger/10 border border-danger/20 rounded-lg">
-              {error}
-            </div>
+            <div className="mt-4 p-3 text-sm text-danger bg-danger/10 border border-danger/20 rounded-lg">{error}</div>
           )}
 
           <div className="mt-6 text-center">

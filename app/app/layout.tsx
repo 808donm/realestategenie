@@ -112,43 +112,43 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <ImpersonationBanner />
 
       <div className="flex flex-1">
-      {/* Desktop Sidebar */}
-      <AppSidebar {...sidebarProps} />
+        {/* Desktop Sidebar */}
+        <AppSidebar {...sidebarProps} />
 
-      {/* Main Content Area */}
-      <div className="flex-1 min-w-0 flex flex-col">
-        {/* Usage Warning Banners */}
-        {subscriptionStatus && subscriptionStatus.hasActiveAlerts && (
-          <UsageWarningBanner
-            alerts={subscriptionStatus.alerts}
-            plan={subscriptionStatus.plan}
-            suggestedPlan={suggestedPlan}
-          />
-        )}
+        {/* Main Content Area */}
+        <div className="flex-1 min-w-0 flex flex-col">
+          {/* Usage Warning Banners */}
+          {subscriptionStatus && subscriptionStatus.hasActiveAlerts && (
+            <UsageWarningBanner
+              alerts={subscriptionStatus.alerts}
+              plan={subscriptionStatus.plan}
+              suggestedPlan={suggestedPlan}
+            />
+          )}
 
-        {/* Global Search Bar + Notification Center */}
-        <div className="noprint" style={{ padding: "12px 16px 0", maxWidth: 1100, margin: "0 auto", width: "100%" }}>
-          <div className="flex items-center gap-3">
-            <div className="flex-1">
-              <GlobalSearch />
+          {/* Global Search Bar + Notification Center */}
+          <div className="noprint" style={{ padding: "12px 16px 0", maxWidth: 1100, margin: "0 auto", width: "100%" }}>
+            <div className="flex items-center gap-3">
+              <div className="flex-1">
+                <GlobalSearch />
+              </div>
+              <NotificationCenter />
             </div>
-            <NotificationCenter />
           </div>
+
+          <main className="flex-1">
+            <div className="max-w-[1100px] mx-auto px-4 py-5 pb-20 md:pb-5">
+              <Breadcrumbs />
+              {children}
+            </div>
+          </main>
         </div>
 
-        <main className="flex-1">
-          <div className="max-w-[1100px] mx-auto px-4 py-5 pb-20 md:pb-5">
-            <Breadcrumbs />
-            {children}
-          </div>
-        </main>
-      </div>
+        {/* Mobile Bottom Bar */}
+        <MobileBottomBar {...sidebarProps} />
 
-      {/* Mobile Bottom Bar */}
-      <MobileBottomBar {...sidebarProps} />
-
-      {/* Hoku AI Assistant — available on all pages */}
-      <HokuGlobal />
+        {/* Hoku AI Assistant — available on all pages */}
+        <HokuGlobal />
       </div>
     </div>
   );

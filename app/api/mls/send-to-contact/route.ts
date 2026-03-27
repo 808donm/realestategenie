@@ -22,10 +22,7 @@ export async function POST(request: NextRequest) {
     const { contactId, property, mode = "attach", customMessage } = body;
 
     if (!contactId || !property) {
-      return NextResponse.json(
-        { error: "contactId and property are required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "contactId and property are required" }, { status: 400 });
     }
 
     const ghlAgentId = await resolveGHLAgentId(userData.user.id);
@@ -34,16 +31,14 @@ export async function POST(request: NextRequest) {
     if (!ghlConfig) {
       return NextResponse.json(
         { error: "GoHighLevel is not connected. Go to Integrations to set it up." },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     const client = new GHLClient(ghlConfig.access_token, ghlConfig.location_id);
 
     // Build property details
-    const address = [property.StreetNumber, property.StreetName, property.StreetSuffix]
-      .filter(Boolean)
-      .join(" ");
+    const address = [property.StreetNumber, property.StreetName, property.StreetSuffix].filter(Boolean).join(" ");
     const fullAddress = [address, property.City, property.StateOrProvince, property.PostalCode]
       .filter(Boolean)
       .join(", ");
@@ -138,7 +133,7 @@ export async function POST(request: NextRequest) {
     console.error("Error sending/attaching listing:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to process listing" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

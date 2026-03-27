@@ -2,11 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { GHLClient } from "@/lib/integrations/ghl-client";
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 /**
  * GHL Workflow Webhook: Handle numeric replies for flyer choice
@@ -21,17 +19,11 @@ export async function POST(request: NextRequest) {
     const { contactId, choice } = body;
 
     if (!contactId) {
-      return NextResponse.json(
-        { error: "contactId is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "contactId is required" }, { status: 400 });
     }
 
     if (!choice) {
-      return NextResponse.json(
-        { error: "choice is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "choice is required" }, { status: 400 });
     }
 
     // Parse choice as integer
@@ -57,10 +49,7 @@ export async function POST(request: NextRequest) {
 
     if (sessionError) {
       console.error("Error fetching offer session:", sessionError);
-      return NextResponse.json(
-        { error: "Database error" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Database error" }, { status: 500 });
     }
 
     // Get GHL integration for sending SMS
@@ -104,10 +93,7 @@ export async function POST(request: NextRequest) {
       console.log("Offer token expired for contact:", contactId);
 
       // Mark session as expired
-      await supabaseAdmin
-        .from("flyer_offer_sessions")
-        .update({ status: "expired" })
-        .eq("id", session.id);
+      await supabaseAdmin.from("flyer_offer_sessions").update({ status: "expired" }).eq("id", session.id);
 
       if (client) {
         await client.sendSMS({
@@ -142,7 +128,8 @@ export async function POST(request: NextRequest) {
     // Fetch the selected registration with event details
     const { data: registration, error: regError } = await supabaseAdmin
       .from("open_house_registrations")
-      .select(`
+      .select(
+        `
         id,
         event_id,
         agent_id,
@@ -156,16 +143,14 @@ export async function POST(request: NextRequest) {
           sqft,
           price
         )
-      `)
+      `,
+      )
       .eq("id", selectedRegistrationId)
       .single();
 
     if (regError || !registration) {
       console.error("Error fetching registration:", regError);
-      return NextResponse.json(
-        { error: "Registration not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Registration not found" }, { status: 404 });
     }
 
     const event = registration.open_house_events as any;
@@ -227,9 +212,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error("Flyer choice error:", error);
-    return NextResponse.json(
-      { error: "Internal server error", details: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error", details: error.message }, { status: 500 });
   }
 }

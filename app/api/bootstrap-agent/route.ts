@@ -18,10 +18,12 @@ export async function POST(req: Request) {
           });
         },
       },
-    }
+    },
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
   // Create agent row if missing; keep email in sync
@@ -32,7 +34,7 @@ export async function POST(req: Request) {
       // leave display_name blank for now; they’ll fill it in later
       updated_at: new Date().toISOString(),
     },
-    { onConflict: "id" }
+    { onConflict: "id" },
   );
 
   if (error) {

@@ -15,17 +15,15 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 export async function GET(request: NextRequest) {
   try {
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check admin
-    const { data: agent } = await supabase
-      .from("agents")
-      .select("is_admin")
-      .eq("id", user.id)
-      .single();
+    const { data: agent } = await supabase.from("agents").select("is_admin").eq("id", user.id).single();
 
     if (!agent?.is_admin) {
       return NextResponse.json({ error: "Admin access required" }, { status: 403 });
@@ -35,10 +33,7 @@ export async function GET(request: NextRequest) {
     const since = new Date(Date.now() - days * 24 * 3600 * 1000).toISOString();
 
     // Total calls by provider
-    const { data: byProvider } = await supabaseAdmin
-      .from("api_call_log")
-      .select("provider")
-      .gte("created_at", since);
+    const { data: byProvider } = await supabaseAdmin.from("api_call_log").select("provider").gte("created_at", since);
 
     const providerCounts: Record<string, number> = {};
     for (const row of byProvider || []) {
@@ -72,13 +67,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Cache hit ratio
-    const { data: cacheData } = await supabaseAdmin
-      .from("api_call_log")
-      .select("cache_hit")
-      .gte("created_at", since);
+    const { data: cacheData } = await supabaseAdmin.from("api_call_log").select("cache_hit").gte("created_at", since);
 
     const totalCalls = cacheData?.length || 0;
-    const cacheHits = cacheData?.filter(r => r.cache_hit).length || 0;
+    const cacheHits = cacheData?.filter((r) => r.cache_hit).length || 0;
 
     // Active user count
     const { count: activeUserCount } = await supabaseAdmin
@@ -109,12 +101,16 @@ export async function GET(request: NextRequest) {
       .select("model, prompt_tokens, completion_tokens, total_tokens, estimated_cost, source")
       .gte("created_at", since);
 
-    const aiByModel: Record<string, { calls: number; promptTokens: number; completionTokens: number; totalTokens: number; totalCost: number }> = {};
+    const aiByModel: Record<
+      string,
+      { calls: number; promptTokens: number; completionTokens: number; totalTokens: number; totalCost: number }
+    > = {};
     const aiBySource: Record<string, { calls: number; totalTokens: number; totalCost: number }> = {};
 
     for (const row of aiTokenData || []) {
       // By model
-      if (!aiByModel[row.model]) aiByModel[row.model] = { calls: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0, totalCost: 0 };
+      if (!aiByModel[row.model])
+        aiByModel[row.model] = { calls: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0, totalCost: 0 };
       aiByModel[row.model].calls++;
       aiByModel[row.model].promptTokens += row.prompt_tokens || 0;
       aiByModel[row.model].completionTokens += row.completion_tokens || 0;

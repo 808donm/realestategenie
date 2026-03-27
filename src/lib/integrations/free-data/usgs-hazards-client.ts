@@ -25,7 +25,10 @@ export interface HazardRiskProfile {
  * Get earthquake hazard data from USGS
  * Uses the Earthquake Hazards Program probabilistic seismic hazard data
  */
-async function getEarthquakeRisk(latitude: number, longitude: number): Promise<{ risk: string; score: number | null; details?: string }> {
+async function getEarthquakeRisk(
+  latitude: number,
+  longitude: number,
+): Promise<{ risk: string; score: number | null; details?: string }> {
   try {
     // USGS Design Maps API — provides seismic hazard parameters
     const url = `https://earthquake.usgs.gov/ws/designmaps/asce7-22.json?latitude=${latitude}&longitude=${longitude}&riskCategory=II&siteClass=D&title=query`;
@@ -46,11 +49,22 @@ async function getEarthquakeRisk(latitude: number, longitude: number): Promise<{
     // Classify risk based on short-period spectral acceleration
     let risk: string;
     let score: number;
-    if (ss >= 1.5) { risk = "Very High"; score = 90; }
-    else if (ss >= 1.0) { risk = "High"; score = 70; }
-    else if (ss >= 0.5) { risk = "Moderate"; score = 50; }
-    else if (ss >= 0.2) { risk = "Low"; score = 25; }
-    else { risk = "Very Low"; score = 10; }
+    if (ss >= 1.5) {
+      risk = "Very High";
+      score = 90;
+    } else if (ss >= 1.0) {
+      risk = "High";
+      score = 70;
+    } else if (ss >= 0.5) {
+      risk = "Moderate";
+      score = 50;
+    } else if (ss >= 0.2) {
+      risk = "Low";
+      score = 25;
+    } else {
+      risk = "Very Low";
+      score = 10;
+    }
 
     return {
       risk,
@@ -130,14 +144,16 @@ export async function getHazardRiskProfile(
 ): Promise<HazardRiskProfile> {
   const [earthquake, femaRisks] = await Promise.all([
     getEarthquakeRisk(latitude, longitude),
-    stateAbbrev ? getFEMARiskIndex(stateAbbrev, countyFips) : Promise.resolve({
-      flood: { risk: "Unknown" as string, score: null as number | null },
-      tornado: { risk: "Unknown" as string, score: null as number | null },
-      hurricane: { risk: "Unknown" as string, score: null as number | null },
-      wildfire: { risk: "Unknown" as string, score: null as number | null },
-      hail: { risk: "Unknown" as string, score: null as number | null },
-      wind: { risk: "Unknown" as string, score: null as number | null },
-    }),
+    stateAbbrev
+      ? getFEMARiskIndex(stateAbbrev, countyFips)
+      : Promise.resolve({
+          flood: { risk: "Unknown" as string, score: null as number | null },
+          tornado: { risk: "Unknown" as string, score: null as number | null },
+          hurricane: { risk: "Unknown" as string, score: null as number | null },
+          wildfire: { risk: "Unknown" as string, score: null as number | null },
+          hail: { risk: "Unknown" as string, score: null as number | null },
+          wind: { risk: "Unknown" as string, score: null as number | null },
+        }),
   ]);
 
   // Compute overall risk as average of available scores

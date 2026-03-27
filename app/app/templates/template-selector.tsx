@@ -11,7 +11,15 @@ type Props = {
 };
 
 // Mini template preview component showing actual layout structure
-function TemplatePreviewMini({ templateId, primaryColor, secondaryColor }: { templateId: string; primaryColor: string; secondaryColor?: string }) {
+function TemplatePreviewMini({
+  templateId,
+  primaryColor,
+  secondaryColor,
+}: {
+  templateId: string;
+  primaryColor: string;
+  secondaryColor?: string;
+}) {
   // Modern: Centered header, hero image, clean layout
   if (templateId === "modern") {
     return (
@@ -194,7 +202,10 @@ function TemplatePreviewMini({ templateId, primaryColor, secondaryColor }: { tem
       <div className="w-full h-full bg-white flex flex-col">
         <div className="flex-[3] bg-gradient-to-b from-gray-600 to-gray-900 relative">
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-          <div className="absolute top-1 left-1 w-5 h-1.5 rounded text-[4px]" style={{ backgroundColor: secondaryColor || "#e2b04a" }} />
+          <div
+            className="absolute top-1 left-1 w-5 h-1.5 rounded text-[4px]"
+            style={{ backgroundColor: secondaryColor || "#e2b04a" }}
+          />
           <div className="absolute bottom-1.5 left-1.5 space-y-0.5">
             <div className="w-10 h-1.5 bg-white/90 rounded" />
             <div className="w-6 h-0.5 bg-white/50 rounded" />
@@ -202,13 +213,22 @@ function TemplatePreviewMini({ templateId, primaryColor, secondaryColor }: { tem
           </div>
         </div>
         <div className="flex h-4 border-b" style={{ borderColor: `${secondaryColor || "#e2b04a"}40` }}>
-          <div className="flex-1 flex items-center justify-center border-r" style={{ borderColor: `${secondaryColor || "#e2b04a"}20` }}>
+          <div
+            className="flex-1 flex items-center justify-center border-r"
+            style={{ borderColor: `${secondaryColor || "#e2b04a"}20` }}
+          >
             <div className="w-2 h-1.5 rounded" style={{ backgroundColor: primaryColor }} />
           </div>
-          <div className="flex-1 flex items-center justify-center border-r" style={{ borderColor: `${secondaryColor || "#e2b04a"}20` }}>
+          <div
+            className="flex-1 flex items-center justify-center border-r"
+            style={{ borderColor: `${secondaryColor || "#e2b04a"}20` }}
+          >
             <div className="w-2 h-1.5 rounded" style={{ backgroundColor: primaryColor }} />
           </div>
-          <div className="flex-1 flex items-center justify-center border-r" style={{ borderColor: `${secondaryColor || "#e2b04a"}20` }}>
+          <div
+            className="flex-1 flex items-center justify-center border-r"
+            style={{ borderColor: `${secondaryColor || "#e2b04a"}20` }}
+          >
             <div className="w-2 h-1.5 rounded" style={{ backgroundColor: primaryColor }} />
           </div>
           <div className="flex-1 flex items-center justify-center">
@@ -226,7 +246,10 @@ function TemplatePreviewMini({ templateId, primaryColor, secondaryColor }: { tem
           </div>
         </div>
         <div className="h-4 flex items-center gap-1 px-1" style={{ backgroundColor: primaryColor }}>
-          <div className="w-3 h-3 rounded-full bg-white/20 border" style={{ borderColor: secondaryColor || "#e2b04a" }} />
+          <div
+            className="w-3 h-3 rounded-full bg-white/20 border"
+            style={{ borderColor: secondaryColor || "#e2b04a" }}
+          />
           <div className="flex-1 space-y-0.5">
             <div className="w-full h-0.5 bg-white/70 rounded" />
             <div className="w-2/3 h-0.5 bg-white/50 rounded" />
@@ -285,7 +308,8 @@ export default function TemplateSelector({ selectedTemplate, onSelect }: Props) 
       <div>
         <h3 className="text-lg font-semibold mb-2">Choose Your Template</h3>
         <p className="text-sm text-muted-foreground">
-          Each template has a unique design and layout. Selecting a template will apply its default colors, fonts, and layout options.
+          Each template has a unique design and layout. Selecting a template will apply its default colors, fonts, and
+          layout options.
         </p>
       </div>
 
@@ -337,9 +361,7 @@ export default function TemplateSelector({ selectedTemplate, onSelect }: Props) 
                       style={{ backgroundColor: template.defaultSettings.secondaryColor }}
                       title="Secondary color"
                     />
-                    <span className="text-xs text-gray-400 ml-1">
-                      {template.defaultSettings.fontFamily}
-                    </span>
+                    <span className="text-xs text-gray-400 ml-1">{template.defaultSettings.fontFamily}</span>
                   </div>
                 </div>
               </CardContent>

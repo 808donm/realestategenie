@@ -5,7 +5,9 @@ import { generateOutreach, type ProspectMode, type ProspectProperty, type Market
 export async function POST(req: NextRequest) {
   try {
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -30,7 +32,7 @@ export async function POST(req: NextRequest) {
     console.error("[prospecting-ai/outreach]", err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Outreach generation failed" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

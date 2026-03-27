@@ -2,11 +2,9 @@ import { NextResponse } from "next/server";
 import { getValidGHLConfig } from "@/lib/integrations/ghl-token-refresh";
 import { createClient } from "@supabase/supabase-js";
 
-const admin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 /**
  * Diagnostic endpoint to check a specific Registration record in GHL
@@ -15,42 +13,51 @@ const admin = createClient(
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const registrationId = searchParams.get('registrationId');
-    const agentId = searchParams.get('agentId');
+    const registrationId = searchParams.get("registrationId");
+    const agentId = searchParams.get("agentId");
 
     if (!registrationId || !agentId) {
-      return NextResponse.json({
-        error: "Missing required parameters: registrationId and agentId"
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: "Missing required parameters: registrationId and agentId",
+        },
+        { status: 400 },
+      );
     }
 
     const ghlConfig = await getValidGHLConfig(agentId);
 
     if (!ghlConfig) {
-      return NextResponse.json({
-        error: "GHL not connected for this agent"
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: "GHL not connected for this agent",
+        },
+        { status: 400 },
+      );
     }
 
     // Fetch the Registration record
     const registrationResponse = await fetch(
       `https://services.leadconnectorhq.com/objects/custom_objects.registrations/records/${registrationId}?locationId=${ghlConfig.location_id}`,
       {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Authorization': `Bearer ${ghlConfig.access_token}`,
-          'Content-Type': 'application/json',
-          'Version': '2021-07-28',
+          Authorization: `Bearer ${ghlConfig.access_token}`,
+          "Content-Type": "application/json",
+          Version: "2021-07-28",
         },
-      }
+      },
     );
 
     if (!registrationResponse.ok) {
       const error = await registrationResponse.text();
-      return NextResponse.json({
-        error: "Failed to fetch Registration record",
-        details: error
-      }, { status: 500 });
+      return NextResponse.json(
+        {
+          error: "Failed to fetch Registration record",
+          details: error,
+        },
+        { status: 500 },
+      );
     }
 
     const registrationData = await registrationResponse.json();
@@ -60,13 +67,13 @@ export async function GET(req: Request) {
     const associationsResponse = await fetch(
       `https://services.leadconnectorhq.com/associations/?locationId=${ghlConfig.location_id}&firstObjectKey=custom_objects.registrations&firstObjectId=${registrationId}`,
       {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Authorization': `Bearer ${ghlConfig.access_token}`,
-          'Content-Type': 'application/json',
-          'Version': '2021-07-28',
+          Authorization: `Bearer ${ghlConfig.access_token}`,
+          "Content-Type": "application/json",
+          Version: "2021-07-28",
         },
-      }
+      },
     );
 
     let associations = [];
@@ -76,9 +83,7 @@ export async function GET(req: Request) {
     }
 
     // Find the OpenHouse association
-    const openHouseAssoc = associations.find((a: any) =>
-      a.secondObjectKey === 'custom_objects.openhouses'
-    );
+    const openHouseAssoc = associations.find((a: any) => a.secondObjectKey === "custom_objects.openhouses");
 
     let openHouseData = null;
     if (openHouseAssoc?.secondObjectId) {
@@ -86,13 +91,13 @@ export async function GET(req: Request) {
       const openHouseResponse = await fetch(
         `https://services.leadconnectorhq.com/objects/custom_objects.openhouses/records/${openHouseAssoc.secondObjectId}?locationId=${ghlConfig.location_id}`,
         {
-          method: 'GET',
+          method: "GET",
           headers: {
-            'Authorization': `Bearer ${ghlConfig.access_token}`,
-            'Content-Type': 'application/json',
-            'Version': '2021-07-28',
+            Authorization: `Bearer ${ghlConfig.access_token}`,
+            "Content-Type": "application/json",
+            Version: "2021-07-28",
           },
-        }
+        },
       );
 
       if (openHouseResponse.ok) {
@@ -116,11 +121,13 @@ export async function GET(req: Request) {
         hasOpenHouseAssociation: !!openHouseAssoc,
         openHouseId: openHouseAssoc?.secondObjectId,
       },
-      openHouse: openHouseData ? {
-        id: openHouseData.record?.id,
-        properties: openHouseData.record?.properties,
-        createdAt: openHouseData.record?.createdAt,
-      } : null,
+      openHouse: openHouseData
+        ? {
+            id: openHouseData.record?.id,
+            properties: openHouseData.record?.properties,
+            createdAt: openHouseData.record?.createdAt,
+          }
+        : null,
       diagnosis: {
         registrationExists: !!registration,
         associationExists: !!openHouseAssoc,
@@ -132,10 +139,13 @@ export async function GET(req: Request) {
       recommendations: generateRecommendations(registration, openHouseAssoc, openHouseData),
     });
   } catch (error: any) {
-    return NextResponse.json({
-      error: error.message,
-      stack: error.stack,
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: error.message,
+        stack: error.stack,
+      },
+      { status: 500 },
+    );
   }
 }
 
@@ -150,7 +160,9 @@ function generateRecommendations(registration: any, openHouseAssoc: any, openHou
   if (!openHouseAssoc) {
     recommendations.push("❌ No association found between Registration → OpenHouse");
     recommendations.push("💡 Check server logs for association creation errors");
-    recommendations.push("💡 Verify association is configured in GHL Settings → Custom Objects → Registrations → Associations");
+    recommendations.push(
+      "💡 Verify association is configured in GHL Settings → Custom Objects → Registrations → Associations",
+    );
     return recommendations;
   }
 

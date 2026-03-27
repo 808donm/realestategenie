@@ -22,7 +22,7 @@ export async function pullOpenHousesFromMLS(
   client: TrestleClient,
   supabase: SupabaseClient,
   agentId: string,
-  options?: { daysAhead?: number; listingKey?: string }
+  options?: { daysAhead?: number; listingKey?: string },
 ): Promise<SyncResult> {
   const result: SyncResult = {
     imported: 0,
@@ -66,9 +66,7 @@ export async function pullOpenHousesFromMLS(
       .eq("agent_id", agentId)
       .in("mls_open_house_key", ohKeys);
 
-    const existingKeyMap = new Map(
-      (existingEvents || []).map((e) => [e.mls_open_house_key, e.id])
-    );
+    const existingKeyMap = new Map((existingEvents || []).map((e) => [e.mls_open_house_key, e.id]));
 
     for (const oh of ohResult.value) {
       const property = propertyMap.get(oh.ListingKey);
@@ -77,9 +75,10 @@ export async function pullOpenHousesFromMLS(
         continue;
       }
 
-      const address = property.UnparsedAddress ||
+      const address =
+        property.UnparsedAddress ||
         [property.StreetNumber, property.StreetName, property.StreetSuffix].filter(Boolean).join(" ") +
-        `, ${property.City}, ${property.StateOrProvince} ${property.PostalCode}`;
+          `, ${property.City}, ${property.StateOrProvince} ${property.PostalCode}`;
 
       // Parse date and times
       const startAt = parseOpenHouseDateTime(oh.OpenHouseDate, oh.OpenHouseStartTime);
@@ -153,7 +152,7 @@ export async function pullOpenHousesFromMLS(
  */
 export async function getUnsyncedLocalEvents(
   supabase: SupabaseClient,
-  agentId: string
+  agentId: string,
 ): Promise<{ id: string; address: string; startAt: string; endAt: string }[]> {
   const { data } = await supabase
     .from("open_house_events")

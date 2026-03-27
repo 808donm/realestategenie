@@ -25,23 +25,14 @@ export async function GET(request: NextRequest) {
       .maybeSingle();
 
     if (fetchError || !integration) {
-      return NextResponse.json(
-        { error: "Trestle integration not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Trestle integration not found" }, { status: 404 });
     }
 
     // Ensure config is parsed as an object (direct SQL may store it as a JSON string)
-    const config =
-      typeof integration.config === "string"
-        ? JSON.parse(integration.config)
-        : integration.config;
+    const config = typeof integration.config === "string" ? JSON.parse(integration.config) : integration.config;
 
     if (integration.status !== "connected" || !(config.client_id || config.username)) {
-      return NextResponse.json(
-        { error: "Trestle is not connected" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Trestle is not connected" }, { status: 400 });
     }
 
     // Parse query parameters
@@ -95,7 +86,7 @@ export async function GET(request: NextRequest) {
     console.error("Error fetching Trestle properties:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to fetch properties" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -116,10 +107,7 @@ export async function POST(request: NextRequest) {
     const { listingKey, includeMedia } = body;
 
     if (!listingKey) {
-      return NextResponse.json(
-        { error: "listingKey is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "listingKey is required" }, { status: 400 });
     }
 
     // Get the integration
@@ -131,22 +119,13 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (fetchError || !integration) {
-      return NextResponse.json(
-        { error: "Trestle integration not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Trestle integration not found" }, { status: 404 });
     }
 
-    const postConfig =
-      typeof integration.config === "string"
-        ? JSON.parse(integration.config)
-        : integration.config;
+    const postConfig = typeof integration.config === "string" ? JSON.parse(integration.config) : integration.config;
 
     if (integration.status !== "connected" || !(postConfig.client_id || postConfig.username)) {
-      return NextResponse.json(
-        { error: "Trestle is not connected" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Trestle is not connected" }, { status: 400 });
     }
 
     // Create client and fetch property
@@ -169,7 +148,7 @@ export async function POST(request: NextRequest) {
     console.error("Error fetching Trestle property:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to fetch property" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

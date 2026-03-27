@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to create rule" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -157,7 +157,7 @@ export async function PATCH(request: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to update rule" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

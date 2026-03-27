@@ -2,10 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: memberId } = await params;
     const supabase = await supabaseServer();
@@ -77,10 +74,7 @@ export async function PATCH(
       });
 
       if (!canAdd) {
-        return NextResponse.json(
-          { error: `No ${role} seats available. Please upgrade your plan.` },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: `No ${role} seats available. Please upgrade your plan.` }, { status: 400 });
       }
     }
 

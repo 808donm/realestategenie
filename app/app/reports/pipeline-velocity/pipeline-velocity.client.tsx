@@ -4,9 +4,7 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import jsPDF from "jspdf";
 import * as XLSX from "xlsx";
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell,
-} from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell } from "recharts";
 
 interface PipelineStage {
   name: string;
@@ -99,7 +97,12 @@ export default function PipelineVelocityClient() {
     y += 10;
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    doc.text(`Generated ${new Date().toLocaleDateString()} | Range: ${DATE_RANGES.find((d) => d.value === dateRange)?.label}`, pw / 2, y, { align: "center" });
+    doc.text(
+      `Generated ${new Date().toLocaleDateString()} | Range: ${DATE_RANGES.find((d) => d.value === dateRange)?.label}`,
+      pw / 2,
+      y,
+      { align: "center" },
+    );
     y += 14;
 
     // Summary
@@ -109,9 +112,12 @@ export default function PipelineVelocityClient() {
     y += 8;
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    doc.text(`Average Lead-to-Close: ${totalAvgDays.toFixed(1)} days`, 25, y); y += 6;
-    doc.text(`Bottleneck Stage: ${bottleneckStage.name} (${bottleneckStage.avgDays} avg days)`, 25, y); y += 6;
-    doc.text(`Stuck Deals: ${stuckDeals.length}`, 25, y); y += 12;
+    doc.text(`Average Lead-to-Close: ${totalAvgDays.toFixed(1)} days`, 25, y);
+    y += 6;
+    doc.text(`Bottleneck Stage: ${bottleneckStage.name} (${bottleneckStage.avgDays} avg days)`, 25, y);
+    y += 6;
+    doc.text(`Stuck Deals: ${stuckDeals.length}`, 25, y);
+    y += 12;
 
     // Stage table
     doc.setFontSize(12);
@@ -153,7 +159,10 @@ export default function PipelineVelocityClient() {
 
     doc.setFont("helvetica", "normal");
     stuckDeals.forEach((d) => {
-      if (y > 270) { doc.addPage(); y = 20; }
+      if (y > 270) {
+        doc.addPage();
+        y = 20;
+      }
       doc.text(d.name, sdCols[0], y);
       doc.text(d.stage, sdCols[1], y);
       doc.text(`${d.daysInStage}d`, sdCols[2], y);
@@ -169,13 +178,13 @@ export default function PipelineVelocityClient() {
   };
 
   const exportToExcel = () => {
-    const stageRows = stages.map(s => ({
+    const stageRows = stages.map((s) => ({
       Stage: s.name,
       "Avg Days": s.name === "Closed" ? "-" : s.avgDays,
       "Current Leads": s.currentCount,
       "Conversion to Next %": s.name === "Closed" ? "-" : `${s.conversionToNext}%`,
     }));
-    const stuckRows = stuckDeals.map(d => ({
+    const stuckRows = stuckDeals.map((d) => ({
       Lead: d.name,
       Stage: d.stage,
       "Days in Stage": d.daysInStage,
@@ -202,19 +211,56 @@ export default function PipelineVelocityClient() {
     <div>
       {/* Integration Notice */}
       {isLive ? (
-        <div style={{ padding: 16, background: "#ecfdf5", border: "1px solid #a7f3d0", borderRadius: 10, marginBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div
+          style={{
+            padding: 16,
+            background: "#ecfdf5",
+            border: "1px solid #a7f3d0",
+            borderRadius: 10,
+            marginBottom: 20,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
           <div>
             <strong style={{ fontSize: 14 }}>Live Data</strong>
-            <span style={{ fontSize: 13, opacity: 0.8, marginLeft: 8 }}>Showing real pipeline data from your integrations.</span>
+            <span style={{ fontSize: 13, opacity: 0.8, marginLeft: 8 }}>
+              Showing real pipeline data from your integrations.
+            </span>
           </div>
         </div>
       ) : (
-        <div style={{ padding: 16, background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10, marginBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div
+          style={{
+            padding: 16,
+            background: "#fffbeb",
+            border: "1px solid #fde68a",
+            borderRadius: 10,
+            marginBottom: 20,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
           <div>
             <strong style={{ fontSize: 14 }}>Sample Data</strong>
-            <span style={{ fontSize: 13, opacity: 0.8, marginLeft: 8 }}>Connect GoHighLevel to see your real pipeline data.</span>
+            <span style={{ fontSize: 13, opacity: 0.8, marginLeft: 8 }}>
+              Connect GoHighLevel to see your real pipeline data.
+            </span>
           </div>
-          <Link href="/app/integrations" style={{ padding: "6px 14px", background: "#f59e0b", color: "#fff", borderRadius: 6, fontSize: 13, fontWeight: 600, textDecoration: "none" }}>
+          <Link
+            href="/app/integrations"
+            style={{
+              padding: "6px 14px",
+              background: "#f59e0b",
+              color: "#fff",
+              borderRadius: 6,
+              fontSize: 13,
+              fontWeight: 600,
+              textDecoration: "none",
+            }}
+          >
             Connect Integration
           </Link>
         </div>
@@ -243,11 +289,32 @@ export default function PipelineVelocityClient() {
         <div style={{ flex: 1 }} />
         <button
           onClick={exportToPDF}
-          style={{ padding: "8px 20px", background: "#dc2626", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 13 }}
+          style={{
+            padding: "8px 20px",
+            background: "#dc2626",
+            color: "#fff",
+            border: "none",
+            borderRadius: 8,
+            fontWeight: 600,
+            cursor: "pointer",
+            fontSize: 13,
+          }}
         >
           Export PDF
         </button>
-        <button onClick={exportToExcel} style={{ padding: "8px 20px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>
+        <button
+          onClick={exportToExcel}
+          style={{
+            padding: "8px 20px",
+            background: "#fff",
+            color: "#374151",
+            border: "1px solid #d1d5db",
+            borderRadius: 8,
+            fontWeight: 600,
+            cursor: "pointer",
+            fontSize: 13,
+          }}
+        >
           Export Excel
         </button>
       </div>
@@ -275,15 +342,23 @@ export default function PipelineVelocityClient() {
       <div style={{ ...cardStyle, marginBottom: 24 }}>
         <h3 style={{ margin: "0 0 20px 0", fontSize: 16, fontWeight: 700 }}>Average Days in Each Stage</h3>
         <ResponsiveContainer width="100%" height={280}>
-          <BarChart data={stages.filter((s) => s.name !== "Closed")} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
+          <BarChart
+            data={stages.filter((s) => s.name !== "Closed")}
+            margin={{ top: 5, right: 20, bottom: 5, left: 20 }}
+          >
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
             <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-            <YAxis tick={{ fontSize: 11 }} label={{ value: "Days", angle: -90, position: "insideLeft", style: { fontSize: 12 } }} />
+            <YAxis
+              tick={{ fontSize: 11 }}
+              label={{ value: "Days", angle: -90, position: "insideLeft", style: { fontSize: 12 } }}
+            />
             <Tooltip formatter={(value: any) => `${value} days`} />
             <Bar dataKey="avgDays" name="Avg Days" radius={[6, 6, 0, 0]}>
-              {stages.filter((s) => s.name !== "Closed").map((s) => (
-                <Cell key={s.name} fill={s.name === bottleneckStage.name ? "#ef4444" : "#3b82f6"} />
-              ))}
+              {stages
+                .filter((s) => s.name !== "Closed")
+                .map((s) => (
+                  <Cell key={s.name} fill={s.name === bottleneckStage.name ? "#ef4444" : "#3b82f6"} />
+                ))}
             </Bar>
           </BarChart>
         </ResponsiveContainer>
@@ -293,15 +368,23 @@ export default function PipelineVelocityClient() {
       <div style={{ ...cardStyle, marginBottom: 24 }}>
         <h3 style={{ margin: "0 0 20px 0", fontSize: 16, fontWeight: 700 }}>Conversion Rate by Stage</h3>
         <ResponsiveContainer width="100%" height={280}>
-          <BarChart data={stages.filter((s) => s.name !== "Closed")} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
+          <BarChart
+            data={stages.filter((s) => s.name !== "Closed")}
+            margin={{ top: 5, right: 20, bottom: 5, left: 20 }}
+          >
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
             <XAxis dataKey="name" tick={{ fontSize: 12 }} />
             <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} tickFormatter={(v: number) => `${v}%`} />
             <Tooltip formatter={(value: any) => `${value}%`} />
             <Bar dataKey="conversionToNext" name="Conversion %" radius={[6, 6, 0, 0]}>
-              {stages.filter((s) => s.name !== "Closed").map((s) => (
-                <Cell key={s.name} fill={s.conversionToNext >= 70 ? "#10b981" : s.conversionToNext >= 40 ? "#f59e0b" : "#ef4444"} />
-              ))}
+              {stages
+                .filter((s) => s.name !== "Closed")
+                .map((s) => (
+                  <Cell
+                    key={s.name}
+                    fill={s.conversionToNext >= 70 ? "#10b981" : s.conversionToNext >= 40 ? "#f59e0b" : "#ef4444"}
+                  />
+                ))}
             </Bar>
           </BarChart>
         </ResponsiveContainer>
@@ -312,14 +395,19 @@ export default function PipelineVelocityClient() {
         <h3 style={{ margin: "0 0 20px 0", fontSize: 16, fontWeight: 700 }}>Pipeline Funnel</h3>
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           {stages.map((s, idx) => {
-            const widthPct = stages[0].currentCount > 0 ? Math.max(15, (s.currentCount / stages[0].currentCount) * 100) : 100;
+            const widthPct =
+              stages[0].currentCount > 0 ? Math.max(15, (s.currentCount / stages[0].currentCount) * 100) : 100;
             const isBottleneck = s.name === bottleneckStage.name;
             const colors = ["#3b82f6", "#6366f1", "#8b5cf6", "#a855f7", "#10b981"];
             return (
               <div key={s.name} style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <div style={{ width: 120, fontSize: 13, fontWeight: 600, textAlign: "right", flexShrink: 0 }}>
                   {s.name}
-                  {isBottleneck && <span style={{ display: "block", fontSize: 10, color: "#dc2626", fontWeight: 700 }}>BOTTLENECK</span>}
+                  {isBottleneck && (
+                    <span style={{ display: "block", fontSize: 10, color: "#dc2626", fontWeight: 700 }}>
+                      BOTTLENECK
+                    </span>
+                  )}
                 </div>
                 <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
                   <div
@@ -347,9 +435,7 @@ export default function PipelineVelocityClient() {
                         borderRadius: 6,
                       }}
                     />
-                    <span style={{ fontSize: 13, fontWeight: 700, zIndex: 1 }}>
-                      {s.currentCount} leads
-                    </span>
+                    <span style={{ fontSize: 13, fontWeight: 700, zIndex: 1 }}>{s.currentCount} leads</span>
                   </div>
                 </div>
                 <div style={{ width: 100, fontSize: 12, color: "#6b7280", flexShrink: 0 }}>
@@ -375,7 +461,16 @@ export default function PipelineVelocityClient() {
           <thead>
             <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
               {["Stage", "Avg Days in Stage", "Current Leads", "Conversion to Next", "Status"].map((h) => (
-                <th key={h} style={{ padding: "10px 8px", textAlign: h === "Stage" ? "left" : "right", fontWeight: 700, fontSize: 12, color: "#6b7280" }}>
+                <th
+                  key={h}
+                  style={{
+                    padding: "10px 8px",
+                    textAlign: h === "Stage" ? "left" : "right",
+                    fontWeight: 700,
+                    fontSize: 12,
+                    color: "#6b7280",
+                  }}
+                >
                   {h}
                 </th>
               ))}
@@ -385,7 +480,10 @@ export default function PipelineVelocityClient() {
             {stages.map((s) => {
               const isBottleneck = s.name === bottleneckStage.name;
               return (
-                <tr key={s.name} style={{ borderBottom: "1px solid #f3f4f6", background: isBottleneck ? "#fef2f2" : "transparent" }}>
+                <tr
+                  key={s.name}
+                  style={{ borderBottom: "1px solid #f3f4f6", background: isBottleneck ? "#fef2f2" : "transparent" }}
+                >
                   <td style={{ padding: "10px 8px", fontWeight: 600 }}>{s.name}</td>
                   <td style={{ padding: "10px 8px", textAlign: "right" }}>
                     {s.name === "Closed" ? "-" : `${s.avgDays} days`}
@@ -393,21 +491,68 @@ export default function PipelineVelocityClient() {
                   <td style={{ padding: "10px 8px", textAlign: "right" }}>
                     <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
                       <div style={{ width: 60, height: 6, background: "#e5e7eb", borderRadius: 3, overflow: "hidden" }}>
-                        <div style={{ height: "100%", width: `${(s.currentCount / maxCount) * 100}%`, background: isBottleneck ? "#ef4444" : "#3b82f6", borderRadius: 3 }} />
+                        <div
+                          style={{
+                            height: "100%",
+                            width: `${(s.currentCount / maxCount) * 100}%`,
+                            background: isBottleneck ? "#ef4444" : "#3b82f6",
+                            borderRadius: 3,
+                          }}
+                        />
                       </div>
                       {s.currentCount}
                     </div>
                   </td>
-                  <td style={{ padding: "10px 8px", textAlign: "right", color: s.conversionToNext >= 70 ? "#059669" : s.conversionToNext >= 40 ? "#d97706" : "#dc2626", fontWeight: 600 }}>
+                  <td
+                    style={{
+                      padding: "10px 8px",
+                      textAlign: "right",
+                      color: s.conversionToNext >= 70 ? "#059669" : s.conversionToNext >= 40 ? "#d97706" : "#dc2626",
+                      fontWeight: 600,
+                    }}
+                  >
                     {s.name === "Closed" ? "-" : `${s.conversionToNext}%`}
                   </td>
                   <td style={{ padding: "10px 8px", textAlign: "right" }}>
                     {isBottleneck ? (
-                      <span style={{ padding: "3px 10px", background: "#fef2f2", color: "#dc2626", borderRadius: 6, fontSize: 11, fontWeight: 700 }}>Bottleneck</span>
+                      <span
+                        style={{
+                          padding: "3px 10px",
+                          background: "#fef2f2",
+                          color: "#dc2626",
+                          borderRadius: 6,
+                          fontSize: 11,
+                          fontWeight: 700,
+                        }}
+                      >
+                        Bottleneck
+                      </span>
                     ) : s.name === "Closed" ? (
-                      <span style={{ padding: "3px 10px", background: "#ecfdf5", color: "#059669", borderRadius: 6, fontSize: 11, fontWeight: 700 }}>Complete</span>
+                      <span
+                        style={{
+                          padding: "3px 10px",
+                          background: "#ecfdf5",
+                          color: "#059669",
+                          borderRadius: 6,
+                          fontSize: 11,
+                          fontWeight: 700,
+                        }}
+                      >
+                        Complete
+                      </span>
                     ) : (
-                      <span style={{ padding: "3px 10px", background: "#f0fdf4", color: "#16a34a", borderRadius: 6, fontSize: 11, fontWeight: 700 }}>Normal</span>
+                      <span
+                        style={{
+                          padding: "3px 10px",
+                          background: "#f0fdf4",
+                          color: "#16a34a",
+                          borderRadius: 6,
+                          fontSize: 11,
+                          fontWeight: 700,
+                        }}
+                      >
+                        Normal
+                      </span>
                     )}
                   </td>
                 </tr>
@@ -427,7 +572,16 @@ export default function PipelineVelocityClient() {
           <thead>
             <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
               {["Lead", "Stage", "Days in Stage", "Stage Avg", "Overdue By", "Source", "Est. Value"].map((h) => (
-                <th key={h} style={{ padding: "8px 6px", textAlign: h === "Lead" || h === "Stage" || h === "Source" ? "left" : "right", fontWeight: 700, fontSize: 12, color: "#6b7280" }}>
+                <th
+                  key={h}
+                  style={{
+                    padding: "8px 6px",
+                    textAlign: h === "Lead" || h === "Stage" || h === "Source" ? "left" : "right",
+                    fontWeight: 700,
+                    fontSize: 12,
+                    color: "#6b7280",
+                  }}
+                >
                   {h}
                 </th>
               ))}
@@ -438,7 +592,9 @@ export default function PipelineVelocityClient() {
               <tr key={idx} style={{ borderBottom: "1px solid #f3f4f6" }}>
                 <td style={{ padding: "8px 6px", fontWeight: 600 }}>{d.name}</td>
                 <td style={{ padding: "8px 6px" }}>{d.stage}</td>
-                <td style={{ padding: "8px 6px", textAlign: "right", color: "#dc2626", fontWeight: 700 }}>{d.daysInStage}d</td>
+                <td style={{ padding: "8px 6px", textAlign: "right", color: "#dc2626", fontWeight: 700 }}>
+                  {d.daysInStage}d
+                </td>
                 <td style={{ padding: "8px 6px", textAlign: "right" }}>{d.avgForStage}d</td>
                 <td style={{ padding: "8px 6px", textAlign: "right", color: "#dc2626", fontWeight: 600 }}>
                   +{(d.daysInStage - d.avgForStage).toFixed(1)}d ({(d.daysInStage / d.avgForStage).toFixed(1)}x)

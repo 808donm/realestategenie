@@ -5,10 +5,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 export const dynamic = "force-dynamic";
 
 // GET plan details
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await supabaseServer();
 
@@ -18,22 +15,14 @@ export async function GET(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { data: agent } = await supabase
-    .from("agents")
-    .select("role")
-    .eq("id", userData.user.id)
-    .single();
+  const { data: agent } = await supabase.from("agents").select("role").eq("id", userData.user.id).single();
 
   if (agent?.role !== "admin") {
     return NextResponse.json({ error: "Admin access required" }, { status: 403 });
   }
 
   // Get plan
-  const { data: plan, error } = await supabaseAdmin
-    .from("subscription_plans")
-    .select("*")
-    .eq("id", id)
-    .single();
+  const { data: plan, error } = await supabaseAdmin.from("subscription_plans").select("*").eq("id", id).single();
 
   if (error || !plan) {
     return NextResponse.json({ error: "Plan not found" }, { status: 404 });
@@ -43,10 +32,7 @@ export async function GET(
 }
 
 // PATCH update plan
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await supabaseServer();
 
@@ -56,11 +42,7 @@ export async function PATCH(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { data: agent } = await supabase
-    .from("agents")
-    .select("role")
-    .eq("id", userData.user.id)
-    .single();
+  const { data: agent } = await supabase.from("agents").select("role").eq("id", userData.user.id).single();
 
   if (agent?.role !== "admin") {
     return NextResponse.json({ error: "Admin access required" }, { status: 403 });
@@ -86,7 +68,7 @@ export async function PATCH(
   if (!name || !slug || monthly_price === undefined || tier_level === undefined) {
     return NextResponse.json(
       { error: "Missing required fields: name, slug, monthly_price, tier_level" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -120,10 +102,7 @@ export async function PATCH(
 }
 
 // DELETE plan
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await supabaseServer();
 
@@ -133,11 +112,7 @@ export async function DELETE(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { data: agent } = await supabase
-    .from("agents")
-    .select("role")
-    .eq("id", userData.user.id)
-    .single();
+  const { data: agent } = await supabase.from("agents").select("role").eq("id", userData.user.id).single();
 
   if (agent?.role !== "admin") {
     return NextResponse.json({ error: "Admin access required" }, { status: 403 });
@@ -151,17 +126,11 @@ export async function DELETE(
     .eq("status", "active");
 
   if (count && count > 0) {
-    return NextResponse.json(
-      { error: `Cannot delete plan with ${count} active subscriber(s)` },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: `Cannot delete plan with ${count} active subscriber(s)` }, { status: 400 });
   }
 
   // Delete plan
-  const { error } = await supabaseAdmin
-    .from("subscription_plans")
-    .delete()
-    .eq("id", id);
+  const { error } = await supabaseAdmin.from("subscription_plans").delete().eq("id", id);
 
   if (error) {
     console.error("Error deleting plan:", error);

@@ -27,20 +27,14 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (integrationError || !integration) {
-      return NextResponse.json(
-        { error: "n8n not configured" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "n8n not configured" }, { status: 404 });
     }
 
     const config = integration.config as any;
     const webhookUrl = config.webhook_url;
 
     if (!webhookUrl) {
-      return NextResponse.json(
-        { error: "Webhook URL not configured" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Webhook URL not configured" }, { status: 400 });
     }
 
     // Send test webhook directly
@@ -61,10 +55,7 @@ export async function POST(req: NextRequest) {
 
     // Add signature if secret key is provided
     if (config.secret_key) {
-      const signature = await generateSignature(
-        JSON.stringify(testPayload),
-        config.secret_key
-      );
+      const signature = await generateSignature(JSON.stringify(testPayload), config.secret_key);
       headers["X-Webhook-Signature"] = signature;
     }
 
@@ -103,15 +94,12 @@ export async function POST(req: NextRequest) {
           status_code: response.status,
           response_body: responseBody.slice(0, 200),
         },
-        { status: 500 }
+        { status: 500 },
       );
     }
   } catch (error: any) {
     console.error("n8n test error:", error);
-    return NextResponse.json(
-      { error: error.message || "Test failed" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message || "Test failed" }, { status: 500 });
   }
 }
 
@@ -120,19 +108,11 @@ export async function POST(req: NextRequest) {
  */
 async function generateSignature(payload: string, secret: string): Promise<string> {
   const encoder = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    "raw",
-    encoder.encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"]
-  );
+  const key = await crypto.subtle.importKey("raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, [
+    "sign",
+  ]);
 
-  const signature = await crypto.subtle.sign(
-    "HMAC",
-    key,
-    encoder.encode(payload)
-  );
+  const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(payload));
 
   return Array.from(new Uint8Array(signature))
     .map((b) => b.toString(16).padStart(2, "0"))

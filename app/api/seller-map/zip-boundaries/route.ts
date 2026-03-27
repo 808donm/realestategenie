@@ -55,10 +55,7 @@ export async function GET(request: NextRequest) {
       // Fallback: try the geometry envelope approach if WHERE on STATE fails
       const fallbackUrl = new URL(TIGERWEB_ZCTA_URL);
       // Hawaii bounding box
-      const envelope =
-        stateFips === "15"
-          ? "-160.3,18.9,-154.8,22.3"
-          : "-160.3,18.9,-154.8,22.3";
+      const envelope = stateFips === "15" ? "-160.3,18.9,-154.8,22.3" : "-160.3,18.9,-154.8,22.3";
       fallbackUrl.searchParams.set(
         "geometry",
         JSON.stringify({
@@ -67,7 +64,7 @@ export async function GET(request: NextRequest) {
           xmax: -154.8,
           ymax: 22.3,
           spatialReference: { wkid: 4326 },
-        })
+        }),
       );
       fallbackUrl.searchParams.set("geometryType", "esriGeometryEnvelope");
       fallbackUrl.searchParams.set("spatialRel", "esriSpatialRelIntersects");
@@ -104,7 +101,7 @@ export async function GET(request: NextRequest) {
           xmax: -154.8,
           ymax: 22.3,
           spatialReference: { wkid: 4326 },
-        })
+        }),
       );
       spatialUrl.searchParams.set("geometryType", "esriGeometryEnvelope");
       spatialUrl.searchParams.set("spatialRel", "esriSpatialRelIntersects");
@@ -133,9 +130,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error("[ZipBoundaries] Error:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to fetch zip code boundaries" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message || "Failed to fetch zip code boundaries" }, { status: 500 });
   }
 }

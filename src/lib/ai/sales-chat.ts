@@ -1,11 +1,9 @@
 import { trackedGenerateText } from "@/lib/ai/ai-call-logger";
 import { createClient } from "@supabase/supabase-js";
 
-const admin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 export interface SalesChatMessage {
   role: "user" | "assistant";
@@ -490,10 +488,7 @@ IMPORTANT: Your #1 goal is to book a demo. Use the Sandler/SPIN/SNAP framework t
 /**
  * Generate a sales chat response.
  */
-export async function generateSalesChatResponse(params: {
-  sessionId?: string;
-  message: string;
-}): Promise<{
+export async function generateSalesChatResponse(params: { sessionId?: string; message: string }): Promise<{
   reply: string;
   sessionId: string;
 }> {
@@ -566,10 +561,7 @@ export async function generateSalesChatResponse(params: {
   };
 
   if (sessionId) {
-    await admin
-      .from("sales_chat_sessions")
-      .update(sessionData)
-      .eq("id", sessionId);
+    await admin.from("sales_chat_sessions").update(sessionData).eq("id", sessionId);
   } else {
     const { data: newSession } = await admin
       .from("sales_chat_sessions")

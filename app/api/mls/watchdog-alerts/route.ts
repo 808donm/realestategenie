@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
     console.error("Watchdog alerts GET error:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to load alerts" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -93,7 +93,7 @@ export async function PATCH(request: NextRequest) {
     console.error("Watchdog alerts PATCH error:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to update alerts" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

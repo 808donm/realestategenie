@@ -75,15 +75,9 @@ export default async function TeamManagementPage() {
 
   // Bootstrap: if user has no account, create one and make them the owner
   if (!accountMember) {
-    const agent = await supabase
-      .from("agents")
-      .select("display_name, email")
-      .eq("id", userData.user.id)
-      .single();
+    const agent = await supabase.from("agents").select("display_name, email").eq("id", userData.user.id).single();
 
-    const accountName = agent.data?.display_name?.trim()
-      ? `${agent.data.display_name.trim()}'s Team`
-      : "My Team";
+    const accountName = agent.data?.display_name?.trim() ? `${agent.data.display_name.trim()}'s Team` : "My Team";
 
     // Look up default subscription plan (Brokerage Growth — 10 agents, 5 assistants, 1 admin)
     const { data: defaultPlan } = await supabaseAdmin
@@ -106,27 +100,19 @@ export default async function TeamManagementPage() {
 
     if (accountError || !newAccount) {
       console.error("Failed to create account:", accountError);
-      return (
-        <div style={{ padding: 24, color: "crimson" }}>
-          Failed to set up your team account. Please try again.
-        </div>
-      );
+      return <div style={{ padding: 24, color: "crimson" }}>Failed to set up your team account. Please try again.</div>;
     }
 
-    const { error: memberError } = await supabaseAdmin
-      .from("account_members")
-      .insert({
-        account_id: newAccount.id,
-        agent_id: userData.user.id,
-        account_role: "owner",
-      });
+    const { error: memberError } = await supabaseAdmin.from("account_members").insert({
+      account_id: newAccount.id,
+      agent_id: userData.user.id,
+      account_role: "owner",
+    });
 
     if (memberError) {
       console.error("Failed to create account member:", memberError);
       return (
-        <div style={{ padding: 24, color: "crimson" }}>
-          Failed to set up your team membership. Please try again.
-        </div>
+        <div style={{ padding: 24, color: "crimson" }}>Failed to set up your team membership. Please try again.</div>
       );
     }
 
@@ -147,11 +133,7 @@ export default async function TeamManagementPage() {
   // Ensure the account has a subscription plan and usage row.
   // These can be missing if the bootstrap ran before migrations were applied,
   // or if triggers didn't fire.
-  const { data: account } = await db
-    .from("accounts")
-    .select("subscription_plan_id")
-    .eq("id", accountId)
-    .single();
+  const { data: account } = await db.from("accounts").select("subscription_plan_id").eq("id", accountId).single();
 
   if (!account?.subscription_plan_id) {
     const { data: defaultPlan } = await db
@@ -161,10 +143,7 @@ export default async function TeamManagementPage() {
       .single();
 
     if (defaultPlan) {
-      await db
-        .from("accounts")
-        .update({ subscription_plan_id: defaultPlan.id })
-        .eq("id", accountId);
+      await db.from("accounts").update({ subscription_plan_id: defaultPlan.id }).eq("id", accountId);
     }
   }
 
@@ -172,16 +151,13 @@ export default async function TeamManagementPage() {
   await db.rpc("update_account_usage", { account_uuid: accountId });
 
   // Get account usage status
-  const { data: usageStatus } = await db
-    .from("account_usage_status")
-    .select("*")
-    .eq("account_id", accountId)
-    .single();
+  const { data: usageStatus } = await db.from("account_usage_status").select("*").eq("account_id", accountId).single();
 
   // Get all account members
   const { data: members } = await db
     .from("account_members")
-    .select(`
+    .select(
+      `
       id,
       account_role,
       joined_at,
@@ -195,7 +171,8 @@ export default async function TeamManagementPage() {
         id,
         name
       )
-    `)
+    `,
+    )
     .eq("account_id", accountId)
     .eq("is_active", true)
     .order("joined_at", { ascending: true });
@@ -219,16 +196,8 @@ export default async function TeamManagementPage() {
           <p className="text-gray-500 mt-1">Manage your team members, roles, and permissions</p>
         </div>
         <div className="flex gap-2">
-          <CreateMemberButton
-            accountId={accountId}
-            usage={usage}
-            offices={offices || []}
-          />
-          <InviteMemberButton
-            accountId={accountId}
-            usage={usage}
-            offices={offices || []}
-          />
+          <CreateMemberButton accountId={accountId} usage={usage} offices={offices || []} />
+          <InviteMemberButton accountId={accountId} usage={usage} offices={offices || []} />
         </div>
       </div>
 
@@ -247,11 +216,7 @@ export default async function TeamManagementPage() {
               <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
                 <div
                   className={`h-2 rounded-full ${
-                    usage.agents_critical
-                      ? "bg-red-600"
-                      : usage.agents_warning
-                      ? "bg-yellow-500"
-                      : "bg-green-600"
+                    usage.agents_critical ? "bg-red-600" : usage.agents_warning ? "bg-yellow-500" : "bg-green-600"
                   }`}
                   style={{ width: `${Math.min(100, usage.agents_usage_pct)}%` }}
                 />
@@ -277,8 +242,8 @@ export default async function TeamManagementPage() {
                     usage.assistants_critical
                       ? "bg-red-600"
                       : usage.assistants_warning
-                      ? "bg-yellow-500"
-                      : "bg-green-600"
+                        ? "bg-yellow-500"
+                        : "bg-green-600"
                   }`}
                   style={{ width: `${Math.min(100, usage.assistants_usage_pct)}%` }}
                 />
@@ -299,7 +264,8 @@ export default async function TeamManagementPage() {
                 {(usage.current_administrators || 0) + 1} / {(usage.administrators_limit || 0) + 1}
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                1 owner + {usage.current_administrators || 0} of {usage.administrators_limit || 0} additional admin {usage.administrators_limit === 1 ? "seat" : "seats"}
+                1 owner + {usage.current_administrators || 0} of {usage.administrators_limit || 0} additional admin{" "}
+                {usage.administrators_limit === 1 ? "seat" : "seats"}
               </p>
             </CardContent>
           </Card>

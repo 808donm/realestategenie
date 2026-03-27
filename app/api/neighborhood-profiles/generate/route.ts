@@ -4,11 +4,9 @@ import { createClient } from "@supabase/supabase-js";
 import { generateNeighborhoodProfile, NeighborhoodProfileRequest } from "@/lib/ai/openai-client";
 import { logError } from "@/lib/error-logging";
 
-const admin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,11 +22,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get agent profile
-    const { data: agent } = await supabase
-      .from("agents")
-      .select("account_status")
-      .eq("id", user.id)
-      .single();
+    const { data: agent } = await supabase.from("agents").select("account_status").eq("id", user.id).single();
 
     if (!agent || agent.account_status !== "active") {
       return NextResponse.json({ error: "Account not active" }, { status: 403 });
@@ -50,7 +44,7 @@ export async function POST(request: NextRequest) {
     if (!neighborhoodName || !address || !city || !stateProvince) {
       return NextResponse.json(
         { error: "Missing required fields: neighborhoodName, address, city, stateProvince" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -85,7 +79,7 @@ export async function POST(request: NextRequest) {
           error: "Generated content failed compliance check. Please try again or contact support.",
           warnings: aiResponse.complianceCheck.warnings,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -122,10 +116,7 @@ export async function POST(request: NextRequest) {
         severity: "error",
       });
 
-      return NextResponse.json(
-        { error: "Failed to save generated profile" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to save generated profile" }, { status: 500 });
     }
 
     console.log(`Successfully generated profile ${savedProfile.id} for ${user.id}`);
@@ -144,9 +135,6 @@ export async function POST(request: NextRequest) {
       severity: "error",
     });
 
-    return NextResponse.json(
-      { error: error.message || "Failed to generate neighborhood profile" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message || "Failed to generate neighborhood profile" }, { status: 500 });
   }
 }

@@ -18,11 +18,7 @@ type ErrorLog = {
   } | null;
 };
 
-export default function ErrorLogsClient({
-  errorLogs,
-}: {
-  errorLogs: ErrorLog[];
-}) {
+export default function ErrorLogsClient({ errorLogs }: { errorLogs: ErrorLog[] }) {
   const [severityFilter, setSeverityFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedLog, setExpandedLog] = useState<string | null>(null);
@@ -31,8 +27,7 @@ export default function ErrorLogsClient({
   // Filter error logs based on severity and search query
   const filteredLogs = useMemo(() => {
     return errorLogs.filter((log) => {
-      const matchesSeverity =
-        severityFilter === "all" || log.severity === severityFilter;
+      const matchesSeverity = severityFilter === "all" || log.severity === severityFilter;
       const matchesSearch =
         !searchQuery ||
         log.error_message.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -126,9 +121,7 @@ export default function ErrorLogsClient({
             border: "1px solid #e5e7eb",
           }}
         >
-          <div style={{ fontSize: 14, color: "#6b7280", marginBottom: 4 }}>
-            Total Logs
-          </div>
+          <div style={{ fontSize: 14, color: "#6b7280", marginBottom: 4 }}>Total Logs</div>
           <div style={{ fontSize: 28, fontWeight: 700 }}>{stats.total}</div>
         </div>
 
@@ -140,12 +133,8 @@ export default function ErrorLogsClient({
             border: "1px solid #e5e7eb",
           }}
         >
-          <div style={{ fontSize: 14, color: "#6b7280", marginBottom: 4 }}>
-            Critical
-          </div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: "#dc2626" }}>
-            {stats.critical}
-          </div>
+          <div style={{ fontSize: 14, color: "#6b7280", marginBottom: 4 }}>Critical</div>
+          <div style={{ fontSize: 28, fontWeight: 700, color: "#dc2626" }}>{stats.critical}</div>
         </div>
 
         <div
@@ -156,12 +145,8 @@ export default function ErrorLogsClient({
             border: "1px solid #e5e7eb",
           }}
         >
-          <div style={{ fontSize: 14, color: "#6b7280", marginBottom: 4 }}>
-            Errors
-          </div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: "#ef4444" }}>
-            {stats.error}
-          </div>
+          <div style={{ fontSize: 14, color: "#6b7280", marginBottom: 4 }}>Errors</div>
+          <div style={{ fontSize: 28, fontWeight: 700, color: "#ef4444" }}>{stats.error}</div>
         </div>
 
         <div
@@ -172,12 +157,8 @@ export default function ErrorLogsClient({
             border: "1px solid #e5e7eb",
           }}
         >
-          <div style={{ fontSize: 14, color: "#6b7280", marginBottom: 4 }}>
-            Warnings
-          </div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: "#f59e0b" }}>
-            {stats.warning}
-          </div>
+          <div style={{ fontSize: 14, color: "#6b7280", marginBottom: 4 }}>Warnings</div>
+          <div style={{ fontSize: 28, fontWeight: 700, color: "#f59e0b" }}>{stats.warning}</div>
         </div>
       </div>
 
@@ -268,9 +249,7 @@ export default function ErrorLogsClient({
       >
         {filteredLogs.length === 0 ? (
           <div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>
-            {searchQuery || severityFilter !== "all"
-              ? "No logs match your filters"
-              : "No error logs found"}
+            {searchQuery || severityFilter !== "all" ? "No logs match your filters" : "No error logs found"}
           </div>
         ) : (
           <div style={{ overflowX: "auto" }}>
@@ -358,9 +337,7 @@ export default function ErrorLogsClient({
                         borderBottom: "1px solid #e5e7eb",
                         cursor: "pointer",
                       }}
-                      onClick={() =>
-                        setExpandedLog(expandedLog === log.id ? null : log.id)
-                      }
+                      onClick={() => setExpandedLog(expandedLog === log.id ? null : log.id)}
                     >
                       <td style={{ padding: "12px 16px" }}>
                         <span
@@ -424,9 +401,7 @@ export default function ErrorLogsClient({
                           textAlign: "center",
                         }}
                       >
-                        <span style={{ fontSize: 12 }}>
-                          {expandedLog === log.id ? "▼" : "▶"}
-                        </span>
+                        <span style={{ fontSize: 12 }}>{expandedLog === log.id ? "▼" : "▶"}</span>
                       </td>
                     </tr>
 

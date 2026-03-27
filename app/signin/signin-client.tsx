@@ -111,9 +111,7 @@ export default function SignInClient() {
             <p className="mt-2 text-sm font-bold text-foreground">
               Real Estate Deal Flow &amp; Analytics For The Independent Agent
             </p>
-            <CardDescription className="mt-2">
-              Sign in to manage your open houses and leads
-            </CardDescription>
+            <CardDescription className="mt-2">Sign in to manage your open houses and leads</CardDescription>
           </div>
         </CardHeader>
 
@@ -121,9 +119,7 @@ export default function SignInClient() {
           {/* Registration Notice */}
           <div className="p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg space-y-3">
             <div>
-              <p className="text-sm text-blue-900 dark:text-blue-100 font-medium">
-                Need an account?
-              </p>
+              <p className="text-sm text-blue-900 dark:text-blue-100 font-medium">Need an account?</p>
               <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
                 New users can register to get started with The Real Estate Genie.
               </p>
@@ -154,14 +150,22 @@ export default function SignInClient() {
             <Button
               variant={signInMode === "magic" ? "default" : "outline"}
               size="sm"
-              onClick={() => { setSignInMode("magic"); setErr(null); setMsg(null); }}
+              onClick={() => {
+                setSignInMode("magic");
+                setErr(null);
+                setMsg(null);
+              }}
             >
               Magic Link
             </Button>
             <Button
               variant={signInMode === "password" ? "default" : "outline"}
               size="sm"
-              onClick={() => { setSignInMode("password"); setErr(null); setMsg(null); }}
+              onClick={() => {
+                setSignInMode("password");
+                setErr(null);
+                setMsg(null);
+              }}
             >
               Password
             </Button>
@@ -220,15 +224,9 @@ export default function SignInClient() {
             </form>
           )}
 
-          {err && (
-            <div className="p-3 text-sm text-danger bg-danger/10 border border-danger/20 rounded-lg">
-              {err}
-            </div>
-          )}
+          {err && <div className="p-3 text-sm text-danger bg-danger/10 border border-danger/20 rounded-lg">{err}</div>}
           {msg && (
-            <div className="p-3 text-sm text-success bg-success/10 border border-success/20 rounded-lg">
-              {msg}
-            </div>
+            <div className="p-3 text-sm text-success bg-success/10 border border-success/20 rounded-lg">{msg}</div>
           )}
 
           {/* Demo Accounts */}

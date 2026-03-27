@@ -13,7 +13,9 @@ import type { TrestleProperty } from "@/lib/integrations/trestle-client";
 export async function GET(request: NextRequest) {
   try {
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const mlsNumber = request.nextUrl.searchParams.get("mlsNumber");
@@ -101,12 +103,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Build display address
-    const addressParts = [
-      property.StreetNumber,
-      property.StreetName,
-      property.StreetSuffix,
-    ].filter(Boolean);
-    const displayAddress = property.UnparsedAddress ||
+    const addressParts = [property.StreetNumber, property.StreetName, property.StreetSuffix].filter(Boolean);
+    const displayAddress =
+      property.UnparsedAddress ||
       `${addressParts.join(" ")}, ${property.City}, ${property.StateOrProvince} ${property.PostalCode}`;
 
     // Estimate annual property tax from TaxAnnualAmount or ListPrice
@@ -139,7 +138,7 @@ export async function GET(request: NextRequest) {
     console.error("Error in calculator MLS lookup:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to look up listing" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

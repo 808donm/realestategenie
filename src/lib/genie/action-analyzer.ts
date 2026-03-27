@@ -17,8 +17,9 @@ interface AnalyzerInput {
     attendeeCount?: number;
   }>;
   upcomingEventCount: number; // events in next 14 days
-  domAlertCount: number;      // unread DOM tier alerts
-  recentNewLeads: Array<{     // leads created in last 24h with no response
+  domAlertCount: number; // unread DOM tier alerts
+  recentNewLeads: Array<{
+    // leads created in last 24h with no response
     leadId: string;
     name: string;
     email: string | null;
@@ -26,7 +27,7 @@ interface AnalyzerInput {
     source: string | null;
     heatScore: number;
   }>;
-  overdueTasks: number;       // tasks past due date
+  overdueTasks: number; // tasks past due date
 }
 
 let actionCounter = 0;
@@ -54,7 +55,8 @@ export function analyzeActions(input: AnalyzerInput): GenieActionItem[] {
         type: "follow_up_hot_lead",
         priority: 1,
         title: `Follow up with ${lead.name} (Hot Lead)`,
-        description: `Heat score ${lead.heatScore}, ${lead.daysSinceLastTouch}d since last contact. ${lead.timeline || ""} ${lead.financing ? `(${lead.financing})` : ""}`.trim(),
+        description:
+          `Heat score ${lead.heatScore}, ${lead.daysSinceLastTouch}d since last contact. ${lead.timeline || ""} ${lead.financing ? `(${lead.financing})` : ""}`.trim(),
         leadId: lead.leadId,
         leadName: lead.name,
         leadEmail: lead.email || undefined,
@@ -86,7 +88,8 @@ export function analyzeActions(input: AnalyzerInput): GenieActionItem[] {
         type: "follow_up_stale_lead",
         priority: 1,
         title: `${lead.name} hasn't been contacted in ${lead.daysSinceLastTouch} days`,
-        description: `Score ${lead.heatScore}, stage: ${lead.pipelineStageLabel}. ${lead.recentOpenHouse ? "Attended recent open house." : ""}`.trim(),
+        description:
+          `Score ${lead.heatScore}, stage: ${lead.pipelineStageLabel}. ${lead.recentOpenHouse ? "Attended recent open house." : ""}`.trim(),
         leadId: lead.leadId,
         leadName: lead.name,
         leadEmail: lead.email || undefined,
@@ -133,7 +136,8 @@ export function analyzeActions(input: AnalyzerInput): GenieActionItem[] {
         type: "welcome_new_lead",
         priority: 2,
         title: `Welcome new lead: ${lead.name}`,
-        description: `Just came in. ${lead.financing ? `Financing: ${lead.financing}.` : ""} ${lead.timeline ? `Timeline: ${lead.timeline}.` : ""}`.trim(),
+        description:
+          `Just came in. ${lead.financing ? `Financing: ${lead.financing}.` : ""} ${lead.timeline ? `Timeline: ${lead.timeline}.` : ""}`.trim(),
         leadId: lead.leadId,
         leadName: lead.name,
         leadEmail: lead.email || undefined,
@@ -154,8 +158,11 @@ export function analyzeActions(input: AnalyzerInput): GenieActionItem[] {
   for (const lead of briefingData.followUps) {
     if (seenLeadIds.has(lead.leadId)) continue;
     const midStages = [
-      "qualification", "initial_consultation", "property_search_listing_prep",
-      "open_houses_and_tours", "offer_and_negotiation",
+      "qualification",
+      "initial_consultation",
+      "property_search_listing_prep",
+      "open_houses_and_tours",
+      "offer_and_negotiation",
     ];
     if (midStages.includes(lead.pipelineStage) && lead.daysSinceLastTouch >= 5) {
       items.push({

@@ -1,13 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { X, RefreshCw, CheckCircle2, XCircle } from "lucide-react";
@@ -25,13 +19,7 @@ type WebhookLog = {
   response_body: string | null;
 };
 
-export default function WebhookLogsModal({
-  open,
-  onClose,
-}: {
-  open: boolean;
-  onClose: () => void;
-}) {
+export default function WebhookLogsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [logs, setLogs] = useState<WebhookLog[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -69,12 +57,7 @@ export default function WebhookLogsModal({
                 <CardDescription>Last 20 webhook deliveries to n8n</CardDescription>
               </div>
               <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={fetchLogs}
-                  disabled={loading}
-                >
+                <Button variant="outline" size="icon" onClick={fetchLogs} disabled={loading}>
                   <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
                 </Button>
                 <Button variant="outline" size="icon" onClick={onClose}>
@@ -103,13 +86,7 @@ export default function WebhookLogsModal({
                     </div>
                     <div className="flex items-center gap-2">
                       {log.status_code && (
-                        <Badge
-                          variant={
-                            log.status_code >= 200 && log.status_code < 300
-                              ? "success"
-                              : "danger"
-                          }
-                        >
+                        <Badge variant={log.status_code >= 200 && log.status_code < 300 ? "success" : "danger"}>
                           {log.status_code}
                         </Badge>
                       )}
@@ -121,16 +98,10 @@ export default function WebhookLogsModal({
 
                   <div className="text-xs text-muted-foreground">
                     {new Date(log.created_at).toLocaleString()}
-                    {log.delivered_at && (
-                      <> → Delivered {new Date(log.delivered_at).toLocaleString()}</>
-                    )}
+                    {log.delivered_at && <> → Delivered {new Date(log.delivered_at).toLocaleString()}</>}
                   </div>
 
-                  {log.error && (
-                    <div className="p-2 bg-danger/10 rounded text-xs text-danger">
-                      {log.error}
-                    </div>
-                  )}
+                  {log.error && <div className="p-2 bg-danger/10 rounded text-xs text-danger">{log.error}</div>}
 
                   <details className="text-xs">
                     <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
@@ -146,9 +117,7 @@ export default function WebhookLogsModal({
                       <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
                         View response
                       </summary>
-                      <pre className="mt-2 p-2 bg-muted rounded overflow-x-auto">
-                        {log.response_body}
-                      </pre>
+                      <pre className="mt-2 p-2 bg-muted rounded overflow-x-auto">{log.response_body}</pre>
                     </details>
                   )}
                 </div>

@@ -5,11 +5,9 @@
 
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 export interface SendFlyerFollowupParams {
   leadId: string;
@@ -25,9 +23,7 @@ export interface SendFlyerFollowupParams {
  * Send automated flyer follow-up after open house check-in
  * This is called automatically after a lead is synced to GHL
  */
-export async function sendAutomatedFlyerFollowup(
-  params: SendFlyerFollowupParams
-): Promise<{
+export async function sendAutomatedFlyerFollowup(params: SendFlyerFollowupParams): Promise<{
   success: boolean;
   messageId?: string;
   error?: string;
@@ -73,42 +69,37 @@ export async function sendAutomatedFlyerFollowup(
     }
 
     // Record attendance
-    await supabaseAdmin
-      .from("contact_open_house_attendance")
-      .upsert(
-        {
-          agent_id: agentId,
-          ghl_contact_id: ghlContactId,
-          event_id: eventId,
-          lead_id: leadId,
-        },
-        {
-          onConflict: "ghl_contact_id,event_id",
-          ignoreDuplicates: true,
-        }
-      );
+    await supabaseAdmin.from("contact_open_house_attendance").upsert(
+      {
+        agent_id: agentId,
+        ghl_contact_id: ghlContactId,
+        event_id: eventId,
+        lead_id: leadId,
+      },
+      {
+        onConflict: "ghl_contact_id,event_id",
+        ignoreDuplicates: true,
+      },
+    );
 
     // Create thank you message
     const thankYouMessage = `Hi ${leadFirstName}! Thanks for visiting the open house at ${propertyAddress}. Would you like me to send you the property flyer? Reply YES if interested. - ${agentName}`;
 
     // Send SMS via GHL
-    const response = await fetch(
-      "https://services.leadconnectorhq.com/conversations/messages",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${config.ghl_access_token}`,
-          "Content-Type": "application/json",
-          Version: "2021-07-28",
-        },
-        body: JSON.stringify({
-          type: "SMS",
-          locationId: config.ghl_location_id,
-          contactId: ghlContactId,
-          message: thankYouMessage,
-        }),
-      }
-    );
+    const response = await fetch("https://services.leadconnectorhq.com/conversations/messages", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${config.ghl_access_token}`,
+        "Content-Type": "application/json",
+        Version: "2021-07-28",
+      },
+      body: JSON.stringify({
+        type: "SMS",
+        locationId: config.ghl_location_id,
+        contactId: ghlContactId,
+        message: thankYouMessage,
+      }),
+    });
 
     if (!response.ok) {
       const error = await response.text();
@@ -134,7 +125,7 @@ export async function sendAutomatedFlyerFollowup(
       },
       {
         onConflict: "id",
-      }
+      },
     );
 
     // Log to audit
@@ -178,25 +169,21 @@ export async function sendAutomatedFlyerFollowup(
  * Get flyer URL for an open house event
  */
 export function getFlyerUrl(eventId: string): string {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL || "https://realestategenie.com";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://realestategenie.com";
   return `${baseUrl}/api/open-houses/${eventId}/flyer`;
 }
 
 /**
  * Get all open houses a contact has attended
  */
-export async function getContactOpenHouseAttendance(
-  ghlContactId: string,
-  agentId: string
-): Promise<any[]> {
+export async function getContactOpenHouseAttendance(ghlContactId: string, agentId: string): Promise<any[]> {
   const { data: attendance } = await supabaseAdmin
     .from("contact_open_house_attendance")
     .select(
       `
       *,
       open_house_events!inner(id, address, start_at)
-    `
+    `,
     )
     .eq("ghl_contact_id", ghlContactId)
     .eq("agent_id", agentId)
@@ -208,10 +195,7 @@ export async function getContactOpenHouseAttendance(
 /**
  * Check if a contact has pending flyer follow-ups
  */
-export async function hasPendingFlyerFollowup(
-  ghlContactId: string,
-  agentId: string
-): Promise<boolean> {
+export async function hasPendingFlyerFollowup(ghlContactId: string, agentId: string): Promise<boolean> {
   const { data } = await supabaseAdmin
     .from("open_house_flyer_followups")
     .select("id")

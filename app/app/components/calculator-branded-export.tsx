@@ -17,8 +17,17 @@ interface CalculatorBrandedExportProps {
  * Fetches agent profile and adds a branded cover page before the calculator data.
  * Usage: Place this on calculator pages — it provides a "Branded PDF" button.
  */
-export default function CalculatorBrandedExport({ calculatorName, summaryData, propertyAddress }: CalculatorBrandedExportProps) {
-  const [agentProfile, setAgentProfile] = useState<{ name: string; brokerage: string; email: string; phone: string } | null>(null);
+export default function CalculatorBrandedExport({
+  calculatorName,
+  summaryData,
+  propertyAddress,
+}: CalculatorBrandedExportProps) {
+  const [agentProfile, setAgentProfile] = useState<{
+    name: string;
+    brokerage: string;
+    email: string;
+    phone: string;
+  } | null>(null);
 
   useEffect(() => {
     fetch("/api/profile")
@@ -110,7 +119,10 @@ export default function CalculatorBrandedExport({ calculatorName, summaryData, p
     doc.setFontSize(11);
     const entries = Object.entries(summaryData);
     entries.forEach(([key, value]) => {
-      if (y > ph - 30) { doc.addPage(); y = 20; }
+      if (y > ph - 30) {
+        doc.addPage();
+        y = 20;
+      }
 
       doc.setFont("helvetica", "normal");
       doc.setTextColor(100, 100, 100);
@@ -131,7 +143,12 @@ export default function CalculatorBrandedExport({ calculatorName, summaryData, p
     doc.setFontSize(8);
     doc.setTextColor(180, 180, 180);
     doc.text("Powered by The Real Estate Genie™", pw / 2, ph - 12, { align: "center" });
-    doc.text("This analysis is for informational purposes only and does not constitute financial advice.", pw / 2, ph - 7, { align: "center" });
+    doc.text(
+      "This analysis is for informational purposes only and does not constitute financial advice.",
+      pw / 2,
+      ph - 7,
+      { align: "center" },
+    );
 
     doc.save(`${calculatorName.replace(/\s+/g, "_")}_Report_${new Date().toISOString().slice(0, 10)}.pdf`);
   };
@@ -142,7 +159,11 @@ export default function CalculatorBrandedExport({ calculatorName, summaryData, p
       className="noprint flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-blue-900 text-white rounded-lg hover:bg-blue-800 transition-colors"
     >
       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+        />
       </svg>
       Branded PDF
     </button>

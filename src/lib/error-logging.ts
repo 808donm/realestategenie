@@ -5,11 +5,9 @@
 
 import { createClient } from "@supabase/supabase-js";
 
-const admin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 export type ErrorSeverity = "info" | "warning" | "error" | "critical";
 
@@ -62,10 +60,7 @@ export async function logError(params: LogErrorParams): Promise<void> {
 /**
  * Log an error from a caught exception
  */
-export async function logException(
-  error: Error,
-  context?: Partial<LogErrorParams>
-): Promise<void> {
+export async function logException(error: Error, context?: Partial<LogErrorParams>): Promise<void> {
   await logError({
     errorMessage: error.message,
     stackTrace: error.stack,
@@ -77,11 +72,7 @@ export async function logException(
 /**
  * Express/API route error logger helper
  */
-export async function logApiError(
-  request: Request,
-  error: Error,
-  agentId?: string
-): Promise<void> {
+export async function logApiError(request: Request, error: Error, agentId?: string): Promise<void> {
   const url = new URL(request.url);
 
   await logError({
@@ -90,10 +81,7 @@ export async function logApiError(
     errorMessage: error.message,
     stackTrace: error.stack,
     userAgent: request.headers.get("user-agent") || undefined,
-    ipAddress:
-      request.headers.get("x-forwarded-for") ||
-      request.headers.get("x-real-ip") ||
-      undefined,
+    ipAddress: request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || undefined,
     requestMethod: request.method,
     severity: "error",
   });

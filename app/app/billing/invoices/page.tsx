@@ -34,13 +34,14 @@ export default async function AgentInvoicesPage() {
   };
 
   // Calculate totals
-  const totalPaid = invoices
-    ?.filter((i) => i.status === "paid")
-    .reduce((sum, i) => sum + parseFloat(i.total_amount.toString()), 0) || 0;
+  const totalPaid =
+    invoices?.filter((i) => i.status === "paid").reduce((sum, i) => sum + parseFloat(i.total_amount.toString()), 0) ||
+    0;
 
-  const totalPending = invoices
-    ?.filter((i) => i.status === "pending")
-    .reduce((sum, i) => sum + parseFloat(i.total_amount.toString()), 0) || 0;
+  const totalPending =
+    invoices
+      ?.filter((i) => i.status === "pending")
+      .reduce((sum, i) => sum + parseFloat(i.total_amount.toString()), 0) || 0;
 
   return (
     <div className="space-y-6">
@@ -64,9 +65,7 @@ export default async function AgentInvoicesPage() {
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Invoices
-            </CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Invoices</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{invoices?.length || 0}</div>
@@ -75,27 +74,19 @@ export default async function AgentInvoicesPage() {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Paid
-            </CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Paid</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              ${totalPaid.toFixed(2)}
-            </div>
+            <div className="text-2xl font-bold text-green-600">${totalPaid.toFixed(2)}</div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Outstanding
-            </CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Outstanding</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
-              ${totalPending.toFixed(2)}
-            </div>
+            <div className="text-2xl font-bold text-orange-600">${totalPending.toFixed(2)}</div>
           </CardContent>
         </Card>
       </div>
@@ -147,11 +138,10 @@ export default async function AgentInvoicesPage() {
                       )}
                     </div>
                     <div className="text-right">
-                      <div className="text-xl font-bold">
-                        ${parseFloat(invoice.total_amount.toString()).toFixed(2)}
-                      </div>
+                      <div className="text-xl font-bold">${parseFloat(invoice.total_amount.toString()).toFixed(2)}</div>
                       <div className="text-sm text-muted-foreground mt-1">
-                        ${parseFloat(invoice.amount.toString()).toFixed(2)} + ${parseFloat(invoice.tax_amount.toString()).toFixed(2)} tax
+                        ${parseFloat(invoice.amount.toString()).toFixed(2)} + $
+                        {parseFloat(invoice.tax_amount.toString()).toFixed(2)} tax
                       </div>
                     </div>
                   </div>

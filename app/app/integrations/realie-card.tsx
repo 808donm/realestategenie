@@ -6,8 +6,25 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { CheckCircle2, AlertCircle, Loader2, ExternalLink, Database, Home, Users, TrendingUp, MapPin } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  ExternalLink,
+  Database,
+  Home,
+  Users,
+  TrendingUp,
+  MapPin,
+} from "lucide-react";
 import { toast } from "sonner";
 
 type Integration = {
@@ -138,7 +155,9 @@ export default function RealieIntegrationCard({
               <div>
                 <CardTitle className="flex items-center gap-2">
                   Realie.ai
-                  <Badge variant="outline" className="text-xs font-normal">Primary</Badge>
+                  <Badge variant="outline" className="text-xs font-normal">
+                    Primary
+                  </Badge>
                 </CardTitle>
                 <CardDescription>County-Sourced Property Data</CardDescription>
               </div>
@@ -155,15 +174,14 @@ export default function RealieIntegrationCard({
                 Error
               </Badge>
             )}
-            {!isConnected && !hasError && (
-              <Badge variant="outline">Not Connected</Badge>
-            )}
+            {!isConnected && !hasError && <Badge variant="outline">Not Connected</Badge>}
           </div>
         </CardHeader>
 
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Primary property data source from county records. Ownership, tax assessments, sales history, and parcel boundaries at a fraction of ATTOM's cost. ATTOM automatically supplements any missing data.
+            Primary property data source from county records. Ownership, tax assessments, sales history, and parcel
+            boundaries at a fraction of ATTOM's cost. ATTOM automatically supplements any missing data.
           </p>
 
           {/* Feature highlights */}
@@ -213,7 +231,8 @@ export default function RealieIntegrationCard({
                 <span className="text-teal-800 font-medium">Primary data source active</span>
               </div>
               <p className="text-xs text-teal-700">
-                Property queries use Realie.ai first. ATTOM fills gaps for neighborhood, schools, risk, rental AVM, and market trend data.
+                Property queries use Realie.ai first. ATTOM fills gaps for neighborhood, schools, risk, rental AVM, and
+                market trend data.
               </p>
               {integration?.last_sync_at && (
                 <div className="text-xs text-teal-600">
@@ -256,22 +275,12 @@ export default function RealieIntegrationCard({
               )
             ) : (
               <>
-                <Button
-                  onClick={handleTest}
-                  disabled={testing}
-                  variant="outline"
-                  className="flex-1"
-                >
+                <Button onClick={handleTest} disabled={testing} variant="outline" className="flex-1">
                   {testing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   Test Connection
                 </Button>
                 {isPlatformAdmin && (
-                  <Button
-                    onClick={handleDisconnect}
-                    disabled={disconnecting}
-                    variant="outline"
-                    className="flex-1"
-                  >
+                  <Button onClick={handleDisconnect} disabled={disconnecting} variant="outline" className="flex-1">
                     {disconnecting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                     Disconnect
                   </Button>
@@ -300,7 +309,8 @@ export default function RealieIntegrationCard({
           <DialogHeader>
             <DialogTitle>Connect Realie.ai</DialogTitle>
             <DialogDescription>
-              Enter your Realie.ai API key to enable county-sourced property data as the primary data source. ATTOM will automatically supplement any missing data.
+              Enter your Realie.ai API key to enable county-sourced property data as the primary data source. ATTOM will
+              automatically supplement any missing data.
             </DialogDescription>
           </DialogHeader>
 
@@ -317,19 +327,15 @@ export default function RealieIntegrationCard({
               />
               <p className="text-xs text-muted-foreground">
                 Get your API key at{" "}
-                <a
-                  href="https://realie.ai"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline"
-                >
+                <a href="https://realie.ai" target="_blank" rel="noopener noreferrer" className="underline">
                   realie.ai
                 </a>
               </p>
             </div>
 
             <div className="p-3 bg-teal-50 border border-teal-200 rounded-lg text-xs text-teal-800">
-              <strong>Primary data source:</strong> Once connected, Realie.ai becomes the first source for all property queries. ATTOM automatically fills in any data Realie doesn't provide (schools, risk, trends, rental AVM).
+              <strong>Primary data source:</strong> Once connected, Realie.ai becomes the first source for all property
+              queries. ATTOM automatically fills in any data Realie doesn't provide (schools, risk, trends, rental AVM).
             </div>
 
             <div className="p-3 bg-muted/50 rounded-lg">
@@ -368,11 +374,7 @@ export default function RealieIntegrationCard({
             >
               Cancel
             </Button>
-            <Button
-              onClick={handleConnect}
-              disabled={connecting}
-              className="bg-teal-600 hover:bg-teal-700"
-            >
+            <Button onClick={handleConnect} disabled={connecting} className="bg-teal-600 hover:bg-teal-700">
               {connecting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Connect
             </Button>

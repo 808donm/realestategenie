@@ -49,10 +49,7 @@ export async function GET(request: NextRequest) {
 
       const parcelsUrl = new URL(`${baseUrl}/query`);
       parcelsUrl.searchParams.set("where", whereClause);
-      parcelsUrl.searchParams.set(
-        "outFields",
-        "tmk,tmk_txt,county,zone,section,plat,parcel,gisacres"
-      );
+      parcelsUrl.searchParams.set("outFields", "tmk,tmk_txt,county,zone,section,plat,parcel,gisacres");
       parcelsUrl.searchParams.set("returnGeometry", "true");
       parcelsUrl.searchParams.set("outSR", "4326");
       parcelsUrl.searchParams.set("resultRecordCount", String(limit));
@@ -68,10 +65,7 @@ export async function GET(request: NextRequest) {
 
     // ── Zone-based search ──
     if (!county || !zone) {
-      return NextResponse.json(
-        { error: "county and zone are required (or provide tmk)" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "county and zone are required (or provide tmk)" }, { status: 400 });
     }
 
     const whereClause = section
@@ -80,10 +74,7 @@ export async function GET(request: NextRequest) {
 
     const parcelsUrl = new URL(`${baseUrl}/query`);
     parcelsUrl.searchParams.set("where", whereClause);
-    parcelsUrl.searchParams.set(
-      "outFields",
-      "tmk,tmk_txt,county,zone,section,plat,parcel,gisacres"
-    );
+    parcelsUrl.searchParams.set("outFields", "tmk,tmk_txt,county,zone,section,plat,parcel,gisacres");
     parcelsUrl.searchParams.set("returnGeometry", "true");
     parcelsUrl.searchParams.set("outSR", "4326");
     parcelsUrl.searchParams.set("resultRecordCount", String(limit));
@@ -97,9 +88,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(geojson);
   } catch (error: any) {
     console.error("[TMKOverlay] Error:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to fetch TMK overlay data" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message || "Failed to fetch TMK overlay data" }, { status: 500 });
   }
 }

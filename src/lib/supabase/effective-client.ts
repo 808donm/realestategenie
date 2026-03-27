@@ -21,11 +21,9 @@ type EffectiveClientResult = {
 
 function createAdminClient(): SupabaseClient {
   const { createClient } = require("@supabase/supabase-js");
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } }
-  );
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+    auth: { persistSession: false },
+  });
 }
 
 export async function getEffectiveClient(): Promise<EffectiveClientResult> {
@@ -70,12 +68,15 @@ export async function getEventWithAdminFallback(
   userId: string,
   isImpersonating: boolean,
   eventId: string,
-  selectColumns: string = "agent_id"
-): Promise<{
-  supabase: SupabaseClient;
-  event: any;
-  isElevated: boolean;
-} | { error: string; status: number }> {
+  selectColumns: string = "agent_id",
+): Promise<
+  | {
+      supabase: SupabaseClient;
+      event: any;
+      isElevated: boolean;
+    }
+  | { error: string; status: number }
+> {
   const { data: event, error: fetchError } = await supabase
     .from("open_house_events")
     .select(selectColumns)

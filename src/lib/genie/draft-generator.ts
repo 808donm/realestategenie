@@ -132,7 +132,7 @@ export async function generateDraft(
     financing?: string | null;
     recentOpenHouse?: boolean;
     openHouseDate?: string | null;
-  }
+  },
 ): Promise<{ subject?: string; body: string }> {
   if (channel === "email") {
     return draftEmail({

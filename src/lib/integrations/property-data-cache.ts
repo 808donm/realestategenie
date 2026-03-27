@@ -28,7 +28,7 @@ const MAX_MEMORY_CACHE_SIZE = 500;
 export function buildPropertyCacheKey(
   provider: "realie" | "rentcast" | "free-data" | "unified",
   endpoint: string,
-  params: Record<string, any>
+  params: Record<string, any>,
 ): string {
   const sorted = Object.keys(params)
     .filter((k) => k !== "endpoint" && params[k] !== undefined && params[k] !== null && params[k] !== "")
@@ -67,7 +67,7 @@ export function propertyCacheGet(key: string): { data: any; source: string } | n
 export function propertyCacheSet(
   key: string,
   data: any,
-  source: "realie" | "rentcast" | "free-data" | "computed" | "merged" | "unified"
+  source: "realie" | "rentcast" | "free-data" | "computed" | "merged" | "unified",
 ): void {
   if (cache.size >= MAX_MEMORY_CACHE_SIZE) {
     let oldestKey: string | null = null;
@@ -125,10 +125,7 @@ function getSupabase(): SupabaseClient | null {
  * Read from the Supabase persistent cache.
  * Returns null on miss or expiry. Automatically deletes expired rows.
  */
-export async function propertyDbRead(
-  key: string,
-  _provider: string
-): Promise<{ data: any; source: string } | null> {
+export async function propertyDbRead(key: string, _provider: string): Promise<{ data: any; source: string } | null> {
   const sb = getSupabase();
   if (!sb) return null;
 
@@ -147,7 +144,10 @@ export async function propertyDbRead(
     const expiresAt = new Date(row.expires_at).getTime();
     if (Date.now() > expiresAt) {
       // Async cleanup — don't await
-      sb.from("property_data_cache").delete().eq("cache_key", hash).then(() => {});
+      sb.from("property_data_cache")
+        .delete()
+        .eq("cache_key", hash)
+        .then(() => {});
       console.log(`[PropertyCache] DB EXPIRED: ${_provider} key=${hash.slice(0, 8)}…`);
       return null;
     }
@@ -170,7 +170,7 @@ export async function propertyDbWrite(
   key: string,
   _provider: string,
   data: any,
-  source: "realie" | "rentcast" | "free-data" | "computed" | "merged" | "unified"
+  source: "realie" | "rentcast" | "free-data" | "computed" | "merged" | "unified",
 ): Promise<void> {
   const sb = getSupabase();
   if (!sb) return;
@@ -179,18 +179,16 @@ export async function propertyDbWrite(
   const expiresAt = new Date(Date.now() + CACHE_TTL).toISOString();
 
   try {
-    const { error } = await sb
-      .from("property_data_cache")
-      .upsert(
-        {
-          cache_key: hash,
-          data,
-          source,
-          expires_at: expiresAt,
-          raw_key: key.length <= 500 ? key : key.slice(0, 500), // For debugging
-        },
-        { onConflict: "cache_key" }
-      );
+    const { error } = await sb.from("property_data_cache").upsert(
+      {
+        cache_key: hash,
+        data,
+        source,
+        expires_at: expiresAt,
+        raw_key: key.length <= 500 ? key : key.slice(0, 500), // For debugging
+      },
+      { onConflict: "cache_key" },
+    );
 
     if (error) {
       console.error(`[PropertyCache] DB write error:`, error.message);
@@ -243,7 +241,7 @@ export function propertyDiskWrite(
   _key: string,
   _provider: string,
   _data: any,
-  _source: "realie" | "rentcast" | "free-data" | "computed" | "merged"
+  _source: "realie" | "rentcast" | "free-data" | "computed" | "merged",
 ): void {
   // No-op — use propertyDbWrite instead
 }
@@ -275,8 +273,10 @@ export function mergePropertyData(base: any, supplement: any): any {
       // Base is missing this field — take from supplement
       result[key] = suppVal;
     } else if (
-      typeof baseVal === "object" && !Array.isArray(baseVal) &&
-      typeof suppVal === "object" && !Array.isArray(suppVal)
+      typeof baseVal === "object" &&
+      !Array.isArray(baseVal) &&
+      typeof suppVal === "object" &&
+      !Array.isArray(suppVal)
     ) {
       // Both are objects — recurse
       result[key] = mergePropertyData(baseVal, suppVal);

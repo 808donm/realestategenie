@@ -7,11 +7,7 @@ export default async function AppRoot() {
   const { data } = await supabase.auth.getUser();
   if (!data.user) redirect("/signin");
 
-  const { data: agent } = await supabase
-    .from("agents")
-    .select("landing_page")
-    .eq("id", data.user.id)
-    .single();
+  const { data: agent } = await supabase.from("agents").select("landing_page").eq("id", data.user.id).single();
 
   const landing = agent?.landing_page ?? "dashboard";
 

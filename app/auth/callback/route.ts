@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
           });
         },
       },
-    }
+    },
   );
 
   if (code) {
@@ -42,7 +42,10 @@ export async function GET(req: NextRequest) {
     if (data?.session) {
       console.log("[OAuth Callback] Session created successfully for user:", data.user?.email);
       console.log("[OAuth Callback] Session expires at:", data.session.expires_at);
-      console.log("[OAuth Callback] Cookies being set:", res.cookies.getAll().map(c => c.name));
+      console.log(
+        "[OAuth Callback] Cookies being set:",
+        res.cookies.getAll().map((c) => c.name),
+      );
     }
   } else {
     // If no code, redirect to signin with error

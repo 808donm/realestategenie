@@ -14,10 +14,12 @@ export default async function ReportsPage() {
   return (
     <div style={{ maxWidth: 1000 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h1 style={{ fontSize: 28, fontWeight: 900, marginTop: 0, marginBottom: 8 }}>
-          Reports
-        </h1>
-        <PageHelp title="Reports" description="Performance reports and analytics for your real estate business. Export any report as PDF or Excel." tips={["Use Ctrl+P to print any report page", "Export reports to share with your broker or team"]} />
+        <h1 style={{ fontSize: 28, fontWeight: 900, marginTop: 0, marginBottom: 8 }}>Reports</h1>
+        <PageHelp
+          title="Reports"
+          description="Performance reports and analytics for your real estate business. Export any report as PDF or Excel."
+          tips={["Use Ctrl+P to print any report page", "Export reports to share with your broker or team"]}
+        />
       </div>
       <p style={{ margin: "0 0 32px 0", opacity: 0.7 }}>
         Business intelligence and performance tracking across your real estate operations
@@ -260,14 +262,21 @@ function ReportCard({
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <h3 style={{ margin: "0 0 8px 0", fontSize: 16, fontWeight: 700 }}>{title}</h3>
         {badge && (
-          <span style={{ fontSize: 10, fontWeight: 700, color, background: `${color}15`, padding: "2px 8px", borderRadius: 4 }}>
+          <span
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              color,
+              background: `${color}15`,
+              padding: "2px 8px",
+              borderRadius: 4,
+            }}
+          >
             {badge}
           </span>
         )}
       </div>
-      <p style={{ margin: "0 0 12px 0", opacity: 0.7, fontSize: 13, lineHeight: 1.5 }}>
-        {description}
-      </p>
+      <p style={{ margin: "0 0 12px 0", opacity: 0.7, fontSize: 13, lineHeight: 1.5 }}>{description}</p>
       <div style={{ display: "flex", gap: 6 }}>
         {dataSources.map((source) => (
           <span

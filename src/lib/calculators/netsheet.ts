@@ -73,21 +73,14 @@ export function calculateNetSheet(input: NetSheetInput): NetSheetAnalysis {
 
   if (input.closingCostMode === "percent") {
     totalClosingCosts = salePrice * (input.closingCostPercent / 100);
-    closingCostBreakdown = [
-      { label: `Closing Costs (${input.closingCostPercent}%)`, amount: totalClosingCosts },
-    ];
+    closingCostBreakdown = [{ label: `Closing Costs (${input.closingCostPercent}%)`, amount: totalClosingCosts }];
   } else {
     closingCostBreakdown = input.closingCostItems.filter((item) => item.amount > 0);
     totalClosingCosts = input.closingCostItems.reduce((sum, item) => sum + item.amount, 0);
   }
 
   const totalDeductions =
-    totalCommission +
-    totalClosingCosts +
-    mortgagePayoff +
-    repairsCredits +
-    sellerConcessions +
-    additionalPayoffs;
+    totalCommission + totalClosingCosts + mortgagePayoff + repairsCredits + sellerConcessions + additionalPayoffs;
 
   const estimatedProceeds = salePrice - totalDeductions;
   const proceedsPercent = salePrice > 0 ? (estimatedProceeds / salePrice) * 100 : 0;

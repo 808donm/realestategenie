@@ -12,7 +12,9 @@ import { analyzeActions } from "@/lib/genie/action-analyzer";
 export async function POST(request: NextRequest) {
   try {
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -87,14 +89,14 @@ export async function POST(request: NextRequest) {
     // Run the deterministic rule engine
     const actions = analyzeActions({
       briefingData,
-      tomorrowEvents: (tomorrowEvents || []).map(e => ({
+      tomorrowEvents: (tomorrowEvents || []).map((e) => ({
         id: e.id,
         address: e.address,
         start_at: e.start_at,
       })),
       upcomingEventCount: upcomingEventCount || 0,
       domAlertCount: domAlertCount || 0,
-      recentNewLeads: (recentLeads || []).map(l => ({
+      recentNewLeads: (recentLeads || []).map((l) => ({
         leadId: l.id,
         name: l.payload?.name || "Unknown",
         email: l.payload?.email || null,

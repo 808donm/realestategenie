@@ -1,10 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 
-export async function GET(
-  _req: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function GET(_req: NextRequest, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
 
   const supabase = await supabaseServer();
@@ -60,10 +57,7 @@ export async function GET(
     return s;
   };
 
-  const csv =
-    header +
-    "\n" +
-    rows.map((r) => Object.values(r).map(escape).join(",")).join("\n");
+  const csv = header + "\n" + rows.map((r) => Object.values(r).map(escape).join(",")).join("\n");
 
   return new NextResponse(csv, {
     headers: {

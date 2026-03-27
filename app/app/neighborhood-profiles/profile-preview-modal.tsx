@@ -42,11 +42,7 @@ interface ProfilePreviewModalProps {
   profile: NeighborhoodProfile;
 }
 
-export default function ProfilePreviewModal({
-  isOpen,
-  onClose,
-  profile,
-}: ProfilePreviewModalProps) {
+export default function ProfilePreviewModal({ isOpen, onClose, profile }: ProfilePreviewModalProps) {
   const [downloading, setDownloading] = useState(false);
   const [downloadFormat, setDownloadFormat] = useState<"pdf" | "docx" | null>(null);
 
@@ -93,9 +89,7 @@ export default function ProfilePreviewModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl">
-            {profile.neighborhood_name}
-          </DialogTitle>
+          <DialogTitle className="text-2xl">{profile.neighborhood_name}</DialogTitle>
           <DialogDescription>
             {profile.city}, {profile.state_province}
           </DialogDescription>
@@ -105,17 +99,13 @@ export default function ProfilePreviewModal({
           {/* Section 1: Lifestyle & Vibe */}
           <div>
             <h3 className="text-lg font-semibold mb-2">1. The Lifestyle & Vibe</h3>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {profile_data.lifestyleVibe}
-            </p>
+            <p className="text-sm text-muted-foreground leading-relaxed">{profile_data.lifestyleVibe}</p>
           </div>
 
           {/* Section 2: Location Intelligence */}
           <div>
             <h3 className="text-lg font-semibold mb-2">2. Location Intelligence</h3>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {profile_data.locationNarrative}
-            </p>
+            <p className="text-sm text-muted-foreground leading-relaxed">{profile_data.locationNarrative}</p>
           </div>
 
           {/* Section 3: Market Pulse (if available) */}
@@ -125,26 +115,23 @@ export default function ProfilePreviewModal({
               <div className="grid grid-cols-2 gap-4 text-sm">
                 {profile_data.marketData.medianPrice && (
                   <div>
-                    <span className="font-medium">Median List Price:</span>{" "}
-                    {profile_data.marketData.medianPrice}
+                    <span className="font-medium">Median List Price:</span> {profile_data.marketData.medianPrice}
                   </div>
                 )}
                 {profile_data.marketData.daysOnMarket && (
                   <div>
-                    <span className="font-medium">Avg. Days on Market:</span>{" "}
-                    {profile_data.marketData.daysOnMarket}
+                    <span className="font-medium">Avg. Days on Market:</span> {profile_data.marketData.daysOnMarket}
                   </div>
                 )}
                 {profile_data.marketData.activeInventory && (
                   <div>
-                    <span className="font-medium">Active Inventory:</span>{" "}
-                    {profile_data.marketData.activeInventory} units
+                    <span className="font-medium">Active Inventory:</span> {profile_data.marketData.activeInventory}{" "}
+                    units
                   </div>
                 )}
                 {profile_data.marketData.pricePerSqFt && (
                   <div>
-                    <span className="font-medium">Price per Sq. Ft.:</span>{" "}
-                    {profile_data.marketData.pricePerSqFt}
+                    <span className="font-medium">Price per Sq. Ft.:</span> {profile_data.marketData.pricePerSqFt}
                   </div>
                 )}
               </div>
@@ -220,26 +207,23 @@ export default function ProfilePreviewModal({
           {/* Disclaimer */}
           <div className="border-t pt-4">
             <p className="text-xs text-muted-foreground">
-              <strong>DISCLAIMER:</strong> Information obtained from third-party sources has not been verified.
-              No warranty is made regarding accuracy. Prospective buyers should conduct independent verification.
-              Complies with Fair Housing Act principles.
+              <strong>DISCLAIMER:</strong> Information obtained from third-party sources has not been verified. No
+              warranty is made regarding accuracy. Prospective buyers should conduct independent verification. Complies
+              with Fair Housing Act principles.
             </p>
           </div>
         </div>
 
         <p className="text-[9px] text-gray-400 leading-relaxed text-center">
-          This content was generated using AI. AI can make mistakes. Check AI generated content against reliable information before using.
+          This content was generated using AI. AI can make mistakes. Check AI generated content against reliable
+          information before using.
         </p>
 
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={onClose} disabled={downloading}>
             Close
           </Button>
-          <Button
-            variant="secondary"
-            onClick={() => handleDownload("docx")}
-            disabled={downloading}
-          >
+          <Button variant="secondary" onClick={() => handleDownload("docx")} disabled={downloading}>
             {downloading && downloadFormat === "docx" ? (
               "Downloading..."
             ) : (
@@ -249,10 +233,7 @@ export default function ProfilePreviewModal({
               </>
             )}
           </Button>
-          <Button
-            onClick={() => handleDownload("pdf")}
-            disabled={downloading}
-          >
+          <Button onClick={() => handleDownload("pdf")} disabled={downloading}>
             {downloading && downloadFormat === "pdf" ? (
               "Downloading..."
             ) : (

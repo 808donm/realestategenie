@@ -6,8 +6,27 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { CheckCircle2, AlertCircle, Loader2, ExternalLink, Database, Home, Shield, BarChart3, Droplets, Landmark, Leaf } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  ExternalLink,
+  Database,
+  Home,
+  Shield,
+  BarChart3,
+  Droplets,
+  Landmark,
+  Leaf,
+} from "lucide-react";
 import { toast } from "sonner";
 
 type Integration = {
@@ -111,7 +130,11 @@ export default function FederalDataIntegrationCard({
   };
 
   const handleDisconnect = async () => {
-    if (!confirm("Are you sure you want to disconnect Federal Data? Government data supplements will be disabled for all users.")) {
+    if (
+      !confirm(
+        "Are you sure you want to disconnect Federal Data? Government data supplements will be disabled for all users.",
+      )
+    ) {
       return;
     }
 
@@ -149,9 +172,7 @@ export default function FederalDataIntegrationCard({
                 <Landmark className="w-7 h-7 text-white" />
               </div>
               <div>
-                <CardTitle className="flex items-center gap-2">
-                  Federal Data
-                </CardTitle>
+                <CardTitle className="flex items-center gap-2">Federal Data</CardTitle>
                 <CardDescription>US Government Property Intelligence</CardDescription>
               </div>
             </div>
@@ -167,15 +188,14 @@ export default function FederalDataIntegrationCard({
                 Error
               </Badge>
             )}
-            {!isConnected && !hasError && (
-              <Badge variant="outline">Not Connected</Badge>
-            )}
+            {!isConnected && !hasError && <Badge variant="outline">Not Connected</Badge>}
           </div>
         </CardHeader>
 
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Supplement property data with free US government sources: vacancy status, fair market rents, flood zones, demographics, loan limits, housing market trends, and more.
+            Supplement property data with free US government sources: vacancy status, fair market rents, flood zones,
+            demographics, loan limits, housing market trends, and more.
           </p>
 
           {/* Feature highlights */}
@@ -184,27 +204,21 @@ export default function FederalDataIntegrationCard({
               <Home className="w-4 h-4 mt-0.5 text-blue-600" />
               <div>
                 <h4 className="font-medium text-sm">Vacancy & Occupancy</h4>
-                <p className="text-xs text-muted-foreground mt-1">
-                  USPS vacancy indicators, Census occupancy rates
-                </p>
+                <p className="text-xs text-muted-foreground mt-1">USPS vacancy indicators, Census occupancy rates</p>
               </div>
             </div>
             <div className="p-3 border rounded-lg bg-muted/20 flex items-start gap-2">
               <BarChart3 className="w-4 h-4 mt-0.5 text-blue-600" />
               <div>
                 <h4 className="font-medium text-sm">Fair Market Rents</h4>
-                <p className="text-xs text-muted-foreground mt-1">
-                  HUD rental rates by bedroom count and ZIP code
-                </p>
+                <p className="text-xs text-muted-foreground mt-1">HUD rental rates by bedroom count and ZIP code</p>
               </div>
             </div>
             <div className="p-3 border rounded-lg bg-muted/20 flex items-start gap-2">
               <Droplets className="w-4 h-4 mt-0.5 text-blue-600" />
               <div>
                 <h4 className="font-medium text-sm">Flood & Disaster Risk</h4>
-                <p className="text-xs text-muted-foreground mt-1">
-                  FEMA flood zones, NFIP data, disaster history
-                </p>
+                <p className="text-xs text-muted-foreground mt-1">FEMA flood zones, NFIP data, disaster history</p>
               </div>
             </div>
             <div className="p-3 border rounded-lg bg-muted/20 flex items-start gap-2">
@@ -235,11 +249,7 @@ export default function FederalDataIntegrationCard({
                   { key: "cfpb_hmda", label: "HMDA" },
                   { key: "fred", label: "FRED" },
                 ].map(({ key, label }) => (
-                  <Badge
-                    key={key}
-                    variant={sources[key]?.available ? "success" : "outline"}
-                    className="text-xs"
-                  >
+                  <Badge key={key} variant={sources[key]?.available ? "success" : "outline"} className="text-xs">
                     {label}
                     {sources[key]?.available ? "" : " (N/A)"}
                   </Badge>
@@ -250,9 +260,7 @@ export default function FederalDataIntegrationCard({
                   Last tested: {new Date(integration.last_sync_at).toLocaleString()}
                 </div>
               )}
-              <div className="text-xs text-muted-foreground">
-                Platform-wide integration — available to all agents
-              </div>
+              <div className="text-xs text-muted-foreground">Platform-wide integration — available to all agents</div>
             </div>
           )}
 
@@ -266,15 +274,33 @@ export default function FederalDataIntegrationCard({
             <div className="p-3 bg-muted/30 rounded-lg">
               <h4 className="font-medium text-sm mb-2">Data Sources (mostly free)</h4>
               <ul className="text-xs text-muted-foreground space-y-1">
-                <li>• <strong>HUD:</strong> Fair Market Rents, income limits (free token required)</li>
-                <li>• <strong>Census:</strong> Demographics, housing, income (free, optional key)</li>
-                <li>• <strong>FEMA:</strong> Flood zones, disaster declarations (free, no key)</li>
-                <li>• <strong>FHFA:</strong> Conforming loan limits (free, no key)</li>
-                <li>• <strong>BLS:</strong> Employment & economic data (free, optional key)</li>
-                <li>• <strong>FRED:</strong> Housing market trends, median prices, HPI (free key required)</li>
-                <li>• <strong>EPA:</strong> Superfund, brownfields, TRI (free, no key)</li>
-                <li>• <strong>CFPB:</strong> HMDA mortgage lending data (free, no key)</li>
-                <li>• <strong>USPS:</strong> Vacancy indicators (free, OAuth credentials required)</li>
+                <li>
+                  • <strong>HUD:</strong> Fair Market Rents, income limits (free token required)
+                </li>
+                <li>
+                  • <strong>Census:</strong> Demographics, housing, income (free, optional key)
+                </li>
+                <li>
+                  • <strong>FEMA:</strong> Flood zones, disaster declarations (free, no key)
+                </li>
+                <li>
+                  • <strong>FHFA:</strong> Conforming loan limits (free, no key)
+                </li>
+                <li>
+                  • <strong>BLS:</strong> Employment & economic data (free, optional key)
+                </li>
+                <li>
+                  • <strong>FRED:</strong> Housing market trends, median prices, HPI (free key required)
+                </li>
+                <li>
+                  • <strong>EPA:</strong> Superfund, brownfields, TRI (free, no key)
+                </li>
+                <li>
+                  • <strong>CFPB:</strong> HMDA mortgage lending data (free, no key)
+                </li>
+                <li>
+                  • <strong>USPS:</strong> Vacancy indicators (free, OAuth credentials required)
+                </li>
               </ul>
             </div>
           )}
@@ -294,22 +320,12 @@ export default function FederalDataIntegrationCard({
               )
             ) : (
               <>
-                <Button
-                  onClick={handleTest}
-                  disabled={testing}
-                  variant="outline"
-                  className="flex-1"
-                >
+                <Button onClick={handleTest} disabled={testing} variant="outline" className="flex-1">
                   {testing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   Test Connection
                 </Button>
                 {isPlatformAdmin && (
-                  <Button
-                    onClick={handleDisconnect}
-                    disabled={disconnecting}
-                    variant="outline"
-                    className="flex-1"
-                  >
+                  <Button onClick={handleDisconnect} disabled={disconnecting} variant="outline" className="flex-1">
                     {disconnecting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                     Disconnect
                   </Button>
@@ -319,7 +335,8 @@ export default function FederalDataIntegrationCard({
           </div>
 
           <div className="text-xs text-muted-foreground">
-            <strong>Use Cases:</strong> Rental analysis, flood risk disclosure, neighborhood profiles, housing market trends, loan eligibility, vacancy detection
+            <strong>Use Cases:</strong> Rental analysis, flood risk disclosure, neighborhood profiles, housing market
+            trends, loan eligibility, vacancy detection
           </div>
         </CardContent>
       </Card>
@@ -330,24 +347,30 @@ export default function FederalDataIntegrationCard({
           <DialogHeader>
             <DialogTitle>Connect Federal Data Sources</DialogTitle>
             <DialogDescription>
-              Most federal data sources are free with no API key. Optional keys unlock higher rate limits and additional data.
+              Most federal data sources are free with no API key. Optional keys unlock higher rate limits and additional
+              data.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
             <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
-              <strong>Most sources are free!</strong> FEMA, EPA, CFPB, and FHFA data needs no keys. A free HUD token unlocks Fair Market Rents. Optional Census &amp; BLS keys boost rate limits.
+              <strong>Most sources are free!</strong> FEMA, EPA, CFPB, and FHFA data needs no keys. A free HUD token
+              unlocks Fair Market Rents. Optional Census &amp; BLS keys boost rate limits.
             </div>
 
             {/* USPS (optional) */}
             <div className="space-y-2 p-3 border rounded-lg">
               <h4 className="font-medium text-sm flex items-center gap-2">
                 USPS Vacancy Data
-                <Badge variant="outline" className="text-xs">Optional</Badge>
+                <Badge variant="outline" className="text-xs">
+                  Optional
+                </Badge>
               </h4>
               <div className="space-y-2">
                 <div>
-                  <Label htmlFor="usps-client-id" className="text-xs">Client ID</Label>
+                  <Label htmlFor="usps-client-id" className="text-xs">
+                    Client ID
+                  </Label>
                   <Input
                     id="usps-client-id"
                     type="text"
@@ -359,7 +382,9 @@ export default function FederalDataIntegrationCard({
                   />
                 </div>
                 <div>
-                  <Label htmlFor="usps-client-secret" className="text-xs">Client Secret</Label>
+                  <Label htmlFor="usps-client-secret" className="text-xs">
+                    Client Secret
+                  </Label>
                   <Input
                     id="usps-client-secret"
                     type="password"
@@ -374,8 +399,8 @@ export default function FederalDataIntegrationCard({
                   Register at{" "}
                   <a href="https://developers.usps.com" target="_blank" rel="noopener noreferrer" className="underline">
                     developers.usps.com
-                  </a>
-                  {" "}— enables property-level vacancy indicators (60 req/hr free tier)
+                  </a>{" "}
+                  — enables property-level vacancy indicators (60 req/hr free tier)
                 </p>
               </div>
             </div>
@@ -387,7 +412,9 @@ export default function FederalDataIntegrationCard({
                 <Badge className="text-xs bg-blue-100 text-blue-800 border-blue-200">Recommended</Badge>
               </h4>
               <div>
-                <Label htmlFor="hud-token" className="text-xs">API Token</Label>
+                <Label htmlFor="hud-token" className="text-xs">
+                  API Token
+                </Label>
                 <Input
                   id="hud-token"
                   type="password"
@@ -400,10 +427,15 @@ export default function FederalDataIntegrationCard({
               </div>
               <p className="text-xs text-muted-foreground">
                 Free instant token at{" "}
-                <a href="https://www.huduser.gov/hudapi/public/register" target="_blank" rel="noopener noreferrer" className="underline">
+                <a
+                  href="https://www.huduser.gov/hudapi/public/register"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline"
+                >
                   huduser.gov
-                </a>
-                {" "}— required for Fair Market Rents, income limits, and Section 8 data
+                </a>{" "}
+                — required for Fair Market Rents, income limits, and Section 8 data
               </p>
             </div>
 
@@ -411,10 +443,14 @@ export default function FederalDataIntegrationCard({
             <div className="space-y-2 p-3 border rounded-lg">
               <h4 className="font-medium text-sm flex items-center gap-2">
                 Census Bureau
-                <Badge variant="outline" className="text-xs">Optional</Badge>
+                <Badge variant="outline" className="text-xs">
+                  Optional
+                </Badge>
               </h4>
               <div>
-                <Label htmlFor="census-key" className="text-xs">API Key</Label>
+                <Label htmlFor="census-key" className="text-xs">
+                  API Key
+                </Label>
                 <Input
                   id="census-key"
                   type="text"
@@ -427,10 +463,15 @@ export default function FederalDataIntegrationCard({
               </div>
               <p className="text-xs text-muted-foreground">
                 Free instant key at{" "}
-                <a href="https://api.census.gov/data/key_signup.html" target="_blank" rel="noopener noreferrer" className="underline">
+                <a
+                  href="https://api.census.gov/data/key_signup.html"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline"
+                >
                   api.census.gov
-                </a>
-                {" "}— increases rate limits for demographics & housing data
+                </a>{" "}
+                — increases rate limits for demographics & housing data
               </p>
             </div>
 
@@ -438,10 +479,14 @@ export default function FederalDataIntegrationCard({
             <div className="space-y-2 p-3 border rounded-lg">
               <h4 className="font-medium text-sm flex items-center gap-2">
                 Bureau of Labor Statistics
-                <Badge variant="outline" className="text-xs">Optional</Badge>
+                <Badge variant="outline" className="text-xs">
+                  Optional
+                </Badge>
               </h4>
               <div>
-                <Label htmlFor="bls-key" className="text-xs">API Key</Label>
+                <Label htmlFor="bls-key" className="text-xs">
+                  API Key
+                </Label>
                 <Input
                   id="bls-key"
                   type="text"
@@ -454,10 +499,15 @@ export default function FederalDataIntegrationCard({
               </div>
               <p className="text-xs text-muted-foreground">
                 Free at{" "}
-                <a href="https://data.bls.gov/registrationEngine/" target="_blank" rel="noopener noreferrer" className="underline">
+                <a
+                  href="https://data.bls.gov/registrationEngine/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline"
+                >
                   data.bls.gov
-                </a>
-                {" "}— increases from 25 to 500 queries/day for employment data
+                </a>{" "}
+                — increases from 25 to 500 queries/day for employment data
               </p>
             </div>
 
@@ -468,7 +518,9 @@ export default function FederalDataIntegrationCard({
                 <Badge className="text-xs bg-blue-100 text-blue-800 border-blue-200">Recommended</Badge>
               </h4>
               <div>
-                <Label htmlFor="fred-key" className="text-xs">API Key</Label>
+                <Label htmlFor="fred-key" className="text-xs">
+                  API Key
+                </Label>
                 <Input
                   id="fred-key"
                   type="text"
@@ -481,10 +533,15 @@ export default function FederalDataIntegrationCard({
               </div>
               <p className="text-xs text-muted-foreground">
                 Free instant key at{" "}
-                <a href="https://fred.stlouisfed.org/docs/api/api_key.html" target="_blank" rel="noopener noreferrer" className="underline">
+                <a
+                  href="https://fred.stlouisfed.org/docs/api/api_key.html"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline"
+                >
                   fred.stlouisfed.org
-                </a>
-                {" "}— required for housing market trends, median home prices, and HPI data
+                </a>{" "}
+                — required for housing market trends, median home prices, and HPI data
               </p>
             </div>
           </div>
@@ -505,11 +562,7 @@ export default function FederalDataIntegrationCard({
             >
               Cancel
             </Button>
-            <Button
-              onClick={handleConnect}
-              disabled={connecting}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
+            <Button onClick={handleConnect} disabled={connecting} className="bg-blue-600 hover:bg-blue-700">
               {connecting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Connect
             </Button>

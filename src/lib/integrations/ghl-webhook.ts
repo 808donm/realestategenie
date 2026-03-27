@@ -5,11 +5,9 @@
 
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 export interface GHLWebhookPayload {
   // Event details
@@ -53,7 +51,7 @@ export interface GHLWebhookPayload {
  */
 export async function sendToGHLWorkflow(
   agentId: string,
-  payload: GHLWebhookPayload
+  payload: GHLWebhookPayload,
 ): Promise<{ success: boolean; error?: string }> {
   try {
     // Get GHL integration to find workflow webhook URL
@@ -73,8 +71,7 @@ export async function sendToGHLWorkflow(
     const config = integration.config as any;
 
     // Try agent-specific webhook URL first, fall back to global
-    const webhookUrl =
-      config.workflow_webhook_url || process.env.GHL_WORKFLOW_WEBHOOK_URL;
+    const webhookUrl = config.workflow_webhook_url || process.env.GHL_WORKFLOW_WEBHOOK_URL;
 
     if (!webhookUrl) {
       console.log("GHL workflow webhook URL not configured");
@@ -145,9 +142,7 @@ export async function sendToGHLWorkflow(
 /**
  * Test GHL workflow webhook connection
  */
-export async function testGHLWorkflowWebhook(
-  webhookUrl: string
-): Promise<{ success: boolean; error?: string }> {
+export async function testGHLWorkflowWebhook(webhookUrl: string): Promise<{ success: boolean; error?: string }> {
   try {
     const testPayload: GHLWebhookPayload = {
       event_id: "test-event-id",

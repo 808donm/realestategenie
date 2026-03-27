@@ -5,8 +5,16 @@ import Link from "next/link";
 import jsPDF from "jspdf";
 import * as XLSX from "xlsx";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
-  PieChart, Pie,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+  PieChart,
+  Pie,
 } from "recharts";
 
 const fmt = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
@@ -24,10 +32,22 @@ interface Listing {
 const FALLBACK_DATA: Listing[] = [
   { address: "1234 Oak Ridge Dr", listPrice: 449900, dom: 8, status: "Active", listingAgent: "Sarah Mitchell" },
   { address: "567 Maple Ave #202", listPrice: 319000, dom: 14, status: "Active", listingAgent: "James Carter" },
-  { address: "890 Pine Valley Ct", listPrice: 599000, dom: 28, status: "Active - Price Reduced", listingAgent: "Ashley Brown" },
+  {
+    address: "890 Pine Valley Ct",
+    listPrice: 599000,
+    dom: 28,
+    status: "Active - Price Reduced",
+    listingAgent: "Ashley Brown",
+  },
   { address: "2100 Sunset Blvd", listPrice: 385000, dom: 3, status: "Coming Soon", listingAgent: "Maria Lopez" },
   { address: "45 Lakeview Terrace", listPrice: 725000, dom: 42, status: "Active", listingAgent: "Ashley Brown" },
-  { address: "333 Elm Street", listPrice: 275000, dom: 21, status: "Active - Price Reduced", listingAgent: "Tyler Nguyen" },
+  {
+    address: "333 Elm Street",
+    listPrice: 275000,
+    dom: 21,
+    status: "Active - Price Reduced",
+    listingAgent: "Tyler Nguyen",
+  },
   { address: "1678 Birch Lane", listPrice: 465000, dom: 5, status: "Active", listingAgent: "Sarah Mitchell" },
   { address: "912 Willow Creek Rd", listPrice: 549000, dom: 35, status: "Pending", listingAgent: "David Kim" },
   { address: "4401 Cedar Park Way", listPrice: 410000, dom: 17, status: "Active", listingAgent: "Maria Lopez" },
@@ -127,7 +147,10 @@ export default function ListingInventoryClient() {
 
     data.forEach((listing) => {
       y += 8;
-      if (y > 280) { doc.addPage(); y = 20; }
+      if (y > 280) {
+        doc.addPage();
+        y = 20;
+      }
       const addr = listing.address.length > 26 ? listing.address.substring(0, 26) + "..." : listing.address;
       doc.text(addr, colX[0], y);
       doc.text(fmt.format(listing.listPrice), colX[1], y);
@@ -140,7 +163,7 @@ export default function ListingInventoryClient() {
   };
 
   const exportToExcel = () => {
-    const rows = data.map(listing => ({
+    const rows = data.map((listing) => ({
       Address: listing.address,
       "List Price": listing.listPrice,
       DOM: listing.dom,
@@ -163,22 +186,28 @@ export default function ListingInventoryClient() {
   return (
     <div>
       {/* Integration Notice */}
-      <div style={{
-        background: isLive ? "#f0fdf4" : "#eff6ff",
-        border: isLive ? "1px solid #bbf7d0" : "1px solid #bfdbfe",
-        borderRadius: 8,
-        padding: "12px 16px",
-        marginBottom: 20,
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        fontSize: 13,
-      }}>
+      <div
+        style={{
+          background: isLive ? "#f0fdf4" : "#eff6ff",
+          border: isLive ? "1px solid #bbf7d0" : "1px solid #bfdbfe",
+          borderRadius: 8,
+          padding: "12px 16px",
+          marginBottom: 20,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          fontSize: 13,
+        }}
+      >
         <span>
           {isLive ? (
-            <><strong>Live Data</strong> -- Showing live data from your MLS/Trestle integration.</>
+            <>
+              <strong>Live Data</strong> -- Showing live data from your MLS/Trestle integration.
+            </>
           ) : (
-            <><strong>Sample Data</strong> -- Connect your MLS/Trestle integration to see live data.</>
+            <>
+              <strong>Sample Data</strong> -- Connect your MLS/Trestle integration to see live data.
+            </>
           )}
         </span>
         {!isLive && (
@@ -189,7 +218,16 @@ export default function ListingInventoryClient() {
       </div>
 
       {/* Period Selector + Export */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 20,
+          flexWrap: "wrap",
+          gap: 12,
+        }}
+      >
         <div style={{ display: "flex", gap: 8 }}>
           {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
             <button
@@ -226,7 +264,19 @@ export default function ListingInventoryClient() {
           >
             Export PDF
           </button>
-          <button onClick={exportToExcel} style={{ padding: "8px 20px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>
+          <button
+            onClick={exportToExcel}
+            style={{
+              padding: "8px 20px",
+              background: "#fff",
+              color: "#374151",
+              border: "1px solid #d1d5db",
+              borderRadius: 8,
+              fontWeight: 600,
+              cursor: "pointer",
+              fontSize: 13,
+            }}
+          >
             Export Excel
           </button>
         </div>
@@ -234,19 +284,53 @@ export default function ListingInventoryClient() {
 
       {/* Summary Cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 24 }}>
-        <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 16, borderTop: "3px solid #8b5cf6" }}>
+        <div
+          style={{
+            background: "#fff",
+            border: "1px solid #e5e7eb",
+            borderRadius: 10,
+            padding: 16,
+            borderTop: "3px solid #8b5cf6",
+          }}
+        >
           <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>Total Active</div>
           <div style={{ fontSize: 22, fontWeight: 800 }}>{totalActive}</div>
         </div>
-        <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 16, borderTop: "3px solid #3b82f6" }}>
+        <div
+          style={{
+            background: "#fff",
+            border: "1px solid #e5e7eb",
+            borderRadius: 10,
+            padding: 16,
+            borderTop: "3px solid #3b82f6",
+          }}
+        >
           <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>Avg DOM</div>
           <div style={{ fontSize: 22, fontWeight: 800 }}>{avgDom.toFixed(1)}</div>
         </div>
-        <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 16, borderTop: "3px solid #f59e0b" }}>
+        <div
+          style={{
+            background: "#fff",
+            border: "1px solid #e5e7eb",
+            borderRadius: 10,
+            padding: 16,
+            borderTop: "3px solid #f59e0b",
+          }}
+        >
           <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>Listings 21+ DOM</div>
-          <div style={{ fontSize: 22, fontWeight: 800, color: listings21Plus > 0 ? "#d97706" : "inherit" }}>{listings21Plus}</div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: listings21Plus > 0 ? "#d97706" : "inherit" }}>
+            {listings21Plus}
+          </div>
         </div>
-        <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 16, borderTop: "3px solid #10b981" }}>
+        <div
+          style={{
+            background: "#fff",
+            border: "1px solid #e5e7eb",
+            borderRadius: 10,
+            padding: 16,
+            borderTop: "3px solid #10b981",
+          }}
+        >
           <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>Avg List Price</div>
           <div style={{ fontSize: 22, fontWeight: 800 }}>{fmt.format(avgListPrice)}</div>
         </div>
@@ -254,7 +338,9 @@ export default function ListingInventoryClient() {
 
       {/* DOM Distribution Charts */}
       <div style={{ display: "flex", gap: 16, marginBottom: 20, flexWrap: "wrap" }}>
-        <div style={{ flex: "2 1 400px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20 }}>
+        <div
+          style={{ flex: "2 1 400px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20 }}
+        >
           <h3 style={{ margin: "0 0 16px 0", fontSize: 15, fontWeight: 700 }}>Days on Market Distribution</h3>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={domBuckets} margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>
@@ -263,25 +349,44 @@ export default function ListingInventoryClient() {
               <YAxis tick={{ fontSize: 11 }} />
               <Tooltip />
               <Bar dataKey="count" name="Listings" radius={[6, 6, 0, 0]}>
-                {domBuckets.map((b, i) => <Cell key={i} fill={b.color} />)}
+                {domBuckets.map((b, i) => (
+                  <Cell key={i} fill={b.color} />
+                ))}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
-        <div style={{ flex: "1 1 280px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20 }}>
+        <div
+          style={{ flex: "1 1 280px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20 }}
+        >
           <h3 style={{ margin: "0 0 16px 0", fontSize: 15, fontWeight: 700 }}>Status Breakdown</h3>
           {(() => {
             const statusCounts = [
               { name: "Active", value: data.filter((l) => l.status === "Active").length, color: "#10b981" },
-              { name: "Price Reduced", value: data.filter((l) => l.status === "Active - Price Reduced").length, color: "#f59e0b" },
+              {
+                name: "Price Reduced",
+                value: data.filter((l) => l.status === "Active - Price Reduced").length,
+                color: "#f59e0b",
+              },
               { name: "Pending", value: data.filter((l) => l.status === "Pending").length, color: "#3b82f6" },
               { name: "Coming Soon", value: data.filter((l) => l.status === "Coming Soon").length, color: "#8b5cf6" },
             ].filter((d) => d.value > 0);
             return (
               <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
-                  <Pie data={statusCounts} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={75} innerRadius={35} label={(props: any) => `${props.name}: ${props.value}`}>
-                    {statusCounts.map((d, i) => <Cell key={i} fill={d.color} />)}
+                  <Pie
+                    data={statusCounts}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={75}
+                    innerRadius={35}
+                    label={(props: any) => `${props.name}: ${props.value}`}
+                  >
+                    {statusCounts.map((d, i) => (
+                      <Cell key={i} fill={d.color} />
+                    ))}
                   </Pie>
                   <Tooltip />
                 </PieChart>
@@ -293,18 +398,20 @@ export default function ListingInventoryClient() {
 
       {/* Price Adjustment Alert */}
       {listings21Plus > 0 && (
-        <div style={{
-          background: "#fffbeb",
-          border: "1px solid #fde68a",
-          borderRadius: 10,
-          padding: "14px 20px",
-          marginBottom: 20,
-          fontSize: 13,
-        }}>
+        <div
+          style={{
+            background: "#fffbeb",
+            border: "1px solid #fde68a",
+            borderRadius: 10,
+            padding: "14px 20px",
+            marginBottom: 20,
+            fontSize: 13,
+          }}
+        >
           <strong style={{ color: "#92400e" }}>Price Adjustment Alert:</strong>{" "}
           <span style={{ color: "#78350f" }}>
-            {listings21Plus} listing{listings21Plus !== 1 ? "s" : ""} ha{listings21Plus !== 1 ? "ve" : "s"} been
-            on market 21+ days. Consider a price reduction or marketing refresh. Rows highlighted below.
+            {listings21Plus} listing{listings21Plus !== 1 ? "s" : ""} ha{listings21Plus !== 1 ? "ve" : "s"} been on
+            market 21+ days. Consider a price reduction or marketing refresh. Rows highlighted below.
           </span>
         </div>
       )}
@@ -314,11 +421,61 @@ export default function ListingInventoryClient() {
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>
-              <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 700, fontSize: 12, borderBottom: "2px solid #e5e7eb" }}>Address</th>
-              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, borderBottom: "2px solid #e5e7eb" }}>List Price</th>
-              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, borderBottom: "2px solid #e5e7eb" }}>DOM</th>
-              <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 700, fontSize: 12, borderBottom: "2px solid #e5e7eb" }}>Status</th>
-              <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 700, fontSize: 12, borderBottom: "2px solid #e5e7eb" }}>Listing Agent</th>
+              <th
+                style={{
+                  padding: "10px 12px",
+                  textAlign: "left",
+                  fontWeight: 700,
+                  fontSize: 12,
+                  borderBottom: "2px solid #e5e7eb",
+                }}
+              >
+                Address
+              </th>
+              <th
+                style={{
+                  padding: "10px 12px",
+                  textAlign: "right",
+                  fontWeight: 700,
+                  fontSize: 12,
+                  borderBottom: "2px solid #e5e7eb",
+                }}
+              >
+                List Price
+              </th>
+              <th
+                style={{
+                  padding: "10px 12px",
+                  textAlign: "right",
+                  fontWeight: 700,
+                  fontSize: 12,
+                  borderBottom: "2px solid #e5e7eb",
+                }}
+              >
+                DOM
+              </th>
+              <th
+                style={{
+                  padding: "10px 12px",
+                  textAlign: "left",
+                  fontWeight: 700,
+                  fontSize: 12,
+                  borderBottom: "2px solid #e5e7eb",
+                }}
+              >
+                Status
+              </th>
+              <th
+                style={{
+                  padding: "10px 12px",
+                  textAlign: "left",
+                  fontWeight: 700,
+                  fontSize: 12,
+                  borderBottom: "2px solid #e5e7eb",
+                }}
+              >
+                Listing Agent
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -333,37 +490,57 @@ export default function ListingInventoryClient() {
                 <td style={{ padding: "10px 12px", fontSize: 13, borderBottom: "1px solid #f3f4f6" }}>
                   <strong>{listing.address}</strong>
                 </td>
-                <td style={{ padding: "10px 12px", textAlign: "right", fontSize: 13, borderBottom: "1px solid #f3f4f6", fontWeight: 600 }}>
+                <td
+                  style={{
+                    padding: "10px 12px",
+                    textAlign: "right",
+                    fontSize: 13,
+                    borderBottom: "1px solid #f3f4f6",
+                    fontWeight: 600,
+                  }}
+                >
                   {fmt.format(listing.listPrice)}
                 </td>
-                <td style={{ padding: "10px 12px", textAlign: "right", fontSize: 13, borderBottom: "1px solid #f3f4f6" }}>
-                  <span style={{
-                    fontWeight: 700,
-                    color: domColor(listing.dom),
-                    background: listing.dom >= 21 ? "#fef3c7" : "transparent",
-                    padding: listing.dom >= 21 ? "2px 8px" : 0,
-                    borderRadius: 4,
-                  }}>
+                <td
+                  style={{ padding: "10px 12px", textAlign: "right", fontSize: 13, borderBottom: "1px solid #f3f4f6" }}
+                >
+                  <span
+                    style={{
+                      fontWeight: 700,
+                      color: domColor(listing.dom),
+                      background: listing.dom >= 21 ? "#fef3c7" : "transparent",
+                      padding: listing.dom >= 21 ? "2px 8px" : 0,
+                      borderRadius: 4,
+                    }}
+                  >
                     {listing.dom}
                   </span>
                 </td>
                 <td style={{ padding: "10px 12px", fontSize: 13, borderBottom: "1px solid #f3f4f6" }}>
-                  <span style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    padding: "3px 8px",
-                    borderRadius: 4,
-                    background:
-                      listing.status === "Active" ? "#dcfce7" :
-                      listing.status === "Pending" ? "#dbeafe" :
-                      listing.status === "Coming Soon" ? "#f3e8ff" :
-                      "#fef3c7",
-                    color:
-                      listing.status === "Active" ? "#166534" :
-                      listing.status === "Pending" ? "#1e40af" :
-                      listing.status === "Coming Soon" ? "#6b21a8" :
-                      "#92400e",
-                  }}>
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      padding: "3px 8px",
+                      borderRadius: 4,
+                      background:
+                        listing.status === "Active"
+                          ? "#dcfce7"
+                          : listing.status === "Pending"
+                            ? "#dbeafe"
+                            : listing.status === "Coming Soon"
+                              ? "#f3e8ff"
+                              : "#fef3c7",
+                      color:
+                        listing.status === "Active"
+                          ? "#166534"
+                          : listing.status === "Pending"
+                            ? "#1e40af"
+                            : listing.status === "Coming Soon"
+                              ? "#6b21a8"
+                              : "#92400e",
+                    }}
+                  >
                     {listing.status}
                   </span>
                 </td>

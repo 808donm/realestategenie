@@ -8,14 +8,14 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 interface ApiCallEntry {
-  provider: string;    // 'rentcast' | 'realie' | 'trestle' | 'ghl' | 'federal' | 'openai'
-  endpoint: string;    // URL path (e.g., '/properties', '/Property')
-  method?: string;     // HTTP method
+  provider: string; // 'rentcast' | 'realie' | 'trestle' | 'ghl' | 'federal' | 'openai'
+  endpoint: string; // URL path (e.g., '/properties', '/Property')
+  method?: string; // HTTP method
   statusCode?: number;
   responseTimeMs?: number;
   cacheHit?: boolean;
   agentId?: string;
-  source?: string;     // 'seller-map', 'property-data', 'dom-prospecting', 'cron', etc.
+  source?: string; // 'seller-map', 'property-data', 'dom-prospecting', 'cron', etc.
 }
 
 // In-memory buffer for batching writes
@@ -56,7 +56,7 @@ async function flushBuffer(): Promise<void> {
   buffer = [];
 
   try {
-    const rows = entries.map(e => ({
+    const rows = entries.map((e) => ({
       provider: e.provider,
       endpoint: e.endpoint,
       method: e.method || "GET",
@@ -93,7 +93,7 @@ export async function withApiCallLogging<T>(
   provider: string,
   endpoint: string,
   fn: () => Promise<T>,
-  opts?: { method?: string; agentId?: string; source?: string }
+  opts?: { method?: string; agentId?: string; source?: string },
 ): Promise<T> {
   const start = Date.now();
   let statusCode: number | undefined;

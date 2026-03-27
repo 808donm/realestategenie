@@ -58,7 +58,11 @@ export default async function LeadsPage() {
   const allLeads = leads ?? [];
   const heatDistribution = [
     { name: "Hot (80+)", count: allLeads.filter((l) => l.heat_score >= 80).length, color: "#ef4444" },
-    { name: "Warm (50-79)", count: allLeads.filter((l) => l.heat_score >= 50 && l.heat_score < 80).length, color: "#f59e0b" },
+    {
+      name: "Warm (50-79)",
+      count: allLeads.filter((l) => l.heat_score >= 50 && l.heat_score < 80).length,
+      color: "#f59e0b",
+    },
     { name: "Cold (<50)", count: allLeads.filter((l) => l.heat_score < 50).length, color: "#3b82f6" },
   ];
 
@@ -90,9 +94,7 @@ export default async function LeadsPage() {
       weekMap[key] = (weekMap[key] || 0) + 1;
     }
     // Sort chronologically
-    const sorted = Object.entries(weekMap).sort(
-      (a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime()
-    );
+    const sorted = Object.entries(weekMap).sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime());
     for (const [week, count] of sorted) {
       leadsOverTime.push({ week, count });
     }
@@ -121,7 +123,15 @@ export default async function LeadsPage() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
         <h1 style={{ fontSize: 28, fontWeight: 900, margin: 0 }}>Leads</h1>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <PageHelp title="Leads" description="All leads captured from your open house QR check-ins, organized by heat score. Hot leads are most likely to convert." tips={["Call hot leads within 5 minutes for best results", "Click a lead to generate a neighborhood profile", "Use Call/Text/Email buttons for one-click outreach"]} />
+          <PageHelp
+            title="Leads"
+            description="All leads captured from your open house QR check-ins, organized by heat score. Hot leads are most likely to convert."
+            tips={[
+              "Call hot leads within 5 minutes for best results",
+              "Click a lead to generate a neighborhood profile",
+              "Use Call/Text/Email buttons for one-click outreach",
+            ]}
+          />
           <Link href="/app/open-houses">View Open Houses</Link>
         </div>
       </div>

@@ -103,9 +103,7 @@ export default function AttachToContact({ generateFile, reportTitle }: AttachToC
       const blob = generateFile(format);
       const ext = format === "pdf" ? "pdf" : "xlsx";
       const mimeType =
-        format === "pdf"
-          ? "application/pdf"
-          : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        format === "pdf" ? "application/pdf" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
       const file = new File([blob], `${reportTitle.replace(/\s+/g, "_")}.${ext}`, {
         type: mimeType,
@@ -147,9 +145,7 @@ export default function AttachToContact({ generateFile, reportTitle }: AttachToC
       const blob = generateFile(format);
       const ext = format === "pdf" ? "pdf" : "xlsx";
       const mimeType =
-        format === "pdf"
-          ? "application/pdf"
-          : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        format === "pdf" ? "application/pdf" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
       const file = new File([blob], `${reportTitle.replace(/\s+/g, "_")}.${ext}`, {
         type: mimeType,
@@ -188,7 +184,10 @@ export default function AttachToContact({ generateFile, reportTitle }: AttachToC
     return (
       <div style={{ display: "flex", gap: 8 }}>
         <button
-          onClick={() => { setIsOpen(true); setMode("attach"); }}
+          onClick={() => {
+            setIsOpen(true);
+            setMode("attach");
+          }}
           style={{
             padding: "12px 20px",
             background: "#3b82f6",
@@ -204,7 +203,10 @@ export default function AttachToContact({ generateFile, reportTitle }: AttachToC
           Attach to Contact
         </button>
         <button
-          onClick={() => { setIsOpen(true); setMode("email"); }}
+          onClick={() => {
+            setIsOpen(true);
+            setMode("email");
+          }}
           style={{
             padding: "12px 20px",
             background: "#8b5cf6",
@@ -283,7 +285,10 @@ export default function AttachToContact({ generateFile, reportTitle }: AttachToC
         <input
           type="text"
           value={query}
-          onChange={(e) => { setQuery(e.target.value); setSelectedContact(null); }}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setSelectedContact(null);
+          }}
           placeholder="Type name, email, or phone..."
           style={{
             width: "100%",
@@ -295,9 +300,7 @@ export default function AttachToContact({ generateFile, reportTitle }: AttachToC
           }}
         />
         {searching && (
-          <div style={{ position: "absolute", right: 12, top: 30, fontSize: 12, color: "#6b7280" }}>
-            Searching...
-          </div>
+          <div style={{ position: "absolute", right: 12, top: 30, fontSize: 12, color: "#6b7280" }}>Searching...</div>
         )}
 
         {/* Contact Results Dropdown */}

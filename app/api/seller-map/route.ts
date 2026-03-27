@@ -17,11 +17,11 @@ function toRealiePropertyType(rentcastType: string | undefined): string | undefi
   if (!rentcastType) return undefined;
   const map: Record<string, string> = {
     "Single Family": "SFR",
-    "Condo": "CONDO",
-    "Townhouse": "SFR",
+    Condo: "CONDO",
+    Townhouse: "SFR",
     "Multi-Family": "APARTMENT",
-    "Manufactured": "MOBILE",
-    "Land": "LAND",
+    Manufactured: "MOBILE",
+    Land: "LAND",
   };
   return map[rentcastType];
 }
@@ -60,7 +60,9 @@ export async function GET(request: NextRequest) {
 
     if (!isServiceCall) {
       const supabase = await supabaseServer();
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
@@ -82,15 +84,15 @@ export async function GET(request: NextRequest) {
     const propertyType = url.searchParams.get("propertyType") || undefined;
 
     if (!lat && !lng && !zip && !zips) {
-      return NextResponse.json(
-        { error: "Either lat+lng, zip, or zips is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Either lat+lng, zip, or zips is required" }, { status: 400 });
     }
 
     // Parse multi-zip parameter
     const zipList = zips
-      ? zips.split(",").map((z) => z.trim()).filter((z) => /^\d{5}$/.test(z))
+      ? zips
+          .split(",")
+          .map((z) => z.trim())
+          .filter((z) => /^\d{5}$/.test(z))
       : [];
 
     // ── Check global search cache (7-day TTL, shared across all users) ──
@@ -109,7 +111,10 @@ export async function GET(request: NextRequest) {
         .filter((s: any) => s.score >= minScore)
         .filter((s: any) => !absenteeOnly || s.absentee)
         .filter((s: any) => !minOwnership || (s.ownershipYears != null && s.ownershipYears >= minOwnership))
-        .filter((s: any) => !minEquity || (s.equity != null && s.estimatedValue && (s.equity / s.estimatedValue) * 100 >= minEquity))
+        .filter(
+          (s: any) =>
+            !minEquity || (s.equity != null && s.estimatedValue && (s.equity / s.estimatedValue) * 100 >= minEquity),
+        )
         .filter((s: any) => !minProperties || (s.ownerParcelCount != null && s.ownerParcelCount >= minProperties));
 
       return NextResponse.json({
@@ -159,21 +164,25 @@ export async function GET(request: NextRequest) {
       const uniqueZips = [...new Set(parcels.map((p) => p.zipCode).filter(Boolean))] as string[];
       if (uniqueZips.length > 0) {
         const marketResults = await Promise.allSettled(
-          uniqueZips.slice(0, 20).map((zipCode) =>
-            rentcastForMarket.getMarketData({ zipCode, dataType: "Sale" })
-              .then((data) => ({ zipCode, data }))
-          )
+          uniqueZips
+            .slice(0, 20)
+            .map((zipCode) =>
+              rentcastForMarket.getMarketData({ zipCode, dataType: "Sale" }).then((data) => ({ zipCode, data })),
+            ),
         );
 
-        const marketByZip = new Map<string, {
-          medianPrice: number | undefined;
-          medianPricePerSqft: number | undefined;
-          avgDom: number | undefined;
-          totalListings: number | undefined;
-          newListings: number | undefined;
-          priceTrend: number | undefined;
-          medianRent: number | undefined;
-        }>();
+        const marketByZip = new Map<
+          string,
+          {
+            medianPrice: number | undefined;
+            medianPricePerSqft: number | undefined;
+            avgDom: number | undefined;
+            totalListings: number | undefined;
+            newListings: number | undefined;
+            priceTrend: number | undefined;
+            medianRent: number | undefined;
+          }
+        >();
 
         for (const r of marketResults) {
           if (r.status !== "fulfilled") continue;
@@ -227,7 +236,7 @@ export async function GET(request: NextRequest) {
 
     // ── Supplement ownership dates from MLS (Hawaii non-disclosure fix) ──
     // For parcels missing transferDate, query Trestle for most recent closed sale
-    const missingDates = parcels.filter(p => !p.transferDate && !p.ownershipStartDate && p.address);
+    const missingDates = parcels.filter((p) => !p.transferDate && !p.ownershipStartDate && p.address);
     if (missingDates.length > 0) {
       try {
         const { supabaseAdmin } = await import("@/lib/supabase/admin");
@@ -241,7 +250,8 @@ export async function GET(request: NextRequest) {
           .maybeSingle();
 
         if (trestleInteg?.config) {
-          const config = typeof trestleInteg.config === "string" ? JSON.parse(trestleInteg.config) : trestleInteg.config;
+          const config =
+            typeof trestleInteg.config === "string" ? JSON.parse(trestleInteg.config) : trestleInteg.config;
           if (config.client_id && config.client_secret) {
             const { TrestleClient } = await import("@/lib/integrations/trestle-client");
             const trestle = new TrestleClient(config);
@@ -265,7 +275,7 @@ export async function GET(request: NextRequest) {
                   skipCount: true,
                 });
                 return { zipCode, listings: results.value || [] };
-              })
+              }),
             );
 
             // Build a lookup: normalized address → most recent close date
@@ -274,7 +284,8 @@ export async function GET(request: NextRequest) {
               if (r.status !== "fulfilled") continue;
               for (const listing of r.value.listings) {
                 if (!listing.CloseDate) continue;
-                const key = `${(listing.StreetNumber || "").toLowerCase()}-${(listing.StreetName || "").toLowerCase()}`.trim();
+                const key =
+                  `${(listing.StreetNumber || "").toLowerCase()}-${(listing.StreetName || "").toLowerCase()}`.trim();
                 if (key && !closeDateLookup.has(key)) {
                   closeDateLookup.set(key, { date: listing.CloseDate, price: listing.ClosePrice });
                 }
@@ -323,17 +334,18 @@ export async function GET(request: NextRequest) {
     }
 
     // ── Score all properties ──
-    const parcelMap = new Map(parcels.map((p) => [
-      p._id || p.siteId || p.parcelId || `${p.latitude}-${p.longitude}`,
-      p,
-    ]));
+    const parcelMap = new Map(
+      parcels.map((p) => [p._id || p.siteId || p.parcelId || `${p.latitude}-${p.longitude}`, p]),
+    );
 
     let scored = parcels
       .map((p) => scoreParcel(p))
       .filter((s): s is NonNullable<typeof s> => s !== null)
       .filter((s) => !absenteeOnly || s.absentee)
       .filter((s) => !minOwnership || (s.ownershipYears != null && s.ownershipYears >= minOwnership))
-      .filter((s) => !minEquity || (s.equity != null && s.estimatedValue && (s.equity / s.estimatedValue) * 100 >= minEquity))
+      .filter(
+        (s) => !minEquity || (s.equity != null && s.estimatedValue && (s.equity / s.estimatedValue) * 100 >= minEquity),
+      )
       .filter((s) => !minProperties || (s.ownerParcelCount != null && s.ownerParcelCount >= minProperties))
       .sort((a, b) => b.score - a.score);
 
@@ -346,11 +358,15 @@ export async function GET(request: NextRequest) {
     if (lat && lng && zipList.length === 0 && !zip && scored.length > 0) {
       const realie = await getConfiguredRealieClient();
       if (realie) {
-        const candidateZips = [...new Set(
-          scored.filter((s) => s.score >= 20).slice(0, 500)
-            .map((s) => parcelMap.get(s.id)?.zipCode)
-            .filter(Boolean)
-        )] as string[];
+        const candidateZips = [
+          ...new Set(
+            scored
+              .filter((s) => s.score >= 20)
+              .slice(0, 500)
+              .map((s) => parcelMap.get(s.id)?.zipCode)
+              .filter(Boolean),
+          ),
+        ] as string[];
 
         if (candidateZips.length > 0) {
           try {
@@ -371,11 +387,13 @@ export async function GET(request: NextRequest) {
             }
 
             if (realieProperties.length > 0) {
-              console.log(`[SellerMap] Realie coord enrichment: ${realieProperties.length} properties across ${candidateZips.length} zips`);
+              console.log(
+                `[SellerMap] Realie coord enrichment: ${realieProperties.length} properties across ${candidateZips.length} zips`,
+              );
               // Use shared merge function with AVM sanity check
               const enrichedParcels = bulkMergeRealieData(
                 scored.map((s) => parcelMap.get(s.id)).filter(Boolean) as RealieParcel[],
-                realieProperties
+                realieProperties,
               );
 
               // Update parcel map and re-score
@@ -384,12 +402,14 @@ export async function GET(request: NextRequest) {
                 parcelMap.set(key, ep);
               }
 
-              scored = scored.map((s) => {
-                const parcel = parcelMap.get(s.id);
-                if (!parcel) return s;
-                const rescored = scoreParcel(parcel);
-                return rescored || s;
-              }).sort((a, b) => b.score - a.score);
+              scored = scored
+                .map((s) => {
+                  const parcel = parcelMap.get(s.id);
+                  if (!parcel) return s;
+                  const rescored = scoreParcel(parcel);
+                  return rescored || s;
+                })
+                .sort((a, b) => b.score - a.score);
             }
           } catch (err: any) {
             console.warn("[SellerMap] Realie enrichment failed (non-fatal):", err.message);
@@ -427,21 +447,21 @@ export async function GET(request: NextRequest) {
               return { id: s.id, enriched };
             }
             return null;
-          })
+          }),
         );
 
-        const enrichedCount = avmResults.filter(
-          (r) => r.status === "fulfilled" && r.value != null
-        ).length;
+        const enrichedCount = avmResults.filter((r) => r.status === "fulfilled" && r.value != null).length;
 
         if (enrichedCount > 0) {
           console.log(`[SellerMap] AVM enriched ${enrichedCount}/${avmBatch.length} properties`);
-          scored = scored.map((s) => {
-            const parcel = parcelMap.get(s.id);
-            if (!parcel) return s;
-            const rescored = scoreParcel(parcel);
-            return rescored || s;
-          }).sort((a, b) => b.score - a.score);
+          scored = scored
+            .map((s) => {
+              const parcel = parcelMap.get(s.id);
+              if (!parcel) return s;
+              const rescored = scoreParcel(parcel);
+              return rescored || s;
+            })
+            .sort((a, b) => b.score - a.score);
         }
       }
     }
@@ -474,7 +494,7 @@ export async function GET(request: NextRequest) {
         lng: lng ? Number(lng) : undefined,
         radius,
         zip: zip || undefined,
-      }
+      },
     ).catch((err) => console.warn("[SellerMap] Cache write failed (non-fatal):", err));
 
     return NextResponse.json({
@@ -487,9 +507,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error("[SellerMap] Error:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to fetch seller map data" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message || "Failed to fetch seller map data" }, { status: 500 });
   }
 }

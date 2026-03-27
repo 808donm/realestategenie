@@ -3,9 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Activity, CheckCircle2, AlertTriangle, XCircle, RefreshCw, ChevronRight,
-} from "lucide-react";
+import { Activity, CheckCircle2, AlertTriangle, XCircle, RefreshCw, ChevronRight } from "lucide-react";
 
 interface SyncStatus {
   provider: string;
@@ -56,7 +54,10 @@ export default function SyncHealthWidget() {
             <Activity className="w-4 h-4" />
             Sync Health
           </CardTitle>
-          <Link href="/app/integrations" className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-0.5 no-underline">
+          <Link
+            href="/app/integrations"
+            className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-0.5 no-underline"
+          >
             Manage <ChevronRight className="w-3 h-3" />
           </Link>
         </div>
@@ -93,11 +94,7 @@ export default function SyncHealthWidget() {
                       "Never synced"
                     )}
                   </div>
-                  {sync.last_error && (
-                    <div className="text-[10px] text-red-500 mt-0.5 truncate">
-                      {sync.last_error}
-                    </div>
-                  )}
+                  {sync.last_error && <div className="text-[10px] text-red-500 mt-0.5 truncate">{sync.last_error}</div>}
                 </div>
               </div>
             );

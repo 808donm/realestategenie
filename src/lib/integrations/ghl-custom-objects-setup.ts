@@ -26,14 +26,10 @@ function ghlHeaders(accessToken: string) {
 /**
  * List existing custom objects for a location
  */
-async function listCustomObjects(
-  accessToken: string,
-  locationId: string
-): Promise<any[]> {
-  const response = await fetch(
-    `${GHL_BASE_URL}/objects/custom-objects?locationId=${locationId}`,
-    { headers: ghlHeaders(accessToken) }
-  );
+async function listCustomObjects(accessToken: string, locationId: string): Promise<any[]> {
+  const response = await fetch(`${GHL_BASE_URL}/objects/custom-objects?locationId=${locationId}`, {
+    headers: ghlHeaders(accessToken),
+  });
 
   if (!response.ok) {
     const error = await response.text();
@@ -64,12 +60,10 @@ async function createCustomObjectSchema(
       isRequired?: boolean;
       description?: string;
     }>;
-  }
+  },
 ): Promise<{ success: boolean; objectKey?: string; error?: string }> {
   try {
-    console.log(
-      `[GHL Setup] Creating custom object: ${schema.labels.singular}...`
-    );
+    console.log(`[GHL Setup] Creating custom object: ${schema.labels.singular}...`);
 
     const response = await fetch(`${GHL_BASE_URL}/objects/custom-objects`, {
       method: "POST",
@@ -86,11 +80,7 @@ async function createCustomObjectSchema(
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(
-        `[GHL Setup] Failed to create ${schema.labels.singular}:`,
-        response.status,
-        errorText
-      );
+      console.error(`[GHL Setup] Failed to create ${schema.labels.singular}:`, response.status, errorText);
 
       // Check if it already exists (conflict/duplicate error)
       if (response.status === 409 || response.status === 422) {
@@ -101,9 +91,7 @@ async function createCustomObjectSchema(
             errorData.message?.includes("duplicate") ||
             errorData.error?.includes("already exists")
           ) {
-            console.log(
-              `[GHL Setup] ${schema.labels.singular} already exists (this is fine)`
-            );
+            console.log(`[GHL Setup] ${schema.labels.singular} already exists (this is fine)`);
             return { success: true, objectKey: schema.key };
           }
         } catch {
@@ -115,19 +103,13 @@ async function createCustomObjectSchema(
     }
 
     const data = await response.json();
-    console.log(
-      `[GHL Setup] Created ${schema.labels.singular}:`,
-      data.customObject?.key || data.key
-    );
+    console.log(`[GHL Setup] Created ${schema.labels.singular}:`, data.customObject?.key || data.key);
     return {
       success: true,
       objectKey: data.customObject?.key || data.key || schema.key,
     };
   } catch (error: any) {
-    console.error(
-      `[GHL Setup] Error creating ${schema.labels.singular}:`,
-      error.message
-    );
+    console.error(`[GHL Setup] Error creating ${schema.labels.singular}:`, error.message);
     return { success: false, error: error.message };
   }
 }
@@ -139,14 +121,14 @@ async function createCustomObjectSchema(
 async function ensureOpenHouseObject(
   accessToken: string,
   locationId: string,
-  existingObjects: any[]
+  existingObjects: any[],
 ): Promise<{ success: boolean; alreadyExisted: boolean; error?: string }> {
   const existing = existingObjects.find(
     (obj: any) =>
       obj.key === "custom_objects.openhouses" ||
       obj.objectKey === "custom_objects.openhouses" ||
       obj.name?.toLowerCase() === "openhouse" ||
-      obj.name?.toLowerCase() === "openhouses"
+      obj.name?.toLowerCase() === "openhouses",
   );
 
   if (existing) {
@@ -237,14 +219,14 @@ async function ensureOpenHouseObject(
 async function ensureRegistrationObject(
   accessToken: string,
   locationId: string,
-  existingObjects: any[]
+  existingObjects: any[],
 ): Promise<{ success: boolean; alreadyExisted: boolean; error?: string }> {
   const existing = existingObjects.find(
     (obj: any) =>
       obj.key === "custom_objects.registrations" ||
       obj.objectKey === "custom_objects.registrations" ||
       obj.name?.toLowerCase() === "registration" ||
-      obj.name?.toLowerCase() === "registrations"
+      obj.name?.toLowerCase() === "registrations",
   );
 
   if (existing) {
@@ -305,7 +287,7 @@ async function ensureRegistrationObject(
  */
 export async function ensureGHLCustomObjects(
   accessToken: string,
-  locationId: string
+  locationId: string,
 ): Promise<{
   success: boolean;
   openHouse: { success: boolean; alreadyExisted: boolean; error?: string };
@@ -317,20 +299,12 @@ export async function ensureGHLCustomObjects(
   const existingObjects = await listCustomObjects(accessToken, locationId);
   console.log(
     "[GHL Setup] Found existing custom objects:",
-    existingObjects.map((o: any) => o.name || o.key)
+    existingObjects.map((o: any) => o.name || o.key),
   );
 
   // Create both objects (idempotent - skips if already exists)
-  const openHouseResult = await ensureOpenHouseObject(
-    accessToken,
-    locationId,
-    existingObjects
-  );
-  const registrationResult = await ensureRegistrationObject(
-    accessToken,
-    locationId,
-    existingObjects
-  );
+  const openHouseResult = await ensureOpenHouseObject(accessToken, locationId, existingObjects);
+  const registrationResult = await ensureRegistrationObject(accessToken, locationId, existingObjects);
 
   const allSuccess = openHouseResult.success && registrationResult.success;
 

@@ -3,6 +3,7 @@
 ## 🎉 System Overview
 
 Your Real Estate Genie subscription system is now fully configured with:
+
 - ✅ Monthly and yearly billing options
 - ✅ 4 subscription tiers (Solo Agent Pro, Team Growth, Brokerage Growth, Brokerage Scale)
 - ✅ Two subscription paths (access request approval + direct invitation)
@@ -14,18 +15,19 @@ Your Real Estate Genie subscription system is now fully configured with:
 
 ## 📊 Subscription Plans & Pricing
 
-| Plan | Monthly | Yearly | Savings | Agents | Properties | Tenants |
-|------|---------|--------|---------|--------|------------|---------|
-| **Solo Agent Pro** | $49 | $490 | $98 | 1 | 5 | 50 |
-| **Team Growth** | $149 | $1,490 | $298 | 5 | 25 | 250 |
-| **Brokerage Growth** | $349 | $3,490 | $698 | 10 | 100 | 1,000 |
-| **Brokerage Scale** | $799 | $7,990 | $1,598 | 25 | 300 | 3,000 |
+| Plan                 | Monthly | Yearly | Savings | Agents | Properties | Tenants |
+| -------------------- | ------- | ------ | ------- | ------ | ---------- | ------- |
+| **Solo Agent Pro**   | $49     | $490   | $98     | 1      | 5          | 50      |
+| **Team Growth**      | $149    | $1,490 | $298    | 5      | 25         | 250     |
+| **Brokerage Growth** | $349    | $3,490 | $698    | 10     | 100        | 1,000   |
+| **Brokerage Scale**  | $799    | $7,990 | $1,598  | 25     | 300        | 3,000   |
 
 ---
 
 ## 🔄 Complete User Flow
 
 ### Path 1: Access Request → Approval
+
 1. User visits public site and submits access request form
 2. Request appears in Admin → Access Requests dashboard
 3. Admin reviews request details
@@ -42,6 +44,7 @@ Your Real Estate Genie subscription system is now fully configured with:
 11. User creates account and logs in
 
 ### Path 2: Direct Invitation
+
 1. Admin clicks "Send Paid Invitation" in dashboard
 2. Admin enters:
    - Email address
@@ -62,6 +65,7 @@ Your Real Estate Genie subscription system is now fully configured with:
 ## 💾 Database Schema
 
 ### Subscription Plans Table
+
 ```sql
 subscription_plans
   - id (uuid)
@@ -82,6 +86,7 @@ subscription_plans
 ```
 
 ### Access Requests Table
+
 ```sql
 access_requests
   - id (uuid)
@@ -106,22 +111,27 @@ access_requests
 ### Price IDs Configured
 
 **Solo Agent Pro**
+
 - Monthly: `price_1SnqlmDx8srgWVliuSNRjVAl`
 - Yearly: `price_1SnqrZDx8srgWVli28hMxYa2`
 
 **Team Growth**
+
 - Monthly: `price_1SnqtZDx8srgWVliHZ5jpEIg`
 - Yearly: `price_1SnquhDx8srgWVliZRkXeTa3`
 
 **Brokerage Growth**
+
 - Monthly: `price_1SnqvxDx8srgWVliqUWlqXVL`
 - Yearly: `price_1SnqxJDx8srgWVli6qn717jX`
 
 **Brokerage Scale**
+
 - Monthly: `price_1SrOwbDx8srgWVliG9rdIxMI`
 - Yearly: `price_1SrOyDDx8srgWVlix07cBocg`
 
 ### Checkout Session Metadata
+
 ```javascript
 {
   access_request_id: "uuid",
@@ -136,6 +146,7 @@ access_requests
 ## 📧 Email Templates
 
 ### Payment Link Email Features
+
 - Professional HTML design with gradient header
 - Plan name and pricing prominently displayed
 - Billing frequency indication (month/year)
@@ -151,6 +162,7 @@ access_requests
 ## 🎨 Admin Dashboard Features
 
 ### Access Requests Page (`/admin/access-requests`)
+
 - **Filter tabs**: Pending, Approved, Rejected, All
 - **Send Paid Invitation button** (top of page)
 - **Request cards** showing:
@@ -162,6 +174,7 @@ access_requests
   - Action buttons (Approve/Reject/View Details)
 
 ### Approval Dialog
+
 - Plan selector dropdown (4 plans with pricing)
 - Billing frequency radio buttons (Monthly/Yearly)
 - Real-time savings calculation display
@@ -170,6 +183,7 @@ access_requests
 - "What happens next" instructions
 
 ### Send Invitation Dialog
+
 - Email input (required)
 - Full name input (required)
 - Phone input (optional)
@@ -183,9 +197,11 @@ access_requests
 ## 🛠 API Endpoints
 
 ### `POST /api/admin/subscription-plans`
+
 Fetches all active, non-custom subscription plans for admin selection.
 
 **Response:**
+
 ```json
 {
   "plans": [
@@ -205,9 +221,11 @@ Fetches all active, non-custom subscription plans for admin selection.
 ```
 
 ### `POST /api/admin/approve-access-request`
+
 Approves an access request, generates payment link, sends email.
 
 **Request:**
+
 ```json
 {
   "requestId": "uuid",
@@ -218,6 +236,7 @@ Approves an access request, generates payment link, sends email.
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -227,9 +246,11 @@ Approves an access request, generates payment link, sends email.
 ```
 
 ### `POST /api/admin/send-paid-invitation`
+
 Creates pre-approved invitation, generates payment link, sends email.
 
 **Request:**
+
 ```json
 {
   "email": "string",
@@ -242,6 +263,7 @@ Creates pre-approved invitation, generates payment link, sends email.
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -260,11 +282,13 @@ Creates pre-approved invitation, generates payment link, sends email.
 Run the migration to add Stripe price IDs:
 
 **Option A: Supabase Dashboard**
+
 1. Go to https://app.supabase.com
 2. Navigate to SQL Editor
 3. Open and run `supabase/migrations/077_add_stripe_price_ids.sql`
 
 **Option B: Supabase CLI**
+
 ```bash
 supabase migration up
 ```
@@ -274,6 +298,7 @@ See `supabase/migrations/077_APPLY_MIGRATION.md` for detailed instructions.
 ### 2. Test the Complete Flow
 
 **Test Access Request Approval:**
+
 1. Submit test access request via public form
 2. Go to Admin → Access Requests
 3. Click "Approve & Send Payment Link"
@@ -283,6 +308,7 @@ See `supabase/migrations/077_APPLY_MIGRATION.md` for detailed instructions.
 7. Verify webhook creates account
 
 **Test Direct Invitation:**
+
 1. Go to Admin → Access Requests
 2. Click "+ Send Paid Invitation"
 3. Fill in test user details
@@ -307,6 +333,7 @@ See `supabase/migrations/077_APPLY_MIGRATION.md` for detailed instructions.
 Your webhook endpoint: `https://yourdomain.com/api/webhooks/stripe`
 
 Events to listen for:
+
 - `checkout.session.completed`
 - `customer.subscription.created`
 - `customer.subscription.updated`
@@ -319,22 +346,27 @@ Events to listen for:
 ## 📁 Key Files Modified/Created
 
 ### Database Migrations
+
 - `supabase/migrations/076_add_yearly_stripe_fields.sql` - Added yearly price ID columns
 - `supabase/migrations/077_add_stripe_price_ids.sql` - Populated actual Stripe price IDs
 - `supabase/migrations/077_APPLY_MIGRATION.md` - Migration application guide
 
 ### Admin UI Components
+
 - `app/app/admin/access-requests/access-requests-client.tsx` - Full UI with billing frequency
 
 ### API Routes
+
 - `app/api/admin/subscription-plans/route.ts` - Fetch plans endpoint
 - `app/api/admin/approve-access-request/route.ts` - Approval with billing frequency
 - `app/api/admin/send-paid-invitation/route.ts` - Direct invitation with billing frequency
 
 ### Email System
+
 - `src/lib/email/resend.ts` - Payment link email template with billing frequency
 
 ### Documentation & Scripts
+
 - `scripts/get-stripe-price-ids.ts` - Utility to fetch Stripe price IDs
 - `scripts/STRIPE_SETUP_GUIDE.md` - Setup instructions
 - `SUBSCRIPTION_SYSTEM_COMPLETE.md` - This comprehensive guide
@@ -357,6 +389,7 @@ Events to listen for:
 ## 📞 Support
 
 For questions or issues:
+
 - Check migration guide: `supabase/migrations/077_APPLY_MIGRATION.md`
 - Review Stripe setup: `scripts/STRIPE_SETUP_GUIDE.md`
 - Contact support: support@realestategenie.app

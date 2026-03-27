@@ -24,10 +24,7 @@ export async function GET(request: NextRequest) {
     const ghlAgentId = await resolveGHLAgentId(userData.user.id);
     const ghlConfig = await getValidGHLConfig(ghlAgentId);
     if (!ghlConfig) {
-      return NextResponse.json(
-        { error: "GHL integration not connected" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "GHL integration not connected" }, { status: 404 });
     }
 
     const client = new GHLClient(ghlConfig.access_token, ghlConfig.location_id);
@@ -41,9 +38,8 @@ export async function GET(request: NextRequest) {
 
     const contactData = contact.status === "fulfilled" ? contact.value : null;
     const notes = notesResult.status === "fulfilled" ? notesResult.value.notes || [] : [];
-    const conversations = conversationsResult.status === "fulfilled"
-      ? conversationsResult.value.conversations || []
-      : [];
+    const conversations =
+      conversationsResult.status === "fulfilled" ? conversationsResult.value.conversations || [] : [];
 
     // For each conversation, fetch the latest messages
     const conversationsWithMessages = await Promise.all(
@@ -57,7 +53,7 @@ export async function GET(request: NextRequest) {
         } catch {
           return { ...conv, messages: [] };
         }
-      })
+      }),
     );
 
     return NextResponse.json({
@@ -69,7 +65,7 @@ export async function GET(request: NextRequest) {
     console.error("Contact detail error:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to fetch contact details" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

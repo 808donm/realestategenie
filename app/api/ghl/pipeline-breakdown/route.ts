@@ -12,7 +12,9 @@ import { GHLClient } from "@/lib/integrations/ghl-client";
 export async function GET(req: NextRequest) {
   try {
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -29,9 +31,12 @@ export async function GET(req: NextRequest) {
     const ghlConfig = await getValidGHLConfig(ghlAgentId);
 
     if (!ghlConfig) {
-      return NextResponse.json({
-        error: "Unable to get valid GHL credentials. Please reconnect GHL."
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: "Unable to get valid GHL credentials. Please reconnect GHL.",
+        },
+        { status: 400 },
+      );
     }
 
     const client = new GHLClient(ghlConfig.access_token, ghlConfig.location_id);
@@ -40,24 +45,30 @@ export async function GET(req: NextRequest) {
     const { pipelines } = await client.getPipelines(ghlConfig.location_id);
 
     // Find the specified pipeline by ID
-    const pipeline = pipelines.find(p => p.id === pipelineId);
+    const pipeline = pipelines.find((p) => p.id === pipelineId);
 
     if (!pipeline) {
-      return NextResponse.json({
-        error: `Pipeline with ID "${pipelineId}" not found`,
-        availablePipelines: pipelines.map(p => ({ id: p.id, name: p.name }))
-      }, { status: 404 });
+      return NextResponse.json(
+        {
+          error: `Pipeline with ID "${pipelineId}" not found`,
+          availablePipelines: pipelines.map((p) => ({ id: p.id, name: p.name })),
+        },
+        { status: 404 },
+      );
     }
 
     // Sort stages by position
     const sortedStages = [...pipeline.stages].sort((a, b) => a.position - b.position);
 
-    console.log('[Pipeline Breakdown] ========================================');
-    console.log('[Pipeline Breakdown] Fetching opportunities for pipeline:', pipeline.name);
-    console.log('[Pipeline Breakdown] Pipeline ID:', pipeline.id);
-    console.log('[Pipeline Breakdown] Number of stages:', sortedStages.length);
-    console.log('[Pipeline Breakdown] Stages:', sortedStages.map(s => `${s.name} (${s.id})`));
-    console.log('[Pipeline Breakdown] ========================================');
+    console.log("[Pipeline Breakdown] ========================================");
+    console.log("[Pipeline Breakdown] Fetching opportunities for pipeline:", pipeline.name);
+    console.log("[Pipeline Breakdown] Pipeline ID:", pipeline.id);
+    console.log("[Pipeline Breakdown] Number of stages:", sortedStages.length);
+    console.log(
+      "[Pipeline Breakdown] Stages:",
+      sortedStages.map((s) => `${s.name} (${s.id})`),
+    );
+    console.log("[Pipeline Breakdown] ========================================");
 
     // Fetch opportunities for each stage
     const stagesWithOpportunities = await Promise.all(
@@ -73,7 +84,9 @@ export async function GET(req: NextRequest) {
             limit: 100, // Limit to 100 opportunities per stage
           });
 
-          console.log(`[Pipeline Breakdown] Stage "${stage.name}" returned ${opportunities?.length || 0} opportunities`);
+          console.log(
+            `[Pipeline Breakdown] Stage "${stage.name}" returned ${opportunities?.length || 0} opportunities`,
+          );
 
           // Extract relevant opportunity data
           const formattedOpportunities = opportunities.map((opp: any) => ({
@@ -81,7 +94,7 @@ export async function GET(req: NextRequest) {
             name: opp.name,
             monetaryValue: opp.monetaryValue || 0,
             contactId: opp.contactId,
-            contactName: opp.contact?.name || opp.contact?.firstName + ' ' + opp.contact?.lastName || 'Unknown',
+            contactName: opp.contact?.name || opp.contact?.firstName + " " + opp.contact?.lastName || "Unknown",
             status: opp.status,
             createdAt: opp.createdAt,
           }));
@@ -106,7 +119,7 @@ export async function GET(req: NextRequest) {
             error: error.message,
           };
         }
-      })
+      }),
     );
 
     return NextResponse.json({
@@ -116,12 +129,8 @@ export async function GET(req: NextRequest) {
       totalOpportunities: stagesWithOpportunities.reduce((sum, stage) => sum + stage.opportunityCount, 0),
       totalValue: stagesWithOpportunities.reduce((sum, stage) => sum + stage.totalValue, 0),
     });
-
   } catch (error: any) {
     console.error("Error fetching pipeline breakdown:", error);
-    return NextResponse.json(
-      { error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

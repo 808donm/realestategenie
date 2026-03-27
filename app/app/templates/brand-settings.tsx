@@ -16,9 +16,7 @@ export default function BrandSettings({ settings, onUpdate }: Props) {
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold mb-2">Brand Settings</h3>
-        <p className="text-sm text-muted-foreground">
-          Customize colors, fonts, and branding to match your style
-        </p>
+        <p className="text-sm text-muted-foreground">Customize colors, fonts, and branding to match your style</p>
       </div>
 
       {/* Logo Upload */}
@@ -27,11 +25,7 @@ export default function BrandSettings({ settings, onUpdate }: Props) {
         <div className="flex items-center gap-3">
           {settings.logo_url && (
             <div className="w-20 h-20 border rounded-lg overflow-hidden bg-gray-50 flex items-center justify-center">
-              <img
-                src={settings.logo_url}
-                alt="Logo"
-                className="max-w-full max-h-full object-contain"
-              />
+              <img src={settings.logo_url} alt="Logo" className="max-w-full max-h-full object-contain" />
             </div>
           )}
           <div className="flex-1">
@@ -42,9 +36,7 @@ export default function BrandSettings({ settings, onUpdate }: Props) {
               onChange={(e) => onUpdate({ logo_url: e.target.value || null })}
               className="mb-2"
             />
-            <p className="text-xs text-muted-foreground">
-              Enter a URL to your logo image (PNG or JPG recommended)
-            </p>
+            <p className="text-xs text-muted-foreground">Enter a URL to your logo image (PNG or JPG recommended)</p>
           </div>
         </div>
       </div>
@@ -106,14 +98,8 @@ export default function BrandSettings({ settings, onUpdate }: Props) {
                 className="flex items-center gap-2 p-2 border rounded-lg hover:border-blue-600 transition-colors"
               >
                 <div className="flex gap-1">
-                  <div
-                    className="w-6 h-6 rounded"
-                    style={{ backgroundColor: preset.primary }}
-                  />
-                  <div
-                    className="w-6 h-6 rounded"
-                    style={{ backgroundColor: preset.secondary }}
-                  />
+                  <div className="w-6 h-6 rounded" style={{ backgroundColor: preset.primary }} />
+                  <div className="w-6 h-6 rounded" style={{ backgroundColor: preset.secondary }} />
                 </div>
                 <span className="text-xs">{preset.name}</span>
               </button>
@@ -131,9 +117,7 @@ export default function BrandSettings({ settings, onUpdate }: Props) {
               key={font.value}
               onClick={() => onUpdate({ font_family: font.value })}
               className={`p-3 border rounded-lg text-left transition-all ${
-                settings.font_family === font.value
-                  ? "border-blue-600 bg-blue-50"
-                  : "hover:border-gray-400"
+                settings.font_family === font.value ? "border-blue-600 bg-blue-50" : "hover:border-gray-400"
               }`}
             >
               <div className={`${font.preview} text-sm font-semibold`}>{font.label}</div>

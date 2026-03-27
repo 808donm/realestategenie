@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import {
-  generateChannelResponse,
-  type MessageChannel,
-} from "@/lib/ai/channel-assistant";
+import { generateChannelResponse, type MessageChannel } from "@/lib/ai/channel-assistant";
 import {
   sendChannelMessage,
   getSocialChannelConfig,
@@ -11,11 +8,9 @@ import {
   type SocialChannelConfig,
 } from "@/lib/integrations/social-channels-client";
 
-const admin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 // ─── Normalized Inbound Message ───────────────────────────────
 
@@ -112,9 +107,7 @@ function parseLinkedInPayload(body: any): NormalizedMessage[] {
       senderId: body.eventBody.from,
       messageText: body.eventBody.body,
       messageId: body.eventBody.messageId,
-      timestamp: body.eventBody.createdAt
-        ? new Date(body.eventBody.createdAt).toISOString()
-        : new Date().toISOString(),
+      timestamp: body.eventBody.createdAt ? new Date(body.eventBody.createdAt).toISOString() : new Date().toISOString(),
       rawPayload: body,
     },
   ];
@@ -123,9 +116,7 @@ function parseLinkedInPayload(body: any): NormalizedMessage[] {
 // ─── Core Handler ─────────────────────────────────────────────
 
 async function handleInboundSocialMessage(msg: NormalizedMessage) {
-  console.log(
-    `📨 [Social/${msg.channel}] Inbound from ${msg.senderId}: "${msg.messageText.slice(0, 80)}"`
-  );
+  console.log(`📨 [Social/${msg.channel}] Inbound from ${msg.senderId}: "${msg.messageText.slice(0, 80)}"`);
 
   // Store in inbound_messages
   await admin.from("inbound_messages").insert({
@@ -175,11 +166,7 @@ async function handleInboundSocialMessage(msg: NormalizedMessage) {
   }
 
   // Get agent name
-  const { data: agent } = await admin
-    .from("agents")
-    .select("full_name")
-    .eq("id", agentId)
-    .single();
+  const { data: agent } = await admin.from("agents").select("full_name").eq("id", agentId).single();
 
   const agentName = agent?.full_name || "your agent";
 
@@ -201,13 +188,9 @@ async function handleInboundSocialMessage(msg: NormalizedMessage) {
   });
 
   if (sendResult.success) {
-    console.log(
-      `✅ [Social/${msg.channel}] AI reply sent (conversation: ${conversationId})`
-    );
+    console.log(`✅ [Social/${msg.channel}] AI reply sent (conversation: ${conversationId})`);
   } else {
-    console.error(
-      `❌ [Social/${msg.channel}] Failed to send reply: ${sendResult.error}`
-    );
+    console.error(`❌ [Social/${msg.channel}] Failed to send reply: ${sendResult.error}`);
   }
 
   // Log to audit trail
@@ -268,10 +251,7 @@ export async function POST(req: Request) {
             .single();
 
           const cfg = int?.config as SocialChannelConfig;
-          const secret =
-            platform === "instagram"
-              ? cfg?.instagram?.app_secret
-              : cfg?.facebook?.app_secret;
+          const secret = platform === "instagram" ? cfg?.instagram?.app_secret : cfg?.facebook?.app_secret;
 
           if (secret && !verifyFacebookSignature(rawBody, fbSignature, secret)) {
             console.error(`[Social/${platform}] Invalid webhook signature`);

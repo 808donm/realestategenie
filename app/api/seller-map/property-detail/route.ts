@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import type { RentcastProperty } from "@/lib/integrations/rentcast-client";
-import {
-  getConfiguredRentcastClient,
-  fetchAndMergeSingleProperty,
-} from "@/lib/integrations/property-data-service";
+import { getConfiguredRentcastClient, fetchAndMergeSingleProperty } from "@/lib/integrations/property-data-service";
 
 /**
  * GET /api/seller-map/property-detail
@@ -172,11 +169,9 @@ export async function GET(request: NextRequest) {
 
     // Check cache first
     const { createClient } = await import("@supabase/supabase-js");
-    const adminSb = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { persistSession: false } }
-    );
+    const adminSb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+      auth: { persistSession: false },
+    });
     const { data: cachedRental } = await adminSb
       .from("area_data_cache")
       .select("data")
@@ -211,19 +206,25 @@ export async function GET(request: NextRequest) {
         // Cache for 30 days
         const zip = property?.zipCode || merged?.zipCode || "";
         if (zip && rentalAvm) {
-          await adminSb.from("area_data_cache").upsert({
-            zip_code: zip,
-            data_type: `rental_avm:${normalizedAddr}`,
-            data: {
-              rent: rentalAvm,
-              rentRangeLow: rentalAvmLow,
-              rentRangeHigh: rentalAvmHigh,
-              address: normalizedAddr,
-            },
-            fetched_at: new Date().toISOString(),
-          }, { onConflict: "zip_code,data_type" }).then(({ error }) => {
-            if (error) console.warn("[PropertyDetail] Rental AVM cache write failed:", error.message);
-          });
+          await adminSb
+            .from("area_data_cache")
+            .upsert(
+              {
+                zip_code: zip,
+                data_type: `rental_avm:${normalizedAddr}`,
+                data: {
+                  rent: rentalAvm,
+                  rentRangeLow: rentalAvmLow,
+                  rentRangeHigh: rentalAvmHigh,
+                  address: normalizedAddr,
+                },
+                fetched_at: new Date().toISOString(),
+              },
+              { onConflict: "zip_code,data_type" },
+            )
+            .then(({ error }) => {
+              if (error) console.warn("[PropertyDetail] Rental AVM cache write failed:", error.message);
+            });
         }
       } catch (err: any) {
         console.warn("[PropertyDetail] Rental AVM error:", err.message);
@@ -249,7 +250,7 @@ export async function GET(request: NextRequest) {
         // Estimate monthly mortgage payment (assume 30yr at ~7% — rough estimate)
         const rate = 0.07 / 12; // monthly rate
         const n = 360; // 30 years
-        monthlyMortgage = lienBalance * (rate * Math.pow(1 + rate, n)) / (Math.pow(1 + rate, n) - 1);
+        monthlyMortgage = (lienBalance * (rate * Math.pow(1 + rate, n))) / (Math.pow(1 + rate, n) - 1);
         const annualMortgage = monthlyMortgage * 12;
         const downPayment = estimatedValue - lienBalance;
         if (downPayment > 0) {
@@ -380,9 +381,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(detail);
   } catch (error: any) {
     console.error("[PropertyDetail] Error:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to fetch property detail" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message || "Failed to fetch property detail" }, { status: 500 });
   }
 }

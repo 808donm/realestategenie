@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     if (!body.postType || !body.bedrooms || !body.bathrooms || !body.sqft) {
       return NextResponse.json(
         { error: "Post type, bedrooms, bathrooms, and square footage are required." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -78,10 +78,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!text) {
-      return NextResponse.json(
-        { error: "No response from AI model. Please try again." },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "No response from AI model. Please try again." }, { status: 500 });
     }
 
     const jsonText = extractJSON(text);
@@ -95,16 +92,10 @@ export async function POST(request: NextRequest) {
     console.error("Error generating social media content:", error);
 
     if (error.message?.includes("JSON")) {
-      return NextResponse.json(
-        { error: "AI returned an unexpected format. Please try again." },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "AI returned an unexpected format. Please try again." }, { status: 500 });
     }
 
-    return NextResponse.json(
-      { error: error.message || "Failed to generate social content" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message || "Failed to generate social content" }, { status: 500 });
   }
 }
 
@@ -286,7 +277,7 @@ function buildUserPrompt(input: SocialPostInput): string {
     ``,
     `Pick creative concepts that highlight this property's strongest features. For example, if it has an amazing kitchen, the Reverse Reveal ending in the kitchen would work great. If it's luxury, the ASMR/Whisper or Silent Tour would shine.`,
     ``,
-    `Return ONLY the JSON.`
+    `Return ONLY the JSON.`,
   );
 
   return lines.join("\n");

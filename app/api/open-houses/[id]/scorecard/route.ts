@@ -2,10 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 
 // PATCH - Mark a lead as contacted
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: eventId } = await params;
     const supabase = await supabaseServer();
@@ -56,10 +53,7 @@ export async function PATCH(
 
     if (updateError) {
       console.error("Update error:", updateError);
-      return NextResponse.json(
-        { error: "Failed to update lead" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to update lead" }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
@@ -67,16 +61,13 @@ export async function PATCH(
     console.error("Scorecard API error:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 // GET - Get scorecard metrics for an event
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: eventId } = await params;
     const supabase = await supabaseServer();
@@ -116,20 +107,15 @@ export async function GET(
 
     const hasRealtor =
       leads?.filter((l) => {
-        const rep = ((l.payload as Record<string, unknown>)?.representation as string || "").toLowerCase();
+        const rep = (((l.payload as Record<string, unknown>)?.representation as string) || "").toLowerCase();
         return rep.includes("have") || rep.includes("yes") || rep.includes("working");
       }) || [];
 
     const lookingForAgent =
       leads?.filter((l) => {
-        const rep = ((l.payload as Record<string, unknown>)?.representation as string || "").toLowerCase();
+        const rep = (((l.payload as Record<string, unknown>)?.representation as string) || "").toLowerCase();
         return (
-          !rep ||
-          rep.includes("no") ||
-          rep.includes("looking") ||
-          rep.includes("need") ||
-          rep === "" ||
-          rep === "none"
+          !rep || rep.includes("no") || rep.includes("looking") || rep.includes("need") || rep === "" || rep === "none"
         );
       }) || [];
 
@@ -148,7 +134,7 @@ export async function GET(
     console.error("Scorecard API error:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

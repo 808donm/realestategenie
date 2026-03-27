@@ -50,11 +50,24 @@ function pdfSafe(str: string): string {
 
 export function renderDefaultTemplate(ctx: FlyerRenderContext): void {
   const {
-    pdf, event, agent, primaryRGB,
-    propertyPhotoData, photoWidth, photoHeight,
-    mapImageData, mapWidth, mapHeight,
-    qrCodeData, headshotData, logoData, logoWidth, logoHeight,
-    pageWidth, pageHeight, margin,
+    pdf,
+    event,
+    agent,
+    primaryRGB,
+    propertyPhotoData,
+    photoWidth,
+    photoHeight,
+    mapImageData,
+    mapWidth,
+    mapHeight,
+    qrCodeData,
+    headshotData,
+    logoData,
+    logoWidth,
+    logoHeight,
+    pageWidth,
+    pageHeight,
+    margin,
   } = ctx;
 
   const footerHeight = 50;
@@ -184,9 +197,7 @@ export function renderDefaultTemplate(ctx: FlyerRenderContext): void {
     yPos += 5;
     const qrSize = 35;
     const qrGap = 10;
-    const textWidth = qrCodeData
-      ? pageWidth - margin * 2 - qrSize - qrGap
-      : pageWidth - margin * 2;
+    const textWidth = qrCodeData ? pageWidth - margin * 2 - qrSize - qrGap : pageWidth - margin * 2;
 
     const featuresStartY = yPos;
     pdf.setFontSize(12);
@@ -215,9 +226,7 @@ export function renderDefaultTemplate(ctx: FlyerRenderContext): void {
     yPos += 5;
     const qrSize = 35;
     const qrGap = 10;
-    const textWidth = qrCodeData
-      ? pageWidth - margin * 2 - qrSize - qrGap
-      : pageWidth - margin * 2;
+    const textWidth = qrCodeData ? pageWidth - margin * 2 - qrSize - qrGap : pageWidth - margin * 2;
     let estimatedFeaturesHeight = 12;
     event.key_features.forEach((feature: string) => {
       const lines = pdf.splitTextToSize(pdfSafe(feature), textWidth - 8);
@@ -277,7 +286,7 @@ export function renderDefaultTemplate(ctx: FlyerRenderContext): void {
   pdf.setFillColor(
     Math.min(255, primaryRGB.r + 180),
     Math.min(255, primaryRGB.g + 180),
-    Math.min(255, primaryRGB.b + 180)
+    Math.min(255, primaryRGB.b + 180),
   );
   pdf.roundedRect(margin, yPos, pageWidth - margin * 2, bannerHeight, 3, 3, "FD");
 
@@ -286,13 +295,15 @@ export function renderDefaultTemplate(ctx: FlyerRenderContext): void {
   pdf.setFont("helvetica", "bold");
   const startDate = new Date(event.start_at);
   const endDate = new Date(event.end_at);
-  const openHouseText = pdfSafe(`OPEN HOUSE: ${startDate.toLocaleDateString()} | ${startDate.toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  })} - ${endDate.toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  })}`);
+  const openHouseText = pdfSafe(
+    `OPEN HOUSE: ${startDate.toLocaleDateString()} | ${startDate.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    })} - ${endDate.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    })}`,
+  );
   pdf.text(openHouseText, margin + 5, yPos + 11);
   pdf.setTextColor(0, 0, 0);
 
@@ -361,7 +372,8 @@ export function renderDefaultTemplate(ctx: FlyerRenderContext): void {
   pdf.setFontSize(7);
   pdf.setFont("helvetica", "italic");
   pdf.setTextColor(100, 100, 100);
-  const disclaimer = "Information deemed reliable but not guaranteed. All measurements and information should be independently verified.";
+  const disclaimer =
+    "Information deemed reliable but not guaranteed. All measurements and information should be independently verified.";
   const disclaimerLines = pdf.splitTextToSize(disclaimer, pageWidth - margin * 2);
   pdf.text(disclaimerLines, margin, yPos);
 }
@@ -370,12 +382,27 @@ export function renderDefaultTemplate(ctx: FlyerRenderContext): void {
 
 export function renderModernBlueTemplate(ctx: FlyerRenderContext): void {
   const {
-    pdf, event, agent, primaryRGB, secondaryRGB,
-    propertyPhotoData, photoWidth, photoHeight,
-    secondaryPhotoData, secondaryPhotoWidth, secondaryPhotoHeight,
-    qrCodeData, headshotData, headshotWidth, headshotHeight,
-    logoData, logoWidth, logoHeight,
-    pageWidth, pageHeight, margin,
+    pdf,
+    event,
+    agent,
+    primaryRGB,
+    secondaryRGB,
+    propertyPhotoData,
+    photoWidth,
+    photoHeight,
+    secondaryPhotoData,
+    secondaryPhotoWidth,
+    secondaryPhotoHeight,
+    qrCodeData,
+    headshotData,
+    headshotWidth,
+    headshotHeight,
+    logoData,
+    logoWidth,
+    logoHeight,
+    pageWidth,
+    pageHeight,
+    margin,
   } = ctx;
 
   const contentWidth = pageWidth - margin * 2;
@@ -387,7 +414,7 @@ export function renderModernBlueTemplate(ctx: FlyerRenderContext): void {
   pdf.rect(0, 0, pageWidth, headerH, "F");
 
   // Layout: Logo | Company Name | Phone — evenly spaced across 2/3 of header
-  const twoThirdsW = pageWidth * 2 / 3;
+  const twoThirdsW = (pageWidth * 2) / 3;
 
   // Logo (left-aligned)
   let logoEndX = margin;
@@ -584,18 +611,19 @@ export function renderModernBlueTemplate(ctx: FlyerRenderContext): void {
   pdf.text("PROPERTY FEATURES", featColX + featHeaderW / 2, y + 5.5, { align: "center" });
 
   // Feature icon rows — prefer flyer_features, fall back to hardcoded defaults
-  const featureIcons = (event.flyer_features && event.flyer_features.length > 0)
-    ? event.flyer_features.map((f: { icon: string; label: string; value: string }) => ({
-        icon: f.icon,
-        label: f.label,
-        value: f.value || "--",
-      }))
-    : [
-        { icon: "bed", label: "Bedroom", value: event.beds?.toString() || "--" },
-        { icon: "bath", label: "Bathroom", value: event.baths?.toString() || "--" },
-        { icon: "solar", label: "PV Solar", value: "Yes" },
-        { icon: "garage", label: "Garage", value: event.parking_notes || "--" },
-      ];
+  const featureIcons =
+    event.flyer_features && event.flyer_features.length > 0
+      ? event.flyer_features.map((f: { icon: string; label: string; value: string }) => ({
+          icon: f.icon,
+          label: f.label,
+          value: f.value || "--",
+        }))
+      : [
+          { icon: "bed", label: "Bedroom", value: event.beds?.toString() || "--" },
+          { icon: "bath", label: "Bathroom", value: event.baths?.toString() || "--" },
+          { icon: "solar", label: "PV Solar", value: "Yes" },
+          { icon: "garage", label: "Garage", value: event.parking_notes || "--" },
+        ];
 
   let fy = y + 13;
   for (const feat of featureIcons) {
@@ -651,12 +679,27 @@ export function renderModernBlueTemplate(ctx: FlyerRenderContext): void {
 
 export function renderElegantWarmTemplate(ctx: FlyerRenderContext): void {
   const {
-    pdf, event, agent, primaryRGB, secondaryRGB,
-    propertyPhotoData, photoWidth, photoHeight,
-    secondaryPhotoData, secondaryPhotoWidth, secondaryPhotoHeight,
-    tertiaryPhotoData, tertiaryPhotoWidth, tertiaryPhotoHeight,
-    qrCodeData, logoData, logoWidth, logoHeight,
-    pageWidth, pageHeight, margin,
+    pdf,
+    event,
+    agent,
+    primaryRGB,
+    secondaryRGB,
+    propertyPhotoData,
+    photoWidth,
+    photoHeight,
+    secondaryPhotoData,
+    secondaryPhotoWidth,
+    secondaryPhotoHeight,
+    tertiaryPhotoData,
+    tertiaryPhotoWidth,
+    tertiaryPhotoHeight,
+    qrCodeData,
+    logoData,
+    logoWidth,
+    logoHeight,
+    pageWidth,
+    pageHeight,
+    margin,
   } = ctx;
 
   const contentWidth = pageWidth - margin * 2;
@@ -768,7 +811,9 @@ export function renderElegantWarmTemplate(ctx: FlyerRenderContext): void {
   const startDate = new Date(event.start_at);
   const endDate = new Date(event.end_at);
   const dateLine = pdfSafe(startDate.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" }));
-  const timeLine = pdfSafe(`${startDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} - ${endDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`);
+  const timeLine = pdfSafe(
+    `${startDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} - ${endDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`,
+  );
   pdf.text(dateLine, pageWidth - margin, y + 6, { align: "right" });
   pdf.setFontSize(10);
   pdf.text(timeLine, pageWidth - margin, y + 12, { align: "right" });
@@ -810,18 +855,19 @@ export function renderElegantWarmTemplate(ctx: FlyerRenderContext): void {
   const totalBoxW = 4 * boxW + 3 * boxGap;
   const boxStartX = margin;
 
-  const highlights = (event.flyer_features && event.flyer_features.length > 0)
-    ? event.flyer_features.map((f: { icon: string; label: string; value: string }) => ({
-        value: f.value || "--",
-        label: f.label,
-        icon: f.icon,
-      }))
-    : [
-        { value: event.beds?.toString() || "--", label: "Beds", icon: "bed" },
-        { value: event.baths?.toString() || "--", label: "Baths", icon: "bath" },
-        { value: event.parking_notes || "--", label: "Parking", icon: "garage" },
-        { value: event.sqft ? pdfSafe(Number(event.sqft).toLocaleString()) : "--", label: "Sqft", icon: "sqft" },
-      ];
+  const highlights =
+    event.flyer_features && event.flyer_features.length > 0
+      ? event.flyer_features.map((f: { icon: string; label: string; value: string }) => ({
+          value: f.value || "--",
+          label: f.label,
+          icon: f.icon,
+        }))
+      : [
+          { value: event.beds?.toString() || "--", label: "Beds", icon: "bed" },
+          { value: event.baths?.toString() || "--", label: "Baths", icon: "bath" },
+          { value: event.parking_notes || "--", label: "Parking", icon: "garage" },
+          { value: event.sqft ? pdfSafe(Number(event.sqft).toLocaleString()) : "--", label: "Sqft", icon: "sqft" },
+        ];
 
   for (let i = 0; i < highlights.length; i++) {
     const bx = boxStartX + i * (boxW + boxGap);
@@ -892,7 +938,8 @@ export function renderElegantWarmTemplate(ctx: FlyerRenderContext): void {
   pdf.setFontSize(7);
   pdf.setFont("helvetica", "italic");
   pdf.setTextColor(100, 100, 100);
-  const disclaimer = "Information deemed reliable but not guaranteed. All measurements and information should be independently verified.";
+  const disclaimer =
+    "Information deemed reliable but not guaranteed. All measurements and information should be independently verified.";
   const discLines = pdf.splitTextToSize(disclaimer, contentWidth);
   pdf.text(discLines, margin, disclaimerY);
 }
@@ -904,7 +951,7 @@ function drawHighlightIcon(
   icon: string,
   cx: number,
   cy: number,
-  color: { r: number; g: number; b: number }
+  color: { r: number; g: number; b: number },
 ): void {
   pdf.setDrawColor(color.r, color.g, color.b);
   pdf.setFillColor(color.r, color.g, color.b);

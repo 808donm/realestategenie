@@ -5,15 +5,9 @@ import { usePathname, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 
 // Lazy-load the popup and property modal to avoid bundle bloat
-const GenieCopilotPopup = dynamic(
-  () => import("@/components/genie-copilot-popup.client"),
-  { ssr: false }
-);
+const GenieCopilotPopup = dynamic(() => import("@/components/genie-copilot-popup.client"), { ssr: false });
 
-const PropertyDetailModal = dynamic(
-  () => import("../property-data/property-detail-modal.client"),
-  { ssr: false }
-);
+const PropertyDetailModal = dynamic(() => import("../property-data/property-detail-modal.client"), { ssr: false });
 
 /**
  * Global Hoku floating button + copilot popup + property detail modal.
@@ -61,8 +55,8 @@ export default function HokuGlobal() {
         if (address2) params.set("address2", address2);
 
         fetch(`/api/integrations/attom/property?${params}`)
-          .then(r => r.ok ? r.json() : null)
-          .then(data => {
+          .then((r) => (r.ok ? r.json() : null))
+          .then((data) => {
             console.log("[HokuGlobal] Property API returned:", data?.property?.[0]?.address?.oneLine || "no data");
             if (data?.property?.[0]) {
               setModalProperty(data.property[0]);
@@ -148,21 +142,22 @@ export default function HokuGlobal() {
 
       {/* Copilot popup */}
       {isOpen && (
-        <GenieCopilotPopup
-          isOpen={isOpen}
-          onClose={handleClose}
-          actionContext={actionContext}
-          currentPage={pathname}
-        />
+        <GenieCopilotPopup isOpen={isOpen} onClose={handleClose} actionContext={actionContext} currentPage={pathname} />
       )}
 
       {/* Property Detail Modal — opened from Hoku search results */}
       {modalLoading && (
-        <div style={{
-          position: "fixed", inset: 0, zIndex: 10000,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          background: "rgba(0,0,0,0.4)",
-        }}>
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 10000,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(0,0,0,0.4)",
+          }}
+        >
           <div style={{ background: "#fff", padding: 24, borderRadius: 12, fontSize: 14 }}>
             Loading property details...
           </div>
@@ -170,10 +165,7 @@ export default function HokuGlobal() {
       )}
 
       {modalProperty && !modalLoading && (
-        <PropertyDetailModal
-          property={modalProperty}
-          onClose={() => setModalProperty(null)}
-        />
+        <PropertyDetailModal property={modalProperty} onClose={() => setModalProperty(null)} />
       )}
     </>
   );

@@ -109,12 +109,16 @@ TWILIO_PHONE_NUMBER=+1234567890
 ## Notification Logic
 
 ### Check-in Confirmation
+
 Sent to **all attendees** who consent to email/SMS:
+
 - Email: Beautiful HTML template with property details and flyer download link
 - SMS: Short text with property address and agent contact
 
 ### Greeting Message
+
 Sent **only** when:
+
 - Attendee selects "No" for "Are you currently represented by an agent?"
 - Attendee checks "Yes, please contact me"
 - Attendee consents to email/SMS
@@ -122,11 +126,13 @@ Sent **only** when:
 ## Costs
 
 ### Resend
+
 - **Free Tier:** 3,000 emails/month
 - **Paid Plans:** Start at $20/month for 50,000 emails
 - [Pricing Details](https://resend.com/pricing)
 
 ### Twilio
+
 - **Free Trial:** $15 in credits
 - **SMS Cost:** ~$0.0075 per message (US)
 - **Phone Number:** $1.15/month
@@ -164,9 +170,11 @@ Sent **only** when:
 ## Customization
 
 To customize the email templates, edit:
+
 - `/lib/notifications/email-service.ts`
 
 To customize SMS messages, edit:
+
 - `/lib/notifications/sms-service.ts`
 
 ## Support

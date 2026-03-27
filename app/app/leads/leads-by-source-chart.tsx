@@ -51,12 +51,8 @@ export default function LeadsBySourceChart({ bySource, byEvent }: LeadsBySourceC
           border: "1px solid #e5e7eb",
         }}
       >
-        <h3 style={{ margin: "0 0 4px 0", fontSize: 16, fontWeight: 700 }}>
-          Leads by Source
-        </h3>
-        <p style={{ margin: "0 0 16px 0", fontSize: 13, color: "#6b7280" }}>
-          {totalLeads} total leads
-        </p>
+        <h3 style={{ margin: "0 0 4px 0", fontSize: 16, fontWeight: 700 }}>Leads by Source</h3>
+        <p style={{ margin: "0 0 16px 0", fontSize: 13, color: "#6b7280" }}>{totalLeads} total leads</p>
         {bySource.length === 0 ? (
           <p style={{ color: "#9ca3af", textAlign: "center", padding: 40 }}>No lead data yet</p>
         ) : (
@@ -77,15 +73,10 @@ export default function LeadsBySourceChart({ bySource, byEvent }: LeadsBySourceC
                 labelLine={{ strokeWidth: 1 }}
               >
                 {bySource.map((entry, index) => (
-                  <Cell
-                    key={entry.name}
-                    fill={SOURCE_COLORS[entry.name] || PIE_COLORS[index % PIE_COLORS.length]}
-                  />
+                  <Cell key={entry.name} fill={SOURCE_COLORS[entry.name] || PIE_COLORS[index % PIE_COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip
-                formatter={(value: any) => [value, "Leads"]}
-              />
+              <Tooltip formatter={(value: any) => [value, "Leads"]} />
             </PieChart>
           </ResponsiveContainer>
         )}
@@ -100,21 +91,13 @@ export default function LeadsBySourceChart({ bySource, byEvent }: LeadsBySourceC
           border: "1px solid #e5e7eb",
         }}
       >
-        <h3 style={{ margin: "0 0 4px 0", fontSize: 16, fontWeight: 700 }}>
-          Leads by Open House
-        </h3>
-        <p style={{ margin: "0 0 16px 0", fontSize: 13, color: "#6b7280" }}>
-          Top events by lead volume
-        </p>
+        <h3 style={{ margin: "0 0 4px 0", fontSize: 16, fontWeight: 700 }}>Leads by Open House</h3>
+        <p style={{ margin: "0 0 16px 0", fontSize: 13, color: "#6b7280" }}>Top events by lead volume</p>
         {byEvent.length === 0 ? (
           <p style={{ color: "#9ca3af", textAlign: "center", padding: 40 }}>No event data yet</p>
         ) : (
           <ResponsiveContainer width="100%" height={280}>
-            <BarChart
-              data={byEvent.slice(0, 10)}
-              layout="vertical"
-              margin={{ top: 5, right: 20, bottom: 5, left: 10 }}
-            >
+            <BarChart data={byEvent.slice(0, 10)} layout="vertical" margin={{ top: 5, right: 20, bottom: 5, left: 10 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
               <XAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} />
               <YAxis
@@ -122,7 +105,7 @@ export default function LeadsBySourceChart({ bySource, byEvent }: LeadsBySourceC
                 dataKey="name"
                 tick={{ fontSize: 11 }}
                 width={160}
-                tickFormatter={(v: string) => v.length > 25 ? v.slice(0, 25) + "..." : v}
+                tickFormatter={(v: string) => (v.length > 25 ? v.slice(0, 25) + "..." : v)}
               />
               <Tooltip formatter={(value: any) => [value, "Leads"]} />
               <Bar dataKey="count" fill="#6366f1" radius={[0, 4, 4, 0]} />

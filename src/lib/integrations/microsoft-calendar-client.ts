@@ -6,18 +6,11 @@
  */
 
 import { createClient } from "@supabase/supabase-js";
-import type {
-  CalendarProvider,
-  CalendarEvent,
-  ExternalCalendarEvent,
-  CalendarEventStatus,
-} from "@/lib/calendar/types";
+import type { CalendarProvider, CalendarEvent, ExternalCalendarEvent, CalendarEventStatus } from "@/lib/calendar/types";
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 const GRAPH_API_BASE = "https://graph.microsoft.com/v1.0";
 
@@ -55,20 +48,17 @@ export async function getValidMicrosoftCalendarTokens(agentId: string): Promise<
   console.log("[Microsoft Calendar] Token expired, refreshing...");
 
   const tenant = process.env.MICROSOFT_CALENDAR_TENANT_ID || "common";
-  const response = await fetch(
-    `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        client_id: process.env.MICROSOFT_CALENDAR_CLIENT_ID!,
-        client_secret: process.env.MICROSOFT_CALENDAR_CLIENT_SECRET!,
-        refresh_token: refreshToken,
-        grant_type: "refresh_token",
-        scope: "Calendars.ReadWrite offline_access",
-      }),
-    }
-  );
+  const response = await fetch(`https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: process.env.MICROSOFT_CALENDAR_CLIENT_ID!,
+      client_secret: process.env.MICROSOFT_CALENDAR_CLIENT_SECRET!,
+      refresh_token: refreshToken,
+      grant_type: "refresh_token",
+      scope: "Calendars.ReadWrite offline_access",
+    }),
+  });
 
   if (!response.ok) {
     console.error("[Microsoft Calendar] Token refresh failed:", await response.text());
@@ -99,14 +89,8 @@ export async function getValidMicrosoftCalendarTokens(agentId: string): Promise<
 
 // --- API Helpers ---
 
-async function graphRequest<T>(
-  accessToken: string,
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
-  const url = endpoint.startsWith("http")
-    ? endpoint
-    : `${GRAPH_API_BASE}${endpoint}`;
+async function graphRequest<T>(accessToken: string, endpoint: string, options: RequestInit = {}): Promise<T> {
+  const url = endpoint.startsWith("http") ? endpoint : `${GRAPH_API_BASE}${endpoint}`;
 
   const response = await fetch(url, {
     ...options,
@@ -132,9 +116,12 @@ async function graphRequest<T>(
 
 function mapMicrosoftStatus(showAs?: string): CalendarEventStatus {
   switch (showAs) {
-    case "tentative": return "tentative";
-    case "free": return "confirmed";
-    default: return "confirmed";
+    case "tentative":
+      return "tentative";
+    case "free":
+      return "confirmed";
+    default:
+      return "confirmed";
   }
 }
 
@@ -146,12 +133,8 @@ function mapMicrosoftEvent(event: any): ExternalCalendarEvent {
     title: event.subject || "(No title)",
     description: event.body?.content || undefined,
     location: event.location?.displayName || undefined,
-    startAt: isAllDay
-      ? event.start.dateTime + "Z"
-      : new Date(event.start.dateTime + "Z").toISOString(),
-    endAt: isAllDay
-      ? event.end.dateTime + "Z"
-      : new Date(event.end.dateTime + "Z").toISOString(),
+    startAt: isAllDay ? event.start.dateTime + "Z" : new Date(event.start.dateTime + "Z").toISOString(),
+    endAt: isAllDay ? event.end.dateTime + "Z" : new Date(event.end.dateTime + "Z").toISOString(),
     allDay: isAllDay,
     status: event.isCancelled ? "cancelled" : mapMicrosoftStatus(event.showAs),
     attendees: (event.attendees || []).map((a: any) => ({
@@ -159,9 +142,7 @@ function mapMicrosoftEvent(event: any): ExternalCalendarEvent {
       name: a.emailAddress?.name,
       responseStatus: a.status?.response,
     })),
-    recurrence: event.recurrence
-      ? JSON.stringify(event.recurrence)
-      : undefined,
+    recurrence: event.recurrence ? JSON.stringify(event.recurrence) : undefined,
     reminderMinutes: event.isReminderOn ? event.reminderMinutesBeforeStart : undefined,
     etag: event.changeKey,
     metadata: {
@@ -176,9 +157,7 @@ function mapMicrosoftEvent(event: any): ExternalCalendarEvent {
 function toMicrosoftEvent(event: CalendarEvent): any {
   const body: any = {
     subject: event.title,
-    body: event.description
-      ? { contentType: "text", content: event.description }
-      : undefined,
+    body: event.description ? { contentType: "text", content: event.description } : undefined,
     isAllDay: event.all_day || false,
   };
 
@@ -218,7 +197,7 @@ export class MicrosoftCalendarProvider implements CalendarProvider {
     agentId: string,
     timeMin: string,
     timeMax: string,
-    syncToken?: string
+    syncToken?: string,
   ): Promise<{ events: ExternalCalendarEvent[]; nextSyncToken?: string; deletedIds?: string[] }> {
     const tokens = await getValidMicrosoftCalendarTokens(agentId);
     if (!tokens) throw new Error("Microsoft Calendar not connected");
@@ -283,7 +262,7 @@ export class MicrosoftCalendarProvider implements CalendarProvider {
       try {
         const deltaData = await graphRequest<any>(
           tokens.access_token,
-          `/me/calendarView/delta?startDateTime=${encodeURIComponent(timeMin)}&endDateTime=${encodeURIComponent(timeMax)}`
+          `/me/calendarView/delta?startDateTime=${encodeURIComponent(timeMin)}&endDateTime=${encodeURIComponent(timeMax)}`,
         );
         // Consume all pages to get the deltaLink
         let nextLink = deltaData["@odata.nextLink"];
@@ -308,18 +287,16 @@ export class MicrosoftCalendarProvider implements CalendarProvider {
     const body = toMicrosoftEvent(event);
 
     if (event.external_id) {
-      const data = await graphRequest<any>(
-        tokens.access_token,
-        `/me/events/${event.external_id}`,
-        { method: "PATCH", body: JSON.stringify(body) }
-      );
+      const data = await graphRequest<any>(tokens.access_token, `/me/events/${event.external_id}`, {
+        method: "PATCH",
+        body: JSON.stringify(body),
+      });
       return { externalId: data.id, etag: data.changeKey };
     } else {
-      const data = await graphRequest<any>(
-        tokens.access_token,
-        `/me/events`,
-        { method: "POST", body: JSON.stringify(body) }
-      );
+      const data = await graphRequest<any>(tokens.access_token, `/me/events`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
       return { externalId: data.id, etag: data.changeKey };
     }
   }
@@ -328,11 +305,7 @@ export class MicrosoftCalendarProvider implements CalendarProvider {
     const tokens = await getValidMicrosoftCalendarTokens(agentId);
     if (!tokens) throw new Error("Microsoft Calendar not connected");
 
-    await graphRequest(
-      tokens.access_token,
-      `/me/events/${externalId}`,
-      { method: "DELETE" }
-    );
+    await graphRequest(tokens.access_token, `/me/events/${externalId}`, { method: "DELETE" });
   }
 }
 
@@ -340,7 +313,7 @@ export class MicrosoftCalendarProvider implements CalendarProvider {
 
 export async function createMicrosoftSubscription(
   agentId: string,
-  webhookUrl: string
+  webhookUrl: string,
 ): Promise<{ subscriptionId: string; expiration: string } | null> {
   const tokens = await getValidMicrosoftCalendarTokens(agentId);
   if (!tokens) return null;
@@ -348,40 +321,32 @@ export async function createMicrosoftSubscription(
   // Microsoft subscriptions expire in max 3 days for calendar
   const expiration = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000 - 60000); // 3 days minus 1 min
 
-  const data = await graphRequest<any>(
-    tokens.access_token,
-    `${GRAPH_API_BASE}/subscriptions`,
-    {
-      method: "POST",
-      body: JSON.stringify({
-        changeType: "created,updated,deleted",
-        notificationUrl: webhookUrl,
-        resource: "/me/events",
-        expirationDateTime: expiration.toISOString(),
-        clientState: process.env.CRON_SECRET || "calendar-sync",
-      }),
-    }
-  );
+  const data = await graphRequest<any>(tokens.access_token, `${GRAPH_API_BASE}/subscriptions`, {
+    method: "POST",
+    body: JSON.stringify({
+      changeType: "created,updated,deleted",
+      notificationUrl: webhookUrl,
+      resource: "/me/events",
+      expirationDateTime: expiration.toISOString(),
+      clientState: process.env.CRON_SECRET || "calendar-sync",
+    }),
+  });
 
-  await supabaseAdmin
-    .from("calendar_sync_state")
-    .upsert(
-      {
-        agent_id: agentId,
-        provider: "microsoft",
-        subscription_id: data.id,
-        subscription_expiration: data.expirationDateTime,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "agent_id,provider" }
-    );
+  await supabaseAdmin.from("calendar_sync_state").upsert(
+    {
+      agent_id: agentId,
+      provider: "microsoft",
+      subscription_id: data.id,
+      subscription_expiration: data.expirationDateTime,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "agent_id,provider" },
+  );
 
   return { subscriptionId: data.id, expiration: data.expirationDateTime };
 }
 
-export async function renewMicrosoftSubscription(
-  agentId: string
-): Promise<boolean> {
+export async function renewMicrosoftSubscription(agentId: string): Promise<boolean> {
   const tokens = await getValidMicrosoftCalendarTokens(agentId);
   if (!tokens) return false;
 
@@ -396,14 +361,10 @@ export async function renewMicrosoftSubscription(
 
   const expiration = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000 - 60000);
 
-  await graphRequest(
-    tokens.access_token,
-    `${GRAPH_API_BASE}/subscriptions/${syncState.subscription_id}`,
-    {
-      method: "PATCH",
-      body: JSON.stringify({ expirationDateTime: expiration.toISOString() }),
-    }
-  );
+  await graphRequest(tokens.access_token, `${GRAPH_API_BASE}/subscriptions/${syncState.subscription_id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ expirationDateTime: expiration.toISOString() }),
+  });
 
   await supabaseAdmin
     .from("calendar_sync_state")

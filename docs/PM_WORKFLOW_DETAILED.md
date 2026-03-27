@@ -1,6 +1,7 @@
 # Property Management Complete Workflow Specification
 
 ## Overview
+
 This document details the complete tenant lifecycle workflow from rental open house through lease termination, including all GHL Contract integration touchpoints.
 
 ---
@@ -8,17 +9,21 @@ This document details the complete tenant lifecycle workflow from rental open ho
 ## Step 1: Rental Open House → Application
 
 ### User Actions
+
 1. Agent creates open house event with `event_type = 'rental'`
 2. Prospective tenant visits property and scans QR code
 3. Check-in form detects rental type and shows extended application fields
 
 ### Application Fields (Extended Check-in Form)
+
 **Basic Info:**
+
 - Name, email, phone (standard)
 - Number of occupants
 - Desired move-in date
 
 **Employment:**
+
 - Current employment status (employed, self-employed, retired, unemployed)
 - Employer name
 - Job title
@@ -27,6 +32,7 @@ This document details the complete tenant lifecycle workflow from rental open ho
 - Employer phone number
 
 **Current Residence:**
+
 - Current address
 - Landlord/property manager name
 - Landlord phone number
@@ -35,11 +41,13 @@ This document details the complete tenant lifecycle workflow from rental open ho
 - How long at current address
 
 **References:**
+
 - Previous landlord name, phone
 - Personal reference #1 (name, relationship, phone)
 - Personal reference #2 (name, relationship, phone)
 
 **Additional:**
+
 - Pets (type, breed, weight, number)
 - Vehicles (make, model, license plate)
 - Emergency contact (name, relationship, phone)
@@ -47,6 +55,7 @@ This document details the complete tenant lifecycle workflow from rental open ho
 - Credit check authorization checkbox
 
 ### Database Actions
+
 ```sql
 -- Create lead submission
 INSERT INTO lead_submissions (...)
@@ -73,6 +82,7 @@ INSERT INTO pm_applications (
 ```
 
 ### GHL Sync
+
 - Create/update contact with application data as custom fields
 - Tag: `rental-application-submitted`
 - Trigger: Application screening workflow
@@ -83,12 +93,14 @@ INSERT INTO pm_applications (
 ## Step 2: Application Review → Credit Check → Lease Creation
 
 ### User Actions
+
 1. Agent views application at `/app/pm/applications`
 2. Clicks **"Run Credit Check"** button
 
 ### Credit Check Options
 
 **Option A: Manual (Phase 1)**
+
 - Display links to credit check services:
   - TransUnion SmartMove (opens in new tab)
   - Experian RentBureau (opens in new tab)
@@ -98,11 +110,13 @@ INSERT INTO pm_applications (
 - Field: `credit_score` (number, optional)
 
 **Option B: API Integration (Phase 2 - Future)**
+
 - Direct API integration with credit check service
 - Automated credit pull with consent
 - Results stored in database
 
 ### Approval Flow
+
 1. Agent reviews:
    - Application details
    - Credit check result
@@ -112,6 +126,7 @@ INSERT INTO pm_applications (
 3. If **approved**, clicks **"Create Lease"** button
 
 ### Database Actions
+
 ```sql
 -- Update application
 UPDATE pm_applications
@@ -143,9 +158,11 @@ INSERT INTO pm_leases (
 ```
 
 ### GHL Contract Creation
+
 **API Call:** Create contract from template
 
 **Contract Template Variables:**
+
 - Tenant name, email, phone
 - Property address
 - Unit number (if applicable)
@@ -158,6 +175,7 @@ INSERT INTO pm_leases (
 - Special provisions
 
 **Actions:**
+
 1. Create contract via GHL API
 2. Store `ghl_contract_id` in `pm_leases` table
 3. GHL sends contract to tenant email for e-signature
@@ -167,15 +185,18 @@ INSERT INTO pm_leases (
 ### Lease Document Handling
 
 **Standard Lease:**
+
 - Pre-built template in GHL with fillable fields
 - Auto-populated from lease data
 
 **Custom Lease Upload:**
+
 - Agent uploads PDF lease document
 - Stored in Supabase Storage: `lease-documents/{lease_id}/custom-lease.pdf`
 - Attached to GHL contract as document
 
 **Database Fields:**
+
 ```sql
 ALTER TABLE pm_leases
 ADD COLUMN lease_document_type TEXT DEFAULT 'standard', -- 'standard' or 'custom'
@@ -187,6 +208,7 @@ ADD COLUMN custom_lease_url TEXT; -- Supabase storage URL if custom
 ## Step 3: Lease Signing & Activation
 
 ### Contract Signing Flow
+
 1. Tenant receives email from GHL with contract link
 2. Tenant e-signs contract
 3. Agent receives notification
@@ -194,6 +216,7 @@ ADD COLUMN custom_lease_url TEXT; -- Supabase storage URL if custom
 5. **GHL webhook fires** → `contract.signed` event
 
 ### Webhook Handler
+
 **Endpoint:** `/api/webhooks/ghl/contract-signed`
 
 ```typescript
@@ -206,14 +229,17 @@ WHERE ghl_contract_id = webhookData.contractId;
 ```
 
 ### First Invoice Creation (Combined)
+
 **GHL Action:** Create combined invoice
 
 **Invoice Line Items:**
+
 1. First Month's Rent: `$monthly_rent`
 2. Security Deposit: `$security_deposit`
 3. **Total:** `$monthly_rent + $security_deposit`
 
 **Invoice Details:**
+
 - Due date: Lease start date (or immediate if already started)
 - Payment link included in email
 - Accept payments via GHL (credit card, ACH)
@@ -223,6 +249,7 @@ WHERE ghl_contract_id = webhookData.contractId;
 **Email Sent:** To tenant via GHL workflow
 
 **Email Content:**
+
 - Welcome message
 - Lease start date reminder
 - Move-in walkthrough instructions
@@ -231,6 +258,7 @@ WHERE ghl_contract_id = webhookData.contractId;
 **Upload Link:** Points to `/api/pm/leases/{lease_id}/move-in-report`
 
 **Form Fields:**
+
 - Overall property condition (dropdown: Excellent, Good, Fair, Poor)
 - Room-by-room condition notes (textarea per room)
 - Photo uploads (multiple, up to 20 photos)
@@ -238,6 +266,7 @@ WHERE ghl_contract_id = webhookData.contractId;
 - Date submitted
 
 **Storage:**
+
 - Photos: Supabase Storage `lease-documents/{lease_id}/move-in/`
 - Report data: JSON stored in `pm_leases.move_in_report` field
 
@@ -248,12 +277,14 @@ ADD COLUMN move_in_report_submitted_date TIMESTAMP;
 ```
 
 ### GHL Sync on Activation
+
 - Update contact tag: `active-tenant`
 - Remove tag: `rental-application`
 - Add to "Active Tenants" segment
 - Trigger recurring rent invoice workflow
 
 ### QBO Sync (if connected)
+
 ```typescript
 // Create QBO Customer from tenant
 POST /qbo/customer {
@@ -277,9 +308,11 @@ POST /qbo/invoice {
 ## Step 4: Recurring Rent Billing
 
 ### Automated Invoice Generation
+
 **Trigger:** GHL Workflow (scheduled daily check)
 
 **Logic:**
+
 ```javascript
 // Run daily for all active leases
 FOR EACH lease WHERE lease_status IN ('active-fixed', 'active-month-to-month') {
@@ -294,19 +327,23 @@ FOR EACH lease WHERE lease_status IN ('active-fixed', 'active-month-to-month') {
 ```
 
 **Invoice Details:**
+
 - **Created:** 5 days before `rent_due_day`
 - **Due date:** `rent_due_day` of current month
 - **Amount:** `monthly_rent`
 - **Description:** "Rent for [Property Address] - [Month Year]"
 
 **Email to Tenant:**
+
 - Subject: "Rent Due [Due Date] - [Property Address]"
 - Invoice PDF attached
 - **Payment link** to GHL payment page
 - Payment methods: Credit card, ACH, bank transfer
 
 ### Payment Processing
+
 **GHL Payment Received:**
+
 1. Tenant clicks payment link
 2. Pays via GHL payment form
 3. Payment processed through GHL Payments
@@ -343,9 +380,11 @@ if (qbo_connected) {
 ```
 
 ### Late Payment Handling
+
 **GHL Workflow:** Checks for unpaid invoices past due date
 
 **Actions:**
+
 - Day 1 late: Friendly reminder email
 - Day 3 late: Second reminder + late fee added (if configured)
 - Day 7 late: Agent notification
@@ -356,6 +395,7 @@ if (qbo_connected) {
 ## Step 5: Lease End Date Approaching
 
 ### Expiration Monitoring
+
 **Trigger:** Daily cron job checks leases
 
 ```javascript
@@ -372,7 +412,9 @@ if (end_date - today == 30 days) {
 ```
 
 ### Agent Dashboard Alerts
+
 At `/app/pm/leases`:
+
 - Shows leases expiring in 60/30 days
 - Badge: "Action Required"
 - Options:
@@ -381,6 +423,7 @@ At `/app/pm/leases`:
   3. **Do Not Renew** → Notify tenant lease ending
 
 ### Renewal Option: Create New Lease
+
 - Creates new `pm_leases` record for next year
 - New GHL contract generated
 - Can update rent amount (market rate)
@@ -389,6 +432,7 @@ At `/app/pm/leases`:
 - New lease begins day after
 
 ### Non-Renewal Option
+
 - Agent selects "Do Not Renew"
 - `renewal_status = 'not-renewing'`
 - GHL sends non-renewal notice to tenant (required by law, typically 60 days)
@@ -400,9 +444,11 @@ At `/app/pm/leases`:
 ## Step 6: Automatic Month-to-Month Conversion
 
 ### Conversion Logic
+
 **Trigger:** On `end_date` if `renewal_status != 'renewing' AND renewal_status != 'not-renewing'`
 
 **Automated Actions:**
+
 ```sql
 UPDATE pm_leases
 SET
@@ -414,6 +460,7 @@ WHERE id = ? AND end_date = CURRENT_DATE;
 ```
 
 **GHL Actions:**
+
 - Update contact tag: `month-to-month-tenant`
 - Optional: Generate MTM addendum contract (depends on local law)
 - Continue monthly rent invoices (same amount, same due day)
@@ -421,6 +468,7 @@ WHERE id = ? AND end_date = CURRENT_DATE;
 ### Month-to-Month Rent Adjustments
 
 **UI at `/app/pm/leases/{id}`:**
+
 - Button: "Adjust Rent"
 - Modal opens with options:
   - Custom amount: `$______`
@@ -428,17 +476,19 @@ WHERE id = ? AND end_date = CURRENT_DATE;
     - [ ] 1.5% increase
     - [ ] 2% increase
     - [ ] 3% increase
-    - [ ] Custom: ____%
+    - [ ] Custom: \_\_\_\_%
   - Effective date: [date picker]
   - Notice period: [auto-calculated based on local law, default 30 days]
 
 **Database:**
+
 ```sql
 ALTER TABLE pm_leases
 ADD COLUMN rent_increase_history JSONB; -- Array of {old_amount, new_amount, effective_date, notice_date}
 ```
 
 **Process:**
+
 1. Agent submits rent increase
 2. System validates notice period (must give 30+ days notice)
 3. GHL sends rent increase notice to tenant
@@ -448,12 +498,14 @@ ADD COLUMN rent_increase_history JSONB; -- Array of {old_amount, new_amount, eff
 ### Notice Period Configuration
 
 **Database Field:**
+
 ```sql
 ALTER TABLE pm_leases
 ADD COLUMN notice_period_days INTEGER DEFAULT 30;
 ```
 
 **UI:** Editable at lease creation
+
 - Default: 30 days
 - Options: 30, 45, 60, 90 days
 - Based on local landlord-tenant law
@@ -463,7 +515,9 @@ ADD COLUMN notice_period_days INTEGER DEFAULT 30;
 ## Step 7: Tenant Gives Notice to Vacate
 
 ### Recording Notice
+
 **Agent Action at `/app/pm/leases/{id}`:**
+
 1. Clicks **"Record Move-Out Notice"** button
 2. Form appears:
    - Notice date: [date picker] (defaults to today)
@@ -471,6 +525,7 @@ ADD COLUMN notice_period_days INTEGER DEFAULT 30;
    - Reason (optional): [dropdown: End of lease, Purchasing home, Relocating, Other]
 
 **Database:**
+
 ```sql
 UPDATE pm_leases
 SET
@@ -482,6 +537,7 @@ WHERE id = ?;
 ```
 
 ### Notice Period Rules
+
 - Notice must be at least `notice_period_days` (default 30)
 - Move-out date calculated automatically
 - Rent continues until `move_out_date`
@@ -492,11 +548,13 @@ WHERE id = ?;
 **GHL Workflow Triggered:** When `lease_status = 'notice-given'`
 
 **Email Sent to Tenant:**
+
 - Subject: "Move-Out Checklist - [Property Address]"
 - Move-out date reminder
 - Checklist based on lease provisions
 
 **Checklist Items (Dynamic based on lease):**
+
 - [ ] Professional carpet cleaning required
   - Upload receipt: [link]
 - [ ] Professional house cleaning required
@@ -510,6 +568,7 @@ WHERE id = ?;
 **Upload Portal:** `/api/pm/leases/{lease_id}/move-out-checklist`
 
 **Form Fields:**
+
 - Checklist item uploads (receipts as PDFs)
 - Photo uploads (property cleaned condition)
 - Forwarding address
@@ -517,6 +576,7 @@ WHERE id = ?;
 - Tenant signature
 
 **Storage:**
+
 ```sql
 ALTER TABLE pm_leases
 ADD COLUMN move_out_checklist JSONB,
@@ -526,6 +586,7 @@ ADD COLUMN move_out_checklist_submitted_date TIMESTAMP;
 ### Professional Service Requirements
 
 **Lease Provisions Tracked:**
+
 ```sql
 ALTER TABLE pm_leases
 ADD COLUMN requires_professional_carpet_cleaning BOOLEAN DEFAULT false,
@@ -542,6 +603,7 @@ ADD COLUMN move_out_requirements JSONB; -- Custom requirements
 ### Move-Out Walkthrough
 
 **Agent Receives Email:**
+
 - **Trigger:** 3 days before `move_out_date`
 - **Subject:** "Move-Out Walkthrough Due - [Property Address]"
 - **Content:**
@@ -552,6 +614,7 @@ ADD COLUMN move_out_requirements JSONB; -- Custom requirements
 **Move-Out Inspection Form:** `/api/pm/leases/{lease_id}/move-out-inspection`
 
 **Form Fields:**
+
 - Inspection date
 - Room-by-room condition assessment
   - Compare to move-in report (shown side-by-side)
@@ -567,12 +630,13 @@ ADD COLUMN move_out_requirements JSONB; -- Custom requirements
   - Other charges
 - Security deposit disposition:
   - [ ] Full refund
-  - [ ] Partial refund (amount: $_____)
+  - [ ] Partial refund (amount: $**\_**)
   - [ ] No refund (explain)
 - Agent signature
 - Date
 
 **Storage:**
+
 ```sql
 ALTER TABLE pm_leases
 ADD COLUMN move_out_inspection JSONB,
@@ -584,23 +648,27 @@ ADD COLUMN security_deposit_refund_amount NUMERIC(10,2);
 ### Final Accounting
 
 **Security Deposit Disposition:**
+
 1. Agent submits move-out inspection
 2. Deductions calculated automatically
 3. Refund amount determined: `security_deposit - total_deductions`
 4. **GHL Action:** Create refund invoice (or charge invoice if owed)
 
 **If Refund Due:**
+
 - Create GHL invoice with negative amount (credit)
 - Or process refund via GHL Payments
 - Email tenant itemized deduction statement (legally required)
 - Mail check or ACH refund
 
 **If Tenant Owes:**
+
 - Create GHL invoice for balance owed
 - Email tenant with itemized charges
 - Collection workflow if unpaid
 
 ### QBO Sync
+
 ```typescript
 // Record security deposit refund/charge
 if (refund_amount > 0) {
@@ -623,6 +691,7 @@ if (refund_amount > 0) {
 ### Lease Closure
 
 **Final Database Update:**
+
 ```sql
 UPDATE pm_leases
 SET
@@ -634,12 +703,14 @@ WHERE id = ?;
 ```
 
 **GHL Actions:**
+
 - Update tenant contact tag: `past-tenant`
 - Remove from active tenant segment
 - Archive contact (optional)
 - Mark unit as vacant
 
 **Unit Status:**
+
 ```sql
 UPDATE pm_units
 SET
@@ -649,6 +720,7 @@ WHERE id = ?;
 ```
 
 **Property Ready for New Rental:**
+
 - Unit shows as available at `/app/pm/properties`
 - Can create new rental open house event
 - Cycle repeats
@@ -664,6 +736,7 @@ WHERE id = ?;
 **Termination Options:**
 
 #### Option 1: Tenant Responsible for Remaining Rent
+
 - **Use Case:** Tenant breaks lease without cause
 - **Fields:**
   - Termination date
@@ -672,6 +745,7 @@ WHERE id = ?;
   - Payment plan option (Yes/No)
 
 **Database:**
+
 ```sql
 UPDATE pm_leases
 SET
@@ -683,11 +757,13 @@ WHERE id = ?;
 ```
 
 **GHL Action:**
+
 - Create invoice for remaining rent
 - Payment plan workflow (if selected)
 - Collection workflow if unpaid
 
 #### Option 2: Termination for Cause (Eviction)
+
 - **Use Case:** Lease violation, non-payment, illegal activity
 - **Fields:**
   - Termination date
@@ -702,6 +778,7 @@ WHERE id = ?;
   - Supporting documents (upload)
 
 **Database:**
+
 ```sql
 UPDATE pm_leases
 SET
@@ -714,11 +791,13 @@ WHERE id = ?;
 ```
 
 **GHL Actions:**
+
 - Generate termination notice (legal document)
 - Tag contact: `eviction-in-process`
 - Trigger legal workflow
 
 #### Option 3: Mutual Agreement / Other
+
 - **Use Case:** Both parties agree to end lease early
 - **Fields:**
   - Termination date
@@ -732,6 +811,7 @@ WHERE id = ?;
   - Explanation (textarea)
 
 **Database:**
+
 ```sql
 UPDATE pm_leases
 SET
@@ -744,6 +824,7 @@ WHERE id = ?;
 ```
 
 **Process:**
+
 - Optional early termination fee invoice
 - Abbreviated move-out process
 - Security deposit handled per agreement
@@ -883,11 +964,13 @@ ADD COLUMN last_tenant_move_out DATE;
 ## Implementation Phases
 
 ### Phase 1A: Enhanced Application ✅ COMPLETE
+
 - Extended check-in form for rentals
 - Application database schema
 - GHL sync for applications
 
 ### Phase 1B: Credit Check & Lease Creation (CURRENT)
+
 - Credit check links/manual workflow
 - Lease creation flow
 - GHL contract integration
@@ -895,24 +978,28 @@ ADD COLUMN last_tenant_move_out DATE;
 - Custom lease upload
 
 ### Phase 1C: Lease Activation & Move-In
+
 - Contract signing webhook handler
 - Combined first invoice (rent + deposit)
 - Move-in walkthrough email & upload portal
 - GHL workflow triggers
 
 ### Phase 1D: Recurring Billing
+
 - 5-day advance invoice creation
 - GHL payment processing
 - QBO payment sync
 - Late payment workflows
 
 ### Phase 2A: Lease Lifecycle
+
 - Expiration monitoring (60/30 days)
 - Renewal workflows
 - Month-to-month conversion (automatic)
 - Rent adjustment for MTM
 
 ### Phase 2B: Move-Out Process
+
 - Notice recording
 - Move-out checklist generation (dynamic based on lease provisions)
 - Receipt upload portal
@@ -920,11 +1007,13 @@ ADD COLUMN last_tenant_move_out DATE;
 - Security deposit disposition
 
 ### Phase 2C: Early Termination
+
 - Termination options (tenant-liable, for-cause, mutual)
 - Balance calculation
 - Legal notice generation
 
 ### Phase 3: Advanced Features
+
 - Credit check API integration (TransUnion, Experian)
 - Automated late fees
 - Owner portal (for multi-owner properties)
@@ -935,24 +1024,26 @@ ADD COLUMN last_tenant_move_out DATE;
 
 ## GHL Webhooks Required
 
-| Event | Webhook Endpoint | Purpose |
-|-------|-----------------|---------|
+| Event             | Webhook Endpoint                    | Purpose                            |
+| ----------------- | ----------------------------------- | ---------------------------------- |
 | `contract.signed` | `/api/webhooks/ghl/contract-signed` | Activate lease when fully executed |
-| `invoice.paid` | `/api/webhooks/ghl/invoice-paid` | Mark rent as paid, sync to QBO |
-| `invoice.overdue` | `/api/webhooks/ghl/invoice-overdue` | Trigger late payment workflow |
-| `contact.updated` | `/api/webhooks/ghl/contact-updated` | Sync tenant info changes |
+| `invoice.paid`    | `/api/webhooks/ghl/invoice-paid`    | Mark rent as paid, sync to QBO     |
+| `invoice.overdue` | `/api/webhooks/ghl/invoice-overdue` | Trigger late payment workflow      |
+| `contact.updated` | `/api/webhooks/ghl/contact-updated` | Sync tenant info changes           |
 
 ---
 
 ## API Endpoints Required
 
 ### Public/Tenant-Facing
+
 - `GET /api/pm/leases/{id}/move-in-report` - Move-in report upload form
 - `POST /api/pm/leases/{id}/move-in-report` - Submit move-in report
 - `GET /api/pm/leases/{id}/move-out-checklist` - Move-out checklist upload form
 - `POST /api/pm/leases/{id}/move-out-checklist` - Submit move-out checklist
 
 ### Agent-Facing
+
 - `POST /api/pm/applications/{id}/approve` - Approve application
 - `POST /api/pm/leases/create` - Create lease & GHL contract
 - `POST /api/pm/leases/{id}/upload-custom-lease` - Upload custom lease PDF
@@ -962,6 +1053,7 @@ ADD COLUMN last_tenant_move_out DATE;
 - `POST /api/pm/leases/{id}/terminate` - Early termination
 
 ### Webhooks
+
 - `POST /api/webhooks/ghl/contract-signed` - Handle contract signing
 - `POST /api/webhooks/ghl/invoice-paid` - Handle payment
 - `POST /api/webhooks/ghl/invoice-overdue` - Handle late payment
@@ -973,6 +1065,7 @@ ADD COLUMN last_tenant_move_out DATE;
 Ready to proceed with **Phase 1B: Credit Check & Lease Creation**?
 
 This will include:
+
 1. Database migration for enhanced pm_leases table
 2. Credit check UI (manual links to services)
 3. Lease creation form with all provisions

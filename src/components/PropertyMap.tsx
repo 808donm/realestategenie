@@ -23,12 +23,7 @@ type PropertyMapProps = {
   className?: string;
 };
 
-export default function PropertyMap({
-  latitude,
-  longitude,
-  address,
-  className = "",
-}: PropertyMapProps) {
+export default function PropertyMap({ latitude, longitude, address, className = "" }: PropertyMapProps) {
   const mapRef = useRef<L.Map | null>(null);
 
   useEffect(() => {

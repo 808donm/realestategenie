@@ -5,10 +5,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 export const dynamic = "force-dynamic";
 
 // PATCH update user subscription
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: agentId } = await params;
   const supabase = await supabaseServer();
 
@@ -18,11 +15,7 @@ export async function PATCH(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { data: agent } = await supabase
-    .from("agents")
-    .select("role")
-    .eq("id", userData.user.id)
-    .single();
+  const { data: agent } = await supabase.from("agents").select("role").eq("id", userData.user.id).single();
 
   if (agent?.role !== "admin") {
     return NextResponse.json({ error: "Admin access required" }, { status: 403 });
@@ -34,27 +27,18 @@ export async function PATCH(
 
   // Validate required fields
   if (!plan_id || !status || !billing_cycle) {
-    return NextResponse.json(
-      { error: "Missing required fields: plan_id, status, billing_cycle" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Missing required fields: plan_id, status, billing_cycle" }, { status: 400 });
   }
 
   // Get the plan details to set the pricing
-  const { data: plan } = await supabaseAdmin
-    .from("subscription_plans")
-    .select("*")
-    .eq("id", plan_id)
-    .single();
+  const { data: plan } = await supabaseAdmin.from("subscription_plans").select("*").eq("id", plan_id).single();
 
   if (!plan) {
     return NextResponse.json({ error: "Invalid plan_id" }, { status: 400 });
   }
 
   // Calculate pricing based on billing cycle
-  const monthly_price = billing_cycle === "annual" && plan.annual_price
-    ? plan.annual_price / 12
-    : plan.monthly_price;
+  const monthly_price = billing_cycle === "annual" && plan.annual_price ? plan.annual_price / 12 : plan.monthly_price;
 
   try {
     // Check if subscription exists
@@ -114,9 +98,6 @@ export async function PATCH(
     });
   } catch (error: any) {
     console.error("Error updating subscription:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to update subscription" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message || "Failed to update subscription" }, { status: 500 });
   }
 }

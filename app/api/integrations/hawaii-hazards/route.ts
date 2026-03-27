@@ -39,24 +39,15 @@ export async function GET(request: NextRequest) {
     switch (endpoint) {
       case "profile": {
         if (!lat || !lng) {
-          return NextResponse.json(
-            { error: "lat and lng parameters required" },
-            { status: 400 }
-          );
+          return NextResponse.json({ error: "lat and lng parameters required" }, { status: 400 });
         }
         const latitude = parseFloat(lat);
         const longitude = parseFloat(lng);
         if (isNaN(latitude) || isNaN(longitude)) {
-          return NextResponse.json(
-            { error: "lat and lng must be valid numbers" },
-            { status: 400 }
-          );
+          return NextResponse.json({ error: "lat and lng must be valid numbers" }, { status: 400 });
         }
 
-        const profile = await client.getPropertyHazardProfile(
-          latitude,
-          longitude
-        );
+        const profile = await client.getPropertyHazardProfile(latitude, longitude);
 
         return NextResponse.json({ success: true, ...profile });
       }
@@ -67,21 +58,15 @@ export async function GET(request: NextRequest) {
       }
 
       default:
-        return NextResponse.json(
-          { error: `Unknown endpoint: ${endpoint}. Use: profile, test` },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: `Unknown endpoint: ${endpoint}. Use: profile, test` }, { status: 400 });
     }
   } catch (error) {
     console.error("Error fetching Hawaii hazard data:", error);
     return NextResponse.json(
       {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Failed to fetch Hawaii hazard data",
+        error: error instanceof Error ? error.message : "Failed to fetch Hawaii hazard data",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

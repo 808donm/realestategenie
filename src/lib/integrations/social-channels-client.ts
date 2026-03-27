@@ -12,11 +12,9 @@
 import { createClient } from "@supabase/supabase-js";
 import type { MessageChannel } from "@/lib/ai/channel-assistant";
 
-const admin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -75,23 +73,20 @@ export interface SendMessageResult {
 async function sendFacebookMessage(
   recipientId: string,
   message: string,
-  config: NonNullable<SocialChannelConfig["facebook"]>
+  config: NonNullable<SocialChannelConfig["facebook"]>,
 ): Promise<SendMessageResult> {
-  const response = await fetch(
-    `https://graph.facebook.com/v19.0/${config.page_id}/messages`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${config.page_access_token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        recipient: { id: recipientId },
-        messaging_type: "RESPONSE",
-        message: { text: message },
-      }),
-    }
-  );
+  const response = await fetch(`https://graph.facebook.com/v19.0/${config.page_id}/messages`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${config.page_access_token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      recipient: { id: recipientId },
+      messaging_type: "RESPONSE",
+      message: { text: message },
+    }),
+  });
 
   if (!response.ok) {
     const err = await response.text();
@@ -109,23 +104,20 @@ async function sendFacebookMessage(
 async function sendInstagramMessage(
   recipientId: string,
   message: string,
-  config: NonNullable<SocialChannelConfig["instagram"]>
+  config: NonNullable<SocialChannelConfig["instagram"]>,
 ): Promise<SendMessageResult> {
-  const response = await fetch(
-    `https://graph.facebook.com/v19.0/${config.page_id}/messages`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${config.page_access_token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        recipient: { id: recipientId },
-        messaging_type: "RESPONSE",
-        message: { text: message },
-      }),
-    }
-  );
+  const response = await fetch(`https://graph.facebook.com/v19.0/${config.page_id}/messages`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${config.page_access_token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      recipient: { id: recipientId },
+      messaging_type: "RESPONSE",
+      message: { text: message },
+    }),
+  });
 
   if (!response.ok) {
     const err = await response.text();
@@ -143,25 +135,22 @@ async function sendInstagramMessage(
 async function sendLinkedInMessage(
   recipientId: string,
   message: string,
-  config: NonNullable<SocialChannelConfig["linkedin"]>
+  config: NonNullable<SocialChannelConfig["linkedin"]>,
 ): Promise<SendMessageResult> {
   // LinkedIn Messaging API for organization pages
-  const response = await fetch(
-    "https://api.linkedin.com/v2/messages",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${config.access_token}`,
-        "Content-Type": "application/json",
-        "X-Restli-Protocol-Version": "2.0.0",
-      },
-      body: JSON.stringify({
-        recipients: [recipientId],
-        body: message,
-        messageType: "MEMBER_TO_MEMBER",
-      }),
-    }
-  );
+  const response = await fetch("https://api.linkedin.com/v2/messages", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${config.access_token}`,
+      "Content-Type": "application/json",
+      "X-Restli-Protocol-Version": "2.0.0",
+    },
+    body: JSON.stringify({
+      recipients: [recipientId],
+      body: message,
+      messageType: "MEMBER_TO_MEMBER",
+    }),
+  });
 
   if (!response.ok) {
     const err = await response.text();
@@ -179,29 +168,26 @@ async function sendLinkedInMessage(
 async function sendGoogleBusinessMessage(
   conversationId: string,
   message: string,
-  config: NonNullable<SocialChannelConfig["google_business"]>
+  config: NonNullable<SocialChannelConfig["google_business"]>,
 ): Promise<SendMessageResult> {
   // Google Business Messages requires a service account JWT
   // For now we use the access token approach; production should use google-auth-library
   const messageId = `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
-  const response = await fetch(
-    `https://businessmessages.googleapis.com/v1/conversations/${conversationId}/messages`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${config.service_account_key}`,
-        "Content-Type": "application/json",
+  const response = await fetch(`https://businessmessages.googleapis.com/v1/conversations/${conversationId}/messages`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${config.service_account_key}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      messageId,
+      representative: {
+        representativeType: "BOT",
       },
-      body: JSON.stringify({
-        messageId,
-        representative: {
-          representativeType: "BOT",
-        },
-        text: message,
-      }),
-    }
-  );
+      text: message,
+    }),
+  });
 
   if (!response.ok) {
     const err = await response.text();
@@ -218,24 +204,21 @@ async function sendGoogleBusinessMessage(
 async function sendWhatsAppMessage(
   recipientPhone: string,
   message: string,
-  config: NonNullable<SocialChannelConfig["whatsapp"]>
+  config: NonNullable<SocialChannelConfig["whatsapp"]>,
 ): Promise<SendMessageResult> {
-  const response = await fetch(
-    `https://graph.facebook.com/v19.0/${config.phone_number_id}/messages`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${config.access_token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        messaging_product: "whatsapp",
-        to: recipientPhone,
-        type: "text",
-        text: { body: message },
-      }),
-    }
-  );
+  const response = await fetch(`https://graph.facebook.com/v19.0/${config.phone_number_id}/messages`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${config.access_token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      to: recipientPhone,
+      type: "text",
+      text: { body: message },
+    }),
+  });
 
   if (!response.ok) {
     const err = await response.text();
@@ -252,9 +235,7 @@ async function sendWhatsAppMessage(
 /**
  * Send a message to a lead on any supported social channel.
  */
-export async function sendChannelMessage(
-  params: SendMessageParams
-): Promise<SendMessageResult> {
+export async function sendChannelMessage(params: SendMessageParams): Promise<SendMessageResult> {
   const { channel, recipientId, message, config } = params;
 
   switch (channel) {
@@ -280,11 +261,7 @@ export async function sendChannelMessage(
       if (!config.google_business?.enabled) {
         return { success: false, error: "Google Business Messages not configured" };
       }
-      return sendGoogleBusinessMessage(
-        recipientId,
-        message,
-        config.google_business
-      );
+      return sendGoogleBusinessMessage(recipientId, message, config.google_business);
     }
     case "whatsapp": {
       if (!config.whatsapp?.enabled) {
@@ -304,9 +281,7 @@ export async function sendChannelMessage(
 /**
  * Load social channel config for an agent.
  */
-export async function getSocialChannelConfig(
-  agentId: string
-): Promise<SocialChannelConfig | null> {
+export async function getSocialChannelConfig(agentId: string): Promise<SocialChannelConfig | null> {
   const { data } = await admin
     .from("integrations")
     .select("config")
@@ -321,9 +296,7 @@ export async function getSocialChannelConfig(
 /**
  * Check which channels are enabled for an agent.
  */
-export async function getEnabledChannels(
-  agentId: string
-): Promise<MessageChannel[]> {
+export async function getEnabledChannels(agentId: string): Promise<MessageChannel[]> {
   const config = await getSocialChannelConfig(agentId);
   if (!config) return [];
 
@@ -340,17 +313,8 @@ export async function getEnabledChannels(
  * Verify a webhook signature from Facebook/Instagram/WhatsApp.
  * All three use the same HMAC-SHA256 scheme with the app secret.
  */
-export function verifyFacebookSignature(
-  payload: string,
-  signature: string,
-  appSecret: string
-): boolean {
+export function verifyFacebookSignature(payload: string, signature: string, appSecret: string): boolean {
   const crypto = require("crypto");
-  const expectedSignature =
-    "sha256=" +
-    crypto.createHmac("sha256", appSecret).update(payload).digest("hex");
-  return crypto.timingSafeEqual(
-    Buffer.from(signature),
-    Buffer.from(expectedSignature)
-  );
+  const expectedSignature = "sha256=" + crypto.createHmac("sha256", appSecret).update(payload).digest("hex");
+  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature));
 }

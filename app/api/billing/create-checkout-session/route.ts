@@ -79,9 +79,7 @@ export async function POST(request: NextRequest) {
 
     if (!priceId) {
       // Try to look up price from the Stripe product ID
-      const productId = isYearly
-        ? selectedPlan.stripe_yearly_product_id
-        : selectedPlan.stripe_monthly_product_id;
+      const productId = isYearly ? selectedPlan.stripe_yearly_product_id : selectedPlan.stripe_monthly_product_id;
 
       if (productId) {
         const prices = await stripe.prices.list({
@@ -107,7 +105,7 @@ export async function POST(request: NextRequest) {
       const price = await stripe.prices.create({
         currency: "usd",
         unit_amount: Math.round(
-          (isYearly ? (selectedPlan.annual_price || selectedPlan.monthly_price * 12) : selectedPlan.monthly_price) * 100
+          (isYearly ? selectedPlan.annual_price || selectedPlan.monthly_price * 12 : selectedPlan.monthly_price) * 100,
         ),
         recurring: { interval: isYearly ? "year" : "month" },
         product_data: {
@@ -198,9 +196,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error("Error creating checkout session:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to create checkout session" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message || "Failed to create checkout session" }, { status: 500 });
   }
 }

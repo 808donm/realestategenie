@@ -13,11 +13,7 @@
  */
 
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
-import {
-  TrestleClient,
-  TrestleProperty,
-  createTrestleClient,
-} from "@/lib/integrations/trestle-client";
+import { TrestleClient, TrestleProperty, createTrestleClient } from "@/lib/integrations/trestle-client";
 import { RentcastClient } from "@/lib/integrations/rentcast-client";
 import {
   normalizeMlsPropertyType,
@@ -31,22 +27,68 @@ import {
 
 // Oahu zip codes
 const OAHU_ZIPS = [
-  "96701", "96706", "96707", "96709", "96712", "96717", "96730", "96731",
-  "96734", "96744", "96759", "96762", "96782", "96786", "96789", "96791",
-  "96792", "96795", "96797",
-  "96813", "96814", "96815", "96816", "96817", "96818", "96819", "96820",
-  "96821", "96822", "96824", "96825", "96826",
+  "96701",
+  "96706",
+  "96707",
+  "96709",
+  "96712",
+  "96717",
+  "96730",
+  "96731",
+  "96734",
+  "96744",
+  "96759",
+  "96762",
+  "96782",
+  "96786",
+  "96789",
+  "96791",
+  "96792",
+  "96795",
+  "96797",
+  "96813",
+  "96814",
+  "96815",
+  "96816",
+  "96817",
+  "96818",
+  "96819",
+  "96820",
+  "96821",
+  "96822",
+  "96824",
+  "96825",
+  "96826",
 ];
 
 // Trestle fields to select
 const MLS_SELECT_FIELDS = [
-  "ListingKey", "ListingId", "StandardStatus", "PropertyType",
-  "ListPrice", "OriginalListPrice", "UnparsedAddress", "StreetNumber",
-  "StreetName", "StreetSuffix", "City", "StateOrProvince", "PostalCode",
-  "Latitude", "Longitude", "BedroomsTotal", "BathroomsTotalInteger",
-  "LivingArea", "YearBuilt", "DaysOnMarket", "CumulativeDaysOnMarket",
-  "OnMarketDate", "ListAgentFullName", "ListAgentDirectPhone",
-  "ListAgentEmail", "ListOfficeName",
+  "ListingKey",
+  "ListingId",
+  "StandardStatus",
+  "PropertyType",
+  "ListPrice",
+  "OriginalListPrice",
+  "UnparsedAddress",
+  "StreetNumber",
+  "StreetName",
+  "StreetSuffix",
+  "City",
+  "StateOrProvince",
+  "PostalCode",
+  "Latitude",
+  "Longitude",
+  "BedroomsTotal",
+  "BathroomsTotalInteger",
+  "LivingArea",
+  "YearBuilt",
+  "DaysOnMarket",
+  "CumulativeDaysOnMarket",
+  "OnMarketDate",
+  "ListAgentFullName",
+  "ListAgentDirectPhone",
+  "ListAgentEmail",
+  "ListOfficeName",
 ].join(",");
 
 // ---------------------------------------------------------------------------
@@ -56,7 +98,7 @@ const MLS_SELECT_FIELDS = [
 export async function refreshListingsCache(
   supabase: SupabaseClient,
   trestleConfig: any | null,
-  rentcastClient: RentcastClient | null
+  rentcastClient: RentcastClient | null,
 ): Promise<{
   batchId: string;
   totalListings: number;
@@ -106,7 +148,10 @@ export async function refreshListingsCache(
                   listing_key: l.ListingKey,
                   listing_id: l.ListingId,
                   standard_status: l.StandardStatus || "Active",
-                  address: l.UnparsedAddress || [l.StreetNumber, l.StreetName, l.StreetSuffix].filter(Boolean).join(" ") || "Unknown",
+                  address:
+                    l.UnparsedAddress ||
+                    [l.StreetNumber, l.StreetName, l.StreetSuffix].filter(Boolean).join(" ") ||
+                    "Unknown",
                   city: l.City,
                   state: l.StateOrProvince,
                   zip_code: l.PostalCode?.substring(0, 5) || zip,
@@ -208,7 +253,7 @@ export async function refreshListingsCache(
           console.error(`[DomCache] Fatal error for zip ${zip}:`, err.message);
           zipsFailed++;
         }
-      })
+      }),
     );
 
     // Rate limit between batches
@@ -218,16 +263,15 @@ export async function refreshListingsCache(
   }
 
   // Delete previous batches (keep only the new one)
-  const { error: deleteErr } = await supabase
-    .from("dom_listings_cache")
-    .delete()
-    .neq("batch_id", batchId);
+  const { error: deleteErr } = await supabase.from("dom_listings_cache").delete().neq("batch_id", batchId);
 
   if (deleteErr) {
     console.error("[DomCache] Failed to clean old batches:", deleteErr.message);
   }
 
-  console.log(`[DomCache] Refresh complete: ${totalListings} listings (${mlsListings} MLS, ${rentcastListings} RentCast) across ${zipsFetched} zips`);
+  console.log(
+    `[DomCache] Refresh complete: ${totalListings} listings (${mlsListings} MLS, ${rentcastListings} RentCast) across ${zipsFetched} zips`,
+  );
 
   return { batchId, totalListings, mlsListings, rentcastListings, zipsFetched, zipsFailed };
 }
@@ -238,7 +282,7 @@ export async function refreshListingsCache(
 
 export async function searchCachedListings(
   supabase: SupabaseClient,
-  params: DomSearchParams
+  params: DomSearchParams,
 ): Promise<DomSearchResult> {
   // Check if cache has unexpired data
   const { count: cacheCount } = await supabase
@@ -382,7 +426,7 @@ export async function searchCachedListings(
   return {
     results,
     marketStats,
-    dataSource: results.some(r => r.dataSource === "mls") ? "mls" : "rentcast",
+    dataSource: results.some((r) => r.dataSource === "mls") ? "mls" : "rentcast",
     searchedAt: new Date().toISOString(),
   };
 }
@@ -391,20 +435,20 @@ export async function searchCachedListings(
 // checkMonitoredPropertyTiers — detect tier escalations for alerts
 // ---------------------------------------------------------------------------
 
-export async function checkMonitoredPropertyTiers(
-  supabase: SupabaseClient
-): Promise<Array<{
-  monitoredPropertyId: string;
-  agentId: string;
-  listingKey: string;
-  address: string;
-  oldTier: string;
-  newTier: string;
-  liveDom: number;
-  avgDom: number;
-  domRatio: number;
-  listPrice: number | null;
-}>> {
+export async function checkMonitoredPropertyTiers(supabase: SupabaseClient): Promise<
+  Array<{
+    monitoredPropertyId: string;
+    agentId: string;
+    listingKey: string;
+    address: string;
+    oldTier: string;
+    newTier: string;
+    liveDom: number;
+    avgDom: number;
+    domRatio: number;
+    listPrice: number | null;
+  }>
+> {
   // Get all active monitored properties
   const { data: monitored, error: monErr } = await supabase
     .from("dom_monitored_properties")
@@ -427,7 +471,7 @@ export async function checkMonitoredPropertyTiers(
   }> = [];
 
   // Get unique zips for market stats lookup
-  const uniqueZips = [...new Set(monitored.map(m => m.zip_code))];
+  const uniqueZips = [...new Set(monitored.map((m) => m.zip_code))];
   const { data: marketCache } = await supabase
     .from("area_data_cache")
     .select("zip_code, data")
@@ -489,11 +533,12 @@ export async function checkMonitoredPropertyTiers(
 
     if (avgDom <= 0) continue;
 
-    const newTier = classifyTier(liveDom, avgDom, {
-      redMultiplier: m.red_multiplier,
-      orangeMultiplier: m.orange_multiplier,
-      charcoalMultiplier: m.charcoal_multiplier,
-    }) || "below";
+    const newTier =
+      classifyTier(liveDom, avgDom, {
+        redMultiplier: m.red_multiplier,
+        orangeMultiplier: m.orange_multiplier,
+        charcoalMultiplier: m.charcoal_multiplier,
+      }) || "below";
 
     const oldTier = m.current_tier || "below";
     const domRatio = Math.round((liveDom / avgDom) * 100) / 100;
@@ -552,7 +597,7 @@ export async function createTierAlerts(
     avgDom: number;
     domRatio: number;
     listPrice: number | null;
-  }>
+  }>,
 ): Promise<number> {
   if (!escalations.length) return 0;
 
@@ -563,7 +608,7 @@ export async function createTierAlerts(
     below: "Below Threshold",
   };
 
-  const alerts = escalations.map(e => ({
+  const alerts = escalations.map((e) => ({
     agent_id: e.agentId,
     monitored_property_id: e.monitoredPropertyId,
     listing_key: e.listingKey,

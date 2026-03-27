@@ -131,7 +131,7 @@ export default function ActivityFeed() {
               <div key={activity.id} className="flex items-start gap-3">
                 <div
                   className={`flex h-8 w-8 items-center justify-center rounded-full bg-muted ${getTypeColor(
-                    activity.type
+                    activity.type,
                   )}`}
                 >
                   {getIcon(activity.type)}
@@ -145,23 +145,21 @@ export default function ActivityFeed() {
                           activity.metadata.heatScore >= 80
                             ? "danger"
                             : activity.metadata.heatScore >= 50
-                            ? "default"
-                            : "secondary"
+                              ? "default"
+                              : "secondary"
                         }
                         className="text-xs"
                       >
                         {activity.metadata.heatScore >= 80
                           ? "HOT"
                           : activity.metadata.heatScore >= 50
-                          ? "WARM"
-                          : "COLD"}
+                            ? "WARM"
+                            : "COLD"}
                       </Badge>
                     )}
                   </div>
                   <p className="text-sm text-muted-foreground">{activity.description}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatTimestamp(activity.timestamp)}
-                  </p>
+                  <p className="text-xs text-muted-foreground">{formatTimestamp(activity.timestamp)}</p>
                 </div>
               </div>
             ))}

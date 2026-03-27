@@ -5,11 +5,7 @@ import dynamic from "next/dynamic";
 import MLSClient from "./mls.client";
 
 const MLSFeaturesClient = dynamic(() => import("./mls-features.client"), {
-  loading: () => (
-    <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>
-      Loading MLS tools...
-    </div>
-  ),
+  loading: () => <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>Loading MLS tools...</div>,
 });
 
 const tabs = [
@@ -48,10 +44,7 @@ export default function MLSPageTabs() {
               color: activeTab === tab.id ? "#3b82f6" : "#6b7280",
               background: "transparent",
               border: "none",
-              borderBottom:
-                activeTab === tab.id
-                  ? "2px solid #3b82f6"
-                  : "2px solid transparent",
+              borderBottom: activeTab === tab.id ? "2px solid #3b82f6" : "2px solid transparent",
               cursor: "pointer",
               whiteSpace: "nowrap",
             }}
@@ -63,9 +56,7 @@ export default function MLSPageTabs() {
 
       {/* Tab Content */}
       {activeTab === "search" && <MLSClient />}
-      {activeTab !== "search" && (
-        <MLSFeaturesClient initialTab={activeTab} />
-      )}
+      {activeTab !== "search" && <MLSFeaturesClient initialTab={activeTab} />}
     </div>
   );
 }

@@ -44,7 +44,8 @@ export default async function AdminSubscriptionsPage() {
   // Get all agents with their subscription details
   const { data: agentsData } = await adminSupabase
     .from("agents")
-    .select(`
+    .select(
+      `
       id,
       email,
       display_name,
@@ -71,7 +72,8 @@ export default async function AdminSubscriptionsPage() {
         current_properties,
         current_tenants
       )
-    `)
+    `,
+    )
     .order("created_at", { ascending: false });
 
   // Cast to proper type
@@ -89,14 +91,9 @@ export default async function AdminSubscriptionsPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold mb-2">Subscription Management</h1>
-          <p className="text-gray-600">
-            Manage user subscriptions and plan assignments
-          </p>
+          <p className="text-gray-600">Manage user subscriptions and plan assignments</p>
         </div>
-        <Link
-          href="/app/admin"
-          className="px-4 py-2 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700"
-        >
+        <Link href="/app/admin" className="px-4 py-2 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700">
           Back to Admin
         </Link>
       </div>
@@ -104,15 +101,11 @@ export default async function AdminSubscriptionsPage() {
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         {plans?.map((plan) => {
-          const subscriberCount = agents?.filter(
-            (a) => a.agent_subscriptions?.[0]?.subscription_plans?.id === plan.id
-          ).length || 0;
+          const subscriberCount =
+            agents?.filter((a) => a.agent_subscriptions?.[0]?.subscription_plans?.id === plan.id).length || 0;
 
           return (
-            <div
-              key={plan.id}
-              className="bg-white rounded-lg border border-gray-200 p-4"
-            >
+            <div key={plan.id} className="bg-white rounded-lg border border-gray-200 p-4">
               <div className="text-sm text-gray-500 mb-1">{plan.name}</div>
               <div className="text-2xl font-bold">{subscriberCount}</div>
               <div className="text-xs text-gray-400 mt-1">subscribers</div>
@@ -131,9 +124,7 @@ export default async function AdminSubscriptionsPage() {
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  User
-                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Current Plan
                 </th>
@@ -157,28 +148,18 @@ export default async function AdminSubscriptionsPage() {
                 const plan = subscription?.subscription_plans;
                 const usage = agent.agent_usage?.[0];
 
-                const hasOverage =
-                  usage &&
-                  plan &&
-                  usage.current_agents > plan.max_agents;
+                const hasOverage = usage && plan && usage.current_agents > plan.max_agents;
 
                 return (
-                  <tr
-                    key={agent.id}
-                    className={hasOverage ? "bg-red-50" : ""}
-                  >
+                  <tr key={agent.id} className={hasOverage ? "bg-red-50" : ""}>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        {agent.display_name || agent.email}
-                      </div>
+                      <div className="text-sm font-medium text-gray-900">{agent.display_name || agent.email}</div>
                       <div className="text-sm text-gray-500">{agent.email}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {plan ? (
                         <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {plan.name}
-                          </div>
+                          <div className="text-sm font-medium text-gray-900">{plan.name}</div>
                           <div className="text-xs text-gray-500">
                             ${subscription?.monthly_price}/{subscription?.billing_cycle}
                           </div>
@@ -190,15 +171,8 @@ export default async function AdminSubscriptionsPage() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       {usage && plan ? (
                         <div className="text-xs space-y-1">
-                          <div
-                            className={
-                              usage.current_agents > plan.max_agents
-                                ? "text-red-600 font-semibold"
-                                : ""
-                            }
-                          >
-                            Agents: {usage.current_agents}/
-                            {plan.max_agents === 999999 ? "Unlimited" : plan.max_agents}
+                          <div className={usage.current_agents > plan.max_agents ? "text-red-600 font-semibold" : ""}>
+                            Agents: {usage.current_agents}/{plan.max_agents === 999999 ? "Unlimited" : plan.max_agents}
                           </div>
                         </div>
                       ) : (
@@ -212,8 +186,8 @@ export default async function AdminSubscriptionsPage() {
                             subscription.status === "active"
                               ? "bg-green-100 text-green-800"
                               : subscription.status === "past_due"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : "bg-gray-100 text-gray-800"
+                                ? "bg-yellow-100 text-yellow-800"
+                                : "bg-gray-100 text-gray-800"
                           }`}
                         >
                           {subscription.status}

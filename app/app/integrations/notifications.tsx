@@ -117,10 +117,7 @@ export default function IntegrationsNotifications() {
             <p className="font-medium text-red-800 dark:text-red-300">{errorBanner.title}</p>
             <p className="text-sm text-red-700 dark:text-red-400 mt-1">{errorBanner.message}</p>
           </div>
-          <button
-            onClick={() => setErrorBanner(null)}
-            className="text-red-500 hover:text-red-700 text-sm"
-          >
+          <button onClick={() => setErrorBanner(null)} className="text-red-500 hover:text-red-700 text-sm">
             Dismiss
           </button>
         </div>

@@ -7,10 +7,7 @@ import { supabaseServer } from "@/lib/supabase/server";
  * DELETE /api/mls/listings/[id] — delete a listing
  */
 
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const supabase = await supabaseServer();
@@ -35,15 +32,12 @@ export async function GET(
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Failed to fetch listing" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const supabase = await supabaseServer();
@@ -89,15 +83,12 @@ export async function PUT(
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Failed to update listing" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
-export async function DELETE(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const supabase = await supabaseServer();
@@ -107,11 +98,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { error } = await supabase
-      .from("agent_listings")
-      .delete()
-      .eq("id", id)
-      .eq("user_id", userData.user.id);
+    const { error } = await supabase.from("agent_listings").delete().eq("id", id).eq("user_id", userData.user.id);
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
@@ -121,7 +108,7 @@ export async function DELETE(
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Failed to delete listing" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

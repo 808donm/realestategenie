@@ -5,8 +5,17 @@ import Link from "next/link";
 import jsPDF from "jspdf";
 import * as XLSX from "xlsx";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell,
-  PieChart, Pie,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+  Cell,
+  PieChart,
+  Pie,
 } from "recharts";
 
 /* ---------- types ---------- */
@@ -14,8 +23,8 @@ type RiskLevel = "Low" | "Medium" | "High" | "Critical";
 
 interface AgentRisk {
   name: string;
-  currentScore: number;   // 30-day activity score (0-100)
-  previousScore: number;  // previous 30-day score
+  currentScore: number; // 30-day activity score (0-100)
+  previousScore: number; // previous 30-day score
   logins: number;
   calls: number;
   emails: number;
@@ -23,7 +32,7 @@ interface AgentRisk {
 }
 
 /* ---------- helpers ---------- */
-const changePct = (curr: number, prev: number) => prev > 0 ? ((curr - prev) / prev) * 100 : 0;
+const changePct = (curr: number, prev: number) => (prev > 0 ? ((curr - prev) / prev) * 100 : 0);
 
 const riskLevel = (curr: number, prev: number): RiskLevel => {
   const drop = changePct(curr, prev);
@@ -44,17 +53,17 @@ const RISK_ORDER: Record<RiskLevel, number> = { Critical: 0, High: 1, Medium: 2,
 
 /* ---------- fallback sample data ---------- */
 const FALLBACK_DATA: AgentRisk[] = [
-  { name: "Sarah Chen",     currentScore: 88, previousScore: 91, logins: 24, calls: 38, emails: 62, dealsStarted: 3 },
-  { name: "James Rivera",   currentScore: 72, previousScore: 84, logins: 18, calls: 22, emails: 41, dealsStarted: 2 },
-  { name: "Maria Lopez",    currentScore: 94, previousScore: 90, logins: 28, calls: 45, emails: 78, dealsStarted: 4 },
-  { name: "Kevin Patel",    currentScore: 41, previousScore: 78, logins: 6,  calls: 8,  emails: 14, dealsStarted: 0 },
-  { name: "Aisha Johnson",  currentScore: 65, previousScore: 71, logins: 14, calls: 19, emails: 33, dealsStarted: 1 },
-  { name: "Tom Bradley",    currentScore: 33, previousScore: 82, logins: 4,  calls: 5,  emails: 9,  dealsStarted: 0 },
-  { name: "Lisa Park",      currentScore: 91, previousScore: 88, logins: 26, calls: 42, emails: 70, dealsStarted: 3 },
-  { name: "David Kim",      currentScore: 56, previousScore: 74, logins: 10, calls: 14, emails: 25, dealsStarted: 1 },
-  { name: "Rachel Green",   currentScore: 78, previousScore: 80, logins: 20, calls: 30, emails: 52, dealsStarted: 2 },
+  { name: "Sarah Chen", currentScore: 88, previousScore: 91, logins: 24, calls: 38, emails: 62, dealsStarted: 3 },
+  { name: "James Rivera", currentScore: 72, previousScore: 84, logins: 18, calls: 22, emails: 41, dealsStarted: 2 },
+  { name: "Maria Lopez", currentScore: 94, previousScore: 90, logins: 28, calls: 45, emails: 78, dealsStarted: 4 },
+  { name: "Kevin Patel", currentScore: 41, previousScore: 78, logins: 6, calls: 8, emails: 14, dealsStarted: 0 },
+  { name: "Aisha Johnson", currentScore: 65, previousScore: 71, logins: 14, calls: 19, emails: 33, dealsStarted: 1 },
+  { name: "Tom Bradley", currentScore: 33, previousScore: 82, logins: 4, calls: 5, emails: 9, dealsStarted: 0 },
+  { name: "Lisa Park", currentScore: 91, previousScore: 88, logins: 26, calls: 42, emails: 70, dealsStarted: 3 },
+  { name: "David Kim", currentScore: 56, previousScore: 74, logins: 10, calls: 14, emails: 25, dealsStarted: 1 },
+  { name: "Rachel Green", currentScore: 78, previousScore: 80, logins: 20, calls: 30, emails: 52, dealsStarted: 2 },
   { name: "Marcus Williams", currentScore: 48, previousScore: 86, logins: 7, calls: 10, emails: 18, dealsStarted: 0 },
-  { name: "Jennifer Wu",    currentScore: 85, previousScore: 83, logins: 22, calls: 35, emails: 60, dealsStarted: 3 },
+  { name: "Jennifer Wu", currentScore: 85, previousScore: 83, logins: 22, calls: 35, emails: 60, dealsStarted: 3 },
   { name: "Anthony Torres", currentScore: 62, previousScore: 68, logins: 13, calls: 17, emails: 28, dealsStarted: 1 },
 ];
 
@@ -110,7 +119,7 @@ export default function AgentRetentionRiskClient() {
   const totalAgents = enriched.length;
   const atRisk = enriched.filter((a) => a.risk === "High" || a.risk === "Critical").length;
   const avgScore = Math.round(enriched.reduce((s, a) => s + a.currentScore, 0) / totalAgents);
-  const biggestDrop = enriched.reduce((min, a) => a.change < min.change ? a : min, enriched[0]);
+  const biggestDrop = enriched.reduce((min, a) => (a.change < min.change ? a : min), enriched[0]);
 
   /* PDF export */
   const exportPDF = () => {
@@ -121,18 +130,27 @@ export default function AgentRetentionRiskClient() {
     doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 28);
 
     doc.setFontSize(11);
-    doc.text(`Total Agents: ${totalAgents}  |  At Risk: ${atRisk}  |  Avg Score: ${avgScore}  |  Biggest Drop: ${biggestDrop.name} (${biggestDrop.change.toFixed(1)}%)`, 14, 40);
+    doc.text(
+      `Total Agents: ${totalAgents}  |  At Risk: ${atRisk}  |  Avg Score: ${avgScore}  |  Biggest Drop: ${biggestDrop.name} (${biggestDrop.change.toFixed(1)}%)`,
+      14,
+      40,
+    );
 
     let y = 54;
     doc.setFontSize(8);
     doc.setFont("helvetica", "bold");
     const cols = [14, 52, 80, 104, 128, 148, 164, 180];
-    ["Agent", "30-Day Score", "Prev Score", "Change %", "Risk", "Logins", "Calls", "Emails"].forEach((h, i) => doc.text(h, cols[i], y));
+    ["Agent", "30-Day Score", "Prev Score", "Change %", "Risk", "Logins", "Calls", "Emails"].forEach((h, i) =>
+      doc.text(h, cols[i], y),
+    );
     doc.setFont("helvetica", "normal");
 
     sorted.forEach((a) => {
       y += 7;
-      if (y > 280) { doc.addPage(); y = 20; }
+      if (y > 280) {
+        doc.addPage();
+        y = 20;
+      }
       doc.text(a.name, cols[0], y);
       doc.text(String(a.currentScore), cols[1], y);
       doc.text(String(a.previousScore), cols[2], y);
@@ -147,7 +165,7 @@ export default function AgentRetentionRiskClient() {
   };
 
   const exportToExcel = () => {
-    const rows = sorted.map(a => ({
+    const rows = sorted.map((a) => ({
       "Agent Name": a.name,
       "30-Day Score": a.currentScore,
       "Previous 30-Day Score": a.previousScore,
@@ -186,14 +204,31 @@ export default function AgentRetentionRiskClient() {
   return (
     <div>
       {/* integration banner */}
-      <div style={{ background: isLive ? "#E8F5E9" : "#FFF8E1", border: `1px solid ${isLive ? "#A5D6A7" : "#FFE082"}`, borderRadius: 10, padding: "12px 18px", marginBottom: 24, display: "flex", alignItems: "center", gap: 10 }}>
+      <div
+        style={{
+          background: isLive ? "#E8F5E9" : "#FFF8E1",
+          border: `1px solid ${isLive ? "#A5D6A7" : "#FFE082"}`,
+          borderRadius: 10,
+          padding: "12px 18px",
+          marginBottom: 24,
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+        }}
+      >
         <span style={{ fontSize: 18 }}>{isLive ? "\u2705" : "\u26A0"}</span>
         <span style={{ fontSize: 14 }}>
           {isLive ? (
-            <>This report is showing <strong>live data</strong> from your connected integrations.</>
+            <>
+              This report is showing <strong>live data</strong> from your connected integrations.
+            </>
           ) : (
-            <>This report uses <strong>sample data</strong>. Connect your GHL account to track real agent activity signals.{" "}
-              <Link href="/app/integrations" style={{ color: "#1565C0", fontWeight: 600 }}>Set up integrations &rarr;</Link>
+            <>
+              This report uses <strong>sample data</strong>. Connect your GHL account to track real agent activity
+              signals.{" "}
+              <Link href="/app/integrations" style={{ color: "#1565C0", fontWeight: 600 }}>
+                Set up integrations &rarr;
+              </Link>
             </>
           )}
         </span>
@@ -222,7 +257,9 @@ export default function AgentRetentionRiskClient() {
 
       {/* Risk Distribution Pie */}
       <div style={{ display: "flex", gap: 16, marginBottom: 28, flexWrap: "wrap" }}>
-        <div style={{ flex: "1 1 300px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}>
+        <div
+          style={{ flex: "1 1 300px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}
+        >
           <h3 style={{ margin: "0 0 12px 0", fontSize: 15, fontWeight: 700 }}>Risk Distribution</h3>
           {(() => {
             const riskCounts = [
@@ -234,8 +271,19 @@ export default function AgentRetentionRiskClient() {
             return (
               <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
-                  <Pie data={riskCounts} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} innerRadius={40} label={(props: any) => `${props.name}: ${props.value}`}>
-                    {riskCounts.map((d, i) => <Cell key={i} fill={d.color} />)}
+                  <Pie
+                    data={riskCounts}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    innerRadius={40}
+                    label={(props: any) => `${props.name}: ${props.value}`}
+                  >
+                    {riskCounts.map((d, i) => (
+                      <Cell key={i} fill={d.color} />
+                    ))}
                   </Pie>
                   <Tooltip />
                 </PieChart>
@@ -243,7 +291,9 @@ export default function AgentRetentionRiskClient() {
             );
           })()}
         </div>
-        <div style={{ flex: "2 1 400px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}>
+        <div
+          style={{ flex: "2 1 400px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}
+        >
           <h3 style={{ margin: "0 0 12px 0", fontSize: 15, fontWeight: 700 }}>Activity Score: Current vs Previous</h3>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={sorted} margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>
@@ -255,7 +305,18 @@ export default function AgentRetentionRiskClient() {
               <Bar dataKey="previousScore" name="Previous 30d" fill="#93c5fd" radius={[4, 4, 0, 0]} />
               <Bar dataKey="currentScore" name="Current 30d" radius={[4, 4, 0, 0]}>
                 {sorted.map((a) => (
-                  <Cell key={a.name} fill={a.risk === "Critical" ? "#C62828" : a.risk === "High" ? "#E65100" : a.risk === "Medium" ? "#F57F17" : "#2E7D32"} />
+                  <Cell
+                    key={a.name}
+                    fill={
+                      a.risk === "Critical"
+                        ? "#C62828"
+                        : a.risk === "High"
+                          ? "#E65100"
+                          : a.risk === "Medium"
+                            ? "#F57F17"
+                            : "#2E7D32"
+                    }
+                  />
                 ))}
               </Bar>
             </BarChart>
@@ -264,21 +325,59 @@ export default function AgentRetentionRiskClient() {
       </div>
 
       {/* toolbar */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 16,
+          flexWrap: "wrap",
+          gap: 10,
+        }}
+      >
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <span style={{ fontSize: 12, fontWeight: 600, opacity: 0.6 }}>Sort by:</span>
-          {([["risk", "Risk Level"], ["name", "Name"], ["score", "Score"], ["change", "Change %"]] as const).map(([key, label]) => (
-            <button key={key} onClick={() => setSortBy(key)} style={sortBtnStyle(sortBy === key)}>{label}</button>
+          {(
+            [
+              ["risk", "Risk Level"],
+              ["name", "Name"],
+              ["score", "Score"],
+              ["change", "Change %"],
+            ] as const
+          ).map(([key, label]) => (
+            <button key={key} onClick={() => setSortBy(key)} style={sortBtnStyle(sortBy === key)}>
+              {label}
+            </button>
           ))}
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button
             onClick={exportPDF}
-            style={{ padding: "7px 18px", borderRadius: 8, border: "1px solid #ddd", background: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer" }}
+            style={{
+              padding: "7px 18px",
+              borderRadius: 8,
+              border: "1px solid #ddd",
+              background: "#fff",
+              fontWeight: 600,
+              fontSize: 13,
+              cursor: "pointer",
+            }}
           >
             Export PDF
           </button>
-          <button onClick={exportToExcel} style={{ padding: "8px 20px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>
+          <button
+            onClick={exportToExcel}
+            style={{
+              padding: "8px 20px",
+              background: "#fff",
+              color: "#374151",
+              border: "1px solid #d1d5db",
+              borderRadius: 8,
+              fontWeight: 600,
+              cursor: "pointer",
+              fontSize: 13,
+            }}
+          >
             Export Excel
           </button>
         </div>
@@ -289,8 +388,29 @@ export default function AgentRetentionRiskClient() {
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
           <thead>
             <tr style={{ background: "#f5f5f5" }}>
-              {["Agent Name", "30-Day Score", "Prev 30-Day", "Change %", "Risk Level", "Logins", "Calls", "Emails", "Deals"].map((h) => (
-                <th key={h} style={{ textAlign: "left", padding: "10px 10px", fontWeight: 700, borderBottom: "2px solid #e0e0e0", whiteSpace: "nowrap" }}>{h}</th>
+              {[
+                "Agent Name",
+                "30-Day Score",
+                "Prev 30-Day",
+                "Change %",
+                "Risk Level",
+                "Logins",
+                "Calls",
+                "Emails",
+                "Deals",
+              ].map((h) => (
+                <th
+                  key={h}
+                  style={{
+                    textAlign: "left",
+                    padding: "10px 10px",
+                    fontWeight: 700,
+                    borderBottom: "2px solid #e0e0e0",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {h}
+                </th>
               ))}
             </tr>
           </thead>
@@ -310,30 +430,35 @@ export default function AgentRetentionRiskClient() {
                   <td style={{ padding: "10px 10px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <div style={{ width: 48, height: 6, background: "#e0e0e0", borderRadius: 3, overflow: "hidden" }}>
-                        <div style={{
-                          width: `${a.currentScore}%`,
-                          height: "100%",
-                          background: a.currentScore >= 70 ? "#43A047" : a.currentScore >= 50 ? "#FB8C00" : "#E53935",
-                          borderRadius: 3,
-                        }} />
+                        <div
+                          style={{
+                            width: `${a.currentScore}%`,
+                            height: "100%",
+                            background: a.currentScore >= 70 ? "#43A047" : a.currentScore >= 50 ? "#FB8C00" : "#E53935",
+                            borderRadius: 3,
+                          }}
+                        />
                       </div>
                       <span>{a.currentScore}</span>
                     </div>
                   </td>
                   <td style={{ padding: "10px 10px" }}>{a.previousScore}</td>
                   <td style={{ padding: "10px 10px", fontWeight: 600, color: a.change >= 0 ? "#2E7D32" : "#C62828" }}>
-                    {a.change >= 0 ? "+" : ""}{a.change.toFixed(1)}%
+                    {a.change >= 0 ? "+" : ""}
+                    {a.change.toFixed(1)}%
                   </td>
                   <td style={{ padding: "10px 10px" }}>
-                    <span style={{
-                      display: "inline-block",
-                      padding: "3px 10px",
-                      borderRadius: 20,
-                      fontSize: 12,
-                      fontWeight: 700,
-                      background: riskColor[a.risk].bg,
-                      color: riskColor[a.risk].color,
-                    }}>
+                    <span
+                      style={{
+                        display: "inline-block",
+                        padding: "3px 10px",
+                        borderRadius: 20,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        background: riskColor[a.risk].bg,
+                        color: riskColor[a.risk].color,
+                      }}
+                    >
                       {a.risk}
                     </span>
                   </td>
@@ -352,7 +477,16 @@ export default function AgentRetentionRiskClient() {
       <div style={{ marginTop: 16, display: "flex", gap: 16, flexWrap: "wrap", fontSize: 12 }}>
         {(["Low", "Medium", "High", "Critical"] as RiskLevel[]).map((level) => (
           <div key={level} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ display: "inline-block", width: 12, height: 12, borderRadius: 3, background: riskColor[level].bg, border: `1px solid ${riskColor[level].color}` }} />
+            <span
+              style={{
+                display: "inline-block",
+                width: 12,
+                height: 12,
+                borderRadius: 3,
+                background: riskColor[level].bg,
+                border: `1px solid ${riskColor[level].color}`,
+              }}
+            />
             <span style={{ fontWeight: 600, color: riskColor[level].color }}>{level}</span>
             <span style={{ opacity: 0.6 }}>
               {level === "Critical" && "(40%+ drop)"}

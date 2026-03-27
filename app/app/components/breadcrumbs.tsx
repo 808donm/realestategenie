@@ -89,12 +89,13 @@ export default function Breadcrumbs() {
   // Don't show on dashboard (it's the root)
   if (pathname === "/app/dashboard" || pathname === "/app") return null;
 
-  const segments = pathname.replace(/^\/app\/?/, "").split("/").filter(Boolean);
+  const segments = pathname
+    .replace(/^\/app\/?/, "")
+    .split("/")
+    .filter(Boolean);
   if (segments.length === 0) return null;
 
-  const crumbs: { label: string; href: string }[] = [
-    { label: "Home", href: "/app/dashboard" },
-  ];
+  const crumbs: { label: string; href: string }[] = [{ label: "Home", href: "/app/dashboard" }];
 
   let accPath = "/app";
   for (const seg of segments) {
@@ -102,7 +103,10 @@ export default function Breadcrumbs() {
     if (UUID_REGEX.test(seg)) {
       crumbs.push({ label: "Detail", href: accPath });
     } else {
-      crumbs.push({ label: ROUTE_LABELS[seg] || seg.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()), href: accPath });
+      crumbs.push({
+        label: ROUTE_LABELS[seg] || seg.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+        href: accPath,
+      });
     }
   }
 

@@ -5,13 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -58,10 +52,12 @@ export default function EventModal({
   const [description, setDescription] = useState(event?.description || "");
   const [location, setLocation] = useState(event?.location || "");
   const [startAt, setStartAt] = useState(
-    event?.start_at ? toLocalDatetimeString(event.start_at) : toLocalDatetimeString(new Date().toISOString())
+    event?.start_at ? toLocalDatetimeString(event.start_at) : toLocalDatetimeString(new Date().toISOString()),
   );
   const [endAt, setEndAt] = useState(
-    event?.end_at ? toLocalDatetimeString(event.end_at) : toLocalDatetimeString(new Date(Date.now() + 60 * 60 * 1000).toISOString())
+    event?.end_at
+      ? toLocalDatetimeString(event.end_at)
+      : toLocalDatetimeString(new Date(Date.now() + 60 * 60 * 1000).toISOString()),
   );
   const [allDay, setAllDay] = useState(event?.all_day || false);
   const [source, setSource] = useState(event?.source || "local");
@@ -102,9 +98,7 @@ export default function EventModal({
 
       if (response.ok) {
         toast.success(isNew ? "Event created" : "Event updated", {
-          description: source !== "local"
-            ? `Will sync to ${SOURCE_LABELS[source] || source}`
-            : undefined,
+          description: source !== "local" ? `Will sync to ${SOURCE_LABELS[source] || source}` : undefined,
         });
         onSaved();
       } else {
@@ -124,7 +118,7 @@ export default function EventModal({
       !confirm(
         event.source !== "local"
           ? `This will also delete the event from ${SOURCE_LABELS[event.source]}. Continue?`
-          : "Delete this event?"
+          : "Delete this event?",
       )
     ) {
       return;
@@ -154,9 +148,7 @@ export default function EventModal({
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-background rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-lg font-semibold">
-            {isNew ? "New Event" : "Event Details"}
-          </h2>
+          <h2 className="text-lg font-semibold">{isNew ? "New Event" : "Event Details"}</h2>
           <div className="flex items-center gap-2">
             {event && (
               <Badge
@@ -165,10 +157,10 @@ export default function EventModal({
                   event.source === "google"
                     ? "border-blue-300 text-blue-600"
                     : event.source === "microsoft"
-                    ? "border-green-300 text-green-600"
-                    : event.source === "ghl"
-                    ? "border-purple-300 text-purple-600"
-                    : ""
+                      ? "border-green-300 text-green-600"
+                      : event.source === "ghl"
+                        ? "border-purple-300 text-purple-600"
+                        : ""
                 }`}
               >
                 {SOURCE_LABELS[event.source] || event.source}
@@ -207,15 +199,11 @@ export default function EventModal({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="local">Local Only</SelectItem>
-                  {connectedSources?.includes("google") && (
-                    <SelectItem value="google">Google Calendar</SelectItem>
-                  )}
+                  {connectedSources?.includes("google") && <SelectItem value="google">Google Calendar</SelectItem>}
                   {connectedSources?.includes("microsoft") && (
                     <SelectItem value="microsoft">Outlook Calendar</SelectItem>
                   )}
-                  {connectedSources?.includes("ghl") && (
-                    <SelectItem value="ghl">CRM Calendar</SelectItem>
-                  )}
+                  {connectedSources?.includes("ghl") && <SelectItem value="ghl">CRM Calendar</SelectItem>}
                 </SelectContent>
               </Select>
               {source !== "local" && (
@@ -291,9 +279,7 @@ export default function EventModal({
                 {event.attendees.map((a: any, i: number) => (
                   <Badge key={i} variant="outline" className="text-xs">
                     {a.name || a.email}
-                    {a.responseStatus && (
-                      <span className="ml-1 opacity-60">({a.responseStatus})</span>
-                    )}
+                    {a.responseStatus && <span className="ml-1 opacity-60">({a.responseStatus})</span>}
                   </Badge>
                 ))}
               </div>
@@ -312,11 +298,7 @@ export default function EventModal({
                 disabled={deleting}
                 className="text-destructive hover:text-destructive"
               >
-                {deleting ? (
-                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                ) : (
-                  <Trash2 className="w-4 h-4 mr-1" />
-                )}
+                {deleting ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Trash2 className="w-4 h-4 mr-1" />}
                 Delete
               </Button>
             )}

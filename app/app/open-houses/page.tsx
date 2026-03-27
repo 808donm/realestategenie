@@ -10,7 +10,9 @@ export default async function OpenHousesIndex() {
 
   let query = supabase
     .from("open_house_events")
-    .select("id,address,start_at,end_at,status,property_photo_url,event_type,price,beds,baths,sqft,mls_listing_id,mls_listing_key")
+    .select(
+      "id,address,start_at,end_at,status,property_photo_url,event_type,price,beds,baths,sqft,mls_listing_id,mls_listing_key",
+    )
     .order("start_at", { ascending: false })
     .limit(50);
 
@@ -26,29 +28,52 @@ export default async function OpenHousesIndex() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
         <h1 style={{ margin: 0, fontSize: 28, fontWeight: 900 }}>Open Houses &amp; Showings</h1>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <OpenHousesExport events={(events ?? []).map((e) => ({ id: e.id, address: e.address, start_at: e.start_at, end_at: e.end_at, status: e.status, event_type: (e as any).event_type || "sales" }))} />
-          <PageHelp title="Open Houses" description="Create and manage your open house events. Each event generates a QR code for visitor check-in that automatically captures leads." tips={["Publish an event to make it live and generate a QR code", "Share the QR code at your open house for visitor sign-in"]} />
-          <Link href="/app/open-houses/new" style={btn}>+ New Event</Link>
+          <OpenHousesExport
+            events={(events ?? []).map((e) => ({
+              id: e.id,
+              address: e.address,
+              start_at: e.start_at,
+              end_at: e.end_at,
+              status: e.status,
+              event_type: (e as any).event_type || "sales",
+            }))}
+          />
+          <PageHelp
+            title="Open Houses"
+            description="Create and manage your open house events. Each event generates a QR code for visitor check-in that automatically captures leads."
+            tips={[
+              "Publish an event to make it live and generate a QR code",
+              "Share the QR code at your open house for visitor sign-in",
+            ]}
+          />
+          <Link href="/app/open-houses/new" style={btn}>
+            + New Event
+          </Link>
         </div>
       </div>
 
       {error && <p style={{ color: "crimson" }}>{error.message}</p>}
 
-      <div style={{ marginTop: 16, display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}>
+      <div
+        style={{
+          marginTop: 16,
+          display: "grid",
+          gap: 12,
+          gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+        }}
+      >
         {(events ?? []).map((e) => (
-          <Link
-            key={e.id}
-            href={`/app/open-houses/${e.id}`}
-            style={{ textDecoration: "none", color: "inherit" }}
-          >
-            <div style={{
-              position: "relative",
-              background: "#fff",
-              border: "1px solid #e5e7eb",
-              borderRadius: 14,
-              overflow: "hidden",
-              transition: "box-shadow 0.15s",
-            }}>
+          <Link key={e.id} href={`/app/open-houses/${e.id}`} style={{ textDecoration: "none", color: "inherit" }}>
+            <div
+              style={{
+                position: "relative",
+                background: "#fff",
+                border: "1px solid #e5e7eb",
+                borderRadius: 14,
+                overflow: "hidden",
+                transition: "box-shadow 0.15s",
+              }}
+            >
               <DeleteOpenHouseButton eventId={e.id} />
               {/* Property Photo */}
               {e.property_photo_url ? (
@@ -62,16 +87,18 @@ export default async function OpenHousesIndex() {
                   />
                 </div>
               ) : (
-                <div style={{
-                  width: "100%",
-                  height: 120,
-                  background: "linear-gradient(135deg, #e0e7ff, #f0f4ff)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#94a3b8",
-                  fontSize: 13,
-                }}>
+                <div
+                  style={{
+                    width: "100%",
+                    height: 120,
+                    background: "linear-gradient(135deg, #e0e7ff, #f0f4ff)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#94a3b8",
+                    fontSize: 13,
+                  }}
+                >
                   No photo
                 </div>
               )}
@@ -80,15 +107,31 @@ export default async function OpenHousesIndex() {
               <div style={{ padding: 14 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <div style={{ fontWeight: 900, flex: 1, fontSize: 14 }}>{e.address}</div>
-                  <span style={{
-                    fontSize: 10,
-                    fontWeight: 700,
-                    padding: "2px 8px",
-                    borderRadius: 12,
-                    background: (e as any).event_type === "rental" ? "#dcfce7" : (e as any).event_type === "both" ? "#fef3c7" : "#e0e7ff",
-                    color: (e as any).event_type === "rental" ? "#166534" : (e as any).event_type === "both" ? "#92400e" : "#3730a3",
-                  }}>
-                    {(e as any).event_type === "rental" ? "Rental" : (e as any).event_type === "both" ? "Both" : "Sales"}
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      padding: "2px 8px",
+                      borderRadius: 12,
+                      background:
+                        (e as any).event_type === "rental"
+                          ? "#dcfce7"
+                          : (e as any).event_type === "both"
+                            ? "#fef3c7"
+                            : "#e0e7ff",
+                      color:
+                        (e as any).event_type === "rental"
+                          ? "#166534"
+                          : (e as any).event_type === "both"
+                            ? "#92400e"
+                            : "#3730a3",
+                    }}
+                  >
+                    {(e as any).event_type === "rental"
+                      ? "Rental"
+                      : (e as any).event_type === "both"
+                        ? "Both"
+                        : "Sales"}
                   </span>
                 </div>
 
@@ -102,13 +145,13 @@ export default async function OpenHousesIndex() {
                     )}
                     {(e as any).beds && <span style={{ color: "#374151" }}>{(e as any).beds} bd</span>}
                     {(e as any).baths && <span style={{ color: "#374151" }}>{(e as any).baths} ba</span>}
-                    {(e as any).sqft && <span style={{ color: "#6b7280" }}>{Number((e as any).sqft).toLocaleString()} sqft</span>}
+                    {(e as any).sqft && (
+                      <span style={{ color: "#6b7280" }}>{Number((e as any).sqft).toLocaleString()} sqft</span>
+                    )}
                   </div>
                 )}
                 {(e as any).mls_listing_id && (
-                  <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>
-                    MLS# {(e as any).mls_listing_id}
-                  </div>
+                  <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>MLS# {(e as any).mls_listing_id}</div>
                 )}
 
                 <div style={{ fontSize: 12, opacity: 0.75, marginTop: 6 }}>

@@ -185,9 +185,9 @@ export function getCountyByZip(zip: string | undefined | null): HawaiiCounty | n
  */
 const QPUBLIC_APP_IDS: Record<HawaiiCounty, number> = {
   HONOLULU: 1045,
-  HAWAII:   1048,
-  MAUI:     1029,
-  KAUAI:    986,
+  HAWAII: 1048,
+  MAUI: 1029,
+  KAUAI: 986,
 };
 
 /**
@@ -203,11 +203,7 @@ const QPUBLIC_APP_IDS: Record<HawaiiCounty, number> = {
  * @param zip       - Zip code to derive county when county name is not available
  * @returns QPublic URL string, or null if county cannot be determined
  */
-export function buildQPublicUrl(
-  tmkOrApn: string,
-  county?: string | null,
-  zip?: string | null,
-): string | null {
+export function buildQPublicUrl(tmkOrApn: string, county?: string | null, zip?: string | null): string | null {
   if (!tmkOrApn) return null;
 
   // Clean the key — strip dashes, spaces, dots

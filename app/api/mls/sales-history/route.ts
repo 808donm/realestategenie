@@ -37,16 +37,10 @@ export async function GET(request: NextRequest) {
       .maybeSingle();
 
     if (!integration || integration.status !== "connected") {
-      return NextResponse.json(
-        { error: "Trestle MLS is not connected" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Trestle MLS is not connected" }, { status: 404 });
     }
 
-    const config =
-      typeof integration.config === "string"
-        ? JSON.parse(integration.config)
-        : integration.config;
+    const config = typeof integration.config === "string" ? JSON.parse(integration.config) : integration.config;
 
     const client = createTrestleClient(config);
 
@@ -65,7 +59,8 @@ export async function GET(request: NextRequest) {
             $top: 3,
             $count: true,
             $orderby: "CloseDate desc",
-            $select: "ListingKey,UnparsedAddress,StreetNumber,StreetName,StreetSuffix,ClosePrice,CloseDate,StandardStatus",
+            $select:
+              "ListingKey,UnparsedAddress,StreetNumber,StreetName,StreetSuffix,ClosePrice,CloseDate,StandardStatus",
           });
           diagnostics.closedInZip = {
             count: zipClosed["@odata.count"],
@@ -78,7 +73,9 @@ export async function GET(request: NextRequest) {
               closeDate: p.CloseDate,
             })),
           };
-        } catch (e: any) { diagnostics.closedInZipError = e.message; }
+        } catch (e: any) {
+          diagnostics.closedInZipError = e.message;
+        }
       }
 
       // Test 2: Any closed listings at all?
@@ -100,7 +97,9 @@ export async function GET(request: NextRequest) {
             closeDate: p.CloseDate,
           })),
         };
-      } catch (e: any) { diagnostics.anyClosedError = e.message; }
+      } catch (e: any) {
+        diagnostics.anyClosedError = e.message;
+      }
 
       // Test 3: What statuses exist?
       try {
@@ -112,7 +111,9 @@ export async function GET(request: NextRequest) {
           });
           diagnostics[`status_${status}`] = res["@odata.count"] ?? res.value?.length ?? 0;
         }
-      } catch (e: any) { diagnostics.statusCheckError = e.message; }
+      } catch (e: any) {
+        diagnostics.statusCheckError = e.message;
+      }
 
       return NextResponse.json({ diagnostics });
     }
@@ -148,7 +149,9 @@ export async function GET(request: NextRequest) {
     const unitHistory = unit.map(mapListing);
     const buildingHistory = building.map(mapListing);
 
-    console.log(`[MLS Sales History] Unit: ${unitHistory.length}, Building: ${buildingHistory.length} for "${address}" (unit: ${unitNumber || "n/a"})`);
+    console.log(
+      `[MLS Sales History] Unit: ${unitHistory.length}, Building: ${buildingHistory.length} for "${address}" (unit: ${unitNumber || "n/a"})`,
+    );
 
     return NextResponse.json({
       address,
@@ -160,9 +163,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error("[MLS Sales History] Error:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to fetch sales history" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message || "Failed to fetch sales history" }, { status: 500 });
   }
 }

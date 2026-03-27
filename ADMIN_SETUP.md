@@ -5,6 +5,7 @@ This guide explains how to configure and use the admin system for Real Estate Ge
 ## Overview
 
 The admin system provides:
+
 - **User Management**: Enable/disable accounts, grant admin privileges, delete users
 - **Invitation System**: Invite new users via secure email invitations
 - **Error Logging**: Monitor and troubleshoot application errors
@@ -21,6 +22,7 @@ The admin system requires database tables and policies. Run the migration:
 ```
 
 This migration:
+
 - Adds `is_admin` and `account_status` columns to `agents` table
 - Creates `user_invitations` table for invitation management
 - Creates `error_logs` table for error tracking
@@ -77,20 +79,24 @@ WHERE created_at < NOW() - INTERVAL '90 days';
 ### User Management
 
 **View All Users**
+
 - Go to `/app/admin/users`
 - See all registered users with their status
 
 **Enable/Disable Accounts**
+
 - Click "Disable" to prevent a user from signing in
 - Click "Enable" to restore access
 - Disabled users cannot access the app
 
 **Grant/Revoke Admin Privileges**
+
 - Click "Make Admin" to grant admin access
 - Click "Remove Admin" to revoke admin privileges
 - Admins can manage other users and view error logs
 
 **Delete Users**
+
 - Click "Delete User"
 - Type the user's email to confirm
 - This permanently removes the user from both `agents` table and Supabase Auth
@@ -106,18 +112,21 @@ WHERE created_at < NOW() - INTERVAL '90 days';
 5. Send the link to the recipient (via GHL, email, etc.)
 
 **Invitation Details**
+
 - Invitations expire after 7 days
 - Each invitation has a unique secure token
 - Recipients create their own password during registration
 - Once accepted, invitation status changes to "accepted"
 
 **Invitation States**
+
 - **Pending**: Not yet accepted
 - **Accepted**: User successfully created account
 - **Expired**: Invitation passed expiration date
 - **Cancelled**: Admin cancelled the invitation
 
 **Cancel an Invitation**
+
 - Find the pending invitation
 - Click "Cancel"
 - The invitation link will no longer work
@@ -125,21 +134,25 @@ WHERE created_at < NOW() - INTERVAL '90 days';
 ### Error Logging
 
 **View Error Logs**
+
 - Go to `/app/admin/error-logs`
 - See all application errors with severity, endpoint, and message
 
 **Filter Logs**
+
 - Filter by severity: Critical, Error, Warning, Info
 - Search by error message, endpoint, or user email
 - Click on any row to expand and see full details
 
 **Severity Levels**
+
 - **Critical**: System-breaking errors requiring immediate attention
 - **Error**: Errors that affect functionality but don't break the system
 - **Warning**: Potential issues that should be monitored
 - **Info**: Informational logging for debugging
 
 **Auto-Refresh**
+
 - Enable "Auto-refresh" to reload logs every 30 seconds
 - Useful for monitoring errors in real-time
 
@@ -150,14 +163,17 @@ WHERE created_at < NOW() - INTERVAL '90 days';
 All admin tables have RLS policies:
 
 **user_invitations**
+
 - Only admins can create, view, and manage invitations
 - Public users can verify invitation tokens (for registration)
 
 **error_logs**
+
 - Only admins can view error logs
 - System can insert logs (via service role)
 
 **agents**
+
 - Admins can view all users
 - Users can only view their own profile
 - Only admins can update user status and admin privileges
@@ -165,6 +181,7 @@ All admin tables have RLS policies:
 ### Service Role Usage
 
 The admin system uses the service role key for:
+
 - Creating user invitations (bypasses RLS)
 - Processing invitation acceptance (creates auth users)
 - Logging errors (system-level logging)
@@ -180,10 +197,12 @@ All service role usage is in API routes or server components.
 **Cause**: User is not an admin or account is disabled
 
 **Solution**:
+
 1. Check `agents` table for the user
 2. Ensure `is_admin = TRUE`
 3. Ensure `account_status = 'active'`
 4. Run this SQL to grant admin:
+
 ```sql
 UPDATE agents
 SET is_admin = TRUE, account_status = 'active'
@@ -193,12 +212,14 @@ WHERE email = 'user@example.com';
 ### Invitation link shows "Invalid or expired invitation"
 
 **Causes**:
+
 - Invitation has expired (> 7 days old)
 - Token parameter is missing from URL
 - Invitation ID doesn't exist
 - Invitation already accepted
 
 **Solution**:
+
 - Create a new invitation
 - Ensure URL format: `/accept-invite/{id}?token={token}`
 - Check invitation status in admin dashboard
@@ -224,10 +245,7 @@ try {
     severity: "error",
   });
 
-  return NextResponse.json(
-    { error: "Internal server error" },
-    { status: 500 }
-  );
+  return NextResponse.json({ error: "Internal server error" }, { status: 500 });
 }
 ```
 
@@ -236,6 +254,7 @@ try {
 **Cause**: Public sign-ups are disabled (by design)
 
 **Solution**:
+
 - Admin must create an invitation
 - Send invitation link to the user
 - User registers via the invitation link
@@ -309,6 +328,7 @@ These endpoints are accessible without authentication:
 ## Support
 
 For questions or issues:
+
 - Check error logs at `/app/admin/error-logs`
 - Review Supabase logs in the Supabase Dashboard
 - Check Vercel deployment logs for runtime errors

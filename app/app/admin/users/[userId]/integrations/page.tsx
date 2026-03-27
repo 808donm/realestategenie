@@ -8,7 +8,8 @@ const MLS_PROVIDERS = [
   {
     provider: "trestle",
     name: "Trestle by Cotality",
-    description: "CoreLogic MLS aggregator — covers HiCentral, Maui MLS, Hawaii Information Service (Big Island/Kauai), and 700+ MLSs nationwide.",
+    description:
+      "CoreLogic MLS aggregator — covers HiCentral, Maui MLS, Hawaii Information Service (Big Island/Kauai), and 700+ MLSs nationwide.",
   },
   {
     provider: "bridge",
@@ -28,11 +29,7 @@ type IntegrationRow = {
   config: any;
 };
 
-export default async function UserIntegrationsPage({
-  params,
-}: {
-  params: Promise<{ userId: string }>;
-}) {
+export default async function UserIntegrationsPage({ params }: { params: Promise<{ userId: string }> }) {
   await requireAdmin().catch(() => redirect("/app/admin"));
 
   const { userId } = await params;
@@ -56,9 +53,7 @@ export default async function UserIntegrationsPage({
   if (!userRows[0]) redirect("/app/admin/users");
 
   const user = userRows[0];
-  const integrationMap = Object.fromEntries(
-    integrationRows.map((r) => [r.provider, r])
-  );
+  const integrationMap = Object.fromEntries(integrationRows.map((r) => [r.provider, r]));
 
   return (
     <div style={{ maxWidth: 760, margin: "40px auto", padding: 24 }}>
@@ -76,24 +71,22 @@ export default async function UserIntegrationsPage({
         {MLS_PROVIDERS.map(({ provider, name, description }) => {
           const row = integrationMap[provider];
           const isConnected = row?.status === "connected";
-          const config = row?.config
-            ? typeof row.config === "string"
-              ? JSON.parse(row.config)
-              : row.config
-            : null;
+          const config = row?.config ? (typeof row.config === "string" ? JSON.parse(row.config) : row.config) : null;
 
           return (
             <div key={provider} style={{ border: "1px solid #e5e7eb", borderRadius: 10, padding: 24 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
                 <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>{name}</h2>
-                <span style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  padding: "2px 8px",
-                  borderRadius: 10,
-                  background: isConnected ? "#d1fae5" : "#f3f4f6",
-                  color: isConnected ? "#065f46" : "#6b7280",
-                }}>
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    padding: "2px 8px",
+                    borderRadius: 10,
+                    background: isConnected ? "#d1fae5" : "#f3f4f6",
+                    color: isConnected ? "#065f46" : "#6b7280",
+                  }}
+                >
                   {isConnected ? "Connected" : "Not Connected"}
                 </span>
               </div>

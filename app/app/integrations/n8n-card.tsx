@@ -33,7 +33,7 @@ export default function N8NIntegrationCard({ integration }: { integration: Integ
   const [webhookUrl, setWebhookUrl] = useState(integration?.config?.webhook_url || "");
   const [secretKey, setSecretKey] = useState(integration?.config?.secret_key || "");
   const [enabledEvents, setEnabledEvents] = useState<string[]>(
-    integration?.config?.enabled_events || ["lead.submitted", "lead.hot_scored"]
+    integration?.config?.enabled_events || ["lead.submitted", "lead.hot_scored"],
   );
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -42,9 +42,7 @@ export default function N8NIntegrationCard({ integration }: { integration: Integ
   const isConfigured = integration?.status === "connected";
 
   const handleToggleEvent = (eventType: string) => {
-    setEnabledEvents((prev) =>
-      prev.includes(eventType) ? prev.filter((e) => e !== eventType) : [...prev, eventType]
-    );
+    setEnabledEvents((prev) => (prev.includes(eventType) ? prev.filter((e) => e !== eventType) : [...prev, eventType]));
   };
 
   const handleSave = async () => {
@@ -150,16 +148,13 @@ export default function N8NIntegrationCard({ integration }: { integration: Integ
                 Error
               </Badge>
             )}
-            {!isConfigured && integration?.status !== "error" && (
-              <Badge variant="outline">Not Configured</Badge>
-            )}
+            {!isConfigured && integration?.status !== "error" && <Badge variant="outline">Not Configured</Badge>}
           </div>
         </CardHeader>
 
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Trigger n8n workflows when events occur. Perfect for custom automations, notifications,
-            and integrations.
+            Trigger n8n workflows when events occur. Perfect for custom automations, notifications, and integrations.
           </p>
 
           <div className="space-y-4">
@@ -172,9 +167,7 @@ export default function N8NIntegrationCard({ integration }: { integration: Integ
                 value={webhookUrl}
                 onChange={(e) => setWebhookUrl(e.target.value)}
               />
-              <p className="text-xs text-muted-foreground">
-                Your n8n webhook URL (from Webhook node)
-              </p>
+              <p className="text-xs text-muted-foreground">Your n8n webhook URL (from Webhook node)</p>
             </div>
 
             <div className="space-y-2">
@@ -231,19 +224,13 @@ export default function N8NIntegrationCard({ integration }: { integration: Integ
               {testing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Test
             </Button>
-            <Button
-              onClick={() => setShowLogs(true)}
-              disabled={!isConfigured}
-              variant="outline"
-              size="icon"
-            >
+            <Button onClick={() => setShowLogs(true)} disabled={!isConfigured} variant="outline" size="icon">
               <Eye className="w-4 h-4" />
             </Button>
           </div>
 
           <div className="text-xs text-muted-foreground">
-            <strong>Features:</strong> Event triggers, HMAC signatures, retry logic (3 attempts),
-            delivery logs
+            <strong>Features:</strong> Event triggers, HMAC signatures, retry logic (3 attempts), delivery logs
           </div>
         </CardContent>
       </Card>

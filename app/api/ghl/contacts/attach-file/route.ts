@@ -24,10 +24,7 @@ export async function POST(request: NextRequest) {
     const reportTitle = formData.get("reportTitle") as string;
 
     if (!file || !contactId) {
-      return NextResponse.json(
-        { error: "File and contactId are required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "File and contactId are required" }, { status: 400 });
     }
 
     // Validate file type
@@ -37,10 +34,7 @@ export async function POST(request: NextRequest) {
       "application/vnd.ms-excel",
     ];
     if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json(
-        { error: "Only PDF and Excel files are allowed" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Only PDF and Excel files are allowed" }, { status: 400 });
     }
 
     // Determine file extension
@@ -48,33 +42,27 @@ export async function POST(request: NextRequest) {
     const fileName = `${userData.user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
 
     // Upload to Supabase Storage
-    const { error: uploadError } = await supabase.storage
-      .from("calculator-exports")
-      .upload(fileName, file, {
-        contentType: file.type,
-        upsert: false,
-      });
+    const { error: uploadError } = await supabase.storage.from("calculator-exports").upload(fileName, file, {
+      contentType: file.type,
+      upsert: false,
+    });
 
     if (uploadError) {
       // Bucket may not exist yet - try creating it
       if (uploadError.message?.includes("not found") || uploadError.message?.includes("Bucket")) {
         // Fallback: use lease-documents bucket with a subfolder
         const fallbackName = `calculator-exports/${fileName}`;
-        const { error: fallbackError } = await supabase.storage
-          .from("lease-documents")
-          .upload(fallbackName, file, {
-            contentType: file.type,
-            upsert: false,
-          });
+        const { error: fallbackError } = await supabase.storage.from("lease-documents").upload(fallbackName, file, {
+          contentType: file.type,
+          upsert: false,
+        });
 
         if (fallbackError) {
           console.error("Upload fallback error:", fallbackError);
           return NextResponse.json({ error: "Failed to upload file" }, { status: 500 });
         }
 
-        const { data: urlData } = supabase.storage
-          .from("lease-documents")
-          .getPublicUrl(fallbackName);
+        const { data: urlData } = supabase.storage.from("lease-documents").getPublicUrl(fallbackName);
 
         // Add note to GHL contact with the file URL
         await addNoteToContact(userData.user.id, contactId, reportTitle, urlData.publicUrl, ext);
@@ -91,9 +79,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get public URL
-    const { data: urlData } = supabase.storage
-      .from("calculator-exports")
-      .getPublicUrl(fileName);
+    const { data: urlData } = supabase.storage.from("calculator-exports").getPublicUrl(fileName);
 
     // Add note to GHL contact with the file URL
     await addNoteToContact(userData.user.id, contactId, reportTitle, urlData.publicUrl, ext);
@@ -105,10 +91,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error("Error in attach-file route:", error);
-    return NextResponse.json(
-      { error: error.message || "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
   }
 }
 
@@ -117,7 +100,7 @@ async function addNoteToContact(
   contactId: string,
   reportTitle: string,
   fileUrl: string,
-  fileType: string
+  fileType: string,
 ) {
   const ghlAgentId = await resolveGHLAgentId(userId);
   const ghlConfig = await getValidGHLConfig(ghlAgentId);

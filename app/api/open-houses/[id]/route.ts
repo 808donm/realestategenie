@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 
-export async function DELETE(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const supabase = await supabaseServer();
@@ -32,23 +29,14 @@ export async function DELETE(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const { error: deleteError } = await supabase
-      .from("open_house_events")
-      .delete()
-      .eq("id", id);
+    const { error: deleteError } = await supabase.from("open_house_events").delete().eq("id", id);
 
     if (deleteError) {
-      return NextResponse.json(
-        { error: "Failed to delete open house", details: deleteError.message },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to delete open house", details: deleteError.message }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    return NextResponse.json(
-      { error: "Failed to delete open house", details: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to delete open house", details: error.message }, { status: 500 });
   }
 }

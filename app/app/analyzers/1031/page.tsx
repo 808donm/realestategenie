@@ -28,10 +28,7 @@ export default async function Exchange1031Page() {
     <div style={{ maxWidth: 1200 }}>
       {/* Navigation Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <Link
-          href="/app/analyzers"
-          style={{ fontSize: 14, opacity: 0.7, textDecoration: "none" }}
-        >
+        <Link href="/app/analyzers" style={{ fontSize: 14, opacity: 0.7, textDecoration: "none" }}>
           ← Back to Analyzers
         </Link>
         <div style={{ display: "flex", gap: 8 }}>
@@ -91,18 +88,13 @@ export default async function Exchange1031Page() {
       </div>
 
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 28, fontWeight: 900, marginTop: 0, marginBottom: 8 }}>
-          1031 Exchange Analyzer
-        </h1>
+        <h1 style={{ fontSize: 28, fontWeight: 900, marginTop: 0, marginBottom: 8 }}>1031 Exchange Analyzer</h1>
         <p style={{ margin: 0, opacity: 0.7 }}>
           Track deadlines, calculate tax savings, and compare replacement properties
         </p>
       </div>
 
-      <Exchange1031Client
-        savedExchanges={exchanges ?? []}
-        investmentProperties={properties ?? []}
-      />
+      <Exchange1031Client savedExchanges={exchanges ?? []} investmentProperties={properties ?? []} />
     </div>
   );
 }

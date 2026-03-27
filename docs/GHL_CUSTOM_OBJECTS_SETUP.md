@@ -17,6 +17,7 @@ This system uses **GHL Custom Objects** to model open house registrations as eve
 ### Data Model
 
 **OpenHouse Custom Object** (one per open house event)
+
 ```javascript
 {
   openHouseId: "uuid",
@@ -34,6 +35,7 @@ This system uses **GHL Custom Objects** to model open house registrations as eve
 ```
 
 **Registration Custom Object** (one per contact per open house)
+
 ```javascript
 {
   registrationId: "reg-1234567890-abc123",
@@ -83,19 +85,19 @@ Our API sends SMS directly via GHL API (not workflow)
 3. Name: `OpenHouse`
 4. Add the following fields:
 
-| Field Name | Type | Required | Description |
-|------------|------|----------|-------------|
-| openHouseId | Text | Yes | Unique ID from Real Estate Genie |
-| address | Text | Yes | Full property address |
-| startDateTime | DateTime | Yes | Open house start time |
-| endDateTime | DateTime | Yes | Open house end time |
-| flyerUrl | URL | Yes | Link to property flyer PDF |
-| agentId | Text | Yes | Agent's UUID |
-| locationId | Text | Yes | GHL location ID |
-| beds | Number | No | Bedrooms |
-| baths | Number | No | Bathrooms |
-| sqft | Number | No | Square footage |
-| price | Number | No | List price |
+| Field Name    | Type     | Required | Description                      |
+| ------------- | -------- | -------- | -------------------------------- |
+| openHouseId   | Text     | Yes      | Unique ID from Real Estate Genie |
+| address       | Text     | Yes      | Full property address            |
+| startDateTime | DateTime | Yes      | Open house start time            |
+| endDateTime   | DateTime | Yes      | Open house end time              |
+| flyerUrl      | URL      | Yes      | Link to property flyer PDF       |
+| agentId       | Text     | Yes      | Agent's UUID                     |
+| locationId    | Text     | Yes      | GHL location ID                  |
+| beds          | Number   | No       | Bedrooms                         |
+| baths         | Number   | No       | Bathrooms                        |
+| sqft          | Number   | No       | Square footage                   |
+| price         | Number   | No       | List price                       |
 
 5. **Save** the Custom Object
 
@@ -106,13 +108,13 @@ Our API sends SMS directly via GHL API (not workflow)
 3. Name: `Registration`
 4. Add the following fields:
 
-| Field Name | Type | Required | Description |
-|------------|------|----------|-------------|
-| registrationId | Text | Yes | Unique registration ID |
-| contactId | Relationship (Contact) | Yes | Link to Contact |
-| openHouseId | Text | Yes | Link to OpenHouse Custom Object |
-| registeredAt | DateTime | Yes | Registration timestamp |
-| flyerStatus | Dropdown | Yes | Options: pending, offered, sent |
+| Field Name     | Type                   | Required | Description                     |
+| -------------- | ---------------------- | -------- | ------------------------------- |
+| registrationId | Text                   | Yes      | Unique registration ID          |
+| contactId      | Relationship (Contact) | Yes      | Link to Contact                 |
+| openHouseId    | Text                   | Yes      | Link to OpenHouse Custom Object |
+| registeredAt   | DateTime               | Yes      | Registration timestamp          |
+| flyerStatus    | Dropdown               | Yes      | Options: pending, offered, sent |
 
 5. **Relationships:**
    - Add relationship to **Contact** object
@@ -129,6 +131,7 @@ Our API sends SMS directly via GHL API (not workflow)
 **Purpose:** Send email and SMS when a lead checks in
 
 **Trigger:**
+
 - **Type:** Custom Object Record Created
 - **Object:** Registration
 - **Filter:** flyerStatus = "pending"
@@ -142,21 +145,11 @@ Our API sends SMS directly via GHL API (not workflow)
    - From: Your agent email
    - Subject: `Thanks for registering for the open house at {{custom_fields.property_address}}`
    - Body:
+
      ```html
-     Hi {{contact.first_name}},
-
-     Thank you for registering for the open house at {{custom_fields.property_address}}!
-
-     The open house is scheduled for {{custom_fields.event_start_time}}.
-
-     You can download the property flyer here:
-     {{custom_fields.property_flyer_url}}
-
-     See you there!
-
-     Best regards,
-     {{user.name}}
-     {{custom_fields.agent_license}}
+     Hi {{contact.first_name}}, Thank you for registering for the open house at {{custom_fields.property_address}}! The
+     open house is scheduled for {{custom_fields.event_start_time}}. You can download the property flyer here:
+     {{custom_fields.property_flyer_url}} See you there! Best regards, {{user.name}} {{custom_fields.agent_license}}
      ```
 
 3. **Wait:** 30 seconds
@@ -164,6 +157,7 @@ Our API sends SMS directly via GHL API (not workflow)
 4. **Send SMS:**
    - To: `{{contact.phone}}`
    - Message:
+
      ```
      Hi {{contact.first_name}}! Thanks for registering for the open house at {{custom_fields.property_address}}.
 
@@ -181,6 +175,7 @@ Our API sends SMS directly via GHL API (not workflow)
 **Purpose:** Handle "YES" replies and send flyer via API
 
 **Trigger:**
+
 - **Type:** Inbound Message (SMS)
 - **Conditions:**
   - Message body contains: `YES`, `Y`, `SURE`, `OK`, `PLEASE`, `SEND` (case insensitive)
@@ -202,7 +197,7 @@ Our API sends SMS directly via GHL API (not workflow)
 2. **Wait for Response** (webhook completes)
 
 3. **End Workflow**
-   *(Note: Our API sends the SMS directly - workflow doesn't need to)*
+   _(Note: Our API sends the SMS directly - workflow doesn't need to)_
 
 **End Workflow B**
 
@@ -213,6 +208,7 @@ Our API sends SMS directly via GHL API (not workflow)
 **Purpose:** Handle numeric replies (1, 2, 3) for multi-property choices
 
 **Trigger:**
+
 - **Type:** Inbound Message (SMS)
 - **Conditions:**
   - Message body matches regex: `^[0-9]$` (single digit)
@@ -235,7 +231,7 @@ Our API sends SMS directly via GHL API (not workflow)
 2. **Wait for Response** (webhook completes)
 
 3. **End Workflow**
-   *(Note: Our API sends the SMS directly - workflow doesn't need to)*
+   _(Note: Our API sends the SMS directly - workflow doesn't need to)_
 
 **End Workflow C**
 
@@ -362,6 +358,7 @@ Workflow C calls: `POST /api/ghl/flyer-choice`
 2. **020_add_ghl_custom_object_id.sql** - Adds GHL Custom Object ID column to open_house_events
 
 **In Supabase Dashboard:**
+
 1. Go to SQL Editor
 2. Paste migration contents
 3. Click **Run**
@@ -432,45 +429,53 @@ const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // Change 24 to 48
 ### Issue: Registration Custom Object Not Created
 
 **Check:**
+
 1. GHL integration is connected (check `integrations` table)
 2. Access token is valid (not expired)
 3. locationId is correct
 4. Custom Object schema exists in GHL
 
 **Solution:**
+
 - Check logs: `console.log("Created Registration Custom Object in GHL:", ghlRegistrationId);`
 - Verify in GHL: Settings → Custom Objects → Registration → Records
 
 ### Issue: Workflow Not Triggering
 
 **Check:**
+
 1. Workflow is published (not draft)
 2. Trigger conditions match exactly
 3. Registration Custom Object has `flyerStatus = "pending"`
 
 **Solution:**
+
 - Test workflow manually in GHL
 - Check workflow execution logs
 
 ### Issue: SMS Not Sending
 
 **Check:**
+
 1. GHL API access token is valid
 2. Contact has valid phone number
 3. GHL location has SMS configured (Twilio/LC Phone)
 
 **Solution:**
+
 - Test with GHL API directly: `client.sendSMS({ contactId, message })`
 - Check GHL conversation logs
 
 ### Issue: "All Registrations Expired" Even Though Recent
 
 **Check:**
+
 1. `registered_at` timestamp in database
 2. Current server time vs registration time
 3. FLYER_EXPIRATION_DAYS setting
 
 **Solution:**
+
 - Query database:
   ```sql
   SELECT id, registered_at,
@@ -583,11 +588,13 @@ ORDER BY pending_count DESC;
 ## Support
 
 **GHL API Documentation:**
+
 - [Custom Objects API](https://marketplace.gohighlevel.com/docs/ghl/objects/custom-objects-api/)
 - [Create Record API](https://marketplace.gohighlevel.com/docs/ghl/objects/create-object-record/)
 - [Conversations API](https://marketplace.gohighlevel.com/docs/ghl/conversations/)
 
 **Real Estate Genie Files:**
+
 - GHL Client: `/src/lib/integrations/ghl-client.ts`
 - GHL Sync: `/src/lib/integrations/ghl-sync.ts`
 - Flyer Request API: `/app/api/ghl/flyer-request/route.ts`

@@ -5,6 +5,7 @@
 You have **TWO different agents** in your system, each with their own GHL integration:
 
 ### Agent 1 (OLD) ❌
+
 - **Agent ID:** `6d56532d-0aaa-4386-b4ab-73ff045b6f93`
 - **Integration ID:** `625efff2-991e-4f64-a738-36ef5f3c6368`
 - **Created:** December 12, 2025
@@ -13,6 +14,7 @@ You have **TWO different agents** in your system, each with their own GHL integr
 - **Status:** ❌ Missing critical scopes for registrations and emails
 
 ### Agent 2 (NEW) ✅
+
 - **Agent ID:** `b80d448f-d58a-4cb6-bb13-f5a6d38b30ae`
 - **Integration ID:** `bfad5189-7f65-4b46-ad42-f2e81c477d0d`
 - **Created:** January 6, 2026 (TODAY!)
@@ -39,6 +41,7 @@ When someone registers for an open house:
 Visit: `GET /api/debug/whoami`
 
 This will show:
+
 - Your current user ID
 - Your email
 - Your GHL integration details
@@ -47,16 +50,19 @@ This will show:
 ### Step 2: Check Your GHL Integration
 
 If logged in as Agent 1 (`6d56532d...`):
+
 ```
 GET /api/debug/show-ghl-config
 ```
 
 If logged in as Agent 2 (`b80d448f...`):
+
 ```
 GET /api/debug/show-ghl-config?agentId=b80d448f-d58a-4cb6-bb13-f5a6d38b30ae
 ```
 
 Should show:
+
 - ✅ Location ID: `gTZBuJqALTmKjETniBEN`
 - ✅ Created: 2026-01-06
 
@@ -186,7 +192,7 @@ The diagnostic endpoints default to the **first agent** in the database when no 
 const { data: agent } = await admin
   .from("agents")
   .select("id, email")
-  .limit(1)  // ← Gets the FIRST agent
+  .limit(1) // ← Gets the FIRST agent
   .single();
 ```
 
@@ -194,6 +200,7 @@ Since Agent 1 (`6d56532d...`) was created first (December 12), it's the default.
 Agent 2 (`b80d448f...`) was created later (during OAuth today).
 
 To query Agent 2's data explicitly:
+
 ```
 /api/debug/show-ghl-config?agentId=b80d448f-d58a-4cb6-bb13-f5a6d38b30ae
 ```
@@ -207,6 +214,7 @@ To query Agent 2's data explicitly:
 🎯 **You just need to use Agent 2 when creating/testing open house events!**
 
 The OAuth you just completed was successful. You now have a working integration with:
+
 - All 19 scopes ✅
 - Correct sub-account location ID ✅
 - Proper token storage ✅

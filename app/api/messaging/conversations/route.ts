@@ -96,7 +96,7 @@ export async function GET(request: NextRequest) {
     console.error("Conversations timeline error:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to load conversations" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

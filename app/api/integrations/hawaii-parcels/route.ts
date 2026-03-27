@@ -40,22 +40,15 @@ export async function GET(request: NextRequest) {
     const lng = searchParams.get("lng");
     const minAcres = searchParams.get("min");
     const includeGeometry = searchParams.get("geometry") === "true";
-    const limit = searchParams.get("limit")
-      ? parseInt(searchParams.get("limit")!, 10)
-      : undefined;
-    const offset = searchParams.get("offset")
-      ? parseInt(searchParams.get("offset")!, 10)
-      : undefined;
+    const limit = searchParams.get("limit") ? parseInt(searchParams.get("limit")!, 10) : undefined;
+    const offset = searchParams.get("offset") ? parseInt(searchParams.get("offset")!, 10) : undefined;
 
     const client = new HawaiiStatewideParcelClient();
 
     switch (endpoint) {
       case "tmk": {
         if (!tmk) {
-          return NextResponse.json(
-            { error: "tmk parameter required" },
-            { status: 400 }
-          );
+          return NextResponse.json({ error: "tmk parameter required" }, { status: 400 });
         }
         if (includeGeometry) {
           const feature = await client.getParcelWithGeometry(tmk);
@@ -68,30 +61,21 @@ export async function GET(request: NextRequest) {
       case "enriched": {
         // Combined lookup: statewide parcel data + Honolulu OWNALL owners
         if (!tmk) {
-          return NextResponse.json(
-            { error: "tmk parameter required" },
-            { status: 400 }
-          );
+          return NextResponse.json({ error: "tmk parameter required" }, { status: 400 });
         }
 
         // Fetch statewide parcel and Honolulu owner data in parallel
         const honoluluClient = new HonoluluTaxClient();
 
-        const [parcelResult, ownersResult, honoluluParcelResult] =
-          await Promise.allSettled([
-            client.getParcelByTMK(tmk),
-            honoluluClient.getOwnersByTMK(tmk),
-            honoluluClient.getTaxParcelByTMK(tmk),
-          ]);
+        const [parcelResult, ownersResult, honoluluParcelResult] = await Promise.allSettled([
+          client.getParcelByTMK(tmk),
+          honoluluClient.getOwnersByTMK(tmk),
+          honoluluClient.getTaxParcelByTMK(tmk),
+        ]);
 
-        const parcel =
-          parcelResult.status === "fulfilled" ? parcelResult.value : null;
-        const owners =
-          ownersResult.status === "fulfilled" ? ownersResult.value : [];
-        const honoluluParcel =
-          honoluluParcelResult.status === "fulfilled"
-            ? honoluluParcelResult.value
-            : null;
+        const parcel = parcelResult.status === "fulfilled" ? parcelResult.value : null;
+        const owners = ownersResult.status === "fulfilled" ? ownersResult.value : [];
+        const honoluluParcel = honoluluParcelResult.status === "fulfilled" ? honoluluParcelResult.value : null;
 
         return NextResponse.json({
           success: true,
@@ -106,7 +90,7 @@ export async function GET(request: NextRequest) {
         if (!county) {
           return NextResponse.json(
             { error: "county parameter required (HAWAII, MAUI, KAUAI, HONOLULU)" },
-            { status: 400 }
+            { status: 400 },
           );
         }
         const parcels = await client.getParcelsByCounty(county, {
@@ -118,10 +102,7 @@ export async function GET(request: NextRequest) {
 
       case "island": {
         if (!island) {
-          return NextResponse.json(
-            { error: "island parameter required" },
-            { status: 400 }
-          );
+          return NextResponse.json({ error: "island parameter required" }, { status: 400 });
         }
         const parcels = await client.getParcelsByIsland(island, {
           limit,
@@ -132,10 +113,7 @@ export async function GET(request: NextRequest) {
 
       case "zone": {
         if (!zone) {
-          return NextResponse.json(
-            { error: "zone parameter required" },
-            { status: 400 }
-          );
+          return NextResponse.json({ error: "zone parameter required" }, { status: 400 });
         }
         const parcels = await client.getParcelsByZone(zone, {
           limit,
@@ -147,10 +125,7 @@ export async function GET(request: NextRequest) {
 
       case "section": {
         if (!zone || !section) {
-          return NextResponse.json(
-            { error: "zone and section parameters required" },
-            { status: 400 }
-          );
+          return NextResponse.json({ error: "zone and section parameters required" }, { status: 400 });
         }
         const parcels = await client.getParcelsBySection(zone, section, {
           limit,
@@ -168,17 +143,11 @@ export async function GET(request: NextRequest) {
 
       case "acreage": {
         if (!minAcres) {
-          return NextResponse.json(
-            { error: "min parameter required (minimum acreage)" },
-            { status: 400 }
-          );
+          return NextResponse.json({ error: "min parameter required (minimum acreage)" }, { status: 400 });
         }
         const acres = parseFloat(minAcres);
         if (isNaN(acres)) {
-          return NextResponse.json(
-            { error: "min must be a valid number" },
-            { status: 400 }
-          );
+          return NextResponse.json({ error: "min must be a valid number" }, { status: 400 });
         }
         const parcels = await client.getParcelsByMinAcreage(acres, {
           limit,
@@ -197,18 +166,12 @@ export async function GET(request: NextRequest) {
 
       case "point": {
         if (!lat || !lng) {
-          return NextResponse.json(
-            { error: "lat and lng parameters required" },
-            { status: 400 }
-          );
+          return NextResponse.json({ error: "lat and lng parameters required" }, { status: 400 });
         }
         const latitude = parseFloat(lat);
         const longitude = parseFloat(lng);
         if (isNaN(latitude) || isNaN(longitude)) {
-          return NextResponse.json(
-            { error: "lat and lng must be valid numbers" },
-            { status: 400 }
-          );
+          return NextResponse.json({ error: "lat and lng must be valid numbers" }, { status: 400 });
         }
         const parcel = await client.getParcelAtPoint(latitude, longitude);
         return NextResponse.json({
@@ -229,19 +192,16 @@ export async function GET(request: NextRequest) {
           {
             error: `Unknown endpoint: ${endpoint}. Use: tmk, enriched, county, island, zone, section, acreage, point, test`,
           },
-          { status: 400 }
+          { status: 400 },
         );
     }
   } catch (error) {
     console.error("Error fetching Hawaii statewide parcel data:", error);
     return NextResponse.json(
       {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Failed to fetch Hawaii statewide parcel data",
+        error: error instanceof Error ? error.message : "Failed to fetch Hawaii statewide parcel data",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

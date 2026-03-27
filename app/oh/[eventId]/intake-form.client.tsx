@@ -78,7 +78,7 @@ export default function IntakeForm({ eventId, agentName, brokerageName, accessTo
       },
       representation,
       realtor_name: representation === "yes" ? realtorName.trim() : "",
-      wants_agent_reach_out: (representation === "no" || representation === "unsure") ? wantsAgentReachOut : false,
+      wants_agent_reach_out: representation === "no" || representation === "unsure" ? wantsAgentReachOut : false,
       timeline,
       financing,
       neighborhoods: neighborhoods.trim(),
@@ -107,22 +107,29 @@ export default function IntakeForm({ eventId, agentName, brokerageName, accessTo
 
   return (
     <div style={{ marginTop: 10 }}>
-      <h2 style={{ fontSize: 20, fontWeight: 800, marginBottom: 6 }}>
-        Quick check-in
-      </h2>
-      <p style={{ opacity: 0.75, marginTop: 0 }}>
-        This helps the agent follow up appropriately.
-      </p>
+      <h2 style={{ fontSize: 20, fontWeight: 800, marginBottom: 6 }}>Quick check-in</h2>
+      <p style={{ opacity: 0.75, marginTop: 0 }}>This helps the agent follow up appropriately.</p>
 
       <form onSubmit={submit} style={{ display: "grid", gap: 12, marginTop: 14 }}>
         <div>
           <label style={{ display: "block", fontSize: 12, marginBottom: 6 }}>Name</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} style={{ width: "100%", padding: 10 }} required />
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            style={{ width: "100%", padding: 10 }}
+            required
+          />
         </div>
 
         <div>
           <label style={{ display: "block", fontSize: 12, marginBottom: 6 }}>Email</label>
-          <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" style={{ width: "100%", padding: 10 }} required />
+          <input
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            type="email"
+            style={{ width: "100%", padding: 10 }}
+            required
+          />
         </div>
 
         <div>
@@ -135,7 +142,13 @@ export default function IntakeForm({ eventId, agentName, brokerageName, accessTo
             required
           />
           <div style={{ fontSize: 12, opacity: 0.7, marginTop: 6 }}>
-            {phoneE164 ? <>Will save as: <code>{phoneE164}</code></> : <>Enter a valid phone number</>}
+            {phoneE164 ? (
+              <>
+                Will save as: <code>{phoneE164}</code>
+              </>
+            ) : (
+              <>Enter a valid phone number</>
+            )}
           </div>
         </div>
 
@@ -150,7 +163,8 @@ export default function IntakeForm({ eventId, agentName, brokerageName, accessTo
           <label style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 8 }}>
             <input type="checkbox" checked={consentSms} onChange={(e) => setConsentSms(e.target.checked)} />
             <span style={{ fontSize: 14 }}>
-              I agree to receive SMS messages relating to this open house listing and follow-up relating to this listing.
+              I agree to receive SMS messages relating to this open house listing and follow-up relating to this
+              listing.
             </span>
           </label>
 
@@ -159,15 +173,26 @@ export default function IntakeForm({ eventId, agentName, brokerageName, accessTo
             {agentName && <strong>{agentName}</strong>}
             {agentName && brokerageName && " at "}
             {brokerageName && <strong>{brokerageName}</strong>}
-            {!agentName && !brokerageName && "the listing agent"}
-            . Message/data rates may apply. Reply STOP to opt out or HELP for support. See our{" "}
-            <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: "#0066cc", textDecoration: "underline" }}>
+            {!agentName && !brokerageName && "the listing agent"}. Message/data rates may apply. Reply STOP to opt out
+            or HELP for support. See our{" "}
+            <a
+              href="/terms"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: "#0066cc", textDecoration: "underline" }}
+            >
               Terms of Service
-            </a>
-            {" "}and{" "}
-            <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: "#0066cc", textDecoration: "underline" }}>
+            </a>{" "}
+            and{" "}
+            <a
+              href="/privacy"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: "#0066cc", textDecoration: "underline" }}
+            >
               Privacy Policy
-            </a>.
+            </a>
+            .
           </p>
           <p style={{ marginTop: 8, fontSize: 12, fontWeight: 600, opacity: 0.8 }}>
             We value your privacy and will never sell your information.
@@ -183,7 +208,9 @@ export default function IntakeForm({ eventId, agentName, brokerageName, accessTo
             onChange={(e) => setRepresentation(e.target.value as Representation)}
             style={{ padding: 10 }}
           >
-            <option value="" disabled>Select…</option>
+            <option value="" disabled>
+              Select…
+            </option>
             <option value="yes">Yes</option>
             <option value="no">No</option>
             <option value="unsure">Not sure</option>
@@ -222,7 +249,11 @@ export default function IntakeForm({ eventId, agentName, brokerageName, accessTo
             <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr" }}>
               <div>
                 <label style={{ display: "block", fontSize: 12, marginBottom: 6 }}>Timeline</label>
-                <select value={timeline} onChange={(e) => setTimeline(e.target.value as Timeline)} style={{ padding: 10, width: "100%" }}>
+                <select
+                  value={timeline}
+                  onChange={(e) => setTimeline(e.target.value as Timeline)}
+                  style={{ padding: 10, width: "100%" }}
+                >
                   <option value="0-3 months">0–3 months</option>
                   <option value="3-6 months">3–6 months</option>
                   <option value="6+ months">6–12 months</option>
@@ -232,7 +263,11 @@ export default function IntakeForm({ eventId, agentName, brokerageName, accessTo
 
               <div>
                 <label style={{ display: "block", fontSize: 12, marginBottom: 6 }}>Financing</label>
-                <select value={financing} onChange={(e) => setFinancing(e.target.value as Financing)} style={{ padding: 10, width: "100%" }}>
+                <select
+                  value={financing}
+                  onChange={(e) => setFinancing(e.target.value as Financing)}
+                  style={{ padding: 10, width: "100%" }}
+                >
                   <option value="pre-approved">Pre-approved</option>
                   <option value="cash">Cash</option>
                   <option value="need lender">Need a lender</option>
@@ -243,12 +278,22 @@ export default function IntakeForm({ eventId, agentName, brokerageName, accessTo
 
             <div>
               <label style={{ display: "block", fontSize: 12, marginBottom: 6 }}>Neighborhoods of interest</label>
-              <input value={neighborhoods} onChange={(e) => setNeighborhoods(e.target.value)} placeholder="Kaka’ako, Kailua..." style={{ width: "100%", padding: 10 }} />
+              <input
+                value={neighborhoods}
+                onChange={(e) => setNeighborhoods(e.target.value)}
+                placeholder="Kaka’ako, Kailua..."
+                style={{ width: "100%", padding: 10 }}
+              />
             </div>
 
             <div>
               <label style={{ display: "block", fontSize: 12, marginBottom: 6 }}>Must-haves</label>
-              <input value={mustHaves} onChange={(e) => setMustHaves(e.target.value)} placeholder="3 bed, parking..." style={{ width: "100%", padding: 10 }} />
+              <input
+                value={mustHaves}
+                onChange={(e) => setMustHaves(e.target.value)}
+                placeholder="3 bed, parking..."
+                style={{ width: "100%", padding: 10 }}
+              />
             </div>
           </>
         )}

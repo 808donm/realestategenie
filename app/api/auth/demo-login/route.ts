@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-const admin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: { persistSession: false },
+});
 
-const DEMO_ACCOUNTS: Record<string, { email: string; password: string; displayName: string; role: string; planSlug: string }> = {
+const DEMO_ACCOUNTS: Record<
+  string,
+  { email: string; password: string; displayName: string; role: string; planSlug: string }
+> = {
   brokerage: {
     email: "demo-broker@realestategenie.com",
     password: "demo-broker-2026!",
@@ -34,11 +35,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Try to sign in with the existing demo account first
-    const { data: signInData, error: signInError } =
-      await admin.auth.signInWithPassword({
-        email: demo.email,
-        password: demo.password,
-      });
+    const { data: signInData, error: signInError } = await admin.auth.signInWithPassword({
+      email: demo.email,
+      password: demo.password,
+    });
 
     if (signInData?.session) {
       return NextResponse.json({
@@ -56,10 +56,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (createError || !newUser.user) {
-      return NextResponse.json(
-        { error: "Failed to create demo account" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to create demo account" }, { status: 500 });
     }
 
     const userId = newUser.user.id;
@@ -75,11 +72,7 @@ export async function POST(request: NextRequest) {
       .eq("id", userId);
 
     // Get subscription plan
-    const { data: plan } = await admin
-      .from("subscription_plans")
-      .select("id")
-      .eq("slug", demo.planSlug)
-      .single();
+    const { data: plan } = await admin.from("subscription_plans").select("id").eq("slug", demo.planSlug).single();
 
     if (plan) {
       // Create account
@@ -122,17 +115,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Sign in the newly created user
-    const { data: session, error: sessionError } =
-      await admin.auth.signInWithPassword({
-        email: demo.email,
-        password: demo.password,
-      });
+    const { data: session, error: sessionError } = await admin.auth.signInWithPassword({
+      email: demo.email,
+      password: demo.password,
+    });
 
     if (sessionError || !session?.session) {
-      return NextResponse.json(
-        { error: "Demo account created but sign-in failed" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Demo account created but sign-in failed" }, { status: 500 });
     }
 
     return NextResponse.json({

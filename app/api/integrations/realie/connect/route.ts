@@ -19,27 +19,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user is platform admin
-    const { data: agent } = await supabase
-      .from("agents")
-      .select("role")
-      .eq("id", userData.user.id)
-      .single();
+    const { data: agent } = await supabase.from("agents").select("role").eq("id", userData.user.id).single();
 
     if (agent?.role !== "admin") {
-      return NextResponse.json(
-        { error: "Only platform admins can configure Realie.ai" },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "Only platform admins can configure Realie.ai" }, { status: 403 });
     }
 
     const body = await request.json();
     const { api_key } = body;
 
     if (!api_key?.trim()) {
-      return NextResponse.json(
-        { error: "API Key is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "API Key is required" }, { status: 400 });
     }
 
     // Test the credentials
@@ -52,7 +42,7 @@ export async function POST(request: NextRequest) {
     if (!testResult.success && !testResult.serviceDown) {
       return NextResponse.json(
         { error: testResult.message || "Invalid API key or connection failed" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -88,15 +78,13 @@ export async function POST(request: NextRequest) {
         .eq("id", existing.id);
       dbError = error;
     } else {
-      const { error } = await supabaseAdmin
-        .from("integrations")
-        .insert({
-          agent_id: userData.user.id,
-          provider: "realie",
-          config,
-          status: "connected",
-          last_sync_at: new Date().toISOString(),
-        });
+      const { error } = await supabaseAdmin.from("integrations").insert({
+        agent_id: userData.user.id,
+        provider: "realie",
+        config,
+        status: "connected",
+        last_sync_at: new Date().toISOString(),
+      });
       dbError = error;
     }
 
@@ -104,7 +92,7 @@ export async function POST(request: NextRequest) {
       console.error("Error saving Realie integration:", dbError);
       return NextResponse.json(
         { error: "Failed to save integration: " + (dbError.message || "Database error") },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -117,9 +105,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Error in Realie connect:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

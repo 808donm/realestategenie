@@ -6,13 +6,30 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   try {
     const { id } = await params;
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await req.json();
     const updates: Record<string, any> = { updated_at: new Date().toISOString() };
 
-    const allowedFields = ["title", "description", "status", "priority", "due_date", "due_time", "task_type", "assigned_to", "linked_lead_id", "linked_contact_id", "linked_open_house_id", "snoozed_until", "is_recurring", "recurrence_rule"];
+    const allowedFields = [
+      "title",
+      "description",
+      "status",
+      "priority",
+      "due_date",
+      "due_time",
+      "task_type",
+      "assigned_to",
+      "linked_lead_id",
+      "linked_contact_id",
+      "linked_open_house_id",
+      "snoozed_until",
+      "is_recurring",
+      "recurrence_rule",
+    ];
     for (const field of allowedFields) {
       if (body[field] !== undefined) updates[field] = body[field];
     }
@@ -24,7 +41,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       // Check if recurring — create next occurrence
       const { data: existingTask } = await supabase
         .from("tasks")
-        .select("is_recurring, recurrence_rule, due_date, title, description, priority, task_type, linked_lead_id, linked_contact_id, linked_open_house_id, agent_id, assigned_to")
+        .select(
+          "is_recurring, recurrence_rule, due_date, title, description, priority, task_type, linked_lead_id, linked_contact_id, linked_open_house_id, agent_id, assigned_to",
+        )
         .eq("id", id)
         .single();
 
@@ -55,12 +74,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       updates.snoozed_until = body.snoozed_until;
     }
 
-    const { data: task, error } = await supabase
-      .from("tasks")
-      .update(updates)
-      .eq("id", id)
-      .select()
-      .single();
+    const { data: task, error } = await supabase.from("tasks").update(updates).eq("id", id).select().single();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
@@ -75,7 +89,9 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   try {
     const { id } = await params;
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { error } = await supabase.from("tasks").delete().eq("id", id);
@@ -89,11 +105,14 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
 
 function calculateNextRecurrence(currentDate: string, rule: string): string | null {
   const date = new Date(currentDate);
-  const parts = rule.split(";").reduce((acc, part) => {
-    const [key, val] = part.split("=");
-    acc[key] = val;
-    return acc;
-  }, {} as Record<string, string>);
+  const parts = rule.split(";").reduce(
+    (acc, part) => {
+      const [key, val] = part.split("=");
+      acc[key] = val;
+      return acc;
+    },
+    {} as Record<string, string>,
+  );
 
   const freq = parts["FREQ"];
   const interval = parseInt(parts["INTERVAL"] || "1", 10);

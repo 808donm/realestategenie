@@ -7,20 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 interface AccessRequest {
@@ -47,11 +35,7 @@ interface SubscriptionPlan {
   max_tenants: number;
 }
 
-export default function AccessRequestsClient({
-  initialRequests,
-}: {
-  initialRequests: AccessRequest[];
-}) {
+export default function AccessRequestsClient({ initialRequests }: { initialRequests: AccessRequest[] }) {
   const [requests, setRequests] = useState<AccessRequest[]>(initialRequests);
   const [selectedRequest, setSelectedRequest] = useState<AccessRequest | null>(null);
   const [showDialog, setShowDialog] = useState(false);
@@ -88,7 +72,7 @@ export default function AccessRequestsClient({
       } else {
         const errorData = await response.json();
         console.error("Plans API error:", response.status, errorData);
-        alert(`Failed to load plans: ${errorData.error || 'Unknown error'}`);
+        alert(`Failed to load plans: ${errorData.error || "Unknown error"}`);
       }
     } catch (error) {
       console.error("Failed to fetch plans:", error);
@@ -115,11 +99,7 @@ export default function AccessRequestsClient({
       rejected: "Rejected",
     };
 
-    return (
-      <Badge variant={variants[status] || "outline"}>
-        {labels[status] || status}
-      </Badge>
-    );
+    return <Badge variant={variants[status] || "outline"}>{labels[status] || status}</Badge>;
   };
 
   const handleApprove = async () => {
@@ -152,11 +132,7 @@ export default function AccessRequestsClient({
 
       // Update local state
       setRequests(
-        requests.map((r) =>
-          r.id === selectedRequest.id
-            ? { ...r, status: "approved", admin_notes: adminNotes }
-            : r
-        )
+        requests.map((r) => (r.id === selectedRequest.id ? { ...r, status: "approved", admin_notes: adminNotes } : r)),
       );
 
       // Show payment link to admin
@@ -167,17 +143,17 @@ export default function AccessRequestsClient({
         await navigator.clipboard.writeText(checkoutUrl);
         alert(
           `✅ Request approved!\n\n` +
-          `📋 Payment link copied to clipboard!\n\n` +
-          `📧 Send this to ${selectedRequest.email}:\n${checkoutUrl}\n\n` +
-          `Plan: ${planName}\n\n` +
-          `After they pay, they'll automatically receive an invitation.`
+            `📋 Payment link copied to clipboard!\n\n` +
+            `📧 Send this to ${selectedRequest.email}:\n${checkoutUrl}\n\n` +
+            `Plan: ${planName}\n\n` +
+            `After they pay, they'll automatically receive an invitation.`,
         );
       } catch {
         alert(
           `✅ Request approved!\n\n` +
-          `📧 Send this payment link to ${selectedRequest.email}:\n\n${checkoutUrl}\n\n` +
-          `Plan: ${planName}\n\n` +
-          `After they pay, they'll automatically receive an invitation.`
+            `📧 Send this payment link to ${selectedRequest.email}:\n\n${checkoutUrl}\n\n` +
+            `Plan: ${planName}\n\n` +
+            `After they pay, they'll automatically receive an invitation.`,
         );
       }
 
@@ -214,11 +190,7 @@ export default function AccessRequestsClient({
 
       // Update local state
       setRequests(
-        requests.map((r) =>
-          r.id === selectedRequest.id
-            ? { ...r, status: "rejected", admin_notes: adminNotes }
-            : r
-        )
+        requests.map((r) => (r.id === selectedRequest.id ? { ...r, status: "rejected", admin_notes: adminNotes } : r)),
       );
 
       alert("Request rejected");
@@ -235,7 +207,11 @@ export default function AccessRequestsClient({
   };
 
   const handleDelete = async (request: AccessRequest) => {
-    if (!confirm(`Are you sure you want to permanently delete the access request from ${request.full_name}? This action cannot be undone.`)) {
+    if (
+      !confirm(
+        `Are you sure you want to permanently delete the access request from ${request.full_name}? This action cannot be undone.`,
+      )
+    ) {
       return;
     }
 
@@ -306,17 +282,17 @@ export default function AccessRequestsClient({
         await navigator.clipboard.writeText(checkoutUrl);
         alert(
           `✅ Invitation created!\n\n` +
-          `📋 Payment link copied to clipboard!\n\n` +
-          `📧 Send this to ${inviteEmail}:\n${checkoutUrl}\n\n` +
-          `Plan: ${planName}\n\n` +
-          `After they pay, they'll automatically receive an invitation to create their account.`
+            `📋 Payment link copied to clipboard!\n\n` +
+            `📧 Send this to ${inviteEmail}:\n${checkoutUrl}\n\n` +
+            `Plan: ${planName}\n\n` +
+            `After they pay, they'll automatically receive an invitation to create their account.`,
         );
       } catch {
         alert(
           `✅ Invitation created!\n\n` +
-          `📧 Send this payment link to ${inviteEmail}:\n\n${checkoutUrl}\n\n` +
-          `Plan: ${planName}\n\n` +
-          `After they pay, they'll automatically receive an invitation to create their account.`
+            `📧 Send this payment link to ${inviteEmail}:\n\n${checkoutUrl}\n\n` +
+            `Plan: ${planName}\n\n` +
+            `After they pay, they'll automatically receive an invitation to create their account.`,
         );
       }
 
@@ -379,28 +355,16 @@ export default function AccessRequestsClient({
       </div>
 
       <div className="mb-6 flex gap-2">
-        <Button
-          variant={filter === "pending" ? "default" : "outline"}
-          onClick={() => setFilter("pending")}
-        >
+        <Button variant={filter === "pending" ? "default" : "outline"} onClick={() => setFilter("pending")}>
           Pending ({requests.filter((r) => r.status === "pending").length})
         </Button>
-        <Button
-          variant={filter === "approved" ? "default" : "outline"}
-          onClick={() => setFilter("approved")}
-        >
+        <Button variant={filter === "approved" ? "default" : "outline"} onClick={() => setFilter("approved")}>
           Approved ({requests.filter((r) => r.status === "approved" || r.status === "payment_sent").length})
         </Button>
-        <Button
-          variant={filter === "rejected" ? "default" : "outline"}
-          onClick={() => setFilter("rejected")}
-        >
+        <Button variant={filter === "rejected" ? "default" : "outline"} onClick={() => setFilter("rejected")}>
           Rejected ({requests.filter((r) => r.status === "rejected").length})
         </Button>
-        <Button
-          variant={filter === "all" ? "default" : "outline"}
-          onClick={() => setFilter("all")}
-        >
+        <Button variant={filter === "all" ? "default" : "outline"} onClick={() => setFilter("all")}>
           All ({requests.length})
         </Button>
       </div>
@@ -420,7 +384,8 @@ export default function AccessRequestsClient({
                   <div>
                     <CardTitle className="text-xl">{request.full_name}</CardTitle>
                     <CardDescription className="mt-1">
-                      Applied {new Date(request.created_at).toLocaleDateString("en-US", {
+                      Applied{" "}
+                      {new Date(request.created_at).toLocaleDateString("en-US", {
                         year: "numeric",
                         month: "long",
                         day: "numeric",
@@ -434,19 +399,13 @@ export default function AccessRequestsClient({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Email</p>
-                    <a
-                      href={`mailto:${request.email}`}
-                      className="text-blue-600 hover:underline"
-                    >
+                    <a href={`mailto:${request.email}`} className="text-blue-600 hover:underline">
                       {request.email}
                     </a>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Phone</p>
-                    <a
-                      href={`tel:${request.phone}`}
-                      className="text-blue-600 hover:underline"
-                    >
+                    <a href={`tel:${request.phone}`} className="text-blue-600 hover:underline">
                       {request.phone}
                     </a>
                   </div>
@@ -481,25 +440,15 @@ export default function AccessRequestsClient({
                       >
                         Approve & Send Payment Link
                       </Button>
-                      <Button
-                        variant="danger"
-                        onClick={() => openDialog(request, "reject")}
-                      >
+                      <Button variant="danger" onClick={() => openDialog(request, "reject")}>
                         Reject
                       </Button>
                     </>
                   )}
-                  <Button
-                    variant="outline"
-                    onClick={() => openDialog(request, "details")}
-                  >
+                  <Button variant="outline" onClick={() => openDialog(request, "details")}>
                     View Details
                   </Button>
-                  <Button
-                    variant="danger"
-                    onClick={() => handleDelete(request)}
-                    disabled={loading}
-                  >
+                  <Button variant="danger" onClick={() => handleDelete(request)} disabled={loading}>
                     Delete
                   </Button>
                 </div>
@@ -516,10 +465,10 @@ export default function AccessRequestsClient({
               {dialogType === "approve"
                 ? "Approve Access Request"
                 : dialogType === "reject"
-                ? "Reject Access Request"
-                : dialogType === "send-invitation"
-                ? "Send Paid Invitation"
-                : "Request Details"}
+                  ? "Reject Access Request"
+                  : dialogType === "send-invitation"
+                    ? "Send Paid Invitation"
+                    : "Request Details"}
             </DialogTitle>
             <DialogDescription>
               {dialogType === "send-invitation"
@@ -594,9 +543,7 @@ export default function AccessRequestsClient({
                   </Select>
                   {selectedPlan && plans.find((p) => p.id === selectedPlan) && (
                     <div className="mt-2 p-3 bg-muted rounded-lg text-sm">
-                      <p className="font-medium">
-                        {plans.find((p) => p.id === selectedPlan)?.name}
-                      </p>
+                      <p className="font-medium">{plans.find((p) => p.id === selectedPlan)?.name}</p>
                       <p className="text-muted-foreground mt-1">
                         {plans.find((p) => p.id === selectedPlan)?.max_agents === 999999
                           ? "Unlimited agents, properties, and tenants"
@@ -608,7 +555,11 @@ export default function AccessRequestsClient({
 
                 <div>
                   <Label>Billing Frequency *</Label>
-                  <RadioGroup value={billingFrequency} onValueChange={(value: "monthly" | "yearly") => setBillingFrequency(value)} className="mt-2">
+                  <RadioGroup
+                    value={billingFrequency}
+                    onValueChange={(value: "monthly" | "yearly") => setBillingFrequency(value)}
+                    className="mt-2"
+                  >
                     <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted cursor-pointer">
                       <RadioGroupItem value="monthly" id="invite-monthly" />
                       <Label htmlFor="invite-monthly" className="flex-1 cursor-pointer">
@@ -628,7 +579,12 @@ export default function AccessRequestsClient({
                           <div className="text-sm text-muted-foreground">
                             ${plans.find((p) => p.id === selectedPlan)?.annual_price}/year
                             <span className="ml-1 text-green-600 font-medium">
-                              (Save ${(plans.find((p) => p.id === selectedPlan)!.monthly_price * 12 - plans.find((p) => p.id === selectedPlan)!.annual_price).toFixed(0)})
+                              (Save $
+                              {(
+                                plans.find((p) => p.id === selectedPlan)!.monthly_price * 12 -
+                                plans.find((p) => p.id === selectedPlan)!.annual_price
+                              ).toFixed(0)}
+                              )
                             </span>
                           </div>
                         )}
@@ -661,148 +617,153 @@ export default function AccessRequestsClient({
                   </ol>
                 </div>
               </>
-            ) : selectedRequest && (
-              <>
-                <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Name</p>
-                    <p className="font-medium">{selectedRequest.full_name}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Email</p>
-                    <p className="font-medium">{selectedRequest.email}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Phone</p>
-                    <p className="font-medium">{selectedRequest.phone}</p>
-                  </div>
-                  {selectedRequest.company && (
+            ) : (
+              selectedRequest && (
+                <>
+                  <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">Company</p>
-                      <p className="font-medium">{selectedRequest.company}</p>
+                      <p className="text-sm font-medium text-muted-foreground">Name</p>
+                      <p className="font-medium">{selectedRequest.full_name}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Email</p>
+                      <p className="font-medium">{selectedRequest.email}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Phone</p>
+                      <p className="font-medium">{selectedRequest.phone}</p>
+                    </div>
+                    {selectedRequest.company && (
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Company</p>
+                        <p className="font-medium">{selectedRequest.company}</p>
+                      </div>
+                    )}
+                    <div className="col-span-2">
+                      <p className="text-sm font-medium text-muted-foreground">Applied</p>
+                      <p className="font-medium">{new Date(selectedRequest.created_at).toLocaleString()}</p>
+                    </div>
+                  </div>
+
+                  {selectedRequest.message && (
+                    <div>
+                      <Label>Their Message:</Label>
+                      <div className="mt-2 p-4 bg-muted rounded-lg">
+                        <p className="text-sm whitespace-pre-wrap">{selectedRequest.message}</p>
+                      </div>
                     </div>
                   )}
-                  <div className="col-span-2">
-                    <p className="text-sm font-medium text-muted-foreground">Applied</p>
-                    <p className="font-medium">
-                      {new Date(selectedRequest.created_at).toLocaleString()}
-                    </p>
-                  </div>
-                </div>
 
-                {selectedRequest.message && (
-                  <div>
-                    <Label>Their Message:</Label>
-                    <div className="mt-2 p-4 bg-muted rounded-lg">
-                      <p className="text-sm whitespace-pre-wrap">{selectedRequest.message}</p>
-                    </div>
-                  </div>
-                )}
-
-                {dialogType === "approve" && (
-                  <>
-                    <div>
-                      <Label htmlFor="planSelect">Select Subscription Plan *</Label>
-                      <Select value={selectedPlan} onValueChange={setSelectedPlan}>
-                        <SelectTrigger className="mt-2">
-                          <SelectValue placeholder="Choose a plan..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {loadingPlans ? (
-                            <SelectItem value="loading" disabled>
-                              Loading plans...
-                            </SelectItem>
-                          ) : plans.length === 0 ? (
-                            <SelectItem value="none" disabled>
-                              No plans available
-                            </SelectItem>
-                          ) : (
-                            plans.map((plan) => (
-                              <SelectItem key={plan.id} value={plan.id}>
-                                {plan.name} - ${plan.monthly_price}/mo or ${plan.annual_price}/yr
-                                {plan.max_agents === 999999 ? " (Unlimited agents)" : ` (${plan.max_agents} agents)`}
+                  {dialogType === "approve" && (
+                    <>
+                      <div>
+                        <Label htmlFor="planSelect">Select Subscription Plan *</Label>
+                        <Select value={selectedPlan} onValueChange={setSelectedPlan}>
+                          <SelectTrigger className="mt-2">
+                            <SelectValue placeholder="Choose a plan..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {loadingPlans ? (
+                              <SelectItem value="loading" disabled>
+                                Loading plans...
                               </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
-                      {selectedPlan && plans.find((p) => p.id === selectedPlan) && (
-                        <div className="mt-2 p-3 bg-muted rounded-lg text-sm">
-                          <p className="font-medium">
-                            {plans.find((p) => p.id === selectedPlan)?.name}
-                          </p>
-                          <p className="text-muted-foreground mt-1">
-                            {plans.find((p) => p.id === selectedPlan)?.max_agents === 999999
-                              ? "Unlimited agents"
-                              : `Up to ${plans.find((p) => p.id === selectedPlan)?.max_agents} agents`}
-                          </p>
-                        </div>
-                      )}
-                    </div>
+                            ) : plans.length === 0 ? (
+                              <SelectItem value="none" disabled>
+                                No plans available
+                              </SelectItem>
+                            ) : (
+                              plans.map((plan) => (
+                                <SelectItem key={plan.id} value={plan.id}>
+                                  {plan.name} - ${plan.monthly_price}/mo or ${plan.annual_price}/yr
+                                  {plan.max_agents === 999999 ? " (Unlimited agents)" : ` (${plan.max_agents} agents)`}
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
+                        {selectedPlan && plans.find((p) => p.id === selectedPlan) && (
+                          <div className="mt-2 p-3 bg-muted rounded-lg text-sm">
+                            <p className="font-medium">{plans.find((p) => p.id === selectedPlan)?.name}</p>
+                            <p className="text-muted-foreground mt-1">
+                              {plans.find((p) => p.id === selectedPlan)?.max_agents === 999999
+                                ? "Unlimited agents"
+                                : `Up to ${plans.find((p) => p.id === selectedPlan)?.max_agents} agents`}
+                            </p>
+                          </div>
+                        )}
+                      </div>
 
+                      <div>
+                        <Label>Billing Frequency *</Label>
+                        <RadioGroup
+                          value={billingFrequency}
+                          onValueChange={(value: "monthly" | "yearly") => setBillingFrequency(value)}
+                          className="mt-2"
+                        >
+                          <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted cursor-pointer">
+                            <RadioGroupItem value="monthly" id="approve-monthly" />
+                            <Label htmlFor="approve-monthly" className="flex-1 cursor-pointer">
+                              <div className="font-medium">Monthly Billing</div>
+                              {selectedPlan && plans.find((p) => p.id === selectedPlan) && (
+                                <div className="text-sm text-muted-foreground">
+                                  ${plans.find((p) => p.id === selectedPlan)?.monthly_price}/month
+                                </div>
+                              )}
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted cursor-pointer">
+                            <RadioGroupItem value="yearly" id="approve-yearly" />
+                            <Label htmlFor="approve-yearly" className="flex-1 cursor-pointer">
+                              <div className="font-medium">Yearly Billing</div>
+                              {selectedPlan && plans.find((p) => p.id === selectedPlan) && (
+                                <div className="text-sm text-muted-foreground">
+                                  ${plans.find((p) => p.id === selectedPlan)?.annual_price}/year
+                                  <span className="ml-1 text-green-600 font-medium">
+                                    (Save $
+                                    {(
+                                      plans.find((p) => p.id === selectedPlan)!.monthly_price * 12 -
+                                      plans.find((p) => p.id === selectedPlan)!.annual_price
+                                    ).toFixed(0)}
+                                    )
+                                  </span>
+                                </div>
+                              )}
+                            </Label>
+                          </div>
+                        </RadioGroup>
+                      </div>
+                    </>
+                  )}
+
+                  {dialogType !== "details" && (
                     <div>
-                      <Label>Billing Frequency *</Label>
-                      <RadioGroup value={billingFrequency} onValueChange={(value: "monthly" | "yearly") => setBillingFrequency(value)} className="mt-2">
-                        <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted cursor-pointer">
-                          <RadioGroupItem value="monthly" id="approve-monthly" />
-                          <Label htmlFor="approve-monthly" className="flex-1 cursor-pointer">
-                            <div className="font-medium">Monthly Billing</div>
-                            {selectedPlan && plans.find((p) => p.id === selectedPlan) && (
-                              <div className="text-sm text-muted-foreground">
-                                ${plans.find((p) => p.id === selectedPlan)?.monthly_price}/month
-                              </div>
-                            )}
-                          </Label>
-                        </div>
-                        <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted cursor-pointer">
-                          <RadioGroupItem value="yearly" id="approve-yearly" />
-                          <Label htmlFor="approve-yearly" className="flex-1 cursor-pointer">
-                            <div className="font-medium">Yearly Billing</div>
-                            {selectedPlan && plans.find((p) => p.id === selectedPlan) && (
-                              <div className="text-sm text-muted-foreground">
-                                ${plans.find((p) => p.id === selectedPlan)?.annual_price}/year
-                                <span className="ml-1 text-green-600 font-medium">
-                                  (Save ${(plans.find((p) => p.id === selectedPlan)!.monthly_price * 12 - plans.find((p) => p.id === selectedPlan)!.annual_price).toFixed(0)})
-                                </span>
-                              </div>
-                            )}
-                          </Label>
-                        </div>
-                      </RadioGroup>
+                      <Label htmlFor="adminNotes">Admin Notes {dialogType === "reject" && "(Optional)"}</Label>
+                      <Textarea
+                        id="adminNotes"
+                        value={adminNotes}
+                        onChange={(e) => setAdminNotes(e.target.value)}
+                        placeholder="Add any notes about this decision..."
+                        rows={4}
+                        className="mt-2"
+                      />
                     </div>
-                  </>
-                )}
+                  )}
 
-                {dialogType !== "details" && (
-                  <div>
-                    <Label htmlFor="adminNotes">
-                      Admin Notes {dialogType === "reject" && "(Optional)"}
-                    </Label>
-                    <Textarea
-                      id="adminNotes"
-                      value={adminNotes}
-                      onChange={(e) => setAdminNotes(e.target.value)}
-                      placeholder="Add any notes about this decision..."
-                      rows={4}
-                      className="mt-2"
-                    />
-                  </div>
-                )}
-
-                {dialogType === "approve" && (
-                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="text-sm text-blue-900">
-                      <strong>What happens next:</strong>
-                    </p>
-                    <ol className="text-sm text-blue-800 mt-2 space-y-1 list-decimal list-inside">
-                      <li>System generates Stripe payment link for selected plan</li>
-                      <li>You send the payment link to the user</li>
-                      <li>After payment, user automatically receives invitation</li>
-                      <li>User completes registration and can access the platform</li>
-                    </ol>
-                  </div>
-                )}
-              </>
+                  {dialogType === "approve" && (
+                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-sm text-blue-900">
+                        <strong>What happens next:</strong>
+                      </p>
+                      <ol className="text-sm text-blue-800 mt-2 space-y-1 list-decimal list-inside">
+                        <li>System generates Stripe payment link for selected plan</li>
+                        <li>You send the payment link to the user</li>
+                        <li>After payment, user automatically receives invitation</li>
+                        <li>User completes registration and can access the platform</li>
+                      </ol>
+                    </div>
+                  )}
+                </>
+              )
             )}
 
             <div className="flex gap-2 justify-end pt-4">
@@ -810,29 +771,17 @@ export default function AccessRequestsClient({
                 Cancel
               </Button>
               {dialogType === "approve" && (
-                <Button
-                  onClick={handleApprove}
-                  disabled={loading}
-                  className="bg-green-600 hover:bg-green-700"
-                >
+                <Button onClick={handleApprove} disabled={loading} className="bg-green-600 hover:bg-green-700">
                   {loading ? "Approving..." : "Approve & Send Payment Link"}
                 </Button>
               )}
               {dialogType === "reject" && (
-                <Button
-                  variant="danger"
-                  onClick={handleReject}
-                  disabled={loading}
-                >
+                <Button variant="danger" onClick={handleReject} disabled={loading}>
                   {loading ? "Rejecting..." : "Reject Application"}
                 </Button>
               )}
               {dialogType === "send-invitation" && (
-                <Button
-                  onClick={handleSendInvitation}
-                  disabled={loading}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
+                <Button onClick={handleSendInvitation} disabled={loading} className="bg-blue-600 hover:bg-blue-700">
                   {loading ? "Generating Link..." : "Generate Payment Link"}
                 </Button>
               )}
