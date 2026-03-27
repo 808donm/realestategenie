@@ -3,6 +3,19 @@
 import { useState, useMemo, useCallback } from "react";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 import AttachToContact from "@/components/attach-to-contact";
 import CalculatorBrandedExport from "../../components/calculator-branded-export";
 import MLSImport, { type MLSPropertyData } from "@/components/mls-import";
@@ -275,6 +288,67 @@ export default function MortgageCalculatorClient() {
       };
     });
   }, [inputs.interestRate, calculation.loanAmount]);
+
+  // Pie chart data: split monthly payment into components
+  const pieChartData = useMemo(() => {
+    // Split P&I into principal and interest portions for first month
+    const monthlyRate = inputs.interestRate / 100 / 12;
+    const firstMonthInterest = calculation.loanAmount * monthlyRate;
+    const firstMonthPrincipal = calculation.monthlyPI - firstMonthInterest;
+
+    const entries = [
+      { name: "Principal", value: firstMonthPrincipal },
+      { name: "Interest", value: firstMonthInterest },
+      { name: "Property Tax", value: calculation.monthlyTax },
+      { name: "Insurance", value: calculation.monthlyInsurance },
+      { name: "HOA", value: calculation.monthlyHOA },
+      { name: "PMI", value: calculation.monthlyPMI },
+    ];
+    return entries.filter((e) => e.value > 0);
+  }, [calculation, inputs.interestRate]);
+
+  const PIE_COLORS = ["#3b82f6", "#ef4444", "#f59e0b", "#10b981", "#8b5cf6", "#ec4899"];
+
+  // Line chart data: loan balance and equity over time
+  const balanceChartData = useMemo(() => {
+    const loanAmount = calculation.loanAmount;
+    const monthlyRate = inputs.interestRate / 100 / 12;
+    const numPayments = inputs.loanTermYears * 12;
+    const factor = Math.pow(1 + monthlyRate, numPayments);
+    const points: { year: number; balance: number; equity: number }[] = [];
+
+    for (let year = 0; year <= inputs.loanTermYears; year += 5) {
+      const k = year * 12;
+      let balance: number;
+      if (year === 0) {
+        balance = loanAmount;
+      } else if (k >= numPayments) {
+        balance = 0;
+      } else if (monthlyRate > 0) {
+        const factorK = Math.pow(1 + monthlyRate, k);
+        balance = loanAmount * (factor - factorK) / (factor - 1);
+      } else {
+        balance = loanAmount * (1 - k / numPayments);
+      }
+      balance = Math.max(0, balance);
+      points.push({
+        year,
+        balance,
+        equity: inputs.purchasePrice - balance,
+      });
+    }
+
+    // Ensure the final year is included
+    if (points[points.length - 1].year !== inputs.loanTermYears) {
+      points.push({
+        year: inputs.loanTermYears,
+        balance: 0,
+        equity: inputs.purchasePrice,
+      });
+    }
+
+    return points;
+  }, [calculation.loanAmount, inputs.interestRate, inputs.loanTermYears, inputs.purchasePrice]);
 
   // Export to Excel
   const exportToExcel = () => {
@@ -919,6 +993,89 @@ export default function MortgageCalculatorClient() {
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* Payment Breakdown Pie Chart */}
+            <div
+              style={{
+                padding: 24,
+                background: "#fff",
+                border: "1px solid #e5e7eb",
+                borderRadius: 12,
+                marginBottom: 20,
+              }}
+            >
+              <h3 style={{ margin: "0 0 16px 0", fontSize: 14, fontWeight: 700, letterSpacing: 0.5 }}>
+                PAYMENT BREAKDOWN
+              </h3>
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie
+                    data={pieChartData}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={90}
+                    dataKey="value"
+                    label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(1)}%`}
+                  >
+                    {pieChartData.map((_entry, index) => (
+                      <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value) =>
+                      Number(value).toLocaleString("en-US", {
+                        style: "currency",
+                        currency: "USD",
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })
+                    }
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Loan Balance & Equity Line Chart */}
+            <div
+              style={{
+                padding: 24,
+                background: "#fff",
+                border: "1px solid #e5e7eb",
+                borderRadius: 12,
+                marginBottom: 20,
+              }}
+            >
+              <h3 style={{ margin: "0 0 16px 0", fontSize: 14, fontWeight: 700, letterSpacing: 0.5 }}>
+                LOAN BALANCE & EQUITY
+              </h3>
+              <ResponsiveContainer width="100%" height={280}>
+                <LineChart data={balanceChartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="year" label={{ value: "Years", position: "insideBottom", offset: -5 }} />
+                  <YAxis
+                    tickFormatter={(value: number) =>
+                      value.toLocaleString("en-US", {
+                        style: "currency",
+                        currency: "USD",
+                        maximumFractionDigits: 0,
+                      })
+                    }
+                  />
+                  <Tooltip
+                    formatter={(value) =>
+                      Number(value).toLocaleString("en-US", {
+                        style: "currency",
+                        currency: "USD",
+                        maximumFractionDigits: 0,
+                      })
+                    }
+                  />
+                  <Legend />
+                  <Line type="monotone" dataKey="balance" name="Loan Balance" stroke="#ef4444" strokeWidth={2} />
+                  <Line type="monotone" dataKey="equity" name="Equity" stroke="#16a34a" strokeWidth={2} />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
 
             {/* Actions */}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import AttachToContact from "@/components/attach-to-contact";
@@ -134,6 +135,27 @@ export default function FlipAnalyzerClient({ savedAnalyses }: FlipAnalyzerClient
     () => estimateRehabCosts(formData.squareFeet, rehabLevel),
     [formData.squareFeet, rehabLevel],
   );
+
+  const PIE_COLORS = ["#3b82f6", "#f59e0b", "#10b981", "#ef4444", "#8b5cf6"];
+
+  const costBreakdownData = useMemo(() => {
+    const financingCosts = analysis.interestCostsDuringHold + analysis.loanPointsCost;
+    return [
+      { name: "Purchase Price", value: analysis.totalPurchaseCost },
+      { name: "Rehab/Renovation", value: analysis.totalRenovationCost },
+      { name: "Holding Costs", value: analysis.totalHoldingCosts },
+      { name: "Selling Costs", value: analysis.sellingCosts },
+      { name: "Financing Costs", value: financingCosts },
+    ].filter((d) => d.value > 0);
+  }, [analysis]);
+
+  const dealAnatomyData = useMemo(() => {
+    return [
+      { name: "ARV", value: formData.afterRepairValue, fill: "#3b82f6" },
+      { name: "Total Costs", value: analysis.allInCost, fill: "#ef4444" },
+      { name: "Profit", value: Math.max(analysis.netProfit, 0), fill: "#16a34a" },
+    ];
+  }, [formData.afterRepairValue, analysis.allInCost, analysis.netProfit]);
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
@@ -1072,6 +1094,63 @@ export default function FlipAnalyzerClient({ savedAnalyses }: FlipAnalyzerClient
                   <span>{formatCurrency(analysis.allInCost)}</span>
                 </div>
               </div>
+            </div>
+
+            {/* Cost Breakdown Pie Chart */}
+            <div
+              style={{
+                background: "#fff",
+                border: "1px solid #e5e7eb",
+                borderRadius: 8,
+                padding: 16,
+                marginBottom: 16,
+              }}
+            >
+              <h4 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "#6b7280" }}>COST BREAKDOWN</h4>
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie
+                    data={costBreakdownData}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    dataKey="value"
+                    label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
+                    labelLine={true}
+                  >
+                    {costBreakdownData.map((_entry, index) => (
+                      <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Deal Anatomy Bar Chart */}
+            <div
+              style={{
+                background: "#fff",
+                border: "1px solid #e5e7eb",
+                borderRadius: 8,
+                padding: 16,
+                marginBottom: 16,
+              }}
+            >
+              <h4 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "#6b7280" }}>DEAL ANATOMY</h4>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={dealAnatomyData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="number" tickFormatter={(v: number) => formatCurrency(v)} />
+                  <YAxis type="category" dataKey="name" width={80} />
+                  <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                  <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                    {dealAnatomyData.map((entry, index) => (
+                      <Cell key={`bar-${index}`} fill={entry.fill} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             </div>
 
             {/* Break-even */}

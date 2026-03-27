@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import AttachToContact from "@/components/attach-to-contact";
@@ -30,6 +31,34 @@ export default function NetSheetCalculatorClient() {
   });
 
   const analysis = useMemo(() => calculateNetSheet(inputs), [inputs]);
+
+  const PIE_COLORS = ["#3b82f6", "#ef4444", "#f59e0b", "#10b981", "#8b5cf6", "#ec4899", "#14b8a6", "#f97316"];
+
+  const pieData = useMemo(() => {
+    const items: { name: string; value: number }[] = [];
+    if (analysis.totalCommission > 0) {
+      items.push({ name: "Agent Commission", value: analysis.totalCommission });
+    }
+    if (inputs.closingCostMode === "itemized") {
+      analysis.closingCostBreakdown.forEach((item) => {
+        if (item.amount > 0) {
+          items.push({ name: item.label, value: item.amount });
+        }
+      });
+    } else if (analysis.totalClosingCosts > 0) {
+      items.push({ name: "Closing Costs", value: analysis.totalClosingCosts });
+    }
+    if (analysis.repairsCredits > 0) {
+      items.push({ name: "Repairs / Credits", value: analysis.repairsCredits });
+    }
+    if (analysis.sellerConcessions > 0) {
+      items.push({ name: "Seller Concessions", value: analysis.sellerConcessions });
+    }
+    if (analysis.additionalPayoffs > 0) {
+      items.push({ name: "Additional Payoffs", value: analysis.additionalPayoffs });
+    }
+    return items;
+  }, [analysis, inputs.closingCostMode]);
 
   const handleChange = (field: keyof NetSheetInput, value: number | string | boolean) => {
     setInputs((prev) => ({ ...prev, [field]: value }));
@@ -716,6 +745,42 @@ export default function NetSheetCalculatorClient() {
           <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>Where the Money Goes</h3>
           <ProceedsBar analysis={analysis} fmt={fmt} />
         </div>
+
+        {/* Closing Cost Breakdown Pie Chart */}
+        {pieData.length > 0 && (
+          <div
+            style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 20 }}
+          >
+            <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>Closing Cost Breakdown</h3>
+            <ResponsiveContainer width="100%" height={250}>
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={90}
+                  dataKey="value"
+                  label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
+                  labelLine={true}
+                  style={{ fontSize: 12 }}
+                >
+                  {pieData.map((_entry, index) => (
+                    <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(value) =>
+                    Number(value).toLocaleString("en-US", {
+                      style: "currency",
+                      currency: "USD",
+                      maximumFractionDigits: 0,
+                    })
+                  }
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        )}
 
         {/* Itemized Closing Costs (when in itemized mode) */}
         {inputs.closingCostMode === "itemized" && analysis.closingCostBreakdown.length > 0 && (

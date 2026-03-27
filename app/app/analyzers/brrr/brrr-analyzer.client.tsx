@@ -7,6 +7,7 @@ import AttachToContact from "@/components/attach-to-contact";
 import CalculatorBrandedExport from "../../components/calculator-branded-export";
 import { analyzeBRRR, getBRRRVerdict, calculate70PercentRule, BRRRInput } from "@/lib/calculators/brrr";
 import MLSImport, { type MLSPropertyData } from "@/components/mls-import";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 interface SavedAnalysis {
   id: string;
@@ -136,6 +137,19 @@ export default function BRRRAnalyzerClient({ savedAnalyses }: BRRRAnalyzerClient
   }, [formData]);
 
   const verdict = useMemo(() => getBRRRVerdict(analysis), [analysis]);
+  const chartData = useMemo(() => {
+    let cumulativeCF = 0;
+    return analysis.yearlyProjections.map((yp) => {
+      cumulativeCF += yp.cashFlow;
+      return {
+        year: `Yr ${yp.year}`,
+        cumulativeCashFlow: Math.round(cumulativeCF),
+        totalInvested: Math.round(analysis.totalCashInvested),
+        totalReturn: Math.round(cumulativeCF + yp.equity),
+      };
+    });
+  }, [analysis]);
+
   const maxPurchase70 = useMemo(
     () => calculate70PercentRule(formData.afterRepairValue, formData.renovationCosts),
     [formData.afterRepairValue, formData.renovationCosts],
@@ -1079,6 +1093,60 @@ export default function BRRRAnalyzerClient({ savedAnalyses }: BRRRAnalyzerClient
                 </div>
               )}
             </div>
+
+            {/* Cumulative Returns Chart */}
+            {chartData.length > 0 && (
+              <div
+                style={{
+                  background: "#fff",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 8,
+                  padding: 16,
+                  marginTop: 16,
+                }}
+              >
+                <h4 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "#6b7280" }}>
+                  CUMULATIVE RETURNS
+                </h4>
+                <ResponsiveContainer width="100%" height={280}>
+                  <LineChart data={chartData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="year" tick={{ fontSize: 12 }} />
+                    <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => formatCurrency(v)} width={80} />
+                    <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                    <Line
+                      type="monotone"
+                      dataKey="cumulativeCashFlow"
+                      name="Cumulative Cash Flow"
+                      stroke="#2563eb"
+                      strokeWidth={2}
+                      dot={{ r: 3 }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="totalInvested"
+                      name="Total Cash Invested"
+                      stroke="#ef4444"
+                      strokeWidth={2}
+                      strokeDasharray="6 3"
+                      dot={false}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="totalReturn"
+                      name="Total Return"
+                      stroke="#16a34a"
+                      strokeWidth={2}
+                      dot={{ r: 3 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+                <p style={{ margin: "8px 0 0", fontSize: 11, color: "#9ca3af", textAlign: "center" }}>
+                  Where cash flow crosses the invested line = payback period
+                </p>
+              </div>
+            )}
 
             {/* Multi-family info */}
             {formData.numberOfUnits > 1 && (

@@ -3,6 +3,7 @@
 import { useState, useMemo, useCallback } from "react";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import AttachToContact from "@/components/attach-to-contact";
 import { calculateRental, type RentalInput } from "@/lib/calculators/rental";
 import MLSImport, { type MLSPropertyData } from "@/components/mls-import";
@@ -25,6 +26,40 @@ export default function RentalCalculatorClient() {
   });
 
   const analysis = useMemo(() => calculateRental(inputs), [inputs]);
+
+  const chartData = useMemo(() => {
+    const years = Math.min(inputs.loanTermYears, 30);
+    const monthlyRate = inputs.interestRate / 100 / 12;
+    const totalPayments = inputs.loanTermYears * 12;
+    const data: { year: number; cumulativeCashFlow: number; totalCashInvested: number; totalReturn: number }[] = [];
+
+    for (let y = 0; y <= years; y++) {
+      const cumulativeCashFlow = analysis.annualCashFlow * y;
+
+      // Remaining loan balance after y years of payments
+      let remainingBalance = analysis.loanAmount;
+      if (analysis.loanAmount > 0 && monthlyRate > 0) {
+        const paymentsMade = y * 12;
+        remainingBalance =
+          analysis.loanAmount *
+          (Math.pow(1 + monthlyRate, totalPayments) - Math.pow(1 + monthlyRate, paymentsMade)) /
+          (Math.pow(1 + monthlyRate, totalPayments) - 1);
+      } else if (analysis.loanAmount > 0) {
+        remainingBalance = analysis.loanAmount - analysis.monthlyMortgage * y * 12;
+      }
+
+      const equity = inputs.purchasePrice - Math.max(remainingBalance, 0);
+      const totalReturn = cumulativeCashFlow + equity;
+
+      data.push({
+        year: y,
+        cumulativeCashFlow,
+        totalCashInvested: analysis.downPayment,
+        totalReturn,
+      });
+    }
+    return data;
+  }, [inputs, analysis]);
 
   const handleChange = (field: keyof RentalInput, value: number) => {
     setInputs((prev) => ({ ...prev, [field]: value }));
@@ -582,6 +617,65 @@ export default function RentalCalculatorClient() {
             <div style={{ fontSize: 12, color: "#6b7280" }}>Expense Ratio</div>
             <div style={{ fontSize: 18, fontWeight: 600 }}>{analysis.operatingExpenseRatio.toFixed(1)}%</div>
             <div style={{ fontSize: 11, color: "#6b7280" }}>OpEx / Effective Income</div>
+          </div>
+        </div>
+
+        {/* Cumulative Returns Chart */}
+        <div
+          style={{
+            padding: 16,
+            background: "#fff",
+            border: "1px solid #e5e7eb",
+            borderRadius: 8,
+            marginBottom: 20,
+          }}
+        >
+          <h3 style={{ margin: "0 0 12px 0", fontSize: 14, fontWeight: 700, color: "#6b7280", letterSpacing: 1 }}>
+            CUMULATIVE RETURNS
+          </h3>
+          <ResponsiveContainer width="100%" height={280}>
+            <LineChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis dataKey="year" label={{ value: "Years", position: "insideBottomRight", offset: -5, fontSize: 12 }} />
+              <YAxis tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`} width={60} />
+              <Tooltip
+                formatter={(value) =>
+                  typeof value === "number"
+                    ? value.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 })
+                    : String(value ?? "")
+                }
+                labelFormatter={(label) => `Year ${label}`}
+              />
+              <Legend />
+              <Line
+                type="monotone"
+                dataKey="cumulativeCashFlow"
+                name="Cumulative Cash Flow"
+                stroke="#2563eb"
+                strokeWidth={2}
+                dot={false}
+              />
+              <Line
+                type="monotone"
+                dataKey="totalCashInvested"
+                name="Total Cash Invested"
+                stroke="#ef4444"
+                strokeWidth={2}
+                strokeDasharray="6 3"
+                dot={false}
+              />
+              <Line
+                type="monotone"
+                dataKey="totalReturn"
+                name="Total Return"
+                stroke="#16a34a"
+                strokeWidth={2}
+                dot={false}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+          <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 8, textAlign: "center" }}>
+            Where cash flow crosses the invested line = payback period
           </div>
         </div>
 
