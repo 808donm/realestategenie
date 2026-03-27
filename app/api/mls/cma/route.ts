@@ -3,6 +3,13 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { getTrestleClient } from "@/lib/mls/trestle-helpers";
 import { generateCMA, generateCMAFromFallback } from "@/lib/mls/cma-engine";
 import { getConfiguredRentcastClient, getConfiguredRealieClient } from "@/lib/integrations/property-data-service";
+import {
+  buildPropertyCacheKey,
+  propertyCacheGet,
+  propertyCacheSet,
+  propertyDbRead,
+  propertyDbWrite,
+} from "@/lib/integrations/property-data-cache";
 
 /**
  * POST /api/mls/cma
@@ -52,6 +59,30 @@ export async function POST(request: NextRequest) {
       subjectPropertyType: propertyType,
     };
 
+    // Build a cache key for this CMA request
+    const cacheParams: Record<string, any> = {
+      postalCode: postalCode.trim(),
+      ...(address ? { address: address.trim() } : {}),
+      ...(beds ? { beds } : {}),
+      ...(baths ? { baths } : {}),
+      ...(propertyType ? { propertyType } : {}),
+    };
+    const cacheKey = buildPropertyCacheKey("unified", "cma", cacheParams);
+
+    // 0. Check cache first (memory, then DB)
+    const memoryCached = propertyCacheGet(cacheKey);
+    if (memoryCached && memoryCached.data?.comps?.length > 0) {
+      console.log(`[CMA] Memory cache hit: ${memoryCached.data.comps.length} comps`);
+      return NextResponse.json({ success: true, report: memoryCached.data, cacheHit: "memory" });
+    }
+
+    const dbCached = await propertyDbRead(cacheKey, "cma");
+    if (dbCached && dbCached.data?.comps?.length > 0) {
+      console.log(`[CMA] DB cache hit: ${dbCached.data.comps.length} comps`);
+      propertyCacheSet(cacheKey, dbCached.data, dbCached.source as any);
+      return NextResponse.json({ success: true, report: dbCached.data, cacheHit: "db" });
+    }
+
     // 1. Try MLS (Trestle) first
     let report;
     const client = await getTrestleClient(supabase, user.id);
@@ -74,6 +105,12 @@ export async function POST(request: NextRequest) {
       if (fallbackReport && fallbackReport.comps.length > 0) {
         report = fallbackReport;
       }
+    }
+
+    // Cache the result if we got comps
+    if (report && report.comps.length > 0) {
+      propertyCacheSet(cacheKey, report, "unified");
+      propertyDbWrite(cacheKey, "cma", report, "unified").catch(() => {});
     }
 
     if (!report) {
