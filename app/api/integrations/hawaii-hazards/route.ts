@@ -68,9 +68,9 @@ export async function GET(request: NextRequest) {
 
         const profile = await client.getPropertyHazardProfile(latitude, longitude);
 
-        // Cache the result
+        // Cache the result (30-day TTL -- hazard zones rarely change)
         propertyCacheSet(cacheKey, profile, "free-data");
-        propertyDbWrite(cacheKey, "hazard", profile, "free-data").catch(() => {});
+        propertyDbWrite(cacheKey, "hazard", profile, "free-data", 30 * 24 * 3600 * 1000).catch(() => {});
 
         return NextResponse.json({ success: true, ...profile });
       }

@@ -171,12 +171,13 @@ export async function propertyDbWrite(
   _provider: string,
   data: any,
   source: "realie" | "rentcast" | "free-data" | "computed" | "merged" | "unified",
+  ttlMs?: number,
 ): Promise<void> {
   const sb = getSupabase();
   if (!sb) return;
 
   const hash = hashKey(key);
-  const expiresAt = new Date(Date.now() + CACHE_TTL).toISOString();
+  const expiresAt = new Date(Date.now() + (ttlMs || CACHE_TTL)).toISOString();
 
   try {
     const { error } = await sb.from("property_data_cache").upsert(
