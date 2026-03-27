@@ -30,16 +30,78 @@ export default function PropertyDetailPage() {
       setLoading(true);
       setError(null);
       try {
-        const params = new URLSearchParams({
-          endpoint: "expanded",
-          address: address,
-          pagesize: "1",
-        });
-        const res = await fetch(`/api/integrations/attom/property?${params}`);
-        const data = await res.json();
-        const props = data.property || [];
-        if (props.length > 0) {
-          setProperty(props[0]);
+        let prop: any = null;
+
+        // 1. Try MLS (Trestle) first -- agent's own licensed connection
+        try {
+          const mlsRes = await fetch(`/api/mls/search?q=${encodeURIComponent(address)}&status=Active,Pending,Closed&limit=5`);
+          if (mlsRes.ok) {
+            const mlsData = await mlsRes.json();
+            const listings = mlsData.listings || [];
+            if (listings.length > 0) {
+              // Find best match -- exact address match preferred
+              const addrLower = address.toLowerCase().replace(/[,.\s]+/g, " ").trim();
+              const match = listings.find((l: any) => {
+                const lAddr = (l.UnparsedAddress || "").toLowerCase().replace(/[,.\s]+/g, " ").trim();
+                return lAddr.includes(addrLower) || addrLower.includes(lAddr);
+              }) || listings[0];
+
+              // Map MLS listing to property data shape
+              prop = {
+                identifier: { obPropId: match.ListingKey },
+                address: {
+                  oneLine: match.UnparsedAddress || address,
+                  line1: [match.StreetNumber, match.StreetName, match.StreetSuffix].filter(Boolean).join(" "),
+                  locality: match.City,
+                  countrySubd: match.StateOrProvince,
+                  postal1: match.PostalCode,
+                },
+                location: {
+                  latitude: match.Latitude ? String(match.Latitude) : undefined,
+                  longitude: match.Longitude ? String(match.Longitude) : undefined,
+                },
+                building: {
+                  size: { livingSize: match.LivingArea, universalSize: match.LivingArea },
+                  rooms: { beds: match.BedroomsTotal, bathsTotal: match.BathroomsTotalInteger },
+                },
+                lot: { lotSize1: match.LotSizeArea },
+                summary: {
+                  propType: match.PropertyType,
+                  propSubType: match.PropertySubType,
+                  yearBuilt: match.YearBuilt,
+                },
+                mlsNumber: match.ListingId,
+                listingStatus: match.StandardStatus,
+                daysOnMarket: match.DaysOnMarket || match.CumulativeDaysOnMarket,
+                listingAgentName: match.ListAgentFullName,
+                listingOfficeName: match.ListOfficeName,
+                listingDescription: match.PublicRemarks,
+                ownershipType: match.OwnershipType,
+                _source: "mls",
+              };
+            }
+          }
+        } catch {
+          // MLS not connected or failed -- continue to next source
+        }
+
+        // 2. Try RentCast + Realie (DB cache checked server-side automatically)
+        if (!prop) {
+          const params = new URLSearchParams({
+            endpoint: "expanded",
+            address: address,
+            pagesize: "1",
+          });
+          const res = await fetch(`/api/integrations/attom/property?${params}`);
+          const data = await res.json();
+          const props = data.property || [];
+          if (props.length > 0) {
+            prop = props[0];
+          }
+        }
+
+        if (prop) {
+          setProperty(prop);
         } else {
           setError("Property not found");
         }
