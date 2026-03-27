@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { HawaiiHazardsClient } from "@/lib/integrations/hawaii-hazards-client";
+import {
+  buildPropertyCacheKey,
+  propertyCacheGet,
+  propertyCacheSet,
+  propertyDbRead,
+  propertyDbWrite,
+} from "@/lib/integrations/property-data-cache";
 
 /**
  * GET - Query Hawaii hazard/environmental zones for a property by lat/lng
@@ -47,7 +54,23 @@ export async function GET(request: NextRequest) {
           return NextResponse.json({ error: "lat and lng must be valid numbers" }, { status: 400 });
         }
 
+        // Check cache first (hazard zones don't change often -- 30-day TTL is fine)
+        const cacheKey = buildPropertyCacheKey("free-data", "hazard-profile", { lat: latitude.toFixed(6), lng: longitude.toFixed(6) });
+        const memoryCached = propertyCacheGet(cacheKey);
+        if (memoryCached) {
+          return NextResponse.json({ success: true, ...memoryCached.data, cacheHit: "memory" });
+        }
+        const dbCached = await propertyDbRead(cacheKey, "hazard");
+        if (dbCached) {
+          propertyCacheSet(cacheKey, dbCached.data, "free-data");
+          return NextResponse.json({ success: true, ...dbCached.data, cacheHit: "db" });
+        }
+
         const profile = await client.getPropertyHazardProfile(latitude, longitude);
+
+        // Cache the result
+        propertyCacheSet(cacheKey, profile, "free-data");
+        propertyDbWrite(cacheKey, "hazard", profile, "free-data").catch(() => {});
 
         return NextResponse.json({ success: true, ...profile });
       }

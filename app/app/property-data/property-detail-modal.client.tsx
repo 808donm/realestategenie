@@ -1240,6 +1240,10 @@ export default function PropertyDetailModal({
   }, [collectReportData, addr]);
 
   const handleShareReport = useCallback(async () => {
+    // Wait briefly for hazard data if it's still loading
+    if (hazardLoading) {
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
     setReportGenerating(true);
     try {
       const reportData = collectReportData();
@@ -1270,7 +1274,7 @@ export default function PropertyDetailModal({
     } finally {
       setReportGenerating(false);
     }
-  }, [collectReportData]);
+  }, [collectReportData, hazardLoading]);
 
   const allSections: { id: SectionId; label: string }[] = [
     { id: "overview", label: "Overview" },
@@ -1536,7 +1540,7 @@ export default function PropertyDetailModal({
           {/* Hawaii Hazard & Environmental Zones */}
           {hazardLoading && (
             <div style={{ textAlign: "center", padding: 16, color: "#6b7280", fontSize: 13 }}>
-              Loading Hawaii environmental data...
+              Loading environmental data...
             </div>
           )}
 
@@ -1615,7 +1619,7 @@ export default function PropertyDetailModal({
                       borderBottom: "1px solid #e5e7eb",
                     }}
                   >
-                    Hawaii Environmental & Hazard Zones
+                    Environmental & Hazard Zones
                   </h3>
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                     {zones.map((z, i) => (
