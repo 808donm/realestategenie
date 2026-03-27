@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { getTrestleClient } from "@/lib/mls/trestle-helpers";
-import { generateCMA } from "@/lib/mls/cma-engine";
+import { generateCMA, generateCMAFromFallback } from "@/lib/mls/cma-engine";
+import { getConfiguredRentcastClient, getConfiguredRealieClient } from "@/lib/integrations/property-data-service";
 
 /**
  * POST /api/mls/cma
  *
  * Feature 3: On-Demand CMA (Comparative Market Analysis)
  *
- * Generates a CMA report by pulling comps from the MLS
- * for a given postal code / property criteria.
+ * Generates a CMA report by pulling comps from the MLS first,
+ * then falling back to RentCast and Realie if MLS returns no comps.
  *
  * Body: {
  *   postalCode: string (required)
@@ -39,12 +40,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Postal code is required" }, { status: 400 });
     }
 
-    const client = await getTrestleClient(supabase, user.id);
-    if (!client) {
-      return NextResponse.json({ error: "Trestle MLS not connected" }, { status: 400 });
-    }
-
-    const report = await generateCMA(client, {
+    const cmaOptions = {
       postalCode: postalCode.trim(),
       city: city?.trim(),
       subjectAddress: address?.trim(),
@@ -54,7 +50,51 @@ export async function POST(request: NextRequest) {
       subjectSqft: sqft ? Number(sqft) : undefined,
       subjectYearBuilt: yearBuilt ? Number(yearBuilt) : undefined,
       subjectPropertyType: propertyType,
-    });
+    };
+
+    // 1. Try MLS (Trestle) first
+    let report;
+    const client = await getTrestleClient(supabase, user.id);
+    if (client) {
+      report = await generateCMA(client, cmaOptions);
+    }
+
+    // 2. If MLS returned zero comps, fall back to RentCast + Realie
+    if (!report || report.comps.length === 0) {
+      console.log(`[CMA] MLS returned 0 comps for ${postalCode}, trying RentCast + Realie fallback`);
+      const [rcClient, realieClient] = await Promise.all([
+        getConfiguredRentcastClient(),
+        getConfiguredRealieClient(),
+      ]);
+      const fallbackReport = await generateCMAFromFallback({
+        ...cmaOptions,
+        rentcastClient: rcClient || undefined,
+        realieClient: realieClient || undefined,
+      });
+      if (fallbackReport && fallbackReport.comps.length > 0) {
+        report = fallbackReport;
+      }
+    }
+
+    if (!report) {
+      return NextResponse.json({
+        success: true,
+        report: {
+          subjectAddress: address || "",
+          subjectCity: city || "",
+          subjectPostalCode: postalCode,
+          subjectListPrice: listPrice || null,
+          subjectBeds: beds || null,
+          subjectBaths: baths || null,
+          subjectSqft: sqft || null,
+          subjectYearBuilt: yearBuilt || null,
+          subjectPropertyType: propertyType || null,
+          comps: [],
+          stats: { totalComps: 0, activeComps: 0, pendingComps: 0, soldComps: 0, avgListPrice: 0, medianListPrice: 0, avgClosePrice: 0, medianClosePrice: 0, avgPricePerSqft: 0, medianPricePerSqft: 0, avgDOM: 0, medianDOM: 0, suggestedPriceLow: 0, suggestedPriceHigh: 0, listToSaleRatio: 0 },
+          generatedAt: new Date().toISOString(),
+        },
+      });
+    }
 
     // Optionally save to database
     let savedId: string | null = null;
