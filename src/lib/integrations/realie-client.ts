@@ -1975,7 +1975,7 @@ export function mapAttomParamsToRealie(endpoint: string, params: Record<string, 
         );
         if (suffixMatch) {
           street = suffixMatch[1];
-          mapped.city = suffixMatch[2];
+          // Don't set city without county -- Realie requires county when city is provided
         }
       }
       mapped.address = street;

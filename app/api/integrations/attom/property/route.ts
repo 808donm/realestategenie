@@ -900,6 +900,17 @@ export async function GET(request: NextRequest) {
       delete params.page;
     }
 
+    // Normalize address: ensure comma between street and city
+    // "41-665 Kumuhau Street Waimanalo, HI 96795" -> "41-665 Kumuhau Street, Waimanalo, HI 96795"
+    if (params.address) {
+      const addrFix = params.address.match(
+        /^(.+?\b(?:st|street|rd|road|ave|avenue|dr|drive|ln|lane|pl|place|blvd|boulevard|ct|court|way|loop|pkwy|parkway|hwy|highway|cir|circle)\b\.?)\s+([A-Z][a-z].*,\s*[A-Z]{2}\s*\d{5})/i,
+      );
+      if (addrFix) {
+        params.address = `${addrFix[1]}, ${addrFix[2]}`;
+      }
+    }
+
     // ── Unified 7-Day Cache ───────────────────────────────────────────────
     const cacheKey = buildPropertyCacheKey("unified", endpoint, params);
 

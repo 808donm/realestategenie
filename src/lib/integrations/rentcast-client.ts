@@ -837,7 +837,16 @@ export function mapAttomParamsToRentcast(
   if (params.address1 && params.address2) {
     mapped.address = `${params.address1}, ${params.address2}`;
   } else if (params.address) {
-    mapped.address = params.address;
+    // Normalize: ensure comma between street and city for addresses like
+    // "41-665 Kumuhau Street Waimanalo, HI 96795" (missing comma after street)
+    let addr = params.address;
+    const suffixMatch = addr.match(
+      /^(.+?\b(?:st|street|rd|road|ave|avenue|dr|drive|ln|lane|pl|place|blvd|boulevard|ct|court|way|loop|pkwy|parkway|hwy|highway|cir|circle)\b\.?)\s+([A-Z][a-z].*,\s*[A-Z]{2}\s*\d{5})/i,
+    );
+    if (suffixMatch) {
+      addr = `${suffixMatch[1]}, ${suffixMatch[2]}`;
+    }
+    mapped.address = addr;
   }
 
   // Zip code
