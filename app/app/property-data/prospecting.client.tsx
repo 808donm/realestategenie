@@ -1349,7 +1349,19 @@ export default function Prospecting() {
           srcLabel,
       );
 
-      const matches = allRaw.filter((p) => isAbsenteeOwner(p));
+      // Apply ownership duration filter if set
+      const minYearsVal = parseInt(minYearsOwned, 10) || 0;
+      const ownershipCutoff = minYearsVal > 0 ? new Date() : null;
+      if (ownershipCutoff) ownershipCutoff.setFullYear(ownershipCutoff.getFullYear() - minYearsVal);
+
+      const matches = allRaw.filter((p) => {
+        if (!isAbsenteeOwner(p)) return false;
+        if (ownershipCutoff) {
+          const owned = getOwnershipDate(p);
+          if (!owned || owned > ownershipCutoff) return false;
+        }
+        return true;
+      });
       matches.sort((a, b) => {
         const aHas = hasContactInfo(a) ? 1 : 0;
         const bHas = hasContactInfo(b) ? 1 : 0;
@@ -1424,7 +1436,19 @@ export default function Prospecting() {
           srcLabel,
       );
 
-      const groups = groupByOwner(allRaw);
+      // Apply ownership duration filter if set
+      const invMinYears = parseInt(minYearsOwned, 10) || 0;
+      const invCutoff = invMinYears > 0 ? new Date() : null;
+      if (invCutoff) invCutoff.setFullYear(invCutoff.getFullYear() - invMinYears);
+
+      const ownershipFiltered = invCutoff
+        ? allRaw.filter((p) => {
+            const owned = getOwnershipDate(p);
+            return owned && owned <= invCutoff;
+          })
+        : allRaw;
+
+      const groups = groupByOwner(ownershipFiltered);
 
       const groupedIds = new Set<number>();
       for (const g of groups) {
@@ -1432,7 +1456,7 @@ export default function Prospecting() {
           if (p.identifier?.attomId) groupedIds.add(p.identifier.attomId);
         }
       }
-      const singleInvestors = allRaw.filter((p) => {
+      const singleInvestors = ownershipFiltered.filter((p) => {
         if (p.identifier?.attomId && groupedIds.has(p.identifier.attomId)) return false;
         const ownerR = resolveOwner(p);
         const isCorp = ownerR?.corporateIndicator === "Y";
@@ -2906,45 +2930,46 @@ export default function Prospecting() {
             </select>
           </div>
 
+          {(mode === "absentee" || mode === "equity" || mode === "investor") && (
+            <div>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 4 }}>
+                Min Years Owned
+              </label>
+              <input
+                type="number"
+                value={minYearsOwned}
+                onChange={(e) => setMinYearsOwned(e.target.value)}
+                placeholder="e.g. 10"
+                style={{
+                  width: 100,
+                  padding: "8px 12px",
+                  fontSize: 14,
+                  border: "1px solid #d1d5db",
+                  borderRadius: 6,
+                }}
+              />
+            </div>
+          )}
+
           {mode === "equity" && (
-            <>
-              <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 4 }}>
-                  Min Years Owned
-                </label>
-                <input
-                  type="number"
-                  value={minYearsOwned}
-                  onChange={(e) => setMinYearsOwned(e.target.value)}
-                  placeholder="e.g. 10"
-                  style={{
-                    width: 100,
-                    padding: "8px 12px",
-                    fontSize: 14,
-                    border: "1px solid #d1d5db",
-                    borderRadius: 6,
-                  }}
-                />
-              </div>
-              <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 4 }}>
-                  Min AVM Value
-                </label>
-                <input
-                  type="number"
-                  value={minAvmValue}
-                  onChange={(e) => setMinAvmValue(e.target.value)}
-                  placeholder="e.g. 300000"
-                  style={{
-                    width: 140,
-                    padding: "8px 12px",
-                    fontSize: 14,
-                    border: "1px solid #d1d5db",
-                    borderRadius: 6,
-                  }}
-                />
-              </div>
-            </>
+            <div>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 4 }}>
+                Min AVM Value
+              </label>
+              <input
+                type="number"
+                value={minAvmValue}
+                onChange={(e) => setMinAvmValue(e.target.value)}
+                placeholder="e.g. 300000"
+                style={{
+                  width: 140,
+                  padding: "8px 12px",
+                  fontSize: 14,
+                  border: "1px solid #d1d5db",
+                  borderRadius: 6,
+                }}
+              />
+            </div>
           )}
 
           {mode === "radius" && (
