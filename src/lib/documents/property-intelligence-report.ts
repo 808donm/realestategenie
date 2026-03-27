@@ -189,37 +189,39 @@ export function generatePropertyIntelligencePDF(data: PropertyReportData, brandi
   doc.setFillColor(...brandGold);
   doc.rect(0, 42, pageW, 2, "F");
 
-  // Broker logo (top-left corner of header, if available)
+  // Broker logo (top-left corner of header, square ~26x26mm / ~100px)
+  const logoSize = 26;
+  const logoY = (42 - logoSize) / 2; // vertically center in 42mm header
   let titleX = margin;
   if (branding.brokerLogoData) {
     try {
-      const logoH = 16; // fixed height in mm
-      const logoW = 32; // max width — aspect ratio preserved by jsPDF
-      doc.addImage(branding.brokerLogoData, "PNG", margin, 4, logoW, logoH);
-      titleX = margin + logoW + 4;
+      doc.addImage(branding.brokerLogoData, "PNG", margin, logoY, logoSize, logoSize);
+      titleX = margin + logoSize + 4;
     } catch {
       // Skip if image fails to decode
     }
   }
 
+  // Vertically center text block alongside the logo
+  const textTopY = logoY + 6;
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(18);
   doc.setFont("helvetica", "bold");
-  doc.text("Property Intelligence Report", titleX, 16);
+  doc.text("Property Intelligence Report", titleX, textTopY);
 
   doc.setFontSize(11);
   doc.setFont("helvetica", "normal");
-  doc.text(data.address, titleX, 26);
+  doc.text(data.address, titleX, textTopY + 10);
 
   const cityLine = [data.city, data.state, data.zip].filter(Boolean).join(", ");
   if (cityLine) {
     doc.setFontSize(10);
-    doc.text(cityLine, titleX, 33);
+    doc.text(cityLine, titleX, textTopY + 17);
   }
 
   // Report date top-right
   doc.setFontSize(8);
-  doc.text(data.generatedAt, pageW - margin, 34, { align: "right" });
+  doc.text(data.generatedAt, pageW - margin, textTopY + 17, { align: "right" });
 
   y = 50;
 
