@@ -687,6 +687,7 @@ export default function MortgageCalculatorClient() {
       </div>
 
       {activeTab === "calculator" && (
+        <>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
           {/* Input Form */}
           <div style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12 }}>
@@ -995,89 +996,6 @@ export default function MortgageCalculatorClient() {
               </div>
             </div>
 
-            {/* Payment Breakdown Pie Chart */}
-            <div
-              style={{
-                padding: 24,
-                background: "#fff",
-                border: "1px solid #e5e7eb",
-                borderRadius: 12,
-                marginBottom: 20,
-              }}
-            >
-              <h3 style={{ margin: "0 0 16px 0", fontSize: 14, fontWeight: 700, letterSpacing: 0.5 }}>
-                PAYMENT BREAKDOWN
-              </h3>
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie
-                    data={pieChartData}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={90}
-                    dataKey="value"
-                    label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(1)}%`}
-                  >
-                    {pieChartData.map((_entry, index) => (
-                      <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(value) =>
-                      Number(value).toLocaleString("en-US", {
-                        style: "currency",
-                        currency: "USD",
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })
-                    }
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Loan Balance & Equity Line Chart */}
-            <div
-              style={{
-                padding: 24,
-                background: "#fff",
-                border: "1px solid #e5e7eb",
-                borderRadius: 12,
-                marginBottom: 20,
-              }}
-            >
-              <h3 style={{ margin: "0 0 16px 0", fontSize: 14, fontWeight: 700, letterSpacing: 0.5 }}>
-                LOAN BALANCE & EQUITY
-              </h3>
-              <ResponsiveContainer width="100%" height={280}>
-                <LineChart data={balanceChartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="year" label={{ value: "Years", position: "insideBottom", offset: -5 }} />
-                  <YAxis
-                    tickFormatter={(value: number) =>
-                      value.toLocaleString("en-US", {
-                        style: "currency",
-                        currency: "USD",
-                        maximumFractionDigits: 0,
-                      })
-                    }
-                  />
-                  <Tooltip
-                    formatter={(value) =>
-                      Number(value).toLocaleString("en-US", {
-                        style: "currency",
-                        currency: "USD",
-                        maximumFractionDigits: 0,
-                      })
-                    }
-                  />
-                  <Legend />
-                  <Line type="monotone" dataKey="balance" name="Loan Balance" stroke="#ef4444" strokeWidth={2} />
-                  <Line type="monotone" dataKey="equity" name="Equity" stroke="#16a34a" strokeWidth={2} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-
             {/* Actions */}
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
               <button
@@ -1147,6 +1065,87 @@ export default function MortgageCalculatorClient() {
             </div>
           </div>
         </div>
+
+        {/* Charts -- full width below the two-column layout */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginTop: 24 }}>
+          {/* Payment Breakdown Pie Chart */}
+          <div
+            style={{
+              padding: 24,
+              background: "#fff",
+              border: "1px solid #e5e7eb",
+              borderRadius: 12,
+            }}
+          >
+            <h3 style={{ margin: "0 0 16px 0", fontSize: 14, fontWeight: 700, letterSpacing: 0.5 }}>
+              PAYMENT BREAKDOWN
+            </h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={pieChartData}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={110}
+                  dataKey="value"
+                  label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(1)}%`}
+                >
+                  {pieChartData.map((_entry, index) => (
+                    <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(value) =>
+                    Number(value).toLocaleString("en-US", {
+                      style: "currency",
+                      currency: "USD",
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })
+                  }
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Loan Balance & Equity Line Chart */}
+          <div
+            style={{
+              padding: 24,
+              background: "#fff",
+              border: "1px solid #e5e7eb",
+              borderRadius: 12,
+            }}
+          >
+            <h3 style={{ margin: "0 0 16px 0", fontSize: 14, fontWeight: 700, letterSpacing: 0.5 }}>
+              LOAN BALANCE & EQUITY
+            </h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={balanceChartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="year" label={{ value: "Years", position: "insideBottom", offset: -5 }} />
+                <YAxis
+                  tickFormatter={(value: number) =>
+                    `$${(value / 1000).toFixed(0)}k`
+                  }
+                />
+                <Tooltip
+                  formatter={(value) =>
+                    Number(value).toLocaleString("en-US", {
+                      style: "currency",
+                      currency: "USD",
+                      maximumFractionDigits: 0,
+                    })
+                  }
+                />
+                <Legend />
+                <Line type="monotone" dataKey="balance" name="Loan Balance" stroke="#ef4444" strokeWidth={2} />
+                <Line type="monotone" dataKey="equity" name="Equity" stroke="#16a34a" strokeWidth={2} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+        </>
       )}
 
       {/* Amortization Schedule */}
