@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { createTrestleClient } from "@/lib/integrations/trestle-client";
+import {
+  buildPropertyCacheKey,
+  propertyCacheGet,
+  propertyCacheSet,
+  propertyDbRead,
+  propertyDbWrite,
+} from "@/lib/integrations/property-data-cache";
 
 /**
  * GET /api/mls/sales-history
@@ -26,6 +33,20 @@ export async function GET(request: NextRequest) {
 
     if (!address) {
       return NextResponse.json({ error: "address is required" }, { status: 400 });
+    }
+
+    // Check cache first
+    const cacheKey = buildPropertyCacheKey("unified", "mls-sales-history", { address, limit });
+    const memoryCached = propertyCacheGet(cacheKey);
+    if (memoryCached?.data) {
+      console.log(`[MLS Sales History] Cache hit (memory) for "${address}"`);
+      return NextResponse.json({ ...memoryCached.data, cacheHit: "memory" });
+    }
+    const dbCached = await propertyDbRead(cacheKey, "mls-sales-history");
+    if (dbCached?.data) {
+      console.log(`[MLS Sales History] Cache hit (db) for "${address}"`);
+      propertyCacheSet(cacheKey, dbCached.data, "unified");
+      return NextResponse.json({ ...dbCached.data, cacheHit: "db" });
     }
 
     // Get the Trestle integration
@@ -153,14 +174,20 @@ export async function GET(request: NextRequest) {
       `[MLS Sales History] Unit: ${unitHistory.length}, Building: ${buildingHistory.length} for "${address}" (unit: ${unitNumber || "n/a"})`,
     );
 
-    return NextResponse.json({
+    const response = {
       address,
       unitNumber,
       transactions: unitHistory,
       buildingTransactions: buildingHistory,
       total: unitHistory.length + buildingHistory.length,
       source: "mls",
-    });
+    };
+
+    // Cache the result
+    propertyCacheSet(cacheKey, response, "unified");
+    propertyDbWrite(cacheKey, "mls-sales-history", response, "unified").catch(() => {});
+
+    return NextResponse.json(response);
   } catch (error: any) {
     console.error("[MLS Sales History] Error:", error);
     return NextResponse.json({ error: error.message || "Failed to fetch sales history" }, { status: 500 });
