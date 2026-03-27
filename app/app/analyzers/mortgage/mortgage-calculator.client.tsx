@@ -350,6 +350,55 @@ export default function MortgageCalculatorClient() {
     return points;
   }, [calculation.loanAmount, inputs.interestRate, inputs.loanTermYears, inputs.purchasePrice]);
 
+  const [appreciationRate, setAppreciationRate] = useState(3);
+  const [sellingCostPercent, setSellingCostPercent] = useState(6);
+
+  const equityProjections = useMemo(() => {
+    const years = [1, 3, 5, 7, 10];
+    const loanAmount = calculation.loanAmount;
+    const monthlyRate = inputs.interestRate / 100 / 12;
+    const numPayments = inputs.loanTermYears * 12;
+    const factor = monthlyRate > 0 ? Math.pow(1 + monthlyRate, numPayments) : 1;
+    const totalMonthlyPayments = calculation.totalMonthly;
+
+    return years.map((year) => {
+      const k = Math.min(year * 12, numPayments);
+      let loanBalance: number;
+      if (k >= numPayments) {
+        loanBalance = 0;
+      } else if (monthlyRate > 0) {
+        const factorK = Math.pow(1 + monthlyRate, k);
+        loanBalance = loanAmount * (factor - factorK) / (factor - 1);
+      } else {
+        loanBalance = loanAmount * (1 - k / numPayments);
+      }
+      loanBalance = Math.max(0, loanBalance);
+
+      const propertyValue = inputs.purchasePrice * Math.pow(1 + appreciationRate / 100, year);
+      const equity = propertyValue - loanBalance;
+      const ltv = propertyValue > 0 ? (loanBalance / propertyValue) * 100 : 0;
+      const sellingCosts = propertyValue * (sellingCostPercent / 100);
+      const netProceeds = propertyValue - sellingCosts - loanBalance;
+      const totalPaid = totalMonthlyPayments * year * 12;
+      const downPayment = inputs.purchasePrice - loanAmount;
+      const totalInvested = downPayment + totalPaid;
+      const totalProfit = netProceeds - downPayment;
+
+      return {
+        year,
+        propertyValue: Math.round(propertyValue),
+        loanBalance: Math.round(loanBalance),
+        equity: Math.round(equity),
+        ltv,
+        appreciationPct: appreciationRate,
+        sellingCosts: Math.round(sellingCosts),
+        netProceeds: Math.round(netProceeds),
+        totalPaid: Math.round(totalPaid),
+        totalProfit: Math.round(totalProfit),
+      };
+    });
+  }, [calculation, inputs, appreciationRate, sellingCostPercent]);
+
   // Export to Excel
   const exportToExcel = () => {
     const wb = XLSX.utils.book_new();
@@ -1143,6 +1192,98 @@ export default function MortgageCalculatorClient() {
                 <Line type="monotone" dataKey="equity" name="Equity" stroke="#16a34a" strokeWidth={2} />
               </LineChart>
             </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Equity Accumulation & Sale Analysis */}
+        <div style={{ display: "grid", gridTemplateColumns: "auto auto", gap: 16, marginTop: 24, marginBottom: 8 }}>
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: "#374151", marginRight: 8 }}>Annual Appreciation (%)</label>
+            <input
+              type="number"
+              value={appreciationRate}
+              onChange={(e) => setAppreciationRate(parseFloat(e.target.value) || 0)}
+              step={0.5}
+              style={{ width: 70, padding: "4px 8px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13 }}
+            />
+          </div>
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: "#374151", marginRight: 8 }}>Selling Costs (%)</label>
+            <input
+              type="number"
+              value={sellingCostPercent}
+              onChange={(e) => setSellingCostPercent(parseFloat(e.target.value) || 0)}
+              step={0.5}
+              style={{ width: 70, padding: "4px 8px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13 }}
+            />
+          </div>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+          {/* Equity Accumulation */}
+          <div style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12 }}>
+            <h3 style={{ margin: "0 0 16px 0", fontSize: 14, fontWeight: 700, color: "#2563eb", letterSpacing: 0.5 }}>
+              EQUITY ACCUMULATION
+            </h3>
+            <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
+                  <th style={{ textAlign: "left", padding: "6px 4px", color: "#6b7280" }}>Year</th>
+                  <th style={{ textAlign: "right", padding: "6px 4px", color: "#6b7280" }}>Property Value</th>
+                  <th style={{ textAlign: "right", padding: "6px 4px", color: "#6b7280" }}>Loan Balance</th>
+                  <th style={{ textAlign: "right", padding: "6px 4px", color: "#6b7280" }}>LTV</th>
+                  <th style={{ textAlign: "right", padding: "6px 4px", color: "#2563eb", fontWeight: 700 }}>Equity</th>
+                </tr>
+              </thead>
+              <tbody>
+                {equityProjections.map((row) => (
+                  <tr key={row.year} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                    <td style={{ padding: "6px 4px" }}>Year {row.year}</td>
+                    <td style={{ textAlign: "right", padding: "6px 4px" }}>{fmt(row.propertyValue)}</td>
+                    <td style={{ textAlign: "right", padding: "6px 4px" }}>{fmt(row.loanBalance)}</td>
+                    <td style={{ textAlign: "right", padding: "6px 4px" }}>{row.ltv.toFixed(1)}%</td>
+                    <td style={{ textAlign: "right", padding: "6px 4px", fontWeight: 700, color: "#2563eb" }}>{fmt(row.equity)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div style={{ marginTop: 8, fontSize: 11, color: "#9ca3af" }}>
+              Based on {appreciationRate}% annual appreciation
+            </div>
+          </div>
+
+          {/* Sale Analysis */}
+          <div style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12 }}>
+            <h3 style={{ margin: "0 0 16px 0", fontSize: 14, fontWeight: 700, color: "#2563eb", letterSpacing: 0.5 }}>
+              SALE ANALYSIS
+            </h3>
+            <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
+                  <th style={{ textAlign: "left", padding: "6px 4px", color: "#6b7280" }}>Year</th>
+                  <th style={{ textAlign: "right", padding: "6px 4px", color: "#6b7280" }}>Sale Price</th>
+                  <th style={{ textAlign: "right", padding: "6px 4px", color: "#6b7280" }}>Selling Costs</th>
+                  <th style={{ textAlign: "right", padding: "6px 4px", color: "#6b7280" }}>Net Proceeds</th>
+                  <th style={{ textAlign: "right", padding: "6px 4px", color: "#16a34a", fontWeight: 700 }}>Profit</th>
+                </tr>
+              </thead>
+              <tbody>
+                {equityProjections.map((row) => (
+                  <tr key={row.year} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                    <td style={{ padding: "6px 4px" }}>Year {row.year}</td>
+                    <td style={{ textAlign: "right", padding: "6px 4px" }}>{fmt(row.propertyValue)}</td>
+                    <td style={{ textAlign: "right", padding: "6px 4px", color: "#ef4444" }}>-{fmt(row.sellingCosts)}</td>
+                    <td style={{ textAlign: "right", padding: "6px 4px" }}>{fmt(row.netProceeds)}</td>
+                    <td style={{ textAlign: "right", padding: "6px 4px", fontWeight: 700, color: row.totalProfit >= 0 ? "#16a34a" : "#ef4444" }}>
+                      {row.totalProfit >= 0 ? "" : "-"}{fmt(Math.abs(row.totalProfit))}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div style={{ marginTop: 8, fontSize: 11, color: "#9ca3af" }}>
+              Profit = net proceeds minus down payment ({fmt(inputs.purchasePrice - calculation.loanAmount)}). Selling costs at {sellingCostPercent}%.
+            </div>
           </div>
         </div>
         </>
