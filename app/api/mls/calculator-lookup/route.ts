@@ -27,21 +27,36 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "mlsNumber or address is required" }, { status: 400 });
     }
 
+    // Normalize address: ensure comma between street and city
+    // "41-665 Kumuhau Street Waimanalo, HI 96795" -> "41-665 Kumuhau Street, Waimanalo, HI 96795"
+    let normalizedAddr = address?.trim() || "";
+    if (normalizedAddr) {
+      const addrFix = normalizedAddr.match(
+        /^(.+?\b(?:st|street|rd|road|ave|avenue|dr|drive|ln|lane|pl|place|blvd|boulevard|ct|court|way|loop|pkwy|parkway|hwy|highway|cir|circle)\b\.?)\s+([A-Z][a-z].*,\s*[A-Z]{2}\s*\d{5})/i,
+      );
+      if (addrFix) {
+        normalizedAddr = `${addrFix[1]}, ${addrFix[2]}`;
+      }
+    }
+
+    // Extract just the street portion (before first comma) for MLS searches
+    const streetOnly = normalizedAddr.split(",")[0].trim();
+
     // Check DB cache first for address lookups (property data from prior views)
-    if (address?.trim()) {
-      const cacheKey = buildPropertyCacheKey("unified", "expanded", { address: address.trim(), pagesize: 1 });
+    if (normalizedAddr) {
+      const cacheKey = buildPropertyCacheKey("unified", "expanded", { address: normalizedAddr, pagesize: 1 });
       const memoryCached = propertyCacheGet(cacheKey);
       const cached = memoryCached || (await propertyDbRead(cacheKey, "calculator-lookup"));
       if (cached?.data?.property?.[0]) {
         const p = cached.data.property[0];
         const cachedPrice = p.avm?.amount?.value || p.assessment?.market?.mktTtlValue || p.sale?.amount?.saleAmt || 0;
-        console.log(`[Calculator Lookup] Cache hit for ${address.trim()}`);
+        console.log(`[Calculator Lookup] Cache hit for ${normalizedAddr}`);
         return NextResponse.json({
           success: true,
           property: {
             listingKey: p.identifier?.obPropId || "",
             listingId: "",
-            address: p.address?.oneLine || address.trim(),
+            address: p.address?.oneLine || normalizedAddr,
             listPrice: cachedPrice,
             livingArea: p.building?.size?.universalSize || p.building?.size?.livingSize || 0,
             bedrooms: p.building?.rooms?.beds || 0,
@@ -78,10 +93,9 @@ export async function GET(request: NextRequest) {
           // Not found
         }
       }
-    } else if (address?.trim()) {
-      // Address-based search using UnparsedAddress and street fields
-      const q = address.trim().replace(/'/g, "''"); // escape single quotes for OData
-      // Search UnparsedAddress (most complete), plus StreetName as fallback
+    } else if (streetOnly) {
+      // Address-based search: use just the street portion (MLS UnparsedAddress doesn't include city/state)
+      const q = streetOnly.replace(/'/g, "''");
       const filter = `contains(tolower(UnparsedAddress), '${q.toLowerCase()}')`;
       const result = await client.getProperties({
         $filter: filter,
@@ -95,11 +109,14 @@ export async function GET(request: NextRequest) {
         // Return multiple matches so the user can pick
         addressResults = result.value;
       } else {
-        // Fallback: try searching by street number + street name
-        const parts = q.split(/[\s,]+/).filter(Boolean);
+        // Fallback: try searching by street number + street name only
+        const parts = q.split(/[\s]+/).filter(Boolean);
         if (parts.length >= 2) {
           const streetNum = parts[0];
-          const streetName = parts.slice(1).join(" ").toLowerCase();
+          // Strip street suffix for StreetName search (MLS stores StreetName without suffix)
+          const nameWords = parts.slice(1);
+          const suffixes = ["st", "street", "rd", "road", "ave", "avenue", "dr", "drive", "ln", "lane", "pl", "place", "blvd", "ct", "way", "loop", "pkwy", "hwy", "cir"];
+          const streetName = nameWords.filter(w => !suffixes.includes(w.toLowerCase())).join(" ").toLowerCase();
           const fallbackFilter = `startswith(StreetNumber, '${streetNum}') and contains(tolower(StreetName), '${streetName}')`;
           const fallbackResult = await client.getProperties({
             $filter: fallbackFilter,
@@ -134,11 +151,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Fallback to RentCast when MLS has no results (address search only)
-    if (!property && address?.trim()) {
+    if (!property && normalizedAddr) {
       try {
         const rcClient = await getConfiguredRentcastClient();
         if (rcClient) {
-          const results = await rcClient.searchProperties({ address: address.trim() });
+          const results = await rcClient.searchProperties({ address: normalizedAddr });
           if (results.length > 0) {
             const rc = results[0];
             const rcPrice = rc.lastSalePrice || 0;
@@ -148,7 +165,7 @@ export async function GET(request: NextRequest) {
               property: {
                 listingKey: rc.id || "",
                 listingId: "",
-                address: rc.formattedAddress || address.trim(),
+                address: rc.formattedAddress || normalizedAddr,
                 listPrice: estimatedValue,
                 livingArea: rc.squareFootage || 0,
                 bedrooms: rc.bedrooms || 0,
