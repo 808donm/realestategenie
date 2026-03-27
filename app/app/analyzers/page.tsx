@@ -91,11 +91,11 @@ export default async function AnalyzersPage() {
     {
       id: "quick-flip",
       href: "/app/analyzers/quick-flip",
-      emoji: "⚡",
-      title: "Quick Flip Analyzer",
-      description: "Fast flip deal analysis with profit, ROI, 70% rule MAO, and deal scoring. All costs in one view.",
-      footerText: "Deal score • 70% rule check",
-      background: "linear-gradient(135deg, #ffedd5 0%, #ffffff 100%)",
+      emoji: "🏖️",
+      title: "Short-Term Rental Analyzer",
+      description: "Airbnb & VRBO cash flow analysis with STR taxes, expense breakdown, and multi-year equity projections.",
+      footerText: "STR taxes . Occupancy analysis",
+      background: "linear-gradient(135deg, #e0f2fe 0%, #ffffff 100%)",
     },
     {
       id: "wholesale-mao",

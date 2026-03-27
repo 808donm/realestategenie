@@ -42,7 +42,7 @@ const ROUTE_LABELS: Record<string, string> = {
   investment: "Investment",
   mortgage: "Mortgage",
   "net-sheet": "Net Sheet",
-  "quick-flip": "Quick Flip",
+  "quick-flip": "STR Analyzer",
   rental: "Rental",
   "wholesale-mao": "Wholesale MAO",
   // Reports
