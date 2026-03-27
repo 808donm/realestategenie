@@ -92,7 +92,7 @@ export default async function AnalyzersPage() {
       id: "quick-flip",
       href: "/app/analyzers/quick-flip",
       emoji: "🏖️",
-      title: "Short-Term Rental Analyzer",
+      title: "Short-Term Rental Analyzer (VRBO/Airbnb)",
       description: "Airbnb & VRBO cash flow analysis with STR taxes, expense breakdown, and multi-year equity projections.",
       footerText: "STR taxes . Occupancy analysis",
       background: "linear-gradient(135deg, #e0f2fe 0%, #ffffff 100%)",

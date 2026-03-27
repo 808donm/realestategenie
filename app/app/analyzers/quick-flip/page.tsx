@@ -52,7 +52,7 @@ export default function STRAnalyzerPage() {
       </div>
 
       <h1 style={{ fontSize: 28, fontWeight: 900, marginTop: 0, marginBottom: 8 }}>
-        Short-Term Rental Analyzer
+        Short-Term Rental Analyzer (VRBO/Airbnb)
       </h1>
       <p style={{ margin: "0 0 24px 0", opacity: 0.7 }}>
         Airbnb & VRBO cash flow analysis with STR-specific taxes, expense breakdown, and multi-year equity projections

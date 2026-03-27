@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { getTrestleClient } from "@/lib/mls/trestle-helpers";
 import type { TrestleProperty } from "@/lib/integrations/trestle-client";
+import { getConfiguredRentcastClient } from "@/lib/integrations/property-data-service";
+import { buildPropertyCacheKey, propertyCacheGet, propertyDbRead } from "@/lib/integrations/property-data-cache";
 
 /**
  * GET /api/mls/calculator-lookup?mlsNumber=xxx
@@ -23,6 +25,39 @@ export async function GET(request: NextRequest) {
 
     if (!mlsNumber?.trim() && !address?.trim()) {
       return NextResponse.json({ error: "mlsNumber or address is required" }, { status: 400 });
+    }
+
+    // Check DB cache first for address lookups (property data from prior views)
+    if (address?.trim()) {
+      const cacheKey = buildPropertyCacheKey("unified", "expanded", { address: address.trim(), pagesize: 1 });
+      const memoryCached = propertyCacheGet(cacheKey);
+      const cached = memoryCached || (await propertyDbRead(cacheKey, "calculator-lookup"));
+      if (cached?.data?.property?.[0]) {
+        const p = cached.data.property[0];
+        const cachedPrice = p.avm?.amount?.value || p.assessment?.market?.mktTtlValue || p.sale?.amount?.saleAmt || 0;
+        console.log(`[Calculator Lookup] Cache hit for ${address.trim()}`);
+        return NextResponse.json({
+          success: true,
+          property: {
+            listingKey: p.identifier?.obPropId || "",
+            listingId: "",
+            address: p.address?.oneLine || address.trim(),
+            listPrice: cachedPrice,
+            livingArea: p.building?.size?.universalSize || p.building?.size?.livingSize || 0,
+            bedrooms: p.building?.rooms?.beds || 0,
+            bathrooms: p.building?.rooms?.bathsTotal || 0,
+            yearBuilt: p.summary?.yearBuilt || 0,
+            propertyType: p.summary?.propType || p.summary?.propertyType || "",
+            propertySubType: p.summary?.propSubType || "",
+            numberOfUnits: 1,
+            taxAnnual: p.assessment?.tax?.taxAmt || Math.round(cachedPrice * 0.012),
+            insuranceAnnual: Math.round(cachedPrice * 0.005),
+            associationFee: p.hoa?.fee || 0,
+            status: "Cached",
+          },
+          source: "cache",
+        });
+      }
     }
 
     const client = await getTrestleClient(supabase, user.id);
@@ -96,6 +131,44 @@ export async function GET(request: NextRequest) {
           };
         }),
       });
+    }
+
+    // Fallback to RentCast when MLS has no results (address search only)
+    if (!property && address?.trim()) {
+      try {
+        const rcClient = await getConfiguredRentcastClient();
+        if (rcClient) {
+          const results = await rcClient.searchProperties({ address: address.trim() });
+          if (results.length > 0) {
+            const rc = results[0];
+            const rcPrice = rc.lastSalePrice || 0;
+            const estimatedValue = rcPrice || Math.round((rc.taxAssessments ? Object.values(rc.taxAssessments).pop()?.value || 0 : 0));
+            return NextResponse.json({
+              success: true,
+              property: {
+                listingKey: rc.id || "",
+                listingId: "",
+                address: rc.formattedAddress || address.trim(),
+                listPrice: estimatedValue,
+                livingArea: rc.squareFootage || 0,
+                bedrooms: rc.bedrooms || 0,
+                bathrooms: rc.bathrooms || 0,
+                yearBuilt: rc.yearBuilt || 0,
+                propertyType: rc.propertyType || "",
+                propertySubType: "",
+                numberOfUnits: 1,
+                taxAnnual: rc.propertyTaxes ? Math.round(Object.values(rc.propertyTaxes).pop()?.total || 0) : Math.round(estimatedValue * 0.012),
+                insuranceAnnual: Math.round(estimatedValue * 0.005),
+                associationFee: rc.hoa?.fee || 0,
+                status: "Public Records",
+              },
+              source: "rentcast",
+            });
+          }
+        }
+      } catch (err: any) {
+        console.warn("[Calculator Lookup] RentCast fallback error:", err.message);
+      }
     }
 
     if (!property) {
