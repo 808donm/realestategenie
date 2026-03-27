@@ -32,9 +32,22 @@ export default function PropertyDetailPage() {
       try {
         let prop: any = null;
 
+        // Normalize address: ensure comma between street and city
+        // Handles "41-665 Kumuhau Street Waimanalo, HI 96795" -> "41-665 Kumuhau Street, Waimanalo, HI 96795"
+        let normalizedAddr = address;
+        const singleComma = address.match(
+          /^(.+?\b(?:st|street|rd|road|ave|avenue|dr|drive|ln|lane|pl|place|blvd|boulevard|ct|court|way|loop|pkwy|hwy|cir|circle)\b\.?)\s+([A-Z][a-z]+.*,\s*[A-Z]{2}\s*\d{5})/i,
+        );
+        if (singleComma) {
+          normalizedAddr = `${singleComma[1]}, ${singleComma[2]}`;
+        }
+
+        // Extract just the street portion for MLS search (MLS UnparsedAddress may not include city/state)
+        const streetOnly = normalizedAddr.split(",")[0].trim();
+
         // 1. Try MLS (Trestle) first -- agent's own licensed connection
         try {
-          const mlsRes = await fetch(`/api/mls/search?q=${encodeURIComponent(address)}&status=Active,Pending,Closed&limit=5`);
+          const mlsRes = await fetch(`/api/mls/search?q=${encodeURIComponent(streetOnly)}&status=Active,Pending,Closed&limit=5`);
           if (mlsRes.ok) {
             const mlsData = await mlsRes.json();
             const listings = mlsData.listings || [];
@@ -89,7 +102,7 @@ export default function PropertyDetailPage() {
         if (!prop) {
           const params = new URLSearchParams({
             endpoint: "expanded",
-            address: address,
+            address: normalizedAddr,
             pagesize: "1",
           });
           const res = await fetch(`/api/integrations/attom/property?${params}`);

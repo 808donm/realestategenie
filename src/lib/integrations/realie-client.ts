@@ -1958,12 +1958,27 @@ export function mapAttomParamsToRealie(endpoint: string, params: Record<string, 
     const stateMatch = params.address2.match(/\b([A-Z]{2})\b/);
     if (stateMatch) mapped.state = stateMatch[1];
   } else if (params.address) {
-    // Full address like "123 Main St, City, ST 12345"
+    // Full address like "123 Main St, City, ST 12345" or "123 Main St City, ST 12345"
     const stateMatch = params.address.match(/,\s*([A-Z]{2})\s*\d{0,5}\s*$/);
     if (stateMatch) {
       mapped.state = stateMatch[1];
-      // Strip city/state/zip to get just street for address param
-      mapped.address = params.address.replace(/,\s*[^,]+,\s*[A-Z]{2}\s*\d{0,5}\s*$/, "").trim();
+      // Strip city/state/zip — handle both "Street, City, ST ZIP" (two commas)
+      // and "Street City, ST ZIP" (one comma, missing street/city separator)
+      let street = params.address.replace(/,\s*[^,]+,\s*[A-Z]{2}\s*\d{0,5}\s*$/, "").trim();
+      if (street === params.address) {
+        // Single-comma format: "Street City, ST ZIP" — strip everything from ", ST ZIP"
+        street = params.address.replace(/,\s*[A-Z]{2}\s*\d{0,5}\s*$/, "").trim();
+        // Now street is "Street City" — try to strip the city by removing the last word(s)
+        // that look like a city name (after the street suffix or last number)
+        const suffixMatch = street.match(
+          /^(.+?\b(?:st|street|rd|road|ave|avenue|dr|drive|ln|lane|pl|place|blvd|boulevard|ct|court|way|loop|pkwy|parkway|hwy|highway|cir|circle)\b\.?)\s+(.+)$/i,
+        );
+        if (suffixMatch) {
+          street = suffixMatch[1];
+          mapped.city = suffixMatch[2];
+        }
+      }
+      mapped.address = street;
     } else {
       mapped.address = params.address;
     }
