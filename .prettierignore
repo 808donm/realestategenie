@@ -1,0 +1,11 @@
+.next
+out
+build
+node_modules
+package-lock.json
+*.min.js
+*.min.css
+android
+ios
+public
+supabase/migrations
