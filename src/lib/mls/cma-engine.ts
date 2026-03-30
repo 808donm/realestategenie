@@ -8,7 +8,7 @@
  * - Suggested list price range
  */
 import type { TrestleProperty, TrestleClient } from "@/lib/integrations/trestle-client";
-import type { RentcastClient, RentcastComparable } from "@/lib/integrations/rentcast-client";
+
 import type { RealieClient } from "@/lib/integrations/realie-client";
 
 export interface CMAComp {
@@ -273,31 +273,31 @@ export async function generateCMAFromFallback(options: {
   subjectSqft?: number;
   subjectYearBuilt?: number;
   subjectPropertyType?: string;
-  rentcastClient?: RentcastClient;
   realieClient?: RealieClient;
 }): Promise<CMAReport | null> {
   const comps: CMAComp[] = [];
   let subjectLat: number | undefined;
   let subjectLng: number | undefined;
 
-  // Try RentCast first -- get AVM + comparables for the subject address
-  if (options.rentcastClient && options.subjectAddress) {
+  // Try centralized AVM service first -- get AVM + comparables for the subject address
+  if (options.subjectAddress) {
     try {
       const fullAddr = options.subjectAddress.includes(",")
         ? options.subjectAddress
         : `${options.subjectAddress}, ${options.city || ""}, ${options.postalCode}`.replace(/, ,/g, ",");
 
-      const avmResult = await options.rentcastClient.getValueEstimate({
+      const { getPropertyAvm } = await import("@/lib/integrations/avm-service");
+      const avmData = await getPropertyAvm({
         address: fullAddr,
         compCount: 25,
       });
 
-      subjectLat = avmResult.subjectProperty?.latitude;
-      subjectLng = avmResult.subjectProperty?.longitude;
+      subjectLat = avmData?.subjectProperty?.latitude;
+      subjectLng = avmData?.subjectProperty?.longitude;
 
-      if (avmResult.comparables?.length > 0) {
-        console.log(`[CMA Fallback] RentCast returned ${avmResult.comparables.length} comps`);
-        for (const c of avmResult.comparables) {
+      if (avmData?.comparables?.length) {
+        console.log(`[CMA Fallback] AVM service returned ${avmData.comparables.length} comps`);
+        for (const c of avmData.comparables) {
           comps.push({
             listingKey: c.id || `rc-${c.formattedAddress}`,
             listingId: c.id || "",

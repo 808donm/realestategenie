@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { getTrestleClient } from "@/lib/mls/trestle-helpers";
 import { generateCMA, generateCMAFromFallback } from "@/lib/mls/cma-engine";
-import { getConfiguredRentcastClient, getConfiguredRealieClient } from "@/lib/integrations/property-data-service";
+import { getConfiguredRealieClient } from "@/lib/integrations/property-data-service";
 import {
   buildPropertyCacheKey,
   propertyCacheGet,
@@ -93,13 +93,9 @@ export async function POST(request: NextRequest) {
     // 2. If MLS returned zero comps, fall back to RentCast + Realie
     if (!report || report.comps.length === 0) {
       console.log(`[CMA] MLS returned 0 comps for ${postalCode}, trying RentCast + Realie fallback`);
-      const [rcClient, realieClient] = await Promise.all([
-        getConfiguredRentcastClient(),
-        getConfiguredRealieClient(),
-      ]);
+      const realieClient = await getConfiguredRealieClient();
       const fallbackReport = await generateCMAFromFallback({
         ...cmaOptions,
-        rentcastClient: rcClient || undefined,
         realieClient: realieClient || undefined,
       });
       if (fallbackReport && fallbackReport.comps.length > 0) {

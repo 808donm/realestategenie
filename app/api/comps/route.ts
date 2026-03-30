@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
-import { supabaseAdmin } from "@/lib/supabase/admin";
+
 import { createTrestleClient } from "@/lib/integrations/trestle-client";
-import { RentcastClient, createRentcastClient } from "@/lib/integrations/rentcast-client";
+import { getPropertyAvm } from "@/lib/integrations/avm-service";
 import {
   buildPropertyCacheKey,
   propertyCacheGet,
@@ -295,65 +295,51 @@ export async function GET(request: NextRequest) {
 
     if (!mlsSuccess) {
       try {
-        let rentcast: RentcastClient | null = null;
-        const { data: rcInteg } = await supabaseAdmin
-          .from("integrations")
-          .select("config")
-          .eq("provider", "rentcast")
-          .eq("status", "connected")
-          .limit(1)
-          .maybeSingle();
-
-        if (rcInteg?.config) {
-          const config = typeof rcInteg.config === "string" ? JSON.parse(rcInteg.config) : rcInteg.config;
-          if (config.api_key) rentcast = new RentcastClient({ apiKey: config.api_key });
-        }
-        if (!rentcast) rentcast = createRentcastClient();
-
-        if (rentcast && address) {
-          const avmParams: Record<string, any> = {
+        if (address) {
+          const avmData = await getPropertyAvm({
             address,
             compCount: Math.min(Math.max(compCount, 5), 25),
-          };
-          if (beds) avmParams.bedrooms = beds;
-          if (baths) avmParams.bathrooms = baths;
-          if (sqft) avmParams.squareFootage = sqft;
-          if (propertyType === "SFR") avmParams.propertyType = "Single Family";
-          else if (propertyType === "CONDO") avmParams.propertyType = "Condo";
+            bedrooms: beds,
+            bathrooms: baths,
+            squareFootage: sqft,
+            propertyType:
+              propertyType === "SFR" ? "Single Family" : propertyType === "CONDO" ? "Condo" : propertyType || undefined,
+          });
 
-          const estimate = await rentcast.getValueEstimate(avmParams);
-          rentcastAvm = {
-            price: estimate.price,
-            priceRangeLow: estimate.priceRangeLow,
-            priceRangeHigh: estimate.priceRangeHigh,
-          };
+          if (avmData) {
+            rentcastAvm = {
+              price: avmData.value,
+              priceRangeLow: avmData.low,
+              priceRangeHigh: avmData.high,
+            };
 
-          rentcastComps = (estimate.comparables || []).map((c: any) => ({
-            source: "rentcast",
-            address: c.formattedAddress || c.addressLine1,
-            city: c.city,
-            state: c.state,
-            zipCode: c.zipCode,
-            latitude: c.latitude,
-            longitude: c.longitude,
-            closePrice: c.price || c.lastSalePrice,
-            closeDate: c.lastSaleDate,
-            daysOnMarket: c.daysOnMarket,
-            propertyType: c.propertyType,
-            bedrooms: c.bedrooms,
-            bathrooms: c.bathrooms,
-            squareFootage: c.squareFootage,
-            yearBuilt: c.yearBuilt,
-            lotSize: c.lotSize,
-            pricePerSqft: c.price && c.squareFootage ? Math.round(c.price / c.squareFootage) : undefined,
-            distance: c.distance,
-            correlation: c.correlation,
-          }));
+            rentcastComps = (avmData.comparables || []).map((c: any) => ({
+              source: "rentcast",
+              address: c.formattedAddress || c.addressLine1,
+              city: c.city,
+              state: c.state,
+              zipCode: c.zipCode,
+              latitude: c.latitude,
+              longitude: c.longitude,
+              closePrice: c.price || c.lastSalePrice,
+              closeDate: c.lastSaleDate,
+              daysOnMarket: c.daysOnMarket,
+              propertyType: c.propertyType,
+              bedrooms: c.bedrooms,
+              bathrooms: c.bathrooms,
+              squareFootage: c.squareFootage,
+              yearBuilt: c.yearBuilt,
+              lotSize: c.lotSize,
+              pricePerSqft: c.price && c.squareFootage ? Math.round(c.price / c.squareFootage) : undefined,
+              distance: c.distance,
+              correlation: c.correlation,
+            }));
 
-          console.log(`[Comps] RentCast returned ${rentcastComps.length} comps`);
+            console.log(`[Comps] AVM service returned ${rentcastComps.length} comps`);
+          }
         }
       } catch (err: any) {
-        console.warn("[Comps] RentCast fallback failed:", err.message);
+        console.warn("[Comps] AVM fallback failed:", err.message);
       }
     }
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import type { RentcastProperty } from "@/lib/integrations/rentcast-client";
 import { getConfiguredRentcastClient, fetchAndMergeSingleProperty } from "@/lib/integrations/property-data-service";
+import { getPropertyAvm } from "@/lib/integrations/avm-service";
 
 /**
  * GET /api/seller-map/property-detail
@@ -56,29 +57,31 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Fetch AVM value estimate + comps from RentCast
+    // Fetch AVM value estimate + comps via centralized AVM service
     let comps: any[] = [];
     let avmValue: number | undefined;
     let avmLow: number | undefined;
     let avmHigh: number | undefined;
-    if (rentcast) {
-      try {
-        const avmParams: Record<string, any> = {
-          address,
-          compCount: 10,
-        };
-        if (property?.bedrooms) avmParams.bedrooms = property.bedrooms;
-        if (property?.bathrooms) avmParams.bathrooms = property.bathrooms;
-        if (property?.squareFootage) avmParams.squareFootage = property.squareFootage;
-        if (property?.propertyType) avmParams.propertyType = property.propertyType;
 
-        const valueEstimate = await rentcast.getValueEstimate(avmParams);
-        avmValue = valueEstimate.price;
-        avmLow = valueEstimate.priceRangeLow;
-        avmHigh = valueEstimate.priceRangeHigh;
+    try {
+      const avmData = await getPropertyAvm({
+        address,
+        latitude: property?.latitude,
+        longitude: property?.longitude,
+        bedrooms: property?.bedrooms,
+        bathrooms: property?.bathrooms,
+        squareFootage: property?.squareFootage,
+        propertyType: property?.propertyType,
+        compCount: 10,
+      });
+
+      if (avmData) {
+        avmValue = avmData.value;
+        avmLow = avmData.low;
+        avmHigh = avmData.high;
 
         // Use subjectProperty to fill gaps in the property record
-        const sp = valueEstimate.subjectProperty;
+        const sp = avmData.subjectProperty;
         if (sp && !property) {
           property = {
             id: sp.id,
@@ -117,7 +120,7 @@ export async function GET(request: NextRequest) {
           property.lastSalePrice = property.lastSalePrice ?? sp.lastSalePrice;
         }
 
-        comps = (valueEstimate.comparables || []).map((c) => ({
+        comps = (avmData.comparables || []).map((c) => ({
           id: c.id,
           address: c.formattedAddress,
           lat: c.latitude,
@@ -134,9 +137,9 @@ export async function GET(request: NextRequest) {
           listingType: c.listingType,
           listedDate: c.listedDate,
         }));
-      } catch (err: any) {
-        console.error("[PropertyDetail] AVM/comps error:", err.message);
       }
+    } catch (err: any) {
+      console.error("[PropertyDetail] AVM/comps error:", err.message);
     }
 
     // Fetch active/recent sale listings for this address from Rentcast

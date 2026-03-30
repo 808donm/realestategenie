@@ -320,16 +320,16 @@ export async function enrichWithRentcastAvm(client: RentcastClient, parcel: Real
   if (!address) return parcel;
 
   try {
-    const avmResult = await client.getValueEstimate({
+    const { getPropertyAvmSimple } = await import("./avm-service");
+    const avmResult = await getPropertyAvmSimple({
       address,
       latitude: parcel.latitude,
       longitude: parcel.longitude,
-      compCount: 5,
     });
 
-    if (!avmResult?.price) return parcel;
+    if (!avmResult?.value) return parcel;
 
-    const newAvmValue = avmResult.price;
+    const newAvmValue = avmResult.value;
     const assessedValue = parcel.totalAssessedValue || parcel.totalMarketValue;
     const existingAvm = parcel.modelValue;
 
@@ -533,8 +533,8 @@ export async function fetchAndMergeSingleProperty(
   const state = options.state || stateMatch?.[1];
   const street = address.replace(/,\s*[^,]+,\s*[A-Z]{2}\s*\d{0,5}\s*$/, "").trim();
 
-  // Fetch from all sources in parallel
-  const [rcProperty, realieProperty, avmResult] = await Promise.all([
+  // Fetch property data from both sources in parallel
+  const [rcProperty, realieProperty] = await Promise.all([
     // RentCast property search
     (async () => {
       if (!rentcast) return null;
@@ -557,16 +557,6 @@ export async function fetchAndMergeSingleProperty(
         return null;
       }
     })(),
-    // RentCast real AVM
-    (async () => {
-      if (!rentcast) return null;
-      try {
-        return await rentcast.getValueEstimate({ address, compCount: 5 });
-      } catch (err: any) {
-        console.warn("[PropertyData] RentCast AVM error:", err.message);
-        return null;
-      }
-    })(),
   ]);
 
   if (!rcProperty && !realieProperty) return null;
@@ -579,26 +569,42 @@ export async function fetchAndMergeSingleProperty(
     merged = mergeParcelData(rcProperty, realieProperty);
   }
 
-  // Apply RentCast real AVM (with sanity check against assessed value)
-  if (avmResult?.price) {
+  // Centralized AVM service (cached, deduped) - called after merge so we can pass property details
+  let avmResult = null;
+  try {
+    const { getPropertyAvm } = await import("./avm-service");
+    avmResult = await getPropertyAvm({
+      address,
+      latitude: merged?.latitude,
+      longitude: merged?.longitude,
+      bedrooms: merged?.totalBedrooms,
+      bathrooms: merged?.totalBathrooms,
+      squareFootage: merged?.buildingArea,
+    });
+  } catch (err: any) {
+    console.warn("[PropertyData] AVM service error:", err.message);
+  }
+
+  // Apply centralized AVM (with sanity check against assessed value)
+  if (avmResult?.value) {
     merged = await enrichWithRentcastAvm(rentcast!, { ...merged, modelValue: merged.modelValue });
 
-    // If the RentCast AVM won the sanity check OR there was no existing AVM,
+    // If the AVM won the sanity check OR there was no existing AVM,
     // apply the full AVM data
     const assessedValue = merged.totalAssessedValue || merged.totalMarketValue;
-    if (assessedValue && assessedValue > 0 && avmResult.price) {
+    if (assessedValue && assessedValue > 0 && avmResult.value) {
       const existingDev = merged.modelValue ? Math.abs(Math.log(merged.modelValue / assessedValue)) : Infinity;
-      const rcDev = Math.abs(Math.log(avmResult.price / assessedValue));
+      const rcDev = Math.abs(Math.log(avmResult.value / assessedValue));
 
       if (rcDev < existingDev || !merged.modelValue) {
-        merged.modelValue = avmResult.price;
-        merged.modelValueMin = avmResult.priceRangeLow;
-        merged.modelValueMax = avmResult.priceRangeHigh;
+        merged.modelValue = avmResult.value;
+        merged.modelValueMin = avmResult.low;
+        merged.modelValueMax = avmResult.high;
       }
     } else if (!merged.modelValue) {
-      merged.modelValue = avmResult.price;
-      merged.modelValueMin = avmResult.priceRangeLow;
-      merged.modelValueMax = avmResult.priceRangeHigh;
+      merged.modelValue = avmResult.value;
+      merged.modelValueMin = avmResult.low;
+      merged.modelValueMax = avmResult.high;
     }
   }
 

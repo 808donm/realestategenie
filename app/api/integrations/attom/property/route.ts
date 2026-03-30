@@ -467,26 +467,25 @@ async function fetchFromRentcast(endpoint: string, params: Record<string, any>):
       const isSingleAddressLookup = properties.length <= 3 && rentcastParams.address;
       if (isSingleAddressLookup) {
         try {
-          const avmResult = await client.getValueEstimate({
-            address: rentcastParams.address,
+          const { getPropertyAvm } = await import("@/lib/integrations/avm-service");
+          const avmData = await getPropertyAvm({
+            address: rentcastParams.address!,
             latitude: rentcastParams.latitude,
             longitude: rentcastParams.longitude,
-            compCount: 5,
           });
-          if (avmResult?.price) {
-            // Apply the real AVM to the first (best-match) property
+          if (avmData) {
             properties[0] = {
               ...properties[0],
               avm: {
                 amount: {
-                  value: avmResult.price,
-                  low: avmResult.priceRangeLow,
-                  high: avmResult.priceRangeHigh,
+                  value: avmData.value,
+                  low: avmData.low,
+                  high: avmData.high,
                 },
               },
             };
             console.log(
-              `[Rentcast] Enriched AVM: $${avmResult.price.toLocaleString()} (${avmResult.priceRangeLow?.toLocaleString()} - ${avmResult.priceRangeHigh?.toLocaleString()})`,
+              `[Rentcast] Enriched AVM: $${avmData.value.toLocaleString()} (${avmData.low?.toLocaleString()} - ${avmData.high?.toLocaleString()})`,
             );
           }
         } catch (avmErr: any) {
@@ -1012,21 +1011,20 @@ export async function GET(request: NextRequest) {
       }
       dataSource = "computed";
     } else if (endpoint === "homeequity") {
-      // ── Home equity: computed from RentCast AVM value estimate
-      const client = await getConfiguredRentcastClient();
-      if (client) {
-        try {
-          const address = params.address1
-            ? `${params.address1}${params.address2 ? ", " + params.address2 : ""}`
-            : params.address;
-          const avmResult = await client.getValueEstimate({
-            address,
-            latitude: params.latitude ? Number(params.latitude) : undefined,
-            longitude: params.longitude ? Number(params.longitude) : undefined,
-            compCount: 5,
-          });
-          const avmValue = avmResult.price;
-          const lastSalePrice = avmResult.subjectProperty?.lastSalePrice;
+      // ── Home equity: computed from centralized AVM service
+      try {
+        const address = params.address1
+          ? `${params.address1}${params.address2 ? ", " + params.address2 : ""}`
+          : params.address;
+        const { getPropertyAvm } = await import("@/lib/integrations/avm-service");
+        const avmData = await getPropertyAvm({
+          address,
+          latitude: params.latitude ? Number(params.latitude) : undefined,
+          longitude: params.longitude ? Number(params.longitude) : undefined,
+        });
+        if (avmData) {
+          const avmValue = avmData.value;
+          const lastSalePrice = avmData.subjectProperty?.lastSalePrice;
           // Without mortgage data from RentCast, estimate equity from AVM - lastSalePrice
           const estimatedEquity = avmValue && lastSalePrice ? avmValue - lastSalePrice : undefined;
           const ltv = avmValue && lastSalePrice ? (lastSalePrice / avmValue) * 100 : undefined;
@@ -1038,19 +1036,19 @@ export async function GET(request: NextRequest) {
                   estimatedValue: avmValue,
                   outstandingBalance: lastSalePrice,
                   ltv,
-                  lastSalePrice: avmResult.subjectProperty?.lastSalePrice,
-                  lastSaleDate: avmResult.subjectProperty?.lastSaleDate,
+                  lastSalePrice: avmData.subjectProperty?.lastSalePrice,
+                  lastSaleDate: avmData.subjectProperty?.lastSaleDate,
                 },
-                avm: { amount: { value: avmValue, low: avmResult.priceRangeLow, high: avmResult.priceRangeHigh } },
+                avm: { amount: { value: avmValue, low: avmData.low, high: avmData.high } },
               },
             ],
           };
-        } catch (err: any) {
-          console.warn(`[Rentcast] AVM/equity failed: ${err.message}`);
-          result = { property: [], message: "Equity estimate unavailable" };
+        } else {
+          result = { property: [], message: "AVM estimate unavailable" };
         }
-      } else {
-        result = { property: [], message: "RentCast client not configured" };
+      } catch (err: any) {
+        console.warn(`[AVM Service] AVM/equity failed: ${err.message}`);
+        result = { property: [], message: "Equity estimate unavailable" };
       }
       dataSource = "computed";
     } else if (endpoint === "compgenie") {

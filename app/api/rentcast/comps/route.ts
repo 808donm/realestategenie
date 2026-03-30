@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
-import { supabaseAdmin } from "@/lib/supabase/admin";
-import { RentcastClient, createRentcastClient } from "@/lib/integrations/rentcast-client";
+import { getPropertyAvm } from "@/lib/integrations/avm-service";
 import {
   buildPropertyCacheKey,
   propertyCacheGet,
@@ -65,29 +64,25 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(dbCached.data);
     }
 
-    // Cache miss — fetch live
-    const rentcast = await getRentcastClient();
-    if (!rentcast) {
-      return NextResponse.json({ error: "RentCast not configured" }, { status: 503 });
-    }
-
-    const avmParams: Record<string, any> = {
+    // Cache miss — fetch via centralized AVM service
+    const avmData = await getPropertyAvm({
       address,
       compCount: Math.min(Math.max(compCount, 5), 25),
-    };
+      bedrooms: bedrooms ? Number(bedrooms) : undefined,
+      bathrooms: bathrooms ? Number(bathrooms) : undefined,
+      squareFootage: squareFootage ? Number(squareFootage) : undefined,
+      propertyType: propertyType || undefined,
+    });
 
-    if (bedrooms) avmParams.bedrooms = Number(bedrooms);
-    if (bathrooms) avmParams.bathrooms = Number(bathrooms);
-    if (squareFootage) avmParams.squareFootage = Number(squareFootage);
-    if (propertyType) avmParams.propertyType = propertyType;
-
-    const valueEstimate = await rentcast.getValueEstimate(avmParams);
+    if (!avmData) {
+      return NextResponse.json({ error: "AVM service unavailable" }, { status: 503 });
+    }
 
     const result = {
-      price: valueEstimate.price,
-      priceRangeLow: valueEstimate.priceRangeLow,
-      priceRangeHigh: valueEstimate.priceRangeHigh,
-      comparables: valueEstimate.comparables || [],
+      price: avmData.value,
+      priceRangeLow: avmData.low,
+      priceRangeHigh: avmData.high,
+      comparables: avmData.comparables || [],
     };
 
     // Write to both cache layers
@@ -98,26 +93,5 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error("[RentCast Comps] Error:", error);
     return NextResponse.json({ error: error.message || "Failed to fetch comparables" }, { status: 500 });
-  }
-}
-
-async function getRentcastClient(): Promise<RentcastClient | null> {
-  try {
-    const { data: integration } = await supabaseAdmin
-      .from("integrations")
-      .select("config")
-      .eq("provider", "rentcast")
-      .eq("status", "connected")
-      .limit(1)
-      .maybeSingle();
-
-    if (integration?.config) {
-      const config = typeof integration.config === "string" ? JSON.parse(integration.config) : integration.config;
-      if (config.api_key) return new RentcastClient({ apiKey: config.api_key });
-    }
-
-    return createRentcastClient();
-  } catch {
-    return null;
   }
 }
