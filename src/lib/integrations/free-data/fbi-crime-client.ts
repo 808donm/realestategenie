@@ -150,9 +150,28 @@ export async function getCrimeIndicesByState(stateAbbrev: string, year?: number)
       if (result.status !== "fulfilled" || !result.value) continue;
       const { offense, data } = result.value;
 
-      // Response is typically an array of yearly records or an object
-      const records = Array.isArray(data) ? data : data.results || data.data || [];
-      if (!Array.isArray(records) || records.length === 0) continue;
+      // Log raw response shape for debugging
+      console.log(`[FBI] ${offense} response type=${typeof data}, isArray=${Array.isArray(data)}, keys=${typeof data === "object" && data ? Object.keys(data).slice(0, 10).join(",") : "N/A"}, sample=${JSON.stringify(data).slice(0, 200)}`);
+
+      // Response could be: array of records, object with nested data, or keyed by year
+      let records: any[] = [];
+      if (Array.isArray(data)) {
+        records = data;
+      } else if (data && typeof data === "object") {
+        // Could be { results: [...] }, { data: [...] }, or { "2020": {...}, "2021": {...} }
+        if (data.results) records = data.results;
+        else if (data.data) records = Array.isArray(data.data) ? data.data : [data.data];
+        else {
+          // Try treating keys as years (e.g., { "2020": { population: X, ... }, "2021": {...} })
+          const yearKeys = Object.keys(data).filter((k) => /^\d{4}$/.test(k));
+          if (yearKeys.length > 0) {
+            records = yearKeys.map((yr) => ({ year: parseInt(yr), ...data[yr] }));
+          } else {
+            records = [data];
+          }
+        }
+      }
+      if (records.length === 0) continue;
 
       // Get most recent year's record
       const sorted = [...records].sort((a: any, b: any) => (b.year || b.data_year || 0) - (a.year || a.data_year || 0));
@@ -163,9 +182,10 @@ export async function getCrimeIndicesByState(stateAbbrev: string, year?: number)
       if (yr > latestYear) latestYear = yr;
       if (recent.population && recent.population > population) population = recent.population;
 
-      // Extract the count -- field name varies by response format
+      // Extract the count -- try multiple possible field names
       const count =
-        recent.actual || recent.total || recent.value || recent.count || recent.estimated || 0;
+        recent.actual || recent.total || recent.value || recent.count || recent.estimated ||
+        recent.totalCount || recent.offense_count || recent.incidents || 0;
       crimeData[offense] = count;
     }
 
