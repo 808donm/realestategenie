@@ -8,8 +8,8 @@
  * to match the ATTOM community profile crime format.
  */
 
-const BASE_URL = "https://api.usa.gov/crime/fbi/sapi";
-const API_KEY = "iiHnOKfno2Mgbd5AXC1GqeTpEVsMgiVXqhqoSC2n"; // Public FBI CDE API key
+const BASE_URL = "https://api.usa.gov/crime/fbi/cde";
+const API_KEY = process.env.FBI_API_KEY || "";
 
 export interface CrimeIndices {
   crimeIndex: number | null;
@@ -108,49 +108,75 @@ function rateToIndex(rate: number, offenseType: string): number {
  * FBI API provides data at state level; county data available but less reliable.
  */
 export async function getCrimeIndicesByState(stateAbbrev: string, year?: number): Promise<CrimeIndices | null> {
-  const targetYear = year || 2022;
-  const stateFips = STATE_FIPS[stateAbbrev.toUpperCase()];
-  if (!stateFips) return null;
-
-  try {
-    // Fetch estimated totals for the state
-    const url = `${BASE_URL}/api/estimates/states/${stateFips}?year=${targetYear}&API_KEY=${API_KEY}`;
-    const response = await fetch(url, {
-      signal: AbortSignal.timeout(10000),
-    });
-
-    if (!response.ok) {
-      console.warn(`[FBI] API returned ${response.status} for state ${stateAbbrev}`);
-      return null;
-    }
-
-    const data = await response.json();
-    const results = data.results || [];
-
-    // Find the closest year
-    const match = results.find((r: any) => r.year === targetYear) || results[results.length - 1];
-
-    if (!match) return null;
-
-    const pop = match.population || 1;
-    const rate = (count: number) => (count / pop) * 100000;
-
-    return {
-      crimeIndex: rateToIndex(rate((match.violent_crime || 0) + (match.property_crime || 0)), "violent-crime"),
-      burglaryIndex: rateToIndex(rate(match.burglary || 0), "burglary"),
-      larcenyIndex: rateToIndex(rate(match.larceny || 0), "larceny"),
-      motorVehicleTheftIndex: rateToIndex(rate(match.motor_vehicle_theft || 0), "motor-vehicle-theft"),
-      aggravatedAssaultIndex: rateToIndex(rate(match.aggravated_assault || 0), "aggravated-assault"),
-      robberyIndex: rateToIndex(rate(match.robbery || 0), "robbery"),
-      violentCrimeIndex: rateToIndex(rate(match.violent_crime || 0), "violent-crime"),
-      propertyCrimeIndex: rateToIndex(rate(match.property_crime || 0), "property-crime"),
-      year: match.year,
-      areaName: match.state_name || stateAbbrev,
-    };
-  } catch (err) {
-    console.error("[FBI] Crime data fetch failed:", err);
+  if (!API_KEY) {
+    console.warn("[FBI] FBI_API_KEY not configured, skipping crime data");
     return null;
   }
+
+  const targetYear = year || 2022;
+  const state = stateAbbrev.toUpperCase();
+  const stateFips = STATE_FIPS[state];
+  if (!stateFips) return null;
+
+  // Try the new CDE API first, fall back to legacy SAPI
+  const urls = [
+    `${BASE_URL}/estimate/state/${state}/${targetYear}?API_KEY=${API_KEY}`,
+    `${BASE_URL}/api/estimates/states/${stateFips}?year=${targetYear}&API_KEY=${API_KEY}`,
+  ];
+
+  for (const url of urls) {
+    try {
+      const response = await fetch(url, {
+        signal: AbortSignal.timeout(10000),
+      });
+
+      if (!response.ok) {
+        console.warn(`[FBI] API returned ${response.status} for ${url.split("?")[0]}`);
+        continue;
+      }
+
+      const data = await response.json();
+
+      // New CDE format: data may be an object or have a results array
+      const results = Array.isArray(data) ? data : data.results || (data.data ? [data.data] : [data]);
+
+      // Find the closest year
+      const match = results.find((r: any) => r.year === targetYear) || results[results.length - 1];
+
+      if (!match) continue;
+
+      const pop = match.population || 1;
+      const rate = (count: number) => (count / pop) * 100000;
+
+      // Handle both old field names and potential new field names
+      const violentCrime = match.violent_crime ?? match.violentCrime ?? 0;
+      const propertyCrime = match.property_crime ?? match.propertyCrime ?? 0;
+      const burglary = match.burglary ?? 0;
+      const larceny = match.larceny ?? match.larcenyTheft ?? 0;
+      const mvt = match.motor_vehicle_theft ?? match.motorVehicleTheft ?? 0;
+      const assault = match.aggravated_assault ?? match.aggravatedAssault ?? 0;
+      const robbery = match.robbery ?? 0;
+
+      return {
+        crimeIndex: rateToIndex(rate(violentCrime + propertyCrime), "violent-crime"),
+        burglaryIndex: rateToIndex(rate(burglary), "burglary"),
+        larcenyIndex: rateToIndex(rate(larceny), "larceny"),
+        motorVehicleTheftIndex: rateToIndex(rate(mvt), "motor-vehicle-theft"),
+        aggravatedAssaultIndex: rateToIndex(rate(assault), "aggravated-assault"),
+        robberyIndex: rateToIndex(rate(robbery), "robbery"),
+        violentCrimeIndex: rateToIndex(rate(violentCrime), "violent-crime"),
+        propertyCrimeIndex: rateToIndex(rate(propertyCrime), "property-crime"),
+        year: match.year || targetYear,
+        areaName: match.state_name || match.stateName || stateAbbrev,
+      };
+    } catch (err) {
+      console.warn("[FBI] Crime data fetch failed for URL:", url.split("?")[0], err);
+      continue;
+    }
+  }
+
+  console.warn(`[FBI] All endpoints failed for state ${stateAbbrev}`);
+  return null;
 }
 
 /**
