@@ -110,6 +110,8 @@ export async function getNeighborhoodProfile(params: {
     ? `ZIP ${postalCode}`
     : params.address2 || (latitude && longitude ? `${latitude.toFixed(2)}, ${longitude.toFixed(2)}` : "");
 
+  console.log(`[Neighborhood] Fetching profile: lat=${latitude}, lng=${longitude}, zip=${postalCode}, state=${stateAbbrev}, fips=${fips}`);
+
   // Run all free API calls in parallel
   const [schoolsResult, crimeResult, hazardResult, poiResult, trendsResult] = await Promise.allSettled([
     // Schools
@@ -144,6 +146,9 @@ export async function getNeighborhoodProfile(params: {
       endYear: new Date().getFullYear(),
     }),
   ]);
+
+  // Log results for debugging
+  console.log(`[Neighborhood] Results: schools=${schoolsResult.status === "fulfilled" ? (schoolsResult.value?.schools?.length || 0) : "FAILED:" + (schoolsResult as any).reason?.message}, crime=${crimeResult.status}, hazards=${hazardResult.status}, poi=${poiResult.status === "fulfilled" ? (poiResult.value?.pois?.length || 0) : "FAILED"}, trends=${trendsResult.status}`);
 
   // Build community object (crime + hazards)
   const crime = crimeResult.status === "fulfilled" ? crimeResult.value : null;
