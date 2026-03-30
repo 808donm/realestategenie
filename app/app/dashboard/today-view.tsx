@@ -50,7 +50,14 @@ export default function TodayView({
       {/* Greeting */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight">
-          {greeting}, {agentName.split(" ")[0]}
+          {greeting}, {(() => {
+            const parts = agentName.split(" ");
+            // If first part is an initial (e.g. "R." or "R"), include the next part too
+            if (parts.length >= 2 && /^[A-Z]\.?$/i.test(parts[0])) {
+              return `${parts[0]} ${parts[1]}`;
+            }
+            return parts[0];
+          })()}
         </h1>
         <p className="text-muted-foreground mt-1">{todayStr}</p>
       </div>
