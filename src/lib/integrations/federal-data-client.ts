@@ -709,7 +709,7 @@ export class FederalDataClient {
    * API: https://www.fema.gov/about/openfema/api
    * Free, no key needed
    */
-  async getFloodData(zipCode: string, stateAbbrev?: string): Promise<FEMAResult> {
+  async getFloodData(zipCode: string, stateAbbrev?: string, countyName?: string): Promise<FEMAResult> {
     try {
       // Get NFIP policies summary for the ZIP
       const policyUrl = `https://www.fema.gov/api/open/v2/FimaNfipPolicies?$filter=reportedZipCode eq '${zipCode}'&$select=reportedZipCode,countyCode,policyCount,totalInsurancePremiumOfThePolicy,totalBuildingInsuranceCoverage,floodZone&$top=5&$orderby=policyEffectiveDate desc`;
@@ -743,9 +743,19 @@ export class FederalDataClient {
         }
       }
 
-      // Get recent disaster declarations for the area, filtered by state
+      // Get recent disaster declarations for the area
+      // FEMA's designatedArea field uses county names like "Honolulu (County)", not zip codes.
+      // Filter by county when available, fall back to statewide.
       const stateFilter = stateAbbrev ? ` and state eq '${stateAbbrev}'` : "";
-      const disasterUrl = `https://www.fema.gov/api/open/v2/DisasterDeclarationsSummaries?$filter=(designatedArea eq '${zipCode}' or designatedArea eq 'Statewide')${stateFilter}&$top=10&$orderby=declarationDate desc`;
+      const areaFilters: string[] = [];
+      if (countyName) {
+        // FEMA format: "County Name (County)" e.g. "Honolulu (County)"
+        areaFilters.push(`designatedArea eq '${countyName} (County)'`);
+        // Also try without the "(County)" suffix in case FEMA uses different formatting
+        areaFilters.push(`contains(designatedArea, '${countyName}')`);
+      }
+      areaFilters.push("designatedArea eq 'Statewide'");
+      const disasterUrl = `https://www.fema.gov/api/open/v2/DisasterDeclarationsSummaries?$filter=(${areaFilters.join(" or ")})${stateFilter}&$top=10&$orderby=declarationDate desc`;
       const disasterResponse = await fetch(disasterUrl);
       let disasters: FEMADisaster[] = [];
 
@@ -1294,9 +1304,18 @@ export class FederalDataClient {
       );
     }
 
-    // FEMA Flood Data
+    // FEMA Flood Data -- resolve county name for county-specific disaster filtering
+    let countyName: string | undefined;
+    // For Hawaii, use our zip-to-county mapping
+    if (state?.toUpperCase() === "HI") {
+      try {
+        const { getCountyByZip } = await import("@/lib/hawaii-zip-county");
+        const hiCounty = getCountyByZip(zipCode);
+        if (hiCounty) countyName = hiCounty.charAt(0) + hiCounty.slice(1).toLowerCase(); // "HONOLULU" -> "Honolulu"
+      } catch {}
+    }
     tasks.push(
-      this.getFloodData(zipCode, state)
+      this.getFloodData(zipCode, state, countyName)
         .then((r) => {
           if (r.success) {
             if (r.floodData) supplement.floodRisk = r.floodData;
