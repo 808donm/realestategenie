@@ -1,8 +1,18 @@
 "use client";
 
+import { useState, useCallback, useEffect } from "react";
 import type { ScoredProperty, SellerFactor } from "@/lib/scoring/seller-motivation-score";
 import { getSellerColor, getSellerLabel } from "@/lib/scoring/seller-motivation-score";
 import { fmtPrice } from "@/lib/utils";
+
+interface OutreachDraft {
+  address: string;
+  ownerName: string | null;
+  letterBody: string;
+  subject: string;
+  smsMessage: string;
+  talkingPoints: string[];
+}
 
 type Props = {
   property: ScoredProperty;
@@ -10,10 +20,87 @@ type Props = {
   onAddToCRM?: (property: ScoredProperty) => void;
   onGenerateReport?: (property: ScoredProperty) => void;
   onDraftOutreach?: (property: ScoredProperty) => void;
+  agentName?: string;
+  agentPhone?: string;
 };
 
-export function PropertyCard({ property, compact, onAddToCRM, onGenerateReport, onDraftOutreach }: Props) {
+export function PropertyCard({ property, compact, onAddToCRM, onGenerateReport, onDraftOutreach, agentName, agentPhone }: Props) {
   const p = property;
+  // Fetch agent info for outreach generation
+  const [resolvedAgentName, setResolvedAgentName] = useState(agentName || "");
+  const [resolvedAgentPhone, setResolvedAgentPhone] = useState(agentPhone || "");
+  useEffect(() => {
+    if (agentName) return;
+    fetch("/api/profile").then(r => r.json()).then(data => {
+      if (data.display_name) setResolvedAgentName(data.display_name);
+      if (data.phone) setResolvedAgentPhone(data.phone);
+    }).catch(() => {});
+  }, [agentName]);
+
+  const [outreach, setOutreach] = useState<OutreachDraft | null>(null);
+  const [outreachLoading, setOutreachLoading] = useState(false);
+  const [outreachError, setOutreachError] = useState("");
+  const [outreachTab, setOutreachTab] = useState<"letter" | "sms" | "talking">("letter");
+  const [copied, setCopied] = useState(false);
+
+  const handleGenerateOutreach = useCallback(async () => {
+    setOutreachLoading(true);
+    setOutreachError("");
+    setOutreach(null);
+    try {
+      // Determine prospect mode from top scoring factors
+      const topFactor = p.factors.sort((a, b) => b.points - a.points)[0]?.name?.toLowerCase() || "";
+      let mode = "equity";
+      if (topFactor.includes("absentee")) mode = "absentee";
+      else if (topFactor.includes("distress")) mode = "foreclosure";
+      else if (topFactor.includes("portfolio") || topFactor.includes("multi")) mode = "investor";
+
+      const res = await fetch("/api/prospecting-ai/outreach", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode,
+          properties: [{
+            address: p.address,
+            ownerName: p.owner || null,
+            isAbsentee: p.absentee,
+            isCorporate: false,
+            avmValue: p.estimatedValue,
+            mortgageAmount: p.estimatedValue && p.ltv ? Math.round(p.estimatedValue * (p.ltv / 100)) : null,
+            equityAmount: p.equity,
+            lastSalePrice: p.lastSalePrice,
+            lastSaleDate: p.lastSaleDate,
+            ownershipYears: p.ownershipYears,
+            beds: p.beds,
+            baths: p.baths,
+            sqft: p.sqft,
+            yearBuilt: p.yearBuilt,
+            propertyType: p.propertyType,
+          }],
+          market: { zipCode: p.zip || "unknown" },
+          agentName: resolvedAgentName || "Agent",
+          agentPhone: resolvedAgentPhone || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to generate outreach");
+      if (data.drafts?.length > 0) {
+        setOutreach(data.drafts[0]);
+      } else {
+        setOutreachError("No outreach generated");
+      }
+    } catch (err: any) {
+      setOutreachError(err.message || "Outreach generation failed");
+    } finally {
+      setOutreachLoading(false);
+    }
+  }, [p]);
+
+  const copyToClipboard = useCallback((text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }, []);
 
   return (
     <div className={compact ? "min-w-[280px]" : "bg-white rounded-lg border p-4"}>
@@ -156,20 +243,100 @@ export function PropertyCard({ property, compact, onAddToCRM, onGenerateReport, 
               Property Report
             </button>
           )}
-          {onDraftOutreach && (
-            <button
-              onClick={() => onDraftOutreach(p)}
-              className="flex-1 text-xs border border-indigo-300 text-indigo-600 py-1.5 px-3 rounded hover:bg-indigo-50 transition-colors"
-            >
-              Draft Outreach
-            </button>
-          )}
+          <button
+            onClick={handleGenerateOutreach}
+            disabled={outreachLoading}
+            className="flex-1 text-xs border border-indigo-300 text-indigo-600 py-1.5 px-3 rounded hover:bg-indigo-50 transition-colors disabled:opacity-50"
+          >
+            {outreachLoading ? "Generating..." : outreach ? "Regenerate" : "Draft Outreach"}
+          </button>
           <a
             href={`/app/property-data?address=${encodeURIComponent(p.address)}`}
             className="flex-1 text-xs text-center border border-gray-300 py-1.5 px-3 rounded hover:bg-gray-50 transition-colors"
           >
             Full Details
           </a>
+        </div>
+      )}
+
+      {/* Outreach Error */}
+      {outreachError && !compact && (
+        <div className="text-xs text-red-600 mt-2 px-1">{outreachError}</div>
+      )}
+
+      {/* Generated Outreach */}
+      {outreach && !compact && (
+        <div className="mt-3 border border-indigo-200 rounded-lg overflow-hidden">
+          {/* Tabs */}
+          <div className="flex border-b border-indigo-200 bg-indigo-50">
+            {(["letter", "sms", "talking"] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setOutreachTab(tab)}
+                className="flex-1 text-[11px] font-semibold py-2 transition-colors"
+                style={{
+                  color: outreachTab === tab ? "#4338ca" : "#6b7280",
+                  borderBottom: outreachTab === tab ? "2px solid #4338ca" : "2px solid transparent",
+                  background: outreachTab === tab ? "#fff" : "transparent",
+                }}
+              >
+                {tab === "letter" ? "Email / Letter" : tab === "sms" ? "SMS" : "Talking Points"}
+              </button>
+            ))}
+          </div>
+
+          {/* Content */}
+          <div className="p-3 bg-white">
+            {outreachTab === "letter" && (
+              <div>
+                <div className="text-[10px] font-semibold text-gray-400 mb-1">SUBJECT</div>
+                <div className="text-xs font-medium text-gray-800 mb-3 pb-2 border-b border-gray-100">
+                  {outreach.subject}
+                </div>
+                <div className="text-[10px] font-semibold text-gray-400 mb-1">BODY</div>
+                <div className="text-xs text-gray-700 leading-relaxed whitespace-pre-line">
+                  {outreach.letterBody}
+                </div>
+              </div>
+            )}
+            {outreachTab === "sms" && (
+              <div>
+                <div className="text-[10px] font-semibold text-gray-400 mb-1">SMS MESSAGE</div>
+                <div className="text-xs text-gray-700 leading-relaxed p-2 bg-green-50 rounded border border-green-200">
+                  {outreach.smsMessage}
+                </div>
+                <div className="text-[10px] text-gray-400 mt-1">{outreach.smsMessage.length}/160 chars</div>
+              </div>
+            )}
+            {outreachTab === "talking" && (
+              <div>
+                <div className="text-[10px] font-semibold text-gray-400 mb-1">PHONE TALKING POINTS</div>
+                <ul className="space-y-2">
+                  {outreach.talkingPoints.map((point, i) => (
+                    <li key={i} className="text-xs text-gray-700 flex gap-2">
+                      <span className="text-indigo-500 font-bold shrink-0">{i + 1}.</span>
+                      {point}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Copy button */}
+            <button
+              onClick={() => {
+                const text = outreachTab === "letter"
+                  ? `Subject: ${outreach.subject}\n\n${outreach.letterBody}`
+                  : outreachTab === "sms"
+                    ? outreach.smsMessage
+                    : outreach.talkingPoints.map((p, i) => `${i + 1}. ${p}`).join("\n");
+                copyToClipboard(text);
+              }}
+              className="mt-3 w-full text-xs py-1.5 rounded border border-indigo-300 text-indigo-600 hover:bg-indigo-50 transition-colors font-medium"
+            >
+              {copied ? "Copied!" : "Copy to Clipboard"}
+            </button>
+          </div>
         </div>
       )}
     </div>
