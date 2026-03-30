@@ -95,8 +95,9 @@ function scoreEquity(parcel: RealieParcel): SellerFactor {
       points = Math.round(max * 0.15);
       description = `Low equity (LTV ${ltv}%)`;
     }
-  } else if (equity != null && parcel.modelValue) {
-    const equityPct = Math.round((equity / parcel.modelValue) * 100);
+  } else if (equity != null && (parcel.totalMarketValue || parcel.totalAssessedValue || parcel.modelValue)) {
+    const valForEquity = (parcel.totalMarketValue || parcel.totalAssessedValue || parcel.modelValue)!;
+    const equityPct = Math.round((equity / valForEquity) * 100);
     if (equityPct > 70) {
       points = max;
       description = `Very high equity (${equityPct}% of value)`;
@@ -241,7 +242,7 @@ function scoreDistress(parcel: RealieParcel): SellerFactor {
   } else if (parcel.totalLienCount && parcel.totalLienCount > 3) {
     points = 12;
     description = `${parcel.totalLienCount} liens on property`;
-  } else if (parcel.totalLienBalance && parcel.modelValue && parcel.totalLienBalance > parcel.modelValue * 0.9) {
+  } else if (parcel.totalLienBalance && (parcel.totalMarketValue || parcel.totalAssessedValue || parcel.modelValue) && parcel.totalLienBalance > (parcel.totalMarketValue || parcel.totalAssessedValue || parcel.modelValue)! * 0.9) {
     points = 10;
     description = "Lien balance near or exceeding property value";
   } else if (parcel.totalLienCount && parcel.totalLienCount > 1) {
@@ -316,7 +317,7 @@ function scoreTaxAnomaly(parcel: RealieParcel): SellerFactor {
   const max = WEIGHTS.taxAnomaly;
   let points = 0;
   const assessed = parcel.totalAssessedValue;
-  const market = parcel.modelValue || parcel.totalMarketValue;
+  const market = parcel.totalMarketValue || parcel.totalAssessedValue || parcel.modelValue;
   let description = assessed && market ? "Tax assessment normal" : "No tax assessment data available";
 
   if (assessed && market) {
@@ -455,7 +456,7 @@ function scoreAppreciation(parcel: RealieParcel): SellerFactor {
 
   // If not pre-computed, try to derive from purchase price vs model value
   if (pct == null && parcel.purchasePrice && parcel.purchasePrice > 0) {
-    const currentVal = parcel.modelValue || parcel.totalMarketValue;
+    const currentVal = parcel.totalMarketValue || parcel.totalAssessedValue || parcel.modelValue;
     if (currentVal && currentVal !== parcel.purchasePrice) {
       pct = ((currentVal - parcel.purchasePrice) / parcel.purchasePrice) * 100;
     }
@@ -649,7 +650,7 @@ export function scoreParcel(parcel: RealieParcel): ScoredProperty | null {
     ownerParcelCount: parcel.ownerParcelCount,
     absentee,
     propertyType: parcel.residential ? "Residential" : parcel.condo ? "Condo" : undefined,
-    estimatedValue: parcel.modelValue || parcel.totalMarketValue,
+    estimatedValue: parcel.totalMarketValue || parcel.totalAssessedValue,
     beds: parcel.totalBedrooms,
     baths: parcel.totalBathrooms,
     sqft: parcel.buildingArea,

@@ -342,8 +342,8 @@ export async function GET(request: NextRequest) {
       ownerParcelCount: merged?.ownerParcelCount,
       ownerResCount: merged?.ownerResCount,
       ownerComCount: merged?.ownerComCount,
-      // Use the shared service's sanity-checked AVM as modelValue
-      modelValue: mergedModelValue || avmValue,
+      // Use RentCast AVM as primary, fall back to county assessment
+      modelValue: avmValue || merged?.totalMarketValue || merged?.totalAssessedValue,
 
       // Ownership
       owner: property?.owner,
