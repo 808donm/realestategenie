@@ -113,70 +113,87 @@ export async function getCrimeIndicesByState(stateAbbrev: string, year?: number)
     return null;
   }
 
-  const targetYear = year || 2022;
   const state = stateAbbrev.toUpperCase();
-  const stateFips = STATE_FIPS[state];
-  if (!stateFips) return null;
+  if (!STATE_FIPS[state]) return null;
 
-  // Try the new CDE API first, fall back to legacy SAPI
-  const urls = [
-    `${BASE_URL}/estimate/state/${state}/${targetYear}?API_KEY=${API_KEY}`,
-    `${BASE_URL}/api/estimates/states/${stateFips}?year=${targetYear}&API_KEY=${API_KEY}`,
+  // New CDE API: /summarized/state/{state}/{offense}
+  // Each offense is a separate endpoint. Fetch all in parallel.
+  const offenses = [
+    "violent-crime",
+    "property-crime",
+    "burglary",
+    "larceny",
+    "motor-vehicle-theft",
+    "aggravated-assault",
+    "robbery",
   ];
 
-  for (const url of urls) {
-    try {
-      const response = await fetch(url, {
-        signal: AbortSignal.timeout(10000),
-      });
+  try {
+    const results = await Promise.allSettled(
+      offenses.map((offense) =>
+        fetch(`${BASE_URL}/summarized/state/${state}/${offense}?API_KEY=${API_KEY}`, {
+          signal: AbortSignal.timeout(10000),
+        }).then(async (r) => {
+          if (!r.ok) return null;
+          const data = await r.json();
+          return { offense, data };
+        }),
+      ),
+    );
 
-      if (!response.ok) {
-        console.warn(`[FBI] API returned ${response.status} for ${url.split("?")[0]}`);
-        continue;
-      }
+    // Extract the most recent year's data from each offense response
+    const crimeData: Record<string, number> = {};
+    let latestYear = 0;
+    let population = 0;
 
-      const data = await response.json();
+    for (const result of results) {
+      if (result.status !== "fulfilled" || !result.value) continue;
+      const { offense, data } = result.value;
 
-      // New CDE format: data may be an object or have a results array
-      const results = Array.isArray(data) ? data : data.results || (data.data ? [data.data] : [data]);
+      // Response is typically an array of yearly records or an object
+      const records = Array.isArray(data) ? data : data.results || data.data || [];
+      if (!Array.isArray(records) || records.length === 0) continue;
 
-      // Find the closest year
-      const match = results.find((r: any) => r.year === targetYear) || results[results.length - 1];
+      // Get most recent year's record
+      const sorted = [...records].sort((a: any, b: any) => (b.year || b.data_year || 0) - (a.year || a.data_year || 0));
+      const recent = sorted[0];
+      if (!recent) continue;
 
-      if (!match) continue;
+      const yr = recent.year || recent.data_year || 0;
+      if (yr > latestYear) latestYear = yr;
+      if (recent.population && recent.population > population) population = recent.population;
 
-      const pop = match.population || 1;
-      const rate = (count: number) => (count / pop) * 100000;
-
-      // Handle both old field names and potential new field names
-      const violentCrime = match.violent_crime ?? match.violentCrime ?? 0;
-      const propertyCrime = match.property_crime ?? match.propertyCrime ?? 0;
-      const burglary = match.burglary ?? 0;
-      const larceny = match.larceny ?? match.larcenyTheft ?? 0;
-      const mvt = match.motor_vehicle_theft ?? match.motorVehicleTheft ?? 0;
-      const assault = match.aggravated_assault ?? match.aggravatedAssault ?? 0;
-      const robbery = match.robbery ?? 0;
-
-      return {
-        crimeIndex: rateToIndex(rate(violentCrime + propertyCrime), "violent-crime"),
-        burglaryIndex: rateToIndex(rate(burglary), "burglary"),
-        larcenyIndex: rateToIndex(rate(larceny), "larceny"),
-        motorVehicleTheftIndex: rateToIndex(rate(mvt), "motor-vehicle-theft"),
-        aggravatedAssaultIndex: rateToIndex(rate(assault), "aggravated-assault"),
-        robberyIndex: rateToIndex(rate(robbery), "robbery"),
-        violentCrimeIndex: rateToIndex(rate(violentCrime), "violent-crime"),
-        propertyCrimeIndex: rateToIndex(rate(propertyCrime), "property-crime"),
-        year: match.year || targetYear,
-        areaName: match.state_name || match.stateName || stateAbbrev,
-      };
-    } catch (err) {
-      console.warn("[FBI] Crime data fetch failed for URL:", url.split("?")[0], err);
-      continue;
+      // Extract the count -- field name varies by response format
+      const count =
+        recent.actual || recent.total || recent.value || recent.count || recent.estimated || 0;
+      crimeData[offense] = count;
     }
-  }
 
-  console.warn(`[FBI] All endpoints failed for state ${stateAbbrev}`);
-  return null;
+    if (Object.keys(crimeData).length === 0 || population === 0) {
+      console.warn(`[FBI] No usable crime data for state ${state}`);
+      return null;
+    }
+
+    const rate = (count: number) => (count / population) * 100000;
+
+    console.log(`[FBI] Crime data for ${state} (${latestYear}): ${JSON.stringify(crimeData)}`);
+
+    return {
+      crimeIndex: rateToIndex(rate((crimeData["violent-crime"] || 0) + (crimeData["property-crime"] || 0)), "violent-crime"),
+      burglaryIndex: rateToIndex(rate(crimeData["burglary"] || 0), "burglary"),
+      larcenyIndex: rateToIndex(rate(crimeData["larceny"] || 0), "larceny"),
+      motorVehicleTheftIndex: rateToIndex(rate(crimeData["motor-vehicle-theft"] || 0), "motor-vehicle-theft"),
+      aggravatedAssaultIndex: rateToIndex(rate(crimeData["aggravated-assault"] || 0), "aggravated-assault"),
+      robberyIndex: rateToIndex(rate(crimeData["robbery"] || 0), "robbery"),
+      violentCrimeIndex: rateToIndex(rate(crimeData["violent-crime"] || 0), "violent-crime"),
+      propertyCrimeIndex: rateToIndex(rate(crimeData["property-crime"] || 0), "property-crime"),
+      year: latestYear,
+      areaName: state,
+    };
+  } catch (err) {
+    console.error("[FBI] Crime data fetch failed:", err);
+    return null;
+  }
 }
 
 /**
