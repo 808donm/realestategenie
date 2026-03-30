@@ -3290,7 +3290,7 @@ export default function PropertyDetailModal({
               const climate = communityObj?.climate;
               const airQuality = communityObj?.airQuality;
               const naturalDisasters = communityObj?.naturalDisasters;
-              const hasCommunity = !!(demo || crime || climate);
+              const hasCommunity = !!(demo || crime || climate || naturalDisasters);
 
               // Helper: get a field by exact v4 snake_Case_Name from demographics
               const d = (key: string) => demo?.[key];

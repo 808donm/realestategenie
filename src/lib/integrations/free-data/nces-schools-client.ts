@@ -113,7 +113,7 @@ export async function searchSchoolsByLocation(
 
     const response = await fetch(url, {
       headers: { Accept: "application/json" },
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(30000),
     });
 
     if (!response.ok) {
@@ -165,7 +165,7 @@ export async function searchSchoolsByZip(zipCode: string, maxResults: number = 2
 
     const response = await fetch(url, {
       headers: { Accept: "application/json" },
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(30000),
     });
 
     if (!response.ok) {
