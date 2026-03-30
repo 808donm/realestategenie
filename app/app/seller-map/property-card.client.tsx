@@ -100,6 +100,9 @@ export function PropertyCard({ property, compact, onAddToCRM, onGenerateReport, 
         </div>
       )}
 
+      {/* AI Insight — why this property is a prime opportunity */}
+      {!compact && <OpportunityInsight property={p} />}
+
       {/* Score Factor Breakdown */}
       {!compact && (
         <div className="mb-3">
@@ -185,6 +188,74 @@ function ScoreBadge({ score, level }: { score: number; level: ScoredProperty["le
       <span className="text-[10px] font-medium mt-0.5" style={{ color: getSellerColor(level) }}>
         {getSellerLabel(level)}
       </span>
+    </div>
+  );
+}
+
+function OpportunityInsight({ property: p }: { property: ScoredProperty }) {
+  const topFactors = p.factors
+    .filter((f) => f.points > 0)
+    .sort((a, b) => b.points / b.maxPoints - a.points / a.maxPoints);
+
+  if (topFactors.length === 0) return null;
+
+  // Build a natural-language insight from the top scoring factors
+  const insights: string[] = [];
+  const approaches: string[] = [];
+
+  for (const f of topFactors.slice(0, 3)) {
+    const ratio = f.points / f.maxPoints;
+    const name = f.name.toLowerCase();
+
+    if (name.includes("absentee") && ratio >= 0.5) {
+      insights.push("This is an absentee-owned property, suggesting the owner manages it remotely");
+      approaches.push("a personalized letter highlighting local market conditions they may be missing");
+    } else if (name.includes("equity") && ratio >= 0.5) {
+      insights.push(`the owner has built significant equity${p.equity ? ` (est. ${fmtPrice(p.equity)})` : ""}`);
+      approaches.push("an equity unlock strategy showing what their money could do");
+    } else if (name.includes("ownership") && ratio >= 0.5) {
+      insights.push(`the property has been held for ${p.ownershipYears || "many"} years, signaling possible life transition`);
+      approaches.push("a conversation about estate planning or downsizing");
+    } else if (name.includes("tax") && name.includes("gap") && ratio >= 0.5) {
+      insights.push("the tax assessment is significantly below market value, indicating untapped equity");
+    } else if (name.includes("tax") && name.includes("trend") && ratio >= 0.5) {
+      insights.push("rapidly rising tax assessments may be creating financial pressure");
+      approaches.push("a discussion about whether selling could reduce their tax burden");
+    } else if (name.includes("distress") && ratio >= 0.5) {
+      insights.push("there are signs of financial distress on this property");
+      approaches.push("a sensitive outreach offering options before the situation worsens");
+    } else if (name.includes("portfolio") || name.includes("multi-property")) {
+      insights.push(`the owner holds ${p.ownerParcelCount || "multiple"} properties, indicating an investor`);
+      approaches.push("a portfolio review showing current market valuations");
+    } else if (name.includes("owner type") && ratio >= 0.5) {
+      insights.push("the property is held in a trust or corporate entity");
+    } else if (name.includes("appreciation") && ratio >= 0.5) {
+      insights.push("the property has appreciated significantly since purchase");
+    } else if (name.includes("market") && ratio >= 0.5) {
+      insights.push(f.description.toLowerCase());
+    }
+  }
+
+  if (insights.length === 0) return null;
+
+  const insightText =
+    p.score >= 70
+      ? `This is a strong opportunity because ${insights.join(", and ")}.`
+      : p.score >= 50
+        ? `This property shows potential because ${insights.join(", and ")}.`
+        : `Worth monitoring: ${insights.join(", and ")}.`;
+
+  const approachText =
+    approaches.length > 0
+      ? ` Consider ${approaches[0]}.`
+      : "";
+
+  return (
+    <div className="mb-3 p-2.5 bg-blue-50 border border-blue-200 rounded-lg">
+      <div className="text-[11px] font-semibold text-blue-700 mb-1">WHY THIS PROPERTY</div>
+      <p className="text-[11px] text-blue-900 leading-relaxed">
+        {insightText}{approachText}
+      </p>
     </div>
   );
 }
