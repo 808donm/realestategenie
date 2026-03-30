@@ -660,8 +660,9 @@ export default function PropertyDetailModal({
         .then((data) => {
           if (data && !data.error) {
             setNeighborhoodData(data);
-            // Save to cache for next agent
-            if (zip) {
+            // Only cache if we got meaningful data (at least one section has content)
+            const hasContent = data.community?.community || data.schools?.school?.length > 0 || data.poi?.poi?.length > 0;
+            if (zip && hasContent) {
               fetch("/api/area-cache", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
