@@ -129,28 +129,60 @@ export async function getNeighborhoodProfile(params: {
 
   // Run all free API calls in parallel
   const [schoolsResult, crimeResult, hazardResult, poiResult, trendsResult] = await Promise.allSettled([
-    // Schools -- zip-based primary, supplement with location search for missing levels
+    // Schools -- zip-based primary, use Hawaii school zone data for feeder schools
     (async (): Promise<SchoolSearchResult> => {
       let schools: SchoolResult[] = [];
       if (postalCode) {
         const zipResult = await searchSchoolsByZip(postalCode, 15);
         schools = zipResult.schools;
       }
-      // Check if we have high school coverage -- if not, search nearby
-      const hasHigh = schools.some((s) => s.schoolType === "High" || s.gradeRange?.includes("12"));
-      const hasMiddle = schools.some((s) => s.schoolType === "Middle" || (s.gradeRange?.includes("6") && s.gradeRange?.includes("8")));
-      if ((!hasHigh || !hasMiddle) && latitude && longitude) {
-        const nearby = await searchSchoolsByLocation(latitude, longitude, 3, 20);
-        for (const s of nearby.schools) {
-          const isHigh = s.schoolType === "High" || s.gradeRange?.includes("12");
-          const isMiddle = s.schoolType === "Middle" || (s.gradeRange?.includes("6") && s.gradeRange?.includes("8"));
-          if ((isHigh && !hasHigh) || (isMiddle && !hasMiddle)) {
-            if (!schools.some((existing) => existing.schoolName === s.schoolName)) {
-              schools.push(s);
+
+      // For Hawaii: use the complex area mapping to ensure correct feeder schools
+      if (stateAbbrev === "HI" && postalCode) {
+        try {
+          const { getSchoolComplexByZip } = await import("@/lib/hawaii-school-zones");
+          const complexes = getSchoolComplexByZip(postalCode);
+          if (complexes.length > 0) {
+            // Add designated high school and middle schools if not already in results
+            const designatedNames = new Set<string>();
+            for (const ca of complexes) {
+              designatedNames.add(ca.complex.highSchool);
+              ca.complex.middleSchools.forEach((s) => designatedNames.add(s));
+            }
+
+            // Search nearby to find the designated schools with full data
+            if (latitude && longitude) {
+              const nearby = await searchSchoolsByLocation(latitude, longitude, 5, 30);
+              for (const s of nearby.schools) {
+                const isDesignated = [...designatedNames].some(
+                  (name) => s.schoolName.toLowerCase().includes(name.toLowerCase().split(" ")[0]) ||
+                            name.toLowerCase().includes(s.schoolName.toLowerCase().split(" ")[0]),
+                );
+                if (isDesignated && !schools.some((existing) => existing.schoolName === s.schoolName)) {
+                  schools.push(s);
+                }
+              }
+            }
+          }
+        } catch {}
+      } else {
+        // Non-Hawaii: supplement with location search for missing school levels
+        const hasHigh = schools.some((s) => s.schoolType === "High" || s.gradeRange?.includes("12"));
+        const hasMiddle = schools.some((s) => s.schoolType === "Middle" || (s.gradeRange?.includes("6") && s.gradeRange?.includes("8")));
+        if ((!hasHigh || !hasMiddle) && latitude && longitude) {
+          const nearby = await searchSchoolsByLocation(latitude, longitude, 3, 20);
+          for (const s of nearby.schools) {
+            const isHigh = s.schoolType === "High" || s.gradeRange?.includes("12");
+            const isMiddle = s.schoolType === "Middle" || (s.gradeRange?.includes("6") && s.gradeRange?.includes("8"));
+            if ((isHigh && !hasHigh) || (isMiddle && !hasMiddle)) {
+              if (!schools.some((existing) => existing.schoolName === s.schoolName)) {
+                schools.push(s);
+              }
             }
           }
         }
       }
+
       return { schools, totalCount: schools.length };
     })(),
 
