@@ -94,42 +94,9 @@ async function getFEMARiskIndex(
     wind: { risk: "Unknown", score: null },
   };
 
-  try {
-    // FEMA NRI API — county-level risk scores
-    const fips = countyFips || "";
-    const url = fips
-      ? `https://hazards.fema.gov/nri/services/nriData?countyFips=${fips}`
-      : `https://hazards.fema.gov/nri/services/nriData?stateAbbrev=${stateAbbrev}`;
-
-    const response = await fetch(url, { signal: AbortSignal.timeout(10000) });
-    if (!response.ok) return defaults;
-
-    const data = await response.json();
-    const record = Array.isArray(data) ? data[0] : data;
-
-    if (!record) return defaults;
-
-    const ratingFromScore = (score: number | null): string => {
-      if (score == null) return "Unknown";
-      if (score >= 80) return "Very High";
-      if (score >= 60) return "High";
-      if (score >= 40) return "Moderate";
-      if (score >= 20) return "Low";
-      return "Very Low";
-    };
-
-    return {
-      flood: { risk: ratingFromScore(record.RFLD_RISKR), score: record.RFLD_RISKR ?? null },
-      tornado: { risk: ratingFromScore(record.TRND_RISKR), score: record.TRND_RISKR ?? null },
-      hurricane: { risk: ratingFromScore(record.HRCN_RISKR), score: record.HRCN_RISKR ?? null },
-      wildfire: { risk: ratingFromScore(record.WFIR_RISKR), score: record.WFIR_RISKR ?? null },
-      hail: { risk: ratingFromScore(record.HAIL_RISKR), score: record.HAIL_RISKR ?? null },
-      wind: { risk: ratingFromScore(record.SWND_RISKR), score: record.SWND_RISKR ?? null },
-    };
-  } catch (err) {
-    console.warn("[FEMA NRI] Risk index fetch failed:", err);
-    return defaults;
-  }
+  // FEMA NRI API has been deprecated (hazards.fema.gov redirects to RAPT).
+  // Return defaults until a replacement API is integrated.
+  return defaults;
 }
 
 /**

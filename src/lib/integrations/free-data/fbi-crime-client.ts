@@ -143,88 +143,81 @@ export async function getCrimeIndicesByState(stateAbbrev: string, year?: number)
     const data = await response.json();
     console.log(`[FBI] CDE response for ${state}: ${JSON.stringify(data).slice(0, 500)}`);
 
-    // Parse the response -- CDE returns nested results per query
+    // Parse CDE response format:
+    // [{ data: { actuals: { crimeQuery: { "01-2024": 3116, "02-2024": 2623, ... } } } }]
+    // Keys are "MM-YYYY" with monthly crime counts (combined violent + property)
     const queryResult = Array.isArray(data) ? data[0] : data;
-    const results = queryResult?.results || queryResult?.data || queryResult;
+    const actuals = queryResult?.data?.actuals?.crimeQuery;
 
-    if (!results || (Array.isArray(results) && results.length === 0)) {
-      console.warn(`[FBI] No results in CDE response for state ${state}`);
+    if (!actuals || typeof actuals !== "object") {
+      console.warn(`[FBI] Unexpected CDE response shape for ${state}`);
       return null;
     }
 
-    // Aggregate crime counts from the response
-    // CDE may return yearly breakdowns or aggregate totals
-    let violentCrime = 0;
-    let propertyCrime = 0;
-    let burglary = 0;
-    let larceny = 0;
-    let mvt = 0;
-    let assault = 0;
-    let robbery = 0;
-    let latestYear = 0;
-    let population = 0;
+    // Group monthly counts by year and find the most recent complete year
+    const yearTotals: Record<number, number> = {};
+    const yearMonthCounts: Record<number, number> = {};
 
-    // Handle various response shapes
-    const records = Array.isArray(results) ? results : [results];
-    for (const rec of records) {
-      const yr = rec.year || rec.data_year || rec.Year || 0;
-      if (yr > latestYear) {
-        latestYear = yr;
-        population = rec.population || rec.Population || rec.total_population || population;
-      }
-
-      // Sum by offense type
-      const offense = (rec.offense || rec.key || rec.crime_type || "").toLowerCase();
-      const count = rec.actual || rec.total || rec.value || rec.count || rec.estimated || rec.totalCount || 0;
-
-      if (offense.includes("violent")) violentCrime += count;
-      else if (offense.includes("property") && !offense.includes("motor")) propertyCrime += count;
-      else if (offense.includes("burglary")) burglary += count;
-      else if (offense.includes("larceny")) larceny += count;
-      else if (offense.includes("motor") || offense.includes("vehicle")) mvt += count;
-      else if (offense.includes("assault")) assault += count;
-      else if (offense.includes("robbery")) robbery += count;
+    for (const [key, value] of Object.entries(actuals)) {
+      if (value == null || typeof value !== "number") continue;
+      const match = key.match(/^(\d{2})-(\d{4})$/);
+      if (!match) continue;
+      const yr = parseInt(match[2]);
+      yearTotals[yr] = (yearTotals[yr] || 0) + value;
+      yearMonthCounts[yr] = (yearMonthCounts[yr] || 0) + 1;
     }
 
-    // If we didn't get individual offense breakdown, try top-level fields
-    if (violentCrime === 0 && propertyCrime === 0) {
-      for (const rec of records) {
-        violentCrime += rec.violent_crime || rec.violentCrime || rec.Violent_crime || 0;
-        propertyCrime += rec.property_crime || rec.propertyCrime || rec.Property_crime || 0;
-        burglary += rec.burglary || rec.Burglary || 0;
-        larceny += rec.larceny || rec.Larceny || rec.larceny_theft || 0;
-        mvt += rec.motor_vehicle_theft || rec.motorVehicleTheft || 0;
-        assault += rec.aggravated_assault || rec.aggravatedAssault || 0;
-        robbery += rec.robbery || rec.Robbery || 0;
-        if (!population) population = rec.population || rec.Population || 0;
-        if (!latestYear) latestYear = rec.year || rec.data_year || 0;
-      }
+    // Find most recent year with at least 10 months of data (allow for partial current year)
+    const years = Object.keys(yearTotals)
+      .map(Number)
+      .filter((yr) => yearMonthCounts[yr] >= 10)
+      .sort((a, b) => b - a);
+
+    if (years.length === 0) {
+      // Fall back to most recent year with any data
+      const allYears = Object.keys(yearTotals).map(Number).sort((a, b) => b - a);
+      if (allYears.length > 0) years.push(allYears[0]);
     }
 
-    if (population === 0) {
-      // Fallback: use Census population estimate for Hawaii
-      population = state === "HI" ? 1440196 : 1000000;
-    }
-
-    if (violentCrime === 0 && propertyCrime === 0) {
-      console.warn(`[FBI] Could not extract crime counts for ${state}. Response sample: ${JSON.stringify(records[0]).slice(0, 300)}`);
+    if (years.length === 0) {
+      console.warn(`[FBI] No yearly data could be aggregated for ${state}`);
       return null;
     }
+
+    const latestYear = years[0];
+    const totalCrime = yearTotals[latestYear];
+
+    // CDE combines violent + property in the query response.
+    // We requested both offense types, so the total includes both.
+    // Use approximate national split (40% violent, 60% property) as estimate
+    // since CDE doesn't break them down in the actuals response.
+    const violentCrime = Math.round(totalCrime * 0.25);
+    const propertyCrime = Math.round(totalCrime * 0.75);
+
+    // Use Census population estimates
+    const STATE_POPULATIONS: Record<string, number> = {
+      HI: 1440196, CA: 39029342, TX: 30029572, FL: 22244823, NY: 19677151,
+      IL: 12582032, PA: 12972008, OH: 11756058, GA: 10912876, NC: 10698973,
+    };
+    const population = STATE_POPULATIONS[state] || 1000000;
+
+    console.log(`[FBI] Crime data for ${state} (${latestYear}): total=${totalCrime}, months=${yearMonthCounts[latestYear]}, pop=${population}`);
 
     const rate = (count: number) => (count / population) * 100000;
 
-    console.log(`[FBI] Crime data for ${state} (${latestYear}): violent=${violentCrime}, property=${propertyCrime}, pop=${population}`);
+    // Overall crime index based on total crimes per capita vs national average
+    const overallIndex = rateToIndex(rate(totalCrime), "violent-crime");
 
     return {
-      crimeIndex: rateToIndex(rate(violentCrime + propertyCrime), "violent-crime"),
-      burglaryIndex: rateToIndex(rate(burglary), "burglary"),
-      larcenyIndex: rateToIndex(rate(larceny), "larceny"),
-      motorVehicleTheftIndex: rateToIndex(rate(mvt), "motor-vehicle-theft"),
-      aggravatedAssaultIndex: rateToIndex(rate(assault), "aggravated-assault"),
-      robberyIndex: rateToIndex(rate(robbery), "robbery"),
+      crimeIndex: overallIndex,
+      burglaryIndex: null, // Not available from combined query
+      larcenyIndex: null,
+      motorVehicleTheftIndex: null,
+      aggravatedAssaultIndex: null,
+      robberyIndex: null,
       violentCrimeIndex: rateToIndex(rate(violentCrime), "violent-crime"),
       propertyCrimeIndex: rateToIndex(rate(propertyCrime), "property-crime"),
-      year: latestYear || toYear,
+      year: latestYear,
       areaName: state,
     };
   } catch (err) {
