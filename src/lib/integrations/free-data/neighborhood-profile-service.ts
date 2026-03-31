@@ -140,7 +140,7 @@ export async function getNeighborhoodProfile(params: {
       const hasHigh = schools.some((s) => s.schoolType === "High" || s.gradeRange?.includes("12"));
       const hasMiddle = schools.some((s) => s.schoolType === "Middle" || (s.gradeRange?.includes("6") && s.gradeRange?.includes("8")));
       if ((!hasHigh || !hasMiddle) && latitude && longitude) {
-        const nearby = await searchSchoolsByLocation(latitude, longitude, 5, 20);
+        const nearby = await searchSchoolsByLocation(latitude, longitude, 3, 20);
         for (const s of nearby.schools) {
           const isHigh = s.schoolType === "High" || s.gradeRange?.includes("12");
           const isMiddle = s.schoolType === "Middle" || (s.gradeRange?.includes("6") && s.gradeRange?.includes("8"));
