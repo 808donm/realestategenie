@@ -3787,9 +3787,9 @@ export default function PropertyDetailModal({
                                     gap: 8,
                                   }}
                                 >
-                                  {students != null && <span>Enrollment: {Number(students).toLocaleString()}</span>}
-                                  {school.studentTeacherRatio && <span>Student:Teacher {school.studentTeacherRatio}:1</span>}
-                                  {school.freeLunchPct != null && <span>Free/Reduced Lunch: {school.freeLunchPct}%</span>}
+                                  {students != null && <span style={{ color: "#111827", fontWeight: 600 }}>Enrollment: {Number(students).toLocaleString()}</span>}
+                                  {school.studentTeacherRatio && <span style={{ color: "#dc2626", fontWeight: 600 }}>Student:Teacher {school.studentTeacherRatio}:1</span>}
+                                  {school.freeLunchPct != null && <span style={{ color: "#059669", fontWeight: 600 }}>Free/Reduced Lunch: {school.freeLunchPct}%</span>}
                                   {community && <span>{community}</span>}
                                   {hasAP && <span style={{ color: "#059669", fontWeight: 600 }}>AP Classes</span>}
                                   {charter && <span style={{ color: "#7c3aed", fontWeight: 600 }}>Charter</span>}
