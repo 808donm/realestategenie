@@ -134,8 +134,12 @@ export async function getCrimeIndicesByState(stateAbbrev: string, year?: number)
         fetch(`${BASE_URL}/summarized/state/${state}/${offense}?API_KEY=${API_KEY}`, {
           signal: AbortSignal.timeout(10000),
         }).then(async (r) => {
-          if (!r.ok) return null;
+          if (!r.ok) {
+            console.warn(`[FBI] ${offense}: HTTP ${r.status}`);
+            return null;
+          }
           const data = await r.json();
+          console.log(`[FBI] ${offense}: ${JSON.stringify(data).slice(0, 300)}`);
           return { offense, data };
         }),
       ),
