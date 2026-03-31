@@ -189,10 +189,15 @@ export async function getNeighborhoodProfile(params: {
             if (latitude && longitude) {
               const nearby = await searchSchoolsByLocation(latitude, longitude, 5, 30);
               for (const s of nearby.schools) {
-                const isDesignated = [...designatedNames].some(
-                  (name) => s.schoolName.toLowerCase().includes(name.toLowerCase().split(" ")[0]) ||
-                            name.toLowerCase().includes(s.schoolName.toLowerCase().split(" ")[0]),
-                );
+                // Match by checking if the nearby school name closely matches a designated school
+                const sName = s.schoolName.toLowerCase().trim();
+                const isDesignated = [...designatedNames].some((dName) => {
+                  const d = dName.toLowerCase().trim();
+                  // Exact match or one contains the other (but require substantial overlap)
+                  return sName === d || sName.includes(d) || d.includes(sName) ||
+                    // Match ignoring "School" suffix: "Kailua High" matches "Kailua High School"
+                    sName.replace(/\s*school$/i, "") === d.replace(/\s*school$/i, "");
+                });
                 if (isDesignated && !schools.some((existing) => existing.schoolName === s.schoolName)) {
                   schools.push(s);
                 }
@@ -404,6 +409,11 @@ export async function getNeighborhoodProfile(params: {
             city: s.city,
             state: s.state,
             districtName: s.districtName,
+            studentTeacherRatio: s.studentTeacherRatio,
+            freeLunchPct: s.freeLunchPct,
+            titleI: s.titleI,
+            titleISchoolwide: s.titleISchoolwide,
+            magnet: s.magnet,
           })),
         }
       : null;

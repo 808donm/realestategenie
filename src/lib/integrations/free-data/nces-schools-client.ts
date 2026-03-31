@@ -180,7 +180,7 @@ export async function enrichWithTitleI(schools: SchoolResult[]): Promise<SchoolR
 
   try {
     const url = `${URBAN_API}/?zip_location=${zip}&per_page=50`;
-    const response = await fetch(url, { signal: AbortSignal.timeout(15000) });
+    const response = await fetch(url, { signal: AbortSignal.timeout(45000) });
     if (!response.ok) return schools;
 
     const data = await response.json();
