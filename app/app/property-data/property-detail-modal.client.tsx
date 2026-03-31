@@ -660,8 +660,13 @@ export default function PropertyDetailModal({
         .then((data) => {
           if (data && !data.error) {
             setNeighborhoodData(data);
-            // Only cache if we got meaningful data (at least one section has content)
-            const hasContent = data.community?.community || data.schools?.school?.length > 0 || data.poi?.poi?.length > 0;
+            // Only cache if we got meaningful user-facing data (not just hazard metadata)
+            const comm = data.community?.community;
+            const hasCrime = !!(comm?.crime);
+            const hasDemographics = !!(comm?.demographics);
+            const hasSchools = data.schools?.school?.length > 0;
+            const hasPOI = data.poi?.poi?.length > 0;
+            const hasContent = hasCrime || hasDemographics || hasSchools || hasPOI;
             if (zip && hasContent) {
               fetch("/api/area-cache", {
                 method: "POST",
