@@ -129,11 +129,11 @@ export async function getNeighborhoodProfile(params: {
 
   // Run all free API calls in parallel
   const [schoolsResult, crimeResult, hazardResult, poiResult, trendsResult] = await Promise.allSettled([
-    // Schools
-    latitude && longitude
-      ? searchSchoolsByLocation(latitude, longitude, 5, 15)
-      : postalCode
-        ? searchSchoolsByZip(postalCode, 15)
+    // Schools -- prefer zip-based search to keep results local to the property's area
+    postalCode
+      ? searchSchoolsByZip(postalCode, 15)
+      : latitude && longitude
+        ? searchSchoolsByLocation(latitude, longitude, 3, 15)
         : Promise.resolve({ schools: [] as SchoolResult[], totalCount: 0 }),
 
     // Crime indices
