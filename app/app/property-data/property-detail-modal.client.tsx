@@ -3614,11 +3614,15 @@ export default function PropertyDetailModal({
                         const nriItems = [
                           { label: "Overall Risk", data: naturalDisasters.overall },
                           { label: "Flood", data: naturalDisasters.flood },
+                          { label: "Coastal Flood", data: naturalDisasters.coastalFlood },
                           { label: "Hurricane", data: naturalDisasters.hurricane },
                           { label: "Tornado", data: naturalDisasters.tornado },
                           { label: "Wildfire", data: naturalDisasters.wildfire },
                           { label: "Earthquake", data: naturalDisasters.earthquake },
+                          { label: "Tsunami", data: naturalDisasters.tsunami },
                           { label: "Wind", data: naturalDisasters.wind },
+                          { label: "Landslide", data: naturalDisasters.landslide },
+                          { label: "Lightning", data: naturalDisasters.lightning },
                           { label: "Hail", data: naturalDisasters.hail },
                         ].filter((item) => item.data?.risk && item.data.risk !== "Unknown");
 

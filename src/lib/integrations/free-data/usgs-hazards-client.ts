@@ -12,11 +12,15 @@
 export interface HazardRiskProfile {
   earthquake: { risk: string; score: number | null; details?: string };
   flood: { risk: string; score: number | null; details?: string };
+  coastalFlood?: { risk: string; score: number | null };
   tornado: { risk: string; score: number | null; details?: string };
   hurricane: { risk: string; score: number | null; details?: string };
   wildfire: { risk: string; score: number | null; details?: string };
   hail: { risk: string; score: number | null; details?: string };
   wind: { risk: string; score: number | null; details?: string };
+  tsunami?: { risk: string; score: number | null };
+  landslide?: { risk: string; score: number | null };
+  lightning?: { risk: string; score: number | null };
   overall: { risk: string; score: number | null };
   source: string;
 }
@@ -105,7 +109,8 @@ async function getFEMARiskIndex(
 
     if (!countyQuery) return defaults;
 
-    const nriUrl = `https://services.arcgis.com/XG15cJAlne2vxtgt/ArcGIS/rest/services/National_Risk_Index_Counties/FeatureServer/0/query?where=${countyQuery}&outFields=RISK_RATNG%2CRFLD_RISKR%2CHRCN_RISKR%2CTRND_RISKR%2CWFIR_RISKR%2CERQK_RISKR%2CSWND_RISKR&returnGeometry=false&f=json&resultRecordCount=1`;
+    // Use outFields=* because comma-separated field lists cause 400 errors on this endpoint
+    const nriUrl = `https://services.arcgis.com/XG15cJAlne2vxtgt/ArcGIS/rest/services/National_Risk_Index_Counties/FeatureServer/0/query?where=${countyQuery}&outFields=*&returnGeometry=false&f=json&resultRecordCount=1`;
 
     const response = await fetch(nriUrl, { signal: AbortSignal.timeout(10000) });
     if (!response.ok) return defaults;
@@ -114,26 +119,32 @@ async function getFEMARiskIndex(
     const record = data.features?.[0]?.attributes;
     if (!record) return defaults;
 
-    const ratingMap: Record<string, string> = {
-      "Very High": "Very High",
-      "Relatively High": "High",
-      "Relatively Moderate": "Moderate",
-      "Relatively Low": "Low",
-      "Very Low": "Very Low",
-    };
-
     const mapRating = (r: string | null): { risk: string; score: number | null } => {
-      if (!r) return { risk: "Unknown", score: null };
+      if (!r || r === "No Rating" || r === "Not Applicable") return { risk: "Unknown", score: null };
+      // Simplify FEMA's verbose ratings
+      const ratingMap: Record<string, string> = {
+        "Very High": "Very High",
+        "Relatively High": "High",
+        "Relatively Moderate": "Moderate",
+        "Relatively Low": "Low",
+        "Very Low": "Very Low",
+      };
       return { risk: ratingMap[r] || r, score: null };
     };
 
+    console.log(`[FEMA NRI] Data for ${countyQuery}: flood=${record.IFLD_RISKR}, hurricane=${record.HRCN_RISKR}, wildfire=${record.WFIR_RISKR}, earthquake=${record.ERQK_RISKR}, tsunami=${record.TSUN_RISKR}`);
+
     return {
-      flood: mapRating(record.RFLD_RISKR),
+      flood: mapRating(record.IFLD_RISKR || record.RFLD_RISKR), // IFLD = inland flood (more common), RFLD = riverine
+      coastalFlood: mapRating(record.CFLD_RISKR),
       tornado: mapRating(record.TRND_RISKR),
       hurricane: mapRating(record.HRCN_RISKR),
       wildfire: mapRating(record.WFIR_RISKR),
       earthquake: mapRating(record.ERQK_RISKR),
       wind: mapRating(record.SWND_RISKR),
+      tsunami: mapRating(record.TSUN_RISKR),
+      landslide: mapRating(record.LNDS_RISKR),
+      lightning: mapRating(record.LTNG_RISKR),
       overall: mapRating(record.RISK_RATNG),
     };
   } catch (err) {
