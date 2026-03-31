@@ -101,8 +101,17 @@ async function getFEMARiskIndex(
   // FEMA NRI via ArcGIS — county-level risk scores
   // Source: https://resilience.climate.gov/datasets/FEMA::national-risk-index-counties
   try {
-    const countyQuery = countyFips
-      ? `COUNTYFIPS+%3D+%27${countyFips}%27`
+    // Resolve county name for query (ArcGIS uses COUNTY field, not FIPS)
+    let countyName: string | undefined;
+    if (countyFips && stateAbbrev?.toUpperCase() === "HI") {
+      const FIPS_TO_COUNTY: Record<string, string> = {
+        "15003": "Honolulu", "15001": "Hawaii", "15009": "Maui", "15007": "Kauai",
+      };
+      countyName = FIPS_TO_COUNTY[countyFips];
+    }
+
+    const countyQuery = countyName
+      ? `COUNTY+%3D+%27${countyName}%27`
       : stateAbbrev
         ? `STATE+%3D+%27${stateAbbrev === "HI" ? "Hawaii" : stateAbbrev}%27`
         : null;
