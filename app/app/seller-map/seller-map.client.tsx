@@ -407,13 +407,27 @@ export function SellerMapClient() {
       {/* ── Desktop Layout (side-by-side) ── */}
       <div className="hidden md:flex h-[calc(100vh-180px)] rounded-lg overflow-hidden border bg-white shadow-sm">
         {/* Sidebar — Desktop */}
-        <div className="w-[340px] shrink-0">
+        <div className="w-[420px] shrink-0 overflow-y-auto">
           {selectedProperty ? (
-            <PropertyDetailPanel
-              property={selectedProperty}
-              onClose={() => setSelectedProperty(null)}
-              onAddToCRM={handleAddToCRM}
-            />
+            <div>
+              {/* Header with score and close */}
+              <div className="flex items-center justify-between p-3 border-b bg-white sticky top-0 z-10">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="text-sm font-semibold truncate">{selectedProperty.address}</div>
+                </div>
+                <button
+                  onClick={() => setSelectedProperty(null)}
+                  className="text-gray-400 hover:text-gray-600 text-lg px-2"
+                >
+                  &times;
+                </button>
+              </div>
+              <PropertyDetailModal
+                property={scoredToAttom(selectedProperty)}
+                onClose={() => setSelectedProperty(null)}
+                embedded
+              />
+            </div>
           ) : (
             <SidebarPanel {...sidebarProps} />
           )}
@@ -533,24 +547,18 @@ export function SellerMapClient() {
             </button>
           </div>
           <div className="flex-1 overflow-y-auto">
-            <PropertyDetailPanel
-              property={selectedProperty}
+            <PropertyDetailModal
+              property={scoredToAttom(selectedProperty)}
               onClose={() => {
                 setSelectedProperty(null);
                 setMobileShowSidebar(false);
               }}
-              onAddToCRM={handleAddToCRM}
+              embedded
             />
           </div>
         </div>
       )}
-      {/* Property Detail Modal -- same as Property Intel for consistency */}
-      {detailProperty && (
-        <PropertyDetailModal
-          property={scoredToAttom(detailProperty)}
-          onClose={() => setDetailProperty(null)}
-        />
-      )}
+      {/* detailProperty state kept for future use */}
     </>
   );
 }
