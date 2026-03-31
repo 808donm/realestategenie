@@ -1,18 +1,22 @@
 /**
- * NCES Schools Client — Free school data from Education Data API
+ * NCES Schools Client -- School data from NCES ArcGIS FeatureServer
  *
- * Source: Urban Institute Education Data Portal (https://educationdata.urban.org/)
- * No API key required. Rate-limited but generous.
+ * Source: https://data-nces.opendata.arcgis.com/
+ * ArcGIS endpoint: School_Characteristics_Current FeatureServer
+ * No API key required. Fast and reliable.
  *
  * Provides: School names, grades, enrollment, type, location, distance
  */
 
-const BASE_URL = "https://educationdata.urban.org/api/v1";
+const ARCGIS_URL =
+  "https://services1.arcgis.com/Ua5sjt3LWTPigjyD/arcgis/rest/services/School_Characteristics_Current/FeatureServer/0/query";
+
+const SCHOOL_FIELDS = "SCH_NAME,LCITY,LSTATE,LZIP,SCHOOL_LEVEL,SCHOOL_TYPE_TEXT,TOTAL,GSLO,GSHI,LATCOD,LONCOD,CHARTER_TEXT,LEA_NAME,LSTREET1,PHONE";
 
 export interface SchoolResult {
   schoolName: string;
-  schoolType: string; // "Public", "Private", "Charter"
-  gradeRange: string; // e.g. "K-5", "6-8", "9-12"
+  schoolType: string;
+  gradeRange: string;
   enrollment?: number;
   latitude?: number;
   longitude?: number;
@@ -35,7 +39,7 @@ export interface SchoolSearchResult {
  * Calculate distance between two lat/lng points in miles (Haversine formula)
  */
 function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 3959; // Earth's radius in miles
+  const R = 3959;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLon = ((lon2 - lon1) * Math.PI) / 180;
   const a =
@@ -45,55 +49,43 @@ function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
 }
 
 /**
- * Map NCES grade levels to human-readable range
+ * Map a school record from ArcGIS to our SchoolResult format
  */
-function gradeRangeLabel(loGrade: string | number | null, hiGrade: string | number | null): string {
-  const map: Record<string, string> = {
-    "-1": "PK",
-    "0": "K",
-    "1": "1",
-    "2": "2",
-    "3": "3",
-    "4": "4",
-    "5": "5",
-    "6": "6",
-    "7": "7",
-    "8": "8",
-    "9": "9",
-    "10": "10",
-    "11": "11",
-    "12": "12",
-    "13": "UG",
+function mapSchool(s: any, latitude?: number, longitude?: number): SchoolResult {
+  const lo = s.GSLO || "";
+  const hi = s.GSHI || "";
+  const gradeRange = lo && hi ? `${lo}-${hi}` : lo || hi || "";
+
+  let schoolType = s.SCHOOL_TYPE_TEXT || "Public";
+  if (s.CHARTER_TEXT === "Yes") schoolType = "Charter";
+  else if (s.SCHOOL_LEVEL === "Elementary") schoolType = "Elementary";
+  else if (s.SCHOOL_LEVEL === "Middle") schoolType = "Middle";
+  else if (s.SCHOOL_LEVEL === "High") schoolType = "High";
+
+  const dist =
+    latitude && longitude && s.LATCOD && s.LONCOD
+      ? Math.round(haversineDistance(latitude, longitude, s.LATCOD, s.LONCOD) * 100) / 100
+      : undefined;
+
+  return {
+    schoolName: s.SCH_NAME || "",
+    schoolType,
+    gradeRange,
+    enrollment: s.TOTAL ?? undefined,
+    latitude: s.LATCOD ?? undefined,
+    longitude: s.LONCOD ?? undefined,
+    streetAddress: s.LSTREET1 ?? undefined,
+    city: s.LCITY ?? undefined,
+    state: s.LSTATE ?? undefined,
+    zip: s.LZIP ?? undefined,
+    phone: s.PHONE ?? undefined,
+    districtName: s.LEA_NAME ?? undefined,
+    distanceMiles: dist,
   };
-  const lo = map[String(loGrade)] || String(loGrade ?? "");
-  const hi = map[String(hiGrade)] || String(hiGrade ?? "");
-  if (!lo && !hi) return "";
-  if (lo === hi) return lo;
-  return `${lo}-${hi}`;
 }
 
 /**
- * Map NCES school level codes
- */
-function schoolTypeLabel(level: number | null, charterStatus: number | null): string {
-  if (charterStatus === 1) return "Charter";
-  switch (level) {
-    case 1:
-      return "Primary";
-    case 2:
-      return "Middle";
-    case 3:
-      return "High";
-    case 4:
-      return "Other";
-    default:
-      return "Public";
-  }
-}
-
-/**
- * Search for schools near a lat/lng coordinate.
- * Uses the NCES CCD (Common Core of Data) directory.
+ * Search for schools near a lat/lng coordinate using ArcGIS bounding box.
  */
 export async function searchSchoolsByLocation(
   latitude: number,
@@ -102,52 +94,30 @@ export async function searchSchoolsByLocation(
   maxResults: number = 20,
 ): Promise<SchoolSearchResult> {
   try {
-    // NCES API doesn't support radius search directly, so we query by state/zip
-    // and filter by distance. Use a bounding box approach.
-    const latDelta = radiusMiles / 69; // ~69 miles per degree latitude
+    const latDelta = radiusMiles / 69;
     const lonDelta = radiusMiles / (69 * Math.cos((latitude * Math.PI) / 180));
 
-    // Use the most recent year available (2022-2023 school year)
-    const year = 2022;
-    const url = `${BASE_URL}/schools/ccd/directory/${year}/?latitude__gte=${(latitude - latDelta).toFixed(4)}&latitude__lte=${(latitude + latDelta).toFixed(4)}&longitude__gte=${(longitude - lonDelta).toFixed(4)}&longitude__lte=${(longitude + lonDelta).toFixed(4)}&per_page=100`;
+    const bbox = `${(longitude - lonDelta).toFixed(4)},${(latitude - latDelta).toFixed(4)},${(longitude + lonDelta).toFixed(4)},${(latitude + latDelta).toFixed(4)}`;
 
-    const response = await fetch(url, {
-      headers: { Accept: "application/json" },
-      signal: AbortSignal.timeout(30000),
-    });
+    const url = `${ARCGIS_URL}?where=1%3D1&geometry=${encodeURIComponent(bbox)}&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=${SCHOOL_FIELDS}&returnGeometry=false&f=json&resultRecordCount=100`;
+
+    const response = await fetch(url, { signal: AbortSignal.timeout(10000) });
 
     if (!response.ok) {
-      console.warn(`[NCES] API returned ${response.status}: ${response.statusText}`);
+      console.warn(`[NCES] ArcGIS returned ${response.status}`);
       return { schools: [], totalCount: 0 };
     }
 
     const data = await response.json();
-    const results = data.results || [];
+    const features = data.features || [];
 
-    const schools: SchoolResult[] = results
-      .map((s: any) => {
-        const dist = haversineDistance(latitude, longitude, s.latitude, s.longitude);
-        return {
-          schoolName: s.school_name || "",
-          schoolType: schoolTypeLabel(s.school_level, s.charter),
-          gradeRange: gradeRangeLabel(s.gslo, s.gshi),
-          enrollment: s.enrollment ?? undefined,
-          latitude: s.latitude,
-          longitude: s.longitude,
-          streetAddress: s.street_location || undefined,
-          city: s.city_location || undefined,
-          state: s.state_location || undefined,
-          zip: s.zip_location || undefined,
-          phone: s.phone || undefined,
-          districtName: s.lea_name || undefined,
-          distanceMiles: Math.round(dist * 100) / 100,
-          ncesschid: s.ncessch || undefined,
-        };
-      })
-      .filter((s: SchoolResult) => s.distanceMiles! <= radiusMiles)
+    const schools = features
+      .map((f: any) => mapSchool(f.attributes, latitude, longitude))
+      .filter((s: SchoolResult) => s.distanceMiles == null || s.distanceMiles <= radiusMiles)
       .sort((a: SchoolResult, b: SchoolResult) => (a.distanceMiles || 0) - (b.distanceMiles || 0))
       .slice(0, maxResults);
 
+    console.log(`[NCES] Found ${schools.length} schools near ${latitude.toFixed(3)}, ${longitude.toFixed(3)}`);
     return { schools, totalCount: schools.length };
   } catch (err) {
     console.error("[NCES] School search failed:", err);
@@ -156,43 +126,25 @@ export async function searchSchoolsByLocation(
 }
 
 /**
- * Search schools by ZIP code (simpler — no lat/lng needed)
+ * Search schools by ZIP code
  */
 export async function searchSchoolsByZip(zipCode: string, maxResults: number = 20): Promise<SchoolSearchResult> {
   try {
-    const year = 2022;
-    const url = `${BASE_URL}/schools/ccd/directory/${year}/?zip_location=${zipCode}&per_page=100`;
+    const url = `${ARCGIS_URL}?where=LZIP+%3D+%27${zipCode}%27&outFields=${SCHOOL_FIELDS}&returnGeometry=false&f=json&resultRecordCount=${maxResults}`;
 
-    const response = await fetch(url, {
-      headers: { Accept: "application/json" },
-      signal: AbortSignal.timeout(30000),
-    });
+    const response = await fetch(url, { signal: AbortSignal.timeout(10000) });
 
     if (!response.ok) {
+      console.warn(`[NCES] ArcGIS ZIP search returned ${response.status}`);
       return { schools: [], totalCount: 0 };
     }
 
     const data = await response.json();
-    const results = data.results || [];
+    const features = data.features || [];
 
-    const schools: SchoolResult[] = results
-      .map((s: any) => ({
-        schoolName: s.school_name || "",
-        schoolType: schoolTypeLabel(s.school_level, s.charter),
-        gradeRange: gradeRangeLabel(s.gslo, s.gshi),
-        enrollment: s.enrollment ?? undefined,
-        latitude: s.latitude,
-        longitude: s.longitude,
-        streetAddress: s.street_location || undefined,
-        city: s.city_location || undefined,
-        state: s.state_location || undefined,
-        zip: s.zip_location || undefined,
-        phone: s.phone || undefined,
-        districtName: s.lea_name || undefined,
-        ncesschid: s.ncessch || undefined,
-      }))
-      .slice(0, maxResults);
+    const schools = features.map((f: any) => mapSchool(f.attributes)).slice(0, maxResults);
 
+    console.log(`[NCES] Found ${schools.length} schools in ZIP ${zipCode}`);
     return { schools, totalCount: schools.length };
   } catch (err) {
     console.error("[NCES] School search by ZIP failed:", err);
