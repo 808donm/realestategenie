@@ -137,8 +137,35 @@ export async function getNeighborhoodProfile(params: {
 
   // Run all free API calls in parallel
   const [schoolsResult, crimeResult, hazardResult, poiResult, trendsResult] = await Promise.allSettled([
-    // Schools -- zip-based primary, use Hawaii school zone data for feeder schools
+    // Schools -- cached for 1 year (school zones rarely change, DOE updates in August)
     (async (): Promise<SchoolSearchResult> => {
+      const SCHOOL_CACHE_TTL = 365 * 24 * 3600 * 1000; // 1 year
+      const schoolCacheKey = postalCode
+        ? `schools:zip:${postalCode}:${stateAbbrev || "unknown"}`
+        : latitude && longitude
+          ? `schools:loc:${latitude.toFixed(3)}:${longitude.toFixed(3)}`
+          : null;
+
+      // Check cache first
+      if (schoolCacheKey) {
+        try {
+          const { buildPropertyCacheKey, propertyCacheGet, propertyDbRead } = await import("../property-data-cache");
+          const cacheKey = buildPropertyCacheKey("free-data", "schools", { key: schoolCacheKey });
+          const memoryCached = propertyCacheGet(cacheKey);
+          if (memoryCached?.data?.schools) {
+            console.log(`[Schools] Cache hit (memory) for ${schoolCacheKey}`);
+            return memoryCached.data as SchoolSearchResult;
+          }
+          const dbCached = await propertyDbRead(cacheKey, "schools");
+          if (dbCached?.data?.schools) {
+            console.log(`[Schools] Cache hit (db) for ${schoolCacheKey}`);
+            const { propertyCacheSet } = await import("../property-data-cache");
+            propertyCacheSet(cacheKey, dbCached.data, "free-data");
+            return dbCached.data as SchoolSearchResult;
+          }
+        } catch {}
+      }
+
       let schools: SchoolResult[] = [];
       if (postalCode) {
         const zipResult = await searchSchoolsByZip(postalCode, 15);
@@ -244,7 +271,27 @@ export async function getNeighborhoodProfile(params: {
         }
       }
 
-      return { schools, totalCount: schools.length };
+      const result: SchoolSearchResult = { schools, totalCount: schools.length };
+
+      // Cache school data -- expires on next August 1 (DOE updates annually)
+      if (schoolCacheKey && schools.length > 0) {
+        try {
+          const { buildPropertyCacheKey, propertyCacheSet, propertyDbWrite } = await import("../property-data-cache");
+          const cacheKey = buildPropertyCacheKey("free-data", "schools", { key: schoolCacheKey });
+
+          // Calculate TTL until next August 1
+          const now = new Date();
+          const thisAug = new Date(now.getFullYear(), 7, 1); // August 1 this year
+          const nextRefresh = now < thisAug ? thisAug : new Date(now.getFullYear() + 1, 7, 1);
+          const ttl = nextRefresh.getTime() - now.getTime();
+
+          propertyCacheSet(cacheKey, result, "free-data");
+          propertyDbWrite(cacheKey, "schools", result, "free-data", ttl).catch(() => {});
+          console.log(`[Schools] Cached ${schools.length} schools for ${schoolCacheKey}, expires ${nextRefresh.toISOString().split("T")[0]}`);
+        } catch {}
+      }
+
+      return result;
     })(),
 
     // Crime indices
