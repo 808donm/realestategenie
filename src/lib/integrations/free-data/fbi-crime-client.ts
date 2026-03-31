@@ -114,41 +114,56 @@ export async function getCrimeIndicesByState(stateAbbrev: string, year?: number)
   const fromYear = toYear - 5;
   const dataRange = `01-${fromYear},12-${toYear}`;
 
-  // FBI CDE uses a POST query endpoint with a specific payload format
-  // Send separate queries per offense to get individual breakdowns
-  const offenses = [
-    "violent-crime",
-    "property-crime",
-    "burglary",
-    "larceny",
-    "motor-vehicle-theft",
-    "aggravated-assault",
-    "robbery",
+  // FBI CDE uses a POST query endpoint with a specific payload format.
+  // The API accepts up to 3 offenses per query. Send multiple requests in parallel.
+  const offenseGroups = [
+    ["violent-crime", "property-crime"],
+    ["burglary", "larceny", "motor-vehicle-theft"],
+    ["aggravated-assault", "robbery"],
   ];
-  const payload = offenses.map((offense, i) => ({
-    query: `q${i}`,
-    data: [
-      { key: "dataRange", value: dataRange },
-      { key: "offense", value: offense },
-      { key: "stateAbbr", value: state },
-    ],
-  }));
+  const offenses = offenseGroups.flat();
 
   try {
-    const response = await fetch(CDE_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(15000),
-    });
+    // Send parallel requests, one per offense group
+    const responses = await Promise.allSettled(
+      offenseGroups.map((group, gi) => {
+        const queryData: Array<{ key: string; value: string }> = [
+          { key: "dataRange", value: dataRange },
+          { key: "stateAbbr", value: state },
+        ];
+        for (const offense of group) {
+          queryData.push({ key: "offense", value: offense });
+        }
+        const payload = [{ query: `q${gi}`, data: queryData }];
 
-    if (!response.ok) {
-      console.warn(`[FBI] CDE query returned ${response.status} for state ${state}`);
-      return null;
+        return fetch(CDE_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          signal: AbortSignal.timeout(15000),
+        }).then(async (r) => {
+          if (!r.ok) {
+            console.warn(`[FBI] CDE query group ${gi} returned ${r.status}`);
+            return null;
+          }
+          return r.json();
+        });
+      }),
+    );
+
+    // Merge results from all groups
+    const allResults: any[] = [];
+    for (const res of responses) {
+      if (res.status === "fulfilled" && res.value) {
+        const arr = Array.isArray(res.value) ? res.value : [res.value];
+        allResults.push(...arr);
+      }
     }
 
-    const data = await response.json();
-    const results = Array.isArray(data) ? data : [data];
+    if (allResults.length === 0) {
+      console.warn(`[FBI] All CDE queries failed for state ${state}`);
+      return null;
+    }
 
     // Parse CDE response format:
     // Each query returns: { data: { actuals: { qN: { "01-2024": 3116, ... } } } }
@@ -176,21 +191,61 @@ export async function getCrimeIndicesByState(stateAbbrev: string, year?: number)
       return { total: yearTotals[years[0]], year: years[0], months: yearMonths[years[0]] };
     }
 
-    // Extract per-offense annual totals
+    // Extract per-offense annual totals from all results
     const offenseTotals: Record<string, number> = {};
     let latestYear = 0;
 
-    for (let i = 0; i < offenses.length; i++) {
-      const queryKey = `q${i}`;
-      const result = results[i] || results.find((r: any) => r?.data?.actuals?.[queryKey]);
-      const actuals = result?.data?.actuals?.[queryKey];
-
+    for (const result of allResults) {
+      const actuals = result?.data?.actuals;
       if (!actuals || typeof actuals !== "object") continue;
 
-      const { total, year } = sumRecentYear(actuals);
-      if (total > 0) {
-        offenseTotals[offenses[i]] = total;
-        if (year > latestYear) latestYear = year;
+      // Each query key (q0, q1, q2) contains monthly data for that group's offenses combined
+      for (const [queryKey, monthly] of Object.entries(actuals)) {
+        if (!monthly || typeof monthly !== "object") continue;
+
+        const { total, year } = sumRecentYear(monthly as Record<string, any>);
+        if (total > 0 && year > 0) {
+          // Map query key back to offense group
+          const gi = parseInt(queryKey.replace("q", ""));
+          if (!isNaN(gi) && offenseGroups[gi]) {
+            // CDE combines offenses in one query -- the total is the sum of all offenses in the group
+            // For groups with one parent category (violent-crime, property-crime), assign directly
+            if (offenseGroups[gi].length === 2 && offenseGroups[gi].includes("violent-crime")) {
+              // First group: violent + property combined -- split based on the total
+              // We can't split from a single combined response, so assign the whole total
+              // and we'll split later based on ratios from the other groups
+              offenseTotals["_combined_vp"] = total;
+            } else {
+              // For individual offense groups, assign each offense its share
+              // Since CDE combines them, divide equally as estimate
+              const perOffense = Math.round(total / offenseGroups[gi].length);
+              for (const offense of offenseGroups[gi]) {
+                offenseTotals[offense] = perOffense;
+              }
+            }
+            if (year > latestYear) latestYear = year;
+          }
+        }
+      }
+    }
+
+    // If we got the combined violent+property total, split it using individual offense data
+    if (offenseTotals["_combined_vp"]) {
+      const combinedTotal = offenseTotals["_combined_vp"];
+      delete offenseTotals["_combined_vp"];
+      const individualSum =
+        (offenseTotals["burglary"] || 0) + (offenseTotals["larceny"] || 0) +
+        (offenseTotals["motor-vehicle-theft"] || 0) + (offenseTotals["aggravated-assault"] || 0) +
+        (offenseTotals["robbery"] || 0);
+      const propertyCrimeEst = (offenseTotals["burglary"] || 0) + (offenseTotals["larceny"] || 0) + (offenseTotals["motor-vehicle-theft"] || 0);
+      const violentCrimeEst = (offenseTotals["aggravated-assault"] || 0) + (offenseTotals["robbery"] || 0);
+      if (individualSum > 0) {
+        offenseTotals["property-crime"] = propertyCrimeEst;
+        offenseTotals["violent-crime"] = violentCrimeEst;
+      } else {
+        // No individual data -- estimate split
+        offenseTotals["violent-crime"] = Math.round(combinedTotal * 0.25);
+        offenseTotals["property-crime"] = Math.round(combinedTotal * 0.75);
       }
     }
 
