@@ -3499,8 +3499,6 @@ export default function PropertyDetailModal({
                           { label: "Overall Crime", val: crime.crime_Index ?? crime.crimeIndex },
                           { label: "Violent Crime", val: crime.violentCrimeIndex },
                           { label: "Property Crime", val: crime.propertyCrimeIndex },
-                          { label: "Violent Crime", val: crime.violentCrimeIndex },
-                          { label: "Property Crime", val: crime.propertyCrimeIndex },
                           { label: "Homicide", val: crime.homicideIndex ?? crime.homicide_Index },
                           { label: "Burglary", val: crime.burglary_Index ?? crime.burglaryIndex },
                           { label: "Larceny", val: crime.larceny_Index ?? crime.larcenyIndex },
