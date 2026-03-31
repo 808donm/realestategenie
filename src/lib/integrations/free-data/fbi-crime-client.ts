@@ -17,6 +17,7 @@ export interface CrimeIndices {
   motorVehicleTheftIndex: number | null;
   aggravatedAssaultIndex: number | null;
   robberyIndex: number | null;
+  homicideIndex: number | null;
   violentCrimeIndex: number | null;
   propertyCrimeIndex: number | null;
   year: number;
@@ -119,7 +120,7 @@ export async function getCrimeIndicesByState(stateAbbrev: string, year?: number)
   const offenseGroups = [
     ["violent-crime", "property-crime"],
     ["burglary", "larceny", "motor-vehicle-theft"],
-    ["aggravated-assault", "robbery"],
+    ["aggravated-assault", "robbery", "homicide"],
   ];
   const offenses = offenseGroups.flat();
 
@@ -276,6 +277,7 @@ export async function getCrimeIndicesByState(stateAbbrev: string, year?: number)
       motorVehicleTheftIndex: offenseTotals["motor-vehicle-theft"] ? rateToIndex(rate(offenseTotals["motor-vehicle-theft"]), "motor-vehicle-theft") : null,
       aggravatedAssaultIndex: offenseTotals["aggravated-assault"] ? rateToIndex(rate(offenseTotals["aggravated-assault"]), "aggravated-assault") : null,
       robberyIndex: offenseTotals["robbery"] ? rateToIndex(rate(offenseTotals["robbery"]), "robbery") : null,
+      homicideIndex: offenseTotals["homicide"] ? rateToIndex(rate(offenseTotals["homicide"]), "aggravated-assault") : null,
       violentCrimeIndex: rateToIndex(rate(violentCrime), "violent-crime"),
       propertyCrimeIndex: rateToIndex(rate(propertyCrime), "property-crime"),
       year: latestYear,
