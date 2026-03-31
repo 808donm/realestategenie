@@ -96,13 +96,28 @@ export async function getNeighborhoodProfile(params: {
   address1?: string;
   address2?: string;
 }): Promise<NeighborhoodProfileResult> {
-  const { latitude, longitude, postalCode, state, fips } = params;
+  const { latitude, longitude, postalCode, state } = params;
+  let { fips } = params;
 
   // Derive state from address2 or fips if not provided
   let stateAbbrev = state?.toUpperCase();
   if (!stateAbbrev && params.address2) {
     const match = params.address2.match(/\b([A-Z]{2})\b/);
     if (match) stateAbbrev = match[1];
+  }
+
+  // Resolve county FIPS from zip for Hawaii (needed for county-level NRI data)
+  if (!fips && stateAbbrev === "HI" && postalCode) {
+    const HAWAII_COUNTY_FIPS: Record<string, string> = {
+      HONOLULU: "15003", HAWAII: "15001", MAUI: "15009", KAUAI: "15007",
+    };
+    try {
+      const { getCountyByZip } = await import("@/lib/hawaii-zip-county");
+      const county = getCountyByZip(postalCode);
+      if (county && HAWAII_COUNTY_FIPS[county]) {
+        fips = HAWAII_COUNTY_FIPS[county];
+      }
+    } catch {}
   }
 
   // Area name for display

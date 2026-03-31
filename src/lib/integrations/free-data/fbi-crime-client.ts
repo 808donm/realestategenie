@@ -115,17 +115,24 @@ export async function getCrimeIndicesByState(stateAbbrev: string, year?: number)
   const dataRange = `01-${fromYear},12-${toYear}`;
 
   // FBI CDE uses a POST query endpoint with a specific payload format
-  const payload = [
-    {
-      query: "crimeQuery",
-      data: [
-        { key: "dataRange", value: dataRange },
-        { key: "offense", value: "violent-crime" },
-        { key: "offense", value: "property-crime" },
-        { key: "stateAbbr", value: state },
-      ],
-    },
+  // Send separate queries per offense to get individual breakdowns
+  const offenses = [
+    "violent-crime",
+    "property-crime",
+    "burglary",
+    "larceny",
+    "motor-vehicle-theft",
+    "aggravated-assault",
+    "robbery",
   ];
+  const payload = offenses.map((offense, i) => ({
+    query: `q${i}`,
+    data: [
+      { key: "dataRange", value: dataRange },
+      { key: "offense", value: offense },
+      { key: "stateAbbr", value: state },
+    ],
+  }));
 
   try {
     const response = await fetch(CDE_URL, {
@@ -141,58 +148,56 @@ export async function getCrimeIndicesByState(stateAbbrev: string, year?: number)
     }
 
     const data = await response.json();
-    console.log(`[FBI] CDE response for ${state}: ${JSON.stringify(data).slice(0, 500)}`);
+    const results = Array.isArray(data) ? data : [data];
 
     // Parse CDE response format:
-    // [{ data: { actuals: { crimeQuery: { "01-2024": 3116, "02-2024": 2623, ... } } } }]
-    // Keys are "MM-YYYY" with monthly crime counts (combined violent + property)
-    const queryResult = Array.isArray(data) ? data[0] : data;
-    const actuals = queryResult?.data?.actuals?.crimeQuery;
+    // Each query returns: { data: { actuals: { qN: { "01-2024": 3116, ... } } } }
+    // We sent one query per offense type, so we can attribute counts properly.
 
-    if (!actuals || typeof actuals !== "object") {
-      console.warn(`[FBI] Unexpected CDE response shape for ${state}`);
+    /** Sum monthly counts for the most recent complete year from a monthly-keyed object */
+    function sumRecentYear(monthly: Record<string, any>): { total: number; year: number; months: number } {
+      const yearTotals: Record<number, number> = {};
+      const yearMonths: Record<number, number> = {};
+      for (const [key, value] of Object.entries(monthly)) {
+        if (value == null || typeof value !== "number") continue;
+        const match = key.match(/^(\d{2})-(\d{4})$/);
+        if (!match) continue;
+        const yr = parseInt(match[2]);
+        yearTotals[yr] = (yearTotals[yr] || 0) + value;
+        yearMonths[yr] = (yearMonths[yr] || 0) + 1;
+      }
+      // Most recent year with at least 10 months
+      const years = Object.keys(yearTotals).map(Number).filter((yr) => yearMonths[yr] >= 10).sort((a, b) => b - a);
+      if (years.length === 0) {
+        const allYears = Object.keys(yearTotals).map(Number).sort((a, b) => b - a);
+        if (allYears.length > 0) return { total: yearTotals[allYears[0]], year: allYears[0], months: yearMonths[allYears[0]] };
+        return { total: 0, year: 0, months: 0 };
+      }
+      return { total: yearTotals[years[0]], year: years[0], months: yearMonths[years[0]] };
+    }
+
+    // Extract per-offense annual totals
+    const offenseTotals: Record<string, number> = {};
+    let latestYear = 0;
+
+    for (let i = 0; i < offenses.length; i++) {
+      const queryKey = `q${i}`;
+      const result = results[i] || results.find((r: any) => r?.data?.actuals?.[queryKey]);
+      const actuals = result?.data?.actuals?.[queryKey];
+
+      if (!actuals || typeof actuals !== "object") continue;
+
+      const { total, year } = sumRecentYear(actuals);
+      if (total > 0) {
+        offenseTotals[offenses[i]] = total;
+        if (year > latestYear) latestYear = year;
+      }
+    }
+
+    if (Object.keys(offenseTotals).length === 0) {
+      console.warn(`[FBI] No offense data could be extracted for ${state}`);
       return null;
     }
-
-    // Group monthly counts by year and find the most recent complete year
-    const yearTotals: Record<number, number> = {};
-    const yearMonthCounts: Record<number, number> = {};
-
-    for (const [key, value] of Object.entries(actuals)) {
-      if (value == null || typeof value !== "number") continue;
-      const match = key.match(/^(\d{2})-(\d{4})$/);
-      if (!match) continue;
-      const yr = parseInt(match[2]);
-      yearTotals[yr] = (yearTotals[yr] || 0) + value;
-      yearMonthCounts[yr] = (yearMonthCounts[yr] || 0) + 1;
-    }
-
-    // Find most recent year with at least 10 months of data (allow for partial current year)
-    const years = Object.keys(yearTotals)
-      .map(Number)
-      .filter((yr) => yearMonthCounts[yr] >= 10)
-      .sort((a, b) => b - a);
-
-    if (years.length === 0) {
-      // Fall back to most recent year with any data
-      const allYears = Object.keys(yearTotals).map(Number).sort((a, b) => b - a);
-      if (allYears.length > 0) years.push(allYears[0]);
-    }
-
-    if (years.length === 0) {
-      console.warn(`[FBI] No yearly data could be aggregated for ${state}`);
-      return null;
-    }
-
-    const latestYear = years[0];
-    const totalCrime = yearTotals[latestYear];
-
-    // CDE combines violent + property in the query response.
-    // We requested both offense types, so the total includes both.
-    // Use approximate national split (40% violent, 60% property) as estimate
-    // since CDE doesn't break them down in the actuals response.
-    const violentCrime = Math.round(totalCrime * 0.25);
-    const propertyCrime = Math.round(totalCrime * 0.75);
 
     // Use Census population estimates
     const STATE_POPULATIONS: Record<string, number> = {
@@ -201,20 +206,21 @@ export async function getCrimeIndicesByState(stateAbbrev: string, year?: number)
     };
     const population = STATE_POPULATIONS[state] || 1000000;
 
-    console.log(`[FBI] Crime data for ${state} (${latestYear}): total=${totalCrime}, months=${yearMonthCounts[latestYear]}, pop=${population}`);
+    const violentCrime = offenseTotals["violent-crime"] || 0;
+    const propertyCrime = offenseTotals["property-crime"] || 0;
+    const totalCrime = violentCrime + propertyCrime;
+
+    console.log(`[FBI] Crime data for ${state} (${latestYear}): violent=${violentCrime}, property=${propertyCrime}, burglary=${offenseTotals["burglary"] || 0}, pop=${population}`);
 
     const rate = (count: number) => (count / population) * 100000;
 
-    // Overall crime index based on total crimes per capita vs national average
-    const overallIndex = rateToIndex(rate(totalCrime), "violent-crime");
-
     return {
-      crimeIndex: overallIndex,
-      burglaryIndex: null, // Not available from combined query
-      larcenyIndex: null,
-      motorVehicleTheftIndex: null,
-      aggravatedAssaultIndex: null,
-      robberyIndex: null,
+      crimeIndex: rateToIndex(rate(totalCrime), "violent-crime"),
+      burglaryIndex: offenseTotals["burglary"] ? rateToIndex(rate(offenseTotals["burglary"]), "burglary") : null,
+      larcenyIndex: offenseTotals["larceny"] ? rateToIndex(rate(offenseTotals["larceny"]), "larceny") : null,
+      motorVehicleTheftIndex: offenseTotals["motor-vehicle-theft"] ? rateToIndex(rate(offenseTotals["motor-vehicle-theft"]), "motor-vehicle-theft") : null,
+      aggravatedAssaultIndex: offenseTotals["aggravated-assault"] ? rateToIndex(rate(offenseTotals["aggravated-assault"]), "aggravated-assault") : null,
+      robberyIndex: offenseTotals["robbery"] ? rateToIndex(rate(offenseTotals["robbery"]), "robbery") : null,
       violentCrimeIndex: rateToIndex(rate(violentCrime), "violent-crime"),
       propertyCrimeIndex: rateToIndex(rate(propertyCrime), "property-crime"),
       year: latestYear,
