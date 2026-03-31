@@ -3496,12 +3496,14 @@ export default function PropertyDetailModal({
                         style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8 }}
                       >
                         {[
-                          { label: "Overall Crime", val: crime.crime_Index },
-                          { label: "Burglary", val: crime.burglary_Index },
-                          { label: "Larceny", val: crime.larceny_Index },
-                          { label: "Vehicle Theft", val: crime.motor_Vehicle_Theft_Index },
-                          { label: "Assault", val: crime.aggravated_Assault_Index },
-                          { label: "Robbery", val: crime.forcible_Robbery_Index },
+                          { label: "Overall Crime", val: crime.crime_Index ?? crime.crimeIndex },
+                          { label: "Violent Crime", val: crime.violentCrimeIndex },
+                          { label: "Property Crime", val: crime.propertyCrimeIndex },
+                          { label: "Burglary", val: crime.burglary_Index ?? crime.burglaryIndex },
+                          { label: "Larceny", val: crime.larceny_Index ?? crime.larcenyIndex },
+                          { label: "Vehicle Theft", val: crime.motor_Vehicle_Theft_Index ?? crime.motorVehicleTheftIndex },
+                          { label: "Assault", val: crime.aggravated_Assault_Index ?? crime.aggravatedAssaultIndex },
+                          { label: "Robbery", val: crime.forcible_Robbery_Index ?? crime.robberyIndex },
                         ]
                           .filter((c) => c.val != null)
                           .map((c) => (
@@ -3530,6 +3532,11 @@ export default function PropertyDetailModal({
                             </div>
                           ))}
                       </div>
+                      {crime.year && (
+                        <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 8, textAlign: "right" }}>
+                          Source: FBI Crime Data Explorer ({crime.year}) | {crime.areaName || "State"}
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -3576,7 +3583,7 @@ export default function PropertyDetailModal({
                     </Section>
                   )}
 
-                  {/* Natural Disasters */}
+                  {/* Natural Disaster Risk */}
                   {naturalDisasters && (
                     <div style={{ marginBottom: 20 }}>
                       <h3
@@ -3589,46 +3596,89 @@ export default function PropertyDetailModal({
                           borderBottom: "1px solid #e5e7eb",
                         }}
                       >
-                        Natural Disaster Risk (Index: 100 = National Avg)
+                        Natural Disaster Risk (FEMA National Risk Index)
                       </h3>
-                      <div
-                        style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 8 }}
-                      >
-                        {[
+                      {(() => {
+                        // Handle both formats: NRI risk ratings (from ArcGIS) and old index numbers
+                        const riskColor = (risk: string) => {
+                          const r = risk?.toLowerCase() || "";
+                          if (r.includes("very high")) return "#dc2626";
+                          if (r.includes("high")) return "#ea580c";
+                          if (r.includes("moderate")) return "#d97706";
+                          if (r.includes("low")) return "#059669";
+                          if (r.includes("very low")) return "#3b82f6";
+                          return "#6b7280";
+                        };
+
+                        // NRI format: { flood: { risk: "...", score: N }, ... }
+                        const nriItems = [
+                          { label: "Overall Risk", data: naturalDisasters.overall },
+                          { label: "Flood", data: naturalDisasters.flood },
+                          { label: "Hurricane", data: naturalDisasters.hurricane },
+                          { label: "Tornado", data: naturalDisasters.tornado },
+                          { label: "Wildfire", data: naturalDisasters.wildfire },
+                          { label: "Earthquake", data: naturalDisasters.earthquake },
+                          { label: "Wind", data: naturalDisasters.wind },
+                          { label: "Hail", data: naturalDisasters.hail },
+                        ].filter((item) => item.data?.risk && item.data.risk !== "Unknown");
+
+                        // Old index format: { earthquake_Index: 42, hurricane_Index: 120, ... }
+                        const indexItems = [
                           { label: "Earthquake", val: naturalDisasters.earthquake_Index },
                           { label: "Hurricane", val: naturalDisasters.hurricane_Index },
                           { label: "Tornado", val: naturalDisasters.tornado_Index },
                           { label: "Hail", val: naturalDisasters.hail_Index },
                           { label: "Wind", val: naturalDisasters.wind_Index },
                           { label: "Weather", val: naturalDisasters.weather_Index },
-                        ]
-                          .filter((c) => c.val != null)
-                          .map((c) => (
-                            <div
-                              key={c.label}
-                              style={{
-                                padding: "10px 12px",
-                                background: "#f9fafb",
-                                borderRadius: 8,
-                                textAlign: "center",
-                              }}
-                            >
-                              <div
-                                style={{
-                                  fontSize: 10,
-                                  fontWeight: 600,
-                                  textTransform: "uppercase",
-                                  color: "#6b7280",
-                                  letterSpacing: 0.5,
-                                }}
-                              >
-                                {c.label}
+                        ].filter((c) => c.val != null);
+
+                        if (nriItems.length > 0) {
+                          return (
+                            <>
+                              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 8 }}>
+                                {nriItems.map((item) => (
+                                  <div
+                                    key={item.label}
+                                    style={{
+                                      padding: "12px 14px",
+                                      background: "#f9fafb",
+                                      borderRadius: 8,
+                                      textAlign: "center",
+                                      borderLeft: `3px solid ${riskColor(item.data.risk)}`,
+                                    }}
+                                  >
+                                    <div style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", color: "#6b7280", letterSpacing: 0.5 }}>
+                                      {item.label}
+                                    </div>
+                                    <div style={{ fontSize: 16, fontWeight: 800, color: riskColor(item.data.risk), marginTop: 4 }}>
+                                      {item.data.risk}
+                                    </div>
+                                  </div>
+                                ))}
                               </div>
-                              <div style={{ fontSize: 22, fontWeight: 800, color: idxColor(c.val!) }}>{c.val}</div>
-                              <div style={{ fontSize: 10, color: idxColor(c.val!) }}>{idxLabel(c.val!)}</div>
+                              <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 8, textAlign: "right" }}>
+                                Source: FEMA National Risk Index (county-level)
+                              </div>
+                            </>
+                          );
+                        }
+
+                        if (indexItems.length > 0) {
+                          return (
+                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 8 }}>
+                              {indexItems.map((c) => (
+                                <div key={c.label} style={{ padding: "10px 12px", background: "#f9fafb", borderRadius: 8, textAlign: "center" }}>
+                                  <div style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", color: "#6b7280", letterSpacing: 0.5 }}>{c.label}</div>
+                                  <div style={{ fontSize: 22, fontWeight: 800, color: idxColor(c.val!) }}>{c.val}</div>
+                                  <div style={{ fontSize: 10, color: idxColor(c.val!) }}>{idxLabel(c.val!)}</div>
+                                </div>
+                              ))}
                             </div>
-                          ))}
-                      </div>
+                          );
+                        }
+
+                        return null;
+                      })()}
                     </div>
                   )}
 
