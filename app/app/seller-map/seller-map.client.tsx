@@ -6,6 +6,7 @@ import type { ScoredProperty } from "@/lib/scoring/seller-motivation-score";
 import { SellerMapView } from "./map-view.client";
 import { SidebarPanel } from "./sidebar-panel.client";
 import { PropertyDetailPanel } from "./property-detail-panel.client";
+import PropertyDetailModal from "../property-data/property-detail-modal.client";
 
 type SavedSearch = {
   id: string;
@@ -38,6 +39,7 @@ export function SellerMapClient() {
   const searchParams = useSearchParams();
   const [properties, setProperties] = useState<ScoredProperty[]>([]);
   const [selectedProperty, setSelectedProperty] = useState<ScoredProperty | null>(null);
+  const [detailProperty, setDetailProperty] = useState<ScoredProperty | null>(null);
   const [filters, setFilters] = useState(() => {
     // Check URL params for auto-search (from Hoku navigation)
     const urlZip = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("zip") : null;
@@ -309,11 +311,35 @@ export function SellerMapClient() {
   }, []);
 
   const handleGenerateReport = useCallback((property: ScoredProperty) => {
-    const params = new URLSearchParams({
-      address: property.address,
-    });
-    window.open(`/app/property-data?${params}`, "_blank");
+    setDetailProperty(property);
   }, []);
+
+  // Convert ScoredProperty to AttomProperty shape for the detail modal
+  const scoredToAttom = useCallback((sp: ScoredProperty) => ({
+    identifier: { obPropId: sp.id, apn: sp.parcelId },
+    address: {
+      oneLine: sp.address,
+      locality: sp.city,
+      countrySubd: sp.state,
+      postal1: sp.zip,
+    },
+    location: {
+      latitude: String(sp.lat),
+      longitude: String(sp.lng),
+    },
+    building: {
+      rooms: { beds: sp.beds, bathsTotal: sp.baths },
+      size: { universalSize: sp.sqft, livingSize: sp.sqft },
+      summary: { yearBuilt: sp.yearBuilt },
+    },
+    summary: {
+      propType: sp.propertyType,
+      yearBuilt: sp.yearBuilt,
+    },
+    owner: sp.owner ? { owner1: { fullName: sp.owner } } : undefined,
+    sale: sp.lastSalePrice ? { amount: { saleAmt: sp.lastSalePrice, saleTransDate: sp.lastSaleDate } } : undefined,
+    avm: sp.estimatedValue ? { amount: { value: sp.estimatedValue } } : undefined,
+  }), []);
 
   const handleDraftOutreach = useCallback((property: ScoredProperty) => {
     // Select the property to open its detail panel (outreach tab is available there)
@@ -517,6 +543,13 @@ export function SellerMapClient() {
             />
           </div>
         </div>
+      )}
+      {/* Property Detail Modal -- same as Property Intel for consistency */}
+      {detailProperty && (
+        <PropertyDetailModal
+          property={scoredToAttom(detailProperty)}
+          onClose={() => setDetailProperty(null)}
+        />
       )}
     </>
   );
