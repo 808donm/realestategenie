@@ -172,9 +172,11 @@ export async function getHazardRiskProfile(
           tornado: { risk: "Unknown" as string, score: null as number | null },
           hurricane: { risk: "Unknown" as string, score: null as number | null },
           wildfire: { risk: "Unknown" as string, score: null as number | null },
+          earthquake: { risk: "Unknown" as string, score: null as number | null },
           hail: { risk: "Unknown" as string, score: null as number | null },
           wind: { risk: "Unknown" as string, score: null as number | null },
-        }),
+          overall: { risk: "Unknown" as string, score: null as number | null },
+        } as Record<string, { risk: string; score: number | null }>),
   ]);
 
   // Compute overall risk as average of available scores
@@ -196,14 +198,18 @@ export async function getHazardRiskProfile(
   };
 
   return {
-    earthquake,
+    earthquake: femaRisks.earthquake?.risk !== "Unknown" ? femaRisks.earthquake : earthquake,
     flood: femaRisks.flood,
+    coastalFlood: (femaRisks as any).coastalFlood,
     tornado: femaRisks.tornado,
     hurricane: femaRisks.hurricane,
     wildfire: femaRisks.wildfire,
     hail: femaRisks.hail,
     wind: femaRisks.wind,
-    overall: { risk: riskFromAvg(avgScore), score: avgScore },
-    source: "USGS Earthquake Hazards + FEMA National Risk Index",
+    tsunami: (femaRisks as any).tsunami,
+    landslide: (femaRisks as any).landslide,
+    lightning: (femaRisks as any).lightning,
+    overall: (femaRisks as any).overall?.risk !== "Unknown" ? (femaRisks as any).overall : { risk: riskFromAvg(avgScore), score: avgScore },
+    source: "FEMA National Risk Index + USGS",
   };
 }
