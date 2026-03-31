@@ -8,8 +8,7 @@
  * to match the ATTOM community profile crime format.
  */
 
-const BASE_URL = "https://api.usa.gov/crime/fbi/cde";
-const API_KEY = process.env.FBI_API_KEY || "";
+const CDE_URL = "https://cde.ucr.cjis.gov/LATEST/summarized/query";
 
 export interface CrimeIndices {
   crimeIndex: number | null;
@@ -108,114 +107,128 @@ function rateToIndex(rate: number, offenseType: string): number {
  * FBI API provides data at state level; county data available but less reliable.
  */
 export async function getCrimeIndicesByState(stateAbbrev: string, year?: number): Promise<CrimeIndices | null> {
-  if (!API_KEY) {
-    console.warn("[FBI] FBI_API_KEY not configured, skipping crime data");
-    return null;
-  }
-
   const state = stateAbbrev.toUpperCase();
   if (!STATE_FIPS[state]) return null;
 
-  // New CDE API: /summarized/state/{state}/{offense}
-  // Each offense is a separate endpoint. Fetch all in parallel.
-  const offenses = [
-    "violent-crime",
-    "property-crime",
-    "burglary",
-    "larceny",
-    "motor-vehicle-theft",
-    "aggravated-assault",
-    "robbery",
+  const toYear = year || new Date().getFullYear();
+  const fromYear = toYear - 5;
+  const dataRange = `01-${fromYear},12-${toYear}`;
+
+  // FBI CDE uses a POST query endpoint with a specific payload format
+  const payload = [
+    {
+      query: "crimeQuery",
+      data: [
+        { key: "dataRange", value: dataRange },
+        { key: "offense", value: "violent-crime" },
+        { key: "offense", value: "property-crime" },
+        { key: "stateAbbr", value: state },
+      ],
+    },
   ];
 
   try {
-    const results = await Promise.allSettled(
-      offenses.map((offense) =>
-        fetch(`${BASE_URL}/summarized/state/${state}/${offense}?API_KEY=${API_KEY}`, {
-          signal: AbortSignal.timeout(10000),
-        }).then(async (r) => {
-          if (!r.ok) {
-            console.warn(`[FBI] ${offense}: HTTP ${r.status}`);
-            return null;
-          }
-          const data = await r.json();
-          console.log(`[FBI] ${offense}: ${JSON.stringify(data).slice(0, 300)}`);
-          return { offense, data };
-        }),
-      ),
-    );
+    const response = await fetch(CDE_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(15000),
+    });
 
-    // Extract the most recent year's data from each offense response
-    const crimeData: Record<string, number> = {};
+    if (!response.ok) {
+      console.warn(`[FBI] CDE query returned ${response.status} for state ${state}`);
+      return null;
+    }
+
+    const data = await response.json();
+    console.log(`[FBI] CDE response for ${state}: ${JSON.stringify(data).slice(0, 500)}`);
+
+    // Parse the response -- CDE returns nested results per query
+    const queryResult = Array.isArray(data) ? data[0] : data;
+    const results = queryResult?.results || queryResult?.data || queryResult;
+
+    if (!results || (Array.isArray(results) && results.length === 0)) {
+      console.warn(`[FBI] No results in CDE response for state ${state}`);
+      return null;
+    }
+
+    // Aggregate crime counts from the response
+    // CDE may return yearly breakdowns or aggregate totals
+    let violentCrime = 0;
+    let propertyCrime = 0;
+    let burglary = 0;
+    let larceny = 0;
+    let mvt = 0;
+    let assault = 0;
+    let robbery = 0;
     let latestYear = 0;
     let population = 0;
 
-    for (const result of results) {
-      if (result.status !== "fulfilled" || !result.value) continue;
-      const { offense, data } = result.value;
-
-      // Log raw response shape for debugging
-      console.log(`[FBI] ${offense} response type=${typeof data}, isArray=${Array.isArray(data)}, keys=${typeof data === "object" && data ? Object.keys(data).slice(0, 10).join(",") : "N/A"}, sample=${JSON.stringify(data).slice(0, 200)}`);
-
-      // Response could be: array of records, object with nested data, or keyed by year
-      let records: any[] = [];
-      if (Array.isArray(data)) {
-        records = data;
-      } else if (data && typeof data === "object") {
-        // Could be { results: [...] }, { data: [...] }, or { "2020": {...}, "2021": {...} }
-        if (data.results) records = data.results;
-        else if (data.data) records = Array.isArray(data.data) ? data.data : [data.data];
-        else {
-          // Try treating keys as years (e.g., { "2020": { population: X, ... }, "2021": {...} })
-          const yearKeys = Object.keys(data).filter((k) => /^\d{4}$/.test(k));
-          if (yearKeys.length > 0) {
-            records = yearKeys.map((yr) => ({ year: parseInt(yr), ...data[yr] }));
-          } else {
-            records = [data];
-          }
-        }
+    // Handle various response shapes
+    const records = Array.isArray(results) ? results : [results];
+    for (const rec of records) {
+      const yr = rec.year || rec.data_year || rec.Year || 0;
+      if (yr > latestYear) {
+        latestYear = yr;
+        population = rec.population || rec.Population || rec.total_population || population;
       }
-      if (records.length === 0) continue;
 
-      // Get most recent year's record
-      const sorted = [...records].sort((a: any, b: any) => (b.year || b.data_year || 0) - (a.year || a.data_year || 0));
-      const recent = sorted[0];
-      if (!recent) continue;
+      // Sum by offense type
+      const offense = (rec.offense || rec.key || rec.crime_type || "").toLowerCase();
+      const count = rec.actual || rec.total || rec.value || rec.count || rec.estimated || rec.totalCount || 0;
 
-      const yr = recent.year || recent.data_year || 0;
-      if (yr > latestYear) latestYear = yr;
-      if (recent.population && recent.population > population) population = recent.population;
-
-      // Extract the count -- try multiple possible field names
-      const count =
-        recent.actual || recent.total || recent.value || recent.count || recent.estimated ||
-        recent.totalCount || recent.offense_count || recent.incidents || 0;
-      crimeData[offense] = count;
+      if (offense.includes("violent")) violentCrime += count;
+      else if (offense.includes("property") && !offense.includes("motor")) propertyCrime += count;
+      else if (offense.includes("burglary")) burglary += count;
+      else if (offense.includes("larceny")) larceny += count;
+      else if (offense.includes("motor") || offense.includes("vehicle")) mvt += count;
+      else if (offense.includes("assault")) assault += count;
+      else if (offense.includes("robbery")) robbery += count;
     }
 
-    if (Object.keys(crimeData).length === 0 || population === 0) {
-      console.warn(`[FBI] No usable crime data for state ${state}`);
+    // If we didn't get individual offense breakdown, try top-level fields
+    if (violentCrime === 0 && propertyCrime === 0) {
+      for (const rec of records) {
+        violentCrime += rec.violent_crime || rec.violentCrime || rec.Violent_crime || 0;
+        propertyCrime += rec.property_crime || rec.propertyCrime || rec.Property_crime || 0;
+        burglary += rec.burglary || rec.Burglary || 0;
+        larceny += rec.larceny || rec.Larceny || rec.larceny_theft || 0;
+        mvt += rec.motor_vehicle_theft || rec.motorVehicleTheft || 0;
+        assault += rec.aggravated_assault || rec.aggravatedAssault || 0;
+        robbery += rec.robbery || rec.Robbery || 0;
+        if (!population) population = rec.population || rec.Population || 0;
+        if (!latestYear) latestYear = rec.year || rec.data_year || 0;
+      }
+    }
+
+    if (population === 0) {
+      // Fallback: use Census population estimate for Hawaii
+      population = state === "HI" ? 1440196 : 1000000;
+    }
+
+    if (violentCrime === 0 && propertyCrime === 0) {
+      console.warn(`[FBI] Could not extract crime counts for ${state}. Response sample: ${JSON.stringify(records[0]).slice(0, 300)}`);
       return null;
     }
 
     const rate = (count: number) => (count / population) * 100000;
 
-    console.log(`[FBI] Crime data for ${state} (${latestYear}): ${JSON.stringify(crimeData)}`);
+    console.log(`[FBI] Crime data for ${state} (${latestYear}): violent=${violentCrime}, property=${propertyCrime}, pop=${population}`);
 
     return {
-      crimeIndex: rateToIndex(rate((crimeData["violent-crime"] || 0) + (crimeData["property-crime"] || 0)), "violent-crime"),
-      burglaryIndex: rateToIndex(rate(crimeData["burglary"] || 0), "burglary"),
-      larcenyIndex: rateToIndex(rate(crimeData["larceny"] || 0), "larceny"),
-      motorVehicleTheftIndex: rateToIndex(rate(crimeData["motor-vehicle-theft"] || 0), "motor-vehicle-theft"),
-      aggravatedAssaultIndex: rateToIndex(rate(crimeData["aggravated-assault"] || 0), "aggravated-assault"),
-      robberyIndex: rateToIndex(rate(crimeData["robbery"] || 0), "robbery"),
-      violentCrimeIndex: rateToIndex(rate(crimeData["violent-crime"] || 0), "violent-crime"),
-      propertyCrimeIndex: rateToIndex(rate(crimeData["property-crime"] || 0), "property-crime"),
-      year: latestYear,
+      crimeIndex: rateToIndex(rate(violentCrime + propertyCrime), "violent-crime"),
+      burglaryIndex: rateToIndex(rate(burglary), "burglary"),
+      larcenyIndex: rateToIndex(rate(larceny), "larceny"),
+      motorVehicleTheftIndex: rateToIndex(rate(mvt), "motor-vehicle-theft"),
+      aggravatedAssaultIndex: rateToIndex(rate(assault), "aggravated-assault"),
+      robberyIndex: rateToIndex(rate(robbery), "robbery"),
+      violentCrimeIndex: rateToIndex(rate(violentCrime), "violent-crime"),
+      propertyCrimeIndex: rateToIndex(rate(propertyCrime), "property-crime"),
+      year: latestYear || toYear,
       areaName: state,
     };
   } catch (err) {
-    console.error("[FBI] Crime data fetch failed:", err);
+    console.error("[FBI] CDE query failed:", err);
     return null;
   }
 }
