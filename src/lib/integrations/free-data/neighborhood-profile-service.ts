@@ -8,7 +8,7 @@
  * All data is from free public APIs — no ATTOM dependency.
  */
 
-import { searchSchoolsByLocation, searchSchoolsByZip, type SchoolResult } from "./nces-schools-client";
+import { searchSchoolsByLocation, searchSchoolsByZip, type SchoolResult, type SchoolSearchResult } from "./nces-schools-client";
 import { getCrimeIndicesByState, getCrimeIndicesByFips, type CrimeIndices } from "./fbi-crime-client";
 import { getHazardRiskProfile, type HazardRiskProfile } from "./usgs-hazards-client";
 import { searchPOI, type POIResult } from "./osm-poi-client";
@@ -129,12 +129,30 @@ export async function getNeighborhoodProfile(params: {
 
   // Run all free API calls in parallel
   const [schoolsResult, crimeResult, hazardResult, poiResult, trendsResult] = await Promise.allSettled([
-    // Schools -- prefer zip-based search to keep results local to the property's area
-    postalCode
-      ? searchSchoolsByZip(postalCode, 15)
-      : latitude && longitude
-        ? searchSchoolsByLocation(latitude, longitude, 3, 15)
-        : Promise.resolve({ schools: [] as SchoolResult[], totalCount: 0 }),
+    // Schools -- zip-based primary, supplement with location search for missing levels
+    (async (): Promise<SchoolSearchResult> => {
+      let schools: SchoolResult[] = [];
+      if (postalCode) {
+        const zipResult = await searchSchoolsByZip(postalCode, 15);
+        schools = zipResult.schools;
+      }
+      // Check if we have high school coverage -- if not, search nearby
+      const hasHigh = schools.some((s) => s.schoolType === "High" || s.gradeRange?.includes("12"));
+      const hasMiddle = schools.some((s) => s.schoolType === "Middle" || (s.gradeRange?.includes("6") && s.gradeRange?.includes("8")));
+      if ((!hasHigh || !hasMiddle) && latitude && longitude) {
+        const nearby = await searchSchoolsByLocation(latitude, longitude, 5, 20);
+        for (const s of nearby.schools) {
+          const isHigh = s.schoolType === "High" || s.gradeRange?.includes("12");
+          const isMiddle = s.schoolType === "Middle" || (s.gradeRange?.includes("6") && s.gradeRange?.includes("8"));
+          if ((isHigh && !hasHigh) || (isMiddle && !hasMiddle)) {
+            if (!schools.some((existing) => existing.schoolName === s.schoolName)) {
+              schools.push(s);
+            }
+          }
+        }
+      }
+      return { schools, totalCount: schools.length };
+    })(),
 
     // Crime indices
     fips
@@ -177,6 +195,18 @@ export async function getNeighborhoodProfile(params: {
             ...(crime
               ? {
                   crime: {
+                    crimeIndex: crime.crimeIndex ?? undefined,
+                    violentCrimeIndex: crime.violentCrimeIndex ?? undefined,
+                    propertyCrimeIndex: crime.propertyCrimeIndex ?? undefined,
+                    homicideIndex: crime.homicideIndex ?? undefined,
+                    burglaryIndex: crime.burglaryIndex ?? undefined,
+                    larcenyIndex: crime.larcenyIndex ?? undefined,
+                    motorVehicleTheftIndex: crime.motorVehicleTheftIndex ?? undefined,
+                    aggravatedAssaultIndex: crime.aggravatedAssaultIndex ?? undefined,
+                    robberyIndex: crime.robberyIndex ?? undefined,
+                    year: crime.year ?? undefined,
+                    areaName: crime.areaName ?? undefined,
+                    // Legacy field names for backward compatibility
                     crime_Index: crime.crimeIndex ?? undefined,
                     burglary_Index: crime.burglaryIndex ?? undefined,
                     larceny_Index: crime.larcenyIndex ?? undefined,
@@ -191,11 +221,17 @@ export async function getNeighborhoodProfile(params: {
                   naturalDisasters: {
                     earthquake: hazards.earthquake,
                     flood: hazards.flood,
+                    coastalFlood: hazards.coastalFlood,
                     tornado: hazards.tornado,
                     hurricane: hazards.hurricane,
                     wildfire: hazards.wildfire,
                     hail: hazards.hail,
                     wind: hazards.wind,
+                    tsunami: hazards.tsunami,
+                    volcanic: hazards.volcanic,
+                    landslide: hazards.landslide,
+                    lightning: hazards.lightning,
+                    drought: hazards.drought,
                     overall: hazards.overall,
                   },
                 }
