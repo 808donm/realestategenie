@@ -3788,9 +3788,13 @@ export default function PropertyDetailModal({
                                   }}
                                 >
                                   {students != null && <span>Enrollment: {Number(students).toLocaleString()}</span>}
+                                  {school.studentTeacherRatio && <span>Student:Teacher {school.studentTeacherRatio}:1</span>}
+                                  {school.freeLunchPct != null && <span>Free/Reduced Lunch: {school.freeLunchPct}%</span>}
                                   {community && <span>{community}</span>}
                                   {hasAP && <span style={{ color: "#059669", fontWeight: 600 }}>AP Classes</span>}
                                   {charter && <span style={{ color: "#7c3aed", fontWeight: 600 }}>Charter</span>}
+                                  {school.titleI && <span style={{ color: "#2563eb", fontWeight: 600 }}>Title I</span>}
+                                  {school.magnet && <span style={{ color: "#dc2626", fontWeight: 600 }}>Magnet</span>}
                                 </div>
                                 {/* District info if nested in v4 */}
                                 {school.district?.schoolDistrictName && (

@@ -8,7 +8,7 @@
  * All data is from free public APIs — no ATTOM dependency.
  */
 
-import { searchSchoolsByLocation, searchSchoolsByZip, type SchoolResult, type SchoolSearchResult } from "./nces-schools-client";
+import { searchSchoolsByLocation, searchSchoolsByZip, enrichWithTitleI, type SchoolResult, type SchoolSearchResult } from "./nces-schools-client";
 import { getCrimeIndicesByState, getCrimeIndicesByFips, type CrimeIndices } from "./fbi-crime-client";
 import { getHazardRiskProfile, type HazardRiskProfile } from "./usgs-hazards-client";
 import { searchPOI, type POIResult } from "./osm-poi-client";
@@ -270,6 +270,11 @@ export async function getNeighborhoodProfile(params: {
           }
         }
       }
+
+      // Enrich with Title I / Magnet status (best-effort, non-blocking)
+      try {
+        schools = await enrichWithTitleI(schools);
+      } catch {}
 
       const result: SchoolSearchResult = { schools, totalCount: schools.length };
 

@@ -11,7 +11,10 @@
 const ARCGIS_URL =
   "https://services1.arcgis.com/Ua5sjt3LWTPigjyD/arcgis/rest/services/School_Characteristics_Current/FeatureServer/0/query";
 
-const SCHOOL_FIELDS = "SCH_NAME,LCITY,LSTATE,LZIP,SCHOOL_LEVEL,SCHOOL_TYPE_TEXT,TOTAL,GSLO,GSHI,LATCOD,LONCOD,CHARTER_TEXT,LEA_NAME,LSTREET1,PHONE";
+const SCHOOL_FIELDS = "NCESSCH,SCH_NAME,LCITY,LSTATE,LZIP,SCHOOL_LEVEL,SCHOOL_TYPE_TEXT,TOTAL,GSLO,GSHI,LATCOD,LONCOD,CHARTER_TEXT,LEA_NAME,LSTREET1,PHONE,STUTERATIO,TOTFRL";
+
+// Urban Institute API for Title I / Magnet enrichment (slow but has the data)
+const URBAN_API = "https://educationdata.urban.org/api/v1/schools/ccd/directory/2021";
 
 export interface SchoolResult {
   schoolName: string;
@@ -28,6 +31,11 @@ export interface SchoolResult {
   districtName?: string;
   distanceMiles?: number;
   ncesschid?: string;
+  studentTeacherRatio?: number;
+  freeLunchPct?: number;
+  titleI?: boolean;
+  titleISchoolwide?: boolean;
+  magnet?: boolean;
 }
 
 export interface SchoolSearchResult {
@@ -67,6 +75,8 @@ function mapSchool(s: any, latitude?: number, longitude?: number): SchoolResult 
       ? Math.round(haversineDistance(latitude, longitude, s.LATCOD, s.LONCOD) * 100) / 100
       : undefined;
 
+  const freeLunchPct = s.TOTAL && s.TOTFRL ? Math.round((s.TOTFRL / s.TOTAL) * 100) : undefined;
+
   return {
     schoolName: s.SCH_NAME || "",
     schoolType,
@@ -81,6 +91,9 @@ function mapSchool(s: any, latitude?: number, longitude?: number): SchoolResult 
     phone: s.PHONE ?? undefined,
     districtName: s.LEA_NAME ?? undefined,
     distanceMiles: dist,
+    ncesschid: s.NCESSCH ?? undefined,
+    studentTeacherRatio: s.STUTERATIO ?? undefined,
+    freeLunchPct,
   };
 }
 
@@ -149,5 +162,52 @@ export async function searchSchoolsByZip(zipCode: string, maxResults: number = 2
   } catch (err) {
     console.error("[NCES] School search by ZIP failed:", err);
     return { schools: [], totalCount: 0 };
+  }
+}
+
+/**
+ * Enrich schools with Title I and Magnet status from Urban Institute API.
+ * This is a supplemental call -- non-blocking, best-effort.
+ * The Urban Institute API is slow, so we only call it once and cache the result.
+ */
+export async function enrichWithTitleI(schools: SchoolResult[]): Promise<SchoolResult[]> {
+  if (schools.length === 0) return schools;
+
+  // Use the first school's state + city to batch query
+  const state = schools[0].state;
+  const zip = schools[0].zip;
+  if (!state || !zip) return schools;
+
+  try {
+    const url = `${URBAN_API}/?zip_location=${zip}&per_page=50`;
+    const response = await fetch(url, { signal: AbortSignal.timeout(15000) });
+    if (!response.ok) return schools;
+
+    const data = await response.json();
+    const results = data.results || [];
+
+    // Build lookup by school name
+    const lookup = new Map<string, any>();
+    for (const r of results) {
+      if (r.school_name) {
+        lookup.set(r.school_name.toLowerCase().trim(), r);
+      }
+    }
+
+    // Enrich each school
+    return schools.map((school) => {
+      const match = lookup.get(school.schoolName.toLowerCase().trim());
+      if (!match) return school;
+
+      return {
+        ...school,
+        titleI: match.title_i_eligible === 1 || match.title_i_status === 1 || match.title_i_status === 2,
+        titleISchoolwide: match.title_i_schoolwide === 1,
+        magnet: match.magnet === 1,
+      };
+    });
+  } catch (err) {
+    console.warn("[NCES] Title I enrichment failed (non-fatal):", err);
+    return schools;
   }
 }
