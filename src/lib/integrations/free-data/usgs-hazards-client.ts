@@ -94,9 +94,52 @@ async function getFEMARiskIndex(
     wind: { risk: "Unknown", score: null },
   };
 
-  // FEMA NRI API has been deprecated (hazards.fema.gov redirects to RAPT).
-  // Return defaults until a replacement API is integrated.
-  return defaults;
+  // FEMA NRI via ArcGIS — county-level risk scores
+  // Source: https://resilience.climate.gov/datasets/FEMA::national-risk-index-counties
+  try {
+    const countyQuery = countyFips
+      ? `COUNTYFIPS+%3D+%27${countyFips}%27`
+      : stateAbbrev
+        ? `STATE+%3D+%27${stateAbbrev === "HI" ? "Hawaii" : stateAbbrev}%27`
+        : null;
+
+    if (!countyQuery) return defaults;
+
+    const nriUrl = `https://services.arcgis.com/XG15cJAlne2vxtgt/ArcGIS/rest/services/National_Risk_Index_Counties/FeatureServer/0/query?where=${countyQuery}&outFields=RISK_RATNG%2CRFLD_RISKR%2CHRCN_RISKR%2CTRND_RISKR%2CWFIR_RISKR%2CERQK_RISKR%2CSWND_RISKR&returnGeometry=false&f=json&resultRecordCount=1`;
+
+    const response = await fetch(nriUrl, { signal: AbortSignal.timeout(10000) });
+    if (!response.ok) return defaults;
+
+    const data = await response.json();
+    const record = data.features?.[0]?.attributes;
+    if (!record) return defaults;
+
+    const ratingMap: Record<string, string> = {
+      "Very High": "Very High",
+      "Relatively High": "High",
+      "Relatively Moderate": "Moderate",
+      "Relatively Low": "Low",
+      "Very Low": "Very Low",
+    };
+
+    const mapRating = (r: string | null): { risk: string; score: number | null } => {
+      if (!r) return { risk: "Unknown", score: null };
+      return { risk: ratingMap[r] || r, score: null };
+    };
+
+    return {
+      flood: mapRating(record.RFLD_RISKR),
+      tornado: mapRating(record.TRND_RISKR),
+      hurricane: mapRating(record.HRCN_RISKR),
+      wildfire: mapRating(record.WFIR_RISKR),
+      earthquake: mapRating(record.ERQK_RISKR),
+      wind: mapRating(record.SWND_RISKR),
+      overall: mapRating(record.RISK_RATNG),
+    };
+  } catch (err) {
+    console.warn("[FEMA NRI] ArcGIS risk index fetch failed:", err);
+    return defaults;
+  }
 }
 
 /**

@@ -105,8 +105,17 @@ Security is non-negotiable. Every code change, database modification, and API in
 
 ### Federal/Public Data
 
-- Census, FRED, BLS, HUD, FEMA -- free public APIs for demographics, economic indicators, flood zones.
-- Hawaii-specific: Statewide parcels, Honolulu tax/ArcGIS, hazard zones.
+- **Census ACS** -- Demographics, housing, income by zip/state FIPS. Free, key in `CENSUS_API_KEY`.
+- **FRED** -- Federal Reserve economic data (mortgage rates, CPI). Free, key in `FRED_API_KEY`.
+- **BLS** -- Employment/unemployment data. Free, key in `BLS_API_KEY`.
+- **HUD** -- Fair Market Rents, Section 8 data. Free, token in `HUD_API_TOKEN`.
+- **FEMA Disasters** -- `https://www.fema.gov/api/open/v2/DisasterDeclarationsSummaries`. Free, no key. Filter by `designatedArea` (county name format: "Honolulu (County)") and `state`. OData query syntax.
+- **FEMA NRI** (National Risk Index) -- County-level hazard risk via ArcGIS: `https://services.arcgis.com/XG15cJAlne2vxtgt/ArcGIS/rest/services/National_Risk_Index_Counties/FeatureServer/0/query`. Free, no key. Fields: `RISK_RATNG`, `RFLD_RISKR` (flood), `HRCN_RISKR` (hurricane), `TRND_RISKR` (tornado), `WFIR_RISKR` (wildfire), `ERQK_RISKR` (earthquake), `SWND_RISKR` (wind). Filter by `STATE` (full name) or `COUNTYFIPS`.
+- **FBI Crime (CDE)** -- `POST https://cde.ucr.cjis.gov/LATEST/summarized/query`. No key needed. Payload format: `[{query:"q1", data:[{key:"dataRange",value:"01-2020,12-2025"},{key:"offense",value:"violent-crime"},{key:"stateAbbr",value:"HI"}]}]`. Returns monthly counts keyed by "MM-YYYY". ORI codes for Hawaii: Honolulu `HI0020000`, Maui `HI0050000`, Hawaii `HI0010000`, Kauai `HI0040000`.
+- **NCES Schools** -- `https://educationdata.urban.org/api/v1/schools/ccd/directory/{year}/?zip_location={zip}`. Free, no key.
+- **OSM Overpass** -- Nearby POIs via OpenStreetMap. Free, no key. Can be slow/unreliable.
+- **USPS** -- Address validation/vacancy. Requires `USPS_CLIENT_ID` and `USPS_CLIENT_SECRET`.
+- Hawaii-specific: Statewide parcels, Honolulu tax/ArcGIS, hazard zones (tsunami, lava, SLR, cesspool, SMA, DHHL).
 
 When merging data from multiple sources, Realie is authoritative for sales history and ownership. RentCast supplements with valuation and market data. This hierarchy is codified in `app/api/integrations/attom/property/route.ts`.
 
