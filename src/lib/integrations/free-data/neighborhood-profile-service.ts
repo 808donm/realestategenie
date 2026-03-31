@@ -14,6 +14,14 @@ import { getHazardRiskProfile, type HazardRiskProfile } from "./usgs-hazards-cli
 import { searchPOI, type POIResult } from "./osm-poi-client";
 import { getSalesTrends, type SalesTrendsResult } from "./fred-trends-client";
 
+function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 3959;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 export interface NeighborhoodProfileResult {
   community: {
     community?: {
@@ -166,19 +174,72 @@ export async function getNeighborhoodProfile(params: {
           }
         } catch {}
       } else {
-        // Non-Hawaii: supplement with location search for missing school levels
-        const hasHigh = schools.some((s) => s.schoolType === "High" || s.gradeRange?.includes("12"));
-        const hasMiddle = schools.some((s) => s.schoolType === "Middle" || (s.gradeRange?.includes("6") && s.gradeRange?.includes("8")));
-        if ((!hasHigh || !hasMiddle) && latitude && longitude) {
-          const nearby = await searchSchoolsByLocation(latitude, longitude, 3, 20);
-          for (const s of nearby.schools) {
-            const isHigh = s.schoolType === "High" || s.gradeRange?.includes("12");
-            const isMiddle = s.schoolType === "Middle" || (s.gradeRange?.includes("6") && s.gradeRange?.includes("8"));
-            if ((isHigh && !hasHigh) || (isMiddle && !hasMiddle)) {
-              if (!schools.some((existing) => existing.schoolName === s.schoolName)) {
-                schools.push(s);
+        // Non-Hawaii: use school district boundary lookup
+        if (latitude && longitude) {
+          try {
+            // 1. Find which district the property is in via point-in-polygon
+            const districtUrl = `https://services1.arcgis.com/Ua5sjt3LWTPigjyD/arcgis/rest/services/School_Districts_Current/FeatureServer/0/query?geometry=${encodeURIComponent(`{"x":${longitude},"y":${latitude}}`)}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=NAME,GEOID,LOGRADE,HIGRADE&returnGeometry=false&f=json`;
+            const districtRes = await fetch(districtUrl, { signal: AbortSignal.timeout(10000) });
+            if (districtRes.ok) {
+              const districtData = await districtRes.json();
+              const district = districtData.features?.[0]?.attributes;
+              if (district?.GEOID) {
+                console.log(`[Schools] District: ${district.NAME} (${district.GEOID})`);
+                // 2. Get all schools in this district
+                const distSchoolUrl = `https://services1.arcgis.com/Ua5sjt3LWTPigjyD/arcgis/rest/services/School_Characteristics_Current/FeatureServer/0/query?where=LEAID+%3D+%27${district.GEOID}%27&outFields=SCH_NAME,LCITY,LSTATE,LZIP,SCHOOL_LEVEL,SCHOOL_TYPE_TEXT,TOTAL,GSLO,GSHI,LATCOD,LONCOD,CHARTER_TEXT,LEA_NAME,LSTREET1,PHONE&returnGeometry=false&f=json&resultRecordCount=200`;
+                const distSchoolRes = await fetch(distSchoolUrl, { signal: AbortSignal.timeout(10000) });
+                if (distSchoolRes.ok) {
+                  const distSchoolData = await distSchoolRes.json();
+                  const allDistrictSchools = (distSchoolData.features || []).map((f: any) => {
+                    const s = f.attributes;
+                    const dist = s.LATCOD && s.LONCOD ? Math.round(haversineDistance(latitude!, longitude!, s.LATCOD, s.LONCOD) * 100) / 100 : undefined;
+                    let schoolType = s.SCHOOL_TYPE_TEXT || "Public";
+                    if (s.CHARTER_TEXT === "Yes") schoolType = "Charter";
+                    else if (s.SCHOOL_LEVEL === "Elementary") schoolType = "Elementary";
+                    else if (s.SCHOOL_LEVEL === "Middle") schoolType = "Middle";
+                    else if (s.SCHOOL_LEVEL === "High") schoolType = "High";
+                    return {
+                      schoolName: s.SCH_NAME || "",
+                      schoolType,
+                      gradeRange: s.GSLO && s.GSHI ? `${s.GSLO}-${s.GSHI}` : "",
+                      enrollment: s.TOTAL ?? undefined,
+                      latitude: s.LATCOD,
+                      longitude: s.LONCOD,
+                      city: s.LCITY,
+                      state: s.LSTATE,
+                      zip: s.LZIP,
+                      phone: s.PHONE,
+                      districtName: district.NAME,
+                      distanceMiles: dist,
+                    } as SchoolResult;
+                  });
+
+                  // 3. Show closest schools by level: nearest 3 elementary, nearest 2 middle, nearest high
+                  const elementary = allDistrictSchools
+                    .filter((s: SchoolResult) => s.schoolType === "Elementary" || s.gradeRange?.match(/^(PK|KG|K|01|1)/))
+                    .sort((a: SchoolResult, b: SchoolResult) => (a.distanceMiles || 99) - (b.distanceMiles || 99))
+                    .slice(0, 3);
+                  const middle = allDistrictSchools
+                    .filter((s: SchoolResult) => s.schoolType === "Middle" || (s.gradeRange?.includes("6") && s.gradeRange?.includes("8")))
+                    .sort((a: SchoolResult, b: SchoolResult) => (a.distanceMiles || 99) - (b.distanceMiles || 99))
+                    .slice(0, 2);
+                  const high = allDistrictSchools
+                    .filter((s: SchoolResult) => s.schoolType === "High" || s.gradeRange?.includes("12"))
+                    .sort((a: SchoolResult, b: SchoolResult) => (a.distanceMiles || 99) - (b.distanceMiles || 99))
+                    .slice(0, 2);
+
+                  // Merge district results with zip results, avoiding duplicates
+                  const districtSchools = [...elementary, ...middle, ...high];
+                  for (const ds of districtSchools) {
+                    if (!schools.some((existing) => existing.schoolName === ds.schoolName)) {
+                      schools.push(ds);
+                    }
+                  }
+                }
               }
             }
+          } catch (err) {
+            console.warn("[Schools] District boundary lookup failed:", err);
           }
         }
       }
