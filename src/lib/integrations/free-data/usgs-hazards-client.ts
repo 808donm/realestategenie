@@ -21,6 +21,8 @@ export interface HazardRiskProfile {
   tsunami?: { risk: string; score: number | null };
   landslide?: { risk: string; score: number | null };
   lightning?: { risk: string; score: number | null };
+  volcanic?: { risk: string; score: number | null };
+  drought?: { risk: string; score: number | null };
   overall: { risk: string; score: number | null };
   source: string;
 }
@@ -154,6 +156,8 @@ async function getFEMARiskIndex(
       tsunami: mapRating(record.TSUN_RISKR),
       landslide: mapRating(record.LNDS_RISKR),
       lightning: mapRating(record.LTNG_RISKR),
+      volcanic: mapRating(record.VLCN_RISKR),
+      drought: mapRating(record.DRGT_RISKR),
       overall: mapRating(record.RISK_RATNG),
     };
   } catch (err) {
@@ -218,6 +222,8 @@ export async function getHazardRiskProfile(
     tsunami: (femaRisks as any).tsunami,
     landslide: (femaRisks as any).landslide,
     lightning: (femaRisks as any).lightning,
+    volcanic: (femaRisks as any).volcanic,
+    drought: (femaRisks as any).drought,
     overall: (femaRisks as any).overall?.risk !== "Unknown" ? (femaRisks as any).overall : { risk: riskFromAvg(avgScore), score: avgScore },
     source: "FEMA National Risk Index + USGS",
   };
