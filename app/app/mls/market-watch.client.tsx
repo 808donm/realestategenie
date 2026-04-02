@@ -21,6 +21,8 @@ const STATUS_COLORS: Record<string, { fill: string; stroke: string; label: strin
   Expired: { fill: "#6b7280", stroke: "#374151", label: "Expired" },
   Withdrawn: { fill: "#9ca3af", stroke: "#6b7280", label: "Withdrawn" },
   Canceled: { fill: "#374151", stroke: "#111827", label: "Canceled" },
+  "Price Increase": { fill: "#16a34a", stroke: "#15803d", label: "Price Increase" },
+  "Price Decrease": { fill: "#b91c1c", stroke: "#7f1d1d", label: "Price Decrease" },
   "Coming Soon": { fill: "#ec4899", stroke: "#be185d", label: "Coming Soon" },
 };
 
@@ -28,6 +30,15 @@ const PROPERTY_TYPE_SHAPES: Record<string, string> = {
   Residential: "circle",
   Condominium: "diamond",
   Land: "triangle",
+};
+
+const PROP_TYPE_ABBR: Record<string, string> = {
+  SingleFamilyResidence: "SF",
+  Condominium: "CND",
+  Townhouse: "TH",
+  Land: "LND",
+  MultiFamily: "MF",
+  Manufactured: "MH",
 };
 
 const formatCurrency = (value: number) =>
@@ -39,6 +50,8 @@ interface Listing {
   status: string;
   isNew?: boolean;
   isBackOnMarket?: boolean;
+  isPriceIncrease?: boolean;
+  isPriceDecrease?: boolean;
   mlsStatus?: string;
   propertyType?: string;
   propertySubType?: string;
@@ -68,7 +81,7 @@ interface Listing {
 
 export default function MarketWatchClient() {
   const [postalCode, setPostalCode] = useState("");
-  const [timeframe, setTimeframe] = useState<"today" | "7days" | "30days" | "90days">("30days");
+  const [timeframe, setTimeframe] = useState<"24hours" | "today" | "7days" | "30days" | "90days">("30days");
   const [loadingPhoto, setLoadingPhoto] = useState(false);
   const [propertyType, setPropertyType] = useState<"" | "Residential" | "Condominium">("");
   const [listings, setListings] = useState<Listing[]>([]);
@@ -83,6 +96,9 @@ export default function MarketWatchClient() {
   const [detailListing, setDetailListing] = useState<Listing | null>(null);
   const photoCache = useRef<Record<string, string>>({});
   const [activeStatuses, setActiveStatuses] = useState<Set<string>>(new Set(Object.keys(STATUS_COLORS)));
+  const [viewMode, setViewMode] = useState<"map" | "hotsheet">("map");
+  const [sortField, setSortField] = useState("modifiedAt");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   // Detect if input is a TMK (has dashes between digits, or 3-4 digit non-zip)
   const isTMK = useCallback((input: string): boolean => {
@@ -203,6 +219,8 @@ export default function MarketWatchClient() {
   const filteredListings = listings.filter((l) => {
     if (l.isNew && activeStatuses.has("New")) return true;
     if (l.isBackOnMarket && activeStatuses.has("Back On Market")) return true;
+    if (l.isPriceIncrease && activeStatuses.has("Price Increase")) return true;
+    if (l.isPriceDecrease && activeStatuses.has("Price Decrease")) return true;
     return activeStatuses.has(l.status);
   });
 
@@ -291,6 +309,7 @@ export default function MarketWatchClient() {
             Timeframe
           </label>
           <select value={timeframe} onChange={(e) => setTimeframe(e.target.value as typeof timeframe)} style={selectStyle}>
+            <option value="24hours">Last 24 Hours</option>
             <option value="today">Today</option>
             <option value="7days">7 Days</option>
             <option value="30days">30 Days</option>
@@ -467,133 +486,208 @@ export default function MarketWatchClient() {
           </div>
         )}
 
-        {/* Google Map */}
-        {filteredListings.length > 0 && MAPS_API_KEY && (
+        {/* Google Map / Hot Sheet */}
+        {filteredListings.length > 0 && (
           <>
             <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 8 }}>
-              Showing {filteredListings.filter((l) => l.lat && l.lng).length} of {listings.length} listings on map
+              Showing {filteredListings.length} of {listings.length} listings
             </div>
-            <APIProvider apiKey={MAPS_API_KEY}>
-              <div
-                style={{
-                  height: "calc(100vh - 280px)",
-                  minHeight: 400,
-                  borderRadius: 12,
-                  overflow: "hidden",
-                  border: "1px solid #e5e7eb",
-                  marginBottom: 16,
-                }}
-              >
-                <Map
-                  defaultCenter={mapCenter || DEFAULT_CENTER}
-                  defaultZoom={DEFAULT_ZOOM}
-                  mapId="market-watch-map"
-                  gestureHandling="greedy"
-                  disableDefaultUI={false}
-                  style={{ width: "100%", height: "100%" }}
+            <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+              <button onClick={() => setViewMode("map")} style={{ padding: "6px 16px", fontSize: 13, fontWeight: 600, borderRadius: 6, border: "none", cursor: "pointer", background: viewMode === "map" ? "#1e40af" : "#e5e7eb", color: viewMode === "map" ? "#fff" : "#374151" }}>Map</button>
+              <button onClick={() => setViewMode("hotsheet")} style={{ padding: "6px 16px", fontSize: 13, fontWeight: 600, borderRadius: 6, border: "none", cursor: "pointer", background: viewMode === "hotsheet" ? "#1e40af" : "#e5e7eb", color: viewMode === "hotsheet" ? "#fff" : "#374151" }}>Hot Sheet</button>
+            </div>
+
+            {viewMode === "map" && MAPS_API_KEY && (
+              <APIProvider apiKey={MAPS_API_KEY}>
+                <div
+                  style={{
+                    height: "calc(100vh - 280px)",
+                    minHeight: 400,
+                    borderRadius: 12,
+                    overflow: "hidden",
+                    border: "1px solid #e5e7eb",
+                    marginBottom: 16,
+                  }}
                 >
-                  {filteredListings.map((listing) => {
-                    if (!listing.lat || !listing.lng) return null;
-                    const colors = STATUS_COLORS[listing.status] || STATUS_COLORS.Active;
-                    const isNew = listing.isNew || (listing.daysOnMarket != null && listing.daysOnMarket <= 7);
-                    const markerColor = listing.isBackOnMarket ? "#10b981" : isNew ? "#f97316" : colors.fill;
-                    const strokeColor = listing.status === "Pending" ? "#000000" : colors.stroke;
-                    const strokeWidth = listing.status === "Pending" ? 3 : 1.5;
+                  <Map
+                    defaultCenter={mapCenter || DEFAULT_CENTER}
+                    defaultZoom={DEFAULT_ZOOM}
+                    mapId="market-watch-map"
+                    gestureHandling="greedy"
+                    disableDefaultUI={false}
+                    style={{ width: "100%", height: "100%" }}
+                  >
+                    {filteredListings.map((listing) => {
+                      if (!listing.lat || !listing.lng) return null;
+                      const colors = STATUS_COLORS[listing.status] || STATUS_COLORS.Active;
+                      const isNew = listing.isNew || (listing.daysOnMarket != null && listing.daysOnMarket <= 7);
+                      const markerColor = listing.isBackOnMarket ? "#10b981" : isNew ? "#f97316" : colors.fill;
+                      const strokeColor = listing.status === "Pending" ? "#000000" : colors.stroke;
+                      const strokeWidth = listing.status === "Pending" ? 3 : 1.5;
 
-                    return (
-                      <AdvancedMarker
-                        key={listing.listingKey}
-                        position={{ lat: listing.lat, lng: listing.lng }}
-                        onClick={() => setSelectedListing(listing)}
-                      >
-                        <div
-                          onMouseEnter={() => setSelectedListing(listing)}
-                          style={{
-                            width: 14,
-                            height: 14,
-                            borderRadius: listing.propertyType === "Condominium" ? 2 : "50%",
-                            background: markerColor,
-                            border: `${strokeWidth}px solid ${strokeColor}`,
-                            cursor: "pointer",
-                            boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
-                          }}
-                        />
-                      </AdvancedMarker>
-                    );
-                  })}
-
-                  {selectedListing && selectedListing.lat && selectedListing.lng && (
-                    <InfoWindow
-                      position={{ lat: selectedListing.lat, lng: selectedListing.lng }}
-                      onCloseClick={() => setSelectedListing(null)}
-                      maxWidth={320}
-                      pixelOffset={[0, -12]}
-                    >
-                      <div style={{ padding: 0, minWidth: 280 }}>
-                        {/* Listing Photo */}
-                        {selectedListing.photoUrl && (
-                          <div style={{ width: "100%", height: 160, overflow: "hidden", borderRadius: "4px 4px 0 0", marginBottom: 8 }}>
-                            <img
-                              src={selectedListing.photoUrl}
-                              alt={selectedListing.address}
-                              style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                            />
-                          </div>
-                        )}
-                        <div style={{ padding: "4px 8px 8px" }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                            <span style={{ fontSize: 18, fontWeight: 700 }}>
-                              {formatCurrency(selectedListing.closePrice || selectedListing.listPrice)}
-                            </span>
-                            <span style={{
-                              padding: "2px 8px", borderRadius: 4, fontSize: 10, fontWeight: 700, color: "#fff",
-                              background: selectedListing.isNew
-                                ? STATUS_COLORS.New.fill
-                                : (STATUS_COLORS[selectedListing.status] || STATUS_COLORS.Active).fill,
-                            }}>
-                              {selectedListing.isNew ? "New" : (STATUS_COLORS[selectedListing.status] || STATUS_COLORS.Active).label}
-                            </span>
-                          </div>
-                          <div style={{ fontSize: 13, color: "#374151", marginBottom: 6 }}>{selectedListing.address}</div>
-                          <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 6 }}>
-                            {[
-                              selectedListing.beds && `${selectedListing.beds} bd`,
-                              selectedListing.baths && `${selectedListing.baths} ba`,
-                              selectedListing.sqft && `${selectedListing.sqft.toLocaleString()} sqft`,
-                              selectedListing.daysOnMarket != null && `${selectedListing.daysOnMarket} DOM`,
-                            ].filter(Boolean).join(" \u00B7 ")}
-                          </div>
-                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#9ca3af", marginBottom: 8 }}>
-                            {selectedListing.listingId && <span>MLS# {selectedListing.listingId}</span>}
-                            {selectedListing.propertySubType && <span>{selectedListing.propertySubType}</span>}
-                          </div>
-                          <button
-                            onClick={() => { setDetailListing(selectedListing); setSelectedListing(null); }}
+                      return (
+                        <AdvancedMarker
+                          key={listing.listingKey}
+                          position={{ lat: listing.lat, lng: listing.lng }}
+                          onClick={() => setSelectedListing(listing)}
+                        >
+                          <div
+                            onMouseEnter={() => setSelectedListing(listing)}
                             style={{
-                              width: "100%",
-                              padding: "8px 0",
-                              background: "#1e40af",
-                              color: "#fff",
-                              border: "none",
-                              borderRadius: 6,
-                              fontSize: 13,
-                              fontWeight: 600,
+                              width: 14,
+                              height: 14,
+                              borderRadius: listing.propertyType === "Condominium" ? 2 : "50%",
+                              background: markerColor,
+                              border: `${strokeWidth}px solid ${strokeColor}`,
                               cursor: "pointer",
+                              boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
                             }}
-                          >
-                            View Full Details
-                          </button>
+                          />
+                        </AdvancedMarker>
+                      );
+                    })}
+
+                    {selectedListing && selectedListing.lat && selectedListing.lng && (
+                      <InfoWindow
+                        position={{ lat: selectedListing.lat, lng: selectedListing.lng }}
+                        onCloseClick={() => setSelectedListing(null)}
+                        maxWidth={320}
+                        pixelOffset={[0, -12]}
+                      >
+                        <div style={{ padding: 0, minWidth: 280 }}>
+                          {/* Listing Photo */}
+                          {selectedListing.photoUrl && (
+                            <div style={{ width: "100%", height: 160, overflow: "hidden", borderRadius: "4px 4px 0 0", marginBottom: 8 }}>
+                              <img
+                                src={selectedListing.photoUrl}
+                                alt={selectedListing.address}
+                                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                              />
+                            </div>
+                          )}
+                          <div style={{ padding: "4px 8px 8px" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                              <span style={{ fontSize: 18, fontWeight: 700 }}>
+                                {formatCurrency(selectedListing.closePrice || selectedListing.listPrice)}
+                              </span>
+                              <span style={{
+                                padding: "2px 8px", borderRadius: 4, fontSize: 10, fontWeight: 700, color: "#fff",
+                                background: selectedListing.isNew
+                                  ? STATUS_COLORS.New.fill
+                                  : (STATUS_COLORS[selectedListing.status] || STATUS_COLORS.Active).fill,
+                              }}>
+                                {selectedListing.isNew ? "New" : (STATUS_COLORS[selectedListing.status] || STATUS_COLORS.Active).label}
+                              </span>
+                            </div>
+                            <div style={{ fontSize: 13, color: "#374151", marginBottom: 6 }}>{selectedListing.address}</div>
+                            <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 6 }}>
+                              {[
+                                selectedListing.beds && `${selectedListing.beds} bd`,
+                                selectedListing.baths && `${selectedListing.baths} ba`,
+                                selectedListing.sqft && `${selectedListing.sqft.toLocaleString()} sqft`,
+                                selectedListing.daysOnMarket != null && `${selectedListing.daysOnMarket} DOM`,
+                              ].filter(Boolean).join(" \u00B7 ")}
+                            </div>
+                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#9ca3af", marginBottom: 8 }}>
+                              {selectedListing.listingId && <span>MLS# {selectedListing.listingId}</span>}
+                              {selectedListing.propertySubType && <span>{selectedListing.propertySubType}</span>}
+                            </div>
+                            <button
+                              onClick={() => { setDetailListing(selectedListing); setSelectedListing(null); }}
+                              style={{
+                                width: "100%",
+                                padding: "8px 0",
+                                background: "#1e40af",
+                                color: "#fff",
+                                border: "none",
+                                borderRadius: 6,
+                                fontSize: 13,
+                                fontWeight: 600,
+                                cursor: "pointer",
+                              }}
+                            >
+                              View Full Details
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    </InfoWindow>
-                  )}
-                </Map>
-              </div>
-            </APIProvider>
+                      </InfoWindow>
+                    )}
+                  </Map>
+                </div>
+              </APIProvider>
+            )}
+
+            {viewMode === "hotsheet" && (() => {
+              const handleSort = (field: string) => {
+                if (sortField === field) setSortDir(sortDir === "asc" ? "desc" : "asc");
+                else { setSortField(field); setSortDir(field === "listPrice" ? "desc" : "asc"); }
+              };
+              const arrow = (field: string) => sortField === field ? (sortDir === "asc" ? " \u25B2" : " \u25BC") : "";
+              const sorted = [...filteredListings].sort((a, b) => {
+                const av = (a as any)[sortField] ?? "";
+                const bv = (b as any)[sortField] ?? "";
+                const cmp = typeof av === "number" && typeof bv === "number" ? av - bv : String(av).localeCompare(String(bv));
+                return sortDir === "asc" ? cmp : -cmp;
+              });
+              const thStyle: React.CSSProperties = { position: "sticky", top: 0, background: "#f9fafb", padding: "8px 10px", fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "#6b7280", cursor: "pointer", whiteSpace: "nowrap", borderBottom: "2px solid #e5e7eb", textAlign: "left", userSelect: "none" };
+              const tdStyle: React.CSSProperties = { padding: "6px 10px", fontSize: 13, borderBottom: "1px solid #f3f4f6", whiteSpace: "nowrap" };
+              const getStatusLabel = (l: Listing) => {
+                if (l.isNew) return "NEW";
+                if (l.isBackOnMarket) return "BOM";
+                return (STATUS_COLORS[l.status] || { label: l.status }).label;
+              };
+              const getStatusColor = (l: Listing) => {
+                if (l.isNew) return STATUS_COLORS.New.fill;
+                if (l.isBackOnMarket) return STATUS_COLORS["Back On Market"].fill;
+                return (STATUS_COLORS[l.status] || STATUS_COLORS.Active).fill;
+              };
+              const fmtDate = (d?: string) => { if (!d) return ""; const dt = new Date(d); return `${String(dt.getMonth() + 1).padStart(2, "0")}/${String(dt.getDate()).padStart(2, "0")}/${String(dt.getFullYear()).slice(-2)}`; };
+
+              return (
+                <div style={{ height: "calc(100vh - 280px)", minHeight: 400, overflow: "auto", border: "1px solid #e5e7eb", borderRadius: 12 }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <thead>
+                      <tr>
+                        <th style={thStyle} onClick={() => handleSort("status")}>Status{arrow("status")}</th>
+                        <th style={thStyle} onClick={() => handleSort("parcelNumber")}>TMK{arrow("parcelNumber")}</th>
+                        <th style={thStyle} onClick={() => handleSort("listingId")}>MLS #{arrow("listingId")}</th>
+                        <th style={thStyle} onClick={() => handleSort("propertySubType")}>Type{arrow("propertySubType")}</th>
+                        <th style={thStyle} onClick={() => handleSort("address")}>Address{arrow("address")}</th>
+                        <th style={{ ...thStyle, textAlign: "right" }} onClick={() => handleSort("listPrice")}>Price{arrow("listPrice")}</th>
+                        <th style={thStyle} onClick={() => handleSort("beds")}>Beds{arrow("beds")}</th>
+                        <th style={thStyle} onClick={() => handleSort("baths")}>Baths{arrow("baths")}</th>
+                        <th style={thStyle} onClick={() => handleSort("sqft")}>Sqft{arrow("sqft")}</th>
+                        <th style={thStyle} onClick={() => handleSort("lotSize")}>Lot{arrow("lotSize")}</th>
+                        <th style={thStyle} onClick={() => handleSort("daysOnMarket")}>DOM{arrow("daysOnMarket")}</th>
+                        <th style={thStyle} onClick={() => handleSort("yearBuilt")}>Year{arrow("yearBuilt")}</th>
+                        <th style={thStyle} onClick={() => handleSort("modifiedAt")}>Date{arrow("modifiedAt")}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sorted.map((l, i) => (
+                        <tr key={l.listingKey} style={{ backgroundColor: i % 2 === 0 ? "#fff" : "#f9fafb" }} onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = "#eff6ff"; }} onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = i % 2 === 0 ? "#fff" : "#f9fafb"; }}>
+                          <td style={tdStyle}><span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", backgroundColor: getStatusColor(l), marginRight: 6, verticalAlign: "middle" }} />{getStatusLabel(l)}</td>
+                          <td style={tdStyle}>{l.parcelNumber || "-"}</td>
+                          <td style={{ ...tdStyle, color: "#2563eb", cursor: "pointer" }} onClick={() => setDetailListing(l)}>{l.listingId}</td>
+                          <td style={tdStyle}>{PROP_TYPE_ABBR[l.propertySubType || ""] || l.propertySubType || "-"}</td>
+                          <td style={{ ...tdStyle, color: "#2563eb", cursor: "pointer", maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis" }} onClick={() => setDetailListing(l)}>{l.address}</td>
+                          <td style={{ ...tdStyle, textAlign: "right", fontWeight: 700 }}>{formatCurrency(l.listPrice)}</td>
+                          <td style={tdStyle}>{l.beds ?? "-"}</td>
+                          <td style={tdStyle}>{l.baths ?? "-"}</td>
+                          <td style={tdStyle}>{l.sqft ? l.sqft.toLocaleString() : "-"}</td>
+                          <td style={tdStyle}>{l.lotSize ? l.lotSize.toLocaleString() : "-"}</td>
+                          <td style={tdStyle}>{l.daysOnMarket ?? "-"}</td>
+                          <td style={tdStyle}>{l.yearBuilt ?? "-"}</td>
+                          <td style={tdStyle}>{fmtDate(l.modifiedAt)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })()}
           </>
         )}
-
-        {/* Map-only view -- no card grid. Click markers for property details. */}
       </div>
 
       {/* Property Detail Modal */}

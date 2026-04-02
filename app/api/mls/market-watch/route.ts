@@ -42,6 +42,9 @@ export async function GET(request: NextRequest) {
     const now = new Date();
     const cutoffDate = new Date();
     switch (timeframe) {
+      case "24hours":
+        cutoffDate.setHours(now.getHours() - 24);
+        break;
       case "today":
         cutoffDate.setDate(now.getDate() - 1);
         break;
@@ -218,6 +221,18 @@ export async function GET(request: NextRequest) {
     if (newCount > 0) statusCounts["New"] = newCount;
     if (bomCount > 0) statusCounts["Back On Market"] = bomCount;
 
+    // Count price changes as virtual statuses
+    let priceUpCount = 0;
+    let priceDownCount = 0;
+    for (const listing of listings) {
+      if (listing.OriginalListPrice && listing.ListPrice) {
+        if (listing.ListPrice > listing.OriginalListPrice) priceUpCount++;
+        else if (listing.ListPrice < listing.OriginalListPrice) priceDownCount++;
+      }
+    }
+    if (priceUpCount > 0) statusCounts["Price Increase"] = priceUpCount;
+    if (priceDownCount > 0) statusCounts["Price Decrease"] = priceDownCount;
+
     // Detect price changes
     let priceIncreases = 0;
     let priceDecreases = 0;
@@ -238,6 +253,8 @@ export async function GET(request: NextRequest) {
 
       const isNew = p.StandardStatus === "Active" && p.OnMarketDate && new Date(p.OnMarketDate) >= sevenDaysAgo;
       const isBackOnMarket = p.StandardStatus === "Active" && !!(p as any).BackOnMarketDate;
+      const isPriceIncrease = p.OriginalListPrice && p.ListPrice && p.ListPrice > p.OriginalListPrice;
+      const isPriceDecrease = p.OriginalListPrice && p.ListPrice && p.ListPrice < p.OriginalListPrice;
 
       return {
         listingKey: p.ListingKey,
@@ -245,6 +262,8 @@ export async function GET(request: NextRequest) {
         status: p.StandardStatus,
         isNew,
         isBackOnMarket,
+        isPriceIncrease: !!isPriceIncrease,
+        isPriceDecrease: !!isPriceDecrease,
         photoUrl: (p as any)._photoUrl || null,
         mlsStatus: p.MlsStatus,
         propertyType: p.PropertyType,
