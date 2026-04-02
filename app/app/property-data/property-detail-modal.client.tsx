@@ -264,6 +264,15 @@ export default function PropertyDetailModal({
   sellerScore?: { score: number; level: string; factors: Array<{ name: string; points: number; maxPoints: number; description: string }>; owner?: string };
 }) {
   const [activeSection, setActiveSection] = useState<SectionId>(sellerScore ? "seller-score" as SectionId : visibleTabs?.[0] || "overview");
+
+  // Reset to Opportunity Score tab when a new property with seller data is selected
+  const propId = (p.identifier as any)?.obPropId || p.identifier?.apn || p.address?.oneLine || "";
+  useEffect(() => {
+    if (sellerScore) {
+      setActiveSection("seller-score" as SectionId);
+    }
+  }, [propId, sellerScore]);
+
   const [federalData, setFederalData] = useState<FederalPropertySupplement | null>(null);
   const [federalLoading, setFederalLoading] = useState(false);
   const [hawaiiData, setHawaiiData] = useState<any>(null);

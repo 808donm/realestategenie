@@ -316,7 +316,26 @@ export async function getNeighborhoodProfile(params: {
     // Points of interest -- Hawaii uses State GIS, others use OSM Overpass
     latitude && longitude
       ? stateAbbrev === "HI"
-        ? searchHawaiiAmenities(latitude, longitude, 2, 30)
+        ? (async () => {
+            // For Hawaii: combine GIS amenities (hospitals, schools, parks) with OSM (restaurants, shopping)
+            const [gisResult, osmResult] = await Promise.allSettled([
+              searchHawaiiAmenities(latitude!, longitude!, 2, 20),
+              searchPOI(latitude!, longitude!, 2000, 20),
+            ]);
+            const gisPois = gisResult.status === "fulfilled" ? gisResult.value.pois : [];
+            const osmPois = osmResult.status === "fulfilled" ? osmResult.value.pois : [];
+            // Filter OSM to only restaurants, shops, cafes (GIS covers the rest)
+            const osmFiltered = osmPois.filter((p) => {
+              const cat = (p.category || "").toLowerCase();
+              return cat.includes("restaurant") || cat.includes("cafe") || cat.includes("shop") ||
+                cat.includes("supermarket") || cat.includes("fast_food") || cat.includes("bar") ||
+                cat.includes("convenience") || cat.includes("pharmacy") || cat.includes("bank") ||
+                cat.includes("fuel") || cat.includes("mall");
+            });
+            const combined = [...gisPois, ...osmFiltered];
+            const categories = [...new Set(combined.map((p) => p.category))];
+            return { pois: combined.slice(0, 30), totalCount: combined.length, categories };
+          })()
         : searchPOI(latitude, longitude, 3000, 30)
       : Promise.resolve({ pois: [] as POIResult[], totalCount: 0, categories: [] as string[] }),
 
