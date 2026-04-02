@@ -49,10 +49,15 @@ interface Listing {
   lat?: number;
   lng?: number;
   address: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
   beds?: number;
   baths?: number;
   sqft?: number;
+  lotSize?: number;
   yearBuilt?: number;
+  ownershipType?: string;
   modifiedAt?: string;
   priceChange?: number;
   photoUrl?: string;
@@ -594,9 +599,10 @@ export default function MarketWatchClient() {
             identifier: { apn: "" },
             address: {
               oneLine: detailListing.address,
-              locality: detailListing.address?.split(",")[1]?.trim(),
-              countrySubd: "HI",
-              postal1: detailListing.address?.match(/\d{5}/)?.[0],
+              line1: detailListing.address?.split(",")[0]?.trim(),
+              locality: detailListing.city || detailListing.address?.split(",")[1]?.trim(),
+              countrySubd: detailListing.state || "HI",
+              postal1: detailListing.postalCode || detailListing.address?.match(/\d{5}/)?.[0],
             },
             location: {
               latitude: detailListing.lat ? String(detailListing.lat) : undefined,
@@ -607,9 +613,14 @@ export default function MarketWatchClient() {
               size: { universalSize: detailListing.sqft, livingSize: detailListing.sqft },
               summary: { yearBuilt: detailListing.yearBuilt },
             },
-            summary: { propType: detailListing.propertyType, yearBuilt: detailListing.yearBuilt },
+            lot: { lotSize1: detailListing.lotSize },
+            summary: { propType: detailListing.propertyType, propSubType: detailListing.propertySubType, yearBuilt: detailListing.yearBuilt },
+            mlsNumber: detailListing.listingId,
+            listingStatus: detailListing.status,
+            daysOnMarket: detailListing.daysOnMarket,
           } as any}
           onClose={() => setDetailListing(null)}
+          mlsListPrice={detailListing.listPrice}
         />
       )}
     </div>
