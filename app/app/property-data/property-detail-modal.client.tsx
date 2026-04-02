@@ -272,6 +272,7 @@ export default function PropertyDetailModal({
   const [neighborhoodLoading, setNeighborhoodLoading] = useState(false);
   const [hazardData, setHazardData] = useState<any>(null);
   const [hazardLoading, setHazardLoading] = useState(false);
+  const [gisEnrichment, setGisEnrichment] = useState<any>(null);
   const [avmData, setAvmData] = useState<any>(null);
   const [avmLoading, setAvmLoading] = useState(false);
   const [enrichedFinancial, setEnrichedFinancial] = useState<any>(null);
@@ -490,6 +491,15 @@ export default function PropertyDetailModal({
       })
       .catch(() => {})
       .finally(() => setHazardLoading(false));
+
+    // Also fetch GIS property enrichment (flood zone, fire risk, school zones, opportunity zone)
+    if (!gisEnrichment) {
+      import("@/lib/integrations/free-data/hawaii-gis-enrichment").then(({ enrichPropertyWithGIS }) => {
+        enrichPropertyWithGIS(Number(lat), Number(lng))
+          .then((data) => { if (Object.keys(data).length > 0) setGisEnrichment(data); })
+          .catch(() => {});
+      });
+    }
   }, [hazardData, hazardLoading, p]);
 
   // Fetch AVM data when the Financial tab is selected and property doesn't already have AVM
@@ -1664,6 +1674,52 @@ export default function PropertyDetailModal({
                 </div>
               );
             })()}
+          {/* GIS Property Enrichment (flood zone, school zones, opportunity zone) */}
+          {gisEnrichment && (
+            <div style={{ marginBottom: 20 }}>
+              <h3
+                style={{
+                  fontSize: 14,
+                  fontWeight: 700,
+                  color: "#374151",
+                  marginBottom: 10,
+                  paddingBottom: 6,
+                  borderBottom: "1px solid #e5e7eb",
+                }}
+              >
+                Property Zone Data (Hawaii GIS)
+              </h3>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 24px" }}>
+                {gisEnrichment.floodZone && (
+                  <Field
+                    label="FEMA Flood Zone"
+                    value={`${gisEnrichment.floodZone.zone}${gisEnrichment.floodZone.isSpecialFloodHazard ? " (Special Flood Hazard)" : ""}`}
+                  />
+                )}
+                {gisEnrichment.elementarySchool && (
+                  <Field label="Elementary School" value={gisEnrichment.elementarySchool.name} />
+                )}
+                {gisEnrichment.middleSchool && (
+                  <Field label="Middle School" value={gisEnrichment.middleSchool.name} />
+                )}
+                {gisEnrichment.highSchool && (
+                  <Field label="High School" value={gisEnrichment.highSchool.name} />
+                )}
+                {gisEnrichment.opportunityZone && (
+                  <Field label="Opportunity Zone" value={gisEnrichment.opportunityZone.tract || "Yes"} />
+                )}
+                {gisEnrichment.enterpriseZone && (
+                  <Field label="Enterprise Zone" value={gisEnrichment.enterpriseZone.name} />
+                )}
+                {gisEnrichment.fireResponseZone && (
+                  <Field label="Fire Response Zone" value={gisEnrichment.fireResponseZone.zone} />
+                )}
+              </div>
+              <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 6 }}>
+                Source: Hawaii State GIS (geodata.hawaii.gov)
+              </div>
+            </div>
+          )}
         </>
       )}
 
