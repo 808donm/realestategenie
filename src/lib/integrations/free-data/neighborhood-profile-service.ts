@@ -172,35 +172,31 @@ export async function getNeighborhoodProfile(params: {
         schools = zipResult.schools;
       }
 
-      // For Hawaii: use the complex area mapping to ensure correct feeder schools
-      if (stateAbbrev === "HI" && postalCode) {
+      // For Hawaii: use official DOE attendance zone boundaries from State GIS
+      if (stateAbbrev === "HI" && latitude && longitude) {
         try {
-          const { getSchoolComplexByZip } = await import("@/lib/hawaii-school-zones");
-          const complexes = getSchoolComplexByZip(postalCode);
-          if (complexes.length > 0) {
-            // Add designated high school and middle schools if not already in results
-            const designatedNames = new Set<string>();
-            for (const ca of complexes) {
-              designatedNames.add(ca.complex.highSchool);
-              ca.complex.middleSchools.forEach((s) => designatedNames.add(s));
-            }
+          const { getHawaiiSchoolZones } = await import("./hawaii-school-zones-gis");
+          const zones = await getHawaiiSchoolZones(latitude, longitude);
 
-            // Search nearby to find the designated schools with full data
-            if (latitude && longitude) {
-              const nearby = await searchSchoolsByLocation(latitude, longitude, 5, 30);
-              for (const s of nearby.schools) {
-                // Match by checking if the nearby school name closely matches a designated school
-                const sName = s.schoolName.toLowerCase().trim();
-                const isDesignated = [...designatedNames].some((dName) => {
-                  const d = dName.toLowerCase().trim();
-                  // Exact match or one contains the other (but require substantial overlap)
-                  return sName === d || sName.includes(d) || d.includes(sName) ||
-                    // Match ignoring "School" suffix: "Kailua High" matches "Kailua High School"
-                    sName.replace(/\s*school$/i, "") === d.replace(/\s*school$/i, "");
-                });
-                if (isDesignated && !schools.some((existing) => existing.schoolName === s.schoolName)) {
-                  schools.push(s);
-                }
+          // Build list of designated school names from the GIS attendance zones
+          const designatedNames = new Set<string>();
+          if (zones.elementary?.name) designatedNames.add(zones.elementary.name);
+          if (zones.middle?.name) designatedNames.add(zones.middle.name);
+          if (zones.high?.name) designatedNames.add(zones.high.name);
+
+          if (designatedNames.size > 0) {
+            // Search nearby to find the designated schools with full NCES data (enrollment, ratio, etc.)
+            const nearby = await searchSchoolsByLocation(latitude, longitude, 5, 30);
+            for (const s of nearby.schools) {
+              const sName = s.schoolName.toLowerCase().trim();
+              const isDesignated = [...designatedNames].some((dName) => {
+                const d = dName.toLowerCase().trim();
+                return sName.includes(d) || d.includes(sName) ||
+                  sName.replace(/\s*(elementary|intermediate|middle|high)?\s*school$/i, "").trim() ===
+                  d.replace(/\s*(elementary|intermediate|middle|high)?\s*school$/i, "").trim();
+              });
+              if (isDesignated && !schools.some((existing) => existing.schoolName === s.schoolName)) {
+                schools.push(s);
               }
             }
           }
