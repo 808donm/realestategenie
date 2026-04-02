@@ -88,19 +88,14 @@ export async function GET(request: NextRequest) {
 
     console.log(`[Market Watch] Filter: ${filters.join(" and ")}`);
 
+    // Don't use $expand=Media -- it suppresses Latitude/Longitude in Trestle
+    // Photos will be fetched on-demand when user clicks a marker
     const result = await client.getProperties({
       $filter: filters.join(" and "),
       $orderby: "ModificationTimestamp desc",
       $top: limit,
       $count: true,
-      $expand: "Media",
     });
-
-    // Log sample to debug coordinate fields
-    if (result.value?.length > 0) {
-      const sample = result.value[0] as any;
-      console.log(`[Market Watch] Sample: Lat=${sample.Latitude}, Lng=${sample.Longitude}, MapCoordinate=${JSON.stringify(sample.MapCoordinate)}, MapCoordinateSource=${sample.MapCoordinateSource}`);
-    }
 
     console.log(`[Market Watch] Returned ${result.value?.length || 0} listings, ${result.value?.filter((p: any) => p.Latitude && p.Longitude).length || 0} with coordinates`);
 
@@ -150,18 +145,11 @@ export async function GET(request: NextRequest) {
 
       const isNew = p.StandardStatus === "Active" && p.OnMarketDate && new Date(p.OnMarketDate) >= sevenDaysAgo;
 
-      // Get primary photo
-      const photos = (p.Media || [])
-        .filter((m: any) => m.MediaURL && (m.MediaType || "").startsWith("image"))
-        .sort((a: any, b: any) => (a.Order || 0) - (b.Order || 0));
-      const photoUrl = photos.length > 0 ? photos[0].MediaURL : null;
-
       return {
         listingKey: p.ListingKey,
         listingId: p.ListingId,
         status: p.StandardStatus,
         isNew,
-        photoUrl,
         mlsStatus: p.MlsStatus,
         propertyType: p.PropertyType,
         propertySubType: p.PropertySubType,
