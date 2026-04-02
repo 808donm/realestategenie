@@ -1,21 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { generatePropertyIntelligencePDF, type PropertyReportData } from "@/lib/documents/property-intelligence-report";
-import type { AgentBranding } from "@/lib/documents/neighborhood-profile-generator";
-
-/** Fetch an image URL and return a base64 data URI, or null on failure. */
-async function fetchImageAsDataUri(url: string): Promise<string | null> {
-  try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
-    if (!res.ok) return null;
-    const buf = Buffer.from(await res.arrayBuffer());
-    if (buf.length < 100) return null;
-    const ct = res.headers.get("content-type") || "image/png";
-    return `data:${ct};base64,${buf.toString("base64")}`;
-  } catch {
-    return null;
-  }
-}
+import { fetchImageAsDataUri, fetchStaticMapImage, type AgentBranding } from "@/lib/documents/pdf-report-utils";
 
 /**
  * POST /api/property-intelligence/generate
@@ -83,6 +69,54 @@ export async function POST(request: NextRequest) {
         day: "numeric",
       });
     }
+
+    // Pre-fetch map image and photo gallery for the upgraded report
+    const enrichPromises: Promise<void>[] = [];
+
+    // Static map for cover page
+    if (property.latitude && property.longitude && !property.mapImageData) {
+      enrichPromises.push(
+        fetchStaticMapImage(property.latitude, property.longitude, 600, 400, 15).then((data) => {
+          if (data) property.mapImageData = data;
+        }),
+      );
+    }
+
+    // Primary photo for cover page
+    if (property.photos?.length && !property.primaryPhotoData) {
+      enrichPromises.push(
+        fetchImageAsDataUri(property.photos[0]).then((data) => {
+          if (data) property.primaryPhotoData = data;
+        }),
+      );
+    }
+
+    // Photo gallery (up to 6 photos)
+    if (property.photos?.length && (!property.photoGalleryData || property.photoGalleryData.length === 0)) {
+      const galleryUrls = property.photos.slice(0, 6);
+      enrichPromises.push(
+        Promise.all(galleryUrls.map((url) => fetchImageAsDataUri(url))).then((results) => {
+          property.photoGalleryData = results.filter(Boolean) as string[];
+        }),
+      );
+    }
+
+    // Compute market type from months of inventory
+    if (property.marketStats && !property.marketType) {
+      const totalListings = property.marketStats.totalListings;
+      const avgDOM = property.marketStats.avgDOM;
+      if (totalListings != null && avgDOM != null && avgDOM > 0) {
+        // Estimate monthly sales rate: listings / (avgDOM / 30)
+        const monthlySales = totalListings / (avgDOM / 30);
+        if (monthlySales > 0) {
+          const moi = totalListings / monthlySales;
+          property.monthsOfInventory = Math.round(moi * 10) / 10;
+          property.marketType = moi <= 4 ? "sellers" : moi <= 6 ? "balanced" : "buyers";
+        }
+      }
+    }
+
+    await Promise.allSettled(enrichPromises);
 
     // Generate PDF
     const pdfBlob = generatePropertyIntelligencePDF(property, branding);

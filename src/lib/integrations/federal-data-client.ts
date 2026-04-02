@@ -113,6 +113,55 @@ export interface CensusResult {
   error?: string;
 }
 
+export interface CensusDetailedDemographics {
+  education: {
+    lessThanHS: number;
+    hsGraduate: number;
+    someCollege: number;
+    associates: number;
+    bachelors: number;
+    graduateProfessional: number;
+  };
+  incomeBrackets: {
+    under25k: number;
+    from25kTo50k: number;
+    from50kTo75k: number;
+    from75kTo100k: number;
+    from100kTo150k: number;
+    from150kTo200k: number;
+    over200k: number;
+  };
+  ageGroups: {
+    under18: number;
+    from18to24: number;
+    from25to34: number;
+    from35to44: number;
+    from45to54: number;
+    from55to64: number;
+    over65: number;
+  };
+  occupations: {
+    managementBusiness: number;
+    service: number;
+    salesOffice: number;
+    naturalResourcesConstruction: number;
+    productionTransportation: number;
+  };
+  commuteTime: {
+    averageMinutes: number;
+    under10min: number;
+    from10to19min: number;
+    from20to29min: number;
+    from30to44min: number;
+    from45to59min: number;
+    over60min: number;
+  };
+  totalHouseholds: number;
+  householdsWithChildren: number;
+  householdsWithChildrenPct: number;
+  geography: string;
+}
+
 // FEMA
 export interface FEMAFloodZone {
   policyCount: number;
@@ -700,6 +749,205 @@ export class FederalDataClient {
     } catch (error: any) {
       return { success: false, error: error.message };
     }
+  }
+
+  // ── Census Detailed Demographics ──────────────────────────────────────────
+
+  /**
+   * Get detailed demographic breakdowns from Census ACS 5-year estimates.
+   * Queries education, income, age, occupation, commute, and household tables.
+   */
+  async getDetailedDemographics(
+    level: "zip" | "county" | "state" | "national",
+    params: { zipCode?: string; stateFips?: string; countyFips?: string },
+  ): Promise<{ success: boolean; data?: CensusDetailedDemographics; error?: string }> {
+    try {
+      let geo: string;
+      switch (level) {
+        case "zip":
+          if (!params.zipCode) return { success: false, error: "zipCode required for zip level" };
+          geo = `zip%20code%20tabulation%20area:${params.zipCode}`;
+          break;
+        case "county":
+          if (!params.countyFips || !params.stateFips) return { success: false, error: "countyFips and stateFips required" };
+          geo = `county:${params.countyFips}&in=state:${params.stateFips}`;
+          break;
+        case "state":
+          if (!params.stateFips) return { success: false, error: "stateFips required for state level" };
+          geo = `state:${params.stateFips}`;
+          break;
+        case "national":
+          geo = "us:*";
+          break;
+      }
+
+      const keyParam = this.config.censusApiKey ? `&key=${this.config.censusApiKey}` : "";
+      const baseUrl = "https://api.census.gov/data/2023/acs/acs5";
+
+      // Split into 2 calls to stay under 50-variable limit per request
+      // Call 1: Education (B15003) + Income (B19001) + Households (B11005)
+      const eduVars = "B15003_001E,B15003_002E,B15003_003E,B15003_004E,B15003_005E,B15003_006E,B15003_007E,B15003_008E,B15003_009E,B15003_010E,B15003_011E,B15003_012E,B15003_013E,B15003_014E,B15003_015E,B15003_016E,B15003_017E,B15003_018E,B15003_019E,B15003_020E,B15003_021E,B15003_022E,B15003_023E,B15003_024E,B15003_025E";
+      const incVars = "B19001_001E,B19001_002E,B19001_003E,B19001_004E,B19001_005E,B19001_006E,B19001_007E,B19001_008E,B19001_009E,B19001_010E,B19001_011E,B19001_012E,B19001_013E,B19001_014E,B19001_015E,B19001_016E,B19001_017E";
+      const hhVars = "B11005_001E,B11005_002E";
+
+      // Call 2: Age (B01001 subset) + Occupation (C24010) + Commute (B08303)
+      const ageVars = "B01001_001E,B01001_003E,B01001_004E,B01001_005E,B01001_006E,B01001_007E,B01001_008E,B01001_009E,B01001_010E,B01001_011E,B01001_012E,B01001_013E,B01001_014E,B01001_015E,B01001_016E,B01001_017E,B01001_018E,B01001_019E,B01001_020E,B01001_021E,B01001_022E,B01001_023E,B01001_024E,B01001_025E,B01001_027E,B01001_028E,B01001_029E,B01001_030E,B01001_031E,B01001_032E,B01001_033E,B01001_034E,B01001_035E,B01001_036E,B01001_037E,B01001_038E,B01001_039E,B01001_040E,B01001_041E,B01001_042E,B01001_043E,B01001_044E,B01001_045E,B01001_046E,B01001_047E,B01001_048E,B01001_049E";
+      const occVars = "C24010_001E,C24010_003E,C24010_019E,C24010_027E,C24010_033E,C24010_037E";
+      const commuteVars = "B08303_001E,B08303_002E,B08303_003E,B08303_004E,B08303_005E,B08303_006E,B08303_007E,B08303_008E,B08303_009E,B08303_010E,B08303_011E,B08303_012E,B08303_013E,B08136_001E";
+
+      const [res1, res2] = await Promise.all([
+        fetch(`${baseUrl}?get=NAME,${eduVars},${incVars},${hhVars}&for=${geo}${keyParam}`),
+        fetch(`${baseUrl}?get=NAME,${ageVars},${occVars},${commuteVars}&for=${geo}${keyParam}`),
+      ]);
+
+      if (!res1.ok || !res2.ok) {
+        return { success: false, error: `Census API error: ${res1.status}/${res2.status}` };
+      }
+
+      const [data1, data2] = await Promise.all([res1.json(), res2.json()]);
+      if (!data1?.length || data1.length < 2 || !data2?.length || data2.length < 2) {
+        return { success: false, error: "No Census detailed data found" };
+      }
+
+      const h1 = data1[0] as string[];
+      const v1 = data1[1] as string[];
+      const h2 = data2[0] as string[];
+      const v2 = data2[1] as string[];
+
+      const getVal = (headers: string[], values: string[], varName: string): number => {
+        const idx = headers.indexOf(varName);
+        if (idx === -1) return 0;
+        const v = parseInt(values[idx], 10);
+        return isNaN(v) || v < 0 ? 0 : v;
+      };
+      const g1 = (v: string) => getVal(h1, v1, v);
+      const g2 = (v: string) => getVal(h2, v2, v);
+      const pct = (num: number, denom: number) => (denom > 0 ? Math.round((num / denom) * 1000) / 10 : 0);
+
+      // Education aggregation (B15003: total=001, no schooling=002...doctorate=025)
+      const eduTotal = g1("B15003_001E") || 1;
+      const lessThanHS = g1("B15003_002E") + g1("B15003_003E") + g1("B15003_004E") + g1("B15003_005E") + g1("B15003_006E") + g1("B15003_007E") + g1("B15003_008E") + g1("B15003_009E") + g1("B15003_010E") + g1("B15003_011E") + g1("B15003_012E") + g1("B15003_013E") + g1("B15003_014E") + g1("B15003_015E") + g1("B15003_016E");
+      const hsGrad = g1("B15003_017E") + g1("B15003_018E");
+      const someCollege = g1("B15003_019E") + g1("B15003_020E");
+      const associates = g1("B15003_021E");
+      const bachelors = g1("B15003_022E");
+      const gradProf = g1("B15003_023E") + g1("B15003_024E") + g1("B15003_025E");
+
+      // Income aggregation (B19001: total=001, <10k=002...200k+=017)
+      const incTotal = g1("B19001_001E") || 1;
+      const under25k = g1("B19001_002E") + g1("B19001_003E") + g1("B19001_004E") + g1("B19001_005E");
+      const from25to50 = g1("B19001_006E") + g1("B19001_007E") + g1("B19001_008E") + g1("B19001_009E") + g1("B19001_010E");
+      const from50to75 = g1("B19001_011E") + g1("B19001_012E");
+      const from75to100 = g1("B19001_013E");
+      const from100to150 = g1("B19001_014E") + g1("B19001_015E");
+      const from150to200 = g1("B19001_016E");
+      const over200k = g1("B19001_017E");
+
+      // Age aggregation (B01001: male 003-025, female 027-049)
+      // Under 5: M003+F027, 5-9: M004+F028, 10-14: M005+F029, 15-17: M006+F030
+      const totalPop = g2("B01001_001E") || 1;
+      const under18 = g2("B01001_003E") + g2("B01001_004E") + g2("B01001_005E") + g2("B01001_006E") + g2("B01001_027E") + g2("B01001_028E") + g2("B01001_029E") + g2("B01001_030E");
+      const age18to24 = g2("B01001_007E") + g2("B01001_008E") + g2("B01001_009E") + g2("B01001_010E") + g2("B01001_031E") + g2("B01001_032E") + g2("B01001_033E") + g2("B01001_034E");
+      const age25to34 = g2("B01001_011E") + g2("B01001_012E") + g2("B01001_035E") + g2("B01001_036E");
+      const age35to44 = g2("B01001_013E") + g2("B01001_014E") + g2("B01001_037E") + g2("B01001_038E");
+      const age45to54 = g2("B01001_015E") + g2("B01001_016E") + g2("B01001_039E") + g2("B01001_040E");
+      const age55to64 = g2("B01001_017E") + g2("B01001_018E") + g2("B01001_019E") + g2("B01001_041E") + g2("B01001_042E") + g2("B01001_043E");
+      const age65plus = g2("B01001_020E") + g2("B01001_021E") + g2("B01001_022E") + g2("B01001_023E") + g2("B01001_024E") + g2("B01001_025E") + g2("B01001_044E") + g2("B01001_045E") + g2("B01001_046E") + g2("B01001_047E") + g2("B01001_048E") + g2("B01001_049E");
+
+      // Occupation aggregation (C24010: total=001, mgmt=003, service=019, sales=027, natres=033, prod=037)
+      const occTotal = g2("C24010_001E") || 1;
+
+      // Commute (B08303: total=001, <5=002, 5-9=003, 10-14=004, 15-19=005, 20-24=006, 25-29=007, 30-34=008, 35-39=009, 40-44=010, 45-59=011, 60-89=012, 90+=013)
+      const commuteTotal = g2("B08303_001E") || 1;
+      const aggTravelTime = g2("B08136_001E"); // aggregate travel time in minutes
+
+      // Households
+      const hhTotal = g1("B11005_001E") || 1;
+      const hhWithChildren = g1("B11005_002E");
+
+      return {
+        success: true,
+        data: {
+          education: {
+            lessThanHS: pct(lessThanHS, eduTotal),
+            hsGraduate: pct(hsGrad, eduTotal),
+            someCollege: pct(someCollege, eduTotal),
+            associates: pct(associates, eduTotal),
+            bachelors: pct(bachelors, eduTotal),
+            graduateProfessional: pct(gradProf, eduTotal),
+          },
+          incomeBrackets: {
+            under25k: pct(under25k, incTotal),
+            from25kTo50k: pct(from25to50, incTotal),
+            from50kTo75k: pct(from50to75, incTotal),
+            from75kTo100k: pct(from75to100, incTotal),
+            from100kTo150k: pct(from100to150, incTotal),
+            from150kTo200k: pct(from150to200, incTotal),
+            over200k: pct(over200k, incTotal),
+          },
+          ageGroups: {
+            under18: pct(under18, totalPop),
+            from18to24: pct(age18to24, totalPop),
+            from25to34: pct(age25to34, totalPop),
+            from35to44: pct(age35to44, totalPop),
+            from45to54: pct(age45to54, totalPop),
+            from55to64: pct(age55to64, totalPop),
+            over65: pct(age65plus, totalPop),
+          },
+          occupations: {
+            managementBusiness: pct(g2("C24010_003E"), occTotal),
+            service: pct(g2("C24010_019E"), occTotal),
+            salesOffice: pct(g2("C24010_027E"), occTotal),
+            naturalResourcesConstruction: pct(g2("C24010_033E"), occTotal),
+            productionTransportation: pct(g2("C24010_037E"), occTotal),
+          },
+          commuteTime: {
+            averageMinutes: commuteTotal > 0 && aggTravelTime > 0 ? Math.round(aggTravelTime / commuteTotal) : 0,
+            under10min: pct(g2("B08303_002E") + g2("B08303_003E"), commuteTotal),
+            from10to19min: pct(g2("B08303_004E") + g2("B08303_005E"), commuteTotal),
+            from20to29min: pct(g2("B08303_006E") + g2("B08303_007E"), commuteTotal),
+            from30to44min: pct(g2("B08303_008E") + g2("B08303_009E") + g2("B08303_010E"), commuteTotal),
+            from45to59min: pct(g2("B08303_011E"), commuteTotal),
+            over60min: pct(g2("B08303_012E") + g2("B08303_013E"), commuteTotal),
+          },
+          totalHouseholds: hhTotal,
+          householdsWithChildren: hhWithChildren,
+          householdsWithChildrenPct: pct(hhWithChildren, hhTotal),
+          geography: v1[0] || "",
+        },
+      };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Fetch detailed demographics at all 4 geographic levels in parallel.
+   * Returns zip, county, state, and national data.
+   */
+  async getMultiGeoDemo(params: {
+    zipCode: string;
+    stateFips: string;
+    countyFips: string;
+  }): Promise<{
+    zip?: CensusDetailedDemographics;
+    county?: CensusDetailedDemographics;
+    state?: CensusDetailedDemographics;
+    national?: CensusDetailedDemographics;
+  }> {
+    const [zipRes, countyRes, stateRes, natRes] = await Promise.allSettled([
+      this.getDetailedDemographics("zip", { zipCode: params.zipCode }),
+      this.getDetailedDemographics("county", { countyFips: params.countyFips, stateFips: params.stateFips }),
+      this.getDetailedDemographics("state", { stateFips: params.stateFips }),
+      this.getDetailedDemographics("national", {}),
+    ]);
+
+    return {
+      zip: zipRes.status === "fulfilled" && zipRes.value.success ? zipRes.value.data : undefined,
+      county: countyRes.status === "fulfilled" && countyRes.value.success ? countyRes.value.data : undefined,
+      state: stateRes.status === "fulfilled" && stateRes.value.success ? stateRes.value.data : undefined,
+      national: natRes.status === "fulfilled" && natRes.value.success ? natRes.value.data : undefined,
+    };
   }
 
   // ── FEMA ─────────────────────────────────────────────────────────────────

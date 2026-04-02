@@ -24,6 +24,11 @@ const TEMPLATE_IMAGE_SLOTS: Record<string, ImageSlotConfig[]> = {
     { slot: "secondary", label: "Top Right Image", recommendation: "400 x 290 px (4:3 ratio)" },
     { slot: "tertiary", label: "Bottom Right Image", recommendation: "400 x 290 px (4:3 ratio)" },
   ],
+  "property-showcase": [
+    { slot: "primary", label: "Main Property Photo (large)", recommendation: "800 x 500 px (landscape)" },
+    { slot: "secondary", label: "Second Photo (bottom row)", recommendation: "400 x 280 px" },
+    { slot: "tertiary", label: "Third Photo (bottom row)", recommendation: "400 x 280 px" },
+  ],
 };
 
 export default function FlyerTemplatePicker({ eventId, currentTemplateId }: Props) {

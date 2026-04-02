@@ -305,10 +305,39 @@ export default function PropertyDetailModal({
   const beds = p.building?.rooms?.beds;
   const baths = p.building?.rooms?.bathsFull ?? p.building?.rooms?.bathsTotal;
   const yearBuilt = p.building?.summary?.yearBuilt || p.summary?.yearBuilt;
-  const avmVal = p.avm?.amount?.value;
-  // Best estimated value: AVM → market assessment → appraised assessment
-  const bestValue = avmVal || p.assessment?.market?.mktTtlValue || p.assessment?.appraised?.apprTtlValue;
+  const rawAvmVal = p.avm?.amount?.value;
+  const countyAssessment = p.assessment?.market?.mktTtlValue || p.assessment?.appraised?.apprTtlValue;
   const lastSaleAmt = p.sale?.amount?.saleAmt || p.sale?.amount?.salePrice;
+
+  // AVM reliability check: compare to county assessment or recent sale (within 2 years)
+  const isRecentSale = (() => {
+    const saleDate = p.sale?.amount?.saleTransDate || p.sale?.amount?.saleRecDate;
+    if (!saleDate || !lastSaleAmt) return false;
+    const twoYearsAgo = new Date();
+    twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+    return new Date(saleDate) >= twoYearsAgo;
+  })();
+
+  const avmReliable = (() => {
+    if (!rawAvmVal) return false;
+    // Compare to county assessment
+    if (countyAssessment && countyAssessment > 0) {
+      const diff = Math.abs(rawAvmVal - countyAssessment) / countyAssessment;
+      if (diff > 0.3) return false; // > 30% difference = unreliable
+    }
+    // Compare to recent sale price
+    if (isRecentSale && lastSaleAmt && lastSaleAmt > 0) {
+      const diff = Math.abs(rawAvmVal - lastSaleAmt) / lastSaleAmt;
+      if (diff > 0.3) return false;
+    }
+    return true;
+  })();
+
+  // Use reliable AVM, or fall back to county assessment
+  const avmVal = avmReliable ? rawAvmVal : undefined;
+  const avmUnreliable = rawAvmVal && !avmReliable;
+  // Best estimated value: reliable AVM → county assessment → appraised assessment
+  const bestValue = avmVal || countyAssessment || p.assessment?.appraised?.apprTtlValue;
   // Use Realie's pre-calculated equity (AVM - outstanding mortgage balance) if available,
   // otherwise fall back to best value - last sale price as a rough estimate
   const realieEquity = (p as any).homeEquity?.equity;
@@ -1391,12 +1420,14 @@ export default function PropertyDetailModal({
         const displayVal = avmVal || p.assessment?.market?.mktTtlValue || p.assessment?.appraised?.apprTtlValue;
         if (displayVal == null) return null;
         const label = avmVal ? "AVM Value" : p.assessment?.market?.mktTtlValue ? "Market Value" : "Appraised Value";
+        const cardColor = avmUnreliable ? "#92400e" : "#059669";
+        const cardBg = avmUnreliable ? "#fffbeb" : "#ecfdf5";
         return (
-          <div style={{ flex: 1, minWidth: 130, padding: "10px 14px", background: "#ecfdf5", borderRadius: 8 }}>
+          <div style={{ flex: 1, minWidth: 130, padding: "10px 14px", background: cardBg, borderRadius: 8 }}>
             <div
               style={{
                 fontSize: 11,
-                color: "#059669",
+                color: cardColor,
                 fontWeight: 600,
                 textTransform: "uppercase",
                 letterSpacing: 0.5,
@@ -1404,10 +1435,13 @@ export default function PropertyDetailModal({
             >
               {label}
             </div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: "#059669" }}>{fmt(displayVal)}</div>
-            {p.avm?.amount?.low != null && p.avm?.amount?.high != null && (
+            <div style={{ fontSize: 18, fontWeight: 700, color: cardColor }}>{fmt(displayVal)}</div>
+            {avmUnreliable && (
+              <div style={{ fontSize: 10, color: "#92400e" }}>AVM unavailable - county value</div>
+            )}
+            {!avmUnreliable && p.avm?.amount?.low != null && p.avm?.amount?.high != null && (
               <div style={{ fontSize: 11, color: "#6b7280" }}>
-                Range: {fmt(p.avm.amount.low)} – {fmt(p.avm.amount.high)}
+                Range: {fmt(p.avm.amount.low)} - {fmt(p.avm.amount.high)}
               </div>
             )}
           </div>
@@ -1890,8 +1924,23 @@ export default function PropertyDetailModal({
                 </Section>
               )}
 
+              {/* AVM deemed unreliable -- show county assessment instead */}
+              {avmUnreliable && countyAssessment && (
+                <div style={{ padding: "12px 16px", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 8, marginBottom: 16 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#92400e", marginBottom: 4 }}>
+                    AVM Not Available for This Property
+                  </div>
+                  <div style={{ fontSize: 12, color: "#78350f", marginBottom: 8 }}>
+                    The automated valuation model returned an estimate that differs more than 30% from
+                    {isRecentSale ? " the recent sale price" : " the county assessment"}, indicating low reliability for this property type.
+                  </div>
+                  <Field label="County Assessment" value={fmt(countyAssessment)} />
+                  {isRecentSale && lastSaleAmt && <Field label="Recent Sale Price" value={fmt(lastSaleAmt)} />}
+                </div>
+              )}
+
               {/* When no AVM exists, show fallback estimated value from assessment or RentCast */}
-              {!avm && hasFallbackValue && (
+              {!avm && !avmUnreliable && hasFallbackValue && (
                 <Section title="Estimated Value">
                   <Field label="Estimated Value" value={fmt(fallbackValue)} />
                   <Field

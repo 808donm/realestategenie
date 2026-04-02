@@ -944,6 +944,331 @@ export function renderElegantWarmTemplate(ctx: FlyerRenderContext): void {
   pdf.text(discLines, margin, disclaimerY);
 }
 
+// ─── Property Showcase Template ─────────────────────────────────────────────
+// Layout inspired by RPR listing flyers: large hero photo top-left, small photos
+// top-right, "House For Sale" title, description + details left, agent sidebar right,
+// photo gallery bottom, Real Estate Genie branding footer.
+
+export function renderPropertyShowcaseTemplate(ctx: FlyerRenderContext): void {
+  const {
+    pdf,
+    event,
+    agent,
+    propertyPhotoData,
+    photoWidth,
+    photoHeight,
+    secondaryPhotoData,
+    tertiaryPhotoData,
+    qrCodeData,
+    headshotData,
+    logoData,
+    logoWidth,
+    logoHeight,
+    pageWidth,
+    pageHeight,
+    margin,
+  } = ctx;
+
+  const contentWidth = pageWidth - margin * 2;
+  const leftColWidth = contentWidth * 0.58;
+  const rightColX = margin + leftColWidth + 6;
+  const rightColWidth = contentWidth - leftColWidth - 6;
+  let y = margin;
+
+  // ── Top Photo Row: large hero left, two small photos stacked right ──
+  const photoRowHeight = 72;
+  const smallPhotoHeight = (photoRowHeight - 2) / 2;
+
+  if (propertyPhotoData) {
+    const imgW = leftColWidth;
+    const imgH = photoRowHeight;
+    const srcAspect = photoWidth / photoHeight;
+    const destAspect = imgW / imgH;
+    let sx = 0, sy = 0, sw = photoWidth, sh = photoHeight;
+    if (srcAspect > destAspect) {
+      sw = photoHeight * destAspect;
+      sx = (photoWidth - sw) / 2;
+    } else {
+      sh = photoWidth / destAspect;
+      sy = (photoHeight - sh) / 2;
+    }
+    pdf.addImage(propertyPhotoData, "JPEG", margin, y, imgW, imgH);
+  } else {
+    pdf.setFillColor(229, 231, 235);
+    pdf.rect(margin, y, leftColWidth, photoRowHeight, "F");
+    pdf.setFontSize(12);
+    pdf.setTextColor(156, 163, 175);
+    pdf.text("No Photo Available", margin + leftColWidth / 2, y + photoRowHeight / 2, { align: "center" });
+  }
+
+  // Small photos stacked on right
+  if (secondaryPhotoData) {
+    pdf.addImage(secondaryPhotoData, "JPEG", rightColX, y, rightColWidth, smallPhotoHeight);
+  } else {
+    pdf.setFillColor(243, 244, 246);
+    pdf.rect(rightColX, y, rightColWidth, smallPhotoHeight, "F");
+  }
+
+  if (tertiaryPhotoData) {
+    pdf.addImage(tertiaryPhotoData, "JPEG", rightColX, y + smallPhotoHeight + 2, rightColWidth, smallPhotoHeight);
+  } else {
+    pdf.setFillColor(243, 244, 246);
+    pdf.rect(rightColX, y + smallPhotoHeight + 2, rightColWidth, smallPhotoHeight, "F");
+  }
+
+  y += photoRowHeight + 6;
+
+  // ── "House For Sale" Title ──
+  pdf.setFontSize(28);
+  pdf.setTextColor(31, 41, 55);
+  pdf.setFont("helvetica", "bold");
+  pdf.text("House For Sale", margin, y + 8);
+  y += 14;
+
+  // Thin divider line
+  pdf.setDrawColor(209, 213, 219);
+  pdf.setLineWidth(0.3);
+  pdf.line(margin, y, margin + leftColWidth, y);
+  y += 4;
+
+  // ── Two-Column Layout: Description + Details (left) | Agent Info (right) ──
+  const agentBlockStartY = y;
+
+  // -- LEFT COLUMN --
+
+  // Address
+  pdf.setFontSize(12);
+  pdf.setTextColor(31, 41, 55);
+  pdf.setFont("helvetica", "bold");
+  const address = pdfSafe(event.address || "Address not set");
+  pdf.text(address, margin, y + 4);
+  y += 6;
+
+  // MLS #
+  if (event.mls_listing_id) {
+    pdf.setFontSize(8);
+    pdf.setTextColor(107, 114, 128);
+    pdf.setFont("helvetica", "normal");
+    pdf.text(pdfSafe(`MLS #${event.mls_listing_id}`), margin, y + 3);
+    y += 5;
+  }
+
+  y += 2;
+
+  // Description
+  const description = pdfSafe(event.flyer_description || event.listing_description || "");
+  if (description) {
+    pdf.setFontSize(9);
+    pdf.setTextColor(55, 65, 81);
+    pdf.setFont("helvetica", "normal");
+    const descLines = pdf.splitTextToSize(description, leftColWidth);
+    const maxLines = 8;
+    const trimmedLines = descLines.slice(0, maxLines);
+    pdf.text(trimmedLines, margin, y + 3);
+    y += trimmedLines.length * 3.5 + 4;
+  }
+
+  // Property Details Grid (2 columns)
+  y += 2;
+  pdf.setDrawColor(229, 231, 235);
+  pdf.setLineWidth(0.2);
+  pdf.line(margin, y, margin + leftColWidth, y);
+  y += 4;
+
+  const detailLeftX = margin;
+  const detailRightX = margin + leftColWidth / 2 + 2;
+  const detailColW = leftColWidth / 2 - 2;
+
+  const drawDetail = (label: string, value: string, x: number, yPos: number) => {
+    pdf.setFontSize(8);
+    pdf.setFont("helvetica", "bold");
+    pdf.setTextColor(107, 114, 128);
+    pdf.text(pdfSafe(label), x, yPos);
+    pdf.setFont("helvetica", "normal");
+    pdf.setTextColor(31, 41, 55);
+    pdf.text(pdfSafe(value), x + detailColW * 0.45, yPos);
+  };
+
+  const propType = event.property_type || "Residential";
+  const beds = event.beds ? String(event.beds) : "-";
+  const baths = event.baths ? String(event.baths) : "-";
+  const sqft = event.sqft ? `${Number(event.sqft).toLocaleString()} sqft` : "-";
+  const price = event.price ? `$${Number(event.price).toLocaleString()}` : "-";
+  const lotSize = event.lot_size ? `${Number(event.lot_size).toLocaleString()} sqft` : "";
+  const hoaFee = event.hoa_fee ? `$${event.hoa_fee}` : "";
+
+  drawDetail("Property Type", propType, detailLeftX, y);
+  if (hoaFee) drawDetail("HOA Fee", hoaFee, detailRightX, y);
+  y += 5;
+  drawDetail("Bedrooms", beds, detailLeftX, y);
+  if (lotSize) drawDetail("Lot Size", lotSize, detailRightX, y);
+  y += 5;
+  drawDetail("Total Baths", baths, detailLeftX, y);
+  y += 5;
+  drawDetail("Living Area", sqft, detailLeftX, y);
+  y += 5;
+
+  const leftColEndY = y;
+
+  // -- RIGHT COLUMN (Agent Info Sidebar) --
+  let ry = agentBlockStartY;
+
+  // Price box
+  pdf.setFillColor(248, 250, 252);
+  pdf.setDrawColor(209, 213, 219);
+  pdf.setLineWidth(0.3);
+  pdf.roundedRect(rightColX, ry, rightColWidth, 16, 1, 1, "FD");
+
+  pdf.setFontSize(8);
+  pdf.setTextColor(107, 114, 128);
+  pdf.setFont("helvetica", "bold");
+  pdf.text("OFFERED AT", rightColX + rightColWidth / 2, ry + 5, { align: "center" });
+  pdf.setFontSize(16);
+  pdf.setTextColor(31, 41, 55);
+  pdf.text(pdfSafe(price), rightColX + rightColWidth / 2, ry + 13, { align: "center" });
+  ry += 20;
+
+  // Agent headshot
+  if (headshotData) {
+    const headSize = 22;
+    const headX = rightColX + (rightColWidth - headSize) / 2;
+    pdf.addImage(headshotData, "JPEG", headX, ry, headSize, headSize);
+    ry += headSize + 3;
+  }
+
+  // Agent name
+  const agentName = pdfSafe(agent?.display_name || "");
+  if (agentName) {
+    pdf.setFontSize(11);
+    pdf.setTextColor(31, 41, 55);
+    pdf.setFont("helvetica", "bold");
+    pdf.text(agentName, rightColX + rightColWidth / 2, ry + 3, { align: "center" });
+    ry += 6;
+  }
+
+  // License
+  if (agent?.license_number) {
+    pdf.setFontSize(7);
+    pdf.setTextColor(107, 114, 128);
+    pdf.setFont("helvetica", "normal");
+    pdf.text(pdfSafe(`License #${agent.license_number}`), rightColX + rightColWidth / 2, ry + 2, { align: "center" });
+    ry += 5;
+  }
+
+  ry += 2;
+
+  // Contact details with icons
+  pdf.setFontSize(8);
+  pdf.setTextColor(55, 65, 81);
+  pdf.setFont("helvetica", "normal");
+  const contactX = rightColX + 4;
+
+  if (agent?.phone_e164) {
+    pdf.text(pdfSafe(`Phone: ${agent.phone_e164}`), contactX, ry);
+    ry += 4;
+  }
+  if (agent?.email) {
+    pdf.text(pdfSafe(agent.email), contactX, ry);
+    ry += 4;
+  }
+
+  ry += 2;
+
+  // Agency name + address
+  if (agent?.agency_name) {
+    pdf.setFontSize(8);
+    pdf.setFont("helvetica", "bold");
+    pdf.setTextColor(31, 41, 55);
+    const agencyLines = pdf.splitTextToSize(pdfSafe(agent.agency_name), rightColWidth - 8);
+    pdf.text(agencyLines, contactX, ry);
+    ry += agencyLines.length * 3.5 + 2;
+  }
+
+  // Company logo
+  if (logoData) {
+    const maxLogoW = rightColWidth - 16;
+    const maxLogoH = 18;
+    let lw = maxLogoW;
+    let lh = (logoHeight / logoWidth) * lw;
+    if (lh > maxLogoH) {
+      lh = maxLogoH;
+      lw = (logoWidth / logoHeight) * lh;
+    }
+    const logoX = rightColX + (rightColWidth - lw) / 2;
+    pdf.addImage(logoData, "PNG", logoX, ry, lw, lh);
+    ry += lh + 3;
+  }
+
+  // QR Code under brokerage
+  if (qrCodeData) {
+    const qrSize = 20;
+    const qrX = rightColX + (rightColWidth - qrSize) / 2;
+    pdf.addImage(qrCodeData, "PNG", qrX, ry, qrSize, qrSize);
+    ry += qrSize + 2;
+
+    pdf.setFontSize(6);
+    pdf.setTextColor(107, 114, 128);
+    pdf.setFont("helvetica", "normal");
+    pdf.text("Scan for details", rightColX + rightColWidth / 2, ry, { align: "center" });
+    ry += 5;
+  }
+
+  // ── Bottom Photo Gallery Row ──
+  y = Math.max(leftColEndY, ry) + 4;
+
+  // Draw up to 3 photos in a row (reuse hero + secondary + tertiary at smaller size)
+  const galleryH = 30;
+  const galleryCols = 3;
+  const galleryGap = 3;
+  const galleryW = (contentWidth - galleryGap * (galleryCols - 1)) / galleryCols;
+  const galleryPhotos = [propertyPhotoData, secondaryPhotoData, tertiaryPhotoData].filter(Boolean);
+
+  if (galleryPhotos.length > 0 && y + galleryH + 20 < pageHeight) {
+    for (let i = 0; i < Math.min(galleryPhotos.length, galleryCols); i++) {
+      const gx = margin + i * (galleryW + galleryGap);
+      if (galleryPhotos[i]) {
+        pdf.addImage(galleryPhotos[i]!, "JPEG", gx, y, galleryW, galleryH);
+      }
+    }
+    y += galleryH + 4;
+  }
+
+  // ── Footer: Real Estate Genie branding + disclaimer ──
+  const footerY = Math.max(y, pageHeight - 22);
+
+  // Thin divider
+  pdf.setDrawColor(209, 213, 219);
+  pdf.setLineWidth(0.2);
+  pdf.line(margin, footerY, margin + contentWidth, footerY);
+
+  // Disclaimer text
+  pdf.setFontSize(5.5);
+  pdf.setTextColor(156, 163, 175);
+  pdf.setFont("helvetica", "normal");
+  const disclaimer = pdfSafe(
+    "Information deemed reliable but not guaranteed. All measurements and information should be independently verified. " +
+    "Equal Housing Opportunity.",
+  );
+  const discLines = pdf.splitTextToSize(disclaimer, contentWidth * 0.65);
+  pdf.text(discLines, margin, footerY + 3);
+
+  // Real Estate Genie branding (right side of footer)
+  pdf.setFontSize(8);
+  pdf.setTextColor(107, 114, 128);
+  pdf.setFont("helvetica", "bold");
+  pdf.text("Real Estate Genie", margin + contentWidth, footerY + 4, { align: "right" });
+  pdf.setFontSize(5);
+  pdf.setFont("helvetica", "normal");
+  pdf.setTextColor(156, 163, 175);
+  pdf.text("TM", margin + contentWidth + 0.5, footerY + 2.5);
+
+  // Date
+  const dateStr = new Date().toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "numeric" });
+  pdf.setFontSize(7);
+  pdf.setTextColor(156, 163, 175);
+  pdf.text(dateStr, margin + contentWidth, footerY + 8, { align: "right" });
+}
+
 // ─── Helper: Draw simple icons for property highlights ───────────────────────
 
 function drawHighlightIcon(

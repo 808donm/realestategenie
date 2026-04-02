@@ -20,7 +20,7 @@ export const ROUTE_TO_SECTION: Record<string, string> = {
   "/app/broker": "broker-dashboard",
   "/app/team-lead": "broker-dashboard",
   "/app/mls": "mls",
-  "/app/property-data": "mls",
+  "/app/property-data": "property-intel",
   "/app/seller-map": "seller-map",
   "/app/pipeline": "pipeline",
   "/app/open-houses": "open-houses",
@@ -35,7 +35,10 @@ export const ROUTE_TO_SECTION: Record<string, string> = {
   "/app/security": "security",
   "/app/team": "team-management",
   "/app/admin": "admin-guide",
-  "/app/farm": "seller-map",
+  "/app/farm": "farm-watchdog",
+  "/app/calendar": "calendar",
+  "/app/tasks": "tasks",
+  "/app/prospecting": "property-intel",
   "/app/showing": "showing-scheduler",
 };
 
@@ -118,27 +121,47 @@ The Real Estate Genie supports several user roles, each with different levels of
     title: "2. Dashboard",
     content: `## 2. Dashboard
 
-The Dashboard is your home base in The Real Estate Genie. It provides an at-a-glance overview of your real estate business activity and key performance indicators.
+The Dashboard is your command center in The Real Estate Genie. It provides a comprehensive overview of your real estate business with intelligent recommendations.
 
-### 2.1 Stats Tiles
+### 2.1 Needs Attention
 
-At the top of the Dashboard, you will see Stats Tiles displaying your key metrics at a glance. These may include total active leads, deals in pipeline, upcoming open houses, and other performance indicators relevant to your business.
+At the top, the **Needs Attention** section highlights urgent follow-ups -- leads that have not been contacted in 3 or more days and have a heat score of 50 or above. These are shown in amber to draw your attention.
 
-### 2.2 Heat Score Chart
+### 2.2 Hoku Assistant
 
-The Heat Score Chart visualizes the distribution of your leads by their Heat Score (0\u2013100). Leads with a score of 80 or above are considered \u201chot leads\u201d and are highlighted for immediate attention. This chart helps you prioritize your outreach efforts.
+Hoku is your AI copilot, available as a floating button on the bottom-right of every page. Click the Hoku button to open a conversational interface where you can ask questions, run searches, draft communications, and execute tasks. Hoku knows about every property you are viewing and can provide context-aware help.
 
-### 2.3 Pipeline Stage Breakdown
+### 2.3 AI Daily Briefing
 
-This chart shows how many deals you have in each stage of your Pipeline. It provides a visual representation of your deal flow, helping you identify bottlenecks and ensure deals are progressing smoothly.
+The AI Daily Briefing generates a numbered priority list (1-3 items) based on your current business state: urgent follow-ups, hot lead count, today's open house events, and new leads this week. It helps you start your day knowing exactly what needs attention first.
 
-### 2.4 Activity Feed
+### 2.4 Pipeline Stats
 
-The Activity Feed displays a chronological list of recent actions and events, such as new leads, stage changes, open house registrations, and integration activity. Use it to stay informed about what is happening across your business.
+Shows a count-by-stage breakdown of your leads, total lead count, and hot leads count. Click through to the full Pipeline view to manage your deal flow.
 
-### 2.5 Integration Health
+### 2.5 Tasks Widget
 
-The Integration Health widget shows the status of your connected integrations (CRM, Trestle MLS, n8n Webhooks, etc.). Green indicators mean the integration is connected and functioning properly. If an integration shows a warning or error, navigate to the Integrations page to troubleshoot.`,
+Displays your tasks in three sections: Overdue, Today, and Upcoming (3 tasks per section). Each task shows a priority color dot (red/orange/blue/green). Quick-complete checkboxes let you mark tasks done without leaving the dashboard.
+
+### 2.6 Upcoming Events
+
+Shows your next 5 events from the next 2 weeks across all connected calendars (Google Calendar, Outlook, GHL/CRM). Events are color-coded by source for easy identification.
+
+### 2.7 Active Listings
+
+Displays your total active listings, average Days on Market (DOM), and flags stale listings (21+ DOM) with a warning section showing affected addresses.
+
+### 2.8 Quick Actions
+
+A 7-button grid for one-click navigation: New Open House, View Leads, Pipeline, MLS Search, Reports, Calculators, Tasks. Below this, **One-Tap Contact Actions** show your hot leads (heat score 70+) with direct Call, Text, and Email links. A floating action bar at the bottom-right provides quick access to common actions.
+
+### 2.9 Recent Activity Feed
+
+A real-time chronological log of leads, open house events, integrations, and webhooks. Leads display heat score badges (HOT/WARM/COLD). Times are shown relative (Just now, 5m ago, 1h ago, 3d ago).
+
+### 2.10 Sync Health
+
+Shows the connection status of your calendar integrations (Google Calendar, Outlook, CRM) with last sync timestamps. Green = connected, amber = warning, red = error.`,
   },
   {
     id: "broker-dashboard",
@@ -152,114 +175,266 @@ The Broker Dashboard provides advanced analytics and management tools designed f
 To upgrade, navigate to **Billing** and select the Brokerage Growth plan.`,
   },
   {
+    id: "calendar",
+    title: "4. Calendar",
+    content: `## 4. Calendar
+
+The Calendar provides a unified view of all your events across connected calendar systems.
+
+### 4.1 Calendar Integrations
+
+The Calendar supports three external sources plus local events:
+
+- **Google Calendar** (blue dot) -- Connect via OAuth on the Integrations page
+- **Microsoft/Outlook Calendar** (green dot) -- Connect via OAuth on the Integrations page
+- **GHL/CRM Calendar** (purple dot) -- Connect via GHL API key on the Integrations page
+- **Local Calendar** (gray dot) -- Events created directly in the app
+
+### 4.2 Views and Navigation
+
+Toggle between Month, Week, and Day views. Use the navigation arrows to move between date ranges. The current date is always highlighted.
+
+### 4.3 Managing Events
+
+1. Click **Create Event** to open the event form.
+2. Enter a title, description, location, date/time range, and optionally toggle all-day.
+3. Select which calendar to create the event in.
+4. Add attendees if needed.
+5. Click **Save** to create the event.
+
+You can also click on any existing event to edit or delete it.
+
+### 4.4 Two-Way Sync
+
+Changes made in The Real Estate Genie sync back to your connected calendars, and vice versa. The sync engine handles conflict resolution: app edits win by default, except for GHL booked meetings (from online booking pages), which always take precedence.
+
+Use the **Sync** button to force a full sync across all connected sources.
+
+### 4.5 Source Filtering
+
+Use the source toggles to show or hide events from specific calendars. Each event displays a colored dot indicating its source.`,
+  },
+  {
     id: "mls",
-    title: "4. MLS",
-    content: `## 4. MLS (Multiple Listing Service)
+    title: "5. MLS",
+    content: `## 5. MLS (Multiple Listing Service)
 
-The MLS section allows you to search and browse real estate listings powered by Trestle by CoreLogic.
+The MLS section provides 6 tabs for working with MLS data, powered by HiCentral MLS via Trestle by CoreLogic.
 
-### 4.1 Prerequisites
+### 5.1 Prerequisites
 
-To use MLS features, your account must have Trestle (CoreLogic) credentials configured. This integration is set up by a platform administrator under **Integrations**. If you do not see MLS data, contact your administrator to verify that Trestle credentials are properly configured.
+Your account must have Trestle (CoreLogic) credentials configured. This is set up by a platform administrator under **Integrations**. If you do not see MLS data, contact your administrator.
 
-### 4.2 Searching Listings
+### 5.2 MLS Search (Tab 1)
 
 1. Navigate to **MLS** from the main navigation.
-2. Use the search bar and filters to find properties by location, price range, property type, bedrooms, bathrooms, and other criteria.
-3. Click on any listing to view detailed property information, photos, and listing history.
-4. From a listing detail view, you can add the property to an Analyzer for investment analysis or add associated contacts to your Leads.`,
+2. Search by zip code, city, address, or building/condo name (e.g., "Park Lane", "The Century").
+3. Filter by: Status (Active, Pending, Closed, Expired, Withdrawn, Canceled), property type, price range, beds/baths, Days on Market, 27 property feature badges, and a rental toggle.
+4. Listings display color-coded badges: blue **New** (on market < 7 days), purple **Back on Market**, green **Price Down**, red **Price Up**.
+5. Click any listing to open the full Property Detail Modal with all tabs.
+
+**My Listings** sub-tab shows your own active listings with MLS sync status.
+
+**AI Tools**: Generate AI-powered listing descriptions (multiple tones) and social media content (Instagram, Facebook, LinkedIn, TikTok) with captions, hashtags, and video scripts.
+
+### 5.3 Market Watch (Tab 2)
+
+Market Watch monitors market activity for a specific zip code or area.
+
+1. Enter a zip code and select a timeframe (24 hours, 7 days, 30 days, or 90 days).
+2. Toggle between **Map View** (Google Maps with color-coded markers) and **Hot Sheet View** (sortable spreadsheet).
+3. Filter by status badges: Active, Pending, Closed, New, Back on Market, Price Increase, Price Decrease.
+4. Map markers are color-coded by status and shaped by property type (circle = residential, diamond = condo, triangle = land).
+5. Click any listing for full details.
+
+### 5.4 CMA (Tab 3)
+
+Generate a Comparative Market Analysis for any property.
+
+1. Enter the subject property details: address, city, postal code, list price, beds, baths, sqft, year built, property type.
+2. The system pulls comparable sales from MLS (Active, Pending, Closed within the same area, last 6 months).
+3. If MLS data is limited, it automatically falls back to RentCast and Realie AVM.
+4. Review: total/active/pending/sold comp counts, average and median prices, price per sqft, average DOM, suggested price range, list-to-sale ratio.
+5. Each comp is scored for correlation to the subject property.
+6. Save CMA reports for future reference.
+
+### 5.5 Lead Matches (Tab 4)
+
+Automatically matches your pipeline leads to active MLS listings based on their criteria (neighborhoods, must-haves, timeline, financing). Each match is scored 0-100 with match reasons. Top 5 matches per lead. Matches can be saved and tracked (new/sent/viewed/dismissed).
+
+### 5.6 OH Sync (Tab 5)
+
+Two-way open house synchronization between MLS and your local database. Pull upcoming open houses from MLS as draft events. Track which local events have been synced to MLS. Prevents duplicate imports via MLS key tracking.
+
+### 5.7 Investment (Tab 6)
+
+Multi-unit property analysis with per-unit breakdown (type, beds/baths, actual rent, pro forma rent). Calculates total units, monthly rent, and average rent. Auto-fills BRRRR and Flip analyzers from the investment data.`,
   },
   {
     id: "pipeline",
-    title: "5. Pipeline",
-    content: `## 5. Pipeline
+    title: "6. Pipeline",
+    content: `## 6. Pipeline
 
 The Pipeline provides a visual, Kanban-style board for managing your deal flow from initial lead to closing.
 
-### 5.1 Understanding Pipeline Stages
+### 6.1 Pipeline Stages
 
-Your pipeline consists of configurable stages that represent the steps in your deal process. You can customize stage names and order to match your workflow. Typical stages might include: New Lead, Initial Contact, Showing Scheduled, Offer Made, Under Contract, and Closed.
+Your pipeline has 11 stages, each with a unique color:
+1. New Lead
+2. Initial Contact
+3. Qualification
+4. Initial Consultation
+5. Property Search / Listing Prep
+6. Open Houses & Tours
+7. Offer & Negotiation
+8. Under Contract / Escrow
+9. Closing Coordination
+10. Closed & Follow-up
+11. Review Request
 
-### 5.2 Managing Deals
+### 6.2 Managing Deals
 
 1. Navigate to **Pipeline** from the main navigation.
 2. Drag and drop deal cards between stages to update their status.
-3. Click on a deal card to view details, add notes, or update information.
-4. Create new deals manually by clicking the **Add Deal** button.
+3. Click on a deal card to view details: contact info, notes history, conversation history, and action buttons.
+4. From the detail modal, you can draft emails, create tasks, advance to the next stage, or mark as lost.
+5. Use the pipeline dropdown to switch between multiple pipelines.
 
-### 5.3 CRM Sync
+### 6.3 CRM Sync
 
-If you have connected the CRM integration, your pipeline stages can be mapped to CRM pipeline stages. Leads will automatically move through stages as activities occur (such as emails or SMS being sent). See the **Integrations** section for CRM setup instructions.`,
+If you have connected the GHL integration, your pipeline maps to CRM pipeline stages. Leads automatically advance when emails or SMS are sent. See the **Integrations** section for setup. A local pipeline is also available for agents without CRM.
+
+### 6.4 Tasks
+
+The Tasks page provides full task management:
+- **Tabs**: All, Overdue, Today, Upcoming, Completed
+- **Task Fields**: Title, description, priority (Urgent/High/Medium/Low), due date/time, type (General/Follow-Up/Call/Email/Meeting/Showing/Document/Closing), recurrence (Daily/Weekly/Bi-weekly/Monthly/Quarterly)
+- **Entity Linking**: Link tasks to a Lead, Contact, Open House, or Transaction
+- **Actions**: Mark complete, snooze (tomorrow/next week/2 weeks/custom), bulk operations (complete, snooze, delete)
+- **Export**: CSV or PDF`,
   },
   {
     id: "open-houses",
-    title: "6. Open Houses",
-    content: `## 6. Open Houses
+    title: "7. Open Houses",
+    content: `## 7. Open Houses
 
-The Open Houses section helps you create, manage, and track open house events with built-in lead capture.
+The Open Houses section provides complete open house lifecycle management with built-in lead capture.
 
-### 6.1 Creating an Open House Event
+### 7.1 Creating an Open House
 
-1. Navigate to **Open Houses** from the main navigation.
-2. Click **Create Open House**.
-3. Enter the property address, date, start time, and end time.
-4. Add any additional details such as notes or special instructions.
-5. Click **Save** to create the event.
+1. Navigate to **Open Houses** and click **Create Open House**.
+2. **Choose Event Type**: Sales (buyer check-in), Rental Showing (rental application), or Both.
+3. **Import from MLS** (recommended): Search by MLS Number or by Address. Select from results -- the system auto-fills address, beds, baths, sqft, price, description, key features, photos, and location.
+4. Set start and end date/time.
+5. Click **Save** to create the event as a draft.
 
-### 6.2 Lead Check-In
+### 7.2 Choose a Flyer Template
 
-During an open house, attendees can check in using the public registration page. This page is accessible at a unique URL you can share (the format is realestategenie.app/oh). The check-in process captures attendee information and consent, automatically creating new leads in your system.
+On the event detail page, select a flyer template:
+- **Modern** -- Clean default layout
+- **Modern Blue** -- Blue-themed with hero and secondary image slots
+- **Elegant Warm** -- Warm tones with three image positions
 
-### 6.3 Consent Capture
+Each template has custom color swatches. Upload photos for each image slot (JPEG, PNG, WebP, max 5MB).
 
-The Real Estate Genie includes built-in consent capture during lead check-in. Attendees acknowledge how their information will be used, helping you maintain compliance with data privacy regulations.
+### 7.3 Edit Property Details
 
-### 6.4 Webhook Events
+Click **Edit Property Details** to update: address, beds, baths, sqft, price, listing description, key features, and photos (primary, secondary, tertiary). These details appear on the flyer and the check-in page.
 
-When you publish an open house event, it triggers webhook events that can be used with n8n automation workflows. Events include **Open House Published** and **Open House Ended**. See the **Integrations** section for webhook configuration.`,
+### 7.4 Download Flyer
+
+Click **Download Flyer** to generate a branded PDF containing:
+- Your name, license number, phone, headshot, and company logo
+- Property photos, address, date/time
+- Beds, baths, sqft, price, key features, and description
+- A map showing the property location
+- A QR code for guest check-in
+
+### 7.5 Displaying the Flyer and Guest Registration
+
+1. Print the flyer and display it at the property entrance.
+2. Visitors scan the QR code with their phone camera.
+3. The QR code links to a secure registration page (token expires after 72 hours).
+4. The check-in page only works when the event status is **Published** -- change the status from Draft to Published before the event.
+
+### 7.6 What the Registration Page Asks Guests
+
+1. **Contact Info** (required): Name, Email, Phone, Consent checkboxes (email + SMS)
+2. **Representation**: "Do you currently have a realtor?" -- Yes (show realtor name field) / No / Unsure
+3. **If not represented**: "Would you like the agent to reach out?"
+4. **Buyer Qualification**: Timeline (0-3 months / 3-6 months / 6+ months / Just browsing), Financing (Pre-approved / Cash / Need a lender / Not sure), Neighborhoods interested in, Must-haves
+
+Upon submission, the guest is automatically scored (0-100 heat score), entered into the pipeline, and synced to CRM if connected.
+
+### 7.7 Attendees and Scorecard
+
+- **Attendees** tab lists all captured leads with name, email, phone, sign-in time, representation status, timeline, and financing. Export to CSV.
+- **Scorecard** shows performance metrics: sign-ins captured, contacted within 5 minutes (%), represented by realtor (%), looking for agent (%). An overall performance score (0-100) combines these metrics. Track which leads you have contacted and your response time.`,
   },
   {
     id: "leads",
-    title: "7. Leads",
-    content: `## 7. Leads
+    title: "8. Leads",
+    content: `## 8. Leads
 
-The Leads section is your central hub for managing incoming prospects and nurturing them through your sales process.
+The Leads section manages prospects automatically captured from open house QR check-ins, Zillow webhooks, and other sources.
 
-### 7.1 Managing Leads
+### 8.1 Dashboard and Charts
 
-View, filter, and sort your leads from the Leads page. Each lead record includes contact information, source, status, Heat Score, and activity history.
+The Leads page opens with interactive charts: Leads by Source (Open House, Zillow, Google, Facebook, etc.), Leads by Event, Heat Score Distribution, Pipeline Stage Breakdown, Leads Over Time (weekly), and Buyer Readiness.
 
-### 7.2 Heat Scoring
+### 8.2 Lead List
 
-Every lead is assigned a Heat Score from 0 to 100 based on their engagement and likelihood to convert:
+Leads are organized into tabs: **Hot** (80+), **Warm** (50-79), **Cold** (<50), and **DNC** (Do Not Contact -- already has an agent). Each lead shows: Name, Contact buttons (Call/Text/Email), Property, Heat Score, Timeline, and Date. Export to PDF or XLSX.
 
-- **Hot Leads (80\u2013100)** — High priority. These leads show strong buying signals and should be contacted immediately.
-- **Warm Leads (50\u201379)** — Moderate engagement. Follow up with these leads regularly.
-- **Cool Leads (20\u201349)** — Low engagement. Continue nurturing through automated campaigns.
-- **Cold Leads (0\u201319)** — Minimal engagement. Consider re-engagement strategies or archiving.
+### 8.3 Heat Scoring
 
-### 7.3 CRM Sync and Webhooks
+Every lead is automatically scored from 0 to 100 at check-in based on:
+- **Contact Info** (30 pts): Email (10) + Phone (10) + Email consent (5) + SMS consent (5)
+- **Representation** (20 pts): No agent (20), Unsure (10), Has agent (5)
+- **Agent Reach Out** (15 pts): Opted in to be contacted
+- **Timeline** (20 pts): 0-3 months (20), 3-6 months (15), 6+ months (10), Just browsing (5)
+- **Financing** (15 pts): Pre-approved/Cash (15), Needs lender (10), Not sure (5)
+- **Specificity** (10 pts): Neighborhoods mentioned (5) + Must-haves mentioned (5)
+- Multiple visits to the same property boost the score to 100 (RED HOT).
 
-When a lead is submitted, it triggers CRM sync (if connected) and n8n webhook events. Hot leads (score \u2265 80) trigger a separate **Hot Lead** webhook event, enabling you to set up special automation for high-priority prospects.
+### 8.4 DNC (Do Not Contact)
 
-### 7.4 Consent Tracking
+Leads who indicate they already have a realtor are automatically classified as DNC (gray). These leads should not be solicited.
 
-The Real Estate Genie tracks consent status for each lead. When a lead provides consent during open house check-in or other capture forms, it is recorded and visible on the lead record. A **Consent Captured** webhook event is also triggered.`,
+### 8.5 CRM Sync
+
+When a lead is submitted, it syncs to GoHighLevel CRM (if connected) and triggers webhook events. Hot leads (80+) trigger a separate Hot Lead webhook. Leads can be advanced through pipeline stages manually or automatically when communication occurs.`,
   },
   {
     id: "contacts",
-    title: "8. Contacts",
-    content: `## 8. Contacts
+    title: "9. Contacts",
+    content: `## 9. Contacts
 
-The Contacts section serves as your contact relationship management tool within The Real Estate Genie.
+The Contacts section manages your CRM contacts synced from GoHighLevel. Note: Contacts are different from Leads -- Leads are auto-captured from open house check-ins, while Contacts are synced from your CRM.
 
-### 8.1 Managing Contacts
+### 9.1 Contact List
 
-Add, edit, and organize your professional contacts. Each contact record can include name, email, phone number, address, and custom notes.
+Contacts are alphabetically grouped and searchable (with debounced search). Each contact shows: Name, Email, Phone, Location (City/State), and Tags (displayed as badges).
 
-### 8.2 CRM Sync
+### 9.2 Actions
 
-If the CRM integration is connected, your contacts will sync bidirectionally. Changes made in The Real Estate Genie are reflected in your CRM, and vice versa. This ensures your contact database is always up to date across both platforms.`,
+Each contact has Call, Text, and Email action buttons. Click a contact to view their full detail page with history and notes from GHL.
+
+### 9.3 Adding Contacts
+
+Click **Add Contact** to manually create a contact (first name, last name, email, phone, address). New contacts sync to GoHighLevel automatically.
+
+### 9.4 Bulk Operations
+
+Select multiple contacts using checkboxes, then send bulk Email or SMS messages. Track sent/failed counts.
+
+### 9.5 Export
+
+Export your contacts to PDF or XLSX with columns: Name, Email, Phone, City, Tags.
+
+### 9.6 CRM Requirement
+
+The Contacts page requires GoHighLevel integration. If not connected, a warning banner appears with a link to the Integrations page.`,
   },
   {
     id: "analyzers",
@@ -415,38 +590,154 @@ Analyze the financial performance of a rental property investment.
 1. Navigate to **Analyzers > Rental Property Calculator**.
 2. Enter the purchase price, financing details, monthly rental income, and operating expenses.
 3. Review all key financial metrics.
-4. Use the DSCR to assess whether the property generates sufficient income to cover debt service.`,
+4. Use the DSCR to assess whether the property generates sufficient income to cover debt service.
+
+### 9.13 Short-Term Rental (STR) Analyzer
+
+Analyze Airbnb/VRBO investment potential with Hawaii-specific tax calculations.
+
+**Key Features:** Nightly rate and occupancy modeling, Hawaii GET (4.712%) and TAT (10.25%) tax calculations, monthly and yearly cash flow projections, expense breakdown charts, multi-year revenue projections.
+
+**How to Use:**
+1. Navigate to **Analyzers > STR Analyzer**.
+2. Enter the nightly rate, expected occupancy rate, cleaning fees per turnover, and property expenses.
+3. Review monthly and annual cash flow with Hawaii-specific tax deductions.
+4. View charts showing revenue projections and expense breakdowns.
+
+### 9.14 Shared Features
+
+All calculators share these capabilities:
+- **MLS Auto-Import**: One-click data pull from MLS listings (address, purchase price, taxes, insurance)
+- **Export**: Excel (.xlsx) and PDF with professional formatting and agent branding
+- **Email Sharing**: Send results directly to a client contact
+- **Save/Load**: Complex analyses (Investment, Flip, BRRRR, 1031) persist in the database for future reference
+- **Charts**: Pie charts (expense breakdown), line charts (cash flow projections), bar charts (deal scoring)`,
   },
   {
     id: "reports",
-    title: "10. Reports",
-    content: `## 10. Reports
+    title: "13. Reports",
+    content: `## 13. Reports
 
-The Reports section provides reporting and analytics tools to help you track and analyze your real estate business performance.
+The Reports section provides comprehensive analytics organized by role and category. All reports support PDF export, Excel export, and print-friendly format.
 
-Access **Reports** from the main navigation to view dashboards covering your lead conversion rates, deal pipeline velocity, revenue projections, and other key performance indicators. Use date range filters to analyze specific periods and identify trends in your business.`,
+### 13.1 Market Statistics (Red)
+
+- **Oahu Annual Resales**: 40 years of residential sales data with line/bar/area charts
+- **Oahu Monthly Report**: SF & condo sales, median prices, DOM, pending inventory, YoY comparisons
+- **Maui Monthly**, **Hawaii Island Monthly**, **Kauai Monthly**: Island-specific market data
+- **Statewide Comparison**: Official Hawaii Realtors stats across all four counties
+- **York & Adams Counties, PA**: RAYAC monthly data with school district breakdowns
+
+### 13.2 Solo Agent Reports (Blue)
+
+- **Lead Source ROI**: Conversion rates and cost-per-closing by lead source
+- **Pipeline Velocity**: Days per pipeline stage, deal bottleneck identification
+- **Tax & Savings Reserve**: Gross commission vs. tax/expense reserves
+- **Speed-to-Lead Audit**: Average response time to portal leads
+
+### 13.3 Small Teams Reports (Purple)
+
+- **Agent Leaderboard**: Activity vs. results with radar chart comparison
+- **Lead Assignment Fairness**: Per-member leads and conversion rates
+- **Team Commission Split Tracker**: House vs. agent portions
+- **Listing Inventory Health**: Active listings, DOM, price adjustment alerts for 21+ DOM
+
+### 13.4 Brokerage Reports (Green)
+
+- **Company Dollar**: Revenue after commissions and expenses
+- **Compliance & Audit Log**: Signed documents, ID verifications, wire confirmations
+- **Brokerage Market Share**: Rank by zip code vs. Big Box brands
+- **Agent Retention Risk**: AI flags for agents with 40%+ activity drop over 30 days
+
+### 13.5 Assistants & Office Admin (Orange)
+
+- **Pending Document Checklist**: Under-contract deals missing required signatures/forms`,
+  },
+  {
+    id: "property-intel",
+    title: "11. Property Intel & Prospecting",
+    content: `## 11. Property Intel & Prospecting
+
+The Property Intel page provides comprehensive property intelligence and 6 specialized prospecting tools.
+
+### 11.1 Property Search (3 Methods)
+
+1. **By Address**: Enter a street address for an exact property lookup.
+2. **By Zip Code**: Enter a zip code to browse all properties in that area.
+3. **By Lat/Lng + Radius**: Enter latitude, longitude, and radius in miles.
+
+Apply filters: property type, beds/baths, year built, sqft, lot size, AVM value, sale amount, assessed value, absentee owner toggle, sale date range.
+
+### 11.2 Property Detail Modal
+
+Click any property to open the full intelligence report with tabs:
+- **Opportunity Score** (first tab when seller data is present): Scoring breakdown with AI-generated outreach suggestions
+- **Overview**: Address, beds/baths/sqft, year built, property type, lot size, owner info
+- **Building**: Construction details, rooms, parking, utilities, interior features
+- **Financial**: AVM with reliability check, assessment, tax, mortgage, equity, LTV, rental AVM, cap rate, gross yield
+- **Sales History**: Historical transactions with dates, amounts, buyer/seller names, deed type
+- **Comps**: Comparable sales with correlation scoring
+- **Ownership**: County deed owner (green badge), co-owners, corporate/trust status, absentee, mailing address
+- **Neighborhood**: Demographics, schools (with zones), crime, POIs, walk score
+- **Market Stats**: Median price, avg DOM, active listings, price/sqft, median rent
+- **Federal/GIS**: School attendance zones, FEMA hazard ratings, flood/tsunami/fire zones, opportunity zones
+
+The AVM Reliability Check compares the automated valuation to county assessment and recent sales. If the difference exceeds 30%, the AVM is suppressed and the county assessment is shown instead.
+
+### 11.3 Prospecting (6 Search Types)
+
+1. **Absentee Owners**: Finds owners not living at the property. Best targets: 15+ years owned, out-of-state mailing address.
+2. **High Equity**: Finds owners with significant equity (AVM - mortgage). Focus on 70%+ equity with long ownership.
+3. **Pre-Foreclosure/Distressed**: Properties showing distress signals (underwater, high LTV, assessment drops). Be sensitive -- position as someone who can help.
+4. **Just Sold (Farming)**: Recent closed sales (last 6 months) + all neighboring homes within 0.5 miles for postcard campaigns.
+5. **Investor Portfolios**: Multi-property owners grouped by name. Approach with investment messaging (cap rates, 1031 exchanges, ROI).
+6. **DOM Prospecting**: Stale, expired, and withdrawn listings tiered by DOM ratio (Red/Orange/Charcoal/Green). Only contact expired/withdrawn listings -- never solicit active listings.
+
+Each search includes AI-powered prospect analysis with scoring, tier assignment, outreach drafts (letters, emails, SMS, talking points), and CSV/PDF export.`,
   },
   {
     id: "neighborhoods",
-    title: "11. Neighborhood Profiles",
-    content: `## 11. Neighborhood Profiles
+    title: "12. Neighborhood Profiles",
+    content: `## 12. Neighborhood Profiles
 
-The Neighborhoods section provides detailed profiles with demographic and market data for areas you serve.
+Generate AI-powered neighborhood profiles for marketing materials and client presentations.
 
-### 11.1 What You Can Find
-
-- Population demographics and household statistics
-- Median home values and price trends
-- School ratings and nearby amenities
-- Market activity and inventory levels
-- Employment and income data
-
-### 11.2 How to Use
+### 12.1 Creating a Profile
 
 1. Navigate to **Neighborhoods** from the main navigation.
-2. Search for a neighborhood by name, ZIP code, or city.
-3. Review the neighborhood profile including demographics, market data, and local statistics.
-4. Use this data to advise clients, prepare CMAs, and identify emerging markets.`,
+2. Enter: neighborhood name, address, city, state, and optionally architectural style, nearby amenities, and additional context.
+3. Click **Generate** to create the profile using AI (GPT-4).
+
+### 12.2 Profile Sections
+
+1. **Lifestyle & Vibe**: Character description, walkability, community feel
+2. **Location Intelligence**: Proximity to transit, commute corridors, accessibility
+3. **Market Pulse** (optional): Median price, days on market, active inventory, price per sqft
+4. **Community Resources**: Schools with district info, safety/law enforcement disclaimer
+5. **Local Amenities**: Parks, shopping, dining organized by type
+
+### 12.3 Data Sources
+
+Profiles pull from: NCES schools, FBI crime, FEMA/USGS hazards, OpenStreetMap POI, FRED sales trends, Hawaii GIS school zones, and Census demographics. School data is cached for 1 year (refreshes August 1).
+
+### 12.4 Fair Housing Compliance
+
+Every profile includes a built-in Fair Housing Act compliance check that validates no discriminatory language is present.
+
+### 12.5 Export
+
+Export profiles as a professional multi-page PDF (10-12 pages) or Word/DOCX. The PDF includes:
+- **Cover page** with map, neighborhood name, and your agent branding (headshot, name, license, brokerage logo)
+- **Housing Facts & Stats** comparison table (ZIP vs. County vs. State vs. USA) with median home value, income, population, own/rent percentages
+- **Market Trends** with market type indicator (Seller's/Balanced/Buyer's Market), key stats cards
+- **People Facts & Demographics** with education levels, age distribution, income brackets, and occupational categories as horizontal bar charts
+- **Economy** with commute time distribution and income comparisons
+- **Schools** listing with enrollment, student-teacher ratio
+- **Lifestyle & Community** AI-generated narrative content
+- **Local Amenities** organized by category
+- Consistent headers, footers, and page numbers throughout
+
+Census data is automatically fetched from the ACS 5-year survey at 4 geographic levels when you export the PDF.`,
   },
   {
     id: "integrations",
@@ -544,37 +835,76 @@ The following integrations are available only to platform administrators and are
   },
   {
     id: "seller-map",
-    title: "15. Seller Opportunity Map",
-    content: `## 15. Seller Opportunity Map
+    title: "14. Seller Opportunity Map",
+    content: `## 14. Seller Opportunity Map
 
-The Seller Opportunity Map is an interactive, map-based prospecting tool that uses predictive analytics to identify likely sellers in your market.
+The Seller Opportunity Map is an interactive, map-based prospecting tool that uses predictive analytics to identify likely sellers.
 
-### 15.1 Predictive Seller Scoring
+### 14.1 Searching
 
-Each property is assigned a Predictive Seller Score (0\u2013100) based on multiple data signals:
+Search by: zip code, latitude/longitude + radius (up to 50 miles), or TMK (Tax Map Key) for Hawaii parcels.
 
-- Equity level
-- Length of ownership
-- Absentee owner status
-- Multiple property ownership
-- Distress signals
-- Recent property transfers
-- Tax delinquency
+### 14.2 Seller Motivation Score (0-100)
 
-**Score Levels:**
-- **Very Likely** \u2014 High score, strong indicators of motivation to sell.
-- **Likely** \u2014 Moderate indicators.
-- **Possible** \u2014 Some indicators present.
-- **Unlikely** \u2014 Few or no indicators.
+Each property is scored across 12 dimensions:
+- High equity (15pts), Long ownership (15pts), Absentee owner (12pts), Distress signals (12pts)
+- Multi-property portfolio (8pts), Transfer recency (8pts), Owner type (6pts)
+- Tax assessment gap (5pts), Market trend (5pts), Tax trend (5pts), Appreciation (5pts), HOA burden (4pts)
 
-### 15.2 Map Features
+Scores are normalized based on available data (missing data excluded from the denominator).
 
-- Interactive map with property markers and heat map overlay
-- Search by zip code or TMK (Tax Map Key) number
-- Filter by score range, property type, equity level, and absentee status
-- Hawaii-specific: TMK parcel boundary overlay via ArcGIS
-- One-click actions: Add to CRM, Generate Report, Draft Outreach
-- Saved searches for repeated prospecting`,
+**Score Levels:** Very Likely (70-100) red, Likely (50-69) orange, Possible (30-49) yellow, Unlikely (0-29) blue
+
+### 14.3 Map Features
+
+- Color-coded property markers by motivation score
+- Heat map layer showing density of high-motivation sellers
+- ZIP code boundary overlay (clickable for search)
+- TMK parcel boundary overlay (Hawaii) via ArcGIS
+- Streets and satellite imagery toggle
+- Auto-search on pan/zoom (debounced 600ms)
+
+### 14.4 Filters
+
+Min motivation score (default 40), absentee-only toggle, min ownership years, min equity %, property type, min parcels owned.
+
+### 14.5 Property Details and Outreach
+
+Click any property to open the full Property Detail Modal with the Opportunity Score tab first. This shows the scoring breakdown, AI-generated outreach suggestions (letters, emails, SMS, talking points), and all standard property tabs.
+
+### 14.6 Saved Searches
+
+Save search parameters with a custom name for quick reload. Search results are cached globally for 7 days.`,
+  },
+  {
+    id: "farm-watchdog",
+    title: "15. Farm & Watchdog",
+    content: `## 15. Farm & Watchdog
+
+The Farm & Watchdog page lets you monitor geographic areas and set up automated alerts for market changes.
+
+### 15.1 Creating a Farm Area
+
+1. Navigate to **Farm** from the main navigation.
+2. Click **Create Farm Area**.
+3. Define the area by: zip code, radius (lat/lng), or TMK prefix.
+4. Set property filters: price range, bedrooms, property types, listing statuses.
+5. Save the farm area with a custom name.
+
+### 15.2 Farm Listings
+
+Each farm area shows live MLS listings matching your criteria. Sort by: Days on Market, price ascending/descending, or price drop percentage. View full property details including agent info, photos, and virtual tour links.
+
+### 15.3 Watchdog Rules
+
+Create automated alert rules for each farm area:
+- **DOM Threshold**: Alert when listings exceed a specified number of days on market
+- **Price Drop Monitoring**: Track price reductions with percentage calculations
+- **Status Changes**: New listings, expirations, withdrawals
+
+### 15.4 Notifications
+
+Configure multi-channel alerts: push notifications, email, and SMS. Alert statuses track as unread, read, or archived. A background cron job (MLS Watchdog) periodically checks your monitored properties and generates alerts on changes.`,
   },
   {
     id: "billing",

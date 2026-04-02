@@ -61,6 +61,7 @@ interface Property {
   LeaseAmount?: number;
   LeaseExpiration?: string;
   LeaseAmountFrequency?: string;
+  BackOnMarketDate?: string;
 }
 
 interface GHLContact {
@@ -72,7 +73,7 @@ interface GHLContact {
   phone?: string;
 }
 
-const STATUS_OPTIONS = ["Active", "Pending", "Closed"] as const;
+const STATUS_OPTIONS = ["Active", "Pending", "Closed", "Expired", "Withdrawn", "Canceled"] as const;
 const PROPERTY_TYPES = ["Residential", "Residential Income", "Commercial", "Land", "Farm"] as const;
 
 const PROPERTY_FEATURES = [
@@ -577,6 +578,19 @@ export default function MLSClient() {
     }
   };
 
+  // Compute listing badge flags
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+  const isNewListing = (p: Property) =>
+    p.StandardStatus === "Active" && p.OnMarketDate && new Date(p.OnMarketDate) >= sevenDaysAgo;
+
+  const isBackOnMarket = (p: Property) =>
+    p.StandardStatus === "Active" && !!p.BackOnMarketDate;
+
+  const isPriceChange = (p: Property) =>
+    p.OriginalListPrice && p.ListPrice && p.ListPrice !== p.OriginalListPrice;
+
   // Open send-to-contact modal
   const openSendModal = (property: Property, mode: "email" | "attach") => {
     setSendProperty(property);
@@ -829,7 +843,8 @@ export default function MLSClient() {
                       </option>
                     ))}
                     <option value="Active,Pending">Active & Pending</option>
-                    <option value="Active,Pending,Closed">All</option>
+                    <option value="Active,Pending,Closed">Active, Pending & Closed</option>
+                    <option value="Active,Pending,Closed,Expired,Withdrawn,Canceled">All</option>
                   </select>
                 </div>
                 <div>
@@ -1036,21 +1051,30 @@ export default function MLSClient() {
                                 No Photo Available
                               </div>
                             )}
-                            <span
-                              style={{
-                                position: "absolute",
-                                top: 10,
-                                left: 10,
-                                padding: "4px 10px",
-                                background: statusColor.bg,
-                                color: statusColor.text,
-                                borderRadius: 6,
-                                fontSize: 12,
-                                fontWeight: 600,
-                              }}
-                            >
-                              {property.StandardStatus}
-                            </span>
+                            <div style={{ position: "absolute", top: 10, left: 10, display: "flex", gap: 4, flexWrap: "wrap" }}>
+                              <span
+                                style={{
+                                  padding: "4px 10px",
+                                  background: statusColor.bg,
+                                  color: statusColor.text,
+                                  borderRadius: 6,
+                                  fontSize: 12,
+                                  fontWeight: 600,
+                                }}
+                              >
+                                {property.StandardStatus}
+                              </span>
+                              {isNewListing(property) && (
+                                <span style={{ padding: "4px 10px", background: "#dbeafe", color: "#1d4ed8", borderRadius: 6, fontSize: 12, fontWeight: 600 }}>
+                                  New
+                                </span>
+                              )}
+                              {isBackOnMarket(property) && (
+                                <span style={{ padding: "4px 10px", background: "#fae8ff", color: "#9333ea", borderRadius: 6, fontSize: 12, fontWeight: 600 }}>
+                                  Back on Market
+                                </span>
+                              )}
+                            </div>
                           </div>
                           <div style={{ padding: 16 }}>
                             <div style={{ fontSize: 22, fontWeight: 700, color: "#111827", marginBottom: 4 }}>
@@ -1261,22 +1285,41 @@ export default function MLSClient() {
                           No Photo Available
                         </div>
                       )}
-                      {/* Status badge */}
-                      <span
-                        style={{
-                          position: "absolute",
-                          top: 10,
-                          left: 10,
-                          padding: "4px 10px",
-                          background: statusColor.bg,
-                          color: statusColor.text,
-                          borderRadius: 6,
-                          fontSize: 12,
-                          fontWeight: 600,
-                        }}
-                      >
-                        {property.StandardStatus}
-                      </span>
+                      {/* Status badge + special badges */}
+                      <div style={{ position: "absolute", top: 10, left: 10, display: "flex", gap: 4, flexWrap: "wrap" }}>
+                        <span
+                          style={{
+                            padding: "4px 10px",
+                            background: statusColor.bg,
+                            color: statusColor.text,
+                            borderRadius: 6,
+                            fontSize: 12,
+                            fontWeight: 600,
+                          }}
+                        >
+                          {property.StandardStatus}
+                        </span>
+                        {isNewListing(property) && (
+                          <span style={{ padding: "4px 10px", background: "#dbeafe", color: "#1d4ed8", borderRadius: 6, fontSize: 12, fontWeight: 600 }}>
+                            New
+                          </span>
+                        )}
+                        {isBackOnMarket(property) && (
+                          <span style={{ padding: "4px 10px", background: "#fae8ff", color: "#9333ea", borderRadius: 6, fontSize: 12, fontWeight: 600 }}>
+                            Back on Market
+                          </span>
+                        )}
+                        {isPriceChange(property) && (
+                          <span style={{
+                            padding: "4px 10px",
+                            background: property.ListPrice! > property.OriginalListPrice! ? "#fee2e2" : "#dcfce7",
+                            color: property.ListPrice! > property.OriginalListPrice! ? "#dc2626" : "#16a34a",
+                            borderRadius: 6, fontSize: 12, fontWeight: 600,
+                          }}>
+                            {property.ListPrice! > property.OriginalListPrice! ? "Price Up" : "Price Down"}
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     {/* Details */}
@@ -2893,24 +2936,44 @@ export default function MLSClient() {
                 </button>
               </div>
 
-              {/* Status badge */}
+              {/* Status badge + special badges */}
               {(() => {
                 const statusColor = getStatusColor(selectedProperty.StandardStatus);
                 return (
-                  <span
-                    style={{
-                      display: "inline-block",
-                      padding: "4px 12px",
-                      background: statusColor.bg,
-                      color: statusColor.text,
-                      borderRadius: 6,
-                      fontSize: 13,
-                      fontWeight: 600,
-                      marginBottom: 16,
-                    }}
-                  >
-                    {selectedProperty.StandardStatus}
-                  </span>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
+                    <span
+                      style={{
+                        display: "inline-block",
+                        padding: "4px 12px",
+                        background: statusColor.bg,
+                        color: statusColor.text,
+                        borderRadius: 6,
+                        fontSize: 13,
+                        fontWeight: 600,
+                      }}
+                    >
+                      {selectedProperty.StandardStatus}
+                    </span>
+                    {isNewListing(selectedProperty) && (
+                      <span style={{ display: "inline-block", padding: "4px 12px", background: "#dbeafe", color: "#1d4ed8", borderRadius: 6, fontSize: 13, fontWeight: 600 }}>
+                        New
+                      </span>
+                    )}
+                    {isBackOnMarket(selectedProperty) && (
+                      <span style={{ display: "inline-block", padding: "4px 12px", background: "#fae8ff", color: "#9333ea", borderRadius: 6, fontSize: 13, fontWeight: 600 }}>
+                        Back on Market
+                      </span>
+                    )}
+                    {isPriceChange(selectedProperty) && (
+                      <span style={{
+                        display: "inline-block", padding: "4px 12px", borderRadius: 6, fontSize: 13, fontWeight: 600,
+                        background: selectedProperty.ListPrice! > selectedProperty.OriginalListPrice! ? "#fee2e2" : "#dcfce7",
+                        color: selectedProperty.ListPrice! > selectedProperty.OriginalListPrice! ? "#dc2626" : "#16a34a",
+                      }}>
+                        {selectedProperty.ListPrice! > selectedProperty.OriginalListPrice! ? "Price Up" : "Price Down"}
+                      </span>
+                    )}
+                  </div>
                 );
               })()}
 

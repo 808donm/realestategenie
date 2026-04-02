@@ -8,6 +8,7 @@ import {
   renderDefaultTemplate,
   renderModernBlueTemplate,
   renderElegantWarmTemplate,
+  renderPropertyShowcaseTemplate,
   FlyerRenderContext,
 } from "./renderers";
 
@@ -393,6 +394,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         break;
       case "elegant-warm":
         renderElegantWarmTemplate(ctx);
+        break;
+      case "property-showcase":
+        renderPropertyShowcaseTemplate(ctx);
         break;
       default:
         renderDefaultTemplate(ctx);

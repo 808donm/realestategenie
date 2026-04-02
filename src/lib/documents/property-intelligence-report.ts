@@ -1,5 +1,26 @@
 import { jsPDF } from "jspdf";
-import type { AgentBranding } from "./neighborhood-profile-generator";
+import {
+  COLORS,
+  pdfSafe,
+  fmt$,
+  fmtNum,
+  fmtPct,
+  drawPageHeader,
+  applyFootersToAllPages,
+  drawCoverPage,
+  drawAgentBrandingBar,
+  drawSectionTitle,
+  drawRow,
+  drawValueCards,
+  drawAvmRangeBar,
+  drawEquityBar,
+  drawMarketTypeIndicator,
+  drawPhotoGallery,
+  drawComparisonTable,
+  checkNewPage,
+  type AgentBranding,
+  type ValueCard,
+} from "./pdf-report-utils";
 
 // ── Report Data Shape ──
 
@@ -70,10 +91,8 @@ export interface PropertyReportData {
     medianAge?: number;
     ownerOccupiedPct?: number;
     renterOccupiedPct?: number;
-    // FRED
     mortgageRate30yr?: number;
     cpi?: number;
-    // FEMA
     floodZone?: string;
     floodRisk?: string;
   };
@@ -97,8 +116,8 @@ export interface PropertyReportData {
   listingAgentName?: string;
   listingOfficeName?: string;
   listingDescription?: string;
-  ownershipType?: string; // Leasehold / Fee Simple
-  // Comps (pre-fetched)
+  ownershipType?: string;
+  // Comps
   comps?: Array<{
     address?: string;
     price?: number;
@@ -116,7 +135,7 @@ export interface PropertyReportData {
     totalListings?: number;
     pricePerSqft?: number;
   };
-  // Sales history (recent transactions)
+  // Sales history
   salesHistory?: Array<{
     date?: string;
     recordingDate?: string;
@@ -125,25 +144,38 @@ export interface PropertyReportData {
     seller?: string;
     docType?: string;
   }>;
-  // Photos (up to 6 MLS photos for shared reports)
+  // Photos (up to 6 MLS photos)
   photos?: string[];
   // Mortgage calculator fields
   listPrice?: number;
   taxAnnualAmount?: number;
   associationFee?: number;
+  // Enhanced fields for upgraded report
+  latitude?: number;
+  longitude?: number;
+  mapImageData?: string;
+  primaryPhotoData?: string;
+  photoGalleryData?: string[];
+  marketType?: "sellers" | "balanced" | "buyers";
+  monthsOfInventory?: number;
+  soldToListRatio?: number;
   // Generated timestamp
   generatedAt: string;
 }
 
+// Re-export AgentBranding for backward compatibility
+export type { AgentBranding } from "./pdf-report-utils";
+
 // ── Helpers ──
 
-const $ = (n?: number) => (n != null ? `$${n.toLocaleString()}` : "—");
-const num = (n?: number) => (n != null ? n.toLocaleString() : "—");
-const pct = (n?: number) => (n != null ? `${n.toFixed(1)}%` : "—");
+const $ = (n?: number | null) => fmt$(n);
+const num = (n?: number | null) => fmtNum(n);
+const pct = (n?: number | null) => fmtPct(n);
 
 /**
  * Generate a branded Property Intelligence Report PDF.
- * All data is pre-gathered by the API route; this function just lays it out.
+ * Multi-page layout with cover page, consistent headers/footers,
+ * value snapshot, property details, financial analysis, comps, and market data.
  */
 export function generatePropertyIntelligencePDF(data: PropertyReportData, branding: AgentBranding): Blob {
   const doc = new jsPDF();
@@ -152,204 +184,89 @@ export function generatePropertyIntelligencePDF(data: PropertyReportData, brandi
   const contentW = pageW - margin * 2;
   let y = 0;
 
-  // ── Colors ──
-  const brandBlue = [30, 64, 175] as const; // #1e40af
-  const brandGold = [180, 130, 40] as const; // #b48228
-  const textDark = [17, 24, 39] as const;
-  const textMuted = [107, 114, 128] as const;
-  const sectionBg = [243, 244, 246] as const; // #f3f4f6
-
-  const checkNewPage = (needed: number) => {
-    if (y + needed > 275) {
-      addFooter();
-      doc.addPage();
-      y = 16;
-    }
-  };
-
-  const addFooter = () => {
-    const pg = doc.getNumberOfPages();
-    doc.setPage(pg);
-    doc.setFontSize(7);
-    doc.setTextColor(...textMuted);
-    doc.text(
-      "DISCLAIMER: Data obtained from third-party sources. No warranty regarding accuracy. Verify independently. Complies with Fair Housing Act.",
-      margin,
-      284,
-      { maxWidth: contentW },
-    );
-    doc.text(`${branding.displayName} | ${branding.email}${branding.phone ? ` | ${branding.phone}` : ""}`, margin, 290);
-    doc.text(`Page ${pg}`, pageW - margin, 290, { align: "right" });
-  };
-
-  // ── HEADER ──
-  doc.setFillColor(...brandBlue);
-  doc.rect(0, 0, pageW, 42, "F");
-  // Gold accent bar
-  doc.setFillColor(...brandGold);
-  doc.rect(0, 42, pageW, 2, "F");
-
-  // Broker logo (top-left corner of header, square ~26x26mm / ~100px)
-  const logoSize = 26;
-  const logoY = (42 - logoSize) / 2; // vertically center in 42mm header
-  let titleX = margin;
-  if (branding.brokerLogoData) {
-    try {
-      doc.addImage(branding.brokerLogoData, "PNG", margin, logoY, logoSize, logoSize);
-      titleX = margin + logoSize + 4;
-    } catch {
-      // Skip if image fails to decode
-    }
-  }
-
-  // Vertically center text block alongside the logo
-  const textTopY = logoY + 6;
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(18);
-  doc.setFont("helvetica", "bold");
-  doc.text("Property Intelligence Report", titleX, textTopY);
-
-  doc.setFontSize(11);
-  doc.setFont("helvetica", "normal");
-  doc.text(data.address, titleX, textTopY + 10);
-
+  const reportType = "Property Report";
+  const subtitle = data.address;
   const cityLine = [data.city, data.state, data.zip].filter(Boolean).join(", ");
-  if (cityLine) {
-    doc.setFontSize(10);
-    doc.text(cityLine, titleX, textTopY + 17);
-  }
 
-  // Report date top-right
-  doc.setFontSize(8);
-  doc.text(data.generatedAt, pageW - margin, textTopY + 17, { align: "right" });
-
-  y = 50;
-
-  // ── Agent branding bar ──
-  doc.setFillColor(248, 250, 252); // very light gray bg
-  doc.rect(0, y - 6, pageW, 22, "F");
-  doc.setDrawColor(226, 232, 240);
-  doc.line(0, y + 16, pageW, y + 16);
-
-  let agentTextX = margin;
-
-  // Agent headshot
-  if (branding.headshotData) {
-    try {
-      const photoSize = 14; // mm
-      const photoX = margin;
-      const photoY = y - 3;
-      // Draw a light border around the photo
-      doc.setDrawColor(200, 200, 200);
-      doc.setLineWidth(0.3);
-      doc.roundedRect(photoX - 0.5, photoY - 0.5, photoSize + 1, photoSize + 1, 1, 1, "S");
-      doc.addImage(branding.headshotData, "JPEG", photoX, photoY, photoSize, photoSize);
-      agentTextX = margin + photoSize + 4;
-    } catch {
-      // Skip if image fails
-    }
-  }
-
-  // Agent name
-  doc.setTextColor(...textDark);
-  doc.setFontSize(11);
-  doc.setFont("helvetica", "bold");
-  doc.text(branding.displayName, agentTextX, y + 1);
-
-  // License number & phone on second line
-  const agentDetails: string[] = [];
-  if (branding.licenseNumber) agentDetails.push(`Lic# ${branding.licenseNumber}`);
-  if (branding.phone) agentDetails.push(branding.phone);
-  if (branding.brokerageName) agentDetails.push(branding.brokerageName);
-  if (agentDetails.length > 0) {
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(...textMuted);
-    doc.text(agentDetails.join("  |  "), agentTextX, y + 7);
-  }
-
-  y += 22;
-
-  // ── SECTION HELPER ──
-  const sectionTitle = (title: string) => {
-    checkNewPage(30);
-    doc.setFillColor(...sectionBg);
-    doc.roundedRect(margin - 2, y - 4, contentW + 4, 10, 1, 1, "F");
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...brandBlue);
-    doc.text(title, margin, y + 2);
-    y += 12;
+  // Helper: start new page with header
+  const newPageWithHeader = (): number => {
+    doc.addPage();
+    return drawPageHeader(doc, reportType, pdfSafe(subtitle));
   };
 
-  // ── ROW HELPER (label: value) ──
-  const row = (label: string, value: string | undefined | null, opts?: { bold?: boolean }) => {
-    if (!value || value === "—") return;
-    checkNewPage(8);
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(...textMuted);
-    doc.text(label, margin, y);
-    doc.setTextColor(...textDark);
-    if (opts?.bold) doc.setFont("helvetica", "bold");
-    doc.text(value, margin + 56, y);
-    if (opts?.bold) doc.setFont("helvetica", "normal");
-    y += 6;
+  // Helper: check page break
+  const ensureSpace = (needed: number): void => {
+    y = checkNewPage(doc, y, needed, newPageWithHeader);
   };
 
-  // ── VALUE CARDS (like the summary bar in the modal) ──
-  const valueCards = (cards: Array<{ label: string; value: string; sub?: string }>) => {
-    const available = cards.filter((c) => c.value && c.value !== "—");
-    if (available.length === 0) return;
-    checkNewPage(22);
-
-    const cardW = Math.min(42, (contentW - (available.length - 1) * 4) / available.length);
-    available.forEach((c, i) => {
-      const x = margin + i * (cardW + 4);
-      doc.setFillColor(240, 245, 255); // light blue bg
-      doc.roundedRect(x, y, cardW, 18, 2, 2, "F");
-      doc.setFontSize(7);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(...brandBlue);
-      doc.text(c.label, x + 2, y + 5);
-      doc.setFontSize(10);
-      doc.setTextColor(...textDark);
-      doc.text(c.value, x + 2, y + 12);
-      if (c.sub) {
-        doc.setFontSize(6);
-        doc.setTextColor(...textMuted);
-        doc.text(c.sub, x + 2, y + 16);
-      }
-    });
-    y += 24;
+  // Helper: section title
+  const section = (title: string): void => {
+    ensureSpace(30);
+    y = drawSectionTitle(doc, title, y, margin);
   };
 
-  // ── 1. VALUE SNAPSHOT ──
-  sectionTitle("VALUE SNAPSHOT");
-  valueCards([
-    { label: "AVM VALUE", value: $(data.avmValue), sub: data.avmDate ? `As of ${data.avmDate}` : undefined },
-    { label: "LAST SALE", value: $(data.lastSalePrice), sub: data.lastSaleDate || undefined },
+  // Helper: row
+  const row = (label: string, value: string | undefined | null, opts?: { bold?: boolean; labelWidth?: number }): void => {
+    if (!value || value === "-") return;
+    ensureSpace(8);
+    y = drawRow(doc, label, value, y, margin, opts);
+  };
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // PAGE 1: COVER PAGE
+  // ═══════════════════════════════════════════════════════════════════════
+
+  drawCoverPage(doc, {
+    reportType,
+    title: data.address,
+    subtitle: cityLine,
+    date: data.generatedAt,
+    branding,
+    mapImageData: data.mapImageData || null,
+    heroImageData: data.primaryPhotoData || null,
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // PAGE 2: PROPERTY OVERVIEW & VALUE SNAPSHOT
+  // ═══════════════════════════════════════════════════════════════════════
+
+  y = newPageWithHeader();
+
+  // Value Snapshot Cards
+  section("VALUE SNAPSHOT");
+
+  const valueCards: ValueCard[] = [
+    { label: "AVM VALUE", value: $(data.avmValue), sub: data.avmDate ? `As of ${data.avmDate}` : undefined, color: COLORS.brandBlue },
+    { label: "LAST SALE", value: $(data.lastSalePrice), sub: data.lastSaleDate || undefined, color: COLORS.brandBlue },
     {
       label: "EST. EQUITY",
-      value: data.estimatedEquity != null ? `${data.estimatedEquity >= 0 ? "+" : ""}${$(data.estimatedEquity)}` : "—",
+      value: data.estimatedEquity != null ? `${data.estimatedEquity >= 0 ? "+" : ""}${$(data.estimatedEquity)}` : "-",
+      color: data.estimatedEquity && data.estimatedEquity >= 0 ? COLORS.greenAccent : COLORS.redAccent,
     },
-    { label: "LTV", value: data.ltv != null ? pct(data.ltv) : "—" },
-  ]);
+    { label: "LTV", value: data.ltv != null ? pct(data.ltv) : "-" },
+  ];
+  y = drawValueCards(doc, valueCards, y, margin);
 
-  if (data.avmLow != null && data.avmHigh != null) {
-    row("AVM Range", `${$(data.avmLow)} – ${$(data.avmHigh)}`);
+  // AVM Range Bar
+  if (data.avmLow != null && data.avmHigh != null && data.avmValue != null) {
+    y = drawAvmRangeBar(doc, data.avmLow, data.avmValue, data.avmHigh, y, margin);
   }
+
   if (data.avmConfidence != null) row("Confidence Score", String(data.avmConfidence));
+
+  // Rental Estimate
   if (data.rentalEstimate != null) {
+    y += 2;
     row("Est. Monthly Rent", `${$(data.rentalEstimate)}/mo`);
     if (data.rentalLow != null && data.rentalHigh != null)
-      row("Rental Range", `${$(data.rentalLow)} – ${$(data.rentalHigh)}/mo`);
+      row("Rental Range", `${$(data.rentalLow)} - ${$(data.rentalHigh)}/mo`);
     if (data.grossYield != null) row("Gross Yield", pct(data.grossYield));
   }
+
   y += 4;
 
-  // ── 2. PROPERTY DETAILS ──
-  sectionTitle("PROPERTY DETAILS");
+  // ── Property Details ──
+  section("PROPERTY DETAILS");
   row("Property Type", data.propertyType);
   row("Year Built", data.yearBuilt != null ? String(data.yearBuilt) : null);
   row("Bedrooms", data.beds != null ? String(data.beds) : null);
@@ -369,7 +286,10 @@ export function generatePropertyIntelligencePDF(data: PropertyReportData, brandi
   if (data.ownershipType) row("Land Tenure", data.ownershipType, { bold: true });
   y += 4;
 
-  // ── 2b. BUILDING DETAILS ──
+  // ═══════════════════════════════════════════════════════════════════════
+  // BUILDING DETAILS (if available)
+  // ═══════════════════════════════════════════════════════════════════════
+
   if (
     data.constructionType ||
     data.roofType ||
@@ -379,7 +299,7 @@ export function generatePropertyIntelligencePDF(data: PropertyReportData, brandi
     data.basementType ||
     data.architectureStyle
   ) {
-    sectionTitle("BUILDING DETAILS");
+    section("BUILDING DETAILS");
     row("Architecture", data.architectureStyle);
     row("Construction", data.constructionType);
     row("Condition", data.condition);
@@ -401,24 +321,26 @@ export function generatePropertyIntelligencePDF(data: PropertyReportData, brandi
     y += 4;
   }
 
-  // ── 2c. MLS LISTING INFO ──
+  // ── MLS Listing ──
   if (data.mlsNumber || data.listingAgentName || data.listingStatus) {
-    sectionTitle("MLS LISTING");
+    section("MLS LISTING");
     row("MLS #", data.mlsNumber);
     row("Status", data.listingStatus);
     if (data.daysOnMarket != null) row("Days on Market", String(data.daysOnMarket));
     row("Listing Agent", data.listingAgentName);
     row("Office", data.listingOfficeName);
     if (data.listingDescription) {
-      checkNewPage(20);
+      ensureSpace(20);
       doc.setFontSize(8);
-      doc.setTextColor(...textMuted);
+      doc.setTextColor(...COLORS.textMuted);
       doc.text("Description:", margin, y);
       y += 5;
-      doc.setTextColor(...textDark);
-      const descLines = doc.splitTextToSize(data.listingDescription.substring(0, 500), contentW);
-      descLines.forEach((line: string) => {
-        checkNewPage(6);
+      doc.setTextColor(...COLORS.textDark);
+      doc.setFont("helvetica", "normal");
+      const descLines = doc.splitTextToSize(pdfSafe(data.listingDescription.substring(0, 600)), contentW);
+      descLines.slice(0, 12).forEach((line: string) => {
+        ensureSpace(6);
+        doc.setFontSize(8);
         doc.text(line, margin, y);
         y += 4;
       });
@@ -426,9 +348,12 @@ export function generatePropertyIntelligencePDF(data: PropertyReportData, brandi
     y += 4;
   }
 
-  // ── 3. TAX ASSESSMENT ──
+  // ═══════════════════════════════════════════════════════════════════════
+  // TAX & PUBLIC RECORDS
+  // ═══════════════════════════════════════════════════════════════════════
+
   if (data.assessedTotal != null || data.taxAmount != null) {
-    sectionTitle("TAX ASSESSMENT");
+    section("TAX ASSESSMENT");
     row("Assessed Total", $(data.assessedTotal));
     row("Land Value", $(data.assessedLand));
     row("Improvement Value", $(data.assessedImpr));
@@ -438,9 +363,12 @@ export function generatePropertyIntelligencePDF(data: PropertyReportData, brandi
     y += 4;
   }
 
-  // ── 4. MORTGAGE & EQUITY ──
+  // ═══════════════════════════════════════════════════════════════════════
+  // MORTGAGE & EQUITY
+  // ═══════════════════════════════════════════════════════════════════════
+
   if (data.loanBalance != null || data.loanAmount != null || data.lender) {
-    sectionTitle("MORTGAGE & EQUITY");
+    section("MORTGAGE & EQUITY");
     row("Loan Balance", $(data.loanBalance));
     row("Original Loan", $(data.loanAmount));
     row("Lender", data.lender);
@@ -448,122 +376,95 @@ export function generatePropertyIntelligencePDF(data: PropertyReportData, brandi
     row("Active Loans", data.loanCount != null ? String(data.loanCount) : null);
     row("LTV Ratio", data.ltv != null ? pct(data.ltv) : null);
     row("Est. Equity", data.estimatedEquity != null ? $(data.estimatedEquity) : null, { bold: true });
+
+    // Equity visual bar
+    if (data.avmValue && data.loanBalance && data.avmValue > 0) {
+      ensureSpace(20);
+      y += 2;
+      y = drawEquityBar(doc, data.avmValue, data.loanBalance, y, margin);
+    }
     y += 4;
   }
 
-  // ── 5. MORTGAGE PAYMENT ESTIMATE ──
+  // ═══════════════════════════════════════════════════════════════════════
+  // MORTGAGE PAYMENT ESTIMATE
+  // ═══════════════════════════════════════════════════════════════════════
+
   {
     const price = data.listPrice || data.avmValue;
     if (price && price > 0) {
-      sectionTitle("MORTGAGE PAYMENT ESTIMATE");
+      section("MORTGAGE PAYMENT ESTIMATE");
       const downPct = 20;
       const rate = 6.75;
       const termYears = 30;
       const downPayment = price * (downPct / 100);
-      const loanAmount = price - downPayment;
+      const loanAmt = price - downPayment;
       const monthlyRate = rate / 100 / 12;
       const numPayments = termYears * 12;
       const monthlyPI =
         monthlyRate > 0
-          ? (loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, numPayments))) /
+          ? (loanAmt * (monthlyRate * Math.pow(1 + monthlyRate, numPayments))) /
             (Math.pow(1 + monthlyRate, numPayments) - 1)
-          : loanAmount / numPayments;
+          : loanAmt / numPayments;
       const monthlyTax = (data.taxAmount || data.taxAnnualAmount || 0) / 12;
       const monthlyHOA = (data.associationFee || 0) / 12;
       const monthlyTotal = monthlyPI + monthlyTax + monthlyHOA;
 
       // Summary card
-      checkNewPage(20);
-      doc.setFillColor(240, 253, 244); // green bg
+      ensureSpace(22);
+      doc.setFillColor(240, 253, 244);
       doc.roundedRect(margin - 2, y - 4, contentW + 4, 16, 2, 2, "F");
       doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
-      doc.setTextColor(...textMuted);
+      doc.setTextColor(...COLORS.textMuted);
       doc.text("Estimated Monthly Payment", margin, y + 2);
       doc.setFontSize(16);
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(21, 128, 61); // green
-      doc.text(`$${Math.round(monthlyTotal).toLocaleString()}/mo`, margin + 60, y + 4);
+      doc.setTextColor(...COLORS.greenAccent);
+      doc.text(pdfSafe(`$${Math.round(monthlyTotal).toLocaleString()}/mo`), margin + 60, y + 4);
       y += 18;
 
-      doc.setTextColor(...textDark);
+      doc.setTextColor(...COLORS.textDark);
       row("Home Price", $(price));
       row("Down Payment (20%)", $(Math.round(downPayment)));
-      row("Loan Amount", $(Math.round(loanAmount)));
+      row("Loan Amount", $(Math.round(loanAmt)));
       row("Interest Rate", `${rate}% (30-year fixed)`);
       row("Principal & Interest", `$${Math.round(monthlyPI).toLocaleString()}/mo`);
       if (monthlyTax > 0) row("Property Tax", `$${Math.round(monthlyTax).toLocaleString()}/mo`);
       if (monthlyHOA > 0) row("HOA", `$${Math.round(monthlyHOA).toLocaleString()}/mo`);
-      row("Total Interest (30yr)", $(Math.round(monthlyPI * numPayments - loanAmount)));
+      row("Total Interest (30yr)", $(Math.round(monthlyPI * numPayments - loanAmt)));
       y += 4;
     }
   }
 
-  // ── 6. SALES HISTORY ──
+  // ═══════════════════════════════════════════════════════════════════════
+  // SALES HISTORY
+  // ═══════════════════════════════════════════════════════════════════════
+
   if (data.salesHistory && data.salesHistory.length > 0) {
-    sectionTitle("SALES HISTORY");
-    checkNewPage(10 + data.salesHistory.length * 8);
+    section("SALES HISTORY");
 
-    // Table header
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...textMuted);
-    doc.text("Date", margin, y);
-    doc.text("Amount", margin + 30, y);
-    doc.text("Buyer", margin + 62, y);
-    doc.text("Seller", margin + 110, y);
-    y += 2;
-    doc.setDrawColor(229, 231, 235);
-    doc.line(margin, y, pageW - margin, y);
-    y += 5;
+    const headers = ["", "Date", "Amount", "Buyer", "Seller"];
+    const rows = data.salesHistory.slice(0, 10).map((sale, i) => ({
+      label: String(i + 1),
+      values: [
+        sale.date || "-",
+        sale.amount != null ? $(sale.amount) : "-",
+        (sale.buyer || "-").substring(0, 22),
+        (sale.seller || "-").substring(0, 22),
+      ],
+    }));
 
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(...textDark);
-    data.salesHistory.slice(0, 10).forEach((sale) => {
-      checkNewPage(8);
-      doc.setFontSize(8);
-      doc.text(sale.date || "—", margin, y);
-      doc.text(sale.amount != null ? $(sale.amount) : "—", margin + 30, y);
-      doc.text((sale.buyer || "—").substring(0, 28), margin + 62, y);
-      doc.text((sale.seller || "—").substring(0, 28), margin + 110, y);
-      y += 6;
-    });
+    y = drawComparisonTable(doc, headers, rows, margin, y, contentW);
     y += 4;
   }
 
-  // ── 7. HAZARD & ENVIRONMENTAL ──
-  if (data.hazards && data.hazards.length > 0) {
-    sectionTitle("HAZARD & ENVIRONMENTAL ZONES");
-    data.hazards.forEach((h) => {
-      checkNewPage(10);
-      doc.setFontSize(8);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(220, 38, 38); // red
-      doc.text(h.label, margin, y);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(...textDark);
-      doc.text(h.value, margin + 56, y);
-      y += 6;
-    });
+  // ═══════════════════════════════════════════════════════════════════════
+  // OWNERSHIP
+  // ═══════════════════════════════════════════════════════════════════════
 
-    // FEMA flood zone (from federal data)
-    if (data.federalData?.floodZone) {
-      row("FEMA Flood Zone", data.federalData.floodZone);
-    }
-    if (data.federalData?.floodRisk) {
-      row("Flood Risk", data.federalData.floodRisk);
-    }
-    y += 4;
-  } else if (data.federalData?.floodZone || data.federalData?.floodRisk) {
-    sectionTitle("FLOOD RISK");
-    row("FEMA Flood Zone", data.federalData.floodZone);
-    row("Flood Risk", data.federalData.floodRisk);
-    y += 4;
-  }
-
-  // ── 7b. OWNERSHIP ──
   if (data.owner1 || data.owner2 || data.mailingAddress) {
-    sectionTitle("OWNERSHIP");
+    section("OWNERSHIP");
     row("Owner", data.owner1, { bold: true });
     if (data.owner2) row("Co-Owner", data.owner2);
     row("Owner Occupied", data.ownerOccupied === "Y" ? "Yes" : data.ownerOccupied === "N" ? "No" : data.ownerOccupied);
@@ -576,69 +477,104 @@ export function generatePropertyIntelligencePDF(data: PropertyReportData, brandi
     y += 4;
   }
 
-  // ── 7c. COMPARABLE SALES ──
+  // ═══════════════════════════════════════════════════════════════════════
+  // COMPARABLE SALES
+  // ═══════════════════════════════════════════════════════════════════════
+
   if (data.comps && data.comps.length > 0) {
-    sectionTitle("COMPARABLE SALES");
-    checkNewPage(10 + data.comps.length * 8);
+    section("COMPARABLE SALES");
 
-    // Table header
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...textMuted);
-    doc.text("Address", margin, y);
-    doc.text("Price", margin + 65, y);
-    doc.text("Bd/Ba", margin + 95, y);
-    doc.text("Sqft", margin + 115, y);
-    doc.text("Closed", margin + 135, y);
-    doc.text("Match", margin + 160, y);
-    y += 2;
-    doc.setDrawColor(229, 231, 235);
-    doc.line(margin, y, pageW - margin, y);
-    y += 5;
-
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(...textDark);
-    data.comps.slice(0, 10).forEach((comp) => {
-      checkNewPage(8);
-      doc.setFontSize(7);
-      doc.text((comp.address || "—").substring(0, 38), margin, y);
-      doc.text(comp.price != null ? $(comp.price) : "—", margin + 65, y);
-      doc.text(`${comp.beds || "?"}/${comp.baths || "?"}`, margin + 95, y);
-      doc.text(comp.sqft != null ? num(comp.sqft) : "—", margin + 115, y);
-      doc.text(comp.closeDate || "—", margin + 135, y);
-      doc.text(
+    const compHeaders = ["Address", "Price", "Bd/Ba", "Sqft", "Closed", "Match"];
+    const compRows = data.comps.slice(0, 10).map((comp) => ({
+      label: (comp.address || "-").substring(0, 30),
+      values: [
+        comp.price != null ? $(comp.price) : "-",
+        `${comp.beds || "?"}/${comp.baths || "?"}`,
+        comp.sqft != null ? num(comp.sqft) : "-",
+        comp.closeDate || "-",
         comp.correlation != null
           ? `${Math.round(comp.correlation <= 1 ? comp.correlation * 100 : comp.correlation)}%`
-          : "—",
-        margin + 160,
-        y,
-      );
-      y += 6;
-    });
+          : "-",
+      ],
+    }));
+
+    y = drawComparisonTable(doc, compHeaders, compRows, margin, y, contentW);
     y += 4;
   }
 
-  // ── 7d. MARKET STATS ──
-  if (data.marketStats) {
-    const ms = data.marketStats;
-    if (ms.medianPrice || ms.avgDOM || ms.totalListings) {
-      sectionTitle("AREA MARKET STATISTICS");
-      row("Median Sale Price", $(ms.medianPrice));
-      row("Avg Days on Market", ms.avgDOM != null ? String(ms.avgDOM) : null);
+  // ═══════════════════════════════════════════════════════════════════════
+  // MARKET TRENDS
+  // ═══════════════════════════════════════════════════════════════════════
+
+  if (data.marketStats || data.marketType) {
+    section("AREA MARKET STATISTICS");
+
+    // Market type indicator
+    if (data.marketType) {
+      y = drawMarketTypeIndicator(doc, data.marketType, y, margin);
+    }
+
+    // Key stats as value cards
+    const marketCards: ValueCard[] = [];
+    if (data.monthsOfInventory != null)
+      marketCards.push({ label: "MONTHS INVENTORY", value: data.monthsOfInventory.toFixed(1) });
+    if (data.soldToListRatio != null)
+      marketCards.push({ label: "SOLD-TO-LIST", value: `${data.soldToListRatio.toFixed(1)}%` });
+    if (data.marketStats?.avgDOM != null)
+      marketCards.push({ label: "AVG DOM", value: String(data.marketStats.avgDOM) });
+    if (data.marketStats?.medianPrice != null)
+      marketCards.push({ label: "MEDIAN PRICE", value: $(data.marketStats.medianPrice) });
+
+    if (marketCards.length > 0) {
+      ensureSpace(24);
+      y = drawValueCards(doc, marketCards, y, margin);
+    }
+
+    if (data.marketStats) {
+      const ms = data.marketStats;
       row("Active Listings", ms.totalListings != null ? String(ms.totalListings) : null);
       row("Price per Sqft", ms.pricePerSqft != null ? `$${ms.pricePerSqft.toLocaleString()}` : null);
-      y += 4;
     }
+    y += 4;
   }
 
-  // ── 8. NEIGHBORHOOD & ECONOMIC CONTEXT ──
+  // ═══════════════════════════════════════════════════════════════════════
+  // HAZARD & ENVIRONMENTAL ZONES
+  // ═══════════════════════════════════════════════════════════════════════
+
+  if ((data.hazards && data.hazards.length > 0) || data.federalData?.floodZone) {
+    section("HAZARD & ENVIRONMENTAL ZONES");
+
+    if (data.hazards) {
+      data.hazards.forEach((h) => {
+        ensureSpace(10);
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(...COLORS.redAccent);
+        doc.text(pdfSafe(h.label), margin, y);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(...COLORS.textDark);
+        doc.text(pdfSafe(h.value), margin + 56, y);
+        y += 6;
+      });
+    }
+
+    if (data.federalData?.floodZone) row("FEMA Flood Zone", data.federalData.floodZone);
+    if (data.federalData?.floodRisk) row("Flood Risk", data.federalData.floodRisk);
+    y += 4;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // NEIGHBORHOOD & ECONOMIC CONTEXT
+  // ═══════════════════════════════════════════════════════════════════════
+
   if (data.federalData) {
     const fd = data.federalData;
     const hasDemo = fd.medianIncome != null || fd.populationDensity != null || fd.medianAge != null;
     const hasEcon = fd.unemploymentRate != null || fd.mortgageRate30yr != null;
 
     if (hasDemo || hasEcon) {
-      sectionTitle("NEIGHBORHOOD & ECONOMIC CONTEXT");
+      section("NEIGHBORHOOD & ECONOMIC CONTEXT");
       row("Median Household Income", $(fd.medianIncome));
       row("Median Home Value (Area)", $(fd.medianHomeValue));
       row("Median Age", fd.medianAge != null ? String(fd.medianAge) : null);
@@ -652,12 +588,22 @@ export function generatePropertyIntelligencePDF(data: PropertyReportData, brandi
     }
   }
 
-  // ── FOOTER on all pages ──
-  const totalPages = doc.getNumberOfPages();
-  for (let i = 1; i <= totalPages; i++) {
-    doc.setPage(i);
-    addFooter();
+  // ═══════════════════════════════════════════════════════════════════════
+  // PHOTO GALLERY (if photos available)
+  // ═══════════════════════════════════════════════════════════════════════
+
+  const galleryPhotos = data.photoGalleryData || [];
+  if (galleryPhotos.length > 0) {
+    y = newPageWithHeader();
+    y = drawSectionTitle(doc, "PHOTOS", y, margin);
+    y = drawPhotoGallery(doc, galleryPhotos.slice(0, 6), y, margin);
   }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // APPLY FOOTERS TO ALL PAGES
+  // ═══════════════════════════════════════════════════════════════════════
+
+  applyFootersToAllPages(doc, data.generatedAt, branding.displayName);
 
   return doc.output("blob");
 }

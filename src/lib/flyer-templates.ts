@@ -208,6 +208,25 @@ export const FLYER_TEMPLATES: FlyerTemplate[] = [
       showQrCode: true,
     },
   },
+  {
+    id: "property-showcase",
+    name: "Property Showcase",
+    description:
+      "Professional listing flyer with large hero photo, agent profile sidebar, property details grid, and photo gallery. Inspired by industry-standard formats.",
+    thumbnail: "/templates/property-showcase-thumb.png",
+    category: "Professional",
+    defaultSettings: {
+      headerStyle: "split",
+      footerStyle: "contact",
+      imageLayout: "grid",
+      primaryColor: "#1f2937",
+      secondaryColor: "#6b7280",
+      fontFamily: "playfair",
+      showPrice: true,
+      showAgentPhoto: true,
+      showQrCode: true,
+    },
+  },
 ];
 
 export const FONT_OPTIONS = [

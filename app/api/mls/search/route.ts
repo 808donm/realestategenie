@@ -49,8 +49,9 @@ export async function GET(request: NextRequest) {
       ? parseInt(searchParams.get("minDaysOnMarket")!)
       : undefined;
     const statusParam = searchParams.get("status");
-    const status: ("Active" | "Pending" | "Closed")[] = statusParam
-      ? (statusParam.split(",") as ("Active" | "Pending" | "Closed")[])
+    const validStatuses = ["Active", "Pending", "Closed", "Expired", "Withdrawn", "Canceled", "Delete", "Incomplete", "ComingSoon"];
+    const status: string[] = statusParam
+      ? statusParam.split(",").filter((s) => validStatuses.includes(s.trim()))
       : ["Active"];
     const limit = searchParams.get("limit") ? parseInt(searchParams.get("limit")!) : 25;
     const offset = searchParams.get("offset") ? parseInt(searchParams.get("offset")!) : 0;

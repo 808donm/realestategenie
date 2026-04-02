@@ -379,7 +379,7 @@ export class TrestleClient {
    * Search properties with common filters
    */
   async searchProperties(options: {
-    status?: ("Active" | "Pending" | "Closed")[];
+    status?: string[];
     city?: string;
     postalCode?: string;
     subdivisionName?: string;

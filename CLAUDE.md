@@ -258,6 +258,23 @@ The app's auth is tied to `realestategenie.app`. To enable testing on Vercel pre
 - Commit to the feature branch, never to main.
 - Summarize what changed and why in the commit message.
 
+### Keeping Hoku and Help Up to Date
+
+Whenever a feature is added, modified, or removed, **you must update both**:
+
+1. **Hoku Knowledge Base** (`src/lib/genie/hoku-knowledge-base.ts`):
+   - Update the relevant `PAGE_CONTEXT` entry so Hoku can explain and guide agents through the feature.
+   - If a new page is added, add a new `PAGE_CONTEXT` entry and a route in `buildPageContext`.
+   - Update `APP_KNOWLEDGE` if the change affects data sources, scoring, or platform-wide behavior.
+   - Keep descriptions action-oriented -- Hoku needs to know what the agent can *do*, not just what exists.
+
+2. **Help Content** (`app/app/components/help-content.ts`):
+   - Update the relevant `HELP_SECTIONS` entry with step-by-step instructions for the feature.
+   - If a new page is added, add a new section and a `ROUTE_TO_SECTION` mapping.
+   - Write for the end user (real estate agent), not a developer. Use numbered steps and plain language.
+
+This is not optional. Outdated help and AI context degrade the user experience. Treat these files as part of the feature's deliverable.
+
 ### When in Doubt...
 
 - **Ask a clarifying question** instead of guessing.
