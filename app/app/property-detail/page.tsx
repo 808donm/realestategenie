@@ -42,6 +42,10 @@ export default function PropertyDetailPage() {
           normalizedAddr = `${singleComma[1]}, ${singleComma[2]}`;
         }
 
+        // Expand street suffix abbreviations for MLS matching
+        const { expandStreetSuffix } = await import("@/lib/address-utils");
+        normalizedAddr = expandStreetSuffix(normalizedAddr);
+
         // Extract just the street portion for MLS search (MLS UnparsedAddress may not include city/state)
         const streetOnly = normalizedAddr.split(",")[0].trim();
 

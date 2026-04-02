@@ -94,8 +94,10 @@ export async function GET(request: NextRequest) {
         }
       }
     } else if (streetOnly) {
-      // Address-based search: use just the street portion (MLS UnparsedAddress doesn't include city/state)
-      const q = streetOnly.replace(/'/g, "''");
+      // Address-based search: expand abbreviations and use just the street portion
+      const { expandStreetSuffix } = await import("@/lib/address-utils");
+      const expanded = expandStreetSuffix(streetOnly);
+      const q = expanded.replace(/'/g, "''");
       const filter = `contains(tolower(UnparsedAddress), '${q.toLowerCase()}')`;
       const result = await client.getProperties({
         $filter: filter,

@@ -67,9 +67,15 @@ export async function GET(request: NextRequest) {
         // Pure zip code
         searchPostalCode = q;
       } else if (/^\d+[\s-]/.test(q) || /\b(st|rd|ave|dr|ln|pl|blvd|ct|way|loop|pkwy|hwy)\b/i.test(q)) {
-        // Looks like a street address (starts with number or contains street suffix)
-        const escaped = q.replace(/'/g, "''").toLowerCase();
-        addressFilter = `contains(tolower(UnparsedAddress), '${escaped}') or contains(tolower(StreetName), '${escaped}')`;
+        // Looks like a street address -- expand abbreviations to match MLS full names
+        const { expandStreetSuffix } = await import("@/lib/address-utils");
+        const expanded = expandStreetSuffix(q);
+        const escaped = expanded.replace(/'/g, "''").toLowerCase();
+        const origEscaped = q.replace(/'/g, "''").toLowerCase();
+        const searchTerms = escaped !== origEscaped
+          ? `(contains(tolower(UnparsedAddress), '${escaped}') or contains(tolower(UnparsedAddress), '${origEscaped}') or contains(tolower(StreetName), '${escaped}') or contains(tolower(StreetName), '${origEscaped}'))`
+          : `contains(tolower(UnparsedAddress), '${escaped}') or contains(tolower(StreetName), '${escaped}')`;
+        addressFilter = searchTerms;
       } else {
         // Could be a city name OR a building/condo name (e.g., "Park Lane", "The Century")
         // Search both City and SubdivisionName
