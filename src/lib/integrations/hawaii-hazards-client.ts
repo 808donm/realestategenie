@@ -58,8 +58,11 @@ export interface PropertyHazardProfile {
   lat: number;
   lng: number;
 
-  /** Tsunami evacuation zone info */
+  /** Standard tsunami evacuation zone (Layer 2) */
   tsunami: HazardZoneResult | null;
+
+  /** Extreme tsunami evacuation zone (Layer 12 -- broader, extreme events only) */
+  tsunamiExtreme: HazardZoneResult | null;
 
   /** Lava flow hazard zone (Big Island only) */
   lavaFlow: HazardZoneResult | null;
@@ -145,8 +148,11 @@ export class HawaiiHazardsClient {
    * Runs all spatial queries in parallel for performance.
    */
   async getPropertyHazardProfile(lat: number, lng: number): Promise<PropertyHazardProfile> {
-    const [tsunami, lavaFlow, seaLevelRise, dhhl, sma, stateLandUse, cesspoolPriority] = await Promise.allSettled([
-      this.spatialQuery(HAZARDS, LAYERS.tsunamiAllZones, lat, lng),
+    const [tsunami, tsunamiExtreme, lavaFlow, seaLevelRise, dhhl, sma, stateLandUse, cesspoolPriority] = await Promise.allSettled([
+      // Layer 2: Standard tsunami evacuation zones (actual flood risk)
+      this.spatialQuery(HAZARDS, 2, lat, lng),
+      // Layer 12: Extreme tsunami evacuation zones (broader, extreme events only)
+      this.spatialQuery(HAZARDS, LAYERS.tsunamiExtreme, lat, lng),
       this.spatialQuery(HAZARDS, LAYERS.lavaFlowZones, lat, lng),
       this.spatialQuery(HAZARDS, LAYERS.floodCoastalSLR_Statewide, lat, lng),
       this.spatialQuery(PARCELS_ZONING, LAYERS.dhhlLands, lat, lng),
@@ -159,6 +165,7 @@ export class HawaiiHazardsClient {
       lat,
       lng,
       tsunami: tsunami.status === "fulfilled" ? tsunami.value : null,
+      tsunamiExtreme: tsunamiExtreme.status === "fulfilled" ? tsunamiExtreme.value : null,
       lavaFlow: lavaFlow.status === "fulfilled" ? lavaFlow.value : null,
       seaLevelRise: seaLevelRise.status === "fulfilled" ? seaLevelRise.value : null,
       dhhl: dhhl.status === "fulfilled" ? dhhl.value : null,

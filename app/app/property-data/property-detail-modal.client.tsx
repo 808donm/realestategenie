@@ -998,8 +998,13 @@ export default function PropertyDetailModal({
     if (hazardData) {
       if (hazardData.tsunami?.found)
         hazards.push({
-          label: "Tsunami Evac Zone",
+          label: "Tsunami Evacuation Zone",
           value: String(hazardData.tsunami.attributes?.evaczone || hazardData.tsunami.attributes?.zone || "Yes"),
+        });
+      else if (hazardData.tsunamiExtreme?.found)
+        hazards.push({
+          label: "Extreme Tsunami Evacuation Zone",
+          value: "Extreme warnings only",
         });
       if (hazardData.seaLevelRise?.found)
         hazards.push({ label: "Sea Level Rise", value: "In 3.2ft SLR coastal flood zone" });
@@ -1571,7 +1576,11 @@ export default function PropertyDetailModal({
               if (hazardData.tsunami?.found) {
                 const a = hazardData.tsunami.attributes;
                 const zone = a.evaczone || a.zone || a.type || "Yes";
-                zones.push({ label: "Tsunami Evacuation Zone", value: String(zone), color: "#dc2626", bg: "#fef2f2" });
+                zones.push({ label: "Tsunami Evacuation Zone", value: `Zone ${zone} -- evacuate during tsunami warnings`, color: "#dc2626", bg: "#fef2f2" });
+              } else if (hazardData.tsunamiExtreme?.found) {
+                const a = hazardData.tsunamiExtreme.attributes;
+                const zoneType = a.zonetype || a.zone_desc || "Extreme Tsunami Zone";
+                zones.push({ label: "Extreme Tsunami Evacuation Zone", value: `${zoneType} -- evacuate during extreme tsunami warnings only`, color: "#f59e0b", bg: "#fffbeb" });
               }
               if (hazardData.seaLevelRise?.found) {
                 zones.push({
