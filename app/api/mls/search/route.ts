@@ -162,10 +162,26 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    console.log("[MLS Search] Results returned:", result.value?.length, "count:", result["@odata.count"]);
+    // Filter out rental/lease listings (PropertySubType contains "Lease" or price < $25K)
+    const allResults = result.value || [];
+    const filteredResults = allResults.filter((p) => {
+      const subType = (p.PropertySubType || "").toLowerCase();
+      const propType = (p.PropertyType || "").toLowerCase();
+      if (subType.includes("lease") || propType.includes("lease")) return false;
+      // Prices under $25K are almost certainly monthly rental listings, not sales
+      if (p.ListPrice && p.ListPrice > 0 && p.ListPrice < 25000) return false;
+      return true;
+    });
+
+    const filteredCount = allResults.length - filteredResults.length;
+    if (filteredCount > 0) {
+      console.log(`[MLS Search] Filtered out ${filteredCount} rental/lease listings`);
+    }
+
+    console.log("[MLS Search] Results returned:", filteredResults.length, "count:", result["@odata.count"]);
 
     // Enrich properties that have no Media with separate Media endpoint fetch
-    const properties = result.value;
+    const properties = filteredResults;
     const noMediaProps = properties.filter((p) => !p.Media || p.Media.length === 0);
 
     if (noMediaProps.length > 0 && noMediaProps.length <= 25) {

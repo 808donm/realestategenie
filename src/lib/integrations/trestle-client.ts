@@ -402,6 +402,9 @@ export class TrestleClient {
       filters.push(`(${statusFilter})`);
     }
 
+    // Exclude rental/lease listings
+    filters.push("PropertySubType ne 'ResidentialLease'");
+
     if (options.city) {
       // Case-insensitive partial match using OData contains + tolower
       filters.push(`contains(tolower(City), '${options.city.toLowerCase()}')`);
