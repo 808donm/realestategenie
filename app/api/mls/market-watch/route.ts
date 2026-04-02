@@ -86,18 +86,46 @@ export async function GET(request: NextRequest) {
     // Exclude rentals
     // Note: can't filter PropertySubType as OData enum, so filter server-side
 
-    console.log(`[Market Watch] Filter: ${filters.join(" and ")}`);
+    const filterStr = filters.join(" and ");
+    console.log(`[Market Watch] Filter: ${filterStr}`);
 
-    // Don't use $expand=Media -- it suppresses Latitude/Longitude in Trestle
-    // Photos will be fetched on-demand when user clicks a marker
-    const result = await client.getProperties({
-      $filter: filters.join(" and "),
-      $orderby: "ModificationTimestamp desc",
-      $top: limit,
-      $count: true,
-    });
+    // Trestle suppresses Latitude/Longitude when $expand=Media is used.
+    // Fetch both in parallel and merge: coords from one call, photos from another.
+    const [coordResult, mediaResult] = await Promise.all([
+      client.getProperties({
+        $filter: filterStr,
+        $orderby: "ModificationTimestamp desc",
+        $top: limit,
+        $count: true,
+      }),
+      client.getProperties({
+        $filter: filterStr,
+        $orderby: "ModificationTimestamp desc",
+        $top: limit,
+        $expand: "Media",
+        $select: "ListingKey,Media",
+      }).catch(() => ({ value: [] as any[] })),
+    ]);
 
-    console.log(`[Market Watch] Returned ${result.value?.length || 0} listings, ${result.value?.filter((p: any) => p.Latitude && p.Longitude).length || 0} with coordinates`);
+    // Build photo lookup by ListingKey
+    const photoMap = new Map<string, string>();
+    for (const p of (mediaResult.value || [])) {
+      if (p.ListingKey && p.Media?.length > 0) {
+        const sorted = [...p.Media].sort((a: any, b: any) => (a.Order || 0) - (b.Order || 0));
+        const photo = sorted.find((m: any) => m.MediaURL);
+        if (photo) photoMap.set(p.ListingKey, photo.MediaURL);
+      }
+    }
+
+    // Use coordResult as base, attach photos
+    const result = coordResult;
+    for (const p of (result.value || [])) {
+      if (p.ListingKey && photoMap.has(p.ListingKey)) {
+        (p as any)._photoUrl = photoMap.get(p.ListingKey);
+      }
+    }
+
+    console.log(`[Market Watch] Returned ${result.value?.length || 0} listings, ${result.value?.filter((p: any) => p.Latitude && p.Longitude).length || 0} with coords, ${photoMap.size} with photos`);
 
     // Filter out rentals server-side
     const listings = (result.value || []).filter((p: any) => {
@@ -150,6 +178,7 @@ export async function GET(request: NextRequest) {
         listingId: p.ListingId,
         status: p.StandardStatus,
         isNew,
+        photoUrl: (p as any)._photoUrl || null,
         mlsStatus: p.MlsStatus,
         propertyType: p.PropertyType,
         propertySubType: p.PropertySubType,
