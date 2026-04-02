@@ -160,6 +160,29 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Resolve TMK for listings with coordinates but no ParcelNumber
+    const needsTmk = (result.value || []).filter((p: any) => p.Latitude && p.Longitude && !p.ParcelNumber);
+    if (needsTmk.length > 0) {
+      const tmkBatchSize = 10;
+      for (let i = 0; i < Math.min(needsTmk.length, 50); i += tmkBatchSize) {
+        const batch = needsTmk.slice(i, i + tmkBatchSize);
+        await Promise.allSettled(
+          batch.map(async (p) => {
+            try {
+              const tmkUrl = `https://geodata.hawaii.gov/arcgis/rest/services/ParcelsZoning/MapServer/25/query?geometry=${encodeURIComponent(`{"x":${p.Longitude},"y":${p.Latitude}}`)}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=tmk,tmk_txt&returnGeometry=false&f=json`;
+              const tmkRes = await fetch(tmkUrl, { signal: AbortSignal.timeout(5000) });
+              const tmkData = await tmkRes.json();
+              const parcel = tmkData.features?.[0]?.attributes;
+              if (parcel?.tmk) {
+                (p as any).ParcelNumber = String(parcel.tmk);
+              }
+            } catch {}
+          }),
+        );
+      }
+      console.log(`[Market Watch] Resolved TMK for ${needsTmk.filter((p: any) => p.ParcelNumber).length} of ${needsTmk.length} listings`);
+    }
+
     const finalWithCoords = (result.value || []).filter((p: any) => p.Latitude && p.Longitude).length;
     console.log(`[Market Watch] Returned ${result.value?.length || 0} listings, ${finalWithCoords} with coords, ${photoMap.size} with photos`);
 
