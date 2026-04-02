@@ -96,10 +96,10 @@ export async function GET(request: NextRequest) {
       $expand: "Media",
     });
 
-    // Log sample to see what fields are returned
+    // Log sample to debug coordinate fields
     if (result.value?.length > 0) {
-      const sample = result.value[0];
-      console.log(`[Market Watch] Sample fields: Lat=${sample.Latitude}, Lng=${sample.Longitude}, keys=${Object.keys(sample).filter(k => k.toLowerCase().includes("lat") || k.toLowerCase().includes("lon") || k.toLowerCase().includes("coord")).join(",")}`);
+      const sample = result.value[0] as any;
+      console.log(`[Market Watch] Sample: Lat=${sample.Latitude}, Lng=${sample.Longitude}, MapCoordinate=${JSON.stringify(sample.MapCoordinate)}, MapCoordinateSource=${sample.MapCoordinateSource}`);
     }
 
     console.log(`[Market Watch] Returned ${result.value?.length || 0} listings, ${result.value?.filter((p: any) => p.Latitude && p.Longitude).length || 0} with coordinates`);
@@ -171,8 +171,8 @@ export async function GET(request: NextRequest) {
         closeDate: p.CloseDate,
         onMarketDate: p.OnMarketDate,
         daysOnMarket: p.DaysOnMarket || p.CumulativeDaysOnMarket,
-        lat: p.Latitude,
-        lng: p.Longitude,
+        lat: p.Latitude || p.MapCoordinate?.Latitude || p.MapCoordinate?.lat || (typeof p.MapCoordinate === "string" ? parseFloat(p.MapCoordinate.split(",")[0]) : null),
+        lng: p.Longitude || p.MapCoordinate?.Longitude || p.MapCoordinate?.lng || (typeof p.MapCoordinate === "string" ? parseFloat(p.MapCoordinate.split(",")[1]) : null),
         address,
         beds: p.BedroomsTotal,
         baths: p.BathroomsTotalInteger,
