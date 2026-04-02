@@ -114,6 +114,14 @@ export async function GET(request: NextRequest) {
       allListings = result.value;
     }
 
+    // Filter out rental/lease listings
+    allListings = allListings.filter((p) => {
+      const subType = (p.PropertySubType || "").toLowerCase();
+      if (subType.includes("lease")) return false;
+      if (p.ListPrice && p.ListPrice > 0 && p.ListPrice < 25000) return false;
+      return true;
+    });
+
     // 4. Run matching engine
     const matches = matchLeadsToListings(leadCriteria, allListings, 5, 20);
 

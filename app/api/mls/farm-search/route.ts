@@ -165,6 +165,18 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // Filter out rental/lease listings unless explicitly requested
+    const includeRentals = request.nextUrl.searchParams.get("includeRentals") === "true";
+    if (!includeRentals) {
+      properties = properties.filter((p) => {
+        const subType = (p.PropertySubType || "").toLowerCase();
+        const propType = (p.PropertyType || "").toLowerCase();
+        if (subType.includes("lease") || propType.includes("lease")) return false;
+        if (p.ListPrice && p.ListPrice > 0 && p.ListPrice < 25000) return false;
+        return true;
+      });
+    }
+
     // Compute price drop metrics for each listing
     const enriched = properties.map((p) => {
       const originalPrice = p.OriginalListPrice || p.ListPrice;

@@ -74,10 +74,22 @@ export async function GET(request: NextRequest) {
       })
       .eq("id", integration.id);
 
+    // Filter out rental/lease listings unless explicitly requested
+    const includeRentals = request.nextUrl.searchParams.get("includeRentals") === "true";
+    let properties = result.value;
+    if (!includeRentals) {
+      properties = properties.filter((p: any) => {
+        const subType = (p.PropertySubType || "").toLowerCase();
+        if (subType.includes("lease")) return false;
+        if (p.ListPrice && p.ListPrice > 0 && p.ListPrice < 25000) return false;
+        return true;
+      });
+    }
+
     return NextResponse.json({
       success: true,
-      properties: result.value,
-      totalCount: result["@odata.count"] || result.value.length,
+      properties,
+      totalCount: result["@odata.count"] || properties.length,
       nextLink: result["@odata.nextLink"],
       limit,
       offset,
