@@ -8,6 +8,7 @@ const DEFAULT_CENTER = { lat: 21.3113, lng: -157.86 };
 const DEFAULT_ZOOM = 12;
 
 const STATUS_COLORS: Record<string, { fill: string; stroke: string; label: string }> = {
+  New: { fill: "#f97316", stroke: "#c2410c", label: "New" },
   Active: { fill: "#3b82f6", stroke: "#1d4ed8", label: "Active" },
   Pending: { fill: "#3b82f6", stroke: "#000000", label: "Pending" },
   Closed: { fill: "#dc2626", stroke: "#991b1b", label: "Sold" },
@@ -30,6 +31,7 @@ interface Listing {
   listingKey: string;
   listingId: string;
   status: string;
+  isNew?: boolean;
   mlsStatus?: string;
   propertyType?: string;
   propertySubType?: string;
@@ -48,6 +50,7 @@ interface Listing {
   yearBuilt?: number;
   modifiedAt?: string;
   priceChange?: number;
+  photoUrl?: string;
 }
 
 export default function MarketWatchClient() {
@@ -181,7 +184,10 @@ export default function MarketWatchClient() {
     });
   };
 
-  const filteredListings = listings.filter((l) => activeStatuses.has(l.status));
+  const filteredListings = listings.filter((l) => {
+    if (l.isNew && activeStatuses.has("New")) return true;
+    return activeStatuses.has(l.status);
+  });
 
   const mapCenter =
     listings.length > 0 && listings[0].lat && listings[0].lng
@@ -453,7 +459,8 @@ export default function MarketWatchClient() {
             <APIProvider apiKey={MAPS_API_KEY}>
               <div
                 style={{
-                  height: 500,
+                  height: "calc(100vh - 280px)",
+                  minHeight: 400,
                   borderRadius: 12,
                   overflow: "hidden",
                   border: "1px solid #e5e7eb",
@@ -471,7 +478,7 @@ export default function MarketWatchClient() {
                   {filteredListings.map((listing) => {
                     if (!listing.lat || !listing.lng) return null;
                     const colors = STATUS_COLORS[listing.status] || STATUS_COLORS.Active;
-                    const isNew = listing.daysOnMarket != null && listing.daysOnMarket <= 7;
+                    const isNew = listing.isNew || (listing.daysOnMarket != null && listing.daysOnMarket <= 7);
                     const markerColor = isNew ? "#f97316" : colors.fill;
                     const strokeColor = listing.status === "Pending" ? "#000000" : colors.stroke;
                     const strokeWidth = listing.status === "Pending" ? 3 : 1.5;
@@ -501,50 +508,48 @@ export default function MarketWatchClient() {
                     <InfoWindow
                       position={{ lat: selectedListing.lat, lng: selectedListing.lng }}
                       onCloseClick={() => setSelectedListing(null)}
-                      maxWidth={300}
+                      maxWidth={320}
                       pixelOffset={[0, -12]}
                     >
-                      <div style={{ padding: 4 }}>
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            marginBottom: 4,
-                          }}
-                        >
-                          <span style={{ fontSize: 16, fontWeight: 700 }}>
-                            {formatCurrency(selectedListing.closePrice || selectedListing.listPrice)}
-                          </span>
-                          <span
-                            style={{
-                              padding: "2px 6px",
-                              borderRadius: 4,
-                              fontSize: 10,
-                              fontWeight: 700,
-                              color: "#fff",
-                              background: (STATUS_COLORS[selectedListing.status] || STATUS_COLORS.Active).fill,
-                            }}
-                          >
-                            {(STATUS_COLORS[selectedListing.status] || STATUS_COLORS.Active).label}
-                          </span>
-                        </div>
-                        <div style={{ fontSize: 12, color: "#374151", marginBottom: 4 }}>{selectedListing.address}</div>
-                        <div style={{ fontSize: 11, color: "#6b7280" }}>
-                          {[
-                            selectedListing.beds && `${selectedListing.beds} bd`,
-                            selectedListing.baths && `${selectedListing.baths} ba`,
-                            selectedListing.sqft && `${selectedListing.sqft.toLocaleString()} sqft`,
-                            selectedListing.daysOnMarket != null && `${selectedListing.daysOnMarket} DOM`,
-                          ]
-                            .filter(Boolean)
-                            .join(" \u00B7 ")}
-                        </div>
-                        {selectedListing.listingId && (
-                          <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 2 }}>
-                            MLS# {selectedListing.listingId}
+                      <div style={{ padding: 0, minWidth: 280 }}>
+                        {/* Listing Photo */}
+                        {selectedListing.photoUrl && (
+                          <div style={{ width: "100%", height: 160, overflow: "hidden", borderRadius: "4px 4px 0 0", marginBottom: 8 }}>
+                            <img
+                              src={selectedListing.photoUrl}
+                              alt={selectedListing.address}
+                              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                            />
                           </div>
                         )}
+                        <div style={{ padding: "4px 8px 8px" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                            <span style={{ fontSize: 18, fontWeight: 700 }}>
+                              {formatCurrency(selectedListing.closePrice || selectedListing.listPrice)}
+                            </span>
+                            <span style={{
+                              padding: "2px 8px", borderRadius: 4, fontSize: 10, fontWeight: 700, color: "#fff",
+                              background: selectedListing.isNew
+                                ? STATUS_COLORS.New.fill
+                                : (STATUS_COLORS[selectedListing.status] || STATUS_COLORS.Active).fill,
+                            }}>
+                              {selectedListing.isNew ? "New" : (STATUS_COLORS[selectedListing.status] || STATUS_COLORS.Active).label}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: 13, color: "#374151", marginBottom: 6 }}>{selectedListing.address}</div>
+                          <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 6 }}>
+                            {[
+                              selectedListing.beds && `${selectedListing.beds} bd`,
+                              selectedListing.baths && `${selectedListing.baths} ba`,
+                              selectedListing.sqft && `${selectedListing.sqft.toLocaleString()} sqft`,
+                              selectedListing.daysOnMarket != null && `${selectedListing.daysOnMarket} DOM`,
+                            ].filter(Boolean).join(" \u00B7 ")}
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#9ca3af" }}>
+                            {selectedListing.listingId && <span>MLS# {selectedListing.listingId}</span>}
+                            {selectedListing.propertySubType && <span>{selectedListing.propertySubType}</span>}
+                          </div>
+                        </div>
                       </div>
                     </InfoWindow>
                   )}
@@ -554,119 +559,7 @@ export default function MarketWatchClient() {
           </>
         )}
 
-        {/* Card Grid */}
-        {filteredListings.length > 0 && (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-              gap: 16,
-            }}
-          >
-            {filteredListings.map((listing) => {
-              const statusColor = STATUS_COLORS[listing.status] || {
-                fill: "#9ca3af",
-                stroke: "#6b7280",
-                label: listing.status,
-              };
-              const price = listing.closePrice || listing.listPrice;
-              const shape = PROPERTY_TYPE_SHAPES[listing.propertyType || ""] || "circle";
-
-              return (
-                <div
-                  key={listing.listingKey}
-                  onClick={() =>
-                    setSelectedListing(selectedListing?.listingKey === listing.listingKey ? null : listing)
-                  }
-                  style={{
-                    border:
-                      selectedListing?.listingKey === listing.listingKey
-                        ? `2px solid ${statusColor.fill}`
-                        : "1px solid #e5e7eb",
-                    borderRadius: 10,
-                    padding: 16,
-                    cursor: "pointer",
-                    backgroundColor:
-                      selectedListing?.listingKey === listing.listingKey ? `${statusColor.fill}08` : "#fff",
-                    transition: "all 0.15s",
-                  }}
-                >
-                  {/* Status Badge + Property Type Shape */}
-                  <div
-                    style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}
-                  >
-                    <span
-                      style={{
-                        display: "inline-block",
-                        padding: "3px 10px",
-                        borderRadius: 12,
-                        fontSize: 11,
-                        fontWeight: 600,
-                        color: "#fff",
-                        backgroundColor: statusColor.fill,
-                      }}
-                    >
-                      {statusColor.label}
-                    </span>
-                    <span
-                      style={{ fontSize: 11, color: "#9ca3af" }}
-                      title={listing.propertySubType || listing.propertyType}
-                    >
-                      {shape === "circle" ? "\u25CF" : shape === "diamond" ? "\u25C6" : "\u25B2"}{" "}
-                      {listing.propertySubType || listing.propertyType || ""}
-                    </span>
-                  </div>
-
-                  {/* Price */}
-                  <div style={{ fontSize: 22, fontWeight: 700, color: "#111827", marginBottom: 4 }}>
-                    {formatCurrency(price)}
-                    {listing.priceChange != null && listing.priceChange !== 0 && (
-                      <span
-                        style={{
-                          fontSize: 12,
-                          fontWeight: 600,
-                          marginLeft: 8,
-                          color: listing.priceChange > 0 ? "#16a34a" : "#dc2626",
-                        }}
-                      >
-                        {listing.priceChange > 0 ? "\u2191" : "\u2193"}{" "}
-                        {formatCurrency(Math.abs(listing.priceChange))}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Address */}
-                  <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 8, lineHeight: 1.3 }}>
-                    {listing.address || "Address not available"}
-                  </div>
-
-                  {/* Details Row */}
-                  <div style={{ display: "flex", gap: 12, fontSize: 12, color: "#6b7280", marginBottom: 8 }}>
-                    {listing.beds != null && <span>{listing.beds} bd</span>}
-                    {listing.baths != null && <span>{listing.baths} ba</span>}
-                    {listing.sqft != null && <span>{listing.sqft.toLocaleString()} sqft</span>}
-                  </div>
-
-                  {/* Footer */}
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      fontSize: 11,
-                      color: "#9ca3af",
-                      borderTop: "1px solid #f3f4f6",
-                      paddingTop: 8,
-                    }}
-                  >
-                    <span>MLS# {listing.listingId}</span>
-                    {listing.daysOnMarket != null && <span>{listing.daysOnMarket} DOM</span>}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+        {/* Map-only view -- no card grid. Click markers for property details. */}
       </div>
     </div>
   );

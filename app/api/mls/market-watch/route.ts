@@ -91,6 +91,7 @@ export async function GET(request: NextRequest) {
       $orderby: "ModificationTimestamp desc",
       $top: limit,
       $count: true,
+      $expand: "Media",
     });
 
     console.log(`[Market Watch] Returned ${result.value?.length || 0} listings, ${result.value?.filter((p: any) => p.Latitude && p.Longitude).length || 0} with coordinates`);
@@ -103,12 +104,23 @@ export async function GET(request: NextRequest) {
       return true;
     });
 
-    // Compute status counts
+    // Determine "New" listings (Active with OnMarketDate within 7 days)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    // Compute status counts -- add "New" as a virtual status
     const statusCounts: Record<string, number> = {};
+    let newCount = 0;
     for (const listing of listings) {
       const status = listing.StandardStatus || (listing as any).MlsStatus || "Unknown";
       statusCounts[status] = (statusCounts[status] || 0) + 1;
+      // Check if this is a new listing
+      if (status === "Active" && listing.OnMarketDate) {
+        const onMarket = new Date(listing.OnMarketDate);
+        if (onMarket >= sevenDaysAgo) newCount++;
+      }
     }
+    if (newCount > 0) statusCounts["New"] = newCount;
 
     // Detect price changes
     let priceIncreases = 0;
@@ -128,10 +140,20 @@ export async function GET(request: NextRequest) {
           (p.UnitNumber ? ` #${p.UnitNumber}` : "") +
           `, ${p.City || ""}, HI ${p.PostalCode || ""}`;
 
+      const isNew = p.StandardStatus === "Active" && p.OnMarketDate && new Date(p.OnMarketDate) >= sevenDaysAgo;
+
+      // Get primary photo
+      const photos = (p.Media || [])
+        .filter((m: any) => m.MediaURL && (m.MediaType || "").startsWith("image"))
+        .sort((a: any, b: any) => (a.Order || 0) - (b.Order || 0));
+      const photoUrl = photos.length > 0 ? photos[0].MediaURL : null;
+
       return {
         listingKey: p.ListingKey,
         listingId: p.ListingId,
         status: p.StandardStatus,
+        isNew,
+        photoUrl,
         mlsStatus: p.MlsStatus,
         propertyType: p.PropertyType,
         propertySubType: p.PropertySubType,
