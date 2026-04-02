@@ -125,7 +125,39 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    console.log(`[Market Watch] Returned ${result.value?.length || 0} listings, ${result.value?.filter((p: any) => p.Latitude && p.Longitude).length || 0} with coords, ${photoMap.size} with photos`);
+    // If Trestle doesn't return coordinates, geocode addresses using Google Maps API
+    const withCoords = (result.value || []).filter((p: any) => p.Latitude && p.Longitude).length;
+    if (withCoords === 0 && result.value?.length > 0 && process.env.GOOGLE_MAPS_API_KEY) {
+      console.log(`[Market Watch] No coordinates from Trestle, geocoding ${Math.min(result.value.length, 100)} addresses`);
+
+      // Batch geocode up to 100 addresses in parallel (5 at a time to respect rate limits)
+      const toGeocode = result.value.slice(0, 100);
+      const batchSize = 10;
+      for (let i = 0; i < toGeocode.length; i += batchSize) {
+        const batch = toGeocode.slice(i, i + batchSize);
+        await Promise.allSettled(
+          batch.map(async (p) => {
+            const addr = p.UnparsedAddress || [p.StreetNumber, p.StreetName, p.StreetSuffix].filter(Boolean).join(" ");
+            if (!addr) return;
+            const fullAddr = `${addr}, ${p.City || ""}, ${p.StateOrProvince || "HI"} ${p.PostalCode || ""}`;
+            try {
+              const geoRes = await fetch(
+                `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddr)}&key=${process.env.GOOGLE_MAPS_API_KEY}`,
+                { signal: AbortSignal.timeout(5000) },
+              );
+              const geoData = await geoRes.json();
+              if (geoData.results?.[0]?.geometry?.location) {
+                (p as any).Latitude = geoData.results[0].geometry.location.lat;
+                (p as any).Longitude = geoData.results[0].geometry.location.lng;
+              }
+            } catch {}
+          }),
+        );
+      }
+    }
+
+    const finalWithCoords = (result.value || []).filter((p: any) => p.Latitude && p.Longitude).length;
+    console.log(`[Market Watch] Returned ${result.value?.length || 0} listings, ${finalWithCoords} with coords, ${photoMap.size} with photos`);
 
     // Filter out rentals server-side
     const listings = (result.value || []).filter((p: any) => {
