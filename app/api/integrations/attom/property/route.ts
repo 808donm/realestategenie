@@ -461,6 +461,28 @@ async function fetchFromRentcast(endpoint: string, params: Record<string, any>):
       const results = await client.searchProperties(rentcastParams);
       properties = results.map(mapRentcastToAttomShape);
 
+      // For condo/townhouse buildings: RentCast may return all units in the building.
+      // Filter to the specific unit if the search address contains a unit identifier.
+      if (properties.length > 1 && rentcastParams.address) {
+        const searchAddr = rentcastParams.address.toLowerCase();
+        const unitPatterns = [/\b(?:unit|apt|ste|suite|#)\s*(\S+)/i, /,\s*(\d+[a-z]?)\s*,/i];
+        let unitMatch: string | null = null;
+        for (const pat of unitPatterns) {
+          const m = searchAddr.match(pat);
+          if (m) { unitMatch = m[1].toLowerCase(); break; }
+        }
+        if (unitMatch) {
+          const unitFiltered = properties.filter((p: any) => {
+            const pAddr = (p.address?.oneLine || p.address?.line1 || "").toLowerCase();
+            return pAddr.includes(unitMatch!);
+          });
+          if (unitFiltered.length > 0) {
+            console.log(`[RentCast] Filtered ${properties.length} building results to ${unitFiltered.length} matching unit "${unitMatch}"`);
+            properties = unitFiltered;
+          }
+        }
+      }
+
       // For single-address lookups (1-3 results), enrich with real AVM from
       // RentCast's /avm/value endpoint. The searchProperties endpoint only
       // returns lastSalePrice as a proxy, which can be decades stale.

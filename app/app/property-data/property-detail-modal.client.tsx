@@ -454,13 +454,27 @@ export default function PropertyDetailModal({
       if (ctx.hazards.length === 0) delete ctx.hazards;
     }
 
-    // Market stats
+    // Market stats -- use property-type-specific data when available
     if (marketStats) {
+      const sale = marketStats.saleData;
+      const propType = p.summary?.propType || p.summary?.propertyType;
+      // Match property type to RentCast's property type categories
+      const typeMap: Record<string, string> = {
+        sfr: "Single Family", "single family": "Single Family", residential: "Single Family",
+        condo: "Condo", condominium: "Condo", townhouse: "Townhouse", townhome: "Townhouse",
+        "multi-family": "Multi-Family", multifamily: "Multi-Family", duplex: "Multi-Family",
+        manufactured: "Manufactured", mobile: "Manufactured",
+        land: "Land", lot: "Land",
+      };
+      const rcType = propType ? typeMap[(propType || "").toLowerCase()] : undefined;
+      const typeMatch = rcType && sale?.dataByPropertyType?.find((d: any) => d.propertyType === rcType);
+      const typeSale = typeMatch || sale;
+
       ctx.marketStats = {
-        medianPrice: marketStats.saleData?.medianPrice,
-        avgDOM: marketStats.saleData?.averageDaysOnMarket,
-        totalListings: marketStats.saleData?.totalListings,
-        pricePerSqft: marketStats.saleData?.averagePricePerSquareFoot,
+        medianPrice: typeSale?.medianPrice,
+        avgDOM: typeSale?.averageDaysOnMarket || typeSale?.medianDaysOnMarket,
+        totalListings: typeSale?.totalListings,
+        pricePerSqft: typeSale?.averagePricePerSquareFoot || typeSale?.medianPricePerSquareFoot,
         medianRent: marketStats.rentalData?.medianPrice,
       };
     }
@@ -1291,11 +1305,21 @@ export default function PropertyDetailModal({
       const marketData = marketRes.status === "fulfilled" ? marketRes.value : null;
       if (marketData?.saleData || marketData?.sale) {
         const sale = marketData.saleData || marketData.sale || {};
+        // Use property-type-specific stats for report accuracy
+        const rptPropType = p.summary?.propType || p.summary?.propertyType;
+        const rptTypeMap: Record<string, string> = {
+          sfr: "Single Family", "single family": "Single Family", residential: "Single Family",
+          condo: "Condo", condominium: "Condo", townhouse: "Townhouse", townhome: "Townhouse",
+          "multi-family": "Multi-Family", multifamily: "Multi-Family",
+        };
+        const rptRcType = rptPropType ? rptTypeMap[(rptPropType || "").toLowerCase()] : undefined;
+        const rptTypeMatch = rptRcType && sale.dataByPropertyType?.find((d: any) => d.propertyType === rptRcType);
+        const rptSale = rptTypeMatch || sale;
         reportData.marketStats = {
-          medianPrice: sale.medianPrice || sale.averagePrice,
-          avgDOM: sale.averageDaysOnMarket || sale.medianDaysOnMarket,
-          totalListings: sale.totalListings,
-          pricePerSqft: sale.averagePricePerSquareFoot || sale.medianPricePerSquareFoot,
+          medianPrice: rptSale.medianPrice || rptSale.averagePrice,
+          avgDOM: rptSale.averageDaysOnMarket || rptSale.medianDaysOnMarket,
+          totalListings: rptSale.totalListings,
+          pricePerSqft: rptSale.averagePricePerSquareFoot || rptSale.medianPricePerSquareFoot,
         };
       }
 
@@ -4218,10 +4242,25 @@ export default function PropertyDetailModal({
                   </div>
                 );
 
+              // Determine property-type-specific stats for the headline
+              const propType = p.summary?.propType || p.summary?.propertyType;
+              const typeMap: Record<string, string> = {
+                sfr: "Single Family", "single family": "Single Family", residential: "Single Family",
+                condo: "Condo", condominium: "Condo", townhouse: "Townhouse", townhome: "Townhouse",
+                "multi-family": "Multi-Family", multifamily: "Multi-Family", duplex: "Multi-Family",
+                manufactured: "Manufactured", mobile: "Manufactured",
+                land: "Land", lot: "Land",
+              };
+              const rcType = propType ? typeMap[(propType || "").toLowerCase()] : undefined;
+              const typeMatch = rcType && sale?.dataByPropertyType?.find((d: any) => d.propertyType === rcType);
+              // Use type-specific stats for headline, fall back to aggregate
+              const headlineSale = typeMatch || sale;
+              const headlineLabel = typeMatch ? `${rcType} ` : "";
+
               // Monthly history for trend table
               const saleHistory = sale?.history
                 ? Object.entries(sale.history)
-                    .sort(([a], [b]) => a.localeCompare(b))
+                    .sort(([a]: [string, any], [b]: [string, any]) => a.localeCompare(b))
                     .slice(-12)
                 : [];
 
@@ -4248,54 +4287,56 @@ export default function PropertyDetailModal({
                   >
                     <div style={{ fontSize: 15, fontWeight: 700, color: "#065f46" }}>
                       Market Statistics — {marketStats.zipCode || p.address?.postal1}
+                      {headlineLabel && <span style={{ fontSize: 12, fontWeight: 500, color: "#059669" }}> ({headlineLabel.trim()})</span>}
                     </div>
                     <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
                       Source: RentCast{sale?.lastUpdatedDate ? ` (Updated: ${sale.lastUpdatedDate.split("T")[0]})` : ""}
+                      {headlineLabel && " | Showing stats for matching property type"}
                     </div>
                   </div>
 
-                  {sale && (
-                    <Section title="Sale Market Overview">
+                  {headlineSale && (
+                    <Section title={`${headlineLabel}Sale Market Overview`}>
                       <Field
-                        label="Median Sale Price"
-                        value={sale.medianPrice != null ? `$${Number(sale.medianPrice).toLocaleString()}` : undefined}
+                        label={`${headlineLabel}Median Sale Price`}
+                        value={headlineSale.medianPrice != null ? `$${Number(headlineSale.medianPrice).toLocaleString()}` : undefined}
                       />
                       <Field
-                        label="Average Sale Price"
-                        value={sale.averagePrice != null ? `$${Number(sale.averagePrice).toLocaleString()}` : undefined}
+                        label={`${headlineLabel}Average Sale Price`}
+                        value={headlineSale.averagePrice != null ? `$${Number(headlineSale.averagePrice).toLocaleString()}` : undefined}
                       />
                       <Field
                         label="Price Range"
                         value={
-                          sale.minPrice != null && sale.maxPrice != null
-                            ? `${fmt(sale.minPrice)} – ${fmt(sale.maxPrice)}`
+                          headlineSale.minPrice != null && headlineSale.maxPrice != null
+                            ? `${fmt(headlineSale.minPrice)} – ${fmt(headlineSale.maxPrice)}`
                             : undefined
                         }
                       />
                       <Field
                         label="Median $/Sqft"
                         value={
-                          sale.medianPricePerSquareFoot != null
-                            ? `$${sale.medianPricePerSquareFoot.toLocaleString()}`
+                          headlineSale.medianPricePerSquareFoot != null
+                            ? `$${headlineSale.medianPricePerSquareFoot.toLocaleString()}`
                             : undefined
                         }
                       />
                       <Field
                         label="Avg $/Sqft"
                         value={
-                          sale.averagePricePerSquareFoot != null
-                            ? `$${sale.averagePricePerSquareFoot.toLocaleString()}`
+                          headlineSale.averagePricePerSquareFoot != null
+                            ? `$${headlineSale.averagePricePerSquareFoot.toLocaleString()}`
                             : undefined
                         }
                       />
                       <Field
                         label="Median Sqft"
-                        value={sale.medianSquareFootage != null ? sale.medianSquareFootage.toLocaleString() : undefined}
+                        value={headlineSale.medianSquareFootage != null ? headlineSale.medianSquareFootage.toLocaleString() : undefined}
                       />
-                      <Field label="Median Days on Market" value={sale.medianDaysOnMarket} />
-                      <Field label="Avg Days on Market" value={sale.averageDaysOnMarket} />
-                      <Field label="New Listings" value={sale.newListings} />
-                      <Field label="Total Listings" value={sale.totalListings} />
+                      <Field label="Median Days on Market" value={headlineSale.medianDaysOnMarket} />
+                      <Field label="Avg Days on Market" value={headlineSale.averageDaysOnMarket} />
+                      <Field label="New Listings" value={headlineSale.newListings} />
+                      <Field label="Total Listings" value={headlineSale.totalListings} />
                     </Section>
                   )}
 
