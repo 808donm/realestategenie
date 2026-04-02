@@ -86,14 +86,14 @@ export async function GET(request: NextRequest) {
     // Exclude rentals
     // Note: can't filter PropertySubType as OData enum, so filter server-side
 
-    // Don't use $select -- some fields (Latitude, Longitude, MlsStatus) may not be
-    // available and cause the entire query to fail silently. Let Trestle return all fields.
     const result = await client.getProperties({
       $filter: filters.join(" and "),
       $orderby: "ModificationTimestamp desc",
       $top: limit,
       $count: true,
     });
+
+    console.log(`[Market Watch] Returned ${result.value?.length || 0} listings, ${result.value?.filter((p: any) => p.Latitude && p.Longitude).length || 0} with coordinates`);
 
     // Filter out rentals server-side
     const listings = (result.value || []).filter((p: any) => {
