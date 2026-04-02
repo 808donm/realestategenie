@@ -2996,6 +2996,94 @@ export default function PropertyDetailModal({
                 </div>
               )}
 
+              {/* County Deed Owners (Honolulu OWNINFO) - PRIMARY source, weekly updated */}
+              {hawaiiLoading && !hawaiiData && (
+                <div style={{ textAlign: "center", padding: 12, color: "#6b7280", fontSize: 13 }}>
+                  Loading county ownership records...
+                </div>
+              )}
+
+              {hawaiiData?.owners?.length > 0 && (
+                <div style={{ marginBottom: 16 }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      marginBottom: 12,
+                      paddingBottom: 8,
+                      borderBottom: "2px solid #16a34a",
+                    }}
+                  >
+                    <span style={{ fontSize: 14, fontWeight: 700, color: "#111827" }}>Deed Owners</span>
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 4,
+                        padding: "2px 8px",
+                        background: "#dcfce7",
+                        color: "#166534",
+                        borderRadius: 4,
+                        fontSize: 10,
+                        fontWeight: 700,
+                        textTransform: "uppercase",
+                        letterSpacing: 0.5,
+                      }}
+                    >
+                      County Records
+                    </span>
+                    <span style={{ fontSize: 10, color: "#6b7280", marginLeft: "auto" }}>Updated weekly from county deed records</span>
+                  </div>
+                  {hawaiiData.owners.map((ctyOwner: any, i: number) => {
+                    const ownerName = ctyOwner.taxbillown || ctyOwner.taxbillown1 || ctyOwner.owner;
+                    const ownerName2 = ctyOwner.taxbillown1 && ctyOwner.taxbillown && ctyOwner.taxbillown1 !== ctyOwner.taxbillown
+                      ? ctyOwner.taxbillown1
+                      : ctyOwner.taxbillown2;
+                    const ownerType = ctyOwner.owntype_desc || ctyOwner.owntype;
+                    const mailingParts = [ctyOwner.address1, ctyOwner.address3].filter(Boolean);
+                    const mailing = mailingParts.length > 0 ? mailingParts.join(", ") : undefined;
+                    return (
+                      <div
+                        key={i}
+                        style={{
+                          padding: "10px 14px",
+                          background: "#f0fdf4",
+                          borderRadius: 8,
+                          border: "1px solid #bbf7d0",
+                          marginBottom: 8,
+                        }}
+                      >
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 16px" }}>
+                          <div style={{ gridColumn: "1 / -1" }}>
+                            <span style={{ fontSize: 11, color: "#6b7280" }}>
+                              Owner {ctyOwner.ownseq || i + 1}
+                              {ownerType ? ` - ${ownerType}` : ""}
+                            </span>
+                            <div style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}>{ownerName}</div>
+                            {ownerName2 && (
+                              <div style={{ fontSize: 13, color: "#374151", marginTop: 2 }}>{ownerName2}</div>
+                            )}
+                          </div>
+                          {mailing && (
+                            <div style={{ gridColumn: "1 / -1" }}>
+                              <span style={{ fontSize: 11, color: "#6b7280" }}>Mailing Address</span>
+                              <div style={{ fontSize: 12, color: "#374151" }}>{mailing}</div>
+                            </div>
+                          )}
+                          {ctyOwner.parid && (
+                            <div>
+                              <span style={{ fontSize: 11, color: "#6b7280" }}>Parcel ID</span>
+                              <div style={{ fontSize: 12, color: "#374151", fontFamily: "monospace" }}>{ctyOwner.parid}</div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
               {/* Current Owner — resolve from p.owner, assessment.owner, or enrichedOwner */}
               {(() => {
                 const topOwner = p.owner;
@@ -3020,8 +3108,9 @@ export default function PropertyDetailModal({
                   (baseOwner?.mailingAddressOneLine && baseOwner.mailingAddressOneLine.trim());
                 const owner = hasBase ? baseOwner : enrichedOw ? { ...baseOwner, ...enrichedOw } : baseOwner;
                 const ownerMailing = owner?.mailingAddressOneLine?.trim();
+                const hasCountyOwners = hawaiiData?.owners?.length > 0;
                 return (
-                  <Section title="Current Owner">
+                  <Section title={hasCountyOwners ? "Data Provider Records" : "Current Owner"}>
                     <Field label="Owner 1" value={owner?.owner1?.fullName} />
                     <Field label="Owner 2" value={owner?.owner2?.fullName} />
                     <Field label="Owner 3" value={owner?.owner3?.fullName} />
@@ -3295,25 +3384,7 @@ export default function PropertyDetailModal({
                 );
               })()}
 
-              {/* Hawaii State Data — deed owners from Honolulu OWNALL + statewide parcel */}
-              {hawaiiLoading && (
-                <div style={{ textAlign: "center", padding: 20, color: "#6b7280", fontSize: 13 }}>
-                  Loading Hawaii public records...
-                </div>
-              )}
-
-              {hawaiiData?.owners?.length > 0 && (
-                <Section title="Deed Owners (Hawaii Public Records)">
-                  {hawaiiData.owners.map((owner: any, i: number) => (
-                    <Field
-                      key={i}
-                      label={`Owner ${owner.ownseq || i + 1}${owner.owntype ? ` (${owner.owntype})` : ""}`}
-                      value={owner.owner}
-                    />
-                  ))}
-                </Section>
-              )}
-
+              {/* Hawaii State Parcel Record */}
               {hawaiiData?.parcel && (
                 <Section title="State Parcel Record">
                   <Field label="TMK" value={hawaiiData.parcel.tmk_txt || hawaiiData.parcel.tmk} />
