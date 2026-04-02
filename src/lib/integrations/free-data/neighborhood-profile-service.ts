@@ -12,6 +12,7 @@ import { searchSchoolsByLocation, searchSchoolsByZip, enrichWithTitleI, type Sch
 import { getCrimeIndicesByState, getCrimeIndicesByFips, type CrimeIndices } from "./fbi-crime-client";
 import { getHazardRiskProfile, type HazardRiskProfile } from "./usgs-hazards-client";
 import { searchPOI, type POIResult } from "./osm-poi-client";
+import { searchHawaiiAmenities } from "./hawaii-amenities-client";
 import { getSalesTrends, type SalesTrendsResult } from "./fred-trends-client";
 
 function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -312,9 +313,11 @@ export async function getNeighborhoodProfile(params: {
       ? getHazardRiskProfile(latitude, longitude, stateAbbrev, fips)
       : Promise.resolve(null as HazardRiskProfile | null),
 
-    // Points of interest
+    // Points of interest -- Hawaii uses State GIS, others use OSM Overpass
     latitude && longitude
-      ? searchPOI(latitude, longitude, 3000, 30)
+      ? stateAbbrev === "HI"
+        ? searchHawaiiAmenities(latitude, longitude, 2, 30)
+        : searchPOI(latitude, longitude, 3000, 30)
       : Promise.resolve({ pois: [] as POIResult[], totalCount: 0, categories: [] as string[] }),
 
     // Sales trends (MSA → state → national fallback)
