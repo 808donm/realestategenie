@@ -142,16 +142,19 @@ export async function GET(request: NextRequest) {
             if (!addr) return;
             const fullAddr = `${addr}, ${p.City || ""}, ${p.StateOrProvince || "HI"} ${p.PostalCode || ""}`;
             try {
-              const geoRes = await fetch(
-                `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddr)}&key=${geoKey}`,
-                { signal: AbortSignal.timeout(5000) },
-              );
+              const geoUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddr)}&key=${geoKey}`;
+              const geoRes = await fetch(geoUrl, { signal: AbortSignal.timeout(5000) });
               const geoData = await geoRes.json();
               if (geoData.results?.[0]?.geometry?.location) {
                 (p as any).Latitude = geoData.results[0].geometry.location.lat;
                 (p as any).Longitude = geoData.results[0].geometry.location.lng;
+              } else if (i === 0) {
+                // Log first failure for debugging
+                console.warn(`[Market Watch] Geocode failed for "${fullAddr}": status=${geoData.status}, error=${geoData.error_message || "none"}`);
               }
-            } catch {}
+            } catch (err: any) {
+              if (i === 0) console.warn(`[Market Watch] Geocode error: ${err.message}`);
+            }
           }),
         );
       }
