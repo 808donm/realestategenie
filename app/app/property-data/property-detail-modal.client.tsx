@@ -619,22 +619,46 @@ export default function PropertyDetailModal({
       }
     }
     const isHawaii = hiState === "HI" || hiState === "HAWAII";
-    const tmk = p.identifier?.apn;
+    if (!isHawaii) return;
 
-    if (!isHawaii || !tmk) return;
+    let tmk = p.identifier?.apn;
 
     setHawaiiLoading(true);
 
-    const params = new URLSearchParams({ endpoint: "enriched", tmk });
-    fetch(`/api/integrations/hawaii-parcels?${params}`)
-      .then((r) => r.json())
-      .then((data) => {
+    // If no APN, resolve TMK from lat/lng using statewide parcel layer
+    const fetchHawaiiData = async () => {
+      if (!tmk && p.location?.latitude && p.location?.longitude) {
+        try {
+          const lat = p.location.latitude;
+          const lng = p.location.longitude;
+          const tmkUrl = `https://geodata.hawaii.gov/arcgis/rest/services/ParcelsZoning/MapServer/25/query?geometry=${encodeURIComponent(`{"x":${lng},"y":${lat}}`)}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=tmk,tmk_txt,county&returnGeometry=false&f=json`;
+          const tmkRes = await fetch(tmkUrl);
+          const tmkData = await tmkRes.json();
+          const parcel = tmkData.features?.[0]?.attributes;
+          if (parcel?.tmk) {
+            tmk = String(parcel.tmk);
+            console.log(`[PropertyDetail] Resolved TMK from coords: ${tmk}`);
+          }
+        } catch {}
+      }
+
+      if (!tmk) {
+        setHawaiiLoading(false);
+        return;
+      }
+
+      try {
+        const params = new URLSearchParams({ endpoint: "enriched", tmk });
+        const res = await fetch(`/api/integrations/hawaii-parcels?${params}`);
+        const data = await res.json();
         if (data.success) {
           setHawaiiData(data);
         }
-      })
-      .catch(() => {})
-      .finally(() => setHawaiiLoading(false));
+      } catch {}
+      setHawaiiLoading(false);
+    };
+
+    fetchHawaiiData();
   }, [activeSection, hawaiiData, hawaiiLoading, p]);
 
   // Fetch neighborhood profile (community data, schools) when Neighborhood tab is selected
