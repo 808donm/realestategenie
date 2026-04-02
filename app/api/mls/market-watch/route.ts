@@ -198,19 +198,25 @@ export async function GET(request: NextRequest) {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    // Compute status counts -- add "New" as a virtual status
+    // Compute status counts -- add "New" and "Back On Market" as virtual statuses
     const statusCounts: Record<string, number> = {};
     let newCount = 0;
+    let bomCount = 0;
     for (const listing of listings) {
       const status = listing.StandardStatus || (listing as any).MlsStatus || "Unknown";
       statusCounts[status] = (statusCounts[status] || 0) + 1;
-      // Check if this is a new listing
+      // Check if new listing
       if (status === "Active" && listing.OnMarketDate) {
         const onMarket = new Date(listing.OnMarketDate);
         if (onMarket >= sevenDaysAgo) newCount++;
       }
+      // Check if back on market (has BackOnMarketDate)
+      if (status === "Active" && (listing as any).BackOnMarketDate) {
+        bomCount++;
+      }
     }
     if (newCount > 0) statusCounts["New"] = newCount;
+    if (bomCount > 0) statusCounts["Back On Market"] = bomCount;
 
     // Detect price changes
     let priceIncreases = 0;
@@ -231,12 +237,14 @@ export async function GET(request: NextRequest) {
           `, ${p.City || ""}, HI ${p.PostalCode || ""}`;
 
       const isNew = p.StandardStatus === "Active" && p.OnMarketDate && new Date(p.OnMarketDate) >= sevenDaysAgo;
+      const isBackOnMarket = p.StandardStatus === "Active" && !!(p as any).BackOnMarketDate;
 
       return {
         listingKey: p.ListingKey,
         listingId: p.ListingId,
         status: p.StandardStatus,
         isNew,
+        isBackOnMarket,
         photoUrl: (p as any)._photoUrl || null,
         mlsStatus: p.MlsStatus,
         propertyType: p.PropertyType,

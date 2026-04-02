@@ -14,6 +14,7 @@ const DEFAULT_ZOOM = 12;
 
 const STATUS_COLORS: Record<string, { fill: string; stroke: string; label: string }> = {
   New: { fill: "#f97316", stroke: "#c2410c", label: "New" },
+  "Back On Market": { fill: "#10b981", stroke: "#059669", label: "Back On Market" },
   Active: { fill: "#3b82f6", stroke: "#1d4ed8", label: "Active" },
   Pending: { fill: "#3b82f6", stroke: "#000000", label: "Pending" },
   Closed: { fill: "#dc2626", stroke: "#991b1b", label: "Sold" },
@@ -37,6 +38,7 @@ interface Listing {
   listingId: string;
   status: string;
   isNew?: boolean;
+  isBackOnMarket?: boolean;
   mlsStatus?: string;
   propertyType?: string;
   propertySubType?: string;
@@ -200,6 +202,7 @@ export default function MarketWatchClient() {
 
   const filteredListings = listings.filter((l) => {
     if (l.isNew && activeStatuses.has("New")) return true;
+    if (l.isBackOnMarket && activeStatuses.has("Back On Market")) return true;
     return activeStatuses.has(l.status);
   });
 
@@ -493,7 +496,7 @@ export default function MarketWatchClient() {
                     if (!listing.lat || !listing.lng) return null;
                     const colors = STATUS_COLORS[listing.status] || STATUS_COLORS.Active;
                     const isNew = listing.isNew || (listing.daysOnMarket != null && listing.daysOnMarket <= 7);
-                    const markerColor = isNew ? "#f97316" : colors.fill;
+                    const markerColor = listing.isBackOnMarket ? "#10b981" : isNew ? "#f97316" : colors.fill;
                     const strokeColor = listing.status === "Pending" ? "#000000" : colors.stroke;
                     const strokeWidth = listing.status === "Pending" ? 3 : 1.5;
 
