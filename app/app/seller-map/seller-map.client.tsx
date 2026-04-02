@@ -395,6 +395,9 @@ export function SellerMapClient() {
     owner: sp.owner ? { owner1: { fullName: sp.owner } } : undefined,
     sale: sp.lastSalePrice ? { amount: { saleAmt: sp.lastSalePrice, saleTransDate: sp.lastSaleDate } } : undefined,
     avm: sp.estimatedValue ? { amount: { value: sp.estimatedValue } } : undefined,
+    saleHistory: sp.lastSalePrice || sp.lastSaleDate ? [
+      { date: sp.lastSaleDate, amount: sp.lastSalePrice, _source: "realie" },
+    ] : undefined,
   }), []);
 
   const handleDraftOutreach = useCallback((property: ScoredProperty) => {

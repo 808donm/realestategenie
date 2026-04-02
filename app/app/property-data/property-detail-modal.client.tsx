@@ -5041,6 +5041,7 @@ function SalesHistorySection({ address, publicRecords }: { address?: string; pub
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showBuilding, setShowBuilding] = useState(false);
+  const [fallbackRecords, setFallbackRecords] = useState<any[] | null>(null);
 
   useEffect(() => {
     if (!address) {
@@ -5048,19 +5049,50 @@ function SalesHistorySection({ address, publicRecords }: { address?: string; pub
       return;
     }
     setLoading(true);
+
+    // Try MLS first, then fall back to Realie/RentCast
     fetch(`/api/mls/sales-history?address=${encodeURIComponent(address)}`)
       .then((r) => r.json())
-      .then((data) => {
-        if (data.error) setError(data.error);
-        else {
+      .then(async (data) => {
+        if (data.error) {
+          // MLS failed -- don't set error, try fallback
+          console.log("[SalesHistory] MLS failed, trying RentCast/Realie fallback");
+        } else {
           setUnitHistory(data.transactions || []);
           setBuildingHistory(data.buildingTransactions || []);
           setUnitNumber(data.unitNumber || null);
         }
+
+        // If MLS returned no sales AND no public records, fetch from Realie/RentCast
+        const mlsCount = (data.transactions?.length || 0) + (data.buildingTransactions?.length || 0);
+        if (mlsCount === 0 && (!publicRecords || publicRecords.length === 0)) {
+          try {
+            const { expandStreetSuffix } = await import("@/lib/address-utils");
+            const expanded = expandStreetSuffix(address);
+            const rcRes = await fetch(`/api/integrations/attom/property?endpoint=expanded&address=${encodeURIComponent(expanded)}&pagesize=1`);
+            const rcData = await rcRes.json();
+            const prop = rcData.property?.[0];
+            if (prop?.saleHistory?.length > 0) {
+              // Inject Realie/RentCast sale history as public records
+              const rcHistory = prop.saleHistory.map((s: any) => ({
+                date: s.date,
+                amount: s.amount,
+                buyerName: s.buyerName,
+                sellerName: s.sellerName,
+                deedType: s.deedType,
+                _source: s._source || "public records",
+              }));
+              // Update the publicRecords display via a local state
+              setFallbackRecords(rcHistory);
+            }
+          } catch {
+            // Fallback failed silently
+          }
+        }
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [address]);
+  }, [address, publicRecords]);
 
   if (loading)
     return (
@@ -5069,7 +5101,8 @@ function SalesHistorySection({ address, publicRecords }: { address?: string; pub
       </div>
     );
   if (error) return <div style={{ padding: 20, color: "#ef4444", fontSize: 13 }}>{error}</div>;
-  const hasPublicRecords = publicRecords && publicRecords.length > 0;
+  const allPublicRecords = [...(publicRecords || []), ...(fallbackRecords || [])];
+  const hasPublicRecords = allPublicRecords.length > 0;
   if (unitHistory.length === 0 && buildingHistory.length === 0 && !hasPublicRecords) {
     return (
       <div style={{ padding: 20, textAlign: "center", color: "#9ca3af", fontSize: 13 }}>
@@ -5214,14 +5247,14 @@ function SalesHistorySection({ address, publicRecords }: { address?: string; pub
               borderBottom: "1px solid #e5e7eb",
             }}
           >
-            Public Records ({publicRecords!.length})
+            Public Records ({allPublicRecords.length})
           </h3>
           {unitHistory.length === 0 && buildingHistory.length === 0 && (
             <p style={{ fontSize: 11, color: "#9ca3af", marginBottom: 10 }}>
               No MLS transactions found — showing county deed records
             </p>
           )}
-          {publicRecords!.map((s: any, i: number) => (
+          {allPublicRecords.map((s: any, i: number) => (
             <div
               key={i}
               style={{
