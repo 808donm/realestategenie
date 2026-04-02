@@ -105,8 +105,8 @@ export default function MarketWatchClient() {
         const tmkData = await tmkRes.json();
 
         if (tmkData.features?.length > 0) {
-          // Compute bounding box from TMK geometry
-          let minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
+          // Compute centroid from TMK geometry to find the nearest zip code
+          let sumLat = 0, sumLng = 0, pointCount = 0;
           for (const feature of tmkData.features) {
             const coords = feature.geometry?.type === "Polygon"
               ? feature.geometry.coordinates[0]
@@ -115,13 +115,38 @@ export default function MarketWatchClient() {
                 : [];
             for (const coord of coords) {
               const [lng, lat] = Array.isArray(coord[0]) ? coord[0] : coord;
-              if (lat < minLat) minLat = lat;
-              if (lat > maxLat) maxLat = lat;
-              if (lng < minLng) minLng = lng;
-              if (lng > maxLng) maxLng = lng;
+              sumLat += lat;
+              sumLng += lng;
+              pointCount++;
             }
           }
-          params.set("bbox", `${minLng},${minLat},${maxLng},${maxLat}`);
+          if (pointCount > 0) {
+            const centLat = sumLat / pointCount;
+            const centLng = sumLng / pointCount;
+            // Use Google Geocoding to find the zip code for this centroid
+            try {
+              const geoRes = await fetch(
+                `https://maps.googleapis.com/maps/api/geocode/json?latlng=${centLat},${centLng}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`,
+              );
+              const geoData = await geoRes.json();
+              const zipResult = geoData.results?.[0]?.address_components?.find(
+                (c: any) => c.types?.includes("postal_code"),
+              );
+              if (zipResult?.short_name) {
+                params.set("postalCode", zipResult.short_name);
+              }
+            } catch {
+              // Fallback: use a Hawaii TMK zone-to-zip rough mapping
+              const ZONE_ZIP: Record<string, string> = {
+                "1-1": "96816", "1-2": "96822", "1-3": "96813", "1-4": "96734",
+                "1-5": "96744", "1-6": "96762", "1-7": "96791", "1-8": "96797",
+                "1-9": "96706", "2-1": "96793", "2-4": "96732", "3-1": "96720",
+                "4-1": "96766", "4-5": "96746",
+              };
+              const zoneKey = `${parts[0]}-${zone}`;
+              if (ZONE_ZIP[zoneKey]) params.set("postalCode", ZONE_ZIP[zoneKey]);
+            }
+          }
         } else {
           setError("No TMK area found for that input");
           setLoading(false);

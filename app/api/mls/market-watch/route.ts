@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
     const bbox = params.get("bbox");
     const timeframe = params.get("timeframe") || "30days";
     const propertyType = params.get("propertyType");
-    const statusParam = params.get("status") || "Active,Pending,Closed,Expired,Withdrawn,Canceled";
+    const statusParam = params.get("status") || "Active,Pending,Closed";
     const limit = Math.min(Number(params.get("limit") || 200), 500);
 
     const client = await getTrestleClient(supabase, user.id);
@@ -70,14 +70,9 @@ export async function GET(request: NextRequest) {
       filters.push(`(${statuses.map((s) => `StandardStatus eq '${s}'`).join(" or ")})`);
     }
 
-    // Location filter -- zip code or bounding box
+    // Location filter -- zip code only (Trestle doesn't support Latitude/Longitude filtering)
     if (postalCode) {
       filters.push(`startswith(PostalCode, '${postalCode}')`);
-    } else if (bbox) {
-      const [minLng, minLat, maxLng, maxLat] = bbox.split(",").map(Number);
-      if (!isNaN(minLng) && !isNaN(minLat) && !isNaN(maxLng) && !isNaN(maxLat)) {
-        filters.push(`Latitude ge ${minLat} and Latitude le ${maxLat} and Longitude ge ${minLng} and Longitude le ${maxLng}`);
-      }
     }
 
     // Time filter -- use ModificationTimestamp for recent changes
@@ -91,12 +86,12 @@ export async function GET(request: NextRequest) {
     // Exclude rentals
     // Note: can't filter PropertySubType as OData enum, so filter server-side
 
+    // Don't use $select -- some fields (Latitude, Longitude, MlsStatus) may not be
+    // available and cause the entire query to fail silently. Let Trestle return all fields.
     const result = await client.getProperties({
       $filter: filters.join(" and "),
       $orderby: "ModificationTimestamp desc",
       $top: limit,
-      $select:
-        "ListingKey,ListingId,StandardStatus,MlsStatus,PropertyType,PropertySubType,ListPrice,OriginalListPrice,ClosePrice,CloseDate,OnMarketDate,DaysOnMarket,CumulativeDaysOnMarket,Latitude,Longitude,UnparsedAddress,StreetNumber,StreetName,StreetSuffix,UnitNumber,City,PostalCode,BedroomsTotal,BathroomsTotalInteger,LivingArea,YearBuilt,ModificationTimestamp",
       $count: true,
     });
 
