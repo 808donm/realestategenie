@@ -93,10 +93,13 @@ export function SellerMapClient() {
   const isTMKInput = useCallback((input: string): boolean => {
     const trimmed = input.trim();
     if (!trimmed) return false;
-    // Contains dashes with digits on both sides (TMK-style) — but not a plain zip like "96825"
-    if (/^\d[\d\-.:() ]{4,}\d$/.test(trimmed) && trimmed.includes("-")) return true;
-    // All digits, 9+ chars (raw TMK number like "120030040050")
+    // Contains dashes between digits (TMK-style: "1-3-1", "1-3-1-042-026")
+    if (/^\d+-\d+/.test(trimmed)) return true;
+    // Short digit string that looks like a TMK zone-section (e.g., "131", "1310")
+    // but NOT a 5-digit zip code
     const digitsOnly = trimmed.replace(/[-\s.:()]/g, "");
+    if (/^\d{3,4}$/.test(digitsOnly) && !digitsOnly.startsWith("96") && !digitsOnly.startsWith("97")) return true;
+    // All digits, 9+ chars (raw TMK number like "120030040050")
     if (/^\d{9,}$/.test(digitsOnly)) return true;
     return false;
   }, []);
@@ -107,8 +110,15 @@ export function SellerMapClient() {
   const fetchTMKOverlay = useCallback(async (tmkInput: string) => {
     try {
       // Parse TMK input to determine the right query
-      // Formats: "1-3-1" (zone-section), "1-3-1-042" (zone-section-plat), "1-3-1-042-026" (full TMK)
-      const parts = tmkInput.replace(/[.:() ]/g, "-").split("-").filter(Boolean);
+      // Formats: "1-3-1" (island-zone-section), "131" (same without dashes), "1-3-1-042-026" (full TMK)
+      let parts = tmkInput.replace(/[.:() ]/g, "-").split("-").filter(Boolean);
+
+      // If no dashes and 3-4 digits, split into individual digits (e.g., "131" -> ["1","3","1"])
+      if (parts.length === 1 && /^\d{3,4}$/.test(parts[0])) {
+        const digits = parts[0];
+        parts = digits.split("");
+      }
+
       const params = new URLSearchParams();
 
       if (parts.length >= 5) {
@@ -208,11 +218,11 @@ export function SellerMapClient() {
       try {
         const trimmedInput = filters.zips?.trim();
 
-        // If input looks like a TMK, fetch parcel overlay instead of zip-based search
+        // If input looks like a TMK, fetch parcel overlay and use TMK area for property search
         if (trimmedInput && isTMKInput(trimmedInput)) {
           await fetchTMKOverlay(trimmedInput);
-          // Still run the property search using the TMK parcel area
-          // but don't pass it as a zip code
+          // Use the TMK-derived bounds instead of the map viewport bounds
+          bounds = boundsRef.current;
         }
 
         // If user specified zip codes, use a higher limit for island-wide coverage
