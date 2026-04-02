@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import type { ScoredProperty } from "@/lib/scoring/seller-motivation-score";
+import { getSellerColor, getSellerLabel } from "@/lib/scoring/seller-motivation-score";
 import { SellerMapView } from "./map-view.client";
 import { SidebarPanel } from "./sidebar-panel.client";
 import { PropertyDetailPanel } from "./property-detail-panel.client";
@@ -471,6 +472,12 @@ export function SellerMapClient() {
                 property={scoredToAttom(selectedProperty)}
                 onClose={() => setSelectedProperty(null)}
                 embedded
+                sellerScore={{
+                  score: selectedProperty.score,
+                  level: selectedProperty.level,
+                  factors: selectedProperty.factors,
+                  owner: selectedProperty.owner,
+                }}
               />
             </div>
           ) : (

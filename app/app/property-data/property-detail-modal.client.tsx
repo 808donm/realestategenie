@@ -245,6 +245,7 @@ export default function PropertyDetailModal({
   farmingContext,
   mlsPhotos,
   mlsListPrice,
+  sellerScore,
 }: {
   property: AttomProperty;
   searchContext?: { absenteeowner?: string };
@@ -259,6 +260,8 @@ export default function PropertyDetailModal({
   mlsPhotos?: string[];
   /** MLS list price for mortgage calculator in shared reports */
   mlsListPrice?: number;
+  /** Seller opportunity score data from the Seller Map */
+  sellerScore?: { score: number; level: string; factors: Array<{ name: string; points: number; maxPoints: number; description: string }>; owner?: string };
 }) {
   const [activeSection, setActiveSection] = useState<SectionId>(visibleTabs?.[0] || "overview");
   const [federalData, setFederalData] = useState<FederalPropertySupplement | null>(null);
@@ -1293,6 +1296,7 @@ export default function PropertyDetailModal({
     { id: "neighborhood", label: "Neighborhood" },
     { id: "federal", label: "Area Intel" },
     ...(farmingContext ? [{ id: "nearby" as SectionId, label: "Nearby Homes" }] : []),
+    ...(sellerScore ? [{ id: "seller-score" as SectionId, label: "Opportunity Score" }] : []),
   ];
   const sections = visibleTabs ? allSections.filter((s) => visibleTabs.includes(s.id)) : allSections;
 
@@ -4697,6 +4701,61 @@ export default function PropertyDetailModal({
               );
             })()}
         </>
+      )}
+
+      {/* ── Opportunity Score (Seller Map only) ── */}
+      {activeSection === ("seller-score" as SectionId) && sellerScore && (
+        <div>
+          {/* Score Hero */}
+          <div style={{ textAlign: "center", padding: 20, marginBottom: 16 }}>
+            <div
+              style={{
+                width: 80,
+                height: 80,
+                borderRadius: "50%",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 32,
+                fontWeight: 900,
+                color: "#fff",
+                background: sellerScore.level === "very_likely" ? "#dc2626" : sellerScore.level === "likely" ? "#ea580c" : sellerScore.level === "possible" ? "#d97706" : "#6b7280",
+              }}
+            >
+              {sellerScore.score}
+            </div>
+            <div style={{ fontSize: 16, fontWeight: 700, marginTop: 8, color: sellerScore.level === "very_likely" ? "#dc2626" : sellerScore.level === "likely" ? "#ea580c" : sellerScore.level === "possible" ? "#d97706" : "#6b7280" }}>
+              {sellerScore.level === "very_likely" ? "Very Likely to Sell" : sellerScore.level === "likely" ? "Likely to Sell" : sellerScore.level === "possible" ? "Possible Seller" : "Low Probability"}
+            </div>
+            {sellerScore.owner && (
+              <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>Owner: {sellerScore.owner}</div>
+            )}
+          </div>
+
+          {/* Motivation Factors */}
+          <Section title="Motivation Factors">
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {sellerScore.factors
+                .sort((a, b) => b.points - a.points)
+                .map((f) => {
+                  const pct = f.maxPoints > 0 ? (f.points / f.maxPoints) * 100 : 0;
+                  const barColor = pct >= 80 ? "#dc2626" : pct >= 60 ? "#ea580c" : pct >= 40 ? "#d97706" : pct > 0 ? "#3b82f6" : "#e5e7eb";
+                  return (
+                    <div key={f.name}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 3 }}>
+                        <span style={{ fontWeight: 600, color: "#374151" }}>{f.name}</span>
+                        <span style={{ color: "#6b7280" }}>{f.points}/{f.maxPoints}</span>
+                      </div>
+                      <div style={{ height: 6, background: "#f3f4f6", borderRadius: 3, overflow: "hidden" }}>
+                        <div style={{ height: "100%", width: `${pct}%`, background: barColor, borderRadius: 3, transition: "width 0.3s" }} />
+                      </div>
+                      <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>{f.description}</div>
+                    </div>
+                  );
+                })}
+            </div>
+          </Section>
+        </div>
       )}
     </div>
   );
