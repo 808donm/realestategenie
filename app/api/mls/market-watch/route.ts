@@ -127,7 +127,7 @@ export async function GET(request: NextRequest) {
 
     // If Trestle doesn't return coordinates, geocode addresses using Google Maps API
     const withCoords = (result.value || []).filter((p: any) => p.Latitude && p.Longitude).length;
-    const geoKey = process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    const geoKey = process.env.GOOGLE_GEOCODING_API_KEY || process.env.GOOGLE_MAPS_API_KEY;
     if (withCoords === 0 && result.value?.length > 0 && geoKey) {
       console.log(`[Market Watch] No coordinates from Trestle, geocoding ${Math.min(result.value.length, 100)} addresses`);
 
