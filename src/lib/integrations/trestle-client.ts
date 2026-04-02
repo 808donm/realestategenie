@@ -394,6 +394,7 @@ export class TrestleClient {
     offset?: number;
     includeMedia?: boolean;
     skipCount?: boolean;
+    includeRentals?: boolean;
   }): Promise<ODataResponse<TrestleProperty>> {
     const filters: string[] = [];
 
@@ -402,8 +403,10 @@ export class TrestleClient {
       filters.push(`(${statusFilter})`);
     }
 
-    // Exclude rental/lease listings
-    filters.push("PropertySubType ne 'ResidentialLease'");
+    // Exclude rental/lease listings unless explicitly requested
+    if (!options.includeRentals) {
+      filters.push("PropertySubType ne 'ResidentialLease'");
+    }
 
     if (options.city) {
       // Case-insensitive partial match using OData contains + tolower

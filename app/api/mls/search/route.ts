@@ -54,6 +54,7 @@ export async function GET(request: NextRequest) {
       : ["Active"];
     const limit = searchParams.get("limit") ? parseInt(searchParams.get("limit")!) : 25;
     const offset = searchParams.get("offset") ? parseInt(searchParams.get("offset")!) : 0;
+    const includeRentals = searchParams.get("includeRentals") === "true";
 
     // If there's a general query, detect if it's a zip, address, or city
     let searchCity = city;
@@ -139,6 +140,7 @@ export async function GET(request: NextRequest) {
         offset,
         includeMedia: true,
         skipCount: !hasLocationFilter,
+        includeRentals,
       });
 
       // If city search returned 0 results and we have a building name candidate, try SubdivisionName
@@ -162,16 +164,17 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Filter out rental/lease listings (PropertySubType contains "Lease" or price < $25K)
+    // Filter out rental/lease listings unless includeRentals is set
     const allResults = result.value || [];
-    const filteredResults = allResults.filter((p) => {
-      const subType = (p.PropertySubType || "").toLowerCase();
-      const propType = (p.PropertyType || "").toLowerCase();
-      if (subType.includes("lease") || propType.includes("lease")) return false;
-      // Prices under $25K are almost certainly monthly rental listings, not sales
-      if (p.ListPrice && p.ListPrice > 0 && p.ListPrice < 25000) return false;
-      return true;
-    });
+    const filteredResults = includeRentals
+      ? allResults
+      : allResults.filter((p) => {
+          const subType = (p.PropertySubType || "").toLowerCase();
+          const propType = (p.PropertyType || "").toLowerCase();
+          if (subType.includes("lease") || propType.includes("lease")) return false;
+          if (p.ListPrice && p.ListPrice > 0 && p.ListPrice < 25000) return false;
+          return true;
+        });
 
     const filteredCount = allResults.length - filteredResults.length;
     if (filteredCount > 0) {

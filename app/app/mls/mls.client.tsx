@@ -120,6 +120,7 @@ export default function MLSClient() {
     minBaths: "",
     propertyType: "",
     minDaysOnMarket: "",
+    includeRentals: "",
   });
 
   // Data state
@@ -482,6 +483,7 @@ export default function MLSClient() {
         if (filters.minBaths) params.append("minBaths", filters.minBaths);
         if (filters.propertyType) params.append("propertyType", filters.propertyType);
         if (filters.minDaysOnMarket) params.append("minDaysOnMarket", filters.minDaysOnMarket);
+        if (filters.includeRentals) params.append("includeRentals", "true");
         params.append("limit", limit.toString());
         params.append("offset", newOffset.toString());
 
@@ -925,6 +927,21 @@ export default function MLSClient() {
                     <option value="180">180+ days</option>
                   </select>
                 </div>
+              </div>
+              {/* Rental filter toggle */}
+              <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 8 }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#374151", cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={!filters.includeRentals}
+                    onChange={(e) => setFilters({ ...filters, includeRentals: !e.target.checked ? "true" : "" })}
+                    style={{ accentColor: "#2563eb" }}
+                  />
+                  Hide rental listings
+                </label>
+                <span style={{ fontSize: 11, color: "#9ca3af" }}>
+                  Excludes ResidentialLease and listings under $25K
+                </span>
               </div>
             </div>
           )}
