@@ -2,6 +2,11 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { APIProvider, Map, AdvancedMarker, InfoWindow } from "@vis.gl/react-google-maps";
+import dynamic from "next/dynamic";
+
+const PropertyDetailModal = dynamic(() => import("../property-data/property-detail-modal.client"), {
+  loading: () => null,
+});
 
 const MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
 const DEFAULT_CENTER = { lat: 21.3113, lng: -157.86 };
@@ -56,6 +61,7 @@ interface Listing {
 export default function MarketWatchClient() {
   const [postalCode, setPostalCode] = useState("");
   const [timeframe, setTimeframe] = useState<"today" | "7days" | "30days" | "90days">("30days");
+  const [loadingPhoto, setLoadingPhoto] = useState(false);
   const [propertyType, setPropertyType] = useState<"" | "Residential" | "Condominium">("");
   const [listings, setListings] = useState<Listing[]>([]);
   const [statusCounts, setStatusCounts] = useState<Record<string, number>>({});
@@ -66,6 +72,8 @@ export default function MarketWatchClient() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
+  const [detailListing, setDetailListing] = useState<Listing | null>(null);
+  const photoCache = useRef<Record<string, string>>({});
   const [activeStatuses, setActiveStatuses] = useState<Set<string>>(new Set(Object.keys(STATUS_COLORS)));
 
   // Detect if input is a TMK (has dashes between digits, or 3-4 digit non-zip)
@@ -490,6 +498,7 @@ export default function MarketWatchClient() {
                         onClick={() => setSelectedListing(listing)}
                       >
                         <div
+                          onMouseEnter={() => setSelectedListing(listing)}
                           style={{
                             width: 14,
                             height: 14,
@@ -545,10 +554,26 @@ export default function MarketWatchClient() {
                               selectedListing.daysOnMarket != null && `${selectedListing.daysOnMarket} DOM`,
                             ].filter(Boolean).join(" \u00B7 ")}
                           </div>
-                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#9ca3af" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#9ca3af", marginBottom: 8 }}>
                             {selectedListing.listingId && <span>MLS# {selectedListing.listingId}</span>}
                             {selectedListing.propertySubType && <span>{selectedListing.propertySubType}</span>}
                           </div>
+                          <button
+                            onClick={() => { setDetailListing(selectedListing); setSelectedListing(null); }}
+                            style={{
+                              width: "100%",
+                              padding: "8px 0",
+                              background: "#1e40af",
+                              color: "#fff",
+                              border: "none",
+                              borderRadius: 6,
+                              fontSize: 13,
+                              fontWeight: 600,
+                              cursor: "pointer",
+                            }}
+                          >
+                            View Full Details
+                          </button>
                         </div>
                       </div>
                     </InfoWindow>
@@ -561,6 +586,32 @@ export default function MarketWatchClient() {
 
         {/* Map-only view -- no card grid. Click markers for property details. */}
       </div>
+
+      {/* Property Detail Modal */}
+      {detailListing && (
+        <PropertyDetailModal
+          property={{
+            identifier: { apn: "" },
+            address: {
+              oneLine: detailListing.address,
+              locality: detailListing.address?.split(",")[1]?.trim(),
+              countrySubd: "HI",
+              postal1: detailListing.address?.match(/\d{5}/)?.[0],
+            },
+            location: {
+              latitude: detailListing.lat ? String(detailListing.lat) : undefined,
+              longitude: detailListing.lng ? String(detailListing.lng) : undefined,
+            },
+            building: {
+              rooms: { beds: detailListing.beds, bathsTotal: detailListing.baths },
+              size: { universalSize: detailListing.sqft, livingSize: detailListing.sqft },
+              summary: { yearBuilt: detailListing.yearBuilt },
+            },
+            summary: { propType: detailListing.propertyType, yearBuilt: detailListing.yearBuilt },
+          } as any}
+          onClose={() => setDetailListing(null)}
+        />
+      )}
     </div>
   );
 }
