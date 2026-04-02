@@ -105,7 +105,52 @@ export function SellerMapClient() {
    */
   const fetchTMKOverlay = useCallback(async (tmkInput: string) => {
     try {
-      const res = await fetch(`/api/seller-map/tmk-overlay?tmk=${encodeURIComponent(tmkInput)}&limit=50`);
+      // Parse TMK input to determine the right query
+      // Formats: "1-3-1" (zone-section), "1-3-1-042" (zone-section-plat), "1-3-1-042-026" (full TMK)
+      const parts = tmkInput.replace(/[.:() ]/g, "-").split("-").filter(Boolean);
+      const params = new URLSearchParams();
+
+      if (parts.length >= 5) {
+        // Full TMK: query individual parcels
+        params.set("tmk", tmkInput);
+        params.set("layer", "parcels");
+        params.set("limit", "50");
+      } else if (parts.length >= 4) {
+        // Zone-Section-Plat: query plat boundaries
+        params.set("county", "HONOLULU"); // TODO: derive from first digit
+        params.set("zone", parts[1] || parts[0]);
+        params.set("section", parts[2] || parts[1]);
+        params.set("plat", parts[3] || parts[2]);
+        params.set("layer", "parcels");
+        params.set("limit", "200");
+      } else if (parts.length >= 3) {
+        // Zone-Section: query section parcels
+        params.set("county", "HONOLULU");
+        params.set("zone", parts[1] || parts[0]);
+        params.set("section", parts[2] || parts[1]);
+        params.set("layer", "parcels");
+        params.set("limit", "200");
+      } else if (parts.length >= 2) {
+        // Zone only: query zone sections
+        params.set("county", "HONOLULU");
+        params.set("zone", parts[1] || parts[0]);
+        params.set("layer", "sections");
+        params.set("limit", "50");
+      } else {
+        // Single value -- try as full TMK search
+        params.set("tmk", tmkInput);
+        params.set("layer", "parcels");
+        params.set("limit", "50");
+      }
+
+      // Derive county from island digit (first digit of TMK)
+      const firstDigit = parts[0];
+      if (firstDigit === "1") params.set("county", "HONOLULU");
+      else if (firstDigit === "2") params.set("county", "MAUI");
+      else if (firstDigit === "3") params.set("county", "HAWAII");
+      else if (firstDigit === "4") params.set("county", "KAUAI");
+
+      const res = await fetch(`/api/seller-map/tmk-overlay?${params}`);
       const geojson = await res.json();
 
       if (geojson.error || !geojson.features?.length) {
