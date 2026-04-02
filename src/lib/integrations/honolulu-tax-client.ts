@@ -152,16 +152,40 @@ export class HonoluluTaxClient {
    * TMK can be in any format — dashes/spaces are stripped before querying.
    */
   async getOwnersByTMK(tmk: string): Promise<HonoluluOwner[]> {
-    const cleanTmk = tmk.replace(/[-\s]/g, "");
+    const cleanTmk = tmk.replace(/[-\s.]/g, "");
 
-    // Try multiple field/format combinations to handle TMK format mismatches
-    // OWNINFO uses: tmk (8 digits) and parid (12 digits)
-    // Realie provides: APN which may be 9-12 digits
-    const tmk8 = cleanTmk.length > 8 ? cleanTmk.slice(0, 8) : cleanTmk;
-    const where =
-      cleanTmk.length >= 9
-        ? `parid='${cleanTmk}' OR tmk='${tmk8}' OR tmk='${cleanTmk}'`
-        : `tmk='${cleanTmk}' OR tmk LIKE '%${cleanTmk}%' OR parid LIKE '%${cleanTmk}%'`;
+    // OWNINFO uses two formats:
+    //   tmk:   8 digits (e.g., 29029040) — no island prefix, no trailing zeros
+    //   parid: 12 digits (e.g., 290290400000) — tmk + 4 trailing zeros
+    //
+    // Realie APN formats vary:
+    //   "1-2-9-029-040" → cleaned "129029040" (9 digits, with island prefix)
+    //   "290290400000" (12 digits, matches parid directly)
+    //
+    // Strategy: try the input as-is, strip island prefix, pad to 12 digits, truncate to 8
+    const conditions: string[] = [];
+
+    // As-is
+    conditions.push(`parid='${cleanTmk}'`);
+    conditions.push(`tmk='${cleanTmk}'`);
+
+    // Strip island prefix (first digit) if 9+ digits — Realie adds island code
+    if (cleanTmk.length >= 9) {
+      const noIsland = cleanTmk.slice(1);
+      conditions.push(`tmk='${noIsland}'`);
+      // Pad to 12 digits for parid match
+      const padded = noIsland.padEnd(12, "0");
+      conditions.push(`parid='${padded}'`);
+      // Also try first 8 of the no-island version
+      conditions.push(`tmk='${noIsland.slice(0, 8)}'`);
+    }
+
+    // Truncate to 8 for tmk field
+    if (cleanTmk.length > 8) {
+      conditions.push(`tmk='${cleanTmk.slice(0, 8)}'`);
+    }
+
+    const where = conditions.join(" OR ");
 
     const result = await this.query(this.ownallUrl, where, {
       resultRecordCount: 50,
