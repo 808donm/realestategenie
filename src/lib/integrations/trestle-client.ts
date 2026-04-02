@@ -403,10 +403,9 @@ export class TrestleClient {
       filters.push(`(${statusFilter})`);
     }
 
-    // Exclude rental/lease listings unless explicitly requested
-    if (!options.includeRentals) {
-      filters.push("not contains(tolower(PropertySubType), 'lease')");
-    }
+    // Note: rental filtering is done server-side in the search route
+    // because PropertySubType is an OData enum that doesn't support
+    // string functions like tolower() or ne with string literals.
 
     if (options.city) {
       // Case-insensitive partial match using OData contains + tolower
