@@ -86,6 +86,8 @@ export async function GET(request: NextRequest) {
     // Exclude rentals
     // Note: can't filter PropertySubType as OData enum, so filter server-side
 
+    console.log(`[Market Watch] Filter: ${filters.join(" and ")}`);
+
     const result = await client.getProperties({
       $filter: filters.join(" and "),
       $orderby: "ModificationTimestamp desc",
@@ -93,6 +95,12 @@ export async function GET(request: NextRequest) {
       $count: true,
       $expand: "Media",
     });
+
+    // Log sample to see what fields are returned
+    if (result.value?.length > 0) {
+      const sample = result.value[0];
+      console.log(`[Market Watch] Sample fields: Lat=${sample.Latitude}, Lng=${sample.Longitude}, keys=${Object.keys(sample).filter(k => k.toLowerCase().includes("lat") || k.toLowerCase().includes("lon") || k.toLowerCase().includes("coord")).join(",")}`);
+    }
 
     console.log(`[Market Watch] Returned ${result.value?.length || 0} listings, ${result.value?.filter((p: any) => p.Latitude && p.Longitude).length || 0} with coordinates`);
 
