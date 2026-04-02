@@ -4782,8 +4782,8 @@ export default function PropertyDetailModal({
 
       {/* ── Opportunity Score (Seller Map only) ── */}
       {activeSection === ("seller-score" as SectionId) && sellerScore && (() => {
-        const scoreColor = sellerScore.level === "very_likely" ? "#dc2626" : sellerScore.level === "likely" ? "#ea580c" : sellerScore.level === "possible" ? "#d97706" : "#6b7280";
-        const scoreLabel = sellerScore.level === "very_likely" ? "Very Likely to Sell" : sellerScore.level === "likely" ? "Likely to Sell" : sellerScore.level === "possible" ? "Possible Seller" : "Low Probability";
+        const scoreColor = sellerScore.level === "very-likely" ? "#dc2626" : sellerScore.level === "likely" ? "#ea580c" : sellerScore.level === "possible" ? "#d97706" : "#6b7280";
+        const scoreLabel = sellerScore.level === "very-likely" ? "Very Likely to Sell" : sellerScore.level === "likely" ? "Likely to Sell" : sellerScore.level === "possible" ? "Possible Seller" : "Low Probability";
 
         const INSIGHT_CARDS = [
           { name: "High Equity", icon: "\u25B2", bg: "#ecfdf5", border: "#a7f3d0", text: "#059669", bar: "#10b981" },
