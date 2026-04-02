@@ -230,6 +230,7 @@ export async function GET(request: NextRequest) {
         city: p.City,
         state: p.StateOrProvince || "HI",
         postalCode: p.PostalCode,
+        parcelNumber: p.ParcelNumber || null,
         beds: p.BedroomsTotal,
         baths: p.BathroomsTotalInteger,
         sqft: p.LivingArea,

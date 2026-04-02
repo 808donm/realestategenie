@@ -52,6 +52,7 @@ interface Listing {
   city?: string;
   state?: string;
   postalCode?: string;
+  parcelNumber?: string;
   beds?: number;
   baths?: number;
   sqft?: number;
@@ -596,7 +597,7 @@ export default function MarketWatchClient() {
       {detailListing && (
         <PropertyDetailModal
           property={{
-            identifier: { apn: "" },
+            identifier: { apn: detailListing.parcelNumber || "" },
             address: {
               oneLine: detailListing.address,
               line1: detailListing.address?.split(",")[0]?.trim(),
