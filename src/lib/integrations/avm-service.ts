@@ -38,6 +38,10 @@ export interface AvmParams {
   squareFootage?: number;
   propertyType?: string;
   compCount?: number;
+  /** Max radius in miles for comp search. Smaller = more local, more accurate in dense areas. */
+  maxRadius?: number;
+  /** Max age of comps in days. Smaller = more current but fewer comps. */
+  daysOld?: number;
 }
 
 /**
@@ -81,16 +85,30 @@ export async function getPropertyAvm(params: AvmParams): Promise<AvmWithComps | 
   if (!client) return null;
 
   try {
+    // Build AVM params with all available property attributes for maximum accuracy.
+    // Per RentCast docs: providing bedrooms, bathrooms, squareFootage, and propertyType
+    // significantly improves AVM accuracy by ensuring comps match the subject property.
     const avmParams: Record<string, any> = {
       address: params.address,
-      compCount: params.compCount ?? 15,
+      compCount: params.compCount ?? 20, // increased from 15 for better statistical accuracy
+      lookupSubjectAttributes: true, // let RentCast fill in any attributes we don't have
     };
+
+    // Property attributes -- these override RentCast's automatic lookup
     if (params.latitude) avmParams.latitude = params.latitude;
     if (params.longitude) avmParams.longitude = params.longitude;
     if (params.bedrooms) avmParams.bedrooms = params.bedrooms;
     if (params.bathrooms) avmParams.bathrooms = params.bathrooms;
     if (params.squareFootage) avmParams.squareFootage = params.squareFootage;
     if (params.propertyType) avmParams.propertyType = params.propertyType;
+
+    // Comp search tuning
+    if (params.maxRadius) avmParams.maxRadius = params.maxRadius;
+    if (params.daysOld) avmParams.daysOld = params.daysOld;
+
+    // Log what we're sending for debugging accuracy issues
+    const attrCount = [params.bedrooms, params.bathrooms, params.squareFootage, params.propertyType].filter(Boolean).length;
+    console.log(`[AVM Service] Fetching AVM for "${params.address}" with ${attrCount}/4 property attributes${params.maxRadius ? `, maxRadius=${params.maxRadius}mi` : ""}${params.daysOld ? `, daysOld=${params.daysOld}` : ""}`);
 
     const estimate = await client.getValueEstimate(avmParams);
 

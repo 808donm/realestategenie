@@ -290,6 +290,10 @@ export async function generateCMAFromFallback(options: {
       const avmData = await getPropertyAvm({
         address: fullAddr,
         compCount: 25,
+        bedrooms: options.subjectBeds || undefined,
+        bathrooms: options.subjectBaths || undefined,
+        squareFootage: options.subjectSqft || undefined,
+        propertyType: options.subjectPropertyType || undefined,
       });
 
       subjectLat = avmData?.subjectProperty?.latitude;

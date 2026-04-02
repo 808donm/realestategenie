@@ -468,10 +468,16 @@ async function fetchFromRentcast(endpoint: string, params: Record<string, any>):
       if (isSingleAddressLookup) {
         try {
           const { getPropertyAvm } = await import("@/lib/integrations/avm-service");
+          // Pass property attributes to improve AVM accuracy
+          const p0 = properties[0];
           const avmData = await getPropertyAvm({
             address: rentcastParams.address!,
             latitude: rentcastParams.latitude,
             longitude: rentcastParams.longitude,
+            bedrooms: p0?.building?.rooms?.beds,
+            bathrooms: p0?.building?.rooms?.bathsFull ?? p0?.building?.rooms?.bathsTotal,
+            squareFootage: p0?.building?.size?.livingSize || p0?.building?.size?.universalSize,
+            propertyType: p0?.summary?.propType,
           });
           if (avmData) {
             properties[0] = {
@@ -1018,6 +1024,10 @@ export async function GET(request: NextRequest) {
           address,
           latitude: params.latitude ? Number(params.latitude) : undefined,
           longitude: params.longitude ? Number(params.longitude) : undefined,
+          bedrooms: params.bedrooms ? Number(params.bedrooms) : undefined,
+          bathrooms: params.bathrooms ? Number(params.bathrooms) : undefined,
+          squareFootage: params.squareFootage ? Number(params.squareFootage) : undefined,
+          propertyType: params.propertyType as string | undefined,
         });
         if (avmData) {
           const avmValue = avmData.value;
