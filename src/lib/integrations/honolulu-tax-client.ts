@@ -154,11 +154,14 @@ export class HonoluluTaxClient {
   async getOwnersByTMK(tmk: string): Promise<HonoluluOwner[]> {
     const cleanTmk = tmk.replace(/[-\s]/g, "");
 
-    // Try exact match first, then a LIKE match for partial TMKs
+    // Try multiple field/format combinations to handle TMK format mismatches
+    // OWNINFO uses: tmk (8 digits) and parid (12 digits)
+    // Realie provides: APN which may be 9-12 digits
+    const tmk8 = cleanTmk.length > 8 ? cleanTmk.slice(0, 8) : cleanTmk;
     const where =
       cleanTmk.length >= 9
-        ? `tmk='${cleanTmk}' OR PARID='${cleanTmk}'`
-        : `tmk LIKE '%${cleanTmk}%' OR PARID LIKE '%${cleanTmk}%'`;
+        ? `parid='${cleanTmk}' OR tmk='${tmk8}' OR tmk='${cleanTmk}'`
+        : `tmk='${cleanTmk}' OR tmk LIKE '%${cleanTmk}%' OR parid LIKE '%${cleanTmk}%'`;
 
     const result = await this.query(this.ownallUrl, where, {
       resultRecordCount: 50,
