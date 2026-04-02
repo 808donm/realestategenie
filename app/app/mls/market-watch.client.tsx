@@ -56,17 +56,72 @@ export default function MarketWatchClient() {
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [activeStatuses, setActiveStatuses] = useState<Set<string>>(new Set(Object.keys(STATUS_COLORS)));
 
+  // Detect if input is a TMK (has dashes between digits, or 3-4 digit non-zip)
+  const isTMK = useCallback((input: string): boolean => {
+    const trimmed = input.trim();
+    if (/^\d+-\d+/.test(trimmed)) return true;
+    const digits = trimmed.replace(/[-\s.:()]/g, "");
+    if (/^\d{3,4}$/.test(digits) && !digits.startsWith("96") && !digits.startsWith("97")) return true;
+    return false;
+  }, []);
+
   const fetchMarketWatch = useCallback(async () => {
-    if (!postalCode.trim()) return;
+    const input = postalCode.trim();
+    if (!input) return;
     setLoading(true);
     setError("");
     try {
-      const params = new URLSearchParams({
-        postalCode: postalCode.trim(),
-        timeframe,
-        limit: "200",
-      });
+      const params = new URLSearchParams({ timeframe, limit: "200" });
       if (propertyType) params.set("propertyType", propertyType);
+
+      if (isTMK(input)) {
+        // TMK search: first get the TMK parcel bounds, then search by bounding box
+        const tmkParts = input.replace(/[.:() ]/g, "-").split("-").filter(Boolean);
+        let parts = tmkParts;
+        if (parts.length === 1 && /^\d{3,4}$/.test(parts[0])) {
+          parts = parts[0].split("");
+        }
+        // Derive county from island digit
+        const countyMap: Record<string, string> = { "1": "HONOLULU", "2": "MAUI", "3": "HAWAII", "4": "KAUAI" };
+        const county = countyMap[parts[0]] || "HONOLULU";
+        const zone = parts[1] || "";
+        const section = parts[2] || "";
+
+        // Get TMK section bounds
+        const tmkParams = new URLSearchParams({ county, layer: "sections" });
+        if (zone) tmkParams.set("zone", zone);
+        if (section) tmkParams.set("section", section);
+        tmkParams.set("limit", "10");
+        const tmkRes = await fetch(`/api/seller-map/tmk-overlay?${tmkParams}`);
+        const tmkData = await tmkRes.json();
+
+        if (tmkData.features?.length > 0) {
+          // Compute bounding box from TMK geometry
+          let minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
+          for (const feature of tmkData.features) {
+            const coords = feature.geometry?.type === "Polygon"
+              ? feature.geometry.coordinates[0]
+              : feature.geometry?.type === "MultiPolygon"
+                ? feature.geometry.coordinates.flat(2)
+                : [];
+            for (const coord of coords) {
+              const [lng, lat] = Array.isArray(coord[0]) ? coord[0] : coord;
+              if (lat < minLat) minLat = lat;
+              if (lat > maxLat) maxLat = lat;
+              if (lng < minLng) minLng = lng;
+              if (lng > maxLng) maxLng = lng;
+            }
+          }
+          params.set("bbox", `${minLng},${minLat},${maxLng},${maxLat}`);
+        } else {
+          setError("No TMK area found for that input");
+          setLoading(false);
+          return;
+        }
+      } else {
+        params.set("postalCode", input);
+      }
+
       const res = await fetch(`/api/mls/market-watch?${params}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -78,7 +133,7 @@ export default function MarketWatchClient() {
     } finally {
       setLoading(false);
     }
-  }, [postalCode, timeframe, propertyType]);
+  }, [postalCode, timeframe, propertyType, isTMK]);
 
   const toggleStatus = (status: string) => {
     setActiveStatuses((prev) => {
@@ -142,7 +197,7 @@ export default function MarketWatchClient() {
         {/* Search */}
         <div style={{ marginBottom: 12 }}>
           <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
-            Zip Code
+            Zip Code or TMK
           </label>
           <div style={{ display: "flex", gap: 8 }}>
             <input
@@ -150,7 +205,7 @@ export default function MarketWatchClient() {
               value={postalCode}
               onChange={(e) => setPostalCode(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && fetchMarketWatch()}
-              placeholder="e.g. 96815"
+              placeholder="e.g. 96815 or 1-3-1"
               style={{ ...inputStyle, flex: 1 }}
             />
             <button

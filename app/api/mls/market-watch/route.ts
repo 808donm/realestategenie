@@ -70,9 +70,14 @@ export async function GET(request: NextRequest) {
       filters.push(`(${statuses.map((s) => `StandardStatus eq '${s}'`).join(" or ")})`);
     }
 
-    // Location filter
+    // Location filter -- zip code or bounding box
     if (postalCode) {
       filters.push(`startswith(PostalCode, '${postalCode}')`);
+    } else if (bbox) {
+      const [minLng, minLat, maxLng, maxLat] = bbox.split(",").map(Number);
+      if (!isNaN(minLng) && !isNaN(minLat) && !isNaN(maxLng) && !isNaN(maxLat)) {
+        filters.push(`Latitude ge ${minLat} and Latitude le ${maxLat} and Longitude ge ${minLng} and Longitude le ${maxLng}`);
+      }
     }
 
     // Time filter -- use ModificationTimestamp for recent changes
