@@ -263,7 +263,7 @@ export default function PropertyDetailModal({
   /** Seller opportunity score data from the Seller Map */
   sellerScore?: { score: number; level: string; factors: Array<{ name: string; points: number; maxPoints: number; description: string }>; owner?: string };
 }) {
-  const [activeSection, setActiveSection] = useState<SectionId>(visibleTabs?.[0] || "overview");
+  const [activeSection, setActiveSection] = useState<SectionId>(sellerScore ? "seller-score" as SectionId : visibleTabs?.[0] || "overview");
   const [federalData, setFederalData] = useState<FederalPropertySupplement | null>(null);
   const [federalLoading, setFederalLoading] = useState(false);
   const [hawaiiData, setHawaiiData] = useState<any>(null);
@@ -1311,8 +1311,11 @@ export default function PropertyDetailModal({
     { id: "neighborhood", label: "Neighborhood" },
     { id: "federal", label: "Area Intel" },
     ...(farmingContext ? [{ id: "nearby" as SectionId, label: "Nearby Homes" }] : []),
-    ...(sellerScore ? [{ id: "seller-score" as SectionId, label: "Opportunity Score" }] : []),
   ];
+  // Add Opportunity Score as FIRST tab when seller data is available
+  if (sellerScore) {
+    allSections.unshift({ id: "seller-score" as SectionId, label: "Opportunity Score" });
+  }
   const sections = visibleTabs ? allSections.filter((s) => visibleTabs.includes(s.id)) : allSections;
 
   // ── Shared Tabs Bar ──
@@ -4769,59 +4772,78 @@ export default function PropertyDetailModal({
       )}
 
       {/* ── Opportunity Score (Seller Map only) ── */}
-      {activeSection === ("seller-score" as SectionId) && sellerScore && (
-        <div>
-          {/* Score Hero */}
-          <div style={{ textAlign: "center", padding: 20, marginBottom: 16 }}>
-            <div
-              style={{
-                width: 80,
-                height: 80,
-                borderRadius: "50%",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 32,
-                fontWeight: 900,
-                color: "#fff",
-                background: sellerScore.level === "very_likely" ? "#dc2626" : sellerScore.level === "likely" ? "#ea580c" : sellerScore.level === "possible" ? "#d97706" : "#6b7280",
-              }}
-            >
-              {sellerScore.score}
-            </div>
-            <div style={{ fontSize: 16, fontWeight: 700, marginTop: 8, color: sellerScore.level === "very_likely" ? "#dc2626" : sellerScore.level === "likely" ? "#ea580c" : sellerScore.level === "possible" ? "#d97706" : "#6b7280" }}>
-              {sellerScore.level === "very_likely" ? "Very Likely to Sell" : sellerScore.level === "likely" ? "Likely to Sell" : sellerScore.level === "possible" ? "Possible Seller" : "Low Probability"}
-            </div>
-            {sellerScore.owner && (
-              <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>Owner: {sellerScore.owner}</div>
-            )}
-          </div>
+      {activeSection === ("seller-score" as SectionId) && sellerScore && (() => {
+        const scoreColor = sellerScore.level === "very_likely" ? "#dc2626" : sellerScore.level === "likely" ? "#ea580c" : sellerScore.level === "possible" ? "#d97706" : "#6b7280";
+        const scoreLabel = sellerScore.level === "very_likely" ? "Very Likely to Sell" : sellerScore.level === "likely" ? "Likely to Sell" : sellerScore.level === "possible" ? "Possible Seller" : "Low Probability";
 
-          {/* Motivation Factors */}
-          <Section title="Motivation Factors">
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {sellerScore.factors
-                .sort((a, b) => b.points - a.points)
-                .map((f) => {
-                  const pct = f.maxPoints > 0 ? (f.points / f.maxPoints) * 100 : 0;
-                  const barColor = pct >= 80 ? "#dc2626" : pct >= 60 ? "#ea580c" : pct >= 40 ? "#d97706" : pct > 0 ? "#3b82f6" : "#e5e7eb";
-                  return (
-                    <div key={f.name}>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 3 }}>
-                        <span style={{ fontWeight: 600, color: "#374151" }}>{f.name}</span>
-                        <span style={{ color: "#6b7280" }}>{f.points}/{f.maxPoints}</span>
-                      </div>
-                      <div style={{ height: 6, background: "#f3f4f6", borderRadius: 3, overflow: "hidden" }}>
-                        <div style={{ height: "100%", width: `${pct}%`, background: barColor, borderRadius: 3, transition: "width 0.3s" }} />
-                      </div>
-                      <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>{f.description}</div>
-                    </div>
-                  );
-                })}
+        const INSIGHT_CARDS = [
+          { name: "High Equity", icon: "\u25B2", bg: "#ecfdf5", border: "#a7f3d0", text: "#059669", bar: "#10b981" },
+          { name: "Distress Signals", icon: "\u26A0\uFE0F", bg: "#fef2f2", border: "#fecaca", text: "#dc2626", bar: "#ef4444" },
+          { name: "Multi-Property Owner", icon: "\u229E", bg: "#f5f3ff", border: "#ddd6fe", text: "#7c3aed", bar: "#8b5cf6" },
+          { name: "Tax Assessment Gap", icon: "$", bg: "#fffbeb", border: "#fde68a", text: "#d97706", bar: "#f59e0b" },
+        ];
+
+        return (
+          <div>
+            {/* Score Hero */}
+            <div style={{ textAlign: "center", padding: 20, marginBottom: 12 }}>
+              <div style={{ width: 72, height: 72, borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 900, color: "#fff", background: scoreColor, boxShadow: "0 2px 8px rgba(0,0,0,0.15)" }}>
+                {sellerScore.score}
+              </div>
+              <div style={{ fontSize: 16, fontWeight: 700, marginTop: 8, color: scoreColor }}>{scoreLabel}</div>
+              {sellerScore.owner && <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>Owner: {sellerScore.owner}</div>}
             </div>
-          </Section>
-        </div>
-      )}
+
+            {/* Key Score Insight Cards (2x2 grid) */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
+              {INSIGHT_CARDS.map((card) => {
+                const factor = sellerScore.factors.find((f) => f.name === card.name);
+                if (!factor) return null;
+                const pct = factor.maxPoints > 0 ? (factor.points / factor.maxPoints) * 100 : 0;
+                return (
+                  <div key={card.name} style={{ borderRadius: 8, border: `1px solid ${card.border}`, padding: 10, background: card.bg }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 4 }}>
+                      <span style={{ fontSize: 13 }}>{card.icon}</span>
+                      <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: card.text }}>{card.name}</span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
+                      <span style={{ fontSize: 18, fontWeight: 800, color: card.text }}>{factor.points}</span>
+                      <span style={{ fontSize: 10, color: "#9ca3af" }}>/ {factor.maxPoints}</span>
+                    </div>
+                    <div style={{ height: 4, background: "rgba(255,255,255,0.6)", borderRadius: 2, overflow: "hidden", marginTop: 4 }}>
+                      <div style={{ height: "100%", borderRadius: 2, background: card.bar, width: `${pct}%` }} />
+                    </div>
+                    <div style={{ fontSize: 10, color: "#6b7280", marginTop: 4, lineHeight: 1.3 }}>{factor.description}</div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* All Motivation Factors */}
+            <Section title="All Motivation Factors">
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {[...sellerScore.factors]
+                  .sort((a, b) => b.points - a.points)
+                  .map((f) => {
+                    const pct = f.maxPoints > 0 ? (f.points / f.maxPoints) * 100 : 0;
+                    return (
+                      <div key={f.name}>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 3 }}>
+                          <span style={{ fontWeight: 600, color: "#374151" }}>{f.name}</span>
+                          <span style={{ color: "#6b7280" }}>{f.points}/{f.maxPoints}</span>
+                        </div>
+                        <div style={{ height: 6, background: "#f3f4f6", borderRadius: 3, overflow: "hidden" }}>
+                          <div style={{ height: "100%", width: `${pct}%`, background: "#3b82f6", borderRadius: 3 }} />
+                        </div>
+                        <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>{f.description}</div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </Section>
+          </div>
+        );
+      })()}
     </div>
   );
 
