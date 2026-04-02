@@ -405,7 +405,7 @@ export class TrestleClient {
 
     // Exclude rental/lease listings unless explicitly requested
     if (!options.includeRentals) {
-      filters.push("PropertySubType ne 'ResidentialLease'");
+      filters.push("not contains(tolower(PropertySubType), 'lease')");
     }
 
     if (options.city) {
