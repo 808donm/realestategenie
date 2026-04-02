@@ -286,6 +286,107 @@ function SellerMapInner({
     };
   }, [map, showZipBoundaries, zipGeojson, searchedZips, onZipClick]);
 
+  // GIS overlay layers — managed via custom events from sidebar toggles
+  const gisLayersRef = useRef<globalThis.Map<string, google.maps.Data>>(new globalThis.Map());
+
+  useEffect(() => {
+    if (!map) return;
+
+    // Expose map bounds for GIS layer queries
+    const updateBounds = () => {
+      const bounds = map.getBounds();
+      if (bounds) {
+        const ne = bounds.getNorthEast();
+        const sw = bounds.getSouthWest();
+        (window as any).__sellerMapBounds = {
+          north: ne.lat(),
+          south: sw.lat(),
+          east: ne.lng(),
+          west: sw.lng(),
+        };
+      }
+    };
+    const boundsListener = map.addListener("idle", updateBounds);
+    updateBounds();
+
+    const handleGISToggle = (e: Event) => {
+      const { key, active, geojson, color } = (e as CustomEvent).detail;
+
+      if (!active) {
+        // Remove layer
+        const existing = gisLayersRef.current.get(key);
+        if (existing) {
+          existing.setMap(null);
+          gisLayersRef.current.delete(key);
+        }
+        return;
+      }
+
+      // Add layer
+      if (geojson?.features?.length > 0) {
+        // Remove existing if toggling
+        const existing = gisLayersRef.current.get(key);
+        if (existing) existing.setMap(null);
+
+        const dataLayer = new google.maps.Data({ map });
+        dataLayer.addGeoJson(geojson);
+
+        const layerColor = color || "#3b82f6";
+        const isPointLayer = geojson.features.some(
+          (f: any) => f.geometry?.type === "Point" || f.geometry?.type === "MultiPoint",
+        );
+
+        if (isPointLayer) {
+          dataLayer.setStyle({
+            icon: {
+              path: google.maps.SymbolPath.CIRCLE,
+              scale: 6,
+              fillColor: layerColor,
+              fillOpacity: 0.8,
+              strokeColor: "#fff",
+              strokeWeight: 1.5,
+            },
+          });
+        } else {
+          dataLayer.setStyle({
+            fillColor: layerColor,
+            fillOpacity: 0.15,
+            strokeColor: layerColor,
+            strokeWeight: 1.5,
+            strokeOpacity: 0.6,
+          });
+        }
+
+        // Add info window on click
+        const infoWindow = new google.maps.InfoWindow();
+        dataLayer.addListener("click", (event: google.maps.Data.MouseEvent) => {
+          const props: string[] = [];
+          event.feature.forEachProperty((value, name) => {
+            if (name !== "OBJECTID" && name !== "objectid" && name !== "Shape" && value != null) {
+              props.push(`<b>${name}:</b> ${value}`);
+            }
+          });
+          if (props.length > 0 && event.latLng) {
+            infoWindow.setContent(`<div style="font-size:12px;max-width:250px;line-height:1.6">${props.join("<br>")}</div>`);
+            infoWindow.setPosition(event.latLng);
+            infoWindow.open(map);
+          }
+        });
+
+        gisLayersRef.current.set(key, dataLayer);
+      }
+    };
+
+    window.addEventListener("gis-layer-toggle", handleGISToggle);
+
+    return () => {
+      window.removeEventListener("gis-layer-toggle", handleGISToggle);
+      google.maps.event.removeListener(boundsListener);
+      gisLayersRef.current.forEach((layer) => layer.setMap(null));
+      gisLayersRef.current.clear();
+    };
+  }, [map]);
+
   // Listen for idle event
   useEffect(() => {
     if (!map) return;

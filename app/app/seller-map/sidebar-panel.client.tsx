@@ -380,10 +380,13 @@ export function SidebarPanel({
                 </label>
                 <label className="flex items-center gap-2 text-xs text-gray-600">
                   <input type="checkbox" checked={showTMK} onChange={onToggleTMK} className="rounded accent-blue-600" />
-                  TMK parcel boundaries (Hawaii)
+                  TMK parcel boundaries
                 </label>
               </div>
             </div>
+
+            {/* GIS Overlay Layers */}
+            <GISLayerToggles />
 
             {/* Map Style */}
             <div>
@@ -478,6 +481,141 @@ function PropertyListItem({ property: p }: { property: ScoredProperty }) {
           {!p.ownershipYears && !p.lastSaleDate && <span className="text-orange-400">No sale date</span>}
           {p.absentee && <span className="text-amber-600 font-medium">Absentee</span>}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ── GIS Layer Toggle Controls ────────────────────────────────────────────
+
+const GIS_LAYER_GROUPS = [
+  {
+    label: "Hazards",
+    color: "#dc2626",
+    layers: [
+      { key: "flood-zones", label: "FEMA Flood Zones", color: "#2563eb" },
+      { key: "tsunami-zones", label: "Tsunami Evacuation", color: "#0891b2" },
+      { key: "lava-flow", label: "Lava Flow Zones", color: "#dc2626" },
+      { key: "fire-risk", label: "Fire Risk Areas", color: "#ea580c" },
+      { key: "slr-32ft", label: "Sea Level Rise (3.2ft)", color: "#0d9488" },
+    ],
+  },
+  {
+    label: "Schools",
+    color: "#7c3aed",
+    layers: [
+      { key: "school-elementary", label: "Elementary Zones", color: "#22c55e" },
+      { key: "school-middle", label: "Middle School Zones", color: "#3b82f6" },
+      { key: "school-high", label: "High School Zones", color: "#8b5cf6" },
+    ],
+  },
+  {
+    label: "Economy",
+    color: "#059669",
+    layers: [
+      { key: "opportunity-zones", label: "Opportunity Zones", color: "#059669" },
+      { key: "enterprise-zones", label: "Enterprise Zones", color: "#0891b2" },
+    ],
+  },
+  {
+    label: "Services",
+    color: "#2563eb",
+    layers: [
+      { key: "hospitals", label: "Hospitals", color: "#dc2626" },
+      { key: "fire-stations", label: "Fire Stations", color: "#ea580c" },
+      { key: "police-stations", label: "Police Stations", color: "#1d4ed8" },
+      { key: "parks", label: "Parks", color: "#16a34a" },
+    ],
+  },
+];
+
+function GISLayerToggles() {
+  const [activeLayers, setActiveLayers] = useState<Set<string>>(new Set());
+  const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
+  const [loadingLayers, setLoadingLayers] = useState<Set<string>>(new Set());
+
+  const toggleLayer = async (layerKey: string) => {
+    const newActive = new Set(activeLayers);
+    if (newActive.has(layerKey)) {
+      newActive.delete(layerKey);
+      setActiveLayers(newActive);
+      // Dispatch event to map to remove layer
+      window.dispatchEvent(new CustomEvent("gis-layer-toggle", { detail: { key: layerKey, active: false } }));
+    } else {
+      newActive.add(layerKey);
+      setActiveLayers(newActive);
+      setLoadingLayers((prev) => new Set(prev).add(layerKey));
+
+      // Fetch the GIS data and dispatch to map
+      try {
+        // Get current map bounds from the map view
+        const bounds = (window as any).__sellerMapBounds;
+        const bbox = bounds
+          ? `${bounds.west},${bounds.south},${bounds.east},${bounds.north}`
+          : "";
+        const bboxParam = bbox ? `&bbox=${bbox}` : "";
+        const res = await fetch(`/api/seller-map/gis-overlay?overlay=${layerKey}&limit=500${bboxParam}`);
+        const geojson = await res.json();
+
+        if (geojson.features?.length > 0) {
+          const layerConfig = GIS_LAYER_GROUPS.flatMap((g) => g.layers).find((l) => l.key === layerKey);
+          window.dispatchEvent(
+            new CustomEvent("gis-layer-toggle", {
+              detail: { key: layerKey, active: true, geojson, color: layerConfig?.color || "#3b82f6" },
+            }),
+          );
+        }
+      } catch (err) {
+        console.error(`[GIS] Failed to load layer ${layerKey}:`, err);
+        newActive.delete(layerKey);
+        setActiveLayers(newActive);
+      } finally {
+        setLoadingLayers((prev) => {
+          const next = new Set(prev);
+          next.delete(layerKey);
+          return next;
+        });
+      }
+    }
+  };
+
+  return (
+    <div>
+      <h4 className="text-xs font-medium text-gray-700 mb-2">GIS Layers (Hawaii)</h4>
+      <div className="space-y-1">
+        {GIS_LAYER_GROUPS.map((group) => (
+          <div key={group.label}>
+            <button
+              onClick={() => setExpandedGroup(expandedGroup === group.label ? null : group.label)}
+              className="flex items-center justify-between w-full text-xs font-medium py-1 text-gray-600 hover:text-gray-800"
+            >
+              <span style={{ borderLeft: `3px solid ${group.color}`, paddingLeft: 6 }}>{group.label}</span>
+              <span className="text-gray-400">{expandedGroup === group.label ? "▾" : "▸"}</span>
+            </button>
+            {expandedGroup === group.label && (
+              <div className="pl-3 space-y-1.5 pb-2">
+                {group.layers.map((layer) => (
+                  <label key={layer.key} className="flex items-center gap-2 text-[11px] text-gray-600 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={activeLayers.has(layer.key)}
+                      onChange={() => toggleLayer(layer.key)}
+                      disabled={loadingLayers.has(layer.key)}
+                      className="rounded accent-blue-600"
+                      style={{ accentColor: layer.color }}
+                    />
+                    <span
+                      className="w-2 h-2 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: layer.color }}
+                    />
+                    {layer.label}
+                    {loadingLayers.has(layer.key) && <span className="text-gray-400 ml-1">...</span>}
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );
