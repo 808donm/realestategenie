@@ -29,7 +29,7 @@ export async function GET() {
     client_id: process.env.GOOGLE_CALENDAR_CLIENT_ID!,
     redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/integrations/google-calendar/callback`,
     response_type: "code",
-    scope: "https://www.googleapis.com/auth/calendar",
+    scope: "https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.events.owned https://www.googleapis.com/auth/calendar.freebusy",
     access_type: "offline",
     prompt: "consent",
     state,
