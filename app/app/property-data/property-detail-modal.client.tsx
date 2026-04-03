@@ -4022,8 +4022,8 @@ export default function PropertyDetailModal({
                               {group.items.slice(0, 8).map((poi, i) => (
                                 <div key={i} style={{ padding: "6px 12px", background: "#f9fafb", borderRadius: 6, fontSize: 12 }}>
                                   <span style={{ fontWeight: 500, color: "#111827" }}>{poi.name}</span>
-                                  {poi.distance != null && (
-                                    <span style={{ color: "#9ca3af", marginLeft: 6 }}>{typeof poi.distance === "number" ? `${poi.distance.toFixed(1)} mi` : poi.distance}</span>
+                                  {poi.distance != null && typeof poi.distance === "number" && poi.distance < 25 && (
+                                    <span style={{ color: "#9ca3af", marginLeft: 6 }}>{poi.distance.toFixed(1)} mi</span>
                                   )}
                                 </div>
                               ))}
