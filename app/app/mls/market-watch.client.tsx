@@ -742,30 +742,31 @@ export default function MarketWatchClient() {
 
 // ── Point-in-Polygon helpers (ray casting algorithm) ──
 
-/** Extract all polygon rings from a GeoJSON FeatureCollection */
+/** Extract all polygon rings from a GeoJSON FeatureCollection.
+ *  Returns arrays of [lng, lat] pairs (GeoJSON coordinate order). */
 function extractPolygons(geojson: any): number[][][] {
   const polygons: number[][][] = [];
   for (const feature of geojson.features || []) {
     const geom = feature.geometry;
     if (!geom) continue;
     if (geom.type === "Polygon") {
-      // First ring is the outer boundary
-      polygons.push(geom.coordinates[0].map((c: number[]) => [c[1], c[0]])); // [lat, lng]
+      polygons.push(geom.coordinates[0]); // [lng, lat] pairs
     } else if (geom.type === "MultiPolygon") {
       for (const poly of geom.coordinates) {
-        polygons.push(poly[0].map((c: number[]) => [c[1], c[0]]));
+        polygons.push(poly[0]); // outer ring of each polygon
       }
     }
   }
   return polygons;
 }
 
-/** Ray casting point-in-polygon test */
+/** Ray casting point-in-polygon test.
+ *  Point is [lat, lng], polygon is array of [lng, lat] (GeoJSON order). */
 function pointInPolygon(lat: number, lng: number, polygon: number[][]): boolean {
   let inside = false;
   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-    const [yi, xi] = polygon[i];
-    const [yj, xj] = polygon[j];
+    const xi = polygon[i][0], yi = polygon[i][1]; // [lng, lat]
+    const xj = polygon[j][0], yj = polygon[j][1];
     if ((yi > lat) !== (yj > lat) && lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) {
       inside = !inside;
     }
