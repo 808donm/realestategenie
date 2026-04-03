@@ -31,7 +31,7 @@ const OAHU_TMK_ZIPS: Record<string, string[]> = {
   "2-5": ["96817"], // Kalihi / Liliha
   "2-6": ["96817", "96819"], // Kalihi / Salt Lake
   "2-7": ["96826", "96822"], // Moiliili / Lower Manoa
-  "2-8": ["96822"], // Lower Manoa / University
+  "2-8": ["96822", "96826", "96814"], // Lower Manoa / Makiki / Moiliili
   "2-9": ["96822"], // Upper Manoa / Woodlawn
 
   // Zone 3 -- Kailua / Kaneohe / Windward
