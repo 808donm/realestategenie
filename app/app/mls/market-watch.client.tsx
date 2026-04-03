@@ -185,7 +185,23 @@ export default function MarketWatchClient() {
       const res = await fetch(`/api/mls/market-watch?${params}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      setListings(data.listings || []);
+      let fetchedListings = data.listings || [];
+
+      // If TMK boundary exists, filter listings to only those INSIDE the polygon
+      // (bounding box search returns everything in the rectangle, not just the polygon)
+      if (tmkBoundary?.features?.length && fetchedListings.length > 0) {
+        const polygons = extractPolygons(tmkBoundary);
+        if (polygons.length > 0) {
+          const before = fetchedListings.length;
+          fetchedListings = fetchedListings.filter((l: any) => {
+            if (!l.lat || !l.lng) return false;
+            return polygons.some((poly: number[][]) => pointInPolygon(l.lat, l.lng, poly));
+          });
+          console.log(`[MarketWatch] Filtered ${before} bbox listings to ${fetchedListings.length} inside TMK polygon`);
+        }
+      }
+
+      setListings(fetchedListings);
       setStatusCounts(data.statusCounts || {});
       setPriceChanges(data.priceChanges || { increases: 0, decreases: 0 });
     } catch (err: unknown) {
@@ -722,6 +738,39 @@ export default function MarketWatchClient() {
       )}
     </div>
   );
+}
+
+// ── Point-in-Polygon helpers (ray casting algorithm) ──
+
+/** Extract all polygon rings from a GeoJSON FeatureCollection */
+function extractPolygons(geojson: any): number[][][] {
+  const polygons: number[][][] = [];
+  for (const feature of geojson.features || []) {
+    const geom = feature.geometry;
+    if (!geom) continue;
+    if (geom.type === "Polygon") {
+      // First ring is the outer boundary
+      polygons.push(geom.coordinates[0].map((c: number[]) => [c[1], c[0]])); // [lat, lng]
+    } else if (geom.type === "MultiPolygon") {
+      for (const poly of geom.coordinates) {
+        polygons.push(poly[0].map((c: number[]) => [c[1], c[0]]));
+      }
+    }
+  }
+  return polygons;
+}
+
+/** Ray casting point-in-polygon test */
+function pointInPolygon(lat: number, lng: number, polygon: number[][]): boolean {
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const [yi, xi] = polygon[i];
+    const [yj, xj] = polygon[j];
+    if ((yi > lat) !== (yj > lat) && lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) {
+      inside = !inside;
+    }
+  }
+  return inside;
 }
 
 // ── TMK Boundary Polygon Overlay ──
