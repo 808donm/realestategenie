@@ -167,6 +167,47 @@ const ZIP_TO_COUNTY: Record<string, HawaiiCounty> = {
   "96796": "KAUAI", // Waimea
 };
 
+/** Map Honolulu County ZIP codes to city/neighborhood names */
+const HONOLULU_ZIP_CITY: Record<string, string> = {
+  "96701": "Aiea",
+  "96706": "Ewa Beach",
+  "96707": "Kapolei",
+  "96709": "Kapolei",
+  "96712": "Haleiwa",
+  "96717": "Hauula",
+  "96730": "Kaaawa",
+  "96731": "Kahuku",
+  "96734": "Kailua",
+  "96744": "Kaneohe",
+  "96759": "Kunia",
+  "96762": "Laie",
+  "96782": "Pearl City",
+  "96786": "Wahiawa",
+  "96789": "Mililani",
+  "96791": "Waialua",
+  "96792": "Waianae",
+  "96795": "Waimanalo",
+  "96797": "Waipahu",
+  "96813": "Honolulu",
+  "96814": "Honolulu",
+  "96815": "Honolulu",
+  "96816": "Honolulu",
+  "96817": "Honolulu",
+  "96818": "Honolulu",
+  "96819": "Honolulu",
+  "96821": "Hawaii Kai",
+  "96822": "Honolulu",
+  "96825": "Hawaii Kai",
+  "96826": "Honolulu",
+};
+
+/**
+ * Get the city/neighborhood name for a Honolulu County ZIP code.
+ */
+export function getCityByZip(zip: string): string | null {
+  return HONOLULU_ZIP_CITY[zip] || null;
+}
+
 /**
  * Look up the Hawaii county for a given zip code.
  * Returns null if the zip code is not in Hawaii.

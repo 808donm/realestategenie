@@ -22,10 +22,12 @@ export async function GET(request: NextRequest) {
     const zipCode = request.nextUrl.searchParams.get("zipCode");
     const city = request.nextUrl.searchParams.get("city");
 
-    // Honolulu County zip codes
+    const { getCityByZip } = await import("@/lib/hawaii-zip-county");
+
+    // Honolulu County zip codes (residential areas only)
     const honoluluZips = [
-      "96701", "96706", "96707", "96709", "96712", "96717", "96730", "96731",
-      "96734", "96744", "96759", "96762", "96782", "96786", "96789", "96791",
+      "96701", "96706", "96707", "96712", "96717", "96731",
+      "96734", "96744", "96762", "96782", "96786", "96789", "96791",
       "96792", "96795", "96797", "96813", "96814", "96815", "96816", "96817",
       "96818", "96819", "96821", "96822", "96825", "96826",
     ];
@@ -81,7 +83,7 @@ export async function GET(request: NextRequest) {
               const rental = stats?.rentalData;
               return {
                 zipCode: zip,
-                city: (stats as any)?.city || undefined,
+                city: getCityByZip(zip) || (stats as any)?.city || undefined,
                 medianPrice: sale?.medianPrice,
                 avgPrice: sale?.averagePrice,
                 medianPricePerSqft: sale?.medianPricePerSquareFoot,
