@@ -68,20 +68,43 @@ export async function GET(request: NextRequest) {
         // Pure zip code
         searchPostalCode = q;
       } else if (/^\d+[\s-]/.test(q) || /\b(st|street|rd|road|ave|avenue|dr|drive|ln|lane|pl|place|blvd|boulevard|ct|court|way|loop|pkwy|parkway|hwy|highway|cir|circle)\b/i.test(q)) {
-        // Looks like a street address -- search both expanded AND abbreviated forms
-        // MLS may store "3849 Manoa Rd" or "3849 Manoa Road" -- we search for both
+        // Looks like a street address -- strip city/state/zip if present
+        // "440 Seaside Avenue, Honolulu, HI 96815" → street="440 Seaside Avenue", city="Honolulu", zip="96815"
+        let streetQuery = q;
+        const parts = q.split(",").map((p: string) => p.trim());
+        if (parts.length >= 2) {
+          // First part is the street address
+          streetQuery = parts[0];
+          // Look for city in remaining parts
+          for (let pi = 1; pi < parts.length; pi++) {
+            const part = parts[pi].trim();
+            // Extract zip code
+            const zipMatch = part.match(/\b(\d{5})\b/);
+            if (zipMatch && !searchPostalCode) {
+              searchPostalCode = zipMatch[1];
+            }
+            // Extract state (2-letter abbreviation)
+            const stateMatch = part.match(/\b([A-Z]{2})\b/);
+            // Extract city (whatever is left after removing state and zip)
+            const cityCandidate = part.replace(/\b[A-Z]{2}\b/, "").replace(/\d{5}(-\d{4})?/, "").trim();
+            if (cityCandidate && !searchCity) {
+              searchCity = cityCandidate;
+            }
+          }
+        }
+
+        // Search both expanded AND abbreviated forms of the STREET portion only
         const { expandStreetSuffix, abbreviateStreetSuffix } = await import("@/lib/address-utils");
-        const expanded = expandStreetSuffix(q);
-        const abbreviated = abbreviateStreetSuffix(q);
+        const expanded = expandStreetSuffix(streetQuery);
+        const abbreviated = abbreviateStreetSuffix(streetQuery);
         // Collect unique search variants
         const variants = new Set([
-          q.replace(/'/g, "''").toLowerCase(),
+          streetQuery.replace(/'/g, "''").toLowerCase(),
           expanded.replace(/'/g, "''").toLowerCase(),
           abbreviated.replace(/'/g, "''").toLowerCase(),
         ]);
         // Also try stripping the suffix entirely for StreetName matching
-        // e.g., "Manoa" from "3849 Manoa Road" to match StreetName field
-        const streetNameMatch = q.match(/^\d+[\s-]+(.+?)(?:\s+(?:st|street|rd|road|ave|avenue|dr|drive|ln|lane|pl|place|blvd|boulevard|ct|court|way|loop|pkwy|parkway|hwy|highway|cir|circle)\.?\s*(?:,.*)?$)/i);
+        const streetNameMatch = streetQuery.match(/^\d+[\s-]+(.+?)(?:\s+(?:st|street|rd|road|ave|avenue|dr|drive|ln|lane|pl|place|blvd|boulevard|ct|court|way|loop|pkwy|parkway|hwy|highway|cir|circle)\.?\s*(?:,.*)?$)/i);
         const streetNameOnly = streetNameMatch ? streetNameMatch[1].replace(/'/g, "''").toLowerCase() : null;
 
         const conditions: string[] = [];
