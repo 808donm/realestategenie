@@ -14,6 +14,7 @@ import {
   Crosshair,
   Radar,
   FileBarChart,
+  TrendingUp,
   Briefcase,
   UsersRound,
   Building,
@@ -73,6 +74,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { label: "MLS", href: "/app/mls", icon: Search },
       { label: "Property Intel", href: "/app/property-data", icon: Building2 },
+      { label: "Market Analytics", href: "/app/market-analytics", icon: TrendingUp },
       { label: "Neighborhoods", href: "/app/neighborhood-profiles", icon: MapPin },
       { label: "Calculators", href: "/app/analyzers", icon: Calculator },
     ],
@@ -131,6 +133,6 @@ export const HELP_ICON = HelpCircle;
 export const MOBILE_TAB_ROUTES: Record<string, string[]> = {
   dashboard: ["/app/dashboard", "/app/calendar", "/app/pipeline", "/app/tasks"],
   clients: ["/app/leads", "/app/contacts", "/app/open-houses"],
-  deals: ["/app/mls", "/app/property-data", "/app/neighborhood-profiles", "/app/analyzers"],
+  deals: ["/app/mls", "/app/property-data", "/app/market-analytics", "/app/neighborhood-profiles", "/app/analyzers"],
   listings: ["/app/seller-map", "/app/farm", "/app/reports"],
 };

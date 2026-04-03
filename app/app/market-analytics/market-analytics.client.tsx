@@ -212,7 +212,10 @@ export default function MarketAnalyticsDashboard() {
           </div>
           {/* Grouped bars */}
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {data.zipTable.slice(0, 20).map((z) => {
+            {[...data.zipTable]
+              .sort((a, b) => ((b as any).sfrMedian || 0) - ((a as any).sfrMedian || 0))
+              .slice(0, 20)
+              .map((z) => {
               const sfr = (z as any).sfrMedian || 0;
               const condo = (z as any).condoMedian || 0;
               const maxVal = Math.max(...data.zipTable.map((r) => Math.max((r as any).sfrMedian || 0, (r as any).condoMedian || 0, r.medianPrice || 0)), 1);

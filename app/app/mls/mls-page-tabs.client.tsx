@@ -12,9 +12,14 @@ const MarketWatchClient = dynamic(() => import("./market-watch.client"), {
   loading: () => <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>Loading Market Watch...</div>,
 });
 
+const MarketAnalyticsClient = dynamic(() => import("../market-analytics/market-analytics.client"), {
+  loading: () => <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>Loading Market Analytics...</div>,
+});
+
 const tabs = [
   { id: "search", label: "Search & Listings" },
   { id: "market-watch", label: "Market Watch" },
+  { id: "analytics", label: "Market Analytics" },
   { id: "cma", label: "CMA" },
   { id: "matches", label: "Lead Matches" },
   { id: "sync", label: "OH Sync" },
@@ -62,7 +67,8 @@ export default function MLSPageTabs() {
       {/* Tab Content */}
       {activeTab === "search" && <MLSClient />}
       {activeTab === "market-watch" && <MarketWatchClient />}
-      {activeTab !== "search" && activeTab !== "market-watch" && <MLSFeaturesClient initialTab={activeTab} />}
+      {activeTab === "analytics" && <MarketAnalyticsClient />}
+      {activeTab !== "search" && activeTab !== "market-watch" && activeTab !== "analytics" && <MLSFeaturesClient initialTab={activeTab} />}
     </div>
   );
 }
