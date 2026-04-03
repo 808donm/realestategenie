@@ -591,7 +591,7 @@ Agent actions are logged to the `agent_activity_log` table for agency-level repo
 
 These features ensure the data shown to agents is accurate and relevant, especially for condos and Hawaii-specific properties.
 
-- **AVM Reliability Check**: Compares the automated valuation to county assessment and recent sale price (within 2 years). If the AVM differs by more than 30% from either reference, it is suppressed and the county assessment is shown instead with an amber warning. All downstream calculations (equity, LTV) use the best available value.
+- **AVM Display**: AVM is always shown when available from Realie or RentCast. With unit-specific address lookups for condos, AVM accuracy has improved significantly. Falls back to county assessment only when no AVM data exists.
 
 - **AVM Accuracy**: All API call sites now pass bedrooms, bathrooms, square footage, and property type to RentCast's AVM endpoint. This ensures comps match the subject property instead of RentCast guessing the attributes. Default comp count increased from 15 to 20.
 

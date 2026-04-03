@@ -319,34 +319,11 @@ export default function PropertyDetailModal({
   const countyAssessment = p.assessment?.market?.mktTtlValue || p.assessment?.appraised?.apprTtlValue;
   const lastSaleAmt = p.sale?.amount?.saleAmt || p.sale?.amount?.salePrice;
 
-  // AVM reliability check: compare to county assessment or recent sale (within 2 years)
-  const isRecentSale = (() => {
-    const saleDate = p.sale?.amount?.saleTransDate || p.sale?.amount?.saleRecDate;
-    if (!saleDate || !lastSaleAmt) return false;
-    const twoYearsAgo = new Date();
-    twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
-    return new Date(saleDate) >= twoYearsAgo;
-  })();
-
-  const avmReliable = (() => {
-    if (!rawAvmVal) return false;
-    // Compare to county assessment
-    if (countyAssessment && countyAssessment > 0) {
-      const diff = Math.abs(rawAvmVal - countyAssessment) / countyAssessment;
-      if (diff > 0.3) return false; // > 30% difference = unreliable
-    }
-    // Compare to recent sale price
-    if (isRecentSale && lastSaleAmt && lastSaleAmt > 0) {
-      const diff = Math.abs(rawAvmVal - lastSaleAmt) / lastSaleAmt;
-      if (diff > 0.3) return false;
-    }
-    return true;
-  })();
-
-  // Use reliable AVM, or fall back to county assessment
-  const avmVal = avmReliable ? rawAvmVal : undefined;
-  const avmUnreliable = rawAvmVal && !avmReliable;
-  // Best estimated value: reliable AVM → county assessment → appraised assessment
+  // AVM is always shown when available (reliability check removed --
+  // with unit-specific address lookups, AVM accuracy has improved significantly)
+  const avmVal = rawAvmVal;
+  const avmUnreliable = false;
+  // Best estimated value: AVM → county assessment → appraised assessment
   const bestValue = avmVal || countyAssessment || p.assessment?.appraised?.apprTtlValue;
   // Use Realie's pre-calculated equity (AVM - outstanding mortgage balance) if available,
   // otherwise fall back to best value - last sale price as a rough estimate
@@ -2022,20 +1999,7 @@ export default function PropertyDetailModal({
                 </Section>
               )}
 
-              {/* AVM deemed unreliable -- show county assessment instead */}
-              {avmUnreliable && countyAssessment && (
-                <div style={{ padding: "12px 16px", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 8, marginBottom: 16 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "#92400e", marginBottom: 4 }}>
-                    AVM Not Available for This Property
-                  </div>
-                  <div style={{ fontSize: 12, color: "#78350f", marginBottom: 8 }}>
-                    The automated valuation model returned an estimate that differs more than 30% from
-                    {isRecentSale ? " the recent sale price" : " the county assessment"}, indicating low reliability for this property type.
-                  </div>
-                  <Field label="County Assessment" value={fmt(countyAssessment)} />
-                  {isRecentSale && lastSaleAmt && <Field label="Recent Sale Price" value={fmt(lastSaleAmt)} />}
-                </div>
-              )}
+              {/* AVM reliability check removed -- unit-specific lookups have improved accuracy */}
 
               {/* When no AVM exists, show fallback estimated value from assessment or RentCast */}
               {!avm && !avmUnreliable && hasFallbackValue && (
