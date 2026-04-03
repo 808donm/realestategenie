@@ -28,6 +28,7 @@ interface Property {
   StateOrProvince: string;
   PostalCode: string;
   UnparsedAddress?: string;
+  UnitNumber?: string;
   BedroomsTotal?: number;
   BathroomsTotalInteger?: number;
   LivingArea?: number;
@@ -321,12 +322,13 @@ export default function MLSClient() {
       return;
     }
 
-    const addr = getAddress(selectedProperty);
+    const displayAddr = getAddress(selectedProperty);
+    const streetAddr = getStreetAddress(selectedProperty);
     const city = selectedProperty.City;
     const state = selectedProperty.StateOrProvince;
     const zip = selectedProperty.PostalCode;
 
-    if (!addr || !city) return;
+    if (!streetAddr || !city) return;
 
     let cancelled = false;
     setAttomLoading(true);
@@ -337,8 +339,10 @@ export default function MLSClient() {
       try {
         const params = new URLSearchParams();
         params.set("endpoint", "expanded");
-        if (addr) params.set("address1", addr);
+        // Use street-only address for RentCast/Realie lookup (they can't parse raw unit numbers)
+        if (streetAddr) params.set("address1", streetAddr);
         if (city && state) params.set("address2", `${city}, ${state}`);
+        if (zip) params.set("postalcode", zip);
 
         const res = await fetch(`/api/integrations/attom/property?${params.toString()}`);
         const data = await res.json();
@@ -537,6 +541,27 @@ export default function MLSClient() {
   // Get address string
   const getAddress = (p: Property) => {
     if (p.UnparsedAddress) return p.UnparsedAddress;
+    const street = [p.StreetNumber, p.StreetName, p.StreetSuffix].filter(Boolean).join(" ");
+    // Include UnitNumber with # prefix for display
+    return p.UnitNumber ? `${street} #${p.UnitNumber}` : street;
+  };
+
+  /** Get street-only address (no unit) for property data lookups.
+   *  RentCast/Realie can't parse raw unit numbers appended to addresses. */
+  const getStreetAddress = (p: Property) => {
+    // If UnparsedAddress has a unit, strip it
+    if (p.UnparsedAddress) {
+      // Remove unit patterns: "#1110", "Apt 301", "Unit 5", or bare trailing numbers after street suffix
+      let cleaned = p.UnparsedAddress
+        .replace(/\s*(?:#|apt|unit|ste|suite)\s*\S+/gi, "")
+        .trim();
+      // Also remove bare trailing unit number: "1315 Kalakaua Avenue 1110" -> "1315 Kalakaua Avenue"
+      cleaned = cleaned.replace(
+        /(\b(?:street|st|road|rd|avenue|ave|drive|dr|lane|ln|place|pl|boulevard|blvd|court|ct|way|loop|circle|cir|parkway|pkwy|highway|hwy)\.?)\s+\d+\s*$/i,
+        "$1"
+      );
+      return cleaned;
+    }
     return [p.StreetNumber, p.StreetName, p.StreetSuffix].filter(Boolean).join(" ");
   };
 
