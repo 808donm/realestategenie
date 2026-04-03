@@ -260,7 +260,7 @@ The app's auth is tied to `realestategenie.app`. To enable testing on Vercel pre
 
 ### Keeping Hoku and Help Up to Date
 
-Whenever a feature is added, modified, or removed, **you must update both**:
+Whenever a feature is added, modified, or removed, **you must update all three**:
 
 1. **Hoku Knowledge Base** (`src/lib/genie/hoku-knowledge-base.ts`):
    - Update the relevant `PAGE_CONTEXT` entry so Hoku can explain and guide agents through the feature.
@@ -273,7 +273,13 @@ Whenever a feature is added, modified, or removed, **you must update both**:
    - If a new page is added, add a new section and a `ROUTE_TO_SECTION` mapping.
    - Write for the end user (real estate agent), not a developer. Use numbered steps and plain language.
 
-This is not optional. Outdated help and AI context degrade the user experience. Treat these files as part of the feature's deliverable.
+3. **Features List** (`FEATURES.md`):
+   - Update the relevant section to reflect the current state of the feature.
+   - If a new feature is added, add it to the appropriate section or create a new section.
+   - If a feature is removed, delete it from the list entirely.
+   - Keep descriptions concise and factual -- this is the canonical feature inventory for the product.
+
+This is not optional. Outdated help, AI context, and feature documentation degrade the user experience and create confusion. Treat these three files as part of every feature's deliverable.
 
 ### CRM Branding Rule
 
