@@ -156,6 +156,37 @@
 
 ---
 
+## 8b. Market Analytics
+
+County-level market statistics dashboard accessible from the sidebar (under Deals) and as a tab in the MLS page.
+
+### Overview Cards
+- **Median Sale Price** (all types), **SFR Median** (Single Family), **Condo/TH Median** (Condo + Townhouse)
+- **Price per Sq Ft**, **Median DOM**
+- **YoY Price Change**: Compares current month county median to 12 months ago. Green for appreciation, red for decline.
+- **Sales Momentum**: Compares total listings in the last 6 months to the prior 6 months. Shows whether the market is accelerating or decelerating.
+- **MLS Active Listings** and **MLS Closed (30 days)** from Trestle
+
+### Sales Price by ZIP Code (Interactive Table)
+Sortable table with every Honolulu County ZIP code showing: median price, SFR median (green), Condo/TH median (blue), $/sqft, total listings, median DOM, and median rent. Click any ZIP for a detailed breakdown.
+
+### Grouped Bar Chart -- SFR vs Condo/Townhouse by ZIP
+Horizontal grouped bars for each ZIP code with red bars for SFR median and blue bars for Condo/Townhouse median. Sorted by SFR price descending (most expensive ZIP first). Legend at top.
+
+### Sale Volume by Cities (Recharts Bar Chart)
+Vertical bar chart showing total listings per city in the county (Hauula, Waialua, Wahiawa, Pearl City, Waianae, Kaneohe, Kapolei, Waipahu, Honolulu), sorted ascending.
+
+### Fair Market Rents by Dwelling Size (Recharts Bar Chart)
+Vertical bar chart showing HUD Section 8 Fair Market Rents by bedroom count (Efficiency, 1BR, 2BR, 3BR, 4BR).
+
+### Median Rent by ZIP Code (Horizontal Bar Chart)
+Rental medians per ZIP sorted by rent descending.
+
+### Data Sources
+RentCast market stats (per ZIP with dataByPropertyType breakdown), Trestle MLS (active/closed counts), HUD (fair market rents). Results cached 24 hours.
+
+---
+
 ## 9. Property Intel
 
 ### Property Search (3 methods)

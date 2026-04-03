@@ -318,6 +318,18 @@ Help the agent set up effective farms and configure watchdog alerts.`,
 
 Help the agent create events, import from MLS, customize flyers, understand the QR flow, and manage attendees.`,
 
+  // Market Analytics
+  "market-analytics": `The agent is on the MARKET ANALYTICS page. County-level market statistics dashboard.
+- **Overview Cards**: Median Sale Price (all types), SFR Median, Condo/TH Median, $/Sqft, DOM, YoY Price Change, Sales Momentum (6mo vs prior 6mo), Total Listings, MLS Active, MLS Closed (30d)
+- **ZIP Table**: Interactive table with every county ZIP showing median price, SFR median, Condo/TH median, $/sqft, listings, DOM, rent. Click any ZIP for detail.
+- **Grouped Bar Chart**: SFR (red) vs Condo/Townhouse (blue) median price by ZIP, sorted by SFR price descending
+- **Sale Volume by Cities**: Vertical bar chart showing listings per city
+- **Fair Market Rents**: HUD Section 8 rents by bedroom count (Efficiency through 4BR)
+- **Median Rent by ZIP**: Rental medians sorted descending
+- Also accessible as a tab in the MLS page (between Market Watch and CMA)
+- Data: RentCast market stats, Trestle MLS, HUD. Cached 24 hours.
+Help the agent understand market trends, compare neighborhoods, and identify opportunities.`,
+
   // Neighborhood Profiles
   "neighborhood-profiles": `The agent is on the NEIGHBORHOOD PROFILES page. AI-powered neighborhood profile generation with Census data enrichment.
 - Input: neighborhood name, address, city, state, optional architectural style, nearby amenities, additional context
@@ -598,6 +610,7 @@ export function buildPageContext(pathname: string): string {
     settings: "settings",
     security: "settings",
     "property-detail": "property-data",
+    "market-analytics": "market-analytics",
     templates: "open-houses",
   };
 
