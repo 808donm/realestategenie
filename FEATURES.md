@@ -86,9 +86,9 @@
 ## 7. Open Houses
 
 ### Creating an Open House
-- Choose event type: Sales, Rental Showing, or Both
-- Import from MLS by MLS# or property address (auto-fills all fields)
+- Import from MLS by MLS# or property address (auto-fills address, beds, baths, sqft, price, description, key features, photos)
 - Set start/end date and time
+- Save as draft, then publish when ready
 
 ### Flyer Templates
 - Modern, Modern Blue, Elegant Warm, Property Showcase
@@ -293,24 +293,42 @@ MLS searches, reports generated, last active, retention risk flags (40%+ activit
 
 ---
 
-## 16. Analytics Reports Page
+## 16. Analytics Reports
+
+All reports support PDF/Excel export, print-friendly formatting, and Recharts visualizations.
 
 ### Market Statistics
-Oahu Annual Resales (40 years), Oahu Monthly, Maui Monthly, Hawaii Island Monthly, Kauai Monthly, Statewide Comparison, York & Adams Counties PA
+- **Oahu Annual Resales** -- 40 years of residential sales data with line/bar/area charts, median prices, YoY trends
+- **Oahu Monthly Report** -- Single-family and condo sales, median prices, DOM, pending inventory, YoY comparisons
+- **Maui Monthly Report** -- SF median, condo median, 12-month trends, affordability index
+- **Hawaii Island Monthly** -- SF, condo, and land medians, DOM, new vs sold with YoY
+- **Kauai Monthly** -- SF, condo, and land medians
+- **Statewide Comparison** -- Official Hawaii Realtors stats across all four counties
+- **York & Adams Counties, PA** -- RAYAC monthly data with school district breakdowns
 
-### Solo Agent
-Lead Source ROI, Pipeline Velocity, Tax & Savings Reserve, Speed-to-Lead Audit
+### Solo Agent Reports
+- **Lead Source ROI** -- Conversion rates and cost-per-closing by lead source (Open House, Zillow, Google, Facebook, etc.). Shows which sources produce the most closings per lead invested.
+- **Pipeline Velocity** -- Average days per pipeline stage with bottleneck identification. Highlights "stuck deals" sitting at 2x or more the average duration for their stage.
+- **Tax & Savings Reserve** -- Gross commission vs. recommended tax and expense reserves. Helps agents plan for quarterly tax payments.
+- **Speed-to-Lead Audit** -- Average response time to new leads (in minutes). Breaks down by hour to show when leads arrive and how quickly the agent responds. Tracks under 5 min, under 15 min, under 1 hour, and over 1 hour.
 
-### Small Teams
-Agent Leaderboard (radar chart), Lead Assignment Fairness, Team Commission Split Tracker, Listing Inventory Health
+### Team Reports
+- **Agent Leaderboard** -- Per-agent metrics: closings, calls, SMS, showings booked, total volume, commission earned. Includes radar chart for visual performance comparison.
+- **Lead Assignment Fairness** -- Leads received, contacted, and converted per team member with average response time. Ensures equitable lead distribution.
+- **Team Commission Split Tracker** -- House vs. agent commission portions per deal with instant calculations. Configurable split percentages.
+- **Listing Inventory Health** -- Active listings by agent with DOM tracking. Price reduction alerts flag listings over 21 DOM that may need attention.
 
-### Brokerage
-Company Dollar, Compliance & Audit Log, Brokerage Market Share, Agent Retention Risk
+### Brokerage Reports
+- **Company Dollar** -- Monthly revenue breakdown: gross revenue, agent splits, fees, operating expenses, and net company dollar. 12-month trend with YoY comparison.
+- **Compliance & Audit Log** -- Document signatures, ID verifications, wire confirmations, and disclosure tracking from the audit log (90-day window).
+- **Brokerage Market Share** -- Brokerage rank by zip code compared to competing brokerages. Shows market position relative to major brands.
+- **Agent Retention Risk** -- AI flags agents with 40%+ activity drop over the last 30 days compared to their previous 30 days. Compares logins, leads, open houses, and searches. Enables proactive coaching.
 
 ### Office Admin
-Pending Document Checklist
+- **Pending Document Checklist** -- Under-contract deals missing required signatures, forms, or disclosures.
 
-All reports: PDF/Excel export, print-friendly, Recharts visualizations
+### Agency Dashboard (Broker/Admin)
+The Agency Dashboard (Section 15) provides real-time aggregate reporting across all agents with 6 tabs: Overview, Agent Performance, Lead Performance, Open House Performance, Financial, and Activity & Risk. See Section 15 for details.
 
 ---
 
