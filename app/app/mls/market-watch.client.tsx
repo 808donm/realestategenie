@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { APIProvider, Map, AdvancedMarker, InfoWindow } from "@vis.gl/react-google-maps";
+import { APIProvider, Map, AdvancedMarker, InfoWindow, useMap } from "@vis.gl/react-google-maps";
 import dynamic from "next/dynamic";
 
 const PropertyDetailModal = dynamic(() => import("../property-data/property-detail-modal.client"), {
@@ -94,6 +94,7 @@ export default function MarketWatchClient() {
   const [error, setError] = useState("");
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [detailListing, setDetailListing] = useState<Listing | null>(null);
+  const [tmkBoundary, setTmkBoundary] = useState<any>(null);
   const photoCache = useRef<Record<string, string>>({});
   const [activeStatuses, setActiveStatuses] = useState<Set<string>>(new Set(Object.keys(STATUS_COLORS)));
   const [viewMode, setViewMode] = useState<"map" | "hotsheet">("map");
@@ -114,62 +115,68 @@ export default function MarketWatchClient() {
     if (!input) return;
     setLoading(true);
     setError("");
+    setTmkBoundary(null); // Clear previous TMK overlay
     try {
       const params = new URLSearchParams({ timeframe, limit: "200" });
       if (propertyType) params.set("propertyType", propertyType);
 
       if (isTMK(input)) {
-        // TMK search: map section to known ZIP codes, then search MLS by those zips
+        // TMK search: get the TMK section boundary from GIS, then use bounding box to search MLS
         const { parseTMKInput, getZipsForTMKSection } = await import("@/lib/hawaii-tmk-zip");
         const tmk = parseTMKInput(input);
         const zone = tmk.zone || "";
         const section = tmk.section || "";
 
-        // Look up ZIP codes for this TMK section
-        const sectionZips = zone && section ? getZipsForTMKSection(zone, section) : null;
+        // Fetch TMK section boundary polygon from Hawaii GIS
+        const countyMap: Record<string, string> = { "1": "HONOLULU", "2": "MAUI", "3": "HAWAII", "4": "KAUAI" };
+        const county = countyMap[tmk.island || "1"] || "HONOLULU";
+        const tmkParams = new URLSearchParams({ county, layer: "sections" });
+        if (zone) tmkParams.set("zone", zone);
+        if (section) tmkParams.set("section", section);
+        tmkParams.set("limit", "5");
 
-        if (sectionZips && sectionZips.length > 0) {
-          // For TMK sections spanning multiple zips, fetch all and merge
-          if (sectionZips.length === 1) {
+        let tmkBbox: string | null = null;
+        try {
+          const tmkRes = await fetch(`/api/seller-map/tmk-overlay?${tmkParams}`);
+          const tmkData = await tmkRes.json();
+
+          if (tmkData.features?.length > 0) {
+            // Store the TMK boundary for map overlay
+            setTmkBoundary(tmkData);
+
+            // Compute bounding box from the polygon geometry
+            let minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
+            for (const feature of tmkData.features) {
+              const coords = feature.geometry?.type === "Polygon"
+                ? feature.geometry.coordinates[0]
+                : feature.geometry?.type === "MultiPolygon"
+                  ? feature.geometry.coordinates.flat(2)
+                  : [];
+              for (const coord of coords) {
+                const [lng, lat] = Array.isArray(coord[0]) ? coord[0] : coord;
+                if (lat < minLat) minLat = lat;
+                if (lat > maxLat) maxLat = lat;
+                if (lng < minLng) minLng = lng;
+                if (lng > maxLng) maxLng = lng;
+              }
+            }
+            tmkBbox = `${minLng},${minLat},${maxLng},${maxLat}`;
+            params.set("bbox", tmkBbox);
+          }
+        } catch (err) {
+          console.warn("[MarketWatch] TMK boundary fetch failed:", err);
+        }
+
+        // Fall back to ZIP codes if no boundary found
+        if (!tmkBbox) {
+          const sectionZips = zone && section ? getZipsForTMKSection(zone, section) : null;
+          if (sectionZips && sectionZips.length > 0) {
             params.set("postalCode", sectionZips[0]);
           } else {
-            // Fetch all zips in parallel and merge results
-            const allResults = await Promise.all(
-              sectionZips.map(async (zip) => {
-                const p = new URLSearchParams(params);
-                p.set("postalCode", zip);
-                const r = await fetch(`/api/mls/market-watch?${p}`);
-                return r.ok ? r.json() : null;
-              }),
-            );
-            const mergedListings: any[] = [];
-            const mergedCounts: Record<string, number> = {};
-            let mergedPriceChanges = { increases: 0, decreases: 0 };
-            const seenKeys = new Set<string>();
-            for (const d of allResults) {
-              if (!d) continue;
-              for (const l of d.listings || []) {
-                if (!seenKeys.has(l.listingKey)) {
-                  seenKeys.add(l.listingKey);
-                  mergedListings.push(l);
-                }
-              }
-              for (const [k, v] of Object.entries(d.statusCounts || {})) {
-                mergedCounts[k] = (mergedCounts[k] || 0) + (v as number);
-              }
-              mergedPriceChanges.increases += d.priceChanges?.increases || 0;
-              mergedPriceChanges.decreases += d.priceChanges?.decreases || 0;
-            }
-            setListings(mergedListings);
-            setStatusCounts(mergedCounts);
-            setPriceChanges(mergedPriceChanges);
+            setError(`No TMK boundary found for section ${zone}-${section}. Try a ZIP code instead.`);
             setLoading(false);
             return;
           }
-        } else {
-          setError(`No ZIP codes mapped for TMK section ${zone}-${section}. Try a ZIP code instead.`);
-          setLoading(false);
-          return;
         }
       } else {
         params.set("postalCode", input);
@@ -596,6 +603,8 @@ export default function MarketWatchClient() {
                         </div>
                       </InfoWindow>
                     )}
+                    {/* TMK Boundary Overlay */}
+                    {tmkBoundary && <TmkBoundaryOverlay geojson={tmkBoundary} />}
                   </Map>
                 </div>
               </APIProvider>
@@ -713,4 +722,62 @@ export default function MarketWatchClient() {
       )}
     </div>
   );
+}
+
+// ── TMK Boundary Polygon Overlay ──
+function TmkBoundaryOverlay({ geojson }: { geojson: any }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!map || !geojson?.features?.length) return;
+
+    const polygons: google.maps.Polygon[] = [];
+
+    for (const feature of geojson.features) {
+      const geom = feature.geometry;
+      if (!geom) continue;
+
+      const paths: google.maps.LatLng[][] = [];
+
+      if (geom.type === "Polygon") {
+        for (const ring of geom.coordinates) {
+          paths.push(ring.map((c: number[]) => new google.maps.LatLng(c[1], c[0])));
+        }
+      } else if (geom.type === "MultiPolygon") {
+        for (const polygon of geom.coordinates) {
+          for (const ring of polygon) {
+            paths.push(ring.map((c: number[]) => new google.maps.LatLng(c[1], c[0])));
+          }
+        }
+      }
+
+      if (paths.length > 0) {
+        const poly = new google.maps.Polygon({
+          paths,
+          strokeColor: "#1e40af",
+          strokeOpacity: 0.8,
+          strokeWeight: 2,
+          fillColor: "#3b82f6",
+          fillOpacity: 0.1,
+          map,
+        });
+        polygons.push(poly);
+      }
+    }
+
+    // Fit map to TMK boundary
+    if (polygons.length > 0) {
+      const bounds = new google.maps.LatLngBounds();
+      for (const poly of polygons) {
+        poly.getPath().forEach((latlng) => bounds.extend(latlng));
+      }
+      map.fitBounds(bounds, 50);
+    }
+
+    return () => {
+      for (const poly of polygons) poly.setMap(null);
+    };
+  }, [map, geojson]);
+
+  return null;
 }
