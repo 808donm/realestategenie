@@ -34,6 +34,9 @@ export default function GenerateProfileModal({
 }: GenerateProfileModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [mlsSearching, setMlsSearching] = useState(false);
+  const [mlsQuery, setMlsQuery] = useState("");
+  const [mlsImported, setMlsImported] = useState(false);
 
   // Form fields
   const [neighborhoodName, setNeighborhoodName] = useState(defaultNeighborhood);
@@ -44,6 +47,63 @@ export default function GenerateProfileModal({
   const [architecturalStyle, setArchitecturalStyle] = useState("");
   const [nearbyAmenities, setNearbyAmenities] = useState("");
   const [additionalContext, setAdditionalContext] = useState("");
+
+  // MLS Import -- search by MLS# or address and auto-fill fields
+  const handleMlsImport = async () => {
+    if (!mlsQuery.trim()) return;
+    setMlsSearching(true);
+    setError("");
+    try {
+      const q = mlsQuery.trim();
+      // Determine if it's an MLS number or address
+      const isMlsNumber = /^[A-Z]?\d{6,}$/i.test(q);
+      const url = isMlsNumber
+        ? `/api/mls/lookup-listing?mlsNumber=${encodeURIComponent(q)}`
+        : `/api/mls/search?q=${encodeURIComponent(q)}&limit=1`;
+      const res = await fetch(url);
+      const data = await res.json();
+
+      // Extract property from response
+      const prop = isMlsNumber
+        ? data
+        : data.properties?.[0];
+
+      if (!prop) {
+        setError("No MLS listing found. Try a different MLS# or address.");
+        return;
+      }
+
+      // Auto-fill form fields from MLS data
+      const mlsAddr = prop.UnparsedAddress || prop.address || [prop.StreetNumber, prop.StreetName, prop.StreetSuffix].filter(Boolean).join(" ");
+      const mlsCity = prop.City || prop.city || "";
+      const mlsState = prop.StateOrProvince || prop.state || "";
+      const mlsZip = prop.PostalCode || prop.postalCode || "";
+      const mlsSubdivision = prop.SubdivisionName || "";
+
+      if (mlsAddr) setAddress(mlsAddr);
+      if (mlsCity) setCity(mlsCity);
+      if (mlsState) setStateProvince(mlsState);
+      if (mlsSubdivision && !neighborhoodName) setNeighborhoodName(mlsSubdivision);
+      if (!neighborhoodName && mlsCity) setNeighborhoodName(`${mlsCity} ${mlsZip}`.trim());
+
+      // Add property details as additional context
+      const details: string[] = [];
+      if (prop.PropertyType) details.push(`Property Type: ${prop.PropertyType}`);
+      if (prop.BedroomsTotal) details.push(`${prop.BedroomsTotal} bedrooms`);
+      if (prop.BathroomsTotalInteger) details.push(`${prop.BathroomsTotalInteger} bathrooms`);
+      if (prop.LivingArea) details.push(`${prop.LivingArea.toLocaleString()} sqft`);
+      if (prop.ListPrice) details.push(`List Price: $${prop.ListPrice.toLocaleString()}`);
+      if (details.length > 0) {
+        setAdditionalContext((prev) => prev ? `${prev}\nMLS Property: ${details.join(", ")}` : `MLS Property: ${details.join(", ")}`);
+      }
+
+      setMlsImported(true);
+    } catch (err: any) {
+      setError("Failed to search MLS. Please try again or enter details manually.");
+    } finally {
+      setMlsSearching(false);
+    }
+  };
 
   const handleGenerate = async () => {
     setError("");
@@ -102,6 +162,33 @@ export default function GenerateProfileModal({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
+          {/* MLS Import */}
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg space-y-2">
+            <Label className="text-blue-800 font-semibold">Import from MLS (optional)</Label>
+            <p className="text-xs text-blue-600">Enter an MLS# or property address to auto-fill the form fields.</p>
+            <div className="flex gap-2">
+              <Input
+                placeholder="MLS# (e.g., H12345678) or address"
+                value={mlsQuery}
+                onChange={(e) => setMlsQuery(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleMlsImport()}
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleMlsImport}
+                disabled={mlsSearching || !mlsQuery.trim()}
+                size="sm"
+              >
+                {mlsSearching ? "Searching..." : "Import"}
+              </Button>
+            </div>
+            {mlsImported && (
+              <p className="text-xs text-green-600 font-medium">MLS data imported! Review and adjust the fields below.</p>
+            )}
+          </div>
+
           {/* Neighborhood Name */}
           <div className="space-y-2">
             <Label htmlFor="neighborhood">Neighborhood Name *</Label>

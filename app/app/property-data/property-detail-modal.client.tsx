@@ -1,9 +1,16 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import type { FederalPropertySupplement } from "@/lib/integrations/federal-data-client";
 import { buildQPublicUrl } from "@/lib/hawaii-zip-county";
 import type { PropertyReportData } from "@/lib/documents/property-intelligence-report";
+
+// Lazy-load report viewer components to avoid bloating the initial bundle
+const PropertyReportView = lazy(() => import("@/components/reports/property-report-view"));
+const BuyerReportView = lazy(() => import("@/components/reports/buyer-report-view"));
+const SellerReportView = lazy(() => import("@/components/reports/seller-report-view"));
+const InvestorReportView = lazy(() => import("@/components/reports/investor-report-view"));
+const CMAReportView = lazy(() => import("@/components/reports/cma-report-view"));
 
 interface AttomProperty {
   identifier?: { Id?: number; fips?: string; apn?: string; attomId?: number };
@@ -1056,6 +1063,7 @@ export default function PropertyDetailModal({
   const [reportGenerating, setReportGenerating] = useState(false);
   const [reportShareUrl, setReportShareUrl] = useState<string | null>(null);
   const [reportCopied, setReportCopied] = useState(false);
+  const [viewingReport, setViewingReport] = useState<"property" | "buyer" | "seller" | "investor" | "cma" | null>(null);
 
   const collectReportData = useCallback((): PropertyReportData => {
     const he = enrichedFinancial?.homeEquity?.property?.[0]?.homeEquity;
@@ -5042,8 +5050,50 @@ export default function PropertyDetailModal({
   );
 
   // ── Report action bar (shared between embedded and modal) ──
+  const reportTypes = [
+    { id: "property" as const, label: "Property Report", icon: "📊" },
+    { id: "buyer" as const, label: "Buyer Report", icon: "🏠" },
+    { id: "seller" as const, label: "Seller Report", icon: "💰" },
+    { id: "investor" as const, label: "Investor Report", icon: "📈" },
+    { id: "cma" as const, label: "CMA Report", icon: "📋" },
+  ];
+
   const reportActionBar = (
-    <div style={{ display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
+    <div style={{ display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap", alignItems: "center" }}>
+      {/* View Report dropdown */}
+      <div style={{ position: "relative", display: "inline-block" }}>
+        <select
+          onChange={(e) => {
+            const val = e.target.value as typeof viewingReport;
+            if (val) setViewingReport(val);
+            e.target.value = "";
+          }}
+          value=""
+          style={{
+            padding: "7px 14px",
+            fontSize: 12,
+            fontWeight: 600,
+            borderRadius: 6,
+            border: "none",
+            background: "#7c3aed",
+            color: "#fff",
+            cursor: "pointer",
+            appearance: "none",
+            WebkitAppearance: "none",
+            paddingRight: 28,
+            backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='white' d='M3 5l3 3 3-3z'/%3E%3C/svg%3E\")",
+            backgroundRepeat: "no-repeat",
+            backgroundPosition: "right 8px center",
+          }}
+        >
+          <option value="" disabled>View Report...</option>
+          {reportTypes.map((r) => (
+            <option key={r.id} value={r.id}>{r.icon} {r.label}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Download PDF */}
       <button
         onClick={handleGenerateReport}
         disabled={reportGenerating}
@@ -5059,8 +5109,10 @@ export default function PropertyDetailModal({
           opacity: reportGenerating ? 0.6 : 1,
         }}
       >
-        {reportGenerating ? "Generating..." : "Download Intelligence Report (PDF)"}
+        {reportGenerating ? "Generating..." : "Download PDF"}
       </button>
+
+      {/* Shareable Link */}
       <button
         onClick={handleShareReport}
         disabled={reportGenerating}
@@ -5076,11 +5128,150 @@ export default function PropertyDetailModal({
           opacity: reportGenerating ? 0.6 : 1,
         }}
       >
-        {reportCopied ? "Link Copied!" : "Get Shareable Link"}
+        {reportCopied ? "Link Copied!" : "Share Link"}
       </button>
       {reportShareUrl && !reportCopied && (
-        <span style={{ fontSize: 11, color: "#6b7280", alignSelf: "center" }}>Link ready — click to copy again</span>
+        <span style={{ fontSize: 11, color: "#6b7280", alignSelf: "center" }}>Link ready</span>
       )}
+    </div>
+  );
+
+  // ── Report Viewer Overlay ──
+  const reportBranding = {
+    displayName: "Agent", // Will be populated from session in production
+    email: "",
+    phone: null as string | null,
+    licenseNumber: null as string | null,
+  };
+
+  const reportViewerOverlay = viewingReport && (
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: "#fff",
+        zIndex: 2000,
+        overflowY: "auto",
+      }}
+    >
+      {/* Close bar */}
+      <div
+        style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 2001,
+          background: "#fff",
+          borderBottom: "1px solid #e5e7eb",
+          padding: "8px 16px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <span style={{ fontSize: 13, fontWeight: 600, color: "#374151" }}>
+          {reportTypes.find((r) => r.id === viewingReport)?.label}
+        </span>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            onClick={() => window.print()}
+            style={{ padding: "5px 12px", fontSize: 12, fontWeight: 600, borderRadius: 6, border: "1px solid #d1d5db", background: "#fff", color: "#374151", cursor: "pointer" }}
+          >
+            Print
+          </button>
+          <button
+            onClick={handleGenerateReport}
+            disabled={reportGenerating}
+            style={{ padding: "5px 12px", fontSize: 12, fontWeight: 600, borderRadius: 6, border: "none", background: "#1e40af", color: "#fff", cursor: "pointer" }}
+          >
+            {reportGenerating ? "Generating..." : "Download PDF"}
+          </button>
+          <button
+            onClick={() => setViewingReport(null)}
+            style={{ padding: "5px 12px", fontSize: 12, fontWeight: 600, borderRadius: 6, border: "1px solid #d1d5db", background: "#fff", color: "#374151", cursor: "pointer" }}
+          >
+            Close
+          </button>
+        </div>
+      </div>
+
+      <Suspense fallback={<div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>Loading report...</div>}>
+        {viewingReport === "property" && (
+          <PropertyReportView data={collectReportData()} branding={reportBranding} />
+        )}
+        {viewingReport === "buyer" && (
+          <BuyerReportView
+            property={collectReportData()}
+            branding={reportBranding}
+            photos={mlsPhotos || undefined}
+          />
+        )}
+        {viewingReport === "seller" && (
+          <SellerReportView
+            property={collectReportData()}
+            branding={reportBranding}
+            photos={mlsPhotos || undefined}
+          />
+        )}
+        {viewingReport === "investor" && (
+          <InvestorReportView
+            property={collectReportData()}
+            branding={reportBranding}
+            photos={mlsPhotos || undefined}
+            rentalEstimate={enrichedFinancial?.rentalAvm?.property?.[0]?.rentalAvm?.rent || enrichedFinancial?.rentalAvm?.rent}
+            rentalLow={enrichedFinancial?.rentalAvm?.property?.[0]?.rentalAvm?.rentRangeLow || enrichedFinancial?.rentalAvm?.rentRangeLow}
+            rentalHigh={enrichedFinancial?.rentalAvm?.property?.[0]?.rentalAvm?.rentRangeHigh || enrichedFinancial?.rentalAvm?.rentRangeHigh}
+            areaMedianIncome={neighborhoodData?.medianHouseholdIncome}
+            areaPopulation={neighborhoodData?.population}
+            ownerOccupiedPct={neighborhoodData?.ownerOccupiedPct}
+            renterOccupiedPct={neighborhoodData?.renterOccupiedPct}
+          />
+        )}
+        {viewingReport === "cma" && (() => {
+          const rd = collectReportData();
+          // Build a basic CMA analysis from available comps
+          const { calculateCMAAnalysis } = require("@/lib/mls/cma-adjustments");
+          const subject = {
+            address: rd.address,
+            beds: rd.beds || 0,
+            baths: rd.baths || 0,
+            sqft: rd.sqft || 0,
+            lotSizeSqft: rd.lotSizeSqft,
+            yearBuilt: rd.yearBuilt,
+            propertyType: rd.propertyType,
+          };
+          const compProps = (rd.comps || []).map((c: any) => ({
+            address: c.address || "",
+            status: "Closed",
+            listPrice: c.price || 0,
+            closePrice: c.price || 0,
+            beds: c.beds || null,
+            baths: c.baths || null,
+            sqft: c.sqft || null,
+            dom: null,
+            closeDate: c.closeDate || null,
+          }));
+          const analysis = compProps.length > 0 ? calculateCMAAnalysis(subject, compProps) : null;
+          return analysis ? (
+            <CMAReportView
+              analysis={analysis}
+              branding={reportBranding}
+              avmValue={rd.avmValue}
+              avmLow={rd.avmLow}
+              avmHigh={rd.avmHigh}
+              avmConfidence={rd.avmConfidence}
+              marketType={rd.marketType}
+              photos={mlsPhotos || undefined}
+            />
+          ) : (
+            <div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>
+              No comparable sales data available. Search for comps first using the Comps tab.
+            </div>
+          );
+        })()}
+      </Suspense>
     </div>
   );
 
@@ -5088,6 +5279,7 @@ export default function PropertyDetailModal({
   if (embedded) {
     return (
       <div>
+        {reportViewerOverlay}
         {reportActionBar}
         {valueSummaryCards}
         {tabsBar}
@@ -5098,6 +5290,8 @@ export default function PropertyDetailModal({
 
   // ── Full modal mode ──
   return (
+    <>
+    {reportViewerOverlay}
     <div
       style={{
         position: "fixed",
@@ -5215,6 +5409,7 @@ export default function PropertyDetailModal({
         </div>
       </div>
     </div>
+    </>
   );
 }
 

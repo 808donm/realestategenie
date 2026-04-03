@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, MapPin, Calendar, Download, Eye } from "lucide-react";
+import { Plus, MapPin, Calendar, Download, Eye, FileText } from "lucide-react";
 import GenerateProfileModal from "./generate-modal";
 import ProfilePreviewModal from "./profile-preview-modal";
+
+const NeighborhoodReportView = lazy(() => import("@/components/reports/neighborhood-report-view"));
 
 interface NeighborhoodProfile {
   id: string;
@@ -39,6 +41,9 @@ export default function NeighborhoodProfilesClient() {
   const [error, setError] = useState("");
   const [generateModalOpen, setGenerateModalOpen] = useState(false);
   const [previewProfile, setPreviewProfile] = useState<NeighborhoodProfile | null>(null);
+  const [viewingReportProfile, setViewingReportProfile] = useState<NeighborhoodProfile | null>(null);
+  const [reportEnrichedData, setReportEnrichedData] = useState<any>(null);
+  const [reportLoading, setReportLoading] = useState(false);
 
   const fetchProfiles = async () => {
     try {
@@ -66,6 +71,27 @@ export default function NeighborhoodProfilesClient() {
     fetchProfiles();
     // Show success message
     alert("Neighborhood profile generated successfully!");
+  };
+
+  const handleViewReport = async (profile: NeighborhoodProfile) => {
+    setViewingReportProfile(profile);
+    setReportLoading(true);
+    try {
+      // Fetch enriched data (Census demographics, schools, etc.) via the export route's enrichment
+      const res = await fetch("/api/neighborhood-profiles/export", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ profileId: profile.id, format: "json" }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setReportEnrichedData(data);
+      }
+    } catch {
+      // Proceed without enriched data -- report will still render AI content
+    } finally {
+      setReportLoading(false);
+    }
   };
 
   const handleDownloadPDF = async (profileId: string, neighborhoodName: string) => {
@@ -162,17 +188,21 @@ export default function NeighborhoodProfilesClient() {
                 </div>
               </CardContent>
 
-              <CardFooter className="gap-2">
+              <CardFooter className="gap-2 flex-wrap">
                 <Button variant="outline" size="sm" onClick={() => setPreviewProfile(profile)} className="flex-1">
-                  <Eye className="mr-2 h-4 w-4" />
+                  <Eye className="mr-1 h-4 w-4" />
                   Preview
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => handleViewReport(profile)} className="flex-1" style={{ borderColor: "#7c3aed", color: "#7c3aed" }}>
+                  <FileText className="mr-1 h-4 w-4" />
+                  Report
                 </Button>
                 <Button
                   size="sm"
                   onClick={() => handleDownloadPDF(profile.id, profile.neighborhood_name)}
                   className="flex-1"
                 >
-                  <Download className="mr-2 h-4 w-4" />
+                  <Download className="mr-1 h-4 w-4" />
                   PDF
                 </Button>
               </CardFooter>
@@ -195,6 +225,89 @@ export default function NeighborhoodProfilesClient() {
           onClose={() => setPreviewProfile(null)}
           profile={previewProfile}
         />
+      )}
+
+      {/* Full Report Viewer */}
+      {viewingReportProfile && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "#fff",
+            zIndex: 2000,
+            overflowY: "auto",
+          }}
+        >
+          {/* Close bar */}
+          <div
+            style={{
+              position: "sticky",
+              top: 0,
+              zIndex: 2001,
+              background: "#fff",
+              borderBottom: "1px solid #e5e7eb",
+              padding: "8px 16px",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <span style={{ fontSize: 13, fontWeight: 600, color: "#374151" }}>
+              Neighborhood Report: {viewingReportProfile.neighborhood_name}
+            </span>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                onClick={() => window.print()}
+                style={{ padding: "5px 12px", fontSize: 12, fontWeight: 600, borderRadius: 6, border: "1px solid #d1d5db", background: "#fff", color: "#374151", cursor: "pointer" }}
+              >
+                Print
+              </button>
+              <button
+                onClick={() => handleDownloadPDF(viewingReportProfile.id, viewingReportProfile.neighborhood_name)}
+                style={{ padding: "5px 12px", fontSize: 12, fontWeight: 600, borderRadius: 6, border: "none", background: "#1e40af", color: "#fff", cursor: "pointer" }}
+              >
+                Download PDF
+              </button>
+              <button
+                onClick={() => { setViewingReportProfile(null); setReportEnrichedData(null); }}
+                style={{ padding: "5px 12px", fontSize: 12, fontWeight: 600, borderRadius: 6, border: "1px solid #d1d5db", background: "#fff", color: "#374151", cursor: "pointer" }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+
+          {reportLoading ? (
+            <div style={{ padding: 60, textAlign: "center", color: "#6b7280" }}>Loading report data...</div>
+          ) : (
+            <Suspense fallback={<div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>Loading report...</div>}>
+              <NeighborhoodReportView
+                data={{
+                  neighborhoodName: viewingReportProfile.neighborhood_name,
+                  address: viewingReportProfile.address,
+                  city: viewingReportProfile.city,
+                  stateProvince: viewingReportProfile.state_province,
+                  lifestyleVibe: viewingReportProfile.profile_data.lifestyleVibe,
+                  locationNarrative: viewingReportProfile.profile_data.locationNarrative,
+                  amenitiesList: viewingReportProfile.profile_data.amenitiesList,
+                  marketData: viewingReportProfile.profile_data.marketData as any,
+                  demographics: reportEnrichedData?.demographics,
+                  schoolsDetail: reportEnrichedData?.schoolsDetail,
+                  walkScore: reportEnrichedData?.walkScore,
+                  zipCode: reportEnrichedData?.zipCode,
+                  countyName: reportEnrichedData?.countyName,
+                }}
+                branding={{
+                  displayName: "Agent",
+                  email: "",
+                }}
+              />
+            </Suspense>
+          )}
+        </div>
       )}
     </>
   );
