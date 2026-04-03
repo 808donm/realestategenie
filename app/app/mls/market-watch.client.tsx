@@ -696,11 +696,15 @@ export default function MarketWatchClient() {
           property={{
             identifier: { apn: detailListing.parcelNumber || "" },
             address: {
-              oneLine: detailListing.address,
+              oneLine: [
+                detailListing.address,
+                detailListing.city && !detailListing.address?.includes(detailListing.city) ? detailListing.city : null,
+                `${detailListing.state || "HI"} ${detailListing.postalCode || postalCode || ""}`.trim(),
+              ].filter(Boolean).join(", "),
               line1: detailListing.address?.split(",")[0]?.trim(),
               locality: detailListing.city || detailListing.address?.split(",")[1]?.trim(),
               countrySubd: detailListing.state || "HI",
-              postal1: detailListing.postalCode || detailListing.address?.match(/\d{5}/)?.[0],
+              postal1: detailListing.postalCode || postalCode || detailListing.address?.match(/\d{5}/)?.[0],
             },
             location: {
               latitude: detailListing.lat ? String(detailListing.lat) : undefined,

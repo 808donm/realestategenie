@@ -1263,8 +1263,8 @@ export default function PropertyDetailModal({
         )
           .then((r) => (r.ok ? r.json() : null))
           .catch(() => null),
-        // Fetch MLS sales history
-        fetch(`/api/mls/sales-history?address=${encodeURIComponent(line1)}`)
+        // Fetch MLS sales history (use full address with unit for condos)
+        fetch(`/api/mls/sales-history?address=${encodeURIComponent(addr)}`)
           .then((r) => (r.ok ? r.json() : null))
           .catch(() => null),
         // Fetch rental AVM
@@ -2759,8 +2759,8 @@ export default function PropertyDetailModal({
       {/* ── Sales History Tab ───────────────────────────────────────── */}
       {activeSection === "sales-history" &&
         (() => {
-          // Pass line1 (street only) when available, fall back to oneLine
-          const salesAddr = p.address?.line1 || p.address?.oneLine || addr;
+          // Use oneLine (includes unit number for condos) for accurate sales history
+          const salesAddr = p.address?.oneLine || p.address?.line1 || addr;
           return <SalesHistorySection address={salesAddr} publicRecords={p.saleHistory} />;
         })()}
 
