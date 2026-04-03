@@ -11,6 +11,7 @@ import MicrosoftCalendarCard from "./microsoft-calendar-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import IntegrationsNotifications from "./notifications";
 import SocialChannelsCard from "./social-channels-card";
+import WebAssistantCard from "./web-assistant-card";
 
 export default async function IntegrationsPage() {
   const supabase = await supabaseServer();
@@ -24,7 +25,7 @@ export default async function IntegrationsPage() {
   }
 
   // Check if user is platform admin
-  const { data: agent } = await supabase.from("agents").select("role").eq("id", user.id).single();
+  const { data: agent } = await supabase.from("agents").select("role, display_name, email").eq("id", user.id).single();
 
   const isPlatformAdmin = agent?.role === "admin";
 
@@ -37,6 +38,8 @@ export default async function IntegrationsPage() {
   const trestleIntegration = integrations?.find((i) => i.provider === "trestle");
   const googleCalendarIntegration = integrations?.find((i) => i.provider === "google_calendar") || null;
   const microsoftCalendarIntegration = integrations?.find((i) => i.provider === "microsoft_calendar") || null;
+  const idxBrokerIntegration = integrations?.find((i) => i.provider === "idx_broker");
+  const idxBrokerConfig = idxBrokerIntegration?.config ? (typeof idxBrokerIntegration.config === "string" ? JSON.parse(idxBrokerIntegration.config) : idxBrokerIntegration.config) : null;
 
   // Realie.ai is platform-wide — find any connected Realie integration across all agents
   const { data: realieIntegrations } = await supabaseAdmin
@@ -76,6 +79,13 @@ export default async function IntegrationsPage() {
         <GoogleCalendarCard integration={googleCalendarIntegration} />
         <MicrosoftCalendarCard integration={microsoftCalendarIntegration} />
       </div>
+
+      {/* Hoku Web Assistant */}
+      <WebAssistantCard
+        agentId={user.id}
+        agentName={agent?.display_name || agent?.email || "Agent"}
+        idxBrokerConfig={idxBrokerConfig}
+      />
 
       {/* Social Lead Response Channels */}
       <SocialChannelsCard />
