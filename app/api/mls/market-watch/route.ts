@@ -81,9 +81,22 @@ export async function GET(request: NextRequest) {
     // Time filter -- use ModificationTimestamp for recent changes
     filters.push(`ModificationTimestamp gt ${cutoff}`);
 
-    // Property type
+    // Property type -- map user-friendly names to Trestle OData enum values
     if (propertyType) {
-      filters.push(`PropertyType eq '${propertyType}'`);
+      const trestleTypeMap: Record<string, string> = {
+        "single family": "Residential",
+        "condominium": "Residential",
+        "condo": "Residential",
+        "townhouse": "Residential",
+        "multi-family": "Residential Income",
+        "residential income": "Residential Income",
+        "commercial": "Commercial",
+        "land": "Land",
+        "farm": "Farm",
+        "residential": "Residential",
+      };
+      const mappedType = trestleTypeMap[propertyType.toLowerCase()] || propertyType;
+      filters.push(`PropertyType eq '${mappedType}'`);
     }
 
     // Exclude rentals
