@@ -1,6 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, lazy, Suspense } from "react";
+import { calculateCMAAnalysis, type CMAAnalysis } from "@/lib/mls/cma-adjustments";
+
+const CMAReportView = lazy(() => import("@/components/reports/cma-report-view"));
 
 // ─── Type definitions ────────────────────────────────────────────────
 
@@ -791,321 +794,72 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
             </div>
           )}
 
-          {/* CMA Results */}
+          {/* CMA Results -- Full Report View */}
           {cmaReport && !cmaLoading && (
             <div style={{ marginBottom: 24 }}>
-              {/* Subject Property Header */}
-              <div style={{ ...cardStyle, marginBottom: 16 }}>
-                <div
+              {/* Action Bar */}
+              <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+                <button
+                  onClick={saveCMAReport}
+                  disabled={cmaSaving || cmaSaveSuccess}
                   style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "flex-start",
-                    flexWrap: "wrap",
-                    gap: 12,
+                    ...successBtnStyle,
+                    opacity: cmaSaving ? 0.7 : 1,
+                    cursor: cmaSaving ? "wait" : cmaSaveSuccess ? "default" : "pointer",
+                    background: cmaSaveSuccess ? "#16a34a" : "#10b981",
                   }}
                 >
-                  <div>
-                    <h3 style={{ fontSize: 18, fontWeight: 700, color: "#111827", marginBottom: 4 }}>CMA Report</h3>
-                    {cmaReport.subjectAddress && (
-                      <p style={{ fontSize: 14, color: "#374151", marginBottom: 2 }}>{cmaReport.subjectAddress}</p>
-                    )}
-                    <p style={{ fontSize: 13, color: "#6b7280" }}>
-                      {[cmaReport.subjectCity, cmaReport.subjectPostalCode].filter(Boolean).join(", ")}
-                      {cmaReport.subjectListPrice ? ` | Listed at ${formatPrice(cmaReport.subjectListPrice)}` : ""}
-                    </p>
-                    <p style={{ fontSize: 12, color: "#9ca3af", marginTop: 4 }}>
-                      Generated {new Date(cmaReport.generatedAt).toLocaleString()}
-                    </p>
-                  </div>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <button
-                      onClick={saveCMAReport}
-                      disabled={cmaSaving || cmaSaveSuccess}
-                      style={{
-                        ...successBtnStyle,
-                        opacity: cmaSaving ? 0.7 : 1,
-                        cursor: cmaSaving ? "wait" : cmaSaveSuccess ? "default" : "pointer",
-                        background: cmaSaveSuccess ? "#16a34a" : "#10b981",
-                      }}
-                    >
-                      {cmaSaving ? "Saving..." : cmaSaveSuccess ? "Saved!" : "Save Report"}
-                    </button>
-                  </div>
-                </div>
+                  {cmaSaving ? "Saving..." : cmaSaveSuccess ? "Saved!" : "Save Report"}
+                </button>
+                <button
+                  onClick={() => window.print()}
+                  style={{ padding: "7px 14px", fontSize: 12, fontWeight: 600, borderRadius: 6, border: "1px solid #d1d5db", background: "#fff", color: "#374151", cursor: "pointer" }}
+                >
+                  Print Report
+                </button>
               </div>
 
-              {/* Stats Summary Cards */}
-              {cmaReport.stats && (
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-                    gap: 12,
-                    marginBottom: 20,
-                  }}
-                >
-                  <div style={statCardStyle}>
-                    <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Median Price</div>
-                    <div style={{ fontSize: 20, fontWeight: 700, color: "#111827" }}>
-                      {formatPriceShort(cmaReport.stats.medianListPrice)}
-                    </div>
-                  </div>
-                  <div style={statCardStyle}>
-                    <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Price / Sqft</div>
-                    <div style={{ fontSize: 20, fontWeight: 700, color: "#111827" }}>
-                      {cmaReport.stats.medianPricePerSqft != null
-                        ? `$${cmaReport.stats.medianPricePerSqft.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
-                        : "--"}
-                    </div>
-                  </div>
-                  <div style={statCardStyle}>
-                    <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Avg DOM</div>
-                    <div style={{ fontSize: 20, fontWeight: 700, color: "#111827" }}>
-                      {cmaReport.stats.avgDOM != null ? `${Math.round(cmaReport.stats.avgDOM)} days` : "--"}
-                    </div>
-                  </div>
-                  <div style={statCardStyle}>
-                    <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>List-to-Sale</div>
-                    <div style={{ fontSize: 20, fontWeight: 700, color: "#111827" }}>
-                      {formatPercent(cmaReport.stats.listToSaleRatio)}
-                    </div>
-                  </div>
-                  <div style={{ ...statCardStyle, background: "#eff6ff", borderColor: "#bfdbfe" }}>
-                    <div style={{ fontSize: 12, color: "#3b82f6", marginBottom: 4, fontWeight: 600 }}>
-                      Suggested Range
-                    </div>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: "#1d4ed8" }}>
-                      {formatPriceShort(cmaReport.stats.suggestedPriceLow)} –{" "}
-                      {formatPriceShort(cmaReport.stats.suggestedPriceHigh)}
-                    </div>
-                  </div>
-                </div>
-              )}
+              {/* Full CMA Report */}
+              {(() => {
+                // Build CMA analysis with adjustments from comps
+                const subject = {
+                  address: cmaReport.subjectAddress || "",
+                  beds: cmaReport.subjectBeds || 0,
+                  baths: cmaReport.subjectBaths || 0,
+                  sqft: cmaReport.subjectSqft || 0,
+                  yearBuilt: cmaReport.subjectYearBuilt || undefined,
+                  propertyType: (cmaReport as any).subjectPropertyType || undefined,
+                };
+                const compProps = (cmaReport.comps || []).map((c: CMAComp) => ({
+                  address: c.address,
+                  city: c.city,
+                  status: c.status,
+                  listPrice: c.listPrice,
+                  closePrice: c.closePrice,
+                  beds: c.bedrooms,
+                  baths: c.bathrooms,
+                  sqft: c.livingArea,
+                  yearBuilt: c.yearBuilt,
+                  dom: c.dom,
+                  closeDate: c.closeDate,
+                  photoUrl: c.photoUrl,
+                }));
+                const analysis = compProps.length > 0 ? calculateCMAAnalysis(subject, compProps) : null;
 
-              {/* Comp Breakdown Badges */}
-              {cmaReport.stats && (
-                <div style={{ display: "flex", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
-                  <span style={{ fontSize: 13, color: "#374151" }}>
-                    <strong>{cmaReport.stats.totalComps}</strong> comps found:
-                  </span>
-                  {cmaReport.stats.activeComps > 0 && (
-                    <span
-                      style={{
-                        padding: "2px 10px",
-                        background: "#dcfce7",
-                        color: "#16a34a",
-                        borderRadius: 6,
-                        fontSize: 12,
-                        fontWeight: 600,
-                      }}
-                    >
-                      {cmaReport.stats.activeComps} Active
-                    </span>
-                  )}
-                  {cmaReport.stats.pendingComps > 0 && (
-                    <span
-                      style={{
-                        padding: "2px 10px",
-                        background: "#fef3c7",
-                        color: "#d97706",
-                        borderRadius: 6,
-                        fontSize: 12,
-                        fontWeight: 600,
-                      }}
-                    >
-                      {cmaReport.stats.pendingComps} Pending
-                    </span>
-                  )}
-                  {cmaReport.stats.soldComps > 0 && (
-                    <span
-                      style={{
-                        padding: "2px 10px",
-                        background: "#e0e7ff",
-                        color: "#4f46e5",
-                        borderRadius: 6,
-                        fontSize: 12,
-                        fontWeight: 600,
-                      }}
-                    >
-                      {cmaReport.stats.soldComps} Sold
-                    </span>
-                  )}
-                </div>
-              )}
-
-              {/* Comps Table */}
-              {cmaReport.comps && cmaReport.comps.length > 0 && (
-                <div style={{ ...cardStyle, padding: 0, overflow: "hidden", marginBottom: 20 }}>
-                  <div style={{ overflowX: "auto" }}>
-                    <table
-                      style={{
-                        width: "100%",
-                        borderCollapse: "collapse",
-                        fontSize: 13,
-                      }}
-                    >
-                      <thead>
-                        <tr style={{ background: "#f9fafb" }}>
-                          <th
-                            style={{
-                              padding: "12px 14px",
-                              textAlign: "left",
-                              fontWeight: 600,
-                              color: "#374151",
-                              borderBottom: "1px solid #e5e7eb",
-                            }}
-                          >
-                            Address
-                          </th>
-                          <th
-                            style={{
-                              padding: "12px 14px",
-                              textAlign: "left",
-                              fontWeight: 600,
-                              color: "#374151",
-                              borderBottom: "1px solid #e5e7eb",
-                            }}
-                          >
-                            Status
-                          </th>
-                          <th
-                            style={{
-                              padding: "12px 14px",
-                              textAlign: "right",
-                              fontWeight: 600,
-                              color: "#374151",
-                              borderBottom: "1px solid #e5e7eb",
-                            }}
-                          >
-                            List Price
-                          </th>
-                          <th
-                            style={{
-                              padding: "12px 14px",
-                              textAlign: "right",
-                              fontWeight: 600,
-                              color: "#374151",
-                              borderBottom: "1px solid #e5e7eb",
-                            }}
-                          >
-                            Close Price
-                          </th>
-                          <th
-                            style={{
-                              padding: "12px 14px",
-                              textAlign: "right",
-                              fontWeight: 600,
-                              color: "#374151",
-                              borderBottom: "1px solid #e5e7eb",
-                            }}
-                          >
-                            $/Sqft
-                          </th>
-                          <th
-                            style={{
-                              padding: "12px 14px",
-                              textAlign: "center",
-                              fontWeight: 600,
-                              color: "#374151",
-                              borderBottom: "1px solid #e5e7eb",
-                            }}
-                          >
-                            Beds
-                          </th>
-                          <th
-                            style={{
-                              padding: "12px 14px",
-                              textAlign: "center",
-                              fontWeight: 600,
-                              color: "#374151",
-                              borderBottom: "1px solid #e5e7eb",
-                            }}
-                          >
-                            Baths
-                          </th>
-                          <th
-                            style={{
-                              padding: "12px 14px",
-                              textAlign: "right",
-                              fontWeight: 600,
-                              color: "#374151",
-                              borderBottom: "1px solid #e5e7eb",
-                            }}
-                          >
-                            Sqft
-                          </th>
-                          <th
-                            style={{
-                              padding: "12px 14px",
-                              textAlign: "center",
-                              fontWeight: 600,
-                              color: "#374151",
-                              borderBottom: "1px solid #e5e7eb",
-                            }}
-                          >
-                            DOM
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {cmaReport.comps.map((comp) => {
-                          const sc = getStatusColor(comp.status);
-                          return (
-                            <tr key={comp.listingKey} style={{ borderBottom: "1px solid #f3f4f6" }}>
-                              <td style={{ padding: "10px 14px" }}>
-                                <div style={{ fontWeight: 500, color: "#111827" }}>{comp.address}</div>
-                                <div style={{ fontSize: 11, color: "#9ca3af" }}>
-                                  {comp.city}, {comp.postalCode}
-                                </div>
-                              </td>
-                              <td style={{ padding: "10px 14px" }}>
-                                <span
-                                  style={{
-                                    padding: "2px 8px",
-                                    background: sc.bg,
-                                    color: sc.text,
-                                    borderRadius: 4,
-                                    fontSize: 11,
-                                    fontWeight: 600,
-                                  }}
-                                >
-                                  {comp.status}
-                                </span>
-                              </td>
-                              <td
-                                style={{ padding: "10px 14px", textAlign: "right", color: "#111827", fontWeight: 500 }}
-                              >
-                                {formatPrice(comp.listPrice)}
-                              </td>
-                              <td style={{ padding: "10px 14px", textAlign: "right", color: "#374151" }}>
-                                {comp.closePrice ? formatPrice(comp.closePrice) : "--"}
-                              </td>
-                              <td style={{ padding: "10px 14px", textAlign: "right", color: "#374151" }}>
-                                {comp.pricePerSqft
-                                  ? `$${comp.pricePerSqft.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
-                                  : "--"}
-                              </td>
-                              <td style={{ padding: "10px 14px", textAlign: "center", color: "#374151" }}>
-                                {comp.bedrooms ?? "--"}
-                              </td>
-                              <td style={{ padding: "10px 14px", textAlign: "center", color: "#374151" }}>
-                                {comp.bathrooms ?? "--"}
-                              </td>
-                              <td style={{ padding: "10px 14px", textAlign: "right", color: "#374151" }}>
-                                {comp.livingArea ? comp.livingArea.toLocaleString() : "--"}
-                              </td>
-                              <td style={{ padding: "10px 14px", textAlign: "center", color: "#374151" }}>
-                                {comp.dom ?? "--"}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
+                return analysis ? (
+                  <Suspense fallback={<div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>Loading report...</div>}>
+                    <div style={{ background: "#fff", borderRadius: 12, overflow: "hidden", border: "1px solid #e5e7eb" }}>
+                      <CMAReportView
+                        analysis={analysis}
+                        branding={{ displayName: "Agent", email: "" }}
+                        avmValue={cmaReport.subjectListPrice || undefined}
+                      />
+                    </div>
+                  </Suspense>
+                ) : (
+                  <div style={{ padding: 20, textAlign: "center", color: "#6b7280" }}>No comps available for analysis.</div>
+                );
+              })()}
             </div>
           )}
 
