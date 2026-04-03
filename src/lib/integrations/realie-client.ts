@@ -1984,6 +1984,19 @@ export function mapAttomParamsToRealie(endpoint: string, params: Record<string, 
     }
   }
 
+  // Ensure state is set -- Realie requires it for address lookups
+  // Try params.state, params.stateOrProvince, or infer from zip code
+  if (!mapped.state) {
+    const stateParam = params.state || params.stateOrProvince || params.countrySubd;
+    if (stateParam) {
+      mapped.state = stateParam;
+    } else if (params.postalcode || params.postalCode) {
+      const zip = params.postalcode || params.postalCode;
+      // Hawaii zip codes: 96701-96898
+      if (/^96[7-8]\d{2}/.test(zip)) mapped.state = "HI";
+    }
+  }
+
   // Zip code — Realie uses "zipCode" (camelCase) as query param
   if (params.postalcode || params.postalCode) {
     mapped.zipCode = params.postalcode || params.postalCode;

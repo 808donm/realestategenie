@@ -155,44 +155,66 @@ export class HonoluluTaxClient {
     const cleanTmk = tmk.replace(/[-\s.]/g, "");
 
     // OWNINFO uses two formats:
-    //   tmk:   8 digits (e.g., 29029040) — no island prefix, no trailing zeros
-    //   parid: 12 digits (e.g., 290290400000) — tmk + 4 trailing zeros
+    //   tmk:   8 digits (e.g., 29029040) -- building-level, no island prefix, no unit suffix
+    //   parid: 12 digits (e.g., 290290400118) -- tmk(8) + unit suffix(4)
     //
-    // Realie APN formats vary:
-    //   "1-2-9-029-040" → cleaned "129029040" (9 digits, with island prefix)
-    //   "290290400000" (12 digits, matches parid directly)
-    //
-    // Strategy: try the input as-is, strip island prefix, pad to 12 digits, truncate to 8
-    const conditions: string[] = [];
+    // For condos, the unit suffix is critical. Without it, we get ALL owners in the building.
+    // Strategy: try exact parid match first (most specific), then broaden if no results.
 
-    // As-is
-    conditions.push(`parid='${cleanTmk}'`);
-    conditions.push(`tmk='${cleanTmk}'`);
+    // Step 1: Try exact match with full TMK (most specific -- catches condos correctly)
+    const exactConditions: string[] = [];
+    exactConditions.push(`parid='${cleanTmk}'`);
+    exactConditions.push(`tmk='${cleanTmk}'`);
 
-    // Strip island prefix (first digit) if 9+ digits — Realie adds island code
+    // Strip island prefix if 9+ digits
+    let noIsland = cleanTmk;
     if (cleanTmk.length >= 9) {
-      const noIsland = cleanTmk.slice(1);
-      conditions.push(`tmk='${noIsland}'`);
-      // Pad to 12 digits for parid match
-      const padded = noIsland.padEnd(12, "0");
-      conditions.push(`parid='${padded}'`);
-      // Also try first 8 of the no-island version
-      conditions.push(`tmk='${noIsland.slice(0, 8)}'`);
+      noIsland = cleanTmk.slice(1);
+      // 12-digit parid (most specific for condos)
+      const padded12 = noIsland.padEnd(12, "0");
+      if (padded12 !== cleanTmk) exactConditions.push(`parid='${padded12}'`);
+      // Also try the no-island value as-is
+      if (noIsland !== cleanTmk) {
+        exactConditions.push(`tmk='${noIsland}'`);
+        exactConditions.push(`parid='${noIsland}'`);
+      }
     }
 
-    // Truncate to 8 for tmk field
-    if (cleanTmk.length > 8) {
-      conditions.push(`tmk='${cleanTmk.slice(0, 8)}'`);
-    }
-
-    const where = conditions.join(" OR ");
-
-    const result = await this.query(this.ownallUrl, where, {
-      resultRecordCount: 50,
+    const exactWhere = exactConditions.join(" OR ");
+    const exactResult = await this.query(this.ownallUrl, exactWhere, {
+      resultRecordCount: 10,
       orderByFields: "tmk ASC",
     });
 
-    return (result.features || []).map((f) => this.normalizeAttributes(f.attributes) as HonoluluOwner);
+    // If we got results with exact match, return them (specific unit for condos)
+    if (exactResult.features && exactResult.features.length > 0) {
+      return exactResult.features.map((f) => this.normalizeAttributes(f.attributes) as HonoluluOwner);
+    }
+
+    // Step 2: Broaden search -- try 8-digit building-level TMK
+    // This is the fallback for SFR properties where there's no unit suffix
+    const broadConditions: string[] = [];
+    if (cleanTmk.length > 8) {
+      broadConditions.push(`tmk='${cleanTmk.slice(0, 8)}'`);
+    }
+    if (noIsland.length > 8) {
+      broadConditions.push(`tmk='${noIsland.slice(0, 8)}'`);
+    }
+    if (noIsland.length >= 8) {
+      broadConditions.push(`tmk='${noIsland.slice(0, 8)}'`);
+    }
+
+    if (broadConditions.length === 0) {
+      return [];
+    }
+
+    const broadWhere = [...new Set(broadConditions)].join(" OR ");
+    const broadResult = await this.query(this.ownallUrl, broadWhere, {
+      resultRecordCount: 5, // Limit to 5 for SFR (should only be 1-2 owners)
+      orderByFields: "tmk ASC",
+    });
+
+    return (broadResult.features || []).map((f) => this.normalizeAttributes(f.attributes) as HonoluluOwner);
   }
 
   /**
