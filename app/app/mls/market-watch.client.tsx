@@ -119,71 +119,55 @@ export default function MarketWatchClient() {
       if (propertyType) params.set("propertyType", propertyType);
 
       if (isTMK(input)) {
-        // TMK search: first get the TMK parcel bounds, then search by bounding box
-        const tmkParts = input.replace(/[.:() ]/g, "-").split("-").filter(Boolean);
-        let parts = tmkParts;
-        if (parts.length === 1 && /^\d{3,4}$/.test(parts[0])) {
-          parts = parts[0].split("");
-        }
-        // Derive county from island digit
-        const countyMap: Record<string, string> = { "1": "HONOLULU", "2": "MAUI", "3": "HAWAII", "4": "KAUAI" };
-        const county = countyMap[parts[0]] || "HONOLULU";
-        const zone = parts[1] || "";
-        const section = parts[2] || "";
+        // TMK search: map section to known ZIP codes, then search MLS by those zips
+        const { parseTMKInput, getZipsForTMKSection } = await import("@/lib/hawaii-tmk-zip");
+        const tmk = parseTMKInput(input);
+        const zone = tmk.zone || "";
+        const section = tmk.section || "";
 
-        // Get TMK section bounds
-        const tmkParams = new URLSearchParams({ county, layer: "sections" });
-        if (zone) tmkParams.set("zone", zone);
-        if (section) tmkParams.set("section", section);
-        tmkParams.set("limit", "10");
-        const tmkRes = await fetch(`/api/seller-map/tmk-overlay?${tmkParams}`);
-        const tmkData = await tmkRes.json();
+        // Look up ZIP codes for this TMK section
+        const sectionZips = zone && section ? getZipsForTMKSection(zone, section) : null;
 
-        if (tmkData.features?.length > 0) {
-          // Compute centroid from TMK geometry to find the nearest zip code
-          let sumLat = 0, sumLng = 0, pointCount = 0;
-          for (const feature of tmkData.features) {
-            const coords = feature.geometry?.type === "Polygon"
-              ? feature.geometry.coordinates[0]
-              : feature.geometry?.type === "MultiPolygon"
-                ? feature.geometry.coordinates.flat(2)
-                : [];
-            for (const coord of coords) {
-              const [lng, lat] = Array.isArray(coord[0]) ? coord[0] : coord;
-              sumLat += lat;
-              sumLng += lng;
-              pointCount++;
-            }
-          }
-          if (pointCount > 0) {
-            const centLat = sumLat / pointCount;
-            const centLng = sumLng / pointCount;
-            // Use Google Geocoding to find the zip code for this centroid
-            try {
-              const geoRes = await fetch(
-                `https://maps.googleapis.com/maps/api/geocode/json?latlng=${centLat},${centLng}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`,
-              );
-              const geoData = await geoRes.json();
-              const zipResult = geoData.results?.[0]?.address_components?.find(
-                (c: any) => c.types?.includes("postal_code"),
-              );
-              if (zipResult?.short_name) {
-                params.set("postalCode", zipResult.short_name);
+        if (sectionZips && sectionZips.length > 0) {
+          // For TMK sections spanning multiple zips, fetch all and merge
+          if (sectionZips.length === 1) {
+            params.set("postalCode", sectionZips[0]);
+          } else {
+            // Fetch all zips in parallel and merge results
+            const allResults = await Promise.all(
+              sectionZips.map(async (zip) => {
+                const p = new URLSearchParams(params);
+                p.set("postalCode", zip);
+                const r = await fetch(`/api/mls/market-watch?${p}`);
+                return r.ok ? r.json() : null;
+              }),
+            );
+            const mergedListings: any[] = [];
+            const mergedCounts: Record<string, number> = {};
+            let mergedPriceChanges = { increases: 0, decreases: 0 };
+            const seenKeys = new Set<string>();
+            for (const d of allResults) {
+              if (!d) continue;
+              for (const l of d.listings || []) {
+                if (!seenKeys.has(l.listingKey)) {
+                  seenKeys.add(l.listingKey);
+                  mergedListings.push(l);
+                }
               }
-            } catch {
-              // Fallback: use a Hawaii TMK zone-to-zip rough mapping
-              const ZONE_ZIP: Record<string, string> = {
-                "1-1": "96816", "1-2": "96822", "1-3": "96813", "1-4": "96734",
-                "1-5": "96744", "1-6": "96762", "1-7": "96791", "1-8": "96797",
-                "1-9": "96706", "2-1": "96793", "2-4": "96732", "3-1": "96720",
-                "4-1": "96766", "4-5": "96746",
-              };
-              const zoneKey = `${parts[0]}-${zone}`;
-              if (ZONE_ZIP[zoneKey]) params.set("postalCode", ZONE_ZIP[zoneKey]);
+              for (const [k, v] of Object.entries(d.statusCounts || {})) {
+                mergedCounts[k] = (mergedCounts[k] || 0) + (v as number);
+              }
+              mergedPriceChanges.increases += d.priceChanges?.increases || 0;
+              mergedPriceChanges.decreases += d.priceChanges?.decreases || 0;
             }
+            setListings(mergedListings);
+            setStatusCounts(mergedCounts);
+            setPriceChanges(mergedPriceChanges);
+            setLoading(false);
+            return;
           }
         } else {
-          setError("No TMK area found for that input");
+          setError(`No ZIP codes mapped for TMK section ${zone}-${section}. Try a ZIP code instead.`);
           setLoading(false);
           return;
         }
