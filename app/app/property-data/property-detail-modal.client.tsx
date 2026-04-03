@@ -5479,9 +5479,32 @@ function SalesHistorySection({ address, publicRecords, propertySale }: { address
     }
   }
 
+  // If no unit-specific MLS sales found via UnitNumber filter, try to find
+  // the unit in building results by matching the unit number in the address.
+  // This catches cases where Trestle doesn't populate UnitNumber but the
+  // unit appears in UnparsedAddress (e.g., "440 Seaside Ave 605").
+  if (unitHistory.length === 0 && buildingHistory.length > 0 && unitNumber) {
+    const unitLower = unitNumber.toLowerCase();
+    const unitFromBuilding = buildingHistory.filter((tx: any) => {
+      const txAddr = (tx.address || tx.unitNumber || "").toLowerCase();
+      // Match unit in address: " 605", "#605", "apt 605", "unit 605"
+      return txAddr.match(new RegExp(`(?:\\s|#|apt\\s*|unit\\s*)${unitLower.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:\\s|,|$)`, "i")) != null
+        || (tx.unitNumber || "").toLowerCase() === unitLower;
+    });
+    if (unitFromBuilding.length > 0) {
+      // Move matched transactions to unit history
+      unitHistory.push(...unitFromBuilding);
+      // Remove them from building history
+      const matchedKeys = new Set(unitFromBuilding.map((tx: any) => tx.listingKey));
+      setBuildingHistory(buildingHistory.filter((tx: any) => !matchedKeys.has(tx.listingKey)));
+    }
+  }
+
   const hasAnyData = unitHistory.length > 0 || allPublicRecords.length > 0;
-  // Only show building sales if we also have unit-specific data for context
-  const showBuildingSales = buildingHistory.length > 0 && unitHistory.length > 0;
+  // Never show other units' building sales -- it's confusing and irrelevant.
+  // When Trestle adds sales history support, unit-specific data will come
+  // through the unitHistory array directly.
+  const showBuildingSales = false;
 
   if (!hasAnyData && buildingHistory.length === 0) {
     return (
