@@ -139,17 +139,37 @@ export async function GET(request: NextRequest) {
     // ZIP-level table (sorted by median price descending)
     const zipTable = zipStats
       .filter((z) => z.medianPrice != null)
-      .map((z) => ({
-        zipCode: z.zipCode,
-        city: z.city,
-        medianPrice: z.medianPrice,
-        avgPrice: z.avgPrice,
-        medianPricePerSqft: z.medianPricePerSqft,
-        totalListings: z.totalListings,
-        medianDOM: z.medianDOM,
-        medianRent: z.medianRent,
-      }))
+      .map((z) => {
+        const byType = (z as any).byPropertyType || [];
+        const sfr = byType.find((t: any) => t.propertyType === "Single Family");
+        const condo = byType.find((t: any) => t.propertyType === "Condo" || t.propertyType === "Townhouse");
+        const condoTH = byType.filter((t: any) => t.propertyType === "Condo" || t.propertyType === "Townhouse");
+        // Combine Condo + Townhouse median (weighted by listing count)
+        const condoMedian = condoTH.length > 0
+          ? Math.round(condoTH.reduce((s: number, t: any) => s + (t.medianPrice || 0) * (t.totalListings || 1), 0) / condoTH.reduce((s: number, t: any) => s + (t.totalListings || 1), 0))
+          : null;
+        return {
+          zipCode: z.zipCode,
+          city: z.city,
+          medianPrice: z.medianPrice,
+          avgPrice: z.avgPrice,
+          medianPricePerSqft: z.medianPricePerSqft,
+          totalListings: z.totalListings,
+          medianDOM: z.medianDOM,
+          medianRent: z.medianRent,
+          sfrMedian: sfr?.medianPrice || null,
+          sfrListings: sfr?.totalListings || null,
+          condoMedian: condoMedian,
+          condoListings: condoTH.reduce((s: number, t: any) => s + (t.totalListings || 0), 0) || null,
+        };
+      })
       .sort((a, b) => (b.medianPrice || 0) - (a.medianPrice || 0));
+
+    // County-level per-type aggregates
+    const sfrPrices = zipTable.map((z) => z.sfrMedian).filter((p): p is number => p != null && p > 0);
+    const condoPrices = zipTable.map((z) => z.condoMedian).filter((p): p is number => p != null && p > 0);
+    (overview as any).sfrMedianPrice = median(sfrPrices);
+    (overview as any).condoMedianPrice = median(condoPrices);
 
     // Try to get MLS stats for the county
     let mlsStats: any = null;

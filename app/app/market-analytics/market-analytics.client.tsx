@@ -100,12 +100,18 @@ export default function MarketAnalyticsDashboard() {
       </div>
 
       {/* Overview Cards */}
-      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 24 }}>
+      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
         {o.medianSalePrice != null && (
-          <ValueCard label="Median Sale Price" value={fmt$(o.medianSalePrice)!} sub={o.avgSalePrice ? `Avg: ${fmt$(o.avgSalePrice)}` : undefined} />
+          <ValueCard label="Median Sale Price" value={fmt$(o.medianSalePrice)!} sub="All Property Types" />
+        )}
+        {(o as any).sfrMedianPrice != null && (
+          <ValueCard label="SFR Median" value={fmt$((o as any).sfrMedianPrice)!} sub="Single Family" color="#ecfdf5" />
+        )}
+        {(o as any).condoMedianPrice != null && (
+          <ValueCard label="Condo/TH Median" value={fmt$((o as any).condoMedianPrice)!} sub="Condo & Townhouse" color="#eff6ff" />
         )}
         {o.medianPricePerSqft != null && (
-          <ValueCard label="Price per Sq Ft" value={`$${o.medianPricePerSqft}`} sub={o.avgPricePerSqft ? `Avg: $${o.avgPricePerSqft}` : undefined} />
+          <ValueCard label="Price per Sq Ft" value={`$${o.medianPricePerSqft}`} />
         )}
         {o.medianDOM != null && (
           <ValueCard label="Median DOM" value={`${o.medianDOM} days`} />
@@ -114,13 +120,18 @@ export default function MarketAnalyticsDashboard() {
         {o.medianRent != null && (
           <ValueCard label="Median Rent" value={`${fmt$(o.medianRent)}/mo`} color="#f5f3ff" />
         )}
-        {data.mlsStats?.activeListings != null && (
-          <ValueCard label="MLS Active" value={data.mlsStats.activeListings.toLocaleString()} sub="Honolulu" color="#ecfdf5" />
-        )}
-        {data.mlsStats?.closedLast30Days != null && (
-          <ValueCard label="Closed (30d)" value={data.mlsStats.closedLast30Days.toLocaleString()} sub="MLS" color="#eff6ff" />
-        )}
       </div>
+      {/* MLS Stats Row */}
+      {(data.mlsStats?.activeListings != null || data.mlsStats?.closedLast30Days != null) && (
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 24 }}>
+          {data.mlsStats?.activeListings != null && (
+            <ValueCard label="MLS Active Listings" value={data.mlsStats.activeListings.toLocaleString()} sub="Honolulu" color="#ecfdf5" />
+          )}
+          {data.mlsStats?.closedLast30Days != null && (
+            <ValueCard label="MLS Closed (30d)" value={data.mlsStats.closedLast30Days.toLocaleString()} color="#eff6ff" />
+          )}
+        </div>
+      )}
 
       {/* Sales Price by ZIP Code */}
       <ReportSection title={`Sales Price by ZIP Code - ${o.county} County`}>
@@ -130,7 +141,8 @@ export default function MarketAnalyticsDashboard() {
               <tr style={{ background: REPORT_COLORS.brandBlue }}>
                 <th style={{ padding: "10px 12px", textAlign: "left", color: "#fff", fontWeight: 600, fontSize: 12 }}>ZIP Code</th>
                 <th style={{ padding: "10px 12px", textAlign: "right", color: "#fff", fontWeight: 600, fontSize: 12 }}>Median Price</th>
-                <th style={{ padding: "10px 12px", textAlign: "right", color: "#fff", fontWeight: 600, fontSize: 12 }}>Avg Price</th>
+                <th style={{ padding: "10px 12px", textAlign: "right", color: "#fff", fontWeight: 600, fontSize: 12 }}>SFR Median</th>
+                <th style={{ padding: "10px 12px", textAlign: "right", color: "#fff", fontWeight: 600, fontSize: 12 }}>Condo/TH</th>
                 <th style={{ padding: "10px 12px", textAlign: "right", color: "#fff", fontWeight: 600, fontSize: 12 }}>$/Sqft</th>
                 <th style={{ padding: "10px 12px", textAlign: "right", color: "#fff", fontWeight: 600, fontSize: 12 }}>Listings</th>
                 <th style={{ padding: "10px 12px", textAlign: "right", color: "#fff", fontWeight: 600, fontSize: 12 }}>DOM</th>
@@ -150,7 +162,8 @@ export default function MarketAnalyticsDashboard() {
                 >
                   <td style={{ padding: "10px 12px", fontWeight: 600, color: "#1e40af" }}>{z.zipCode}</td>
                   <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600 }}>{fmt$(z.medianPrice)}</td>
-                  <td style={{ padding: "10px 12px", textAlign: "right", color: "#6b7280" }}>{fmt$(z.avgPrice)}</td>
+                  <td style={{ padding: "10px 12px", textAlign: "right", color: "#15803d" }}>{(z as any).sfrMedian ? fmt$((z as any).sfrMedian) : "-"}</td>
+                  <td style={{ padding: "10px 12px", textAlign: "right", color: "#1e40af" }}>{(z as any).condoMedian ? fmt$((z as any).condoMedian) : "-"}</td>
                   <td style={{ padding: "10px 12px", textAlign: "right" }}>{z.medianPricePerSqft ? `$${z.medianPricePerSqft}` : "-"}</td>
                   <td style={{ padding: "10px 12px", textAlign: "right" }}>{z.totalListings ?? "-"}</td>
                   <td style={{ padding: "10px 12px", textAlign: "right" }}>{z.medianDOM ?? "-"}</td>
