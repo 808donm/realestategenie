@@ -1906,25 +1906,27 @@ export default function PropertyDetailModal({
           const hasFallbackValue = !avm?.amount?.value && fallbackValue != null;
 
           // ── Home Equity Analysis (rendered first, at top of Financial tab) ──
+          // Try enriched financial data first, then fall back to AVM + property data
           const heResp = enrichedFinancial?.homeEquity;
           const heProp = heResp?.property?.[0] || heResp;
           const he = heProp?.homeEquity || heProp?.valuation || heProp;
-          const heAvmValue = he?.avmValue ?? he?.avm?.amount?.value ?? he?.estimatedValue;
-          const heLoanBalance = he?.outstandingBalance ?? he?.loanBalance ?? he?.mortgageBalance ?? he?.estimatedBalance;
-          const heEquityAmount = he?.equity ?? he?.equityAmount ?? (heAvmValue != null && heLoanBalance != null ? heAvmValue - heLoanBalance : null);
+          const heAvmValue = he?.avmValue ?? he?.avm?.amount?.value ?? he?.estimatedValue ?? avm?.amount?.value ?? avmVal;
+          const heLoanBalance = he?.outstandingBalance ?? he?.loanBalance ?? he?.mortgageBalance ?? he?.estimatedBalance ?? (p.mortgage?.amount != null ? Number(p.mortgage.amount) : null);
+          const heEquityAmount = he?.equity ?? he?.equityAmount ?? (heAvmValue != null && heLoanBalance != null ? heAvmValue - heLoanBalance : null) ?? (heAvmValue != null && lastSaleAmt ? heAvmValue - lastSaleAmt : null);
           const heRawLtv = he?.loanToValue ?? he?.ltv;
           const heLtv = heRawLtv != null && heRawLtv > 0 ? heRawLtv : heAvmValue && heLoanBalance ? (heLoanBalance / heAvmValue) * 100 : null;
-          const heLoanCount = he?.loanCount ?? he?.numberOfLoans;
+          const heLoanCount = he?.loanCount ?? he?.numberOfLoans ?? (p.mortgage?.lienCount);
           const heEstPayment = he?.estimatedPayment ?? he?.monthlyPayment;
-          const heLastSalePrice = he?.lastSalePrice ?? he?.salePrice ?? p.sale?.amount?.saleAmt;
+          const heLastSalePrice = he?.lastSalePrice ?? he?.salePrice ?? p.sale?.amount?.saleAmt ?? lastSaleAmt;
           const heLastSaleDate = he?.lastSaleDate ?? he?.saleDate ?? p.sale?.amount?.saleRecDate ?? p.sale?.amount?.saleTransDate;
+          // Show Home Equity if we have AVM (from any source) -- not just from enrichedFinancial
           const heHasData = heAvmValue != null || heLoanBalance != null || heEquityAmount != null;
           const heIsPositive = heEquityAmount != null ? heEquityAmount >= 0 : true;
 
           return (
             <>
               {/* Home Equity Analysis -- displayed first at top of Financial tab */}
-              {enrichedFinancial && !enrichedFinancialLoading && heHasData && (
+              {!enrichedFinancialLoading && heHasData && (
                 <div
                   style={{
                     marginBottom: 20,

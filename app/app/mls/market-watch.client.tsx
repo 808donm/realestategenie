@@ -708,6 +708,7 @@ export default function MarketWatchClient() {
           onClose={() => setDetailListing(null)}
           mlsListPrice={detailListing.listPrice}
           mlsAddress={detailListing.address}
+          mlsPhotos={detailListing.photoUrl ? [detailListing.photoUrl] : undefined}
         />
       )}
     </div>
