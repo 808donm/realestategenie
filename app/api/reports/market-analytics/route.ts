@@ -171,6 +171,75 @@ export async function GET(request: NextRequest) {
     (overview as any).sfrMedianPrice = median(sfrPrices);
     (overview as any).condoMedianPrice = median(condoPrices);
 
+    // YoY Price Change -- compare current month history to 12 months ago
+    let yoyPriceChange: number | null = null;
+    let salesMomentum: number | null = null;
+    const allHistories = zipStats.map((z) => (z as any).history).filter(Boolean);
+    if (allHistories.length > 0) {
+      // Merge all ZIP histories into monthly county totals
+      const monthlyPrices = new Map<string, number[]>();
+      const monthlyListings = new Map<string, number[]>();
+      for (const hist of allHistories) {
+        for (const [month, entry] of Object.entries(hist as Record<string, any>)) {
+          if (!monthlyPrices.has(month)) monthlyPrices.set(month, []);
+          if (!monthlyListings.has(month)) monthlyListings.set(month, []);
+          if (entry.medianPrice) monthlyPrices.get(month)!.push(entry.medianPrice);
+          if (entry.totalListings) monthlyListings.get(month)!.push(entry.totalListings);
+        }
+      }
+      const sortedMonths = [...monthlyPrices.keys()].sort();
+      if (sortedMonths.length >= 2) {
+        const latestMonth = sortedMonths[sortedMonths.length - 1];
+        const yearAgoMonth = sortedMonths.find((m) => {
+          const latest = new Date(latestMonth);
+          const candidate = new Date(m);
+          return latest.getTime() - candidate.getTime() > 330 * 86400000 && latest.getTime() - candidate.getTime() < 400 * 86400000;
+        });
+        if (yearAgoMonth) {
+          const currentPrices = monthlyPrices.get(latestMonth) || [];
+          const yearAgoPrices = monthlyPrices.get(yearAgoMonth) || [];
+          const currentMedian = median(currentPrices);
+          const yearAgoMedian = median(yearAgoPrices);
+          if (currentMedian && yearAgoMedian && yearAgoMedian > 0) {
+            yoyPriceChange = Math.round(((currentMedian - yearAgoMedian) / yearAgoMedian) * 1000) / 10;
+          }
+        }
+      }
+      // Sales Momentum -- compare last 6 months listings to prior 6 months
+      if (sortedMonths.length >= 12) {
+        const recent6 = sortedMonths.slice(-6);
+        const prior6 = sortedMonths.slice(-12, -6);
+        const recentTotal = recent6.reduce((s, m) => s + (monthlyListings.get(m) || []).reduce((a, b) => a + b, 0), 0);
+        const priorTotal = prior6.reduce((s, m) => s + (monthlyListings.get(m) || []).reduce((a, b) => a + b, 0), 0);
+        if (priorTotal > 0) {
+          salesMomentum = Math.round(((recentTotal - priorTotal) / priorTotal) * 1000) / 10;
+        }
+      }
+    }
+    (overview as any).yoyPriceChange = yoyPriceChange;
+    (overview as any).salesMomentum = salesMomentum;
+
+    // City-level aggregation (group ZIPs by city)
+    const cityMap = new Map<string, { totalListings: number; prices: number[]; sfrPrices: number[]; condoPrices: number[] }>();
+    for (const z of zipTable) {
+      const cityName = z.city || "Unknown";
+      if (!cityMap.has(cityName)) cityMap.set(cityName, { totalListings: 0, prices: [], sfrPrices: [], condoPrices: [] });
+      const c = cityMap.get(cityName)!;
+      c.totalListings += z.totalListings || 0;
+      if (z.medianPrice) c.prices.push(z.medianPrice);
+      if (z.sfrMedian) c.sfrPrices.push(z.sfrMedian);
+      if (z.condoMedian) c.condoPrices.push(z.condoMedian);
+    }
+    const cityStats = [...cityMap.entries()]
+      .map(([name, data]) => ({
+        city: name,
+        totalListings: data.totalListings,
+        medianPrice: median(data.prices),
+        sfrMedian: median(data.sfrPrices),
+        condoMedian: median(data.condoPrices),
+      }))
+      .sort((a, b) => (a.totalListings || 0) - (b.totalListings || 0));
+
     // Try to get MLS stats for the county
     let mlsStats: any = null;
     try {
@@ -228,6 +297,7 @@ export async function GET(request: NextRequest) {
     const response = {
       overview,
       zipTable,
+      cityStats,
       mlsStats,
       hudRents,
       generatedAt: new Date().toISOString(),

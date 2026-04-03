@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from "react";
 import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+} from "recharts";
+import {
   ValueCard,
   ReportSection,
   ComparisonTable,
@@ -121,16 +124,65 @@ export default function MarketAnalyticsDashboard() {
           <ValueCard label="Median Rent" value={`${fmt$(o.medianRent)}/mo`} color="#f5f3ff" />
         )}
       </div>
-      {/* MLS Stats Row */}
-      {(data.mlsStats?.activeListings != null || data.mlsStats?.closedLast30Days != null) && (
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 24 }}>
-          {data.mlsStats?.activeListings != null && (
-            <ValueCard label="MLS Active Listings" value={data.mlsStats.activeListings.toLocaleString()} sub="Honolulu" color="#ecfdf5" />
-          )}
-          {data.mlsStats?.closedLast30Days != null && (
-            <ValueCard label="MLS Closed (30d)" value={data.mlsStats.closedLast30Days.toLocaleString()} color="#eff6ff" />
-          )}
-        </div>
+      {/* Row 2: YoY, Momentum, MLS Stats */}
+      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 24 }}>
+        {(o as any).yoyPriceChange != null && (
+          <ValueCard
+            label="YoY Price Change"
+            value={`${(o as any).yoyPriceChange > 0 ? "+" : ""}${(o as any).yoyPriceChange}%`}
+            sub="vs. prior year"
+            color={(o as any).yoyPriceChange >= 0 ? "#ecfdf5" : "#fef2f2"}
+          />
+        )}
+        {(o as any).salesMomentum != null && (
+          <ValueCard
+            label="Sales Momentum"
+            value={`${(o as any).salesMomentum > 0 ? "+" : ""}${(o as any).salesMomentum}%`}
+            sub="6mo vs prior 6mo"
+            color={(o as any).salesMomentum >= 0 ? "#ecfdf5" : "#fef2f2"}
+          />
+        )}
+        <ValueCard label="Total Listings" value={o.totalListings.toLocaleString()} />
+        {data.mlsStats?.activeListings != null && (
+          <ValueCard label="MLS Active" value={data.mlsStats.activeListings.toLocaleString()} sub="Honolulu" color="#ecfdf5" />
+        )}
+        {data.mlsStats?.closedLast30Days != null && (
+          <ValueCard label="MLS Closed (30d)" value={data.mlsStats.closedLast30Days.toLocaleString()} color="#eff6ff" />
+        )}
+      </div>
+
+      {/* Sales Volume by City (Recharts vertical bar chart) */}
+      {(data as any).cityStats?.length > 0 && (
+        <ReportSection title={`Sale Volume by Cities in ${o.county} County`}>
+          <ResponsiveContainer width="100%" height={320}>
+            <BarChart data={(data as any).cityStats} margin={{ top: 5, right: 20, left: 10, bottom: 60 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+              <XAxis dataKey="city" angle={-35} textAnchor="end" fontSize={11} interval={0} />
+              <YAxis fontSize={11} />
+              <Tooltip formatter={(value: any) => Number(value).toLocaleString()} />
+              <Bar dataKey="totalListings" fill="#3b82f6" name="Total Listings" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </ReportSection>
+      )}
+
+      {/* HUD Fair Market Rents by Dwelling Size (Recharts vertical bar chart) */}
+      {data.hudRents && Object.keys(data.hudRents).length > 0 && (
+        <ReportSection title={`Fair Market Rents by Dwelling Size in ${o.county} County`}>
+          <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}>HUD Section 8 Values</div>
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart
+              data={Object.entries(data.hudRents).map(([key, val]) => ({ name: key, rent: val as number }))}
+              margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+              <XAxis dataKey="name" fontSize={12} />
+              <YAxis fontSize={11} tickFormatter={(v) => `$${v.toLocaleString()}`} />
+              <Tooltip formatter={(value: any) => `$${Number(value).toLocaleString()}`} />
+              <Bar dataKey="rent" name="Fair Market Rent" fill="#7c3aed" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </ReportSection>
       )}
 
       {/* Sales Price by ZIP Code */}
@@ -262,17 +314,7 @@ export default function MarketAnalyticsDashboard() {
         </ReportSection>
       )}
 
-      {/* HUD Fair Market Rents */}
-      {data.hudRents && (
-        <ReportSection title={`Fair Market Rents - ${o.county} County (HUD)`}>
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            {Object.entries(data.hudRents).map(([key, val]) => (
-              <ValueCard key={key} label={key} value={fmt$(val as number) || "-"} color="#f5f3ff" />
-            ))}
-          </div>
-          <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 8 }}>Source: HUD Section 8 Fair Market Rents</div>
-        </ReportSection>
-      )}
+      {/* HUD Fair Market Rents rendered as chart above */}
 
       {/* Footer */}
       <div style={{ marginTop: 24, padding: "12px 16px", background: "#f3f4f6", borderRadius: 8, fontSize: 11, color: "#9ca3af", textAlign: "center" }}>
