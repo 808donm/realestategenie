@@ -4008,10 +4008,15 @@ export default function PropertyDetailModal({
 
                     for (const poi of poiList) {
                       const biz = poi.businessLocation || {};
-                      const cat = poi.category || {};
+                      // poi.category can be a string (Hawaii GIS/OSM: "County Park") or an object (ATTOM v4: {condensedHeading, industry})
+                      const catObj = typeof poi.category === "object" && poi.category ? poi.category : {};
                       const det = poi.details || {};
                       const poiName = biz.businessStandardName || det.businessShortName || poi.name || poi.Name || poi.businessName;
-                      const category = (cat.condensedHeading || cat.industry || cat.category || poi.businessCategory || poi.categoryName || "").toLowerCase();
+                      const category = (
+                        (typeof poi.category === "string" ? poi.category : "") ||
+                        catObj.condensedHeading || catObj.industry || catObj.category ||
+                        poi.businessCategory || poi.categoryName || poi.subcategory || ""
+                      ).toLowerCase();
                       if (!poiName) continue;
 
                       const match = AMENITY_CATEGORIES[category];
