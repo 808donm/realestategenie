@@ -337,15 +337,33 @@ export default function MLSClient() {
 
     const fetchAttom = async () => {
       try {
-        const params = new URLSearchParams();
-        params.set("endpoint", "expanded");
-        // Use street-only address for RentCast/Realie lookup (they can't parse raw unit numbers)
-        if (streetAddr) params.set("address1", streetAddr);
-        if (city && state) params.set("address2", `${city}, ${state}`);
-        if (zip) params.set("postalcode", zip);
+        // Try full address with unit first (e.g., "2575 Kuhio Ave Apt 904")
+        // This ensures we get the correct condo unit, not a random unit in the building.
+        // Fall back to street-only address if unit lookup returns no results.
+        let res: Response;
+        let data: any;
 
-        const res = await fetch(`/api/integrations/attom/property?${params.toString()}`);
-        const data = await res.json();
+        // Attempt 1: Full address with unit
+        const fullParams = new URLSearchParams();
+        fullParams.set("endpoint", "expanded");
+        if (displayAddr) fullParams.set("address1", displayAddr.split(",")[0]?.trim() || displayAddr);
+        if (city && state) fullParams.set("address2", `${city}, ${state}`);
+        if (zip) fullParams.set("postalcode", zip);
+
+        res = await fetch(`/api/integrations/attom/property?${fullParams.toString()}`);
+        data = await res.json();
+
+        // If full address returned no results, try street-only
+        if (!data.property?.length && streetAddr !== displayAddr.split(",")[0]?.trim()) {
+          const streetParams = new URLSearchParams();
+          streetParams.set("endpoint", "expanded");
+          if (streetAddr) streetParams.set("address1", streetAddr);
+          if (city && state) streetParams.set("address2", `${city}, ${state}`);
+          if (zip) streetParams.set("postalcode", zip);
+
+          res = await fetch(`/api/integrations/attom/property?${streetParams.toString()}`);
+          data = await res.json();
+        }
 
         if (cancelled) return;
 
