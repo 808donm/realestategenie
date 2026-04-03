@@ -719,7 +719,23 @@ export class TrestleClient {
         }),
       ]);
 
-      const unitListings = unitResult.value || [];
+      let unitListings = unitResult.value || [];
+
+      // If UnitNumber filter returned 0, try matching by UnparsedAddress
+      // MLS may not populate UnitNumber separately for condos
+      if (unitListings.length === 0 && buildingResult.value?.length) {
+        const unitLower = unitNumber.toLowerCase();
+        unitListings = (buildingResult.value || []).filter((p) => {
+          // Match unit in UnparsedAddress (e.g., "440 Seaside Ave 605" contains "605")
+          const addr = (p.UnparsedAddress || "").toLowerCase();
+          // Match exact unit: " 605" or "#605" or "apt 605" at end or before comma
+          return addr.match(new RegExp(`(?:\\s|#|apt\\s*|unit\\s*)${unitLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:\\s|,|$)`, "i")) != null;
+        });
+        if (unitListings.length > 0) {
+          console.log(`[Trestle] UnitNumber field empty, matched ${unitListings.length} by UnparsedAddress`);
+        }
+      }
+
       // Building results exclude the unit's listings
       const unitKeys = new Set(unitListings.map((p) => p.ListingKey));
       const buildingListings = (buildingResult.value || []).filter((p) => !unitKeys.has(p.ListingKey));
