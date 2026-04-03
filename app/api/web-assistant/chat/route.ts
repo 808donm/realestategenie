@@ -272,8 +272,63 @@ async function createLeadFromChat(admin: any, state: ConversationState, agent: a
 // ── Helper: Search MLS via IDX Broker ──
 
 async function searchPropertiesForVisitor(admin: any, state: ConversationState, agent: any) {
+  const criteria = extractSearchCriteria(state.profile);
+
+  // Strategy: Try Trestle MLS first (agent's direct MLS connection),
+  // then fall back to IDX Broker (agent's website MLS feed).
+  // Both Hokus share the same database, so Web Hoku can use the agent's Trestle credentials.
+
+  // 1. Try Trestle MLS (same as App Hoku uses)
   try {
-    // Check if agent has IDX Broker configured
+    const { data: trestleIntegration } = await admin
+      .from("integrations")
+      .select("config, status")
+      .eq("agent_id", state.agentId)
+      .eq("provider", "trestle")
+      .maybeSingle();
+
+    if (trestleIntegration?.status === "connected" && trestleIntegration.config) {
+      const config = typeof trestleIntegration.config === "string" ? JSON.parse(trestleIntegration.config) : trestleIntegration.config;
+      const { createTrestleClient } = await import("@/lib/integrations/trestle-client");
+      const client = createTrestleClient(config);
+
+      const result = await client.searchProperties({
+        status: ["Active"],
+        city: criteria.q,
+        postalCode: criteria.postalCode,
+        minBeds: criteria.minBeds,
+        minBaths: criteria.minBaths,
+        limit: 6,
+        includeMedia: true,
+      });
+
+      if (result.value?.length > 0) {
+        console.log(`[WebAssistant] Trestle MLS returned ${result.value.length} properties`);
+        return {
+          properties: result.value.map((p: any) => ({
+            listingID: p.ListingId || p.ListingKey,
+            address: p.UnparsedAddress || [p.StreetNumber, p.StreetName, p.StreetSuffix].filter(Boolean).join(" "),
+            cityName: p.City,
+            state: p.StateOrProvince || "HI",
+            zipcode: p.PostalCode,
+            listingPrice: String(p.ListPrice),
+            bedrooms: String(p.BedroomsTotal || ""),
+            totalBaths: String(p.BathroomsTotalInteger || ""),
+            sqFt: String(p.LivingArea || ""),
+            yearBuilt: p.YearBuilt ? String(p.YearBuilt) : undefined,
+            propertyType: p.PropertyType,
+            image: p.Media?.length ? [{ url: p.Media.sort((a: any, b: any) => (a.Order || 0) - (b.Order || 0))[0]?.MediaURL }].filter((i: any) => i.url) : [],
+          })),
+          totalCount: result.value.length,
+        };
+      }
+    }
+  } catch (err) {
+    console.warn("[WebAssistant] Trestle MLS search failed:", err);
+  }
+
+  // 2. Fall back to IDX Broker (agent's website MLS feed)
+  try {
     const { data: idxIntegration } = await admin
       .from("integrations")
       .select("config")
@@ -281,28 +336,27 @@ async function searchPropertiesForVisitor(admin: any, state: ConversationState, 
       .eq("provider", "idx_broker")
       .maybeSingle();
 
-    if (!idxIntegration?.config) {
-      console.log("[WebAssistant] No IDX Broker configured, skipping MLS search");
-      return { properties: [] };
+    if (idxIntegration?.config) {
+      const config = typeof idxIntegration.config === "string" ? JSON.parse(idxIntegration.config) : idxIntegration.config;
+      const client = new IdxBrokerClient(config.api_key);
+      const result = await client.searchProperties({
+        city: criteria.q,
+        zipcode: criteria.postalCode,
+        minBeds: criteria.minBeds,
+        minBaths: criteria.minBaths,
+        limit: 6,
+      });
+      if (result.properties.length > 0) {
+        console.log(`[WebAssistant] IDX Broker returned ${result.properties.length} properties`);
+        return result;
+      }
     }
-
-    const config = typeof idxIntegration.config === "string" ? JSON.parse(idxIntegration.config) : idxIntegration.config;
-    const client = new IdxBrokerClient(config.api_key);
-    const criteria = extractSearchCriteria(state.profile);
-
-    const result = await client.searchProperties({
-      city: criteria.q,
-      zipcode: criteria.postalCode,
-      minBeds: criteria.minBeds,
-      minBaths: criteria.minBaths,
-      limit: 6,
-    });
-
-    return result;
   } catch (err) {
-    console.error("[WebAssistant] MLS search failed:", err);
-    return { properties: [] };
+    console.warn("[WebAssistant] IDX Broker search failed:", err);
   }
+
+  console.log("[WebAssistant] No MLS integration available for property search");
+  return { properties: [] };
 }
 
 // ── Helper: Send property email ──
