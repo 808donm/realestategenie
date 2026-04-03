@@ -416,6 +416,12 @@ Help the admin manage the platform, users, plans, and integrations.`,
 - **Google Calendar**: OAuth connection, bidirectional event sync
 - **Microsoft/Outlook Calendar**: OAuth connection, bidirectional event sync
 
+**Hoku Web Assistant**:
+- **Embeddable chat widget** for agent websites. Copy embed code or direct link from this page.
+- Pre-qualifies visitors (buyer/seller), captures leads, searches MLS, emails properties, creates CRM contacts with conversation notes.
+- Uses the agent's Trestle MLS connection for property search (same as App Hoku). IDX Broker as optional fallback.
+- Optional IDX Broker API key for additional MLS source.
+
 **Other**:
 - **Social Channels**: Multi-channel lead response from social platforms
 - **Google Maps**: Geocoding, maps, location features (platform-wide, no user setup)

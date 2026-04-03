@@ -837,15 +837,32 @@ Connect The Real Estate Genie to n8n workflow automation by configuring webhook 
 
 **Webhook Reliability:** Webhooks include automatic retry logic with up to 3 attempts if delivery fails. You can view delivery logs directly in the app to troubleshoot any issues.
 
-### 14.4 Social Channels
+### 14.4 Hoku Web Assistant
+
+Add an AI chat assistant to your website that pre-qualifies visitors and captures leads.
+
+**Setup:**
+1. Navigate to **Integrations** and find the **Hoku Web Assistant** card.
+2. Copy the embed code and paste it before the closing \\</body\\> tag on your website.
+3. A floating chat button appears in the bottom-right corner of your site.
+4. Optionally enter your IDX Broker API key to enable MLS search (if you don't have Trestle connected).
+
+**How It Works:**
+- Visitors click the chat button and Hoku greets them as your assistant.
+- **Buyers**: Hoku captures name, email, phone, timeline, pre-approval, neighborhoods, and must-haves. Optionally searches for matching MLS listings and emails them to the visitor.
+- **Sellers**: Hoku captures the property address, looks up the AVM and property details, then captures contact info.
+- A scored lead is created in your pipeline and a contact is created in your CRM with the full conversation in the notes.
+- The lead appears on your Dashboard as "Needs Attention."
+
+### 14.5 Social Channels
 
 Connect social media channels to manage lead responses from social platforms. Configure your social channels under the Integrations page to centralize your lead communication.
 
-### 14.5 Google Maps
+### 14.7 Google Maps
 
 Google Maps powers geocoding, property map embeds, and location-based features throughout the app (including the Seller Opportunity Map). This integration is configured via the platform\u2019s Google Maps API key and does not require individual user setup.
 
-### 14.6 Bridge Interactive / Zillow (Coming Soon)
+### 14.8 Bridge Interactive / Zillow (Coming Soon)
 
 This integration will provide property valuations, rental estimates, and market data from Zillow. It is currently in development and will be available in a future release.
 

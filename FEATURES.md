@@ -458,46 +458,121 @@ All reports: PDF/Excel export, print-friendly, Recharts visualizations
 
 ---
 
-## 24. Hoku AI Copilot
+## 24. Hoku AI Copilot (In-App)
 
-- Available on every page via floating button
-- 24 action types (8 proactive + 16 quick actions)
-- Comprehensive knowledge base covering all app pages
-- Property context awareness (knows what agent is viewing)
-- Page-specific guidance
-- Proactive suggestions (follow up hot lead, open house reminder, pipeline stalled)
-- Draft generation (emails, SMS)
-- Session persistence (24-hour TTL)
+Hoku is the AI assistant inside the Real Estate Genie app, available on every page via a floating button in the bottom-right corner.
 
----
-
-## 25. Activity Tracking
-
-- Agent actions logged: MLS searches, report generation, CMA generation, lead captures
-- Used by Agency Dashboard for per-agent activity metrics
-- Retention risk detection (40%+ activity drop)
-- Fire-and-forget logging (non-blocking)
+- **24 action types**: 8 proactive (briefing-triggered) + 16 quick actions (agent-initiated)
+- **Comprehensive knowledge base**: Covers all 20+ app pages with page-specific context. When the agent is viewing a property, Hoku knows the address, AVM, owner, comps, hazards, and market stats.
+- **Proactive suggestions**: Follow up hot lead, open house reminder, pipeline stalled, welcome new lead, suggest open house, DOM prospects
+- **Draft generation**: Emails and SMS for leads based on heat score and property context
+- **Session persistence**: 24-hour TTL with message history (max 20 messages)
+- **Actions**: Search MLS, property lookup, generate reports, run calculators, create tasks, advance pipeline, create open houses, search seller map, create farm watchdogs
 
 ---
 
-## 26. Data Accuracy Features
+## 25. Hoku Web Assistant (Public Website)
 
-- **AVM Reliability Check**: Suppresses AVMs >30% off from county assessment or recent sale
-- **AVM Accuracy**: All call sites pass beds/baths/sqft/propertyType to RentCast
-- **Property-Type-Specific Market Stats**: Condo shows Condo medians, not aggregate
-- **Condo Unit Filtering**: Ownership, sales history, and property data filtered to specific unit
-- **Address Search**: Searches both expanded and abbreviated street suffixes (Road/Rd, Street/St)
-- **CMA Property Type Filtering**: SFR comps exclude condos/townhouses via server-side PropertySubType filtering
+Hoku Web Assistant is an embeddable AI chat widget that agents add to their websites. It pre-qualifies visitors, captures leads, searches the MLS, and creates contacts in the CRM.
+
+### Setup
+Agents go to **Integrations > Hoku Web Assistant** and copy their embed code:
+```html
+<script src="https://realestategenie.app/api/web-assistant/embed?agentId=AGENT_ID"></script>
+```
+This adds a floating blue chat button to their website. Clicking it opens the Hoku chat in an iframe. Agents can also share a direct link: `realestategenie.app/chat/AGENT_ID`.
+
+### Buyer Flow
+1. Hoku greets the visitor: "Aloha! I'm Hoku, [Agent Name]'s assistant. Are you interested in buying or selling?"
+2. Visitor says "buying" -- Hoku asks if they're working with an agent
+3. If no agent, asks if they'd like the agent to reach out
+4. Captures: name, email, phone
+5. Qualifies: timeline (0-3mo, 3-6mo, 6+, browsing), pre-approval status, neighborhoods, must-have features
+6. Offers to search for properties -- searches via the agent's **Trestle MLS connection** (same as App Hoku) or **IDX Broker** as fallback
+7. Emails matching properties to the visitor with photos, price, beds/baths, and agent contact info
+8. Creates a scored lead in the pipeline and a CRM contact with full conversation in the notes
+
+### Seller Flow
+1. Visitor says "selling" -- Hoku asks if they're working with an agent
+2. If no agent, asks for the property address
+3. Looks up the property in **RentCast and Realie** -- retrieves AVM, beds, baths, sqft, year built, lot size
+4. Shares the property info with the visitor: "Here's what I found: 3 bed, 2 bath, 1,660 sqft, estimated value $1,472,000"
+5. Captures: name, email, phone
+6. Creates a scored lead with property data in the pipeline and CRM
+
+### Lead Creation
+- Lead inserted into `lead_submissions` with heat score, pipeline stage "new_lead", and source "Website Chat"
+- CRM contact created with tags ["Website Chat", "Hoku Web Assistant"]
+- CRM opportunity created in agent's pipeline as new lead (labeled "Buyer" or "Seller")
+- Full conversation deposited in CRM contact notes
+- Seller leads include property data (AVM, beds, baths, sqft) in the lead payload
+- Lead appears on agent's Dashboard as "Needs Attention"
+
+### Agent Personalization
+- Uses agent's first name throughout ("Aloha! I'm Hoku, Donald's assistant")
+- Hawaii agents get "Aloha" greeting and "Mahalo" farewell (detected from locations_served)
+- Agent headshot, brokerage name, and logo shown on the chat landing page
+- "Powered by Real Estate Genie" in footer
+
+### MLS Search
+- Tries the agent's **Trestle MLS** connection first (same integration as the app)
+- Falls back to **IDX Broker** if configured (agent enters API key on Integrations page)
+- Returns up to 6 matching Active listings with photos
+- Emails results as a branded HTML email with agent contact info
+
+---
+
+## 26. Activity Tracking
+
+Agent actions are logged to the `agent_activity_log` table for agency-level reporting. Logging is fire-and-forget (non-blocking) and does not impact the user's workflow.
+
+**Actions tracked:**
+- MLS searches performed (with query and result count)
+- Reports generated (with address and report type)
+- CMA generated (with address and comp count)
+- Lead captures (from web assistant and open houses)
+
+**Used by:**
+- Agency Dashboard (per-agent activity metrics)
+- Retention risk detection (40%+ activity drop flags agent as "At Risk")
+
+---
+
+## 27. Data Accuracy Features
+
+These features ensure the data shown to agents is accurate and relevant, especially for condos and Hawaii-specific properties.
+
+- **AVM Reliability Check**: Compares the automated valuation to county assessment and recent sale price (within 2 years). If the AVM differs by more than 30% from either reference, it is suppressed and the county assessment is shown instead with an amber warning. All downstream calculations (equity, LTV) use the best available value.
+
+- **AVM Accuracy**: All API call sites now pass bedrooms, bathrooms, square footage, and property type to RentCast's AVM endpoint. This ensures comps match the subject property instead of RentCast guessing the attributes. Default comp count increased from 15 to 20.
+
+- **Property-Type-Specific Market Stats**: When viewing a condo, the headline market stats show the Condo median price (e.g., $360K) instead of the aggregate across all types ($399K which includes $1.7M single-family homes). Same for SFR, Townhouse, Multi-Family, and Land.
+
+- **Condo Unit Filtering**: Three layers of unit-specific filtering for condos:
+  - **Ownership (OWNINFO)**: Queries by exact 12-digit parid (includes unit suffix) first, returns only that unit's owner instead of all building owners
+  - **Sales History (MLS)**: Matches unit number in UnparsedAddress when the UnitNumber field is empty, separating unit-specific sales from building sales
+  - **Property Data (RentCast/Realie)**: Strips unit number from address for lookup (providers don't have per-unit data), uses building-level data
+  - **Parcels (ArcGIS)**: Strips condo unit suffix from TMK (parcels are land-level, not unit-level)
+
+- **Address Search**: Searches both expanded and abbreviated street suffixes. "3849 Manoa Road" searches for "manoa road", "manoa rd", and just "manoa" in the StreetName field to match however the MLS stores it.
+
+- **CMA Property Type Filtering**: HiCentral MLS uses PropertyType="Residential" for SFR, Condo, and Townhouse. The CMA engine filters by PropertySubType server-side after fetching results, so selecting "Single Family" excludes condos and townhouses from comps.
+
+- **Condo Address Handling**: MLS stores condo addresses like "1315 Kalakaua Avenue 1110" (unit number appended without prefix). The app strips the unit for RentCast/Realie lookups (they can't parse raw unit numbers) while keeping it for display and MLS sales history matching.
 
 ---
 
 ## Platform
 
 - **Stack**: Next.js 16 (App Router) + React 19 + TypeScript + TailwindCSS 4
-- **Database**: Supabase (PostgreSQL) with Row Level Security
-- **Auth**: Supabase Auth (JWT, email/password, MFA)
-- **Hosting**: Vercel (serverless, preview deployments)
-- **Mobile**: Capacitor 8 (iOS/Android)
-- **AI**: Vercel AI Gateway + Anthropic Claude + OpenAI
+- **Database**: Supabase (PostgreSQL) with Row Level Security on all tables
+- **Auth**: Supabase Auth (JWT, email/password, MFA with authenticator app)
+- **Hosting**: Vercel (serverless functions, preview deployments, cron jobs)
+- **Mobile**: Capacitor 8 (iOS/Android wrapper)
+- **AI**: Vercel AI Gateway + Anthropic Claude + OpenAI GPT-4
 - **4 User Roles**: Agent, Team Lead, Admin (Account), Admin (Platform)
-- **Bootstrap Wizard**: Guided setup for new users
+- **Bootstrap Wizard**: Guided setup for new users on first login
+- **9 Data Sources**: MLS (Trestle), Realie, RentCast, Honolulu County OWNINFO, Hawaii State GIS, FEMA NRI, FBI CDE, Census ACS (4 geographic levels), NCES/FRED/BLS/HUD
+- **White-Label Ready**: CRM provider name never shown to end users (nameless integration)
+
+> Last updated: April 3, 2026
