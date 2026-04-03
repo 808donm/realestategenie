@@ -5043,7 +5043,7 @@ export default function PropertyDetailModal({
         )}
         {viewingReport === "cma" && (() => {
           const rd = collectReportData();
-          // Build a basic CMA analysis from available comps
+          // Use rentcastComps directly (they're loaded in the Comps tab)
           const { calculateCMAAnalysis } = require("@/lib/mls/cma-adjustments");
           const subject = {
             address: rd.address,
@@ -5054,16 +5054,21 @@ export default function PropertyDetailModal({
             yearBuilt: rd.yearBuilt,
             propertyType: rd.propertyType,
           };
-          const compProps = (rd.comps || []).map((c: any) => ({
-            address: c.address || "",
-            status: "Closed",
-            listPrice: c.price || 0,
-            closePrice: c.price || 0,
-            beds: c.beds || null,
-            baths: c.baths || null,
-            sqft: c.sqft || null,
-            dom: null,
-            closeDate: c.closeDate || null,
+          // Get comps from the Comps tab data (rentcastComps state) or report data
+          const availableComps = rentcastComps || rd.comps || [];
+          const compProps = availableComps.map((c: any) => ({
+            address: c.formattedAddress || c.address || c.addressLine1 || "",
+            city: c.city || "",
+            status: c.status || "Closed",
+            listPrice: c.price || c.listPrice || 0,
+            closePrice: c.price || c.closePrice || 0,
+            beds: c.bedrooms || c.beds || null,
+            baths: c.bathrooms || c.baths || null,
+            sqft: c.squareFootage || c.sqft || c.livingArea || null,
+            yearBuilt: c.yearBuilt || null,
+            dom: c.daysOnMarket || null,
+            closeDate: c.closeDate || c.removedDate || null,
+            photoUrl: c.photoUrl || null,
           }));
           const analysis = compProps.length > 0 ? calculateCMAAnalysis(subject, compProps) : null;
           return analysis ? (
