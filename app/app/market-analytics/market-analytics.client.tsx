@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from "recharts";
+import { OAHU_HISTORICAL_DATA } from "@/lib/data/oahu-historical-sales";
 import {
   ValueCard,
   ReportSection,
@@ -184,6 +185,58 @@ export default function MarketAnalyticsDashboard() {
           </ResponsiveContainer>
         </ReportSection>
       )}
+
+      {/* ═══ HISTORICAL DATA (40 Years from HiCentral MLS) ═══ */}
+
+      {/* Median Price Comparison -- SFR vs Condo (40 Years) */}
+      <ReportSection title="Median Sale Price -- Oahu (40 Years)">
+        <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}>Single Family vs Condo/Townhouse | Source: HiCentral MLS</div>
+        <ResponsiveContainer width="100%" height={350}>
+          <LineChart data={OAHU_HISTORICAL_DATA} margin={{ top: 5, right: 20, left: 15, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+            <XAxis dataKey="year" fontSize={11} tickCount={10} />
+            <YAxis fontSize={11} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`} />
+            <Tooltip formatter={(value: any) => `$${Number(value).toLocaleString()}`} />
+            <Legend />
+            <Line type="monotone" dataKey="sfMedianPrice" name="Single Family" stroke="#dc2626" strokeWidth={2} dot={false} />
+            <Line type="monotone" dataKey="condoMedianPrice" name="Condo" stroke="#2563eb" strokeWidth={2} dot={false} />
+          </LineChart>
+        </ResponsiveContainer>
+      </ReportSection>
+
+      {/* Annual Sales Volume (40 Years) -- Line Chart */}
+      <ReportSection title="Annual Sales Volume -- Oahu (40 Years)">
+        <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}>Number of residential resales per year | Source: HiCentral MLS</div>
+        <ResponsiveContainer width="100%" height={350}>
+          <LineChart data={OAHU_HISTORICAL_DATA} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+            <XAxis dataKey="year" fontSize={11} tickCount={10} />
+            <YAxis fontSize={11} tickFormatter={(v) => v.toLocaleString()} />
+            <Tooltip formatter={(value: any) => Number(value).toLocaleString()} />
+            <Legend />
+            <Line type="monotone" dataKey="sfSales" name="Single Family" stroke="#dc2626" strokeWidth={2} dot={false} />
+            <Line type="monotone" dataKey="condoSales" name="Condo" stroke="#2563eb" strokeWidth={2} dot={false} />
+          </LineChart>
+        </ResponsiveContainer>
+      </ReportSection>
+
+      {/* Average Price Comparison (40 Years) */}
+      <ReportSection title="Average Sale Price -- Oahu (40 Years)">
+        <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}>Single Family vs Condo/Townhouse | Source: HiCentral MLS</div>
+        <ResponsiveContainer width="100%" height={350}>
+          <LineChart data={OAHU_HISTORICAL_DATA} margin={{ top: 5, right: 20, left: 15, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+            <XAxis dataKey="year" fontSize={11} tickCount={10} />
+            <YAxis fontSize={11} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`} />
+            <Tooltip formatter={(value: any) => `$${Number(value).toLocaleString()}`} />
+            <Legend />
+            <Line type="monotone" dataKey="sfAvgPrice" name="Single Family" stroke="#dc2626" strokeWidth={2} dot={false} />
+            <Line type="monotone" dataKey="condoAvgPrice" name="Condo" stroke="#2563eb" strokeWidth={2} dot={false} />
+          </LineChart>
+        </ResponsiveContainer>
+      </ReportSection>
+
+      {/* ═══ ZIP-LEVEL DATA ═══ */}
 
       {/* Sales Price by ZIP Code */}
       <ReportSection title={`Sales Price by ZIP Code - ${o.county} County`}>
