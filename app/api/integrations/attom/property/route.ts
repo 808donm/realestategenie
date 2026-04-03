@@ -210,8 +210,26 @@ async function fetchFromRealie(endpoint: string, params: Record<string, any>): P
       return null;
     }
 
-    const properties = response.properties.map(mapRealieToAttomShape);
+    let properties = response.properties.map(mapRealieToAttomShape);
     console.log(`[Realie] Got ${properties.length} properties for ${endpoint}`);
+
+    // For condos: Realie may return multiple units in the building.
+    // Filter to the specific unit if the search address contains a unit identifier.
+    if (properties.length > 1 && realieParams.address) {
+      const addrLower = (realieParams.address as string).toLowerCase();
+      const unitMatch = addrLower.match(/(?:apt|unit|#|ste|suite)\s*(\S+)/i);
+      if (unitMatch) {
+        const unitNum = unitMatch[1].toLowerCase();
+        const filtered = properties.filter((p: any) => {
+          const pAddr = (p.address?.oneLine || p.address?.line1 || "").toLowerCase();
+          return pAddr.match(new RegExp(`(?:apt|unit|#|ste|suite|apartment)\\s*${unitNum.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:\\s|,|$)`, "i")) != null;
+        });
+        if (filtered.length > 0) {
+          console.log(`[Realie] Filtered ${properties.length} building results to ${filtered.length} matching unit "${unitNum}"`);
+          properties = filtered;
+        }
+      }
+    }
 
     return {
       status: {
