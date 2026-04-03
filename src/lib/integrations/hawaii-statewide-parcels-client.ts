@@ -145,16 +145,41 @@ export class HawaiiStatewideParcelClient {
   async getParcelByTMK(tmk: string): Promise<StateParcel | null> {
     const cleanTmk = tmk.replace(/[-\s.]/g, "");
 
-    // Try tmk field first, then cty_tmk
-    const where =
-      cleanTmk.length >= 9
-        ? `tmk='${cleanTmk}' OR cty_tmk='${cleanTmk}'`
-        : `tmk LIKE '%${cleanTmk}%' OR cty_tmk LIKE '%${cleanTmk}%'`;
+    // The statewide parcels layer uses 9-digit TMKs (land-level parcels).
+    // Condo TMKs have 12-13 digits (9-digit parcel + 3-4 digit unit suffix).
+    // Strip the unit suffix for condo lookups since parcels are land-level.
+    let parcelTmk = cleanTmk;
+    if (cleanTmk.length > 9) {
+      // Try the first 9 digits (standard TMK without unit)
+      parcelTmk = cleanTmk.slice(0, 9);
+    }
 
-    const result = await this.query(where, { resultRecordCount: 1 });
+    // Build query conditions -- try multiple formats
+    const conditions: string[] = [];
+    conditions.push(`tmk='${parcelTmk}'`);
+    conditions.push(`cty_tmk='${parcelTmk}'`);
+    // Also try original if different
+    if (cleanTmk !== parcelTmk) {
+      conditions.push(`tmk='${cleanTmk}'`);
+      conditions.push(`cty_tmk='${cleanTmk}'`);
+    }
+    // For shorter TMKs, use LIKE
+    if (parcelTmk.length < 9) {
+      conditions.push(`tmk LIKE '%${parcelTmk}%'`);
+      conditions.push(`cty_tmk LIKE '%${parcelTmk}%'`);
+    }
 
-    if (!result.features?.length) return null;
-    return this.normalizeAttributes(result.features[0].attributes) as StateParcel;
+    const where = conditions.join(" OR ");
+
+    try {
+      const result = await this.query(where, { resultRecordCount: 1 });
+      if (!result.features?.length) return null;
+      return this.normalizeAttributes(result.features[0].attributes) as StateParcel;
+    } catch (err) {
+      // ArcGIS may return 400 for certain TMK formats -- log and return null
+      console.warn(`[HawaiiParcels] Parcel lookup failed for TMK ${tmk}:`, err instanceof Error ? err.message : err);
+      return null;
+    }
   }
 
   /**
@@ -162,21 +187,35 @@ export class HawaiiStatewideParcelClient {
    */
   async getParcelWithGeometry(tmk: string): Promise<StateParcelFeature | null> {
     const cleanTmk = tmk.replace(/[-\s.]/g, "");
-    const where =
-      cleanTmk.length >= 9
-        ? `tmk='${cleanTmk}' OR cty_tmk='${cleanTmk}'`
-        : `tmk LIKE '%${cleanTmk}%' OR cty_tmk LIKE '%${cleanTmk}%'`;
+    // Strip condo unit suffix -- parcels layer uses 9-digit TMKs
+    const parcelTmk = cleanTmk.length > 9 ? cleanTmk.slice(0, 9) : cleanTmk;
 
-    const result = await this.query(where, {
-      resultRecordCount: 1,
-      returnGeometry: true,
-    });
+    const conditions: string[] = [];
+    conditions.push(`tmk='${parcelTmk}'`);
+    conditions.push(`cty_tmk='${parcelTmk}'`);
+    if (cleanTmk !== parcelTmk) {
+      conditions.push(`tmk='${cleanTmk}'`);
+    }
+    if (parcelTmk.length < 9) {
+      conditions.push(`tmk LIKE '%${parcelTmk}%'`);
+    }
+    const where = conditions.join(" OR ");
 
-    if (!result.features?.length) return null;
-    return {
-      attributes: this.normalizeAttributes(result.features[0].attributes) as StateParcel,
-      geometry: result.features[0].geometry,
-    };
+    try {
+      const result = await this.query(where, {
+        resultRecordCount: 1,
+        returnGeometry: true,
+      });
+
+      if (!result.features?.length) return null;
+      return {
+        attributes: this.normalizeAttributes(result.features[0].attributes) as StateParcel,
+        geometry: result.features[0].geometry,
+      };
+    } catch (err) {
+      console.warn(`[HawaiiParcels] Geometry lookup failed for TMK ${tmk}:`, err instanceof Error ? err.message : err);
+      return null;
+    }
   }
 
   // ── County / Island Lookup ────────────────────────────────────────────
