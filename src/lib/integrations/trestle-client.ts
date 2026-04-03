@@ -439,7 +439,24 @@ export class TrestleClient {
     }
 
     if (options.propertyType) {
-      filters.push(`PropertyType eq '${options.propertyType}'`);
+      // Map user-friendly names to Trestle OData enum values
+      // Trestle PropertyType is an enum: "Residential", "Commercial", "Land", "Farm"
+      // "Single Family", "Condominium", "Townhouse" are PropertySubType values,
+      // not PropertyType -- filter those server-side instead
+      const trestleTypeMap: Record<string, string> = {
+        "single family": "Residential",
+        "condominium": "Residential",
+        "condo": "Residential",
+        "townhouse": "Residential",
+        "multi-family": "Residential Income",
+        "residential income": "Residential Income",
+        "commercial": "Commercial",
+        "land": "Land",
+        "farm": "Farm",
+        "residential": "Residential",
+      };
+      const mappedType = trestleTypeMap[options.propertyType.toLowerCase()] || options.propertyType;
+      filters.push(`PropertyType eq '${mappedType}'`);
     }
 
     if (options.minDaysOnMarket !== undefined) {
