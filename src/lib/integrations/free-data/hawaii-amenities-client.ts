@@ -24,7 +24,8 @@ interface LayerConfig {
 
 const LAYERS: LayerConfig[] = [
   { baseUrl: INFRASTRUCTURE_URL, layerId: 5, category: "Hospital", nameField: "name" },
-  { baseUrl: INFRASTRUCTURE_URL, layerId: 6, category: "Preschool", nameField: "name" },
+  { baseUrl: INFRASTRUCTURE_URL, layerId: 3, category: "Fire Station", nameField: "name" },
+  { baseUrl: INFRASTRUCTURE_URL, layerId: 4, category: "Police Station", nameField: "name" },
   { baseUrl: INFRASTRUCTURE_URL, layerId: 7, category: "Public School", nameField: "name" },
   { baseUrl: INFRASTRUCTURE_URL, layerId: 8, category: "Private School", nameField: "name" },
   { baseUrl: INFRASTRUCTURE_URL, layerId: 14, category: "Golf Course", nameField: "name" },

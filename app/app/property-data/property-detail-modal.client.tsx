@@ -4085,142 +4085,105 @@ export default function PropertyDetailModal({
                     </div>
                   )}
 
-                  {/* Nearby Amenities / Points of Interest */}
-                  {poiList.length > 0 && (
-                    <div style={{ marginBottom: 20 }}>
-                      <h3
-                        style={{
-                          fontSize: 14,
-                          fontWeight: 700,
-                          color: "#374151",
-                          marginBottom: 10,
-                          paddingBottom: 6,
-                          borderBottom: "1px solid #e5e7eb",
-                        }}
-                      >
-                        Nearby Amenities
-                      </h3>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                        {poiList.slice(0, 25).map((poi: any, i: number) => {
-                          // v4 response nests under businessLocation, category, details
-                          const biz = poi.businessLocation || {};
-                          const cat = poi.category || {};
-                          const det = poi.details || {};
-                          // Resolve name: v4 nested → flat fallbacks
-                          const poiName =
-                            biz.businessStandardName ||
-                            det.businessShortName ||
-                            poi.name ||
-                            poi.Name ||
-                            poi.businessName;
-                          const category =
-                            cat.condensedHeading ||
-                            cat.industry ||
-                            cat.category ||
-                            poi.businessCategory ||
-                            poi.categoryName;
-                          const address =
-                            biz.address || (det.house && det.street)
-                              ? [det.house, det.street, det.strType].filter(Boolean).join(" ")
-                              : poi.address || poi.addressLine1;
-                          const poiCity = biz.city || det.cityName || poi.city;
-                          const poiState = det.state || poi.stateCode;
-                          const poiZip = det.zip || poi.zipCode;
-                          // Build phone from area code + exchange + number
-                          const phone =
-                            det.areaCode && det.exchange && det.phoneNumber
-                              ? `(${det.areaCode}) ${det.exchange}-${det.phoneNumber}`
-                              : poi.phone || poi.contactPhone;
-                          const facebook = det.facebookUrl || poi.facebookUrl;
-                          const yelp = det.yelpUrl || poi.yelpUrl;
-                          const website = det.website || poi.website;
-                          const hours = det.standardizedHours || poi.operatingHours;
-                          const franchise = det.franchiseInd === "Y" || poi.franchiseInd === "Y";
-                          const dist = det.distance ?? poi.distance;
-                          const industry = cat.lineOfBusiness || det.industry;
+                  {/* Nearby Amenities -- organized by category */}
+                  {poiList.length > 0 && (() => {
+                    // Define which categories to show and their display order/icons
+                    const AMENITY_CATEGORIES: Record<string, { icon: string; label: string; priority: number }> = {
+                      "park": { icon: "🌳", label: "Parks & Recreation", priority: 1 },
+                      "county park": { icon: "🌳", label: "Parks & Recreation", priority: 1 },
+                      "state park": { icon: "🌳", label: "Parks & Recreation", priority: 1 },
+                      "playground": { icon: "🌳", label: "Parks & Recreation", priority: 1 },
+                      "golf course": { icon: "⛳", label: "Parks & Recreation", priority: 1 },
+                      "fire station": { icon: "🚒", label: "Fire & Emergency", priority: 2 },
+                      "police": { icon: "👮", label: "Fire & Emergency", priority: 2 },
+                      "police station": { icon: "👮", label: "Fire & Emergency", priority: 2 },
+                      "hospital": { icon: "🏥", label: "Medical & Health", priority: 3 },
+                      "medical": { icon: "🏥", label: "Medical & Health", priority: 3 },
+                      "clinic": { icon: "🏥", label: "Medical & Health", priority: 3 },
+                      "dentist": { icon: "🏥", label: "Medical & Health", priority: 3 },
+                      "pharmacy": { icon: "💊", label: "Medical & Health", priority: 3 },
+                      "restaurant": { icon: "🍽️", label: "Dining", priority: 4 },
+                      "fast food": { icon: "🍽️", label: "Dining", priority: 4 },
+                      "cafe": { icon: "☕", label: "Dining", priority: 4 },
+                      "bakery": { icon: "🍽️", label: "Dining", priority: 4 },
+                      "grocery": { icon: "🛒", label: "Shopping", priority: 5 },
+                      "supermarket": { icon: "🛒", label: "Shopping", priority: 5 },
+                      "shopping mall": { icon: "🛍️", label: "Shopping", priority: 5 },
+                      "department store": { icon: "🛍️", label: "Shopping", priority: 5 },
+                      "convenience store": { icon: "🏪", label: "Shopping", priority: 5 },
+                      "bank": { icon: "🏦", label: "Banks & Services", priority: 6 },
+                      "atm": { icon: "🏦", label: "Banks & Services", priority: 6 },
+                      "post office": { icon: "📮", label: "Banks & Services", priority: 6 },
+                      "gas station": { icon: "⛽", label: "Banks & Services", priority: 6 },
+                      "library": { icon: "📚", label: "Libraries & Community", priority: 7 },
+                      "community center": { icon: "🏛️", label: "Libraries & Community", priority: 7 },
+                      "public school": { icon: "🎓", label: "Schools", priority: 8 },
+                      "private school": { icon: "🎓", label: "Schools", priority: 8 },
+                      "school": { icon: "🎓", label: "Schools", priority: 8 },
+                    };
 
-                          return (
-                            <div key={i} style={{ padding: "10px 14px", background: "#f9fafb", borderRadius: 8 }}>
-                              <div
-                                style={{
-                                  display: "flex",
-                                  justifyContent: "space-between",
-                                  alignItems: "flex-start",
-                                  gap: 8,
-                                }}
-                              >
-                                <div style={{ flex: 1, minWidth: 180 }}>
-                                  <div style={{ fontWeight: 600, fontSize: 13, color: "#111827" }}>{poiName}</div>
-                                  <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
-                                    {[
-                                      category,
-                                      industry && industry !== category ? industry : null,
-                                      dist != null ? `${Number(dist).toFixed(1)} mi` : null,
-                                    ]
-                                      .filter(Boolean)
-                                      .join(" · ")}
-                                  </div>
-                                  {address && (
-                                    <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>
-                                      {[address, poiCity, poiState, poiZip].filter(Boolean).join(", ")}
-                                    </div>
-                                  )}
-                                  <div
-                                    style={{
-                                      fontSize: 11,
-                                      color: "#9ca3af",
-                                      marginTop: 1,
-                                      display: "flex",
-                                      flexWrap: "wrap",
-                                      gap: 8,
-                                    }}
-                                  >
-                                    {phone && <span>Tel: {phone}</span>}
-                                    {franchise && <span style={{ color: "#7c3aed", fontWeight: 600 }}>Franchise</span>}
-                                    {hours && <span>Hours: {hours}</span>}
-                                  </div>
-                                  {(facebook || yelp || website) && (
-                                    <div style={{ fontSize: 11, marginTop: 2, display: "flex", gap: 10 }}>
-                                      {website && (
-                                        <a
-                                          href={website}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          style={{ color: "#059669", textDecoration: "none" }}
-                                        >
-                                          Website
-                                        </a>
-                                      )}
-                                      {facebook && (
-                                        <a
-                                          href={facebook}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          style={{ color: "#3b82f6", textDecoration: "none" }}
-                                        >
-                                          Facebook
-                                        </a>
-                                      )}
-                                      {yelp && (
-                                        <a
-                                          href={yelp}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          style={{ color: "#dc2626", textDecoration: "none" }}
-                                        >
-                                          Yelp
-                                        </a>
-                                      )}
-                                    </div>
+                    // Parse and categorize POIs
+                    type CatPOI = { name: string; category: string; address?: string; phone?: string; distance?: number; group: string; icon: string };
+                    const categorized: CatPOI[] = [];
+
+                    for (const poi of poiList) {
+                      const biz = poi.businessLocation || {};
+                      const cat = poi.category || {};
+                      const det = poi.details || {};
+                      const poiName = biz.businessStandardName || det.businessShortName || poi.name || poi.Name || poi.businessName;
+                      const category = (cat.condensedHeading || cat.industry || cat.category || poi.businessCategory || poi.categoryName || "").toLowerCase();
+                      if (!poiName) continue;
+
+                      const match = AMENITY_CATEGORIES[category];
+                      if (!match) continue; // Skip categories not in our whitelist
+
+                      const address = biz.address || (det.house && det.street ? [det.house, det.street, det.strType].filter(Boolean).join(" ") : poi.address || poi.addressLine1);
+                      const phone = det.areaCode && det.exchange && det.phoneNumber ? `(${det.areaCode}) ${det.exchange}-${det.phoneNumber}` : poi.phone || poi.contactPhone;
+                      const dist = det.distance ?? poi.distance ?? poi.distanceMiles;
+
+                      categorized.push({ name: poiName, category, address, phone, distance: dist, group: match.label, icon: match.icon });
+                    }
+
+                    // Group by category label
+                    const groups = new Map<string, { icon: string; priority: number; items: CatPOI[] }>();
+                    for (const poi of categorized) {
+                      const match = Object.values(AMENITY_CATEGORIES).find((c) => c.label === poi.group);
+                      if (!groups.has(poi.group)) {
+                        groups.set(poi.group, { icon: poi.icon, priority: match?.priority || 99, items: [] });
+                      }
+                      groups.get(poi.group)!.items.push(poi);
+                    }
+
+                    // Sort groups by priority
+                    const sortedGroups = [...groups.entries()].sort((a, b) => a[1].priority - b[1].priority);
+
+                    if (sortedGroups.length === 0) return null;
+
+                    return (
+                      <div style={{ marginBottom: 20 }}>
+                        <h3 style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 10, paddingBottom: 6, borderBottom: "1px solid #e5e7eb" }}>
+                          Nearby Amenities
+                        </h3>
+                        {sortedGroups.map(([groupName, group]) => (
+                          <div key={groupName} style={{ marginBottom: 16 }}>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: "#1e40af", marginBottom: 6 }}>
+                              {group.icon} {groupName}
+                            </div>
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                              {group.items.slice(0, 8).map((poi, i) => (
+                                <div key={i} style={{ padding: "6px 12px", background: "#f9fafb", borderRadius: 6, fontSize: 12 }}>
+                                  <span style={{ fontWeight: 500, color: "#111827" }}>{poi.name}</span>
+                                  {poi.distance != null && (
+                                    <span style={{ color: "#9ca3af", marginLeft: 6 }}>{typeof poi.distance === "number" ? `${poi.distance.toFixed(1)} mi` : poi.distance}</span>
                                   )}
                                 </div>
-                              </div>
+                              ))}
                             </div>
-                          );
-                        })}
+                          </div>
+                        ))}
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
                 </>
               );
             })()}
