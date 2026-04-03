@@ -3357,6 +3357,7 @@ export default function MLSClient() {
                     .map((m) => m.MediaURL)
                     .slice(0, 6)}
                   mlsListPrice={selectedProperty?.ListPrice}
+                  mlsAddress={getAddress(selectedProperty)}
                 />
               )}
 

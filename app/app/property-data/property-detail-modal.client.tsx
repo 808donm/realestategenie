@@ -252,6 +252,7 @@ export default function PropertyDetailModal({
   farmingContext,
   mlsPhotos,
   mlsListPrice,
+  mlsAddress,
   sellerScore,
 }: {
   property: AttomProperty;
@@ -267,6 +268,8 @@ export default function PropertyDetailModal({
   mlsPhotos?: string[];
   /** MLS list price for mortgage calculator in shared reports */
   mlsListPrice?: number;
+  /** Original MLS address with unit number (e.g., "440 Seaside Ave Apt 605"). Used for sales history unit filtering. */
+  mlsAddress?: string;
   /** Seller opportunity score data from the Seller Map */
   sellerScore?: { score: number; level: string; factors: Array<{ name: string; points: number; maxPoints: number; description: string }>; owner?: string };
 }) {
@@ -2759,8 +2762,9 @@ export default function PropertyDetailModal({
       {/* ── Sales History Tab ───────────────────────────────────────── */}
       {activeSection === "sales-history" &&
         (() => {
-          // Use oneLine (includes unit number for condos) for accurate sales history
-          const salesAddr = p.address?.oneLine || p.address?.line1 || addr;
+          // Use the original MLS address (with unit like "Apt 605") for accurate condo sales history.
+          // Falls back to oneLine (from Realie/RentCast which strips units) then display addr.
+          const salesAddr = mlsAddress || p.address?.oneLine || p.address?.line1 || addr;
           return <SalesHistorySection address={salesAddr} publicRecords={p.saleHistory} />;
         })()}
 
