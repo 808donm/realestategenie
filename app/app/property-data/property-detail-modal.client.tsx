@@ -2765,7 +2765,17 @@ export default function PropertyDetailModal({
           // Use the original MLS address (with unit like "Apt 605") for accurate condo sales history.
           // Falls back to oneLine (from Realie/RentCast which strips units) then display addr.
           const salesAddr = mlsAddress || p.address?.oneLine || p.address?.line1 || addr;
-          return <SalesHistorySection address={salesAddr} publicRecords={p.saleHistory} />;
+          return (
+            <SalesHistorySection
+              address={salesAddr}
+              publicRecords={p.saleHistory}
+              propertySale={{
+                amount: p.sale?.amount?.saleAmt || p.sale?.amount?.salePrice,
+                date: p.sale?.amount?.saleTransDate,
+                recordingDate: p.sale?.amount?.saleRecDate,
+              }}
+            />
+          );
         })()}
 
       {/* ── Comps Tab ─────────────────────────────────────────────── */}
@@ -5381,7 +5391,7 @@ export default function PropertyDetailModal({
 }
 
 // ── Sales History Section ────────────────────────────────────────────────────
-function SalesHistorySection({ address, publicRecords }: { address?: string; publicRecords?: any[] }) {
+function SalesHistorySection({ address, publicRecords, propertySale }: { address?: string; publicRecords?: any[]; propertySale?: { amount?: number; date?: string; recordingDate?: string } }) {
   const [unitHistory, setUnitHistory] = useState<any[]>([]);
   const [buildingHistory, setBuildingHistory] = useState<any[]>([]);
   const [unitNumber, setUnitNumber] = useState<string | null>(null);
@@ -5450,7 +5460,30 @@ function SalesHistorySection({ address, publicRecords }: { address?: string; pub
   if (error) return <div style={{ padding: 20, color: "#ef4444", fontSize: 13 }}>{error}</div>;
   const allPublicRecords = [...(publicRecords || []), ...(fallbackRecords || [])];
   const hasPublicRecords = allPublicRecords.length > 0;
-  if (unitHistory.length === 0 && buildingHistory.length === 0 && !hasPublicRecords) {
+
+  // If we have NO unit-specific MLS sales but the property data has a last sale
+  // (from Realie/RentCast), inject it as a public record so it shows up
+  const hasPropertySale = propertySale?.amount && propertySale.amount > 0;
+  if (unitHistory.length === 0 && hasPropertySale) {
+    // Check if this sale is already in public records (avoid duplicates)
+    const alreadyListed = allPublicRecords.some(
+      (r: any) => r.amount === propertySale!.amount && (r.date === propertySale!.date || r.date === propertySale!.recordingDate),
+    );
+    if (!alreadyListed) {
+      allPublicRecords.unshift({
+        date: propertySale!.date,
+        recordingDate: propertySale!.recordingDate,
+        amount: propertySale!.amount,
+        _source: "property_record",
+      });
+    }
+  }
+
+  const hasAnyData = unitHistory.length > 0 || allPublicRecords.length > 0;
+  // Only show building sales if we also have unit-specific data for context
+  const showBuildingSales = buildingHistory.length > 0 && unitHistory.length > 0;
+
+  if (!hasAnyData && buildingHistory.length === 0) {
     return (
       <div style={{ padding: 20, textAlign: "center", color: "#9ca3af", fontSize: 13 }}>
         No sales history found for this address.
@@ -5552,8 +5585,8 @@ function SalesHistorySection({ address, publicRecords }: { address?: string; pub
         </>
       )}
 
-      {/* Building-wide sales (collapsible for condos) */}
-      {buildingHistory.length > 0 && (
+      {/* Building-wide sales -- only shown when we have unit-specific sales for context */}
+      {showBuildingSales && (
         <div style={{ marginTop: unitHistory.length > 0 ? 16 : 0 }}>
           <button
             onClick={() => setShowBuilding(!showBuilding)}
@@ -5581,9 +5614,9 @@ function SalesHistorySection({ address, publicRecords }: { address?: string; pub
         </div>
       )}
 
-      {/* Public Records (from RentCast/Realie — county deed records) */}
-      {hasPublicRecords && (
-        <div style={{ marginTop: unitHistory.length > 0 || buildingHistory.length > 0 ? 16 : 0 }}>
+      {/* Public Records / Property Sale Data */}
+      {allPublicRecords.length > 0 && (
+        <div style={{ marginTop: unitHistory.length > 0 ? 16 : 0 }}>
           <h3
             style={{
               fontSize: 13,
@@ -5596,9 +5629,9 @@ function SalesHistorySection({ address, publicRecords }: { address?: string; pub
           >
             Public Records ({allPublicRecords.length})
           </h3>
-          {unitHistory.length === 0 && buildingHistory.length === 0 && (
+          {unitHistory.length === 0 && (
             <p style={{ fontSize: 11, color: "#9ca3af", marginBottom: 10 }}>
-              No MLS transactions found — showing county deed records
+              Source: County deed records / property data
             </p>
           )}
           {allPublicRecords.map((s: any, i: number) => (
@@ -5646,7 +5679,7 @@ function SalesHistorySection({ address, publicRecords }: { address?: string; pub
       )}
 
       {/* No data at all */}
-      {unitHistory.length === 0 && buildingHistory.length === 0 && !hasPublicRecords && (
+      {unitHistory.length === 0 && allPublicRecords.length === 0 && !showBuildingSales && (
         <div style={{ padding: 20, textAlign: "center", color: "#9ca3af", fontSize: 13 }}>No sales history found.</div>
       )}
     </div>
