@@ -177,10 +177,10 @@ const TABS: { key: TabKey; label: string }[] = [
 ];
 
 const PROPERTY_TYPES = [
-  "Residential",
-  "Residential Income",
-  "Condo",
+  "Single Family",
+  "Condominium",
   "Townhouse",
+  "Residential Income",
   "Multi-Family",
   "Commercial",
   "Land",

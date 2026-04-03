@@ -67,16 +67,31 @@ export async function GET(request: NextRequest) {
       if (/^\d{5}(-\d{4})?$/.test(q)) {
         // Pure zip code
         searchPostalCode = q;
-      } else if (/^\d+[\s-]/.test(q) || /\b(st|rd|ave|dr|ln|pl|blvd|ct|way|loop|pkwy|hwy)\b/i.test(q)) {
-        // Looks like a street address -- expand abbreviations to match MLS full names
-        const { expandStreetSuffix } = await import("@/lib/address-utils");
+      } else if (/^\d+[\s-]/.test(q) || /\b(st|street|rd|road|ave|avenue|dr|drive|ln|lane|pl|place|blvd|boulevard|ct|court|way|loop|pkwy|parkway|hwy|highway|cir|circle)\b/i.test(q)) {
+        // Looks like a street address -- search both expanded AND abbreviated forms
+        // MLS may store "3849 Manoa Rd" or "3849 Manoa Road" -- we search for both
+        const { expandStreetSuffix, abbreviateStreetSuffix } = await import("@/lib/address-utils");
         const expanded = expandStreetSuffix(q);
-        const escaped = expanded.replace(/'/g, "''").toLowerCase();
-        const origEscaped = q.replace(/'/g, "''").toLowerCase();
-        const searchTerms = escaped !== origEscaped
-          ? `(contains(tolower(UnparsedAddress), '${escaped}') or contains(tolower(UnparsedAddress), '${origEscaped}') or contains(tolower(StreetName), '${escaped}') or contains(tolower(StreetName), '${origEscaped}'))`
-          : `contains(tolower(UnparsedAddress), '${escaped}') or contains(tolower(StreetName), '${escaped}')`;
-        addressFilter = searchTerms;
+        const abbreviated = abbreviateStreetSuffix(q);
+        // Collect unique search variants
+        const variants = new Set([
+          q.replace(/'/g, "''").toLowerCase(),
+          expanded.replace(/'/g, "''").toLowerCase(),
+          abbreviated.replace(/'/g, "''").toLowerCase(),
+        ]);
+        // Also try stripping the suffix entirely for StreetName matching
+        // e.g., "Manoa" from "3849 Manoa Road" to match StreetName field
+        const streetNameMatch = q.match(/^\d+[\s-]+(.+?)(?:\s+(?:st|street|rd|road|ave|avenue|dr|drive|ln|lane|pl|place|blvd|boulevard|ct|court|way|loop|pkwy|parkway|hwy|highway|cir|circle)\.?\s*(?:,.*)?$)/i);
+        const streetNameOnly = streetNameMatch ? streetNameMatch[1].replace(/'/g, "''").toLowerCase() : null;
+
+        const conditions: string[] = [];
+        for (const v of variants) {
+          conditions.push(`contains(tolower(UnparsedAddress), '${v}')`);
+        }
+        if (streetNameOnly) {
+          conditions.push(`contains(tolower(StreetName), '${streetNameOnly}')`);
+        }
+        addressFilter = conditions.length === 1 ? conditions[0] : `(${conditions.join(" or ")})`;
       } else {
         // Could be a city name OR a building/condo name (e.g., "Park Lane", "The Century")
         // Search both City and SubdivisionName

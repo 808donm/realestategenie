@@ -152,7 +152,37 @@ export async function generateCMA(
     }),
   ]);
 
-  const allProperties = [...activeResult.value, ...pendingResult.value, ...soldResult.value];
+  let allProperties = [...activeResult.value, ...pendingResult.value, ...soldResult.value];
+
+  // Filter by property sub-type when a specific type is requested.
+  // HiCentral MLS uses PropertyType="Residential" for everything (SFR, Condo, Townhouse).
+  // The actual distinction is in PropertySubType, which is an OData enum that can't be
+  // filtered in the query -- so we filter server-side after fetching.
+  if (options.subjectPropertyType) {
+    const typeLC = options.subjectPropertyType.toLowerCase();
+    const isSFR = typeLC.includes("single") || typeLC === "residential" || typeLC === "sfr";
+    const isCondo = typeLC.includes("condo") || typeLC.includes("condominium");
+    const isTownhouse = typeLC.includes("town");
+
+    if (isSFR || isCondo || isTownhouse) {
+      const beforeCount = allProperties.length;
+      allProperties = allProperties.filter((p) => {
+        const subType = (p.PropertySubType || "").toLowerCase();
+        if (isSFR) {
+          // SFR: exclude condos and townhouses
+          return !subType.includes("condo") && !subType.includes("townhouse") && !subType.includes("apartment");
+        }
+        if (isCondo) {
+          return subType.includes("condo") || subType.includes("condominium");
+        }
+        if (isTownhouse) {
+          return subType.includes("townhouse") || subType.includes("town");
+        }
+        return true;
+      });
+      console.log(`[CMA] Filtered ${beforeCount} comps to ${allProperties.length} matching ${options.subjectPropertyType} (by PropertySubType)`);
+    }
+  }
 
   // Convert to CMAComp format
   const comps: CMAComp[] = allProperties.map((p) => {

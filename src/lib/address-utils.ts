@@ -24,6 +24,11 @@ const SUFFIX_MAP: Record<string, string> = {
   wy: "way",
 };
 
+/** Reverse map: full names to abbreviations */
+const REVERSE_SUFFIX_MAP: Record<string, string> = Object.fromEntries(
+  Object.entries(SUFFIX_MAP).map(([abbr, full]) => [full, abbr]),
+);
+
 /**
  * Expand street suffix abbreviations to full names.
  * "123 Main St" -> "123 Main Street"
@@ -36,6 +41,22 @@ export function expandStreetSuffix(address: string): string {
     expanded = expanded.replace(re, full);
   }
   return expanded;
+}
+
+/**
+ * Abbreviate street suffix full names to abbreviations.
+ * "123 Main Street" -> "123 Main St"
+ * "3849 Manoa Road" -> "3849 Manoa Rd"
+ */
+export function abbreviateStreetSuffix(address: string): string {
+  let abbreviated = address;
+  for (const [full, abbr] of Object.entries(REVERSE_SUFFIX_MAP)) {
+    // Match full word at word boundary, case-insensitive
+    const re = new RegExp(`\\b${full}\\b`, "gi");
+    // Capitalize first letter of abbreviation to match typical MLS format
+    abbreviated = abbreviated.replace(re, abbr.charAt(0).toUpperCase() + abbr.slice(1));
+  }
+  return abbreviated;
 }
 
 /**
