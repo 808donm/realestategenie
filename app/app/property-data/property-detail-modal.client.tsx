@@ -1927,8 +1927,71 @@ export default function PropertyDetailModal({
           const fallbackValue =
             p.assessment?.market?.mktTtlValue || p.assessment?.appraised?.apprTtlValue || rentcastAvmPrice;
           const hasFallbackValue = !avm?.amount?.value && fallbackValue != null;
+
+          // ── Home Equity Analysis (rendered first, at top of Financial tab) ──
+          const heResp = enrichedFinancial?.homeEquity;
+          const heProp = heResp?.property?.[0] || heResp;
+          const he = heProp?.homeEquity || heProp?.valuation || heProp;
+          const heAvmValue = he?.avmValue ?? he?.avm?.amount?.value ?? he?.estimatedValue;
+          const heLoanBalance = he?.outstandingBalance ?? he?.loanBalance ?? he?.mortgageBalance ?? he?.estimatedBalance;
+          const heEquityAmount = he?.equity ?? he?.equityAmount ?? (heAvmValue != null && heLoanBalance != null ? heAvmValue - heLoanBalance : null);
+          const heRawLtv = he?.loanToValue ?? he?.ltv;
+          const heLtv = heRawLtv != null && heRawLtv > 0 ? heRawLtv : heAvmValue && heLoanBalance ? (heLoanBalance / heAvmValue) * 100 : null;
+          const heLoanCount = he?.loanCount ?? he?.numberOfLoans;
+          const heEstPayment = he?.estimatedPayment ?? he?.monthlyPayment;
+          const heLastSalePrice = he?.lastSalePrice ?? he?.salePrice ?? p.sale?.amount?.saleAmt;
+          const heLastSaleDate = he?.lastSaleDate ?? he?.saleDate ?? p.sale?.amount?.saleRecDate ?? p.sale?.amount?.saleTransDate;
+          const heHasData = heAvmValue != null || heLoanBalance != null || heEquityAmount != null;
+          const heIsPositive = heEquityAmount != null ? heEquityAmount >= 0 : true;
+
           return (
             <>
+              {/* Home Equity Analysis -- displayed first at top of Financial tab */}
+              {enrichedFinancial && !enrichedFinancialLoading && heHasData && (
+                <div
+                  style={{
+                    marginBottom: 20,
+                    padding: "14px 18px",
+                    background: heIsPositive ? "#ecfdf5" : "#fef2f2",
+                    borderRadius: 10,
+                    border: `1px solid ${heIsPositive ? "#a7f3d0" : "#fecaca"}`,
+                  }}
+                >
+                  <div style={{ fontSize: 11, fontWeight: 600, color: heIsPositive ? "#059669" : "#dc2626", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                    Home Equity Analysis
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12, marginTop: 8 }}>
+                    <div>
+                      <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 500 }}>Estimated Value</div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: "#111827" }}>{heAvmValue != null ? fmt(heAvmValue) : "Not Disclosed"}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 500 }}>Est. Loan Balance</div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: "#111827" }}>{heLoanBalance != null ? fmt(heLoanBalance) : "Not Disclosed"}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 500 }}>Est. Equity</div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: heEquityAmount != null ? (heIsPositive ? "#059669" : "#dc2626") : "#9ca3af" }}>
+                        {heEquityAmount != null ? `${heEquityAmount >= 0 ? "+" : ""}${fmt(heEquityAmount)}` : "Not Disclosed"}
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 500 }}>Loan-to-Value</div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: heLtv != null ? (Number(heLtv) > 80 ? "#dc2626" : "#059669") : "#9ca3af" }}>
+                        {heLtv != null ? `${Number(heLtv).toFixed(1)}%` : "Not Disclosed"}
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 16, marginTop: 10, fontSize: 12, color: "#374151" }}>
+                    {heLoanCount != null && heLoanCount > 0 && <span><strong>Active Loans:</strong> {heLoanCount}</span>}
+                    {heEstPayment != null && heEstPayment > 0 && <span><strong>Est. Monthly Payment:</strong> {fmt(heEstPayment)}</span>}
+                    <span><strong>Last Sale:</strong> {heLastSalePrice != null ? fmt(heLastSalePrice) : "Not Disclosed"}</span>
+                    <span><strong>Sale Date:</strong> {heLastSaleDate || "Not Disclosed"}</span>
+                    {p.sale?.amount?.saleRecDate && <span><strong>Recording Date:</strong> {p.sale.amount.saleRecDate}</span>}
+                  </div>
+                </div>
+              )}
+
               {avmLoading && !avm && !hasFallbackValue && (
                 <div style={{ textAlign: "center", padding: 20, color: "#6b7280", fontSize: 13 }}>
                   Loading AVM valuation data...
@@ -5420,9 +5483,10 @@ function SalesHistorySection({ address, publicRecords, propertySale }: { address
           setUnitNumber(data.unitNumber || null);
         }
 
-        // If MLS returned no sales AND no public records, fetch from Realie/RentCast
-        const mlsCount = (data.transactions?.length || 0) + (data.buildingTransactions?.length || 0);
-        if (mlsCount === 0 && (!publicRecords || publicRecords.length === 0)) {
+        // If MLS returned no unit-specific sales, try fetching from Realie/RentCast
+        // with the FULL address (including unit) for unit-specific transfer history
+        const unitCount = data.transactions?.length || 0;
+        if (unitCount === 0 && (!publicRecords || publicRecords.length === 0)) {
           try {
             const { expandStreetSuffix } = await import("@/lib/address-utils");
             const expanded = expandStreetSuffix(address);
