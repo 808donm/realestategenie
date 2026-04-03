@@ -3845,11 +3845,11 @@ export default function PropertyDetailModal({
                     </div>
                   )}
 
-                  {/* Other Nearby Schools (from NCES -- distance-based, secondary to assigned schools) */}
-                  {schoolList.length > 0 && (
+                  {/* NCES nearby schools -- only shown if no GIS assigned schools available (non-Hawaii) */}
+                  {!gisEnrichment?.elementarySchool && !gisEnrichment?.middleSchool && !gisEnrichment?.highSchool && schoolList.length > 0 && (
                     <div style={{ marginBottom: 20 }}>
                       <h3 style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 10, paddingBottom: 6, borderBottom: "1px solid #e5e7eb" }}>
-                        Other Nearby Schools
+                        Nearby Schools
                       </h3>
                       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                         {schoolList.slice(0, 15).map((school: any, i: number) => {
