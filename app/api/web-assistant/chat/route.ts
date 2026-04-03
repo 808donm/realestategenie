@@ -206,21 +206,34 @@ async function createLeadFromChat(admin: any, state: ConversationState, agent: a
   const p = state.profile;
   try {
     // Insert into lead_submissions
+    const payload: any = {
+      name: p.name || "Website Visitor",
+      email: p.email,
+      phone_e164: p.phone,
+      representation: p.hasAgent ? "yes" : "no",
+      wants_agent_reach_out: p.wantReachOut,
+      timeline: p.timeline,
+      financing: p.preApproved,
+      neighborhoods: p.neighborhoods,
+      must_haves: p.mustHaves,
+      consent: { sms: true, email: true },
+      source: "website_chat",
+      intent: p.intent || "buyer",
+    };
+    // Include seller property data if available
+    if (p.intent === "seller" && p.propertyAddress) {
+      payload.sellerProperty = {
+        address: p.propertyAddress,
+        avmValue: p.propertyData?.avmValue,
+        beds: p.propertyData?.beds,
+        baths: p.propertyData?.baths,
+        sqft: p.propertyData?.sqft,
+        yearBuilt: p.propertyData?.yearBuilt,
+      };
+    }
     await admin.from("lead_submissions").insert({
       agent_id: state.agentId,
-      payload: {
-        name: p.name || "Website Visitor",
-        email: p.email,
-        phone_e164: p.phone,
-        representation: p.hasAgent ? "yes" : "no",
-        wants_agent_reach_out: p.wantReachOut,
-        timeline: p.timeline,
-        financing: p.preApproved,
-        neighborhoods: p.neighborhoods,
-        must_haves: p.mustHaves,
-        consent: { sms: true, email: true },
-        source: "website_chat",
-      },
+      payload,
       heat_score: calculateWebChatHeatScore(p),
       pipeline_stage: "new_lead",
       lead_source: "Website Chat",
@@ -257,6 +270,24 @@ async function createLeadFromChat(admin: any, state: ConversationState, agent: a
         if (contactId) {
           const note = formatProfileAsNote(state);
           await (ghl as any).addNote?.(contactId, note);
+
+          // Create opportunity in CRM pipeline (adds to pipeline as new lead)
+          if (config.pipeline_id && config.new_lead_stage_id) {
+            try {
+              await (ghl as any).createOpportunity?.({
+                pipelineId: config.pipeline_id,
+                stageId: config.new_lead_stage_id,
+                contactId,
+                name: `${p.name || "Website Visitor"} - ${p.intent === "seller" ? "Seller" : "Buyer"} (Website Chat)`,
+                status: "open",
+                source: "Website Chat",
+                monetaryValue: p.propertyData?.avmValue || 0,
+              });
+              console.log(`[WebAssistant] CRM opportunity created for ${p.name}`);
+            } catch (oppErr) {
+              console.warn("[WebAssistant] CRM opportunity creation failed:", oppErr);
+            }
+          }
         }
       } catch (ghlErr) {
         console.warn("[WebAssistant] CRM contact creation failed:", ghlErr);
