@@ -17,7 +17,7 @@ export const PAGE_CONTEXT: Record<string, string> = {
 - **AI Daily Briefing**: Numbered priority list (1-3 items) generated from urgent follow-ups, hot leads, today's events, new leads this week
 - **Pipeline Stats**: Count by stage breakdown, total leads, hot leads count
 - **Tasks Widget**: Overdue/Today/Upcoming tasks (3 per section) with quick-complete checkboxes
-- **Upcoming Events**: Next 5 events from all connected calendars (Google, Outlook, GHL) with source color-coding
+- **Upcoming Events**: Next 5 events from all connected calendars (Google, Outlook, CRM) with source color-coding
 - **Active Listings**: Total active listings, average DOM, stale listings (21+ DOM) with warning
 - **One-Tap Contact Actions**: Hot leads (70+ score) with direct Call/Text/Email links
 - **Recent Activity Feed**: Real-time log of leads, open houses, integrations, webhooks with heat score badges
@@ -27,12 +27,12 @@ Help the agent understand their daily priorities and offer to take action on bri
   // Calendar
   calendar: `The agent is on the CALENDAR page. This is a unified, multi-source calendar view.
 - **Views**: Month, Week, Day with navigation arrows
-- **Sources** (color-coded): Google Calendar (blue), Outlook/Microsoft (green), GHL/CRM (purple), Local (gray)
+- **Sources** (color-coded): Google Calendar (blue), Outlook/Microsoft (green), CRM (purple), Local (gray)
 - **Source Filtering**: Toggle visibility per calendar source
 - **Event Operations**: Create, edit, delete events with title, description, location, date/time, all-day toggle, attendee management
-- **Two-Way Sync**: Changes sync bidirectionally with connected calendars. GHL booked meetings (online booking page) always take precedence.
+- **Two-Way Sync**: Changes sync bidirectionally with connected calendars. CRM booked meetings (online booking page) always take precedence.
 - **Manual Sync Button**: Force full sync across all connected sources
-- **Integration Setup**: Connect Google Calendar (OAuth), Outlook (OAuth), CRM (GHL API key + Location ID)
+- **Integration Setup**: Connect Google Calendar (OAuth), Outlook (OAuth), CRM (API key + Location ID)
 Help the agent manage their schedule, sync calendars, and create events.`,
 
   // Pipeline
@@ -42,7 +42,7 @@ Help the agent manage their schedule, sync calendars, and create events.`,
 - **Drag-and-drop** cards between stages to update status
 - **Card Details**: Lead/opportunity name, contact name, monetary value, status, creation date
 - **Lead Detail Modal**: Full info, notes history, conversation history, action buttons (email draft, create task, advance stage, mark as lost)
-- **CRM Sync**: If GHL connected, pipeline maps to CRM pipeline stages. Leads auto-advance when emails/SMS sent.
+- **CRM Sync**: If CRM connected, pipeline maps to CRM pipeline stages. Leads auto-advance when emails/SMS sent.
 - **Local Pipeline**: Available for agents without CRM connection
 - **Pipeline Selection**: Dropdown to switch between multiple pipelines
 Help the agent manage their deal flow and advance opportunities through stages.`,
@@ -61,16 +61,16 @@ Help the agent manage their deal flow and advance opportunities through stages.`
 Help the agent manage tasks, set priorities, and stay on top of follow-ups.`,
 
   // Contacts
-  contacts: `The agent is on the CONTACTS page. These are CRM contacts synced from GoHighLevel (different from Leads which are auto-captured from open houses).
+  contacts: `The agent is on the CONTACTS page. These are CRM contacts synced from your CRM (different from Leads which are auto-captured from open houses).
 - **Contact List**: Alphabetically grouped, searchable (debounced), with bulk selection
 - **Contact Fields**: Name, email, phone, address, tags (displayed as badges)
 - **Actions**: Call/Text/Email buttons, Add Follow-Up
 - **Bulk Operations**: Select multiple contacts for bulk email or SMS
-- **Add Contact**: Manual form (first/last name, email, phone, address) -- syncs to GHL CRM
+- **Add Contact**: Manual form (first/last name, email, phone, address) -- syncs to CRM
 - **Export**: PDF or XLSX (Name, Email, Phone, City, Tags)
-- **CRM Sync**: Bidirectional sync with GoHighLevel. Requires GHL OAuth connection.
-- **Contact Detail Page**: Full details, history, notes from GHL, attached files
-NOTE: Leads = auto-captured from open house check-ins (scored 0-100). Contacts = CRM-synced professional contacts from GHL.
+- **CRM Sync**: Bidirectional sync with CRM. Requires CRM OAuth connection.
+- **Contact Detail Page**: Full details, history, notes from CRM, attached files
+NOTE: Leads = auto-captured from open house check-ins (scored 0-100). Contacts = CRM-synced professional contacts from CRM.
 Help the agent manage contacts, sync with CRM, and draft communications.`,
 
   // Leads
@@ -399,7 +399,7 @@ Help the admin manage the platform, users, plans, and integrations.`,
   integrations: `The agent is on the INTEGRATIONS page.
 
 **Primary Integrations**:
-- **GHL (GoHighLevel)**: CRM, contacts, pipeline, email/SMS automation. Setup: Private Integration API Key + Location ID + Pipeline selection + New Lead Stage mapping.
+- **CRM**: Contacts, pipeline, email/SMS automation. Setup: Private Integration API Key + Location ID + Pipeline selection + New Lead Stage mapping.
 - **Trestle (HiCentral MLS)**: MLS listings, property data, comps, market watch, OH sync. Setup: Trestle API credentials (OAuth2 or Basic Auth).
 
 **Calendar Integrations** (Two-Way Sync):

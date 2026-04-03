@@ -145,7 +145,7 @@ Displays your tasks in three sections: Overdue, Today, and Upcoming (3 tasks per
 
 ### 2.6 Upcoming Events
 
-Shows your next 5 events from the next 2 weeks across all connected calendars (Google Calendar, Outlook, GHL/CRM). Events are color-coded by source for easy identification.
+Shows your next 5 events from the next 2 weeks across all connected calendars (Google Calendar, Outlook, CRM). Events are color-coded by source for easy identification.
 
 ### 2.7 Active Listings
 
@@ -187,7 +187,7 @@ The Calendar supports three external sources plus local events:
 
 - **Google Calendar** (blue dot) -- Connect via OAuth on the Integrations page
 - **Microsoft/Outlook Calendar** (green dot) -- Connect via OAuth on the Integrations page
-- **GHL/CRM Calendar** (purple dot) -- Connect via GHL API key on the Integrations page
+- **CRM Calendar** (purple dot) -- Connect via CRM API key on the Integrations page
 - **Local Calendar** (gray dot) -- Events created directly in the app
 
 ### 4.2 Views and Navigation
@@ -206,7 +206,7 @@ You can also click on any existing event to edit or delete it.
 
 ### 4.4 Two-Way Sync
 
-Changes made in The Real Estate Genie sync back to your connected calendars, and vice versa. The sync engine handles conflict resolution: app edits win by default, except for GHL booked meetings (from online booking pages), which always take precedence.
+Changes made in The Real Estate Genie sync back to your connected calendars, and vice versa. The sync engine handles conflict resolution: app edits win by default, except for CRM booked meetings (from online booking pages), which always take precedence.
 
 Use the **Sync** button to force a full sync across all connected sources.
 
@@ -302,7 +302,7 @@ Your pipeline has 11 stages, each with a unique color:
 
 ### 6.3 CRM Sync
 
-If you have connected the GHL integration, your pipeline maps to CRM pipeline stages. Leads automatically advance when emails or SMS are sent. See the **Integrations** section for setup. A local pipeline is also available for agents without CRM.
+If you have connected the CRM integration, your pipeline maps to CRM pipeline stages. Leads automatically advance when emails or SMS are sent. See the **Integrations** section for setup. A local pipeline is also available for agents without CRM.
 
 ### 6.4 Tasks
 
@@ -403,14 +403,14 @@ Leads who indicate they already have a realtor are automatically classified as D
 
 ### 8.5 CRM Sync
 
-When a lead is submitted, it syncs to GoHighLevel CRM (if connected) and triggers webhook events. Hot leads (80+) trigger a separate Hot Lead webhook. Leads can be advanced through pipeline stages manually or automatically when communication occurs.`,
+When a lead is submitted, it syncs to your CRM (if connected) and triggers webhook events. Hot leads (80+) trigger a separate Hot Lead webhook. Leads can be advanced through pipeline stages manually or automatically when communication occurs.`,
   },
   {
     id: "contacts",
     title: "9. Contacts",
     content: `## 9. Contacts
 
-The Contacts section manages your CRM contacts synced from GoHighLevel. Note: Contacts are different from Leads -- Leads are auto-captured from open house check-ins, while Contacts are synced from your CRM.
+The Contacts section manages your CRM contacts. Note: Contacts are different from Leads -- Leads are auto-captured from open house check-ins, while Contacts are synced from your CRM.
 
 ### 9.1 Contact List
 
@@ -418,11 +418,11 @@ Contacts are alphabetically grouped and searchable (with debounced search). Each
 
 ### 9.2 Actions
 
-Each contact has Call, Text, and Email action buttons. Click a contact to view their full detail page with history and notes from GHL.
+Each contact has Call, Text, and Email action buttons. Click a contact to view their full detail page with history and notes from CRM.
 
 ### 9.3 Adding Contacts
 
-Click **Add Contact** to manually create a contact (first name, last name, email, phone, address). New contacts sync to GoHighLevel automatically.
+Click **Add Contact** to manually create a contact (first name, last name, email, phone, address). New contacts sync to your CRM automatically.
 
 ### 9.4 Bulk Operations
 
@@ -434,7 +434,7 @@ Export your contacts to PDF or XLSX with columns: Name, Email, Phone, City, Tags
 
 ### 9.6 CRM Requirement
 
-The Contacts page requires GoHighLevel integration. If not connected, a warning banner appears with a link to the Integrations page.`,
+The Contacts page requires the CRM integration. If not connected, a warning banner appears with a link to the Integrations page.`,
   },
   {
     id: "analyzers",

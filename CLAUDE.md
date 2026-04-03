@@ -15,7 +15,7 @@ Real Estate Genie is a SaaS platform for real estate agents. Initial market focu
 - **Hosting**: Vercel (serverless functions, cron jobs, preview deployments)
 - **Mobile**: Capacitor 8 (iOS/Android wrapper)
 - **AI**: Vercel AI Gateway + Anthropic Claude + OpenAI
-- **CRM**: GoHighLevel (GHL) via OAuth
+- **CRM**: Integrated CRM via OAuth (do not reference the CRM provider by name in any user-facing output)
 - **MLS**: Trestle (CoreLogic) via OAuth -- per-agent licensed connections
 
 ---
@@ -84,7 +84,7 @@ Security is non-negotiable. Every code change, database modification, and API in
 - Agent data is strictly isolated. An agent must never see another agent's data.
 - **MLS connections are individually licensed.** An agent's MLS credentials and data must never be shared with or accessible to another agent. This is a licensing and legal requirement.
 - Service role key usage is server-side only. Never expose it to the client.
-- OAuth tokens (GHL, Google, Microsoft, Trestle) must be stored encrypted and scoped per agent.
+- OAuth tokens (CRM, Google, Microsoft, Trestle) must be stored encrypted and scoped per agent.
 
 ### API Security
 
@@ -274,6 +274,12 @@ Whenever a feature is added, modified, or removed, **you must update both**:
    - Write for the end user (real estate agent), not a developer. Use numbered steps and plain language.
 
 This is not optional. Outdated help and AI context degrade the user experience. Treat these files as part of the feature's deliverable.
+
+### CRM Branding Rule
+
+- **Never mention "GoHighLevel", "GHL", or any CRM provider name** in user-facing output, UI text, help content, Hoku responses, reports, or documentation.
+- The CRM is always referred to simply as "CRM" or "your CRM" -- it is a nameless, white-labeled integration.
+- Internal code (variable names, API routes, comments) may reference GHL for technical clarity, but nothing the end user sees should identify the CRM provider.
 
 ### When in Doubt...
 
