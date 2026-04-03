@@ -196,18 +196,47 @@ export default function MarketAnalyticsDashboard() {
         </div>
       )}
 
-      {/* Median Price by ZIP (bar chart) */}
+      {/* Median Price by ZIP -- SFR vs Condo/TH grouped bar chart */}
       {data.zipTable.length > 0 && (
-        <ReportSection title="Median Sale Price by ZIP Code">
-          <HorizontalBarChart
-            data={data.zipTable.slice(0, 15).map((z) => ({
-              label: z.zipCode,
-              value: z.medianPrice || 0,
-              displayValue: fmt$(z.medianPrice) || "-",
-            }))}
-            labelWidth={70}
-            barColor={REPORT_COLORS.brandBlue}
-          />
+        <ReportSection title="Median Sale Price by ZIP Code -- SFR vs Condo/Townhouse">
+          {/* Legend */}
+          <div style={{ display: "flex", gap: 16, marginBottom: 12, fontSize: 12 }}>
+            <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <span style={{ width: 12, height: 12, borderRadius: 2, background: "#dc2626", display: "inline-block" }} />
+              Single Family
+            </span>
+            <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <span style={{ width: 12, height: 12, borderRadius: 2, background: "#2563eb", display: "inline-block" }} />
+              Condo/Townhouse
+            </span>
+          </div>
+          {/* Grouped bars */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {data.zipTable.slice(0, 20).map((z) => {
+              const sfr = (z as any).sfrMedian || 0;
+              const condo = (z as any).condoMedian || 0;
+              const maxVal = Math.max(...data.zipTable.map((r) => Math.max((r as any).sfrMedian || 0, (r as any).condoMedian || 0, r.medianPrice || 0)), 1);
+              return (
+                <div key={z.zipCode} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ width: 55, fontSize: 12, color: REPORT_COLORS.textDark, textAlign: "right", flexShrink: 0, fontWeight: 600 }}>
+                    {z.zipCode}
+                  </div>
+                  <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 2 }}>
+                    {/* SFR bar (red) */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      <div style={{ height: 14, background: "#dc2626", borderRadius: 3, width: `${Math.max((sfr / maxVal) * 100, 0.5)}%`, minWidth: sfr > 0 ? 2 : 0 }} />
+                      {sfr > 0 && <span style={{ fontSize: 10, color: "#dc2626", fontWeight: 600, whiteSpace: "nowrap" }}>{fmt$(sfr)}</span>}
+                    </div>
+                    {/* Condo/TH bar (blue) */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      <div style={{ height: 14, background: "#2563eb", borderRadius: 3, width: `${Math.max((condo / maxVal) * 100, 0.5)}%`, minWidth: condo > 0 ? 2 : 0 }} />
+                      {condo > 0 && <span style={{ fontSize: 10, color: "#2563eb", fontWeight: 600, whiteSpace: "nowrap" }}>{fmt$(condo)}</span>}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </ReportSection>
       )}
 
