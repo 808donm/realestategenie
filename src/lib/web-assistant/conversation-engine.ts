@@ -1,60 +1,69 @@
 /**
  * Hoku Web Assistant -- Conversation Engine
  *
- * Manages the pre-qualification flow for website visitors:
- * 1. Greet the visitor
- * 2. Ask if they're working with an agent
- *    - Yes → end politely
- *    - No → continue qualification
- * 3. Would you like the agent to reach out?
- *    - No → offer to help with property search only
- *    - Yes → capture contact info
- * 4. Capture: name, email, phone
- * 5. Ask: timeline, pre-approval, neighborhoods, must-haves
- * 6. Offer to search properties
- * 7. Perform MLS search via IDX Broker, email results
- * 8. Create contact in CRM with all conversation data
+ * Pre-qualifies website visitors through a guided conversation flow.
+ * Supports both buyer and seller flows with property lookup for sellers.
+ *
+ * Buyer Flow:
+ *   Greeting → Buy/Sell → Has Agent? → Want Reach Out? → Name → Email → Phone
+ *   → Timeline → Pre-Approval → Neighborhoods → Must-Haves → Property Search
+ *
+ * Seller Flow:
+ *   Greeting → Buy/Sell → Has Agent? → Want Reach Out? → Property Address
+ *   → (lookup property in RentCast/Realie) → Name → Email → Phone → Done
+ *
+ * All flows create a lead in the system with heat score and CRM contact.
  */
 
 // ── Conversation State ──
 
 export type ConversationStep =
   | "greeting"
+  | "buy_or_sell"
   | "has_agent"
-  | "has_agent_yes" // end state
+  | "has_agent_yes"
   | "want_reach_out"
-  | "get_name"
-  | "get_email"
-  | "get_phone"
-  | "get_timeline"
-  | "get_preapproval"
-  | "get_neighborhoods"
-  | "get_musthaves"
-  | "offer_search"
-  | "searching"
-  | "results_sent"
-  | "general_chat"; // free-form after qualification
+  // Buyer flow
+  | "buyer_get_name"
+  | "buyer_get_email"
+  | "buyer_get_phone"
+  | "buyer_get_timeline"
+  | "buyer_get_preapproval"
+  | "buyer_get_neighborhoods"
+  | "buyer_get_musthaves"
+  | "buyer_offer_search"
+  | "buyer_searching"
+  | "buyer_results_sent"
+  // Seller flow
+  | "seller_get_address"
+  | "seller_looking_up"
+  | "seller_property_found"
+  | "seller_get_name"
+  | "seller_get_email"
+  | "seller_get_phone"
+  | "seller_done"
+  // General
+  | "general_chat";
+
+export type VisitorIntent = "buyer" | "seller" | "unknown";
 
 export interface VisitorProfile {
+  intent?: VisitorIntent;
   hasAgent?: boolean;
   wantReachOut?: boolean;
+  // Contact info
   name?: string;
   email?: string;
   phone?: string;
+  // Buyer fields
   timeline?: string;
   preApproved?: string;
   neighborhoods?: string;
   mustHaves?: string;
   wantsPropertySearch?: boolean;
-  searchCriteria?: {
-    city?: string;
-    postalCode?: string;
-    minPrice?: number;
-    maxPrice?: number;
-    minBeds?: number;
-    minBaths?: number;
-    propertyType?: string;
-  };
+  // Seller fields
+  propertyAddress?: string;
+  propertyData?: any; // Enriched property data from RentCast/Realie
 }
 
 export interface ConversationMessage {
@@ -75,197 +84,334 @@ export interface ConversationState {
   propertiesSent?: boolean;
 }
 
-// ── Step Handlers ──
+// ── Agent Customization ──
+
+export interface WebAssistantConfig {
+  greeting?: string; // Custom greeting (default: "Aloha! I'm Hoku, {agentName}'s assistant.")
+  agentName: string;
+  agentFirstName?: string;
+  locale?: string; // "hawaii" for Aloha greeting, "standard" for Hi
+}
+
+// ── Step Response ──
 
 export interface StepResponse {
   reply: string;
   nextStep: ConversationStep;
   actions?: Array<{
-    type: "create_lead" | "search_mls" | "send_properties" | "end_conversation";
+    type: "create_lead" | "search_mls" | "lookup_property" | "send_properties";
     data?: any;
   }>;
 }
 
 /**
- * Process a visitor's message and return Hoku's response + next step.
+ * Process a visitor's message and return Hoku's response.
  */
 export function processMessage(
   state: ConversationState,
   visitorMessage: string,
+  config?: WebAssistantConfig,
 ): StepResponse {
   const msg = visitorMessage.trim().toLowerCase();
-  const agentName = state.agentName || "the agent";
+  const agentName = config?.agentName || state.agentName || "the agent";
+  const firstName = config?.agentFirstName || agentName.split(" ")[0];
+  const isHawaii = config?.locale === "hawaii";
 
   switch (state.step) {
-    // ── GREETING ──
-    case "greeting":
+    // ═══════════════════════════════════════════════════════════
+    // GREETING
+    // ═══════════════════════════════════════════════════════════
+    case "greeting": {
+      const greeting = config?.greeting || (isHawaii
+        ? `Aloha! I'm Hoku, ${firstName}'s assistant. Welcome to the website!`
+        : `Hi there! I'm Hoku, ${firstName}'s AI assistant. Welcome!`);
       return {
-        reply: `Hi there! Welcome! I'm Hoku, ${agentName}'s AI assistant. I'd love to help you with your real estate needs.\n\nAre you currently working with a real estate agent?`,
-        nextStep: "has_agent",
+        reply: `${greeting}\n\nAre you interested in buying or selling a property today?`,
+        nextStep: "buy_or_sell",
+      };
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // BUY OR SELL?
+    // ═══════════════════════════════════════════════════════════
+    case "buy_or_sell":
+      if (msg.includes("buy") || msg.includes("looking") || msg.includes("search") || msg.includes("find") || msg.includes("home") || msg.includes("house")) {
+        state.profile.intent = "buyer";
+        return {
+          reply: `Great! I'd love to help you find your perfect property.\n\nAre you currently working with a real estate agent?`,
+          nextStep: "has_agent",
+        };
+      }
+      if (msg.includes("sell") || msg.includes("list") || msg.includes("value") || msg.includes("worth")) {
+        state.profile.intent = "seller";
+        return {
+          reply: `I'd be happy to help! ${firstName} specializes in helping sellers get the best value for their property.\n\nAre you currently working with a real estate agent?`,
+          nextStep: "has_agent",
+        };
+      }
+      if (msg.includes("both") || msg.includes("buy and sell")) {
+        state.profile.intent = "buyer"; // Start with buyer flow, seller can follow
+        return {
+          reply: `Exciting! Let's start with finding your new home, and we can also discuss selling your current property.\n\nAre you currently working with a real estate agent?`,
+          nextStep: "has_agent",
+        };
+      }
+      return {
+        reply: `No problem! Are you looking to buy a property, or are you thinking about selling? I can help with either!`,
+        nextStep: "buy_or_sell",
       };
 
-    // ── HAS AGENT? ──
+    // ═══════════════════════════════════════════════════════════
+    // HAS AGENT?
+    // ═══════════════════════════════════════════════════════════
     case "has_agent":
       if (isYes(msg)) {
+        state.profile.hasAgent = true;
         return {
-          reply: `That's great! I hope you're having a wonderful experience with your agent. If you ever need anything in the future, don't hesitate to reach out. Have a wonderful day!`,
+          reply: `That's wonderful! I hope you're having a great experience with your agent. If you ever need anything in the future, ${firstName} would love to help. Have a wonderful day!`,
           nextStep: "has_agent_yes",
         };
       }
-      if (isNo(msg) || msg.includes("not sure") || msg.includes("looking")) {
+      if (isNo(msg) || msg.includes("not sure") || msg.includes("looking") || msg.includes("not yet")) {
+        state.profile.hasAgent = false;
         return {
-          reply: `No problem! Would you like ${agentName} to reach out to you? ${agentName} would love to help you with your real estate journey.`,
+          reply: `No problem at all! Would you like ${firstName} to reach out to you? ${firstName} would love to help you with your real estate ${state.profile.intent === "seller" ? "sale" : "search"}.`,
           nextStep: "want_reach_out",
         };
       }
       return {
-        reply: `I just want to make sure I can help you the right way. Are you currently working with a real estate agent? (yes or no)`,
+        reply: `Just want to make sure I direct you properly. Are you currently working with a real estate agent? (yes or no)`,
         nextStep: "has_agent",
       };
 
-    // ── WANT REACH OUT? ──
+    // ═══════════════════════════════════════════════════════════
+    // WANT REACH OUT?
+    // ═══════════════════════════════════════════════════════════
     case "want_reach_out":
       if (isYes(msg)) {
+        state.profile.wantReachOut = true;
+        if (state.profile.intent === "seller") {
+          return {
+            reply: `Wonderful! First, what is the address of the property you're looking to sell?`,
+            nextStep: "seller_get_address",
+          };
+        }
         return {
-          reply: `Wonderful! I'd love to connect you with ${agentName}. To get started, may I have your name?`,
-          nextStep: "get_name",
+          reply: `Wonderful! I'd love to connect you with ${firstName}. May I have your name?`,
+          nextStep: "buyer_get_name",
         };
       }
       if (isNo(msg)) {
+        if (state.profile.intent === "buyer") {
+          return {
+            reply: `No worries! Would you like me to search for properties for you? I can find listings that match your criteria.`,
+            nextStep: "buyer_offer_search",
+          };
+        }
         return {
-          reply: `No worries at all! I'm still here to help. Would you like me to search for properties for you? I can find listings that match your criteria.`,
-          nextStep: "offer_search",
+          reply: `No problem! If you change your mind, feel free to come back. ${isHawaii ? "Mahalo" : "Thank you"} for visiting!`,
+          nextStep: "general_chat",
         };
       }
       return {
-        reply: `Would you like ${agentName} to reach out to you? (yes or no)`,
+        reply: `Would you like ${firstName} to reach out to you? (yes or no)`,
         nextStep: "want_reach_out",
       };
 
-    // ── CAPTURE NAME ──
-    case "get_name":
+    // ═══════════════════════════════════════════════════════════
+    // SELLER FLOW
+    // ═══════════════════════════════════════════════════════════
+    case "seller_get_address":
+      if (msg.length < 5) {
+        return { reply: "Could you share the full address of the property? For example: 123 Main Street, Honolulu, HI 96822", nextStep: "seller_get_address" };
+      }
+      state.profile.propertyAddress = visitorMessage.trim();
+      return {
+        reply: `Thank you! Let me look up some information on ${visitorMessage.trim()}...`,
+        nextStep: "seller_looking_up",
+        actions: [{ type: "lookup_property", data: { address: visitorMessage.trim() } }],
+      };
+
+    case "seller_looking_up":
+      // This state is set after property lookup completes
+      return {
+        reply: `I'm still looking that up. Just a moment...`,
+        nextStep: "seller_looking_up",
+      };
+
+    case "seller_property_found": {
+      const pd = state.profile.propertyData;
+      let propertyInfo = "";
+      if (pd) {
+        const parts = [];
+        if (pd.beds) parts.push(`${pd.beds} bed`);
+        if (pd.baths) parts.push(`${pd.baths} bath`);
+        if (pd.sqft) parts.push(`${pd.sqft.toLocaleString()} sqft`);
+        if (pd.yearBuilt) parts.push(`built ${pd.yearBuilt}`);
+        if (pd.avmValue) parts.push(`estimated value: $${pd.avmValue.toLocaleString()}`);
+        propertyInfo = parts.length > 0 ? `\n\nHere's what I found: ${parts.join(", ")}.` : "";
+      }
+      return {
+        reply: `I found the property at ${state.profile.propertyAddress}.${propertyInfo}\n\n${firstName} can provide a detailed market analysis and help you get the best price. May I have your name so ${firstName} can reach out?`,
+        nextStep: "seller_get_name",
+      };
+    }
+
+    case "seller_get_name":
       if (msg.length < 2) {
-        return { reply: "Could you please share your name so I can let the agent know who to contact?", nextStep: "get_name" };
+        return { reply: "Could you share your name?", nextStep: "seller_get_name" };
       }
       state.profile.name = toTitleCase(visitorMessage.trim());
       return {
         reply: `Nice to meet you, ${state.profile.name}! What's the best email address to reach you at?`,
-        nextStep: "get_email",
+        nextStep: "seller_get_email",
       };
 
-    // ── CAPTURE EMAIL ──
-    case "get_email": {
+    case "seller_get_email": {
       const emailMatch = visitorMessage.match(/[\w.+-]+@[\w-]+\.[\w.]+/);
       if (!emailMatch) {
-        return { reply: "I didn't catch a valid email address. Could you type it again?", nextStep: "get_email" };
+        return { reply: "I didn't catch a valid email address. Could you type it again?", nextStep: "seller_get_email" };
       }
       state.profile.email = emailMatch[0].toLowerCase();
       return {
         reply: `Got it! And what's a good phone number to reach you at?`,
-        nextStep: "get_phone",
+        nextStep: "seller_get_phone",
       };
     }
 
-    // ── CAPTURE PHONE ──
-    case "get_phone": {
+    case "seller_get_phone": {
       const digits = visitorMessage.replace(/\D/g, "");
       if (digits.length < 7) {
-        return { reply: "Could you share a phone number? It helps the agent connect with you quickly.", nextStep: "get_phone" };
+        return { reply: "Could you share a phone number?", nextStep: "seller_get_phone" };
       }
       state.profile.phone = formatPhone(digits);
       return {
-        reply: `Thank you, ${state.profile.name}! Just a few quick questions so ${agentName} can be best prepared.\n\nWhat is your timeframe for buying or selling? (e.g., 0-3 months, 3-6 months, 6+ months, just browsing)`,
-        nextStep: "get_timeline",
+        reply: `Thank you, ${state.profile.name}! I've passed all your information along to ${firstName}, who will be reaching out to you soon to discuss ${state.profile.propertyAddress || "your property"}.\n\n${isHawaii ? "Mahalo" : "Thank you"} for visiting! Is there anything else I can help with?`,
+        nextStep: "seller_done",
+        actions: [{ type: "create_lead" }],
       };
     }
 
-    // ── TIMELINE ──
-    case "get_timeline":
+    case "seller_done":
+      return {
+        reply: `${firstName} will be in touch soon, ${state.profile.name || ""}! Is there anything else I can help with?`,
+        nextStep: "general_chat",
+      };
+
+    // ═══════════════════════════════════════════════════════════
+    // BUYER FLOW
+    // ═══════════════════════════════════════════════════════════
+    case "buyer_get_name":
+      if (msg.length < 2) {
+        return { reply: "Could you share your name?", nextStep: "buyer_get_name" };
+      }
+      state.profile.name = toTitleCase(visitorMessage.trim());
+      return {
+        reply: `Nice to meet you, ${state.profile.name}! What's the best email address to reach you at?`,
+        nextStep: "buyer_get_email",
+      };
+
+    case "buyer_get_email": {
+      const emailMatch = visitorMessage.match(/[\w.+-]+@[\w-]+\.[\w.]+/);
+      if (!emailMatch) {
+        return { reply: "I didn't catch a valid email address. Could you type it again?", nextStep: "buyer_get_email" };
+      }
+      state.profile.email = emailMatch[0].toLowerCase();
+      return {
+        reply: `Got it! And what's a good phone number to reach you at?`,
+        nextStep: "buyer_get_phone",
+      };
+    }
+
+    case "buyer_get_phone": {
+      const digits = visitorMessage.replace(/\D/g, "");
+      if (digits.length < 7) {
+        return { reply: "Could you share a phone number?", nextStep: "buyer_get_phone" };
+      }
+      state.profile.phone = formatPhone(digits);
+      return {
+        reply: `Thank you, ${state.profile.name}! Just a few quick questions so ${firstName} can be best prepared.\n\nWhat is your timeframe for buying? (e.g., 0-3 months, 3-6 months, 6+ months, just browsing)`,
+        nextStep: "buyer_get_timeline",
+      };
+    }
+
+    case "buyer_get_timeline":
       state.profile.timeline = visitorMessage.trim();
       return {
         reply: `Are you pre-approved for a mortgage? (yes, no, paying cash, or not sure)`,
-        nextStep: "get_preapproval",
+        nextStep: "buyer_get_preapproval",
       };
 
-    // ── PRE-APPROVAL ──
-    case "get_preapproval":
+    case "buyer_get_preapproval":
       state.profile.preApproved = visitorMessage.trim();
       return {
         reply: `Which neighborhoods or areas are you interested in?`,
-        nextStep: "get_neighborhoods",
+        nextStep: "buyer_get_neighborhoods",
       };
 
-    // ── NEIGHBORHOODS ──
-    case "get_neighborhoods":
+    case "buyer_get_neighborhoods":
       state.profile.neighborhoods = visitorMessage.trim();
       return {
-        reply: `Do you have any must-have features? (e.g., number of bedrooms, parking, pool, updated kitchen, etc.)`,
-        nextStep: "get_musthaves",
+        reply: `Do you have any must-have features? (e.g., number of bedrooms, parking, pool, updated kitchen, ocean view, etc.)`,
+        nextStep: "buyer_get_musthaves",
       };
 
-    // ── MUST-HAVES ──
-    case "get_musthaves":
+    case "buyer_get_musthaves":
       state.profile.mustHaves = visitorMessage.trim();
       return {
-        reply: `Thank you for all that great information, ${state.profile.name}! I've passed everything along to ${agentName} who will be reaching out to you soon.\n\nWould you like me to find some properties that match your criteria right now?`,
-        nextStep: "offer_search",
+        reply: `Thank you for all that great information, ${state.profile.name}! I've passed everything along to ${firstName} who will be reaching out to you soon.\n\nWould you like me to find some properties that match your criteria right now?`,
+        nextStep: "buyer_offer_search",
         actions: [{ type: "create_lead" }],
       };
 
-    // ── OFFER SEARCH ──
-    case "offer_search":
+    case "buyer_offer_search":
       if (isYes(msg)) {
         state.profile.wantsPropertySearch = true;
         return {
           reply: `Great! Let me search for properties for you. This will just take a moment...`,
-          nextStep: "searching",
+          nextStep: "buyer_searching",
           actions: [{ type: "search_mls" }],
         };
       }
       if (isNo(msg)) {
         return {
-          reply: `No problem! ${state.profile.name ? `${agentName} will be in touch soon, ${state.profile.name}` : "Feel free to come back anytime"}. Is there anything else I can help you with?`,
+          reply: `No problem! ${state.profile.name ? `${firstName} will be in touch soon, ${state.profile.name}` : "Feel free to come back anytime"}. ${isHawaii ? "Mahalo" : "Thank you"} for visiting! Is there anything else I can help with?`,
           nextStep: "general_chat",
         };
       }
       return {
         reply: `Would you like me to search for properties? I can find listings that match your preferences. (yes or no)`,
-        nextStep: "offer_search",
+        nextStep: "buyer_offer_search",
       };
 
-    // ── SEARCHING ──
-    case "searching":
-      return {
-        reply: `I'm still searching for properties. Give me just a moment...`,
-        nextStep: "searching",
-      };
+    case "buyer_searching":
+      return { reply: `I'm still searching. Just a moment...`, nextStep: "buyer_searching" };
 
-    // ── RESULTS SENT ──
-    case "results_sent":
+    case "buyer_results_sent":
       return {
-        reply: `Is there anything else I can help you with? I'm happy to search for more properties or answer any questions about the area.`,
+        reply: `Is there anything else I can help you with? I'm happy to search for more properties or answer any questions.`,
         nextStep: "general_chat",
       };
 
-    // ── GENERAL CHAT ──
+    // ═══════════════════════════════════════════════════════════
+    // GENERAL / END STATES
+    // ═══════════════════════════════════════════════════════════
     case "general_chat":
-      // Free-form -- could integrate with AI for general real estate questions
       return {
-        reply: `That's a great question! I'd recommend discussing that with ${agentName} who can give you personalized advice. Is there anything else I can help with?`,
+        reply: `That's a great question! I'd recommend discussing that with ${firstName} who can give you personalized advice. Is there anything else I can help with?`,
         nextStep: "general_chat",
       };
 
-    // ── END STATE ──
     case "has_agent_yes":
       return {
-        reply: `If you ever need anything in the future, feel free to come back. Have a great day!`,
+        reply: `If you ever need anything in the future, feel free to come back. ${isHawaii ? "A hui hou!" : "Have a great day!"}`,
         nextStep: "has_agent_yes",
       };
 
     default:
       return {
-        reply: `I'm here to help! Would you like to search for properties or connect with ${agentName}?`,
-        nextStep: "general_chat",
+        reply: `I'm here to help! Are you looking to buy or sell a property?`,
+        nextStep: "buy_or_sell",
       };
   }
 }
@@ -274,20 +420,19 @@ export function processMessage(
  * Create the initial conversation state.
  */
 export function createConversation(agentId: string, agentName: string): ConversationState {
-  const sessionId = generateSessionId();
   return {
     step: "greeting",
     profile: {},
     messages: [],
     agentId,
     agentName,
-    sessionId,
+    sessionId: `hoku-web-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
     createdAt: new Date().toISOString(),
   };
 }
 
 /**
- * Format the visitor profile into a CRM note.
+ * Format the visitor profile as a CRM note.
  */
 export function formatProfileAsNote(state: ConversationState): string {
   const p = state.profile;
@@ -295,45 +440,86 @@ export function formatProfileAsNote(state: ConversationState): string {
     `--- Website Visitor (Hoku Web Assistant) ---`,
     `Date: ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", hour: "numeric", minute: "2-digit" })}`,
     `Source: Website Chat`,
+    `Intent: ${p.intent === "seller" ? "Seller" : p.intent === "buyer" ? "Buyer" : "Unknown"}`,
     `Session ID: ${state.sessionId}`,
     "",
     "--- Qualification ---",
     `Working with agent: ${p.hasAgent ? "Yes" : "No"}`,
     `Wants agent to reach out: ${p.wantReachOut ? "Yes" : "No"}`,
-    p.timeline ? `Timeline: ${p.timeline}` : null,
-    p.preApproved ? `Pre-approved: ${p.preApproved}` : null,
-    p.neighborhoods ? `Neighborhoods: ${p.neighborhoods}` : null,
-    p.mustHaves ? `Must-haves: ${p.mustHaves}` : null,
-    p.wantsPropertySearch ? `Requested property search: Yes` : null,
-    "",
-    "--- Conversation ---",
-    ...state.messages.map((m) => `${m.role === "assistant" ? "Hoku" : "Visitor"}: ${m.content}`),
   ];
-  return lines.filter(Boolean).join("\n");
+
+  if (p.intent === "seller") {
+    if (p.propertyAddress) lines.push(`Property Address: ${p.propertyAddress}`);
+    if (p.propertyData) {
+      const pd = p.propertyData;
+      if (pd.avmValue) lines.push(`Estimated Value (AVM): $${pd.avmValue.toLocaleString()}`);
+      if (pd.beds) lines.push(`Beds: ${pd.beds}`);
+      if (pd.baths) lines.push(`Baths: ${pd.baths}`);
+      if (pd.sqft) lines.push(`Sqft: ${pd.sqft.toLocaleString()}`);
+      if (pd.yearBuilt) lines.push(`Year Built: ${pd.yearBuilt}`);
+      if (pd.lastSalePrice) lines.push(`Last Sale: $${pd.lastSalePrice.toLocaleString()}`);
+    }
+  } else {
+    if (p.timeline) lines.push(`Timeline: ${p.timeline}`);
+    if (p.preApproved) lines.push(`Pre-approved: ${p.preApproved}`);
+    if (p.neighborhoods) lines.push(`Neighborhoods: ${p.neighborhoods}`);
+    if (p.mustHaves) lines.push(`Must-haves: ${p.mustHaves}`);
+    if (p.wantsPropertySearch) lines.push(`Requested property search: Yes`);
+  }
+
+  lines.push("", "--- Conversation ---");
+  state.messages.forEach((m) => {
+    lines.push(`${m.role === "assistant" ? "Hoku" : "Visitor"}: ${m.content}`);
+  });
+
+  return lines.join("\n");
 }
 
 /**
- * Extract search criteria from visitor profile.
+ * Extract MLS search criteria from buyer profile.
  */
 export function extractSearchCriteria(profile: VisitorProfile): Record<string, any> {
   const criteria: Record<string, any> = {};
-
-  // Parse neighborhoods for city/zip
   if (profile.neighborhoods) {
     const zipMatch = profile.neighborhoods.match(/\d{5}/);
     if (zipMatch) criteria.postalCode = zipMatch[0];
     else criteria.q = profile.neighborhoods;
   }
-
-  // Parse must-haves for beds/baths
   if (profile.mustHaves) {
     const bedMatch = profile.mustHaves.match(/(\d+)\s*(?:bed|br|bedroom)/i);
     if (bedMatch) criteria.minBeds = parseInt(bedMatch[1]);
     const bathMatch = profile.mustHaves.match(/(\d+)\s*(?:bath|ba|bathroom)/i);
     if (bathMatch) criteria.minBaths = parseInt(bathMatch[1]);
   }
-
   return criteria;
+}
+
+/**
+ * Calculate heat score for a web chat lead.
+ */
+export function calculateWebChatHeatScore(p: VisitorProfile): number {
+  let score = 0;
+  if (p.email) score += 10;
+  if (p.phone) score += 10;
+  if (p.name) score += 5;
+  if (!p.hasAgent) score += 20;
+  if (p.wantReachOut) score += 15;
+  if (p.intent === "seller") score += 10; // Sellers are high-value leads
+  if (p.propertyAddress) score += 5;
+  if (p.timeline) {
+    const tl = p.timeline.toLowerCase();
+    if (tl.includes("0-3") || tl.includes("immediate") || tl.includes("asap")) score += 20;
+    else if (tl.includes("3-6")) score += 15;
+    else if (tl.includes("6")) score += 10;
+    else score += 5;
+  }
+  if (p.preApproved) {
+    const pa = p.preApproved.toLowerCase();
+    if (pa.includes("yes") || pa.includes("pre-approved") || pa.includes("cash")) score += 15;
+    else if (pa.includes("lender")) score += 10;
+    else score += 5;
+  }
+  return Math.min(score, 100);
 }
 
 // ── Helpers ──
@@ -354,8 +540,4 @@ function formatPhone(digits: string): string {
   if (digits.length === 10) return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
   if (digits.length === 11 && digits[0] === "1") return `(${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
   return digits;
-}
-
-function generateSessionId(): string {
-  return `hoku-web-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }

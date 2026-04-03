@@ -5,7 +5,9 @@ import {
   processMessage,
   formatProfileAsNote,
   extractSearchCriteria,
+  calculateWebChatHeatScore,
   type ConversationState,
+  type WebAssistantConfig,
 } from "@/lib/web-assistant/conversation-engine";
 import { IdxBrokerClient, formatPropertiesForHtmlEmail } from "@/lib/integrations/idx-broker-client";
 
@@ -61,6 +63,13 @@ export async function POST(request: NextRequest) {
 
     const agentName = agent.display_name || "the agent";
 
+    // Build config for conversation engine
+    const assistantConfig: WebAssistantConfig = {
+      agentName,
+      agentFirstName: agentName.split(" ")[0],
+      locale: (agent as any).locations_served?.some?.((l: string) => l?.includes("HI") || l?.includes("Hawaii")) ? "hawaii" : "standard",
+    };
+
     // Get or create session
     let state: ConversationState;
     if (sessionId && sessions.has(sessionId)) {
@@ -73,7 +82,7 @@ export async function POST(request: NextRequest) {
 
     // If this is the first message (greeting), process it to get the greeting
     if (state.step === "greeting" && !message) {
-      const response = processMessage(state, "");
+      const response = processMessage(state, "", assistantConfig);
       state.step = response.nextStep;
       state.messages.push({
         role: "assistant",
@@ -100,7 +109,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Process the message
-    const response = processMessage(state, message);
+    const response = processMessage(state, message, assistantConfig);
     state.step = response.nextStep;
 
     // Record assistant reply
@@ -116,9 +125,30 @@ export async function POST(request: NextRequest) {
     if (response.actions) {
       for (const action of response.actions) {
         if (action.type === "create_lead" && !state.leadCreated) {
-          // Create lead in the system
           await createLeadFromChat(admin, state, agent);
           state.leadCreated = true;
+        }
+
+        if (action.type === "lookup_property" && action.data?.address) {
+          // Look up seller's property via RentCast/Realie
+          const propertyData = await lookupPropertyForSeller(action.data.address);
+          state.profile.propertyData = propertyData;
+          state.step = "seller_property_found";
+
+          // Update reply with property info
+          const pd = propertyData;
+          const parts: string[] = [];
+          if (pd?.beds) parts.push(`${pd.beds} bed`);
+          if (pd?.baths) parts.push(`${pd.baths} bath`);
+          if (pd?.sqft) parts.push(`${pd.sqft.toLocaleString()} sqft`);
+          if (pd?.yearBuilt) parts.push(`built ${pd.yearBuilt}`);
+          if (pd?.avmValue) parts.push(`estimated value: $${pd.avmValue.toLocaleString()}`);
+
+          const propertyInfo = parts.length > 0 ? `\n\nHere's what I found: ${parts.join(", ")}.` : "";
+          response.reply = `I found the property at ${action.data.address}.${propertyInfo}\n\n${assistantConfig.agentFirstName} can provide a detailed market analysis and help you get the best price. May I have your name so ${assistantConfig.agentFirstName} can reach out?`;
+
+          // Update the last message
+          state.messages[state.messages.length - 1].content = response.reply;
         }
 
         if (action.type === "search_mls") {
@@ -136,7 +166,7 @@ export async function POST(request: NextRequest) {
             // Update the reply with results
             const count = searchResult.properties.length;
             response.reply = `I found ${count} properties that might interest you! ${state.profile.email ? `I've sent them to ${state.profile.email}.` : ""}\n\nWould you like me to refine the search or is there anything else I can help with?`;
-            state.step = "results_sent";
+            state.step = "buyer_results_sent";
 
             // Update the last message
             state.messages[state.messages.length - 1].content = response.reply;
@@ -303,27 +333,68 @@ async function sendPropertyEmail(admin: any, state: ConversationState, agent: an
   }
 }
 
-// ── Helper: Calculate heat score for web chat lead ──
+// ── Helper: Look up property for seller via RentCast/Realie ──
 
-function calculateWebChatHeatScore(p: any): number {
-  let score = 0;
-  if (p.email) score += 10;
-  if (p.phone) score += 10;
-  if (p.name) score += 5;
-  if (!p.hasAgent) score += 20;
-  if (p.wantReachOut) score += 15;
-  if (p.timeline) {
-    const tl = p.timeline.toLowerCase();
-    if (tl.includes("0-3") || tl.includes("immediate") || tl.includes("asap")) score += 20;
-    else if (tl.includes("3-6")) score += 15;
-    else if (tl.includes("6")) score += 10;
-    else score += 5;
+async function lookupPropertyForSeller(address: string): Promise<any> {
+  try {
+    // Try RentCast first for property data + AVM
+    const { getConfiguredRentcastClient } = await import("@/lib/integrations/property-data-service");
+    const rcClient = await getConfiguredRentcastClient();
+
+    if (rcClient) {
+      try {
+        const results = await rcClient.searchProperties({ address, limit: 1 });
+        if (results.length > 0) {
+          const rc = results[0];
+          // Also get AVM
+          const { getPropertyAvm } = await import("@/lib/integrations/avm-service");
+          const avm = await getPropertyAvm({
+            address,
+            bedrooms: rc.bedrooms,
+            bathrooms: rc.bathrooms,
+            squareFootage: rc.squareFootage,
+            propertyType: rc.propertyType,
+          });
+
+          return {
+            address: rc.formattedAddress || address,
+            beds: rc.bedrooms,
+            baths: rc.bathrooms,
+            sqft: rc.squareFootage,
+            yearBuilt: rc.yearBuilt,
+            propertyType: rc.propertyType,
+            lotSize: rc.lotSize,
+            lastSalePrice: rc.lastSalePrice,
+            lastSaleDate: rc.lastSaleDate,
+            avmValue: avm?.value || null,
+            avmLow: avm?.low || null,
+            avmHigh: avm?.high || null,
+          };
+        }
+      } catch (err) {
+        console.warn("[WebAssistant] RentCast property lookup failed:", err);
+      }
+    }
+
+    // Fallback: just get AVM
+    const { getPropertyAvm } = await import("@/lib/integrations/avm-service");
+    const avm = await getPropertyAvm({ address });
+    if (avm) {
+      return {
+        address: avm.subjectProperty?.formattedAddress || address,
+        beds: avm.subjectProperty?.bedrooms,
+        baths: avm.subjectProperty?.bathrooms,
+        sqft: avm.subjectProperty?.squareFootage,
+        yearBuilt: avm.subjectProperty?.yearBuilt,
+        avmValue: avm.value,
+        avmLow: avm.low,
+        avmHigh: avm.high,
+      };
+    }
+
+    return null;
+  } catch (err) {
+    console.error("[WebAssistant] Property lookup failed:", err);
+    return null;
   }
-  if (p.preApproved) {
-    const pa = p.preApproved.toLowerCase();
-    if (pa.includes("yes") || pa.includes("pre-approved") || pa.includes("cash")) score += 15;
-    else if (pa.includes("lender")) score += 10;
-    else score += 5;
-  }
-  return Math.min(score, 100);
 }
