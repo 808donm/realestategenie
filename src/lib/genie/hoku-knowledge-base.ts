@@ -369,14 +369,24 @@ Help the agent choose the right calculator and offer to send results to a contac
 All reports support PDF export, Excel export, and print-friendly format. Charts powered by Recharts.
 Help the agent find the right report for their needs.`,
 
-  // Broker Dashboard
-  broker: `The agent is on the BROKER DASHBOARD. Advanced analytics for brokers managing agents.
-**Access**: Requires Brokerage Growth plan
-**Overview Cards**: Active agents count, open houses total (with published count), hot leads (80+), total leads with avg per OH
-**Open House Performance**: Total OHs, published count, total leads generated, hot/warm lead breakdown with averages
-**Agent Performance Table**: Per-agent metrics (open houses, total leads, hot leads) with team totals
-Data sourced from all agents under broker via get_broker_agents RPC.
-Help the broker understand team performance and identify coaching opportunities.`,
+  // Agency Dashboard (Broker)
+  broker: `The agent is on the AGENCY DASHBOARD. Comprehensive brokerage analytics with 6 tabs.
+**Access**: Requires Brokerage Growth plan and broker/admin role
+
+**Tab 1 - Overview**: Value cards (total agents, active leads, hot leads, open houses, closings MTD/YTD, pipeline value), monthly trend table (last 6 months), alerts (retention risk agents, leads not contacted 7+ days)
+
+**Tab 2 - Agent Performance**: Sortable table per agent with: leads captured, hot leads, open houses, pipeline deals, closings, volume, speed-to-lead, conversion rate, MLS searches, reports generated, retention risk indicator. Sort by any column.
+
+**Tab 3 - Lead Performance**: Lead funnel visualization (stage -> count -> conversion %), lead source breakdown (horizontal bar chart), speed-to-lead leaderboard (agents ranked by response time), lead aging warnings (3+, 7+, 14+ days not contacted)
+
+**Tab 4 - Open House Performance**: Per-agent events, check-ins, avg check-ins per OH, hot leads, conversion rate
+
+**Tab 5 - Financial**: Commission by agent (MTD), volume by agent, revenue trend table (6 months), pipeline value, totals
+
+**Tab 6 - Activity & Risk**: Per-agent activity log (MLS searches, reports generated, last active), retention risk (40%+ activity drop flagged)
+
+Data tracks: MLS searches, report generation, CMA generation, lead captures. All scoped to account via account_members.
+Help the broker manage their team, identify coaching opportunities, and track business performance.`,
 
   // Team Management
   team: `The agent is on the TEAM MANAGEMENT page (Account Admins only).

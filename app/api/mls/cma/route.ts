@@ -155,6 +155,9 @@ export async function POST(request: NextRequest) {
       savedId = saved?.id || null;
     }
 
+    // Log activity (fire-and-forget)
+    void (async () => { try { await supabase.from("agent_activity_log").insert({ agent_id: user.id, action: "cma_generated", details: { address: report.subjectAddress, comps: report.comps?.length || 0 } }); } catch {} })();
+
     return NextResponse.json({
       success: true,
       report,

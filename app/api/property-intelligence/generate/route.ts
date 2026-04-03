@@ -124,6 +124,9 @@ export async function POST(request: NextRequest) {
     // Convert Blob to ArrayBuffer for the response
     const arrayBuffer = await pdfBlob.arrayBuffer();
 
+    // Log activity (fire-and-forget)
+    void (async () => { try { await supabase.from("agent_activity_log").insert({ agent_id: user.id, action: "report_generated", details: { address: property.address, type: "property_intelligence" } }); } catch {} })();
+
     // Sanitize filename
     const safeAddr = property.address
       .replace(/[^a-zA-Z0-9 ]/g, "")

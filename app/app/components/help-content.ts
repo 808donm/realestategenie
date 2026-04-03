@@ -165,14 +165,39 @@ Shows the connection status of your calendar integrations (Google Calendar, Outl
   },
   {
     id: "broker-dashboard",
-    title: "3. Broker Dashboard",
-    content: `## 3. Broker Dashboard
+    title: "3. Agency Dashboard",
+    content: `## 3. Agency Dashboard
 
-The Broker Dashboard provides advanced analytics and management tools designed for real estate brokers who oversee multiple agents or offices.
+The Agency Dashboard provides comprehensive analytics for brokers and admins who manage multiple agents. It gives visibility into each agent's activities and aggregate brokerage performance.
 
-**Access Requirement:** The Broker Dashboard requires the **Brokerage Growth** subscription plan. If you are on a lower-tier plan, you will see a prompt to upgrade when attempting to access this section.
+**Access Requirement:** Requires the **Brokerage Growth** plan and a broker or admin role.
 
-To upgrade, navigate to **Billing** and select the Brokerage Growth plan.`,
+### 3.1 Overview Tab
+
+At-a-glance metrics: Total Agents, Active Leads, Hot Leads, Open Houses, Closings (MTD/YTD), Pipeline Value. Below this, a 6-month trend table shows leads, closings, and revenue per month. Alerts highlight agents at retention risk and leads not contacted in 7+ days.
+
+### 3.2 Agent Performance Tab
+
+Sortable table with one row per agent showing: Leads Captured, Hot Leads, Open Houses, Pipeline Deals, Closings, Volume, Speed-to-Lead, Conversion Rate, MLS Searches, Reports Generated, and a Risk indicator. Click any column header to sort. Agents with 40%+ activity drops are flagged "AT RISK" in red.
+
+### 3.3 Lead Performance Tab
+
+- **Lead Funnel**: Visual breakdown by pipeline stage with conversion percentages
+- **Leads by Source**: Horizontal bar chart showing which sources produce the most leads
+- **Speed-to-Lead Leaderboard**: Agents ranked by average response time (fastest first)
+- **Lead Aging**: Warnings for leads not contacted in 3+, 7+, and 14+ days
+
+### 3.4 Open House Performance Tab
+
+Per-agent breakdown: events held, total check-ins, average check-ins per open house, hot leads generated, and conversion rate.
+
+### 3.5 Financial Tab
+
+Commission by agent (MTD), total volume, estimated commission, pipeline deals. Revenue trend table showing closings and revenue by month. Totals at the bottom for Revenue MTD, Total Volume, and Pipeline Value.
+
+### 3.6 Activity & Risk Tab
+
+Per-agent activity metrics: MLS Searches performed, Reports Generated, Last Active date, and overall status (Active/Inactive/At Risk). Retention risk section highlights agents with significant activity drops.`,
   },
   {
     id: "calendar",
