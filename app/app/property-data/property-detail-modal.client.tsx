@@ -5483,18 +5483,18 @@ function SalesHistorySection({ address, publicRecords, propertySale }: { address
           setUnitNumber(data.unitNumber || null);
         }
 
-        // If MLS returned no unit-specific sales, try fetching from Realie/RentCast
-        // with the FULL address (including unit) for unit-specific transfer history
+        // If MLS returned no unit-specific sales AND no public records passed in,
+        // try fetching sale history directly from RentCast/Realie using the FULL
+        // address with unit (e.g., "440 Seaside Ave Apt 605"). This bypasses the
+        // attom/property route which strips units for building-level lookups.
         const unitCount = data.transactions?.length || 0;
         if (unitCount === 0 && (!publicRecords || publicRecords.length === 0)) {
           try {
-            const { expandStreetSuffix } = await import("@/lib/address-utils");
-            const expanded = expandStreetSuffix(address);
-            const rcRes = await fetch(`/api/integrations/attom/property?endpoint=expanded&address=${encodeURIComponent(expanded)}&pagesize=1`);
+            // Try the full address with unit first for unit-specific history
+            const rcRes = await fetch(`/api/integrations/attom/property?endpoint=expanded&address=${encodeURIComponent(address)}&pagesize=1`);
             const rcData = await rcRes.json();
             const prop = rcData.property?.[0];
             if (prop?.saleHistory?.length > 0) {
-              // Inject Realie/RentCast sale history as public records
               const rcHistory = prop.saleHistory.map((s: any) => ({
                 date: s.date,
                 amount: s.amount,
@@ -5503,7 +5503,6 @@ function SalesHistorySection({ address, publicRecords, propertySale }: { address
                 deedType: s.deedType,
                 _source: s._source || "public records",
               }));
-              // Update the publicRecords display via a local state
               setFallbackRecords(rcHistory);
             }
           } catch {
