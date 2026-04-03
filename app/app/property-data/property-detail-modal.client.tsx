@@ -3821,20 +3821,35 @@ export default function PropertyDetailModal({
                     </div>
                   )}
 
-                  {/* Nearby Schools */}
+                  {/* Assigned Schools (from GIS attendance zone boundaries) */}
+                  {gisEnrichment && (gisEnrichment.elementarySchool || gisEnrichment.middleSchool || gisEnrichment.highSchool) && (
+                    <div style={{ marginBottom: 20 }}>
+                      <h3 style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 10, paddingBottom: 6, borderBottom: "1px solid #e5e7eb" }}>
+                        Assigned Schools (Attendance Zone)
+                      </h3>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        {[
+                          gisEnrichment.elementarySchool && { ...gisEnrichment.elementarySchool, level: "Elementary" },
+                          gisEnrichment.middleSchool && { ...gisEnrichment.middleSchool, level: "Middle" },
+                          gisEnrichment.highSchool && { ...gisEnrichment.highSchool, level: "High" },
+                        ].filter(Boolean).map((school: any, i: number) => (
+                          <div key={i} style={{ padding: "10px 14px", background: "#f0f9ff", borderRadius: 8, borderLeft: "4px solid #3b82f6" }}>
+                            <div style={{ fontWeight: 600, fontSize: 14, color: "#111827" }}>{school.name}</div>
+                            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
+                              {school.level}
+                              {school.complex && ` - ${school.complex} Complex`}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Other Nearby Schools (from NCES -- distance-based, secondary to assigned schools) */}
                   {schoolList.length > 0 && (
                     <div style={{ marginBottom: 20 }}>
-                      <h3
-                        style={{
-                          fontSize: 14,
-                          fontWeight: 700,
-                          color: "#374151",
-                          marginBottom: 10,
-                          paddingBottom: 6,
-                          borderBottom: "1px solid #e5e7eb",
-                        }}
-                      >
-                        Nearby Schools
+                      <h3 style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 10, paddingBottom: 6, borderBottom: "1px solid #e5e7eb" }}>
+                        Other Nearby Schools
                       </h3>
                       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                         {schoolList.slice(0, 15).map((school: any, i: number) => {
@@ -3963,38 +3978,28 @@ export default function PropertyDetailModal({
                   {/* Nearby Amenities -- organized by category */}
                   {poiList.length > 0 && (() => {
                     // Define which categories to show and their display order/icons
+                    // Only show these 5 amenity categories -- nothing else
                     const AMENITY_CATEGORIES: Record<string, { icon: string; label: string; priority: number }> = {
-                      "park": { icon: "🌳", label: "Parks & Recreation", priority: 1 },
-                      "county park": { icon: "🌳", label: "Parks & Recreation", priority: 1 },
-                      "state park": { icon: "🌳", label: "Parks & Recreation", priority: 1 },
-                      "playground": { icon: "🌳", label: "Parks & Recreation", priority: 1 },
-                      "golf course": { icon: "⛳", label: "Parks & Recreation", priority: 1 },
-                      "fire station": { icon: "🚒", label: "Fire & Emergency", priority: 2 },
-                      "police": { icon: "👮", label: "Fire & Emergency", priority: 2 },
-                      "police station": { icon: "👮", label: "Fire & Emergency", priority: 2 },
-                      "hospital": { icon: "🏥", label: "Medical & Health", priority: 3 },
-                      "medical": { icon: "🏥", label: "Medical & Health", priority: 3 },
-                      "clinic": { icon: "🏥", label: "Medical & Health", priority: 3 },
-                      "dentist": { icon: "🏥", label: "Medical & Health", priority: 3 },
-                      "pharmacy": { icon: "💊", label: "Medical & Health", priority: 3 },
-                      "restaurant": { icon: "🍽️", label: "Dining", priority: 4 },
-                      "fast food": { icon: "🍽️", label: "Dining", priority: 4 },
-                      "cafe": { icon: "☕", label: "Dining", priority: 4 },
-                      "bakery": { icon: "🍽️", label: "Dining", priority: 4 },
+                      // Parks
+                      "park": { icon: "🌳", label: "Nearby Parks", priority: 1 },
+                      "county park": { icon: "🌳", label: "Nearby Parks", priority: 1 },
+                      "state park": { icon: "🌳", label: "Nearby Parks", priority: 1 },
+                      "playground": { icon: "🌳", label: "Nearby Parks", priority: 1 },
+                      "golf course": { icon: "⛳", label: "Nearby Parks", priority: 1 },
+                      // Fire Stations
+                      "fire station": { icon: "🚒", label: "Fire Stations", priority: 2 },
+                      // Banks
+                      "bank": { icon: "🏦", label: "Banks", priority: 3 },
+                      // Restaurants
+                      "restaurant": { icon: "🍽️", label: "Restaurants", priority: 4 },
+                      "fast food": { icon: "🍽️", label: "Restaurants", priority: 4 },
+                      "cafe": { icon: "🍽️", label: "Restaurants", priority: 4 },
+                      // Shopping
                       "grocery": { icon: "🛒", label: "Shopping", priority: 5 },
                       "supermarket": { icon: "🛒", label: "Shopping", priority: 5 },
                       "shopping mall": { icon: "🛍️", label: "Shopping", priority: 5 },
                       "department store": { icon: "🛍️", label: "Shopping", priority: 5 },
-                      "convenience store": { icon: "🏪", label: "Shopping", priority: 5 },
-                      "bank": { icon: "🏦", label: "Banks & Services", priority: 6 },
-                      "atm": { icon: "🏦", label: "Banks & Services", priority: 6 },
-                      "post office": { icon: "📮", label: "Banks & Services", priority: 6 },
-                      "gas station": { icon: "⛽", label: "Banks & Services", priority: 6 },
-                      "library": { icon: "📚", label: "Libraries & Community", priority: 7 },
-                      "community center": { icon: "🏛️", label: "Libraries & Community", priority: 7 },
-                      "public school": { icon: "🎓", label: "Schools", priority: 8 },
-                      "private school": { icon: "🎓", label: "Schools", priority: 8 },
-                      "school": { icon: "🎓", label: "Schools", priority: 8 },
+                      "convenience store": { icon: "🛒", label: "Shopping", priority: 5 },
                     };
 
                     // Parse and categorize POIs
