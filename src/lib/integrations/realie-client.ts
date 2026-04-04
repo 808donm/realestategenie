@@ -1951,22 +1951,30 @@ export function mapAttomParamsToRealie(endpoint: string, params: Record<string, 
 
   const mapped: RealieSearchParams = {};
 
-  // Strip bare trailing condo unit numbers from street address.
-  // MLS stores condos as "7018 Hawaii Kai Drive 6-15" (no Apt/#/Unit prefix).
-  const stripUnit = (street: string) => {
-    let s = street;
-    const unitMatch = s.match(
-      /^(.+?\b(?:st|street|rd|road|ave|avenue|dr|drive|ln|lane|pl|place|blvd|boulevard|ct|court|way|loop|pkwy|parkway|hwy|highway|cir|circle)\b\.?)\s+[\dA-Z][\dA-Z-]*$/i,
+  // Reformat condo unit numbers for Realie.
+  // MLS stores "7018 Hawaii Kai Drive 6-15" (bare unit after suffix, "6-15" = Bldg 6 Unit 15).
+  // Realie finds it with "7018 Hawaii Kai Drive Unit 615" (dashes removed, "Unit" prefix).
+  // Without unit, Realie returns ~100 results for the whole complex.
+  const reformatUnit = (street: string) => {
+    const unitMatch = street.match(
+      /^(.+?\b(?:st|street|rd|road|ave|avenue|dr|drive|ln|lane|pl|place|blvd|boulevard|ct|court|way|loop|pkwy|parkway|hwy|highway|cir|circle)\b\.?)\s+([\dA-Z][\dA-Z-]*)$/i,
     );
-    if (unitMatch) s = unitMatch[1];
-    s = s.replace(/\s*(?:#|apt\.?|unit|ste\.?|suite)\s*\S+/i, "");
-    return s;
+    if (unitMatch) {
+      const base = unitMatch[1];
+      const unit = unitMatch[2].replace(/-/g, "");
+      return `${base} Unit ${unit}`;
+    }
+    const prefixMatch = street.match(/^(.+?)\s*(?:#|apt\.?|ste\.?|suite)\s*(\S+)$/i);
+    if (prefixMatch) {
+      return `${prefixMatch[1]} Unit ${prefixMatch[2]}`;
+    }
+    return street;
   };
 
   // Address — Realie needs state separately for address lookups
   if (params.address1 && params.address2) {
     // address2 is typically "City, ST ZIP" — extract state
-    mapped.address = stripUnit(params.address1);
+    mapped.address = reformatUnit(params.address1);
     const stateMatch = params.address2.match(/\b([A-Z]{2})\b/);
     if (stateMatch) mapped.state = stateMatch[1];
   } else if (params.address) {
@@ -1990,9 +1998,9 @@ export function mapAttomParamsToRealie(endpoint: string, params: Record<string, 
           // Don't set city without county -- Realie requires county when city is provided
         }
       }
-      mapped.address = street;
+      mapped.address = reformatUnit(street);
     } else {
-      mapped.address = stripUnit(params.address);
+      mapped.address = reformatUnit(params.address);
     }
   }
 
