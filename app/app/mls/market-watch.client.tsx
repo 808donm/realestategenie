@@ -178,7 +178,18 @@ export default function MarketWatchClient() {
             mergedPriceChanges.increases += d.priceChanges?.increases || 0;
             mergedPriceChanges.decreases += d.priceChanges?.decreases || 0;
           }
-          setListings(mergedListings);
+          // Apply TMK filter to merged results using startsWith on dashed ParcelNumber
+          let filteredMerged = mergedListings;
+          if (zone && section) {
+            const island = tmk.island || "1";
+            const tmkPrefix = `${island}-${zone}-${section}-`;
+            filteredMerged = mergedListings.filter((l: any) => {
+              if (!l.parcelNumber) return false;
+              return String(l.parcelNumber).startsWith(tmkPrefix);
+            });
+            console.log(`[MarketWatch] TMK filter (multi-zip): ${mergedListings.length} -> ${filteredMerged.length} matching prefix "${tmkPrefix}"`);
+          }
+          setListings(filteredMerged);
           setStatusCounts(mergedCounts);
           setPriceChanges(mergedPriceChanges);
           setLoading(false);
@@ -193,8 +204,7 @@ export default function MarketWatchClient() {
       if (!res.ok) throw new Error(data.error);
       let fetchedListings = data.listings || [];
 
-      // For TMK searches, filter listings by ParcelNumber (TMK) prefix.
-      // TMK format from MLS: "28xxxxxxxx" (zone+section first) or "128xxxxxxxx" (with island prefix)
+      // For TMK searches, filter listings by ParcelNumber prefix using startsWith
       if (isTMK(input) && fetchedListings.length > 0) {
         const { parseTMKInput: parseTmk } = await import("@/lib/hawaii-tmk-zip");
         const tmkParsed = parseTmk(input);
@@ -204,26 +214,12 @@ export default function MarketWatchClient() {
 
         if (zone && section) {
           const before = fetchedListings.length;
+          const tmkPrefix = `${island}-${zone}-${section}-`;
           fetchedListings = fetchedListings.filter((l: any) => {
             if (!l.parcelNumber) return false;
-            const tmkStr = String(l.parcelNumber);
-
-            // Handle dashed format: "1-2-8-027-025-0000"
-            if (tmkStr.includes("-")) {
-              const parts = tmkStr.split("-").filter(Boolean);
-              // parts[0]=island, parts[1]=zone, parts[2]=section
-              const lZone = parts.length >= 3 ? parts[1] : parts[0];
-              const lSection = parts.length >= 3 ? parts[2] : parts[1];
-              return lZone === zone && lSection === section;
-            }
-
-            // Handle numeric formats: "28xxxxxx" (8-12 digit) or "128xxxxxxxxx" (13 digit)
-            const cleanTmk = tmkStr.replace(/[\s.]/g, "");
-            const shortPrefix = `${zone}${section}`;
-            const longPrefix = `${island}${zone}${section}`;
-            return cleanTmk.startsWith(shortPrefix) || cleanTmk.startsWith(longPrefix);
+            return String(l.parcelNumber).startsWith(tmkPrefix);
           });
-          console.log(`[MarketWatch] TMK filter: ${before} -> ${fetchedListings.length} matching zone=${zone} section=${section}`);
+          console.log(`[MarketWatch] TMK filter: ${before} -> ${fetchedListings.length} matching prefix "${tmkPrefix}"`);
         }
       }
 
