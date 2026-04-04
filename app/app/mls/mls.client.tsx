@@ -379,6 +379,20 @@ export default function MLSClient() {
           console.log("[ATTOM] Property keys:", Object.keys(prop));
           console.log("[ATTOM] Owner data:", JSON.stringify(prop.owner, null, 2));
           console.log("[ATTOM] Mortgage data:", JSON.stringify(prop.mortgage, null, 2));
+          // Merge Trestle's full TMK (from UniversalParcelId) into property data
+          // RentCast/Realie often don't return assessorID for Hawaii condos
+          if (selectedProperty) {
+            const upi = (selectedProperty as any).UniversalParcelId;
+            if (upi && (!prop.identifier?.apn || prop.identifier.apn.split("-").length < 6)) {
+              const upiParts = upi.split(":");
+              const fullTmk = upiParts[upiParts.length - 1];
+              if (fullTmk?.includes("-")) {
+                prop.identifier = { ...prop.identifier, apn: fullTmk };
+              }
+            } else if ((selectedProperty as any).ParcelNumber && !prop.identifier?.apn) {
+              prop.identifier = { ...prop.identifier, apn: (selectedProperty as any).ParcelNumber };
+            }
+          }
           setAttomData(prop);
         } else {
           console.log("[ATTOM] No property found in response:", JSON.stringify(data).substring(0, 500));
@@ -3376,21 +3390,7 @@ export default function MLSClient() {
 
               {attomData && (
                 <PropertyDetailModal
-                  property={(() => {
-                    // Merge Trestle's full TMK (from UniversalParcelId) into property data
-                    // RentCast/Realie often don't return assessorID for condos
-                    const prop = { ...attomData };
-                    if ((selectedProperty as any)?.UniversalParcelId && (!prop.identifier?.apn || prop.identifier.apn.split("-").length < 6)) {
-                      const upiParts = (selectedProperty as any).UniversalParcelId.split(":");
-                      const fullTmk = upiParts[upiParts.length - 1];
-                      if (fullTmk?.includes("-")) {
-                        prop.identifier = { ...prop.identifier, apn: fullTmk };
-                      }
-                    } else if ((selectedProperty as any)?.ParcelNumber && !prop.identifier?.apn) {
-                      prop.identifier = { ...prop.identifier, apn: (selectedProperty as any).ParcelNumber };
-                    }
-                    return prop;
-                  })()}
+                  property={attomData}
                   onClose={() => {}}
                   embedded
                   mlsPhotos={selectedProperty?.Media?.filter((m) => (m.MediaType || "").startsWith("image"))
