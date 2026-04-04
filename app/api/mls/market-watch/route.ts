@@ -262,15 +262,6 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Log parcel/TMK fields from first listing to discover full TMK field
-    if (listings.length > 0) {
-      const sample = listings[0];
-      const parcelFields = Object.entries(sample)
-        .filter(([k]) => /parcel|tax|tmk|apn|assessor|map/i.test(k))
-        .map(([k, v]) => `${k}=${v}`);
-      console.log(`[Market Monitor] Parcel fields from Trestle: ${parcelFields.join(", ") || "none"}`);
-    }
-
     // Build address for each listing
     const enriched = listings.map((p: any) => {
       const address =
@@ -308,7 +299,16 @@ export async function GET(request: NextRequest) {
         city: p.City,
         state: p.StateOrProvince || "HI",
         postalCode: p.PostalCode,
-        parcelNumber: p.ParcelNumber || null,
+        parcelNumber: (() => {
+          // Prefer UniversalParcelId which includes the condo unit suffix
+          // Format: "urn:reso:upi:2.0:US:15003:1-4-2-002-016-0134"
+          if (p.UniversalParcelId) {
+            const upiParts = p.UniversalParcelId.split(":");
+            const tmk = upiParts[upiParts.length - 1];
+            if (tmk && tmk.includes("-")) return tmk;
+          }
+          return p.ParcelNumber || null;
+        })(),
         beds: p.BedroomsTotal,
         baths: p.BathroomsTotalInteger,
         sqft: p.LivingArea,

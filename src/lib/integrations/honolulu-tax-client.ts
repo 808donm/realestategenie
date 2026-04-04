@@ -226,12 +226,6 @@ export class HonoluluTaxClient {
         // Strategy: match on mailing address containing the street number AND unit number
         const streetNum = address.match(/^(\d[\d-]*)/)?.[1] || "";
 
-        // Log all records for debugging
-        console.log(`[HonoluluTax] OWNINFO unit match: looking for streetNum="${streetNum}" + unit="${unitClean}" in ${owners.length} records`);
-        for (const o of owners.slice(0, 5)) {
-          const r = o as Record<string, unknown>;
-          console.log(`[HonoluluTax]   parid=${r.parid} suffix=${r.suffix} addr1="${r.address1}" owner="${r.owner || r.taxbillown}"`);
-        }
 
         const filtered = owners.filter((o) => {
           const rec = o as Record<string, unknown>;
