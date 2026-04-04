@@ -833,22 +833,30 @@ export function mapAttomParamsToRentcast(
 
   const mapped: RentcastPropertySearchParams = {};
 
-  // Strip bare trailing condo unit numbers from street address.
-  // MLS stores condos as "7018 Hawaii Kai Drive 6-15" (no Apt/#/Unit prefix).
-  // RentCast can't parse these -- strip to building address.
-  const stripUnit = (street: string) => {
-    let s = street;
-    const unitMatch = s.match(
-      /^(.+?\b(?:st|street|rd|road|ave|avenue|dr|drive|ln|lane|pl|place|blvd|boulevard|ct|court|way|loop|pkwy|parkway|hwy|highway|cir|circle)\b\.?)\s+[\dA-Z][\dA-Z-]*$/i,
+  // Reformat condo unit numbers for RentCast.
+  // MLS stores "7018 Hawaii Kai Drive 6-15" (bare unit after suffix).
+  // RentCast expects "7018 Hawaii Kai Drive Unit 615" (with "Unit" prefix, no dash).
+  const reformatUnit = (street: string) => {
+    // Match bare trailing unit number after street suffix
+    const unitMatch = street.match(
+      /^(.+?\b(?:st|street|rd|road|ave|avenue|dr|drive|ln|lane|pl|place|blvd|boulevard|ct|court|way|loop|pkwy|parkway|hwy|highway|cir|circle)\b\.?)\s+([\dA-Z][\dA-Z-]*)$/i,
     );
-    if (unitMatch) s = unitMatch[1];
-    s = s.replace(/\s*(?:#|apt\.?|unit|ste\.?|suite)\s*\S+/i, "");
-    return s;
+    if (unitMatch) {
+      const base = unitMatch[1];
+      const unit = unitMatch[2].replace(/-/g, ""); // "6-15" -> "615"
+      return `${base} Unit ${unit}`;
+    }
+    // Normalize explicit prefixes: "#G5" -> "Unit G5", "Apt 301" -> "Unit 301"
+    const prefixMatch = street.match(/^(.+?)\s*(?:#|apt\.?|ste\.?|suite)\s*(\S+)$/i);
+    if (prefixMatch) {
+      return `${prefixMatch[1]} Unit ${prefixMatch[2]}`;
+    }
+    return street;
   };
 
   // Address
   if (params.address1 && params.address2) {
-    mapped.address = `${stripUnit(params.address1)}, ${params.address2}`;
+    mapped.address = `${reformatUnit(params.address1)}, ${params.address2}`;
   } else if (params.address) {
     // Normalize: ensure comma between street and city for addresses like
     // "41-665 Kumuhau Street Waimanalo, HI 96795" (missing comma after street)
@@ -859,9 +867,9 @@ export function mapAttomParamsToRentcast(
     if (suffixMatch) {
       addr = `${suffixMatch[1]}, ${suffixMatch[2]}`;
     }
-    // Strip unit numbers from the street portion
+    // Reformat unit in the street portion
     const parts = addr.split(",");
-    parts[0] = stripUnit(parts[0]);
+    parts[0] = reformatUnit(parts[0]);
     mapped.address = parts.join(",");
   }
 
