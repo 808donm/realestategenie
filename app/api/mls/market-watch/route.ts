@@ -141,14 +141,13 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // If Trestle doesn't return coordinates, geocode addresses using Google Maps API
-    const withCoords = (result.value || []).filter((p: any) => p.Latitude && p.Longitude).length;
+    // Geocode any listings missing coordinates
+    const withoutCoords = (result.value || []).filter((p: any) => !p.Latitude || !p.Longitude);
     const geoKey = process.env.GOOGLE_GEOCODING_API_KEY || process.env.GOOGLE_MAPS_API_KEY;
-    if (withCoords === 0 && result.value?.length > 0 && geoKey) {
-      console.log(`[Market Watch] No coordinates from Trestle, geocoding ${Math.min(result.value.length, 100)} addresses`);
+    if (withoutCoords.length > 0 && geoKey) {
+      console.log(`[Market Watch] Geocoding ${Math.min(withoutCoords.length, 100)} listings missing coordinates`);
 
-      // Batch geocode up to 100 addresses in parallel (5 at a time to respect rate limits)
-      const toGeocode = result.value.slice(0, 100);
+      const toGeocode = withoutCoords.slice(0, 100);
       const batchSize = 10;
       for (let i = 0; i < toGeocode.length; i += batchSize) {
         const batch = toGeocode.slice(i, i + batchSize);
