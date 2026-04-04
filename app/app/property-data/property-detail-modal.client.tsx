@@ -648,8 +648,14 @@ export default function PropertyDetailModal({
 
   // Fetch Hawaii statewide parcel + owner data when Ownership or Financial tab is selected
   // Combines State ArcGIS (all counties) with Honolulu OWNALL (deed owners)
+  const [hawaiiTmkUsed, setHawaiiTmkUsed] = useState<string>("");
   useEffect(() => {
-    if ((activeSection !== "ownership" && activeSection !== "financial") || hawaiiData || hawaiiLoading) return;
+    // Re-fetch if we got a better TMK from RentCast/Realie (avmData) than what Trestle provided
+    const betterTmk = avmData?.identifier?.apn;
+    const hasBetterTmk = betterTmk && hawaiiTmkUsed && betterTmk !== hawaiiTmkUsed &&
+      betterTmk.replace(/[-\s.]/g, "").length > hawaiiTmkUsed.replace(/[-\s.]/g, "").length;
+    if ((activeSection !== "ownership" && activeSection !== "financial") || hawaiiLoading) return;
+    if (hawaiiData && !hasBetterTmk) return;
 
     let hiState = p.address?.countrySubd?.toUpperCase();
     if (!hiState && p.address?.oneLine) {
@@ -662,7 +668,9 @@ export default function PropertyDetailModal({
     const isHawaii = hiState === "HI" || hiState === "HAWAII";
     if (!isHawaii) return;
 
-    let tmk = p.identifier?.apn;
+    // Prefer TMK from RentCast/Realie (avmData) over Trestle -- they include the unit suffix
+    // for condos while Trestle only provides the land-level TMK.
+    let tmk = avmData?.identifier?.apn || p.identifier?.apn;
 
     setHawaiiLoading(true);
 
@@ -697,13 +705,14 @@ export default function PropertyDetailModal({
         const data = await res.json();
         if (data.success) {
           setHawaiiData(data);
+          setHawaiiTmkUsed(tmk);
         }
       } catch {}
       setHawaiiLoading(false);
     };
 
     fetchHawaiiData();
-  }, [activeSection, hawaiiData, hawaiiLoading, p]);
+  }, [activeSection, hawaiiData, hawaiiLoading, hawaiiTmkUsed, avmData, p]);
 
   // Fetch neighborhood profile (community data, schools) when Neighborhood tab is selected
   // Tries cached data first, falls back to live API
