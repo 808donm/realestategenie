@@ -1217,8 +1217,9 @@ export async function GET(request: NextRequest) {
           (p: any) => p.avm?.amount?.value || p.assessment?.assessed?.assdTtlValue || p.assessment?.market?.mktTtlValue,
         ).length;
         const withEquity = props.filter((p: any) => p.homeEquity?.equity != null).length;
+        const apns = props.map((p: any) => p.identifier?.apn).filter(Boolean);
         console.log(
-          `[PropertyData] ${total} props, ${withOwner} owners, ${withValue} with values, ${withEquity} with equity`,
+          `[PropertyData] ${total} props, ${withOwner} owners, ${withValue} with values, ${withEquity} with equity, APNs: ${apns.join(", ") || "none"}`,
         );
       } else if (realieResult?.property?.length > 0) {
         // RentCast returned no data — use Realie as fallback
