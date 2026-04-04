@@ -203,18 +203,27 @@ export default function MarketWatchClient() {
         const island = tmkParsed.island || "1";
 
         if (zone && section) {
-          // Build prefixes to match: "28" (zone+section) and "128" (island+zone+section)
-          const shortPrefix = `${zone}${section}`; // e.g., "28"
-          const longPrefix = `${island}${zone}${section}`; // e.g., "128"
-
           const before = fetchedListings.length;
           fetchedListings = fetchedListings.filter((l: any) => {
-            if (!l.parcelNumber) return false; // Drop listings without TMK -- we can't verify them
-            const cleanTmk = String(l.parcelNumber).replace(/[-\s.]/g, "");
-            // Match zone+section at the start (8/12-digit format) or island+zone+section (13-digit)
+            if (!l.parcelNumber) return false;
+            const tmkStr = String(l.parcelNumber);
+
+            // Handle dashed format: "1-2-8-027-025-0000"
+            if (tmkStr.includes("-")) {
+              const parts = tmkStr.split("-").filter(Boolean);
+              // parts[0]=island, parts[1]=zone, parts[2]=section
+              const lZone = parts.length >= 3 ? parts[1] : parts[0];
+              const lSection = parts.length >= 3 ? parts[2] : parts[1];
+              return lZone === zone && lSection === section;
+            }
+
+            // Handle numeric formats: "28xxxxxx" (8-12 digit) or "128xxxxxxxxx" (13 digit)
+            const cleanTmk = tmkStr.replace(/[\s.]/g, "");
+            const shortPrefix = `${zone}${section}`;
+            const longPrefix = `${island}${zone}${section}`;
             return cleanTmk.startsWith(shortPrefix) || cleanTmk.startsWith(longPrefix);
           });
-          console.log(`[MarketWatch] TMK filter: ${before} -> ${fetchedListings.length} matching prefix "${shortPrefix}" or "${longPrefix}"`);
+          console.log(`[MarketWatch] TMK filter: ${before} -> ${fetchedListings.length} matching zone=${zone} section=${section}`);
         }
       }
 
