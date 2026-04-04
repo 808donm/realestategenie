@@ -690,6 +690,9 @@ export default function PropertyDetailModal({
 
       try {
         const params = new URLSearchParams({ endpoint: "enriched", tmk });
+        // Pass address so OWNINFO can filter to the specific condo unit owner
+        const ownerAddr = p.address?.line1 || p.address?.oneLine?.split(",")[0]?.trim();
+        if (ownerAddr) params.set("address", ownerAddr);
         const res = await fetch(`/api/integrations/hawaii-parcels?${params}`);
         const data = await res.json();
         if (data.success) {

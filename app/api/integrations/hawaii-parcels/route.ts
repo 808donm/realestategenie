@@ -66,10 +66,11 @@ export async function GET(request: NextRequest) {
 
         // Fetch statewide parcel and Honolulu owner data in parallel
         const honoluluClient = new HonoluluTaxClient();
+        const address = searchParams.get("address") || undefined;
 
         const [parcelResult, ownersResult, honoluluParcelResult] = await Promise.allSettled([
           client.getParcelByTMK(tmk),
-          honoluluClient.getOwnersByTMK(tmk),
+          honoluluClient.getOwnersByTMK(tmk, address),
           honoluluClient.getTaxParcelByTMK(tmk),
         ]);
 

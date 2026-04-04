@@ -151,70 +151,83 @@ export class HonoluluTaxClient {
    * Get all owners for a parcel by TMK from the OWNALL table.
    * TMK can be in any format — dashes/spaces are stripped before querying.
    */
-  async getOwnersByTMK(tmk: string): Promise<HonoluluOwner[]> {
+  async getOwnersByTMK(tmk: string, address?: string): Promise<HonoluluOwner[]> {
     const cleanTmk = tmk.replace(/[-\s.]/g, "");
 
     // OWNINFO uses two formats:
     //   tmk:   8 digits (e.g., 29029040) -- building-level, no island prefix, no unit suffix
     //   parid: 12 digits (e.g., 290290400118) -- tmk(8) + unit suffix(4)
     //
-    // For condos, the unit suffix is critical. Without it, we get ALL owners in the building.
-    // Strategy: try exact parid match first (most specific), then broaden if no results.
+    // For condos, Trestle often provides only the land-level TMK (9 digits, no unit).
+    // The unit suffix in parid is NOT the same as the unit number in the address
+    // (e.g., unit 3001 has parid suffix 0134). So we can't derive it from the address.
+    //
+    // Strategy: if we get multiple results from a TMK query, try to filter by
+    // street number from the address to find the specific unit owner.
 
-    // Step 1: Try exact match with full TMK (most specific -- catches condos correctly)
-    const exactConditions: string[] = [];
-    exactConditions.push(`parid='${cleanTmk}'`);
-    exactConditions.push(`tmk='${cleanTmk}'`);
+    // Build query conditions
+    const conditions: string[] = [];
+    conditions.push(`parid='${cleanTmk}'`);
+    conditions.push(`tmk='${cleanTmk}'`);
 
     // Strip island prefix if 9+ digits
     let noIsland = cleanTmk;
     if (cleanTmk.length >= 9) {
       noIsland = cleanTmk.slice(1);
-      // 12-digit parid (most specific for condos)
       const padded12 = noIsland.padEnd(12, "0");
-      if (padded12 !== cleanTmk) exactConditions.push(`parid='${padded12}'`);
-      // Also try the no-island value as-is
+      if (padded12 !== cleanTmk) conditions.push(`parid='${padded12}'`);
       if (noIsland !== cleanTmk) {
-        exactConditions.push(`tmk='${noIsland}'`);
-        exactConditions.push(`parid='${noIsland}'`);
+        conditions.push(`tmk='${noIsland}'`);
+        conditions.push(`parid='${noIsland}'`);
       }
     }
 
-    const exactWhere = exactConditions.join(" OR ");
-    const exactResult = await this.query(this.ownallUrl, exactWhere, {
-      resultRecordCount: 10,
+    // Also try 8-digit building-level TMK in the same query
+    const tmk8 = noIsland.length >= 8 ? noIsland.slice(0, 8) : cleanTmk.length >= 8 ? cleanTmk.slice(0, 8) : null;
+    if (tmk8) {
+      conditions.push(`tmk='${tmk8}'`);
+    }
+
+    const where = [...new Set(conditions)].join(" OR ");
+    const result = await this.query(this.ownallUrl, where, {
+      resultRecordCount: 20,
       orderByFields: "tmk ASC",
     });
 
-    // If we got results with exact match, return them (specific unit for condos)
-    if (exactResult.features && exactResult.features.length > 0) {
-      return exactResult.features.map((f) => this.normalizeAttributes(f.attributes) as HonoluluOwner);
+    let owners = (result.features || []).map((f) => this.normalizeAttributes(f.attributes) as HonoluluOwner);
+
+    // If multiple results from a land-level TMK (no unit suffix), we're getting
+    // all units in the building. Try to match by address to find the specific owner.
+    if (owners.length > 1 && address) {
+      // Extract street number from the property address
+      const streetNum = address.match(/^(\d[\d-]*)/)?.[1];
+      // Extract unit from address (e.g., "3001" from "1150 Kamahele Street 3001")
+      const addrParts = address.split(",")[0].trim().split(/\s+/);
+      const unitPart = addrParts.length > 2 ? addrParts[addrParts.length - 1] : null;
+      const unitClean = unitPart?.replace(/-/g, "");
+
+      if (streetNum && unitClean) {
+        // Try to match by parid -- some OWNINFO records have the property address
+        // in the mailing address field (owner-occupied units)
+        const filtered = owners.filter((o) => {
+          const mailadd = String((o as any).mailadd || "").toUpperCase();
+          // Check if mailing address contains the street number AND unit
+          return mailadd.includes(streetNum) && (mailadd.includes(unitClean) || mailadd.includes(unitPart || ""));
+        });
+        if (filtered.length === 1) {
+          owners = filtered;
+        }
+      }
     }
 
-    // Step 2: Broaden search -- try 8-digit building-level TMK
-    // This is the fallback for SFR properties where there's no unit suffix
-    const broadConditions: string[] = [];
-    if (cleanTmk.length > 8) {
-      broadConditions.push(`tmk='${cleanTmk.slice(0, 8)}'`);
-    }
-    if (noIsland.length > 8) {
-      broadConditions.push(`tmk='${noIsland.slice(0, 8)}'`);
-    }
-    if (noIsland.length >= 8) {
-      broadConditions.push(`tmk='${noIsland.slice(0, 8)}'`);
-    }
-
-    if (broadConditions.length === 0) {
+    // If still multiple and we only have a land-level TMK, return empty
+    // rather than showing wrong owners from other units
+    if (owners.length > 2 && cleanTmk.length <= 9) {
+      console.log(`[HonoluluTax] Land-level TMK ${tmk} returned ${owners.length} owners (condo building). Cannot determine specific unit.`);
       return [];
     }
 
-    const broadWhere = [...new Set(broadConditions)].join(" OR ");
-    const broadResult = await this.query(this.ownallUrl, broadWhere, {
-      resultRecordCount: 5, // Limit to 5 for SFR (should only be 1-2 owners)
-      orderByFields: "tmk ASC",
-    });
-
-    return (broadResult.features || []).map((f) => this.normalizeAttributes(f.attributes) as HonoluluOwner);
+    return owners;
   }
 
   /**
