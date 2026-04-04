@@ -141,61 +141,68 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Geocode any listings missing coordinates
-    const withoutCoords = (result.value || []).filter((p: any) => !p.Latitude || !p.Longitude);
-    const geoKey = process.env.GOOGLE_GEOCODING_API_KEY || process.env.GOOGLE_MAPS_API_KEY;
-    if (withoutCoords.length > 0 && geoKey) {
-      console.log(`[Market Watch] Geocoding ${Math.min(withoutCoords.length, 100)} listings missing coordinates`);
+    // Use Hawaii GIS parcel centroids to get coordinates for listings with ParcelNumber but no lat/lng.
+    // This is free and works for every listing since HiCentral always provides ParcelNumber (TMK).
+    const needsCoords = (result.value || []).filter((p: any) => (!p.Latitude || !p.Longitude) && (p as any).ParcelNumber);
+    if (needsCoords.length > 0) {
+      console.log(`[Market Watch] Resolving coordinates from parcel centroids for ${needsCoords.length} listings`);
 
-      const toGeocode = withoutCoords.slice(0, 100);
-      const batchSize = 10;
-      for (let i = 0; i < toGeocode.length; i += batchSize) {
-        const batch = toGeocode.slice(i, i + batchSize);
-        await Promise.allSettled(
-          batch.map(async (p) => {
-            const addr = p.UnparsedAddress || [p.StreetNumber, p.StreetName, p.StreetSuffix].filter(Boolean).join(" ");
-            if (!addr) return;
-            const fullAddr = `${addr}, ${p.City || ""}, ${p.StateOrProvince || "HI"} ${p.PostalCode || ""}`;
-            try {
-              const geoUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddr)}&key=${geoKey}`;
-              const geoRes = await fetch(geoUrl, { signal: AbortSignal.timeout(5000) });
-              const geoData = await geoRes.json();
-              if (geoData.results?.[0]?.geometry?.location) {
-                (p as any).Latitude = geoData.results[0].geometry.location.lat;
-                (p as any).Longitude = geoData.results[0].geometry.location.lng;
-              } else if (i === 0) {
-                // Log first failure for debugging
-                console.warn(`[Market Watch] Geocode failed for "${fullAddr}": status=${geoData.status}, error=${geoData.error_message || "none"}`);
-              }
-            } catch (err: any) {
-              if (i === 0) console.warn(`[Market Watch] Geocode error: ${err.message}`);
-            }
-          }),
-        );
+      // Strip condo unit suffix (last 4 digits) from TMK for land-level parcel lookup.
+      // TMK "1-2-8-013-029-0011" -> query tmk = 128013029 (9 digits, no unit)
+      const tmkToNumeric = (tmk: string): string => {
+        const parts = tmk.replace(/[^0-9-]/g, "").split("-").filter(Boolean);
+        // Take island + zone + section + plat + parcel (skip unit)
+        if (parts.length >= 5) return parts.slice(0, 5).join("");
+        return parts.join("");
+      };
+
+      // Group listings by land-level TMK to avoid duplicate GIS calls for same-building condos
+      const tmkGroups = new Map<string, typeof needsCoords>();
+      for (const p of needsCoords) {
+        const numTmk = tmkToNumeric(String((p as any).ParcelNumber));
+        if (!tmkGroups.has(numTmk)) tmkGroups.set(numTmk, []);
+        tmkGroups.get(numTmk)!.push(p);
       }
-    }
 
-    // Resolve TMK for listings with coordinates but no ParcelNumber
-    const needsTmk = (result.value || []).filter((p: any) => p.Latitude && p.Longitude && !p.ParcelNumber);
-    if (needsTmk.length > 0) {
-      const tmkBatchSize = 10;
-      for (let i = 0; i < Math.min(needsTmk.length, 50); i += tmkBatchSize) {
-        const batch = needsTmk.slice(i, i + tmkBatchSize);
+      const uniqueTmks = Array.from(tmkGroups.keys());
+      const batchSize = 10;
+      let resolved = 0;
+      for (let i = 0; i < uniqueTmks.length; i += batchSize) {
+        const batch = uniqueTmks.slice(i, i + batchSize);
         await Promise.allSettled(
-          batch.map(async (p) => {
+          batch.map(async (numTmk) => {
             try {
-              const tmkUrl = `https://geodata.hawaii.gov/arcgis/rest/services/ParcelsZoning/MapServer/25/query?geometry=${encodeURIComponent(`{"x":${p.Longitude},"y":${p.Latitude}}`)}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=tmk,tmk_txt&returnGeometry=false&f=json`;
-              const tmkRes = await fetch(tmkUrl, { signal: AbortSignal.timeout(5000) });
-              const tmkData = await tmkRes.json();
-              const parcel = tmkData.features?.[0]?.attributes;
-              if (parcel?.tmk) {
-                (p as any).ParcelNumber = String(parcel.tmk);
+              const gisUrl = `https://geodata.hawaii.gov/arcgis/rest/services/ParcelsZoning/MapServer/25/query?where=${encodeURIComponent(`tmk=${numTmk}`)}&outFields=tmk&returnGeometry=true&returnCentroid=true&outSR=4326&f=json`;
+              const gisRes = await fetch(gisUrl, { signal: AbortSignal.timeout(5000) });
+              const gisData = await gisRes.json();
+              const feature = gisData.features?.[0];
+              if (feature) {
+                // Use centroid if available, otherwise compute from geometry rings
+                let lat: number | null = null;
+                let lng: number | null = null;
+                if (feature.centroid) {
+                  lat = feature.centroid.y;
+                  lng = feature.centroid.x;
+                } else if (feature.geometry?.rings?.[0]) {
+                  const ring = feature.geometry.rings[0];
+                  const sumX = ring.reduce((s: number, c: number[]) => s + c[0], 0);
+                  const sumY = ring.reduce((s: number, c: number[]) => s + c[1], 0);
+                  lng = sumX / ring.length;
+                  lat = sumY / ring.length;
+                }
+                if (lat && lng) {
+                  for (const p of tmkGroups.get(numTmk)!) {
+                    (p as any).Latitude = lat;
+                    (p as any).Longitude = lng;
+                  }
+                  resolved += tmkGroups.get(numTmk)!.length;
+                }
               }
             } catch {}
           }),
         );
       }
-      console.log(`[Market Watch] Resolved TMK for ${needsTmk.filter((p: any) => p.ParcelNumber).length} of ${needsTmk.length} listings`);
+      console.log(`[Market Watch] Parcel centroid lookup: ${resolved} of ${needsCoords.length} listings resolved (${uniqueTmks.length} unique parcels)`);
     }
 
     const finalWithCoords = (result.value || []).filter((p: any) => p.Latitude && p.Longitude).length;
