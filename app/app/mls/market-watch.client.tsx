@@ -194,20 +194,27 @@ export default function MarketWatchClient() {
       let fetchedListings = data.listings || [];
 
       // For TMK searches, filter listings by ParcelNumber (TMK) prefix.
-      // This is precise -- no need for polygon or coordinate filtering.
+      // TMK format from MLS: "28xxxxxxxx" (zone+section first) or "128xxxxxxxx" (with island prefix)
       if (isTMK(input) && fetchedListings.length > 0) {
         const { parseTMKInput: parseTmk } = await import("@/lib/hawaii-tmk-zip");
         const tmkParsed = parseTmk(input);
-        // Build TMK prefix: island + zone + section (e.g., "129" for 1-2-9)
-        const tmkPrefix = [tmkParsed.island, tmkParsed.zone, tmkParsed.section].filter(Boolean).join("");
-        if (tmkPrefix.length >= 3) {
+        const zone = tmkParsed.zone || "";
+        const section = tmkParsed.section || "";
+        const island = tmkParsed.island || "1";
+
+        if (zone && section) {
+          // Build prefixes to match: "28" (zone+section) and "128" (island+zone+section)
+          const shortPrefix = `${zone}${section}`; // e.g., "28"
+          const longPrefix = `${island}${zone}${section}`; // e.g., "128"
+
           const before = fetchedListings.length;
           fetchedListings = fetchedListings.filter((l: any) => {
-            if (!l.parcelNumber) return true; // Keep listings without TMK (can't filter them)
+            if (!l.parcelNumber) return false; // Drop listings without TMK -- we can't verify them
             const cleanTmk = String(l.parcelNumber).replace(/[-\s.]/g, "");
-            return cleanTmk.startsWith(tmkPrefix);
+            // Match zone+section at the start (8/12-digit format) or island+zone+section (13-digit)
+            return cleanTmk.startsWith(shortPrefix) || cleanTmk.startsWith(longPrefix);
           });
-          console.log(`[MarketWatch] TMK filter: ${before} -> ${fetchedListings.length} matching prefix "${tmkPrefix}"`);
+          console.log(`[MarketWatch] TMK filter: ${before} -> ${fetchedListings.length} matching prefix "${shortPrefix}" or "${longPrefix}"`);
         }
       }
 
