@@ -647,10 +647,18 @@ export default function MarketWatchClient() {
                                 selectedListing.daysOnMarket != null && `${selectedListing.daysOnMarket} DOM`,
                               ].filter(Boolean).join(" \u00B7 ")}
                             </div>
-                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#9ca3af", marginBottom: 8 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#9ca3af", marginBottom: 4 }}>
                               {selectedListing.listingId && <span>MLS# {selectedListing.listingId}</span>}
                               {selectedListing.propertySubType && <span>{selectedListing.propertySubType}</span>}
                             </div>
+                            {(selectedListing.subdivision || selectedListing.ownershipType) && (
+                              <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 8 }}>
+                                {[
+                                  selectedListing.subdivision,
+                                  selectedListing.ownershipType === "Fee Simple" ? "Fee Simple" : selectedListing.ownershipType === "Leasehold" ? "Leasehold" : selectedListing.ownershipType,
+                                ].filter(Boolean).join(" \u00B7 ")}
+                              </div>
+                            )}
                             <button
                               onClick={() => { setDetailListing(selectedListing); setSelectedListing(null); }}
                               style={{

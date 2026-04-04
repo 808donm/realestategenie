@@ -1161,6 +1161,7 @@ export default function MLSClient() {
                               <span style={{ fontSize: 11, color: "#9ca3af" }}>
                                 MLS# {property.ListingId || property.ListingKey}
                                 {property.PropertyType && ` | ${property.PropertyType}`}
+                                {(property as any).SubdivisionName && ` | ${(property as any).SubdivisionName}`}
                               </span>
                               {property.OwnershipType && (
                                 <span
