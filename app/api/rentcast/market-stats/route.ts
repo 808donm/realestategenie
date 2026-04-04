@@ -30,23 +30,29 @@ export async function GET(request: NextRequest) {
 
     const historyRange = Number(url.searchParams.get("historyRange")) || 12;
 
-    // Check area_data_cache first (populated by monthly cron)
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - 45);
+    // Check area_data_cache first.
+    // Market stats change monthly -- cache for 30 days, refresh on the 10th of each month.
+    const now = new Date();
+    const dayOfMonth = now.getDate();
+    // On or after the 10th, data from before the 1st of this month is stale
+    // Before the 10th, data from before the 1st of last month is stale
+    const staleDate = new Date(now.getFullYear(), now.getMonth() - (dayOfMonth >= 10 ? 0 : 1), 1);
+
     const { data: cached } = await supabase
       .from("area_data_cache")
       .select("data, fetched_at")
       .eq("zip_code", zipCode)
       .eq("data_type", "market_stats")
-      .gte("fetched_at", cutoff.toISOString())
+      .gte("fetched_at", staleDate.toISOString())
       .maybeSingle();
 
     if (cached?.data) {
-      console.log("[RentCast Market Stats] Cache HIT for", zipCode);
+      console.log(`[RentCast Market Stats] Cache HIT for ${zipCode} (fetched ${cached.fetched_at})`);
       return NextResponse.json(cached.data);
     }
 
     // Cache miss — fetch live from RentCast
+    console.log(`[RentCast Market Stats] Cache MISS for ${zipCode}, fetching live`);
     const rentcast = await getRentcastClient();
     if (!rentcast) {
       return NextResponse.json({ error: "RentCast not configured" }, { status: 503 });
@@ -57,6 +63,24 @@ export async function GET(request: NextRequest) {
       dataType: "All",
       historyRange: Math.min(Math.max(historyRange, 1), 36),
     });
+
+    // Save to cache for future requests
+    const admin = supabaseAdmin;
+    admin
+      .from("area_data_cache")
+      .upsert(
+        {
+          zip_code: zipCode,
+          data_type: "market_stats",
+          data: marketData,
+          fetched_at: now.toISOString(),
+        },
+        { onConflict: "zip_code,data_type" },
+      )
+      .then(({ error }) => {
+        if (error) console.warn(`[RentCast Market Stats] Cache write failed for ${zipCode}:`, error.message);
+        else console.log(`[RentCast Market Stats] Cached ${zipCode}`);
+      });
 
     return NextResponse.json(marketData);
   } catch (error: any) {
