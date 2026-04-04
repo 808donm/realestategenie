@@ -977,6 +977,7 @@ export default function PropertyDetailModal({
       .then(([rentalAvm, mlsSalesHistory, mlsLastSale]) => {
         // Prefer direct sales history over comps match
         const effectiveMlsLastSale = mlsSalesHistory || (mlsLastSale && !mlsLastSale._isComp ? mlsLastSale : null);
+        console.log("[PropertyDetail] MLS sale enrichment:", { salesHistory: mlsSalesHistory, compsMatch: mlsLastSale?._isComp ? "comp-only" : mlsLastSale, effective: effectiveMlsLastSale });
         // Build homeEquity from Realie's pre-calculated data, or fall back to
         // computing it from AVM / assessment values (same cascade the search cards use).
         let homeEquityData = (p as any).homeEquity || null;
