@@ -184,7 +184,7 @@ export default function MarketWatchClient() {
             const island = tmk.island || "1";
             const tmkPrefix = `${island}-${zone}-${section}-`;
             filteredMerged = mergedListings.filter((l: any) => {
-              if (!l.parcelNumber) return true; // No TMK data -- keep it (already ZIP-filtered)
+              if (!l.parcelNumber) return false;
               return String(l.parcelNumber).startsWith(tmkPrefix);
             });
             // Recalculate status counts from filtered listings
