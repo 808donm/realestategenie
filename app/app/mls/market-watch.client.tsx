@@ -187,17 +187,27 @@ export default function MarketWatchClient() {
       if (!res.ok) throw new Error(data.error);
       let fetchedListings = data.listings || [];
 
-      // If TMK boundary exists, filter listings to only those INSIDE the polygon
-      // (bounding box search returns everything in the rectangle, not just the polygon)
+      // If TMK boundary exists, filter listings to only those INSIDE the polygon.
+      // For listings without coordinates, fall back to ZIP code matching.
       if (tmkBoundary?.features?.length && fetchedListings.length > 0) {
         const polygons = extractPolygons(tmkBoundary);
         if (polygons.length > 0) {
+          // Get the ZIP codes for this TMK section as a fallback for listings without coords
+          const { parseTMKInput: parseTmk, getZipsForTMKSection: getZips } = await import("@/lib/hawaii-tmk-zip");
+          const tmkParsed = parseTmk(input);
+          const sectionZips = new Set(getZips(tmkParsed.zone || "", tmkParsed.section || "") || []);
+
           const before = fetchedListings.length;
           fetchedListings = fetchedListings.filter((l: any) => {
-            if (!l.lat || !l.lng) return false;
-            return polygons.some((poly: number[][]) => pointInPolygon(l.lat, l.lng, poly));
+            // If listing has coordinates, use point-in-polygon test
+            if (l.lat && l.lng) {
+              return polygons.some((poly: number[][]) => pointInPolygon(l.lat, l.lng, poly));
+            }
+            // Fallback: if no coordinates, include if ZIP matches the TMK section
+            if (l.postalCode && sectionZips.has(l.postalCode)) return true;
+            return false;
           });
-          console.log(`[MarketWatch] Filtered ${before} bbox listings to ${fetchedListings.length} inside TMK polygon`);
+          console.log(`[MarketWatch] Filtered ${before} bbox listings to ${fetchedListings.length} inside TMK polygon (${sectionZips.size} fallback zips)`);
         }
       }
 
