@@ -5176,7 +5176,7 @@ export default function PropertyDetailModal({
               <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>{addr}</h2>
               {mlsListPrice ? (
                 <div style={{ fontSize: 16, fontWeight: 700, color: "#1e40af", marginTop: 4 }}>
-                  List Price: {fmt(mlsListPrice)}
+                  List Price: ${mlsListPrice.toLocaleString()}
                 </div>
               ) : null}
               <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>
