@@ -196,34 +196,38 @@ export class HonoluluTaxClient {
 
     let owners = (result.features || []).map((f) => this.normalizeAttributes(f.attributes) as HonoluluOwner);
 
-    // Log available fields from first result for discovery
-    if (owners.length > 0) {
-      const sample = owners[0] as Record<string, unknown>;
-      const fields = Object.keys(sample).filter((k) => sample[k] != null).join(", ");
-      console.log(`[HonoluluTax] OWNINFO fields: ${fields}`);
-      console.log(`[HonoluluTax] OWNINFO sample: parid=${sample.parid}, tmk=${sample.tmk}, owner=${sample.owner || sample.taxbillown}`);
-    }
-
     // If multiple results from a land-level TMK (no unit suffix), we're getting
-    // all units in the building. Try to match by address to find the specific owner.
+    // all units in the building. Try to match by address fields to find the specific owner.
     if (owners.length > 1 && address) {
-      // Extract street number from the property address
-      const streetNum = address.match(/^(\d[\d-]*)/)?.[1];
       // Extract unit from address (e.g., "3001" from "1150 Kamahele Street 3001")
       const addrParts = address.split(",")[0].trim().split(/\s+/);
       const unitPart = addrParts.length > 2 ? addrParts[addrParts.length - 1] : null;
       const unitClean = unitPart?.replace(/-/g, "");
 
-      if (streetNum && unitClean) {
-        // Try to match by parid -- some OWNINFO records have the property address
-        // in the mailing address field (owner-occupied units)
+      if (unitClean) {
+        // OWNINFO has address1/address3 fields that may contain the property address with unit
+        // Also check suffix field which may contain the unit identifier
         const filtered = owners.filter((o) => {
-          const mailadd = String((o as any).mailadd || "").toUpperCase();
-          // Check if mailing address contains the street number AND unit
-          return mailadd.includes(streetNum) && (mailadd.includes(unitClean) || mailadd.includes(unitPart || ""));
+          const rec = o as Record<string, unknown>;
+          const addr1 = String(rec.address1 || "").toUpperCase();
+          const addr3 = String(rec.address3 || "").toUpperCase();
+          const suffix = String(rec.suffix || "");
+          const parid = String(rec.parid || "");
+
+          // Match by address1/address3 containing the unit number
+          if (addr1.includes(unitClean) || addr1.includes(unitPart || "")) return true;
+          if (addr3.includes(unitClean) || addr3.includes(unitPart || "")) return true;
+          // Match by suffix field
+          if (suffix === unitClean || suffix === unitPart) return true;
+
+          return false;
         });
-        if (filtered.length === 1) {
+
+        if (filtered.length >= 1 && filtered.length <= 2) {
+          console.log(`[HonoluluTax] Matched ${filtered.length} owner(s) by unit "${unitClean}" from ${owners.length} building records`);
           owners = filtered;
+        } else {
+          console.log(`[HonoluluTax] Could not match unit "${unitClean}" in address/suffix fields, ${filtered.length} matches from ${owners.length} records`);
         }
       }
     }
