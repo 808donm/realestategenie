@@ -193,9 +193,24 @@ export default function MarketWatchClient() {
       if (!res.ok) throw new Error(data.error);
       let fetchedListings = data.listings || [];
 
-      // No polygon filtering -- TMK boundary is visual only.
-      // All listings from the mapped ZIP codes are shown.
-      // Some may fall slightly outside the boundary, which is expected.
+      // For TMK searches, filter listings by ParcelNumber (TMK) prefix.
+      // This is precise -- no need for polygon or coordinate filtering.
+      if (isTMK(input) && fetchedListings.length > 0) {
+        const { parseTMKInput: parseTmk } = await import("@/lib/hawaii-tmk-zip");
+        const tmkParsed = parseTmk(input);
+        // Build TMK prefix: island + zone + section (e.g., "129" for 1-2-9)
+        const tmkPrefix = [tmkParsed.island, tmkParsed.zone, tmkParsed.section].filter(Boolean).join("");
+        if (tmkPrefix.length >= 3) {
+          const before = fetchedListings.length;
+          fetchedListings = fetchedListings.filter((l: any) => {
+            if (!l.parcelNumber) return true; // Keep listings without TMK (can't filter them)
+            const cleanTmk = String(l.parcelNumber).replace(/[-\s.]/g, "");
+            return cleanTmk.startsWith(tmkPrefix);
+          });
+          console.log(`[MarketWatch] TMK filter: ${before} -> ${fetchedListings.length} matching prefix "${tmkPrefix}"`);
+        }
+      }
+
       setListings(fetchedListings);
       setStatusCounts(data.statusCounts || {});
       setPriceChanges(data.priceChanges || { increases: 0, decreases: 0 });
