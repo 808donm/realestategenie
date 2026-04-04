@@ -224,19 +224,21 @@ export class HonoluluTaxClient {
         if (owners.length > 0) {
           const s = owners[0] as Record<string, unknown>;
           console.log(`[HonoluluTax] OWNINFO unit match: looking for "${unitClean}" in address="${address}"`);
-          console.log(`[HonoluluTax] Sample record: addr1="${s.address1}", addr3="${s.address3}", suffix="${s.suffix}", parid="${s.parid}"`);
+          console.log(`[HonoluluTax] Sample record: addr1="${s.address1}", addr2="${s.address2}", addr3="${s.address3}", suffix="${s.suffix}", parid="${s.parid}"`);
         }
-        // OWNINFO has address1/address3 fields that may contain the property address with unit
+        // OWNINFO has address1/address2/address3 fields that may contain the property address with unit
         // Also check suffix field which may contain the unit identifier
         const filtered = owners.filter((o) => {
           const rec = o as Record<string, unknown>;
           const addr1 = String(rec.address1 || "").toUpperCase();
+          const addr2 = String(rec.address2 || "").toUpperCase();
           const addr3 = String(rec.address3 || "").toUpperCase();
           const suffix = String(rec.suffix || "");
           const parid = String(rec.parid || "");
 
-          // Match by address1/address3 containing the unit number
+          // Match by address1/address2/address3 containing the unit number
           if (addr1.includes(unitClean) || addr1.includes(unitPart || "")) return true;
+          if (addr2.includes(unitClean) || addr2.includes(unitPart || "")) return true;
           if (addr3.includes(unitClean) || addr3.includes(unitPart || "")) return true;
           // Match by suffix field
           if (suffix === unitClean || suffix === unitPart) return true;
