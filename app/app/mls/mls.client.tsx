@@ -3376,7 +3376,21 @@ export default function MLSClient() {
 
               {attomData && (
                 <PropertyDetailModal
-                  property={attomData}
+                  property={(() => {
+                    // Merge Trestle's full TMK (from UniversalParcelId) into property data
+                    // RentCast/Realie often don't return assessorID for condos
+                    const prop = { ...attomData };
+                    if ((selectedProperty as any)?.UniversalParcelId && (!prop.identifier?.apn || prop.identifier.apn.split("-").length < 6)) {
+                      const upiParts = (selectedProperty as any).UniversalParcelId.split(":");
+                      const fullTmk = upiParts[upiParts.length - 1];
+                      if (fullTmk?.includes("-")) {
+                        prop.identifier = { ...prop.identifier, apn: fullTmk };
+                      }
+                    } else if ((selectedProperty as any)?.ParcelNumber && !prop.identifier?.apn) {
+                      prop.identifier = { ...prop.identifier, apn: (selectedProperty as any).ParcelNumber };
+                    }
+                    return prop;
+                  })()}
                   onClose={() => {}}
                   embedded
                   mlsPhotos={selectedProperty?.Media?.filter((m) => (m.MediaType || "").startsWith("image"))
