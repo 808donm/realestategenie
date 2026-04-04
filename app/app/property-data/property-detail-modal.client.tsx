@@ -319,10 +319,21 @@ export default function PropertyDetailModal({
   const countyAssessment = p.assessment?.market?.mktTtlValue || p.assessment?.appraised?.apprTtlValue;
   const lastSaleAmt = p.sale?.amount?.saleAmt || p.sale?.amount?.salePrice;
 
-  // AVM is always shown when available (reliability check removed --
-  // with unit-specific address lookups, AVM accuracy has improved significantly)
+  // AVM is always shown when available
   const avmVal = rawAvmVal;
   const avmUnreliable = false;
+  const avmLow = p.avm?.amount?.low;
+  const avmHigh = p.avm?.amount?.high;
+
+  // FSD (Forecast Standard Deviation) -- measures AVM confidence
+  // FSD = ((high - low) / (2 * estimate)) * 100
+  // High Confidence: FSD < 13%, Medium: 13-20%, Low: > 20%
+  const avmFSD = avmVal && avmLow != null && avmHigh != null && avmVal > 0
+    ? Math.round(((avmHigh - avmLow) / (2 * avmVal)) * 1000) / 10
+    : null;
+  const avmConfidenceLevel: "High" | "Medium" | "Low" | null =
+    avmFSD != null ? (avmFSD < 13 ? "High" : avmFSD <= 20 ? "Medium" : "Low") : null;
+
   // Best estimated value: AVM → county assessment → appraised assessment
   const bestValue = avmVal || countyAssessment || p.assessment?.appraised?.apprTtlValue;
   // Use Realie's pre-calculated equity (AVM - outstanding mortgage balance) if available,
@@ -1432,28 +1443,29 @@ export default function PropertyDetailModal({
         const displayVal = avmVal || p.assessment?.market?.mktTtlValue || p.assessment?.appraised?.apprTtlValue;
         if (displayVal == null) return null;
         const label = avmVal ? "AVM Value" : p.assessment?.market?.mktTtlValue ? "Market Value" : "Appraised Value";
-        const cardColor = avmUnreliable ? "#92400e" : "#059669";
-        const cardBg = avmUnreliable ? "#fffbeb" : "#ecfdf5";
+        const confidenceColors = {
+          High: { color: "#059669", bg: "#ecfdf5" },
+          Medium: { color: "#d97706", bg: "#fffbeb" },
+          Low: { color: "#dc2626", bg: "#fef2f2" },
+        };
+        const cc = avmConfidenceLevel ? confidenceColors[avmConfidenceLevel] : { color: "#059669", bg: "#ecfdf5" };
         return (
-          <div style={{ flex: 1, minWidth: 130, padding: "10px 14px", background: cardBg, borderRadius: 8 }}>
-            <div
-              style={{
-                fontSize: 11,
-                color: cardColor,
-                fontWeight: 600,
-                textTransform: "uppercase",
-                letterSpacing: 0.5,
-              }}
-            >
-              {label}
+          <div style={{ flex: 1, minWidth: 130, padding: "10px 14px", background: cc.bg, borderRadius: 8 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ fontSize: 11, color: cc.color, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                {label}
+              </div>
+              {avmConfidenceLevel && (
+                <span style={{ fontSize: 9, fontWeight: 700, color: cc.color, background: `${cc.color}15`, padding: "1px 6px", borderRadius: 4 }}>
+                  {avmConfidenceLevel}
+                </span>
+              )}
             </div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: cardColor }}>{fmt(displayVal)}</div>
-            {avmUnreliable && (
-              <div style={{ fontSize: 10, color: "#92400e" }}>AVM unavailable - county value</div>
-            )}
-            {!avmUnreliable && p.avm?.amount?.low != null && p.avm?.amount?.high != null && (
+            <div style={{ fontSize: 18, fontWeight: 700, color: cc.color }}>{fmt(displayVal)}</div>
+            {avmLow != null && avmHigh != null && (
               <div style={{ fontSize: 11, color: "#6b7280" }}>
-                Range: {fmt(p.avm.amount.low)} - {fmt(p.avm.amount.high)}
+                Range: {fmt(avmLow)} - {fmt(avmHigh)}
+                {avmFSD != null && <span style={{ marginLeft: 4 }}>(FSD: {avmFSD}%)</span>}
               </div>
             )}
           </div>
@@ -1962,6 +1974,15 @@ export default function PropertyDetailModal({
                     </div>
                   </div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 16, marginTop: 10, fontSize: 12, color: "#374151" }}>
+                    {avmConfidenceLevel && (
+                      <span>
+                        <strong>AVM Confidence:</strong>{" "}
+                        <span style={{ color: avmConfidenceLevel === "High" ? "#059669" : avmConfidenceLevel === "Medium" ? "#d97706" : "#dc2626", fontWeight: 700 }}>
+                          {avmConfidenceLevel}
+                        </span>
+                        {avmFSD != null && <span style={{ color: "#9ca3af" }}> (FSD: {avmFSD}%)</span>}
+                      </span>
+                    )}
                     {heLoanCount != null && heLoanCount > 0 && <span><strong>Active Loans:</strong> {heLoanCount}</span>}
                     {heEstPayment != null && heEstPayment > 0 && <span><strong>Est. Monthly Payment:</strong> {fmt(heEstPayment)}</span>}
                     <span><strong>Last Sale:</strong> {heLastSalePrice != null ? fmt(heLastSalePrice) : "Not Disclosed"}</span>
@@ -1992,6 +2013,12 @@ export default function PropertyDetailModal({
                     <Field
                       label="Range Width"
                       value={`±${Math.round(((avm.amount.high - avm.amount.low) / 2 / avm.amount.value) * 100)}%`}
+                    />
+                  )}
+                  {avmFSD != null && (
+                    <Field
+                      label="Confidence"
+                      value={`${avmConfidenceLevel} (FSD: ${avmFSD}%)`}
                     />
                   )}
                   <Field
