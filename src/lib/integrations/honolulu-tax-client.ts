@@ -220,6 +220,12 @@ export class HonoluluTaxClient {
       const unitClean = unitPart?.replace(/-/g, "");
 
       if (unitClean) {
+        // Log sample record fields for debugging
+        if (owners.length > 0) {
+          const s = owners[0] as Record<string, unknown>;
+          console.log(`[HonoluluTax] OWNINFO unit match: looking for "${unitClean}" in address="${address}"`);
+          console.log(`[HonoluluTax] Sample record: addr1="${s.address1}", addr3="${s.address3}", suffix="${s.suffix}", parid="${s.parid}"`);
+        }
         // OWNINFO has address1/address3 fields that may contain the property address with unit
         // Also check suffix field which may contain the unit identifier
         const filtered = owners.filter((o) => {
