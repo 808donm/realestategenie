@@ -698,8 +698,10 @@ export default function PropertyDetailModal({
 
       try {
         const params = new URLSearchParams({ endpoint: "enriched", tmk });
-        // Pass address so OWNINFO can filter to the specific condo unit owner
-        const ownerAddr = p.address?.line1 || p.address?.oneLine?.split(",")[0]?.trim();
+        // Pass original MLS address so OWNINFO can filter to the specific condo unit owner
+        // Use mlsAddress (raw from MLS, e.g., "1150 Kamahele Street 3001") not line1
+        // which may have been reformatted (unit stripped or prefixed with "Unit")
+        const ownerAddr = mlsAddress || p.address?.line1 || p.address?.oneLine?.split(",")[0]?.trim();
         if (ownerAddr) params.set("address", ownerAddr);
         const res = await fetch(`/api/integrations/hawaii-parcels?${params}`);
         const data = await res.json();

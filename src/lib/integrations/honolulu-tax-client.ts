@@ -199,9 +199,24 @@ export class HonoluluTaxClient {
     // If multiple results from a land-level TMK (no unit suffix), we're getting
     // all units in the building. Try to match by address fields to find the specific owner.
     if (owners.length > 1 && address) {
-      // Extract unit from address (e.g., "3001" from "1150 Kamahele Street 3001")
-      const addrParts = address.split(",")[0].trim().split(/\s+/);
-      const unitPart = addrParts.length > 2 ? addrParts[addrParts.length - 1] : null;
+      // Extract unit from address. Handles multiple formats:
+      //   "1150 Kamahele Street 3001" -> "3001"
+      //   "1150 Kamahele Street Unit 3001" -> "3001"
+      //   "1150 Kamahele Street #3001" -> "3001"
+      //   "7018 Hawaii Kai Drive 6-15" -> "615"
+      const streetPart = address.split(",")[0].trim();
+      let unitPart: string | null = null;
+      // Try explicit unit prefix first
+      const unitPrefixMatch = streetPart.match(/(?:unit|apt|#)\s*(\S+)$/i);
+      if (unitPrefixMatch) {
+        unitPart = unitPrefixMatch[1];
+      } else {
+        // Bare trailing unit after street suffix
+        const bareSuffixMatch = streetPart.match(
+          /\b(?:st|street|rd|road|ave|avenue|dr|drive|ln|lane|pl|place|blvd|boulevard|ct|court|way|loop|pkwy|parkway|hwy|highway|cir|circle)\b\.?\s+([\dA-Z][\dA-Z-]*)$/i,
+        );
+        if (bareSuffixMatch) unitPart = bareSuffixMatch[1];
+      }
       const unitClean = unitPart?.replace(/-/g, "");
 
       if (unitClean) {
