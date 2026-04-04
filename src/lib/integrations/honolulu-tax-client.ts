@@ -165,36 +165,47 @@ export class HonoluluTaxClient {
     // Strategy: if we get multiple results from a TMK query, try to filter by
     // street number from the address to find the specific unit owner.
 
-    // Build query conditions
-    const conditions: string[] = [];
-    conditions.push(`parid='${cleanTmk}'`);
-    conditions.push(`tmk='${cleanTmk}'`);
+    // Step 1: Try exact match with full TMK (unit-specific for condos)
+    const exactConditions: string[] = [];
+    exactConditions.push(`parid='${cleanTmk}'`);
+    exactConditions.push(`tmk='${cleanTmk}'`);
 
-    // Strip island prefix if 9+ digits
     let noIsland = cleanTmk;
     if (cleanTmk.length >= 9) {
       noIsland = cleanTmk.slice(1);
       const padded12 = noIsland.padEnd(12, "0");
-      if (padded12 !== cleanTmk) conditions.push(`parid='${padded12}'`);
+      if (padded12 !== cleanTmk) exactConditions.push(`parid='${padded12}'`);
       if (noIsland !== cleanTmk) {
-        conditions.push(`tmk='${noIsland}'`);
-        conditions.push(`parid='${noIsland}'`);
+        exactConditions.push(`tmk='${noIsland}'`);
+        exactConditions.push(`parid='${noIsland}'`);
       }
     }
 
-    // Also try 8-digit building-level TMK in the same query
-    const tmk8 = noIsland.length >= 8 ? noIsland.slice(0, 8) : cleanTmk.length >= 8 ? cleanTmk.slice(0, 8) : null;
-    if (tmk8) {
-      conditions.push(`tmk='${tmk8}'`);
-    }
-
-    const where = [...new Set(conditions)].join(" OR ");
-    const result = await this.query(this.ownallUrl, where, {
-      resultRecordCount: 20,
+    const exactWhere = [...new Set(exactConditions)].join(" OR ");
+    const exactResult = await this.query(this.ownallUrl, exactWhere, {
+      resultRecordCount: 5,
       orderByFields: "tmk ASC",
     });
 
-    let owners = (result.features || []).map((f) => this.normalizeAttributes(f.attributes) as HonoluluOwner);
+    let owners = (exactResult.features || []).map((f) => this.normalizeAttributes(f.attributes) as HonoluluOwner);
+
+    // If exact match found 1-2 results, return them (specific unit or SFR)
+    if (owners.length >= 1 && owners.length <= 2) {
+      return owners;
+    }
+
+    // Step 2: Broaden to 8-digit building-level TMK if exact match failed
+    if (owners.length === 0) {
+      const tmk8 = noIsland.length >= 8 ? noIsland.slice(0, 8) : cleanTmk.length >= 8 ? cleanTmk.slice(0, 8) : null;
+      if (tmk8) {
+        const broadWhere = `tmk='${tmk8}'`;
+        const broadResult = await this.query(this.ownallUrl, broadWhere, {
+          resultRecordCount: 20,
+          orderByFields: "tmk ASC",
+        });
+        owners = (broadResult.features || []).map((f) => this.normalizeAttributes(f.attributes) as HonoluluOwner);
+      }
+    }
 
     // If multiple results from a land-level TMK (no unit suffix), we're getting
     // all units in the building. Try to match by address fields to find the specific owner.
