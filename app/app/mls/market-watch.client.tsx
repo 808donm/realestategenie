@@ -161,7 +161,7 @@ export default function MarketWatchClient() {
             }),
           );
           const mergedListings: any[] = [];
-          const mergedCounts: Record<string, number> = {};
+          let mergedCounts: Record<string, number> = {};
           let mergedPriceChanges = { increases: 0, decreases: 0 };
           const seenKeys = new Set<string>();
           for (const d of allResults) {
@@ -187,6 +187,19 @@ export default function MarketWatchClient() {
               if (!l.parcelNumber) return false;
               return String(l.parcelNumber).startsWith(tmkPrefix);
             });
+            // Recalculate status counts from filtered listings
+            const filteredCounts: Record<string, number> = {};
+            let filteredInc = 0, filteredDec = 0;
+            for (const l of filteredMerged) {
+              const s = l.status || "Unknown";
+              filteredCounts[s] = (filteredCounts[s] || 0) + 1;
+              if (l.isNew) filteredCounts["New"] = (filteredCounts["New"] || 0) + 1;
+              if (l.isBackOnMarket) filteredCounts["Back On Market"] = (filteredCounts["Back On Market"] || 0) + 1;
+              if (l.isPriceIncrease) { filteredCounts["Price Increase"] = (filteredCounts["Price Increase"] || 0) + 1; filteredInc++; }
+              if (l.isPriceDecrease) { filteredCounts["Price Decrease"] = (filteredCounts["Price Decrease"] || 0) + 1; filteredDec++; }
+            }
+            mergedCounts = filteredCounts;
+            mergedPriceChanges = { increases: filteredInc, decreases: filteredDec };
             console.log(`[MarketWatch] TMK filter (multi-zip): ${mergedListings.length} -> ${filteredMerged.length} matching prefix "${tmkPrefix}"`);
           }
           setListings(filteredMerged);
@@ -223,9 +236,25 @@ export default function MarketWatchClient() {
         }
       }
 
+      // If TMK-filtered, recalculate status counts from filtered listings
+      let finalCounts = data.statusCounts || {};
+      let finalPriceChanges = data.priceChanges || { increases: 0, decreases: 0 };
+      if (isTMK(input) && fetchedListings.length !== (data.listings || []).length) {
+        finalCounts = {};
+        let inc = 0, dec = 0;
+        for (const l of fetchedListings) {
+          const s = l.status || "Unknown";
+          finalCounts[s] = (finalCounts[s] || 0) + 1;
+          if (l.isNew) finalCounts["New"] = (finalCounts["New"] || 0) + 1;
+          if (l.isBackOnMarket) finalCounts["Back On Market"] = (finalCounts["Back On Market"] || 0) + 1;
+          if (l.isPriceIncrease) { finalCounts["Price Increase"] = (finalCounts["Price Increase"] || 0) + 1; inc++; }
+          if (l.isPriceDecrease) { finalCounts["Price Decrease"] = (finalCounts["Price Decrease"] || 0) + 1; dec++; }
+        }
+        finalPriceChanges = { increases: inc, decreases: dec };
+      }
       setListings(fetchedListings);
-      setStatusCounts(data.statusCounts || {});
-      setPriceChanges(data.priceChanges || { increases: 0, decreases: 0 });
+      setStatusCounts(finalCounts);
+      setPriceChanges(finalPriceChanges);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to fetch market data");
     } finally {
