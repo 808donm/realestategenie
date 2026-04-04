@@ -5174,6 +5174,11 @@ export default function PropertyDetailModal({
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
             <div>
               <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>{addr}</h2>
+              {mlsListPrice ? (
+                <div style={{ fontSize: 16, fontWeight: 700, color: "#1e40af", marginTop: 4 }}>
+                  List Price: {fmt(mlsListPrice)}
+                </div>
+              ) : null}
               <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>
                 {[
                   beds != null ? `${beds} bed` : null,
