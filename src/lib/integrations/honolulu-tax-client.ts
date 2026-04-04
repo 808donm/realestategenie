@@ -181,6 +181,7 @@ export class HonoluluTaxClient {
     }
 
     const exactWhere = exactConditions.join(" OR ");
+    console.log(`[HonoluluTax] OWNINFO exact query: ${exactWhere}`);
     const exactResult = await this.query(this.ownallUrl, exactWhere, {
       resultRecordCount: 10,
       orderByFields: "tmk ASC",
@@ -188,11 +189,13 @@ export class HonoluluTaxClient {
 
     // If we got results with exact match, return them (specific unit for condos)
     if (exactResult.features && exactResult.features.length > 0) {
+      console.log(`[HonoluluTax] OWNINFO exact match: ${exactResult.features.length} results`);
       return exactResult.features.map((f) => this.normalizeAttributes(f.attributes) as HonoluluOwner);
     }
 
     // Step 2: Broaden search -- try 8-digit building-level TMK
     // This is the fallback for SFR properties where there's no unit suffix
+    console.log(`[HonoluluTax] OWNINFO exact match failed, trying broad search`);
     const broadConditions: string[] = [];
     if (cleanTmk.length > 8) {
       broadConditions.push(`tmk='${cleanTmk.slice(0, 8)}'`);
