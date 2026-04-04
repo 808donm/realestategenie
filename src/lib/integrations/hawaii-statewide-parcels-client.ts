@@ -156,17 +156,17 @@ export class HawaiiStatewideParcelClient {
 
     // Build query conditions -- try multiple formats
     const conditions: string[] = [];
-    conditions.push(`tmk='${parcelTmk}'`);
-    conditions.push(`cty_tmk='${parcelTmk}'`);
+    conditions.push(`tmk=${parcelTmk}`);
+    conditions.push(`cty_tmk=${parcelTmk}`);
     // Also try original if different
     if (cleanTmk !== parcelTmk) {
-      conditions.push(`tmk='${cleanTmk}'`);
-      conditions.push(`cty_tmk='${cleanTmk}'`);
+      conditions.push(`tmk=${cleanTmk}`);
+      conditions.push(`cty_tmk=${cleanTmk}`);
     }
-    // For shorter TMKs, use LIKE
+    // For shorter TMKs, use CAST to string for LIKE matching (tmk is numeric)
     if (parcelTmk.length < 9) {
-      conditions.push(`tmk LIKE '%${parcelTmk}%'`);
-      conditions.push(`cty_tmk LIKE '%${parcelTmk}%'`);
+      conditions.push(`CAST(tmk AS VARCHAR(20)) LIKE '%${parcelTmk}%'`);
+      conditions.push(`CAST(cty_tmk AS VARCHAR(20)) LIKE '%${parcelTmk}%'`);
     }
 
     const where = conditions.join(" OR ");
@@ -191,13 +191,13 @@ export class HawaiiStatewideParcelClient {
     const parcelTmk = cleanTmk.length > 9 ? cleanTmk.slice(0, 9) : cleanTmk;
 
     const conditions: string[] = [];
-    conditions.push(`tmk='${parcelTmk}'`);
-    conditions.push(`cty_tmk='${parcelTmk}'`);
+    conditions.push(`tmk=${parcelTmk}`);
+    conditions.push(`cty_tmk=${parcelTmk}`);
     if (cleanTmk !== parcelTmk) {
-      conditions.push(`tmk='${cleanTmk}'`);
+      conditions.push(`tmk=${cleanTmk}`);
     }
     if (parcelTmk.length < 9) {
-      conditions.push(`tmk LIKE '%${parcelTmk}%'`);
+      conditions.push(`CAST(tmk AS VARCHAR(20)) LIKE '%${parcelTmk}%'`);
     }
     const where = conditions.join(" OR ");
 
