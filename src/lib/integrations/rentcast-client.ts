@@ -846,6 +846,19 @@ export function mapAttomParamsToRentcast(
     if (suffixMatch) {
       addr = `${suffixMatch[1]}, ${suffixMatch[2]}`;
     }
+    // Strip bare trailing condo unit numbers after street suffix.
+    // MLS stores condos as "7018 Hawaii Kai Drive 6-15" (no Apt/#/Unit prefix).
+    // RentCast/Realie can't parse these -- strip to building address.
+    const streetPart = addr.split(",")[0];
+    const unitStrip = streetPart.match(
+      /^(.+?\b(?:st|street|rd|road|ave|avenue|dr|drive|ln|lane|pl|place|blvd|boulevard|ct|court|way|loop|pkwy|parkway|hwy|highway|cir|circle)\b\.?)\s+[\dA-Z][\dA-Z-]*$/i,
+    );
+    if (unitStrip) {
+      const rest = addr.slice(streetPart.length);
+      addr = unitStrip[1] + rest;
+    }
+    // Also strip explicit unit prefixes: "#G5", "Apt 301", "Unit 1806"
+    addr = addr.replace(/\s*(?:#|apt\.?|unit|ste\.?|suite)\s*\S+/i, "");
     mapped.address = addr;
   }
 

@@ -1980,7 +1980,14 @@ export function mapAttomParamsToRealie(endpoint: string, params: Record<string, 
       }
       mapped.address = street;
     } else {
-      mapped.address = params.address;
+      // Strip bare trailing condo unit numbers after street suffix
+      let cleanAddr = params.address;
+      const unitStrip = cleanAddr.match(
+        /^(.+?\b(?:st|street|rd|road|ave|avenue|dr|drive|ln|lane|pl|place|blvd|boulevard|ct|court|way|loop|pkwy|parkway|hwy|highway|cir|circle)\b\.?)\s+[\dA-Z][\dA-Z-]*$/i,
+      );
+      if (unitStrip) cleanAddr = unitStrip[1];
+      cleanAddr = cleanAddr.replace(/\s*(?:#|apt\.?|unit|ste\.?|suite)\s*\S+/i, "");
+      mapped.address = cleanAddr;
     }
   }
 
