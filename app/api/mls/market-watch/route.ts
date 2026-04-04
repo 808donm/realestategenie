@@ -5,7 +5,7 @@ import { getTrestleClient } from "@/lib/mls/trestle-helpers";
 /**
  * GET /api/mls/market-watch
  *
- * Returns MLS listings for a Market Watch map and dashboard.
+ * Returns MLS listings for a Market Monitor map and dashboard.
  * Queries by zip code or bounding box with status filtering.
  *
  * Query params:
@@ -103,7 +103,7 @@ export async function GET(request: NextRequest) {
     // Note: can't filter PropertySubType as OData enum, so filter server-side
 
     const filterStr = filters.join(" and ");
-    console.log(`[Market Watch] Filter: ${filterStr}`);
+    console.log(`[Market Monitor] Filter: ${filterStr}`);
 
     // Trestle suppresses Latitude/Longitude when $expand=Media is used.
     // Fetch both in parallel and merge: coords from one call, photos from another.
@@ -145,7 +145,7 @@ export async function GET(request: NextRequest) {
     // This is free and works for every listing since HiCentral always provides ParcelNumber (TMK).
     const needsCoords = (result.value || []).filter((p: any) => (!p.Latitude || !p.Longitude) && (p as any).ParcelNumber);
     if (needsCoords.length > 0) {
-      console.log(`[Market Watch] Resolving coordinates from parcel centroids for ${needsCoords.length} listings`);
+      console.log(`[Market Monitor] Resolving coordinates from parcel centroids for ${needsCoords.length} listings`);
 
       // Strip condo unit suffix (last 4 digits) from TMK for land-level parcel lookup.
       // TMK "1-2-8-013-029-0011" -> query tmk = 128013029 (9 digits, no unit)
@@ -202,11 +202,11 @@ export async function GET(request: NextRequest) {
           }),
         );
       }
-      console.log(`[Market Watch] Parcel centroid lookup: ${resolved} of ${needsCoords.length} listings resolved (${uniqueTmks.length} unique parcels)`);
+      console.log(`[Market Monitor] Parcel centroid lookup: ${resolved} of ${needsCoords.length} listings resolved (${uniqueTmks.length} unique parcels)`);
     }
 
     const finalWithCoords = (result.value || []).filter((p: any) => p.Latitude && p.Longitude).length;
-    console.log(`[Market Watch] Returned ${result.value?.length || 0} listings, ${finalWithCoords} with coords, ${photoMap.size} with photos`);
+    console.log(`[Market Monitor] Returned ${result.value?.length || 0} listings, ${finalWithCoords} with coords, ${photoMap.size} with photos`);
 
     // Filter out rentals server-side
     const listings = (result.value || []).filter((p: any) => {
@@ -322,7 +322,7 @@ export async function GET(request: NextRequest) {
       postalCode,
     });
   } catch (error: any) {
-    console.error("[Market Watch] Error:", error);
+    console.error("[Market Monitor] Error:", error);
     return NextResponse.json({ error: error.message || "Failed to fetch market watch data" }, { status: 500 });
   }
 }

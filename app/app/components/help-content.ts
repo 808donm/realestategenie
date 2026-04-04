@@ -262,9 +262,9 @@ Your account must have Trestle (CoreLogic) credentials configured. This is set u
 
 **AI Tools**: Generate AI-powered listing descriptions (multiple tones) and social media content (Instagram, Facebook, LinkedIn, TikTok) with captions, hashtags, and video scripts.
 
-### 5.3 Market Watch (Tab 2)
+### 5.3 Market Monitor (Tab 2)
 
-Market Watch monitors market activity for a specific zip code or area.
+Market Monitor monitors market activity for a specific zip code or area.
 
 1. Enter a zip code and select a timeframe (24 hours, 7 days, 30 days, or 90 days).
 2. Toggle between **Map View** (Google Maps with color-coded markers) and **Hot Sheet View** (sortable spreadsheet).

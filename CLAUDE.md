@@ -219,7 +219,7 @@ The app's auth is tied to `realestategenie.app`. To enable testing on Vercel pre
 
 - **Every property detail card should be a complete intelligence briefing.** The agent should never need to leave the app or open another tab to learn about a property. AVM, ownership, sales history, comps, hazards, schools, crime, market stats, neighborhood amenities -- all in one view.
 - **Pull data from every available source.** Use MLS (Trestle), county records (Honolulu OWNINFO), state GIS (geodata.hawaii.gov), RentCast, Realie, FEMA, FBI, Census, NCES -- and merge it into a unified display. The agent shouldn't know or care where the data comes from.
-- **Consistency across touchpoints.** The same PropertyDetailModal is used in Property Search, Prospecting, Seller Map, and Market Watch. An agent sees the same data regardless of how they found the property.
+- **Consistency across touchpoints.** The same PropertyDetailModal is used in Property Search, Prospecting, Seller Map, and Market Monitor. An agent sees the same data regardless of how they found the property.
 - **Cache everything, fetch once.** Data that doesn't change often (schools, hazards, AVM) should be cached aggressively. The first view fetches; every subsequent view is instant.
 
 ### Simplicity First

@@ -9,7 +9,7 @@ const MLSFeaturesClient = dynamic(() => import("./mls-features.client"), {
 });
 
 const MarketWatchClient = dynamic(() => import("./market-watch.client"), {
-  loading: () => <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>Loading Market Watch...</div>,
+  loading: () => <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>Loading Market Monitor...</div>,
 });
 
 const MarketAnalyticsClient = dynamic(() => import("../market-analytics/market-analytics.client"), {
@@ -18,7 +18,7 @@ const MarketAnalyticsClient = dynamic(() => import("../market-analytics/market-a
 
 const tabs = [
   { id: "search", label: "Search & Listings" },
-  { id: "market-watch", label: "Market Watch" },
+  { id: "market-watch", label: "Market Monitor" },
   { id: "analytics", label: "Market Analytics" },
   { id: "cma", label: "CMA" },
   { id: "matches", label: "Lead Matches" },

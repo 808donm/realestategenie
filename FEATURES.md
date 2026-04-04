@@ -124,7 +124,7 @@
 - AI Description Generator (multiple tones)
 - AI Social Media Generator (Instagram, Facebook, LinkedIn, TikTok)
 
-### Tab 2: Market Watch
+### Tab 2: Market Monitor
 - Map view (Google Maps with color-coded markers by status, shaped by property type)
 - Hot Sheet view (sortable spreadsheet)
 - Status filters + timeframe (24h, 7d, 30d, 90d)

@@ -201,7 +201,7 @@ export default function MarketWatchClient() {
             }
             mergedCounts = filteredCounts;
             mergedPriceChanges = { increases: filteredInc, decreases: filteredDec };
-            console.log(`[MarketWatch] TMK filter (multi-zip): ${mergedListings.length} -> ${filteredMerged.length} matching prefix "${tmkPrefix}"`);
+            console.log(`[MarketMonitor] TMK filter (multi-zip): ${mergedListings.length} -> ${filteredMerged.length} matching prefix "${tmkPrefix}"`);
           }
           setListings(filteredMerged);
           setStatusCounts(mergedCounts);
@@ -233,7 +233,7 @@ export default function MarketWatchClient() {
             if (!l.parcelNumber) return true; // No TMK data -- keep it (already ZIP-filtered)
             return String(l.parcelNumber).startsWith(tmkPrefix);
           });
-          console.log(`[MarketWatch] TMK filter: ${before} -> ${fetchedListings.length} matching prefix "${tmkPrefix}"`);
+          console.log(`[MarketMonitor] TMK filter: ${before} -> ${fetchedListings.length} matching prefix "${tmkPrefix}"`);
         }
       }
 
@@ -331,7 +331,7 @@ export default function MarketWatchClient() {
           backgroundColor: "#f9fafb",
         }}
       >
-        <h2 style={{ margin: "0 0 16px", fontSize: 18, fontWeight: 700 }}>Market Watch</h2>
+        <h2 style={{ margin: "0 0 16px", fontSize: 18, fontWeight: 700 }}>Market Monitor</h2>
 
         {/* Search */}
         <div style={{ marginBottom: 12 }}>

@@ -116,7 +116,7 @@ Help the agent prioritize leads, view matched properties, draft communications, 
 - **AI Description Generator**: Creates 3-5 tone variants (Professional/Casual/Luxury/Family)
 - **AI Social Media Generator**: Platform-specific content (Instagram/Facebook/LinkedIn/TikTok) with captions, hashtags, video scripts
 
-**Tab 2 - Market Watch**: Map + Hot Sheet for market monitoring (see market-watch context)
+**Tab 2 - Market Monitor**: Map + Hot Sheet for market monitoring (see market-watch context)
 
 **Tab 3 - CMA**: Comparative Market Analysis with MLS comps, RentCast/Realie fallback, correlation scoring, suggested price range
 
@@ -223,8 +223,8 @@ GENERAL TIPS:
 Data sources: RentCast (property data, AVM), Realie (equity, liens, distress), Hawaii GIS (TMK parcels).
 Help the agent understand scoring, identify best prospects, and generate outreach materials.`,
 
-  // Market Watch
-  "market-watch": `The agent is on the MARKET WATCH page (a tab within MLS). This is a real-time market monitoring tool:
+  // Market Monitor
+  "market-watch": `The agent is on the MARKET MONITOR page (a tab within MLS). This is a real-time market monitoring tool:
 - **Map View**: Google Map with color-coded markers for each listing status
   - Green = Active, Yellow = Pending, Purple = Closed, Red = Expired/Withdrawn/Canceled
   - Blue = New (on market < 7 days), Purple outline = Back on Market
@@ -326,7 +326,7 @@ Help the agent create events, import from MLS, customize flyers, understand the 
 - **Sale Volume by Cities**: Vertical bar chart showing listings per city
 - **Fair Market Rents**: HUD Section 8 rents by bedroom count (Efficiency through 4BR)
 - **Median Rent by ZIP**: Rental medians sorted descending
-- Also accessible as a tab in the MLS page (between Market Watch and CMA)
+- Also accessible as a tab in the MLS page (between Market Monitor and CMA)
 - Data: RentCast market stats, Trestle MLS, HUD. Cached 24 hours.
 Help the agent understand market trends, compare neighborhoods, and identify opportunities.`,
 
