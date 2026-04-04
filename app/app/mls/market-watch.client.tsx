@@ -752,17 +752,25 @@ export default function MarketWatchClient() {
 
       {/* Property Detail Modal */}
       {detailListing && (() => {
-        // For condos, Trestle ParcelNumber has a zero unit suffix (e.g., "1-4-2-002-016-0000").
-        // Extract the unit from the address and replace the zero suffix so OWNINFO returns
+        // For condos, Trestle ParcelNumber may lack the unit suffix entirely
+        // (e.g., "1-4-2-002-016") or have zeros (e.g., "1-4-2-002-016-0000").
+        // Extract the unit from the address and append/replace so OWNINFO returns
         // the specific unit owner instead of all owners in the building.
         let apn = detailListing.parcelNumber || "";
-        if (apn && apn.endsWith("-0000")) {
+        if (apn && detailListing.propertySubType?.toLowerCase()?.includes("condo") || detailListing.propertySubType?.toLowerCase()?.includes("townhouse")) {
           const addrParts = (detailListing.address || "").split(",")[0].trim().split(/\s+/);
           const lastPart = addrParts[addrParts.length - 1];
-          // If the last part looks like a unit number (digits, possibly with dash like "6-15")
           if (lastPart && /^[\dA-Z][\dA-Z-]*$/i.test(lastPart) && addrParts.length > 2) {
             const unitNum = lastPart.replace(/-/g, "").padStart(4, "0");
-            apn = apn.replace(/-0000$/, `-${unitNum}`);
+            const parts = apn.split("-");
+            if (parts.length === 6) {
+              // Has unit suffix -- replace it
+              parts[5] = unitNum;
+              apn = parts.join("-");
+            } else if (parts.length === 5) {
+              // No unit suffix -- append it
+              apn = `${apn}-${unitNum}`;
+            }
           }
         }
         return (
