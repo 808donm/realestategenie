@@ -262,6 +262,15 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Log parcel/TMK fields from first listing to discover full TMK field
+    if (listings.length > 0) {
+      const sample = listings[0];
+      const parcelFields = Object.entries(sample)
+        .filter(([k]) => /parcel|tax|tmk|apn|assessor|map/i.test(k))
+        .map(([k, v]) => `${k}=${v}`);
+      console.log(`[Market Monitor] Parcel fields from Trestle: ${parcelFields.join(", ") || "none"}`);
+    }
+
     // Build address for each listing
     const enriched = listings.map((p: any) => {
       const address =
