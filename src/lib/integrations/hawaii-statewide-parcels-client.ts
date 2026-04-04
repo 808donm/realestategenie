@@ -154,15 +154,12 @@ export class HawaiiStatewideParcelClient {
       parcelTmk = cleanTmk.slice(0, 9);
     }
 
-    // Build query conditions -- try multiple formats
+    // Build query conditions -- only use 9-digit land-level TMK
+    // The statewide parcels tmk field is numeric and maxes at 9 digits.
+    // Passing 13-digit condo TMKs causes ArcGIS 400 errors.
     const conditions: string[] = [];
     conditions.push(`tmk=${parcelTmk}`);
     conditions.push(`cty_tmk=${parcelTmk}`);
-    // Also try original if different
-    if (cleanTmk !== parcelTmk) {
-      conditions.push(`tmk=${cleanTmk}`);
-      conditions.push(`cty_tmk=${cleanTmk}`);
-    }
     // For shorter TMKs, use CAST to string for LIKE matching (tmk is numeric)
     if (parcelTmk.length < 9) {
       conditions.push(`CAST(tmk AS VARCHAR(20)) LIKE '%${parcelTmk}%'`);

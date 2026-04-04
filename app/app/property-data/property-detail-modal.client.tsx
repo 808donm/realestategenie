@@ -2907,15 +2907,20 @@ export default function PropertyDetailModal({
 
             return buildQPublicUrl(keySource, hawaiiData?.parcel?.county, p.address?.postal1);
           })();
-          // Display TMK: prefer Hawaii source, fall back to converted APN
+          // Display TMK: prefer the most specific source (with unit suffix)
+          // attomApn from UniversalParcelId has full 6-part TMK (e.g., "1-4-2-002-016-0134")
+          // tmkValue from statewide parcels is only 8-9 digits (land-level, no unit)
+          const attomClean = attomApn?.replace(/[-\s.]/g, "") || "";
+          const tmkClean = tmkValue ? String(tmkValue).replace(/[-\s.]/g, "") : "";
           const displayTmk =
-            tmkValue ||
-            (attomApn
-              ? attomApn
-                  .replace(/[-\s.]/g, "")
-                  .slice(1)
-                  .padEnd(12, "0")
-              : null);
+            attomClean.length > tmkClean.length
+              ? attomClean.length > 9
+                ? attomClean.slice(1) // Strip island prefix for display (12-digit parid format)
+                : attomClean
+              : tmkValue ||
+                (attomApn
+                  ? attomClean.slice(1).padEnd(12, "0")
+                  : null);
 
           return (
             <>
