@@ -3093,6 +3093,13 @@ export default function MLSClient() {
                     {selectedProperty.PropertyType}
                     {selectedProperty.PropertySubType ? ` - ${selectedProperty.PropertySubType}` : ""}
                   </span>
+                  {/* Subdivision / Neighborhood */}
+                  {(selectedProperty as any).SubdivisionName && (
+                    <>
+                      <span style={{ fontWeight: 600, color: "#374151" }}>Neighborhood:</span>
+                      <span style={{ color: "#6b7280" }}>{(selectedProperty as any).SubdivisionName}</span>
+                    </>
+                  )}
                   {/* Land Tenure — critical for Hawaii */}
                   {selectedProperty.OwnershipType && (
                     <>
