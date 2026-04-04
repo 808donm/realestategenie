@@ -944,7 +944,7 @@ export default function PropertyDetailModal({
         ? fetch(`/api/mls/sales-history?address=${encodeURIComponent(salesAddr)}`)
             .then((r) => (r.ok ? r.json() : null))
             .then((data) => {
-              const sales = data?.unitHistory || data?.buildingHistory || [];
+              const sales = data?.transactions || data?.unitHistory || data?.buildingTransactions || data?.buildingHistory || [];
               if (sales.length > 0) {
                 const latest = sales[0];
                 return { closePrice: latest.ClosePrice || latest.closePrice, closeDate: latest.CloseDate || latest.closeDate };
