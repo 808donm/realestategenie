@@ -1950,6 +1950,7 @@ export default function PropertyDetailModal({
           const mlsSale = enrichedFinancial?.mlsLastSale;
           const heLastSalePrice = he?.lastSalePrice ?? he?.salePrice ?? p.sale?.amount?.saleAmt ?? lastSaleAmt ?? mlsSale?.closePrice;
           const heLastSaleDate = he?.lastSaleDate ?? he?.saleDate ?? p.sale?.amount?.saleRecDate ?? p.sale?.amount?.saleTransDate ?? (mlsSale?.closeDate ? new Date(mlsSale.closeDate).toLocaleDateString() : null);
+          console.log("[PropertyDetail] HE render:", { heLastSale: he?.lastSalePrice, saleAmt: p.sale?.amount?.saleAmt, lastSaleAmt, mlsSaleClose: mlsSale?.closePrice, final: heLastSalePrice });
           // Show Home Equity if we have AVM (from any source) -- not just from enrichedFinancial
           const heHasData = heAvmValue != null || heLoanBalance != null || heEquityAmount != null;
           const heIsPositive = heEquityAmount != null ? heEquityAmount >= 0 : true;
