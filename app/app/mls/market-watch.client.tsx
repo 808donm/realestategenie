@@ -764,12 +764,10 @@ export default function MarketWatchClient() {
       </div>
 
       {/* Property Detail Modal */}
-      {detailListing && (() => {
-        const apn = detailListing.parcelNumber || "";
-        return (
+      {detailListing && (
         <PropertyDetailModal
           property={{
-            identifier: { apn },
+            identifier: { apn: detailListing.parcelNumber || "" },
             address: {
               oneLine: [
                 detailListing.address,
@@ -801,8 +799,7 @@ export default function MarketWatchClient() {
           mlsAddress={detailListing.address}
           mlsPhotos={detailListing.photoUrl ? [detailListing.photoUrl] : undefined}
         />
-        );
-      })()}
+      )}
     </div>
   );
 }
