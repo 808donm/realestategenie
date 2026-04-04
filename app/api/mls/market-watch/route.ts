@@ -306,6 +306,7 @@ export async function GET(request: NextRequest) {
         lotSize: p.LotSizeArea,
         yearBuilt: p.YearBuilt,
         ownershipType: p.OwnershipType,
+        subdivision: p.SubdivisionName,
         modifiedAt: p.ModificationTimestamp,
         priceChange:
           p.OriginalListPrice && p.ListPrice !== p.OriginalListPrice ? p.ListPrice - p.OriginalListPrice : 0,

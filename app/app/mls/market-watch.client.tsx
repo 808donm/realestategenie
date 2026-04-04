@@ -74,6 +74,7 @@ interface Listing {
   lotSize?: number;
   yearBuilt?: number;
   ownershipType?: string;
+  subdivision?: string;
   modifiedAt?: string;
   priceChange?: number;
   photoUrl?: string;
@@ -720,6 +721,8 @@ export default function MarketWatchClient() {
                         <th style={thStyle} onClick={() => handleSort("lotSize")}>Lot{arrow("lotSize")}</th>
                         <th style={thStyle} onClick={() => handleSort("daysOnMarket")}>DOM{arrow("daysOnMarket")}</th>
                         <th style={thStyle} onClick={() => handleSort("yearBuilt")}>Year{arrow("yearBuilt")}</th>
+                        <th style={thStyle} onClick={() => handleSort("subdivision")}>Nbrhd{arrow("subdivision")}</th>
+                        <th style={thStyle} onClick={() => handleSort("ownershipType")}>LT{arrow("ownershipType")}</th>
                         <th style={thStyle} onClick={() => handleSort("modifiedAt")}>Date{arrow("modifiedAt")}</th>
                       </tr>
                     </thead>
@@ -738,6 +741,8 @@ export default function MarketWatchClient() {
                           <td style={tdStyle}>{l.lotSize ? l.lotSize.toLocaleString() : "-"}</td>
                           <td style={tdStyle}>{l.daysOnMarket ?? "-"}</td>
                           <td style={tdStyle}>{l.yearBuilt ?? "-"}</td>
+                          <td style={{ ...tdStyle, maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis" }}>{l.subdivision || "-"}</td>
+                          <td style={tdStyle}>{l.ownershipType === "Fee Simple" ? "FS" : l.ownershipType === "Leasehold" ? "LH" : l.ownershipType || "-"}</td>
                           <td style={tdStyle}>{fmtDate(l.modifiedAt)}</td>
                         </tr>
                       ))}
