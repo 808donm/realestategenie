@@ -121,62 +121,68 @@ export default function MarketWatchClient() {
       if (propertyType) params.set("propertyType", propertyType);
 
       if (isTMK(input)) {
-        // TMK search: get the TMK section boundary from GIS, then use bounding box to search MLS
+        // TMK search: use ZIP codes to get listings, then overlay TMK boundary for visual reference
         const { parseTMKInput, getZipsForTMKSection } = await import("@/lib/hawaii-tmk-zip");
         const tmk = parseTMKInput(input);
         const zone = tmk.zone || "";
         const section = tmk.section || "";
 
-        // Fetch TMK section boundary polygon from Hawaii GIS
+        // Get ZIP codes for this TMK section
+        const sectionZips = zone && section ? getZipsForTMKSection(zone, section) : null;
+        if (!sectionZips || sectionZips.length === 0) {
+          setError(`No ZIP codes mapped for TMK section ${zone}-${section}. Try a ZIP code instead.`);
+          setLoading(false);
+          return;
+        }
+
+        // Fetch TMK section boundary polygon for map overlay (non-blocking)
         const countyMap: Record<string, string> = { "1": "HONOLULU", "2": "MAUI", "3": "HAWAII", "4": "KAUAI" };
         const county = countyMap[tmk.island || "1"] || "HONOLULU";
         const tmkParams = new URLSearchParams({ county, layer: "sections" });
         if (zone) tmkParams.set("zone", zone);
         if (section) tmkParams.set("section", section);
         tmkParams.set("limit", "5");
+        fetch(`/api/seller-map/tmk-overlay?${tmkParams}`)
+          .then((r) => r.json())
+          .then((data) => { if (data.features?.length) setTmkBoundary(data); })
+          .catch(() => {}); // Boundary is visual only, not critical
 
-        let tmkBbox: string | null = null;
-        try {
-          const tmkRes = await fetch(`/api/seller-map/tmk-overlay?${tmkParams}`);
-          const tmkData = await tmkRes.json();
-
-          if (tmkData.features?.length > 0) {
-            // Store the TMK boundary for map overlay
-            setTmkBoundary(tmkData);
-
-            // Compute bounding box from the polygon geometry
-            let minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
-            for (const feature of tmkData.features) {
-              const coords = feature.geometry?.type === "Polygon"
-                ? feature.geometry.coordinates[0]
-                : feature.geometry?.type === "MultiPolygon"
-                  ? feature.geometry.coordinates.flat(2)
-                  : [];
-              for (const coord of coords) {
-                const [lng, lat] = Array.isArray(coord[0]) ? coord[0] : coord;
-                if (lat < minLat) minLat = lat;
-                if (lat > maxLat) maxLat = lat;
-                if (lng < minLng) minLng = lng;
-                if (lng > maxLng) maxLng = lng;
+        // Search by ZIP codes (fetches ALL listings in those zips)
+        if (sectionZips.length === 1) {
+          params.set("postalCode", sectionZips[0]);
+        } else {
+          // Multiple zips: fetch all in parallel and merge
+          const allResults = await Promise.all(
+            sectionZips.map(async (zip) => {
+              const p = new URLSearchParams(params);
+              p.set("postalCode", zip);
+              const r = await fetch(`/api/mls/market-watch?${p}`);
+              return r.ok ? r.json() : null;
+            }),
+          );
+          const mergedListings: any[] = [];
+          const mergedCounts: Record<string, number> = {};
+          let mergedPriceChanges = { increases: 0, decreases: 0 };
+          const seenKeys = new Set<string>();
+          for (const d of allResults) {
+            if (!d) continue;
+            for (const l of d.listings || []) {
+              if (!seenKeys.has(l.listingKey)) {
+                seenKeys.add(l.listingKey);
+                mergedListings.push(l);
               }
             }
-            tmkBbox = `${minLng},${minLat},${maxLng},${maxLat}`;
-            params.set("bbox", tmkBbox);
+            for (const [k, v] of Object.entries(d.statusCounts || {})) {
+              mergedCounts[k] = (mergedCounts[k] || 0) + (v as number);
+            }
+            mergedPriceChanges.increases += d.priceChanges?.increases || 0;
+            mergedPriceChanges.decreases += d.priceChanges?.decreases || 0;
           }
-        } catch (err) {
-          console.warn("[MarketWatch] TMK boundary fetch failed:", err);
-        }
-
-        // Fall back to ZIP codes if no boundary found
-        if (!tmkBbox) {
-          const sectionZips = zone && section ? getZipsForTMKSection(zone, section) : null;
-          if (sectionZips && sectionZips.length > 0) {
-            params.set("postalCode", sectionZips[0]);
-          } else {
-            setError(`No TMK boundary found for section ${zone}-${section}. Try a ZIP code instead.`);
-            setLoading(false);
-            return;
-          }
+          setListings(mergedListings);
+          setStatusCounts(mergedCounts);
+          setPriceChanges(mergedPriceChanges);
+          setLoading(false);
+          return;
         }
       } else {
         params.set("postalCode", input);
@@ -187,30 +193,9 @@ export default function MarketWatchClient() {
       if (!res.ok) throw new Error(data.error);
       let fetchedListings = data.listings || [];
 
-      // If TMK boundary exists, filter listings to only those INSIDE the polygon.
-      // For listings without coordinates, fall back to ZIP code matching.
-      if (tmkBoundary?.features?.length && fetchedListings.length > 0) {
-        const polygons = extractPolygons(tmkBoundary);
-        if (polygons.length > 0) {
-          // Get the ZIP codes for this TMK section as a fallback for listings without coords
-          const { parseTMKInput: parseTmk, getZipsForTMKSection: getZips } = await import("@/lib/hawaii-tmk-zip");
-          const tmkParsed = parseTmk(input);
-          const sectionZips = new Set(getZips(tmkParsed.zone || "", tmkParsed.section || "") || []);
-
-          const before = fetchedListings.length;
-          fetchedListings = fetchedListings.filter((l: any) => {
-            // If listing has coordinates, use point-in-polygon test
-            if (l.lat && l.lng) {
-              return polygons.some((poly: number[][]) => pointInPolygon(l.lat, l.lng, poly));
-            }
-            // Fallback: if no coordinates, include if ZIP matches the TMK section
-            if (l.postalCode && sectionZips.has(l.postalCode)) return true;
-            return false;
-          });
-          console.log(`[MarketWatch] Filtered ${before} bbox listings to ${fetchedListings.length} inside TMK polygon (${sectionZips.size} fallback zips)`);
-        }
-      }
-
+      // No polygon filtering -- TMK boundary is visual only.
+      // All listings from the mapped ZIP codes are shown.
+      // Some may fall slightly outside the boundary, which is expected.
       setListings(fetchedListings);
       setStatusCounts(data.statusCounts || {});
       setPriceChanges(data.priceChanges || { increases: 0, decreases: 0 });
