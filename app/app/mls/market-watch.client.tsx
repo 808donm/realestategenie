@@ -751,10 +751,24 @@ export default function MarketWatchClient() {
       </div>
 
       {/* Property Detail Modal */}
-      {detailListing && (
+      {detailListing && (() => {
+        // For condos, Trestle ParcelNumber has a zero unit suffix (e.g., "1-4-2-002-016-0000").
+        // Extract the unit from the address and replace the zero suffix so OWNINFO returns
+        // the specific unit owner instead of all owners in the building.
+        let apn = detailListing.parcelNumber || "";
+        if (apn && apn.endsWith("-0000")) {
+          const addrParts = (detailListing.address || "").split(",")[0].trim().split(/\s+/);
+          const lastPart = addrParts[addrParts.length - 1];
+          // If the last part looks like a unit number (digits, possibly with dash like "6-15")
+          if (lastPart && /^[\dA-Z][\dA-Z-]*$/i.test(lastPart) && addrParts.length > 2) {
+            const unitNum = lastPart.replace(/-/g, "").padStart(4, "0");
+            apn = apn.replace(/-0000$/, `-${unitNum}`);
+          }
+        }
+        return (
         <PropertyDetailModal
           property={{
-            identifier: { apn: detailListing.parcelNumber || "" },
+            identifier: { apn },
             address: {
               oneLine: [
                 detailListing.address,
@@ -786,7 +800,8 @@ export default function MarketWatchClient() {
           mlsAddress={detailListing.address}
           mlsPhotos={detailListing.photoUrl ? [detailListing.photoUrl] : undefined}
         />
-      )}
+        );
+      })()}
     </div>
   );
 }
