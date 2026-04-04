@@ -936,16 +936,31 @@ export default function PropertyDetailModal({
           .catch((e) => ({ status: "rejected" as const, reason: e }));
 
     // MLS last sale — Hawaii is non-disclosure, so Realie/RentCast won't have sale prices.
-    // Query MLS for closed sales of this property to get actual ClosePrice/CloseDate.
+    // Use MLS sales history endpoint (more reliable) and comps as fallback.
     const zip = p.address?.postal1;
-    const mlsLastSalePromise: Promise<any> =
+    const salesAddr = mlsAddress || addr1 || "";
+    const mlsSalesHistoryPromise: Promise<any> =
+      salesAddr
+        ? fetch(`/api/mls/sales-history?address=${encodeURIComponent(salesAddr)}`)
+            .then((r) => (r.ok ? r.json() : null))
+            .then((data) => {
+              const sales = data?.unitHistory || data?.buildingHistory || [];
+              if (sales.length > 0) {
+                const latest = sales[0];
+                return { closePrice: latest.ClosePrice || latest.closePrice, closeDate: latest.CloseDate || latest.closeDate };
+              }
+              return null;
+            })
+            .catch(() => null)
+        : Promise.resolve(null);
+
+    const mlsCompsPromise: Promise<any> =
       zip && addr1
         ? fetch(
             `/api/comps?address=${encodeURIComponent(addr1 + (addr2 ? ", " + addr2 : ""))}&zipCode=${zip}&compCount=1&months=60`,
           )
             .then((r) => r.json())
             .then((data) => {
-              // Find a comp that matches this property's address (it might be in its own closed sales)
               const comps = data.comparables || [];
               const addrLower = (addr1 || "").toLowerCase();
               const match = comps.find(
@@ -958,8 +973,10 @@ export default function PropertyDetailModal({
             .catch(() => null)
         : Promise.resolve(null);
 
-    Promise.all([rentalAvmPromise, mlsLastSalePromise])
-      .then(([rentalAvm, mlsLastSale]) => {
+    Promise.all([rentalAvmPromise, mlsSalesHistoryPromise, mlsCompsPromise])
+      .then(([rentalAvm, mlsSalesHistory, mlsLastSale]) => {
+        // Prefer direct sales history over comps match
+        const effectiveMlsLastSale = mlsSalesHistory || (mlsLastSale && !mlsLastSale._isComp ? mlsLastSale : null);
         // Build homeEquity from Realie's pre-calculated data, or fall back to
         // computing it from AVM / assessment values (same cascade the search cards use).
         let homeEquityData = (p as any).homeEquity || null;
@@ -1021,13 +1038,13 @@ export default function PropertyDetailModal({
         }
 
         // Enrich homeEquity with MLS last sale data (Hawaii non-disclosure workaround)
-        if (mlsLastSale && !mlsLastSale._isComp) {
+        if (effectiveMlsLastSale) {
           if (homeEquityData) {
-            if (!homeEquityData.lastSalePrice && mlsLastSale.closePrice) {
-              homeEquityData.lastSalePrice = mlsLastSale.closePrice;
+            if (!homeEquityData.lastSalePrice && effectiveMlsLastSale.closePrice) {
+              homeEquityData.lastSalePrice = effectiveMlsLastSale.closePrice;
             }
-            if (!homeEquityData.lastSaleDate && mlsLastSale.closeDate) {
-              homeEquityData.lastSaleDate = new Date(mlsLastSale.closeDate).toLocaleDateString();
+            if (!homeEquityData.lastSaleDate && effectiveMlsLastSale.closeDate) {
+              homeEquityData.lastSaleDate = new Date(effectiveMlsLastSale.closeDate).toLocaleDateString();
             }
           }
         }
@@ -1038,7 +1055,7 @@ export default function PropertyDetailModal({
           salesHistory: null,
           mortgageDetail: null,
           homeEquity: homeEquityData ? { property: [{ homeEquity: homeEquityData }] } : null,
-          mlsLastSale: mlsLastSale && !mlsLastSale._isComp ? mlsLastSale : null,
+          mlsLastSale: effectiveMlsLastSale || null,
         });
       })
       .finally(() => setEnrichedFinancialLoading(false));
@@ -1929,8 +1946,9 @@ export default function PropertyDetailModal({
           const heLtv = heRawLtv != null && heRawLtv > 0 ? heRawLtv : heAvmValue && heLoanBalance ? (heLoanBalance / heAvmValue) * 100 : null;
           const heLoanCount = he?.loanCount ?? he?.numberOfLoans ?? (p.mortgage?.lienCount);
           const heEstPayment = he?.estimatedPayment ?? he?.monthlyPayment;
-          const heLastSalePrice = he?.lastSalePrice ?? he?.salePrice ?? p.sale?.amount?.saleAmt ?? lastSaleAmt;
-          const heLastSaleDate = he?.lastSaleDate ?? he?.saleDate ?? p.sale?.amount?.saleRecDate ?? p.sale?.amount?.saleTransDate;
+          const mlsSale = enrichedFinancial?.mlsLastSale;
+          const heLastSalePrice = he?.lastSalePrice ?? he?.salePrice ?? p.sale?.amount?.saleAmt ?? lastSaleAmt ?? mlsSale?.closePrice;
+          const heLastSaleDate = he?.lastSaleDate ?? he?.saleDate ?? p.sale?.amount?.saleRecDate ?? p.sale?.amount?.saleTransDate ?? (mlsSale?.closeDate ? new Date(mlsSale.closeDate).toLocaleDateString() : null);
           // Show Home Equity if we have AVM (from any source) -- not just from enrichedFinancial
           const heHasData = heAvmValue != null || heLoanBalance != null || heEquityAmount != null;
           const heIsPositive = heEquityAmount != null ? heEquityAmount >= 0 : true;
