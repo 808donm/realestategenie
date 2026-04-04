@@ -196,6 +196,14 @@ export class HonoluluTaxClient {
 
     let owners = (result.features || []).map((f) => this.normalizeAttributes(f.attributes) as HonoluluOwner);
 
+    // Log available fields from first result for discovery
+    if (owners.length > 0) {
+      const sample = owners[0] as Record<string, unknown>;
+      const fields = Object.keys(sample).filter((k) => sample[k] != null).join(", ");
+      console.log(`[HonoluluTax] OWNINFO fields: ${fields}`);
+      console.log(`[HonoluluTax] OWNINFO sample: parid=${sample.parid}, tmk=${sample.tmk}, owner=${sample.owner || sample.taxbillown}`);
+    }
+
     // If multiple results from a land-level TMK (no unit suffix), we're getting
     // all units in the building. Try to match by address to find the specific owner.
     if (owners.length > 1 && address) {
