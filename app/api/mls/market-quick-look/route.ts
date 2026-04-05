@@ -77,16 +77,21 @@ export async function GET(request: NextRequest) {
     // Build ZIP-based filter: (startswith(PostalCode, '96701') or startswith(PostalCode, '96706') or ...)
     const zipFilter = `(${zips.map((z) => `startswith(PostalCode, '${z}')`).join(" or ")})`;
 
-    // Log a sample listing to see what county fields Trestle actually returns
+    // Log location fields from a sample listing to find the right county filter
     try {
       const sample = await client.getProperties({
         $filter: `StandardStatus eq 'Active'`,
         $top: 1,
-        $select: "ListingKey,CountyOrParish,City,StateOrProvince,PostalCode,MLSAreaMajor",
       });
       if (sample.value?.[0]) {
-        const s = sample.value[0];
-        console.log(`[Market Snapshot] Trestle county fields: CountyOrParish="${(s as any).CountyOrParish}", City="${s.City}", State="${s.StateOrProvince}", ZIP="${s.PostalCode}", MLSAreaMajor="${(s as any).MLSAreaMajor}"`);
+        const s = sample.value[0] as any;
+        // Log all fields that might contain county/area info
+        const locationFields = Object.entries(s)
+          .filter(([k]) => /county|parish|area|region|district|board|zone/i.test(k))
+          .map(([k, v]) => `${k}="${v}"`)
+          .join(", ");
+        console.log(`[Market Snapshot] Location fields: ${locationFields || "none found"}`);
+        console.log(`[Market Snapshot] City="${s.City}", State="${s.StateOrProvince}", ZIP="${s.PostalCode}"`);
       }
     } catch {}
 
