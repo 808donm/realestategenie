@@ -20,9 +20,14 @@ const HazardMapClient = dynamic(() => import("./hazard-map.client"), {
   loading: () => <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>Loading Hazard Map...</div>,
 });
 
+const MarketQuickLookClient = dynamic(() => import("./market-quick-look.client"), {
+  loading: () => <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>Loading Market Quick Look...</div>,
+});
+
 const tabs = [
   { id: "search", label: "Search & Listings" },
   { id: "market-watch", label: "Market Monitor" },
+  { id: "quick-look", label: "Market Quick Look" },
   { id: "analytics", label: "Market Analytics" },
   { id: "cma", label: "CMA" },
   { id: "matches", label: "Lead Matches" },
@@ -73,8 +78,9 @@ export default function MLSPageTabs() {
       {activeTab === "search" && <MLSClient />}
       {activeTab === "market-watch" && <MarketWatchClient />}
       {activeTab === "analytics" && <MarketAnalyticsClient />}
+      {activeTab === "quick-look" && <MarketQuickLookClient />}
       {activeTab === "hazard-map" && <HazardMapClient />}
-      {activeTab !== "search" && activeTab !== "market-watch" && activeTab !== "analytics" && activeTab !== "hazard-map" && <MLSFeaturesClient initialTab={activeTab} />}
+      {activeTab !== "search" && activeTab !== "market-watch" && activeTab !== "analytics" && activeTab !== "quick-look" && activeTab !== "hazard-map" && <MLSFeaturesClient initialTab={activeTab} />}
     </div>
   );
 }

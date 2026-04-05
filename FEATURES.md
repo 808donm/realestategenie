@@ -1,6 +1,6 @@
 # Real Estate Genie -- Complete Feature List
 
-> Last updated: April 2, 2026
+> Last updated: April 3, 2026
 
 ---
 
@@ -113,7 +113,7 @@
 
 ---
 
-## 8. MLS (7 Tabs)
+## 8. MLS (8 Tabs)
 
 ### Tab 1: Search & Listings
 - Search by zip code, city, address, building/condo name
@@ -154,7 +154,15 @@
 - Multi-unit property analysis with per-unit rent breakdown
 - Auto-fills BRRRR and Flip analyzers
 
-### Tab 7: Hazard Map
+### Tab 7: Market Quick Look
+- Real-time market statistics computed from Trestle MLS data
+- Market Temperature gauge (buyer's vs seller's market)
+- Quick Stats cards: Closed Sales, Pending, Active, Months of Inventory, DOM, Sale-to-List Ratio (6 metrics with 90-day trend arrows)
+- 12-month bar charts for Average Sales Price and Sales Activity
+- County selector (Hawaii counties)
+- Cached 24 hours
+
+### Tab 8: Hazard Map
 - Map view with color-coded hazard zone polygon overlays
 - Toggle layers: FEMA Flood Zones (blue), Tsunami Evacuation Zones (cyan), Sea Level Rise 0.5-3.2ft (teal gradient)
 - Auto-detects Hawaii vs mainland for appropriate layers (Hawaii State GIS or FEMA NFHL)

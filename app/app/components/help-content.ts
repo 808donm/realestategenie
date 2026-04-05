@@ -244,7 +244,7 @@ Use the source toggles to show or hide events from specific calendars. Each even
     title: "5. MLS",
     content: `## 5. MLS (Multiple Listing Service)
 
-The MLS section provides 7 tabs for working with MLS data, powered by HiCentral MLS via Trestle by CoreLogic.
+The MLS section provides 8 tabs for working with MLS data, powered by HiCentral MLS via Trestle by CoreLogic.
 
 ### 5.1 Prerequisites
 
@@ -295,7 +295,19 @@ Two-way open house synchronization between MLS and your local database. Pull upc
 
 Multi-unit property analysis with per-unit breakdown (type, beds/baths, actual rent, pro forma rent). Calculates total units, monthly rent, and average rent. Auto-fills BRRRR and Flip analyzers from the investment data.
 
-### 5.8 Hazard Map (Tab 7)
+### 5.8 Market Quick Look (Tab 7)
+
+Real-time market statistics computed from Trestle MLS data.
+
+1. Go to **MLS** > **Market Quick Look** tab.
+2. Select a county from the dropdown (Hawaii counties supported).
+3. View the **Market Temperature** gauge to see whether it is a buyer's or seller's market.
+4. Review the **Quick Stats** cards: Closed Sales, Pending, Active, Months of Inventory, Days on Market, and Sale-to-List Ratio. Each card shows a 90-day trend arrow.
+5. Analyze the **12-month bar charts** for Average Sales Price and Sales Activity trends.
+
+Data is cached for 24 hours.
+
+### 5.9 Hazard Map (Tab 8)
 
 View flood, tsunami, and sea level rise hazard zones on an interactive map.
 
