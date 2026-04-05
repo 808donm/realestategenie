@@ -236,6 +236,7 @@ type SectionId =
   | "building"
   | "financial"
   | "sales-history"
+  | "listing-history"
   | "ownership"
   | "neighborhood"
   | "market"
@@ -1452,6 +1453,7 @@ export default function PropertyDetailModal({
     { id: "building", label: "Building" },
     { id: "financial", label: "Financial" },
     { id: "sales-history" as SectionId, label: "Sales History" },
+    { id: "listing-history" as SectionId, label: "Listing History" },
     { id: "comps" as SectionId, label: "Comps" },
     { id: "ownership", label: "Ownership" },
     { id: "market", label: "Market Stats" },
@@ -2756,6 +2758,11 @@ export default function PropertyDetailModal({
             />
           );
         })()}
+
+      {/* ── Listing History Tab ──────────────────────────────────── */}
+      {activeSection === "listing-history" && (
+        <ListingHistorySection address={mlsAddress || addr} />
+      )}
 
       {/* ── Comps Tab ─────────────────────────────────────────────── */}
       {activeSection === "comps" &&
@@ -5709,6 +5716,148 @@ function SalesHistorySection({ address, publicRecords, propertySale }: { address
       {unitHistory.length === 0 && allPublicRecords.length === 0 && !showBuildingSales && (
         <div style={{ padding: 20, textAlign: "center", color: "#9ca3af", fontSize: 13 }}>No sales history found.</div>
       )}
+    </div>
+  );
+}
+
+// ── Listing History Section ──
+// Shows all MLS listings for a property (not just closed sales)
+
+function ListingHistorySection({ address }: { address: string }) {
+  const [listings, setListings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!address) return;
+    setLoading(true);
+    fetch(`/api/mls/listing-history?address=${encodeURIComponent(address)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data) {
+          // Combine unit and building history
+          const all = [...(data.unitHistory || []), ...(data.buildingHistory || [])];
+          // Sort by most recent first
+          all.sort((a: any, b: any) => {
+            const dateA = a.statusChangeTimestamp || a.modificationTimestamp || a.onMarketDate || "";
+            const dateB = b.statusChangeTimestamp || b.modificationTimestamp || b.onMarketDate || "";
+            return dateB.localeCompare(dateA);
+          });
+          setListings(all);
+        }
+      })
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
+  }, [address]);
+
+  const STATUS_COLORS: Record<string, string> = {
+    Active: "#059669",
+    Pending: "#2563eb",
+    Closed: "#dc2626",
+    Expired: "#6b7280",
+    Withdrawn: "#d97706",
+    Canceled: "#9ca3af",
+  };
+
+  const fmtDate = (d?: string) => d ? new Date(d).toLocaleDateString() : "-";
+  const fmtPrice = (v?: number) => v ? `$${v.toLocaleString()}` : "-";
+
+  if (loading) return <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>Loading listing history...</div>;
+  if (error) return <div style={{ color: "#dc2626", padding: 20 }}>{error}</div>;
+  if (listings.length === 0) return <div style={{ color: "#6b7280", padding: 20 }}>No listing history found for this property.</div>;
+
+  return (
+    <div>
+      <h3 style={{ fontSize: 16, fontWeight: 700, margin: "0 0 16px" }}>
+        Listing History ({listings.length})
+      </h3>
+      {listings.map((l, i) => {
+        const statusColor = STATUS_COLORS[l.status] || "#6b7280";
+        const hasPriceChange = l.priceChange && l.priceChange !== 0;
+        return (
+          <div
+            key={l.listingKey || i}
+            style={{
+              padding: "14px 16px",
+              marginBottom: 10,
+              borderRadius: 10,
+              border: `1px solid #e5e7eb`,
+              borderLeft: `4px solid ${statusColor}`,
+              backgroundColor: "#fff",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+              <div>
+                <span
+                  style={{
+                    display: "inline-block",
+                    padding: "2px 8px",
+                    borderRadius: 4,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: "#fff",
+                    backgroundColor: statusColor,
+                    marginRight: 8,
+                  }}
+                >
+                  {l.status}
+                </span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: "#111827" }}>
+                  {fmtPrice(l.status === "Closed" ? l.closePrice : l.listPrice)}
+                </span>
+                {hasPriceChange && (
+                  <span style={{ fontSize: 11, color: l.priceChange > 0 ? "#059669" : "#dc2626", marginLeft: 8, fontWeight: 600 }}>
+                    {l.priceChange > 0 ? "+" : ""}{fmtPrice(l.priceChange)}
+                    {l.originalListPrice ? ` (from ${fmtPrice(l.originalListPrice)})` : ""}
+                  </span>
+                )}
+              </div>
+              <div style={{ fontSize: 11, color: "#6b7280", textAlign: "right" }}>
+                {l.daysOnMarket != null && <span>{l.daysOnMarket} DOM</span>}
+              </div>
+            </div>
+
+            <div style={{ fontSize: 12, color: "#374151", marginBottom: 4 }}>
+              {l.address}{l.unitNumber ? ` #${l.unitNumber}` : ""}
+            </div>
+
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 16px", fontSize: 11, color: "#6b7280" }}>
+              {l.onMarketDate && <span>Listed: {fmtDate(l.onMarketDate)}</span>}
+              {l.closeDate && <span>Closed: {fmtDate(l.closeDate)}</span>}
+              {l.withdrawnDate && <span>Withdrawn: {fmtDate(l.withdrawnDate)}</span>}
+              {l.expirationDate && <span>Expired: {fmtDate(l.expirationDate)}</span>}
+              {l.cancelationDate && <span>Canceled: {fmtDate(l.cancelationDate)}</span>}
+              {l.beds && <span>{l.beds} bd</span>}
+              {l.baths && <span>{l.baths} ba</span>}
+              {l.sqft && <span>{l.sqft.toLocaleString()} sqft</span>}
+            </div>
+
+            {(l.listAgentName || l.listOfficeName) && (
+              <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>
+                {l.listAgentName && <span>List Agent: <strong>{l.listAgentName}</strong></span>}
+                {l.listOfficeName && <span> / {l.listOfficeName}</span>}
+                {l.buyerAgentName && (
+                  <>
+                    <br />
+                    <span>Buyer Agent: <strong>{l.buyerAgentName}</strong></span>
+                    {l.buyerOfficeName && <span> / {l.buyerOfficeName}</span>}
+                  </>
+                )}
+              </div>
+            )}
+
+            {!l.isUnitMatch && (
+              <div style={{ fontSize: 10, color: "#d97706", marginTop: 4, fontStyle: "italic" }}>
+                Building listing (different unit)
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 12, fontStyle: "italic" }}>
+        Information presented is deemed reliable but not guaranteed and should be used accordingly.
+      </div>
     </div>
   );
 }
