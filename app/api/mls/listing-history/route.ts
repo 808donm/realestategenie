@@ -38,10 +38,10 @@ export async function GET(request: NextRequest) {
     // Check cache
     const cacheKey = buildPropertyCacheKey("unified", "mls-listing-history", { address, limit });
     const memCached = propertyCacheGet(cacheKey);
-    if (memCached?.total > 0) return NextResponse.json(memCached);
+    if (memCached && (memCached as any).total > 0) return NextResponse.json(memCached);
 
     const dbCached = await propertyDbRead(cacheKey, "mls-listing-history");
-    if (dbCached?.total > 0) {
+    if (dbCached && (dbCached as any).total > 0) {
       propertyCacheSet(cacheKey, dbCached, "unified");
       return NextResponse.json(dbCached);
     }
