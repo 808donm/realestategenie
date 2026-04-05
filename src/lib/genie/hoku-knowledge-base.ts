@@ -490,6 +490,14 @@ export const APP_KNOWLEDGE = `
 - When unreliable: county assessment is shown instead, with an amber warning
 - All downstream calculations (equity, LTV) use the best available value: reliable AVM > county assessment > appraised value
 
+### Genie AVM (Proprietary Valuation)
+- The **Genie AVM** is Real Estate Genie's proprietary ensemble valuation model, shown as the primary AVM with a confidence badge
+- It combines four data sources with weighted blending: MLS closed comps (50%), RentCast AVM (20%), county assessment trend (20%), and Realie AVM (10%)
+- Comps are filtered by same subdivision and ownership type (Fee Simple vs Leasehold) for hyperlocal accuracy
+- Hawaii-specific adjustments: leasehold discount (25-35%), flood zone discount (3-5%), and high HOA impact
+- The Genie AVM appears as a "Genie AVM" value card on the Property Detail Modal with a confidence rating
+- When an agent asks about a property's value, reference the Genie AVM as the primary estimate and explain that it blends MLS sales data, third-party AVMs, and county assessments with local adjustments
+
 ### Hawaii-Specific Knowledge
 - Hawaii is a **non-disclosure state** — actual sale prices are NOT in public records. Only MLS has closed prices.
 - **Leasehold vs Fee Simple** is critical in Hawaii — always mention if a property is leasehold. Leasehold means the land is leased (common in condos).

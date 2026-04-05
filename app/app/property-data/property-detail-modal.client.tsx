@@ -294,6 +294,8 @@ export default function PropertyDetailModal({
   const [gisEnrichment, setGisEnrichment] = useState<any>(null);
   const [avmData, setAvmData] = useState<any>(null);
   const [avmLoading, setAvmLoading] = useState(false);
+  const [genieAvm, setGenieAvm] = useState<any>(null);
+  const [genieAvmLoading, setGenieAvmLoading] = useState(false);
   const [enrichedFinancial, setEnrichedFinancial] = useState<any>(null);
   const [enrichedFinancialLoading, setEnrichedFinancialLoading] = useState(false);
   const [enrichedOwner, setEnrichedOwner] = useState<any>(null);
@@ -551,6 +553,43 @@ export default function PropertyDetailModal({
       });
     }
   }, [hazardData, hazardLoading, p]);
+
+  // Fetch Genie AVM on mount (pre-fetch for value card display)
+  useEffect(() => {
+    if (genieAvm || genieAvmLoading) return;
+
+    const addr1 = p.address?.line1 || p.address?.oneLine?.split(",")[0]?.trim();
+    const zip = p.address?.postal1;
+    if (!addr1 || !zip) return;
+
+    setGenieAvmLoading(true);
+
+    const params = new URLSearchParams({ address: mlsAddress || addr1, zipCode: zip });
+    if (beds != null) params.set("beds", String(beds));
+    if (baths != null) params.set("baths", String(baths));
+    if (sqft) params.set("sqft", String(sqft));
+    if (yearBuilt) params.set("yearBuilt", String(yearBuilt));
+    if (p.summary?.propType) params.set("propertyType", p.summary.propType);
+    if (p.summary?.propSubType) params.set("propertySubType", p.summary.propSubType);
+    if ((p as any).OwnershipType || (p as any).ownershipType) {
+      params.set("ownershipType", (p as any).OwnershipType || (p as any).ownershipType);
+    }
+    if ((p as any).SubdivisionName || (p as any).subdivision) {
+      params.set("subdivision", (p as any).SubdivisionName || (p as any).subdivision);
+    }
+    if (p.location?.latitude) params.set("lat", p.location.latitude);
+    if (p.location?.longitude) params.set("lng", p.location.longitude);
+
+    fetch(`/api/avm/genie?${params}`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data && data.value && !data.error) {
+          setGenieAvm(data);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setGenieAvmLoading(false));
+  }, [genieAvm, genieAvmLoading, p, mlsAddress, beds, baths, sqft, yearBuilt]);
 
   // Fetch AVM data when the Financial tab is selected and property doesn't already have AVM
   useEffect(() => {
@@ -1162,10 +1201,10 @@ export default function PropertyDetailModal({
       stories: p.building?.summary?.levels,
       garageSpaces: p.building?.parking?.prkgSpaces,
       pool: p.lot?.poolInd === "Y" ? true : p.lot?.poolInd === "N" ? false : undefined,
-      avmValue: avmVal || bestValue,
-      avmLow: p.avm?.amount?.low,
-      avmHigh: p.avm?.amount?.high,
-      avmConfidence: p.avm?.amount?.scr,
+      avmValue: genieAvm?.value || avmVal || bestValue,
+      avmLow: genieAvm?.low || p.avm?.amount?.low,
+      avmHigh: genieAvm?.high || p.avm?.amount?.high,
+      avmConfidence: genieAvm?.confidence || p.avm?.amount?.scr,
       avmDate: p.avm?.eventDate,
       assessedTotal: p.assessment?.assessed?.assdTtlValue,
       assessedLand: p.assessment?.assessed?.assdLandValue,
@@ -1463,32 +1502,51 @@ export default function PropertyDetailModal({
       }}
     >
       {(() => {
-        const displayVal = avmVal || p.assessment?.market?.mktTtlValue || p.assessment?.appraised?.apprTtlValue;
-        if (displayVal == null) return null;
-        const label = avmVal ? "AVM Value" : p.assessment?.market?.mktTtlValue ? "Market Value" : "Appraised Value";
+        // Prefer Genie AVM when available, fall back to external AVM, then assessment
+        const useGenie = genieAvm?.value;
+        const displayVal = useGenie || avmVal || p.assessment?.market?.mktTtlValue || p.assessment?.appraised?.apprTtlValue;
+        if (displayVal == null && !genieAvmLoading) return null;
+        if (genieAvmLoading && !displayVal) return (
+          <div style={{ flex: 1, minWidth: 130, padding: "10px 14px", background: "#f3f4f6", borderRadius: 8 }}>
+            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600, textTransform: "uppercase" }}>Estimating Value...</div>
+          </div>
+        );
+
+        const label = useGenie ? "Genie AVM" : avmVal ? "AVM Value" : p.assessment?.market?.mktTtlValue ? "Market Value" : "Appraised Value";
+        const confidence = useGenie ? genieAvm.confidence : avmConfidenceLevel;
+        const low = useGenie ? genieAvm.low : avmLow;
+        const high = useGenie ? genieAvm.high : avmHigh;
+        const fsd = useGenie ? genieAvm.fsd : avmFSD;
+
         const confidenceColors = {
           High: { color: "#059669", bg: "#ecfdf5" },
           Medium: { color: "#d97706", bg: "#fffbeb" },
           Low: { color: "#dc2626", bg: "#fef2f2" },
         };
-        const cc = avmConfidenceLevel ? confidenceColors[avmConfidenceLevel] : { color: "#059669", bg: "#ecfdf5" };
+        const cc = confidence ? confidenceColors[confidence as keyof typeof confidenceColors] : { color: "#059669", bg: "#ecfdf5" };
         return (
           <div style={{ flex: 1, minWidth: 130, padding: "10px 14px", background: cc.bg, borderRadius: 8 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div style={{ fontSize: 11, color: cc.color, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
                 {label}
               </div>
-              {avmConfidenceLevel && (
+              {confidence && (
                 <span style={{ fontSize: 9, fontWeight: 700, color: cc.color, background: `${cc.color}15`, padding: "1px 6px", borderRadius: 4 }}>
-                  {avmConfidenceLevel}
+                  {confidence}
                 </span>
               )}
             </div>
             <div style={{ fontSize: 18, fontWeight: 700, color: cc.color }}>{fmt(displayVal)}</div>
-            {avmLow != null && avmHigh != null && (
+            {low != null && high != null && (
               <div style={{ fontSize: 11, color: "#6b7280" }}>
-                Range: {fmt(avmLow)} - {fmt(avmHigh)}
-                {avmFSD != null && <span style={{ marginLeft: 4 }}>(FSD: {avmFSD}%)</span>}
+                Range: {fmt(low)} - {fmt(high)}
+                {fsd != null && <span style={{ marginLeft: 4 }}>(FSD: {fsd}%)</span>}
+              </div>
+            )}
+            {useGenie && genieAvm.methodology?.compsUsed > 0 && (
+              <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 2 }}>
+                Based on {genieAvm.methodology.compsUsed} MLS comps
+                {genieAvm.methodology.compsFromSubdivision > 0 && ` (${genieAvm.methodology.compsFromSubdivision} from same subdivision)`}
               </div>
             )}
           </div>

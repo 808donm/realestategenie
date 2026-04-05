@@ -606,6 +606,8 @@ Agent actions are logged to the `agent_activity_log` table for agency-level repo
 
 These features ensure the data shown to agents is accurate and relevant, especially for condos and Hawaii-specific properties.
 
+- **Genie AVM (Proprietary Valuation)**: Ensemble valuation model blending MLS closed comps (50%), RentCast AVM (20%), county assessment trend (20%), and Realie AVM (10%). Applies Hawaii-specific adjustments for leasehold discount (25-35%), flood zone discount (3-5%), and high HOA impact. Filters comps by same subdivision and ownership type for hyperlocal accuracy. Displayed as "Genie AVM" value card with confidence badge on the Property Detail Modal.
+
 - **AVM Display**: AVM is always shown when available from Realie or RentCast. With unit-specific address lookups for condos, AVM accuracy has improved significantly. Falls back to county assessment only when no AVM data exists.
 
 - **AVM Accuracy**: All API call sites now pass bedrooms, bathrooms, square footage, and property type to RentCast's AVM endpoint. This ensures comps match the subject property instead of RentCast guessing the attributes. Default comp count increased from 15 to 20.

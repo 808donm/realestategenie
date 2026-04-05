@@ -732,6 +732,29 @@ Click any property to open the full intelligence report with tabs:
 
 The AVM Reliability Check compares the automated valuation to county assessment and recent sales. If the difference exceeds 30%, the AVM is suppressed and the county assessment is shown instead.
 
+### 11.2a Genie AVM (Proprietary Valuation)
+
+The Genie AVM is Real Estate Genie's proprietary valuation model. It appears as a "Genie AVM" value card with a confidence badge on the Property Detail Modal.
+
+**How it works:**
+
+The Genie AVM is an ensemble model that blends four data sources:
+
+1. **MLS Closed Comps (50% weight)** - Recent closed sales from MLS, filtered to the same subdivision and ownership type (Fee Simple vs Leasehold). This is the strongest signal because it reflects actual market transactions.
+2. **RentCast AVM (20% weight)** - Third-party automated valuation with national coverage.
+3. **County Assessment Trend (20% weight)** - Assessed value adjusted for the local assessment-to-market ratio over time.
+4. **Realie AVM (10% weight)** - Additional third-party valuation for cross-validation.
+
+**Hawaii-specific adjustments:**
+
+- **Leasehold discount (25-35%)**: Leasehold properties are valued lower than Fee Simple. The discount varies based on remaining lease term.
+- **Flood zone discount (3-5%)**: Properties in FEMA flood zones receive a small valuation reduction reflecting insurance costs and risk.
+- **High HOA impact**: Unusually high HOA fees reduce the effective value to reflect ongoing carrying costs.
+
+**Why it matters:**
+
+Generic AVMs often miss Hawaii-specific factors like leasehold tenure, which can reduce a property's value by a third. The Genie AVM accounts for these local realities. For methodology details, see this help section. The Property Detail Modal keeps the display clean with just the value and confidence badge.
+
 ### 11.3 Prospecting (6 Search Types)
 
 1. **Absentee Owners**: Finds owners not living at the property. Best targets: 15+ years owned, out-of-state mailing address.
