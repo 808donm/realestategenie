@@ -154,7 +154,7 @@
 - Multi-unit property analysis with per-unit rent breakdown
 - Auto-fills BRRRR and Flip analyzers
 
-### Tab 7: Market Quick Look
+### Tab 7: Market Snapshot
 - Real-time market statistics computed from Trestle MLS data
 - Market Temperature gauge (buyer's vs seller's market)
 - Quick Stats cards: Closed Sales, Pending, Active, Months of Inventory, DOM, Sale-to-List Ratio (6 metrics with 90-day trend arrows)

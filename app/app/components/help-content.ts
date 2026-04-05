@@ -295,11 +295,11 @@ Two-way open house synchronization between MLS and your local database. Pull upc
 
 Multi-unit property analysis with per-unit breakdown (type, beds/baths, actual rent, pro forma rent). Calculates total units, monthly rent, and average rent. Auto-fills BRRRR and Flip analyzers from the investment data.
 
-### 5.8 Market Quick Look (Tab 7)
+### 5.8 Market Snapshot (Tab 7)
 
 Real-time market statistics computed from Trestle MLS data.
 
-1. Go to **MLS** > **Market Quick Look** tab.
+1. Go to **MLS** > **Market Snapshot** tab.
 2. Select a county from the dropdown (Hawaii counties supported).
 3. View the **Market Temperature** gauge to see whether it is a buyer's or seller's market.
 4. Review the **Quick Stats** cards: Closed Sales, Pending, Active, Months of Inventory, Days on Market, and Sale-to-List Ratio. Each card shows a 90-day trend arrow.

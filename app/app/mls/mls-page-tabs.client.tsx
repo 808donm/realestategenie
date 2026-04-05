@@ -21,13 +21,13 @@ const HazardMapClient = dynamic(() => import("./hazard-map.client"), {
 });
 
 const MarketQuickLookClient = dynamic(() => import("./market-quick-look.client"), {
-  loading: () => <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>Loading Market Quick Look...</div>,
+  loading: () => <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>Loading Market Snapshot...</div>,
 });
 
 const tabs = [
   { id: "search", label: "Search & Listings" },
   { id: "market-watch", label: "Market Monitor" },
-  { id: "quick-look", label: "Market Quick Look" },
+  { id: "quick-look", label: "Market Snapshot" },
   { id: "analytics", label: "Market Analytics" },
   { id: "cma", label: "CMA" },
   { id: "matches", label: "Lead Matches" },

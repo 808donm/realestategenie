@@ -114,7 +114,7 @@ export default function MarketQuickLookClient() {
     <div style={{ maxWidth: 1200, margin: "0 auto", fontFamily: "system-ui, sans-serif" }}>
       {/* Header with County Selector */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-        <h2 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>Market Quick Look</h2>
+        <h2 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>Market Snapshot</h2>
         <select
           value={county}
           onChange={(e) => setCounty(e.target.value)}

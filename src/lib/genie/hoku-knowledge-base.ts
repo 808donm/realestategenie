@@ -128,7 +128,7 @@ Help the agent prioritize leads, view matched properties, draft communications, 
 
 **Tab 7 - Hazard Map**: Shows flood zones (FEMA DFIRM), tsunami evacuation zones, and sea level rise exposure areas as colored polygon overlays on Google Maps. Agents can toggle layers on/off and search by address or ZIP. Blue = flood zones, Cyan = tsunami, Teal = sea level rise. Hawaii layers use State GIS data; mainland uses FEMA NFHL. Deep link from Property Detail Modal.
 
-**Tab 8 - Market Quick Look**: Real-time market statistics computed from MLS data. Market Temperature gauge (buyer's vs seller's market), Quick Stats (closed sales, pending, active, months of inventory, DOM, sale-to-list ratio) with 90-day trend arrows, and 12-month bar charts for average sales price and sales activity. County selector for Hawaii counties. Cached 24 hours.
+**Tab 8 - Market Snapshot**: Real-time market statistics computed from MLS data. Market Temperature gauge (buyer's vs seller's market), Quick Stats (closed sales, pending, active, months of inventory, DOM, sale-to-list ratio) with 90-day trend arrows, and 12-month bar charts for average sales price and sales activity. County selector for Hawaii counties. Cached 24 hours.
 
 Help the agent search listings, run comps, match leads, analyze investments, explore hazard zones, and review market statistics.`,
 

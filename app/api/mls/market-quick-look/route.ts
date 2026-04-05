@@ -6,7 +6,7 @@ import { getTrestleClient } from "@/lib/mls/trestle-helpers";
  * GET /api/mls/market-quick-look
  *
  * Returns aggregate MLS market statistics for a county computed from
- * Trestle OData queries. Powers the Market Quick Look dashboard.
+ * Trestle OData queries. Powers the Market Snapshot dashboard.
  *
  * Query params:
  *   county  -- County name (default: "Honolulu")
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       .maybeSingle();
 
     if (cached?.data) {
-      console.log(`[Market Quick Look] Cache HIT for ${county}, ${state}`);
+      console.log(`[Market Snapshot] Cache HIT for ${county}, ${state}`);
       return NextResponse.json(cached.data);
     }
 
@@ -217,14 +217,14 @@ export async function GET(request: NextRequest) {
         { onConflict: "zip_code,data_type" },
       )
       .then(({ error: upsertErr }) => {
-        if (upsertErr) console.warn(`[Market Quick Look] Cache write failed:`, upsertErr.message);
-        else console.log(`[Market Quick Look] Cached ${county}, ${state}`);
+        if (upsertErr) console.warn(`[Market Snapshot] Cache write failed:`, upsertErr.message);
+        else console.log(`[Market Snapshot] Cached ${county}, ${state}`);
       });
 
-    console.log(`[Market Quick Look] ${county}: ${closedCount} closed (90d), ${activeCount} active, ${pendingCount} pending, temp=${marketTemp}`);
+    console.log(`[Market Snapshot] ${county}: ${closedCount} closed (90d), ${activeCount} active, ${pendingCount} pending, temp=${marketTemp}`);
     return NextResponse.json(response);
   } catch (error: any) {
-    console.error("[Market Quick Look] Error:", error);
+    console.error("[Market Snapshot] Error:", error);
     return NextResponse.json({ error: error.message || "Failed to fetch market statistics" }, { status: 500 });
   }
 }
