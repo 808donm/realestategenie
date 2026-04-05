@@ -16,6 +16,10 @@ const MarketAnalyticsClient = dynamic(() => import("../market-analytics/market-a
   loading: () => <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>Loading Market Analytics...</div>,
 });
 
+const HazardMapClient = dynamic(() => import("./hazard-map.client"), {
+  loading: () => <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>Loading Hazard Map...</div>,
+});
+
 const tabs = [
   { id: "search", label: "Search & Listings" },
   { id: "market-watch", label: "Market Monitor" },
@@ -24,6 +28,7 @@ const tabs = [
   { id: "matches", label: "Lead Matches" },
   { id: "sync", label: "OH Sync" },
   { id: "investment", label: "Investment" },
+  { id: "hazard-map", label: "Hazard Map" },
 ] as const;
 
 type TabId = (typeof tabs)[number]["id"];
@@ -68,7 +73,8 @@ export default function MLSPageTabs() {
       {activeTab === "search" && <MLSClient />}
       {activeTab === "market-watch" && <MarketWatchClient />}
       {activeTab === "analytics" && <MarketAnalyticsClient />}
-      {activeTab !== "search" && activeTab !== "market-watch" && activeTab !== "analytics" && <MLSFeaturesClient initialTab={activeTab} />}
+      {activeTab === "hazard-map" && <HazardMapClient />}
+      {activeTab !== "search" && activeTab !== "market-watch" && activeTab !== "analytics" && activeTab !== "hazard-map" && <MLSFeaturesClient initialTab={activeTab} />}
     </div>
   );
 }

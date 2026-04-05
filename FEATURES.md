@@ -113,7 +113,7 @@
 
 ---
 
-## 8. MLS (6 Tabs)
+## 8. MLS (7 Tabs)
 
 ### Tab 1: Search & Listings
 - Search by zip code, city, address, building/condo name
@@ -153,6 +153,13 @@
 ### Tab 6: Investment
 - Multi-unit property analysis with per-unit rent breakdown
 - Auto-fills BRRRR and Flip analyzers
+
+### Tab 7: Hazard Map
+- Map view with color-coded hazard zone polygon overlays
+- Toggle layers: FEMA Flood Zones (blue), Tsunami Evacuation Zones (cyan), Sea Level Rise 0.5-3.2ft (teal gradient)
+- Auto-detects Hawaii vs mainland for appropriate layers (Hawaii State GIS or FEMA NFHL)
+- Address/ZIP search to center the map
+- Deep link from Property Detail Modal
 
 ---
 

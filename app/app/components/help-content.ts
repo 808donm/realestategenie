@@ -244,7 +244,7 @@ Use the source toggles to show or hide events from specific calendars. Each even
     title: "5. MLS",
     content: `## 5. MLS (Multiple Listing Service)
 
-The MLS section provides 6 tabs for working with MLS data, powered by HiCentral MLS via Trestle by CoreLogic.
+The MLS section provides 7 tabs for working with MLS data, powered by HiCentral MLS via Trestle by CoreLogic.
 
 ### 5.1 Prerequisites
 
@@ -293,7 +293,18 @@ Two-way open house synchronization between MLS and your local database. Pull upc
 
 ### 5.7 Investment (Tab 6)
 
-Multi-unit property analysis with per-unit breakdown (type, beds/baths, actual rent, pro forma rent). Calculates total units, monthly rent, and average rent. Auto-fills BRRRR and Flip analyzers from the investment data.`,
+Multi-unit property analysis with per-unit breakdown (type, beds/baths, actual rent, pro forma rent). Calculates total units, monthly rent, and average rent. Auto-fills BRRRR and Flip analyzers from the investment data.
+
+### 5.8 Hazard Map (Tab 7)
+
+View flood, tsunami, and sea level rise hazard zones on an interactive map.
+
+1. Go to **MLS** > **Hazard Map** tab.
+2. Enter an address or ZIP code to center the map on that location.
+3. Toggle hazard layers on/off in the sidebar panel.
+4. Layer colors: **Blue** = FEMA Flood Zones, **Cyan** = Tsunami Evacuation Zones, **Teal** = Sea Level Rise (0.5-3.2 ft gradient).
+5. The map automatically selects Hawaii GIS layers or FEMA NFHL depending on location.
+6. You can also open the Hazard Map directly from a property's detail modal.`,
   },
   {
     id: "pipeline",

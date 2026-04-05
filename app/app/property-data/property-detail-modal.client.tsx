@@ -1797,6 +1797,26 @@ export default function PropertyDetailModal({
                     Source: State of Hawaii Statewide GIS Program. Data updated periodically. Verify with county for
                     official determinations.
                   </div>
+                  {p.location?.latitude && p.location?.longitude && (
+                    <a
+                      href={`/app/mls?tab=hazard-map&lat=${p.location.latitude}&lng=${p.location.longitude}&address=${encodeURIComponent(addr)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        display: "inline-block",
+                        marginTop: 10,
+                        padding: "6px 14px",
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: "#fff",
+                        backgroundColor: "#0891b2",
+                        borderRadius: 6,
+                        textDecoration: "none",
+                      }}
+                    >
+                      View on Hazard Map
+                    </a>
+                  )}
                 </div>
               );
             })()}

@@ -19,6 +19,7 @@ import {
   UsersRound,
   Building,
   Shield,
+  AlertTriangle,
   Plug,
   CreditCard,
   Settings2,
@@ -77,6 +78,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: "Market Analytics", href: "/app/market-analytics", icon: TrendingUp },
       { label: "Neighborhoods", href: "/app/neighborhood-profiles", icon: MapPin },
       { label: "Calculators", href: "/app/analyzers", icon: Calculator },
+      { label: "Hazard Map", href: "/app/hazard-map", icon: AlertTriangle },
     ],
   },
   {
@@ -133,6 +135,6 @@ export const HELP_ICON = HelpCircle;
 export const MOBILE_TAB_ROUTES: Record<string, string[]> = {
   dashboard: ["/app/dashboard", "/app/calendar", "/app/pipeline", "/app/tasks"],
   clients: ["/app/leads", "/app/contacts", "/app/open-houses"],
-  deals: ["/app/mls", "/app/property-data", "/app/market-analytics", "/app/neighborhood-profiles", "/app/analyzers"],
+  deals: ["/app/mls", "/app/property-data", "/app/market-analytics", "/app/neighborhood-profiles", "/app/analyzers", "/app/hazard-map"],
   listings: ["/app/seller-map", "/app/farm", "/app/reports"],
 };

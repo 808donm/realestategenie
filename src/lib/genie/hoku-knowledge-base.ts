@@ -104,7 +104,7 @@ Help the agent manage contacts, sync with CRM, and draft communications.`,
 Help the agent prioritize leads, view matched properties, draft communications, and understand heat scores.`,
 
   // MLS Listings
-  "mls-listings": `The agent is on the MLS page. This has 6 tabs powered by HiCentral MLS (Trestle).
+  "mls-listings": `The agent is on the MLS page. This has 7 tabs powered by HiCentral MLS (Trestle).
 
 **Tab 1 - Search & Listings**:
 - Search by zip code, city, address, or building/condo name
@@ -126,7 +126,9 @@ Help the agent prioritize leads, view matched properties, draft communications, 
 
 **Tab 6 - Investment**: Multi-unit property analysis with per-unit rent breakdown, auto-fills BRRRR and Flip analyzers
 
-Help the agent search listings, run comps, match leads, and analyze investments.`,
+**Tab 7 - Hazard Map**: Shows flood zones (FEMA DFIRM), tsunami evacuation zones, and sea level rise exposure areas as colored polygon overlays on Google Maps. Agents can toggle layers on/off and search by address or ZIP. Blue = flood zones, Cyan = tsunami, Teal = sea level rise. Hawaii layers use State GIS data; mainland uses FEMA NFHL. Deep link from Property Detail Modal.
+
+Help the agent search listings, run comps, match leads, analyze investments, and explore hazard zones.`,
 
   // Property Data / Prospecting
   "property-data": `The agent is on the PROPERTY INTEL page. This has 2 tabs: Property Search and Prospecting.

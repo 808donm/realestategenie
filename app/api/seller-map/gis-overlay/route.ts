@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 
-// Hawaii State GIS MapServer base URLs
+// GIS MapServer base URLs (Hawaii State + National FEMA)
 const GIS_SERVICES: Record<string, string> = {
   hazards: "https://geodata.hawaii.gov/arcgis/rest/services/Hazards/MapServer",
   parcels: "https://geodata.hawaii.gov/arcgis/rest/services/ParcelsZoning/MapServer",
@@ -11,6 +11,8 @@ const GIS_SERVICES: Record<string, string> = {
   business: "https://geodata.hawaii.gov/arcgis/rest/services/BusinessEconomy/MapServer",
   infrastructure: "https://geodata.hawaii.gov/arcgis/rest/services/Infrastructure/MapServer",
   emergency: "https://geodata.hawaii.gov/arcgis/rest/services/EmergMgmtPubSafety/MapServer",
+  // National (all 50 states)
+  "fema-nfhl": "https://hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer",
 };
 
 // Pre-defined overlay configurations for the seller map
@@ -80,6 +82,13 @@ const OVERLAY_CONFIGS: Record<string, { service: string; layerId: number; outFie
   "slr-exposure-11": { service: "climate", layerId: 43, outFields: "*", label: "SLR Exposure 1.1ft" },
   "slr-exposure-20": { service: "climate", layerId: 44, outFields: "*", label: "SLR Exposure 2.0ft" },
   "slr-exposure-32": { service: "climate", layerId: 45, outFields: "*", label: "SLR Exposure 3.2ft" },
+  // National FEMA layers (all 50 states)
+  "fema-nfhl": {
+    service: "fema-nfhl",
+    layerId: 28,
+    outFields: "FLD_ZONE,ZONE_SUBTY,SFHA_TF,DFIRM_ID",
+    label: "FEMA National Flood Hazard Layer",
+  },
 };
 
 /**
