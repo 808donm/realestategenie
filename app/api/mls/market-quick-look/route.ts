@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
     } catch {}
 
     // Parallel queries for counts and detailed data
-    const [activeRes, pendingRes, closedDetailRes, prevClosedRes, trendRes] = await Promise.allSettled([
+    const [activeRes, pendingRes, closedDetailRes, prevClosedRes] = await Promise.allSettled([
       // Active count
       client.getProperties({
         $filter: `${zipFilter} and StandardStatus eq 'Active'`,
@@ -120,15 +120,24 @@ export async function GET(request: NextRequest) {
         $count: true,
         $select: "ListingKey",
       }),
-      // 12-month closed for trend charts
-      client.getProperties({
-        $filter: `${zipFilter} and StandardStatus eq 'Closed' and CloseDate gt ${twelveMonthsAgo.toISOString()}`,
-        $top: 500,
-        $count: true,
-        $select: "ListingKey,ClosePrice,ListPrice,DaysOnMarket,CloseDate",
-        $orderby: "CloseDate desc",
-      }),
     ]);
+
+    // 12-month trend: query each month separately for accurate counts
+    // Fetch count + avg price per month in parallel
+    const monthQueries: Promise<any>[] = [];
+    for (let i = 11; i >= 0; i--) {
+      const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+      monthQueries.push(
+        client.getProperties({
+          $filter: `${zipFilter} and StandardStatus eq 'Closed' and CloseDate ge ${monthStart.toISOString()} and CloseDate lt ${monthEnd.toISOString()}`,
+          $top: 200,
+          $count: true,
+          $select: "ListingKey,ClosePrice",
+        }).catch(() => ({ value: [], "@odata.count": 0 })),
+      );
+    }
+    const monthResults = await Promise.all(monthQueries);
 
     // Extract counts
     const activeCount = activeRes.status === "fulfilled" ? (activeRes.value as any)["@odata.count"] || 0 : 0;
@@ -184,32 +193,22 @@ export async function GET(request: NextRequest) {
     const prevClosedMonthlyAvg = Math.round(prevClosedCount / 3);
     const closedTrend = prevClosedMonthlyAvg > 0 ? Math.round(((closedMonthlyAvg - prevClosedMonthlyAvg) / prevClosedMonthlyAvg) * 100) : 0;
 
-    // 12-month trends for charts
-    const trendListings = trendRes.status === "fulfilled" ? (trendRes.value.value || []) : [];
+    // 12-month trends from per-month queries
     const monthlyData: { month: string; count: number; avgPrice: number; totalPrice: number }[] = [];
-    const monthBuckets: Record<string, { count: number; totalPrice: number }> = {};
-
-    for (const l of trendListings) {
-      if (!l.CloseDate) continue;
-      const d = new Date(l.CloseDate);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      if (!monthBuckets[key]) monthBuckets[key] = { count: 0, totalPrice: 0 };
-      monthBuckets[key].count++;
-      if (l.ClosePrice != null && l.ClosePrice > 0) monthBuckets[key].totalPrice += l.ClosePrice;
-    }
-
-    // Fill 12 months
-    for (let i = 11; i >= 0; i--) {
-      const d = new Date(now);
-      d.setMonth(d.getMonth() - i);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    for (let i = 0; i < 12; i++) {
+      const monthIdx = 11 - i; // monthResults[0] = oldest, monthResults[11] = newest
+      const d = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1);
       const label = d.toLocaleDateString("en-US", { month: "short", year: "2-digit" });
-      const bucket = monthBuckets[key] || { count: 0, totalPrice: 0 };
+      const result = monthResults[i];
+      const count = (result as any)?.["@odata.count"] ?? (result?.value?.length || 0);
+      const listings = result?.value || [];
+      const prices = listings.map((l: any) => l.ClosePrice).filter((p: number) => p > 0);
+      const totalPrice = prices.reduce((s: number, p: number) => s + p, 0);
       monthlyData.push({
         month: label,
-        count: bucket.count,
-        avgPrice: bucket.count > 0 ? Math.round(bucket.totalPrice / bucket.count) : 0,
-        totalPrice: bucket.totalPrice,
+        count,
+        avgPrice: prices.length > 0 ? Math.round(totalPrice / prices.length) : 0,
+        totalPrice,
       });
     }
 
