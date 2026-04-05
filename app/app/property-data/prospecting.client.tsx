@@ -1950,7 +1950,7 @@ export default function Prospecting() {
                     flexShrink: 0,
                   }}
                 >
-                  Realie
+                  Public Records
                 </span>
               )}
             </div>

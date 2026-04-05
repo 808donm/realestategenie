@@ -2728,7 +2728,7 @@ export default function PropertyDetailModal({
                               </div>
                             )}
                             <div style={{ marginTop: 4, fontSize: 11, color: "#9ca3af" }}>
-                              Source: {s._source === "realie" ? "Realie (County Records)" : "RentCast"}
+                              Source: Public Records
                             </div>
                           </div>
                         );
@@ -2819,7 +2819,7 @@ export default function PropertyDetailModal({
                       const hasRange = avmLow != null && avmHigh != null;
                       const rangeWidth =
                         hasRange && avmValue ? Math.round(((avmHigh! - avmLow!) / 2 / avmValue) * 100) : null;
-                      const source = p.avm?._avmSources?.chosen === "rentcast" ? "RentCast" : "Realie (County Records)";
+                      const source = "Real Estate Genie";
                       return (
                         <div
                           style={{
@@ -4279,7 +4279,7 @@ export default function PropertyDetailModal({
                       {headlineLabel && <span style={{ fontSize: 12, fontWeight: 500, color: "#059669" }}> ({headlineLabel.trim()})</span>}
                     </div>
                     <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
-                      Source: RentCast{sale?.lastUpdatedDate ? ` (Updated: ${sale.lastUpdatedDate.split("T")[0]})` : ""}
+                      Source: Public Records{sale?.lastUpdatedDate ? ` (Updated: ${sale.lastUpdatedDate.split("T")[0]})` : ""}
                       {headlineLabel && " | Showing stats for matching property type"}
                     </div>
                   </div>
@@ -5692,7 +5692,7 @@ function SalesHistorySection({ address, publicRecords, propertySale }: { address
                 <span
                   style={{ fontSize: 10, background: "#dbeafe", color: "#1e40af", padding: "2px 6px", borderRadius: 4 }}
                 >
-                  {s._source === "realie" ? "County Records" : "Public Records"}
+                  Public Records
                 </span>
               </div>
               {s.date && (

@@ -1189,7 +1189,7 @@ function InvestmentTab({ property, detail }: { property: ScoredProperty; detail:
               value={detail?.annualRent ? `$${detail.annualRent.toLocaleString()}` : undefined}
             />
             {detail?.rentalAvmSource && (
-              <InfoRow label="Source" value={detail.rentalAvmSource === "cache" ? "Cached (30-day)" : "RentCast"} />
+              <InfoRow label="Source" value="Real Estate Genie" />
             )}
           </>
         ) : (

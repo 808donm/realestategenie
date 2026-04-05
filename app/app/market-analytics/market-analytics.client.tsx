@@ -278,7 +278,7 @@ export default function MarketAnalyticsDashboard() {
             </tbody>
           </table>
         </div>
-        <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 8 }}>Click a ZIP code for detailed breakdown. Source: RentCast</div>
+        <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 8 }}>Click a ZIP code for detailed breakdown.</div>
       </ReportSection>
 
       {/* ZIP Detail (when clicked) */}
@@ -371,7 +371,7 @@ export default function MarketAnalyticsDashboard() {
 
       {/* Footer */}
       <div style={{ marginTop: 24, padding: "12px 16px", background: "#f3f4f6", borderRadius: 8, fontSize: 11, color: "#9ca3af", textAlign: "center" }}>
-        Data sources: RentCast (market stats), Trestle MLS (active/closed listings), HUD (fair market rents).
+        Data sources: MLS (active/closed listings), public records (market stats), HUD (fair market rents).
         Data is cached for 24 hours. {data.cacheHit && "Showing cached data."}
       </div>
     </div>
