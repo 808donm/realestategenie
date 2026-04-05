@@ -2252,8 +2252,9 @@ export default function PropertyDetailModal({
                   );
                 })()}
 
-              {p.assessment &&
+              {(p.assessment || avmData?.assessment) &&
                 (() => {
+                  const assess = p.assessment || avmData?.assessment;
                   const tmkKey = p.identifier?.apn;
                   const assessQpubLink = tmkKey ? buildQPublicUrl(String(tmkKey), undefined, p.address?.postal1) : null;
                   return (
@@ -2300,18 +2301,18 @@ export default function PropertyDetailModal({
                           gap: "8px 20px",
                         }}
                       >
-                        <Field label="Assessed Total" value={fmt(p.assessment.assessed?.assdTtlValue)} />
-                        <Field label="Assessed Land" value={fmt(p.assessment.assessed?.assdLandValue)} />
-                        <Field label="Assessed Improvements" value={fmt(p.assessment.assessed?.assdImprValue)} />
-                        <Field label="Appraised Total" value={fmt(p.assessment.appraised?.apprTtlValue)} />
-                        <Field label="Market Total" value={fmt(p.assessment.market?.mktTtlValue)} />
-                        <Field label="Annual Tax" value={fmt(p.assessment.tax?.taxAmt)} />
-                        <Field label="Tax Year" value={p.assessment.tax?.taxYear} />
+                        <Field label="Assessed Total" value={fmt(assess.assessed?.assdTtlValue)} />
+                        <Field label="Assessed Land" value={fmt(assess.assessed?.assdLandValue)} />
+                        <Field label="Assessed Improvements" value={fmt(assess.assessed?.assdImprValue)} />
+                        <Field label="Appraised Total" value={fmt(assess.appraised?.apprTtlValue)} />
+                        <Field label="Market Total" value={fmt(assess.market?.mktTtlValue)} />
+                        <Field label="Annual Tax" value={fmt(assess.tax?.taxAmt)} />
+                        <Field label="Tax Year" value={assess.tax?.taxYear} />
                         <Field
                           label="Tax / Sqft"
                           value={
-                            p.assessment.tax?.taxPerSizeUnit
-                              ? `$${p.assessment.tax.taxPerSizeUnit.toFixed(2)}`
+                            assess.tax?.taxPerSizeUnit
+                              ? `$${assess.tax.taxPerSizeUnit.toFixed(2)}`
                               : undefined
                           }
                         />
@@ -2321,9 +2322,9 @@ export default function PropertyDetailModal({
                 })()}
 
               {/* Assessment History (multi-year trend) */}
-              {(p as any).assessmenthistory?.length > 1 &&
+              {((p as any).assessmenthistory?.length > 1 || (avmData as any)?.assessmenthistory?.length > 1) &&
                 (() => {
-                  const history = (p as any).assessmenthistory.sort(
+                  const history = ((p as any).assessmenthistory || (avmData as any)?.assessmenthistory || []).sort(
                     (a: any, b: any) =>
                       (b.assessedYear || b.tax?.taxYear || 0) - (a.assessedYear || a.tax?.taxYear || 0),
                   );

@@ -546,10 +546,10 @@ export default function MarketWatchClient() {
         )}
 
         {/* Google Map / Hot Sheet */}
-        {filteredListings.length > 0 && (
+        {(filteredListings.length > 0 || tmkBoundary || loading) && (
           <>
             <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 8 }}>
-              Showing {filteredListings.length} of {listings.length} listings
+              {filteredListings.length > 0 ? `Showing ${filteredListings.length} of ${listings.length} listings` : loading ? "Loading..." : "No listings found"}
             </div>
             <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
               <button onClick={() => setViewMode("map")} style={{ padding: "6px 16px", fontSize: 13, fontWeight: 600, borderRadius: 6, border: "none", cursor: "pointer", background: viewMode === "map" ? "#1e40af" : "#e5e7eb", color: viewMode === "map" ? "#fff" : "#374151" }}>Map</button>
