@@ -211,6 +211,14 @@ export default function MarketWatchClient() {
         }
       } else {
         params.set("postalCode", input);
+
+        // Fetch ZIP boundary polygon for map overlay (non-blocking)
+        if (/^\d{5}$/.test(input)) {
+          fetch(`https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/tigerWMS_Current/MapServer/2/query?where=${encodeURIComponent(`ZCTA5='${input}'`)}&outFields=ZCTA5&returnGeometry=true&outSR=4326&f=geojson`)
+            .then((r) => r.ok ? r.json() : null)
+            .then((data) => { if (data?.features?.length) setTmkBoundary(data); })
+            .catch(() => {});
+        }
       }
 
       const res = await fetch(`/api/mls/market-watch?${params}`);
