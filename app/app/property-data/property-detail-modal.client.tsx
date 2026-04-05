@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, lazy, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 import type { FederalPropertySupplement } from "@/lib/integrations/federal-data-client";
 import { buildQPublicUrl } from "@/lib/hawaii-zip-county";
 import type { PropertyReportData } from "@/lib/documents/property-intelligence-report";
@@ -555,14 +555,16 @@ export default function PropertyDetailModal({
     }
   }, [hazardData, hazardLoading, p]);
 
-  // Fetch Genie AVM on mount (pre-fetch for value card display)
+  // Fetch Genie AVM once on mount (pre-fetch for value card display)
+  const genieAvmFetched = useRef(false);
   useEffect(() => {
-    if (genieAvm || genieAvmLoading) return;
+    if (genieAvmFetched.current || genieAvm || genieAvmLoading) return;
 
     const addr1 = p.address?.line1 || p.address?.oneLine?.split(",")[0]?.trim();
     const zip = p.address?.postal1;
     if (!addr1 || !zip) return;
 
+    genieAvmFetched.current = true;
     setGenieAvmLoading(true);
 
     const params = new URLSearchParams({ address: mlsAddress || addr1, zipCode: zip });
@@ -590,7 +592,8 @@ export default function PropertyDetailModal({
       })
       .catch(() => {})
       .finally(() => setGenieAvmLoading(false));
-  }, [genieAvm, genieAvmLoading, p, mlsAddress, beds, baths, sqft, yearBuilt]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Fetch AVM data when the Financial tab is selected and property doesn't already have AVM
   useEffect(() => {
@@ -5739,8 +5742,8 @@ function ListingHistorySection({ address }: { address: string }) {
           const all = [...(data.unitHistory || []), ...(data.buildingHistory || [])];
           // Sort by most recent first
           all.sort((a: any, b: any) => {
-            const dateA = a.statusChangeTimestamp || a.modificationTimestamp || a.onMarketDate || "";
-            const dateB = b.statusChangeTimestamp || b.modificationTimestamp || b.onMarketDate || "";
+            const dateA = a.modificationTimestamp || a.onMarketDate || "";
+            const dateB = b.modificationTimestamp || b.onMarketDate || "";
             return dateB.localeCompare(dateA);
           });
           setListings(all);

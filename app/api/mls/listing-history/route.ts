@@ -103,8 +103,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Could not parse address" }, { status: 400 });
     }
 
+    // Use the same fields as sales-history (known to work with HiCentral)
+    // plus ModificationTimestamp for sorting. Avoid fields that may not exist
+    // in HiCentral's Trestle implementation (OffMarketDate, PendingTimestamp, etc.)
     const selectFields =
-      "ListingKey,ListingId,StandardStatus,MlsStatus,ListPrice,OriginalListPrice,ClosePrice,CloseDate,OnMarketDate,OffMarketDate,WithdrawnDate,ExpirationDate,CancelationDate,PendingTimestamp,StatusChangeTimestamp,ModificationTimestamp,DaysOnMarket,CumulativeDaysOnMarket,UnparsedAddress,StreetNumber,StreetName,StreetSuffix,UnitNumber,City,PostalCode,BedroomsTotal,BathroomsTotalInteger,LivingArea,PropertyType,PropertySubType,ListAgentFullName,BuyerAgentFullName,ListOfficeName,BuyerOfficeName,OwnershipType,PreviousListPrice";
+      "ListingKey,ListingId,StandardStatus,ListPrice,OriginalListPrice,ClosePrice,CloseDate,OnMarketDate,DaysOnMarket,CumulativeDaysOnMarket,ModificationTimestamp,UnparsedAddress,StreetNumber,StreetName,StreetSuffix,UnitNumber,City,PostalCode,BedroomsTotal,BathroomsTotalInteger,LivingArea,PropertyType,PropertySubType,ListAgentFullName,BuyerAgentFullName,ListOfficeName,BuyerOfficeName,OwnershipType";
 
     // Query ALL statuses for this address (no StandardStatus filter)
     const baseFilter = streetNum
@@ -170,7 +173,6 @@ export async function GET(request: NextRequest) {
       listingKey: p.ListingKey,
       listingId: p.ListingId,
       status: p.StandardStatus,
-      mlsStatus: p.MlsStatus,
       address: p.UnparsedAddress || [p.StreetNumber, p.StreetName, p.StreetSuffix].filter(Boolean).join(" "),
       unitNumber: p.UnitNumber,
       city: p.City,
@@ -179,16 +181,9 @@ export async function GET(request: NextRequest) {
       propertySubType: p.PropertySubType,
       listPrice: p.ListPrice,
       originalListPrice: p.OriginalListPrice,
-      previousListPrice: p.PreviousListPrice,
       closePrice: p.ClosePrice,
       closeDate: p.CloseDate,
       onMarketDate: p.OnMarketDate,
-      offMarketDate: p.OffMarketDate,
-      withdrawnDate: p.WithdrawnDate,
-      expirationDate: p.ExpirationDate,
-      cancelationDate: p.CancelationDate,
-      pendingTimestamp: p.PendingTimestamp,
-      statusChangeTimestamp: p.StatusChangeTimestamp,
       modificationTimestamp: p.ModificationTimestamp,
       daysOnMarket: p.DaysOnMarket,
       cumulativeDaysOnMarket: p.CumulativeDaysOnMarket,
