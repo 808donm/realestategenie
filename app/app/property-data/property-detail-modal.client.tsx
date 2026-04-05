@@ -1512,7 +1512,7 @@ export default function PropertyDetailModal({
           </div>
         );
 
-        const label = useGenie ? "Genie AVM" : avmVal ? "AVM Value" : p.assessment?.market?.mktTtlValue ? "Market Value" : "Appraised Value";
+        const label = useGenie ? "Estimated Value" : avmVal ? "AVM Value" : p.assessment?.market?.mktTtlValue ? "Market Value" : "Appraised Value";
         const confidence = useGenie ? genieAvm.confidence : avmConfidenceLevel;
         const low = useGenie ? genieAvm.low : avmLow;
         const high = useGenie ? genieAvm.high : avmHigh;
@@ -2100,7 +2100,33 @@ export default function PropertyDetailModal({
                 </div>
               )}
 
-              {avm && (
+              {genieAvm?.value ? (
+                <Section title="Estimated Value (Genie AVM)">
+                  <Field label="Estimated Value" value={fmt(genieAvm.value)} />
+                  <Field
+                    label="Confidence Range"
+                    value={`${fmt(genieAvm.low)} – ${fmt(genieAvm.high)}`}
+                  />
+                  <Field
+                    label="Range Width"
+                    value={`±${genieAvm.fsd}%`}
+                  />
+                  <Field
+                    label="Confidence"
+                    value={`${genieAvm.confidence} (FSD: ${genieAvm.fsd}%)`}
+                  />
+                  {genieAvm.methodology?.compsUsed > 0 && (
+                    <Field
+                      label="MLS Comps Used"
+                      value={`${genieAvm.methodology.compsUsed}${genieAvm.methodology.compsFromSubdivision > 0 ? ` (${genieAvm.methodology.compsFromSubdivision} from same subdivision)` : ""}`}
+                    />
+                  )}
+                  {genieAvm.methodology?.leaseholdAdjustment != null && (
+                    <Field label="Leasehold Adjustment" value={`${Math.round(genieAvm.methodology.leaseholdAdjustment * 100)}%`} />
+                  )}
+                  <Field label="Source" value="Real Estate Genie" />
+                </Section>
+              ) : avm && (
                 <Section title="Automated Valuation (AVM)">
                   <Field label="Estimated Value" value={fmt(avm.amount?.value)} />
                   <Field
@@ -2123,10 +2149,7 @@ export default function PropertyDetailModal({
                       value={`${avmConfidenceLevel} (FSD: ${avmFSD}%)`}
                     />
                   )}
-                  <Field
-                    label="Source"
-                    value={avm._avmSources?.chosen === "rentcast" ? "RentCast" : "Realie (County Records)"}
-                  />
+                  <Field label="Source" value="Real Estate Genie" />
                 </Section>
               )}
 
