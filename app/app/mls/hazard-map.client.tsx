@@ -15,11 +15,7 @@ export default function HazardMapClient() {
   const [center, setCenter] = useState(DEFAULT_CENTER);
   const [zoom, setZoom] = useState(DEFAULT_ZOOM);
   const [searchInput, setSearchInput] = useState("");
-  const [activeLayers, setActiveLayers] = useState<Set<string>>(() => {
-    const defaults = new Set<string>();
-    HAZARD_LAYERS.filter((l) => l.defaultOn && l.market === "hawaii").forEach((l) => defaults.add(l.key));
-    return defaults;
-  });
+  const [activeLayers, setActiveLayers] = useState<Set<string>>(new Set());
   const [visibleLayers, setVisibleLayers] = useState<HazardLayer[]>(() =>
     getLayersForMarket(DEFAULT_CENTER.lat, DEFAULT_CENTER.lng),
   );
@@ -50,6 +46,8 @@ export default function HazardMapClient() {
     }
   }, []);
 
+  const mapRef = useRef<google.maps.Map | null>(null);
+
   const handleSearch = useCallback(async () => {
     if (!searchInput.trim()) return;
     setLoading(true);
@@ -60,9 +58,14 @@ export default function HazardMapClient() {
       if (data.results?.[0]?.geometry?.location) {
         const { lat, lng } = data.results[0].geometry.location;
         setCenter({ lat, lng });
-        setZoom(14);
+        setZoom(15);
         setVisibleLayers(getLayersForMarket(lat, lng));
         setPropertyPin({ lat, lng, address: data.results[0].formatted_address });
+        // Pan the map to the new location
+        if (mapRef.current) {
+          mapRef.current.panTo({ lat, lng });
+          mapRef.current.setZoom(15);
+        }
       }
     } catch {}
     setLoading(false);
@@ -222,6 +225,7 @@ export default function HazardMapClient() {
               mapTypeControl
               fullscreenControl
             >
+              <MapRefCapture mapRef={mapRef} />
               <HazardOverlays activeLayers={activeLayers} center={center} />
               {propertyPin && (
                 <AdvancedMarker position={propertyPin}>
@@ -243,6 +247,15 @@ export default function HazardMapClient() {
       </div>
     </div>
   );
+}
+
+// ── Map Ref Capture ──
+function MapRefCapture({ mapRef }: { mapRef: React.MutableRefObject<google.maps.Map | null> }) {
+  const map = useMap();
+  useEffect(() => {
+    if (map) mapRef.current = map;
+  }, [map, mapRef]);
+  return null;
 }
 
 // ── Hazard Overlay Manager ──
