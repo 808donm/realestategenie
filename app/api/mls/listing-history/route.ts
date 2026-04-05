@@ -38,10 +38,10 @@ export async function GET(request: NextRequest) {
     // Check cache
     const cacheKey = buildPropertyCacheKey("unified", "mls-listing-history", { address, limit });
     const memCached = propertyCacheGet(cacheKey);
-    if (memCached) return NextResponse.json(memCached);
+    if (memCached?.total > 0) return NextResponse.json(memCached);
 
     const dbCached = await propertyDbRead(cacheKey, "mls-listing-history");
-    if (dbCached) {
+    if (dbCached?.total > 0) {
       propertyCacheSet(cacheKey, dbCached, "unified");
       return NextResponse.json(dbCached);
     }
@@ -217,8 +217,11 @@ export async function GET(request: NextRequest) {
       source: "mls",
     };
 
-    propertyCacheSet(cacheKey, response, "unified");
-    propertyDbWrite(cacheKey, "mls-listing-history", response, "unified").catch(() => {});
+    // Only cache if we got results (don't cache empty results that might be from errors)
+    if (response.total > 0) {
+      propertyCacheSet(cacheKey, response, "unified");
+      propertyDbWrite(cacheKey, "mls-listing-history", response, "unified").catch(() => {});
+    }
 
     return NextResponse.json(response);
   } catch (error: any) {
