@@ -1,6 +1,6 @@
 # Real Estate Genie -- Complete Feature List
 
-> Last updated: April 3, 2026
+> Last updated: April 5, 2026
 
 ---
 
@@ -113,7 +113,7 @@
 
 ---
 
-## 8. MLS (8 Tabs)
+## 8. MLS (9 Tabs)
 
 ### Tab 1: Search & Listings
 - Search by zip code, city, address, building/condo name
@@ -131,30 +131,7 @@
 - TMK/zip code search
 - Geocoding fallback, TMK resolution
 
-### Tab 3: CMA (Comparative Market Analysis)
-- Full CMA Report rendered inline with adjustment engine
-- Subject property input with property type filtering (SFR, Condo, Townhouse)
-- Per-comp adjustment cards (sqft, beds, baths, lot, age, garage)
-- Pricing summary with recommended price
-- Fallback to RentCast/Realie when MLS has limited comps
-- Save and print reports
-
-### Tab 4: Lead Matches
-- Auto-matches pipeline leads to active MLS listings
-- Scoring: location (40pts), must-haves (30pts), timeline (15pts), financing (15pts)
-- Top 5 matches per lead with reasons
-- Status tracking (new/sent/viewed/dismissed)
-
-### Tab 5: OH Sync
-- Pull MLS open houses as draft events
-- Push local events to calendar
-- Sync tracking and status
-
-### Tab 6: Investment
-- Multi-unit property analysis with per-unit rent breakdown
-- Auto-fills BRRRR and Flip analyzers
-
-### Tab 7: Market Snapshot
+### Tab 3: Market Snapshot
 - Real-time market statistics computed from Trestle MLS data
 - Market Temperature gauge (buyer's vs seller's market)
 - Quick Stats cards: Closed Sales, Pending, Active, Months of Inventory, DOM, Sale-to-List Ratio (6 metrics with 90-day trend arrows)
@@ -162,43 +139,46 @@
 - County selector (Hawaii counties)
 - Cached 24 hours
 
-### Tab 8: Hazard Map
+### Tab 4: Market Analytics
+County-level market statistics dashboard also accessible from the sidebar (under Deals).
+
+- **Overview Cards**: Median Sale Price (all types), SFR Median, Condo/TH Median, $/Sqft, DOM, YoY Price Change, Sales Momentum (6mo vs prior 6mo), MLS Active, MLS Closed (30d)
+- **Sales Price by ZIP Code**: Interactive sortable table with median price, SFR median (green), Condo/TH median (blue), $/sqft, listings, DOM, rent per ZIP. Click any ZIP for detail.
+- **Grouped Bar Chart**: SFR vs Condo/Townhouse median by ZIP, sorted by SFR price descending
+- **Sale Volume by Cities**: Vertical bar chart of total listings per city, sorted ascending
+- **Fair Market Rents**: HUD Section 8 rents by bedroom count (Efficiency through 4BR)
+- **Median Rent by ZIP**: Rental medians per ZIP sorted descending
+- Data: RentCast market stats, Trestle MLS, HUD. Cached 24 hours.
+
+### Tab 5: CMA (Comparative Market Analysis)
+- Full CMA Report rendered inline with adjustment engine
+- Subject property input with property type filtering (SFR, Condo, Townhouse)
+- Per-comp adjustment cards (sqft, beds, baths, lot, age, garage)
+- Pricing summary with recommended price
+- Fallback to RentCast/Realie when MLS has limited comps
+- Save and print reports
+
+### Tab 6: Lead Matches
+- Auto-matches pipeline leads to active MLS listings
+- Scoring: location (40pts), must-haves (30pts), timeline (15pts), financing (15pts)
+- Top 5 matches per lead with reasons
+- Status tracking (new/sent/viewed/dismissed)
+
+### Tab 7: OH Sync
+- Pull MLS open houses as draft events
+- Push local events to calendar
+- Sync tracking and status
+
+### Tab 8: Investment
+- Multi-unit property analysis with per-unit rent breakdown
+- Auto-fills BRRRR and Flip analyzers
+
+### Tab 9: Hazard Map
 - Map view with color-coded hazard zone polygon overlays
 - Toggle layers: FEMA Flood Zones (blue), Tsunami Evacuation Zones (cyan), Sea Level Rise 0.5-3.2ft (teal gradient)
 - Auto-detects Hawaii vs mainland for appropriate layers (Hawaii State GIS or FEMA NFHL)
 - Address/ZIP search to center the map
 - Deep link from Property Detail Modal
-
----
-
-## 8b. Market Analytics
-
-County-level market statistics dashboard accessible from the sidebar (under Deals) and as a tab in the MLS page.
-
-### Overview Cards
-- **Median Sale Price** (all types), **SFR Median** (Single Family), **Condo/TH Median** (Condo + Townhouse)
-- **Price per Sq Ft**, **Median DOM**
-- **YoY Price Change**: Compares current month county median to 12 months ago. Green for appreciation, red for decline.
-- **Sales Momentum**: Compares total listings in the last 6 months to the prior 6 months. Shows whether the market is accelerating or decelerating.
-- **MLS Active Listings** and **MLS Closed (30 days)** from Trestle
-
-### Sales Price by ZIP Code (Interactive Table)
-Sortable table with every Honolulu County ZIP code showing: median price, SFR median (green), Condo/TH median (blue), $/sqft, total listings, median DOM, and median rent. Click any ZIP for a detailed breakdown.
-
-### Grouped Bar Chart -- SFR vs Condo/Townhouse by ZIP
-Horizontal grouped bars for each ZIP code with red bars for SFR median and blue bars for Condo/Townhouse median. Sorted by SFR price descending (most expensive ZIP first). Legend at top.
-
-### Sale Volume by Cities (Recharts Bar Chart)
-Vertical bar chart showing total listings per city in the county (Hauula, Waialua, Wahiawa, Pearl City, Waianae, Kaneohe, Kapolei, Waipahu, Honolulu), sorted ascending.
-
-### Fair Market Rents by Dwelling Size (Recharts Bar Chart)
-Vertical bar chart showing HUD Section 8 Fair Market Rents by bedroom count (Efficiency, 1BR, 2BR, 3BR, 4BR).
-
-### Median Rent by ZIP Code (Horizontal Bar Chart)
-Rental medians per ZIP sorted by rent descending.
-
-### Data Sources
-RentCast market stats (per ZIP with dataByPropertyType breakdown), Trestle MLS (active/closed counts), HUD (fair market rents). Results cached 24 hours.
 
 ---
 
@@ -209,7 +189,7 @@ RentCast market stats (per ZIP with dataByPropertyType breakdown), Trestle MLS (
 - Filters: property type, beds/baths, year built, sqft, lot size, AVM, sale amount, assessed value, absentee toggle
 
 ### Property Detail Modal
-- **Tabs**: Opportunity Score, Overview, Building, Financial, Sales History, Comps, Ownership, Neighborhood, Market Stats, Federal/GIS
+- **Tabs**: Opportunity Score, Overview, Building, Financial, Sales History, Listing History, Comps, Ownership, Neighborhood, Market Stats, Federal/GIS
 - **AVM Reliability Check**: >30% difference from county assessment = suppressed, county value shown
 - **Property-type-specific market stats**: Condo shows Condo medians, SFR shows SFR medians
 - **County Deed Owner**: Green badge from Honolulu OWNINFO, unit-specific for condos
@@ -641,4 +621,4 @@ These features ensure the data shown to agents is accurate and relevant, especia
 - **9 Data Sources**: MLS (Trestle), Realie, RentCast, Honolulu County OWNINFO, Hawaii State GIS, FEMA NRI, FBI CDE, Census ACS (4 geographic levels), NCES/FRED/BLS/HUD
 - **White-Label Ready**: CRM provider name never shown to end users (nameless integration)
 
-> Last updated: April 3, 2026
+> Last updated: April 5, 2026

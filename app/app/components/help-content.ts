@@ -244,7 +244,7 @@ Use the source toggles to show or hide events from specific calendars. Each even
     title: "5. MLS",
     content: `## 5. MLS (Multiple Listing Service)
 
-The MLS section provides 8 tabs for working with MLS data, powered by HiCentral MLS via Trestle by CoreLogic.
+The MLS section provides 9 tabs for working with MLS data, powered by HiCentral MLS via Trestle by CoreLogic.
 
 ### 5.1 Prerequisites
 
@@ -272,30 +272,7 @@ Market Monitor monitors market activity for a specific zip code or area.
 4. Map markers are color-coded by status and shaped by property type (circle = residential, diamond = condo, triangle = land).
 5. Click any listing for full details.
 
-### 5.4 CMA (Tab 3)
-
-Generate a Comparative Market Analysis for any property.
-
-1. Enter the subject property details: address, city, postal code, list price, beds, baths, sqft, year built, property type.
-2. The system pulls comparable sales from MLS (Active, Pending, Closed within the same area, last 6 months).
-3. If MLS data is limited, it automatically falls back to RentCast and Realie AVM.
-4. Review: total/active/pending/sold comp counts, average and median prices, price per sqft, average DOM, suggested price range, list-to-sale ratio.
-5. Each comp is scored for correlation to the subject property.
-6. Save CMA reports for future reference.
-
-### 5.5 Lead Matches (Tab 4)
-
-Automatically matches your pipeline leads to active MLS listings based on their criteria (neighborhoods, must-haves, timeline, financing). Each match is scored 0-100 with match reasons. Top 5 matches per lead. Matches can be saved and tracked (new/sent/viewed/dismissed).
-
-### 5.6 OH Sync (Tab 5)
-
-Two-way open house synchronization between MLS and your local database. Pull upcoming open houses from MLS as draft events. Track which local events have been synced to MLS. Prevents duplicate imports via MLS key tracking.
-
-### 5.7 Investment (Tab 6)
-
-Multi-unit property analysis with per-unit breakdown (type, beds/baths, actual rent, pro forma rent). Calculates total units, monthly rent, and average rent. Auto-fills BRRRR and Flip analyzers from the investment data.
-
-### 5.8 Market Snapshot (Tab 7)
+### 5.4 Market Snapshot (Tab 3)
 
 Real-time market statistics computed from Trestle MLS data.
 
@@ -307,7 +284,41 @@ Real-time market statistics computed from Trestle MLS data.
 
 Data is cached for 24 hours.
 
-### 5.9 Hazard Map (Tab 8)
+### 5.5 Market Analytics (Tab 4)
+
+County-level market statistics dashboard. Also accessible from the sidebar under Deals.
+
+1. Go to **MLS** > **Market Analytics** tab.
+2. View overview cards: Median Sale Price, SFR Median, Condo/TH Median, $/Sqft, DOM, YoY Price Change, Sales Momentum, MLS Active, MLS Closed (30d).
+3. Browse the **Sales Price by ZIP Code** table - click any ZIP for a detailed breakdown.
+4. Review grouped bar charts (SFR vs Condo/TH by ZIP), sale volume by city, fair market rents by bedroom count, and median rent by ZIP.
+
+Data sources: RentCast market stats, Trestle MLS, HUD. Cached 24 hours.
+
+### 5.6 CMA (Tab 5)
+
+Generate a Comparative Market Analysis for any property.
+
+1. Enter the subject property details: address, city, postal code, list price, beds, baths, sqft, year built, property type.
+2. The system pulls comparable sales from MLS (Active, Pending, Closed within the same area, last 6 months).
+3. If MLS data is limited, it automatically falls back to RentCast and Realie AVM.
+4. Review: total/active/pending/sold comp counts, average and median prices, price per sqft, average DOM, suggested price range, list-to-sale ratio.
+5. Each comp is scored for correlation to the subject property.
+6. Save CMA reports for future reference.
+
+### 5.7 Lead Matches (Tab 6)
+
+Automatically matches your pipeline leads to active MLS listings based on their criteria (neighborhoods, must-haves, timeline, financing). Each match is scored 0-100 with match reasons. Top 5 matches per lead. Matches can be saved and tracked (new/sent/viewed/dismissed).
+
+### 5.8 OH Sync (Tab 7)
+
+Two-way open house synchronization between MLS and your local database. Pull upcoming open houses from MLS as draft events. Track which local events have been synced to MLS. Prevents duplicate imports via MLS key tracking.
+
+### 5.9 Investment (Tab 8)
+
+Multi-unit property analysis with per-unit breakdown (type, beds/baths, actual rent, pro forma rent). Calculates total units, monthly rent, and average rent. Auto-fills BRRRR and Flip analyzers from the investment data.
+
+### 5.10 Hazard Map (Tab 9)
 
 View flood, tsunami, and sea level rise hazard zones on an interactive map.
 
@@ -723,7 +734,8 @@ Click any property to open the full intelligence report with tabs:
 - **Overview**: Address, beds/baths/sqft, year built, property type, lot size, owner info
 - **Building**: Construction details, rooms, parking, utilities, interior features
 - **Financial**: AVM with reliability check, assessment, tax, mortgage, equity, LTV, rental AVM, cap rate, gross yield
-- **Sales History**: Historical transactions with dates, amounts, buyer/seller names, deed type
+- **Sales History**: Historical closed transactions with dates, amounts, buyer/seller names, deed type
+- **Listing History**: All MLS listings for the property (Active, Pending, Closed, Expired, Withdrawn, Canceled) with color-coded status badges, price changes, days on market, and listing/buyer agent info. Unlike Sales History which shows only closed transactions, Listing History shows every time the property was listed on MLS.
 - **Comps**: Comparable sales with correlation scoring
 - **Ownership**: County deed owner (green badge), co-owners, corporate/trust status, absentee, mailing address
 - **Neighborhood**: Demographics, schools (with zones), crime, POIs, walk score

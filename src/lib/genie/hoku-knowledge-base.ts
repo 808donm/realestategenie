@@ -104,7 +104,7 @@ Help the agent manage contacts, sync with CRM, and draft communications.`,
 Help the agent prioritize leads, view matched properties, draft communications, and understand heat scores.`,
 
   // MLS Listings
-  "mls-listings": `The agent is on the MLS page. This has 8 tabs powered by HiCentral MLS (Trestle).
+  "mls-listings": `The agent is on the MLS page. This has 9 tabs powered by HiCentral MLS (Trestle).
 
 **Tab 1 - Search & Listings**:
 - Search by zip code, city, address, or building/condo name
@@ -118,17 +118,19 @@ Help the agent prioritize leads, view matched properties, draft communications, 
 
 **Tab 2 - Market Monitor**: Map + Hot Sheet for market monitoring (see market-watch context)
 
-**Tab 3 - CMA**: Comparative Market Analysis with MLS comps, RentCast/Realie fallback, correlation scoring, suggested price range
+**Tab 3 - Market Snapshot**: Real-time market statistics computed from MLS data. Market Temperature gauge (buyer's vs seller's market), Quick Stats (closed sales, pending, active, months of inventory, DOM, sale-to-list ratio) with 90-day trend arrows, and 12-month bar charts for average sales price and sales activity. County selector for Hawaii counties. Cached 24 hours.
 
-**Tab 4 - Lead Matches**: Auto-matches pipeline leads to active MLS listings (scored 0-100)
+**Tab 4 - Market Analytics**: County-level market statistics (see market-analytics context). Also accessible from the sidebar.
 
-**Tab 5 - OH Sync**: Two-way open house sync between MLS and local database
+**Tab 5 - CMA**: Comparative Market Analysis with MLS comps, RentCast/Realie fallback, correlation scoring, suggested price range
 
-**Tab 6 - Investment**: Multi-unit property analysis with per-unit rent breakdown, auto-fills BRRRR and Flip analyzers
+**Tab 6 - Lead Matches**: Auto-matches pipeline leads to active MLS listings (scored 0-100)
 
-**Tab 7 - Hazard Map**: Shows flood zones (FEMA DFIRM), tsunami evacuation zones, and sea level rise exposure areas as colored polygon overlays on Google Maps. Agents can toggle layers on/off and search by address or ZIP. Blue = flood zones, Cyan = tsunami, Teal = sea level rise. Hawaii layers use State GIS data; mainland uses FEMA NFHL. Deep link from Property Detail Modal.
+**Tab 7 - OH Sync**: Two-way open house sync between MLS and local database
 
-**Tab 8 - Market Snapshot**: Real-time market statistics computed from MLS data. Market Temperature gauge (buyer's vs seller's market), Quick Stats (closed sales, pending, active, months of inventory, DOM, sale-to-list ratio) with 90-day trend arrows, and 12-month bar charts for average sales price and sales activity. County selector for Hawaii counties. Cached 24 hours.
+**Tab 8 - Investment**: Multi-unit property analysis with per-unit rent breakdown, auto-fills BRRRR and Flip analyzers
+
+**Tab 9 - Hazard Map**: Shows flood zones (FEMA DFIRM), tsunami evacuation zones, and sea level rise exposure areas as colored polygon overlays on Google Maps. Agents can toggle layers on/off and search by address or ZIP. Blue = flood zones, Cyan = tsunami, Teal = sea level rise. Hawaii layers use State GIS data; mainland uses FEMA NFHL. Deep link from Property Detail Modal.
 
 Help the agent search listings, run comps, match leads, analyze investments, explore hazard zones, and review market statistics.`,
 
@@ -145,7 +147,8 @@ Help the agent search listings, run comps, match leads, analyze investments, exp
   - **Overview**: Address, beds/baths/sqft, year built, property type, lot size, owner info
   - **Building**: Construction, rooms, parking, utilities, interior features
   - **Financial**: AVM (with reliability check), assessment, tax, mortgage, equity, LTV, rental AVM, cap rate
-  - **Sales History**: Historical transactions with dates, amounts, buyer/seller, deed type
+  - **Sales History**: Historical closed transactions with dates, amounts, buyer/seller, deed type
+  - **Listing History**: All MLS listings for the property (Active, Pending, Closed, Expired, Withdrawn, Canceled) with color-coded status badges, price changes, DOM, listing/buyer agents
   - **Comps**: Comparable sales with correlation scoring
   - **Ownership**: Deed owner (county OWNINFO with green badge), co-owners, corporate/trust, absentee, mailing address
   - **Neighborhood**: Demographics, schools, crime, POI, walk score
@@ -330,7 +333,7 @@ Help the agent create events, import from MLS, customize flyers, understand the 
 - **Sale Volume by Cities**: Vertical bar chart showing listings per city
 - **Fair Market Rents**: HUD Section 8 rents by bedroom count (Efficiency through 4BR)
 - **Median Rent by ZIP**: Rental medians sorted descending
-- Also accessible as a tab in the MLS page (between Market Monitor and CMA)
+- Also accessible as Tab 4 in the MLS page (between Market Snapshot and CMA)
 - Data: RentCast market stats, Trestle MLS, HUD. Cached 24 hours.
 Help the agent understand market trends, compare neighborhoods, and identify opportunities.`,
 
@@ -426,7 +429,7 @@ Help the admin manage the platform, users, plans, and integrations.`,
 
 **Primary Integrations**:
 - **CRM**: Contacts, pipeline, email/SMS automation. Setup: Private Integration API Key + Location ID + Pipeline selection + New Lead Stage mapping.
-- **Trestle (HiCentral MLS)**: MLS listings, property data, comps, market watch, OH sync. Setup: Trestle API credentials (OAuth2 or Basic Auth).
+- **Trestle (HiCentral MLS)**: MLS listings, property data, comps, market monitor, OH sync. Setup: Trestle API credentials (OAuth2 or Basic Auth).
 
 **Calendar Integrations** (Two-Way Sync):
 - **Google Calendar**: OAuth connection, bidirectional event sync
