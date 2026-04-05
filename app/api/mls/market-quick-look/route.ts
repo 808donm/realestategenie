@@ -36,10 +36,11 @@ export async function GET(request: NextRequest) {
       .gte("fetched_at", cutoff.toISOString())
       .maybeSingle();
 
-    if (cached?.data) {
-      console.log(`[Market Snapshot] Cache HIT for ${county}, ${state}`);
-      return NextResponse.json(cached.data);
-    }
+    // Cache temporarily disabled for testing - re-enable once data is verified
+    // if (cached?.data) {
+    //   console.log(`[Market Snapshot] Cache HIT for ${county}, ${state}`);
+    //   return NextResponse.json(cached.data);
+    // }
 
     const client = await getTrestleClient(supabase, user.id);
     if (!client) {
