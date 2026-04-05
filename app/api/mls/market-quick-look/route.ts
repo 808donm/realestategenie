@@ -54,27 +54,60 @@ export async function GET(request: NextRequest) {
     const twelveMonthsAgo = new Date(now);
     twelveMonthsAgo.setMonth(now.getMonth() - 12);
 
-    const countyFilter = `CountyOrParish eq '${county}'`;
+    // HiCentral MLS doesn't populate CountyOrParish. For Hawaii, all listings
+    // are on one MLS (HiCentral) so we filter by the ZIP codes in each county.
+    const COUNTY_ZIPS: Record<string, string[]> = {
+      Honolulu: [
+        "96701", "96706", "96707", "96712", "96717", "96731",
+        "96734", "96744", "96762", "96782", "96786", "96789", "96791",
+        "96792", "96795", "96797", "96813", "96814", "96815", "96816", "96817",
+        "96818", "96819", "96821", "96822", "96825", "96826",
+      ],
+      Maui: ["96708", "96713", "96732", "96753", "96761", "96768", "96779", "96790", "96793"],
+      Hawaii: ["96704", "96710", "96719", "96720", "96725", "96726", "96727", "96728", "96740", "96743", "96745", "96749", "96750", "96755", "96760", "96771", "96773", "96774", "96776", "96777", "96778", "96781", "96783", "96785"],
+      Kauai: ["96703", "96705", "96714", "96716", "96722", "96741", "96746", "96747", "96752", "96754", "96756", "96765", "96766", "96769", "96796"],
+    };
+
+    const zips = COUNTY_ZIPS[county];
+    if (!zips || zips.length === 0) {
+      return NextResponse.json({ error: `Unknown county: ${county}` }, { status: 400 });
+    }
+
+    // Build ZIP-based filter: (startswith(PostalCode, '96701') or startswith(PostalCode, '96706') or ...)
+    const zipFilter = `(${zips.map((z) => `startswith(PostalCode, '${z}')`).join(" or ")})`;
+
+    // Log a sample listing to see what county fields Trestle actually returns
+    try {
+      const sample = await client.getProperties({
+        $filter: `StandardStatus eq 'Active'`,
+        $top: 1,
+        $select: "ListingKey,CountyOrParish,City,StateOrProvince,PostalCode,MLSAreaMajor",
+      });
+      if (sample.value?.[0]) {
+        const s = sample.value[0];
+        console.log(`[Market Snapshot] Trestle county fields: CountyOrParish="${(s as any).CountyOrParish}", City="${s.City}", State="${s.StateOrProvince}", ZIP="${s.PostalCode}", MLSAreaMajor="${(s as any).MLSAreaMajor}"`);
+      }
+    } catch {}
 
     // Parallel queries for counts and detailed data
     const [activeRes, pendingRes, closedDetailRes, prevClosedRes, trendRes] = await Promise.allSettled([
       // Active count
       client.getProperties({
-        $filter: `${countyFilter} and StandardStatus eq 'Active'`,
+        $filter: `${zipFilter} and StandardStatus eq 'Active'`,
         $top: 1,
         $count: true,
         $select: "ListingKey",
       }),
       // Pending count
       client.getProperties({
-        $filter: `${countyFilter} and StandardStatus eq 'Pending'`,
+        $filter: `${zipFilter} and StandardStatus eq 'Pending'`,
         $top: 1,
         $count: true,
         $select: "ListingKey",
       }),
       // Closed last 90 days -- detailed for stats
       client.getProperties({
-        $filter: `${countyFilter} and StandardStatus eq 'Closed' and CloseDate gt ${ninetyDaysAgo.toISOString()}`,
+        $filter: `${zipFilter} and StandardStatus eq 'Closed' and CloseDate gt ${ninetyDaysAgo.toISOString()}`,
         $top: 500,
         $count: true,
         $select: "ListingKey,ClosePrice,ListPrice,DaysOnMarket,CloseDate,PropertyType,PropertySubType",
@@ -82,14 +115,14 @@ export async function GET(request: NextRequest) {
       }),
       // Previous 90-day period closed count (for trend comparison)
       client.getProperties({
-        $filter: `${countyFilter} and StandardStatus eq 'Closed' and CloseDate gt ${prevNinetyStart.toISOString()} and CloseDate le ${ninetyDaysAgo.toISOString()}`,
+        $filter: `${zipFilter} and StandardStatus eq 'Closed' and CloseDate gt ${prevNinetyStart.toISOString()} and CloseDate le ${ninetyDaysAgo.toISOString()}`,
         $top: 1,
         $count: true,
         $select: "ListingKey",
       }),
       // 12-month closed for trend charts
       client.getProperties({
-        $filter: `${countyFilter} and StandardStatus eq 'Closed' and CloseDate gt ${twelveMonthsAgo.toISOString()}`,
+        $filter: `${zipFilter} and StandardStatus eq 'Closed' and CloseDate gt ${twelveMonthsAgo.toISOString()}`,
         $top: 500,
         $count: true,
         $select: "ListingKey,ClosePrice,ListPrice,DaysOnMarket,CloseDate",
