@@ -233,9 +233,10 @@ export async function executeCopilotAction(
           success: true,
           redirect: mlsUrl,
           data: {
-            properties: [{ address: `Search MLS for ${params.propertyType || "all"} in ${tmk ? `TMK ${tmk}` : postalCode}` }],
-            totalCount: 1,
-            message: `Click "View Results" to see ${params.propertyType || "all"} properties in ${tmk ? `TMK ${tmk}` : postalCode} on the MLS Search page.`,
+            properties: [],
+            totalCount: 0,
+            searchRedirect: true,
+            message: `Here are your properties.`,
           },
         };
       }
