@@ -1220,7 +1220,7 @@ export default function PropertyDetailModal({
       stories: p.building?.summary?.levels,
       garageSpaces: p.building?.parking?.prkgSpaces,
       pool: p.lot?.poolInd === "Y" ? true : p.lot?.poolInd === "N" ? false : undefined,
-      avmValue: genieAvm?.value || avmVal || bestValue,
+      avmValue: rentcastAvmPrice || avmVal || bestValue,
       avmLow: genieAvm?.low || p.avm?.amount?.low,
       avmHigh: genieAvm?.high || p.avm?.amount?.high,
       avmConfidence: genieAvm?.confidence || p.avm?.amount?.scr,
@@ -1522,17 +1522,19 @@ export default function PropertyDetailModal({
       }}
     >
       {(() => {
-        // Prefer Genie AVM when available, fall back to external AVM, then assessment
-        const useGenie = genieAvm?.value;
-        const displayVal = useGenie || avmVal || p.assessment?.market?.mktTtlValue || p.assessment?.appraised?.apprTtlValue;
-        if (displayVal == null && !genieAvmLoading) return null;
-        if (genieAvmLoading && !displayVal) return (
+        // Priority: Comps AVM (most accurate) > Genie AVM > external AVM > assessment
+        const compsAvm = rentcastAvmPrice;
+        const useComps = compsAvm && compsAvm > 0;
+        const useGenie = !useComps && genieAvm?.value;
+        const displayVal = compsAvm || genieAvm?.value || avmVal || p.assessment?.market?.mktTtlValue || p.assessment?.appraised?.apprTtlValue;
+        if (displayVal == null && !genieAvmLoading && !rentcastCompsLoading) return null;
+        if ((genieAvmLoading || rentcastCompsLoading) && !displayVal) return (
           <div style={{ flex: 1, minWidth: 130, padding: "10px 14px", background: "#f3f4f6", borderRadius: 8 }}>
             <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600, textTransform: "uppercase" }}>Estimating Value...</div>
           </div>
         );
 
-        const label = useGenie ? "Estimated Value" : avmVal ? "AVM Value" : p.assessment?.market?.mktTtlValue ? "Market Value" : "Appraised Value";
+        const label = "Estimated Value";
         const confidence = useGenie ? genieAvm.confidence : avmConfidenceLevel;
         const low = useGenie ? genieAvm.low : avmLow;
         const high = useGenie ? genieAvm.high : avmHigh;
@@ -1563,10 +1565,14 @@ export default function PropertyDetailModal({
                 {fsd != null && <span style={{ marginLeft: 4 }}>(FSD: {fsd}%)</span>}
               </div>
             )}
-            {useGenie && genieAvm.methodology?.compsUsed > 0 && (
+            {useComps && rentcastComps && rentcastComps.length > 0 && (
+              <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 2 }}>
+                Based on {rentcastComps.length} comps
+              </div>
+            )}
+            {useGenie && !useComps && genieAvm.methodology?.compsUsed > 0 && (
               <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 2 }}>
                 Based on {genieAvm.methodology.compsUsed} MLS comps
-                {genieAvm.methodology.compsFromSubdivision > 0 && ` (${genieAvm.methodology.compsFromSubdivision} from same subdivision)`}
               </div>
             )}
           </div>
@@ -2120,29 +2126,11 @@ export default function PropertyDetailModal({
                 </div>
               )}
 
-              {genieAvm?.value ? (
-                <Section title="Estimated Value (Genie AVM)">
-                  <Field label="Estimated Value" value={fmt(genieAvm.value)} />
-                  <Field
-                    label="Confidence Range"
-                    value={`${fmt(genieAvm.low)} – ${fmt(genieAvm.high)}`}
-                  />
-                  <Field
-                    label="Range Width"
-                    value={`±${genieAvm.fsd}%`}
-                  />
-                  <Field
-                    label="Confidence"
-                    value={`${genieAvm.confidence} (FSD: ${genieAvm.fsd}%)`}
-                  />
-                  {genieAvm.methodology?.compsUsed > 0 && (
-                    <Field
-                      label="MLS Comps Used"
-                      value={`${genieAvm.methodology.compsUsed}${genieAvm.methodology.compsFromSubdivision > 0 ? ` (${genieAvm.methodology.compsFromSubdivision} from same subdivision)` : ""}`}
-                    />
-                  )}
-                  {genieAvm.methodology?.leaseholdAdjustment != null && (
-                    <Field label="Leasehold Adjustment" value={`${Math.round(genieAvm.methodology.leaseholdAdjustment * 100)}%`} />
+              {rentcastAvmPrice ? (
+                <Section title="Automated Valuation (AVM)">
+                  <Field label="Estimated Value" value={fmt(rentcastAvmPrice)} />
+                  {rentcastComps && rentcastComps.length > 0 && (
+                    <Field label="Based On" value={`${rentcastComps.length} comparable properties`} />
                   )}
                   <Field label="Source" value="Real Estate Genie" />
                 </Section>
