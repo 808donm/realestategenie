@@ -201,10 +201,10 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Log PropertySubType values for debugging
+    console.log(`[Farm Search] ${properties.length} results from Trestle. postalCode=${postalCodes.join(",")}, propertyType=${propertyType}, minBeds=${minBeds}, minBaths=${minBaths}`);
     if (properties.length > 0) {
-      const subTypes = [...new Set(properties.map((p: any) => p.PropertySubType).filter(Boolean))];
-      console.log(`[Farm Search] ${properties.length} results. PropertySubTypes: ${subTypes.join(", ")}`);
+      const subTypes = [...new Set(properties.map((p: any) => `${p.PropertyType}/${p.PropertySubType}`).filter(Boolean))];
+      console.log(`[Farm Search] PropertyType/SubType: ${subTypes.join(", ")}`);
     }
 
     // No post-fetch PropertySubType filter needed — filtered in OData query.

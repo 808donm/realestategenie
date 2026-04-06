@@ -203,7 +203,11 @@ export async function POST(request: NextRequest) {
 
     // ── Check for <execute> tag ────────────────────────────────────
     let actionResult = null;
+    const hasTag = aiResponse.includes("<execute>");
+    console.log(`[Copilot] AI response has <execute> tag: ${hasTag}, length: ${aiResponse.length}`);
+    if (hasTag) console.log(`[Copilot] AI text: ${aiResponse.substring(0, 300)}`);
     const executeIntent = extractExecuteTag(aiResponse);
+    console.log(`[Copilot] Execute intent: ${executeIntent ? JSON.stringify(executeIntent) : "null"}`);
 
     if (executeIntent) {
       // Execute the action
