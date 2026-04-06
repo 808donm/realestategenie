@@ -294,7 +294,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Log activity (fire-and-forget)
-    void (async () => { try { await supabase.from("agent_activity_log").insert({ agent_id: userData.user!.id, action: "mls_search", details: { query, results: properties.length } }); } catch {} })();
+    if (userId) {
+      void (async () => { try { await supabase.from("agent_activity_log").insert({ agent_id: userId, action: "mls_search", details: { query, results: properties.length } }); } catch {} })();
+    }
 
     return NextResponse.json({
       properties,
