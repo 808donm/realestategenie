@@ -222,43 +222,22 @@ export async function executeCopilotAction(
         if (params.minBeds) searchParams.set("minBeds", String(params.minBeds));
         if (params.minBaths) searchParams.set("minBaths", String(params.minBaths));
 
-        // Call MLS search with service-role key
-        const baseUrl = getBaseUrl();
+        // Navigate to MLS Search page with pre-filled filters
+        // Server-to-server Trestle calls return 0 results due to auth differences.
+        // Let the browser handle the search through the existing MLS Search UI.
         const postalCode = searchParams.get("postalCodes") || "";
-        const mlsParams = new URLSearchParams();
-        mlsParams.set("q", postalCode);
-        if (params.propertyType) mlsParams.set("propertyType", params.propertyType);
-        mlsParams.set("status", "Active");
-        mlsParams.set("limit", "50");
-
-        const res = await internalFetch(`${baseUrl}/api/mls/search?${mlsParams}`);
-        const data = await res.json();
-
-        console.log(`[Hoku MLS] MLS search returned: ${data.value?.length || 0} results, status=${res.status}`);
-
-        let properties = (data.value || []).map((p: any) => ({
-          address: p.UnparsedAddress || [p.StreetNumber, p.StreetName, p.StreetSuffix].filter(Boolean).join(" "),
-          beds: p.BedroomsTotal,
-          baths: p.BathroomsTotalInteger,
-          sqft: p.LivingArea,
-          price: p.ListPrice,
-          ParcelNumber: p.ParcelNumber,
-          PropertyType: p.PropertyType,
-          PropertySubType: p.PropertySubType,
-        }));
-
-        // Filter by TMK ParcelNumber prefix if TMK search
-        if (tmkPrefix && properties.length > 0) {
-          properties = properties.filter((p: any) => {
-            const pn = p.ParcelNumber || (p as any).UniversalParcelId?.split(":").pop();
-            return !pn || String(pn).startsWith(tmkPrefix!);
-          });
-        }
+        const mlsUrl = `/app/mls?q=${encodeURIComponent(postalCode)}&propertyType=${encodeURIComponent(params.propertyType || "")}&status=Active`;
 
         return {
           action,
           success: true,
-          data: { properties: properties.slice(0, 10), totalCount: properties.length, tmkSearch: tmkPrefix ? tmk : undefined },
+          data: {
+            navigateUrl: mlsUrl,
+            properties: [],
+            totalCount: 0,
+            message: `Opening MLS Search for ${params.propertyType || "all"} properties in ${tmk ? `TMK ${tmk}` : postalCode}...`,
+            tmkSearch: tmkPrefix ? tmk : undefined,
+          },
         };
       }
 
