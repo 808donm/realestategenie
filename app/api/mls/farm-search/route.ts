@@ -136,23 +136,9 @@ export async function GET(request: NextRequest) {
     // Radius mode: Trestle doesn't support geo-radius natively in OData
     // We fetch by nearby zip codes or city and filter by distance client-side
 
-    // Property filters — HiCentral uses PropertyType="Residential" for SFR, Condo, Townhouse.
-    // Map common property type names to the OData filter that works with HiCentral.
-    if (propertyType) {
-      const ptLower = propertyType.toLowerCase();
-      if (ptLower.includes("single") || ptLower === "sfr") {
-        filters.push(`PropertyType eq 'Residential'`);
-        // PropertySubType filter applied after fetch (not all MLS support it in OData)
-      } else if (ptLower.includes("condo")) {
-        filters.push(`PropertyType eq 'Residential'`);
-      } else if (ptLower.includes("town")) {
-        filters.push(`PropertyType eq 'Residential'`);
-      } else if (ptLower === "residential") {
-        filters.push(`PropertyType eq 'Residential'`);
-      } else {
-        filters.push(`PropertyType eq '${propertyType}'`);
-      }
-    }
+    // PropertyType filter — DON'T filter in OData query. HiCentral's PropertyType
+    // values may not match standard RESO enum values in OData filters.
+    // Instead, filter by PropertySubType post-fetch (already handled below).
     if (minPrice) filters.push(`ListPrice ge ${minPrice}`);
     if (maxPrice) filters.push(`ListPrice le ${maxPrice}`);
     if (minBeds) filters.push(`BedroomsTotal ge ${minBeds}`);
