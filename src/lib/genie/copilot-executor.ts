@@ -226,13 +226,18 @@ export async function executeCopilotAction(
         const { supabaseAdmin: adminClient } = await import("@/lib/supabase/admin");
         const { createTrestleClient } = await import("@/lib/integrations/trestle-client");
 
-        const { data: trestleIntegration } = await adminClient
+        // Get a Trestle integration with valid OAuth config (skip broken/empty ones)
+        const { data: allTrestle } = await adminClient
           .from("integrations")
           .select("config")
           .eq("provider", "trestle")
-          .eq("status", "connected")
-          .limit(1)
-          .maybeSingle();
+          .eq("status", "connected");
+
+        // Find one with actual OAuth credentials
+        const trestleIntegration = (allTrestle || []).find((t: any) => {
+          const c = typeof t.config === "string" ? JSON.parse(t.config) : t.config;
+          return c?.client_id || c?.username || c?.bearer_token;
+        });
 
         if (!trestleIntegration?.config) {
           return { action, success: false, error: "Trestle MLS not connected" };
