@@ -233,10 +233,8 @@ export async function executeCopilotAction(
           success: true,
           redirect: mlsUrl,
           data: {
-            properties: [],
-            totalCount: 0,
             searchRedirect: true,
-            message: `Here are your properties.`,
+            message: `I found matching properties! Click "Open" to view them on the MLS Search page.`,
           },
         };
       }
