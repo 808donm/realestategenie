@@ -136,8 +136,23 @@ export async function GET(request: NextRequest) {
     // Radius mode: Trestle doesn't support geo-radius natively in OData
     // We fetch by nearby zip codes or city and filter by distance client-side
 
-    // Property filters
-    if (propertyType) filters.push(`PropertyType eq '${propertyType}'`);
+    // Property filters — HiCentral uses PropertyType="Residential" for SFR, Condo, Townhouse.
+    // Map common property type names to the OData filter that works with HiCentral.
+    if (propertyType) {
+      const ptLower = propertyType.toLowerCase();
+      if (ptLower.includes("single") || ptLower === "sfr") {
+        filters.push(`PropertyType eq 'Residential'`);
+        // PropertySubType filter applied after fetch (not all MLS support it in OData)
+      } else if (ptLower.includes("condo")) {
+        filters.push(`PropertyType eq 'Residential'`);
+      } else if (ptLower.includes("town")) {
+        filters.push(`PropertyType eq 'Residential'`);
+      } else if (ptLower === "residential") {
+        filters.push(`PropertyType eq 'Residential'`);
+      } else {
+        filters.push(`PropertyType eq '${propertyType}'`);
+      }
+    }
     if (minPrice) filters.push(`ListPrice ge ${minPrice}`);
     if (maxPrice) filters.push(`ListPrice le ${maxPrice}`);
     if (minBeds) filters.push(`BedroomsTotal ge ${minBeds}`);
@@ -163,6 +178,22 @@ export async function GET(request: NextRequest) {
         const dist = haversineDistance(lat!, lng!, p.Latitude, p.Longitude);
         return dist <= radius;
       });
+    }
+
+    // Post-fetch PropertySubType filtering for SFR/Condo/Townhouse
+    // HiCentral uses PropertyType="Residential" for all, so we filter by SubType after fetch
+    if (propertyType) {
+      const ptLower = propertyType.toLowerCase();
+      if (ptLower.includes("single") || ptLower === "sfr") {
+        properties = properties.filter((p) => {
+          const sub = (p.PropertySubType || "").toLowerCase();
+          return sub.includes("single") || sub === "" || sub.includes("residence");
+        });
+      } else if (ptLower.includes("condo")) {
+        properties = properties.filter((p) => (p.PropertySubType || "").toLowerCase().includes("condo"));
+      } else if (ptLower.includes("town")) {
+        properties = properties.filter((p) => (p.PropertySubType || "").toLowerCase().includes("town"));
+      }
     }
 
     // Filter out rental/lease listings unless explicitly requested

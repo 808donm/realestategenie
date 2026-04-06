@@ -205,7 +205,7 @@ AVAILABLE ACTIONS (use <execute> tag when ready):
 4. create_open_house — Create open house (redirect to form)
 5. property_lookup — Look up property. Params: address OR zipCode
 6. generate_property_report — Generate PDF report (redirect)
-7. search_mls — Search MLS listings. Params: zipCodes, propertyType?, minPrice?, maxPrice?
+7. search_mls — Search MLS listings. Params: zipCodes, propertyType? (use "Single Family" for SFR, "Condominium" for condos), minPrice?, maxPrice?, minBeds?, minBaths?
 8. run_calculator — Open calculator. Params: calculatorType
 9. export_calculator_report — Email calculator results (redirect)
 10. search_seller_map — Find motivated sellers. Params: zips?

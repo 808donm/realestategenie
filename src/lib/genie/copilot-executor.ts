@@ -190,6 +190,8 @@ export async function executeCopilotAction(
         if (params.propertyType) searchParams.set("propertyType", params.propertyType);
         if (params.minPrice) searchParams.set("minPrice", String(params.minPrice));
         if (params.maxPrice) searchParams.set("maxPrice", String(params.maxPrice));
+        if (params.minBeds) searchParams.set("minBeds", String(params.minBeds));
+        if (params.minBaths) searchParams.set("minBaths", String(params.minBaths));
 
         const baseUrl = getBaseUrl();
         const res = await internalFetch(`${baseUrl}/api/mls/farm-search?${searchParams}`);
