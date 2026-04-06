@@ -222,45 +222,26 @@ export async function executeCopilotAction(
         if (params.minBeds) searchParams.set("minBeds", String(params.minBeds));
         if (params.minBaths) searchParams.set("minBaths", String(params.minBaths));
 
-        // Call Trestle directly to avoid auth/routing issues
-        const { supabaseAdmin: adminClient } = await import("@/lib/supabase/admin");
-        const { createTrestleClient } = await import("@/lib/integrations/trestle-client");
-
-        // Get a Trestle integration with valid OAuth config (skip broken/empty ones)
-        const { data: allTrestle } = await adminClient
-          .from("integrations")
-          .select("config")
-          .eq("provider", "trestle")
-          .eq("status", "connected");
-
-        // Find one with actual OAuth credentials
-        const trestleIntegration = (allTrestle || []).find((t: any) => {
-          const c = typeof t.config === "string" ? JSON.parse(t.config) : t.config;
-          return c?.client_id || c?.username || c?.bearer_token;
-        });
-
-        if (!trestleIntegration?.config) {
-          return { action, success: false, error: "Trestle MLS not connected" };
-        }
-
-        const trestleConfig = typeof trestleIntegration.config === "string"
-          ? JSON.parse(trestleIntegration.config)
-          : trestleIntegration.config;
-        const trestleClient = createTrestleClient(trestleConfig);
-
+        // Use the copilot's request context to call MLS search with user auth
+        // This ensures Trestle gets the same credentials as the browser
+        const baseUrl = getBaseUrl();
         const postalCode = searchParams.get("postalCodes") || "";
-        const result = await trestleClient.searchProperties({
-          status: ["Active"],
-          postalCode: postalCode || undefined,
-          propertyType: params.propertyType,
-          limit: 50,
-          offset: 0,
-          includeMedia: false,
+        const mlsParams = new URLSearchParams();
+        mlsParams.set("q", postalCode);
+        if (params.propertyType) mlsParams.set("propertyType", params.propertyType);
+        mlsParams.set("status", "Active");
+        mlsParams.set("limit", "50");
+
+        // Pass the user's auth cookie from the copilot request context
+        const cookieHeader = (globalThis as any).__hokuRequestCookies || "";
+        const res = await fetch(`${baseUrl}/api/mls/search?${mlsParams}`, {
+          headers: { cookie: cookieHeader },
         });
+        const data = await res.json();
 
-        console.log(`[Hoku MLS] Trestle returned: ${result.value?.length || 0} results, count=${(result as any)["@odata.count"]}, postalCode=${postalCode}, propertyType=${params.propertyType}`);
+        console.log(`[Hoku MLS] MLS search returned: ${data.value?.length || 0} results, status=${res.status}`);
 
-        let properties = (result.value || []).map((p: any) => ({
+        let properties = (data.value || []).map((p: any) => ({
           address: p.UnparsedAddress || [p.StreetNumber, p.StreetName, p.StreetSuffix].filter(Boolean).join(" "),
           beds: p.BedroomsTotal,
           baths: p.BathroomsTotalInteger,

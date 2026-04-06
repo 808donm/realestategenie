@@ -210,6 +210,8 @@ export async function POST(request: NextRequest) {
     console.log(`[Copilot] Execute intent: ${executeIntent ? JSON.stringify(executeIntent) : "null"}`);
 
     if (executeIntent) {
+      // Pass user's cookies so the executor can make authenticated calls
+      (globalThis as any).__hokuRequestCookies = request.headers.get("cookie") || "";
       // Execute the action
       actionResult = await executeCopilotAction(user.id, executeIntent.action, executeIntent.params);
 
