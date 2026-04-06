@@ -180,6 +180,12 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // Log PropertySubType values for debugging
+    if (properties.length > 0) {
+      const subTypes = [...new Set(properties.map((p: any) => p.PropertySubType).filter(Boolean))];
+      console.log(`[Farm Search] ${properties.length} results. PropertySubTypes: ${subTypes.join(", ")}`);
+    }
+
     // Post-fetch PropertySubType filtering for SFR/Condo/Townhouse
     // HiCentral uses PropertyType="Residential" for all, so we filter by SubType after fetch
     if (propertyType) {
