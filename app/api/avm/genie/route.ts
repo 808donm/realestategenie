@@ -92,42 +92,29 @@ export async function GET(request: NextRequest) {
         { headers: { cookie: request.headers.get("cookie") || "" } },
       ).then((r) => r.json()).catch(() => null),
 
-      // MLS closed comps via Trestle
+      // Comps — same data source as the Comps tab. Uses MLS first, RentCast fallback.
       (async () => {
-        const client = await getTrestleClient(supabase, user.id);
-        if (!client) return [];
-
-        const sixMonthsAgo = new Date();
-        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-
-        // Build filter: same ZIP, closed, last 6 months
-        let filter = `StandardStatus eq 'Closed' and startswith(PostalCode, '${zipCode}') and CloseDate gt ${sixMonthsAgo.toISOString()}`;
-
-        // Filter by property type if provided
-        if (propertyType) {
-          filter += ` and PropertyType eq '${propertyType}'`;
-        }
-
-        const result = await client.getProperties({
-          $filter: filter,
-          $top: 25,
-          $orderby: "CloseDate desc",
-          $select: "ListingKey,ClosePrice,ListPrice,BedroomsTotal,BathroomsTotalInteger,LivingArea,YearBuilt,LotSizeArea,CloseDate,OwnershipType,SubdivisionName,UnparsedAddress,StreetNumber,StreetName,StreetSuffix,City",
-        });
-
-        return (result.value || []).map((p: any): MlsComp => ({
-          address: p.UnparsedAddress || [p.StreetNumber, p.StreetName, p.StreetSuffix].filter(Boolean).join(" "),
-          closePrice: p.ClosePrice || 0,
-          listPrice: p.ListPrice,
-          beds: p.BedroomsTotal,
-          baths: p.BathroomsTotalInteger,
-          sqft: p.LivingArea,
-          yearBuilt: p.YearBuilt,
-          lotSize: p.LotSizeArea,
-          closeDate: p.CloseDate || "",
-          ownershipType: p.OwnershipType,
-          subdivision: p.SubdivisionName,
-        }));
+        try {
+          const compsUrl = `${request.nextUrl.origin}/api/comps?address=${encodeURIComponent(address)}&zipCode=${zipCode}&compCount=20${beds ? `&beds=${beds}` : ""}${baths ? `&baths=${baths}` : ""}${sqft ? `&sqft=${sqft}` : ""}${propertyType ? `&propertyType=${propertyType}` : ""}`;
+          const compsRes = await fetch(compsUrl, {
+            headers: { cookie: request.headers.get("cookie") || "" },
+          });
+          const compsData = await compsRes.json();
+          const comps = compsData.comparables || [];
+          return comps.map((c: any): MlsComp => ({
+            address: c.address || c.formattedAddress || "",
+            closePrice: c.closePrice || c.price || 0,
+            listPrice: c.listPrice,
+            beds: c.bedrooms || c.beds,
+            baths: c.bathrooms || c.baths,
+            sqft: c.squareFootage || c.sqft,
+            yearBuilt: c.yearBuilt,
+            lotSize: c.lotSize,
+            closeDate: c.closeDate || c.listedDate || "",
+            correlation: c.correlation,
+            distance: c.distance,
+          }));
+        } catch { return []; }
       })(),
 
       // Hazard check (if coordinates available)

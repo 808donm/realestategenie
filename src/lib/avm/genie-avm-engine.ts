@@ -154,11 +154,7 @@ export function computeGenieAvm(input: GenieAvmInput): GenieAvmResult | null {
     });
   }
 
-  // RentCast comp-based AVM — use as fallback when no MLS comps available
-  // This is based on actual sale prices (comps), not an algorithmic estimate
-  if (!compBasedValue && input.rentcastAvm?.value) {
-    sources.push({ name: "rentcastCompAvm", value: input.rentcastAvm.value, weight: 0.70 });
-  }
+  // No external AVM fallbacks — our value comes from comps and assessment only
 
   // Sanity check: if the only source is an assessment that seems unreasonably low
   // (e.g., $265K for a property with 1,943 sqft in 2026), use a $/sqft estimate
