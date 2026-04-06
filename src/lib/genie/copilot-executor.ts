@@ -216,7 +216,7 @@ export async function executeCopilotAction(
         const baseUrl = getBaseUrl();
         // Use MLS search route (proven to work) instead of farm-search
         const mlsParams = new URLSearchParams();
-        mlsParams.set("query", searchParams.get("postalCodes") || "");
+        mlsParams.set("q", searchParams.get("postalCodes") || "");
         if (params.propertyType) mlsParams.set("propertyType", params.propertyType);
         if (params.minPrice) mlsParams.set("minPrice", String(params.minPrice));
         if (params.maxPrice) mlsParams.set("maxPrice", String(params.maxPrice));
