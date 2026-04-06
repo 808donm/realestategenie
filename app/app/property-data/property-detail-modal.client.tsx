@@ -5739,15 +5739,21 @@ function ListingHistorySection({ address }: { address: string }) {
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (data) {
-          // Combine unit and building history
-          const all = [...(data.unitHistory || []), ...(data.buildingHistory || [])];
+          // Show unit-specific listings only (not entire building for condos)
+          const unitResults = data.unitHistory || [];
+          const buildingResults = data.buildingHistory || [];
+
+          // If we have unit-specific results, show only those
+          // Otherwise fall back to all building results (for SFR)
+          const toShow = unitResults.length > 0 ? unitResults : buildingResults;
+
           // Sort by most recent first
-          all.sort((a: any, b: any) => {
+          toShow.sort((a: any, b: any) => {
             const dateA = a.modificationTimestamp || a.onMarketDate || "";
             const dateB = b.modificationTimestamp || b.onMarketDate || "";
             return dateB.localeCompare(dateA);
           });
-          setListings(all);
+          setListings(toShow);
         }
       })
       .catch((e) => setError(e.message))
