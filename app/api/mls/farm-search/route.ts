@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
     if (userId) {
       integrationQuery = integrationQuery.eq("agent_id", userId);
     }
-    const { data: integration } = await integrationQuery.maybeSingle();
+    const { data: integration } = await integrationQuery.limit(1).maybeSingle();
 
     if (!integration || integration.status !== "connected") {
       return NextResponse.json(
