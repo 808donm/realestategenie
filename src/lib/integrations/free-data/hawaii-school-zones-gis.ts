@@ -54,8 +54,9 @@ async function querySchoolZone(
     // Middle: mid_desc, grade_from, grade_to
     // High: high_desc, grade_from, grade_to
     // Complex: complex_desc or complex_area
+    // Hawaii uses "Intermediate" not "Middle" — field is int_desc, not mid_desc
     const name =
-      attrs.elem_desc || attrs.mid_desc || attrs.high_desc ||
+      attrs.elem_desc || attrs.int_desc || attrs.mid_desc || attrs.high_desc ||
       attrs.complex_desc || attrs.complex_area ||
       attrs.name || attrs.NAME || attrs.SCHOOL || null;
 
