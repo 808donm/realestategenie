@@ -266,7 +266,7 @@ export async function executeCopilotAction(
         return {
           action,
           success: true,
-          data: { properties: properties.slice(0, 10), totalCount: tmkPrefix ? properties.length : (data.totalCount || 0), tmkSearch: tmkPrefix ? tmk : undefined },
+          data: { properties: properties.slice(0, 10), totalCount: properties.length, tmkSearch: tmkPrefix ? tmk : undefined },
         };
       }
 
