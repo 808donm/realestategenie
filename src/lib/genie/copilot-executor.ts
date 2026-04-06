@@ -213,26 +213,46 @@ export async function executeCopilotAction(
         if (params.minBeds) searchParams.set("minBeds", String(params.minBeds));
         if (params.minBaths) searchParams.set("minBaths", String(params.minBaths));
 
-        const baseUrl = getBaseUrl();
-        // Use MLS search route (proven to work) instead of farm-search
-        const mlsParams = new URLSearchParams();
-        mlsParams.set("q", searchParams.get("postalCodes") || "");
-        if (params.propertyType) mlsParams.set("propertyType", params.propertyType);
-        if (params.minPrice) mlsParams.set("minPrice", String(params.minPrice));
-        if (params.maxPrice) mlsParams.set("maxPrice", String(params.maxPrice));
-        mlsParams.set("status", "Active");
+        // Call Trestle directly to avoid auth/routing issues
+        const { supabaseAdmin: adminClient } = await import("@/lib/supabase/admin");
+        const { createTrestleClient } = await import("@/lib/integrations/trestle-client");
 
-        const res = await internalFetch(`${baseUrl}/api/mls/search?${mlsParams}`);
-        const data = await res.json();
+        const { data: trestleIntegration } = await adminClient
+          .from("integrations")
+          .select("config")
+          .eq("provider", "trestle")
+          .eq("status", "connected")
+          .limit(1)
+          .maybeSingle();
 
-        let properties = (data.value || data.properties || []).map((p: any) => ({
-          ...p,
+        if (!trestleIntegration?.config) {
+          return { action, success: false, error: "Trestle MLS not connected" };
+        }
+
+        const trestleConfig = typeof trestleIntegration.config === "string"
+          ? JSON.parse(trestleIntegration.config)
+          : trestleIntegration.config;
+        const trestleClient = createTrestleClient(trestleConfig);
+
+        const postalCode = searchParams.get("postalCodes") || "";
+        const result = await trestleClient.searchProperties({
+          status: ["Active"],
+          postalCode: postalCode || undefined,
+          propertyType: params.propertyType,
+          limit: 50,
+          offset: 0,
+          includeMedia: false,
+        });
+
+        let properties = (result.value || []).map((p: any) => ({
           address: p.UnparsedAddress || [p.StreetNumber, p.StreetName, p.StreetSuffix].filter(Boolean).join(" "),
           beds: p.BedroomsTotal,
           baths: p.BathroomsTotalInteger,
           sqft: p.LivingArea,
           price: p.ListPrice,
           ParcelNumber: p.ParcelNumber,
+          PropertyType: p.PropertyType,
+          PropertySubType: p.PropertySubType,
         }));
 
         // Filter by TMK ParcelNumber prefix if TMK search
