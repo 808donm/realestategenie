@@ -154,11 +154,11 @@ export function computeGenieAvm(input: GenieAvmInput): GenieAvmResult | null {
     });
   }
 
-  // RentCast and Realie AVMs are NOT used — they undervalue Hawaii properties
-  // because Hawaii is non-disclosure and they lack actual sale price data.
-  // Our MLS comps from Trestle have the actual transaction prices.
-
-  // RentCast/Realie AVMs intentionally excluded — they undervalue Hawaii properties
+  // RentCast comp-based AVM — use as fallback when no MLS comps available
+  // This is based on actual sale prices (comps), not an algorithmic estimate
+  if (!compBasedValue && input.rentcastAvm?.value) {
+    sources.push({ name: "rentcastCompAvm", value: input.rentcastAvm.value, weight: 0.70 });
+  }
 
   // Sanity check: if the only source is an assessment that seems unreasonably low
   // (e.g., $265K for a property with 1,943 sqft in 2026), use a $/sqft estimate
