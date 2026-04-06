@@ -178,8 +178,28 @@ export async function executeCopilotAction(
       }
 
       case "search_mls": {
-        const { zipCodes } = params;
-        if (!zipCodes) return { action, success: false, error: "zipCodes required" };
+        let { zipCodes } = params;
+        const { tmk } = params;
+
+        // TMK search: resolve TMK section to ZIP codes
+        let tmkPrefix: string | null = null;
+        if (tmk && !zipCodes) {
+          const { parseTMKInput, getZipsForTMKSection } = await import("@/lib/hawaii-tmk-zip");
+          const parsed = parseTMKInput(tmk);
+          if (parsed.zone && parsed.section) {
+            const zips = getZipsForTMKSection(parsed.zone, parsed.section);
+            if (zips && zips.length > 0) {
+              zipCodes = zips.join(",");
+              tmkPrefix = `${parsed.island || "1"}-${parsed.zone}-${parsed.section}-`;
+            } else {
+              return { action, success: false, error: `No ZIP codes mapped for TMK ${tmk}` };
+            }
+          } else {
+            return { action, success: false, error: `Could not parse TMK: ${tmk}. Use format like 1-2-9 or 2-9.` };
+          }
+        }
+
+        if (!zipCodes) return { action, success: false, error: "zipCodes or tmk required" };
 
         const searchParams = new URLSearchParams({
           searchType: "zip",
@@ -197,10 +217,20 @@ export async function executeCopilotAction(
         const res = await internalFetch(`${baseUrl}/api/mls/farm-search?${searchParams}`);
         const data = await res.json();
 
+        let properties = data.properties || [];
+
+        // Filter by TMK ParcelNumber prefix if TMK search
+        if (tmkPrefix && properties.length > 0) {
+          properties = properties.filter((p: any) => {
+            const pn = p.ParcelNumber || (p as any).UniversalParcelId?.split(":").pop();
+            return !pn || String(pn).startsWith(tmkPrefix!);
+          });
+        }
+
         return {
           action,
           success: true,
-          data: { properties: (data.properties || []).slice(0, 10), totalCount: data.totalCount || 0 },
+          data: { properties: properties.slice(0, 10), totalCount: tmkPrefix ? properties.length : (data.totalCount || 0), tmkSearch: tmkPrefix ? tmk : undefined },
         };
       }
 
