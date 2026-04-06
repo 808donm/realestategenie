@@ -551,22 +551,16 @@ export default function PropertyDetailModal({
         enrichPropertyWithGIS(Number(lat), Number(lng))
           .then((data) => {
             if (Object.keys(data).length > 0) {
-              // If middle school is missing (cached before int_desc fix), fetch via our GIS overlay API
+              // If middle school is missing (cached before int_desc fix), re-fetch enrichment
               if (!data.middleSchool && lat && lng) {
-                const bbox = `${Number(lng) - 0.001},${Number(lat) - 0.001},${Number(lng) + 0.001},${Number(lat) + 0.001}`;
-                fetch(`/api/seller-map/gis-overlay?service=admin&layer=18&bbox=${bbox}&outFields=int_desc,mid_desc,grade_from,grade_to&limit=1`)
-                  .then((r) => r.ok ? r.json() : null)
-                  .then((gis) => {
-                    const attrs = gis?.features?.[0]?.properties;
-                    if (attrs) {
-                      const name = attrs.int_desc || attrs.INT_DESC || attrs.mid_desc || attrs.MID_DESC;
-                      if (name) {
-                        data.middleSchool = { name, gradeFrom: attrs.grade_from, gradeTo: attrs.grade_to };
-                        setGisEnrichment({ ...data });
-                      }
-                    }
-                  })
-                  .catch(() => {});
+                import("@/lib/integrations/free-data/hawaii-gis-enrichment").then(async ({ enrichPropertyWithGIS }) => {
+                  // Force a fresh fetch (bypasses in-memory cache)
+                  const fresh = await enrichPropertyWithGIS(Number(lat), Number(lng));
+                  if (fresh.middleSchool) {
+                    data.middleSchool = fresh.middleSchool;
+                    setGisEnrichment({ ...data });
+                  }
+                }).catch(() => {});
               }
               setGisEnrichment(data);
             }
