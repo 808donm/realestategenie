@@ -136,9 +136,8 @@ export async function GET(request: NextRequest) {
     // Radius mode: Trestle doesn't support geo-radius natively in OData
     // We fetch by nearby zip codes or city and filter by distance client-side
 
-    // PropertyType filter — DON'T filter in OData query. HiCentral's PropertyType
-    // values may not match standard RESO enum values in OData filters.
-    // Instead, filter by PropertySubType post-fetch (already handled below).
+    // Don't filter PropertyType in OData — need to discover actual Trestle values first.
+    // PropertyType filtering happens post-fetch after we log what Trestle returns.
     if (minPrice) filters.push(`ListPrice ge ${minPrice}`);
     if (maxPrice) filters.push(`ListPrice le ${maxPrice}`);
     if (minBeds) filters.push(`BedroomsTotal ge ${minBeds}`);
@@ -174,21 +173,8 @@ export async function GET(request: NextRequest) {
       console.log(`[Farm Search] ${properties.length} results. PropertySubTypes: ${subTypes.join(", ")}`);
     }
 
-    // Post-fetch PropertySubType filtering for SFR/Condo/Townhouse
-    // HiCentral uses PropertyType="Residential" for all, so we filter by SubType after fetch
-    if (propertyType) {
-      const ptLower = propertyType.toLowerCase();
-      if (ptLower.includes("single") || ptLower === "sfr") {
-        properties = properties.filter((p) => {
-          const sub = (p.PropertySubType || "").toLowerCase();
-          return sub.includes("single") || sub === "" || sub.includes("residence");
-        });
-      } else if (ptLower.includes("condo")) {
-        properties = properties.filter((p) => (p.PropertySubType || "").toLowerCase().includes("condo"));
-      } else if (ptLower.includes("town")) {
-        properties = properties.filter((p) => (p.PropertySubType || "").toLowerCase().includes("town"));
-      }
-    }
+    // No post-fetch PropertySubType filter needed — HiCentral PropertyType
+    // values ("Single Family", "Condo/Townhouse", "Rental") are filtered in OData.
 
     // Post-fetch bath filter (BathroomsTotalInteger not always populated in OData)
     if (minBaths) {

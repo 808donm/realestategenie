@@ -158,20 +158,8 @@ export async function GET(request: NextRequest) {
       if (maxPrice) filters.push(`ListPrice le ${maxPrice}`);
       if (minBeds) filters.push(`BedroomsTotal ge ${minBeds}`);
       if (minBaths) filters.push(`BathroomsTotalInteger ge ${minBaths}`);
-      // HiCentral uses PropertyType="Residential" for SFR, Condo, and Townhouse.
-      // Map common property type names to the correct OData filter.
-      if (propertyType) {
-        const ptLower = propertyType.toLowerCase();
-        if (ptLower.includes("single") || ptLower === "sfr" || ptLower.includes("residential")) {
-          filters.push(`PropertyType eq 'Residential'`);
-        } else if (ptLower.includes("condo")) {
-          filters.push(`PropertyType eq 'Residential'`);
-        } else if (ptLower.includes("town")) {
-          filters.push(`PropertyType eq 'Residential'`);
-        } else {
-          filters.push(`PropertyType eq '${propertyType}'`);
-        }
-      }
+      // Don't filter PropertyType in OData — let the PropertyType/SubType log
+      // show us what values Trestle actually uses, then filter post-fetch.
 
       console.log("[MLS Search] Address search filter:", filters.join(" and "));
 
