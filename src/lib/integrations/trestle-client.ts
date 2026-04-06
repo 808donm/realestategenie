@@ -439,24 +439,25 @@ export class TrestleClient {
     }
 
     if (options.propertyType) {
-      // Map user-friendly names to Trestle OData enum values
-      // Trestle PropertyType is an enum: "Residential", "Commercial", "Land", "Farm"
-      // "Single Family", "Condominium", "Townhouse" are PropertySubType values,
-      // not PropertyType -- filter those server-side instead
-      const trestleTypeMap: Record<string, string> = {
-        "single family": "Residential",
-        "condominium": "Residential",
-        "condo": "Residential",
-        "townhouse": "Residential",
-        "multi-family": "Residential Income",
-        "residential income": "Residential Income",
-        "commercial": "Commercial",
-        "land": "Land",
-        "farm": "Farm",
-        "residential": "Residential",
-      };
-      const mappedType = trestleTypeMap[options.propertyType.toLowerCase()] || options.propertyType;
-      filters.push(`PropertyType eq '${mappedType}'`);
+      // Map user-friendly names to Trestle OData filter.
+      // PropertyType: "Residential", "ResidentialLease", "Land", "Commercial", "Farm"
+      // PropertySubType: "SingleFamilyResidence", "Condominium", "Townhouse"
+      const ptLower = options.propertyType.toLowerCase();
+      if (ptLower.includes("single") || ptLower === "sfr") {
+        filters.push(`PropertyType eq 'Residential' and PropertySubType eq 'SingleFamilyResidence'`);
+      } else if (ptLower.includes("condo")) {
+        filters.push(`PropertyType eq 'Residential' and PropertySubType eq 'Condominium'`);
+      } else if (ptLower.includes("town")) {
+        filters.push(`PropertyType eq 'Residential' and PropertySubType eq 'Townhouse'`);
+      } else if (ptLower.includes("rental") || ptLower.includes("lease")) {
+        filters.push(`PropertyType eq 'ResidentialLease'`);
+      } else if (ptLower.includes("land")) {
+        filters.push(`PropertyType eq 'Land'`);
+      } else if (ptLower.includes("residential")) {
+        filters.push(`PropertyType eq 'Residential'`);
+      } else {
+        filters.push(`PropertyType eq '${options.propertyType}'`);
+      }
     }
 
     if (options.minDaysOnMarket !== undefined) {
