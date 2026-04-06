@@ -27,10 +27,19 @@ async function internalFetch(url: string, init?: RequestInit): Promise<Response>
  * Extract an <execute> tag from AI text
  */
 export function extractExecuteTag(text: string): { action: string; params: Record<string, any> } | null {
-  const match = text.match(/<execute>([\s\S]*?)<\/execute>/);
+  // Try with closing tag first
+  let match = text.match(/<execute>([\s\S]*?)<\/execute>/);
+  // Fallback: AI sometimes omits the closing tag
+  if (!match) {
+    match = text.match(/<execute>([\s\S]*?\})\s*$/);
+  }
+  // Fallback: extract JSON after <execute> tag
+  if (!match) {
+    match = text.match(/<execute>\s*(\{[\s\S]*\})/);
+  }
   if (!match) return null;
   try {
-    return JSON.parse(match[1]);
+    return JSON.parse(match[1].trim());
   } catch {
     return null;
   }
