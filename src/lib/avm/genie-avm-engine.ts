@@ -134,16 +134,12 @@ export function computeGenieAvm(input: GenieAvmInput): GenieAvmResult | null {
       compBasedValue = Math.round(
         adjustedComps.reduce((s, c) => s + c.adjustedPrice * c.weight, 0) / totalWeight,
       );
-      sources.push({ name: "mlsComps", value: compBasedValue, weight: 0.50 });
+      // MLS comps are primary — they have actual Hawaii sale prices
+      sources.push({ name: "mlsComps", value: compBasedValue, weight: 0.85 });
     }
   }
 
-  // 2. RentCast AVM
-  if (input.rentcastAvm?.value) {
-    sources.push({ name: "rentcastAvm", value: input.rentcastAvm.value, weight: compBasedValue ? 0.20 : 0.40 });
-  }
-
-  // 3. County Assessment (trend-adjusted)
+  // 2. County Assessment (trend-adjusted) — secondary source only
   let trendAdjustedAssessment: number | null = null;
   let assessmentTrendPct: number | null = null;
 
@@ -154,14 +150,15 @@ export function computeGenieAvm(input: GenieAvmInput): GenieAvmResult | null {
     sources.push({
       name: "assessment",
       value: trendAdjustedAssessment,
-      weight: compBasedValue ? 0.20 : 0.40,
+      weight: compBasedValue ? 0.15 : 1.0, // Only used as primary when no MLS comps
     });
   }
 
-  // 4. Realie AVM
-  if (input.realieAvm?.value) {
-    sources.push({ name: "realieAvm", value: input.realieAvm.value, weight: compBasedValue ? 0.10 : 0.20 });
-  }
+  // RentCast and Realie AVMs are NOT used — they undervalue Hawaii properties
+  // because Hawaii is non-disclosure and they lack actual sale price data.
+  // Our MLS comps from Trestle have the actual transaction prices.
+
+  // RentCast/Realie AVMs intentionally excluded — they undervalue Hawaii properties
 
   // No sources at all -- can't compute
   if (sources.length === 0) return null;
