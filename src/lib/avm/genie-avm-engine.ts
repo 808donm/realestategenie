@@ -109,12 +109,15 @@ export interface GenieAvmResult {
   comps: AdjustedComp[];
 }
 
-// ── Adjustment Constants ──
+// ── Adjustment Constants (Hawaii market) ──
+// These are percentage-based relative to comp price, not flat dollar amounts.
+// Hawaii's high price points make flat adjustments meaningless ($10K on a $2M home = 0.5%).
 
-const ADJUSTMENT_PER_BED = 10_000;
-const ADJUSTMENT_PER_BATH = 7_000;
-const ADJUSTMENT_PER_YEAR_AGE = 2_000;
-const ADJUSTMENT_PER_SQFT_LOT = 5; // $/sqft for lot size difference (SFR only)
+const ADJUSTMENT_PCT_PER_BED = 0.05;   // 5% per bedroom difference
+const ADJUSTMENT_PCT_PER_BATH = 0.03;  // 3% per bathroom difference
+const ADJUSTMENT_PCT_PER_YEAR_AGE = 0.005; // 0.5% per year age difference
+const ADJUSTMENT_PCT_SQFT = 0.75;      // 75% of proportional sqft difference (was 50%)
+const ADJUSTMENT_PER_SQFT_LOT = 10;    // $/sqft for lot size difference (SFR only)
 
 // ── Engine ──
 
@@ -279,14 +282,19 @@ function adjustAndWeightComps(input: GenieAvmInput): AdjustedComp[] {
   for (const comp of comps) {
     if (comp.closePrice <= 0) continue;
 
-    // Calculate adjustments
+    // Calculate adjustments — percentage-based relative to comp price
+    // This scales correctly across Hawaii price points ($500K condos to $5M estates)
     const sqftAdj = subjectSqft && comp.sqft
-      ? Math.round(((subjectSqft - comp.sqft) / comp.sqft) * comp.closePrice * 0.5) // 50% of proportional difference
+      ? Math.round(((subjectSqft - comp.sqft) / comp.sqft) * comp.closePrice * ADJUSTMENT_PCT_SQFT)
       : 0;
-    const bedsAdj = (subjectBeds && comp.beds) ? (subjectBeds - comp.beds) * ADJUSTMENT_PER_BED : 0;
-    const bathsAdj = (subjectBaths && comp.baths) ? (subjectBaths - comp.baths) * ADJUSTMENT_PER_BATH : 0;
+    const bedsAdj = (subjectBeds && comp.beds)
+      ? Math.round((subjectBeds - comp.beds) * comp.closePrice * ADJUSTMENT_PCT_PER_BED)
+      : 0;
+    const bathsAdj = (subjectBaths && comp.baths)
+      ? Math.round((subjectBaths - comp.baths) * comp.closePrice * ADJUSTMENT_PCT_PER_BATH)
+      : 0;
     const ageAdj = (subjectYearBuilt && comp.yearBuilt)
-      ? (comp.yearBuilt - subjectYearBuilt) * ADJUSTMENT_PER_YEAR_AGE // Newer comp = negative adj (subject is older)
+      ? Math.round((comp.yearBuilt - subjectYearBuilt) * comp.closePrice * ADJUSTMENT_PCT_PER_YEAR_AGE)
       : 0;
     const lotAdj = isSFR && subjectLotSize && comp.lotSize
       ? (subjectLotSize - comp.lotSize) * ADJUSTMENT_PER_SQFT_LOT
