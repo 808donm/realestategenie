@@ -214,10 +214,26 @@ export async function executeCopilotAction(
         if (params.minBaths) searchParams.set("minBaths", String(params.minBaths));
 
         const baseUrl = getBaseUrl();
-        const res = await internalFetch(`${baseUrl}/api/mls/farm-search?${searchParams}`);
+        // Use MLS search route (proven to work) instead of farm-search
+        const mlsParams = new URLSearchParams();
+        mlsParams.set("query", searchParams.get("postalCodes") || "");
+        if (params.propertyType) mlsParams.set("propertyType", params.propertyType);
+        if (params.minPrice) mlsParams.set("minPrice", String(params.minPrice));
+        if (params.maxPrice) mlsParams.set("maxPrice", String(params.maxPrice));
+        mlsParams.set("status", "Active");
+
+        const res = await internalFetch(`${baseUrl}/api/mls/search?${mlsParams}`);
         const data = await res.json();
 
-        let properties = data.properties || [];
+        let properties = (data.value || data.properties || []).map((p: any) => ({
+          ...p,
+          address: p.UnparsedAddress || [p.StreetNumber, p.StreetName, p.StreetSuffix].filter(Boolean).join(" "),
+          beds: p.BedroomsTotal,
+          baths: p.BathroomsTotalInteger,
+          sqft: p.LivingArea,
+          price: p.ListPrice,
+          ParcelNumber: p.ParcelNumber,
+        }));
 
         // Filter by TMK ParcelNumber prefix if TMK search
         if (tmkPrefix && properties.length > 0) {
