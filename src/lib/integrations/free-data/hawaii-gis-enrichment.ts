@@ -84,8 +84,8 @@ export async function enrichPropertyWithGIS(latitude: number, longitude: number)
     queryPoint(HAZARDS_URL, 15, latitude, longitude, "*"),
     // Elementary School Zone (layer 17)
     queryPoint(ADMIN_URL, 17, latitude, longitude, "elem_desc,grade_from,grade_to"),
-    // Middle School Zone (layer 18)
-    queryPoint(ADMIN_URL, 18, latitude, longitude, "mid_desc,grade_from,grade_to"),
+    // Middle/Intermediate School Zone (layer 18) — Hawaii uses "Intermediate" not "Middle"
+    queryPoint(ADMIN_URL, 18, latitude, longitude, "int_desc,mid_desc,grade_from,grade_to"),
     // High School Zone (layer 19)
     queryPoint(ADMIN_URL, 19, latitude, longitude, "high_desc,grade_from,grade_to"),
     // Opportunity Zone (layer 6)
@@ -139,7 +139,7 @@ export async function enrichPropertyWithGIS(latitude: number, longitude: number)
   if (midSchool.status === "fulfilled" && midSchool.value) {
     const d = midSchool.value;
     result.middleSchool = {
-      name: d.mid_desc || d.MID_DESC,
+      name: d.int_desc || d.INT_DESC || d.mid_desc || d.MID_DESC,
       gradeFrom: d.grade_from || d.GRADE_FROM,
       gradeTo: d.grade_to || d.GRADE_TO,
     };

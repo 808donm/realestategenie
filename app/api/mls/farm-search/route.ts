@@ -208,7 +208,7 @@ export async function GET(request: NextRequest) {
     if (minBaths) {
       const minB = Number(minBaths);
       properties = properties.filter((p) => {
-        const totalBaths = p.BathroomsTotalInteger ?? ((p.BathroomsFull || 0) + (p.BathroomsHalf || 0) * 0.5);
+        const totalBaths = p.BathroomsTotalInteger ?? (((p as any).BathroomsFull || 0) + ((p as any).BathroomsHalf || 0) * 0.5);
         return totalBaths >= minB;
       });
     }
