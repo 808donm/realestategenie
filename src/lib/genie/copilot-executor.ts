@@ -222,9 +222,32 @@ export async function executeCopilotAction(
         if (params.minBeds) searchParams.set("minBeds", String(params.minBeds));
         if (params.minBaths) searchParams.set("minBaths", String(params.minBaths));
 
-        // Navigate to MLS Search page with pre-filled filters
-        // Server-to-server Trestle calls return 0 results due to auth differences.
-        // Let the browser handle the search through the existing MLS Search UI.
+        // Get count from Trestle (count-only query, no data fetched)
+        const { supabaseAdmin: adminClient } = await import("@/lib/supabase/admin");
+        const { createTrestleClient } = await import("@/lib/integrations/trestle-client");
+        const { data: allTrestle } = await adminClient
+          .from("integrations")
+          .select("config")
+          .eq("provider", "trestle")
+          .eq("status", "connected");
+        const trestleInt = (allTrestle || []).find((t: any) => {
+          const c = typeof t.config === "string" ? JSON.parse(t.config) : t.config;
+          return c?.client_id || c?.username;
+        });
+        let propertyCount = 0;
+        if (trestleInt?.config) {
+          const cfg = typeof trestleInt.config === "string" ? JSON.parse(trestleInt.config) : trestleInt.config;
+          const client = createTrestleClient(cfg);
+          const countResult = await client.searchProperties({
+            status: ["Active"],
+            postalCode: searchParams.get("postalCodes") || undefined,
+            propertyType: params.propertyType,
+            limit: 0,
+            offset: 0,
+          });
+          propertyCount = (countResult as any)["@odata.count"] || 0;
+        }
+
         const postalCode = searchParams.get("postalCodes") || "";
         const mlsUrl = `/app/mls?q=${encodeURIComponent(postalCode)}&propertyType=${encodeURIComponent(params.propertyType || "")}&status=Active`;
 
@@ -234,7 +257,8 @@ export async function executeCopilotAction(
           redirect: mlsUrl,
           data: {
             searchRedirect: true,
-            message: `I found matching properties! Click "Open" to view them on the MLS Search page.`,
+            totalCount: propertyCount,
+            message: `I found ${propertyCount} properties. Click "Open" to view them.`,
           },
         };
       }
