@@ -166,14 +166,30 @@ export async function GET(request: NextRequest) {
 
     const client = createTrestleClient(config);
 
-    const result = await client.getProperties({
-      $filter: filters.join(" and "),
-      $orderby: "ModificationTimestamp desc",
-      $top: limit,
-      $skip: offset,
-      $count: true,
-      $expand: "Media",
+    // Use searchProperties() which handles PropertyType/SubType mapping correctly
+    const result = await client.searchProperties({
+      status: statuses,
+      postalCode: postalCodes.length === 1 ? postalCodes[0] : undefined,
+      propertyType,
+      minPrice,
+      maxPrice,
+      minBeds,
+      minBaths,
+      minDaysOnMarket: minDOM,
+      limit,
+      offset,
+      includeMedia: true,
     });
+
+    // If multiple postal codes, also apply the postal code filter
+    // (searchProperties only supports single postalCode)
+    if (postalCodes.length > 1) {
+      const zipSet = new Set(postalCodes);
+      result.value = (result.value || []).filter((p: any) => {
+        const pz = (p.PostalCode || "").slice(0, 5);
+        return zipSet.has(pz);
+      });
+    }
 
     // For radius mode, filter by haversine distance
     let properties = result.value || [];
