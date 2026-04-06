@@ -273,8 +273,9 @@ function adjustAndWeightComps(input: GenieAvmInput): AdjustedComp[] {
   const subjectYearBuilt = input.yearBuilt || 0;
   const subjectLotSize = input.lotSize || 0;
   const subjectSubdivision = input.subdivision?.toLowerCase().trim();
-  const isSFR = input.propertySubType?.toLowerCase()?.includes("single") ||
-    input.propertyType?.toLowerCase() === "residential" && !input.propertySubType?.toLowerCase()?.includes("condo");
+  const subTypeLower = (input.propertySubType || "").toLowerCase();
+  const isCondo = subTypeLower.includes("condo") || subTypeLower.includes("townhouse") || subTypeLower.includes("apartment");
+  const isSFR = subTypeLower.includes("single") || (input.propertyType?.toLowerCase() === "residential" && !isCondo);
 
   const now = Date.now();
   const adjusted: AdjustedComp[] = [];
@@ -293,8 +294,10 @@ function adjustAndWeightComps(input: GenieAvmInput): AdjustedComp[] {
     const bathsAdj = (subjectBaths && comp.baths)
       ? Math.round((subjectBaths - comp.baths) * comp.closePrice * ADJUSTMENT_PCT_PER_BATH)
       : 0;
+    // Age adjustment — reduced for condos (location/floor matters more than age)
+    const agePct = isCondo ? ADJUSTMENT_PCT_PER_YEAR_AGE * 0.3 : ADJUSTMENT_PCT_PER_YEAR_AGE;
     const ageAdj = (subjectYearBuilt && comp.yearBuilt)
-      ? Math.round((comp.yearBuilt - subjectYearBuilt) * comp.closePrice * ADJUSTMENT_PCT_PER_YEAR_AGE)
+      ? Math.round((comp.yearBuilt - subjectYearBuilt) * comp.closePrice * agePct)
       : 0;
     const lotAdj = isSFR && subjectLotSize && comp.lotSize
       ? (subjectLotSize - comp.lotSize) * ADJUSTMENT_PER_SQFT_LOT
