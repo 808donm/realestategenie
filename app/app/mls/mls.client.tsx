@@ -420,6 +420,21 @@ export default function MLSClient() {
   // All other ATTOM data (neighborhood, risk, rental AVM, permits, sales history,
   // comps, POI, assessment history) is now handled by PropertyDetailModal in embedded mode
 
+  // Auto-fill search from URL params (used by Hoku MLS search)
+  useEffect(() => {
+    const urlQ = searchParams.get("q");
+    const urlPropType = searchParams.get("propertyType");
+    if (urlQ && !query) {
+      setQuery(urlQ);
+      if (urlPropType) setFilters((f) => ({ ...f, propertyType: urlPropType }));
+      // Trigger search after state update
+      setTimeout(() => {
+        setDebouncedQuery(urlQ);
+      }, 100);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Open property detail from ?listing= URL param (used in shared links)
   useEffect(() => {
     const listingKey = searchParams.get("listing");
