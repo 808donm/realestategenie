@@ -156,7 +156,9 @@ export async function GET(request: NextRequest) {
     if (minPrice) filters.push(`ListPrice ge ${minPrice}`);
     if (maxPrice) filters.push(`ListPrice le ${maxPrice}`);
     if (minBeds) filters.push(`BedroomsTotal ge ${minBeds}`);
-    if (minBaths) filters.push(`BathroomsTotalInteger ge ${minBaths}`);
+    // BathroomsTotalInteger may not be populated on all MLS systems.
+    // Filter baths post-fetch instead of in OData to avoid missing listings.
+    // if (minBaths) filters.push(`BathroomsTotalInteger ge ${minBaths}`);
     if (minDOM) filters.push(`DaysOnMarket ge ${minDOM}`);
 
     const client = createTrestleClient(config);
@@ -200,6 +202,15 @@ export async function GET(request: NextRequest) {
       } else if (ptLower.includes("town")) {
         properties = properties.filter((p) => (p.PropertySubType || "").toLowerCase().includes("town"));
       }
+    }
+
+    // Post-fetch bath filter (BathroomsTotalInteger not always populated in OData)
+    if (minBaths) {
+      const minB = Number(minBaths);
+      properties = properties.filter((p) => {
+        const totalBaths = p.BathroomsTotalInteger ?? ((p.BathroomsFull || 0) + (p.BathroomsHalf || 0) * 0.5);
+        return totalBaths >= minB;
+      });
     }
 
     // Filter out rental/lease listings unless explicitly requested
