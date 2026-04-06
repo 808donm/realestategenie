@@ -222,8 +222,7 @@ export async function executeCopilotAction(
         if (params.minBeds) searchParams.set("minBeds", String(params.minBeds));
         if (params.minBaths) searchParams.set("minBaths", String(params.minBaths));
 
-        // Use the copilot's request context to call MLS search with user auth
-        // This ensures Trestle gets the same credentials as the browser
+        // Call MLS search with service-role key
         const baseUrl = getBaseUrl();
         const postalCode = searchParams.get("postalCodes") || "";
         const mlsParams = new URLSearchParams();
@@ -232,11 +231,7 @@ export async function executeCopilotAction(
         mlsParams.set("status", "Active");
         mlsParams.set("limit", "50");
 
-        // Pass the user's auth cookie from the copilot request context
-        const cookieHeader = (globalThis as any).__hokuRequestCookies || "";
-        const res = await fetch(`${baseUrl}/api/mls/search?${mlsParams}`, {
-          headers: { cookie: cookieHeader },
-        });
+        const res = await internalFetch(`${baseUrl}/api/mls/search?${mlsParams}`);
         const data = await res.json();
 
         console.log(`[Hoku MLS] MLS search returned: ${data.value?.length || 0} results, status=${res.status}`);

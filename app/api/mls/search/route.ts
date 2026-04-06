@@ -28,15 +28,28 @@ export async function GET(request: NextRequest) {
     }
 
     // Get the Trestle integration
-    let integrationQuery = supabase
-      .from("integrations")
-      .select("*")
-      .eq("provider", "trestle")
-      .eq("status", "connected");
+    let integration: any = null;
     if (userId) {
-      integrationQuery = integrationQuery.eq("agent_id", userId);
+      const { data } = await supabase
+        .from("integrations")
+        .select("*")
+        .eq("agent_id", userId)
+        .eq("provider", "trestle")
+        .eq("status", "connected")
+        .maybeSingle();
+      integration = data;
+    } else {
+      // Service call: find any integration with valid OAuth credentials
+      const { data: all } = await supabase
+        .from("integrations")
+        .select("*")
+        .eq("provider", "trestle")
+        .eq("status", "connected");
+      integration = (all || []).find((t: any) => {
+        const c = typeof t.config === "string" ? JSON.parse(t.config) : t.config;
+        return c?.client_id || c?.username || c?.bearer_token;
+      });
     }
-    const { data: integration } = await integrationQuery.limit(1).maybeSingle();
 
     if (!integration || integration.status !== "connected") {
       return NextResponse.json(
