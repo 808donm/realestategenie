@@ -116,9 +116,9 @@ export async function GET(request: NextRequest) {
     // Geographic filter
     if (searchType === "zip" && postalCodes.length > 0) {
       if (postalCodes.length === 1) {
-        filters.push(`PostalCode eq '${postalCodes[0]}'`);
+        filters.push(`startswith(PostalCode, '${postalCodes[0]}')`);
       } else {
-        const zipFilter = postalCodes.map((z) => `PostalCode eq '${z}'`).join(" or ");
+        const zipFilter = postalCodes.map((z) => `startswith(PostalCode, '${z}')`).join(" or ");
         filters.push(`(${zipFilter})`);
       }
     } else if (searchType === "tmk" && tmkPrefix) {
