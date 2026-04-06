@@ -136,8 +136,26 @@ export async function GET(request: NextRequest) {
     // Radius mode: Trestle doesn't support geo-radius natively in OData
     // We fetch by nearby zip codes or city and filter by distance client-side
 
-    // Don't filter PropertyType in OData — need to discover actual Trestle values first.
-    // PropertyType filtering happens post-fetch after we log what Trestle returns.
+    // Trestle PropertyType values: "Residential", "ResidentialLease", "Land"
+    // Trestle PropertySubType values: "SingleFamilyResidence", "Condominium", "Townhouse"
+    if (propertyType) {
+      const ptLower = propertyType.toLowerCase();
+      if (ptLower.includes("single") || ptLower === "sfr") {
+        filters.push(`PropertyType eq 'Residential' and PropertySubType eq 'SingleFamilyResidence'`);
+      } else if (ptLower.includes("condo")) {
+        filters.push(`PropertyType eq 'Residential' and PropertySubType eq 'Condominium'`);
+      } else if (ptLower.includes("town")) {
+        filters.push(`PropertyType eq 'Residential' and PropertySubType eq 'Townhouse'`);
+      } else if (ptLower.includes("rental") || ptLower.includes("lease")) {
+        filters.push(`PropertyType eq 'ResidentialLease'`);
+      } else if (ptLower.includes("land")) {
+        filters.push(`PropertyType eq 'Land'`);
+      } else if (ptLower.includes("residential")) {
+        filters.push(`PropertyType eq 'Residential'`);
+      } else {
+        filters.push(`PropertyType eq '${propertyType}'`);
+      }
+    }
     if (minPrice) filters.push(`ListPrice ge ${minPrice}`);
     if (maxPrice) filters.push(`ListPrice le ${maxPrice}`);
     if (minBeds) filters.push(`BedroomsTotal ge ${minBeds}`);
@@ -173,8 +191,7 @@ export async function GET(request: NextRequest) {
       console.log(`[Farm Search] ${properties.length} results. PropertySubTypes: ${subTypes.join(", ")}`);
     }
 
-    // No post-fetch PropertySubType filter needed — HiCentral PropertyType
-    // values ("Single Family", "Condo/Townhouse", "Rental") are filtered in OData.
+    // No post-fetch PropertySubType filter needed — filtered in OData query.
 
     // Post-fetch bath filter (BathroomsTotalInteger not always populated in OData)
     if (minBaths) {

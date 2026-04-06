@@ -158,8 +158,26 @@ export async function GET(request: NextRequest) {
       if (maxPrice) filters.push(`ListPrice le ${maxPrice}`);
       if (minBeds) filters.push(`BedroomsTotal ge ${minBeds}`);
       if (minBaths) filters.push(`BathroomsTotalInteger ge ${minBaths}`);
-      // Don't filter PropertyType in OData — let the PropertyType/SubType log
-      // show us what values Trestle actually uses, then filter post-fetch.
+      // Trestle PropertyType: "Residential", "ResidentialLease", "Land"
+      // Trestle PropertySubType: "SingleFamilyResidence", "Condominium", "Townhouse"
+      if (propertyType) {
+        const ptLower = propertyType.toLowerCase();
+        if (ptLower.includes("single") || ptLower === "sfr") {
+          filters.push(`PropertyType eq 'Residential' and PropertySubType eq 'SingleFamilyResidence'`);
+        } else if (ptLower.includes("condo")) {
+          filters.push(`PropertyType eq 'Residential' and PropertySubType eq 'Condominium'`);
+        } else if (ptLower.includes("town")) {
+          filters.push(`PropertyType eq 'Residential' and PropertySubType eq 'Townhouse'`);
+        } else if (ptLower.includes("rental") || ptLower.includes("lease")) {
+          filters.push(`PropertyType eq 'ResidentialLease'`);
+        } else if (ptLower.includes("land")) {
+          filters.push(`PropertyType eq 'Land'`);
+        } else if (ptLower.includes("residential")) {
+          filters.push(`PropertyType eq 'Residential'`);
+        } else {
+          filters.push(`PropertyType eq '${propertyType}'`);
+        }
+      }
 
       console.log("[MLS Search] Address search filter:", filters.join(" and "));
 
