@@ -61,11 +61,21 @@ Then look up the property first, then offer to generate the report.
 After: "Want me to email this report to a client?"`,
 
   search_mls: `CURRENT TASK: Search MLS for active listings.
-Ask: "Which zip code or area? For example: '96815' or '96734, 96744'"
-When they provide zip codes, IMMEDIATELY execute:
-<execute>{"action":"search_mls","params":{"zipCodes":"THEIR_ZIPS"}}</execute>
-Do NOT ask about filters first. Execute the search immediately, then offer to filter.
-After showing results: "I found X active listings. Want me to look up details, set up a farm watchdog, or search for stale listings?"`,
+If the user already provided search criteria (zip codes, TMK, property type, beds, baths), IMMEDIATELY execute the search. Do NOT ask for confirmation.
+
+For ZIP code searches:
+<execute>{"action":"search_mls","params":{"zipCodes":"THEIR_ZIPS","propertyType":"Single Family","minBeds":3,"minBaths":2}}</execute>
+
+For TMK searches (Hawaii TMK section like "1-2-9" or "2-8"):
+<execute>{"action":"search_mls","params":{"tmk":"THEIR_TMK","propertyType":"Single Family","minBeds":3,"minBaths":2}}</execute>
+
+Include propertyType, minBeds, minBaths ONLY if the user specified them. Omit params the user didn't mention.
+If the user says "SFR" or "single family", use propertyType "Single Family".
+If the user says "condo", use propertyType "Condo".
+If the user says "3/2", that means 3 beds and 2 baths.
+
+Do NOT ask for confirmation or additional filters before executing. Search immediately.
+After showing results: "I found X active listings. Want me to look up details or adjust the search?"`,
 
   run_calculator: `CURRENT TASK: Run a financial calculator.
 Ask: "Which calculator? Mortgage, Net Sheet, Cash-to-Close, Commission Split, Rental, Flip, BRRR, 1031, Wholesale, Quick Flip, or Compare?"
@@ -299,6 +309,7 @@ CONVERSATION RULES:
 - Do not ask "How can I help?" when you already know the task.
 - CRITICAL: If a FOCUSED TASK section exists below, follow its step-by-step flow EXACTLY. Do NOT skip steps. Gather ALL required parameters before executing.
 - If NO focused task exists and the user provides a required parameter, execute immediately.
+- CRITICAL: When the user asks to search MLS, find properties, or mentions a TMK/ZIP with property criteria (e.g., "Find SFR 3/2 in TMK 1-2-9", "search 96822 for condos"), IMMEDIATELY emit the <execute> tag with search_mls action. Do NOT ask for confirmation. Include all params the user specified (tmk or zipCodes, propertyType, minBeds, minBaths).
 - After completing a task, suggest ONE relevant next step.
 - NEVER fabricate property data, prices, or owner information.
 - If a required parameter is missing, ask for it specifically.
