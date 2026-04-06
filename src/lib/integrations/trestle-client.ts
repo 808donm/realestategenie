@@ -431,7 +431,8 @@ export class TrestleClient {
     }
 
     if (options.minBeds !== undefined) {
-      filters.push(`BedroomsTotal ge ${options.minBeds}`);
+      // BedroomsTotal may not be populated on all listings — filter post-fetch
+      // filters.push(`BedroomsTotal ge ${options.minBeds}`);
     }
 
     // Don't filter BathroomsTotalInteger in OData — not populated on all HiCentral listings.
