@@ -549,7 +549,27 @@ export default function PropertyDetailModal({
     if (!gisEnrichment) {
       import("@/lib/integrations/free-data/hawaii-gis-enrichment").then(({ enrichPropertyWithGIS }) => {
         enrichPropertyWithGIS(Number(lat), Number(lng))
-          .then((data) => { if (Object.keys(data).length > 0) setGisEnrichment(data); })
+          .then((data) => {
+            if (Object.keys(data).length > 0) {
+              // If middle school is missing (cached before int_desc fix), fetch it
+              if (!data.middleSchool && lat && lng) {
+                fetch(`https://geodata.hawaii.gov/arcgis/rest/services/AdminBnd/MapServer/18/query?geometry=${encodeURIComponent(`{"x":${lng},"y":${lat}}`)}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=int_desc,mid_desc,grade_from,grade_to&returnGeometry=false&f=json`)
+                  .then((r) => r.json())
+                  .then((gis) => {
+                    const attrs = gis.features?.[0]?.attributes;
+                    if (attrs) {
+                      const name = attrs.int_desc || attrs.INT_DESC || attrs.mid_desc || attrs.MID_DESC;
+                      if (name) {
+                        data.middleSchool = { name, gradeFrom: attrs.grade_from, gradeTo: attrs.grade_to };
+                        setGisEnrichment({ ...data });
+                      }
+                    }
+                  })
+                  .catch(() => {});
+              }
+              setGisEnrichment(data);
+            }
+          })
           .catch(() => {});
       });
     }
