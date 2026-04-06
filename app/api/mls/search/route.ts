@@ -10,20 +10,33 @@ import { createTrestleClient } from "@/lib/integrations/trestle-client";
  */
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await supabaseServer();
-    const { data: userData } = await supabase.auth.getUser();
+    // Allow service-role key for internal server-to-server calls (e.g., Hoku copilot)
+    const serviceKey = request.headers.get("x-service-role-key");
+    const isServiceCall = serviceKey && serviceKey === process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-    if (!userData.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    let supabase: any;
+    let userId: string | null = null;
+    if (!isServiceCall) {
+      supabase = await supabaseServer();
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+      userId = userData.user.id;
+    } else {
+      supabase = (await import("@/lib/supabase/admin")).supabaseAdmin;
     }
 
     // Get the Trestle integration
-    const { data: integration } = await supabase
+    let integrationQuery = supabase
       .from("integrations")
       .select("*")
-      .eq("agent_id", userData.user.id)
       .eq("provider", "trestle")
-      .maybeSingle();
+      .eq("status", "connected");
+    if (userId) {
+      integrationQuery = integrationQuery.eq("agent_id", userId);
+    }
+    const { data: integration } = await integrationQuery.limit(1).maybeSingle();
 
     if (!integration || integration.status !== "connected") {
       return NextResponse.json(
