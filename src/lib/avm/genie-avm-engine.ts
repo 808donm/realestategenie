@@ -160,6 +160,23 @@ export function computeGenieAvm(input: GenieAvmInput): GenieAvmResult | null {
 
   // RentCast/Realie AVMs intentionally excluded — they undervalue Hawaii properties
 
+  // Sanity check: if the only source is an assessment that seems unreasonably low
+  // (e.g., $265K for a property with 1,943 sqft in 2026), use a $/sqft estimate
+  // from the comps or a regional average as a floor
+  if (sources.length === 1 && sources[0].name === "assessment" && input.sqft) {
+    const assessedPerSqft = sources[0].value / input.sqft;
+    // If assessed value is under $200/sqft, it's likely a stale/historic value
+    // Hawaii median is roughly $500-800/sqft for residential
+    if (assessedPerSqft < 200) {
+      const estimatedPerSqft = 550; // Conservative Hawaii median $/sqft
+      const sqftEstimate = Math.round(input.sqft * estimatedPerSqft);
+      sources[0].value = Math.max(sources[0].value, sqftEstimate);
+      sources[0].weight = 0.5; // Lower confidence for this estimate
+      // Add a $/sqft-based estimate as a second source
+      sources.push({ name: "sqftEstimate", value: sqftEstimate, weight: 0.5 });
+    }
+  }
+
   // No sources at all -- can't compute
   if (sources.length === 0) return null;
 
