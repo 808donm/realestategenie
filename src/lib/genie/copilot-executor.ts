@@ -231,12 +231,11 @@ export async function executeCopilotAction(
         return {
           action,
           success: true,
+          redirect: mlsUrl,
           data: {
-            navigateUrl: mlsUrl,
-            properties: [],
-            totalCount: 0,
-            message: `Opening MLS Search for ${params.propertyType || "all"} properties in ${tmk ? `TMK ${tmk}` : postalCode}...`,
-            tmkSearch: tmkPrefix ? tmk : undefined,
+            properties: [{ address: `Search MLS for ${params.propertyType || "all"} in ${tmk ? `TMK ${tmk}` : postalCode}` }],
+            totalCount: 1,
+            message: `Click "View Results" to see ${params.propertyType || "all"} properties in ${tmk ? `TMK ${tmk}` : postalCode} on the MLS Search page.`,
           },
         };
       }
