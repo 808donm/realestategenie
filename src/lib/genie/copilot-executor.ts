@@ -253,6 +253,8 @@ export async function executeCopilotAction(
           includeMedia: false,
         });
 
+        console.log(`[Hoku MLS] Trestle returned: ${result.value?.length || 0} results, count=${(result as any)["@odata.count"]}, postalCode=${postalCode}, propertyType=${params.propertyType}`);
+
         let properties = (result.value || []).map((p: any) => ({
           address: p.UnparsedAddress || [p.StreetNumber, p.StreetName, p.StreetSuffix].filter(Boolean).join(" "),
           beds: p.BedroomsTotal,
