@@ -158,7 +158,20 @@ export async function GET(request: NextRequest) {
       if (maxPrice) filters.push(`ListPrice le ${maxPrice}`);
       if (minBeds) filters.push(`BedroomsTotal ge ${minBeds}`);
       if (minBaths) filters.push(`BathroomsTotalInteger ge ${minBaths}`);
-      if (propertyType) filters.push(`PropertyType eq '${propertyType}'`);
+      // HiCentral uses PropertyType="Residential" for SFR, Condo, and Townhouse.
+      // Map common property type names to the correct OData filter.
+      if (propertyType) {
+        const ptLower = propertyType.toLowerCase();
+        if (ptLower.includes("single") || ptLower === "sfr" || ptLower.includes("residential")) {
+          filters.push(`PropertyType eq 'Residential'`);
+        } else if (ptLower.includes("condo")) {
+          filters.push(`PropertyType eq 'Residential'`);
+        } else if (ptLower.includes("town")) {
+          filters.push(`PropertyType eq 'Residential'`);
+        } else {
+          filters.push(`PropertyType eq '${propertyType}'`);
+        }
+      }
 
       console.log("[MLS Search] Address search filter:", filters.join(" and "));
 
@@ -209,8 +222,14 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Filter out rental/lease listings unless includeRentals is set
+    // Log PropertySubType values for debugging
     const allResults = result.value || [];
+    if (allResults.length > 0) {
+      const subTypes = [...new Set(allResults.map((p: any) => `${p.PropertyType}/${p.PropertySubType}`).filter(Boolean))];
+      console.log(`[MLS Search] PropertyType/SubType values: ${subTypes.join(", ")}`);
+    }
+
+    // Filter out rental/lease listings unless includeRentals is set
     const filteredResults = includeRentals
       ? allResults
       : allResults.filter((p) => {
