@@ -122,7 +122,7 @@ Help the agent prioritize leads, view matched properties, draft communications, 
 
 **Tab 4 - Market Analytics**: County-level market statistics (see market-analytics context). Also accessible from the sidebar.
 
-**Tab 5 - CMA**: Comparative Market Analysis with MLS comps, RentCast/Realie fallback, correlation scoring, suggested price range
+**Tab 5 - CMA**: Comparative Market Analysis with MLS comps (HPI time-adjusted), RentCast/Realie fallback, correlation scoring, suggested price range. Feeds the CMA pillar of the Genie AVM.
 
 **Tab 6 - Lead Matches**: Auto-matches pipeline leads to active MLS listings (scored 0-100)
 
@@ -146,7 +146,7 @@ Help the agent search listings, run comps, match leads, analyze investments, exp
   - **Opportunity Score** (first tab when seller data present): scoring breakdown, AI outreach suggestions
   - **Overview**: Address, beds/baths/sqft, year built, property type, lot size, owner info
   - **Building**: Construction, rooms, parking, utilities, interior features
-  - **Financial**: AVM (with reliability check), assessment, tax, mortgage, equity, LTV, rental AVM, cap rate
+  - **Financial**: Genie AVM (confidence score 1-100, FSD accuracy range), assessment, tax, mortgage, equity, LTV, rental AVM, cap rate
   - **Sales History**: Historical closed transactions with dates, amounts, buyer/seller, deed type
   - **Listing History**: All MLS listings for the property (Active, Pending, Closed, Expired, Withdrawn, Canceled) with color-coded status badges, price changes, DOM, listing/buyer agents
   - **Comps**: Comparable sales with correlation scoring
@@ -154,7 +154,7 @@ Help the agent search listings, run comps, match leads, analyze investments, exp
   - **Neighborhood**: Demographics, schools, crime, POI, walk score
   - **Market Stats**: Median price, avg DOM, active listings, price/sqft, median rent
   - **Federal/GIS**: School zones (elementary/middle/high attendance boundaries), hazards (FEMA NRI), flood/tsunami/fire zones, opportunity zones
-- **AVM Reliability**: Compared to county assessment and recent sale. If >30% difference, suppressed -- county assessment shown instead
+- **Genie AVM**: Single unified property value with confidence score (1-100) and FSD accuracy range. Uses sales history as a sanity anchor. If insufficient data, county assessment shown instead
 - Download professional multi-page PDF report (cover page with map, value snapshot, AVM range bar, equity visual, photo gallery, comps table, market type indicator, hazards, demographics) or generate shareable link (expires 30 days)
 
 **Tab 2 - Prospecting** (6 search types): See prospecting context.
@@ -227,7 +227,7 @@ GENERAL TIPS:
 
 **Saved Searches**: Save search parameters with custom name for quick reload. 7-day global cache.
 
-Data sources: RentCast (property data, AVM), Realie (equity, liens, distress), Hawaii GIS (TMK parcels).
+Data sources: RentCast (property data, rental estimates), Realie (equity, liens, distress), Genie AVM (unified valuation), Hawaii GIS (TMK parcels).
 Help the agent understand scoring, identify best prospects, and generate outreach materials.`,
 
   // Market Monitor
@@ -478,7 +478,7 @@ export const APP_KNOWLEDGE = `
 
 ### Data Sources (priority order)
 1. **MLS (Trestle/HiCentral)** — Active/Pending/Closed/Expired/Withdrawn/Canceled listings, actual sale prices, agent info, photos, DOM. Most accurate for Hawaii.
-2. **Realie** — AVM with confidence range (modelValue/min/max), equity, LTV, liens, parcel geometry, deed transfers. Best for property valuation.
+2. **Realie** — County records: ownership, tax assessments, sales history, equity, LTV, liens, parcel geometry, deed transfers. Feeds into Genie AVM as a data source.
 3. **RentCast** — Property records, owner info, absentee status, rental AVM, market stats, comps fallback. Best for owner intelligence.
 4. **Honolulu County OWNINFO** — Current deed owner from county records (green "County Records" badge). Prioritized over Realie/RentCast for ownership.
 5. **Hawaii State GIS** — Flood zones, tsunami zones, fire risk, school attendance boundaries, opportunity zones, parcel boundaries (TMK). Free public data.
@@ -487,19 +487,20 @@ export const APP_KNOWLEDGE = `
 8. **Census ACS / FRED / BLS / HUD** — Demographics, mortgage rates, employment, fair market rents.
 9. **NCES** — School data: enrollment, student-teacher ratio, free/reduced lunch %, Title I, grade range.
 
-### AVM Reliability
-- AVM is compared to county assessment and recent sale price (within 2 years)
-- If AVM differs by more than 30% from either reference, it is suppressed as unreliable
-- When unreliable: county assessment is shown instead, with an amber warning
-- All downstream calculations (equity, LTV) use the best available value: reliable AVM > county assessment > appraised value
-
-### Genie AVM (Proprietary Valuation)
-- The **Genie AVM** is Real Estate Genie's proprietary ensemble valuation model, shown as the primary AVM with a confidence badge
-- It combines four data sources with weighted blending: MLS closed comps (50%), RentCast AVM (20%), county assessment trend (20%), and Realie AVM (10%)
-- Comps are filtered by same subdivision and ownership type (Fee Simple vs Leasehold) for hyperlocal accuracy
+### Genie AVM v2 (Unified Hybrid Ensemble Valuation)
+- The **Genie AVM** is Real Estate Genie's proprietary valuation model -- the ONE value shown everywhere in the app (Property Detail Modal, reports, comps, prospecting). There are no separate AVM values on different tabs.
+- It is a **unified hybrid ensemble** built on four pillars:
+  1. **Hedonic Pricing** -- regression model that prices individual property features (beds, baths, sqft, lot size, year built, condition, view, parking) with property-type-aware weights
+  2. **Repeat-Sales Index** -- uses HPI (House Price Index) data to time-adjust historical sale prices to current market conditions, so a comp that sold 8 months ago is adjusted for appreciation or depreciation
+  3. **CMA (Comps)** -- pulls comparable sales and weights them by similarity (location, size, features, recency). Building/subdivision matching is weighted heavily for condos. Ownership type (Fee Simple vs Leasehold) is always matched.
+  4. **AI Validation** -- final sanity check layer that flags outliers and adjusts for factors the model cannot capture (e.g., major renovations, unusual lot shapes)
+- **All property types** (SFR, condo, townhome, vacant land) go through the same model. Feature weights adjust automatically by property type -- for example, lot size matters more for SFR and land; building/floor level matters more for condos.
+- **Confidence Score (1-100)**: Numeric score reflecting how much data the model had to work with. Higher = more data, more comps, more reliable. Shown as a badge on the value card.
+- **FSD (Forecast Standard Deviation)**: Measures prediction accuracy as a percentage -- lower is better. An FSD of 10% on a $500K property means the true value is likely within +/-$50K. Shown alongside the confidence score.
+- **Sales history anchor**: If the property sold recently, that sale price is used as a sanity check. The model will not deviate far from a verified recent sale unless market conditions have shifted significantly (detected via HPI).
 - Hawaii-specific adjustments: leasehold discount (25-35%), flood zone discount (3-5%), and high HOA impact
-- The Genie AVM appears as a "Genie AVM" value card on the Property Detail Modal with a confidence rating
-- When an agent asks about a property's value, reference the Genie AVM as the primary estimate and explain that it blends MLS sales data, third-party AVMs, and county assessments with local adjustments
+- When an agent asks about a property's value, reference the Genie AVM as the single authoritative estimate. Explain that it blends comp sales, hedonic pricing, market index adjustments, and AI validation into one number with a confidence score and accuracy range.
+- All downstream calculations (equity, LTV, opportunity scoring) use the Genie AVM. If insufficient data exists to produce a reliable Genie AVM, county assessment is shown instead with an amber warning.
 
 ### Hawaii-Specific Knowledge
 - Hawaii is a **non-disclosure state** — actual sale prices are NOT in public records. Only MLS has closed prices.
@@ -538,10 +539,12 @@ Levels: Very Likely (70-100), Likely (50-69), Possible (30-49), Unlikely (0-29)
 ### CMA (Comparative Market Analysis)
 - Agent inputs a subject property (address, beds, baths, sqft)
 - System pulls comparable sales from MLS (Active, Pending, Closed within same area, last 6 months)
-- If MLS has limited data, automatically falls back to RentCast and Realie AVM
+- Comp prices are time-adjusted using HPI (House Price Index) data so older sales reflect current market conditions
+- If MLS has limited data, automatically falls back to RentCast and Realie
 - Calculates: median/avg list price, close price, price per sqft, avg DOM, list-to-sale ratio
 - Generates suggested list price range (25th-75th percentile of comps)
-- Each comp scored for correlation to subject (beds, baths, sqft, year built, property type)
+- Each comp scored for correlation to subject (beds, baths, sqft, year built, property type, subdivision/building for condos)
+- CMA comps feed directly into the Genie AVM -- the CMA pillar is one of four inputs to the unified valuation
 - Reports can be saved and retrieved later
 - Hoku can run a CMA for any property without the agent needing to provide details she already has
 
@@ -657,7 +660,7 @@ export function buildPropertyContext(property: any): string {
   const avmLow = property.avmLow || property.avm?.amount?.low;
   const avmHigh = property.avmHigh || property.avm?.amount?.high;
   if (listPrice) parts.push(`List Price: $${Number(listPrice).toLocaleString()}`);
-  if (avmValue) parts.push(`AVM (Estimated Value): $${Number(avmValue).toLocaleString()}`);
+  if (avmValue) parts.push(`Genie AVM (Estimated Value): $${Number(avmValue).toLocaleString()}`);
   if (avmLow && avmHigh)
     parts.push(`AVM Range: $${Number(avmLow).toLocaleString()} - $${Number(avmHigh).toLocaleString()}`);
 

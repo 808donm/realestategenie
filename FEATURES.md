@@ -1,6 +1,6 @@
 # Real Estate Genie -- Complete Feature List
 
-> Last updated: April 5, 2026
+> Last updated: April 6, 2026
 
 ---
 
@@ -586,11 +586,11 @@ Agent actions are logged to the `agent_activity_log` table for agency-level repo
 
 These features ensure the data shown to agents is accurate and relevant, especially for condos and Hawaii-specific properties.
 
-- **Genie AVM (Proprietary Valuation)**: Ensemble valuation model blending MLS closed comps (50%), RentCast AVM (20%), county assessment trend (20%), and Realie AVM (10%). Applies Hawaii-specific adjustments for leasehold discount (25-35%), flood zone discount (3-5%), and high HOA impact. Filters comps by same subdivision and ownership type for hyperlocal accuracy. Displayed as "Genie AVM" value card with confidence badge on the Property Detail Modal.
+- **Genie AVM v2 (Unified Valuation Model)**: Hybrid ensemble model implementing four industry-standard valuation methodologies: (1) Hedonic Pricing - regression on property features with type-specific weights, (2) Repeat-Sales Index - HPI-adjusted historical transactions, (3) CMA - comparable market analysis with per-comp adjustments, (4) AI Validation - NLP condition extraction from listing descriptions for condition scoring. Property-type-aware: SFR, condo, townhome, and vacant land all flow through the same model with type-specific feature weights. All comp prices are temporally normalized (HPI-adjusted) to the valuation date. Outputs a single value with confidence score (1-100 scale) and FSD (Forecast Standard Deviation). Applies Hawaii-specific adjustments for leasehold discount (25-35%), flood zone discount (3-5%), and high HOA impact. One unified AVM value shown consistently across the entire app (Property Detail Modal, reports, prospecting, seller map).
 
-- **AVM Display**: AVM is always shown when available from Realie or RentCast. With unit-specific address lookups for condos, AVM accuracy has improved significantly. Falls back to county assessment only when no AVM data exists.
+- **AVM Display**: The Genie AVM value is always shown when sufficient data exists. Falls back to county assessment only when no comp or AVM source data is available. Unit-specific address lookups for condos ensure accurate valuations.
 
-- **AVM Accuracy**: All API call sites now pass bedrooms, bathrooms, square footage, and property type to RentCast's AVM endpoint. This ensures comps match the subject property instead of RentCast guessing the attributes. Default comp count increased from 15 to 20.
+- **AVM Accuracy**: All API call sites pass bedrooms, bathrooms, square footage, and property type to RentCast's AVM endpoint. This ensures comps match the subject property. Default comp count increased from 15 to 20.
 
 - **Property-Type-Specific Market Stats**: When viewing a condo, the headline market stats show the Condo median price (e.g., $360K) instead of the aggregate across all types ($399K which includes $1.7M single-family homes). Same for SFR, Townhouse, Multi-Family, and Land.
 
@@ -621,4 +621,4 @@ These features ensure the data shown to agents is accurate and relevant, especia
 - **9 Data Sources**: MLS (Trestle), Realie, RentCast, Honolulu County OWNINFO, Hawaii State GIS, FEMA NRI, FBI CDE, Census ACS (4 geographic levels), NCES/FRED/BLS/HUD
 - **White-Label Ready**: CRM provider name never shown to end users (nameless integration)
 
-> Last updated: April 5, 2026
+> Last updated: April 6, 2026

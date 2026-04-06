@@ -597,6 +597,20 @@ export default function PropertyDetailModal({
     }
     if (p.location?.latitude) params.set("lat", p.location.latitude);
     if (p.location?.longitude) params.set("lng", p.location.longitude);
+    if ((p as any).hoaFee) params.set("hoaFee", String((p as any).hoaFee));
+    if ((p as any).lotSize || (p as any).lotSizeSqft) params.set("lotSize", String((p as any).lotSize || (p as any).lotSizeSqft));
+    if ((p as any).stories) params.set("stories", String((p as any).stories));
+    // Pass sales history for repeat-sales pillar
+    const saleAmt = p.sale?.amount?.saleAmt || p.sale?.amount?.salePrice;
+    const saleDate = p.sale?.amount?.saleTransDate || p.sale?.amount?.saleRecDate;
+    if (saleAmt && saleDate) {
+      params.set("lastSalePrice", String(saleAmt));
+      params.set("lastSaleDate", saleDate);
+    }
+    if (p.saleHistory?.length) {
+      const history = p.saleHistory.filter((s) => s.amount && s.date).map((s) => ({ price: s.amount!, date: s.date! }));
+      if (history.length > 0) params.set("saleHistory", JSON.stringify(history));
+    }
 
     fetch(`/api/avm/genie?${params}`)
       .then((r) => r.ok ? r.json() : null)
@@ -1560,13 +1574,15 @@ export default function PropertyDetailModal({
             {low != null && high != null && (
               <div style={{ fontSize: 11, color: "#6b7280" }}>
                 Range: {fmt(low)} - {fmt(high)}
-                {fsd != null && <span style={{ marginLeft: 4 }}>(FSD: {fsd}%)</span>}
+                {fsd != null && <span style={{ marginLeft: 4 }}>(FSD: {typeof fsd === "number" && fsd < 1 ? `${(fsd * 100).toFixed(1)}%` : `${fsd}%`})</span>}
               </div>
             )}
-            {useGenie && genieAvm.methodology?.compsUsed > 0 && (
+            {useGenie && (
               <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 2 }}>
-                Based on {genieAvm.methodology.compsUsed} MLS comps
-                {genieAvm.methodology.compsFromSubdivision > 0 && ` (${genieAvm.methodology.compsFromSubdivision} from same subdivision)`}
+                {genieAvm.confidenceScore != null && <span>{genieAvm.confidenceScore}/100 confidence</span>}
+                {genieAvm.methodology?.compsUsed > 0 && <span> - {genieAvm.methodology.compsUsed} comps</span>}
+                {genieAvm.methodology?.compsFromBuilding > 0 && <span> ({genieAvm.methodology.compsFromBuilding} same building)</span>}
+                {genieAvm.methodology?.pillars?.length > 0 && <span> - {genieAvm.methodology.pillars.length} pillars</span>}
               </div>
             )}
           </div>
@@ -2827,11 +2843,11 @@ export default function PropertyDetailModal({
 
               {rentcastComps && rentcastComps.length > 0 && (
                 <div>
-                  {(p.avm?.amount?.value || rentcastAvmPrice) &&
+                  {(genieAvm?.value || p.avm?.amount?.value || rentcastAvmPrice) &&
                     (() => {
-                      const avmValue = p.avm?.amount?.value ?? rentcastAvmPrice ?? undefined;
-                      const avmLow = p.avm?.amount?.low;
-                      const avmHigh = p.avm?.amount?.high;
+                      const avmValue = genieAvm?.value ?? p.avm?.amount?.value ?? rentcastAvmPrice ?? undefined;
+                      const avmLow = genieAvm?.low ?? p.avm?.amount?.low;
+                      const avmHigh = genieAvm?.high ?? p.avm?.amount?.high;
                       const hasRange = avmLow != null && avmHigh != null;
                       const rangeWidth =
                         hasRange && avmValue ? Math.round(((avmHigh! - avmLow!) / 2 / avmValue) * 100) : null;
@@ -2903,6 +2919,12 @@ export default function PropertyDetailModal({
                                 </span>
                                 {rangeWidth != null && <span>±{rangeWidth}%</span>}
                               </div>
+                            </div>
+                          )}
+                          {genieAvm?.confidenceScore != null && (
+                            <div style={{ fontSize: 10, color: "#6b7280", marginTop: 4 }}>
+                              Confidence: {genieAvm.confidenceScore}/100 ({genieAvm.confidence})
+                              {genieAvm.methodology?.pillars?.length > 0 && ` - ${genieAvm.methodology.pillars.length} valuation pillars`}
                             </div>
                           )}
                         </div>

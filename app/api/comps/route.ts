@@ -3,6 +3,7 @@ import { supabaseServer } from "@/lib/supabase/server";
 
 import { createTrestleClient } from "@/lib/integrations/trestle-client";
 import { getPropertyAvm } from "@/lib/integrations/avm-service";
+import { classifyProperty } from "@/lib/avm/genie-avm-engine";
 import {
   buildPropertyCacheKey,
   propertyCacheGet,
@@ -13,7 +14,8 @@ import {
 
 /**
  * Calculate similarity/correlation score between a comp and the subject property.
- * Returns 0-1 (1 = perfect match). Weighted by importance to valuation.
+ * Returns 0-1 (1 = perfect match). Weights vary by property type per lender-grade
+ * AVM methodology - condos weight building match heavily, land weights lot size.
  */
 function calculateCorrelation(
   comp: {
@@ -23,46 +25,64 @@ function calculateCorrelation(
     yearBuilt?: number;
     propertyType?: string;
     lotSize?: number;
+    subdivisionName?: string;
   },
-  subject: { beds?: number; baths?: number; sqft?: number; yearBuilt?: number; propertyType?: string },
+  subject: {
+    beds?: number;
+    baths?: number;
+    sqft?: number;
+    yearBuilt?: number;
+    propertyType?: string;
+    subdivision?: string;
+  },
 ): number {
+  const category = classifyProperty(subject.propertyType, subject.propertyType);
   let totalWeight = 0;
   let totalScore = 0;
 
-  // Bedrooms (weight: 20) — exact match = 1.0, ±1 = 0.7, ±2 = 0.3
-  if (comp.bedrooms != null && subject.beds != null) {
-    const diff = Math.abs(comp.bedrooms - subject.beds);
-    const score = diff === 0 ? 1.0 : diff === 1 ? 0.7 : diff === 2 ? 0.3 : 0;
-    totalWeight += 20;
-    totalScore += score * 20;
-  }
+  // Dynamic weight table by property type
+  const w = category === "condo"
+    ? { sqft: 25, beds: 15, baths: 10, year: 5, type: 10, building: 25, lot: 0 }
+    : category === "land"
+      ? { sqft: 0, beds: 0, baths: 0, year: 0, type: 25, building: 5, lot: 50 }
+      : category === "townhome"
+        ? { sqft: 25, beds: 15, baths: 10, year: 10, type: 15, building: 15, lot: 10 }
+        : { sqft: 25, beds: 15, baths: 10, year: 10, type: 15, building: 10, lot: 15 }; // sfr
 
-  // Bathrooms (weight: 15) — exact match = 1.0, ±1 = 0.7, ±2 = 0.3
-  if (comp.bathrooms != null && subject.baths != null) {
-    const diff = Math.abs(comp.bathrooms - subject.baths);
-    const score = diff === 0 ? 1.0 : diff <= 1 ? 0.7 : diff <= 2 ? 0.3 : 0;
-    totalWeight += 15;
-    totalScore += score * 15;
-  }
-
-  // Square footage (weight: 30) — within 10% = 1.0, 20% = 0.7, 30% = 0.4
-  if (comp.squareFootage && subject.sqft) {
+  // Square footage
+  if (comp.squareFootage && subject.sqft && w.sqft > 0) {
     const pctDiff = Math.abs(comp.squareFootage - subject.sqft) / subject.sqft;
     const score = pctDiff <= 0.1 ? 1.0 : pctDiff <= 0.2 ? 0.7 : pctDiff <= 0.3 ? 0.4 : pctDiff <= 0.5 ? 0.15 : 0;
-    totalWeight += 30;
-    totalScore += score * 30;
+    totalWeight += w.sqft;
+    totalScore += score * w.sqft;
   }
 
-  // Year built (weight: 15) — within 5 yrs = 1.0, 10 = 0.7, 20 = 0.4
-  if (comp.yearBuilt && subject.yearBuilt) {
+  // Bedrooms
+  if (comp.bedrooms != null && subject.beds != null && w.beds > 0) {
+    const diff = Math.abs(comp.bedrooms - subject.beds);
+    const score = diff === 0 ? 1.0 : diff === 1 ? 0.7 : diff === 2 ? 0.3 : 0;
+    totalWeight += w.beds;
+    totalScore += score * w.beds;
+  }
+
+  // Bathrooms
+  if (comp.bathrooms != null && subject.baths != null && w.baths > 0) {
+    const diff = Math.abs(comp.bathrooms - subject.baths);
+    const score = diff === 0 ? 1.0 : diff <= 1 ? 0.7 : diff <= 2 ? 0.3 : 0;
+    totalWeight += w.baths;
+    totalScore += score * w.baths;
+  }
+
+  // Year built
+  if (comp.yearBuilt && subject.yearBuilt && w.year > 0) {
     const diff = Math.abs(comp.yearBuilt - subject.yearBuilt);
     const score = diff <= 5 ? 1.0 : diff <= 10 ? 0.7 : diff <= 20 ? 0.4 : diff <= 30 ? 0.2 : 0;
-    totalWeight += 15;
-    totalScore += score * 15;
+    totalWeight += w.year;
+    totalScore += score * w.year;
   }
 
-  // Property type (weight: 20) — same = 1.0, different = 0
-  if (comp.propertyType && subject.propertyType) {
+  // Property type match
+  if (comp.propertyType && subject.propertyType && w.type > 0) {
     const compType = (comp.propertyType || "").toLowerCase();
     const subType = (subject.propertyType || "").toLowerCase();
     const match =
@@ -70,8 +90,28 @@ function calculateCorrelation(
       (compType.includes("resid") && subType.includes("sfr")) ||
       (compType.includes("sfr") && subType.includes("resid")) ||
       (compType.includes("condo") && subType.includes("condo"));
-    totalWeight += 20;
-    totalScore += (match ? 1.0 : 0) * 20;
+    totalWeight += w.type;
+    totalScore += (match ? 1.0 : 0) * w.type;
+  }
+
+  // Building/subdivision match (critical for condos)
+  if (w.building > 0) {
+    const compSub = (comp.subdivisionName || "").toLowerCase().trim();
+    const subSub = (subject.subdivision || "").toLowerCase().trim();
+    if (compSub && subSub) {
+      const match = compSub === subSub || compSub.includes(subSub) || subSub.includes(compSub);
+      totalWeight += w.building;
+      totalScore += (match ? 1.0 : 0) * w.building;
+    }
+  }
+
+  // Lot size match
+  if (comp.lotSize && subject.sqft && w.lot > 0 && category === "land") {
+    // For land, lot size is the primary comparison
+    const pctDiff = Math.abs(comp.lotSize - (subject.sqft || 0)) / (subject.sqft || 1);
+    const score = pctDiff <= 0.15 ? 1.0 : pctDiff <= 0.30 ? 0.7 : pctDiff <= 0.50 ? 0.4 : 0.1;
+    totalWeight += w.lot;
+    totalScore += score * w.lot;
   }
 
   return totalWeight > 0 ? totalScore / totalWeight : 0;
@@ -114,6 +154,7 @@ export async function GET(request: NextRequest) {
     const compCount = Number(url.searchParams.get("compCount")) || 10;
     const months = Number(url.searchParams.get("months")) || 12;
     const yearBuilt = url.searchParams.get("yearBuilt") ? Number(url.searchParams.get("yearBuilt")) : undefined;
+    const subdivision = url.searchParams.get("subdivision") || "";
 
     if (!address && !zipCode) {
       return NextResponse.json({ error: "address or zipCode is required" }, { status: 400 });
@@ -223,6 +264,7 @@ export async function GET(request: NextRequest) {
             "ListOfficeName",
             "BuyerAgentFullName",
             "BuyerOfficeName",
+            "SubdivisionName",
           ].join(","),
           $orderby: "CloseDate desc",
           $top: compCount,
@@ -242,8 +284,9 @@ export async function GET(request: NextRequest) {
                 yearBuilt: p.YearBuilt,
                 propertyType: p.PropertyType,
                 lotSize: p.LotSizeArea,
+                subdivisionName: p.SubdivisionName,
               },
-              { beds, baths, sqft, yearBuilt, propertyType },
+              { beds, baths, sqft, yearBuilt, propertyType, subdivision },
             );
 
             return {
@@ -273,6 +316,8 @@ export async function GET(request: NextRequest) {
               listOfficeName: p.ListOfficeName,
               buyerAgentName: p.BuyerAgentFullName,
               buyerOfficeName: p.BuyerOfficeName,
+              subdivision: p.SubdivisionName,
+              subdivisionName: p.SubdivisionName,
             };
           });
           // Sort by correlation (best match first)

@@ -733,7 +733,7 @@ Click any property to open the full intelligence report with tabs:
 - **Opportunity Score** (first tab when seller data is present): Scoring breakdown with AI-generated outreach suggestions
 - **Overview**: Address, beds/baths/sqft, year built, property type, lot size, owner info
 - **Building**: Construction details, rooms, parking, utilities, interior features
-- **Financial**: AVM with reliability check, assessment, tax, mortgage, equity, LTV, rental AVM, cap rate, gross yield
+- **Financial**: Estimated Value (unified AVM) with confidence score, FSD accuracy range, assessment, tax, mortgage, equity, LTV, rental AVM, cap rate, gross yield
 - **Sales History**: Historical closed transactions with dates, amounts, buyer/seller names, deed type
 - **Listing History**: All MLS listings for the property (Active, Pending, Closed, Expired, Withdrawn, Canceled) with color-coded status badges, price changes, days on market, and listing/buyer agent info. Unlike Sales History which shows only closed transactions, Listing History shows every time the property was listed on MLS.
 - **Comps**: Comparable sales with correlation scoring
@@ -742,30 +742,38 @@ Click any property to open the full intelligence report with tabs:
 - **Market Stats**: Median price, avg DOM, active listings, price/sqft, median rent
 - **Federal/GIS**: School attendance zones, FEMA hazard ratings, flood/tsunami/fire zones, opportunity zones
 
-The AVM Reliability Check compares the automated valuation to county assessment and recent sales. If the difference exceeds 30%, the AVM is suppressed and the county assessment is shown instead.
+### 11.2a Estimated Value (Unified AVM)
 
-### 11.2a Genie AVM (Proprietary Valuation)
-
-The Genie AVM is Real Estate Genie's proprietary valuation model. It appears as a "Genie AVM" value card with a confidence badge on the Property Detail Modal.
+The Estimated Value is Real Estate Genie's proprietary valuation. It appears in the header card, on the Comps tab, and in generated reports - the same number everywhere so there is no confusion.
 
 **How it works:**
 
-The Genie AVM is an ensemble model that blends four data sources:
+The Estimated Value is computed by a unified hybrid model that combines four valuation methodologies:
 
-1. **MLS Closed Comps (50% weight)** - Recent closed sales from MLS, filtered to the same subdivision and ownership type (Fee Simple vs Leasehold). This is the strongest signal because it reflects actual market transactions.
-2. **RentCast AVM (20% weight)** - Third-party automated valuation with national coverage.
-3. **County Assessment Trend (20% weight)** - Assessed value adjusted for the local assessment-to-market ratio over time.
-4. **Realie AVM (10% weight)** - Additional third-party valuation for cross-validation.
+1. **Hedonic Pricing** - An attribute-based approach that values the property based on its features (beds, baths, sqft, lot size, year built, condition, and location factors).
+2. **Repeat-Sales Projection** - Uses the property's own sales history to project its current value based on how prices have moved in the area since the last sale.
+3. **CMA (Comparable Sales Analysis)** - Analyzes recent comparable sales nearby, adjusted for differences in size, condition, and features. For condos, the model prioritizes same-building comps and skips lot size adjustments.
+4. **AI Validation** - A final check that cross-references the other three methods and flags outliers, improving overall accuracy.
 
-**Hawaii-specific adjustments:**
+For vacant land, the model switches to a lot-size-based valuation since building attributes do not apply.
+
+**Confidence Score (1-100):**
+
+Every estimate includes a confidence score that tells you how reliable it is:
+- **High (75-100)**: Strong data support - multiple recent comps, good sales history, consistent across methods.
+- **Medium (50-74)**: Reasonable estimate but some data gaps. Use as a solid starting point.
+- **Low (25-49)**: Limited data available. Treat as a rough guide and verify with local knowledge.
+- **Very Low (1-24)**: Minimal data. The estimate may be significantly off - proceed with caution.
+
+**FSD (Forecast Standard Deviation):**
+
+The FSD tells you the likely accuracy range of the estimate. For example, an FSD of 10% on a $500,000 estimate means the true value is most likely between $450,000 and $550,000. Lower FSD means a tighter, more reliable range.
+
+**Market-specific adjustments:**
 
 - **Leasehold discount (25-35%)**: Leasehold properties are valued lower than Fee Simple. The discount varies based on remaining lease term.
 - **Flood zone discount (3-5%)**: Properties in FEMA flood zones receive a small valuation reduction reflecting insurance costs and risk.
 - **High HOA impact**: Unusually high HOA fees reduce the effective value to reflect ongoing carrying costs.
-
-**Why it matters:**
-
-Generic AVMs often miss Hawaii-specific factors like leasehold tenure, which can reduce a property's value by a third. The Genie AVM accounts for these local realities. For methodology details, see this help section. The Property Detail Modal keeps the display clean with just the value and confidence badge.
 
 ### 11.3 Prospecting (6 Search Types)
 

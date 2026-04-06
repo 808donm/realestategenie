@@ -112,6 +112,64 @@ export interface AdjustmentConfig {
   pricePerGarage: number; // $ per garage space
 }
 
+/**
+ * Returns property-type-aware default adjustment config.
+ * Uses percentage-based adjustments scaled to median comp price
+ * instead of flat dollar amounts. This ensures adjustments are
+ * proportional to the local market (a $15K bed adj on a $2M property
+ * is only 0.75%, but on a $400K property it's 3.75%).
+ */
+function getDefaultConfig(subject: SubjectProperty, comps: CompProperty[]): AdjustmentConfig {
+  const subType = (subject.propertySubType || subject.propertyType || "").toLowerCase();
+  const closedPrices = comps.filter((c) => c.closePrice && c.closePrice > 0).map((c) => c.closePrice!);
+  const medianPrice = closedPrices.length > 0
+    ? closedPrices.sort((a, b) => a - b)[Math.floor(closedPrices.length / 2)]
+    : 500000;
+
+  if (subType.includes("condo") || subType.includes("apartment") || subType.includes("condominium")) {
+    return {
+      pricePerSqft: 0,
+      pricePerBed: Math.round(medianPrice * 0.05),
+      pricePerBath: Math.round(medianPrice * 0.03),
+      pricePerLotSqft: 0, // no lot adjustment for condos
+      pricePerYear: Math.round(medianPrice * 0.002),
+      pricePerGarage: Math.round(medianPrice * 0.02),
+    };
+  }
+
+  if (subType.includes("townhome") || subType.includes("townhouse")) {
+    return {
+      pricePerSqft: 0,
+      pricePerBed: Math.round(medianPrice * 0.05),
+      pricePerBath: Math.round(medianPrice * 0.03),
+      pricePerLotSqft: 3,
+      pricePerYear: Math.round(medianPrice * 0.003),
+      pricePerGarage: Math.round(medianPrice * 0.025),
+    };
+  }
+
+  if (subType.includes("land") || subType.includes("vacant")) {
+    return {
+      pricePerSqft: 0,
+      pricePerBed: 0,
+      pricePerBath: 0,
+      pricePerLotSqft: 0,
+      pricePerYear: 0,
+      pricePerGarage: 0,
+    };
+  }
+
+  // SFR defaults - scaled to market
+  return {
+    pricePerSqft: 0,
+    pricePerBed: Math.max(15000, Math.round(medianPrice * 0.04)),
+    pricePerBath: Math.max(10000, Math.round(medianPrice * 0.025)),
+    pricePerLotSqft: 5,
+    pricePerYear: Math.max(500, Math.round(medianPrice * 0.003)),
+    pricePerGarage: Math.max(20000, Math.round(medianPrice * 0.025)),
+  };
+}
+
 const DEFAULT_CONFIG: AdjustmentConfig = {
   pricePerSqft: 0, // Will be computed from comps median price/sqft
   pricePerBed: 15000,
@@ -128,7 +186,7 @@ export function calculateCMAAnalysis(
   comps: CompProperty[],
   config?: Partial<AdjustmentConfig>,
 ): CMAAnalysis {
-  const cfg = { ...DEFAULT_CONFIG, ...config };
+  const cfg = { ...getDefaultConfig(subject, comps), ...config };
 
   // Compute median price/sqft from closed comps if not provided
   if (!cfg.pricePerSqft) {
@@ -185,8 +243,8 @@ export function calculateCMAAnalysis(
       }
     }
 
-    // Lot Size
-    if (subject.lotSizeSqft && comp.lotSizeSqft && comp.lotSizeSqft > 0) {
+    // Lot Size (skip for condos - lot size is shared/irrelevant per unit)
+    if (cfg.pricePerLotSqft > 0 && subject.lotSizeSqft && comp.lotSizeSqft && comp.lotSizeSqft > 0) {
       const diff = subject.lotSizeSqft - comp.lotSizeSqft;
       if (Math.abs(diff) > 500) { // Only adjust for significant lot size differences
         adjustments.push({
