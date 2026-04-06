@@ -75,7 +75,12 @@ interface GHLContact {
 }
 
 const STATUS_OPTIONS = ["Active", "Pending", "Closed", "Expired", "Withdrawn", "Canceled"] as const;
-const PROPERTY_TYPES = ["Residential", "Residential Income", "Commercial", "Land", "Farm"] as const;
+const PROPERTY_TYPES = [
+  { value: "Single Family", label: "Single Family" },
+  { value: "Condo", label: "Condo/Townhouse" },
+  { value: "Land", label: "Land" },
+  { value: "Residential", label: "All Residential" },
+] as const;
 
 const PROPERTY_FEATURES = [
   "Updated Kitchen",
@@ -973,8 +978,8 @@ export default function MLSClient() {
                   >
                     <option value="">Any</option>
                     {PROPERTY_TYPES.map((t) => (
-                      <option key={t} value={t}>
-                        {t}
+                      <option key={t.value} value={t.value}>
+                        {t.label}
                       </option>
                     ))}
                   </select>
