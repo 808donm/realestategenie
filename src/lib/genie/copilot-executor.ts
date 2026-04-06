@@ -185,7 +185,7 @@ export async function executeCopilotAction(
           searchType: "zip",
           postalCodes: Array.isArray(zipCodes) ? zipCodes.join(",") : zipCodes,
           status: "Active",
-          limit: "10",
+          limit: "50",
         });
         if (params.propertyType) searchParams.set("propertyType", params.propertyType);
         if (params.minPrice) searchParams.set("minPrice", String(params.minPrice));
