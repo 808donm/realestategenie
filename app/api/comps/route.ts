@@ -163,12 +163,11 @@ export async function GET(request: NextRequest) {
         // Build filter for closed sales in the area
         const filters: string[] = ["StandardStatus eq 'Closed'"];
 
-        // Location: prefer zip code. For luxury ($2M+), use ZIP prefix to include
-        // adjacent neighborhoods since high-value comps are sparse in any single ZIP.
+        // Location: use startswith for all searches (handles ZIP+4 format).
+        // For $2M+, widen to ZIP prefix to include adjacent neighborhoods.
         const searchZip = zipCode || address.match(/\b(\d{5})\b/)?.[1];
         if (searchZip) {
           if (listPrice && listPrice >= 2000000) {
-            // Use first 3 digits of ZIP to cover adjacent areas (e.g., 968xx covers most of Honolulu)
             filters.push(`startswith(PostalCode, '${searchZip.slice(0, 3)}')`);
           } else {
             filters.push(`startswith(PostalCode, '${searchZip}')`);
@@ -200,17 +199,19 @@ export async function GET(request: NextRequest) {
           filters.push(`BedroomsTotal le ${beds + 1}`);
         }
 
-        // Price range — for luxury properties, filter comps to a reasonable range
-        // This prevents $650K comps being used for a $5.67M property
+        // Price range — filter comps to a reasonable range around the subject
+        // A $500K condo shouldn't have $2M SFR comps, and vice versa
         if (listPrice && listPrice > 0) {
-          const priceLow = Math.round(listPrice * 0.5);  // 50% of list price
+          const priceLow = Math.round(listPrice * 0.5);   // 50% of list price
           const priceHigh = Math.round(listPrice * 1.5);  // 150% of list price
           filters.push(`ClosePrice ge ${priceLow}`);
           filters.push(`ClosePrice le ${priceHigh}`);
         }
 
-        // Date range — extend to 24 months for luxury ($2M+) since fewer transactions
-        const searchMonths = (listPrice && listPrice >= 2000000) ? Math.max(months, 24) : months;
+        // Date range — extend for higher-value properties since fewer transactions
+        const searchMonths = (listPrice && listPrice >= 1000000) ? Math.max(months, 18)
+          : (listPrice && listPrice >= 2000000) ? Math.max(months, 24)
+          : months;
         const cutoffDate = new Date();
         cutoffDate.setMonth(cutoffDate.getMonth() - searchMonths);
         filters.push(`CloseDate ge ${cutoffDate.toISOString().split("T")[0]}`);
