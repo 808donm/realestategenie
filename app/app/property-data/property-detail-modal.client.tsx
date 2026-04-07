@@ -571,45 +571,51 @@ export default function PropertyDetailModal({
     }
   }, [hazardData, hazardLoading, p]);
 
-  // Fetch Genie AVM once on mount (pre-fetch for value card display)
-  const genieAvmFetched = useRef(false);
+  // Compute Genie AVM client-side using the same comps from the Comps tab
+  // This avoids server-to-server auth issues and ensures both use the same data
   useEffect(() => {
-    if (genieAvmFetched.current || genieAvm || genieAvmLoading) return;
+    if (genieAvm || !rentcastComps || rentcastComps.length === 0) return;
 
-    const addr1 = p.address?.line1 || p.address?.oneLine?.split(",")[0]?.trim();
-    const zip = p.address?.postal1;
-    if (!addr1 || !zip) return;
+    import("@/lib/avm/genie-avm-engine").then(({ computeGenieAvm }) => {
+      const mlsComps = rentcastComps.map((c: any) => ({
+        address: c.address || "",
+        closePrice: c.closePrice || c.price || 0,
+        listPrice: c.listPrice,
+        beds: c.bedrooms || c.beds,
+        baths: c.bathrooms || c.baths,
+        sqft: c.squareFootage || c.sqft,
+        yearBuilt: c.yearBuilt,
+        lotSize: c.lotSize,
+        closeDate: c.closeDate || "",
+        correlation: c.correlation,
+        distance: c.distance,
+        subdivision: c.subdivision || c.subdivisionName,
+        ownershipType: c.ownershipType,
+      }));
 
-    genieAvmFetched.current = true;
-    setGenieAvmLoading(true);
+      const result = computeGenieAvm({
+        address: mlsAddress || p.address?.oneLine || "",
+        zipCode: p.address?.postal1 || "",
+        beds,
+        baths,
+        sqft,
+        yearBuilt,
+        propertyType: p.summary?.propType,
+        propertySubType: p.summary?.propSubType,
+        ownershipType: (p as any).OwnershipType || (p as any).ownershipType,
+        subdivision: (p as any).SubdivisionName || (p as any).subdivision,
+        hoaFee: (p as any).AssociationFee,
+        assessment: p.assessment?.market?.mktTtlValue
+          ? { value: p.assessment.market.mktTtlValue, year: p.assessment.tax?.taxYear || 2025, land: 0, improvements: 0 }
+          : null,
+        mlsComps,
+      });
 
-    const params = new URLSearchParams({ address: mlsAddress || addr1, zipCode: zip });
-    if (beds != null) params.set("beds", String(beds));
-    if (baths != null) params.set("baths", String(baths));
-    if (sqft) params.set("sqft", String(sqft));
-    if (yearBuilt) params.set("yearBuilt", String(yearBuilt));
-    if (p.summary?.propType) params.set("propertyType", p.summary.propType);
-    if (p.summary?.propSubType) params.set("propertySubType", p.summary.propSubType);
-    if ((p as any).OwnershipType || (p as any).ownershipType) {
-      params.set("ownershipType", (p as any).OwnershipType || (p as any).ownershipType);
-    }
-    if ((p as any).SubdivisionName || (p as any).subdivision) {
-      params.set("subdivision", (p as any).SubdivisionName || (p as any).subdivision);
-    }
-    if (p.location?.latitude) params.set("lat", p.location.latitude);
-    if (p.location?.longitude) params.set("lng", p.location.longitude);
-
-    fetch(`/api/avm/genie?${params}`)
-      .then((r) => r.ok ? r.json() : null)
-      .then((data) => {
-        if (data && data.value && !data.error) {
-          setGenieAvm(data);
-        }
-      })
-      .catch(() => {})
-      .finally(() => setGenieAvmLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+      if (result) {
+        setGenieAvm(result);
+      }
+    }).catch(() => {});
+  }, [rentcastComps, genieAvm, p, mlsAddress, beds, baths, sqft, yearBuilt]);
 
   // Fetch AVM data when the Financial tab is selected and property doesn't already have AVM
   useEffect(() => {
