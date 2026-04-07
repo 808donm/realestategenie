@@ -183,6 +183,9 @@ export async function GET(request: NextRequest) {
     const isFloodZone = hazardData?.seaLevelRise?.found || hazardData?.tsunami?.found || false;
     const floodZoneCode = (hazardData?.seaLevelRise?.attributes as any)?.FLD_ZONE || undefined;
 
+    // Property AVM: use Realie AVM first, fall back to RentCast AVM
+    const propertyAvm = realieAvm || rentcastAvm || null;
+
     // Build input and compute
     const avmInput: GenieAvmInput = {
       address,
@@ -196,6 +199,7 @@ export async function GET(request: NextRequest) {
       ownershipType,
       subdivision,
       hoaFee,
+      propertyAvm,
       rentcastAvm,
       realieAvm,
       assessment,

@@ -599,7 +599,7 @@ These features ensure the data shown to agents is accurate and relevant, especia
 
 - **Comps AVM as Primary**: Comps-based AVM used as Estimated Value everywhere (most accurate for Hawaii). Genie AVM available but not displayed until accuracy improves.
 
-- **Genie AVM (Proprietary Valuation)**: Ensemble valuation model blending MLS closed comps (50%), RentCast AVM (20%), county assessment trend (20%), and Realie AVM (10%). Applies Hawaii-specific adjustments for leasehold discount (25-35%), flood zone discount (3-5%), and high HOA impact. Filters comps by same subdivision and ownership type for hyperlocal accuracy.
+- **Genie AVM (Proprietary Valuation)**: Dynamic ensemble valuation model that weights three sources based on comp quality: MLS closed comps (30-50%), Property AVM (30-50%), and county assessment trend (20%). When comps agree well, comps get higher weight; when comps disagree, Property AVM stabilizes the estimate. Comp quality filters: minimum correlation (0.3), max adjustment cap (35%), and outlier removal. Condo-specific tuning with increased sqft weight and reduced bed/bath adjustments. Hawaii-specific adjustments for leasehold discount (25-35%), flood zone discount (3-5%), and high HOA impact.
 
 - **Source Branding**: All data sources display as "Real Estate Genie" or "Public Records" -- no provider names (Realie, RentCast) shown to agents.
 

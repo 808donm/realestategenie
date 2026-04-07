@@ -495,11 +495,13 @@ export const APP_KNOWLEDGE = `
 
 ### Genie AVM (Proprietary Valuation)
 - The **Genie AVM** is Real Estate Genie's proprietary ensemble valuation model, shown as the primary AVM with a confidence badge
-- It combines four data sources with weighted blending: MLS closed comps (50%), RentCast AVM (20%), county assessment trend (20%), and Realie AVM (10%)
-- Comps are filtered by same subdivision and ownership type (Fee Simple vs Leasehold) for hyperlocal accuracy
+- It dynamically weights three sources based on comp quality: MLS closed comps (30-50%), Property AVM (30-50%), and trend-adjusted county assessment (20%)
+- When comps agree well (low price spread), comps get higher weight. When comps disagree, the Property AVM gets more weight for stability
+- Comp quality filters: minimum correlation threshold, max adjustment cap, and outlier removal
+- Condo-specific tuning: increased sqft adjustment weight, reduced bed/bath adjustment
 - Hawaii-specific adjustments: leasehold discount (25-35%), flood zone discount (3-5%), and high HOA impact
 - The Genie AVM appears as a "Genie AVM" value card on the Property Detail Modal with a confidence rating
-- When an agent asks about a property's value, reference the Genie AVM as the primary estimate and explain that it blends MLS sales data, third-party AVMs, and county assessments with local adjustments
+- When an agent asks about a property's value, reference the Genie AVM as the primary estimate and explain that it blends MLS sales data, property valuations, and county assessments with local adjustments
 
 ### Hawaii-Specific Knowledge
 - Hawaii is a **non-disclosure state** — actual sale prices are NOT in public records. Only MLS has closed prices.

@@ -605,6 +605,7 @@ export default function PropertyDetailModal({
         ownershipType: (p as any).OwnershipType || (p as any).ownershipType,
         subdivision: (p as any).SubdivisionName || (p as any).subdivision,
         hoaFee: (p as any).AssociationFee,
+        propertyAvm: avmVal ? { value: avmVal, low: avmLow, high: avmHigh } : null,
         assessment: p.assessment?.market?.mktTtlValue
           ? { value: p.assessment.market.mktTtlValue, year: p.assessment.tax?.taxYear || 2025, land: 0, improvements: 0 }
           : null,
@@ -2768,7 +2769,7 @@ export default function PropertyDetailModal({
                 </>
               )}
               <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 8 }}>
-                MLS comps (85%) + Assessment trend (15%)
+                MLS comps + Property AVM + Assessment (dynamic weights)
               </div>
             </div>
 

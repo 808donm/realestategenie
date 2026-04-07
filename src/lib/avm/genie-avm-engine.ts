@@ -6,11 +6,13 @@
  * because it uses actual MLS closed sales, accounts for Fee Simple vs
  * Leasehold, and matches by subdivision.
  *
- * Sources (weighted by reliability):
- *   1. MLS Closed Comps (50%) -- actual sale prices from Trestle
- *   2. RentCast AVM (20%) -- algorithmic estimate
+ * Sources (dynamically weighted by comp quality):
+ *   1. MLS Closed Comps (30-50%) -- actual sale prices from Trestle
+ *   2. Property AVM (30-50%) -- Realie/RentCast property valuation
  *   3. County Assessment (20%) -- trend-adjusted market value
- *   4. Realie AVM (10%) -- supplementary estimate
+ *
+ * Dynamic weighting: When comps agree well (low CV), comps get 50%.
+ * When comps disagree (high CV) or are few, Property AVM gets more weight.
  *
  * Hawaii-Specific Adjustments:
  *   - Leasehold discount (25-35% based on remaining term)
@@ -39,6 +41,7 @@ export interface GenieAvmInput {
   hoaFee?: number; // Monthly
 
   // External AVM values (pre-fetched)
+  propertyAvm?: { value: number; low?: number; high?: number } | null; // Realie/RentCast property valuation
   rentcastAvm?: { value: number; low: number; high: number } | null;
   realieAvm?: { value: number; low?: number; high?: number } | null;
 
@@ -94,6 +97,7 @@ export interface GenieAvmResult {
   source: "genie";
   methodology: {
     compBasedValue: number | null;
+    propertyAvm: number | null;
     rentcastAvm: number | null;
     realieAvm: number | null;
     assessmentValue: number | null;
@@ -116,8 +120,17 @@ export interface GenieAvmResult {
 const ADJUSTMENT_PCT_PER_BED = 0.05;   // 5% per bedroom difference
 const ADJUSTMENT_PCT_PER_BATH = 0.03;  // 3% per bathroom difference
 const ADJUSTMENT_PCT_PER_YEAR_AGE = 0.005; // 0.5% per year age difference
-const ADJUSTMENT_PCT_SQFT = 0.75;      // 75% of proportional sqft difference (was 50%)
+const ADJUSTMENT_PCT_SQFT = 0.75;      // 75% of proportional sqft difference
 const ADJUSTMENT_PER_SQFT_LOT = 10;    // $/sqft for lot size difference (SFR only)
+
+// For condos, sqft matters more and bed/bath matters less
+const CONDO_ADJUSTMENT_PCT_SQFT = 0.85;       // 85% for condos (increased)
+const CONDO_BED_BATH_DISCOUNT = 0.6;          // Reduce bed/bath adjustments by 40% for condos
+
+// Comp quality thresholds
+const MIN_CORRELATION = 0.3;                   // Exclude comps below this correlation
+const MAX_ADJUSTMENT_PCT = 0.35;               // Exclude comps needing >35% total adjustment
+const OUTLIER_THRESHOLD = 0.50;                // Exclude comps >50% from median adjusted price
 
 // ── Engine ──
 
@@ -137,12 +150,13 @@ export function computeGenieAvm(input: GenieAvmInput): GenieAvmResult | null {
       compBasedValue = Math.round(
         adjustedComps.reduce((s, c) => s + c.adjustedPrice * c.weight, 0) / totalWeight,
       );
-      // MLS comps are primary — they have actual Hawaii sale prices
-      sources.push({ name: "mlsComps", value: compBasedValue, weight: 0.85 });
     }
   }
 
-  // 2. County Assessment (trend-adjusted) — secondary source only
+  // 2. Property AVM (Realie/RentCast) -- strongest external signal
+  const propertyAvmValue = input.propertyAvm?.value || null;
+
+  // 3. County Assessment (trend-adjusted)
   let trendAdjustedAssessment: number | null = null;
   let assessmentTrendPct: number | null = null;
 
@@ -150,42 +164,81 @@ export function computeGenieAvm(input: GenieAvmInput): GenieAvmResult | null {
     const trend = computeAssessmentTrend(input.assessmentHistory || []);
     assessmentTrendPct = trend;
     trendAdjustedAssessment = Math.round(input.assessment.value * (1 + trend));
-    sources.push({
-      name: "assessment",
-      value: trendAdjustedAssessment,
-      weight: compBasedValue ? 0.15 : 1.0, // Only used as primary when no MLS comps
-    });
   }
 
-  // No external AVM fallbacks — our value comes from comps and assessment only
+  // ── Dynamic Weight Assignment ──
+  // Weights shift based on comp quality (measured by CV of adjusted prices)
+  const compCV = adjustedComps.length >= 2 ? computeCV(adjustedComps.map((c) => c.adjustedPrice)) : 1.0;
 
-  // Sanity check: if the only source is an assessment that seems unreasonably low
-  // (e.g., $265K for a property with 1,943 sqft in 2026), use a $/sqft estimate
-  // from the comps or a regional average as a floor
-  if (sources.length === 1 && sources[0].name === "assessment" && input.sqft) {
-    const assessedPerSqft = sources[0].value / input.sqft;
-    // If assessed value is under $200/sqft, it's likely a stale/historic value
-    // Hawaii median is roughly $500-800/sqft for residential
-    if (assessedPerSqft < 200) {
-      const estimatedPerSqft = 550; // Conservative Hawaii median $/sqft
-      const sqftEstimate = Math.round(input.sqft * estimatedPerSqft);
-      sources[0].value = Math.max(sources[0].value, sqftEstimate);
-      sources[0].weight = 0.5; // Lower confidence for this estimate
-      // Add a $/sqft-based estimate as a second source
-      sources.push({ name: "sqftEstimate", value: sqftEstimate, weight: 0.5 });
+  if (compBasedValue) {
+    // Dynamic comp weight: high quality comps get more weight
+    let compWeight: number;
+    let propAvmWeight: number;
+    if (compCV < 0.15) {
+      // Comps agree well -- trust them more
+      compWeight = 0.50;
+      propAvmWeight = 0.30;
+    } else if (compCV < 0.30) {
+      // Moderate spread -- balanced
+      compWeight = 0.40;
+      propAvmWeight = 0.40;
+    } else {
+      // Comps all over the place -- trust Property AVM more
+      compWeight = 0.30;
+      propAvmWeight = 0.50;
+    }
+
+    // Fewer comps = less trust in comp value
+    if (adjustedComps.length < 3) {
+      compWeight = Math.max(0.25, compWeight - 0.10);
+      propAvmWeight += 0.10;
+    }
+
+    sources.push({ name: "mlsComps", value: compBasedValue, weight: compWeight });
+
+    if (propertyAvmValue) {
+      sources.push({ name: "propertyAvm", value: propertyAvmValue, weight: propAvmWeight });
+    }
+
+    sources.push({
+      name: "assessment",
+      value: trendAdjustedAssessment || input.assessment?.value || 0,
+      weight: 0.20,
+    });
+  } else if (propertyAvmValue) {
+    // No comps -- Property AVM is primary
+    sources.push({ name: "propertyAvm", value: propertyAvmValue, weight: 0.60 });
+    if (trendAdjustedAssessment) {
+      sources.push({ name: "assessment", value: trendAdjustedAssessment, weight: 0.40 });
+    }
+  } else if (trendAdjustedAssessment) {
+    // Only assessment available
+    sources.push({ name: "assessment", value: trendAdjustedAssessment, weight: 1.0 });
+
+    // Sanity check: if assessment seems unreasonably low, add $/sqft floor
+    if (input.sqft) {
+      const assessedPerSqft = trendAdjustedAssessment / input.sqft;
+      if (assessedPerSqft < 200) {
+        const estimatedPerSqft = 550;
+        const sqftEstimate = Math.round(input.sqft * estimatedPerSqft);
+        sources[0].value = Math.max(sources[0].value, sqftEstimate);
+        sources[0].weight = 0.5;
+        sources.push({ name: "sqftEstimate", value: sqftEstimate, weight: 0.5 });
+      }
     }
   }
 
-  // No sources at all -- can't compute
-  if (sources.length === 0) return null;
+  // Remove zero-value sources
+  const validSources = sources.filter((s) => s.value > 0);
+  if (validSources.length === 0) return null;
 
   // Normalize weights to sum to 1.0
-  const totalWeight = sources.reduce((s, src) => s + src.weight, 0);
-  for (const src of sources) src.weight = src.weight / totalWeight;
+  const totalWeight = validSources.reduce((s, src) => s + src.weight, 0);
+  for (const src of validSources) src.weight = src.weight / totalWeight;
 
   // Weighted ensemble value
   let ensembleValue = Math.round(
-    sources.reduce((s, src) => s + src.value * src.weight, 0),
+    validSources.reduce((s, src) => s + src.value * src.weight, 0),
   );
 
   // ── Hawaii-Specific Adjustments ──
@@ -232,11 +285,11 @@ export function computeGenieAvm(input: GenieAvmInput): GenieAvmResult | null {
 
   // ── Confidence & Range ──
 
-  const { confidence, fsd, low, high } = computeConfidence(ensembleValue, sources, adjustedComps);
+  const { confidence, fsd, low, high } = computeConfidence(ensembleValue, validSources, adjustedComps);
 
   // Build weights map
   const weights: Record<string, number> = {};
-  for (const src of sources) weights[src.name] = Math.round(src.weight * 100) / 100;
+  for (const src of validSources) weights[src.name] = Math.round(src.weight * 100) / 100;
 
   return {
     value: ensembleValue,
@@ -247,6 +300,7 @@ export function computeGenieAvm(input: GenieAvmInput): GenieAvmResult | null {
     source: "genie",
     methodology: {
       compBasedValue,
+      propertyAvm: propertyAvmValue,
       rentcastAvm: input.rentcastAvm?.value || null,
       realieAvm: input.realieAvm?.value || null,
       assessmentValue: input.assessment?.value || null,
@@ -283,18 +337,24 @@ function adjustAndWeightComps(input: GenieAvmInput): AdjustedComp[] {
   for (const comp of comps) {
     if (comp.closePrice <= 0) continue;
 
-    // Calculate adjustments — percentage-based relative to comp price
-    // This scales correctly across Hawaii price points ($500K condos to $5M estates)
+    // Skip comps with low correlation (not really comparable)
+    if (comp.correlation != null && comp.correlation < MIN_CORRELATION) continue;
+
+    // Calculate adjustments -- percentage-based relative to comp price
+    // For condos: sqft matters more, bed/bath matters less
+    const sqftPct = isCondo ? CONDO_ADJUSTMENT_PCT_SQFT : ADJUSTMENT_PCT_SQFT;
+    const bedBathDiscount = isCondo ? CONDO_BED_BATH_DISCOUNT : 1.0;
+
     const sqftAdj = subjectSqft && comp.sqft
-      ? Math.round(((subjectSqft - comp.sqft) / comp.sqft) * comp.closePrice * ADJUSTMENT_PCT_SQFT)
+      ? Math.round(((subjectSqft - comp.sqft) / comp.sqft) * comp.closePrice * sqftPct)
       : 0;
     const bedsAdj = (subjectBeds && comp.beds)
-      ? Math.round((subjectBeds - comp.beds) * comp.closePrice * ADJUSTMENT_PCT_PER_BED)
+      ? Math.round((subjectBeds - comp.beds) * comp.closePrice * ADJUSTMENT_PCT_PER_BED * bedBathDiscount)
       : 0;
     const bathsAdj = (subjectBaths && comp.baths)
-      ? Math.round((subjectBaths - comp.baths) * comp.closePrice * ADJUSTMENT_PCT_PER_BATH)
+      ? Math.round((subjectBaths - comp.baths) * comp.closePrice * ADJUSTMENT_PCT_PER_BATH * bedBathDiscount)
       : 0;
-    // Age adjustment — reduced for condos (location/floor matters more than age)
+    // Age adjustment -- reduced for condos (location/floor matters more than age)
     const agePct = isCondo ? ADJUSTMENT_PCT_PER_YEAR_AGE * 0.3 : ADJUSTMENT_PCT_PER_YEAR_AGE;
     const ageAdj = (subjectYearBuilt && comp.yearBuilt)
       ? Math.round((comp.yearBuilt - subjectYearBuilt) * comp.closePrice * agePct)
@@ -304,6 +364,11 @@ function adjustAndWeightComps(input: GenieAvmInput): AdjustedComp[] {
       : 0;
 
     const totalAdj = sqftAdj + bedsAdj + bathsAdj + ageAdj + lotAdj;
+
+    // Cap total adjustment -- if a comp needs >35% adjustment, it's not truly comparable
+    const adjPct = Math.abs(totalAdj) / comp.closePrice;
+    if (adjPct > MAX_ADJUSTMENT_PCT) continue;
+
     const adjustedPrice = comp.closePrice + totalAdj;
 
     // Recency weight
@@ -341,7 +406,30 @@ function adjustAndWeightComps(input: GenieAvmInput): AdjustedComp[] {
   }
 
   // Sort by weight descending, keep top 10
-  return adjusted.sort((a, b) => b.weight - a.weight).slice(0, 10);
+  let filtered = adjusted.sort((a, b) => b.weight - a.weight).slice(0, 10);
+
+  // Outlier removal: exclude comps whose adjusted price is >50% from median
+  if (filtered.length >= 3) {
+    const prices = filtered.map((c) => c.adjustedPrice).sort((a, b) => a - b);
+    const median = prices[Math.floor(prices.length / 2)];
+    filtered = filtered.filter((c) => {
+      const deviation = Math.abs(c.adjustedPrice - median) / median;
+      return deviation <= OUTLIER_THRESHOLD;
+    });
+  }
+
+  return filtered;
+}
+
+// ── Coefficient of Variation ──
+// Measures how much the comp prices agree. Low CV = comps cluster tightly.
+
+function computeCV(values: number[]): number {
+  if (values.length < 2) return 1.0;
+  const mean = values.reduce((s, v) => s + v, 0) / values.length;
+  if (mean === 0) return 1.0;
+  const variance = values.reduce((s, v) => s + (v - mean) ** 2, 0) / values.length;
+  return Math.sqrt(variance) / mean;
 }
 
 // ── Assessment Trend ──
