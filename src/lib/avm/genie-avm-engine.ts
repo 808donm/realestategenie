@@ -184,35 +184,51 @@ export function computeGenieAvm(input: GenieAvmInput): GenieAvmResult | null {
     let listPriceWeight: number;
     let assessmentWeight: number;
 
-    if (isOnMarket) {
-      // On-market: our proprietary formula (list price + our comps + assessment = 90%)
-      // Property AVM is a minor cross-check at 10%, not a primary input
-      listPriceWeight = 0.30;
-      propAvmWeight = 0.10;
+    // Luxury properties ($2M+) get more list price weight because
+    // comps are sparse and often from different quality tiers
+    const isLuxury = isOnMarket && listPriceValue && listPriceValue >= 2000000;
+
+    if (isOnMarket && isLuxury) {
+      // Luxury on-market: agent pricing is the strongest signal
+      listPriceWeight = 0.40;
+      propAvmWeight = 0.15;
       assessmentWeight = 0.15;
       if (compCV < 0.15) {
-        compWeight = 0.45;
+        compWeight = 0.30;
       } else if (compCV < 0.30) {
-        compWeight = 0.40;
+        compWeight = 0.25;
         assessmentWeight = 0.20;
       } else {
+        compWeight = 0.20;
+        assessmentWeight = 0.25;
+      }
+    } else if (isOnMarket) {
+      // Standard on-market: balanced ensemble
+      listPriceWeight = 0.30;
+      propAvmWeight = 0.15;
+      assessmentWeight = 0.15;
+      if (compCV < 0.15) {
+        compWeight = 0.40;
+      } else if (compCV < 0.30) {
         compWeight = 0.35;
+        assessmentWeight = 0.20;
+      } else {
+        compWeight = 0.30;
         assessmentWeight = 0.25;
       }
     } else {
-      // Off-market: no list price, so comps and assessment carry more weight
-      // Property AVM is a secondary reference
+      // Off-market: no list price, comps and assessment carry more weight
       listPriceWeight = 0;
+      propAvmWeight = 0.20;
       assessmentWeight = 0.25;
       if (compCV < 0.15) {
-        compWeight = 0.60;
-        propAvmWeight = 0.15;
+        compWeight = 0.55;
       } else if (compCV < 0.30) {
-        compWeight = 0.50;
-        propAvmWeight = 0.25;
+        compWeight = 0.45;
+        propAvmWeight = 0.30;
       } else {
-        compWeight = 0.40;
-        propAvmWeight = 0.35;
+        compWeight = 0.35;
+        propAvmWeight = 0.40;
       }
     }
 
