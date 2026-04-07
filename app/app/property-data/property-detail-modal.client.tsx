@@ -235,6 +235,7 @@ type SectionId =
   | "overview"
   | "building"
   | "financial"
+  | "avm"
   | "sales-history"
   | "listing-history"
   | "ownership"
@@ -1470,6 +1471,7 @@ export default function PropertyDetailModal({
     { id: "overview", label: "Overview" },
     { id: "building", label: "Building" },
     { id: "financial", label: "Financial" },
+    { id: "avm" as SectionId, label: "AVM" },
     { id: "sales-history" as SectionId, label: "Sales History" },
     { id: "listing-history" as SectionId, label: "Listing History" },
     { id: "comps" as SectionId, label: "Comps" },
@@ -1521,61 +1523,20 @@ export default function PropertyDetailModal({
         flexWrap: "wrap",
       }}
     >
+      {/* Single Estimated Value card — best available AVM */}
       {(() => {
-        // Priority: Comps AVM (most accurate) > Genie AVM > external AVM > assessment
-        const compsAvm = rentcastAvmPrice;
-        const useComps = compsAvm && compsAvm > 0;
-        const useGenie = !useComps && genieAvm?.value;
-        const displayVal = compsAvm || genieAvm?.value || avmVal || p.assessment?.market?.mktTtlValue || p.assessment?.appraised?.apprTtlValue;
-        if (displayVal == null && !genieAvmLoading && !rentcastCompsLoading) return null;
-        if ((genieAvmLoading || rentcastCompsLoading) && !displayVal) return (
-          <div style={{ flex: 1, minWidth: 130, padding: "10px 14px", background: "#f3f4f6", borderRadius: 8 }}>
-            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600, textTransform: "uppercase" }}>Estimating Value...</div>
-          </div>
-        );
-
-        const label = "Estimated Value";
-        // Always use the base AVM confidence/range (from Realie/RentCast property data)
-        const confidence = avmConfidenceLevel;
-        const low = avmLow;
-        const high = avmHigh;
-        const fsd = avmFSD;
-
-        const confidenceColors = {
-          High: { color: "#059669", bg: "#ecfdf5" },
-          Medium: { color: "#d97706", bg: "#fffbeb" },
-          Low: { color: "#dc2626", bg: "#fef2f2" },
-        };
-        const cc = confidence ? confidenceColors[confidence as keyof typeof confidenceColors] : { color: "#059669", bg: "#ecfdf5" };
+        const displayVal = genieAvm?.value || rentcastAvmPrice || avmVal || p.assessment?.market?.mktTtlValue;
+        if (!displayVal) return null;
+        const isGenie = genieAvm?.value;
         return (
-          <div style={{ flex: 1, minWidth: 130, padding: "10px 14px", background: cc.bg, borderRadius: 8 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div style={{ fontSize: 11, color: cc.color, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                {label}
-              </div>
-              {confidence && (
-                <span style={{ fontSize: 9, fontWeight: 700, color: cc.color, background: `${cc.color}15`, padding: "1px 6px", borderRadius: 4 }}>
-                  {confidence}
-                </span>
-              )}
+          <div style={{ flex: 1, minWidth: 130, padding: "10px 14px", background: "#ecfdf5", borderRadius: 8 }}>
+            <div style={{ fontSize: 11, color: "#059669", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
+              Estimated Value
             </div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: cc.color }}>{fmt(displayVal)}</div>
-            {low != null && high != null && (
-              <div style={{ fontSize: 11, color: "#6b7280" }}>
-                Range: {fmt(low)} - {fmt(high)}
-                {fsd != null && <span style={{ marginLeft: 4 }}>(FSD: {fsd}%)</span>}
-              </div>
-            )}
-            {useComps && rentcastComps && rentcastComps.length > 0 && (
-              <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 2 }}>
-                Based on {rentcastComps.length} comps
-              </div>
-            )}
-            {useGenie && !useComps && genieAvm.methodology?.compsUsed > 0 && (
-              <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 2 }}>
-                Based on {genieAvm.methodology.compsUsed} MLS comps
-              </div>
-            )}
+            <div style={{ fontSize: 18, fontWeight: 700, color: "#059669" }}>{fmt(displayVal)}</div>
+            <div style={{ fontSize: 9, color: "#9ca3af", marginTop: 2 }}>
+              {isGenie ? "Genie AVM" : rentcastAvmPrice ? "Comps AVM" : "Property AVM"}
+            </div>
           </div>
         );
       })()}
@@ -2747,6 +2708,115 @@ export default function PropertyDetailModal({
             </>
           );
         })()}
+
+      {/* ── AVM Comparison Tab ─────────────────────────────────────── */}
+      {activeSection === "avm" && (
+        <div>
+          <h3 style={{ fontSize: 16, fontWeight: 700, margin: "0 0 16px" }}>AVM Comparison</h3>
+          <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 16 }}>
+            Three valuation models for comparison. Use this to evaluate accuracy and determine which model best fits the property.
+          </p>
+
+          <div style={{ display: "flex", gap: 16, marginBottom: 24, flexWrap: "wrap" }}>
+            {/* Genie AVM */}
+            <div style={{ flex: 1, minWidth: 200, padding: 16, borderRadius: 12, border: "2px solid #059669", background: "#ecfdf5" }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#059669", textTransform: "uppercase", marginBottom: 8 }}>
+                Genie AVM
+              </div>
+              <div style={{ fontSize: 28, fontWeight: 800, color: "#059669", marginBottom: 4 }}>
+                {genieAvm?.value ? fmt(genieAvm.value) : genieAvmLoading ? "Loading..." : "N/A"}
+              </div>
+              {genieAvm && (
+                <>
+                  <div style={{ fontSize: 12, color: "#374151", marginBottom: 2 }}>
+                    Range: {fmt(genieAvm.low)} - {fmt(genieAvm.high)}
+                  </div>
+                  <div style={{ fontSize: 12, color: "#374151", marginBottom: 2 }}>
+                    Confidence: {genieAvm.confidence} (FSD: {genieAvm.fsd}%)
+                  </div>
+                  <div style={{ fontSize: 12, color: "#374151", marginBottom: 8 }}>
+                    Comps Used: {genieAvm.methodology?.compsUsed || 0}
+                    {genieAvm.methodology?.compsFromSubdivision > 0 && ` (${genieAvm.methodology.compsFromSubdivision} same subdivision)`}
+                  </div>
+                  {genieAvm.methodology?.leaseholdAdjustment != null && (
+                    <div style={{ fontSize: 11, color: "#d97706" }}>Leasehold Adj: {Math.round(genieAvm.methodology.leaseholdAdjustment * 100)}%</div>
+                  )}
+                  {genieAvm.methodology?.hazardAdjustment != null && (
+                    <div style={{ fontSize: 11, color: "#dc2626" }}>Hazard Adj: {Math.round(genieAvm.methodology.hazardAdjustment * 100)}%</div>
+                  )}
+                </>
+              )}
+              <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 8 }}>
+                MLS comps (85%) + Assessment trend (15%)
+              </div>
+            </div>
+
+            {/* Comps AVM */}
+            <div style={{ flex: 1, minWidth: 200, padding: 16, borderRadius: 12, border: "2px solid #2563eb", background: "#eff6ff" }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#2563eb", textTransform: "uppercase", marginBottom: 8 }}>
+                Comps AVM
+              </div>
+              <div style={{ fontSize: 28, fontWeight: 800, color: "#2563eb", marginBottom: 4 }}>
+                {rentcastAvmPrice ? fmt(rentcastAvmPrice) : rentcastCompsLoading ? "Loading..." : "N/A"}
+              </div>
+              {rentcastComps && rentcastComps.length > 0 && (
+                <div style={{ fontSize: 12, color: "#374151", marginBottom: 2 }}>
+                  Based on {rentcastComps.length} comparable properties
+                </div>
+              )}
+              <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 8 }}>
+                RentCast comp-based valuation
+              </div>
+            </div>
+
+            {/* Property AVM */}
+            <div style={{ flex: 1, minWidth: 200, padding: 16, borderRadius: 12, border: "2px solid #d97706", background: "#fefce8" }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#d97706", textTransform: "uppercase", marginBottom: 8 }}>
+                Property AVM
+              </div>
+              <div style={{ fontSize: 28, fontWeight: 800, color: "#d97706", marginBottom: 4 }}>
+                {avmVal ? fmt(avmVal) : "N/A"}
+              </div>
+              {avmLow != null && avmHigh != null && (
+                <div style={{ fontSize: 12, color: "#374151", marginBottom: 2 }}>
+                  Range: {fmt(avmLow)} - {fmt(avmHigh)}
+                </div>
+              )}
+              {avmConfidenceLevel && (
+                <div style={{ fontSize: 12, color: "#374151", marginBottom: 2 }}>
+                  Confidence: {avmConfidenceLevel} (FSD: {avmFSD}%)
+                </div>
+              )}
+              <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 8 }}>
+                Realie/RentCast property valuation
+              </div>
+            </div>
+          </div>
+
+          {/* Context info */}
+          <div style={{ padding: 14, background: "#f9fafb", borderRadius: 10, border: "1px solid #e5e7eb" }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 8 }}>Property Context</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "4px 16px", fontSize: 12, color: "#6b7280" }}>
+              <div>Beds: {beds ?? "N/A"}</div>
+              <div>Baths: {baths ?? "N/A"}</div>
+              <div>Sqft: {sqft ? fmtNum(sqft) : "N/A"}</div>
+              <div>Year Built: {yearBuilt ?? "N/A"}</div>
+              <div>Type: {p.summary?.propSubType || p.summary?.propType || "N/A"}</div>
+              <div>Tenure: {(p as any).OwnershipType || (p as any).ownershipType || "N/A"}</div>
+            </div>
+            {lastSaleAmt && (
+              <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
+                Last Sale: {fmt(lastSaleAmt)} ({p.sale?.amount?.saleTransDate || "date unknown"})
+              </div>
+            )}
+            {mlsListPrice && (
+              <div style={{ fontSize: 12, color: "#2563eb", marginTop: 4, fontWeight: 600 }}>
+                List Price: ${mlsListPrice.toLocaleString()}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── Sales History Tab ───────────────────────────────────────── */}
       {activeSection === "sales-history" &&
