@@ -293,7 +293,8 @@ export async function GET(request: NextRequest) {
     let rentcastComps: any[] = [];
     let rentcastAvm: any = null;
 
-    if (!mlsSuccess) {
+    // Supplement with RentCast if MLS returned fewer than 3 comps
+    if (!mlsSuccess || mlsComps.length < 3) {
       try {
         if (address) {
           const avmData = await getPropertyAvm({
@@ -346,8 +347,26 @@ export async function GET(request: NextRequest) {
     // ═══════════════════════════════════════════════════════════════════
     // Build response
     // ═══════════════════════════════════════════════════════════════════
-    const comparables = mlsSuccess ? mlsComps : rentcastComps;
-    const dataSource = mlsSuccess ? "mls" : "rentcast";
+    // Merge MLS and RentCast comps, deduplicating by address
+    let comparables: any[];
+    let dataSource: string;
+    if (mlsComps.length > 0 && rentcastComps.length > 0) {
+      // Combine both, MLS first, dedupe by address similarity
+      const seen = new Set(mlsComps.map((c: any) => (c.address || "").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 20)));
+      const uniqueRentcast = rentcastComps.filter((c: any) => {
+        const key = (c.address || "").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 20);
+        return !seen.has(key);
+      });
+      comparables = [...mlsComps, ...uniqueRentcast];
+      dataSource = "merged";
+      console.log(`[Comps] Merged: ${mlsComps.length} MLS + ${uniqueRentcast.length} RentCast = ${comparables.length} total`);
+    } else if (mlsComps.length > 0) {
+      comparables = mlsComps;
+      dataSource = "mls";
+    } else {
+      comparables = rentcastComps;
+      dataSource = "rentcast";
+    }
 
     const response = {
       comparables,
