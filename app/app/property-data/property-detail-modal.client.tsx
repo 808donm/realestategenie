@@ -932,7 +932,7 @@ export default function PropertyDetailModal({
     setRentcastCompsLoading(true);
     setRentcastCompsError(null);
 
-    const params = new URLSearchParams({ address, compCount: "10" });
+    const params = new URLSearchParams({ address, compCount: "20" });
     const zip = p.address?.postal1;
     const bedsVal = p.building?.rooms?.beds;
     const bathsVal = p.building?.rooms?.bathsFull ?? p.building?.rooms?.bathsTotal;
@@ -940,6 +940,8 @@ export default function PropertyDetailModal({
     const propType = p.summary?.propType;
     if (zip) params.set("zipCode", zip);
     if (bedsVal != null) params.set("beds", String(bedsVal));
+    // Pass list price for price-range filtering (important for luxury comps)
+    if (mlsListPrice) params.set("listPrice", String(mlsListPrice));
     if (bathsVal != null) params.set("baths", String(bathsVal));
     if (sqftVal) params.set("sqft", String(sqftVal));
     if (propType) params.set("propertyType", propType);

@@ -114,6 +114,7 @@ export async function GET(request: NextRequest) {
     const compCount = Number(url.searchParams.get("compCount")) || 10;
     const months = Number(url.searchParams.get("months")) || 12;
     const yearBuilt = url.searchParams.get("yearBuilt") ? Number(url.searchParams.get("yearBuilt")) : undefined;
+    const listPrice = url.searchParams.get("listPrice") ? Number(url.searchParams.get("listPrice")) : undefined;
 
     if (!address && !zipCode) {
       return NextResponse.json({ error: "address or zipCode is required" }, { status: 400 });
@@ -162,10 +163,16 @@ export async function GET(request: NextRequest) {
         // Build filter for closed sales in the area
         const filters: string[] = ["StandardStatus eq 'Closed'"];
 
-        // Location: prefer zip code
+        // Location: prefer zip code. For luxury ($2M+), use ZIP prefix to include
+        // adjacent neighborhoods since high-value comps are sparse in any single ZIP.
         const searchZip = zipCode || address.match(/\b(\d{5})\b/)?.[1];
         if (searchZip) {
-          filters.push(`PostalCode eq '${searchZip}'`);
+          if (listPrice && listPrice >= 2000000) {
+            // Use first 3 digits of ZIP to cover adjacent areas (e.g., 968xx covers most of Honolulu)
+            filters.push(`startswith(PostalCode, '${searchZip.slice(0, 3)}')`);
+          } else {
+            filters.push(`startswith(PostalCode, '${searchZip}')`);
+          }
         }
 
         // Property type matching — use correct Trestle enum values
@@ -193,9 +200,19 @@ export async function GET(request: NextRequest) {
           filters.push(`BedroomsTotal le ${beds + 1}`);
         }
 
-        // Date range (last N months)
+        // Price range — for luxury properties, filter comps to a reasonable range
+        // This prevents $650K comps being used for a $5.67M property
+        if (listPrice && listPrice > 0) {
+          const priceLow = Math.round(listPrice * 0.5);  // 50% of list price
+          const priceHigh = Math.round(listPrice * 1.5);  // 150% of list price
+          filters.push(`ClosePrice ge ${priceLow}`);
+          filters.push(`ClosePrice le ${priceHigh}`);
+        }
+
+        // Date range — extend to 24 months for luxury ($2M+) since fewer transactions
+        const searchMonths = (listPrice && listPrice >= 2000000) ? Math.max(months, 24) : months;
         const cutoffDate = new Date();
-        cutoffDate.setMonth(cutoffDate.getMonth() - months);
+        cutoffDate.setMonth(cutoffDate.getMonth() - searchMonths);
         filters.push(`CloseDate ge ${cutoffDate.toISOString().split("T")[0]}`);
 
         console.log("[Comps] MLS filter:", filters.join(" and "));
