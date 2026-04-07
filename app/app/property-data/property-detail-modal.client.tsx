@@ -337,8 +337,8 @@ export default function PropertyDetailModal({
   const avmConfidenceLevel: "High" | "Medium" | "Low" | null =
     avmFSD != null ? (avmFSD < 13 ? "High" : avmFSD <= 20 ? "Medium" : "Low") : null;
 
-  // Best estimated value: AVM → county assessment → appraised assessment
-  const bestValue = avmVal || countyAssessment || p.assessment?.appraised?.apprTtlValue;
+  // Best estimated value: Comps AVM → property AVM → county assessment → appraised
+  const bestValue = rentcastAvmPrice || avmVal || countyAssessment || p.assessment?.appraised?.apprTtlValue;
   // Use Realie's pre-calculated equity (AVM - outstanding mortgage balance) if available,
   // otherwise fall back to best value - last sale price as a rough estimate
   const realieEquity = (p as any).homeEquity?.equity;
@@ -1535,10 +1535,11 @@ export default function PropertyDetailModal({
         );
 
         const label = "Estimated Value";
-        const confidence = useGenie ? genieAvm.confidence : avmConfidenceLevel;
-        const low = useGenie ? genieAvm.low : avmLow;
-        const high = useGenie ? genieAvm.high : avmHigh;
-        const fsd = useGenie ? genieAvm.fsd : avmFSD;
+        // Always use the base AVM confidence/range (from Realie/RentCast property data)
+        const confidence = avmConfidenceLevel;
+        const low = avmLow;
+        const high = avmHigh;
+        const fsd = avmFSD;
 
         const confidenceColors = {
           High: { color: "#059669", bg: "#ecfdf5" },
@@ -2136,7 +2137,7 @@ export default function PropertyDetailModal({
                 </Section>
               ) : avm && (
                 <Section title="Automated Valuation (AVM)">
-                  <Field label="Estimated Value" value={fmt(avm.amount?.value)} />
+                  <Field label="Estimated Value" value={fmt(rentcastAvmPrice || avm.amount?.value)} />
                   <Field
                     label="Confidence Range"
                     value={
@@ -2817,7 +2818,8 @@ export default function PropertyDetailModal({
                 <div>
                   {(p.avm?.amount?.value || rentcastAvmPrice) &&
                     (() => {
-                      const avmValue = p.avm?.amount?.value ?? rentcastAvmPrice ?? undefined;
+                      // Use rentcastAvmPrice (comps-based) as primary, matching the Estimated Value card
+                      const avmValue = rentcastAvmPrice ?? p.avm?.amount?.value ?? undefined;
                       const avmLow = p.avm?.amount?.low;
                       const avmHigh = p.avm?.amount?.high;
                       const hasRange = avmLow != null && avmHigh != null;
