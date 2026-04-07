@@ -185,18 +185,19 @@ export function computeGenieAvm(input: GenieAvmInput): GenieAvmResult | null {
     let assessmentWeight: number;
 
     if (isOnMarket) {
-      // On-market: list price anchors the estimate (agent did their own CMA)
-      listPriceWeight = 0.25;
+      // On-market: list price is the strongest signal (agent did their own CMA)
+      listPriceWeight = 0.30;
       assessmentWeight = 0.15;
+      // Remaining 55% split between comps and Property AVM based on comp quality
       if (compCV < 0.15) {
         compWeight = 0.35;
-        propAvmWeight = 0.25;
+        propAvmWeight = 0.20;
       } else if (compCV < 0.30) {
         compWeight = 0.30;
-        propAvmWeight = 0.30;
+        propAvmWeight = 0.25;
       } else {
         compWeight = 0.25;
-        propAvmWeight = 0.35;
+        propAvmWeight = 0.30;
       }
     } else {
       // Off-market: no list price available
@@ -448,8 +449,8 @@ function adjustAndWeightComps(input: GenieAvmInput): AdjustedComp[] {
     });
   }
 
-  // Sort by weight descending, keep top 10
-  let filtered = adjusted.sort((a, b) => b.weight - a.weight).slice(0, 10);
+  // Sort by weight descending, keep top 15 for a broader sample
+  let filtered = adjusted.sort((a, b) => b.weight - a.weight).slice(0, 15);
 
   // Outlier removal: exclude comps whose adjusted price is >50% from median
   if (filtered.length >= 3) {
