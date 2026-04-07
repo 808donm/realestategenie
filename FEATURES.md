@@ -1,6 +1,6 @@
 # Real Estate Genie -- Complete Feature List
 
-> Last updated: April 5, 2026
+> Last updated: April 6, 2026
 
 ---
 
@@ -126,7 +126,9 @@
 
 ### Tab 2: Market Monitor
 - Map view (Google Maps with color-coded markers by status, shaped by property type)
-- Hot Sheet view (sortable spreadsheet)
+- ZIP code boundary overlay (blue polygon from Census TIGERweb)
+- Hot Sheet view (sortable spreadsheet) with Neighborhood (Nbrhd) and Land Title (LT) columns
+- Map popup cards show neighborhood and ownership type
 - Status filters + timeframe (24h, 7d, 30d, 90d)
 - TMK/zip code search
 - Geocoding fallback, TMK resolution
@@ -135,8 +137,8 @@
 - Real-time market statistics computed from Trestle MLS data
 - Market Temperature gauge (buyer's vs seller's market)
 - Quick Stats cards: Closed Sales, Pending, Active, Months of Inventory, DOM, Sale-to-List Ratio (6 metrics with 90-day trend arrows)
-- 12-month bar charts for Average Sales Price and Sales Activity
-- County selector (Hawaii counties)
+- 12-month bar charts for Average Sales Price and Sales Activity (per-month Trestle queries for accurate data)
+- County selector using CountyOrParish filtering (Oahu, Maui, Hawaii, Kauai)
 - Cached 24 hours
 
 ### Tab 4: Market Analytics
@@ -163,6 +165,7 @@ County-level market statistics dashboard also accessible from the sidebar (under
 - Scoring: location (40pts), must-haves (30pts), timeline (15pts), financing (15pts)
 - Top 5 matches per lead with reasons
 - Status tracking (new/sent/viewed/dismissed)
+- Future: checkbox selection and "Send to Lead" via email (planned)
 
 ### Tab 7: OH Sync
 - Pull MLS open houses as draft events
@@ -190,6 +193,10 @@ County-level market statistics dashboard also accessible from the sidebar (under
 
 ### Property Detail Modal
 - **Tabs**: Opportunity Score, Overview, Building, Financial, Sales History, Listing History, Comps, Ownership, Neighborhood, Market Stats, Federal/GIS
+- **Listing History tab**: All MLS listings (Active, Pending, Closed, Expired, Withdrawn, Canceled) with status badges, price changes, DOM, and agents. Separate from Sales History (deed transfers).
+- **List Price**: Displayed below address in modal header when opened from MLS
+- **Comps AVM**: Used as primary Estimated Value (most accurate for Hawaii)
+- **UniversalParcelId**: Full TMK with condo unit suffix from Trestle for accurate OWNINFO ownership lookups
 - **AVM Reliability Check**: >30% difference from county assessment = suppressed, county value shown
 - **Property-type-specific market stats**: Condo shows Condo medians, SFR shows SFR medians
 - **County Deed Owner**: Green badge from Honolulu OWNINFO, unit-specific for condos
@@ -512,6 +519,10 @@ Hoku is the AI assistant inside the Real Estate Genie app, available on every pa
 - **Draft generation**: Emails and SMS for leads based on heat score and property context
 - **Session persistence**: 24-hour TTL with message history (max 20 messages)
 - **Actions**: Search MLS, property lookup, generate reports, run calculators, create tasks, advance pipeline, create open houses, search seller map, create farm watchdogs
+- **TMK search**: "Find me SFR 3/2 in TMK 1-2-9" -- maps TMK to ZIP, searches MLS, navigates to results
+- **MLS search navigation**: Navigates to MLS Search page with pre-filled filters and auto-search
+- **Property type filtering**: Single Family, Condo, Townhouse, Land
+- **Beds/baths parameters**: Supported in search commands
 
 ---
 
@@ -586,13 +597,17 @@ Agent actions are logged to the `agent_activity_log` table for agency-level repo
 
 These features ensure the data shown to agents is accurate and relevant, especially for condos and Hawaii-specific properties.
 
-- **Genie AVM (Proprietary Valuation)**: Ensemble valuation model blending MLS closed comps (50%), RentCast AVM (20%), county assessment trend (20%), and Realie AVM (10%). Applies Hawaii-specific adjustments for leasehold discount (25-35%), flood zone discount (3-5%), and high HOA impact. Filters comps by same subdivision and ownership type for hyperlocal accuracy. Displayed as "Genie AVM" value card with confidence badge on the Property Detail Modal.
+- **Comps AVM as Primary**: Comps-based AVM used as Estimated Value everywhere (most accurate for Hawaii). Genie AVM available but not displayed until accuracy improves.
 
-- **AVM Display**: AVM is always shown when available from Realie or RentCast. With unit-specific address lookups for condos, AVM accuracy has improved significantly. Falls back to county assessment only when no AVM data exists.
+- **Genie AVM (Proprietary Valuation)**: Ensemble valuation model blending MLS closed comps (50%), RentCast AVM (20%), county assessment trend (20%), and Realie AVM (10%). Applies Hawaii-specific adjustments for leasehold discount (25-35%), flood zone discount (3-5%), and high HOA impact. Filters comps by same subdivision and ownership type for hyperlocal accuracy.
+
+- **Source Branding**: All data sources display as "Real Estate Genie" or "Public Records" -- no provider names (Realie, RentCast) shown to agents.
 
 - **AVM Accuracy**: All API call sites now pass bedrooms, bathrooms, square footage, and property type to RentCast's AVM endpoint. This ensures comps match the subject property instead of RentCast guessing the attributes. Default comp count increased from 15 to 20.
 
 - **Property-Type-Specific Market Stats**: When viewing a condo, the headline market stats show the Condo median price (e.g., $360K) instead of the aggregate across all types ($399K which includes $1.7M single-family homes). Same for SFR, Townhouse, Multi-Family, and Land.
+
+- **PropertyType Mapping**: Trestle uses PropertyType="Residential" with PropertySubType="SingleFamilyResidence"/"Condominium"/"Townhouse". All search routes map correctly.
 
 - **Condo Unit Filtering**: Three layers of unit-specific filtering for condos:
   - **Ownership (OWNINFO)**: Queries by exact 12-digit parid (includes unit suffix) first, returns only that unit's owner instead of all building owners
@@ -600,11 +615,17 @@ These features ensure the data shown to agents is accurate and relevant, especia
   - **Property Data (RentCast/Realie)**: Strips unit number from address for lookup (providers don't have per-unit data), uses building-level data
   - **Parcels (ArcGIS)**: Strips condo unit suffix from TMK (parcels are land-level, not unit-level)
 
+- **Condo Address Reformatting**: MLS bare unit numbers (e.g., "6-15") reformatted to "Unit 615" for RentCast/Realie lookups.
+
+- **UniversalParcelId**: Trestle's UniversalParcelId field contains the full 6-part TMK with condo unit suffix. Used for accurate OWNINFO ownership lookups instead of the 5-part ParcelNumber.
+
 - **Address Search**: Searches both expanded and abbreviated street suffixes. "3849 Manoa Road" searches for "manoa road", "manoa rd", and just "manoa" in the StreetName field to match however the MLS stores it.
 
 - **CMA Property Type Filtering**: HiCentral MLS uses PropertyType="Residential" for SFR, Condo, and Townhouse. The CMA engine filters by PropertySubType server-side after fetching results, so selecting "Single Family" excludes condos and townhouses from comps.
 
-- **Condo Address Handling**: MLS stores condo addresses like "1315 Kalakaua Avenue 1110" (unit number appended without prefix). The app strips the unit for RentCast/Realie lookups (they can't parse raw unit numbers) while keeping it for display and MLS sales history matching.
+- **Middle School Fix**: Hawaii GIS uses `int_desc` (Intermediate) not `mid_desc` (Middle) for school zones. Fixed in both GIS enrichment and school zones modules.
+
+- **Market Stats Caching**: RentCast market stats cached with monthly refresh on the 10th of each month.
 
 ---
 
@@ -621,4 +642,4 @@ These features ensure the data shown to agents is accurate and relevant, especia
 - **9 Data Sources**: MLS (Trestle), Realie, RentCast, Honolulu County OWNINFO, Hawaii State GIS, FEMA NRI, FBI CDE, Census ACS (4 geographic levels), NCES/FRED/BLS/HUD
 - **White-Label Ready**: CRM provider name never shown to end users (nameless integration)
 
-> Last updated: April 5, 2026
+> Last updated: April 6, 2026
