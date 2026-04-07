@@ -52,6 +52,9 @@ export interface GenieAvmInput {
   // MLS closed comps (from CMA engine or Trestle)
   mlsComps?: MlsComp[];
 
+  // On-market listing price (strong signal when available)
+  listPrice?: number;
+
   // Hazard data
   isFloodZone?: boolean; // In Special Flood Hazard Area
   floodZoneCode?: string; // AE, VE, X, etc.
@@ -166,35 +169,62 @@ export function computeGenieAvm(input: GenieAvmInput): GenieAvmResult | null {
     trendAdjustedAssessment = Math.round(input.assessment.value * (1 + trend));
   }
 
+  // 4. List Price (on-market) -- agent-set price is a strong market signal
+  const listPriceValue = input.listPrice && input.listPrice > 0 ? input.listPrice : null;
+
   // ── Dynamic Weight Assignment ──
   // Weights shift based on comp quality (measured by CV of adjusted prices)
+  // and whether the property is on-market (has list price)
   const compCV = adjustedComps.length >= 2 ? computeCV(adjustedComps.map((c) => c.adjustedPrice)) : 1.0;
+  const isOnMarket = !!listPriceValue;
 
   if (compBasedValue) {
-    // Dynamic comp weight: high quality comps get more weight
     let compWeight: number;
     let propAvmWeight: number;
-    if (compCV < 0.15) {
-      // Comps agree well -- trust them more
-      compWeight = 0.50;
-      propAvmWeight = 0.30;
-    } else if (compCV < 0.30) {
-      // Moderate spread -- balanced
-      compWeight = 0.40;
-      propAvmWeight = 0.40;
+    let listPriceWeight: number;
+    let assessmentWeight: number;
+
+    if (isOnMarket) {
+      // On-market: list price anchors the estimate (agent did their own CMA)
+      listPriceWeight = 0.25;
+      assessmentWeight = 0.15;
+      if (compCV < 0.15) {
+        compWeight = 0.35;
+        propAvmWeight = 0.25;
+      } else if (compCV < 0.30) {
+        compWeight = 0.30;
+        propAvmWeight = 0.30;
+      } else {
+        compWeight = 0.25;
+        propAvmWeight = 0.35;
+      }
     } else {
-      // Comps all over the place -- trust Property AVM more
-      compWeight = 0.30;
-      propAvmWeight = 0.50;
+      // Off-market: no list price available
+      listPriceWeight = 0;
+      assessmentWeight = 0.20;
+      if (compCV < 0.15) {
+        compWeight = 0.50;
+        propAvmWeight = 0.30;
+      } else if (compCV < 0.30) {
+        compWeight = 0.40;
+        propAvmWeight = 0.40;
+      } else {
+        compWeight = 0.30;
+        propAvmWeight = 0.50;
+      }
     }
 
     // Fewer comps = less trust in comp value
     if (adjustedComps.length < 3) {
-      compWeight = Math.max(0.25, compWeight - 0.10);
+      compWeight = Math.max(0.20, compWeight - 0.10);
       propAvmWeight += 0.10;
     }
 
     sources.push({ name: "mlsComps", value: compBasedValue, weight: compWeight });
+
+    if (listPriceValue && listPriceWeight > 0) {
+      sources.push({ name: "listPrice", value: listPriceValue, weight: listPriceWeight });
+    }
 
     if (propertyAvmValue) {
       sources.push({ name: "propertyAvm", value: propertyAvmValue, weight: propAvmWeight });
@@ -203,10 +233,23 @@ export function computeGenieAvm(input: GenieAvmInput): GenieAvmResult | null {
     sources.push({
       name: "assessment",
       value: trendAdjustedAssessment || input.assessment?.value || 0,
-      weight: 0.20,
+      weight: assessmentWeight,
     });
+  } else if (listPriceValue && propertyAvmValue) {
+    // No comps but have list price and Property AVM
+    sources.push({ name: "listPrice", value: listPriceValue, weight: 0.40 });
+    sources.push({ name: "propertyAvm", value: propertyAvmValue, weight: 0.35 });
+    if (trendAdjustedAssessment) {
+      sources.push({ name: "assessment", value: trendAdjustedAssessment, weight: 0.25 });
+    }
+  } else if (listPriceValue) {
+    // Only list price -- it's our best signal
+    sources.push({ name: "listPrice", value: listPriceValue, weight: 0.60 });
+    if (trendAdjustedAssessment) {
+      sources.push({ name: "assessment", value: trendAdjustedAssessment, weight: 0.40 });
+    }
   } else if (propertyAvmValue) {
-    // No comps -- Property AVM is primary
+    // No comps, no list price -- Property AVM is primary
     sources.push({ name: "propertyAvm", value: propertyAvmValue, weight: 0.60 });
     if (trendAdjustedAssessment) {
       sources.push({ name: "assessment", value: trendAdjustedAssessment, weight: 0.40 });

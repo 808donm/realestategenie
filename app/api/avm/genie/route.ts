@@ -75,6 +75,7 @@ export async function GET(request: NextRequest) {
     const ownershipType = params.get("ownershipType") || undefined;
     const subdivision = params.get("subdivision") || undefined;
     const hoaFee = params.get("hoaFee") ? Number(params.get("hoaFee")) : undefined;
+    const listPrice = params.get("listPrice") ? Number(params.get("listPrice")) : undefined;
     const lat = params.get("lat") ? Number(params.get("lat")) : undefined;
     const lng = params.get("lng") ? Number(params.get("lng")) : undefined;
 
@@ -199,6 +200,7 @@ export async function GET(request: NextRequest) {
       ownershipType,
       subdivision,
       hoaFee,
+      listPrice,
       propertyAvm,
       rentcastAvm,
       realieAvm,
