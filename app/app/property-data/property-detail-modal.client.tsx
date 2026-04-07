@@ -946,8 +946,21 @@ export default function PropertyDetailModal({
         if (data.error) {
           setRentcastCompsError(data.error);
         } else {
-          setRentcastComps(data.comparables || []);
-          setRentcastAvmPrice(data.avm?.price || null);
+          const comps = data.comparables || [];
+          setRentcastComps(comps);
+          // Use RentCast AVM if available, otherwise compute from comp median
+          let avmPrice = data.avm?.price || null;
+          if (!avmPrice && comps.length > 0) {
+            const prices = comps
+              .map((c: any) => c.closePrice || c.price)
+              .filter((p: number) => p > 0)
+              .sort((a: number, b: number) => a - b);
+            if (prices.length > 0) {
+              const mid = Math.floor(prices.length / 2);
+              avmPrice = prices.length % 2 !== 0 ? prices[mid] : Math.round((prices[mid - 1] + prices[mid]) / 2);
+            }
+          }
+          setRentcastAvmPrice(avmPrice);
         }
       })
       .catch((e) => setRentcastCompsError(e.message || "Failed to fetch comparables."))
