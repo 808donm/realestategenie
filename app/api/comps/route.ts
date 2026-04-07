@@ -168,19 +168,27 @@ export async function GET(request: NextRequest) {
           filters.push(`PostalCode eq '${searchZip}'`);
         }
 
-        // Property type matching
+        // Property type matching — use correct Trestle enum values
+        const isLand = propertyType?.toLowerCase().includes("land");
         if (propertyType) {
-          const mlsType =
-            propertyType.includes("SFR") || propertyType.includes("Single")
-              ? "Residential"
-              : propertyType.includes("Condo")
-                ? "Condominium"
-                : propertyType;
-          filters.push(`PropertyType eq '${mlsType}'`);
+          const ptLower = propertyType.toLowerCase();
+          if (ptLower.includes("land")) {
+            filters.push(`PropertyType eq 'Land'`);
+          } else if (ptLower.includes("single") || ptLower === "sfr") {
+            filters.push(`PropertyType eq 'Residential' and PropertySubType eq 'SingleFamilyResidence'`);
+          } else if (ptLower.includes("condo")) {
+            filters.push(`PropertyType eq 'Residential' and PropertySubType eq 'Condominium'`);
+          } else if (ptLower.includes("town")) {
+            filters.push(`PropertyType eq 'Residential' and PropertySubType eq 'Townhouse'`);
+          } else if (ptLower.includes("multi")) {
+            filters.push(`PropertyType eq 'Residential'`);
+          } else {
+            filters.push(`PropertyType eq 'Residential'`);
+          }
         }
 
-        // Bedroom range (±1)
-        if (beds) {
+        // Bedroom range (±1) — skip for land
+        if (beds && !isLand) {
           filters.push(`BedroomsTotal ge ${Math.max(1, beds - 1)}`);
           filters.push(`BedroomsTotal le ${beds + 1}`);
         }
@@ -275,10 +283,17 @@ export async function GET(request: NextRequest) {
               buyerOfficeName: p.BuyerOfficeName,
             };
           });
+          // Exclude self-match — don't include the subject property as its own comp
+          const subjectAddrLower = address.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 25);
+          mlsComps = mlsComps.filter((c: any) => {
+            const compAddr = (c.address || "").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 25);
+            return compAddr !== subjectAddrLower;
+          });
+
           // Sort by correlation (best match first)
           mlsComps.sort((a, b) => (b.correlation || 0) - (a.correlation || 0));
-          mlsSuccess = true;
-          console.log(`[Comps] MLS returned ${mlsComps.length} closed sales, sorted by match %`);
+          mlsSuccess = mlsComps.length > 0;
+          console.log(`[Comps] MLS returned ${mlsComps.length} closed sales (self-match excluded), sorted by match %`);
         } else {
           console.log("[Comps] MLS returned 0 closed sales, falling back to RentCast");
         }
