@@ -1165,18 +1165,20 @@ export default function PropertyDetailModal({
         // computing it from AVM / assessment values (same cascade the search cards use).
         // Always use Genie AVM as estimated value for equity calculation
         const genieEstValue = genieAvm?.value || reapiData?.avm?.amount?.value || p.avm?.amount?.value || p.assessment?.market?.mktTtlValue || p.assessment?.appraised?.apprTtlValue;
-        // Use REAPI mortgage data as primary for loan balance
-        const reapiMortBal = reapiData?.homeEquity?.estimatedMortgageBalance ? Number(reapiData.homeEquity.estimatedMortgageBalance) : null;
+        // REAPI mortgage balance is authoritative when available (even if $0 = free & clear)
+        const hasReapiEquity = reapiData?.homeEquity != null;
+        const reapiMortBal = hasReapiEquity ? Number(reapiData.homeEquity.estimatedMortgageBalance || 0) : null;
 
         let homeEquityData = genieEstValue
           ? {
-              equity: reapiMortBal != null ? genieEstValue - reapiMortBal : reapiData?.homeEquity?.equity ?? ((p as any).homeEquity?.equity),
+              equity: hasReapiEquity ? genieEstValue - (reapiMortBal || 0) : ((p as any).homeEquity?.equity),
               estimatedValue: genieEstValue,
-              outstandingBalance: reapiMortBal ?? ((p as any).homeEquity?.outstandingBalance),
-              estimatedPayment: reapiData?.homeEquity?.estimatedMortgagePayment ? Number(reapiData.homeEquity.estimatedMortgagePayment) : ((p as any).homeEquity?.estimatedPayment),
-              ltv: reapiMortBal != null && genieEstValue ? (reapiMortBal / genieEstValue) * 100 : ((p as any).homeEquity?.ltv),
+              outstandingBalance: hasReapiEquity ? (reapiMortBal || 0) : ((p as any).homeEquity?.outstandingBalance),
+              estimatedPayment: hasReapiEquity ? Number(reapiData.homeEquity.estimatedMortgagePayment || 0) : ((p as any).homeEquity?.estimatedPayment),
+              ltv: hasReapiEquity ? ((reapiMortBal || 0) / genieEstValue) * 100 : ((p as any).homeEquity?.ltv),
               equityPercent: reapiData?.homeEquity?.equityPercent,
               freeClear: reapiData?.homeEquity?.freeClear,
+              loanCount: hasReapiEquity && reapiMortBal === 0 ? 0 : undefined,
             }
           : (p as any).homeEquity || null;
         if (!homeEquityData) {
@@ -2143,17 +2145,25 @@ export default function PropertyDetailModal({
           const hasFallbackValue = !avm?.amount?.value && fallbackValue != null;
 
           // ── Home Equity Analysis (rendered first, at top of Financial tab) ──
-          // Try enriched financial data first, then fall back to AVM + property data
+          // Priority: REAPI equity + Genie AVM > enriched financial > Realie
+          const hasReapi = reapiData?.homeEquity != null;
           const heResp = enrichedFinancial?.homeEquity;
           const heProp = heResp?.property?.[0] || heResp;
           const he = heProp?.homeEquity || heProp?.valuation || heProp;
-          const heAvmValue = he?.avmValue ?? he?.avm?.amount?.value ?? he?.estimatedValue ?? avm?.amount?.value ?? avmVal;
-          const heLoanBalance = he?.outstandingBalance ?? he?.loanBalance ?? he?.mortgageBalance ?? he?.estimatedBalance ?? (p.mortgage?.amount != null ? Number(p.mortgage.amount) : null);
-          const heEquityAmount = he?.equity ?? he?.equityAmount ?? (heAvmValue != null && heLoanBalance != null ? heAvmValue - heLoanBalance : null) ?? (heAvmValue != null && lastSaleAmt ? heAvmValue - lastSaleAmt : null);
-          const heRawLtv = he?.loanToValue ?? he?.ltv;
-          const heLtv = heRawLtv != null && heRawLtv > 0 ? heRawLtv : heAvmValue && heLoanBalance ? (heLoanBalance / heAvmValue) * 100 : null;
-          const heLoanCount = he?.loanCount ?? he?.numberOfLoans ?? (p.mortgage?.lienCount);
-          const heEstPayment = he?.estimatedPayment ?? he?.monthlyPayment;
+          // Genie AVM is always the estimated value
+          const heAvmValue = genieAvm?.value ?? reapiData?.avm?.amount?.value ?? he?.avmValue ?? he?.avm?.amount?.value ?? avm?.amount?.value ?? avmVal;
+          // REAPI mortgage balance is authoritative (even $0 for free & clear)
+          const heLoanBalance = hasReapi
+            ? Number(reapiData.homeEquity.estimatedMortgageBalance || 0)
+            : (he?.outstandingBalance ?? he?.loanBalance ?? (p.mortgage?.amount != null ? Number(p.mortgage.amount) : null));
+          const heEquityAmount = hasReapi
+            ? (heAvmValue != null ? heAvmValue - heLoanBalance : reapiData.homeEquity.equity)
+            : (he?.equity ?? (heAvmValue != null && heLoanBalance != null ? heAvmValue - heLoanBalance : null));
+          const heLtv = heAvmValue && heLoanBalance != null ? (heLoanBalance / heAvmValue) * 100 : null;
+          const heLoanCount = hasReapi && heLoanBalance === 0 ? 0 : (he?.loanCount ?? he?.numberOfLoans ?? p.mortgage?.lienCount);
+          const heEstPayment = hasReapi
+            ? Number(reapiData.homeEquity.estimatedMortgagePayment || 0)
+            : (he?.estimatedPayment ?? he?.monthlyPayment);
           const mlsSale = enrichedFinancial?.mlsLastSale;
           const heLastSalePrice = he?.lastSalePrice ?? he?.salePrice ?? p.sale?.amount?.saleAmt ?? lastSaleAmt ?? mlsSale?.closePrice;
           const heLastSaleDate = he?.lastSaleDate ?? he?.saleDate ?? p.sale?.amount?.saleRecDate ?? p.sale?.amount?.saleTransDate ?? (mlsSale?.closeDate ? new Date(mlsSale.closeDate).toLocaleDateString() : null);
