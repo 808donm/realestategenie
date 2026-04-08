@@ -1788,13 +1788,17 @@ export default function PropertyDetailModal({
           <Section title="Property Summary">
             <Field label="Property Type" value={p.summary?.propertyType || p.summary?.propType} />
             <Field label="Sub Type" value={p.summary?.propSubType} />
-            <Field label="Land Use" value={p.summary?.propLandUse} />
+            <Field label="Land Use" value={p.summary?.propLandUse || reapiData?.lot?.landUse} />
             <Field label="Year Built" value={yearBuilt} />
+            <Field label="Construction" value={reapiData?.building?.features?.construction} />
+            <Field label="Condition" value={reapiData?._raw?.propertyInfo?.buildingCondition} />
+            <Field label="HOA" value={reapiData?.building?.features?.hoa === true ? "Yes" : reapiData?.building?.features?.hoa === false ? "No" : undefined} />
             <Field label="APN" value={p.identifier?.apn} />
             <Field label="FIPS" value={p.identifier?.fips} />
             <Field label="Record ID" value={p.identifier?.attomId} />
-            <Field label="Zoning" value={p.lot?.siteZoningIdent} />
-            <Field label="Legal" value={p.summary?.legal1} />
+            <Field label="Zoning" value={p.lot?.siteZoningIdent || reapiData?.lot?.zoning} />
+            <Field label="Legal" value={p.summary?.legal1 || reapiData?.lot?.legalDescription} />
+            {reapiData?.pricePerSquareFoot > 0 && <Field label="Price/Sqft" value={`$${reapiData.pricePerSquareFoot}`} />}
           </Section>
 
           <Section title="Location">
@@ -2353,9 +2357,30 @@ export default function PropertyDetailModal({
                       <Field label="Gross Yield" value={grossYield != null ? `${grossYield.toFixed(2)}%` : undefined} />
                       <Field label="Confidence Score" value={rentScr} />
                       <Field label="Valuation Date" value={eventDate} />
+                      {/* REAPI suggested rent and FMR data */}
+                      {reapiData?.demographics?.suggestedRent && (
+                        <Field label="REAPI Suggested Rent" value={`$${Number(reapiData.demographics.suggestedRent).toLocaleString()}/mo`} />
+                      )}
                     </Section>
                   );
                 })()}
+
+              {/* REAPI Demographics / FMR Rents (when no rental AVM available) */}
+              {reapiData?.demographics && !enrichedFinancial?.rentalAvm && (() => {
+                const d = reapiData.demographics;
+                if (!d.suggestedRent && !d.fmrTwoBedroom) return null;
+                return (
+                  <Section title="Rent Estimates (HUD Fair Market Rents)">
+                    {d.suggestedRent && <Field label="Suggested Rent" value={`$${Number(d.suggestedRent).toLocaleString()}/mo`} />}
+                    {d.fmrOneBedroom && <Field label="FMR 1-Bedroom" value={`$${Number(d.fmrOneBedroom).toLocaleString()}/mo`} />}
+                    {d.fmrTwoBedroom && <Field label="FMR 2-Bedroom" value={`$${Number(d.fmrTwoBedroom).toLocaleString()}/mo`} />}
+                    {d.fmrThreeBedroom && <Field label="FMR 3-Bedroom" value={`$${Number(d.fmrThreeBedroom).toLocaleString()}/mo`} />}
+                    {d.fmrFourBedroom && <Field label="FMR 4-Bedroom" value={`$${Number(d.fmrFourBedroom).toLocaleString()}/mo`} />}
+                    {d.medianIncome && <Field label="Area Median Income" value={`$${Number(d.medianIncome).toLocaleString()}`} />}
+                    {d.hudAreaName && <Field label="HUD Area" value={d.hudAreaName} />}
+                  </Section>
+                );
+              })()}
 
               {(p.assessment || avmData?.assessment) &&
                 (() => {
@@ -2671,12 +2696,22 @@ export default function PropertyDetailModal({
                         {reapiMortHistory.map((mh: any, i: number) => (
                           <div key={i} style={{ padding: "8px 0", borderBottom: i < reapiMortHistory.length - 1 ? "1px solid #f3f4f6" : "none" }}>
                             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 2 }}>
-                              <span style={{ fontWeight: 600, fontSize: 13 }}>{fmt(mh.amount)}</span>
+                              <span style={{ fontWeight: 600, fontSize: 13 }}>
+                                {fmt(mh.amount)}
+                                {mh.open === true && <span style={{ fontSize: 10, marginLeft: 6, padding: "1px 5px", borderRadius: 3, background: "#d1fae5", color: "#065f46" }}>Open</span>}
+                                {mh.open === false && <span style={{ fontSize: 10, marginLeft: 6, padding: "1px 5px", borderRadius: 3, background: "#f3f4f6", color: "#6b7280" }}>Closed</span>}
+                              </span>
                               <span style={{ fontSize: 12, color: "#6b7280" }}>{mh.lenderName}</span>
                             </div>
                             <div style={{ fontSize: 11, color: "#9ca3af" }}>
                               {[mh.loanType, mh.position, mh.interestRateType, mh.documentDate?.split("T")[0]].filter(Boolean).join(" - ")}
                             </div>
+                            {mh.granteeName && (
+                              <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>Borrower: {mh.granteeName}</div>
+                            )}
+                            {mh.maturityDate && (
+                              <div style={{ fontSize: 11, color: "#9ca3af" }}>Maturity: {mh.maturityDate.split("T")[0]}</div>
+                            )}
                           </div>
                         ))}
                       </Section>
@@ -2698,6 +2733,18 @@ export default function PropertyDetailModal({
                         {fc.auctionInfo?.lenderName && <Field label="Lender" value={fc.auctionInfo.lenderName} />}
                         <Field label="Filing Date" value={fc.filingDate || fc.recordingDate} />
                         <Field label="Case Number" value={fc.caseNumber || fc.auctionInfo?.caseNumber} />
+                        {/* REAPI foreclosure detail */}
+                        {fc.foreclosureInfo?.map((fi: any, fi_i: number) => (
+                          <div key={fi_i} style={{ marginTop: 8, padding: 8, background: "#fef2f2", borderRadius: 6, fontSize: 12 }}>
+                            <Field label="Document Type" value={fi.documentType} />
+                            <Field label="Recording Date" value={fi.recordingDate?.split("T")[0]} />
+                            <Field label="Original Loan" value={fi.originalLoanAmount ? fmt(fi.originalLoanAmount) : undefined} />
+                            <Field label="Est. Bank Value" value={fi.estimatedBankValue ? fmt(fi.estimatedBankValue) : undefined} />
+                            <Field label="Lender" value={fi.lenderName} />
+                            <Field label="Trustee" value={fi.trusteeFullName} />
+                            <Field label="Status" value={fi.active ? "Active" : "Resolved"} />
+                          </div>
+                        ))}
                       </Section>
                     )}
                   </>
@@ -3245,6 +3292,22 @@ export default function PropertyDetailModal({
                             {comp.listAgentName && `List: ${comp.listAgentName}`}
                             {comp.listAgentName && comp.buyerAgentName && " | "}
                             {comp.buyerAgentName && `Buyer: ${comp.buyerAgentName}`}
+                          </div>
+                        )}
+                        {/* REAPI comp enrichment: owner, lender, flags */}
+                        {(comp.owner1FirstName || comp.owner1LastName || comp.companyName || comp.lenderName) && (
+                          <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4, borderTop: "1px solid #f3f4f6", paddingTop: 4 }}>
+                            {(comp.owner1FirstName || comp.owner1LastName || comp.companyName) && (
+                              <span>Owner: {comp.companyName || [comp.owner1FirstName, comp.owner1LastName].filter(Boolean).join(" ")}
+                                {comp.owner2FirstName && ` & ${comp.owner2FirstName} ${comp.owner2LastName || ""}`}
+                              </span>
+                            )}
+                            {comp.lenderName && <span style={{ marginLeft: 8 }}>| Lender: {comp.lenderName}</span>}
+                            {(comp.absenteeOwner || comp.cashBuyer || comp.corporateOwned || comp.vacant) && (
+                              <span style={{ marginLeft: 8 }}>
+                                |{comp.absenteeOwner ? " Absentee" : ""}{comp.cashBuyer ? " Cash" : ""}{comp.corporateOwned ? " Corp" : ""}{comp.vacant ? " Vacant" : ""}
+                              </span>
+                            )}
                           </div>
                         )}
                       </div>
