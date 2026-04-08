@@ -378,27 +378,79 @@ export async function GET(request: NextRequest) {
     }
 
     // ═══════════════════════════════════════════════════════════════════
+    // STEP 3: Supplement with cached historical comps
+    // ═══════════════════════════════════════════════════════════════════
+    let cachedComps: any[] = [];
+    const totalLiveComps = mlsComps.length + rentcastComps.length;
+    if (totalLiveComps < compCount) {
+      try {
+        const { getHistoricalComps } = await import("@/lib/avm/avm-cache-service");
+        const cutoff = new Date();
+        cutoff.setMonth(cutoff.getMonth() - (listPrice && listPrice >= 1000000 ? 18 : 12));
+        const cached = await getHistoricalComps({
+          zipCode: zipCode || address.match(/\b(\d{5})\b/)?.[1] || "",
+          propertyType: propertyType || undefined,
+          beds,
+          minCloseDate: cutoff.toISOString().split("T")[0],
+          listPrice,
+          limit: compCount - totalLiveComps,
+        });
+        if (cached.length > 0) {
+          cachedComps = cached.map((c) => ({
+            source: "cache",
+            address: c.address,
+            zipCode: c.zipCode,
+            closePrice: c.closePrice,
+            listPrice: c.listPrice,
+            closeDate: c.closeDate,
+            propertyType: c.propertyType,
+            bedrooms: c.beds,
+            bathrooms: c.baths,
+            squareFootage: c.sqft,
+            yearBuilt: c.yearBuilt,
+            lotSize: c.lotSize,
+            latitude: c.lat,
+            longitude: c.lng,
+            subdivision: c.subdivision,
+            ownershipType: c.ownershipType,
+            listingKey: c.listingKey,
+            daysOnMarket: c.daysOnMarket,
+            correlation: c.correlation,
+            pricePerSqft: c.closePrice && c.sqft ? Math.round(c.closePrice / c.sqft) : undefined,
+          }));
+          console.log(`[Comps] Cache supplemented with ${cachedComps.length} historical comps`);
+        }
+      } catch { /* cache not available */ }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
     // Build response
     // ═══════════════════════════════════════════════════════════════════
-    // Merge MLS and RentCast comps, deduplicating by address
+    // Merge MLS, RentCast, and cached comps, deduplicating by address
+    const allComps = [...mlsComps, ...rentcastComps, ...cachedComps];
+    const seen = new Set<string>();
+    const deduped = allComps.filter((c: any) => {
+      const key = (c.address || "").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 20);
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
     let comparables: any[];
     let dataSource: string;
-    if (mlsComps.length > 0 && rentcastComps.length > 0) {
-      // Combine both, MLS first, dedupe by address similarity
-      const seen = new Set(mlsComps.map((c: any) => (c.address || "").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 20)));
-      const uniqueRentcast = rentcastComps.filter((c: any) => {
-        const key = (c.address || "").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 20);
-        return !seen.has(key);
-      });
-      comparables = [...mlsComps, ...uniqueRentcast];
-      dataSource = "merged";
-      console.log(`[Comps] Merged: ${mlsComps.length} MLS + ${uniqueRentcast.length} RentCast = ${comparables.length} total`);
+    if (mlsComps.length > 0 && (rentcastComps.length > 0 || cachedComps.length > 0)) {
+      comparables = deduped;
+      dataSource = cachedComps.length > 0 ? "merged+cache" : "merged";
+      console.log(`[Comps] Final: ${comparables.length} total (${mlsComps.length} MLS, ${rentcastComps.length} RentCast, ${cachedComps.length} cache)`);
     } else if (mlsComps.length > 0) {
-      comparables = mlsComps;
+      comparables = deduped;
       dataSource = "mls";
-    } else {
-      comparables = rentcastComps;
+    } else if (rentcastComps.length > 0) {
+      comparables = deduped;
       dataSource = "rentcast";
+    } else {
+      comparables = deduped;
+      dataSource = cachedComps.length > 0 ? "cache" : "none";
     }
 
     const response = {

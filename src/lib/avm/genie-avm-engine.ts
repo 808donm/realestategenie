@@ -472,8 +472,8 @@ function adjustAndWeightComps(input: GenieAvmInput): AdjustedComp[] {
     });
   }
 
-  // Sort by weight descending, keep top 15 for a broader sample
-  let filtered = adjusted.sort((a, b) => b.weight - a.weight).slice(0, 15);
+  // Sort by weight descending, keep top 20 for the broadest sample
+  let filtered = adjusted.sort((a, b) => b.weight - a.weight).slice(0, 20);
 
   // Outlier removal: exclude comps whose adjusted price is >50% from median
   if (filtered.length >= 3) {
