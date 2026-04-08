@@ -676,11 +676,12 @@ export default function PropertyDetailModal({
       .catch(() => {});
   }, [reapiData, p, mlsAddress]);
 
-  // Skip Trace DISABLED - burns too many credits on trial key
-  // TODO: Re-enable with production key and add a manual "Run Skip Trace" button
-  useEffect(() => {
-    if (true) return; // DISABLED
-    if (activeSection !== "ownership" || skipTraceData || skipTraceLoading) return;
+  // Skip Trace - manual button click only (never auto-fire)
+  // Uses a ref lock to guarantee exactly one API call per click
+  const skipTraceCalledRef = useRef(false);
+  const runSkipTrace = () => {
+    if (skipTraceCalledRef.current || skipTraceLoading || skipTraceData) return;
+    skipTraceCalledRef.current = true;
     const addr = mlsAddress || p.address?.oneLine || "";
     const reapiZip = p.address?.postal1 || "";
     const reapiCity = p.address?.locality || "";
@@ -691,25 +692,28 @@ export default function PropertyDetailModal({
     if (reapiCity) stParams.set("city", reapiCity);
     if (reapiState) stParams.set("state", reapiState);
     if (reapiZip) stParams.set("zip", reapiZip);
-    // Pass owner name if available for better match
-    const ownerName = reapiData?.owner?.owner1?.fullName || p.owner?.owner1?.fullName;
-    if (ownerName) {
-      const nameParts = ownerName.split(" ");
-      if (nameParts.length >= 2) {
-        stParams.set("first_name", nameParts[0]);
-        stParams.set("last_name", nameParts[nameParts.length - 1]);
-      }
-    }
+    // Pass owner name for better match
+    const ownerFirst = reapiData?.owner?.owner1?.firstName || (p.owner?.owner1 as any)?.firstName;
+    const ownerLast = reapiData?.owner?.owner1?.lastName || p.owner?.owner1?.lastName;
+    if (ownerFirst) stParams.set("first_name", ownerFirst);
+    if (ownerLast) stParams.set("last_name", ownerLast);
+    console.log("[SkipTrace] Calling with params:", Object.fromEntries(stParams.entries()));
     fetch(`/api/integrations/reapi?${stParams.toString()}`)
       .then((r) => r.json())
       .then((data) => {
+        console.log("[SkipTrace] Response:", JSON.stringify(data).slice(0, 500));
         if (data.people && data.people.length > 0) {
           setSkipTraceData(data.people);
+        } else {
+          setSkipTraceData([]); // Empty array = no results found
         }
       })
-      .catch(() => {})
+      .catch((err) => {
+        console.error("[SkipTrace] Error:", err);
+        setSkipTraceData([]);
+      })
       .finally(() => setSkipTraceLoading(false));
-  }, [activeSection, skipTraceData, skipTraceLoading, p, mlsAddress, reapiData]);
+  };
 
   // Fetch AVM data when the Financial tab is selected and property doesn't already have AVM
   useEffect(() => {
@@ -3589,10 +3593,37 @@ export default function PropertyDetailModal({
                 );
               })()}
 
-              {/* Skip Trace Results (fetched on Ownership tab click) */}
+              {/* Skip Trace - manual button, never auto-fires */}
+              {!skipTraceData && !skipTraceLoading && (
+                <Section title="Skip Trace">
+                  <button
+                    onClick={runSkipTrace}
+                    style={{
+                      padding: "10px 20px",
+                      background: "#2563eb",
+                      color: "white",
+                      border: "none",
+                      borderRadius: 8,
+                      fontSize: 14,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Run Skip Trace
+                  </button>
+                  <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 6 }}>
+                    Find phone numbers, emails, and contact info for the property owner
+                  </div>
+                </Section>
+              )}
               {skipTraceLoading && (
                 <Section title="Skip Trace">
                   <div style={{ color: "#6b7280", fontSize: 13 }}>Loading contact information...</div>
+                </Section>
+              )}
+              {skipTraceData && skipTraceData.length === 0 && (
+                <Section title="Skip Trace">
+                  <div style={{ color: "#9ca3af", fontSize: 13 }}>No contact information found for this owner.</div>
                 </Section>
               )}
               {skipTraceData && skipTraceData.length > 0 && skipTraceData.map((person: any, pi: number) => (
