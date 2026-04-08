@@ -301,6 +301,9 @@ export default function PropertyDetailModal({
   const [reapiData, setReapiData] = useState<any>(null); // Full REAPI enrichment data
   const [skipTraceData, setSkipTraceData] = useState<any>(null);
   const [skipTraceLoading, setSkipTraceLoading] = useState(false);
+  const [portfolioProperties, setPortfolioProperties] = useState<any[]>([]);
+  const [portfolioLoading, setPortfolioLoading] = useState(false);
+  const portfolioLoadedRef = useRef(false);
   const [genieAvmLoading, setGenieAvmLoading] = useState(false);
   const [enrichedFinancial, setEnrichedFinancial] = useState<any>(null);
   const [enrichedFinancialLoading, setEnrichedFinancialLoading] = useState(false);
@@ -1790,8 +1793,6 @@ export default function PropertyDetailModal({
             <Field label="Sub Type" value={p.summary?.propSubType} />
             <Field label="Land Use" value={p.summary?.propLandUse || reapiData?.lot?.landUse} />
             <Field label="Year Built" value={yearBuilt} />
-            <Field label="Construction" value={reapiData?.building?.features?.construction} />
-            <Field label="Condition" value={reapiData?._raw?.propertyInfo?.buildingCondition} />
             <Field label="HOA" value={reapiData?.building?.features?.hoa === true ? "Yes" : reapiData?.building?.features?.hoa === false ? "No" : undefined} />
             <Field label="APN" value={p.identifier?.apn} />
             <Field label="FIPS" value={p.identifier?.fips} />
@@ -3705,7 +3706,7 @@ export default function PropertyDetailModal({
               {/* Investor Portfolio (from REAPI linkedProperties) */}
               {reapiData?.linkedProperties?.totalOwned > 0 && (
                 <Section title={`Investor Portfolio (${reapiData.linkedProperties.totalOwned} Properties)`}>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 16px", fontSize: 13 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 16px", fontSize: 13, marginBottom: 12 }}>
                     <Field label="Total Properties Owned" value={String(reapiData.linkedProperties.totalOwned)} />
                     <Field label="Total Portfolio Value" value={reapiData.linkedProperties.totalValue ? fmt(Number(reapiData.linkedProperties.totalValue)) : undefined} />
                     <Field label="Total Equity" value={reapiData.linkedProperties.totalEquity ? fmt(Number(reapiData.linkedProperties.totalEquity)) : undefined} />
@@ -3717,6 +3718,59 @@ export default function PropertyDetailModal({
                       <Field label="Purchased Last 12 Months" value={String(reapiData.linkedProperties.purchasedLast12mos)} />
                     )}
                   </div>
+                  {/* Linked Property Details */}
+                  {reapiData.linkedProperties.ids?.length > 0 && !portfolioLoading && portfolioProperties.length === 0 && (
+                    <button
+                      onClick={() => {
+                        if (portfolioLoadedRef.current) return;
+                        portfolioLoadedRef.current = true;
+                        setPortfolioLoading(true);
+                        const ids = reapiData.linkedProperties.ids.filter((id: string) => String(id) !== String(reapiData._raw?.id));
+                        Promise.all(
+                          ids.slice(0, 10).map((id: string) =>
+                            fetch(`/api/integrations/reapi?endpoint=property-detail&id=${id}`)
+                              .then((r) => r.json())
+                              .then((d) => d.property)
+                              .catch(() => null)
+                          )
+                        ).then((results) => {
+                          setPortfolioProperties(results.filter(Boolean));
+                          setPortfolioLoading(false);
+                        });
+                      }}
+                      style={{ padding: "8px 16px", background: "#3b82f6", color: "white", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", marginBottom: 8 }}
+                    >
+                      View Portfolio Properties ({reapiData.linkedProperties.ids.length - 1} other properties)
+                    </button>
+                  )}
+                  {portfolioLoading && (
+                    <div style={{ fontSize: 12, color: "#6b7280", padding: 8 }}>Loading portfolio properties...</div>
+                  )}
+                  {portfolioProperties.length > 0 && (
+                    <div style={{ marginTop: 8 }}>
+                      {portfolioProperties.map((prop: any, pi: number) => {
+                        const propAddr = prop?.address?.oneLine || prop?.address?.line1 || "Unknown Address";
+                        const propVal = prop?.avm?.amount?.value || prop?.homeEquity?.estimatedValue;
+                        const propEquity = prop?.homeEquity?.equity;
+                        const propType = prop?.summary?.propSubType || prop?.summary?.propType;
+                        return (
+                          <div key={pi} style={{ padding: 10, border: "1px solid #e5e7eb", borderRadius: 8, marginBottom: 6, background: "#f9fafb" }}>
+                            <div style={{ fontWeight: 600, fontSize: 13, color: "#1f2937", marginBottom: 4 }}>
+                              {propAddr}
+                            </div>
+                            <div style={{ display: "flex", gap: 12, fontSize: 12, color: "#6b7280", flexWrap: "wrap" }}>
+                              {propType && <span>{propType}</span>}
+                              {propVal && <span style={{ fontWeight: 600, color: "#059669" }}>Value: {fmt(propVal)}</span>}
+                              {propEquity != null && <span>Equity: {fmt(propEquity)}</span>}
+                              {prop?.building?.rooms?.beds && <span>{prop.building.rooms.beds} bed</span>}
+                              {prop?.building?.rooms?.bathsTotal && <span>{prop.building.rooms.bathsTotal} bath</span>}
+                              {prop?.building?.size?.livingSize > 0 && <span>{prop.building.size.livingSize.toLocaleString()} sqft</span>}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </Section>
               )}
 
