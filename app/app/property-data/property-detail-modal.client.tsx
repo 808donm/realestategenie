@@ -2116,15 +2116,18 @@ export default function PropertyDetailModal({
           </Section>
 
           <Section title="Lot">
-            <Field label="Lot Size (sqft)" value={p.lot?.lotSize1 ? fmtNum(p.lot.lotSize1) : undefined} />
+            <Field label="Lot Size (sqft)" value={p.lot?.lotSize1 || reapiData?.lot?.lotSize1 ? fmtNum(p.lot?.lotSize1 || reapiData?.lot?.lotSize1) : undefined} />
             <Field
               label="Lot Size (acres)"
-              value={p.lot?.lotSize2 ? `${p.lot.lotSize2.toFixed(2)} acres` : undefined}
+              value={p.lot?.lotSize2 ? `${p.lot.lotSize2.toFixed(2)} acres` : reapiData?.lot?.lotAcres ? `${reapiData.lot.lotAcres} acres` : undefined}
             />
-            <Field label="Lot Number" value={p.lot?.lotNum} />
+            <Field label="Lot Number" value={p.lot?.lotNum || reapiData?.lot?.lotNumber} />
+            <Field label="Zoning" value={reapiData?.lot?.zoning} />
+            <Field label="Land Use" value={reapiData?.lot?.landUse} />
+            <Field label="Subdivision" value={reapiData?.lot?.subdivision} />
             <Field
               label="Pool"
-              value={p.lot?.poolInd === "Y" ? p.lot.poolType || "Yes" : p.lot?.poolInd === "N" ? "No" : undefined}
+              value={p.lot?.poolInd === "Y" ? p.lot.poolType || "Yes" : reapiData?.building?.features?.pool === true ? "Yes" : p.lot?.poolInd === "N" || reapiData?.building?.features?.pool === false ? "No" : undefined}
             />
           </Section>
         </>
@@ -2622,43 +2625,78 @@ export default function PropertyDetailModal({
                 </div>
               )}
 
-              {/* Mortgage & Foreclosure — from Realie primary response */}
+              {/* Mortgage & Foreclosure — from REAPI or Realie */}
               {(() => {
                 const m = p.mortgage;
-                const fc = (p as any).foreclosure;
+                const reapiMort = reapiData?.mortgage;
+                const reapiMortHistory = reapiData?.currentMortgages;
+                const fc = reapiData?.foreclosure || (p as any).foreclosure;
                 const hasMortgage =
-                  m &&
-                  (m.amount != null || m.lender?.fullName || m.lienCount != null || m.financingHistoryCount != null);
-                const hasForeclosure = fc && (fc.actionType || fc.recordingDate || fc.auctionDate);
-                if (!hasMortgage && !hasForeclosure) return null;
+                  (reapiMort?.amount?.firstAmt) ||
+                  (m && (m.amount != null || m.lender?.fullName || m.lienCount != null));
+                const hasForeclosure = fc && (fc.isForeclosure || fc.actionType || fc.recordingDate);
+                const isFreeClear = reapiData?.leadFlags?.freeClear || reapiData?.homeEquity?.freeClear;
 
                 return (
                   <>
-                    {hasMortgage && (
+                    {/* Free & Clear indicator -- only when explicitly flagged */}
+                    {isFreeClear && !hasMortgage && (
+                      <Section title="Mortgage Status">
+                        <span style={{ padding: "4px 12px", borderRadius: 6, fontSize: 13, fontWeight: 700, background: "#d1fae5", color: "#065f46" }}>
+                          Free & Clear - No Outstanding Mortgage
+                        </span>
+                        <div style={{ marginTop: 8 }}>
+                          <Field label="Est. Mortgage Balance" value={fmt(0)} />
+                          <Field label="Equity" value={reapiData?.homeEquity?.equity ? fmt(reapiData.homeEquity.equity) : undefined} />
+                        </div>
+                      </Section>
+                    )}
+                    {/* Active mortgage from REAPI */}
+                    {reapiMort?.amount?.firstAmt && (
+                      <Section title="Current Mortgage">
+                        <Field label="Loan Amount" value={fmt(reapiMort.amount.firstAmt)} />
+                        <Field label="Lender" value={reapiMort.lender?.name} />
+                        <Field label="Interest Rate" value={reapiMort.interestRate ? `${reapiMort.interestRate}% (${reapiMort.interestRateType || "Fixed"})` : undefined} />
+                        <Field label="Term" value={reapiMort.term ? `${reapiMort.term} months` : undefined} />
+                        <Field label="Maturity Date" value={reapiMort.dueDate} />
+                        <Field label="Loan Type" value={reapiMort.loanType} />
+                        <Field label="Position" value={reapiMort.position} />
+                        <Field label="Assumable" value={reapiMort.assumable === true ? "Yes" : reapiMort.assumable === false ? "No" : undefined} />
+                      </Section>
+                    )}
+                    {/* Mortgage history from REAPI */}
+                    {reapiMortHistory && reapiMortHistory.length > 0 && (
+                      <Section title={`Mortgage History (${reapiMortHistory.length})`}>
+                        {reapiMortHistory.map((mh: any, i: number) => (
+                          <div key={i} style={{ padding: "8px 0", borderBottom: i < reapiMortHistory.length - 1 ? "1px solid #f3f4f6" : "none" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 2 }}>
+                              <span style={{ fontWeight: 600, fontSize: 13 }}>{fmt(mh.amount)}</span>
+                              <span style={{ fontSize: 12, color: "#6b7280" }}>{mh.lenderName}</span>
+                            </div>
+                            <div style={{ fontSize: 11, color: "#9ca3af" }}>
+                              {[mh.loanType, mh.position, mh.interestRateType, mh.documentDate?.split("T")[0]].filter(Boolean).join(" - ")}
+                            </div>
+                          </div>
+                        ))}
+                      </Section>
+                    )}
+                    {/* Fallback: Realie mortgage data */}
+                    {!reapiMort?.amount?.firstAmt && hasMortgage && m && (
                       <Section title="Mortgage">
                         <Field label="Loan Amount" value={m.amount != null ? fmt(Number(m.amount)) : undefined} />
                         <Field label="Lender" value={m.lender?.fullName} />
-                        <Field
-                          label="Outstanding Loans"
-                          value={
-                            m.lienCount != null
-                              ? `${m.lienCount} lien${Number(m.lienCount) !== 1 ? "s" : ""}`
-                              : undefined
-                          }
-                        />
-                        <Field
-                          label="Financing History"
-                          value={m.financingHistoryCount != null ? `${m.financingHistoryCount} loans` : undefined}
-                        />
+                        <Field label="Outstanding Loans" value={m.lienCount != null ? `${m.lienCount} lien${Number(m.lienCount) !== 1 ? "s" : ""}` : undefined} />
                       </Section>
                     )}
+                    {/* Foreclosure */}
                     {hasForeclosure && (
                       <Section title="Foreclosure">
-                        <Field label="Status" value={fc.actionType} />
-                        <Field label="Filing Date" value={fc.filingDate} />
-                        <Field label="Recording Date" value={fc.recordingDate} />
-                        <Field label="Auction Date" value={fc.auctionDate} />
-                        <Field label="Case Number" value={fc.caseNumber} />
+                        <Field label="Status" value={fc.preForeclosure ? "Pre-Foreclosure" : fc.bankOwned ? "Bank Owned" : fc.actionType || "Active"} />
+                        {fc.auctionInfo?.auctionDate && <Field label="Auction Date" value={fc.auctionInfo.auctionDate.split("T")[0]} />}
+                        {fc.auctionInfo?.openingBid && <Field label="Opening Bid" value={fmt(Number(fc.auctionInfo.openingBid))} />}
+                        {fc.auctionInfo?.lenderName && <Field label="Lender" value={fc.auctionInfo.lenderName} />}
+                        <Field label="Filing Date" value={fc.filingDate || fc.recordingDate} />
+                        <Field label="Case Number" value={fc.caseNumber || fc.auctionInfo?.caseNumber} />
                       </Section>
                     )}
                   </>
@@ -3593,6 +3631,24 @@ export default function PropertyDetailModal({
                   </>
                 );
               })()}
+
+              {/* Investor Portfolio (from REAPI linkedProperties) */}
+              {reapiData?.linkedProperties?.totalOwned > 0 && (
+                <Section title={`Investor Portfolio (${reapiData.linkedProperties.totalOwned} Properties)`}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 16px", fontSize: 13 }}>
+                    <Field label="Total Properties Owned" value={String(reapiData.linkedProperties.totalOwned)} />
+                    <Field label="Total Portfolio Value" value={reapiData.linkedProperties.totalValue ? fmt(Number(reapiData.linkedProperties.totalValue)) : undefined} />
+                    <Field label="Total Equity" value={reapiData.linkedProperties.totalEquity ? fmt(Number(reapiData.linkedProperties.totalEquity)) : undefined} />
+                    <Field label="Total Mortgage Balance" value={reapiData.linkedProperties.totalMortgageBalance ? fmt(Number(reapiData.linkedProperties.totalMortgageBalance)) : undefined} />
+                    {reapiData.linkedProperties.purchasedLast6mos > 0 && (
+                      <Field label="Purchased Last 6 Months" value={String(reapiData.linkedProperties.purchasedLast6mos)} />
+                    )}
+                    {reapiData.linkedProperties.purchasedLast12mos > 0 && (
+                      <Field label="Purchased Last 12 Months" value={String(reapiData.linkedProperties.purchasedLast12mos)} />
+                    )}
+                  </div>
+                </Section>
+              )}
 
               {/* Skip Trace - manual button, never auto-fires */}
               {!skipTraceData && !skipTraceLoading && (
