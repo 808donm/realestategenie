@@ -297,6 +297,7 @@ export default function PropertyDetailModal({
   const [avmData, setAvmData] = useState<any>(null);
   const [avmLoading, setAvmLoading] = useState(false);
   const [genieAvm, setGenieAvm] = useState<any>(null);
+  const [reapiAvm, setReapiAvm] = useState<{ value: number; raw?: any } | null>(null);
   const [genieAvmLoading, setGenieAvmLoading] = useState(false);
   const [enrichedFinancial, setEnrichedFinancial] = useState<any>(null);
   const [enrichedFinancialLoading, setEnrichedFinancialLoading] = useState(false);
@@ -636,6 +637,24 @@ export default function PropertyDetailModal({
       }
     }).catch(() => {});
   }, [rentcastComps, genieAvm, p, mlsAddress, beds, baths, sqft, yearBuilt]);
+
+  // Fetch REAPI AVM when AVM tab is viewed (for comparison testing)
+  useEffect(() => {
+    if (activeSection !== "avm" || reapiAvm) return;
+    const addr = mlsAddress || p.address?.oneLine || "";
+    if (!addr) return;
+    fetch(`/api/integrations/reapi?endpoint=property-detail&address=${encodeURIComponent(addr)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.property?.avm?.amount?.value || data.raw?.estimatedValue) {
+          setReapiAvm({
+            value: data.property?.avm?.amount?.value || data.raw?.estimatedValue,
+            raw: data.raw,
+          });
+        }
+      })
+      .catch(() => {});
+  }, [activeSection, reapiAvm, p, mlsAddress]);
 
   // Fetch AVM data when the Financial tab is selected and property doesn't already have AVM
   useEffect(() => {
@@ -1512,8 +1531,7 @@ export default function PropertyDetailModal({
     { id: "overview", label: "Overview" },
     { id: "building", label: "Building" },
     { id: "financial", label: "Financial" },
-    // AVM tab hidden -- Genie AVM computes silently in background for accuracy tracking
-    // { id: "avm" as SectionId, label: "AVM" },
+    { id: "avm" as SectionId, label: "AVM" },
     { id: "sales-history" as SectionId, label: "Sales History" },
     { id: "listing-history" as SectionId, label: "Listing History" },
     { id: "comps" as SectionId, label: "Comps" },
@@ -2831,6 +2849,19 @@ export default function PropertyDetailModal({
               )}
               <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 8 }}>
                 Realie/RentCast property valuation
+              </div>
+            </div>
+
+            {/* REAPI AVM */}
+            <div style={{ flex: 1, minWidth: 200, padding: 16, borderRadius: 12, border: "2px solid #dc2626", background: "#fef2f2" }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#dc2626", textTransform: "uppercase", marginBottom: 8 }}>
+                REAPI AVM
+              </div>
+              <div style={{ fontSize: 28, fontWeight: 800, color: "#dc2626", marginBottom: 4 }}>
+                {reapiAvm ? fmt(reapiAvm.value) : activeSection === "avm" ? "Loading..." : "N/A"}
+              </div>
+              <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 8 }}>
+                REAPI property valuation
               </div>
             </div>
           </div>

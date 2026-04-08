@@ -34,20 +34,29 @@ export interface ReapiPropertySearchParams {
   state?: string;
   zip?: string;
   county?: string;
+  fips?: string;
+  census_block?: string;
+  census_tract?: string;
   beds_min?: number;
   beds_max?: number;
   baths_min?: number;
   baths_max?: number;
   value_min?: number;
   value_max?: number;
-  year_min?: number;
-  year_max?: number;
-  sqft_min?: number;
-  sqft_max?: number;
+  equity_min?: number;
+  equity_max?: number;
+  mortgage_min?: number;
+  mortgage_max?: number;
+  year_built_min?: number;
+  year_built_max?: number;
+  building_size_min?: number;
+  building_size_max?: number;
   property_type?: ReapiPropertyType;
+  // Status flags
   foreclosure?: boolean;
   pre_foreclosure?: boolean;
   auction?: boolean;
+  tax_delinquent?: boolean;
   // Lead flags
   absentee_owner?: boolean;
   high_equity?: boolean;
@@ -58,9 +67,12 @@ export interface ReapiPropertySearchParams {
   latitude?: number;
   longitude?: number;
   radius?: number;
-  // Pagination
+  // Pagination & optimization
   size?: number;
   resultIndex?: number;
+  count?: boolean;        // Return only count (saves credits)
+  ids_only?: boolean;     // Return only IDs (FREE - 0 credits)
+  summary?: boolean;      // Summary mode
 }
 
 export interface ReapiPropertySearchResult {
@@ -68,6 +80,7 @@ export interface ReapiPropertySearchResult {
   recordCount: number;
   resultCount: number;
   resultIndex: number;
+  credits: number;
   statusCode: number;
   statusMessage: string;
   requestExecutionTimeMS: number;
@@ -494,27 +507,43 @@ export class ReapiClient {
     return this.request<ReapiPropertySearchResult>("POST", "/v2/PropertySearch", params);
   }
 
+  /** Search returning only property IDs -- costs 0 credits */
+  async searchPropertyIds(params: Omit<ReapiPropertySearchParams, "ids_only">): Promise<ReapiPropertySearchResult> {
+    return this.request<ReapiPropertySearchResult>("POST", "/v2/PropertySearch", { ...params, ids_only: true });
+  }
+
+  /** Get count of matching properties -- saves credits */
+  async countProperties(params: Omit<ReapiPropertySearchParams, "count">): Promise<{ resultCount: number; statusCode: number }> {
+    return this.request("POST", "/v2/PropertySearch", { ...params, count: true });
+  }
+
   // ── Property Detail ──
 
   async getPropertyDetail(id: number): Promise<{ data: ReapiProperty; statusCode: number; statusMessage: string }> {
     return this.request("GET", "/v2/PropertyDetail", undefined, { id });
   }
 
+  async getPropertyDetailByAddress(address: string): Promise<{ data: ReapiProperty; statusCode: number; statusMessage: string }> {
+    // Search first to get the property ID, then fetch full detail
+    const search = await this.searchProperties({ address, size: 1 });
+    if (search.data.length > 0 && search.data[0].id) {
+      return this.getPropertyDetail(search.data[0].id);
+    }
+    // If no ID, return the search result directly
+    return { data: search.data[0] || ({} as ReapiProperty), statusCode: search.statusCode, statusMessage: search.statusMessage };
+  }
+
   async getPropertyDetailBulk(ids: number[]): Promise<{ data: ReapiProperty[]; recordCount: number; statusCode: number }> {
     return this.request("POST", "/v2/PropertyDetailBulk", { ids });
   }
 
-  // ── Lender Grade AVM ──
+  // ── Lender Grade AVM (disabled on trial) ──
 
   async getPropertyAvm(params: ReapiAvmParams): Promise<ReapiAvmResult> {
     if (params.id) {
       return this.request("GET", "/v2/PropertyAvm", undefined, params);
     }
     return this.request("POST", "/v2/PropertyAvm", params);
-  }
-
-  async getPropertyAvmBulk(properties: ReapiAvmParams[]): Promise<{ data: any[]; statusCode: number }> {
-    return this.request("POST", "/v2/PropertyAvmBulk", { properties });
   }
 
   // ── Property Boundary (parcel polygon) ──
@@ -557,13 +586,13 @@ export class ReapiClient {
     return this.request("POST", "/v3/PropertyComps", params);
   }
 
-  // ── MLS Search ──
+  // ── MLS Search (disabled on trial) ──
 
   async searchMLS(params: ReapiMLSSearchParams): Promise<ReapiMLSResult> {
     return this.request<ReapiMLSResult>("POST", "/v2/MLSSearch", params);
   }
 
-  // ── MLS Detail ──
+  // ── MLS Detail (disabled on trial) ──
 
   async getMLSDetail(params: {
     listing_id?: number;
@@ -606,7 +635,7 @@ export class ReapiClient {
     return this.request("POST", "/v2/AddressVerification", params);
   }
 
-  // ── Property Mapping ──
+  // ── Property Mapping (pins) ──
 
   async propertyMapping(params: {
     address?: string;
@@ -617,7 +646,7 @@ export class ReapiClient {
     return this.request("POST", "/v2/PropertyMapping", params);
   }
 
-  // ── PropGPT ──
+  // ── PropGPT (AI semantic search) ──
 
   async propGPT(query: string, params?: {
     city?: string;
@@ -650,7 +679,53 @@ export function getReapiClient(): ReapiClient | null {
 // ── ATTOM-Compatible Mapping ─────────────────────────────────────────────
 // Maps REAPI property data to the ATTOM-compatible shape used throughout the app
 
-export function mapReapiToAttomShape(p: ReapiProperty): any {
+export function mapReapiToAttomShape(raw: ReapiProperty): any {
+  // REAPI returns nested structure: propertyInfo.address.address, propertyInfo.bedrooms, etc.
+  // Flatten it so both nested and flat formats work
+  const pi = (raw as any).propertyInfo || raw;
+  const addr = pi.address || raw;
+  const p: ReapiProperty = {
+    ...raw,
+    id: raw.id,
+    address: addr.address || addr.street || raw.address || raw.street,
+    city: addr.city || raw.city,
+    state: addr.state || raw.state,
+    zip: addr.zip || addr.zipCode || raw.zip,
+    county: addr.county || raw.county,
+    latitude: pi.latitude || raw.latitude,
+    longitude: pi.longitude || raw.longitude,
+    apn: pi.apn || raw.apn,
+    fips: pi.fips || raw.fips,
+    property_type: pi.propertyType || pi.property_type || raw.property_type,
+    bedrooms: pi.bedrooms || raw.bedrooms,
+    bathrooms: pi.bathrooms || raw.bathrooms,
+    square_footage: pi.livingSquareFeet || pi.square_footage || raw.square_footage,
+    lot_size: pi.lotSquareFeet || pi.lot_size || raw.lot_size,
+    year_built: pi.yearBuilt || pi.year_built || raw.year_built,
+    stories: pi.stories || raw.stories,
+    units: pi.units || raw.units,
+    owner_name: pi.ownerName || pi.owner_name || raw.owner_name || (raw as any).ownerInfo?.ownerName,
+    owner_name_2: pi.owner_name_2 || raw.owner_name_2 || (raw as any).ownerInfo?.ownerName2,
+    owner_occupied: pi.ownerOccupied ?? pi.owner_occupied ?? raw.owner_occupied,
+    absentee_owner: pi.absenteeOwner ?? pi.absentee_owner ?? raw.absentee_owner,
+    mailing_address: (raw as any).ownerInfo?.mailingAddress?.address || pi.mailing_address || raw.mailing_address,
+    mailing_city: (raw as any).ownerInfo?.mailingAddress?.city || pi.mailing_city || raw.mailing_city,
+    mailing_state: (raw as any).ownerInfo?.mailingAddress?.state || pi.mailing_state || raw.mailing_state,
+    mailing_zip: (raw as any).ownerInfo?.mailingAddress?.zip || pi.mailing_zip || raw.mailing_zip,
+    estimated_value: (raw as any).estimatedValue || raw.estimated_value,
+    estimated_equity: (raw as any).estimatedEquity || raw.estimated_equity,
+    assessed_value: pi.assessedValue || pi.assessed_value || raw.assessed_value,
+    last_sale_date: pi.lastSaleDate || pi.last_sale_date || raw.last_sale_date,
+    last_sale_price: pi.lastSalePrice || pi.last_sale_price || raw.last_sale_price,
+    mortgage_amount: (raw as any).mortgageInfo?.amount || pi.mortgage_amount || raw.mortgage_amount,
+    mortgage_lender: (raw as any).mortgageInfo?.lender || pi.mortgage_lender || raw.mortgage_lender,
+    total_lien_balance: (raw as any).mortgageInfo?.totalBalance || pi.total_lien_balance || raw.total_lien_balance,
+    schools: (raw as any).schools || pi.schools || raw.schools,
+    flood_zone: (raw as any).floodZone || pi.flood_zone || raw.flood_zone,
+    sale_history: (raw as any).saleHistory || pi.sale_history || raw.sale_history,
+    assessment_history: (raw as any).assessmentHistory || pi.assessment_history || raw.assessment_history,
+  };
+
   const oneLine = [p.address || p.street, p.city, p.state, p.zip].filter(Boolean).join(", ");
 
   return {
