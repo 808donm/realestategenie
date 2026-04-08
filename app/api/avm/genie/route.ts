@@ -187,6 +187,16 @@ export async function GET(request: NextRequest) {
     // Property AVM: use Realie AVM first, fall back to RentCast AVM
     const propertyAvm = realieAvm || rentcastAvm || null;
 
+    // Strategy 3: Fetch list-to-sale ratio for this area
+    let listToSaleRatio: number | undefined;
+    try {
+      const { getListToSaleRatio } = await import("@/lib/avm/avm-cache-service");
+      const ratio = await getListToSaleRatio(zipCode, subdivision, propertyType);
+      if (ratio && ratio.count >= 5) {
+        listToSaleRatio = ratio.median;
+      }
+    } catch { /* ratio not available yet */ }
+
     // Build input and compute
     const avmInput: GenieAvmInput = {
       address,
@@ -201,6 +211,7 @@ export async function GET(request: NextRequest) {
       subdivision,
       hoaFee,
       listPrice,
+      listToSaleRatio,
       propertyAvm,
       rentcastAvm,
       realieAvm,

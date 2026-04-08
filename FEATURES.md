@@ -599,7 +599,9 @@ These features ensure the data shown to agents is accurate and relevant, especia
 
 - **Comps AVM as Primary**: Comps-based AVM used as Estimated Value everywhere (most accurate for Hawaii). Genie AVM available but not displayed until accuracy improves.
 
-- **Genie AVM (Proprietary Valuation)**: Dynamic ensemble valuation model that weights three sources based on comp quality: MLS closed comps (30-50%), Property AVM (30-50%), and county assessment trend (20%). When comps agree well, comps get higher weight; when comps disagree, Property AVM stabilizes the estimate. Comp quality filters: minimum correlation (0.3), max adjustment cap (35%), and outlier removal. Condo-specific tuning with increased sqft weight and reduced bed/bath adjustments. Hawaii-specific adjustments for leasehold discount (25-35%), flood zone discount (3-5%), and high HOA impact.
+- **Genie AVM (Proprietary Valuation)**: Dynamic ensemble valuation model with four sources: list price (30-40%), MLS closed comps (20-45%), Property AVM (15% cross-check), and county assessment trend (15-25%). Luxury properties ($2M+) get 40% list price weight since comps are sparse at high price points. Comp quality filters: minimum correlation (0.3), max adjustment cap (35%), outlier removal, and up to 15 comps. Condo-specific tuning with increased sqft weight and reduced bed/bath adjustments. List-to-sale ratio calibration adjusts list price input based on area-specific sale patterns. Hawaii-specific adjustments for leasehold discount (25-35%), flood zone discount (3-5%), and high HOA impact.
+
+- **AVM Caching (4 strategies)**: (1) Sale outcome tracking records AVM predictions vs actual sale prices for accuracy measurement. (2) Historical comp cache builds a richer comp pool over time from every closed sale encountered. (3) List-to-sale ratio cache tracks how list prices compare to actual sales by ZIP/subdivision for list price weight calibration. (4) Genie AVM result caching via existing property_data_cache with 7-day TTL.
 
 - **Source Branding**: All data sources display as "Real Estate Genie" or "Public Records" -- no provider names (Realie, RentCast) shown to agents.
 

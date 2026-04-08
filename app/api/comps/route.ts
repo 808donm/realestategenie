@@ -413,6 +413,36 @@ export async function GET(request: NextRequest) {
     propertyCacheSet(cacheKey, response, "unified");
     propertyDbWrite(cacheKey, "unified", response, "unified").catch(() => {});
 
+    // Strategy 2: Cache closed comps to build historical comp pool
+    import("@/lib/avm/avm-cache-service")
+      .then(({ cacheClosedCompsBatch }) => {
+        const closedComps = comparables
+          .filter((c: any) => c.closePrice > 0 && c.closeDate)
+          .map((c: any) => ({
+            address: c.address || "",
+            closePrice: c.closePrice,
+            listPrice: c.listPrice || c.originalListPrice,
+            closeDate: c.closeDate,
+            beds: c.bedrooms,
+            baths: c.bathrooms,
+            sqft: c.squareFootage,
+            yearBuilt: c.yearBuilt,
+            lotSize: c.lotSize,
+            propertyType: c.propertyType,
+            zipCode: c.zipCode || zipCode,
+            lat: c.latitude,
+            lng: c.longitude,
+            source: (c.source === "mls" ? "mls" : "rentcast") as "mls" | "rentcast",
+            listingKey: c.listingKey,
+            daysOnMarket: c.daysOnMarket,
+            correlation: c.correlation,
+          }));
+        if (closedComps.length > 0) {
+          cacheClosedCompsBatch(closedComps).catch(() => {});
+        }
+      })
+      .catch(() => {});
+
     return NextResponse.json(response);
   } catch (error: any) {
     console.error("[Comps] Error:", error);

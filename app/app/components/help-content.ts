@@ -750,13 +750,14 @@ The Genie AVM is Real Estate Genie's proprietary valuation model. It appears as 
 
 **How it works:**
 
-The Genie AVM is an ensemble model that dynamically weights three data sources based on comp quality:
+The Genie AVM is a proprietary ensemble model that dynamically weights four data sources:
 
-1. **MLS Closed Comps (30-50% weight)** - Recent closed sales from MLS, filtered by subdivision and ownership type. Gets higher weight when comps agree well with each other.
-2. **Property AVM (30-50% weight)** - Third-party automated valuation. Gets higher weight when comps show high price spread or are few in number.
-3. **County Assessment Trend (20% weight)** - Assessed value adjusted for the local assessment-to-market ratio over time.
+1. **List Price (30-40% weight)** - When a property is actively listed, the agent's asking price is the strongest signal. Luxury properties ($2M+) get 40% weight since comps are sparse at high price points.
+2. **MLS Closed Comps (20-45% weight)** - Recent closed sales from MLS, adjusted for differences in size, beds, baths, and age. Up to 15 comps are used for a broader sample.
+3. **Property AVM (15% weight)** - Third-party valuation used as a minor cross-check, not a primary input.
+4. **County Assessment Trend (15-25% weight)** - Assessed value adjusted for the local assessment-to-market ratio over time.
 
-Comp quality filters ensure only truly comparable properties influence the value: minimum correlation threshold, maximum adjustment cap (35%), and outlier removal. Condos use sqft-focused adjustments since location and floor matter more than bedroom count.
+The model also uses list-to-sale ratio calibration -- it tracks how properties in each area actually sell relative to their asking price, and adjusts accordingly. Comp quality filters ensure only truly comparable properties influence the value: minimum correlation threshold, maximum adjustment cap (35%), and outlier removal.
 
 **Hawaii-specific adjustments:**
 

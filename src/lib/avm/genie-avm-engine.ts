@@ -54,6 +54,8 @@ export interface GenieAvmInput {
 
   // On-market listing price (strong signal when available)
   listPrice?: number;
+  // List-to-sale ratio for this area (e.g., 0.97 means homes sell at 97% of list)
+  listToSaleRatio?: number;
 
   // Hazard data
   isFloodZone?: boolean; // In Special Flood Hazard Area
@@ -170,7 +172,11 @@ export function computeGenieAvm(input: GenieAvmInput): GenieAvmResult | null {
   }
 
   // 4. List Price (on-market) -- agent-set price is a strong market signal
-  const listPriceValue = input.listPrice && input.listPrice > 0 ? input.listPrice : null;
+  // Apply list-to-sale ratio if available (e.g., 0.97 means homes sell at 97% of list)
+  const rawListPrice = input.listPrice && input.listPrice > 0 ? input.listPrice : null;
+  const listPriceValue = rawListPrice && input.listToSaleRatio
+    ? Math.round(rawListPrice * input.listToSaleRatio)
+    : rawListPrice;
 
   // ── Dynamic Weight Assignment ──
   // Weights shift based on comp quality (measured by CV of adjusted prices)
