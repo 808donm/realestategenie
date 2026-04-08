@@ -1157,13 +1157,26 @@ export default function PropertyDetailModal({
         const effectiveMlsLastSale = mlsSalesHistory || (mlsLastSale && !mlsLastSale._isComp ? mlsLastSale : null);
         // Build homeEquity from Realie's pre-calculated data, or fall back to
         // computing it from AVM / assessment values (same cascade the search cards use).
-        let homeEquityData = (p as any).homeEquity || null;
+        // Use REAPI equity data as primary, then existing sources
+        let homeEquityData = reapiData?.homeEquity?.equity != null
+          ? {
+              equity: reapiData.homeEquity.equity,
+              estimatedValue: reapiData.homeEquity.estimatedValue || genieAvm?.value,
+              outstandingBalance: reapiData.homeEquity.estimatedMortgageBalance ? Number(reapiData.homeEquity.estimatedMortgageBalance) : 0,
+              estimatedPayment: reapiData.homeEquity.estimatedMortgagePayment ? Number(reapiData.homeEquity.estimatedMortgagePayment) : undefined,
+              ltv: reapiData.homeEquity.estimatedMortgageBalance && reapiData.homeEquity.estimatedValue
+                ? (Number(reapiData.homeEquity.estimatedMortgageBalance) / reapiData.homeEquity.estimatedValue) * 100 : 0,
+              equityPercent: reapiData.homeEquity.equityPercent,
+              freeClear: reapiData.homeEquity.freeClear,
+            }
+          : (p as any).homeEquity || null;
         if (!homeEquityData) {
-          // Cascade: AVM → market assessment → appraised assessment
+          // Cascade: Genie AVM → REAPI AVM → Realie AVM → market assessment
           const avmVal =
-            p.avm?.amount?.value || p.assessment?.market?.mktTtlValue || p.assessment?.appraised?.apprTtlValue;
+            genieAvm?.value || reapiData?.avm?.amount?.value || p.avm?.amount?.value || p.assessment?.market?.mktTtlValue || p.assessment?.appraised?.apprTtlValue;
           const saleAmt = p.sale?.amount?.saleAmt;
           const lienBal =
+            (reapiData?.homeEquity?.estimatedMortgageBalance ? Number(reapiData.homeEquity.estimatedMortgageBalance) : null) ??
             (p as any).mortgage?.amount?.total ??
             (p as any).mortgage?.amount?.first ??
             (p.mortgage?.amount != null ? Number(p.mortgage.amount) : null);
@@ -2201,17 +2214,20 @@ export default function PropertyDetailModal({
                 </div>
               )}
 
-              {rentcastAvmPrice ? (
+              {(genieAvm?.value || rentcastAvmPrice) ? (
                 <Section title="Automated Valuation (AVM)">
-                  <Field label="Estimated Value" value={fmt(rentcastAvmPrice)} />
-                  {rentcastComps && rentcastComps.length > 0 && (
-                    <Field label="Based On" value={`${rentcastComps.length} comparable properties`} />
+                  <Field label="Estimated Value" value={fmt(genieAvm?.value || rentcastAvmPrice)} />
+                  {genieAvm && (
+                    <Field label="Based On" value={`${genieAvm.methodology?.compsUsed || 0} comparable properties`} />
+                  )}
+                  {genieAvm && (
+                    <Field label="Confidence" value={`${genieAvm.confidence} (FSD: ${genieAvm.fsd}%)`} />
                   )}
                   <Field label="Source" value="Real Estate Genie" />
                 </Section>
               ) : avm && (
                 <Section title="Automated Valuation (AVM)">
-                  <Field label="Estimated Value" value={fmt(rentcastAvmPrice || avm.amount?.value)} />
+                  <Field label="Estimated Value" value={fmt(genieAvm?.value || rentcastAvmPrice || avm.amount?.value)} />
                   <Field
                     label="Confidence Range"
                     value={
@@ -3012,12 +3028,12 @@ export default function PropertyDetailModal({
 
               {rentcastComps && rentcastComps.length > 0 && (
                 <div>
-                  {(p.avm?.amount?.value || rentcastAvmPrice) &&
+                  {(genieAvm?.value || p.avm?.amount?.value || rentcastAvmPrice) &&
                     (() => {
-                      // Use rentcastAvmPrice (comps-based) as primary, matching the Estimated Value card
-                      const avmValue = rentcastAvmPrice ?? p.avm?.amount?.value ?? undefined;
-                      const avmLow = p.avm?.amount?.low;
-                      const avmHigh = p.avm?.amount?.high;
+                      // Use Genie AVM as primary, matching the Estimated Value card
+                      const avmValue = genieAvm?.value ?? rentcastAvmPrice ?? p.avm?.amount?.value ?? undefined;
+                      const avmLow = genieAvm?.low ?? p.avm?.amount?.low;
+                      const avmHigh = genieAvm?.high ?? p.avm?.amount?.high;
                       const hasRange = avmLow != null && avmHigh != null;
                       const rangeWidth =
                         hasRange && avmValue ? Math.round(((avmHigh! - avmLow!) / 2 / avmValue) * 100) : null;

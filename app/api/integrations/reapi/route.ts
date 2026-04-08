@@ -213,10 +213,13 @@ export async function GET(request: NextRequest) {
         if (params.get("state")) skipParams.state = params.get("state");
         if (params.get("zip")) skipParams.zip = params.get("zip");
         const raw = await client.skipTrace(skipParams);
+        const skipData = raw.data || (raw as any).results || (raw as any).people || [];
+        const skipArray = Array.isArray(skipData) ? skipData : [skipData];
+        console.log("[REAPI] Skip trace response keys:", Object.keys(raw), "data count:", skipArray.length);
         result = {
-          people: raw.data.map(mapReapiSkipTrace),
-          raw: raw.data,
-          count: raw.recordCount,
+          people: skipArray.filter(Boolean).map(mapReapiSkipTrace),
+          raw: skipArray,
+          count: raw.recordCount || skipArray.length,
           source: "reapi",
         };
         break;
