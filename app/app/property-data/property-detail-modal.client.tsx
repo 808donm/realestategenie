@@ -1163,23 +1163,24 @@ export default function PropertyDetailModal({
         const effectiveMlsLastSale = mlsSalesHistory || (mlsLastSale && !mlsLastSale._isComp ? mlsLastSale : null);
         // Build homeEquity from Realie's pre-calculated data, or fall back to
         // computing it from AVM / assessment values (same cascade the search cards use).
-        // Use REAPI equity data as primary, then existing sources
-        let homeEquityData = reapiData?.homeEquity?.equity != null
+        // Always use Genie AVM as estimated value for equity calculation
+        const genieEstValue = genieAvm?.value || reapiData?.avm?.amount?.value || p.avm?.amount?.value || p.assessment?.market?.mktTtlValue || p.assessment?.appraised?.apprTtlValue;
+        // Use REAPI mortgage data as primary for loan balance
+        const reapiMortBal = reapiData?.homeEquity?.estimatedMortgageBalance ? Number(reapiData.homeEquity.estimatedMortgageBalance) : null;
+
+        let homeEquityData = genieEstValue
           ? {
-              equity: reapiData.homeEquity.equity,
-              estimatedValue: reapiData.homeEquity.estimatedValue || genieAvm?.value,
-              outstandingBalance: reapiData.homeEquity.estimatedMortgageBalance ? Number(reapiData.homeEquity.estimatedMortgageBalance) : 0,
-              estimatedPayment: reapiData.homeEquity.estimatedMortgagePayment ? Number(reapiData.homeEquity.estimatedMortgagePayment) : undefined,
-              ltv: reapiData.homeEquity.estimatedMortgageBalance && reapiData.homeEquity.estimatedValue
-                ? (Number(reapiData.homeEquity.estimatedMortgageBalance) / reapiData.homeEquity.estimatedValue) * 100 : 0,
-              equityPercent: reapiData.homeEquity.equityPercent,
-              freeClear: reapiData.homeEquity.freeClear,
+              equity: reapiMortBal != null ? genieEstValue - reapiMortBal : reapiData?.homeEquity?.equity ?? ((p as any).homeEquity?.equity),
+              estimatedValue: genieEstValue,
+              outstandingBalance: reapiMortBal ?? ((p as any).homeEquity?.outstandingBalance),
+              estimatedPayment: reapiData?.homeEquity?.estimatedMortgagePayment ? Number(reapiData.homeEquity.estimatedMortgagePayment) : ((p as any).homeEquity?.estimatedPayment),
+              ltv: reapiMortBal != null && genieEstValue ? (reapiMortBal / genieEstValue) * 100 : ((p as any).homeEquity?.ltv),
+              equityPercent: reapiData?.homeEquity?.equityPercent,
+              freeClear: reapiData?.homeEquity?.freeClear,
             }
           : (p as any).homeEquity || null;
         if (!homeEquityData) {
-          // Cascade: Genie AVM → REAPI AVM → Realie AVM → market assessment
-          const avmVal =
-            genieAvm?.value || reapiData?.avm?.amount?.value || p.avm?.amount?.value || p.assessment?.market?.mktTtlValue || p.assessment?.appraised?.apprTtlValue;
+          const avmVal = genieEstValue;
           const saleAmt = p.sale?.amount?.saleAmt;
           const lienBal =
             (reapiData?.homeEquity?.estimatedMortgageBalance ? Number(reapiData.homeEquity.estimatedMortgageBalance) : null) ??
