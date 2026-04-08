@@ -311,6 +311,37 @@ export async function GET(request: NextRequest) {
       void (async () => { try { await supabase.from("agent_activity_log").insert({ agent_id: userId, action: "mls_search", details: { query, results: properties.length } }); } catch {} })();
     }
 
+    // Cache closed sales to build historical comp pool (fire-and-forget)
+    const closedProps = properties.filter((p: any) => p.StandardStatus === "Closed" && p.ClosePrice > 0 && p.CloseDate);
+    if (closedProps.length > 0) {
+      import("@/lib/avm/avm-cache-service")
+        .then(({ cacheClosedCompsBatch }) => {
+          const comps = closedProps.map((p: any) => ({
+            address: p.UnparsedAddress || [p.StreetNumber, p.StreetName, p.StreetSuffix].filter(Boolean).join(" ") || "",
+            closePrice: p.ClosePrice,
+            listPrice: p.ListPrice || p.OriginalListPrice,
+            closeDate: p.CloseDate,
+            beds: p.BedroomsTotal,
+            baths: p.BathroomsTotalInteger,
+            sqft: p.LivingArea,
+            yearBuilt: p.YearBuilt,
+            lotSize: p.LotSizeArea,
+            propertyType: p.PropertyType,
+            propertySubType: p.PropertySubType,
+            zipCode: p.PostalCode || "",
+            lat: p.Latitude,
+            lng: p.Longitude,
+            subdivision: p.SubdivisionName,
+            ownershipType: p.Ownership,
+            source: "mls" as const,
+            listingKey: p.ListingKey,
+            daysOnMarket: p.DaysOnMarket || p.CumulativeDaysOnMarket,
+          }));
+          cacheClosedCompsBatch(comps).catch(() => {});
+        })
+        .catch(() => {});
+    }
+
     return NextResponse.json({
       properties,
       totalCount: result["@odata.count"] || properties.length,
