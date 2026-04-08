@@ -200,10 +200,18 @@ export async function GET(request: NextRequest) {
 
       case "skip-trace": {
         const skipParams: any = {};
-        if (params.get("address")) skipParams.address = params.get("address");
+        const skipAddr = params.get("address");
+        if (skipAddr) {
+          // Parse address into street for skip trace
+          const skipParts = skipAddr.split(",")[0].trim();
+          skipParams.address = skipParts;
+        }
         if (params.get("id")) skipParams.id = Number(params.get("id"));
         if (params.get("first_name")) skipParams.first_name = params.get("first_name");
         if (params.get("last_name")) skipParams.last_name = params.get("last_name");
+        if (params.get("city")) skipParams.city = params.get("city");
+        if (params.get("state")) skipParams.state = params.get("state");
+        if (params.get("zip")) skipParams.zip = params.get("zip");
         const raw = await client.skipTrace(skipParams);
         result = {
           people: raw.data.map(mapReapiSkipTrace),

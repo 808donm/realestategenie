@@ -299,6 +299,8 @@ export default function PropertyDetailModal({
   const [genieAvm, setGenieAvm] = useState<any>(null);
   const [reapiAvm, setReapiAvm] = useState<{ value: number; raw?: any } | null>(null);
   const [reapiData, setReapiData] = useState<any>(null); // Full REAPI enrichment data
+  const [skipTraceData, setSkipTraceData] = useState<any>(null);
+  const [skipTraceLoading, setSkipTraceLoading] = useState(false);
   const [genieAvmLoading, setGenieAvmLoading] = useState(false);
   const [enrichedFinancial, setEnrichedFinancial] = useState<any>(null);
   const [enrichedFinancialLoading, setEnrichedFinancialLoading] = useState(false);
@@ -673,6 +675,39 @@ export default function PropertyDetailModal({
       })
       .catch(() => {});
   }, [reapiData, p, mlsAddress]);
+
+  // Fetch Skip Trace when Ownership tab is clicked (on-demand only)
+  useEffect(() => {
+    if (activeSection !== "ownership" || skipTraceData || skipTraceLoading) return;
+    const addr = mlsAddress || p.address?.oneLine || "";
+    const reapiZip = p.address?.postal1 || "";
+    const reapiCity = p.address?.locality || "";
+    const reapiState = p.address?.countrySubd || "";
+    if (!addr || (!reapiZip && !reapiCity)) return;
+    setSkipTraceLoading(true);
+    const stParams = new URLSearchParams({ endpoint: "skip-trace", address: addr });
+    if (reapiCity) stParams.set("city", reapiCity);
+    if (reapiState) stParams.set("state", reapiState);
+    if (reapiZip) stParams.set("zip", reapiZip);
+    // Pass owner name if available for better match
+    const ownerName = reapiData?.owner?.owner1?.fullName || p.owner?.owner1?.fullName;
+    if (ownerName) {
+      const nameParts = ownerName.split(" ");
+      if (nameParts.length >= 2) {
+        stParams.set("first_name", nameParts[0]);
+        stParams.set("last_name", nameParts[nameParts.length - 1]);
+      }
+    }
+    fetch(`/api/integrations/reapi?${stParams.toString()}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.people && data.people.length > 0) {
+          setSkipTraceData(data.people);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setSkipTraceLoading(false));
+  }, [activeSection, skipTraceData, skipTraceLoading, p, mlsAddress, reapiData]);
 
   // Fetch AVM data when the Financial tab is selected and property doesn't already have AVM
   useEffect(() => {
@@ -3535,6 +3570,94 @@ export default function PropertyDetailModal({
                   </>
                 );
               })()}
+
+              {/* Skip Trace Results (fetched on Ownership tab click) */}
+              {skipTraceLoading && (
+                <Section title="Skip Trace">
+                  <div style={{ color: "#6b7280", fontSize: 13 }}>Loading contact information...</div>
+                </Section>
+              )}
+              {skipTraceData && skipTraceData.length > 0 && skipTraceData.map((person: any, pi: number) => (
+                <Section key={pi} title={pi === 0 ? "Skip Trace - Contact Info" : `Additional Contact ${pi + 1}`}>
+                  {person.name && <Field label="Name" value={person.name} />}
+                  {person.age && <Field label="Age" value={String(person.age)} />}
+                  {person.gender && <Field label="Gender" value={person.gender} />}
+                  {/* Phone Numbers */}
+                  {person.phones?.length > 0 && (
+                    <div style={{ marginTop: 8 }}>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", marginBottom: 4 }}>Phone Numbers</div>
+                      {person.phones.map((ph: any, i: number) => (
+                        <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", fontSize: 13, borderBottom: "1px solid #f3f4f6" }}>
+                          <span style={{ fontWeight: 600 }}>
+                            <a href={`tel:${ph.number}`} style={{ color: "#2563eb", textDecoration: "none" }}>{ph.number}</a>
+                          </span>
+                          <span style={{ fontSize: 11, color: "#9ca3af" }}>
+                            {[ph.type, ph.lineType, ph.doNotCall ? "DNC" : null].filter(Boolean).join(" - ")}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {/* Emails */}
+                  {person.emails?.length > 0 && (
+                    <div style={{ marginTop: 8 }}>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", marginBottom: 4 }}>Email Addresses</div>
+                      {person.emails.map((em: any, i: number) => (
+                        <div key={i} style={{ padding: "3px 0", fontSize: 13, borderBottom: "1px solid #f3f4f6" }}>
+                          <a href={`mailto:${em.address}`} style={{ color: "#2563eb", textDecoration: "none" }}>{em.address}</a>
+                          {em.type && <span style={{ fontSize: 11, color: "#9ca3af", marginLeft: 8 }}>{em.type}</span>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {/* Social Profiles */}
+                  {person.socialProfiles?.length > 0 && (
+                    <div style={{ marginTop: 8 }}>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", marginBottom: 4 }}>Social Profiles</div>
+                      {person.socialProfiles.map((sp: any, i: number) => (
+                        <div key={i} style={{ padding: "3px 0", fontSize: 13, borderBottom: "1px solid #f3f4f6" }}>
+                          <span style={{ fontWeight: 600 }}>{sp.type}</span>
+                          {sp.url && <a href={sp.url} target="_blank" rel="noopener noreferrer" style={{ color: "#2563eb", textDecoration: "none", marginLeft: 8 }}>{sp.username || sp.url}</a>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {/* Demographics */}
+                  {person.demographics && (person.demographics.occupation || person.demographics.incomeRange || person.demographics.education) && (
+                    <div style={{ marginTop: 8 }}>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", marginBottom: 4 }}>Demographics</div>
+                      {person.demographics.occupation && <Field label="Occupation" value={person.demographics.occupation} />}
+                      {person.demographics.education && <Field label="Education" value={person.demographics.education} />}
+                      {person.demographics.incomeRange && <Field label="Income Range" value={person.demographics.incomeRange} />}
+                      {person.demographics.netWorthRange && <Field label="Net Worth" value={person.demographics.netWorthRange} />}
+                      {person.demographics.maritalStatus && <Field label="Marital Status" value={person.demographics.maritalStatus} />}
+                    </div>
+                  )}
+                  {/* Known Addresses */}
+                  {person.addresses?.length > 0 && (
+                    <div style={{ marginTop: 8 }}>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", marginBottom: 4 }}>Known Addresses</div>
+                      {person.addresses.slice(0, 5).map((a: any, i: number) => (
+                        <div key={i} style={{ padding: "3px 0", fontSize: 12, color: "#374151", borderBottom: "1px solid #f3f4f6" }}>
+                          {[a.address, a.city, a.state, a.zip].filter(Boolean).join(", ")}
+                          {a.type && <span style={{ fontSize: 11, color: "#9ca3af", marginLeft: 6 }}>({a.type})</span>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {/* Relatives */}
+                  {person.relatives?.length > 0 && (
+                    <div style={{ marginTop: 8 }}>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", marginBottom: 4 }}>Known Relatives</div>
+                      {person.relatives.slice(0, 5).map((r: any, i: number) => (
+                        <div key={i} style={{ padding: "2px 0", fontSize: 12, color: "#374151" }}>
+                          {r.name}{r.relationship && <span style={{ color: "#9ca3af", marginLeft: 6 }}>({r.relationship})</span>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </Section>
+              ))}
 
               {/* Last Sale Summary — always visible from base property data */}
               {(p.sale?.amount?.saleAmt || p.sale?.amount?.saleTransDate || p.sale?.amount?.saleRecDate) &&
