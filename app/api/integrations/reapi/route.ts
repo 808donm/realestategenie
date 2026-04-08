@@ -193,6 +193,51 @@ export async function GET(request: NextRequest) {
         break;
       }
 
+      case "boundary": {
+        const boundaryParams: any = {};
+        if (params.get("id")) boundaryParams.id = Number(params.get("id"));
+        if (params.get("address")) boundaryParams.address = params.get("address");
+        if (params.get("latitude")) boundaryParams.latitude = Number(params.get("latitude"));
+        if (params.get("longitude")) boundaryParams.longitude = Number(params.get("longitude"));
+        const raw = await client.getPropertyBoundary(boundaryParams);
+        result = { boundary: raw.data, source: "reapi" };
+        break;
+      }
+
+      case "portfolio": {
+        const portfolioParams: any = {};
+        if (params.get("id")) portfolioParams.id = Number(params.get("id"));
+        if (params.get("address")) portfolioParams.address = params.get("address");
+        if (params.get("owner_name")) portfolioParams.owner_name = params.get("owner_name");
+        const raw = await client.getPropertyPortfolio(portfolioParams);
+        result = { portfolio: raw.data, source: "reapi" };
+        break;
+      }
+
+      case "propgpt": {
+        const query = params.get("query") || params.get("q") || "";
+        if (!query) return NextResponse.json({ error: "query is required" }, { status: 400 });
+        const raw = await client.propGPT(query, {
+          city: params.get("city") || undefined,
+          state: params.get("state") || undefined,
+          zip: params.get("zip") || undefined,
+          size: params.get("size") ? Number(params.get("size")) : undefined,
+        });
+        result = { properties: raw.data.map(mapReapiToAttomShape), raw: raw.data, source: "reapi" };
+        break;
+      }
+
+      case "mapping": {
+        const mappingParams: any = {};
+        if (params.get("address")) mappingParams.address = params.get("address");
+        if (params.get("latitude")) mappingParams.latitude = Number(params.get("latitude"));
+        if (params.get("longitude")) mappingParams.longitude = Number(params.get("longitude"));
+        if (params.get("id")) mappingParams.id = Number(params.get("id"));
+        const raw = await client.propertyMapping(mappingParams);
+        result = { mapping: raw.data, source: "reapi" };
+        break;
+      }
+
       case "autocomplete": {
         const search = params.get("search") || params.get("q") || "";
         if (!search || search.length < 2) {

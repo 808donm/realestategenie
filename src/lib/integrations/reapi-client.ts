@@ -504,7 +504,7 @@ export class ReapiClient {
     return this.request("POST", "/v2/PropertyDetailBulk", { ids });
   }
 
-  // ── Property AVM ──
+  // ── Lender Grade AVM ──
 
   async getPropertyAvm(params: ReapiAvmParams): Promise<ReapiAvmResult> {
     if (params.id) {
@@ -515,6 +515,30 @@ export class ReapiClient {
 
   async getPropertyAvmBulk(properties: ReapiAvmParams[]): Promise<{ data: any[]; statusCode: number }> {
     return this.request("POST", "/v2/PropertyAvmBulk", { properties });
+  }
+
+  // ── Property Boundary (parcel polygon) ──
+
+  async getPropertyBoundary(params: {
+    id?: number;
+    address?: string;
+    latitude?: number;
+    longitude?: number;
+  }): Promise<{ data: any; statusCode: number }> {
+    if (params.id) {
+      return this.request("GET", "/v2/PropertyBoundary", undefined, params);
+    }
+    return this.request("POST", "/v2/PropertyBoundary", params);
+  }
+
+  // ── Property Portfolio (investor portfolio) ──
+
+  async getPropertyPortfolio(params: {
+    id?: number;
+    address?: string;
+    owner_name?: string;
+  }): Promise<{ data: any; statusCode: number }> {
+    return this.request("POST", "/v2/PropertyPortfolio", params);
   }
 
   // ── Property Comps ──
