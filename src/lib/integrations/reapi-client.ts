@@ -715,7 +715,7 @@ export class ReapiClient {
   // ── Skip Trace ──
 
   async skipTrace(params: ReapiSkipTraceParams): Promise<ReapiSkipTraceResult> {
-    return this.request<ReapiSkipTraceResult>("POST", "/v2/SkipTrace", params);
+    return this.request<ReapiSkipTraceResult>("POST", "/v1/SkipTrace", params);
   }
 
   async skipTraceBatch(

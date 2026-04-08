@@ -212,14 +212,42 @@ export async function GET(request: NextRequest) {
         if (params.get("city")) skipParams.city = params.get("city");
         if (params.get("state")) skipParams.state = params.get("state");
         if (params.get("zip")) skipParams.zip = params.get("zip");
-        const raw = await client.skipTrace(skipParams);
-        const skipData = (raw as any).persons || raw.data || (raw as any).results || [];
-        const skipArray = Array.isArray(skipData) ? skipData : [skipData];
-        console.log("[REAPI] Skip trace response keys:", Object.keys(raw), "persons count:", skipArray.length);
+        const raw = await client.skipTrace(skipParams) as any;
+        console.log("[REAPI] Skip trace response keys:", Object.keys(raw), "match:", raw.match, "statusCode:", raw.statusCode);
+        // Response structure: { output: { identity: { phones: [], emails: [] } }, match: true }
+        const identity = raw.output?.identity || {};
+        const person = {
+          name: [skipParams.first_name, skipParams.last_name].filter(Boolean).join(" "),
+          firstName: skipParams.first_name,
+          lastName: skipParams.last_name,
+          phones: (identity.phones || []).map((ph: any) => ({
+            number: ph.phoneDisplay || ph.phone,
+            type: ph.phoneType,
+            connected: ph.isConnected,
+            doNotCall: ph.doNotCall,
+          })),
+          emails: (identity.emails || []).map((em: any) => ({
+            address: em.email,
+            type: em.emailType,
+          })),
+          addresses: (identity.addresses || []).map((a: any) => ({
+            address: a.address,
+            city: a.city,
+            state: a.state,
+            zip: a.zip,
+          })),
+          socialProfiles: identity.socialProfiles || [],
+          demographics: identity.demographics || {},
+          relatives: identity.relatives || [],
+          associates: identity.associates || [],
+        };
+        console.log("[REAPI] Skip trace found:", identity.phones?.length || 0, "phones,", identity.emails?.length || 0, "emails");
         result = {
-          people: skipArray.filter(Boolean).map(mapReapiSkipTrace),
-          raw: skipArray,
-          count: raw.recordCount || skipArray.length,
+          people: raw.match ? [person] : [],
+          raw: raw.output || raw,
+          count: raw.match ? 1 : 0,
+          matched: raw.match,
+          credits: raw.credits,
           source: "reapi",
         };
         break;
