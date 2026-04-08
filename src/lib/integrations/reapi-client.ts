@@ -519,18 +519,26 @@ export class ReapiClient {
 
   // ── Property Detail ──
 
-  async getPropertyDetail(id: number): Promise<{ data: ReapiProperty; statusCode: number; statusMessage: string }> {
-    return this.request("GET", "/v2/PropertyDetail", undefined, { id });
-  }
-
-  async getPropertyDetailByAddress(address: string): Promise<{ data: ReapiProperty; statusCode: number; statusMessage: string }> {
-    // Search first to get the property ID, then fetch full detail
-    const search = await this.searchProperties({ address, size: 1 });
-    if (search.data.length > 0 && search.data[0].id) {
-      return this.getPropertyDetail(search.data[0].id);
-    }
-    // If no ID, return the search result directly
-    return { data: search.data[0] || ({} as ReapiProperty), statusCode: search.statusCode, statusMessage: search.statusMessage };
+  async getPropertyDetail(params: {
+    id?: number;
+    address?: string;
+    house?: string;
+    street?: string;
+    city?: string;
+    state?: string;
+    zip?: string;
+    apn?: string;
+    fips?: string;
+    exact_match?: boolean;
+    prior_owner?: boolean;
+    comps?: boolean;
+  }): Promise<{ data: ReapiProperty; statusCode: number; statusMessage: string }> {
+    return this.request("POST", "/v2/PropertyDetail", {
+      ...params,
+      prior_owner: params.prior_owner ?? true,  // Always get prior owner
+      comps: params.comps ?? true,               // Always get comps (saves a separate call)
+      exact_match: params.exact_match ?? true,
+    });
   }
 
   async getPropertyDetailBulk(ids: number[]): Promise<{ data: ReapiProperty[]; recordCount: number; statusCode: number }> {
@@ -680,201 +688,284 @@ export function getReapiClient(): ReapiClient | null {
 // Maps REAPI property data to the ATTOM-compatible shape used throughout the app
 
 export function mapReapiToAttomShape(raw: ReapiProperty): any {
-  // REAPI returns nested structure: propertyInfo.address.address, propertyInfo.bedrooms, etc.
-  // Flatten it so both nested and flat formats work
-  const pi = (raw as any).propertyInfo || raw;
-  const addr = pi.address || raw;
-  const p: ReapiProperty = {
-    ...raw,
-    id: raw.id,
-    address: addr.address || addr.street || raw.address || raw.street,
-    city: addr.city || raw.city,
-    state: addr.state || raw.state,
-    zip: addr.zip || addr.zipCode || raw.zip,
-    county: addr.county || raw.county,
-    latitude: pi.latitude || raw.latitude,
-    longitude: pi.longitude || raw.longitude,
-    apn: pi.apn || raw.apn,
-    fips: pi.fips || raw.fips,
-    property_type: pi.propertyType || pi.property_type || raw.property_type,
-    bedrooms: pi.bedrooms || raw.bedrooms,
-    bathrooms: pi.bathrooms || raw.bathrooms,
-    square_footage: pi.livingSquareFeet || pi.square_footage || raw.square_footage,
-    lot_size: pi.lotSquareFeet || pi.lot_size || raw.lot_size,
-    year_built: pi.yearBuilt || pi.year_built || raw.year_built,
-    stories: pi.stories || raw.stories,
-    units: pi.units || raw.units,
-    owner_name: pi.ownerName || pi.owner_name || raw.owner_name || (raw as any).ownerInfo?.ownerName,
-    owner_name_2: pi.owner_name_2 || raw.owner_name_2 || (raw as any).ownerInfo?.ownerName2,
-    owner_occupied: pi.ownerOccupied ?? pi.owner_occupied ?? raw.owner_occupied,
-    absentee_owner: pi.absenteeOwner ?? pi.absentee_owner ?? raw.absentee_owner,
-    mailing_address: (raw as any).ownerInfo?.mailingAddress?.address || pi.mailing_address || raw.mailing_address,
-    mailing_city: (raw as any).ownerInfo?.mailingAddress?.city || pi.mailing_city || raw.mailing_city,
-    mailing_state: (raw as any).ownerInfo?.mailingAddress?.state || pi.mailing_state || raw.mailing_state,
-    mailing_zip: (raw as any).ownerInfo?.mailingAddress?.zip || pi.mailing_zip || raw.mailing_zip,
-    estimated_value: (raw as any).estimatedValue || raw.estimated_value,
-    estimated_equity: (raw as any).estimatedEquity || raw.estimated_equity,
-    assessed_value: pi.assessedValue || pi.assessed_value || raw.assessed_value,
-    last_sale_date: pi.lastSaleDate || pi.last_sale_date || raw.last_sale_date,
-    last_sale_price: pi.lastSalePrice || pi.last_sale_price || raw.last_sale_price,
-    mortgage_amount: (raw as any).mortgageInfo?.amount || pi.mortgage_amount || raw.mortgage_amount,
-    mortgage_lender: (raw as any).mortgageInfo?.lender || pi.mortgage_lender || raw.mortgage_lender,
-    total_lien_balance: (raw as any).mortgageInfo?.totalBalance || pi.total_lien_balance || raw.total_lien_balance,
-    schools: (raw as any).schools || pi.schools || raw.schools,
-    flood_zone: (raw as any).floodZone || pi.flood_zone || raw.flood_zone,
-    sale_history: (raw as any).saleHistory || pi.sale_history || raw.sale_history,
-    assessment_history: (raw as any).assessmentHistory || pi.assessment_history || raw.assessment_history,
-  };
+  // REAPI PropertyDetail returns deeply nested structure
+  const d = raw as any; // raw data from REAPI
+  const pi = d.propertyInfo || {};
+  const addr = pi.address || {};
+  const oi = d.ownerInfo || {};
+  const poi = d.priorOwnerInfo || {};
+  const ti = d.taxInfo || {};
+  const li = d.lotInfo || {};
+  const ls = d.lastSale || {};
+  const lp = d.linkedProperties || {};
+  const demo = d.demographics || {};
+  const nb = d.neighborhood || {};
+  const mort0 = (d.currentMortgages || [])[0] || {};
 
-  const oneLine = [p.address || p.street, p.city, p.state, p.zip].filter(Boolean).join(", ");
+  const address = addr.address || addr.label || d.address || d.street || "";
+  const city = addr.city || d.city || "";
+  const state = addr.state || d.state || "";
+  const zip = addr.zip || d.zip || "";
+  const oneLine = [address, city, state, zip].filter(Boolean).join(", ");
 
   return {
     identifier: {
-      apn: p.apn,
-      fips: p.fips,
-      obPropId: p.id ? String(p.id) : undefined,
-      attomId: p.id || 0,
+      apn: li.apn || li.apnUnformatted || pi.parcelAccountNumber,
+      fips: addr.fips || li.fips,
+      obPropId: d.id ? String(d.id) : undefined,
+      attomId: d.id || 0,
     },
     address: {
       oneLine,
-      line1: p.address || p.street || "",
-      locality: p.city || "",
-      countrySubd: p.state || "",
-      postal1: p.zip || "",
+      line1: address,
+      locality: city,
+      countrySubd: state,
+      postal1: zip,
+      postal2: addr.zip4,
+      county: addr.county,
     },
     location: {
-      latitude: p.latitude,
-      longitude: p.longitude,
+      latitude: pi.latitude || d.latitude,
+      longitude: pi.longitude || d.longitude,
     },
     summary: {
-      propType: mapPropertyType(p.property_type),
-      propSubType: mapPropertySubType(p.property_type),
-      yearBuilt: p.year_built,
+      propType: mapPropertyType(d.propertyType || pi.propertyUse),
+      propSubType: mapPropertySubType(d.propertyType || pi.propertyUse),
+      yearBuilt: pi.yearBuilt,
     },
     owner: {
-      owner1: { fullName: p.owner_name },
-      owner2: p.owner_name_2 ? { fullName: p.owner_name_2 } : undefined,
-      corporateIndicator: p.owner_type === "Corporate" ? "Y" : "N",
-      absenteeOwnerStatus: p.absentee_owner ? "A" : "O",
-      mailingAddressOneLine: [p.mailing_address, p.mailing_city, p.mailing_state, p.mailing_zip]
-        .filter(Boolean)
-        .join(", "),
-      ownerOccupied: p.owner_occupied ? "Y" : "N",
-      ownerParcelCount: p.owner_parcel_count,
+      owner1: { fullName: oi.owner1FullName, firstName: oi.owner1FirstName, lastName: oi.owner1LastName },
+      owner2: oi.owner2FullName ? { fullName: oi.owner2FullName, firstName: oi.owner2FirstName, lastName: oi.owner2LastName } : undefined,
+      corporateIndicator: oi.corporateOwned ? "Y" : "N",
+      companyName: oi.companyName,
+      absenteeOwnerStatus: oi.absenteeOwner ? "A" : "O",
+      inStateAbsentee: d.inStateAbsenteeOwner,
+      outOfStateAbsentee: d.outOfStateAbsenteeOwner,
+      mailingAddressOneLine: oi.mailAddress?.label || oi.mailAddress?.address || "",
+      mailingAddress: oi.mailAddress,
+      ownerOccupied: oi.ownerOccupied ? "Y" : "N",
+      ownershipLength: oi.ownershipLength,
     },
+    priorOwner: poi.owner1FullName ? {
+      owner1: { fullName: poi.owner1FullName, firstName: poi.owner1FirstName, lastName: poi.owner1LastName },
+      owner2: poi.owner2FullName ? { fullName: poi.owner2FullName } : undefined,
+      ownershipLength: poi.ownershipLength,
+      mailingAddress: poi.mailAddress,
+    } : undefined,
     building: {
       size: {
-        livingSize: p.square_footage,
-        universalSize: p.square_footage,
+        livingSize: pi.livingSquareFeet,
+        universalSize: pi.buildingSquareFeet || pi.livingSquareFeet,
       },
       rooms: {
-        beds: p.bedrooms,
-        bathsTotal: p.bathrooms,
-        bathsFull: p.bathrooms ? Math.floor(p.bathrooms) : undefined,
+        beds: pi.bedrooms,
+        bathsTotal: pi.bathrooms,
+        bathsFull: pi.bathrooms ? Math.floor(pi.bathrooms) : undefined,
+        bathsPartial: pi.partialBathrooms,
+        roomsTotal: pi.roomsCount,
       },
       summary: {
-        yearBuilt: p.year_built,
-        storyCount: p.stories,
-        unitsCount: p.units,
+        yearBuilt: pi.yearBuilt,
+        storyCount: pi.stories,
+        unitsCount: pi.unitsCount,
+      },
+      features: {
+        pool: pi.pool,
+        poolArea: pi.poolArea,
+        fireplace: pi.fireplace,
+        fireplaces: pi.fireplaces,
+        garageType: pi.garageType,
+        garageSquareFeet: pi.garageSquareFeet,
+        parkingSpaces: pi.parkingSpaces,
+        airConditioning: pi.airConditioningType,
+        heating: pi.heatingType,
+        heatingFuel: pi.heatingFuelType,
+        basement: pi.basementType,
+        basementSqft: pi.basementSquareFeet,
+        basementFinishedSqft: pi.basementSquareFeetFinished,
+        construction: pi.construction,
+        roofMaterial: pi.roofMaterial,
+        roofConstruction: pi.roofConstruction,
+        patio: pi.patio,
+        deck: pi.deck,
+        balcony: pi.featureBalcony,
+        hoa: pi.hoa,
+        carport: pi.carport,
+        rvParking: pi.rvParking,
+        waterSource: pi.utilitiesWaterSource,
+        sewage: pi.utilitiesSewageUsage,
       },
     },
     lot: {
-      lotSize1: p.lot_size,
+      lotSize1: li.lotSquareFeet || pi.lotSquareFeet,
+      lotAcres: li.lotAcres,
+      lotDepth: li.lotDepthFeet,
+      lotWidth: li.lotWidthFeet,
+      lotNumber: li.lotNumber,
+      zoning: li.zoning,
+      landUse: li.landUse,
+      legalDescription: li.legalDescription,
+      subdivision: li.subdivision,
+      censusBlock: li.censusBlock,
+      censusTract: li.censusTract,
     },
     avm: {
       amount: {
-        value: p.estimated_value,
-        low: p.estimated_value_low,
-        high: p.estimated_value_high,
+        value: d.estimatedValue || ti.estimatedValue,
+        low: d.estimatedValue ? Math.round(d.estimatedValue * 0.9) : undefined,
+        high: d.estimatedValue ? Math.round(d.estimatedValue * 1.1) : undefined,
       },
     },
     assessment: {
       assessed: {
-        assdTtlValue: p.assessed_value,
-        assdLandValue: p.assessed_land_value,
-        assdImprValue: p.assessed_improvement_value,
+        assdTtlValue: ti.assessedValue,
+        assdLandValue: ti.assessedLandValue || ti.assessedLandValue,
+        assdImprValue: ti.assessedImprovementValue,
       },
       market: {
-        mktTtlValue: p.market_value || p.assessed_value,
-        mktLandValue: p.assessed_land_value,
-        mktImprValue: p.assessed_improvement_value,
+        mktTtlValue: ti.marketValue || ti.assessedValue,
+        mktLandValue: ti.marketLandValue,
+        mktImprValue: ti.marketImprovementValue,
       },
       tax: {
-        taxAmt: p.tax_amount,
+        taxAmt: ti.taxAmount,
+        taxYear: ti.year || ti.assessmentYear,
+        taxDelinquentYear: ti.taxDelinquentYear,
       },
     },
-    homeEquity: p.estimated_equity != null
-      ? {
-          estimatedValue: p.estimated_value,
-          equity: p.estimated_equity,
-          lienBal: p.total_lien_balance,
-          lienCount: p.total_lien_count,
-        }
-      : undefined,
-    mortgage: p.mortgage_amount
-      ? {
-          amount: {
-            firstAmt: p.mortgage_amount,
-            secondAmt: p.second_mortgage_amount,
-          },
-          lender: { name: p.mortgage_lender },
-          interestRate: p.mortgage_rate,
-          term: p.mortgage_term,
-          dueDate: p.mortgage_maturity_date,
-          loanDate: p.mortgage_date,
-        }
-      : undefined,
+    homeEquity: {
+      estimatedValue: d.estimatedValue,
+      equity: d.estimatedEquity || oi.equity,
+      estimatedMortgageBalance: d.estimatedMortgageBalance || d.openMortgageBalance,
+      estimatedMortgagePayment: d.estimatedMortgagePayment,
+      equityPercent: d.equityPercent,
+      freeClear: d.freeClear,
+    },
+    mortgage: mort0.amount ? {
+      amount: { firstAmt: mort0.amount },
+      lender: { name: mort0.lenderName, type: mort0.lenderType },
+      interestRate: mort0.interestRate,
+      interestRateType: mort0.interestRateType,
+      term: mort0.term,
+      termType: mort0.termType,
+      dueDate: mort0.maturityDate,
+      loanDate: mort0.documentDate,
+      loanType: mort0.loanType,
+      position: mort0.position,
+      assumable: mort0.assumable,
+    } : undefined,
+    currentMortgages: (d.currentMortgages || []).map((m: any) => ({
+      amount: m.amount,
+      lenderName: m.lenderName,
+      lenderType: m.lenderType,
+      interestRate: m.interestRate,
+      interestRateType: m.interestRateType,
+      term: m.term,
+      maturityDate: m.maturityDate,
+      loanType: m.loanType,
+      position: m.position,
+      documentDate: m.documentDate,
+      recordingDate: m.recordingDate,
+    })),
+    mortgageHistory: d.mortgageHistory,
     sale: {
       amount: {
-        saleAmt: p.last_sale_price,
-        salePrice: p.last_sale_price,
-        saleTransDate: p.last_sale_date,
+        saleAmt: ls.saleAmount || d.lastSalePrice,
+        salePrice: ls.saleAmount || d.lastSalePrice,
+        saleTransDate: ls.saleDate || d.lastSaleDate,
+        saleRecDate: ls.recordingDate,
       },
+      buyerNames: ls.buyerNames,
+      sellerNames: ls.sellerNames,
+      documentType: ls.documentType,
+      downPayment: ls.downPayment,
+      ltv: ls.ltv,
+      armsLength: ls.armsLength,
+      purchaseMethod: ls.purchaseMethod,
     },
-    saleHistory: (p.sale_history || []).map((s) => ({
-      amount: {
-        saleAmt: s.price,
-        saleTransDate: s.date,
-      },
-      buyer: s.buyer,
-      seller: s.seller,
-      documentType: s.document_type,
+    saleHistory: (d.saleHistory || []).map((s: any) => ({
+      amount: { saleAmt: s.saleAmount, saleTransDate: s.saleDate, saleRecDate: s.recordingDate },
+      buyerNames: s.buyerNames,
+      sellerNames: s.sellerNames,
+      documentType: s.documentType,
+      armsLength: s.armsLength,
+      downPayment: s.downPayment,
+      ltv: s.ltv,
     })),
-    assessmenthistory: (p.assessment_history || []).map((a) => ({
-      year: a.year,
-      value: a.total,
-      land: a.land,
-      improvements: a.improvement,
-    })),
-    foreclosure: p.foreclosure_status
-      ? { code: p.foreclosure_status, isForeclosure: true }
+    foreclosure: d.preForeclosure || d.foreclosure || d.bankOwned
+      ? {
+          isForeclosure: true,
+          preForeclosure: d.preForeclosure,
+          bankOwned: d.bankOwned,
+          foreclosureInfo: d.foreclosureInfo,
+          auctionInfo: d.auctionInfo,
+        }
       : undefined,
-    // Lead flags (REAPI-specific enrichment)
+    // Lead flags
     leadFlags: {
-      absenteeOwner: p.absentee_owner,
-      highEquity: p.high_equity,
-      investor: p.investor,
-      vacant: p.vacant,
-      preForeclosure: p.pre_foreclosure,
-      foreclosure: !!p.foreclosure_status,
+      absenteeOwner: d.absenteeOwner,
+      highEquity: d.highEquity,
+      investor: d.investorBuyer,
+      vacant: d.vacant,
+      preForeclosure: d.preForeclosure,
+      foreclosure: d.foreclosure,
+      bankOwned: d.bankOwned,
+      taxLien: d.taxLien,
+      taxDelinquent: d.taxDelinquent,
+      freeClear: d.freeClear,
+      cashBuyer: d.cashBuyer,
+      cashSale: d.cashSale,
+      death: d.death,
+      inherited: d.inherited,
+      judgment: d.judgment,
     },
-    // Schools (REAPI-specific enrichment)
-    schools: (p.schools || []).map((s) => ({
+    // MLS keywords (motivated seller detection)
+    mlsKeywords: d.mlsKeywords,
+    mlsHistory: d.mlsHistory,
+    // Schools
+    schools: (d.schools || []).map((s: any) => ({
       name: s.name,
       type: s.type,
-      level: s.level,
       rating: s.rating,
-      distance: s.distance,
-      gradesLow: s.grades_low,
-      gradesHigh: s.grades_high,
+      parentRating: s.parentRating,
+      grades: s.grades,
       enrollment: s.enrollment,
+      levels: s.levels,
+      city: s.city,
+      street: s.street,
+      zip: s.zip,
     })),
+    // Investor portfolio
+    linkedProperties: lp.totalOwned ? {
+      totalOwned: lp.totalOwned,
+      totalValue: lp.totalValue,
+      totalEquity: lp.totalEquity,
+      totalMortgageBalance: lp.totalMortgageBalance,
+      purchasedLast6mos: lp.purchasedLast6mos,
+      purchasedLast12mos: lp.purchasedLast12mos,
+      ids: lp.ids,
+    } : undefined,
+    // Demographics / rent estimates
+    demographics: demo.medianIncome ? {
+      medianIncome: demo.medianIncome,
+      suggestedRent: demo.suggestedRent,
+      fmrOneBedroom: demo.fmrOneBedroom,
+      fmrTwoBedroom: demo.fmrTwoBedroom,
+      fmrThreeBedroom: demo.fmrThreeBedroom,
+      fmrFourBedroom: demo.fmrFourBedroom,
+      hudAreaName: demo.hudAreaName,
+    } : undefined,
     // Flood zone
-    floodZone: p.flood_zone
-      ? { zone: p.flood_zone, description: p.flood_zone_description }
+    floodZone: d.floodZone
+      ? { zone: d.floodZone, description: d.floodZoneDescription, type: d.floodZoneType }
       : undefined,
+    // Neighborhood
+    neighborhood: nb.name ? { name: nb.name, type: nb.type } : undefined,
+    // Price per sqft
+    pricePerSquareFoot: pi.pricePerSquareFoot,
     // Source marker
     _source: "reapi",
+    _raw: d, // Keep raw for debugging
   };
 }
 

@@ -78,25 +78,20 @@ export async function GET(request: NextRequest) {
       case "property-detail": {
         const id = params.get("id") ? Number(params.get("id")) : undefined;
         const address = params.get("address");
-        if (id) {
-          const raw = await client.getPropertyDetail(id);
-          result = { property: mapReapiToAttomShape(raw.data), raw: raw.data, source: "reapi" };
-        } else if (address) {
-          // Search by address first to get ID, then get detail
-          const search = await client.searchProperties({ address, size: 1 });
-          if (search.data.length > 0) {
-            const prop = search.data[0];
-            if (prop.id) {
-              const detail = await client.getPropertyDetail(prop.id);
-              result = { property: mapReapiToAttomShape(detail.data), raw: detail.data, source: "reapi" };
-            } else {
-              result = { property: mapReapiToAttomShape(prop), raw: prop, source: "reapi" };
-            }
-          } else {
-            result = { property: null, error: "Property not found", source: "reapi" };
-          }
-        } else {
+        if (!id && !address) {
           return NextResponse.json({ error: "id or address required" }, { status: 400 });
+        }
+        // Single call gets property detail + prior owner + comps
+        const raw = await client.getPropertyDetail({
+          id,
+          address: address || undefined,
+          prior_owner: true,
+          comps: true,
+        });
+        if (raw.data && (raw.data.id || (raw.data as any).propertyInfo)) {
+          result = { property: mapReapiToAttomShape(raw.data), raw: raw.data, source: "reapi" };
+        } else {
+          result = { property: null, error: "Property not found", source: "reapi" };
         }
         break;
       }
