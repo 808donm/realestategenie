@@ -571,8 +571,13 @@ export class ReapiClient {
     };
 
     const options: RequestInit = { method, headers };
-    if (body && method === "POST") {
-      options.body = JSON.stringify(body);
+    if (body) {
+      // Strip undefined/null values to avoid REAPI validation errors
+      const cleaned: Record<string, any> = {};
+      for (const [k, v] of Object.entries(body)) {
+        if (v !== undefined && v !== null) cleaned[k] = v;
+      }
+      options.body = JSON.stringify(cleaned);
     }
 
     const res = await fetch(url, options);

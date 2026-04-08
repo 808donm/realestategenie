@@ -82,7 +82,8 @@ export async function GET(request: NextRequest) {
           return NextResponse.json({ error: "id or address required" }, { status: 400 });
         }
         // Parse address to extract city, state, zip for REAPI requirement
-        const detailParams: any = { id, prior_owner: true, comps: true };
+        const detailParams: any = { prior_owner: true, comps: true };
+        if (id) detailParams.id = id;
         if (address) {
           detailParams.address = address;
           // Try to extract city/state/zip from address string (e.g., "123 Main St, Honolulu, HI 96825")
