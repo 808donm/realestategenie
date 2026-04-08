@@ -81,33 +81,27 @@ export async function GET(request: NextRequest) {
         if (!id && !address) {
           return NextResponse.json({ error: "id or address required" }, { status: 400 });
         }
-        // Parse address to extract city, state, zip for REAPI requirement
+        // REAPI requires separate fields: house, street, city, state, zip
         const detailParams: any = { prior_owner: true, comps: true };
-        if (id) detailParams.id = id;
-        if (address) {
-          detailParams.address = address;
-          // Try to extract city/state/zip from address string (e.g., "123 Main St, Honolulu, HI 96825")
-          const parts = address.split(",").map((s: string) => s.trim());
-          if (parts.length >= 3) {
-            detailParams.city = parts[parts.length - 2].replace(/\s+\w{2}\s+\d{5}.*/, "").trim();
-            const stateZip = parts[parts.length - 1] || parts[parts.length - 2] || "";
-            const zipMatch = stateZip.match(/(\d{5})/);
-            const stateMatch = stateZip.match(/([A-Z]{2})/);
-            if (zipMatch) detailParams.zip = zipMatch[1];
-            if (stateMatch) detailParams.state = stateMatch[1];
-            detailParams.address = parts[0]; // Street address only
-          } else if (parts.length === 2) {
-            const stateZip = parts[1];
-            const zipMatch = stateZip.match(/(\d{5})/);
-            const stateMatch = stateZip.match(/([A-Z]{2})/);
-            if (zipMatch) detailParams.zip = zipMatch[1];
-            if (stateMatch) detailParams.state = stateMatch[1];
+        if (id) {
+          detailParams.id = id;
+        } else if (address) {
+          // Parse "822 Kalalea St" or "822 Kalalea St, Honolulu, HI 96825"
+          const streetAddr = address.split(",")[0].trim();
+          // Extract house number and street name
+          const houseMatch = streetAddr.match(/^(\d+[-\d]*)\s+(.+)$/);
+          if (houseMatch) {
+            detailParams.house = houseMatch[1];
+            detailParams.street = houseMatch[2];
+          } else {
+            detailParams.street = streetAddr;
           }
-          // Also accept explicit params
-          if (params.get("city")) detailParams.city = params.get("city");
-          if (params.get("state")) detailParams.state = params.get("state");
-          if (params.get("zip")) detailParams.zip = params.get("zip");
         }
+        // Accept explicit params or parse from full address
+        detailParams.city = params.get("city") || address?.split(",")[1]?.trim() || "";
+        detailParams.state = params.get("state") || address?.match(/,\s*([A-Z]{2})\s/)?.[1] || "";
+        detailParams.zip = params.get("zip") || address?.match(/(\d{5})/)?.[1] || "";
+
         const raw = await client.getPropertyDetail(detailParams);
         if (raw.data && (raw.data.id || (raw.data as any).propertyInfo)) {
           result = { property: mapReapiToAttomShape(raw.data), raw: raw.data, source: "reapi" };
