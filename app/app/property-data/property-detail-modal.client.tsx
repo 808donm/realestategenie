@@ -298,6 +298,7 @@ export default function PropertyDetailModal({
   const [avmLoading, setAvmLoading] = useState(false);
   const [genieAvm, setGenieAvm] = useState<any>(null);
   const [reapiAvm, setReapiAvm] = useState<{ value: number; raw?: any } | null>(null);
+  const [reapiData, setReapiData] = useState<any>(null); // Full REAPI enrichment data
   const [genieAvmLoading, setGenieAvmLoading] = useState(false);
   const [enrichedFinancial, setEnrichedFinancial] = useState<any>(null);
   const [enrichedFinancialLoading, setEnrichedFinancialLoading] = useState(false);
@@ -341,11 +342,14 @@ export default function PropertyDetailModal({
 
   // Best estimated value: Comps AVM → property AVM → county assessment → appraised
   const bestValue = rentcastAvmPrice || avmVal || countyAssessment || p.assessment?.appraised?.apprTtlValue;
-  // Use Realie's pre-calculated equity (AVM - outstanding mortgage balance) if available,
-  // otherwise fall back to best value - last sale price as a rough estimate
+  // Use REAPI equity (best) > Realie equity > calculated from AVM - mortgage
+  const reapiEquity = reapiData?.homeEquity?.equity;
   const realieEquity = (p as any).homeEquity?.equity;
-  const mortgageAmt = p.mortgage?.amount != null ? Number(p.mortgage.amount) : null;
+  const mortgageAmt = reapiData?.homeEquity?.estimatedMortgageBalance
+    ? Number(reapiData.homeEquity.estimatedMortgageBalance)
+    : p.mortgage?.amount != null ? Number(p.mortgage.amount) : null;
   const equity =
+    reapiEquity ??
     realieEquity ??
     (bestValue && mortgageAmt ? bestValue - mortgageAmt : null) ??
     (bestValue && lastSaleAmt ? bestValue - lastSaleAmt : null);
@@ -638,14 +642,17 @@ export default function PropertyDetailModal({
     }).catch(() => {});
   }, [rentcastComps, genieAvm, p, mlsAddress, beds, baths, sqft, yearBuilt]);
 
-  // Fetch REAPI AVM when AVM tab is viewed (for comparison testing)
+  // Fetch REAPI enrichment data on modal open (background, cached 7 days)
+  // Returns: owner info, prior owner, mortgage, sale history, schools, demographics,
+  // flood zone, lead flags, comps, lot info, tax info, AVM -- all in one call
   useEffect(() => {
-    if (activeSection !== "avm" || reapiAvm) return;
+    if (reapiData) return;
     const addr = mlsAddress || p.address?.oneLine || "";
     if (!addr) return;
     const reapiCity = p.address?.locality || "";
     const reapiState = p.address?.countrySubd || "";
     const reapiZip = p.address?.postal1 || "";
+    if (!reapiZip && !reapiCity) return; // REAPI requires city or zip
     const reapiParams = new URLSearchParams({ endpoint: "property-detail", address: addr });
     if (reapiCity) reapiParams.set("city", reapiCity);
     if (reapiState) reapiParams.set("state", reapiState);
@@ -653,15 +660,19 @@ export default function PropertyDetailModal({
     fetch(`/api/integrations/reapi?${reapiParams.toString()}`)
       .then((r) => r.json())
       .then((data) => {
-        if (data.property?.avm?.amount?.value || data.raw?.estimatedValue) {
-          setReapiAvm({
-            value: data.property?.avm?.amount?.value || data.raw?.estimatedValue,
-            raw: data.raw,
-          });
+        if (data.property) {
+          setReapiData(data.property);
+          // Also set REAPI AVM for the AVM comparison tab
+          if (data.property.avm?.amount?.value || data.raw?.estimatedValue) {
+            setReapiAvm({
+              value: data.property.avm?.amount?.value || data.raw?.estimatedValue,
+              raw: data.raw,
+            });
+          }
         }
       })
       .catch(() => {});
-  }, [activeSection, reapiAvm, p, mlsAddress]);
+  }, [reapiData, p, mlsAddress]);
 
   // Fetch AVM data when the Financial tab is selected and property doesn't already have AVM
   useEffect(() => {
@@ -3353,9 +3364,11 @@ export default function PropertyDetailModal({
                 </div>
               )}
 
-              {/* Current Owner — resolve from p.owner, assessment.owner, or enrichedOwner */}
+              {/* Current Owner — resolve from REAPI (best), p.owner, assessment.owner, or enrichedOwner */}
               {(() => {
-                const topOwner = p.owner;
+                // REAPI owner data is the richest source (includes prior owner, ownership length)
+                const reapiOwner = reapiData?.owner;
+                const topOwner = reapiOwner?.owner1?.fullName ? reapiOwner : p.owner;
                 const assessOwner = p.assessment?.owner;
                 const hasTop =
                   topOwner?.owner1?.fullName ||
@@ -3378,7 +3391,9 @@ export default function PropertyDetailModal({
                 const owner = hasBase ? baseOwner : enrichedOw ? { ...baseOwner, ...enrichedOw } : baseOwner;
                 const ownerMailing = owner?.mailingAddressOneLine?.trim();
                 const hasCountyOwners = hawaiiData?.owners?.length > 0;
+                const priorOwner = reapiData?.priorOwner;
                 return (
+                  <>
                   <Section title={hasCountyOwners ? "Data Provider Records" : "Current Owner"}>
                     <Field label="Owner 1" value={owner?.owner1?.fullName} />
                     <Field label="Owner 2" value={owner?.owner2?.fullName} />
@@ -3475,7 +3490,49 @@ export default function PropertyDetailModal({
                         return owner?.absenteeOwnerStatus || undefined;
                       })()}
                     />
+                    {owner?.ownershipLength != null && (
+                      <Field label="Ownership Length" value={`${owner.ownershipLength} months (${Math.round(owner.ownershipLength / 12)} years)`} />
+                    )}
+                    {owner?.companyName && <Field label="Company" value={owner.companyName} />}
                   </Section>
+                  {/* Prior Owner (from REAPI) */}
+                  {priorOwner?.owner1?.fullName && (
+                    <Section title="Prior Owner">
+                      <Field label="Owner 1" value={priorOwner.owner1.fullName} />
+                      {priorOwner.owner2?.fullName && <Field label="Owner 2" value={priorOwner.owner2.fullName} />}
+                      {priorOwner.ownershipLength != null && (
+                        <Field label="Ownership Length" value={`${priorOwner.ownershipLength} months (${Math.round(priorOwner.ownershipLength / 12)} years)`} />
+                      )}
+                      {priorOwner.mailingAddress?.label && <Field label="Mailing Address" value={priorOwner.mailingAddress.label} />}
+                    </Section>
+                  )}
+                  {/* Lead Flags (from REAPI) */}
+                  {reapiData?.leadFlags && (() => {
+                    const flags = reapiData.leadFlags;
+                    const activeFlags = Object.entries(flags).filter(([, v]) => v === true).map(([k]) => {
+                      const labels: Record<string, string> = {
+                        absenteeOwner: "Absentee Owner", highEquity: "High Equity", investor: "Investor",
+                        vacant: "Vacant", preForeclosure: "Pre-Foreclosure", foreclosure: "Foreclosure",
+                        bankOwned: "Bank Owned", taxLien: "Tax Lien", freeClear: "Free & Clear",
+                        cashBuyer: "Cash Buyer", cashSale: "Cash Sale", death: "Death", inherited: "Inherited",
+                        judgment: "Judgment",
+                      };
+                      return labels[k] || k;
+                    });
+                    if (activeFlags.length === 0) return null;
+                    return (
+                      <Section title="Lead Flags">
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                          {activeFlags.map((flag) => (
+                            <span key={flag} style={{ padding: "3px 10px", borderRadius: 6, fontSize: 12, fontWeight: 600, background: "#dbeafe", color: "#1e40af" }}>
+                              {flag}
+                            </span>
+                          ))}
+                        </div>
+                      </Section>
+                    );
+                  })()}
+                  </>
                 );
               })()}
 
