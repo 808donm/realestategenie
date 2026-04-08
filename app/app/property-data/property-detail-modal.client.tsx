@@ -2093,8 +2093,8 @@ export default function PropertyDetailModal({
           <Section title="Interior &amp; Extras">
             <Field label="Fireplace" value={rf.fireplace === true ? (rf.fireplaces ? `Yes (${rf.fireplaces})` : "Yes") : rf.fireplace === false ? "No" : p.building?.interior?.fplcCount ? `Yes (${p.building.interior.fplcCount})` : undefined} />
             <Field label="Pool" value={rf.pool === true ? (rf.poolArea ? `Yes (${fmtNum(rf.poolArea)} sqft)` : "Yes") : p.lot?.poolInd === "Y" ? p.lot.poolType || "Yes" : rf.pool === false || p.lot?.poolInd === "N" ? "No" : undefined} />
-            <Field label="Deck" value={rf.deck === true ? (rf.deckArea ? `Yes (${fmtNum(rf.deckArea)} sqft)` : "Yes") : rf.deck === false ? "No" : undefined} />
-            <Field label="Patio" value={rf.patio === true ? (rf.patioArea ? `Yes (${fmtNum(rf.patioArea)} sqft)` : "Yes") : rf.patio === false ? "No" : undefined} />
+            <Field label="Deck" value={rf.deck === true ? (reapiData?._raw?.propertyInfo?.deckArea > 0 ? `Yes (${fmtNum(reapiData._raw.propertyInfo.deckArea)} sqft)` : "Yes") : rf.deck === false ? "No" : undefined} />
+            <Field label="Patio" value={rf.patio === true ? (reapiData?._raw?.propertyInfo?.patioArea > 0 ? `Yes (${fmtNum(Number(reapiData._raw.propertyInfo.patioArea))} sqft)` : "Yes") : rf.patio === false ? "No" : undefined} />
             <Field label="Porch" value={reapiData?._raw?.propertyInfo?.porchType ? `${reapiData._raw.propertyInfo.porchType}${reapiData._raw.propertyInfo.porchArea ? ` (${reapiData._raw.propertyInfo.porchArea} sqft)` : ""}` : undefined} />
             <Field label="Balcony" value={rf.balcony === true ? "Yes" : rf.balcony === false ? "No" : undefined} />
             <Field label="Basement" value={rf.basement && rf.basement !== "NO BASEMENT" ? `${rf.basement}${rf.basementSqft ? ` (${fmtNum(rf.basementSqft)} sqft)` : ""}` : rf.basement === "NO BASEMENT" ? "None" : p.building?.interior?.bsmtType || undefined} />
