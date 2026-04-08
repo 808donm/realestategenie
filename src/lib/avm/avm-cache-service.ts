@@ -284,19 +284,24 @@ export async function refreshListToSaleRatios(zipCode: string): Promise<void> {
     const avgRatio = ratios.reduce((s: number, r: number) => s + r, 0) / ratios.length;
     const medianRatio = ratios[Math.floor(ratios.length / 2)];
 
-    await sb.from("list_to_sale_ratio_cache").upsert(
-      {
-        zip_code: zipCode,
-        subdivision: null,
-        property_type: null,
-        avg_ratio: Math.round(avgRatio * 10000) / 10000,
-        median_ratio: Math.round(medianRatio * 10000) / 10000,
-        sample_count: ratios.length,
-        period_months: 12,
-        last_updated: new Date().toISOString(),
-      },
-      { onConflict: "zip_code,COALESCE(subdivision, ''),COALESCE(property_type, '')" },
-    );
+    // Delete existing row then insert (unique index uses COALESCE which Supabase JS can't target)
+    await sb
+      .from("list_to_sale_ratio_cache")
+      .delete()
+      .eq("zip_code", zipCode)
+      .is("subdivision", null)
+      .is("property_type", null);
+
+    await sb.from("list_to_sale_ratio_cache").insert({
+      zip_code: zipCode,
+      subdivision: null,
+      property_type: null,
+      avg_ratio: Math.round(avgRatio * 10000) / 10000,
+      median_ratio: Math.round(medianRatio * 10000) / 10000,
+      sample_count: ratios.length,
+      period_months: 12,
+      last_updated: new Date().toISOString(),
+    });
 
     console.log(`[AVM Cache] Refreshed list-to-sale ratio for ${zipCode}: avg=${avgRatio.toFixed(4)}, n=${ratios.length}`);
   } catch (err) {

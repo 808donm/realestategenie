@@ -117,10 +117,11 @@ CREATE TABLE IF NOT EXISTS list_to_sale_ratio_cache (
   sample_count INTEGER NOT NULL DEFAULT 0,
   period_months INTEGER NOT NULL DEFAULT 12,
   last_updated TIMESTAMPTZ DEFAULT now(),
-  created_at TIMESTAMPTZ DEFAULT now(),
-  UNIQUE(zip_code, COALESCE(subdivision, ''), COALESCE(property_type, ''))
+  created_at TIMESTAMPTZ DEFAULT now()
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_lts_ratio_unique
+  ON list_to_sale_ratio_cache(zip_code, COALESCE(subdivision, ''), COALESCE(property_type, ''));
 CREATE INDEX IF NOT EXISTS idx_lts_ratio_zip ON list_to_sale_ratio_cache(zip_code);
 
 ALTER TABLE list_to_sale_ratio_cache ENABLE ROW LEVEL SECURITY;
