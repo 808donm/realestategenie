@@ -84,11 +84,11 @@ export async function GET(request: NextRequest) {
         // REAPI requires separate fields: house, street, city, state, zip
         const detailParams: any = { prior_owner: true, comps: true };
         if (id) {
+          // ID-only lookup -- no address fields needed
           detailParams.id = id;
         } else if (address) {
           // Parse "822 Kalalea St" or "822 Kalalea St, Honolulu, HI 96825"
           const streetAddr = address.split(",")[0].trim();
-          // Extract house number and street name
           const houseMatch = streetAddr.match(/^(\d+[-\d]*)\s+(.+)$/);
           if (houseMatch) {
             detailParams.house = houseMatch[1];
@@ -96,11 +96,11 @@ export async function GET(request: NextRequest) {
           } else {
             detailParams.street = streetAddr;
           }
+          // Only set city/state/zip for address-based lookups
+          detailParams.city = params.get("city") || address.split(",")[1]?.trim() || "";
+          detailParams.state = params.get("state") || address.match(/,\s*([A-Z]{2})\s/)?.[1] || "";
+          detailParams.zip = params.get("zip") || address.match(/(\d{5})/)?.[1] || "";
         }
-        // Accept explicit params or parse from full address
-        detailParams.city = params.get("city") || address?.split(",")[1]?.trim() || "";
-        detailParams.state = params.get("state") || address?.match(/,\s*([A-Z]{2})\s/)?.[1] || "";
-        detailParams.zip = params.get("zip") || address?.match(/(\d{5})/)?.[1] || "";
 
         const raw = await client.getPropertyDetail(detailParams);
         if (raw.data && (raw.data.id || (raw.data as any).propertyInfo)) {
