@@ -2050,90 +2050,79 @@ export default function PropertyDetailModal({
         </>
       )}
 
-      {activeSection === "building" && (
+      {activeSection === "building" && (() => {
+        const rf = reapiData?.building?.features || {};
+        const rl = reapiData?.lot || {};
+        return (
         <>
           <Section title="Rooms &amp; Size">
-            <Field label="Bedrooms" value={beds} />
-            <Field label="Full Baths" value={p.building?.rooms?.bathsFull} />
-            <Field label="Half Baths" value={p.building?.rooms?.bathsHalf} />
-            <Field label="Total Rooms" value={p.building?.rooms?.roomsTotal} />
-            <Field label="Living Area" value={sqft ? `${fmtNum(sqft)} sqft` : undefined} />
-            <Field
-              label="Gross Size"
-              value={p.building?.size?.grossSize ? `${fmtNum(p.building.size.grossSize)} sqft` : undefined}
-            />
-            <Field
-              label="Ground Floor"
-              value={p.building?.size?.groundFloorSize ? `${fmtNum(p.building.size.groundFloorSize)} sqft` : undefined}
-            />
-            <Field label="Stories" value={p.building?.summary?.storyDesc || p.building?.summary?.levels} />
-            <Field label="Units" value={p.building?.summary?.unitsCount} />
+            <Field label="Bedrooms" value={beds || reapiData?.building?.rooms?.beds} />
+            <Field label="Full Baths" value={p.building?.rooms?.bathsFull || reapiData?.building?.rooms?.bathsFull} />
+            <Field label="Partial Baths" value={p.building?.rooms?.bathsHalf || reapiData?.building?.rooms?.bathsPartial} />
+            <Field label="Total Rooms" value={p.building?.rooms?.roomsTotal || reapiData?.building?.rooms?.roomsTotal} />
+            <Field label="Living Area" value={sqft ? `${fmtNum(sqft)} sqft` : reapiData?.building?.size?.livingSize ? `${fmtNum(reapiData.building.size.livingSize)} sqft` : undefined} />
+            <Field label="Building Sqft" value={reapiData?.building?.size?.universalSize && reapiData.building.size.universalSize !== reapiData?.building?.size?.livingSize ? `${fmtNum(reapiData.building.size.universalSize)} sqft` : undefined} />
+            <Field label="Stories" value={p.building?.summary?.storyDesc || p.building?.summary?.levels || reapiData?.building?.summary?.storyCount} />
+            <Field label="Units" value={p.building?.summary?.unitsCount || reapiData?.building?.summary?.unitsCount} />
           </Section>
 
           <Section title="Construction">
-            <Field label="Construction Type" value={p.building?.construction?.constructionType} />
-            <Field label="Condition" value={p.building?.construction?.condition} />
+            <Field label="Construction Type" value={p.building?.construction?.constructionType || rf.construction} />
+            <Field label="Building Condition" value={p.building?.construction?.condition || reapiData?._raw?.propertyInfo?.buildingCondition} />
+            <Field label="Interior Structure" value={reapiData?._raw?.propertyInfo?.interiorStructure} />
             <Field label="Foundation" value={p.building?.construction?.foundationType} />
-            <Field label="Frame" value={p.building?.construction?.frameType} />
-            <Field label="Roof Cover" value={p.building?.construction?.roofCover} />
-            <Field label="Roof Shape" value={p.building?.construction?.roofShape} />
+            <Field label="Roof Material" value={p.building?.construction?.roofCover || (rf.roofMaterial && rf.roofMaterial !== "183" ? rf.roofMaterial : undefined)} />
             <Field label="Wall Type" value={p.building?.construction?.wallType} />
             <Field label="Quality" value={p.building?.summary?.quality} />
-            <Field label="Arch Style" value={p.building?.summary?.archStyle} />
-            <Field label="Building Type" value={p.building?.summary?.bldgType} />
+            <Field label="Year Built" value={yearBuilt} />
+          </Section>
+
+          <Section title="Parking &amp; Garage">
+            <Field label="Garage Type" value={p.building?.parking?.garageType || rf.garageType} />
+            <Field label="Garage Size" value={rf.garageSquareFeet ? `${fmtNum(rf.garageSquareFeet)} sqft` : p.building?.parking?.prkgSize ? `${fmtNum(p.building.parking.prkgSize)} sqft` : undefined} />
+            <Field label="Parking Spaces" value={p.building?.parking?.prkgSpaces || rf.parkingSpaces} />
+            <Field label="Carport" value={rf.carport === true ? "Yes" : rf.carport === false ? "No" : undefined} />
+            <Field label="RV Parking" value={rf.rvParking === true ? "Yes" : rf.rvParking === false ? "No" : undefined} />
           </Section>
 
           <Section title="Interior &amp; Extras">
-            <Field label="Fireplace Count" value={p.building?.interior?.fplcCount} />
-            <Field label="Fireplace Type" value={p.building?.interior?.fplcType} />
-            <Field
-              label="Basement Size"
-              value={p.building?.interior?.bsmtSize ? `${fmtNum(p.building.interior.bsmtSize)} sqft` : undefined}
-            />
-            <Field label="Basement Type" value={p.building?.interior?.bsmtType} />
-            <Field label="Garage Type" value={p.building?.parking?.garageType} />
-            <Field label="Parking Type" value={p.building?.parking?.prkgType} />
-            <Field
-              label="Parking Spaces"
-              value={(() => {
-                const spaces = p.building?.parking?.prkgSpaces;
-                const type = p.building?.parking?.prkgType?.toLowerCase() || "";
-                const garage = p.building?.parking?.garageType?.toLowerCase() || "";
-                if (!spaces) return undefined;
-                let label = String(spaces);
-                if (garage.includes("attached") || garage.includes("covered") || type.includes("covered"))
-                  label += " (Covered)";
-                else if (garage.includes("detach")) label += " (Detached)";
-                else if (type.includes("uncovered") || type.includes("open")) label += " (Uncovered)";
-                else if (type.includes("street") || type.includes("on-street")) label += " (Street)";
-                else if (type.includes("carport")) label += " (Carport)";
-                return label;
-              })()}
-            />
-            <Field
-              label="Parking Size"
-              value={p.building?.parking?.prkgSize ? `${fmtNum(p.building.parking.prkgSize)} sqft` : undefined}
-            />
+            <Field label="Fireplace" value={rf.fireplace === true ? (rf.fireplaces ? `Yes (${rf.fireplaces})` : "Yes") : rf.fireplace === false ? "No" : p.building?.interior?.fplcCount ? `Yes (${p.building.interior.fplcCount})` : undefined} />
+            <Field label="Pool" value={rf.pool === true ? (rf.poolArea ? `Yes (${fmtNum(rf.poolArea)} sqft)` : "Yes") : p.lot?.poolInd === "Y" ? p.lot.poolType || "Yes" : rf.pool === false || p.lot?.poolInd === "N" ? "No" : undefined} />
+            <Field label="Deck" value={rf.deck === true ? (rf.deckArea ? `Yes (${fmtNum(rf.deckArea)} sqft)` : "Yes") : rf.deck === false ? "No" : undefined} />
+            <Field label="Patio" value={rf.patio === true ? (rf.patioArea ? `Yes (${fmtNum(rf.patioArea)} sqft)` : "Yes") : rf.patio === false ? "No" : undefined} />
+            <Field label="Porch" value={reapiData?._raw?.propertyInfo?.porchType ? `${reapiData._raw.propertyInfo.porchType}${reapiData._raw.propertyInfo.porchArea ? ` (${reapiData._raw.propertyInfo.porchArea} sqft)` : ""}` : undefined} />
+            <Field label="Balcony" value={rf.balcony === true ? "Yes" : rf.balcony === false ? "No" : undefined} />
+            <Field label="Basement" value={rf.basement && rf.basement !== "NO BASEMENT" ? `${rf.basement}${rf.basementSqft ? ` (${fmtNum(rf.basementSqft)} sqft)` : ""}` : rf.basement === "NO BASEMENT" ? "None" : p.building?.interior?.bsmtType || undefined} />
+            <Field label="Attic" value={reapiData?._raw?.propertyInfo?.attic === true ? "Yes" : reapiData?._raw?.propertyInfo?.attic === false ? "No" : undefined} />
+            <Field label="HOA" value={rf.hoa === true ? "Yes" : rf.hoa === false ? "No" : undefined} />
+            <Field label="Fire Sprinklers" value={reapiData?._raw?.propertyInfo?.safetyFireSprinklers === true ? "Yes" : reapiData?._raw?.propertyInfo?.safetyFireSprinklers === false ? "No" : undefined} />
             <Field label="View" value={p.building?.summary?.view} />
           </Section>
 
+          <Section title="Utilities">
+            <Field label="Air Conditioning" value={rf.airConditioning || (reapiData?._raw?.propertyInfo?.airConditioningAvailable === false ? "None" : undefined)} />
+            <Field label="Heating" value={rf.heating} />
+            <Field label="Heating Fuel" value={rf.heatingFuel} />
+            <Field label="Water Source" value={rf.waterSource} />
+            <Field label="Sewage" value={rf.sewage} />
+            <Field label="Plumbing Fixtures" value={reapiData?._raw?.propertyInfo?.plumbingFixturesCount ? String(reapiData._raw.propertyInfo.plumbingFixturesCount) : undefined} />
+          </Section>
+
           <Section title="Lot">
-            <Field label="Lot Size (sqft)" value={p.lot?.lotSize1 || reapiData?.lot?.lotSize1 ? fmtNum(p.lot?.lotSize1 || reapiData?.lot?.lotSize1) : undefined} />
-            <Field
-              label="Lot Size (acres)"
-              value={p.lot?.lotSize2 ? `${p.lot.lotSize2.toFixed(2)} acres` : reapiData?.lot?.lotAcres ? `${reapiData.lot.lotAcres} acres` : undefined}
-            />
-            <Field label="Lot Number" value={p.lot?.lotNum || reapiData?.lot?.lotNumber} />
-            <Field label="Zoning" value={reapiData?.lot?.zoning} />
-            <Field label="Land Use" value={reapiData?.lot?.landUse} />
-            <Field label="Subdivision" value={reapiData?.lot?.subdivision} />
-            <Field
-              label="Pool"
-              value={p.lot?.poolInd === "Y" ? p.lot.poolType || "Yes" : reapiData?.building?.features?.pool === true ? "Yes" : p.lot?.poolInd === "N" || reapiData?.building?.features?.pool === false ? "No" : undefined}
-            />
+            <Field label="Lot Size (sqft)" value={p.lot?.lotSize1 || rl.lotSize1 ? fmtNum(p.lot?.lotSize1 || rl.lotSize1) : undefined} />
+            <Field label="Lot Size (acres)" value={p.lot?.lotSize2 ? `${p.lot.lotSize2.toFixed(2)} acres` : rl.lotAcres ? `${rl.lotAcres} acres` : undefined} />
+            <Field label="Lot Dimensions" value={rl.lotDepth && rl.lotWidth ? `${rl.lotDepth} x ${rl.lotWidth} ft` : undefined} />
+            <Field label="Lot Number" value={p.lot?.lotNum || rl.lotNumber} />
+            <Field label="Zoning" value={rl.zoning} />
+            <Field label="Land Use" value={rl.landUse} />
+            <Field label="Subdivision" value={rl.subdivision} />
+            <Field label="Legal Description" value={rl.legalDescription} />
+            <Field label="Census Tract/Block" value={rl.censusTract && rl.censusBlock ? `${rl.censusTract} / ${rl.censusBlock}` : undefined} />
+            <Field label="Property Class" value={reapiData?._raw?.lotInfo?.propertyClass} />
           </Section>
         </>
-      )}
+        );
+      })()}
 
       {activeSection === "financial" &&
         (() => {
@@ -2219,7 +2208,9 @@ export default function PropertyDetailModal({
                         {avmFSD != null && <span style={{ color: "#9ca3af" }}> (FSD: {avmFSD}%)</span>}
                       </span>
                     )}
+                    {reapiData?.homeEquity?.equityPercent != null && <span><strong>Equity:</strong> {reapiData.homeEquity.equityPercent}%</span>}
                     {heLoanCount != null && heLoanCount > 0 && <span><strong>Active Loans:</strong> {heLoanCount}</span>}
+                    {reapiData?.homeEquity?.freeClear && <span style={{ color: "#059669", fontWeight: 700 }}>Free &amp; Clear</span>}
                     {heEstPayment != null && heEstPayment > 0 && <span><strong>Est. Monthly Payment:</strong> {fmt(heEstPayment)}</span>}
                     <span><strong>Last Sale:</strong> {heLastSalePrice != null ? fmt(heLastSalePrice) : "Not Disclosed"}</span>
                     <span><strong>Sale Date:</strong> {heLastSaleDate || "Not Disclosed"}</span>
@@ -3030,6 +3021,7 @@ export default function PropertyDetailModal({
                 date: p.sale?.amount?.saleTransDate,
                 recordingDate: p.sale?.amount?.saleRecDate,
               }}
+              reapiSaleHistory={reapiData?.saleHistory}
             />
           );
         })()}
@@ -3614,14 +3606,19 @@ export default function PropertyDetailModal({
                   )}
                   {/* Lead Flags (from REAPI) */}
                   {reapiData?.leadFlags && (() => {
-                    const flags = reapiData.leadFlags;
+                    const raw = reapiData._raw || {};
+                    const flags = { ...reapiData.leadFlags, deathTransfer: raw.deathTransfer, spousalDeath: raw.spousalDeath, deedInLieu: raw.deedInLieu, quitClaim: raw.quitClaim, warrantyDeed: raw.warrantyDeed, sheriffsDeed: raw.sheriffsDeed, trusteeSale: raw.trusteeSale, adjustableRate: raw.adjustableRate, privateLender: raw.privateLender, taxDelinquent: raw.taxDelinquent };
                     const activeFlags = Object.entries(flags).filter(([, v]) => v === true).map(([k]) => {
                       const labels: Record<string, string> = {
                         absenteeOwner: "Absentee Owner", highEquity: "High Equity", investor: "Investor",
                         vacant: "Vacant", preForeclosure: "Pre-Foreclosure", foreclosure: "Foreclosure",
-                        bankOwned: "Bank Owned", taxLien: "Tax Lien", freeClear: "Free & Clear",
-                        cashBuyer: "Cash Buyer", cashSale: "Cash Sale", death: "Death", inherited: "Inherited",
-                        judgment: "Judgment",
+                        bankOwned: "Bank Owned", taxLien: "Tax Lien", taxDelinquent: "Tax Delinquent",
+                        freeClear: "Free & Clear", cashBuyer: "Cash Buyer", cashSale: "Cash Sale",
+                        death: "Death", deathTransfer: "Death Transfer", spousalDeath: "Spousal Death",
+                        inherited: "Inherited", judgment: "Judgment",
+                        deedInLieu: "Deed in Lieu", quitClaim: "Quit Claim", warrantyDeed: "Warranty Deed",
+                        sheriffsDeed: "Sheriff's Deed", trusteeSale: "Trustee Sale",
+                        adjustableRate: "Adjustable Rate", privateLender: "Private Lender",
                       };
                       return labels[k] || k;
                     });
@@ -5857,7 +5854,7 @@ export default function PropertyDetailModal({
 }
 
 // ── Sales History Section ────────────────────────────────────────────────────
-function SalesHistorySection({ address, publicRecords, propertySale }: { address?: string; publicRecords?: any[]; propertySale?: { amount?: number; date?: string; recordingDate?: string } }) {
+function SalesHistorySection({ address, publicRecords, propertySale, reapiSaleHistory }: { address?: string; publicRecords?: any[]; propertySale?: { amount?: number; date?: string; recordingDate?: string }; reapiSaleHistory?: any[] }) {
   const [unitHistory, setUnitHistory] = useState<any[]>([]);
   const [buildingHistory, setBuildingHistory] = useState<any[]>([]);
   const [unitNumber, setUnitNumber] = useState<string | null>(null);
@@ -6167,8 +6164,48 @@ function SalesHistorySection({ address, publicRecords, propertySale }: { address
         </div>
       )}
 
+      {/* REAPI Sale History (enriched with buyer/seller names, doc types) */}
+      {reapiSaleHistory && reapiSaleHistory.length > 0 && (
+        <div style={{ marginTop: 16 }}>
+          <h3 style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 8, paddingBottom: 6, borderBottom: "1px solid #e5e7eb" }}>
+            Deed History ({reapiSaleHistory.length} transactions)
+          </h3>
+          {reapiSaleHistory.map((s: any, i: number) => {
+            const amt = s.amount?.saleAmt;
+            const sqftVal = amt && s.sqft ? Math.round(amt / s.sqft) : null;
+            return (
+              <div key={i} style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: 14, marginBottom: 10, background: "#f9fafb" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
+                  <span style={{ fontSize: 16, fontWeight: 700, color: amt && amt > 0 ? "#15803d" : "#9ca3af" }}>
+                    {amt && amt > 0 ? `$${amt.toLocaleString()}` : "Price Not Disclosed"}
+                  </span>
+                  <div style={{ display: "flex", gap: 4 }}>
+                    {s.armsLength === true && <span style={{ fontSize: 10, background: "#d1fae5", color: "#065f46", padding: "2px 6px", borderRadius: 4 }}>Arms Length</span>}
+                    {s.armsLength === false && <span style={{ fontSize: 10, background: "#fef3c7", color: "#92400e", padding: "2px 6px", borderRadius: 4 }}>Non-Arms Length</span>}
+                    {sqftVal && <span style={{ fontSize: 10, background: "#f3f4f6", color: "#4b5563", padding: "2px 6px", borderRadius: 4 }}>${sqftVal}/sqft</span>}
+                  </div>
+                </div>
+                <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>
+                  {s.amount?.saleTransDate?.split("T")[0]}
+                  {s.amount?.saleRecDate && <span style={{ marginLeft: 8, fontSize: 11, color: "#9ca3af" }}>Recorded: {String(s.amount.saleRecDate).split("T")[0]}</span>}
+                </div>
+                <div style={{ fontSize: 12, color: "#374151", marginBottom: 4 }}>
+                  {s.documentType && <span style={{ fontWeight: 600 }}>{s.documentType}</span>}
+                </div>
+                <div style={{ fontSize: 11, color: "#6b7280" }}>
+                  {s.buyerNames && <div>Buyer: {s.buyerNames}</div>}
+                  {s.sellerNames && <div>Seller: {s.sellerNames}</div>}
+                  {s.downPayment != null && s.downPayment > 0 && <div>Down Payment: ${s.downPayment.toLocaleString()}</div>}
+                  {s.ltv != null && <div>LTV: {s.ltv}%</div>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* No data at all */}
-      {unitHistory.length === 0 && allPublicRecords.length === 0 && !showBuildingSales && (
+      {unitHistory.length === 0 && allPublicRecords.length === 0 && (!reapiSaleHistory || reapiSaleHistory.length === 0) && !showBuildingSales && (
         <div style={{ padding: 20, textAlign: "center", color: "#9ca3af", fontSize: 13 }}>No sales history found.</div>
       )}
     </div>
