@@ -676,8 +676,10 @@ export default function PropertyDetailModal({
       .catch(() => {});
   }, [reapiData, p, mlsAddress]);
 
-  // Fetch Skip Trace when Ownership tab is clicked (on-demand only)
+  // Skip Trace DISABLED - burns too many credits on trial key
+  // TODO: Re-enable with production key and add a manual "Run Skip Trace" button
   useEffect(() => {
+    if (true) return; // DISABLED
     if (activeSection !== "ownership" || skipTraceData || skipTraceLoading) return;
     const addr = mlsAddress || p.address?.oneLine || "";
     const reapiZip = p.address?.postal1 || "";
