@@ -643,7 +643,14 @@ export default function PropertyDetailModal({
     if (activeSection !== "avm" || reapiAvm) return;
     const addr = mlsAddress || p.address?.oneLine || "";
     if (!addr) return;
-    fetch(`/api/integrations/reapi?endpoint=property-detail&address=${encodeURIComponent(addr)}`)
+    const reapiCity = p.address?.locality || "";
+    const reapiState = p.address?.countrySubd || "";
+    const reapiZip = p.address?.postal1 || "";
+    const reapiParams = new URLSearchParams({ endpoint: "property-detail", address: addr });
+    if (reapiCity) reapiParams.set("city", reapiCity);
+    if (reapiState) reapiParams.set("state", reapiState);
+    if (reapiZip) reapiParams.set("zip", reapiZip);
+    fetch(`/api/integrations/reapi?${reapiParams.toString()}`)
       .then((r) => r.json())
       .then((data) => {
         if (data.property?.avm?.amount?.value || data.raw?.estimatedValue) {

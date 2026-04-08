@@ -81,13 +81,33 @@ export async function GET(request: NextRequest) {
         if (!id && !address) {
           return NextResponse.json({ error: "id or address required" }, { status: 400 });
         }
-        // Single call gets property detail + prior owner + comps
-        const raw = await client.getPropertyDetail({
-          id,
-          address: address || undefined,
-          prior_owner: true,
-          comps: true,
-        });
+        // Parse address to extract city, state, zip for REAPI requirement
+        const detailParams: any = { id, prior_owner: true, comps: true };
+        if (address) {
+          detailParams.address = address;
+          // Try to extract city/state/zip from address string (e.g., "123 Main St, Honolulu, HI 96825")
+          const parts = address.split(",").map((s: string) => s.trim());
+          if (parts.length >= 3) {
+            detailParams.city = parts[parts.length - 2].replace(/\s+\w{2}\s+\d{5}.*/, "").trim();
+            const stateZip = parts[parts.length - 1] || parts[parts.length - 2] || "";
+            const zipMatch = stateZip.match(/(\d{5})/);
+            const stateMatch = stateZip.match(/([A-Z]{2})/);
+            if (zipMatch) detailParams.zip = zipMatch[1];
+            if (stateMatch) detailParams.state = stateMatch[1];
+            detailParams.address = parts[0]; // Street address only
+          } else if (parts.length === 2) {
+            const stateZip = parts[1];
+            const zipMatch = stateZip.match(/(\d{5})/);
+            const stateMatch = stateZip.match(/([A-Z]{2})/);
+            if (zipMatch) detailParams.zip = zipMatch[1];
+            if (stateMatch) detailParams.state = stateMatch[1];
+          }
+          // Also accept explicit params
+          if (params.get("city")) detailParams.city = params.get("city");
+          if (params.get("state")) detailParams.state = params.get("state");
+          if (params.get("zip")) detailParams.zip = params.get("zip");
+        }
+        const raw = await client.getPropertyDetail(detailParams);
         if (raw.data && (raw.data.id || (raw.data as any).propertyInfo)) {
           result = { property: mapReapiToAttomShape(raw.data), raw: raw.data, source: "reapi" };
         } else {
