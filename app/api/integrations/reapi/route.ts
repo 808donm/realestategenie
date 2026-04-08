@@ -164,11 +164,22 @@ export async function GET(request: NextRequest) {
         const compsParams: any = {};
         if (params.get("id")) compsParams.id = Number(params.get("id"));
         if (params.get("address")) compsParams.address = params.get("address");
-        const version = params.get("version") === "v3" ? "v3" : "v2";
-        const raw = version === "v3"
-          ? await client.getPropertyCompsV3(compsParams)
-          : await client.getPropertyComps(compsParams);
-        result = { comps: raw.data, source: "reapi", version };
+        // Pass through optional filters
+        const numFields = ["max_radius_miles", "max_days_back", "max_results", "living_square_feet_min", "living_square_feet_max", "bedrooms_min", "bedrooms_max", "bathrooms_min", "bathrooms_max", "year_built_min", "year_built_max", "last_sale_price_min", "last_sale_price_max"];
+        const boolFields = ["same_zip", "same_neighborhood", "same_county", "same_beds", "same_baths", "arms_length", "exact_match"];
+        for (const f of numFields) { if (params.get(f)) compsParams[f] = Number(params.get(f)); }
+        for (const f of boolFields) { if (params.get(f)) compsParams[f] = params.get(f) === "true"; }
+
+        const raw = await client.getPropertyComps(compsParams);
+        result = {
+          subject: raw.subject,
+          comps: raw.comps,
+          reapiAvm: raw.reapiAvm ? Number(raw.reapiAvm) : undefined,
+          reapiAvmLow: raw.reapiAvmLow ? Number(raw.reapiAvmLow) : undefined,
+          reapiAvmHigh: raw.reapiAvmHigh ? Number(raw.reapiAvmHigh) : undefined,
+          recordCount: raw.recordCount,
+          source: "reapi",
+        };
         break;
       }
 

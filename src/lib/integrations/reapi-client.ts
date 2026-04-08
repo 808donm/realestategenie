@@ -326,17 +326,100 @@ export interface ReapiAvmResult {
 export interface ReapiCompsParams {
   id?: number;
   address?: string;
+  max_radius_miles?: number;
+  max_days_back?: number;
+  max_results?: number;
+  // Size filters
+  living_square_feet_min?: number;
+  living_square_feet_max?: number;
+  living_square_feet_boost?: number;
+  lot_square_feet_min?: number;
+  lot_square_feet_max?: number;
+  lot_square_feet_boost?: number;
+  // Bed/bath filters
+  bedrooms_min?: number;
+  bedrooms_max?: number;
+  bedrooms_boost?: number;
+  bathrooms_min?: number;
+  bathrooms_max?: number;
+  bathrooms_boost?: number;
+  // Year built
+  year_built_min?: number;
+  year_built_max?: number;
+  year_built_boost?: number;
+  // Price filters
+  last_sale_price_min?: number;
+  last_sale_price_max?: number;
+  mls_listing_price_min?: number;
+  mls_listing_price_max?: number;
+  // Match constraints
+  exact_match?: boolean;
+  same_county?: boolean;
+  same_census_tract?: boolean;
+  same_neighborhood?: boolean;
+  same_zip?: boolean;
+  same_beds?: boolean;
+  same_baths?: boolean;
+  same_construction_type?: boolean;
+  arms_length?: boolean;
+}
+
+export interface ReapiComp {
+  id?: string;
+  distance?: number;
+  address?: { address?: string; city?: string; state?: string; zip?: string; county?: string; street?: string };
+  mailAddress?: { address?: string; city?: string; state?: string; zip?: string };
+  bedrooms?: number;
+  bathrooms?: number;
+  yearBuilt?: number;
+  squareFeet?: number;
+  lotSquareFeet?: number;
+  latitude?: number;
+  longitude?: number;
+  apn?: string;
+  fips?: string;
+  propertyType?: string;
+  estimatedValue?: number;
+  estimatedEquity?: number;
+  lastSaleDate?: string;
+  lastSaleAmount?: number;
+  mlsListingAmount?: number;
+  mlsListingDate?: string;
+  mlsSoldPrice?: number;
+  mlsLastSaleDate?: string;
+  daysOnMarket?: number;
+  pricePerSquareFoot?: number;
+  age?: number;
+  owner1FirstName?: string;
+  owner1LastName?: string;
+  owner2FirstName?: string;
+  owner2LastName?: string;
+  companyName?: string;
+  taxAmount?: number;
+  taxAssessedValue?: number;
+  absenteeOwner?: boolean;
+  vacant?: boolean;
+  preForeclosure?: boolean;
+  cashBuyer?: boolean;
+  zoning?: string;
+  censusTract?: string;
+  lenderName?: string;
+  [key: string]: any;
 }
 
 export interface ReapiCompsResult {
-  data: {
-    subject?: ReapiProperty;
-    comps?: ReapiProperty[];
-    [key: string]: any;
-  };
+  subject?: any;
+  comps?: ReapiComp[];
+  reapiAvm?: string | number;
+  reapiAvmLow?: string | number;
+  reapiAvmHigh?: string | number;
+  recordCount?: number;
   statusCode: number;
   statusMessage: string;
-  requestExecutionTimeMS: number;
+  requestExecutionTimeMS?: string | number;
+  rangeParametersUsed?: any;
+  boostParametersUsed?: any;
+  warning?: string;
 }
 
 // ── Skip Trace ───────────────────────────────────────────────────────────
@@ -581,17 +664,26 @@ export class ReapiClient {
   // ── Property Comps ──
 
   async getPropertyComps(params: ReapiCompsParams): Promise<ReapiCompsResult> {
-    if (params.id) {
-      return this.request("GET", "/v2/PropertyComps", undefined, params);
-    }
-    return this.request("POST", "/v2/PropertyComps", params);
+    // Default to reasonable Hawaii comp search params
+    const body = {
+      max_radius_miles: 5,
+      max_days_back: 365,
+      max_results: 20,
+      arms_length: true,
+      ...params,
+    };
+    return this.request<ReapiCompsResult>("POST", "/v2/PropertyComps", body);
   }
 
   async getPropertyCompsV3(params: ReapiCompsParams): Promise<ReapiCompsResult> {
-    if (params.id) {
-      return this.request("GET", "/v3/PropertyComps", undefined, params);
-    }
-    return this.request("POST", "/v3/PropertyComps", params);
+    const body = {
+      max_radius_miles: 5,
+      max_days_back: 365,
+      max_results: 20,
+      arms_length: true,
+      ...params,
+    };
+    return this.request<ReapiCompsResult>("POST", "/v3/PropertyComps", body);
   }
 
   // ── MLS Search (disabled on trial) ──
