@@ -615,6 +615,24 @@ export default function PropertyDetailModal({
 
       if (result) {
         setGenieAvm(result);
+        // Track AVM prediction for accuracy reporting (fire-and-forget)
+        fetch("/api/avm/track", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            address: mlsAddress || p.address?.oneLine || "",
+            genieAvm: result.value,
+            genieAvmConfidence: result.confidence,
+            listPrice: mlsListPrice || (p as any).ListPrice,
+            propertyType: p.summary?.propSubType || p.summary?.propType,
+            zipCode: p.address?.postal1 || "",
+            beds,
+            baths,
+            sqft,
+            yearBuilt,
+            subdivision: (p as any).SubdivisionName || (p as any).subdivision,
+          }),
+        }).catch(() => {});
       }
     }).catch(() => {});
   }, [rentcastComps, genieAvm, p, mlsAddress, beds, baths, sqft, yearBuilt]);
@@ -1494,7 +1512,8 @@ export default function PropertyDetailModal({
     { id: "overview", label: "Overview" },
     { id: "building", label: "Building" },
     { id: "financial", label: "Financial" },
-    { id: "avm" as SectionId, label: "AVM" },
+    // AVM tab hidden -- Genie AVM computes silently in background for accuracy tracking
+    // { id: "avm" as SectionId, label: "AVM" },
     { id: "sales-history" as SectionId, label: "Sales History" },
     { id: "listing-history" as SectionId, label: "Listing History" },
     { id: "comps" as SectionId, label: "Comps" },
