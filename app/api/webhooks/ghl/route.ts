@@ -249,7 +249,32 @@ async function handleInboundMessage(payload: any) {
  */
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    const rawBody = await req.text();
+    const body = JSON.parse(rawBody);
+
+    // ── Security: Validate webhook source ──
+    // 1. Check location ID matches our known GHL location(s)
+    const allowedLocationIds = process.env.GHL_LOCATION_IDS?.split(",").map((s) => s.trim()) || [];
+    if (allowedLocationIds.length > 0 && body.locationId && !allowedLocationIds.includes(body.locationId)) {
+      console.warn(`[GHL Webhook] REJECTED: Unknown location ID ${body.locationId}`);
+      return NextResponse.json({ received: true }); // Return 200 to prevent retries but don't process
+    }
+
+    // 2. Verify webhook signature if secret is configured
+    const webhookSecret = process.env.GHL_WEBHOOK_SECRET;
+    if (webhookSecret) {
+      const signature = req.headers.get("x-ghl-signature") || req.headers.get("x-signature");
+      if (signature) {
+        const crypto = await import("crypto");
+        const expectedSig = crypto.createHmac("sha256", webhookSecret).update(rawBody).digest("hex");
+        const sigBuffer = Buffer.from(signature, "hex");
+        const expectedBuffer = Buffer.from(expectedSig, "hex");
+        if (sigBuffer.length !== expectedBuffer.length || !crypto.timingSafeEqual(sigBuffer, expectedBuffer)) {
+          console.warn("[GHL Webhook] REJECTED: Invalid signature");
+          return NextResponse.json({ error: "Invalid signature" }, { status: 403 });
+        }
+      }
+    }
 
     console.log("[GHL Webhook] Received event:", {
       type: body.type,
