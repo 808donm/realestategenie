@@ -523,6 +523,61 @@ export async function executeCopilotAction(
       case "create_farm_watchdog":
         return { action, success: true, redirect: "/app/farm" };
 
+      case "create_bird_dog": {
+        const bdBase = getBaseUrl();
+        const bdCriteria: Record<string, any> = { state: "HI" };
+        if (params.zip) bdCriteria.zip = params.zip;
+        if (params.absentee) bdCriteria.absentee_owner = true;
+        if (params.highEquity || params.high_equity) bdCriteria.high_equity = true;
+        if (params.vacant) bdCriteria.vacant = true;
+        if (params.foreclosure || params.preForeclosure) bdCriteria.pre_foreclosure = true;
+        if (params.investor) bdCriteria.investor = true;
+        if (params.taxDelinquent) bdCriteria.tax_delinquent = true;
+        if (params.propertyType) bdCriteria.property_type = params.propertyType;
+        if (params.equityMin) bdCriteria.equity_min = Number(params.equityMin);
+        try {
+          const bdRes = await internalFetch(`${bdBase}/api/bird-dog/searches`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name: params.name || `Bird Dog - ${bdCriteria.zip || "Search"}`,
+              criteria: bdCriteria,
+              schedule: params.schedule || "weekly",
+            }),
+          });
+          const bdData = await bdRes.json();
+          if (bdData.search) {
+            return { action, success: true, data: { search: bdData.search, summary: bdData.criteriaSummary }, redirect: "/app/bird-dog" };
+          }
+          return { action, success: false, error: bdData.error || "Failed to create Bird Dog search" };
+        } catch (e: any) {
+          return { action, success: false, error: e.message };
+        }
+      }
+
+      case "run_bird_dog": {
+        const bdBase2 = getBaseUrl();
+        const bdSearchId = params.searchId;
+        if (!bdSearchId) return { action, success: false, error: "Which Bird Dog search should I run?" };
+        try {
+          const bdRes = await internalFetch(`${bdBase2}/api/bird-dog/searches`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: bdSearchId, action: "run" }),
+          });
+          const bdData = await bdRes.json();
+          if (bdData.summary) {
+            return { action, success: true, data: bdData.summary, redirect: "/app/bird-dog" };
+          }
+          return { action, success: false, error: bdData.error || "Run failed" };
+        } catch (e: any) {
+          return { action, success: false, error: e.message };
+        }
+      }
+
+      case "bird_dog_results":
+        return { action, success: true, redirect: "/app/bird-dog" };
+
       // ════════════════════════════════════════════════════════════════
       // DOCUMENTS & COMMUNICATION
       // ════════════════════════════════════════════════════════════════

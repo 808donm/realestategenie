@@ -183,9 +183,24 @@ export async function POST(request: NextRequest) {
 
     console.log("Daily briefing cron complete:", results);
 
+    // ── Bird Dog: Run daily-schedule searches ──
+    let birdDogResults = null;
+    try {
+      const bdRes = await fetch(`${request.nextUrl.origin}/api/cron/bird-dog?schedule=daily`, {
+        headers: { "x-internal-call": "true" },
+      });
+      birdDogResults = await bdRes.json();
+      if (birdDogResults.totalNew > 0) {
+        console.log(`[BirdDog] Daily: ${birdDogResults.totalNew} new leads (${birdDogResults.totalHot} HOT)`);
+      }
+    } catch (e: any) {
+      console.warn("[BirdDog] Daily cron failed:", e.message);
+    }
+
     return NextResponse.json({
       success: true,
       ...results,
+      birdDog: birdDogResults,
       timestamp: now.toISOString(),
     });
   } catch (error: any) {

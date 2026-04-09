@@ -39,7 +39,10 @@ export type QuickActionType =
   | "search_high_equity"
   | "search_foreclosure"
   | "search_just_sold"
-  | "search_investor";
+  | "search_investor"
+  | "create_bird_dog"
+  | "run_bird_dog"
+  | "bird_dog_results";
 
 export type GenieActionType = ProactiveActionType | QuickActionType;
 
@@ -245,6 +248,14 @@ export const QUICK_ACTIONS: QuickActionDef[] = [
     description: "Set up a farm area with MLS watchdog alerts",
     icon: "📡",
     color: "#7c2d12",
+    category: "prospecting",
+  },
+  {
+    type: "create_bird_dog",
+    label: "Bird Dog Search",
+    description: "Set up automated prospecting to hunt for off-market leads on a schedule",
+    icon: "🐕",
+    color: "#b91c1c",
     category: "prospecting",
   },
   {

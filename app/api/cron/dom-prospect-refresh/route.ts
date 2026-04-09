@@ -181,10 +181,40 @@ export async function POST(request: NextRequest) {
 
     console.log("[DomCron] Weekly refresh complete:", stats);
 
+    // ── Bird Dog: Run weekly and monthly searches ──
+    let birdDogResults = null;
+    try {
+      // Run weekly searches
+      const bdWeekly = await fetch(`${request.nextUrl.origin}/api/cron/bird-dog?schedule=weekly`, {
+        headers: { "x-internal-call": "true" },
+      });
+      const weeklyData = await bdWeekly.json();
+
+      // Run monthly searches (the cron runs weekly, but monthly searches
+      // only get picked up when next_run_at <= now)
+      const bdMonthly = await fetch(`${request.nextUrl.origin}/api/cron/bird-dog?schedule=monthly`, {
+        headers: { "x-internal-call": "true" },
+      });
+      const monthlyData = await bdMonthly.json();
+
+      birdDogResults = {
+        weekly: weeklyData,
+        monthly: monthlyData,
+        totalNew: (weeklyData.totalNew || 0) + (monthlyData.totalNew || 0),
+      };
+
+      if (birdDogResults.totalNew > 0) {
+        console.log(`[BirdDog] Weekly/Monthly: ${birdDogResults.totalNew} new leads`);
+      }
+    } catch (e: any) {
+      console.warn("[BirdDog] Weekly/Monthly cron failed:", e.message);
+    }
+
     return NextResponse.json({
       success: true,
       message: "DOM prospect refresh complete",
       stats,
+      birdDog: birdDogResults,
     });
   } catch (error: any) {
     console.error("[DomCron] Error:", error);
