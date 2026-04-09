@@ -139,7 +139,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ diagnostics });
     }
 
-    const { unit, building, unitNumber } = await client.getSalesHistory(address, { limit });
+    let salesResult;
+    try {
+      salesResult = await client.getSalesHistory(address, { limit });
+    } catch (salesErr: any) {
+      console.warn("[MLS Sales History] Trestle query failed:", salesErr.message);
+      // Return empty instead of 500 -- let REAPI deed history fill in
+      return NextResponse.json({ address, transactions: [], buildingTransactions: [], total: 0, source: "mls", error: salesErr.message });
+    }
+    const { unit, building, unitNumber } = salesResult;
 
     const mapListing = (p: any) => ({
       listingKey: p.ListingKey,

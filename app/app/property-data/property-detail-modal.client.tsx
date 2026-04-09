@@ -2090,7 +2090,7 @@ export default function PropertyDetailModal({
                   </div>
                   {p.location?.latitude && p.location?.longitude && (
                     <a
-                      href={`/app/mls?tab=hazard-map&lat=${p.location.latitude}&lng=${p.location.longitude}&address=${encodeURIComponent(addr)}`}
+                      href={`/app/hazard-map?lat=${p.location.latitude}&lng=${p.location.longitude}&address=${encodeURIComponent(addr)}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{

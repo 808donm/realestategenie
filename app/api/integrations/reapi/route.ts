@@ -87,12 +87,17 @@ export async function GET(request: NextRequest) {
           // ID-only lookup -- no address fields needed
           detailParams.id = id;
         } else if (address) {
-          // Parse "822 Kalalea St" or "822 Kalalea St, Honolulu, HI 96825"
+          // Parse "822 Kalalea St" or "46-435 Kahuhipa Street B" or "2957 Kalakaua Avenue 518"
           const streetAddr = address.split(",")[0].trim();
           const houseMatch = streetAddr.match(/^(\d+[-\d]*)\s+(.+)$/);
           if (houseMatch) {
             detailParams.house = houseMatch[1];
-            detailParams.street = houseMatch[2];
+            let street = houseMatch[2];
+            // Strip trailing unit suffixes: "B", "518", "#G5", "Apt 301", "Unit 7"
+            street = street.replace(/\s*(?:#|apt|unit|ste|suite)\s*\S+$/i, "").trim();
+            // Strip bare trailing single letter or number after street name (e.g., "Kahuhipa Street B" → "Kahuhipa Street")
+            street = street.replace(/\s+([A-Z]|\d+)$/i, "").trim();
+            detailParams.street = street;
           } else {
             detailParams.street = streetAddr;
           }

@@ -117,6 +117,7 @@ export async function GET(request: NextRequest) {
     let unitListings: any[] = [];
     let buildingListings: any[] = [];
 
+    try {
     if (unitNumber) {
       const escapedUnit = unitNumber.replace(/'/g, "''");
       const unitFilter = streetNum
@@ -167,6 +168,11 @@ export async function GET(request: NextRequest) {
         $select: selectFields,
       });
       unitListings = result.value || [];
+    }
+    } catch (queryErr: any) {
+      console.warn("[MLS Listing History] Trestle query failed:", queryErr.message);
+      // Return empty instead of 500
+      return NextResponse.json({ address, listings: [], buildingListings: [], total: 0, source: "mls", error: queryErr.message });
     }
 
     const mapListing = (p: any, isUnitMatch: boolean) => ({
