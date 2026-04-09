@@ -200,6 +200,16 @@ Help the agent search properties, understand data, run reports/calculators, and 
      - CHARCOAL (Just over threshold): Watch for expiration
    - BEST APPROACH: For expired listings, lead with a fresh marketing strategy. Explain what you would do differently. For active stale listings, add to your monitor list and wait for expiration.
 
+7. **Bird Dog Automated Prospecting** — Automated off-market lead hunting on a schedule.
+   - HOW IT WORKS: Agent sets criteria (ZIP, lead flags, property type, equity %) and a schedule (daily/weekly/monthly). Bird Dog automatically searches for matching properties and alerts on NEW leads.
+   - LEAD SCORING: HOT (red) = most likely to sell (inherited, pre-foreclosure, death, tax lien, vacant+absentee). WARM (orange) = moderately likely (out-of-state absentee + equity, free & clear). COLD (gray) = nurture/monitor.
+   - HOKU CAN: Create a Bird Dog search from natural language: "Bird dog absentee owners in 96825 with high equity, run weekly". Use action create_bird_dog with params: zip, absentee, highEquity, vacant, foreclosure, investor, taxDelinquent, propertyType, equityMin, name, schedule.
+   - HOKU CAN: Run a Bird Dog search immediately with run_bird_dog action and searchId param.
+   - HOKU CAN: Navigate to Bird Dog results with bird_dog_results action.
+   - HOT SHEET: Agent can export a color-coded XLSX spreadsheet with all lead data, owner info, equity, and skip trace contacts.
+   - SKIP TRACE: Manual button per lead to find phone numbers, emails, and social profiles for the property owner.
+   - BEST APPROACH: Help agents set up targeted searches combining multiple criteria for highest quality leads.
+
 GENERAL TIPS:
 - All searches return scored property cards ranked by likelihood to sell
 - Click any property card to see full details, motivation factors, and AI analysis
@@ -282,6 +292,31 @@ IMPORTANT: It is unethical (and often illegal) to solicit sellers whose property
 
 **Listing Display**: Address, price, original price, price drop %, beds/baths, sqft, DOM, agent/office info, media, virtual tour links
 Help the agent set up effective farms and configure watchdog alerts.`,
+
+  // Bird Dog Prospecting
+  "bird-dog": `The agent is on the BIRD DOG PROSPECTING page. Automated off-market lead hunting.
+
+**How Bird Dog Works**:
+1. Agent creates a search with criteria (ZIP code, lead flags, property type, equity %, schedule)
+2. Bird Dog automatically searches for matching properties on schedule (daily/weekly/monthly)
+3. Only alerts on NEW properties not previously found (zero-cost initial scanning)
+4. Each lead is scored by seller motivation: HOT (red), WARM (orange), COLD/NURTURE (gray)
+
+**Creating a Search**: Agent can use the UI form or tell you: "Bird dog absentee owners in 96825 with high equity, run weekly"
+- Use action create_bird_dog with params: zip, absentee, highEquity, vacant, foreclosure, investor, taxDelinquent, propertyType, equityMin, name, schedule
+
+**Lead Scoring**:
+- HOT: Inherited, pre-foreclosure, death transfer, tax lien, vacant+absentee, foreclosure, deed in lieu
+- WARM: Out-of-state absentee + high equity + long ownership, free & clear, absentee + equity > 40%
+- COLD: Monitoring -- no urgency signals detected
+
+**Available Actions**:
+- "Run Now" button triggers immediate search
+- "Export Hot Sheet" downloads color-coded XLSX with Summary, Hot Sheet, and Contacts tabs
+- Skip Trace button on individual leads (manual, finds phone/email/social)
+- Star important leads for follow-up
+
+Help agents set up targeted searches. Suggest combining criteria for highest quality leads (e.g., absentee + high equity + long ownership for prime seller prospects).`,
 
   // Open Houses
   "open-houses": `The agent is on the OPEN HOUSES page. Complete open house lifecycle management.
@@ -629,6 +664,7 @@ export function buildPageContext(pathname: string): string {
     security: "settings",
     "property-detail": "property-data",
     "market-analytics": "market-analytics",
+    "bird-dog": "bird-dog",
     templates: "open-houses",
   };
 

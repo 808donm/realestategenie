@@ -216,6 +216,24 @@ County-level market statistics dashboard also accessible from the sidebar (under
 - AI prospect analysis with scoring, outreach drafts (letters, emails, SMS, talking points)
 - CSV/PDF export
 
+### Bird Dog Automated Prospecting
+Automated off-market lead hunting that searches for properties matching agent criteria on a schedule.
+
+- **Create searches** via UI form or Hoku ("Bird dog absentee owners in 96825 with high equity")
+- **Lead filters**: Absentee Owner, High Equity, Vacant, Pre-Foreclosure, Foreclosure, Investor, Tax Delinquent, property type, min equity %, ZIP code
+- **Combined filters**: Any combination (e.g., absentee + high equity + long ownership)
+- **Scheduling**: Daily, weekly, or monthly automated searches
+- **Delta detection**: Only alerts on NEW leads not previously found (zero-cost ID scanning)
+- **Lead scoring**: Color-coded by seller motivation
+  - HOT (red): Most likely to sell -- inherited, pre-foreclosure, death transfer, tax lien, vacant+absentee, foreclosure
+  - WARM (orange): Moderately likely -- out-of-state absentee + equity, free & clear, long-term owner
+  - COLD/NURTURE (gray): Not likely right now -- monitoring, no urgency signals
+- **Hot Sheet Export**: Color-coded XLSX spreadsheet with 3 tabs (Summary, Hot Sheet with full property/owner data, Contacts with skip trace data)
+- **Skip Trace**: Manual button per lead to find phone, email, social profiles
+- **Investor Portfolio**: Shows total properties owned, portfolio value, equity when owner is an investor
+- **Hoku integration**: Create, run, and view Bird Dog searches via conversational AI
+- **Cron automation**: Daily searches run with daily briefing, weekly/monthly run with prospect refresh
+
 ---
 
 ## 10. Reports -- 6 Report Types

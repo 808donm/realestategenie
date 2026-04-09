@@ -36,6 +36,7 @@ export const ROUTE_TO_SECTION: Record<string, string> = {
   "/app/team": "team-management",
   "/app/admin": "admin-guide",
   "/app/farm": "farm-watchdog",
+  "/app/bird-dog": "property-intel",
   "/app/calendar": "calendar",
   "/app/tasks": "tasks",
   "/app/prospecting": "property-intel",
@@ -778,7 +779,33 @@ Generic AVMs often miss Hawaii-specific factors like leasehold tenure, which can
 5. **Investor Portfolios**: Multi-property owners grouped by name. Approach with investment messaging (cap rates, 1031 exchanges, ROI).
 6. **DOM Prospecting**: Stale, expired, and withdrawn listings tiered by DOM ratio (Red/Orange/Charcoal/Green). Only contact expired/withdrawn listings -- never solicit active listings.
 
-Each search includes AI-powered prospect analysis with scoring, tier assignment, outreach drafts (letters, emails, SMS, talking points), and CSV/PDF export.`,
+Each search includes AI-powered prospect analysis with scoring, tier assignment, outreach drafts (letters, emails, SMS, talking points), and CSV/PDF export.
+
+### 11.4 Bird Dog Automated Prospecting
+
+Bird Dog is an automated off-market lead hunting tool that searches for properties matching your criteria on a schedule.
+
+**How to use:**
+1. Go to **Bird Dog** in the sidebar (under Opportunities)
+2. Click **+ New Search**
+3. Enter a ZIP code and select lead filters (Absentee Owner, High Equity, Vacant, Pre-Foreclosure, etc.)
+4. Choose a schedule: Daily, Weekly, or Monthly
+5. Click **Create Search**
+6. Click **Run Now** to search immediately, or wait for the next scheduled run
+
+**Or tell Hoku:** "Bird dog absentee owners in 96825 with high equity, run weekly"
+
+**Lead Scoring:**
+- **HOT (red)**: Most likely to sell -- inherited property, pre-foreclosure, death transfer, tax delinquent, vacant + absentee, foreclosure
+- **WARM (orange)**: Moderately likely -- out-of-state absentee with equity, free & clear, long-term owner with high equity
+- **COLD/NURTURE (gray)**: Not likely right now -- monitoring, no urgency signals
+
+**Features:**
+- Only alerts you on NEW leads not previously found
+- Export a color-coded Hot Sheet (XLSX) with full property, owner, and contact data
+- Skip Trace individual leads to find phone numbers, emails, and social profiles
+- Star important leads for follow-up
+- Combine multiple filters for targeted searches (e.g., absentee + high equity + long ownership)`,
   },
   {
     id: "neighborhoods",
