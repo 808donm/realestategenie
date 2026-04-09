@@ -583,10 +583,19 @@ export default function PropertyDetailModal({
 
   // Compute Genie AVM client-side using the same comps from the Comps tab
   // This avoids server-to-server auth issues and ensures both use the same data
+  // Re-compute Genie AVM when comps OR REAPI data changes
+  // REAPI comps are merged with MLS/RentCast comps for a richer pool
+  const reapiCompsRef = useRef<string>("");
   useEffect(() => {
-    if (genieAvm || !rentcastComps || rentcastComps.length === 0) return;
+    if (!rentcastComps || rentcastComps.length === 0) return;
+    // Track if REAPI comps changed to trigger recomputation
+    const reapiCompsKey = reapiData?._raw?.comps?.length ? String(reapiData._raw.comps.length) : "";
+    const shouldRecompute = !genieAvm || (reapiCompsKey && reapiCompsKey !== reapiCompsRef.current);
+    if (!shouldRecompute) return;
+    reapiCompsRef.current = reapiCompsKey;
 
     import("@/lib/avm/genie-avm-engine").then(({ computeGenieAvm }) => {
+      // Map MLS/RentCast comps
       const mlsComps = rentcastComps.map((c: any) => ({
         address: c.address || "",
         closePrice: c.closePrice || c.price || 0,
@@ -601,13 +610,38 @@ export default function PropertyDetailModal({
         distance: c.distance,
         subdivision: c.subdivision || c.subdivisionName,
         ownershipType: c.ownershipType,
-        // REAPI comp features (from REAPI comps endpoint)
         pool: c.pool ?? (c.poolAvailable === true ? true : c.poolAvailable === false ? false : undefined),
         garage: c.garageAvailable ?? c.garage,
         garageType: c.garageType,
         fireplace: c.fireplace ?? c.fireplaceAvailable,
         condition: c.buildingCondition || c.condition,
       }));
+
+      // Merge REAPI comps (deduplicated by address)
+      const reapiComps = (reapiData?._raw?.comps || []).map((c: any) => ({
+        address: c.address?.address ? `${c.address.address}, ${c.address.city}, ${c.address.state} ${c.address.zip}` : "",
+        closePrice: c.lastSaleAmount ? Number(c.lastSaleAmount) : 0,
+        beds: c.bedrooms ? Number(c.bedrooms) : undefined,
+        baths: c.bathrooms ? Number(c.bathrooms) : undefined,
+        sqft: c.squareFeet ? Number(c.squareFeet) : undefined,
+        yearBuilt: c.yearBuilt ? Number(c.yearBuilt) : undefined,
+        lotSize: c.lotSquareFeet ? Number(c.lotSquareFeet) : undefined,
+        closeDate: c.lastSaleDate || "",
+        garage: c.garageAvailable,
+        pool: c.poolAvailable,
+        fireplace: c.fireplaceAvailable,
+      })).filter((c: any) => c.closePrice > 0 && c.closeDate);
+
+      // Deduplicate: prefer MLS comps, add REAPI comps that aren't already present
+      const seen = new Set(mlsComps.map((c: any) => (c.address || "").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 20)));
+      const uniqueReapiComps = reapiComps.filter((c: any) => {
+        const key = (c.address || "").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 20);
+        return key && !seen.has(key);
+      });
+      const allComps = [...mlsComps, ...uniqueReapiComps];
+      if (uniqueReapiComps.length > 0) {
+        console.log(`[GenieAVM] Merged ${mlsComps.length} MLS + ${uniqueReapiComps.length} REAPI = ${allComps.length} total comps`);
+      }
 
       // Extract REAPI property features for AVM adjustments
       const rf = reapiData?.building?.features || {};
@@ -642,7 +676,7 @@ export default function PropertyDetailModal({
         assessment: p.assessment?.market?.mktTtlValue
           ? { value: p.assessment.market.mktTtlValue, year: p.assessment.tax?.taxYear || 2025, land: 0, improvements: 0 }
           : null,
-        mlsComps,
+        mlsComps: allComps,
       });
 
       if (result) {
@@ -667,7 +701,7 @@ export default function PropertyDetailModal({
         }).catch(() => {});
       }
     }).catch(() => {});
-  }, [rentcastComps, genieAvm, p, mlsAddress, beds, baths, sqft, yearBuilt]);
+  }, [rentcastComps, genieAvm, p, mlsAddress, beds, baths, sqft, yearBuilt, reapiData]);
 
   // Fetch REAPI enrichment data on modal open (background, cached 7 days)
   // Returns: owner info, prior owner, mortgage, sale history, schools, demographics,
