@@ -1,6 +1,6 @@
 # Real Estate Genie -- Complete Feature List
 
-> Last updated: April 6, 2026
+> Last updated: April 9, 2026
 
 ---
 
@@ -16,7 +16,7 @@
 - **Active Listings** -- Total active, average DOM, stale listings (21+ DOM)
 - **One-Tap Contact** -- Hot leads (70+) with direct Call/Text/Email links
 - **Recent Activity Feed** -- Real-time log of leads, open houses, integrations, webhooks
-- **Sync Health** -- Google Calendar, Outlook, CRM connection status
+- **Sync Health** -- Calendar and CRM connection status
 
 ---
 
@@ -57,7 +57,7 @@
 
 ## 5. Leads
 
-- Auto-capture from open house QR check-ins, Zillow webhooks, social channels
+- Auto-capture from open house QR check-ins, third-party webhooks, social channels
 - Dashboard charts: by source, by event, heat score distribution, pipeline breakdown, over time, buyer readiness
 - Lead list tabs: Hot (80+), Warm (50-79), Cold (<50), DNC
 - **Heat Score (0-100)**: Contact info (30pts), representation (20pts), agent reach-out (15pts), timeline (20pts), financing (15pts), specificity (10pts)
@@ -108,7 +108,7 @@
 
 ### OH Sync
 - Two-way sync with MLS (pull upcoming, push local)
-- Calendar sync (Google, Outlook)
+- Calendar sync
 - Duplicate prevention via MLS key tracking
 
 ---
@@ -125,39 +125,39 @@
 - AI Social Media Generator (Instagram, Facebook, LinkedIn, TikTok)
 
 ### Tab 2: Market Monitor
-- Map view (Google Maps with color-coded markers by status, shaped by property type)
-- ZIP code boundary overlay (blue polygon from Census TIGERweb)
-- Hot Sheet view (sortable spreadsheet) with Neighborhood (Nbrhd) and Land Title (LT) columns
+- Map view with color-coded markers by status, shaped by property type
+- ZIP code boundary overlay
+- Hot Sheet view (sortable spreadsheet) with Neighborhood and Land Title columns
 - Map popup cards show neighborhood and ownership type
 - Status filters + timeframe (24h, 7d, 30d, 90d)
 - TMK/zip code search
 - Geocoding fallback, TMK resolution
 
 ### Tab 3: Market Snapshot
-- Real-time market statistics computed from Trestle MLS data
+- Real-time market statistics computed from MLS data
 - Market Temperature gauge (buyer's vs seller's market)
 - Quick Stats cards: Closed Sales, Pending, Active, Months of Inventory, DOM, Sale-to-List Ratio (6 metrics with 90-day trend arrows)
-- 12-month bar charts for Average Sales Price and Sales Activity (per-month Trestle queries for accurate data)
-- County selector using CountyOrParish filtering (Oahu, Maui, Hawaii, Kauai)
+- 12-month bar charts for Average Sales Price and Sales Activity
+- County selector filtering
 - Cached 24 hours
 
 ### Tab 4: Market Analytics
 County-level market statistics dashboard also accessible from the sidebar (under Deals).
 
 - **Overview Cards**: Median Sale Price (all types), SFR Median, Condo/TH Median, $/Sqft, DOM, YoY Price Change, Sales Momentum (6mo vs prior 6mo), MLS Active, MLS Closed (30d)
-- **Sales Price by ZIP Code**: Interactive sortable table with median price, SFR median (green), Condo/TH median (blue), $/sqft, listings, DOM, rent per ZIP. Click any ZIP for detail.
+- **Sales Price by ZIP Code**: Interactive sortable table with median price, SFR median, Condo/TH median, $/sqft, listings, DOM, rent per ZIP
 - **Grouped Bar Chart**: SFR vs Condo/Townhouse median by ZIP, sorted by SFR price descending
 - **Sale Volume by Cities**: Vertical bar chart of total listings per city, sorted ascending
 - **Fair Market Rents**: HUD Section 8 rents by bedroom count (Efficiency through 4BR)
 - **Median Rent by ZIP**: Rental medians per ZIP sorted descending
-- Data: RentCast market stats, Trestle MLS, HUD. Cached 24 hours.
+- Data cached 24 hours
 
 ### Tab 5: CMA (Comparative Market Analysis)
 - Full CMA Report rendered inline with adjustment engine
 - Subject property input with property type filtering (SFR, Condo, Townhouse)
 - Per-comp adjustment cards (sqft, beds, baths, lot, age, garage)
 - Pricing summary with recommended price
-- Fallback to RentCast/Realie when MLS has limited comps
+- Fallback data sources when MLS has limited comps
 - Save and print reports
 
 ### Tab 6: Lead Matches
@@ -178,8 +178,8 @@ County-level market statistics dashboard also accessible from the sidebar (under
 
 ### Tab 9: Hazard Map
 - Map view with color-coded hazard zone polygon overlays
-- Toggle layers: FEMA Flood Zones (blue), Tsunami Evacuation Zones (cyan), Sea Level Rise 0.5-3.2ft (teal gradient)
-- Auto-detects Hawaii vs mainland for appropriate layers (Hawaii State GIS or FEMA NFHL)
+- Toggle layers: FEMA Flood Zones, Tsunami Evacuation Zones, Sea Level Rise
+- Auto-detects Hawaii vs mainland for appropriate layers
 - Address/ZIP search to center the map
 - Deep link from Property Detail Modal
 
@@ -192,14 +192,16 @@ County-level market statistics dashboard also accessible from the sidebar (under
 - Filters: property type, beds/baths, year built, sqft, lot size, AVM, sale amount, assessed value, absentee toggle
 
 ### Property Detail Modal
-- **Tabs**: Opportunity Score, Overview, Building, Financial, Sales History, Listing History, Comps, Ownership, Neighborhood, Market Stats, Federal/GIS
-- **Listing History tab**: All MLS listings (Active, Pending, Closed, Expired, Withdrawn, Canceled) with status badges, price changes, DOM, and agents. Separate from Sales History (deed transfers).
+- **Tabs**: Opportunity Score, Overview, Building, Financial, AVM, Sales History, Listing History, Comps, Ownership, Neighborhood, Market Stats, Area Intel
+- **Building tab**: Full property features (construction type, condition, garage/carport details, deck/patio/porch areas, pool, fireplace, basement, HOA, utilities, lot dimensions, zoning, legal description)
+- **Financial tab**: Home Equity Analysis with Genie AVM, mortgage status (Free & Clear indicator), current mortgage details, mortgage history with open/closed status and borrower names, foreclosure history with auction details, FMR rent estimates, assessment history
+- **Sales History**: Full deed history with buyer/seller names, document types, arms length badges, down payment, LTV per transaction
+- **Comps tab**: Owner names, lender, absentee/cash/corporate flags per comparable
+- **Ownership tab**: Owner with ownership length, prior owner, 20+ lead flags (absentee, high equity, investor, free & clear, cash buyer, inherited, pre-foreclosure, etc.), investor portfolio (total properties, portfolio value, equity), skip trace (manual button - phone, email, social, demographics)
+- **AVM Comparison**: Side-by-side Genie AVM, Comps AVM, Property AVM, and external AVM
 - **List Price**: Displayed below address in modal header when opened from MLS
-- **Comps AVM**: Used as primary Estimated Value (most accurate for Hawaii)
-- **UniversalParcelId**: Full TMK with condo unit suffix from Trestle for accurate OWNINFO ownership lookups
-- **AVM Reliability Check**: >30% difference from county assessment = suppressed, county value shown
 - **Property-type-specific market stats**: Condo shows Condo medians, SFR shows SFR medians
-- **County Deed Owner**: Green badge from Honolulu OWNINFO, unit-specific for condos
+- **County Deed Owner**: Green badge from county records, unit-specific for condos
 - **Condo Unit Filtering**: Sales history and ownership filtered to specific unit
 - **Report Viewer Dropdown**: View Property, Buyer, Seller, Investor, or CMA report in-browser
 - Download PDF report, shareable link (30-day expiry)
@@ -245,7 +247,7 @@ ReportHeader, ValueCard, ReportRow, TwoColumnGrid, MarketTypeIndicator, EquityBa
 
 ## 11. Neighborhood Profiles
 
-- AI-powered generation (GPT-4) with Fair Housing compliance check
+- AI-powered generation with Fair Housing compliance check
 - MLS import: search by MLS# or address to auto-fill fields
 - Sections: Lifestyle & Vibe, Location Intelligence, Market Pulse, Community Resources, Amenities
 - Census data enrichment at 4 geographic levels (ZIP/County/State/USA)
@@ -267,7 +269,7 @@ ReportHeader, ValueCard, ReportRow, TwoColumnGrid, MarketTypeIndicator, EquityBa
 5. **Investment Property** -- ROI, cap rate, IRR, cash-on-cash, 30-year projections, verdict
 6. **Compare Properties** -- Side-by-side ranked by cap rate/CoC/IRR/ROI
 7. **Rental Property** -- NOI, cap rate, CoC, DSCR, GRM, cash flow, equity projection
-8. **STR Analyzer** -- Airbnb/VRBO, Hawaii GET + TAT taxes, occupancy, revenue projections
+8. **STR Analyzer** -- Short-term rental with Hawaii GET + TAT taxes, occupancy, revenue projections
 9. **Wholesale MAO** -- Maximum Allowable Offer, 70% Rule, investor margin
 10. **House Flip** -- ARV, 70% Rule, costs, profit, ROI, annualized ROI
 11. **BRRRR Calculator** -- Buy/Renovate/Refinance/Rent, equity capture, infinite returns
@@ -279,7 +281,7 @@ All calculators: MLS auto-import, Excel/PDF export, branded reports, email shari
 
 ## 13. Seller Opportunity Map
 
-- Interactive Google Map with color-coded markers by motivation score
+- Interactive map with color-coded markers by motivation score
 - Search by zip code, lat/lng + radius, TMK
 - 12-dimension Seller Motivation Score (0-100): equity, ownership length, absentee, distress, portfolio, transfers, owner type, tax gap, market trend, tax trend, appreciation, HOA burden
 - Filters: min score, absentee-only, min ownership years, min equity %, property type
@@ -328,7 +330,7 @@ MLS searches, reports generated, last active, retention risk flags (40%+ activit
 
 ## 16. Analytics Reports
 
-All reports support PDF/Excel export, print-friendly formatting, and Recharts visualizations.
+All reports support PDF/Excel export, print-friendly formatting, and chart visualizations.
 
 ### Market Statistics
 - **Oahu Annual Resales** -- 40 years of residential sales data with line/bar/area charts, median prices, YoY trends
@@ -337,31 +339,31 @@ All reports support PDF/Excel export, print-friendly formatting, and Recharts vi
 - **Hawaii Island Monthly** -- SF, condo, and land medians, DOM, new vs sold with YoY
 - **Kauai Monthly** -- SF, condo, and land medians
 - **Statewide Comparison** -- Official Hawaii Realtors stats across all four counties
-- **York & Adams Counties, PA** -- RAYAC monthly data with school district breakdowns
+- **York & Adams Counties, PA** -- Monthly data with school district breakdowns
 
 ### Solo Agent Reports
-- **Lead Source ROI** -- Conversion rates and cost-per-closing by lead source (Open House, Zillow, Google, Facebook, etc.). Shows which sources produce the most closings per lead invested.
-- **Pipeline Velocity** -- Average days per pipeline stage with bottleneck identification. Highlights "stuck deals" sitting at 2x or more the average duration for their stage.
-- **Tax & Savings Reserve** -- Gross commission vs. recommended tax and expense reserves. Helps agents plan for quarterly tax payments.
-- **Speed-to-Lead Audit** -- Average response time to new leads (in minutes). Breaks down by hour to show when leads arrive and how quickly the agent responds. Tracks under 5 min, under 15 min, under 1 hour, and over 1 hour.
+- **Lead Source ROI** -- Conversion rates and cost-per-closing by lead source
+- **Pipeline Velocity** -- Average days per pipeline stage with bottleneck identification
+- **Tax & Savings Reserve** -- Gross commission vs. recommended tax and expense reserves
+- **Speed-to-Lead Audit** -- Average response time to new leads with hourly breakdown
 
 ### Team Reports
-- **Agent Leaderboard** -- Per-agent metrics: closings, calls, SMS, showings booked, total volume, commission earned. Includes radar chart for visual performance comparison.
-- **Lead Assignment Fairness** -- Leads received, contacted, and converted per team member with average response time. Ensures equitable lead distribution.
-- **Team Commission Split Tracker** -- House vs. agent commission portions per deal with instant calculations. Configurable split percentages.
-- **Listing Inventory Health** -- Active listings by agent with DOM tracking. Price reduction alerts flag listings over 21 DOM that may need attention.
+- **Agent Leaderboard** -- Per-agent metrics: closings, calls, SMS, showings booked, total volume, commission earned
+- **Lead Assignment Fairness** -- Leads received, contacted, and converted per team member
+- **Team Commission Split Tracker** -- House vs. agent commission portions per deal
+- **Listing Inventory Health** -- Active listings by agent with DOM tracking
 
 ### Brokerage Reports
-- **Company Dollar** -- Monthly revenue breakdown: gross revenue, agent splits, fees, operating expenses, and net company dollar. 12-month trend with YoY comparison.
-- **Compliance & Audit Log** -- Document signatures, ID verifications, wire confirmations, and disclosure tracking from the audit log (90-day window).
-- **Brokerage Market Share** -- Brokerage rank by zip code compared to competing brokerages. Shows market position relative to major brands.
-- **Agent Retention Risk** -- AI flags agents with 40%+ activity drop over the last 30 days compared to their previous 30 days. Compares logins, leads, open houses, and searches. Enables proactive coaching.
+- **Company Dollar** -- Monthly revenue breakdown: gross revenue, agent splits, fees, operating expenses, and net company dollar
+- **Compliance & Audit Log** -- Document signatures, ID verifications, wire confirmations, and disclosure tracking
+- **Brokerage Market Share** -- Brokerage rank by zip code compared to competing brokerages
+- **Agent Retention Risk** -- AI flags agents with 40%+ activity drop
 
 ### Office Admin
-- **Pending Document Checklist** -- Under-contract deals missing required signatures, forms, or disclosures.
+- **Pending Document Checklist** -- Under-contract deals missing required signatures, forms, or disclosures
 
 ### Agency Dashboard (Broker/Admin)
-The Agency Dashboard (Section 15) provides real-time aggregate reporting across all agents with 6 tabs: Overview, Agent Performance, Lead Performance, Open House Performance, Financial, and Activity & Risk. See Section 15 for details.
+The Agency Dashboard (Section 15) provides real-time aggregate reporting across all agents with 6 tabs. See Section 15 for details.
 
 ---
 
@@ -382,7 +384,7 @@ The Agency Dashboard (Section 15) provides real-time aggregate reporting across 
 
 ### Messaging
 - **SMS**: Send via CRM conversations API
-- **Email**: Dual-channel (CRM-first, Resend fallback)
+- **Email**: Dual-channel (CRM-first, transactional fallback)
 - **Bulk Messaging**: Send to multiple contacts
 - **Message Templates**: Predefined templates (intro, showing, check-in, etc.)
 
@@ -393,7 +395,7 @@ The Agency Dashboard (Section 15) provides real-time aggregate reporting across 
 - Status tracking: draft, pending, signed, declined, expired
 
 ### Workflows & Automations
-- n8n webhook integration with 6+ event types
+- Webhook integration with 6+ event types
 - HMAC-SHA256 signature verification
 - Webhook delivery logs with retry logic
 - CRM workflow triggers on lead submission, stage advancement, open house events
@@ -404,7 +406,7 @@ The Agency Dashboard (Section 15) provides real-time aggregate reporting across 
 - Custom qualification questions
 - Lead capture with auto-scoring
 - CRM custom objects (OpenHouse, Registration)
-- Zillow/Bridge Interactive webhook for external lead sources
+- Third-party webhook support for external lead sources
 
 ### Auto-Response
 - AI-powered 24/7 SMS and email auto-responses
@@ -440,31 +442,30 @@ The Agency Dashboard (Section 15) provides real-time aggregate reporting across 
 ## 19. Integrations
 
 ### Primary
-- **CRM**: Contacts, pipeline, email/SMS, e-signature, workflows, automations (19 OAuth scopes)
-- **Trestle (HiCentral MLS)**: Listings, property data, comps, market watch, OH sync (OAuth2/Basic Auth)
+- **CRM**: Contacts, pipeline, email/SMS, e-signature, workflows, automations
+- **MLS**: Listings, property data, comps, market watch, OH sync
 
 ### Calendar (Two-Way Sync)
-- Google Calendar (OAuth)
-- Microsoft/Outlook Calendar (OAuth)
+- Google Calendar
+- Microsoft/Outlook Calendar
 
 ### Webhooks
-- n8n integration with 6+ event types
+- Automation webhook integration with 6+ event types
 - HMAC verification, delivery logs, retry logic
 
 ### Data Providers
-- **Realie**: AVM, equity, liens, deed transfers, sales history
-- **RentCast**: Property records, rental AVM, market stats, comps, owner info
-- **Honolulu County OWNINFO**: Current deed owner (unit-specific for condos)
-- **Hawaii State GIS**: Flood/tsunami/fire zones, school boundaries, TMK parcels, fire stations, police stations, parks
+- **Property Data API**: AVM, equity, liens, deed transfers, sales history, owner info, skip trace, investor portfolios, property boundaries, comps with boost parameters
+- **County Records**: Current deed owner (unit-specific for condos)
+- **State GIS**: Flood/tsunami/fire zones, school boundaries, TMK parcels
 - **FEMA NRI**: 12+ hazard risk ratings
 - **FBI CDE**: Crime statistics by county
 - **Census ACS**: Detailed demographics at 4 levels (education, income, age, occupation, commute)
 - **NCES**: Schools (enrollment, student-teacher ratio, free lunch %, Title I)
-- **FRED/BLS/HUD**: Economic data, employment, fair market rents
-- **Google Maps/Geocoding**: Maps, geocoding, static map images
+- **Federal Economic Data**: Mortgage rates, employment, fair market rents
+- **Maps/Geocoding**: Maps, geocoding, static map images
 
 ### Admin-Only
-- Stripe (payments), PayPal (payments)
+- Payment processing (credit card and alternative methods)
 
 ---
 
@@ -486,7 +487,7 @@ The Agency Dashboard (Section 15) provides real-time aggregate reporting across 
 - Invoices with status badges
 - Payment history
 - Plan upgrade/change
-- Stripe and PayPal support
+- Multiple payment methods supported
 
 ---
 
@@ -531,47 +532,42 @@ Hoku is the AI assistant inside the Real Estate Genie app, available on every pa
 Hoku Web Assistant is an embeddable AI chat widget that agents add to their websites. It pre-qualifies visitors, captures leads, searches the MLS, and creates contacts in the CRM.
 
 ### Setup
-Agents go to **Integrations > Hoku Web Assistant** and copy their embed code:
-```html
-<script src="https://realestategenie.app/api/web-assistant/embed?agentId=AGENT_ID"></script>
-```
-This adds a floating blue chat button to their website. Clicking it opens the Hoku chat in an iframe. Agents can also share a direct link: `realestategenie.app/chat/AGENT_ID`.
+Agents go to **Integrations > Hoku Web Assistant** and copy their embed code. This adds a floating blue chat button to their website. Agents can also share a direct link.
 
 ### Buyer Flow
-1. Hoku greets the visitor: "Aloha! I'm Hoku, [Agent Name]'s assistant. Are you interested in buying or selling?"
+1. Hoku greets the visitor using the agent's name
 2. Visitor says "buying" -- Hoku asks if they're working with an agent
 3. If no agent, asks if they'd like the agent to reach out
 4. Captures: name, email, phone
-5. Qualifies: timeline (0-3mo, 3-6mo, 6+, browsing), pre-approval status, neighborhoods, must-have features
-6. Offers to search for properties -- searches via the agent's **Trestle MLS connection** (same as App Hoku) or **IDX Broker** as fallback
+5. Qualifies: timeline, pre-approval status, neighborhoods, must-have features
+6. Offers to search for properties via the agent's MLS connection
 7. Emails matching properties to the visitor with photos, price, beds/baths, and agent contact info
 8. Creates a scored lead in the pipeline and a CRM contact with full conversation in the notes
 
 ### Seller Flow
 1. Visitor says "selling" -- Hoku asks if they're working with an agent
 2. If no agent, asks for the property address
-3. Looks up the property in **RentCast and Realie** -- retrieves AVM, beds, baths, sqft, year built, lot size
-4. Shares the property info with the visitor: "Here's what I found: 3 bed, 2 bath, 1,660 sqft, estimated value $1,472,000"
+3. Looks up the property -- retrieves AVM, beds, baths, sqft, year built, lot size
+4. Shares the property info with the visitor
 5. Captures: name, email, phone
 6. Creates a scored lead with property data in the pipeline and CRM
 
 ### Lead Creation
-- Lead inserted into `lead_submissions` with heat score, pipeline stage "new_lead", and source "Website Chat"
-- CRM contact created with tags ["Website Chat", "Hoku Web Assistant"]
-- CRM opportunity created in agent's pipeline as new lead (labeled "Buyer" or "Seller")
+- Lead inserted with heat score, pipeline stage "new_lead", and source "Website Chat"
+- CRM contact created with tags
+- CRM opportunity created in agent's pipeline
 - Full conversation deposited in CRM contact notes
-- Seller leads include property data (AVM, beds, baths, sqft) in the lead payload
+- Seller leads include property data in the lead payload
 - Lead appears on agent's Dashboard as "Needs Attention"
 
 ### Agent Personalization
-- Uses agent's first name throughout ("Aloha! I'm Hoku, Donald's assistant")
+- Uses agent's first name throughout
 - Hawaii agents get "Aloha" greeting and "Mahalo" farewell (detected from locations_served)
 - Agent headshot, brokerage name, and logo shown on the chat landing page
 - "Powered by Real Estate Genie" in footer
 
 ### MLS Search
-- Tries the agent's **Trestle MLS** connection first (same integration as the app)
-- Falls back to **IDX Broker** if configured (agent enters API key on Integrations page)
+- Uses the agent's MLS connection
 - Returns up to 6 matching Active listings with photos
 - Emails results as a branded HTML email with agent contact info
 
@@ -579,7 +575,7 @@ This adds a floating blue chat button to their website. Clicking it opens the Ho
 
 ## 26. Activity Tracking
 
-Agent actions are logged to the `agent_activity_log` table for agency-level reporting. Logging is fire-and-forget (non-blocking) and does not impact the user's workflow.
+Agent actions are logged for agency-level reporting. Logging is fire-and-forget (non-blocking) and does not impact the user's workflow.
 
 **Actions tracked:**
 - MLS searches performed (with query and result count)
@@ -597,53 +593,41 @@ Agent actions are logged to the `agent_activity_log` table for agency-level repo
 
 These features ensure the data shown to agents is accurate and relevant, especially for condos and Hawaii-specific properties.
 
-- **Comps AVM as Primary**: Comps-based AVM used as Estimated Value everywhere (most accurate for Hawaii). Genie AVM available but not displayed until accuracy improves.
+- **Genie AVM (Proprietary Valuation)**: Dynamic ensemble valuation model with four sources: list price (30-40%), MLS closed comps (20-45%), Property AVM (15% cross-check), and county assessment trend (15-25%). Luxury properties ($2M+) get 40% list price weight since comps are sparse at high price points. Feature-based comp adjustments for pool, garage, condition, outdoor space, and fireplace. Comp quality filters: minimum correlation (0.3), max adjustment cap (35%), outlier removal, and up to 20 comps. Condo-specific tuning with increased sqft weight and reduced bed/bath adjustments. List-to-sale ratio calibration adjusts list price input based on area-specific sale patterns. Hawaii-specific adjustments for leasehold discount (25-35%), flood zone discount (3-5%), and high HOA impact.
 
-- **Genie AVM (Proprietary Valuation)**: Dynamic ensemble valuation model with four sources: list price (30-40%), MLS closed comps (20-45%), Property AVM (15% cross-check), and county assessment trend (15-25%). Luxury properties ($2M+) get 40% list price weight since comps are sparse at high price points. Comp quality filters: minimum correlation (0.3), max adjustment cap (35%), outlier removal, and up to 15 comps. Condo-specific tuning with increased sqft weight and reduced bed/bath adjustments. List-to-sale ratio calibration adjusts list price input based on area-specific sale patterns. Hawaii-specific adjustments for leasehold discount (25-35%), flood zone discount (3-5%), and high HOA impact.
+- **AVM Caching (4 strategies)**: (1) Sale outcome tracking records AVM predictions vs actual sale prices for accuracy measurement. (2) Historical comp cache builds a richer comp pool over time from every closed sale encountered (both from Comps tab and MLS Search). (3) List-to-sale ratio cache tracks how list prices compare to actual sales by ZIP/subdivision for list price weight calibration. (4) AVM result caching with 7-day TTL. Cached comps supplement live MLS results when fewer than requested.
 
-- **AVM Caching (4 strategies)**: (1) Sale outcome tracking records AVM predictions vs actual sale prices for accuracy measurement. (2) Historical comp cache builds a richer comp pool over time from every closed sale encountered (both from Comps tab and MLS Search). (3) List-to-sale ratio cache tracks how list prices compare to actual sales by ZIP/subdivision for list price weight calibration. (4) Genie AVM result caching via existing property_data_cache with 7-day TTL. Cached comps supplement live MLS results when fewer than requested.
+- **AVM Statistics Dashboard**: Admin console page showing real-time AVM accuracy metrics: median/mean error, within-10%/15%/20% rates, accuracy by ZIP code, property type, and confidence level. Comp cache health. Recent predictions table with per-property error. Silently tracks every AVM prediction for app-wide reporting.
 
-- **AVM Statistics Dashboard**: Admin console page showing real-time AVM accuracy metrics: median/mean error, within-10%/15%/20% rates, accuracy by ZIP code, property type, and confidence level. Comp cache health (total cached, by ZIP, by source). Recent predictions table with per-property error. Silently tracks every AVM prediction for app-wide reporting.
+- **Source Branding**: All data sources display as "Real Estate Genie" or "Public Records" -- no provider names shown to agents.
 
-- **Source Branding**: All data sources display as "Real Estate Genie" or "Public Records" -- no provider names (Realie, RentCast) shown to agents.
+- **Property-Type-Specific Market Stats**: When viewing a condo, the headline market stats show the Condo median price instead of the aggregate across all types. Same for SFR, Townhouse, Multi-Family, and Land.
 
-- **AVM Accuracy**: All API call sites now pass bedrooms, bathrooms, square footage, and property type to RentCast's AVM endpoint. This ensures comps match the subject property instead of RentCast guessing the attributes. Default comp count increased from 15 to 20.
+- **PropertyType Mapping**: MLS uses PropertyType="Residential" with PropertySubType for specific types. All search routes map correctly.
 
-- **Property-Type-Specific Market Stats**: When viewing a condo, the headline market stats show the Condo median price (e.g., $360K) instead of the aggregate across all types ($399K which includes $1.7M single-family homes). Same for SFR, Townhouse, Multi-Family, and Land.
+- **Condo Unit Filtering**: Three layers of unit-specific filtering for condos (ownership, sales history, property data, parcels).
 
-- **PropertyType Mapping**: Trestle uses PropertyType="Residential" with PropertySubType="SingleFamilyResidence"/"Condominium"/"Townhouse". All search routes map correctly.
+- **Address Search**: Searches both expanded and abbreviated street suffixes for flexible matching.
 
-- **Condo Unit Filtering**: Three layers of unit-specific filtering for condos:
-  - **Ownership (OWNINFO)**: Queries by exact 12-digit parid (includes unit suffix) first, returns only that unit's owner instead of all building owners
-  - **Sales History (MLS)**: Matches unit number in UnparsedAddress when the UnitNumber field is empty, separating unit-specific sales from building sales
-  - **Property Data (RentCast/Realie)**: Strips unit number from address for lookup (providers don't have per-unit data), uses building-level data
-  - **Parcels (ArcGIS)**: Strips condo unit suffix from TMK (parcels are land-level, not unit-level)
+- **CMA Property Type Filtering**: Filters by PropertySubType server-side after fetching results.
 
-- **Condo Address Reformatting**: MLS bare unit numbers (e.g., "6-15") reformatted to "Unit 615" for RentCast/Realie lookups.
+- **Middle School Fix**: Hawaii GIS uses correct field names for intermediate/middle school zones.
 
-- **UniversalParcelId**: Trestle's UniversalParcelId field contains the full 6-part TMK with condo unit suffix. Used for accurate OWNINFO ownership lookups instead of the 5-part ParcelNumber.
-
-- **Address Search**: Searches both expanded and abbreviated street suffixes. "3849 Manoa Road" searches for "manoa road", "manoa rd", and just "manoa" in the StreetName field to match however the MLS stores it.
-
-- **CMA Property Type Filtering**: HiCentral MLS uses PropertyType="Residential" for SFR, Condo, and Townhouse. The CMA engine filters by PropertySubType server-side after fetching results, so selecting "Single Family" excludes condos and townhouses from comps.
-
-- **Middle School Fix**: Hawaii GIS uses `int_desc` (Intermediate) not `mid_desc` (Middle) for school zones. Fixed in both GIS enrichment and school zones modules.
-
-- **Market Stats Caching**: RentCast market stats cached with monthly refresh on the 10th of each month.
+- **Market Stats Caching**: Market stats cached with monthly refresh.
 
 ---
 
 ## Platform
 
-- **Stack**: Next.js 16 (App Router) + React 19 + TypeScript + TailwindCSS 4
-- **Database**: Supabase (PostgreSQL) with Row Level Security on all tables
-- **Auth**: Supabase Auth (JWT, email/password, MFA with authenticator app)
-- **Hosting**: Vercel (serverless functions, preview deployments, cron jobs)
-- **Mobile**: Capacitor 8 (iOS/Android wrapper)
-- **AI**: Vercel AI Gateway + Anthropic Claude + OpenAI GPT-4
+- **Stack**: Next.js (App Router) + React + TypeScript + TailwindCSS
+- **Database**: PostgreSQL with Row Level Security on all tables
+- **Auth**: JWT-based authentication (email/password, MFA with authenticator app)
+- **Hosting**: Serverless deployment with preview deployments and cron jobs
+- **Mobile**: Native iOS/Android wrapper
+- **AI**: Multi-model AI integration for copilot, analysis, and content generation
 - **4 User Roles**: Agent, Team Lead, Admin (Account), Admin (Platform)
 - **Bootstrap Wizard**: Guided setup for new users on first login
-- **9 Data Sources**: MLS (Trestle), Realie, RentCast, Honolulu County OWNINFO, Hawaii State GIS, FEMA NRI, FBI CDE, Census ACS (4 geographic levels), NCES/FRED/BLS/HUD
-- **White-Label Ready**: CRM provider name never shown to end users (nameless integration)
+- **Multiple Data Sources**: MLS, property records, county records, state GIS, federal data (FEMA, FBI, Census, NCES, HUD)
+- **White-Label Ready**: No provider names shown to end users
 
-> Last updated: April 6, 2026
+> Last updated: April 9, 2026

@@ -281,11 +281,29 @@ Whenever a feature is added, modified, or removed, **you must update all three**
 
 This is not optional. Outdated help, AI context, and feature documentation degrade the user experience and create confusion. Treat these three files as part of every feature's deliverable.
 
-### CRM Branding Rule
+### Platform & Provider Branding Rule
 
-- **Never mention "GoHighLevel", "GHL", or any CRM provider name** in user-facing output, UI text, help content, Hoku responses, reports, or documentation.
-- The CRM is always referred to simply as "CRM" or "your CRM" -- it is a nameless, white-labeled integration.
-- Internal code (variable names, API routes, comments) may reference GHL for technical clarity, but nothing the end user sees should identify the CRM provider.
+Real Estate Genie reserves the right to change integrations and platform partners at any time without notice. **No platform or provider names should appear in user-facing output.** This applies to UI text, help content, Hoku responses, reports, documentation (including FEATURES.md), and any agent-visible surface.
+
+| Integration | User-Facing Name | Internal Code Reference OK |
+|-------------|-----------------|---------------------------|
+| GoHighLevel / GHL | "CRM" or "your CRM" | Yes (variable names, API routes, comments) |
+| Trestle / CoreLogic / HiCentral | "MLS" | Yes |
+| Realie / RentCast / REAPI | "Property Data" or "Public Records" | Yes |
+| Anthropic Claude / OpenAI GPT | "AI" or "Hoku" | Yes |
+| Vercel | (don't mention) | Yes |
+| Supabase | (don't mention) | Yes |
+| Stripe / PayPal | "Payment" | Yes |
+| Google Maps | "Maps" | Yes |
+| n8n | "Automation" or "Webhook" | Yes |
+| IDX Broker | "IDX" or "MLS search" | Yes |
+| Zillow / Bridge Interactive | "Lead source" | Yes |
+
+**In code:** Variable names, file names, API routes, and comments MAY reference platform names for technical clarity (e.g., `ghl-service.ts`, `trestle-client.ts`, `reapi-client.ts`).
+
+**In FEATURES.md:** Use generic terms only. No provider names. Refer to data sources generically (e.g., "Property Data API" not "REAPI", "MLS" not "Trestle").
+
+**In the app UI:** No platform logos, names, or branding. Integrations page shows "MLS", "CRM", "Calendar" -- not provider names.
 
 ### When in Doubt...
 
