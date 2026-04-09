@@ -34,6 +34,19 @@ export interface GenieAvmInput {
   propertyType?: string;
   propertySubType?: string;
 
+  // Property features (from REAPI or MLS -- used for feature-level comp adjustments)
+  pool?: boolean;
+  garage?: boolean;
+  garageSqft?: number;
+  garageType?: string; // "Garage" | "Carport" | null
+  condition?: string;  // "Excellent" | "Good" | "Average" | "Fair" | "Poor"
+  construction?: string; // "Frame" | "Masonry" | "Concrete" | "Adobe"
+  deckArea?: number;
+  patioArea?: number;
+  porchArea?: number;
+  fireplace?: boolean;
+  stories?: number;
+
   // Hawaii-specific
   ownershipType?: string; // "Fee Simple" | "Leasehold"
   leaseExpiration?: string; // ISO date
@@ -76,6 +89,18 @@ export interface MlsComp {
   subdivision?: string;
   distance?: number; // miles
   correlation?: number; // 0-1
+  // Property features (from REAPI comps)
+  pool?: boolean;
+  garage?: boolean;
+  garageSqft?: number;
+  garageType?: string;
+  condition?: string;
+  construction?: string;
+  deckArea?: number;
+  patioArea?: number;
+  porchArea?: number;
+  fireplace?: boolean;
+  stories?: number;
 }
 
 export interface AdjustedComp extends MlsComp {
@@ -86,6 +111,7 @@ export interface AdjustedComp extends MlsComp {
     baths: number;
     lot: number;
     age: number;
+    features: number;
     total: number;
   };
   weight: number;
@@ -131,6 +157,18 @@ const ADJUSTMENT_PER_SQFT_LOT = 10;    // $/sqft for lot size difference (SFR on
 // For condos, sqft matters more and bed/bath matters less
 const CONDO_ADJUSTMENT_PCT_SQFT = 0.85;       // 85% for condos (increased)
 const CONDO_BED_BATH_DISCOUNT = 0.6;          // Reduce bed/bath adjustments by 40% for condos
+
+// Feature-based adjustments (from REAPI property data)
+// Applied when subject and comp differ on a feature. Capped at 10% total.
+const ADJUSTMENT_PCT_POOL = 0.04;           // 4% for pool (significant in Hawaii)
+const ADJUSTMENT_PCT_GARAGE = 0.025;        // 2.5% for garage vs none
+const ADJUSTMENT_PCT_CARPORT = 0.01;        // 1% for carport vs none
+const ADJUSTMENT_PCT_FIREPLACE = 0.01;      // 1% for fireplace
+const ADJUSTMENT_PCT_OUTDOOR_SPACE = 0.02;  // 2% for significant outdoor living (deck+patio+porch > 200sqft)
+const ADJUSTMENT_PCT_CONDITION: Record<string, number> = {
+  "Excellent": 0.06, "Good": 0.03, "Average": 0, "Fair": -0.03, "Poor": -0.06,
+};
+const MAX_FEATURE_ADJUSTMENT_PCT = 0.10;    // Cap total feature adjustments at 10%
 
 // Comp quality thresholds
 const MIN_CORRELATION = 0.3;                   // Exclude comps below this correlation
@@ -430,7 +468,57 @@ function adjustAndWeightComps(input: GenieAvmInput): AdjustedComp[] {
       ? (subjectLotSize - comp.lotSize) * ADJUSTMENT_PER_SQFT_LOT
       : 0;
 
-    const totalAdj = sqftAdj + bedsAdj + bathsAdj + ageAdj + lotAdj;
+    // Feature-based adjustments (from REAPI data)
+    let featureAdj = 0;
+
+    // Pool: subject has pool but comp doesn't → adjust comp up (it would be worth more with a pool)
+    if (input.pool != null && comp.pool != null && input.pool !== comp.pool) {
+      featureAdj += (input.pool ? 1 : -1) * comp.closePrice * ADJUSTMENT_PCT_POOL;
+    }
+
+    // Garage: compare parking type differences
+    if (input.garageType && comp.garageType) {
+      const subjectHasGarage = input.garageType.toLowerCase().includes("garage") && !input.garageType.toLowerCase().includes("carport");
+      const compHasGarage = comp.garageType.toLowerCase().includes("garage") && !comp.garageType.toLowerCase().includes("carport");
+      const subjectHasCarport = input.garageType.toLowerCase().includes("carport");
+      const compHasCarport = comp.garageType?.toLowerCase().includes("carport");
+
+      if (subjectHasGarage && !compHasGarage) {
+        featureAdj += comp.closePrice * ADJUSTMENT_PCT_GARAGE;
+      } else if (!subjectHasGarage && compHasGarage) {
+        featureAdj -= comp.closePrice * ADJUSTMENT_PCT_GARAGE;
+      } else if (subjectHasCarport && !compHasCarport && !compHasGarage) {
+        featureAdj += comp.closePrice * ADJUSTMENT_PCT_CARPORT;
+      }
+    } else if (input.garage != null && comp.garage != null && input.garage !== comp.garage) {
+      featureAdj += (input.garage ? 1 : -1) * comp.closePrice * ADJUSTMENT_PCT_GARAGE;
+    }
+
+    // Fireplace
+    if (input.fireplace != null && comp.fireplace != null && input.fireplace !== comp.fireplace) {
+      featureAdj += (input.fireplace ? 1 : -1) * comp.closePrice * ADJUSTMENT_PCT_FIREPLACE;
+    }
+
+    // Outdoor living space (deck + patio + porch)
+    const subjectOutdoor = (input.deckArea || 0) + (input.patioArea || 0) + (input.porchArea || 0);
+    const compOutdoor = (comp.deckArea || 0) + (comp.patioArea || 0) + (comp.porchArea || 0);
+    if (subjectOutdoor > 200 && compOutdoor < 100) {
+      featureAdj += comp.closePrice * ADJUSTMENT_PCT_OUTDOOR_SPACE;
+    } else if (compOutdoor > 200 && subjectOutdoor < 100) {
+      featureAdj -= comp.closePrice * ADJUSTMENT_PCT_OUTDOOR_SPACE;
+    }
+
+    // Building condition
+    if (input.condition && comp.condition && input.condition !== comp.condition) {
+      const subjectScore = ADJUSTMENT_PCT_CONDITION[input.condition] ?? 0;
+      const compScore = ADJUSTMENT_PCT_CONDITION[comp.condition] ?? 0;
+      featureAdj += (subjectScore - compScore) * comp.closePrice;
+    }
+
+    // Cap feature adjustments at 10% to prevent over-adjustment
+    const featureAdjCapped = Math.sign(featureAdj) * Math.min(Math.abs(featureAdj), comp.closePrice * MAX_FEATURE_ADJUSTMENT_PCT);
+
+    const totalAdj = sqftAdj + bedsAdj + bathsAdj + ageAdj + lotAdj + Math.round(featureAdjCapped);
 
     // Cap total adjustment -- if a comp needs >35% adjustment, it's not truly comparable
     const adjPct = Math.abs(totalAdj) / comp.closePrice;
@@ -464,6 +552,7 @@ function adjustAndWeightComps(input: GenieAvmInput): AdjustedComp[] {
         baths: bathsAdj,
         lot: lotAdj,
         age: ageAdj,
+        features: Math.round(featureAdjCapped),
         total: totalAdj,
       },
       weight,

@@ -601,7 +601,17 @@ export default function PropertyDetailModal({
         distance: c.distance,
         subdivision: c.subdivision || c.subdivisionName,
         ownershipType: c.ownershipType,
+        // REAPI comp features (from REAPI comps endpoint)
+        pool: c.pool ?? (c.poolAvailable === true ? true : c.poolAvailable === false ? false : undefined),
+        garage: c.garageAvailable ?? c.garage,
+        garageType: c.garageType,
+        fireplace: c.fireplace ?? c.fireplaceAvailable,
+        condition: c.buildingCondition || c.condition,
       }));
+
+      // Extract REAPI property features for AVM adjustments
+      const rf = reapiData?.building?.features || {};
+      const rRaw = reapiData?._raw?.propertyInfo || {};
 
       const result = computeGenieAvm({
         address: mlsAddress || p.address?.oneLine || "",
@@ -617,6 +627,18 @@ export default function PropertyDetailModal({
         hoaFee: (p as any).AssociationFee,
         propertyAvm: avmVal ? { value: avmVal, low: avmLow, high: avmHigh } : null,
         listPrice: mlsListPrice || (p as any).ListPrice || undefined,
+        // REAPI property features for comp adjustments
+        pool: rf.pool ?? undefined,
+        garage: rf.garageType ? !rf.garageType.toLowerCase().includes("no") : undefined,
+        garageSqft: rf.garageSquareFeet || undefined,
+        garageType: rf.garageType || undefined,
+        condition: rRaw.buildingCondition || undefined,
+        construction: rf.construction || undefined,
+        deckArea: rRaw.deckArea ? Number(rRaw.deckArea) : undefined,
+        patioArea: rRaw.patioArea ? Number(rRaw.patioArea) : undefined,
+        porchArea: rRaw.porchArea ? Number(rRaw.porchArea) : undefined,
+        fireplace: rf.fireplace ?? undefined,
+        stories: reapiData?.building?.summary?.storyCount || undefined,
         assessment: p.assessment?.market?.mktTtlValue
           ? { value: p.assessment.market.mktTtlValue, year: p.assessment.tax?.taxYear || 2025, land: 0, improvements: 0 }
           : null,
