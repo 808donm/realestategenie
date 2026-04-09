@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } from "react";
 import type { FederalPropertySupplement } from "@/lib/integrations/federal-data-client";
 import { buildQPublicUrl } from "@/lib/hawaii-zip-county";
 import type { PropertyReportData } from "@/lib/documents/property-intelligence-report";
@@ -246,7 +246,7 @@ type SectionId =
   | "comps";
 
 export default function PropertyDetailModal({
-  property: p,
+  property: _rawProperty,
   searchContext,
   onClose,
   embedded,
@@ -278,7 +278,7 @@ export default function PropertyDetailModal({
   const [activeSection, setActiveSection] = useState<SectionId>(sellerScore ? "seller-score" as SectionId : visibleTabs?.[0] || "overview");
 
   // Reset to Opportunity Score tab when a new property with seller data is selected
-  const propId = (p.identifier as any)?.obPropId || p.identifier?.apn || p.address?.oneLine || "";
+  const propId = (_rawProperty.identifier as any)?.obPropId || _rawProperty.identifier?.apn || _rawProperty.address?.oneLine || "";
   useEffect(() => {
     if (sellerScore) {
       setActiveSection("seller-score" as SectionId);
@@ -320,12 +320,50 @@ export default function PropertyDetailModal({
   const [marketStats, setMarketStats] = useState<any>(null);
   const [marketStatsLoading, setMarketStatsLoading] = useState(false);
 
+  // ── Merge REAPI data into property object ──
+  // REAPI is the richest data source. When available, its values override Realie/RentCast.
+  // All downstream code uses `p` which automatically contains REAPI data when loaded.
+  const p = useMemo(() => {
+    if (!reapiData) return _rawProperty;
+    const rd = reapiData;
+    const rp = _rawProperty;
+    return {
+      ...rp,
+      identifier: { ...rp.identifier, apn: rd.identifier?.apn || rp.identifier?.apn, fips: rd.identifier?.fips || rp.identifier?.fips },
+      address: { ...rp.address, ...rd.address, oneLine: rd.address?.oneLine || rp.address?.oneLine, county: rd.address?.county || (rp.address as any)?.county },
+      location: { ...rp.location, latitude: rd.location?.latitude || rp.location?.latitude, longitude: rd.location?.longitude || rp.location?.longitude },
+      summary: { ...rp.summary, propType: rd.summary?.propType || rp.summary?.propType, propSubType: rd.summary?.propSubType || rp.summary?.propSubType, yearBuilt: rd.summary?.yearBuilt || rp.summary?.yearBuilt },
+      owner: rd.owner?.owner1?.fullName ? rd.owner : rp.owner,
+      building: {
+        ...rp.building,
+        size: { ...rp.building?.size, livingSize: rd.building?.size?.livingSize || rp.building?.size?.livingSize, universalSize: rd.building?.size?.universalSize || rp.building?.size?.universalSize },
+        rooms: { ...rp.building?.rooms, beds: rd.building?.rooms?.beds || rp.building?.rooms?.beds, bathsTotal: rd.building?.rooms?.bathsTotal || rp.building?.rooms?.bathsTotal, bathsFull: rd.building?.rooms?.bathsFull || rp.building?.rooms?.bathsFull, roomsTotal: rd.building?.rooms?.roomsTotal || rp.building?.rooms?.roomsTotal },
+        summary: { ...rp.building?.summary, yearBuilt: rd.building?.summary?.yearBuilt || rp.building?.summary?.yearBuilt, storyCount: rd.building?.summary?.storyCount || (rp.building?.summary as any)?.storyCount },
+      },
+      lot: { ...rp.lot, lotSize1: rd.lot?.lotSize1 || rp.lot?.lotSize1 },
+      // REAPI AVM overrides Realie/RentCast AVM
+      avm: rd.avm?.amount?.value ? rd.avm : rp.avm,
+      assessment: {
+        ...rp.assessment,
+        assessed: rd.assessment?.assessed?.assdTtlValue ? rd.assessment.assessed : rp.assessment?.assessed,
+        market: rd.assessment?.market?.mktTtlValue ? rd.assessment.market : rp.assessment?.market,
+        tax: rd.assessment?.tax?.taxAmt ? rd.assessment.tax : rp.assessment?.tax,
+      },
+      sale: rd.sale?.amount?.saleAmt || rd.sale?.amount?.salePrice ? rd.sale : rp.sale,
+      saleHistory: rd.saleHistory?.length > 0 ? rd.saleHistory : rp.saleHistory,
+      homeEquity: rd.homeEquity?.equity != null ? rd.homeEquity : (rp as any).homeEquity,
+      mortgage: rd.mortgage?.amount?.firstAmt ? rd.mortgage : rp.mortgage,
+      foreclosure: rd.foreclosure || (rp as any).foreclosure,
+    } as typeof rp;
+  }, [_rawProperty, reapiData]);
+
   const addr =
     p.address?.oneLine || [p.address?.line1, p.address?.line2].filter(Boolean).join(", ") || "Property Detail";
   const sqft = p.building?.size?.livingSize || p.building?.size?.universalSize || p.building?.size?.bldgSize;
   const beds = p.building?.rooms?.beds;
   const baths = p.building?.rooms?.bathsFull ?? p.building?.rooms?.bathsTotal;
   const yearBuilt = p.building?.summary?.yearBuilt || p.summary?.yearBuilt;
+  // REAPI AVM is preferred over Realie/RentCast when available
   const rawAvmVal = p.avm?.amount?.value;
   const countyAssessment = p.assessment?.market?.mktTtlValue || p.assessment?.appraised?.apprTtlValue;
   const lastSaleAmt = p.sale?.amount?.saleAmt || p.sale?.amount?.salePrice;
@@ -708,11 +746,11 @@ export default function PropertyDetailModal({
   // flood zone, lead flags, comps, lot info, tax info, AVM -- all in one call
   useEffect(() => {
     if (reapiData) return;
-    const addr = mlsAddress || p.address?.oneLine || (p as any).UnparsedAddress || "";
+    const addr = mlsAddress || _rawProperty.address?.oneLine || (_rawProperty as any).UnparsedAddress || "";
     if (!addr) return;
-    const reapiCity = p.address?.locality || (p as any).City || "";
-    const reapiState = p.address?.countrySubd || (p as any).StateOrProvince || "";
-    const reapiZip = p.address?.postal1 || (p as any).PostalCode || "";
+    const reapiCity = _rawProperty.address?.locality || (_rawProperty as any).City || "";
+    const reapiState = _rawProperty.address?.countrySubd || (_rawProperty as any).StateOrProvince || "";
+    const reapiZip = _rawProperty.address?.postal1 || (_rawProperty as any).PostalCode || "";
     if (!reapiZip && !reapiCity) return; // REAPI requires city or zip
     console.log("[REAPI] Enrichment fetch for:", addr, reapiCity, reapiState, reapiZip);
     const reapiParams = new URLSearchParams({ endpoint: "property-detail", address: addr });
