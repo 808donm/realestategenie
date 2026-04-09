@@ -674,12 +674,13 @@ export default function PropertyDetailModal({
   // flood zone, lead flags, comps, lot info, tax info, AVM -- all in one call
   useEffect(() => {
     if (reapiData) return;
-    const addr = mlsAddress || p.address?.oneLine || "";
+    const addr = mlsAddress || p.address?.oneLine || (p as any).UnparsedAddress || "";
     if (!addr) return;
-    const reapiCity = p.address?.locality || "";
-    const reapiState = p.address?.countrySubd || "";
-    const reapiZip = p.address?.postal1 || "";
+    const reapiCity = p.address?.locality || (p as any).City || "";
+    const reapiState = p.address?.countrySubd || (p as any).StateOrProvince || "";
+    const reapiZip = p.address?.postal1 || (p as any).PostalCode || "";
     if (!reapiZip && !reapiCity) return; // REAPI requires city or zip
+    console.log("[REAPI] Enrichment fetch for:", addr, reapiCity, reapiState, reapiZip);
     const reapiParams = new URLSearchParams({ endpoint: "property-detail", address: addr });
     if (reapiCity) reapiParams.set("city", reapiCity);
     if (reapiState) reapiParams.set("state", reapiState);
