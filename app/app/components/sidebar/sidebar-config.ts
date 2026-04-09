@@ -12,6 +12,7 @@ import {
   Calculator,
   Map,
   Crosshair,
+  Dog,
   Radar,
   FileBarChart,
   TrendingUp,
@@ -87,6 +88,7 @@ export const NAV_SECTIONS: NavSection[] = [
     icon: Crosshair,
     items: [
       { label: "Seller Map", href: "/app/seller-map", icon: Map },
+      { label: "Bird Dog", href: "/app/bird-dog", icon: Dog },
       { label: "Prospecting", href: "/app/prospecting", icon: Crosshair },
       { label: "Farm & Watchdog", href: "/app/farm", icon: Radar },
       { label: "Reports", href: "/app/reports", icon: FileBarChart },
