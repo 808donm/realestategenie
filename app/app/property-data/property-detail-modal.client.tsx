@@ -299,6 +299,7 @@ export default function PropertyDetailModal({
   const [genieAvm, setGenieAvm] = useState<any>(null);
   const [reapiAvm, setReapiAvm] = useState<{ value: number; raw?: any } | null>(null);
   const [reapiData, setReapiData] = useState<any>(null); // Full REAPI enrichment data
+  const [reapiError, setReapiError] = useState(false); // True when REAPI fetch failed
   const [skipTraceData, setSkipTraceData] = useState<any>(null);
   const [skipTraceLoading, setSkipTraceLoading] = useState(false);
   const [portfolioProperties, setPortfolioProperties] = useState<any[]>([]);
@@ -757,21 +758,30 @@ export default function PropertyDetailModal({
     if (reapiCity) reapiParams.set("city", reapiCity);
     if (reapiState) reapiParams.set("state", reapiState);
     if (reapiZip) reapiParams.set("zip", reapiZip);
-    fetch(`/api/integrations/reapi?${reapiParams.toString()}`)
+    // 15-second timeout to prevent infinite "Loading..."
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    fetch(`/api/integrations/reapi?${reapiParams.toString()}`, { signal: controller.signal })
       .then((r) => r.json())
       .then((data) => {
         if (data.property) {
           setReapiData(data.property);
-          // Also set REAPI AVM for the AVM comparison tab
           if (data.property.avm?.amount?.value || data.raw?.estimatedValue) {
             setReapiAvm({
               value: data.property.avm?.amount?.value || data.raw?.estimatedValue,
               raw: data.raw,
             });
           }
+        } else {
+          console.warn("[REAPI] No property data returned:", data.error || "unknown");
+          setReapiError(true);
         }
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.warn("[REAPI] Enrichment failed:", err.name === "AbortError" ? "timeout" : err.message);
+        setReapiError(true);
+      })
+      .finally(() => clearTimeout(timeout));
   }, [reapiData, p, mlsAddress]);
 
   // Skip Trace - manual button click only (never auto-fire)
@@ -3116,7 +3126,7 @@ export default function PropertyDetailModal({
                 REAPI AVM
               </div>
               <div style={{ fontSize: 28, fontWeight: 800, color: "#dc2626", marginBottom: 4 }}>
-                {reapiAvm ? fmt(reapiAvm.value) : activeSection === "avm" ? "Loading..." : "N/A"}
+                {reapiAvm ? fmt(reapiAvm.value) : reapiError ? "N/A" : activeSection === "avm" && !reapiData ? "Loading..." : "N/A"}
               </div>
               <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 8 }}>
                 REAPI property valuation
