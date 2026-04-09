@@ -3761,7 +3761,8 @@ export default function PropertyDetailModal({
               })()}
 
               {/* Investor Portfolio (from REAPI linkedProperties) */}
-              {reapiData?.linkedProperties?.totalOwned > 0 && (
+              {/* Only show for individual investors, not lenders/servicers with thousands of properties */}
+              {reapiData?.linkedProperties?.totalOwned > 1 && Number(reapiData.linkedProperties.totalOwned) <= 100 && (
                 <Section title={`Investor Portfolio (${reapiData.linkedProperties.totalOwned} Properties)`}>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 16px", fontSize: 13, marginBottom: 12 }}>
                     <Field label="Total Properties Owned" value={String(reapiData.linkedProperties.totalOwned)} />
