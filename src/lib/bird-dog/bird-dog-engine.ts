@@ -200,8 +200,14 @@ export async function runBirdDogSearch(searchId: string): Promise<BirdDogRunSumm
 
   // 2. Search for matching property IDs (FREE - 0 credits)
   try {
+    // Strip fields not supported by REAPI PropertySearch
+    // equity_min/max are Bird Dog criteria used for post-filtering, not REAPI search params
+    const { equity_min, equity_max, tax_delinquent, ...reapiCriteria } = criteria as any;
+    // Map tax_delinquent to REAPI's supported field if available
+    if (tax_delinquent) (reapiCriteria as any).tax_lien = true;
+
     const searchResult = await reapi.searchPropertyIds({
-      ...(criteria as any),
+      ...reapiCriteria,
       size: 500, // Get up to 500 matching IDs
     });
 
@@ -274,9 +280,14 @@ export async function runBirdDogSearch(searchId: string): Promise<BirdDogRunSumm
             is_new: true,
           });
 
-          if (scoreResult.score === "hot") summary.hot++;
-          else if (scoreResult.score === "warm") summary.warm++;
-          else summary.cold++;
+          // Post-filter by equity_min if specified in criteria
+          if (equity_min && raw.equityPercent != null && Number(raw.equityPercent) < equity_min) {
+            results.pop(); // Remove the just-added result
+          } else {
+            if (scoreResult.score === "hot") summary.hot++;
+            else if (scoreResult.score === "warm") summary.warm++;
+            else summary.cold++;
+          }
         }
       } catch (err: any) {
         summary.errors.push(`Detail fetch failed for ${id}: ${err.message}`);
