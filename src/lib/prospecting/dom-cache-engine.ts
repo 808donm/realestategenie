@@ -6,7 +6,7 @@
  * AVM, HOA, and serves as listing fallback when MLS is unavailable.
  *
  * Key functions:
- * - refreshListingsCache()    — weekly bulk pull of ALL active Oahu listings
+ * - refreshListingsCache()    — weekly bulk pull of Active, Expired, and Withdrawn Oahu listings
  * - searchCachedListings()    — DOM search against cache (zero live API calls)
  * - checkMonitoredPropertyTiers() — detect tier escalations for alerts
  * - enrichMonitoredProperties()   — refresh enrichment data for monitored properties
@@ -136,7 +136,7 @@ export async function refreshListingsCache(
 
               while (hasMore) {
                 const result = await trestle.getProperties({
-                  $filter: `StandardStatus eq 'Active' and startswith(PostalCode, '${zip}')`,
+                  $filter: `(StandardStatus eq 'Active' or StandardStatus eq 'Expired' or StandardStatus eq 'Withdrawn') and startswith(PostalCode, '${zip}')`,
                   $select: MLS_SELECT_FIELDS,
                   $orderby: "DaysOnMarket desc",
                   $top: 500,
@@ -298,7 +298,7 @@ export async function searchCachedListings(
   let query = supabase
     .from("dom_listings_cache")
     .select("*")
-    .eq("standard_status", "Active")
+    .in("standard_status", ["Active", "Expired", "Withdrawn"])
     .in("zip_code", params.zipCodes)
     .gte("expires_at", new Date().toISOString());
 
@@ -344,8 +344,10 @@ export async function searchCachedListings(
   }
 
   // Second: compute from cache listings for zips/types missing from market stats
+  // Only use Active listings for avg DOM (Expired/Withdrawn would skew averages)
   const listingsByZipType: Record<string, Record<string, number[]>> = {};
   for (const l of listings) {
+    if (l.standard_status !== "Active") continue;
     const zip = l.zip_code;
     const type = l.property_type || "Other";
     if (!listingsByZipType[zip]) listingsByZipType[zip] = {};
@@ -421,7 +423,13 @@ export async function searchCachedListings(
     });
   }
 
-  results.sort((a, b) => b.domRatio - a.domRatio);
+  // Sort: outreach (expired/withdrawn) first, then by DOM ratio descending
+  results.sort((a, b) => {
+    if (a.prospectCategory !== b.prospectCategory) {
+      return a.prospectCategory === "outreach" ? -1 : 1;
+    }
+    return b.domRatio - a.domRatio;
+  });
 
   return {
     results,
@@ -522,7 +530,7 @@ export async function checkMonitoredPropertyTiers(supabase: SupabaseClient): Pro
       .from("dom_listings_cache")
       .select("*")
       .eq("listing_key", m.listing_key)
-      .eq("standard_status", "Active")
+      .in("standard_status", ["Active", "Expired", "Withdrawn"])
       .gte("expires_at", new Date().toISOString())
       .limit(1)
       .maybeSingle();
