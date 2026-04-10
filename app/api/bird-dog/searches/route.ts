@@ -136,6 +136,19 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ summary });
     }
 
+    // "Reset" action -- clears previous IDs and results so next run re-fetches everything
+    if (action === "reset") {
+      await supabase.from("bird_dog_results").delete().eq("search_id", id).eq("agent_id", user.id);
+      await supabase.from("bird_dog_searches").update({
+        last_run_property_ids: [],
+        last_run_new_count: 0,
+        total_results: 0,
+        last_run_at: null,
+        updated_at: new Date().toISOString(),
+      }).eq("id", id).eq("agent_id", user.id);
+      return NextResponse.json({ reset: true });
+    }
+
     // Toggle active/inactive
     if (action === "toggle") {
       const { data: current } = await supabase

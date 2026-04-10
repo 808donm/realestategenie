@@ -211,8 +211,16 @@ export async function runBirdDogSearch(searchId: string): Promise<BirdDogRunSumm
       size: 500, // Get up to 500 matching IDs
     });
 
-    const allIds = searchResult.data.map((p) => String(p.id)).filter(Boolean);
+    // Log the first result to see what fields are available
+    if (searchResult.data.length > 0) {
+      const sample = searchResult.data[0];
+      console.log("[BirdDog] Sample ids_only result keys:", Object.keys(sample), "id:", sample.id, "propertyId:", (sample as any).propertyId);
+    }
+    const allIds = searchResult.data.map((p: any) => String(p.id || p.propertyId || p.property_id || "")).filter(Boolean);
     summary.totalIds = allIds.length;
+    if (allIds.length === 0 && searchResult.data.length > 0) {
+      console.error("[BirdDog] IDs are empty! First result:", JSON.stringify(searchResult.data[0]).slice(0, 200));
+    }
 
     // 3. Find NEW IDs not in previous run
     const newIds = allIds.filter((id) => !previousIds.has(id));

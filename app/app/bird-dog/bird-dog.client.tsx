@@ -318,6 +318,20 @@ export function BirdDogPage() {
                     <button onClick={() => runSearch(s.id)} disabled={runningId === s.id} style={{ padding: "6px 14px", background: runningId === s.id ? "#9ca3af" : "#059669", color: "white", border: "none", borderRadius: 6, fontWeight: 600, cursor: runningId === s.id ? "default" : "pointer" }}>
                       {runningId === s.id ? "Running..." : "Run Now"}
                     </button>
+                    <button onClick={async () => {
+                      if (!confirm("Reset this search? This clears all previous results and re-scans from scratch.")) return;
+                      await fetch("/api/bird-dog/searches", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: s.id, action: "reset" }) });
+                      fetch("/api/bird-dog/searches").then((r) => r.json()).then((d) => setSearches(d.searches || []));
+                    }} style={{ padding: "6px 14px", background: "#f3f4f6", color: "#6b7280", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13, cursor: "pointer" }}>
+                      Reset
+                    </button>
+                    <button onClick={async () => {
+                      if (!confirm("Delete this search and all its results?")) return;
+                      await fetch(`/api/bird-dog/searches?id=${s.id}`, { method: "DELETE" });
+                      setSearches((prev) => prev.filter((x) => x.id !== s.id));
+                    }} style={{ padding: "6px 14px", background: "#fef2f2", color: "#dc2626", border: "1px solid #fca5a5", borderRadius: 6, fontSize: 13, cursor: "pointer" }}>
+                      Delete
+                    </button>
                     {s.last_run_at && (
                       <span style={{ padding: "6px 0", color: "#9ca3af", fontSize: 11 }}>
                         Last run: {new Date(s.last_run_at).toLocaleDateString()} ({s.last_run_new_count} new)
