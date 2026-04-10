@@ -712,6 +712,8 @@ export default function PropertyDetailModal({
         porchArea: rRaw.porchArea ? Number(rRaw.porchArea) : undefined,
         fireplace: rf.fireplace ?? undefined,
         stories: reapiData?.building?.summary?.storyCount || undefined,
+        lastSalePrice: lastSaleAmt || undefined,
+        lastSaleDate: p.sale?.amount?.saleTransDate || undefined,
         assessment: p.assessment?.market?.mktTtlValue
           ? { value: p.assessment.market.mktTtlValue, year: p.assessment.tax?.taxYear || 2025, land: 0, improvements: 0 }
           : null,

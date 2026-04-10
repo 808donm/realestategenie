@@ -197,6 +197,10 @@ export async function GET(request: NextRequest) {
       }
     } catch { /* ratio not available yet */ }
 
+    // Extract last sale data for time-adjusted valuation
+    const lastSalePrice = propData?.sale?.amount?.saleAmt || propData?.sale?.amount?.salePrice || undefined;
+    const lastSaleDate = propData?.sale?.amount?.saleTransDate || propData?.sale?.amount?.saleRecDate || undefined;
+
     // Build input and compute
     const avmInput: GenieAvmInput = {
       address,
@@ -212,6 +216,8 @@ export async function GET(request: NextRequest) {
       hoaFee,
       listPrice,
       listToSaleRatio,
+      lastSalePrice: lastSalePrice && lastSalePrice > 1000 ? lastSalePrice : undefined,
+      lastSaleDate,
       propertyAvm,
       rentcastAvm,
       realieAvm,

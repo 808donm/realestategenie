@@ -65,10 +65,18 @@ export interface GenieAvmInput {
   // MLS closed comps (from CMA engine or Trestle)
   mlsComps?: MlsComp[];
 
+  // Last arm's-length sale (used to compute time-adjusted sale value)
+  lastSalePrice?: number;
+  lastSaleDate?: string; // ISO date
+
   // On-market listing price (strong signal when available)
   listPrice?: number;
   // List-to-sale ratio for this area (e.g., 0.97 means homes sell at 97% of list)
   listToSaleRatio?: number;
+
+  // Annual appreciation rate for this area (e.g., 0.035 = 3.5%/yr)
+  // Falls back to DEFAULT_APPRECIATION_RATE if not provided
+  appreciationRate?: number;
 
   // Hazard data
   isFloodZone?: boolean; // In Special Flood Hazard Area
@@ -140,6 +148,8 @@ export interface GenieAvmResult {
     hoaAdjustment: number | null;
     weights: Record<string, number>;
     assessmentTrendPct: number | null;
+    lastSaleAppreciated: number | null;
+    lastSaleYearsAgo: number | null;
   };
   comps: AdjustedComp[];
 }
@@ -169,6 +179,10 @@ const ADJUSTMENT_PCT_CONDITION: Record<string, number> = {
   "Excellent": 0.06, "Good": 0.03, "Average": 0, "Fair": -0.03, "Poor": -0.06,
 };
 const MAX_FEATURE_ADJUSTMENT_PCT = 0.10;    // Cap total feature adjustments at 10%
+
+// Annual appreciation rate defaults (Oahu 40-year historical averages)
+const DEFAULT_APPRECIATION_RATE_SFR = 0.05;   // 5%/yr for single-family
+const DEFAULT_APPRECIATION_RATE_CONDO = 0.04;  // 4%/yr for condos
 
 // Comp quality thresholds
 const MIN_CORRELATION = 0.3;                   // Exclude comps below this correlation
@@ -215,6 +229,26 @@ export function computeGenieAvm(input: GenieAvmInput): GenieAvmResult | null {
   const listPriceValue = rawListPrice && input.listToSaleRatio
     ? Math.round(rawListPrice * input.listToSaleRatio)
     : rawListPrice;
+
+  // 5. Time-Adjusted Last Sale -- appreciate the last arm's-length sale price
+  // A property sold for $2.82M in 2023 should be worth at least $2.82M * (1.035)^3 in 2026
+  let lastSaleAppreciated: number | null = null;
+  let lastSaleYearsAgo: number | null = null;
+
+  if (input.lastSalePrice && input.lastSalePrice > 1000 && input.lastSaleDate) {
+    const saleDate = new Date(input.lastSaleDate);
+    const yearsAgo = (Date.now() - saleDate.getTime()) / (365.25 * 86400000);
+    lastSaleYearsAgo = Math.round(yearsAgo * 10) / 10;
+
+    // Only use if sale was arm's-length (> $1000) and within 20 years
+    if (yearsAgo > 0.25 && yearsAgo <= 20) {
+      const subType = (input.propertySubType || "").toLowerCase();
+      const isCondo = subType.includes("condo") || subType.includes("townhouse") || subType.includes("apartment");
+      const defaultRate = isCondo ? DEFAULT_APPRECIATION_RATE_CONDO : DEFAULT_APPRECIATION_RATE_SFR;
+      const rate = input.appreciationRate ?? defaultRate;
+      lastSaleAppreciated = Math.round(input.lastSalePrice * Math.pow(1 + rate, yearsAgo));
+    }
+  }
 
   // ── Dynamic Weight Assignment ──
   // Weights shift based on comp quality (measured by CV of adjusted prices)
@@ -333,6 +367,17 @@ export function computeGenieAvm(input: GenieAvmInput): GenieAvmResult | null {
     }
   }
 
+  // Add time-adjusted last sale as a source (weight varies by recency)
+  // Recent sales (<3 years) are strong signals; older sales carry less weight
+  if (lastSaleAppreciated && lastSaleYearsAgo) {
+    let saleWeight: number;
+    if (lastSaleYearsAgo <= 2) saleWeight = 0.15;      // Recent sale: strong signal
+    else if (lastSaleYearsAgo <= 5) saleWeight = 0.10;  // Moderate
+    else if (lastSaleYearsAgo <= 10) saleWeight = 0.07; // Weaker
+    else saleWeight = 0.05;                              // Old sale: minimal weight
+    sources.push({ name: "lastSaleAppreciated", value: lastSaleAppreciated, weight: saleWeight });
+  }
+
   // Remove zero-value sources
   const validSources = sources.filter((s) => s.value > 0);
   if (validSources.length === 0) return null;
@@ -345,6 +390,15 @@ export function computeGenieAvm(input: GenieAvmInput): GenieAvmResult | null {
   let ensembleValue = Math.round(
     validSources.reduce((s, src) => s + src.value * src.weight, 0),
   );
+
+  // Floor check: for recent sales (<5 years), the AVM should not fall below
+  // the time-adjusted last sale. Markets generally appreciate, so a valuation
+  // below what someone paid (adjusted for time) suggests undervaluation.
+  if (lastSaleAppreciated && lastSaleYearsAgo && lastSaleYearsAgo <= 5) {
+    if (ensembleValue < lastSaleAppreciated) {
+      ensembleValue = Math.round((ensembleValue + lastSaleAppreciated) / 2);
+    }
+  }
 
   // ── Hawaii-Specific Adjustments ──
 
@@ -417,6 +471,8 @@ export function computeGenieAvm(input: GenieAvmInput): GenieAvmResult | null {
       hoaAdjustment: hoaAdj,
       weights,
       assessmentTrendPct,
+      lastSaleAppreciated,
+      lastSaleYearsAgo,
     },
     comps: adjustedComps,
   };
