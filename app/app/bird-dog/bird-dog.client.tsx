@@ -84,11 +84,12 @@ export function BirdDogPage() {
   }, []);
 
   // Load results for selected search
-  const loadResults = (search: Search) => {
+  const loadResults = (search: Search, score?: string) => {
     setSelectedSearch(search);
     setView("results");
     setResultsLoading(true);
-    fetch(`/api/bird-dog/results?searchId=${search.id}&score=${scoreFilter === "all" ? "" : scoreFilter}`)
+    const filterScore = score ?? scoreFilter;
+    fetch(`/api/bird-dog/results?searchId=${search.id}${filterScore && filterScore !== "all" ? `&score=${filterScore}` : ""}`)
       .then((r) => r.json())
       .then((data) => setResults(data.results || []))
       .catch(() => {})
@@ -361,7 +362,7 @@ export function BirdDogPage() {
           {/* Score filter tabs */}
           <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
             {["all", "hot", "warm", "cold"].map((s) => (
-              <button key={s} onClick={() => { setScoreFilter(s); loadResults(selectedSearch); }} style={{ padding: "6px 16px", borderRadius: 20, fontSize: 13, fontWeight: 600, border: scoreFilter === s ? "2px solid #2563eb" : "1px solid #d1d5db", background: scoreFilter === s ? "#dbeafe" : "white", color: scoreFilter === s ? "#1e40af" : "#6b7280", cursor: "pointer" }}>
+              <button key={s} onClick={() => { setScoreFilter(s); loadResults(selectedSearch, s); }} style={{ padding: "6px 16px", borderRadius: 20, fontSize: 13, fontWeight: 600, border: scoreFilter === s ? "2px solid #2563eb" : "1px solid #d1d5db", background: scoreFilter === s ? "#dbeafe" : "white", color: scoreFilter === s ? "#1e40af" : "#6b7280", cursor: "pointer" }}>
                 {s === "all" ? "All" : s === "cold" ? "Nurture" : s.toUpperCase()}
               </button>
             ))}
@@ -418,6 +419,7 @@ export function BirdDogPage() {
                         {r.bird_dog_contacts[0].phones?.map((p: any, i: number) => (
                           <span key={i} style={{ marginRight: 8 }}>
                             <a href={`tel:${p.number}`} style={{ color: "#2563eb" }}>{p.number}</a>
+                            {p.type && <span style={{ color: "#9ca3af", marginLeft: 2 }}>{p.type}</span>}
                           </span>
                         ))}
                         {r.bird_dog_contacts[0].emails?.map((e: any, i: number) => (
@@ -426,6 +428,36 @@ export function BirdDogPage() {
                           </span>
                         ))}
                       </div>
+                    )}
+
+                    {/* Skip Trace button for HOT leads without contact info */}
+                    {r.lead_score === "hot" && (!r.bird_dog_contacts || r.bird_dog_contacts.length === 0) && (
+                      <button
+                        onClick={async (e) => {
+                          const btn = e.currentTarget;
+                          btn.disabled = true;
+                          btn.textContent = "Tracing...";
+                          try {
+                            const res = await fetch("/api/bird-dog/skip-trace", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ resultId: r.id }),
+                            });
+                            const data = await res.json();
+                            if (data.contact) {
+                              // Refresh results to show contact data
+                              if (selectedSearch) loadResults(selectedSearch, scoreFilter);
+                            } else {
+                              btn.textContent = "No data found";
+                            }
+                          } catch {
+                            btn.textContent = "Failed";
+                          }
+                        }}
+                        style={{ marginTop: 6, padding: "4px 12px", background: "#2563eb", color: "white", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+                      >
+                        Skip Trace
+                      </button>
                     )}
                   </div>
                 );
