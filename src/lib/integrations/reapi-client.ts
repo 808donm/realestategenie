@@ -621,11 +621,13 @@ export class ReapiClient {
     prior_owner?: boolean;
     comps?: boolean;
   }): Promise<{ data: ReapiProperty; statusCode: number; statusMessage: string }> {
+    // When using ID lookup, don't send exact_match (requires street)
+    const isIdLookup = !!params.id && !params.street && !params.address;
     return this.request("POST", "/v2/PropertyDetail", {
       ...params,
-      prior_owner: params.prior_owner ?? true,  // Always get prior owner
-      comps: params.comps ?? true,               // Always get comps (saves a separate call)
-      exact_match: params.exact_match ?? true,
+      prior_owner: params.prior_owner ?? true,
+      comps: params.comps ?? !isIdLookup, // Skip comps for ID-only (saves time in Bird Dog bulk)
+      exact_match: isIdLookup ? undefined : (params.exact_match ?? true),
     });
   }
 

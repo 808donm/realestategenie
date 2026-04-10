@@ -238,9 +238,10 @@ export async function runBirdDogSearch(searchId: string): Promise<BirdDogRunSumm
     const idsToFetch = newIds.slice(0, MAX_DETAIL_PER_RUN);
     const results: any[] = [];
 
+    console.log(`[BirdDog] Fetching details for ${idsToFetch.length} properties (IDs: ${idsToFetch.slice(0, 5).join(", ")}...)`);
     for (const id of idsToFetch) {
       try {
-        const detail = await reapi.getPropertyDetail({ id: Number(id), prior_owner: true });
+        const detail = await reapi.getPropertyDetail({ id: Number(id), prior_owner: true, comps: false });
         if (detail.data) {
           const mapped = mapReapiToAttomShape(detail.data);
           const raw = detail.data as any;
@@ -290,7 +291,13 @@ export async function runBirdDogSearch(searchId: string): Promise<BirdDogRunSumm
           }
         }
       } catch (err: any) {
-        summary.errors.push(`Detail fetch failed for ${id}: ${err.message}`);
+        console.error(`[BirdDog] Detail fetch failed for ID ${id}:`, err.message);
+        summary.errors.push(`ID ${id}: ${err.message}`);
+        // Stop after 3 consecutive errors to avoid wasting time
+        if (summary.errors.length >= 3) {
+          console.warn("[BirdDog] Too many errors, stopping detail fetches");
+          break;
+        }
       }
     }
 
