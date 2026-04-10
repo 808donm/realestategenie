@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
+
+const PropertyDetailModal = lazy(() => import("../property-data/property-detail-modal.client"));
 
 const fmt = (n: number) => "$" + n.toLocaleString();
 
@@ -52,6 +54,7 @@ interface Result {
   is_new: boolean;
   is_starred: boolean;
   discovered_at: string;
+  property_data: any;
   bird_dog_contacts?: Array<{ phones: any[]; emails: any[] }>;
 }
 
@@ -73,6 +76,7 @@ export function BirdDogPage() {
   const [formPropertyType, setFormPropertyType] = useState("");
   const [formEquityMin, setFormEquityMin] = useState("");
   const [creating, setCreating] = useState(false);
+  const [selectedProperty, setSelectedProperty] = useState<any>(null);
 
   // Load searches
   useEffect(() => {
@@ -380,7 +384,10 @@ export function BirdDogPage() {
                   <div key={r.id} style={{ background: "white", border: `1px solid ${sc.border}`, borderLeft: `4px solid ${sc.text}`, borderRadius: 8, padding: 14 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
                       <div>
-                        <div style={{ fontWeight: 700, fontSize: 14, color: "#111827" }}>{r.address}</div>
+                        <div
+                        onClick={() => r.property_data && setSelectedProperty(r.property_data)}
+                        style={{ fontWeight: 700, fontSize: 14, color: r.property_data ? "#2563eb" : "#111827", cursor: r.property_data ? "pointer" : "default", textDecoration: r.property_data ? "underline" : "none" }}
+                      >{r.address}</div>
                         <div style={{ fontSize: 12, color: "#6b7280" }}>{r.city}, {r.state} {r.zip}</div>
                       </div>
                       <span style={{ padding: "3px 12px", borderRadius: 6, fontSize: 12, fontWeight: 800, background: sc.bg, color: sc.text, border: `1px solid ${sc.border}` }}>
@@ -465,6 +472,15 @@ export function BirdDogPage() {
             </div>
           )}
         </>
+      )}
+      {/* Property Detail Modal */}
+      {selectedProperty && (
+        <Suspense fallback={null}>
+          <PropertyDetailModal
+            property={selectedProperty}
+            onClose={() => setSelectedProperty(null)}
+          />
+        </Suspense>
       )}
     </div>
   );
