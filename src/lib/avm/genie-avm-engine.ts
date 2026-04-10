@@ -391,13 +391,17 @@ export function computeGenieAvm(input: GenieAvmInput): GenieAvmResult | null {
     validSources.reduce((s, src) => s + src.value * src.weight, 0),
   );
 
-  // Floor check: for recent sales (<5 years), the AVM should not fall below
-  // the time-adjusted last sale. Markets generally appreciate, so a valuation
-  // below what someone paid (adjusted for time) suggests undervaluation.
-  if (lastSaleAppreciated && lastSaleYearsAgo && lastSaleYearsAgo <= 5) {
-    if (ensembleValue < lastSaleAppreciated) {
-      ensembleValue = Math.round((ensembleValue + lastSaleAppreciated) / 2);
-    }
+  // Floor check: AVM should not fall below the time-adjusted last sale.
+  // Markets generally appreciate, so a valuation below what someone paid
+  // (adjusted for time) suggests undervaluation from bad external AVMs.
+  // Blending weight decreases with age: recent sales get stronger pull-up.
+  if (lastSaleAppreciated && lastSaleYearsAgo && ensembleValue < lastSaleAppreciated) {
+    let floorWeight: number;
+    if (lastSaleYearsAgo <= 3) floorWeight = 0.65;       // Recent: strong pull toward appreciated sale
+    else if (lastSaleYearsAgo <= 5) floorWeight = 0.55;
+    else if (lastSaleYearsAgo <= 10) floorWeight = 0.45;  // Older: still meaningful
+    else floorWeight = 0.35;                               // Very old: gentle nudge
+    ensembleValue = Math.round(ensembleValue * (1 - floorWeight) + lastSaleAppreciated * floorWeight);
   }
 
   // ── Hawaii-Specific Adjustments ──
