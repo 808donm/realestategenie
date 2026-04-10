@@ -1616,6 +1616,36 @@ export default function Prospecting() {
     setIsLoading(true);
     setInvestorGroups([]);
 
+    // Try REAPI-powered search for non-radius modes (much richer data for Hawaii)
+    if (mode !== "radius") {
+      try {
+        const reapiParams = new URLSearchParams({ zip: zip.trim(), mode, size: "50" });
+        if (propertyType) reapiParams.set("propertyType", propertyType === "SINGLE FAMILY" ? "SFR" : propertyType === "CONDO" ? "CONDO" : propertyType);
+        if (minYearsOwned) reapiParams.set("minYearsOwned", String(minYearsOwned));
+        if (minAvmValue) reapiParams.set("minAvm", minAvmValue);
+        const reapiRes = await fetch(`/api/prospecting/reapi-search?${reapiParams}`);
+        const reapiData = await reapiRes.json();
+        if (reapiData.properties && reapiData.properties.length > 0) {
+          const mapped = reapiData.properties as AttomProperty[];
+          setSharedRawData(mapped);
+          setSharedDataKey(`${zip.trim()}:${propertyType}`);
+          applyModeFilter(mode, mapped);
+          setDebugInfo(
+            `Scanned ${reapiData.scanned} properties — ${reapiData.fetched} with full data, ` +
+            `${mapped.filter((p: any) => p._leadScore?.score === "hot").length} HOT leads, ` +
+            `${mapped.filter((p: any) => p._leadScore?.score === "warm").length} WARM leads ` +
+            `[source: enhanced property data]`,
+          );
+          setIsLoading(false);
+          return;
+        }
+        // If REAPI returned 0, fall through to legacy pipeline
+        console.log("[Prospecting] REAPI returned 0 results, falling back to legacy pipeline");
+      } catch (reapiErr) {
+        console.warn("[Prospecting] REAPI search failed, falling back to legacy:", reapiErr);
+      }
+    }
+
     // Fire parallel MLS search for Just Sold mode
     if (mode === "radius") {
       setMlsResults([]);
