@@ -250,6 +250,15 @@ export function computeGenieAvm(input: GenieAvmInput): GenieAvmResult | null {
     }
   }
 
+  // ── Property AVM sanity check ──
+  // If the Property AVM is less than 60% of the time-adjusted last sale,
+  // it's likely erroneous (bad data, wrong property type, etc.) -- discard it.
+  let sanitizedPropertyAvm = propertyAvmValue;
+  if (sanitizedPropertyAvm && lastSaleAppreciated && sanitizedPropertyAvm < lastSaleAppreciated * 0.6) {
+    console.log(`[GenieAVM] Discarding Property AVM $${sanitizedPropertyAvm.toLocaleString()} — below 60% of time-adjusted sale $${lastSaleAppreciated.toLocaleString()}`);
+    sanitizedPropertyAvm = null;
+  }
+
   // ── Dynamic Weight Assignment ──
   // Weights shift based on comp quality (measured by CV of adjusted prices)
   // and whether the property is on-market (has list price)
@@ -322,8 +331,8 @@ export function computeGenieAvm(input: GenieAvmInput): GenieAvmResult | null {
       sources.push({ name: "listPrice", value: listPriceValue, weight: listPriceWeight });
     }
 
-    if (propertyAvmValue) {
-      sources.push({ name: "propertyAvm", value: propertyAvmValue, weight: propAvmWeight });
+    if (sanitizedPropertyAvm) {
+      sources.push({ name: "propertyAvm", value: sanitizedPropertyAvm, weight: propAvmWeight });
     }
 
     sources.push({
@@ -331,10 +340,10 @@ export function computeGenieAvm(input: GenieAvmInput): GenieAvmResult | null {
       value: trendAdjustedAssessment || input.assessment?.value || 0,
       weight: assessmentWeight,
     });
-  } else if (listPriceValue && propertyAvmValue) {
+  } else if (listPriceValue && sanitizedPropertyAvm) {
     // No comps but have list price and Property AVM
     sources.push({ name: "listPrice", value: listPriceValue, weight: 0.40 });
-    sources.push({ name: "propertyAvm", value: propertyAvmValue, weight: 0.35 });
+    sources.push({ name: "propertyAvm", value: sanitizedPropertyAvm, weight: 0.35 });
     if (trendAdjustedAssessment) {
       sources.push({ name: "assessment", value: trendAdjustedAssessment, weight: 0.25 });
     }
@@ -344,9 +353,9 @@ export function computeGenieAvm(input: GenieAvmInput): GenieAvmResult | null {
     if (trendAdjustedAssessment) {
       sources.push({ name: "assessment", value: trendAdjustedAssessment, weight: 0.40 });
     }
-  } else if (propertyAvmValue) {
+  } else if (sanitizedPropertyAvm) {
     // No comps, no list price -- Property AVM is primary
-    sources.push({ name: "propertyAvm", value: propertyAvmValue, weight: 0.60 });
+    sources.push({ name: "propertyAvm", value: sanitizedPropertyAvm, weight: 0.60 });
     if (trendAdjustedAssessment) {
       sources.push({ name: "assessment", value: trendAdjustedAssessment, weight: 0.40 });
     }
