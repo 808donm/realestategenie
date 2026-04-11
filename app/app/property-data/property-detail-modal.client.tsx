@@ -696,6 +696,7 @@ export default function PropertyDetailModal({
         propertyType: p.summary?.propType,
         propertySubType: p.summary?.propSubType,
         ownershipType: (p as any).OwnershipType || (p as any).ownershipType,
+        leaseExpiration: (p as any).LeaseExpiration || (p as any).leaseExpiration || undefined,
         subdivision: (p as any).SubdivisionName || (p as any).subdivision,
         hoaFee: (p as any).AssociationFee,
         propertyAvm: avmVal ? { value: avmVal, low: avmLow, high: avmHigh } : null,
