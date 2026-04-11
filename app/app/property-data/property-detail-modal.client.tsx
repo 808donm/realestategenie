@@ -257,6 +257,12 @@ export default function PropertyDetailModal({
   mlsAddress,
   mlsOwnershipType,
   mlsLeaseExpiration,
+  mlsBeds,
+  mlsBaths,
+  mlsSqft,
+  mlsYearBuilt,
+  mlsPropertyType,
+  mlsPropertySubType,
   sellerScore,
 }: {
   property: AttomProperty;
@@ -278,6 +284,13 @@ export default function PropertyDetailModal({
   mlsOwnershipType?: string;
   /** MLS lease expiration date */
   mlsLeaseExpiration?: string;
+  /** MLS property attributes (preferred over property data provider when available) */
+  mlsBeds?: number;
+  mlsBaths?: number;
+  mlsSqft?: number;
+  mlsYearBuilt?: number;
+  mlsPropertyType?: string;
+  mlsPropertySubType?: string;
   /** Seller opportunity score data from the Seller Map */
   sellerScore?: { score: number; level: string; factors: Array<{ name: string; points: number; maxPoints: number; description: string }>; owner?: string };
 }) {
@@ -366,10 +379,11 @@ export default function PropertyDetailModal({
 
   const addr =
     p.address?.oneLine || [p.address?.line1, p.address?.line2].filter(Boolean).join(", ") || "Property Detail";
-  const sqft = p.building?.size?.livingSize || p.building?.size?.universalSize || p.building?.size?.bldgSize;
-  const beds = p.building?.rooms?.beds;
-  const baths = p.building?.rooms?.bathsFull ?? p.building?.rooms?.bathsTotal;
-  const yearBuilt = p.building?.summary?.yearBuilt || p.summary?.yearBuilt;
+  // Prefer MLS attributes over property data provider (MLS has correct unit-level data)
+  const sqft = mlsSqft || p.building?.size?.livingSize || p.building?.size?.universalSize || p.building?.size?.bldgSize;
+  const beds = mlsBeds ?? p.building?.rooms?.beds;
+  const baths = mlsBaths ?? p.building?.rooms?.bathsFull ?? p.building?.rooms?.bathsTotal;
+  const yearBuilt = mlsYearBuilt || p.building?.summary?.yearBuilt || p.summary?.yearBuilt;
   // REAPI AVM is preferred over Realie/RentCast when available
   const rawAvmVal = p.avm?.amount?.value;
   const countyAssessment = p.assessment?.market?.mktTtlValue || p.assessment?.appraised?.apprTtlValue;
@@ -699,8 +713,8 @@ export default function PropertyDetailModal({
         baths,
         sqft,
         yearBuilt,
-        propertyType: p.summary?.propType,
-        propertySubType: p.summary?.propSubType,
+        propertyType: mlsPropertyType || p.summary?.propType,
+        propertySubType: mlsPropertySubType || p.summary?.propSubType,
         ownershipType: (p as any).OwnershipType || (p as any).ownershipType || mlsOwnershipType
           || ((p as any).LeaseExpiration || (p as any).LeaseRent || mlsLeaseExpiration ? "Leasehold" : undefined),
         leaseExpiration: (p as any).LeaseExpiration || (p as any).leaseExpiration || mlsLeaseExpiration || undefined,

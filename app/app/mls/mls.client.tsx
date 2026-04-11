@@ -3445,6 +3445,12 @@ export default function MLSClient() {
                   mlsAddress={getAddress(selectedProperty)}
                   mlsOwnershipType={(selectedProperty as any)?.OwnershipType}
                   mlsLeaseExpiration={(selectedProperty as any)?.LeaseExpiration}
+                  mlsBeds={selectedProperty?.BedroomsTotal}
+                  mlsBaths={selectedProperty?.BathroomsTotalInteger}
+                  mlsSqft={selectedProperty?.LivingArea}
+                  mlsYearBuilt={selectedProperty?.YearBuilt}
+                  mlsPropertyType={selectedProperty?.PropertyType}
+                  mlsPropertySubType={selectedProperty?.PropertySubType}
                 />
               )}
 
