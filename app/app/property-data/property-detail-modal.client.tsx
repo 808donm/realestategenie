@@ -255,6 +255,8 @@ export default function PropertyDetailModal({
   mlsPhotos,
   mlsListPrice,
   mlsAddress,
+  mlsOwnershipType,
+  mlsLeaseExpiration,
   sellerScore,
 }: {
   property: AttomProperty;
@@ -272,6 +274,10 @@ export default function PropertyDetailModal({
   mlsListPrice?: number;
   /** Original MLS address with unit number (e.g., "440 Seaside Ave Apt 605"). Used for sales history unit filtering. */
   mlsAddress?: string;
+  /** MLS ownership type (Fee Simple / Leasehold) */
+  mlsOwnershipType?: string;
+  /** MLS lease expiration date */
+  mlsLeaseExpiration?: string;
   /** Seller opportunity score data from the Seller Map */
   sellerScore?: { score: number; level: string; factors: Array<{ name: string; points: number; maxPoints: number; description: string }>; owner?: string };
 }) {
@@ -695,9 +701,9 @@ export default function PropertyDetailModal({
         yearBuilt,
         propertyType: p.summary?.propType,
         propertySubType: p.summary?.propSubType,
-        ownershipType: (p as any).OwnershipType || (p as any).ownershipType
-          || ((p as any).LeaseExpiration || (p as any).LeaseRent ? "Leasehold" : undefined),
-        leaseExpiration: (p as any).LeaseExpiration || (p as any).leaseExpiration || undefined,
+        ownershipType: (p as any).OwnershipType || (p as any).ownershipType || mlsOwnershipType
+          || ((p as any).LeaseExpiration || (p as any).LeaseRent || mlsLeaseExpiration ? "Leasehold" : undefined),
+        leaseExpiration: (p as any).LeaseExpiration || (p as any).leaseExpiration || mlsLeaseExpiration || undefined,
         subdivision: (p as any).SubdivisionName || (p as any).subdivision,
         hoaFee: (p as any).AssociationFee,
         propertyAvm: avmVal ? { value: avmVal, low: avmLow, high: avmHigh } : null,

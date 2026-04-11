@@ -3418,6 +3418,8 @@ export default function MLSClient() {
                     .slice(0, 6)}
                   mlsListPrice={selectedProperty?.ListPrice}
                   mlsAddress={getAddress(selectedProperty)}
+                  mlsOwnershipType={(selectedProperty as any)?.OwnershipType}
+                  mlsLeaseExpiration={(selectedProperty as any)?.LeaseExpiration}
                 />
               )}
 
