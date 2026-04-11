@@ -375,13 +375,15 @@ export function computeGenieAvm(input: GenieAvmInput): GenieAvmResult | null {
   }
 
   // Add time-adjusted last sale as a source (weight varies by recency)
-  // Recent sales (<3 years) are strong signals; older sales carry less weight
+  // An actual sale appreciated at market rate is a strong anchor -- often
+  // more reliable than comps from different market segments.
   if (lastSaleAppreciated && lastSaleYearsAgo) {
     let saleWeight: number;
-    if (lastSaleYearsAgo <= 2) saleWeight = 0.15;      // Recent sale: strong signal
-    else if (lastSaleYearsAgo <= 5) saleWeight = 0.10;  // Moderate
-    else if (lastSaleYearsAgo <= 10) saleWeight = 0.07; // Weaker
-    else saleWeight = 0.05;                              // Old sale: minimal weight
+    if (lastSaleYearsAgo <= 2) saleWeight = 0.30;       // Very recent: strongest signal
+    else if (lastSaleYearsAgo <= 5) saleWeight = 0.25;   // Recent: strong
+    else if (lastSaleYearsAgo <= 10) saleWeight = 0.20;  // Moderate: still meaningful
+    else if (lastSaleYearsAgo <= 20) saleWeight = 0.15;  // Older: moderate
+    else saleWeight = 0.10;                               // Very old: still a data point
     sources.push({ name: "lastSaleAppreciated", value: lastSaleAppreciated, weight: saleWeight });
   }
 
