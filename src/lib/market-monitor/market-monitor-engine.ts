@@ -283,7 +283,7 @@ export async function runMonitorProfile(profileId: string): Promise<MonitorRunSu
 
       const { error: insertErr } = await admin
         .from("market_monitor_alerts")
-        .upsert(rows, { onConflict: "profile_id,listing_key,alert_type,created_at::date", ignoreDuplicates: true });
+        .upsert(rows, { onConflict: "profile_id,listing_key,alert_type,created_date", ignoreDuplicates: true });
 
       if (insertErr) {
         summary.errors.push(`Alert insert error: ${insertErr.message}`);

@@ -2311,13 +2311,13 @@ export default function PropertyDetailModal({
                     </div>
                   </div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 16, marginTop: 10, fontSize: 12, color: "#374151" }}>
-                    {avmConfidenceLevel && (
+                    {(genieAvm || avmConfidenceLevel) && (
                       <span>
                         <strong>AVM Confidence:</strong>{" "}
-                        <span style={{ color: avmConfidenceLevel === "High" ? "#059669" : avmConfidenceLevel === "Medium" ? "#d97706" : "#dc2626", fontWeight: 700 }}>
-                          {avmConfidenceLevel}
+                        <span style={{ color: (genieAvm?.confidence || avmConfidenceLevel) === "High" ? "#059669" : (genieAvm?.confidence || avmConfidenceLevel) === "Medium" ? "#d97706" : "#dc2626", fontWeight: 700 }}>
+                          {genieAvm?.confidence || avmConfidenceLevel}
                         </span>
-                        {avmFSD != null && <span style={{ color: "#9ca3af" }}> (FSD: {avmFSD}%)</span>}
+                        <span style={{ color: "#9ca3af" }}> (FSD: {genieAvm?.fsd ?? avmFSD}%)</span>
                       </span>
                     )}
                     {reapiData?.homeEquity?.equityPercent != null && <span><strong>Equity:</strong> {reapiData.homeEquity.equityPercent}%</span>}

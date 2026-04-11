@@ -109,6 +109,7 @@ CREATE TABLE IF NOT EXISTS market_monitor_alerts (
   sms_sent_at TIMESTAMPTZ,
   crm_sent_at TIMESTAMPTZ,
 
+  created_date DATE NOT NULL DEFAULT CURRENT_DATE,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
@@ -119,7 +120,7 @@ CREATE INDEX IF NOT EXISTS idx_market_monitor_alerts_type ON market_monitor_aler
 
 -- Prevent duplicate alerts for the same listing/type on the same day
 CREATE UNIQUE INDEX IF NOT EXISTS idx_market_monitor_alerts_dedup
-  ON market_monitor_alerts(profile_id, listing_key, alert_type, (created_at::date));
+  ON market_monitor_alerts(profile_id, listing_key, alert_type, created_date);
 
 ALTER TABLE market_monitor_alerts ENABLE ROW LEVEL SECURITY;
 
