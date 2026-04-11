@@ -34,14 +34,14 @@ export async function GET(request: NextRequest) {
     const minYearsOwned = params.get("minYearsOwned") ? Number(params.get("minYearsOwned")) : undefined;
     const minAvm = params.get("minAvm") ? Number(params.get("minAvm")) : undefined;
     const minEquity = params.get("minEquity") ? Number(params.get("minEquity")) : undefined;
-    const size = Math.min(Number(params.get("size") || "50"), 250);
+    const size = Math.min(Number(params.get("size") || "250"), 500);
 
     if (!zip) return NextResponse.json({ error: "zip is required" }, { status: 400 });
 
     // Build REAPI search criteria based on prospecting mode
-    // Request more IDs when post-filtering (minYearsOwned or minEquity) since many will be filtered out
+    // Always request a large pool of IDs (free) to get enough results after filtering
     const hasPostFilter = minYearsOwned || minEquity;
-    const searchSize = hasPostFilter ? Math.min(size * 5, 500) : size;
+    const searchSize = hasPostFilter ? Math.min(size * 3, 1500) : Math.min(size * 2, 1000);
     const criteria: Record<string, any> = {
       zip,
       size: searchSize,
@@ -81,8 +81,8 @@ export async function GET(request: NextRequest) {
     // Step 2: Get full details for top results
     // When post-filtering (e.g., minYearsOwned, minEquity), we need more detail calls
     // since many will be filtered out. Cap higher to get enough results.
-    const detailCap = hasPostFilter ? Math.min(allIds.length, 150) : Math.min(size, 50);
-    const targetResults = Math.min(size, 50);
+    const detailCap = hasPostFilter ? Math.min(allIds.length, 300) : Math.min(allIds.length, 200);
+    const targetResults = Math.min(size, 100);
     const idsToFetch = allIds.slice(0, detailCap);
     const properties: any[] = [];
     const errors: string[] = [];

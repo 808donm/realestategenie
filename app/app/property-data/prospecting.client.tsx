@@ -1619,7 +1619,7 @@ export default function Prospecting() {
     // Try REAPI-powered search for non-radius modes (much richer data for Hawaii)
     if (mode !== "radius") {
       try {
-        const reapiParams = new URLSearchParams({ zip: zip.trim(), mode, size: "50" });
+        const reapiParams = new URLSearchParams({ zip: zip.trim(), mode, size: "250" });
         if (propertyType) reapiParams.set("propertyType", propertyType === "SINGLE FAMILY" ? "SFR" : propertyType === "CONDO" ? "CONDO" : propertyType);
         if (minYearsOwned) reapiParams.set("minYearsOwned", String(minYearsOwned));
         if (minAvmValue && mode === "equity") reapiParams.set("minEquity", minAvmValue);
@@ -1927,6 +1927,7 @@ export default function Prospecting() {
           100
         : null);
     const distress = mode === "foreclosure" ? getDistressSignals(prop) : null;
+    const leadScore = (prop as any)._leadScore as { score: string; reasons: string[] } | undefined;
     const apn = prop.identifier?.apn;
     const isHI =
       prop.address?.countrySubd?.toUpperCase() === "HI" || prop.address?.countrySubd?.toUpperCase() === "HAWAII";
@@ -1969,6 +1970,24 @@ export default function Prospecting() {
               style={{ fontWeight: 700, fontSize: 15, marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}
             >
               {getAddress(prop)}
+              {leadScore && (
+                <span
+                  style={{
+                    padding: "2px 8px",
+                    background: leadScore.score === "hot" ? "#dc2626" : leadScore.score === "warm" ? "#ea580c" : "#6b7280",
+                    color: "#fff",
+                    borderRadius: 10,
+                    fontSize: 10,
+                    fontWeight: 700,
+                    flexShrink: 0,
+                    textTransform: "uppercase",
+                    letterSpacing: 0.5,
+                  }}
+                  title={leadScore.reasons?.join(", ")}
+                >
+                  {leadScore.score}
+                </span>
+              )}
               {mode === "radius" && (
                 <span
                   style={{
