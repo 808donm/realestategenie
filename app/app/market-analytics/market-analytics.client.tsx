@@ -196,7 +196,7 @@ export default function MarketAnalyticsDashboard() {
                   <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                   <YAxis yAxisId="price" orientation="left" tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`} />
                   <YAxis yAxisId="sales" orientation="right" />
-                  <Tooltip formatter={(v: any, name: string) => name === "Avg Price" ? `$${Number(v).toLocaleString()}` : v} />
+                  <Tooltip formatter={(v, name) => name === "Avg Price" ? `$${Number(v).toLocaleString()}` : v} />
                   <Legend />
                   <Bar yAxisId="sales" dataKey="sales" fill="#059669" name="Sales" />
                   <Line yAxisId="price" type="monotone" dataKey="avgPrice" stroke="#2563eb" name="Avg Price" strokeWidth={2} dot={false} />
