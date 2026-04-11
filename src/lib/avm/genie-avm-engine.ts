@@ -185,7 +185,7 @@ const DEFAULT_APPRECIATION_RATE_SFR = 0.05;   // 5%/yr for single-family
 const DEFAULT_APPRECIATION_RATE_CONDO = 0.04;  // 4%/yr for condos
 
 // Comp quality thresholds
-const MIN_CORRELATION = 0.4;                   // Exclude comps below this correlation (raised from 0.3)
+const MIN_CORRELATION = 0.35;                  // Exclude comps below 35% match
 const MAX_ADJUSTMENT_PCT = 0.35;               // Exclude comps needing >35% total adjustment
 const OUTLIER_THRESHOLD = 0.50;                // Exclude comps >50% from median adjusted price
 
@@ -273,13 +273,11 @@ export function computeGenieAvm(input: GenieAvmInput): GenieAvmResult | null {
       ? compsWithCorrelation.reduce((s, c) => s + (c.correlation || 0), 0) / compsWithCorrelation.length
       : 0.5; // Default if no correlation data
 
-    // Quality multiplier based on average match quality
+    // Quality multiplier based on average match quality (matches per-comp tiers)
     let qualityMultiplier: number;
-    if (avgCorrelation >= 0.80) qualityMultiplier = 1.0;       // Excellent comps
-    else if (avgCorrelation >= 0.60) qualityMultiplier = 0.75;  // Good
-    else if (avgCorrelation >= 0.40) qualityMultiplier = 0.50;  // Moderate
-    else if (avgCorrelation >= 0.25) qualityMultiplier = 0.30;  // Poor
-    else qualityMultiplier = 0.15;                               // Unreliable
+    if (avgCorrelation >= 0.75) qualityMultiplier = 1.0;       // Excellent comps
+    else if (avgCorrelation >= 0.55) qualityMultiplier = 0.65;  // Good
+    else qualityMultiplier = 0.35;                               // Moderate/poor
 
     // Fewer comps also reduces quality
     if (adjustedComps.length < 3) qualityMultiplier *= 0.7;
@@ -599,11 +597,13 @@ function adjustAndWeightComps(input: GenieAvmInput): AdjustedComp[] {
     const isSubdivisionMatch = !!(subjectSubdivision && compSubdivision && subjectSubdivision === compSubdivision);
     const subdivisionBonus = isSubdivisionMatch ? 1.5 : 1.0;
 
-    // Correlation weight: squared so low-quality comps are penalized exponentially
-    // 90% match -> 0.81 weight, 70% -> 0.49, 50% -> 0.25, 40% -> 0.16
-    // This ensures the best comps dominate the weighted average
+    // Correlation weight based on match quality tiers:
+    // 75-95%: 80% weight, 55-74%: 50%, 35-54%: 25%, below 35%: excluded
     const rawCorrelation = comp.correlation || 0.5;
-    const correlationWeight = rawCorrelation * rawCorrelation;
+    let correlationWeight: number;
+    if (rawCorrelation >= 0.75) correlationWeight = 0.80;
+    else if (rawCorrelation >= 0.55) correlationWeight = 0.50;
+    else correlationWeight = 0.25; // 35-54% (below 35% already excluded)
 
     const weight = recencyWeight * subdivisionBonus * correlationWeight;
 
