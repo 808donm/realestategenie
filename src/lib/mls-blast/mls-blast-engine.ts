@@ -222,7 +222,7 @@ export async function runEmailBlast(blastId: string): Promise<BlastRunResult> {
 
         if (ghlInteg?.config) {
           const ghlConfig = typeof ghlInteg.config === "string" ? JSON.parse(ghlInteg.config) : ghlInteg.config;
-          const ghl = new GHLClient({ accessToken: ghlConfig.access_token, locationId: ghlConfig.location_id });
+          const ghl = new GHLClient(ghlConfig.access_token, ghlConfig.location_id);
 
           // Fetch individual contacts
           for (const cid of (blast.crm_contact_ids || [])) {

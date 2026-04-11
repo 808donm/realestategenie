@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     }
 
     const config = typeof ghlInteg.config === "string" ? JSON.parse(ghlInteg.config) : ghlInteg.config;
-    const ghl = new GHLClient({ accessToken: config.access_token, locationId: config.location_id });
+    const ghl = new GHLClient(config.access_token, config.location_id);
 
     const result = await ghl.searchContacts({ email: query });
     const contacts = (result.contacts || []).map((c: any) => ({
