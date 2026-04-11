@@ -99,8 +99,8 @@ export async function GET(request: NextRequest) {
       const month = s.CloseDate.substring(0, 7); // YYYY-MM
       const existing = monthlyMap.get(month) || { sales: 0, totalPrice: 0, totalDOM: 0 };
       existing.sales++;
-      if (s.ClosePrice > 0) existing.totalPrice += s.ClosePrice;
-      if (s.DaysOnMarket != null) existing.totalDOM += s.DaysOnMarket;
+      if (s.ClosePrice && s.ClosePrice > 0) existing.totalPrice += s.ClosePrice;
+      if (s.DaysOnMarket != null && s.DaysOnMarket >= 0) existing.totalDOM += s.DaysOnMarket;
       monthlyMap.set(month, existing);
     }
 
