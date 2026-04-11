@@ -74,6 +74,7 @@ export async function GET(request: NextRequest) {
     const minDaysOnMarket = searchParams.get("minDaysOnMarket")
       ? parseInt(searchParams.get("minDaysOnMarket")!)
       : undefined;
+    const subdivision = searchParams.get("subdivision") || undefined;
     const statusParam = searchParams.get("status");
     const validStatuses = ["Active", "Pending", "Closed", "Expired", "Withdrawn", "Canceled", "Delete", "Incomplete", "ComingSoon"];
     const status: string[] = statusParam
@@ -159,7 +160,7 @@ export async function GET(request: NextRequest) {
     // Trestle returns 0 results when a query's filter matches >5,000 records,
     // regardless of $top. When no location filter is provided (e.g. "latest listings"
     // on page load), we must narrow with additional filters and skip $count.
-    const hasLocationFilter = !!(searchCity || searchPostalCode || addressFilter);
+    const hasLocationFilter = !!(searchCity || searchPostalCode || addressFilter || subdivision);
 
     // For the "latest listings" case (no location/price/beds filters), narrow the query
     // so it stays under Trestle's 5,000-record threshold for ad-hoc queries.
@@ -168,7 +169,37 @@ export async function GET(request: NextRequest) {
 
     let result;
 
-    if (addressFilter) {
+    if (subdivision) {
+      // Subdivision/neighborhood search — explicit filter on SubdivisionName
+      const filters: string[] = [];
+      const statusFilter = status.map((s) => `StandardStatus eq '${s}'`).join(" or ");
+      filters.push(status.length === 1 ? `StandardStatus eq '${status[0]}'` : `(${statusFilter})`);
+      const escaped = subdivision.replace(/'/g, "''").toLowerCase();
+      filters.push(`contains(tolower(SubdivisionName), '${escaped}')`);
+      if (searchPostalCode) filters.push(`startswith(PostalCode, '${searchPostalCode}')`);
+      if (searchCity) filters.push(`contains(tolower(City), '${searchCity.replace(/'/g, "''").toLowerCase()}')`);
+      if (minPrice) filters.push(`ListPrice ge ${minPrice}`);
+      if (maxPrice) filters.push(`ListPrice le ${maxPrice}`);
+      if (minBeds) filters.push(`BedroomsTotal ge ${minBeds}`);
+      if (minBaths) filters.push(`BathroomsTotalInteger ge ${minBaths}`);
+      if (propertyType) {
+        const ptLower = propertyType.toLowerCase();
+        if (ptLower.includes("single") || ptLower === "sfr") filters.push(`PropertyType eq 'Residential' and PropertySubType eq 'SingleFamilyResidence'`);
+        else if (ptLower.includes("condo")) filters.push(`PropertyType eq 'Residential' and PropertySubType eq 'Condominium'`);
+        else if (ptLower.includes("land")) filters.push(`PropertyType eq 'Land'`);
+        else if (ptLower.includes("residential")) filters.push(`PropertyType eq 'Residential'`);
+        else filters.push(`PropertyType eq '${propertyType}'`);
+      }
+      console.log("[MLS Search] Subdivision search filter:", filters.join(" and "));
+      result = await client.getProperties({
+        $filter: filters.join(" and "),
+        $orderby: "ModificationTimestamp desc",
+        $top: limit,
+        $skip: offset,
+        $count: true,
+        $expand: "Media",
+      });
+    } else if (addressFilter) {
       // Address search — use raw OData filter on UnparsedAddress/StreetName
       const filters: string[] = [];
 

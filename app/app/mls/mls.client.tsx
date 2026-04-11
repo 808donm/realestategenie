@@ -121,6 +121,7 @@ export default function MLSClient() {
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
     status: "Active" as string,
+    subdivision: "",
     minPrice: "",
     maxPrice: "",
     minBeds: "",
@@ -517,6 +518,7 @@ export default function MLSClient() {
     async (newOffset = 0) => {
       if (
         !debouncedQuery &&
+        !filters.subdivision &&
         !filters.minPrice &&
         !filters.maxPrice &&
         !filters.minBeds &&
@@ -534,6 +536,7 @@ export default function MLSClient() {
         const params = new URLSearchParams();
         if (debouncedQuery) params.append("q", debouncedQuery);
         if (filters.status) params.append("status", filters.status);
+        if (filters.subdivision) params.append("subdivision", filters.subdivision);
         if (filters.minPrice) params.append("minPrice", filters.minPrice);
         if (filters.maxPrice) params.append("maxPrice", filters.maxPrice);
         if (filters.minBeds) params.append("minBeds", filters.minBeds);
@@ -905,24 +908,46 @@ export default function MLSClient() {
                   gap: 12,
                 }}
               >
-                <div>
+                <div style={{ gridColumn: "span 2" }}>
                   <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
                     Status
                   </label>
-                  <select
-                    value={filters.status}
-                    onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {STATUS_OPTIONS.map((s) => {
+                      const selected = filters.status.split(",").includes(s);
+                      return (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() => {
+                            const current = filters.status.split(",").filter(Boolean);
+                            const next = selected ? current.filter((x) => x !== s) : [...current, s];
+                            setFilters({ ...filters, status: next.length > 0 ? next.join(",") : "Active" });
+                          }}
+                          style={{
+                            padding: "6px 12px", borderRadius: 16, fontSize: 12, fontWeight: 600, cursor: "pointer",
+                            border: selected ? "2px solid #2563eb" : "1px solid #d1d5db",
+                            background: selected ? "#eff6ff" : "#fff",
+                            color: selected ? "#2563eb" : "#6b7280",
+                          }}
+                        >
+                          {s}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div style={{ gridColumn: "span 2" }}>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                    Neighborhood / Subdivision
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Kaimuki, Diamond Head, Hawaii Kai"
+                    value={filters.subdivision}
+                    onChange={(e) => setFilters({ ...filters, subdivision: e.target.value })}
                     style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
-                  >
-                    {STATUS_OPTIONS.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
-                    <option value="Active,Pending">Active & Pending</option>
-                    <option value="Active,Pending,Closed">Active, Pending & Closed</option>
-                    <option value="Active,Pending,Closed,Expired,Withdrawn,Canceled">All</option>
-                  </select>
+                  />
                 </div>
                 <div>
                   <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>

@@ -48,7 +48,20 @@ interface MarketData {
   cacheHit?: boolean;
 }
 
+const COUNTIES = ["honolulu", "maui", "hawaii", "kauai"];
+const COUNTY_LABELS: Record<string, string> = { honolulu: "Honolulu (Oahu)", maui: "Maui County", hawaii: "Hawaii County", kauai: "Kauai County" };
+
+interface NeighborhoodStats {
+  subdivision: string;
+  sales: number;
+  stats: any;
+  monthly: any[];
+  propertyTypes: Record<string, number>;
+  dateRange: { from: string; to: string };
+}
+
 export default function MarketAnalyticsDashboard() {
+  const [county, setCounty] = useState("honolulu");
   const [data, setData] = useState<MarketData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -56,9 +69,18 @@ export default function MarketAnalyticsDashboard() {
   const [zipData, setZipData] = useState<MarketData | null>(null);
   const [zipLoading, setZipLoading] = useState(false);
 
+  // Neighborhood search
+  const [neighborhoodQuery, setNeighborhoodQuery] = useState("");
+  const [neighborhoodData, setNeighborhoodData] = useState<NeighborhoodStats | null>(null);
+  const [neighborhoodLoading, setNeighborhoodLoading] = useState(false);
+
   // Fetch county-level data
   useEffect(() => {
-    fetch("/api/reports/market-analytics?county=honolulu")
+    setLoading(true);
+    setData(null);
+    setSelectedZip(null);
+    setZipData(null);
+    fetch(`/api/reports/market-analytics?county=${county}`)
       .then((r) => r.json())
       .then((d) => {
         if (d.error) setError(d.error);
@@ -66,7 +88,23 @@ export default function MarketAnalyticsDashboard() {
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, []);
+  }, [county]);
+
+  // Neighborhood search handler
+  const searchNeighborhood = async () => {
+    if (!neighborhoodQuery.trim()) return;
+    setNeighborhoodLoading(true);
+    setNeighborhoodData(null);
+    try {
+      const res = await fetch(`/api/mls/neighborhood-stats?subdivision=${encodeURIComponent(neighborhoodQuery.trim())}&months=12`);
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error);
+      setNeighborhoodData(d);
+    } catch (e: any) {
+      setError(e.message);
+    }
+    setNeighborhoodLoading(false);
+  };
 
   // Fetch zip-level data when a zip is selected
   const handleZipClick = async (zip: string) => {
@@ -78,7 +116,7 @@ export default function MarketAnalyticsDashboard() {
     setSelectedZip(zip);
     setZipLoading(true);
     try {
-      const res = await fetch(`/api/reports/market-analytics?county=honolulu&zipCode=${zip}`);
+      const res = await fetch(`/api/reports/market-analytics?county=${county}&zipCode=${zip}`);
       const d = await res.json();
       if (!d.error) setZipData(d);
     } catch { /* ignore */ }
@@ -93,6 +131,88 @@ export default function MarketAnalyticsDashboard() {
 
   return (
     <div>
+      {/* Search Controls */}
+      <div style={{ display: "flex", gap: 16, marginBottom: 20, flexWrap: "wrap", alignItems: "flex-end" }}>
+        <div>
+          <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 4 }}>County</label>
+          <select
+            value={county}
+            onChange={(e) => setCounty(e.target.value)}
+            style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 14 }}
+          >
+            {COUNTIES.map((c) => <option key={c} value={c}>{COUNTY_LABELS[c]}</option>)}
+          </select>
+        </div>
+        <div style={{ flex: 1, minWidth: 200 }}>
+          <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 4 }}>Neighborhood / Subdivision</label>
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              value={neighborhoodQuery}
+              onChange={(e) => setNeighborhoodQuery(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && searchNeighborhood()}
+              placeholder="e.g. Kaimuki, Diamond Head, Hawaii Kai"
+              style={{ flex: 1, padding: "10px 14px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 14 }}
+            />
+            <button
+              onClick={searchNeighborhood}
+              disabled={neighborhoodLoading || !neighborhoodQuery.trim()}
+              style={{
+                padding: "10px 20px", borderRadius: 8, border: "none",
+                background: "#059669", color: "#fff", fontWeight: 600,
+                cursor: neighborhoodLoading ? "wait" : "pointer", fontSize: 14,
+                opacity: neighborhoodLoading ? 0.6 : 1,
+              }}
+            >
+              {neighborhoodLoading ? "Searching..." : "Search"}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Neighborhood Stats */}
+      {neighborhoodData && neighborhoodData.stats && (
+        <div style={{ marginBottom: 24, padding: 20, background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 12 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <div>
+              <div style={{ fontSize: 18, fontWeight: 700 }}>{neighborhoodData.subdivision}</div>
+              <div style={{ fontSize: 13, color: "#6b7280" }}>{neighborhoodData.sales} closed sales | {neighborhoodData.dateRange.from} to {neighborhoodData.dateRange.to}</div>
+            </div>
+            <button onClick={() => setNeighborhoodData(null)} style={{ padding: "6px 14px", borderRadius: 6, border: "1px solid #d1d5db", background: "#fff", cursor: "pointer", fontSize: 12 }}>Close</button>
+          </div>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
+            <ValueCard label="Median Price" value={fmt$(neighborhoodData.stats.medianPrice)!} />
+            <ValueCard label="Avg Price" value={fmt$(neighborhoodData.stats.avgPrice)!} />
+            <ValueCard label="Price/SqFt" value={`$${neighborhoodData.stats.medianPricePerSqft}`} />
+            <ValueCard label="Median DOM" value={`${neighborhoodData.stats.medianDOM} days`} />
+            <ValueCard label="List-to-Sale" value={neighborhoodData.stats.listToSaleRatio ? `${neighborhoodData.stats.listToSaleRatio}%` : "N/A"} />
+            <ValueCard label="Total Sales" value={`${neighborhoodData.sales}`} />
+          </div>
+          {neighborhoodData.monthly.length > 0 && (
+            <div style={{ background: "#fff", borderRadius: 10, padding: 16, border: "1px solid #e5e7eb" }}>
+              <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Monthly Sales Trend</div>
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={neighborhoodData.monthly}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                  <YAxis yAxisId="price" orientation="left" tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`} />
+                  <YAxis yAxisId="sales" orientation="right" />
+                  <Tooltip formatter={(v: any, name: string) => name === "Avg Price" ? `$${Number(v).toLocaleString()}` : v} />
+                  <Legend />
+                  <Bar yAxisId="sales" dataKey="sales" fill="#059669" name="Sales" />
+                  <Line yAxisId="price" type="monotone" dataKey="avgPrice" stroke="#2563eb" name="Avg Price" strokeWidth={2} dot={false} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </div>
+      )}
+
+      {neighborhoodData && !neighborhoodData.stats && (
+        <div style={{ marginBottom: 24, padding: 16, background: "#fffbeb", border: "1px solid #fcd34d", borderRadius: 10, color: "#92400e", fontSize: 14 }}>
+          No closed sales found for "{neighborhoodData.subdivision}" in the last 12 months.
+        </div>
+      )}
+
       {/* County Header */}
       <div style={{ marginBottom: 24, padding: "16px 20px", background: "linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)", borderRadius: 12, color: "#fff" }}>
         <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 1, opacity: 0.7 }}>Market Analytics</div>
