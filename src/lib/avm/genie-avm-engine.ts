@@ -325,6 +325,17 @@ export function computeGenieAvm(input: GenieAvmInput): GenieAvmResult | null {
       propAvmWeight += 0.10;
     }
 
+    // High divergence: when comps and Property AVM disagree by >25%,
+    // comps are likely from dissimilar properties. Shift weight to Property AVM.
+    if (sanitizedPropertyAvm && compBasedValue) {
+      const divergence = Math.abs(compBasedValue - sanitizedPropertyAvm) / sanitizedPropertyAvm;
+      if (divergence > 0.25) {
+        const shift = Math.min(compWeight * 0.4, 0.15); // Shift up to 40% of comp weight (max 15pp)
+        compWeight -= shift;
+        propAvmWeight += shift;
+      }
+    }
+
     sources.push({ name: "mlsComps", value: compBasedValue, weight: compWeight });
 
     if (listPriceValue && listPriceWeight > 0) {
