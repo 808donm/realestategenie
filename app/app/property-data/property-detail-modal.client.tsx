@@ -695,7 +695,8 @@ export default function PropertyDetailModal({
         yearBuilt,
         propertyType: p.summary?.propType,
         propertySubType: p.summary?.propSubType,
-        ownershipType: (p as any).OwnershipType || (p as any).ownershipType,
+        ownershipType: (p as any).OwnershipType || (p as any).ownershipType
+          || ((p as any).LeaseExpiration || (p as any).LeaseRent ? "Leasehold" : undefined),
         leaseExpiration: (p as any).LeaseExpiration || (p as any).leaseExpiration || undefined,
         subdivision: (p as any).SubdivisionName || (p as any).subdivision,
         hoaFee: (p as any).AssociationFee,
