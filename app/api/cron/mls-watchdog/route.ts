@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { runWatchdogScan } from "@/lib/mls/watchdog-engine";
+import { runMarketMonitorCron } from "@/lib/market-monitor/market-monitor-engine";
 
 /**
  * MLS Watchdog Cron Job
@@ -35,6 +36,15 @@ export async function POST(request: NextRequest) {
       await sendAlertNotifications();
     }
 
+    // Run Market Monitor profiles (client alerts)
+    let monitorResults = { processed: 0, totalAlerts: 0 };
+    try {
+      monitorResults = await runMarketMonitorCron();
+      console.log("Market Monitor:", monitorResults);
+    } catch (monitorErr: any) {
+      console.error("Market Monitor cron error:", monitorErr.message);
+    }
+
     // Clean up old snapshots (> 90 days)
     await supabase
       .from("mls_listing_snapshots")
@@ -44,6 +54,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       ...scanResults,
+      marketMonitor: monitorResults,
       timestamp: new Date().toISOString(),
     });
   } catch (error: any) {

@@ -234,6 +234,16 @@ Automated off-market lead hunting that searches for properties matching agent cr
 - **Hoku integration**: Create, run, and view Bird Dog searches via conversational AI
 - **Cron automation**: Daily searches run with daily briefing, weekly/monthly run with prospect refresh
 
+### Market Monitor
+Automated MLS alert system for buyer and seller clients with daily scanning and diff detection.
+
+- **Client Profiles**: Create profiles with client name, contact info, search criteria (ZIP, beds, baths, price range, property type), and notification preferences
+- **5 Alert Types**: New Listing, Price Drop, Back on Market, Expired/Withdrawn, Pending
+- **3 Notification Channels**: Email, SMS, CRM
+- **Daily Scanning**: Automated MLS scans with diff detection -- only alerts on changes since the last scan
+- **On-Demand Scans**: "Run Now" button triggers an immediate scan for any profile
+- **Alert History Dashboard**: View all past alerts per profile with timestamps and details
+
 ---
 
 ## 10. Reports -- 6 Report Types

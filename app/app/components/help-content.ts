@@ -37,6 +37,7 @@ export const ROUTE_TO_SECTION: Record<string, string> = {
   "/app/admin": "admin-guide",
   "/app/farm": "farm-watchdog",
   "/app/bird-dog": "property-intel",
+  "/app/market-monitor": "market-monitor",
   "/app/calendar": "calendar",
   "/app/tasks": "tasks",
   "/app/prospecting": "property-intel",
@@ -806,6 +807,35 @@ Bird Dog is an automated off-market lead hunting tool that searches for properti
 - Skip Trace individual leads to find phone numbers, emails, and social profiles
 - Star important leads for follow-up
 - Combine multiple filters for targeted searches (e.g., absentee + high equity + long ownership)`,
+  },
+  {
+    id: "market-monitor",
+    title: "11.5 Market Monitor",
+    content: `## 11.5 Market Monitor
+
+Market Monitor is an automated MLS alert system that sends notifications to your clients when listings matching their criteria change. Set up a profile once and the system scans daily, sending alerts for new listings, price drops, back-on-market properties, and more.
+
+### How to Use
+
+1. Go to **Market Monitor** from the sidebar (under Opportunities)
+2. Click **+ New Profile** to create a client profile
+3. Enter the client's name, email address, and/or phone number
+4. Set search criteria: ZIP code, beds, baths, price range, property type
+5. Choose notification channels: **Email**, **SMS**, or **CRM**
+6. Select alert types:
+   - **New Listing** -- A property matching the criteria hits the market
+   - **Price Drop** -- A matching property reduces its price
+   - **Back on Market** -- A previously pending or withdrawn listing returns to active
+   - **Expired/Withdrawn** -- A matching listing expires or is withdrawn
+   - **Pending** -- A matching listing goes under contract
+7. The system scans MLS daily and sends alerts automatically
+8. View alert history by clicking **Alerts** on any profile
+9. Use **Run Now** to trigger an immediate scan for any profile
+
+**Tips:**
+- Create separate profiles for each client with their specific criteria
+- Adjust alert types based on whether the client is a buyer (New Listing, Price Drop) or seller (Pending, Expired)
+- All alerts include property details, photos, and a link to the full listing`,
   },
   {
     id: "neighborhoods",

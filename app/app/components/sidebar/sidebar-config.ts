@@ -21,6 +21,7 @@ import {
   Building,
   Shield,
   AlertTriangle,
+  Bell,
   Plug,
   CreditCard,
   Settings2,
@@ -89,6 +90,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { label: "Seller Map", href: "/app/seller-map", icon: Map },
       { label: "Bird Dog", href: "/app/bird-dog", icon: Dog },
+      { label: "Market Monitor", href: "/app/market-monitor", icon: Bell },
       { label: "Prospecting", href: "/app/prospecting", icon: Crosshair },
       { label: "Farm & Watchdog", href: "/app/farm", icon: Radar },
       { label: "Reports", href: "/app/reports", icon: FileBarChart },
@@ -138,5 +140,5 @@ export const MOBILE_TAB_ROUTES: Record<string, string[]> = {
   dashboard: ["/app/dashboard", "/app/calendar", "/app/pipeline", "/app/tasks"],
   clients: ["/app/leads", "/app/contacts", "/app/open-houses"],
   deals: ["/app/mls", "/app/property-data", "/app/market-analytics", "/app/neighborhood-profiles", "/app/analyzers", "/app/hazard-map"],
-  listings: ["/app/seller-map", "/app/farm", "/app/reports"],
+  listings: ["/app/seller-map", "/app/farm", "/app/reports", "/app/bird-dog", "/app/market-monitor", "/app/prospecting"],
 };

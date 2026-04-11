@@ -210,6 +210,12 @@ Help the agent search properties, understand data, run reports/calculators, and 
    - SKIP TRACE: Manual button per lead to find phone numbers, emails, and social profiles for the property owner.
    - BEST APPROACH: Help agents set up targeted searches combining multiple criteria for highest quality leads.
 
+8. **Market Monitor** -- Automated MLS alerts for your clients.
+   - HOW IT WORKS: Agent creates a monitoring profile for each buyer/seller client with search criteria and notification preferences. Market Monitor scans the MLS daily and sends alerts directly to the client for new listings, price drops, back-on-market, expired/withdrawn, and pending status changes.
+   - ALERT TYPES: New Listing, Price Drop, Back on Market, Expired/Withdrawn, Pending.
+   - CHANNELS: Email (branded HTML with property photos), SMS (short text), CRM (via conversations API).
+   - HOKU CAN: Create a monitor profile, navigate to Market Monitor page.
+
 GENERAL TIPS:
 - All searches return scored property cards ranked by likelihood to sell
 - Click any property card to see full details, motivation factors, and AI analysis
@@ -317,6 +323,35 @@ Help the agent set up effective farms and configure watchdog alerts.`,
 - Star important leads for follow-up
 
 Help agents set up targeted searches. Suggest combining criteria for highest quality leads (e.g., absentee + high equity + long ownership for prime seller prospects).`,
+
+  // Market Monitor
+  "market-monitor": `The agent is on the MARKET MONITOR page. Automated MLS alerts for buyer and seller clients.
+
+**How Market Monitor Works**:
+1. Agent creates a monitoring profile for a client with search criteria (location, price range, property type, beds/baths)
+2. Agent sets notification preferences (email, SMS, CRM) and alert types (new listings, price drops, back on market, expired/withdrawn, pending)
+3. Market Monitor scans the MLS daily for matching properties
+4. Alerts are sent directly to the client via their preferred channels
+
+**Alert Types**:
+- New Listing: Fresh listings matching client criteria
+- Price Drop: Price reductions on previously matched listings
+- Back on Market: Listings that fell out of contract and are available again
+- Expired/Withdrawn: Listings removed from market (useful for seller clients targeting off-market leads)
+- Pending: Listings going under contract (market activity awareness)
+
+**Notification Channels**:
+- Email: Branded HTML with property photos and details
+- SMS: Short text with key property info and link
+- CRM: Creates conversation via CRM conversations API
+
+**Available Actions**:
+- Create new monitor profile for a client
+- Edit existing profile criteria and notification preferences
+- Pause/resume monitoring
+- View alert history
+
+Help agents set up targeted monitors. Suggest appropriate alert types based on whether the client is a buyer (new listings, price drops, back on market) or seller (expired/withdrawn, pending for market awareness).`,
 
   // Open Houses
   "open-houses": `The agent is on the OPEN HOUSES page. Complete open house lifecycle management.
@@ -632,6 +667,7 @@ export function buildPageContext(pathname: string): string {
   if ((page === "mls-listings" || page === "mls") && segments[1] === "market-watch") {
     return PAGE_CONTEXT["market-watch"] || "";
   }
+  if (pathname.includes("market-monitor")) return PAGE_CONTEXT["market-monitor"] || "";
 
   // Page-level routing
   const routeMap: Record<string, string> = {
@@ -665,6 +701,7 @@ export function buildPageContext(pathname: string): string {
     "property-detail": "property-data",
     "market-analytics": "market-analytics",
     "bird-dog": "bird-dog",
+    "market-monitor": "market-monitor",
     templates: "open-houses",
   };
 
