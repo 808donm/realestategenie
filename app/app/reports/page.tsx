@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { supabaseServer } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import PageHelp from "../components/page-help";
 
@@ -9,6 +10,53 @@ export default async function ReportsPage() {
 
   if (!userData.user) {
     redirect("/signin");
+  }
+
+  // Get agent's MLS ID from their Trestle integration
+  const { data: trestleInteg } = await supabase
+    .from("integrations")
+    .select("config")
+    .eq("agent_id", userData.user.id)
+    .eq("provider", "trestle")
+    .eq("status", "connected")
+    .maybeSingle();
+
+  const trestleConfig = trestleInteg?.config
+    ? typeof trestleInteg.config === "string" ? JSON.parse(trestleInteg.config) : trestleInteg.config
+    : null;
+  const agentMlsId = trestleConfig?.mls_id || null;
+
+  // Load market report configs for the agent's MLS (or all if no MLS connected)
+  let marketReports: { report_slug: string; report_title: string; report_description: string | null; report_category: string; mls_name: string }[] = [];
+
+  if (agentMlsId) {
+    const { data } = await supabaseAdmin
+      .from("market_report_configs")
+      .select("report_slug, report_title, report_description, report_category, mls_name")
+      .eq("mls_id", agentMlsId)
+      .eq("is_active", true)
+      .order("display_order");
+    marketReports = data || [];
+  } else {
+    // No MLS connected -- show all active reports
+    const { data } = await supabaseAdmin
+      .from("market_report_configs")
+      .select("report_slug, report_title, report_description, report_category, mls_name")
+      .eq("is_active", true)
+      .order("mls_id")
+      .order("display_order");
+    marketReports = data || [];
+  }
+
+  // Always include MLS Agent Leaderboard if not already in the list
+  if (!marketReports.some((r) => r.report_slug === "mls-leaderboard")) {
+    marketReports.push({
+      report_slug: "mls-leaderboard",
+      report_title: "MLS Agent Leaderboard",
+      report_description: "Market-wide agent rankings by closed transactions. Top agents and offices by sales, volume, and DOM.",
+      report_category: "leaderboard",
+      mls_name: "MLS",
+    });
   }
 
   return (
@@ -25,79 +73,30 @@ export default async function ReportsPage() {
         Business intelligence and performance tracking across your real estate operations
       </p>
 
-      {/* Market Statistics — Featured */}
+      {/* Market Statistics — Dynamic based on agent's MLS */}
+      {marketReports.length > 0 && (
       <section style={{ marginBottom: 40 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
           <div style={{ width: 4, height: 24, background: "#dc2626", borderRadius: 2 }} />
           <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800 }}>Market Statistics</h2>
-          <span style={{ fontSize: 13, color: "#6b7280" }}>Historical data with interactive charts</span>
+          <span style={{ fontSize: 13, color: "#6b7280" }}>
+            {agentMlsId ? `Reports for your MLS` : "Historical data with interactive charts"}
+          </span>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
-          <ReportCard
-            href="/app/reports/market-statistics"
-            title="Oahu Annual Resales"
-            description="40 years of residential sales data with line, bar, and area charts. Median prices, sales volume, and YoY trends."
-            dataSources={["HiCentral MLS"]}
-            color="#dc2626"
-          />
-          <ReportCard
-            href="/app/reports/monthly-statistics"
-            title="Oahu Monthly Report"
-            description="Oahu monthly resales: SF & condo sales, median prices, DOM, pending, inventory with YoY comparisons and trend charts."
-            dataSources={["HiCentral MLS"]}
-            color="#dc2626"
-            badge="NEW"
-          />
-          <ReportCard
-            href="/app/reports/maui-statistics"
-            title="Maui Monthly Report"
-            description="Maui County: SF median $1.25M, condo $847K. 12-month trends, area sales volume, affordability index, and inventory analysis."
-            dataSources={["RAM MLS"]}
-            color="#dc2626"
-            badge="NEW"
-          />
-          <ReportCard
-            href="/app/reports/hawaii-island-statistics"
-            title="Hawai'i Island Monthly"
-            description="Big Island: SF, condo & land — median prices, DOM, new vs sold listings with YoY comparisons."
-            dataSources={["HIS"]}
-            color="#dc2626"
-            badge="NEW"
-          />
-          <ReportCard
-            href="/app/reports/kauai-statistics"
-            title="Kaua'i Monthly"
-            description="Garden Isle: SF median $1.37M, condo $637K, land $1.23M. Sales, inventory, and DOM by property type."
-            dataSources={["HIS"]}
-            color="#dc2626"
-            badge="NEW"
-          />
-          <ReportCard
-            href="/app/reports/hawaii-market-comparison"
-            title="Statewide Comparison"
-            description="Official Hawai'i Realtors® statewide stats: median prices, sales, YoY changes, DOM & inventory across all four counties."
-            dataSources={["Hawai'i Realtors®"]}
-            color="#dc2626"
-            badge="NEW"
-          />
-          <ReportCard
-            href="/app/reports/york-adams-market"
-            title="York & Adams Counties, PA"
-            description="RAYAC monthly housing statistics: median prices, sales volume, DOM, inventory & school district breakdowns for York and Adams Counties."
-            dataSources={["RAYAC", "Bright MLS"]}
-            color="#1e40af"
-            badge="NEW"
-          />
-          <ReportCard
-            href="/app/reports/mls-leaderboard"
-            title="MLS Agent Leaderboard"
-            description="Market-wide agent rankings by closed transactions. Top agents and offices by sales count, volume, avg price, and DOM."
-            dataSources={["MLS"]}
-            color="#059669"
-            badge="NEW"
-          />
+          {marketReports.map((r) => (
+            <ReportCard
+              key={r.report_slug}
+              href={`/app/reports/${r.report_slug}`}
+              title={r.report_title}
+              description={r.report_description || ""}
+              dataSources={[r.mls_name]}
+              color={r.report_category === "leaderboard" ? "#059669" : "#dc2626"}
+            />
+          ))}
         </div>
       </section>
+      )}
 
       {/* Solo Agent Reports */}
       <section style={{ marginBottom: 40 }}>

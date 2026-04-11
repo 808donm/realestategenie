@@ -51,6 +51,9 @@ export default function AdminSidebar() {
         <NavLink href="/app/admin/features" active={pathname === "/app/admin/features"}>
           ⚙️ Features
         </NavLink>
+        <NavLink href="/app/admin/market-reports" active={pathname === "/app/admin/market-reports"}>
+          📊 Market Reports
+        </NavLink>
 
         <div
           style={{

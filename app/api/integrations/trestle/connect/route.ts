@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { auth_method, username, password, client_id, client_secret, bearer_token, api_url, token_url } = body;
+    const { auth_method, username, password, client_id, client_secret, bearer_token, api_url, token_url, mls_id } = body;
 
     // Validate required fields
     if (!api_url) {
@@ -73,6 +73,18 @@ export async function POST(request: NextRequest) {
       total_listings: testResult.data?.totalListings || 0,
       connected_at: new Date().toISOString(),
     };
+
+    // MLS identifier -- set by admin or auto-detected
+    if (mls_id) {
+      config.mls_id = mls_id;
+    } else if (testResult.data?.originatingSystem) {
+      // Auto-detect from Trestle response
+      const sys = testResult.data.originatingSystem.toLowerCase();
+      if (sys.includes("hicentral")) config.mls_id = "hicentral";
+      else if (sys.includes("bright")) config.mls_id = "bright";
+      else if (sys.includes("rayac")) config.mls_id = "bright";
+      else config.mls_id = sys.replace(/[^a-z0-9]/g, "");
+    }
 
     // Store credentials based on auth method
     if (method === "basic") {

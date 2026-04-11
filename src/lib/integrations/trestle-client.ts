@@ -843,8 +843,9 @@ export class TrestleClient {
 
       // Step 2 — minimal Property query (non-fatal; 403 means data not yet provisioned)
       let totalListings = 0;
+      let originatingSystem = "";
       try {
-        const propResp = await fetch(`${baseUrl}/Property?$top=1&$select=ListingKey`, {
+        const propResp = await fetch(`${baseUrl}/Property?$top=1&$select=ListingKey,OriginatingSystemName`, {
           headers: {
             Authorization: authHeader,
             Accept: "application/json",
@@ -856,6 +857,7 @@ export class TrestleClient {
         if (propResp.ok) {
           const data = await propResp.json();
           totalListings = data["@odata.count"] ?? data.value?.length ?? 0;
+          originatingSystem = data.value?.[0]?.OriginatingSystemName || "";
         } else {
           const body = await propResp.text();
           console.warn(`[Trestle] Property query returned ${propResp.status} (data may not be provisioned yet):`, body);
@@ -867,7 +869,7 @@ export class TrestleClient {
       return {
         success: true,
         message: "Successfully connected to Trestle API",
-        data: { totalListings },
+        data: { totalListings, originatingSystem },
       };
     } catch (error) {
       console.error("[Trestle] Connection test failed:", error);
