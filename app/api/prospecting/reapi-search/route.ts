@@ -33,13 +33,15 @@ export async function GET(request: NextRequest) {
     const propertyType = params.get("propertyType");
     const minYearsOwned = params.get("minYearsOwned") ? Number(params.get("minYearsOwned")) : undefined;
     const minAvm = params.get("minAvm") ? Number(params.get("minAvm")) : undefined;
+    const minEquity = params.get("minEquity") ? Number(params.get("minEquity")) : undefined;
     const size = Math.min(Number(params.get("size") || "50"), 250);
 
     if (!zip) return NextResponse.json({ error: "zip is required" }, { status: 400 });
 
     // Build REAPI search criteria based on prospecting mode
-    // Request more IDs when post-filtering (minYearsOwned) since many will be filtered out
-    const searchSize = minYearsOwned ? Math.min(size * 5, 500) : size;
+    // Request more IDs when post-filtering (minYearsOwned or minEquity) since many will be filtered out
+    const hasPostFilter = minYearsOwned || minEquity;
+    const searchSize = hasPostFilter ? Math.min(size * 5, 500) : size;
     const criteria: Record<string, any> = {
       zip,
       size: searchSize,
@@ -77,9 +79,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Step 2: Get full details for top results
-    // When post-filtering (e.g., minYearsOwned), we need more detail calls
+    // When post-filtering (e.g., minYearsOwned, minEquity), we need more detail calls
     // since many will be filtered out. Cap higher to get enough results.
-    const detailCap = minYearsOwned ? Math.min(allIds.length, 150) : Math.min(size, 50);
+    const detailCap = hasPostFilter ? Math.min(allIds.length, 150) : Math.min(size, 50);
     const targetResults = Math.min(size, 50);
     const idsToFetch = allIds.slice(0, detailCap);
     const properties: any[] = [];
@@ -100,6 +102,11 @@ export async function GET(request: NextRequest) {
           if (minYearsOwned && raw.ownerInfo?.ownershipLength) {
             const yearsOwned = raw.ownerInfo.ownershipLength / 12;
             if (yearsOwned < minYearsOwned) continue;
+          }
+
+          // Post-filter by min equity (dollar amount)
+          if (minEquity && raw.estimatedEquity != null) {
+            if (Number(raw.estimatedEquity) < minEquity) continue;
           }
 
           properties.push({

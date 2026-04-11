@@ -1622,7 +1622,8 @@ export default function Prospecting() {
         const reapiParams = new URLSearchParams({ zip: zip.trim(), mode, size: "50" });
         if (propertyType) reapiParams.set("propertyType", propertyType === "SINGLE FAMILY" ? "SFR" : propertyType === "CONDO" ? "CONDO" : propertyType);
         if (minYearsOwned) reapiParams.set("minYearsOwned", String(minYearsOwned));
-        if (minAvmValue) reapiParams.set("minAvm", minAvmValue);
+        if (minAvmValue && mode === "equity") reapiParams.set("minEquity", minAvmValue);
+        else if (minAvmValue) reapiParams.set("minAvm", minAvmValue);
         const reapiRes = await fetch(`/api/prospecting/reapi-search?${reapiParams}`);
         const reapiData = await reapiRes.json();
         if (reapiData.properties && reapiData.properties.length > 0) {
@@ -2984,13 +2985,13 @@ export default function Prospecting() {
           {mode === "equity" && (
             <div>
               <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 4 }}>
-                Min AVM Value
+                Min Equity ($)
               </label>
               <input
                 type="number"
                 value={minAvmValue}
                 onChange={(e) => setMinAvmValue(e.target.value)}
-                placeholder="e.g. 300000"
+                placeholder="e.g. 500000"
                 style={{
                   width: 140,
                   padding: "8px 12px",
