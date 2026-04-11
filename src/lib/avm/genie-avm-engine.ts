@@ -260,97 +260,61 @@ export function computeGenieAvm(input: GenieAvmInput): GenieAvmResult | null {
   }
 
   // ── Dynamic Weight Assignment ──
-  // Weights shift based on comp quality (measured by CV of adjusted prices)
-  // and whether the property is on-market (has list price)
-  const compCV = adjustedComps.length >= 2 ? computeCV(adjustedComps.map((c) => c.adjustedPrice)) : 1.0;
+  // Comp weight is dynamically scaled by average match quality (correlation).
+  // High-quality comps (80%+ avg correlation) get full weight.
+  // Poor comps (25-40%) get heavily discounted. Freed weight goes to
+  // list price (if on-market) and Property AVM.
   const isOnMarket = !!listPriceValue;
 
   if (compBasedValue) {
-    let compWeight: number;
-    let propAvmWeight: number;
+    // Calculate average correlation across adjusted comps
+    const compsWithCorrelation = adjustedComps.filter((c) => c.correlation != null);
+    const avgCorrelation = compsWithCorrelation.length > 0
+      ? compsWithCorrelation.reduce((s, c) => s + (c.correlation || 0), 0) / compsWithCorrelation.length
+      : 0.5; // Default if no correlation data
+
+    // Quality multiplier based on average match quality
+    let qualityMultiplier: number;
+    if (avgCorrelation >= 0.80) qualityMultiplier = 1.0;       // Excellent comps
+    else if (avgCorrelation >= 0.60) qualityMultiplier = 0.75;  // Good
+    else if (avgCorrelation >= 0.40) qualityMultiplier = 0.50;  // Moderate
+    else if (avgCorrelation >= 0.25) qualityMultiplier = 0.30;  // Poor
+    else qualityMultiplier = 0.15;                               // Unreliable
+
+    // Fewer comps also reduces quality
+    if (adjustedComps.length < 3) qualityMultiplier *= 0.7;
+    else if (adjustedComps.length < 5) qualityMultiplier *= 0.85;
+
+    // Base weights before quality adjustment
+    let baseCompWeight: number;
     let listPriceWeight: number;
+    let propAvmWeight: number;
     let assessmentWeight: number;
 
-    // Luxury properties ($2M+) get more list price weight because
-    // comps are sparse and often from different quality tiers
-    const isLuxury = isOnMarket && listPriceValue && listPriceValue >= 2000000;
-
-    if (isOnMarket && isLuxury) {
-      // Luxury on-market: agent pricing is the strongest signal
-      listPriceWeight = 0.40;
-      propAvmWeight = 0.15;
-      assessmentWeight = 0.15;
-      if (compCV < 0.15) {
-        compWeight = 0.30;
-      } else if (compCV < 0.30) {
-        compWeight = 0.25;
-        assessmentWeight = 0.20;
-      } else {
-        compWeight = 0.20;
-        assessmentWeight = 0.25;
-      }
-    } else if (isOnMarket) {
-      // Standard on-market: balanced ensemble
+    if (isOnMarket) {
+      baseCompWeight = 0.40;
       listPriceWeight = 0.30;
       propAvmWeight = 0.15;
       assessmentWeight = 0.15;
-      if (compCV < 0.15) {
-        compWeight = 0.40;
-      } else if (compCV < 0.30) {
-        compWeight = 0.35;
-        assessmentWeight = 0.20;
-      } else {
-        compWeight = 0.30;
-        assessmentWeight = 0.25;
-      }
     } else {
-      // Off-market: no list price, comps and assessment carry more weight
+      baseCompWeight = 0.50;
       listPriceWeight = 0;
-      propAvmWeight = 0.20;
+      propAvmWeight = 0.25;
       assessmentWeight = 0.25;
-      if (compCV < 0.15) {
-        compWeight = 0.55;
-      } else if (compCV < 0.30) {
-        compWeight = 0.45;
-        propAvmWeight = 0.30;
-      } else {
-        compWeight = 0.35;
-        propAvmWeight = 0.40;
-      }
     }
 
-    // Fewer comps = less trust in comp value
-    if (adjustedComps.length < 3) {
-      compWeight = Math.max(0.20, compWeight - 0.10);
-      propAvmWeight += 0.10;
-    }
+    // Apply quality multiplier to comp weight
+    let compWeight = baseCompWeight * qualityMultiplier;
+    const freedWeight = baseCompWeight - compWeight;
 
-    // High divergence: when comps and Property AVM disagree by >20%,
-    // comps are likely from dissimilar properties. Shift weight to Property AVM.
-    if (sanitizedPropertyAvm && compBasedValue) {
-      const divergence = Math.abs(compBasedValue - sanitizedPropertyAvm) / sanitizedPropertyAvm;
-      if (divergence > 0.20) {
-        const shift = Math.min(compWeight * 0.4, 0.15);
-        compWeight -= shift;
-        propAvmWeight += shift;
-      }
-    }
-
-    // Consensus check: when list price and Property AVM agree (within 15%)
-    // but comps diverge from both by >15%, comps are from a different market
-    // segment. Aggressively reduce comp weight.
-    if (sanitizedPropertyAvm && listPriceValue && compBasedValue) {
-      const listAvmAgreement = Math.abs(listPriceValue - sanitizedPropertyAvm) / sanitizedPropertyAvm;
-      const compVsList = Math.abs(compBasedValue - listPriceValue) / listPriceValue;
-      const compVsAvm = Math.abs(compBasedValue - sanitizedPropertyAvm) / sanitizedPropertyAvm;
-      if (listAvmAgreement < 0.15 && compVsList > 0.15 && compVsAvm > 0.15) {
-        // List price and Property AVM agree, but comps are the outlier
-        const extraShift = Math.min(compWeight * 0.5, 0.15);
-        compWeight -= extraShift;
-        // Split the weight between list price and property AVM
-        listPriceWeight += extraShift * 0.6;
-        propAvmWeight += extraShift * 0.4;
-      }
+    // Redistribute freed weight to other sources
+    if (isOnMarket) {
+      listPriceWeight += freedWeight * 0.5;
+      propAvmWeight += freedWeight * 0.3;
+      assessmentWeight += freedWeight * 0.2;
+    } else {
+      propAvmWeight += freedWeight * 0.6;
+      assessmentWeight += freedWeight * 0.4;
     }
 
     sources.push({ name: "mlsComps", value: compBasedValue, weight: compWeight });
