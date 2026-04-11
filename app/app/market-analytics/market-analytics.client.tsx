@@ -55,6 +55,8 @@ interface NeighborhoodStats {
   subdivision: string;
   sales: number;
   stats: any;
+  sfrStats: any;
+  condoStats: any;
   monthly: any[];
   propertyTypes: Record<string, number>;
   dateRange: { from: string; to: string };
@@ -179,27 +181,58 @@ export default function MarketAnalyticsDashboard() {
             </div>
             <button onClick={() => setNeighborhoodData(null)} style={{ padding: "6px 14px", borderRadius: 6, border: "1px solid #d1d5db", background: "#fff", cursor: "pointer", fontSize: 12 }}>Close</button>
           </div>
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
-            <ValueCard label="Median Price" value={fmt$(neighborhoodData.stats.medianPrice)!} />
-            <ValueCard label="Avg Price" value={fmt$(neighborhoodData.stats.avgPrice)!} />
-            <ValueCard label="Price/SqFt" value={`$${neighborhoodData.stats.medianPricePerSqft}`} />
-            <ValueCard label="Median DOM" value={`${neighborhoodData.stats.medianDOM} days`} />
-            <ValueCard label="List-to-Sale" value={neighborhoodData.stats.listToSaleRatio ? `${neighborhoodData.stats.listToSaleRatio}%` : "N/A"} />
-            <ValueCard label="Total Sales" value={`${neighborhoodData.sales}`} />
+          {/* Stats by property type */}
+          <div style={{ display: "grid", gridTemplateColumns: neighborhoodData.sfrStats && neighborhoodData.condoStats ? "1fr 1fr" : "1fr", gap: 16, marginBottom: 16 }}>
+            {neighborhoodData.sfrStats && (
+              <div style={{ padding: 14, background: "#fff", borderRadius: 8, border: "1px solid #e5e7eb" }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#dc2626", marginBottom: 8 }}>Single Family ({neighborhoodData.sfrStats.totalSales} sales)</div>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  <ValueCard label="Median Price" value={fmt$(neighborhoodData.sfrStats.medianPrice)!} />
+                  <ValueCard label="Price/SqFt" value={`$${neighborhoodData.sfrStats.medianPricePerSqft}`} />
+                  <ValueCard label="Median DOM" value={`${neighborhoodData.sfrStats.medianDOM} days`} />
+                  <ValueCard label="List-to-Sale" value={neighborhoodData.sfrStats.listToSaleRatio ? `${neighborhoodData.sfrStats.listToSaleRatio}%` : "N/A"} />
+                </div>
+              </div>
+            )}
+            {neighborhoodData.condoStats && (
+              <div style={{ padding: 14, background: "#fff", borderRadius: 8, border: "1px solid #e5e7eb" }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#2563eb", marginBottom: 8 }}>Condo / Townhouse ({neighborhoodData.condoStats.totalSales} sales)</div>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  <ValueCard label="Median Price" value={fmt$(neighborhoodData.condoStats.medianPrice)!} />
+                  <ValueCard label="Price/SqFt" value={`$${neighborhoodData.condoStats.medianPricePerSqft}`} />
+                  <ValueCard label="Median DOM" value={`${neighborhoodData.condoStats.medianDOM} days`} />
+                  <ValueCard label="List-to-Sale" value={neighborhoodData.condoStats.listToSaleRatio ? `${neighborhoodData.condoStats.listToSaleRatio}%` : "N/A"} />
+                </div>
+              </div>
+            )}
+            {!neighborhoodData.sfrStats && !neighborhoodData.condoStats && (
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                <ValueCard label="Median Price" value={fmt$(neighborhoodData.stats.medianPrice)!} />
+                <ValueCard label="Avg Price" value={fmt$(neighborhoodData.stats.avgPrice)!} />
+                <ValueCard label="Price/SqFt" value={`$${neighborhoodData.stats.medianPricePerSqft}`} />
+                <ValueCard label="Median DOM" value={`${neighborhoodData.stats.medianDOM} days`} />
+                <ValueCard label="Total Sales" value={`${neighborhoodData.sales}`} />
+              </div>
+            )}
           </div>
           {neighborhoodData.monthly.length > 0 && (
             <div style={{ background: "#fff", borderRadius: 10, padding: 16, border: "1px solid #e5e7eb" }}>
               <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Monthly Sales Trend</div>
-              <ResponsiveContainer width="100%" height={250}>
+              <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={neighborhoodData.monthly}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                   <YAxis yAxisId="price" orientation="left" tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`} />
                   <YAxis yAxisId="sales" orientation="right" />
-                  <Tooltip formatter={(v, name) => name === "Avg Price" ? `$${Number(v).toLocaleString()}` : v} />
+                  <Tooltip formatter={(v, name) => {
+                    const n = String(name);
+                    return n.includes("Price") ? `$${Number(v).toLocaleString()}` : v;
+                  }} />
                   <Legend />
-                  <Bar yAxisId="sales" dataKey="sales" fill="#059669" name="Sales" />
-                  <Line yAxisId="price" type="monotone" dataKey="avgPrice" stroke="#2563eb" name="Avg Price" strokeWidth={2} dot={false} />
+                  <Bar yAxisId="sales" dataKey="sfrSales" fill="#dc2626" name="SFR Sales" stackId="sales" />
+                  <Bar yAxisId="sales" dataKey="condoSales" fill="#3b82f6" name="Condo/TH Sales" stackId="sales" />
+                  <Line yAxisId="price" type="monotone" dataKey="sfrAvgPrice" stroke="#dc2626" name="SFR Avg Price" strokeWidth={2} dot={false} strokeDasharray="5 5" />
+                  <Line yAxisId="price" type="monotone" dataKey="condoAvgPrice" stroke="#3b82f6" name="Condo Avg Price" strokeWidth={2} dot={false} strokeDasharray="5 5" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
