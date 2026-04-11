@@ -325,14 +325,31 @@ export function computeGenieAvm(input: GenieAvmInput): GenieAvmResult | null {
       propAvmWeight += 0.10;
     }
 
-    // High divergence: when comps and Property AVM disagree by >25%,
+    // High divergence: when comps and Property AVM disagree by >20%,
     // comps are likely from dissimilar properties. Shift weight to Property AVM.
     if (sanitizedPropertyAvm && compBasedValue) {
       const divergence = Math.abs(compBasedValue - sanitizedPropertyAvm) / sanitizedPropertyAvm;
-      if (divergence > 0.25) {
-        const shift = Math.min(compWeight * 0.4, 0.15); // Shift up to 40% of comp weight (max 15pp)
+      if (divergence > 0.20) {
+        const shift = Math.min(compWeight * 0.4, 0.15);
         compWeight -= shift;
         propAvmWeight += shift;
+      }
+    }
+
+    // Consensus check: when list price and Property AVM agree (within 15%)
+    // but comps diverge from both by >15%, comps are from a different market
+    // segment. Aggressively reduce comp weight.
+    if (sanitizedPropertyAvm && listPriceValue && compBasedValue) {
+      const listAvmAgreement = Math.abs(listPriceValue - sanitizedPropertyAvm) / sanitizedPropertyAvm;
+      const compVsList = Math.abs(compBasedValue - listPriceValue) / listPriceValue;
+      const compVsAvm = Math.abs(compBasedValue - sanitizedPropertyAvm) / sanitizedPropertyAvm;
+      if (listAvmAgreement < 0.15 && compVsList > 0.15 && compVsAvm > 0.15) {
+        // List price and Property AVM agree, but comps are the outlier
+        const extraShift = Math.min(compWeight * 0.5, 0.15);
+        compWeight -= extraShift;
+        // Split the weight between list price and property AVM
+        listPriceWeight += extraShift * 0.6;
+        propAvmWeight += extraShift * 0.4;
       }
     }
 
