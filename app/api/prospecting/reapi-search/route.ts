@@ -38,9 +38,11 @@ export async function GET(request: NextRequest) {
     if (!zip) return NextResponse.json({ error: "zip is required" }, { status: 400 });
 
     // Build REAPI search criteria based on prospecting mode
+    // Request more IDs when post-filtering (minYearsOwned) since many will be filtered out
+    const searchSize = minYearsOwned ? Math.min(size * 5, 500) : size;
     const criteria: Record<string, any> = {
       zip,
-      size,
+      size: searchSize,
       state: "HI",
     };
 
@@ -74,12 +76,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ properties: [], total: 0, scanned: 0, mode });
     }
 
-    // Step 2: Get full details for top results (capped at size)
-    const idsToFetch = allIds.slice(0, Math.min(size, 50)); // Cap at 50 detail calls
+    // Step 2: Get full details for top results
+    // When post-filtering (e.g., minYearsOwned), we need more detail calls
+    // since many will be filtered out. Cap higher to get enough results.
+    const detailCap = minYearsOwned ? Math.min(allIds.length, 150) : Math.min(size, 50);
+    const targetResults = Math.min(size, 50);
+    const idsToFetch = allIds.slice(0, detailCap);
     const properties: any[] = [];
     const errors: string[] = [];
 
     for (const id of idsToFetch) {
+      // Stop once we have enough results
+      if (properties.length >= targetResults) break;
+
       try {
         const detail = await reapi.getPropertyDetail({ id: Number(id), prior_owner: true, comps: false });
         if (detail.data) {
