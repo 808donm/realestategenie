@@ -17,12 +17,14 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { getTrestleClient } from "@/lib/mls/trestle-helpers";
 import { TrestleProperty } from "@/lib/integrations/trestle-client";
+import { parseTMKInput, getZipsForTMKSection } from "@/lib/hawaii-tmk-zip";
 
 // ── Types ────────────────────────────────────────────────────────
 
 export interface MonitorSearchCriteria {
   zip_codes?: string[];
   city?: string;
+  tmk?: string; // Hawaii TMK (e.g., "1-2-9") -- resolved to ZIPs, post-filtered by ParcelNumber
   beds_min?: number;
   beds_max?: number;
   baths_min?: number;
@@ -114,8 +116,8 @@ export async function runMonitorProfile(profileId: string): Promise<MonitorRunSu
   }
 
   // 3. Build OData filter from criteria
-  const filter = buildODataFilter(criteria);
-  if (!filter) {
+  const filterResult = buildODataFilter(criteria);
+  if (!filterResult) {
     summary.errors.push("Invalid search criteria - no location filter");
     return summary;
   }
@@ -123,7 +125,7 @@ export async function runMonitorProfile(profileId: string): Promise<MonitorRunSu
   try {
     // 4. Query MLS for matching listings (all statuses for change detection)
     const result = await trestle.getProperties({
-      $filter: filter,
+      $filter: filterResult.filter,
       $select: [
         "ListingKey", "ListingId", "StandardStatus", "PropertyType",
         "ListPrice", "OriginalListPrice", "UnparsedAddress",
@@ -131,6 +133,7 @@ export async function runMonitorProfile(profileId: string): Promise<MonitorRunSu
         "City", "StateOrProvince", "PostalCode",
         "BedroomsTotal", "BathroomsTotalInteger", "LivingArea", "YearBuilt",
         "DaysOnMarket", "OnMarketDate",
+        "ParcelNumber",
         "Media",
       ].join(","),
       $orderby: "ModificationTimestamp desc",
@@ -139,7 +142,15 @@ export async function runMonitorProfile(profileId: string): Promise<MonitorRunSu
       $expand: "Media($select=MediaURL,Order;$top=1;$orderby=Order)",
     });
 
-    const currentListings = result.value || [];
+    // Post-filter by TMK ParcelNumber prefix if TMK search
+    let currentListings = result.value || [];
+    if (filterResult.tmkPrefix) {
+      const prefix = filterResult.tmkPrefix;
+      currentListings = currentListings.filter((l: any) =>
+        l.ParcelNumber && String(l.ParcelNumber).startsWith(prefix),
+      );
+    }
+
     const currentKeys = new Set<string>();
     const currentByKey = new Map<string, TrestleProperty>();
 
@@ -364,14 +375,30 @@ export async function runMarketMonitorCron(): Promise<{
 
 // ── OData Filter Builder ────────────────────────────────────────
 
-function buildODataFilter(criteria: MonitorSearchCriteria): string | null {
+function buildODataFilter(criteria: MonitorSearchCriteria): { filter: string; tmkPrefix?: string } | null {
   const parts: string[] = [];
+  let tmkPrefix: string | undefined;
 
   // Status filter: all statuses for change detection
   parts.push("(StandardStatus eq 'Active' or StandardStatus eq 'Pending' or StandardStatus eq 'Expired' or StandardStatus eq 'Withdrawn' or StandardStatus eq 'Canceled')");
 
-  // Location: ZIP codes or city (at least one required)
-  if (criteria.zip_codes?.length) {
+  // Location: TMK, ZIP codes, or city (at least one required)
+  if (criteria.tmk) {
+    // Resolve TMK to ZIPs and build ParcelNumber prefix for post-filtering
+    const tmk = parseTMKInput(criteria.tmk);
+    const zone = tmk.zone || "";
+    const section = tmk.section || "";
+    const island = tmk.island || "1";
+    tmkPrefix = `${island}-${zone}-${section}-`;
+
+    const zips = getZipsForTMKSection(zone, section);
+    if (zips?.length) {
+      const zipFilters = zips.map((z) => `PostalCode eq '${z}'`);
+      parts.push(`(${zipFilters.join(" or ")})`);
+    } else {
+      return null; // TMK doesn't map to any ZIPs
+    }
+  } else if (criteria.zip_codes?.length) {
     const zipFilters = criteria.zip_codes.map((z) => `PostalCode eq '${z}'`);
     parts.push(`(${zipFilters.join(" or ")})`);
   } else if (criteria.city) {
@@ -398,7 +425,7 @@ function buildODataFilter(criteria: MonitorSearchCriteria): string | null {
   if (criteria.price_min) parts.push(`ListPrice ge ${criteria.price_min}`);
   if (criteria.price_max) parts.push(`ListPrice le ${criteria.price_max}`);
 
-  return parts.join(" and ");
+  return { filter: parts.join(" and "), tmkPrefix };
 }
 
 // ── Notification Sender ─────────────────────────────────────────
@@ -614,6 +641,7 @@ function alertTypeBadge(type: string): { label: string; color: string } {
 
 export function summarizeMonitorCriteria(criteria: MonitorSearchCriteria): string {
   const parts: string[] = [];
+  if (criteria.tmk) parts.push(`TMK ${criteria.tmk}`);
   if (criteria.zip_codes?.length) parts.push(criteria.zip_codes.join(", "));
   if (criteria.city) parts.push(criteria.city);
   if (criteria.property_types?.length) parts.push(criteria.property_types.join(", "));

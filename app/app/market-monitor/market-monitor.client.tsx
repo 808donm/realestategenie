@@ -93,6 +93,7 @@ export function MarketMonitorPage() {
   const [formCrmId, setFormCrmId] = useState("");
   const [formZips, setFormZips] = useState("");
   const [formCity, setFormCity] = useState("");
+  const [formTmk, setFormTmk] = useState("");
   const [formBedsMin, setFormBedsMin] = useState("");
   const [formBedsMax, setFormBedsMax] = useState("");
   const [formBathsMin, setFormBathsMin] = useState("");
@@ -140,7 +141,7 @@ export function MarketMonitorPage() {
   const handleCreate = async () => {
     if (!formName.trim()) return;
     const zipArr = formZips.split(",").map((z) => z.trim()).filter(Boolean);
-    if (!zipArr.length && !formCity.trim()) return;
+    if (!zipArr.length && !formCity.trim() && !formTmk.trim()) return;
 
     setCreating(true);
     try {
@@ -153,6 +154,7 @@ export function MarketMonitorPage() {
           clientPhone: formPhone || undefined,
           clientCrmContactId: formCrmId || undefined,
           searchCriteria: {
+            tmk: formTmk || undefined,
             zip_codes: zipArr.length > 0 ? zipArr : undefined,
             city: formCity || undefined,
             beds_min: formBedsMin ? Number(formBedsMin) : undefined,
@@ -184,7 +186,7 @@ export function MarketMonitorPage() {
 
   const resetForm = () => {
     setFormName(""); setFormEmail(""); setFormPhone(""); setFormCrmId("");
-    setFormZips(""); setFormCity(""); setFormBedsMin(""); setFormBedsMax("");
+    setFormZips(""); setFormCity(""); setFormTmk(""); setFormBedsMin(""); setFormBedsMax("");
     setFormBathsMin(""); setFormBathsMax(""); setFormPriceMin(""); setFormPriceMax("");
     setFormPropTypes([]);
     setFormNotifyEmail(true); setFormNotifySms(false); setFormNotifyCrm(false);
@@ -394,9 +396,13 @@ export function MarketMonitorPage() {
                 <label style={labelStyle}>ZIP Codes (comma-separated)</label>
                 <input style={inputStyle} value={formZips} onChange={(e) => setFormZips(e.target.value)} placeholder="96825, 96821, 96734" />
               </div>
-              <div style={{ gridColumn: "span 2" }}>
+              <div>
                 <label style={labelStyle}>City</label>
                 <input style={inputStyle} value={formCity} onChange={(e) => setFormCity(e.target.value)} placeholder="Honolulu" />
+              </div>
+              <div>
+                <label style={labelStyle}>TMK (Hawaii)</label>
+                <input style={inputStyle} value={formTmk} onChange={(e) => setFormTmk(e.target.value)} placeholder="1-2-9" />
               </div>
               <div>
                 <label style={labelStyle}>Beds Min</label>
@@ -489,7 +495,7 @@ export function MarketMonitorPage() {
 
           <button
             onClick={handleCreate}
-            disabled={creating || !formName.trim() || (!formZips.trim() && !formCity.trim())}
+            disabled={creating || !formName.trim() || (!formZips.trim() && !formCity.trim() && !formTmk.trim())}
             style={{
               padding: "12px 32px", borderRadius: 8, border: "none",
               background: "#059669", color: "#fff", fontWeight: 600,
