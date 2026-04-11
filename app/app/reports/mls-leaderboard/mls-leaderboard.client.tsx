@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import * as XLSX from "xlsx";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
@@ -81,6 +82,69 @@ export default function MlsLeaderboardClient() {
     else { setSortKey(key); setSortAsc(false); }
   };
 
+  const exportToExcel = () => {
+    const wb = XLSX.utils.book_new();
+
+    // Agent sheet
+    const agentRows = sorted.map((a) => ({
+      Rank: a.rank,
+      "Agent Name": a.name,
+      Office: a.office,
+      "Total Sales": a.totalSales,
+      "Listing Sales": a.listingSales,
+      "Buyer Sales": a.buyerSales,
+      "Total Volume": a.totalVolume,
+      "Listing Volume": a.listingVolume,
+      "Buyer Volume": a.buyerVolume,
+      "Avg Price": a.avgPrice,
+      "Avg DOM": a.avgDOM,
+      "Top City": a.topCity,
+      "Top Property Type": a.topPropertyType,
+    }));
+    const agentWs = XLSX.utils.json_to_sheet(agentRows);
+
+    // Set column widths
+    agentWs["!cols"] = [
+      { wch: 6 }, { wch: 30 }, { wch: 35 }, { wch: 12 }, { wch: 14 },
+      { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 14 }, { wch: 12 },
+      { wch: 10 }, { wch: 15 }, { wch: 25 },
+    ];
+    XLSX.utils.book_append_sheet(wb, agentWs, "Top Agents");
+
+    // Office sheet
+    const officeRows = offices.map((o) => ({
+      Rank: o.rank,
+      Office: o.name,
+      "Total Sales": o.sales,
+      "Total Volume": o.volume,
+      "Agent Count": o.agentCount,
+      "Avg Sales/Agent": o.avgPerAgent,
+    }));
+    const officeWs = XLSX.utils.json_to_sheet(officeRows);
+    officeWs["!cols"] = [
+      { wch: 6 }, { wch: 40 }, { wch: 12 }, { wch: 15 }, { wch: 14 }, { wch: 16 },
+    ];
+    XLSX.utils.book_append_sheet(wb, officeWs, "Top Offices");
+
+    // Summary sheet
+    const summaryRows = [
+      { Metric: "Report", Value: "MLS Agent Leaderboard" },
+      { Metric: "Date Range", Value: dateRange ? `${dateRange.from} to ${dateRange.to}` : "" },
+      { Metric: "Period", Value: `${months} months` },
+      { Metric: "Total Transactions", Value: totalTx },
+      { Metric: "Agents Ranked", Value: agents.length },
+      { Metric: "Offices", Value: offices.length },
+      { Metric: "Side", Value: agentType === "both" ? "Listing + Buyer" : agentType === "listing" ? "Listing Only" : "Buyer Only" },
+      { Metric: "Generated", Value: new Date().toLocaleString() },
+    ];
+    const summaryWs = XLSX.utils.json_to_sheet(summaryRows);
+    summaryWs["!cols"] = [{ wch: 20 }, { wch: 40 }];
+    XLSX.utils.book_append_sheet(wb, summaryWs, "Summary");
+
+    const filename = `MLS_Agent_Leaderboard_${months}mo_${new Date().toISOString().split("T")[0]}.xlsx`;
+    XLSX.writeFile(wb, filename);
+  };
+
   const thStyle = (key: SortKey): React.CSSProperties => ({
     padding: "10px 12px", textAlign: "right" as const, fontSize: 12, fontWeight: 700,
     cursor: "pointer", whiteSpace: "nowrap" as const, userSelect: "none" as const,
@@ -134,6 +198,7 @@ export default function MlsLeaderboardClient() {
             <option value={100}>Top 100</option>
             <option value={250}>Top 250</option>
             <option value={500}>Top 500</option>
+            <option value={1000}>Top 1000</option>
           </select>
         </div>
         <button
@@ -148,6 +213,18 @@ export default function MlsLeaderboardClient() {
         >
           {loading ? "Loading MLS data..." : hasLoaded ? "Refresh" : "Generate Leaderboard"}
         </button>
+        {hasLoaded && (
+          <button
+            onClick={exportToExcel}
+            style={{
+              padding: "10px 24px", borderRadius: 8, border: "1px solid #059669",
+              background: "#fff", color: "#059669", fontWeight: 600,
+              cursor: "pointer", fontSize: 14,
+            }}
+          >
+            Export to Excel
+          </button>
+        )}
       </div>
 
       {error && (

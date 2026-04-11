@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 
     const params = request.nextUrl.searchParams;
     const months = Math.min(Number(params.get("months") || "12"), 24);
-    const limit = Math.min(Number(params.get("limit") || "100"), 500);
+    const limit = Math.min(Number(params.get("limit") || "100"), 1000);
     const type = params.get("type") || "both";
 
     // Get agent's Trestle client
