@@ -26,7 +26,7 @@ interface CrmContact {
   tags: string[];
 }
 
-const STATUS_OPTIONS = ["Active", "Pending", "Closed", "Expired", "Withdrawn"];
+const STATUS_OPTIONS = ["Active", "Pending", "Closed", "Price Change", "Expired", "Withdrawn"];
 const SCHEDULES = [
   { value: "weekly", label: "Weekly" },
   { value: "biweekly", label: "Bi-weekly" },
