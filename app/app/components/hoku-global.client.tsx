@@ -108,9 +108,10 @@ export default function HokuGlobal() {
         <button
           onClick={handleOpen}
           aria-label="Open Hoku assistant"
+          className="hoku-fab"
           style={{
             position: "fixed",
-            bottom: 24,
+            bottom: 80,
             right: 24,
             width: 56,
             height: 56,
