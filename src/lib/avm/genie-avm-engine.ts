@@ -185,7 +185,7 @@ const DEFAULT_APPRECIATION_RATE_SFR = 0.05;   // 5%/yr for single-family
 const DEFAULT_APPRECIATION_RATE_CONDO = 0.04;  // 4%/yr for condos
 
 // Comp quality thresholds
-const MIN_CORRELATION = 0.3;                   // Exclude comps below this correlation
+const MIN_CORRELATION = 0.4;                   // Exclude comps below this correlation (raised from 0.3)
 const MAX_ADJUSTMENT_PCT = 0.35;               // Exclude comps needing >35% total adjustment
 const OUTLIER_THRESHOLD = 0.50;                // Exclude comps >50% from median adjusted price
 
@@ -599,8 +599,11 @@ function adjustAndWeightComps(input: GenieAvmInput): AdjustedComp[] {
     const isSubdivisionMatch = !!(subjectSubdivision && compSubdivision && subjectSubdivision === compSubdivision);
     const subdivisionBonus = isSubdivisionMatch ? 1.5 : 1.0;
 
-    // Correlation/distance weight
-    const correlationWeight = comp.correlation || 0.7;
+    // Correlation weight: squared so low-quality comps are penalized exponentially
+    // 90% match -> 0.81 weight, 70% -> 0.49, 50% -> 0.25, 40% -> 0.16
+    // This ensures the best comps dominate the weighted average
+    const rawCorrelation = comp.correlation || 0.5;
+    const correlationWeight = rawCorrelation * rawCorrelation;
 
     const weight = recencyWeight * subdivisionBonus * correlationWeight;
 
