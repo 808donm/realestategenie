@@ -259,6 +259,14 @@ export function computeGenieAvm(input: GenieAvmInput): GenieAvmResult | null {
     sanitizedPropertyAvm = null;
   }
 
+  // If list price is below 30% of Property AVM, the AVM is likely for the
+  // whole building (multi-family) or a different unit -- discard it.
+  // Also applies when Property AVM is >3x the list price for any property.
+  if (sanitizedPropertyAvm && listPriceValue && listPriceValue < sanitizedPropertyAvm * 0.30) {
+    console.log(`[GenieAVM] Discarding Property AVM $${sanitizedPropertyAvm.toLocaleString()} — list price $${listPriceValue.toLocaleString()} is <30% (likely whole-building AVM)`);
+    sanitizedPropertyAvm = null;
+  }
+
   // ── Dynamic Weight Assignment ──
   // Comp weight is dynamically scaled by average match quality (correlation).
   // High-quality comps (80%+ avg correlation) get full weight.
