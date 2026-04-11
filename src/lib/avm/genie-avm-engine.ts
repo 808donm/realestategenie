@@ -241,7 +241,7 @@ export function computeGenieAvm(input: GenieAvmInput): GenieAvmResult | null {
     lastSaleYearsAgo = Math.round(yearsAgo * 10) / 10;
 
     // Only use if sale was arm's-length (> $1000) and within 20 years
-    if (yearsAgo > 0.25 && yearsAgo <= 20) {
+    if (yearsAgo > 0.25 && yearsAgo <= 30) {
       const subType = (input.propertySubType || "").toLowerCase();
       const isCondo = subType.includes("condo") || subType.includes("townhouse") || subType.includes("apartment");
       const defaultRate = isCondo ? DEFAULT_APPRECIATION_RATE_CONDO : DEFAULT_APPRECIATION_RATE_SFR;
