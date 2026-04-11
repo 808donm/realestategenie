@@ -224,7 +224,7 @@ export default function MlsLeaderboardClient() {
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis type="number" tickFormatter={(v) => fmtM(v)} />
                       <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={100} />
-                      <Tooltip formatter={(v: number) => fmt(v)} />
+                      <Tooltip formatter={(v) => fmt(Number(v))} />
                       <Bar dataKey="Volume" fill="#8b5cf6" />
                     </BarChart>
                   </ResponsiveContainer>
