@@ -88,6 +88,14 @@ export default async function ReportsPage() {
             color="#1e40af"
             badge="NEW"
           />
+          <ReportCard
+            href="/app/reports/mls-leaderboard"
+            title="MLS Agent Leaderboard"
+            description="Market-wide agent rankings by closed transactions. Top agents and offices by sales count, volume, avg price, and DOM."
+            dataSources={["MLS"]}
+            color="#059669"
+            badge="NEW"
+          />
         </div>
       </section>
 
