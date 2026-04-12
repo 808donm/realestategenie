@@ -434,10 +434,13 @@ export function computeGenieAvm(input: GenieAvmInput): GenieAvmResult | null {
       else if (yearsRemaining > 15) discountPct = -0.30;
       else discountPct = -0.35;
     }
-    // Only apply if comps were NOT already leasehold
-    const compsAllLeasehold = adjustedComps.length > 0 &&
-      adjustedComps.every((c) => c.ownershipType?.toLowerCase() === "leasehold");
-    if (!compsAllLeasehold) {
+    // Only apply if comps are NOT already reflecting leasehold prices.
+    // Skip if: majority of comps are leasehold, OR if the comp-based value
+    // is already in the same range as list price (comps already reflect leasehold market)
+    const leaseholdComps = adjustedComps.filter((c) => c.ownershipType?.toLowerCase() === "leasehold").length;
+    const compsReflectLeasehold = adjustedComps.length > 0 && leaseholdComps >= adjustedComps.length * 0.5;
+    const compsAlignWithList = compBasedValue && listPriceValue && Math.abs(compBasedValue - listPriceValue) / listPriceValue < 0.3;
+    if (!compsReflectLeasehold && !compsAlignWithList) {
       leaseholdAdj = discountPct;
       ensembleValue = Math.round(ensembleValue * (1 + discountPct));
     }
