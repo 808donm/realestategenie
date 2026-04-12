@@ -13,6 +13,13 @@ type Tab = "agents" | "offices";
 type SortKey = "totalSales" | "totalVolume" | "listingSales" | "buyerSales" | "avgPrice" | "avgDOM";
 type AgentType = "both" | "listing" | "buyer";
 
+const PROPERTY_TYPE_OPTIONS = [
+  { value: "Residential", label: "Residential (SFR/Condo/TH)" },
+  { value: "Land", label: "Land" },
+  { value: "Commercial", label: "Commercial" },
+  { value: "MultiFamily", label: "Multi-Family" },
+];
+
 interface AgentRow {
   rank: number;
   name: string;
@@ -51,6 +58,7 @@ export default function MlsLeaderboardClient() {
   const [months, setMonths] = useState(12);
   const [agentType, setAgentType] = useState<AgentType>("both");
   const [topN, setTopN] = useState(100);
+  const [selectedPropTypes, setSelectedPropTypes] = useState<string[]>(["Residential", "Land"]);
   const [totalTx, setTotalTx] = useState(0);
   const [dateRange, setDateRange] = useState<{ from: string; to: string } | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
@@ -59,7 +67,8 @@ export default function MlsLeaderboardClient() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/mls/agent-leaderboard?months=${months}&limit=${topN}&type=${agentType}`);
+      const propTypeParam = selectedPropTypes.length > 0 ? `&propertyTypes=${selectedPropTypes.join(",")}` : "";
+      const res = await fetch(`/api/mls/agent-leaderboard?months=${months}&limit=${topN}&type=${agentType}${propTypeParam}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setAgents(data.agents || []);
@@ -71,7 +80,7 @@ export default function MlsLeaderboardClient() {
       setError(err.message);
     }
     setLoading(false);
-  }, [months, topN, agentType]);
+  }, [months, topN, agentType, selectedPropTypes]);
 
   const sorted = [...agents].sort((a, b) => {
     const va = a[sortKey] as number;
@@ -204,6 +213,19 @@ export default function MlsLeaderboardClient() {
             <option value={500}>Top 500</option>
             <option value={1000}>Top 1000</option>
           </select>
+        </div>
+        <div>
+          <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 4 }}>Property Types</label>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {PROPERTY_TYPE_OPTIONS.map((t) => {
+              const sel = selectedPropTypes.includes(t.value);
+              return (
+                <button key={t.value} type="button" onClick={() => setSelectedPropTypes(sel ? selectedPropTypes.filter((x) => x !== t.value) : [...selectedPropTypes, t.value])} style={{ padding: "6px 12px", borderRadius: 16, fontSize: 12, fontWeight: 600, cursor: "pointer", border: sel ? "2px solid #2563eb" : "1px solid #d1d5db", background: sel ? "#eff6ff" : "#fff", color: sel ? "#2563eb" : "#6b7280" }}>
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
         <button
           onClick={fetchData}

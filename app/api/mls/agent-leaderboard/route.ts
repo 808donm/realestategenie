@@ -23,6 +23,9 @@ export async function GET(request: NextRequest) {
     const months = Math.min(Number(params.get("months") || "12"), 24);
     const limit = Math.min(Number(params.get("limit") || "100"), 1000);
     const type = params.get("type") || "both";
+    const propertyTypes = params.get("propertyTypes")
+      ? params.get("propertyTypes")!.split(",").map((t) => t.trim())
+      : null; // null = all except leases (default)
 
     // Get agent's Trestle client
     const trestle = await getTrestleClient(supabase, user.id);
@@ -43,7 +46,12 @@ export async function GET(request: NextRequest) {
       "BuyerAgentFullName", "BuyerAgentKey", "BuyerAgentEmail", "BuyerAgentDirectPhone", "BuyerOfficeName",
     ].join(",");
 
-    const filter = `StandardStatus eq 'Closed' and CloseDate ge ${sinceStr} and StateOrProvince eq 'HI'`;
+    // Build filter: exclude leases by default, optionally filter by property type
+    let propertyTypeFilter = "PropertyType ne 'ResidentialLease'"; // Default: exclude leases
+    if (propertyTypes && propertyTypes.length > 0) {
+      propertyTypeFilter = `(${propertyTypes.map((t) => `PropertyType eq '${t}'`).join(" or ")})`;
+    }
+    const filter = `StandardStatus eq 'Closed' and CloseDate ge ${sinceStr} and StateOrProvince eq 'HI' and ${propertyTypeFilter}`;
 
     const allListings: any[] = [];
     let offset = 0;
