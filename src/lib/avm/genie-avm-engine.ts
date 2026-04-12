@@ -236,12 +236,17 @@ export function computeGenieAvm(input: GenieAvmInput): GenieAvmResult | null {
   let lastSaleYearsAgo: number | null = null;
 
   if (input.lastSalePrice && input.lastSalePrice > 1000 && input.lastSaleDate) {
+    // Sanity check: if we have sqft, reject absurd price-per-sqft (>$5K/sqft)
+    // This catches building-level sales misattributed to a unit
+    const salePricePerSqft = input.sqft && input.sqft > 0 ? input.lastSalePrice / input.sqft : 0;
+    const saleIsReasonable = salePricePerSqft === 0 || salePricePerSqft < 5000;
+
     const saleDate = new Date(input.lastSaleDate);
     const yearsAgo = (Date.now() - saleDate.getTime()) / (365.25 * 86400000);
     lastSaleYearsAgo = Math.round(yearsAgo * 10) / 10;
 
-    // Only use if sale was arm's-length (> $1000) and within 20 years
-    if (yearsAgo > 0.25 && yearsAgo <= 30) {
+    // Only use if arm's-length, within 30 years, and price is reasonable per sqft
+    if (yearsAgo > 0.25 && yearsAgo <= 30 && saleIsReasonable) {
       const subType = (input.propertySubType || "").toLowerCase();
       const isCondo = subType.includes("condo") || subType.includes("townhouse") || subType.includes("apartment");
       const defaultRate = isCondo ? DEFAULT_APPRECIATION_RATE_CONDO : DEFAULT_APPRECIATION_RATE_SFR;
