@@ -63,6 +63,32 @@ export default function MlsLeaderboardClient() {
   const [totalTx, setTotalTx] = useState(0);
   const [dateRange, setDateRange] = useState<{ from: string; to: string } | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [exportResult, setExportResult] = useState<any>(null);
+
+  const exportToCRM = async () => {
+    if (agents.length === 0) return;
+    setExporting(true);
+    setExportResult(null);
+    try {
+      const res = await fetch("/api/mls/agent-leaderboard/export-crm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agents: sorted.map((a) => ({
+            name: a.name, email: a.email, phone: a.phone,
+            office: a.office, rank: a.rank, totalSales: a.totalSales,
+            topPropertyType: a.topPropertyType,
+          })),
+        }),
+      });
+      const data = await res.json();
+      setExportResult(data);
+    } catch (err: any) {
+      setExportResult({ error: err.message });
+    }
+    setExporting(false);
+  };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -241,22 +267,50 @@ export default function MlsLeaderboardClient() {
           {loading ? "Loading MLS data..." : hasLoaded ? "Refresh" : "Generate Leaderboard"}
         </button>
         {hasLoaded && (
-          <button
-            onClick={exportToExcel}
-            style={{
-              padding: "10px 24px", borderRadius: 8, border: "1px solid #059669",
-              background: "#fff", color: "#059669", fontWeight: 600,
-              cursor: "pointer", fontSize: 14,
-            }}
-          >
-            Export to Excel
-          </button>
+          <>
+            <button
+              onClick={exportToExcel}
+              style={{
+                padding: "10px 24px", borderRadius: 8, border: "1px solid #059669",
+                background: "#fff", color: "#059669", fontWeight: 600,
+                cursor: "pointer", fontSize: 14,
+              }}
+            >
+              Export to Excel
+            </button>
+            <button
+              onClick={exportToCRM}
+              disabled={exporting}
+              style={{
+                padding: "10px 24px", borderRadius: 8, border: "1px solid #8b5cf6",
+                background: "#fff", color: "#8b5cf6", fontWeight: 600,
+                cursor: exporting ? "wait" : "pointer", fontSize: 14,
+                opacity: exporting ? 0.6 : 1,
+              }}
+            >
+              {exporting ? "Exporting to CRM..." : "Export to CRM"}
+            </button>
+          </>
         )}
       </div>
 
       {error && (
         <div style={{ padding: 16, background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, color: "#dc2626", fontSize: 14, marginBottom: 16 }}>
           {error}
+        </div>
+      )}
+
+      {exportResult && (
+        <div style={{ padding: 16, background: exportResult.error ? "#fef2f2" : "#f0fdf4", border: `1px solid ${exportResult.error ? "#fecaca" : "#bbf7d0"}`, borderRadius: 8, fontSize: 14, marginBottom: 16 }}>
+          {exportResult.error ? (
+            <span style={{ color: "#dc2626" }}>CRM export failed: {exportResult.error}</span>
+          ) : (
+            <span style={{ color: "#166534" }}>
+              <strong>CRM Export:</strong> {exportResult.created} created, {exportResult.updated} updated, {exportResult.skipped} skipped (no email/phone)
+              {exportResult.errors?.length > 0 && <span style={{ color: "#dc2626", display: "block", marginTop: 4 }}>{exportResult.errors.join("; ")}</span>}
+            </span>
+          )}
+          <button onClick={() => setExportResult(null)} style={{ marginLeft: 12, fontSize: 12, cursor: "pointer", background: "none", border: "none", color: "#6b7280" }}>Dismiss</button>
         </div>
       )}
 
