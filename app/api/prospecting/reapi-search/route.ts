@@ -150,12 +150,17 @@ export async function GET(request: NextRequest) {
       if (errors.length >= 5) break;
     }
 
-    // Sort by lead score (hot first) then by equity
+    // Sort by lead score (hot first, then warm, then cold)
+    // Within same tier, sort by number of reasons (more signals = stronger lead)
+    // Then by equity as final tiebreaker
     const sortOrder = { hot: 0, warm: 1, cold: 2 };
     properties.sort((a, b) => {
       const scoreA = sortOrder[a._leadScore?.score as keyof typeof sortOrder] ?? 3;
       const scoreB = sortOrder[b._leadScore?.score as keyof typeof sortOrder] ?? 3;
       if (scoreA !== scoreB) return scoreA - scoreB;
+      const reasonsA = a._leadScore?.reasons?.length || 0;
+      const reasonsB = b._leadScore?.reasons?.length || 0;
+      if (reasonsA !== reasonsB) return reasonsB - reasonsA;
       return (b._reapi?.estimatedEquity || 0) - (a._reapi?.estimatedEquity || 0);
     });
 
