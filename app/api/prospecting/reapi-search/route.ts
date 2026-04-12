@@ -87,12 +87,26 @@ export async function GET(request: NextRequest) {
     const properties: any[] = [];
     const errors: string[] = [];
 
-    for (const id of idsToFetch) {
-      // Stop once we have enough results
+    // Fetch details in parallel batches of 10 for speed (vs sequential)
+    const BATCH_SIZE = 10;
+    for (let i = 0; i < idsToFetch.length; i += BATCH_SIZE) {
       if (properties.length >= targetResults) break;
 
-      try {
-        const detail = await reapi.getPropertyDetail({ id: Number(id), prior_owner: true, comps: false });
+      const batch = idsToFetch.slice(i, i + BATCH_SIZE);
+      const batchResults = await Promise.allSettled(
+        batch.map((id) => reapi.getPropertyDetail({ id: Number(id), prior_owner: true, comps: false })),
+      );
+
+      for (let j = 0; j < batchResults.length; j++) {
+        if (properties.length >= targetResults) break;
+        const result = batchResults[j];
+        if (result.status === "rejected") {
+          errors.push(`ID ${batch[j]}: ${result.reason?.message || "Failed"}`);
+          if (errors.length >= 5) break;
+          continue;
+        }
+
+        const detail = result.value;
         if (detail.data) {
           const mapped = mapReapiToAttomShape(detail.data);
           const raw = detail.data as any;
@@ -131,10 +145,9 @@ export async function GET(request: NextRequest) {
             _leadScore: score,
           });
         }
-      } catch (err: any) {
-        errors.push(`ID ${id}: ${err.message}`);
-        if (errors.length >= 3) break;
       }
+
+      if (errors.length >= 5) break;
     }
 
     // Sort by lead score (hot first) then by equity
