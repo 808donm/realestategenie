@@ -39,8 +39,8 @@ export async function GET(request: NextRequest) {
     const selectFields = [
       "ListingKey", "ClosePrice", "CloseDate", "PropertyType", "PropertySubType",
       "City", "PostalCode", "DaysOnMarket",
-      "ListAgentFullName", "ListAgentKey", "ListOfficeName",
-      "BuyerAgentFullName", "BuyerAgentKey", "BuyerOfficeName",
+      "ListAgentFullName", "ListAgentKey", "ListAgentEmail", "ListAgentDirectPhone", "ListOfficeName",
+      "BuyerAgentFullName", "BuyerAgentKey", "BuyerAgentEmail", "BuyerAgentDirectPhone", "BuyerOfficeName",
     ].join(",");
 
     const filter = `StandardStatus eq 'Closed' and CloseDate ge ${sinceStr} and StateOrProvince eq 'HI'`;
@@ -71,6 +71,8 @@ export async function GET(request: NextRequest) {
     const agentMap = new Map<string, {
       name: string;
       key: string;
+      email: string;
+      phone: string;
       office: string;
       listingSales: number;
       buyerSales: number;
@@ -84,16 +86,20 @@ export async function GET(request: NextRequest) {
       cities: Record<string, number>;
     }>();
 
-    const processAgent = (name: string, key: string, office: string, side: "listing" | "buyer", price: number, dom: number, propType: string, city: string) => {
+    const processAgent = (name: string, key: string, email: string, phone: string, office: string, side: "listing" | "buyer", price: number, dom: number, propType: string, city: string) => {
       if (!name || name.trim() === "") return;
       const normalized = name.trim();
       const existing = agentMap.get(normalized) || {
-        name: normalized, key: key || "", office: office || "",
+        name: normalized, key: key || "", email: email || "", phone: phone || "",
+        office: office || "",
         listingSales: 0, buyerSales: 0, totalSales: 0,
         listingVolume: 0, buyerVolume: 0, totalVolume: 0,
         domTotal: 0, domCount: 0,
         propertyTypes: {}, cities: {},
       };
+
+      if (!existing.email && email) existing.email = email;
+      if (!existing.phone && phone) existing.phone = phone;
 
       if (side === "listing") {
         existing.listingSales++;
@@ -124,10 +130,10 @@ export async function GET(request: NextRequest) {
       const city = l.City || "";
 
       if (type === "listing" || type === "both") {
-        processAgent(l.ListAgentFullName, l.ListAgentKey, l.ListOfficeName, "listing", price, dom, propType, city);
+        processAgent(l.ListAgentFullName, l.ListAgentKey, l.ListAgentEmail || "", l.ListAgentDirectPhone || "", l.ListOfficeName, "listing", price, dom, propType, city);
       }
       if (type === "buyer" || type === "both") {
-        processAgent(l.BuyerAgentFullName, l.BuyerAgentKey, l.BuyerOfficeName, "buyer", price, dom, propType, city);
+        processAgent(l.BuyerAgentFullName, l.BuyerAgentKey, l.BuyerAgentEmail || "", l.BuyerAgentDirectPhone || "", l.BuyerOfficeName, "buyer", price, dom, propType, city);
       }
     }
 
@@ -138,6 +144,8 @@ export async function GET(request: NextRequest) {
       .map((a, i) => ({
         rank: i + 1,
         name: a.name,
+        email: a.email,
+        phone: a.phone,
         office: a.office,
         listingSales: a.listingSales,
         buyerSales: a.buyerSales,

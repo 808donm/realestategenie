@@ -16,6 +16,8 @@ type AgentType = "both" | "listing" | "buyer";
 interface AgentRow {
   rank: number;
   name: string;
+  email: string;
+  phone: string;
   office: string;
   listingSales: number;
   buyerSales: number;
@@ -89,6 +91,8 @@ export default function MlsLeaderboardClient() {
     const agentRows = sorted.map((a) => ({
       Rank: a.rank,
       "Agent Name": a.name,
+      Email: a.email,
+      Phone: a.phone,
       Office: a.office,
       "Total Sales": a.totalSales,
       "Listing Sales": a.listingSales,
@@ -315,6 +319,8 @@ export default function MlsLeaderboardClient() {
                     <tr style={{ background: "#f9fafb" }}>
                       <th style={{ ...thStyle("totalSales"), textAlign: "center", width: 50 }}>#</th>
                       <th style={{ ...thStyle("totalSales"), textAlign: "left" }}>Agent</th>
+                      <th style={{ ...thStyle("totalSales"), textAlign: "left" }}>Email</th>
+                      <th style={{ ...thStyle("totalSales"), textAlign: "left" }}>Phone</th>
                       <th style={{ ...thStyle("totalSales"), textAlign: "left" }}>Office</th>
                       <th style={thStyle("totalSales")} onClick={() => handleSort("totalSales")}>Total Sales {sortKey === "totalSales" ? (sortAsc ? "^" : "v") : ""}</th>
                       <th style={thStyle("listingSales")} onClick={() => handleSort("listingSales")}>Listings {sortKey === "listingSales" ? (sortAsc ? "^" : "v") : ""}</th>
@@ -330,6 +336,8 @@ export default function MlsLeaderboardClient() {
                       <tr key={a.name} style={{ background: i % 2 === 0 ? "#fff" : "#f9fafb", borderBottom: "1px solid #f3f4f6" }}>
                         <td style={{ padding: "8px 12px", textAlign: "center", fontWeight: 700, color: a.rank <= 3 ? "#d97706" : "#6b7280" }}>{a.rank}</td>
                         <td style={{ padding: "8px 12px", fontWeight: 600 }}>{a.name}</td>
+                        <td style={{ padding: "8px 12px", color: "#6b7280", fontSize: 12 }}>{a.email}</td>
+                        <td style={{ padding: "8px 12px", color: "#6b7280", fontSize: 12 }}>{a.phone}</td>
                         <td style={{ padding: "8px 12px", color: "#6b7280", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.office}</td>
                         <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 700 }}>{a.totalSales}</td>
                         <td style={{ padding: "8px 12px", textAlign: "right", color: "#2563eb" }}>{a.listingSales}</td>
