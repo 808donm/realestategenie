@@ -1902,12 +1902,27 @@ export default function Prospecting() {
 
   const renderPropertyCard = (prop: AttomProperty, idx: number) => {
     // Use getPropertyValue() for display — falls back from AVM to assessment
-    const avmVal = getPropertyValue(prop);
+    let avmVal = getPropertyValue(prop);
     const hasRealAvm = prop.avm?.amount?.value != null && prop.avm.amount.value > 0;
     const avmHigh = prop.avm?.amount?.high;
     const avmLow = prop.avm?.amount?.low;
     const lastSale = getSaleAmount(prop);
     const saleDateStr = getSaleDateStr(prop);
+
+    // Sanity check: compare Property AVM against time-adjusted last sale
+    // If they diverge significantly, use the more reliable value
+    if (avmVal && lastSale && lastSale > 1000 && saleDateStr) {
+      const saleDate = new Date(saleDateStr);
+      const yearsAgo = (Date.now() - saleDate.getTime()) / (365.25 * 86400000);
+      if (yearsAgo > 0.25 && yearsAgo <= 30) {
+        const rate = 0.045; // Blended 4.5% appreciation
+        const timeAdjusted = Math.round(lastSale * Math.pow(1 + rate, yearsAgo));
+        // If Property AVM is <60% or >200% of time-adjusted value, use the average
+        if (avmVal < timeAdjusted * 0.6 || avmVal > timeAdjusted * 2.0) {
+          avmVal = Math.round((avmVal + timeAdjusted) / 2);
+        }
+      }
+    }
     const owner = getOwnerName(prop);
     const ownerObj = resolveOwner(prop);
     // Show absentee badge when ATTOM flags the property as absentee-owned.

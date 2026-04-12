@@ -3140,7 +3140,7 @@ export default function PropertyDetailModal({
                 </div>
               )}
               <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 8 }}>
-                Realie/RentCast property valuation
+                Property data valuation
               </div>
             </div>
 
@@ -3153,7 +3153,7 @@ export default function PropertyDetailModal({
                 {reapiAvm ? fmt(reapiAvm.value) : reapiError ? "N/A" : activeSection === "avm" && !reapiData ? "Loading..." : "N/A"}
               </div>
               <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 8 }}>
-                REAPI property valuation
+                Property data valuation
               </div>
             </div>
           </div>
