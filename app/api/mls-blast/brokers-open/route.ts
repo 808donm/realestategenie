@@ -183,7 +183,7 @@ export async function POST(request: NextRequest) {
         const recipientName = [recipient.firstName, recipient.lastName].filter(Boolean).join(" ") || "";
         await resend.emails.send({
           from: process.env.EMAIL_FROM || "Real Estate Genie <support@realestategenie.app>",
-          to: [recipient.email],
+          to: [recipient.email!],
           subject: `${agentName} - ${listings.length} Current Listing${listings.length > 1 ? "s" : ""}`,
           html: html.replace("Aloha,", `Aloha ${recipientName.split(" ")[0] || ""},`),
         });
