@@ -38,6 +38,8 @@ export const ROUTE_TO_SECTION: Record<string, string> = {
   "/app/farm": "farm-watchdog",
   "/app/bird-dog": "property-intel",
   "/app/market-monitor": "market-monitor",
+  "/app/mls-blast": "email-blast",
+  "/app/reports/mls-leaderboard": "mls-leaderboard",
   "/app/calendar": "calendar",
   "/app/tasks": "tasks",
   "/app/prospecting": "property-intel",
@@ -256,7 +258,7 @@ Your account must have Trestle (CoreLogic) credentials configured. This is set u
 
 1. Navigate to **MLS** from the main navigation.
 2. Search by zip code, city, address, or building/condo name (e.g., "Park Lane", "The Century").
-3. Filter by: Status (Active, Pending, Closed, Expired, Withdrawn, Canceled), property type, price range, beds/baths, Days on Market, 27 property feature badges, and a rental toggle.
+3. Filter by: Status (Active, Pending, Closed, Expired, Withdrawn, Canceled), property type, price range, beds/baths, Days on Market, Neighborhood/Subdivision name, 27 property feature badges, and a rental toggle.
 4. Listings display color-coded badges: blue **New** (on market < 7 days), purple **Back on Market**, green **Price Down**, red **Price Up**.
 5. Click any listing to open the full Property Detail Modal with all tabs.
 
@@ -712,7 +714,11 @@ The Reports section provides comprehensive analytics organized by role and categ
 
 ### 13.5 Assistants & Office Admin (Orange)
 
-- **Pending Document Checklist**: Under-contract deals missing required signatures/forms`,
+- **Pending Document Checklist**: Under-contract deals missing required signatures/forms
+
+### 13.6 Report Routing
+
+Reports are filtered based on your MLS connection. You will only see reports relevant to your market. For example, an agent connected to a Hawaii MLS will see Hawaii market reports, while an agent connected to a Pennsylvania MLS will see Pennsylvania reports.`,
   },
   {
     id: "property-intel",
@@ -1204,9 +1210,56 @@ The Showing Scheduler provides a public-facing page where your clients can sched
 4. Manage and confirm showings from within the app.`,
   },
   {
+    id: "email-blast",
+    title: "22. Email Blast",
+    content: `## 22. Email Blast
+
+Email Blast lets you send MLS neighborhood updates to your CRM contacts on a recurring schedule. You can also use it for Broker's Open announcements to share your current listings with other agents.
+
+### 22.1 Creating a Blast
+
+1. Navigate to **Email Blast** from the main navigation.
+2. Click **+ New Blast**.
+3. Enter the neighborhood or subdivision name and one or more ZIP codes.
+4. Select the MLS statuses to include: Active, Closed, Price Change, or any combination.
+5. Search your CRM contacts and add them to the recipient list.
+6. Set a schedule: Weekly, Biweekly, Monthly, or Manual (send only when you choose).
+7. Click **Create** to save the blast.
+
+### 22.2 Sending a Blast
+
+- Scheduled blasts run automatically at the configured interval.
+- Click **Send Now** on any blast to trigger it immediately, regardless of schedule.
+- Each blast pulls the latest MLS data for the configured area and statuses before sending.
+
+### 22.3 Broker's Open
+
+Use Email Blast to send your current listings to other agents for Broker's Open events.
+
+1. Export agents from the **MLS Agent Leaderboard** to your CRM (they are tagged "MLS Agent").
+2. Create a new blast targeting contacts tagged "MLS Agent."
+3. Include your active listings and send on demand or on a schedule.`,
+  },
+  {
+    id: "mls-leaderboard",
+    title: "22.5 MLS Agent Leaderboard",
+    content: `## 22.5 MLS Agent Leaderboard
+
+The MLS Agent Leaderboard ranks agents in your market based on closed MLS transactions. Use it to identify top producers, track competition, and build your Broker's Open contact list.
+
+### How to Use
+
+1. Go to **Reports > MLS Agent Leaderboard**.
+2. Set the time period and property types to analyze.
+3. Click **Generate** to build the leaderboard.
+4. Sort by any column (closings, volume, average price, etc.).
+5. Click **Export to Excel** to download the data as a spreadsheet.
+6. Click **Export to CRM** to push agent contacts into your CRM with the "MLS Agent" tag for use with Email Blast and Broker's Open outreach.`,
+  },
+  {
     id: "glossary",
-    title: "22. Glossary",
-    content: `## 22. Glossary
+    title: "23. Glossary",
+    content: `## 23. Glossary
 
 Key terms used throughout The Real Estate Genie.
 
@@ -1262,8 +1315,8 @@ Key terms used throughout The Real Estate Genie.
   },
   {
     id: "support",
-    title: "23. Support & Legal",
-    content: `## 23. Support & Legal
+    title: "24. Support & Legal",
+    content: `## 24. Support & Legal
 
 ### 23.1 Getting Help
 

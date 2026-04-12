@@ -1,6 +1,6 @@
 # Real Estate Genie -- Complete Feature List
 
-> Last updated: April 9, 2026
+> Last updated: April 10, 2026
 
 ---
 
@@ -116,9 +116,9 @@
 ## 8. MLS (9 Tabs)
 
 ### Tab 1: Search & Listings
-- Search by zip code, city, address, building/condo name
+- Search by zip code, city, address, building/condo name, neighborhood/subdivision
 - All statuses: Active, Pending, Closed, Expired, Withdrawn, Canceled
-- Filters: property type, price range, beds/baths, DOM, 27 feature badges, rental toggle
+- Filters: property type, price range, beds/baths, DOM, 27 feature badges, rental toggle, neighborhood/subdivision name
 - Color-coded badges: New (<7 days), Back on Market, Price Down, Price Up
 - My Listings sub-tab
 - AI Description Generator (multiple tones)
@@ -244,6 +244,24 @@ Automated MLS alert system for buyer and seller clients with daily scanning and 
 - **On-Demand Scans**: "Run Now" button triggers an immediate scan for any profile
 - **Alert History Dashboard**: View all past alerts per profile with timestamps and details
 
+### Email Blast Agent
+Neighborhood email marketing to CRM contacts with automated MLS-driven content.
+
+- **MLS-Powered Content**: Search MLS by subdivision/neighborhood for recent activity
+- **Configurable Statuses**: Active, Closed, Price Change, Pending, Expired
+- **Branded HTML Email**: Listing cards with photos, MLS links, and agent branding
+- **CRM Contact List Builder**: Search and select recipients from CRM contacts
+- **Scheduling**: Weekly, bi-weekly, monthly, or manual send
+- **Neighborhood Focus**: Target specific subdivisions for farming campaigns
+
+### Broker's Open Email Blast
+Agent-to-agent listing marketing for promoting current inventory.
+
+- **Active Listing Showcase**: Sends agent's current active MLS listings to other agents
+- **Branded HTML Email**: Listing cards with photos and property details
+- **Agent Recipients**: Sends to CRM contacts tagged "MLS Agent"
+- **One-Click Send**: Select listings and blast to agent network
+
 ---
 
 ## 10. Reports -- 6 Report Types
@@ -270,6 +288,11 @@ Cover map, housing comparison table (ZIP/County/State/USA), market trends, educa
 
 ### Shared Report Components
 ReportHeader, ValueCard, ReportRow, TwoColumnGrid, MarketTypeIndicator, EquityBar, AvmRangeBar, HorizontalBarChart, ComparisonTable, PhotoGallery, ReportFooter
+
+### Market-Based Report Routing
+- Admin-managed report-to-MLS assignment system
+- Reports filtered by agent's MLS connection -- agents only see reports relevant to their market
+- Admin console for managing report visibility per MLS
 
 ---
 
@@ -361,6 +384,8 @@ MLS searches, reports generated, last active, retention risk flags (40%+ activit
 All reports support PDF/Excel export, print-friendly formatting, and chart visualizations.
 
 ### Market Statistics
+Monthly statistics include data through March 2026.
+
 - **Oahu Annual Resales** -- 40 years of residential sales data with line/bar/area charts, median prices, YoY trends
 - **Oahu Monthly Report** -- Single-family and condo sales, median prices, DOM, pending inventory, YoY comparisons
 - **Maui Monthly Report** -- SF median, condo median, 12-month trends, affordability index
@@ -368,6 +393,15 @@ All reports support PDF/Excel export, print-friendly formatting, and chart visua
 - **Kauai Monthly** -- SF, condo, and land medians
 - **Statewide Comparison** -- Official Hawaii Realtors stats across all four counties
 - **York & Adams Counties, PA** -- Monthly data with school district breakdowns
+
+### MLS Agent Leaderboard
+- Market-wide agent rankings from MLS closed transactions
+- Configurable period (3-24 months) and property type filter
+- Mode selection: listing agent, buyer agent, or both
+- Top agents table with sales count, volume, average price, average DOM, email, phone
+- Top offices tab with agent counts per office
+- Excel export (3 sheets: agents, offices, summary)
+- Export to CRM with rank tier tags (Top 10/25/50/100)
 
 ### Solo Agent Reports
 - **Lead Source ROI** -- Conversion rates and cost-per-closing by lead source
@@ -658,4 +692,4 @@ These features ensure the data shown to agents is accurate and relevant, especia
 - **Multiple Data Sources**: MLS, property records, county records, state GIS, federal data (FEMA, FBI, Census, NCES, HUD)
 - **White-Label Ready**: No provider names shown to end users
 
-> Last updated: April 9, 2026
+> Last updated: April 10, 2026

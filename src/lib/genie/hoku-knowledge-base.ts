@@ -522,6 +522,39 @@ Help the admin manage the platform, users, plans, and integrations.`,
 Each integration has a Test Connection button. Status shows Connected/Disconnected with last sync timestamp.
 Help the agent connect their integrations and troubleshoot connection issues.`,
 
+  // Email Blast
+  "mls-blast": `The agent is on the EMAIL BLAST page. Neighborhood email marketing tool.
+
+**How It Works**:
+1. Agent creates a blast by choosing a subdivision/neighborhood name (e.g., "Kaimuki", "Diamond Head")
+2. System searches MLS by SubdivisionName for active listings in that area
+3. Listings are compiled into a branded HTML email template
+4. Agent selects CRM contacts as recipients and sends the blast
+
+**Use Cases**:
+- Neighborhood farming: send regular listing updates to contacts in a target area
+- Showcase local expertise by sharing curated listings
+- Stay top-of-mind with past clients in specific neighborhoods
+
+Hoku can help set up email blasts: "Create an email blast for Kaimuki listings" or "Send Hawaii Kai listings to my contacts."`,
+
+  // MLS Agent Leaderboard
+  "mls-leaderboard": `The agent is on the MLS AGENT LEADERBOARD page. Market-wide agent performance rankings.
+
+**Features**:
+- Generate a leaderboard ranking agents across the MLS by production metrics
+- Export leaderboard data to Excel for analysis
+- Export agents to CRM with rank tags for networking and outreach
+- Identify top-producing agents in specific markets or areas
+
+**Use Cases**:
+- Competitive analysis: see where you rank vs other agents in your market
+- Recruit top agents (for brokers)
+- Build a network of active agents for referrals and Broker's Open invitations
+- Export agents to CRM tagged "MLS Agent" for use with Broker's Open feature
+
+Help the agent generate rankings, export data, and understand their competitive position.`,
+
   // Billing
   billing: `The agent is on the BILLING page.
 - **Current Subscription**: Plan name, status badge (active/cancelled/past_due/suspended), monthly price, billing cycle, plan limits (agents, assistants, admins, offices), next billing date
@@ -629,6 +662,26 @@ Levels: Very Likely (70-100), Likely (50-69), Possible (30-49), Unlikely (0-29)
 - **Active listings over DOM threshold**: MONITOR ONLY — it is unethical (and often illegal) to solicit sellers whose property is actively listed with another agent
 - Tiers: Red (2x+ avg DOM), Orange (1.5x), Charcoal (1.15x)
 
+### MLS Agent Leaderboard
+- Market-wide agent rankings by production metrics. Available at /app/reports/mls-leaderboard.
+- Agent can generate a leaderboard, export to Excel, and export agents to CRM with rank tags.
+- Exported agents are tagged "MLS Agent" in CRM, which enables the Broker's Open feature.
+
+### Email Blast (Neighborhood Marketing)
+- Agent creates email blasts that search MLS by subdivision name and compile listings into branded HTML emails.
+- Available at /app/mls-blast. Hoku can help: "Create an email blast for Kaimuki listings."
+- Recipients are selected from CRM contacts.
+
+### Broker's Open
+- Send the agent's current listings to other agents via branded email.
+- Recipients are CRM contacts tagged "MLS Agent" (exported from the Leaderboard).
+- Hoku can trigger this: "Send my listings to agents."
+
+### Neighborhood Search (MLS)
+- MLS search supports SubdivisionName filter in addition to ZIP, city, and address.
+- Agent can search by neighborhood name (e.g., "Kaimuki", "Diamond Head", "Hawaii Kai").
+- This powers both direct MLS search and the Email Blast feature.
+
 ### Open House QR Flow
 1. Agent creates open house (import from MLS by MLS# or address, or create manually)
 2. Choose template (Modern, Modern Blue, Elegant Warm) and upload property photos
@@ -702,6 +755,8 @@ export function buildPageContext(pathname: string): string {
     "market-analytics": "market-analytics",
     "bird-dog": "bird-dog",
     "market-monitor": "market-monitor",
+    "mls-blast": "mls-blast",
+    "mls-leaderboard": "mls-leaderboard",
     templates: "open-houses",
   };
 
