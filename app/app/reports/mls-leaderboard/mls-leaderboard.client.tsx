@@ -14,8 +14,7 @@ type SortKey = "totalSales" | "totalVolume" | "listingSales" | "buyerSales" | "a
 type AgentType = "both" | "listing" | "buyer";
 
 const PROPERTY_TYPE_OPTIONS = [
-  { value: "Residential", label: "Residential" },
-  { value: "Condominium", label: "Condominium" },
+  { value: "Residential", label: "SFR / Condo / Townhouse" },
   { value: "Land", label: "Land" },
   { value: "Commercial", label: "Commercial" },
   { value: "MultiFamily", label: "Multi-Family" },
@@ -60,7 +59,7 @@ export default function MlsLeaderboardClient() {
   const [months, setMonths] = useState(12);
   const [agentType, setAgentType] = useState<AgentType>("both");
   const [topN, setTopN] = useState(100);
-  const [selectedPropTypes, setSelectedPropTypes] = useState<string[]>(["Residential", "Condominium", "Land"]);
+  const [selectedPropTypes, setSelectedPropTypes] = useState<string[]>(["Residential", "Land"]);
   const [totalTx, setTotalTx] = useState(0);
   const [dateRange, setDateRange] = useState<{ from: string; to: string } | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);

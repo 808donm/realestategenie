@@ -47,9 +47,16 @@ export async function GET(request: NextRequest) {
     ].join(",");
 
     // Build filter: exclude leases by default, optionally filter by property type
+    // "Residential" pill also matches "Condominium" since some MLS boards use
+    // it as a top-level PropertyType instead of a PropertySubType under Residential
     let propertyTypeFilter = "PropertyType ne 'ResidentialLease'"; // Default: exclude leases
     if (propertyTypes && propertyTypes.length > 0) {
-      propertyTypeFilter = `(${propertyTypes.map((t) => `PropertyType eq '${t}'`).join(" or ")})`;
+      const expanded = new Set(propertyTypes);
+      if (expanded.has("Residential")) {
+        expanded.add("Condominium");
+        expanded.add("Townhouse");
+      }
+      propertyTypeFilter = `(${Array.from(expanded).map((t) => `PropertyType eq '${t}'`).join(" or ")})`;
     }
     const filter = `StandardStatus eq 'Closed' and CloseDate ge ${sinceStr} and StateOrProvince eq 'HI' and ${propertyTypeFilter}`;
 
