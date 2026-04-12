@@ -1363,9 +1363,13 @@ export default function Prospecting() {
         return true;
       });
       matches.sort((a, b) => {
-        const aHas = hasContactInfo(a) ? 1 : 0;
-        const bHas = hasContactInfo(b) ? 1 : 0;
-        if (aHas !== bHas) return bHas - aHas;
+        const scoreOrder: Record<string, number> = { hot: 0, warm: 1, cold: 2 };
+        const sa = scoreOrder[(a as any)._leadScore?.score] ?? 3;
+        const sb = scoreOrder[(b as any)._leadScore?.score] ?? 3;
+        if (sa !== sb) return sa - sb;
+        const ra = (a as any)._leadScore?.reasons?.length || 0;
+        const rb = (b as any)._leadScore?.reasons?.length || 0;
+        if (ra !== rb) return rb - ra;
         return (getPropertyValue(b) || 0) - (getPropertyValue(a) || 0);
       });
       setResults(matches);
@@ -1382,6 +1386,10 @@ export default function Prospecting() {
 
       const matches = allRaw.filter((p) => getDistressSignals(p).isDistressed);
       matches.sort((a, b) => {
+        const scoreOrder: Record<string, number> = { hot: 0, warm: 1, cold: 2 };
+        const sA = scoreOrder[(a as any)._leadScore?.score] ?? 3;
+        const sB = scoreOrder[(b as any)._leadScore?.score] ?? 3;
+        if (sA !== sB) return sA - sB;
         const sa = getDistressSignals(a);
         const sb = getDistressSignals(b);
         if (sa.isUnderwater !== sb.isUnderwater) return sa.isUnderwater ? -1 : 1;
@@ -1417,11 +1425,16 @@ export default function Prospecting() {
       });
 
       matches.sort((a, b) => {
-        const aVal = getPropertyValue(a) || 0;
-        const aSale = getSaleAmount(a) || 0;
-        const bVal = getPropertyValue(b) || 0;
-        const bSale = getSaleAmount(b) || 0;
-        return bVal - bSale - (aVal - aSale);
+        const scoreOrder: Record<string, number> = { hot: 0, warm: 1, cold: 2 };
+        const sa = scoreOrder[(a as any)._leadScore?.score] ?? 3;
+        const sb = scoreOrder[(b as any)._leadScore?.score] ?? 3;
+        if (sa !== sb) return sa - sb;
+        const ra = (a as any)._leadScore?.reasons?.length || 0;
+        const rb = (b as any)._leadScore?.reasons?.length || 0;
+        if (ra !== rb) return rb - ra;
+        const aEquity = (getPropertyValue(a) || 0) - (getSaleAmount(a) || 0);
+        const bEquity = (getPropertyValue(b) || 0) - (getSaleAmount(b) || 0);
+        return bEquity - aEquity;
       });
 
       setResults(matches);
