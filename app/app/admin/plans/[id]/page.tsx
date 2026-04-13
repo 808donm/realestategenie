@@ -8,7 +8,7 @@ type PageProps = {
 };
 
 export default async function EditPlanPage({ params }: PageProps) {
-  await requireAdmin();
+  await requireAdmin("global");
   const { id } = await params;
 
   // Get plan details

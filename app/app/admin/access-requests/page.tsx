@@ -6,7 +6,7 @@ import AccessRequestsClient from "./access-requests-client";
 export const dynamic = "force-dynamic";
 
 export default async function AccessRequestsPage() {
-  await requireAdmin();
+  await requireAdmin("global");
 
   // Fetch all access requests
   const { data: accessRequests } = await supabaseAdmin

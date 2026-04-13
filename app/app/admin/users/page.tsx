@@ -5,7 +5,7 @@ import Link from "next/link";
 import UserManagementClient from "./user-management.client";
 
 export default async function UsersManagementPage() {
-  await requireAdmin();
+  await requireAdmin("global");
 
   const supabase = await supabaseServer();
 

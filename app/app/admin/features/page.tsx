@@ -4,7 +4,7 @@ import Link from "next/link";
 import FeaturesManager from "./features-manager";
 
 export default async function AdminFeaturesPage() {
-  await requireAdmin();
+  await requireAdmin("global");
 
   const adminSupabase = supabaseAdmin;
 

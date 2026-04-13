@@ -125,7 +125,13 @@ export const CONDITIONAL_ITEMS: ConditionalNavItem[] = [
     label: "Admin",
     href: "/app/admin",
     icon: Shield,
-    condition: "platform_admin",
+    condition: "site_admin",
+  },
+  {
+    label: "Global Admin",
+    href: "/app/admin",
+    icon: Shield,
+    condition: "global_admin",
   },
 ];
 

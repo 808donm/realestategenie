@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-export default function AdminSidebar() {
+export default function AdminSidebar({ adminLevel = "global" }: { adminLevel?: string }) {
   const pathname = usePathname();
+  const isGlobal = adminLevel === "global";
 
   return (
     <aside
@@ -16,73 +17,82 @@ export default function AdminSidebar() {
       }}
     >
       <div style={{ padding: "0 24px", marginBottom: 32 }}>
-        <h1 style={{ fontSize: 20, fontWeight: 800, margin: 0 }}>⚡ Admin Panel</h1>
+        <h1 style={{ fontSize: 20, fontWeight: 800, margin: 0 }}>
+          {isGlobal ? "Global Admin" : "Admin"}
+        </h1>
         <p style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>Real Estate Genie</p>
       </div>
 
       <nav>
         <NavLink href="/app/admin" active={pathname === "/app/admin"}>
-          📊 Overview
-        </NavLink>
-        <NavLink href="/app/admin/users" active={pathname === "/app/admin/users"}>
-          👥 Users
-        </NavLink>
-        <NavLink href="/app/admin/access-requests" active={pathname === "/app/admin/access-requests"}>
-          📋 Access Requests
-        </NavLink>
-        <NavLink href="/app/admin/invitations" active={pathname === "/app/admin/invitations"}>
-          📧 Invitations
+          Overview
         </NavLink>
 
-        <div
-          style={{
-            height: 1,
-            background: "rgba(255,255,255,0.1)",
-            margin: "16px 24px",
-          }}
-        />
-
-        <NavLink href="/app/admin/plans" active={pathname?.startsWith("/app/admin/plans") ?? false}>
-          💰 Plans
+        {/* Site Admin: account management */}
+        <NavLink href="/app/team" active={pathname === "/app/team"}>
+          Team Members
         </NavLink>
-        <NavLink href="/app/admin/subscriptions" active={pathname?.startsWith("/app/admin/subscriptions") ?? false}>
-          📄 Subscriptions
-        </NavLink>
-        <NavLink href="/app/admin/features" active={pathname === "/app/admin/features"}>
-          ⚙️ Features
-        </NavLink>
-        <NavLink href="/app/admin/market-reports" active={pathname === "/app/admin/market-reports"}>
-          📊 Market Reports
+        <NavLink href="/app/billing" active={pathname === "/app/billing"}>
+          Billing
         </NavLink>
 
-        <div
-          style={{
-            height: 1,
-            background: "rgba(255,255,255,0.1)",
-            margin: "16px 24px",
-          }}
-        />
+        {/* Global Admin: platform management */}
+        {isGlobal && (
+          <>
+            <div style={{ height: 1, background: "rgba(255,255,255,0.1)", margin: "16px 24px" }} />
+            <div style={{ padding: "4px 24px", fontSize: 10, textTransform: "uppercase", letterSpacing: 1, opacity: 0.5 }}>
+              Platform
+            </div>
 
-        <NavLink href="/app/admin/api-usage" active={pathname === "/app/admin/api-usage"}>
-          📈 API Usage
-        </NavLink>
-        <NavLink href="/app/admin/avm-statistics" active={pathname === "/app/admin/avm-statistics"}>
-          🎯 AVM Statistics
-        </NavLink>
-        <NavLink href="/app/admin/error-logs" active={pathname === "/app/admin/error-logs"}>
-          🐛 Error Logs
-        </NavLink>
+            <NavLink href="/app/admin/users" active={pathname === "/app/admin/users"}>
+              Users
+            </NavLink>
+            <NavLink href="/app/admin/access-requests" active={pathname === "/app/admin/access-requests"}>
+              Access Requests
+            </NavLink>
+            <NavLink href="/app/admin/invitations" active={pathname === "/app/admin/invitations"}>
+              Invitations
+            </NavLink>
 
-        <div
-          style={{
-            height: 1,
-            background: "rgba(255,255,255,0.1)",
-            margin: "16px 24px",
-          }}
-        />
+            <div style={{ height: 1, background: "rgba(255,255,255,0.1)", margin: "16px 24px" }} />
+            <div style={{ padding: "4px 24px", fontSize: 10, textTransform: "uppercase", letterSpacing: 1, opacity: 0.5 }}>
+              Subscriptions
+            </div>
+
+            <NavLink href="/app/admin/plans" active={pathname?.startsWith("/app/admin/plans") ?? false}>
+              Plans
+            </NavLink>
+            <NavLink href="/app/admin/subscriptions" active={pathname?.startsWith("/app/admin/subscriptions") ?? false}>
+              Subscriptions
+            </NavLink>
+            <NavLink href="/app/admin/features" active={pathname === "/app/admin/features"}>
+              Features
+            </NavLink>
+            <NavLink href="/app/admin/market-reports" active={pathname === "/app/admin/market-reports"}>
+              Market Reports
+            </NavLink>
+
+            <div style={{ height: 1, background: "rgba(255,255,255,0.1)", margin: "16px 24px" }} />
+            <div style={{ padding: "4px 24px", fontSize: 10, textTransform: "uppercase", letterSpacing: 1, opacity: 0.5 }}>
+              Diagnostics
+            </div>
+
+            <NavLink href="/app/admin/api-usage" active={pathname === "/app/admin/api-usage"}>
+              API Usage
+            </NavLink>
+            <NavLink href="/app/admin/avm-statistics" active={pathname === "/app/admin/avm-statistics"}>
+              AVM Statistics
+            </NavLink>
+            <NavLink href="/app/admin/error-logs" active={pathname === "/app/admin/error-logs"}>
+              Error Logs
+            </NavLink>
+          </>
+        )}
+
+        <div style={{ height: 1, background: "rgba(255,255,255,0.1)", margin: "16px 24px" }} />
 
         <NavLink href="/app" active={false}>
-          ← Back to App
+          Back to App
         </NavLink>
       </nav>
     </aside>

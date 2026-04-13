@@ -20,7 +20,7 @@ type SubscriptionPlan = {
 };
 
 export default async function ManageUserSubscriptionPage({ params }: PageProps) {
-  await requireAdmin();
+  await requireAdmin("global");
   const { id: agentId } = await params;
 
   // Get agent details with subscription

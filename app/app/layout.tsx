@@ -24,13 +24,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // Get user role
   const { data: agent } = await supabase
     .from("agents")
-    .select("role, display_name, must_change_password, is_admin")
+    .select("role, display_name, must_change_password, is_admin, admin_level")
     .eq("id", userId)
     .single();
 
   const userRole = agent?.role || "agent";
   const displayName = agent?.display_name?.trim() || email;
-  const isPlatformAdmin = agent?.is_admin === true;
+  const adminLevel = (agent?.admin_level as string) || (agent?.is_admin ? "global" : "none");
+  const isPlatformAdmin = adminLevel === "global";
 
   // Check if user is account owner or admin
   const { data: accountMember } = await supabase
@@ -104,6 +105,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     hasNoAccount,
     hasBrokerDashboard,
     displayName,
+    adminLevel,
   };
 
   return (

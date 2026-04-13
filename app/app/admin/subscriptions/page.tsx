@@ -37,7 +37,7 @@ type AgentWithSubscription = {
 };
 
 export default async function AdminSubscriptionsPage() {
-  await requireAdmin();
+  await requireAdmin("global");
 
   const adminSupabase = supabaseAdmin;
 

@@ -1,5 +1,4 @@
-import { redirect } from "next/navigation";
-import { supabaseServer } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/auth/admin-check";
 import { AvmStatisticsDashboard } from "./avm-statistics.client";
 
 export const metadata = {
@@ -7,15 +6,7 @@ export const metadata = {
 };
 
 export default async function AvmStatisticsPage() {
-  const supabase = await supabaseServer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const { data: agent } = await supabase.from("agents").select("is_admin").eq("id", user.id).single();
-
-  if (!agent?.is_admin) redirect("/app/dashboard");
+  await requireAdmin("global");
 
   return (
     <div>

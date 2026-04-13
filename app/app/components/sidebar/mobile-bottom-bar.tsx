@@ -17,6 +17,7 @@ type MobileBottomBarProps = {
   hasNoAccount: boolean;
   hasBrokerDashboard: boolean;
   displayName: string;
+  adminLevel?: string;
 };
 
 const TABS = [
@@ -32,6 +33,7 @@ export default function MobileBottomBar({
   isAccountAdmin,
   hasNoAccount,
   hasBrokerDashboard,
+  adminLevel = "none",
 }: MobileBottomBarProps) {
   const pathname = usePathname();
   const [isMoreOpen, setIsMoreOpen] = useState(false);
@@ -54,6 +56,10 @@ export default function MobileBottomBar({
         return isAccountAdmin || hasNoAccount;
       case "platform_admin":
         return isPlatformAdmin;
+      case "site_admin":
+        return adminLevel === "admin" || adminLevel === "global";
+      case "global_admin":
+        return adminLevel === "global";
       default:
         return false;
     }

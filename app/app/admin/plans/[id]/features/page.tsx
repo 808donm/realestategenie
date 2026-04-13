@@ -12,7 +12,7 @@ type PageProps = {
 };
 
 export default async function PlanFeaturesPage({ params }: PageProps) {
-  await requireAdmin();
+  await requireAdmin("global");
   const { id: planId } = await params;
 
   // Get plan details

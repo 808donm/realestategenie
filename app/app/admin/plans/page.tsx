@@ -3,7 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import Link from "next/link";
 
 export default async function AdminPlansPage() {
-  await requireAdmin();
+  await requireAdmin("global");
 
   const adminSupabase = supabaseAdmin;
 

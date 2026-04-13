@@ -3,7 +3,7 @@ import { requireAdmin } from "@/lib/auth/admin-check";
 import ErrorLogsClient from "./error-logs.client";
 
 export default async function ErrorLogsPage() {
-  await requireAdmin();
+  await requireAdmin("global");
 
   const supabase = await supabaseServer();
 

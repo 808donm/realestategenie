@@ -30,7 +30,7 @@ type IntegrationRow = {
 };
 
 export default async function UserIntegrationsPage({ params }: { params: Promise<{ userId: string }> }) {
-  await requireAdmin().catch(() => redirect("/app/admin"));
+  await requireAdmin("global").catch(() => redirect("/app/admin"));
 
   const { userId } = await params;
   const sql = getDirectDb();

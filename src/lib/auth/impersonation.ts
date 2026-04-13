@@ -95,9 +95,10 @@ export async function getImpersonationState(): Promise<{
     auth: { persistSession: false },
   });
 
-  const { data: agent } = await admin.from("agents").select("is_admin, account_status").eq("id", user.id).single();
+  const { data: agent } = await admin.from("agents").select("is_admin, admin_level, account_status").eq("id", user.id).single();
 
-  if (!agent?.is_admin || agent.account_status !== "active") {
+  const level = agent?.admin_level || (agent?.is_admin ? "global" : "none");
+  if (level !== "global" || agent?.account_status !== "active") {
     cookieStore.delete(COOKIE_NAME);
     return null;
   }

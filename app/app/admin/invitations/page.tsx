@@ -3,7 +3,7 @@ import { supabaseServer } from "@/lib/supabase/server";
 import InvitationsClient from "./invitations.client";
 
 export default async function InvitationsPage() {
-  const { user } = await requireAdmin();
+  const { user } = await requireAdmin("global");
   const supabase = await supabaseServer();
 
   // Get all invitations

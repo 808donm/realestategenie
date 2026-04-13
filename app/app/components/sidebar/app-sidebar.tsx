@@ -17,6 +17,7 @@ export type AppSidebarProps = {
   hasNoAccount: boolean;
   hasBrokerDashboard: boolean;
   displayName: string;
+  adminLevel?: string;
 };
 
 export default function AppSidebar({
@@ -26,6 +27,7 @@ export default function AppSidebar({
   hasNoAccount,
   hasBrokerDashboard,
   displayName,
+  adminLevel = "none",
 }: AppSidebarProps) {
   const { isCollapsed, toggleCollapse, openSections, toggleSection, hydrated } = useSidebarState();
 
@@ -33,7 +35,6 @@ export default function AppSidebar({
   const visibleConditionalItems = CONDITIONAL_ITEMS.filter((item) => {
     switch (item.condition) {
       case "broker":
-        // Always show (disabled if no access)
         return true;
       case "team_lead":
         return userRole === "team_lead";
@@ -41,6 +42,10 @@ export default function AppSidebar({
         return isAccountAdmin || hasNoAccount;
       case "platform_admin":
         return isPlatformAdmin;
+      case "site_admin":
+        return adminLevel === "admin" || adminLevel === "global";
+      case "global_admin":
+        return adminLevel === "global";
       default:
         return false;
     }
