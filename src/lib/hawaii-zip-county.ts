@@ -287,5 +287,15 @@ export function buildQPublicUrl(tmkOrApn: string, county?: string | null, zip?: 
   if (!resolvedCounty) return null;
 
   const appId = QPUBLIC_APP_IDS[resolvedCounty];
-  return `https://qpublic.schneidercorp.com/Application.aspx?AppID=${appId}&PageTypeID=4&KeyValue=${keyValue}`;
+
+  // QPublic requires LayerID and PageID for direct parcel lookup
+  const QPUBLIC_PARAMS: Record<HawaiiCounty, { layerId: number; pageId: number }> = {
+    HONOLULU: { layerId: 23342, pageId: 9746 },
+    HAWAII: { layerId: 23340, pageId: 9744 },
+    MAUI: { layerId: 23338, pageId: 9742 },
+    KAUAI: { layerId: 23336, pageId: 9740 },
+  };
+
+  const countyParams = QPUBLIC_PARAMS[resolvedCounty];
+  return `https://qpublic.schneidercorp.com/Application.aspx?AppID=${appId}&LayerID=${countyParams.layerId}&PageTypeID=4&PageID=${countyParams.pageId}&KeyValue=${keyValue}`;
 }
