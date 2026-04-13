@@ -44,7 +44,7 @@ export type NavSection = {
 };
 
 export type ConditionalNavItem = NavItem & {
-  condition: "broker" | "team_lead" | "account_admin" | "platform_admin";
+  condition: "broker" | "team_lead" | "account_admin" | "platform_admin" | "site_admin" | "global_admin";
   disabledTooltip?: string;
   showDisabled?: boolean; // render as disabled instead of hiding
 };
