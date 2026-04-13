@@ -3166,8 +3166,8 @@ export default function PropertyDetailModal({
               <div>Baths: {baths ?? "N/A"}</div>
               <div>Sqft: {sqft ? fmtNum(sqft) : "N/A"}</div>
               <div>Year Built: {yearBuilt ?? "N/A"}</div>
-              <div>Type: {p.summary?.propSubType || p.summary?.propType || "N/A"}</div>
-              <div>Tenure: {(p as any).OwnershipType || (p as any).ownershipType || "N/A"}</div>
+              <div>Type: {mlsPropertySubType || mlsPropertyType || p.summary?.propSubType || p.summary?.propType || "N/A"}</div>
+              <div>Tenure: {mlsOwnershipType || (p as any).OwnershipType || (p as any).ownershipType || ((p as any).LeaseExpiration || mlsLeaseExpiration ? "Leasehold" : "N/A")}</div>
             </div>
             {lastSaleAmt && (
               <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>

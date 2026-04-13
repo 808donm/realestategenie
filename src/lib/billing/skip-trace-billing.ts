@@ -30,7 +30,7 @@ export async function logSkipTraceUsage(params: {
   const now = new Date();
   const billingMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
-  await admin.from("skip_trace_usage").insert({
+  const { error } = await admin.from("skip_trace_usage").insert({
     agent_id: params.agentId,
     address: params.address || null,
     owner_name: params.ownerName || null,
@@ -38,9 +38,10 @@ export async function logSkipTraceUsage(params: {
     cost_cents: params.cached ? 0 : COST_CENTS,
     billing_month: billingMonth,
     cached: params.cached,
-  }).catch((err) => {
-    console.error("[SkipTrace Billing] Failed to log usage:", err.message);
   });
+  if (error) {
+    console.error("[SkipTrace Billing] Failed to log usage:", error.message);
+  }
 }
 
 /**
