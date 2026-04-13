@@ -395,7 +395,8 @@ export default function MLSClient() {
               if (fullTmk?.includes("-")) {
                 prop.identifier = { ...prop.identifier, apn: fullTmk };
               }
-            } else if ((selectedProperty as any).ParcelNumber && !prop.identifier?.apn) {
+            } else if ((selectedProperty as any).ParcelNumber) {
+              // Always prefer MLS ParcelNumber (unit-level TMK for condos)
               prop.identifier = { ...prop.identifier, apn: (selectedProperty as any).ParcelNumber };
             }
           }
@@ -3451,6 +3452,7 @@ export default function MLSClient() {
                   mlsYearBuilt={selectedProperty?.YearBuilt}
                   mlsPropertyType={selectedProperty?.PropertyType}
                   mlsPropertySubType={selectedProperty?.PropertySubType}
+                  mlsParcelNumber={(selectedProperty as any)?.ParcelNumber}
                 />
               )}
 

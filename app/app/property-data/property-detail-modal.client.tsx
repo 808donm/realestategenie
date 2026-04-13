@@ -263,6 +263,7 @@ export default function PropertyDetailModal({
   mlsYearBuilt,
   mlsPropertyType,
   mlsPropertySubType,
+  mlsParcelNumber,
   sellerScore,
 }: {
   property: AttomProperty;
@@ -291,6 +292,8 @@ export default function PropertyDetailModal({
   mlsYearBuilt?: number;
   mlsPropertyType?: string;
   mlsPropertySubType?: string;
+  /** MLS parcel number / TMK (unit-level for condos) */
+  mlsParcelNumber?: string;
   /** Seller opportunity score data from the Seller Map */
   sellerScore?: { score: number; level: string; factors: Array<{ name: string; points: number; maxPoints: number; description: string }>; owner?: string };
 }) {
@@ -957,8 +960,8 @@ export default function PropertyDetailModal({
     const isHawaii = hiState === "HI" || hiState === "HAWAII";
     if (!isHawaii) return;
 
-    // Use the TMK from the property data (now includes UniversalParcelId with unit suffix)
-    let tmk = p.identifier?.apn;
+    // Prefer MLS ParcelNumber (unit-level TMK for condos) over property data APN (may be building master)
+    let tmk = mlsParcelNumber || p.identifier?.apn;
 
     setHawaiiLoading(true);
 
@@ -1923,7 +1926,7 @@ export default function PropertyDetailModal({
             <Field label="Land Use" value={p.summary?.propLandUse || reapiData?.lot?.landUse} />
             <Field label="Year Built" value={yearBuilt} />
             <Field label="HOA" value={reapiData?.building?.features?.hoa === true ? "Yes" : reapiData?.building?.features?.hoa === false ? "No" : undefined} />
-            <Field label="APN" value={p.identifier?.apn} />
+            <Field label="APN" value={mlsParcelNumber || p.identifier?.apn} />
             <Field label="FIPS" value={p.identifier?.fips} />
             <Field label="Record ID" value={p.identifier?.attomId} />
             <Field label="Zoning" value={p.lot?.siteZoningIdent || reapiData?.lot?.zoning} />
@@ -2515,7 +2518,7 @@ export default function PropertyDetailModal({
               {(p.assessment || avmData?.assessment) &&
                 (() => {
                   const assess = p.assessment || avmData?.assessment;
-                  const tmkKey = p.identifier?.apn;
+                  const tmkKey = mlsParcelNumber || p.identifier?.apn;
                   const assessQpubLink = tmkKey ? buildQPublicUrl(String(tmkKey), undefined, p.address?.postal1) : null;
                   return (
                     <div style={{ marginBottom: 20 }}>
@@ -3464,8 +3467,8 @@ export default function PropertyDetailModal({
             hawaiiData?.parcel?.cty_tmk ||
             hawaiiData?.owners?.[0]?.tmk ||
             null;
-          // APN as fallback display
-          const attomApn = p.identifier?.apn || null;
+          // APN: prefer MLS ParcelNumber (unit-level) over property data (may be building)
+          const attomApn = mlsParcelNumber || p.identifier?.apn || null;
 
           // Build QPublic direct report link from TMK + county-specific AppID
           const qpubLink = (() => {
