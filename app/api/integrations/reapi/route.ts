@@ -138,16 +138,31 @@ export async function GET(request: NextRequest) {
       }
 
       case "mls-search": {
+        const numericFields = new Set([
+          "bedrooms", "bedrooms_min", "bedrooms_max", "bathrooms", "bathrooms_min", "bathrooms_max",
+          "listing_price_min", "listing_price_max", "sold_price_min", "sold_price_max",
+          "living_area_min", "living_area_max", "lot_size_min", "lot_size_max",
+          "year_built_min", "year_built_max", "stories", "price_per_sqft_min", "price_per_sqft_max",
+          "days_on_market_min", "days_on_market_max", "size", "resultIndex",
+          "latitude", "longitude", "radius", "listing_id", "id",
+          "public_years_owned_min", "public_years_owned_max",
+          "public_properties_owned_min", "public_properties_owned_max",
+          "listing_association_fee_min", "listing_association_fee_max",
+        ]);
+        const booleanFields = new Set([
+          "active", "pending", "sold", "cancelled", "failed",
+          "include_photos", "has_photos", "has_pool", "has_basement",
+          "is_water_view", "is_water_front", "is_mountain_view",
+          "count", "ids_only", "listing_ids_only", "latest_only",
+          "public_absentee_type", "public_corporate_owned", "public_investor_buyer",
+          "public_vacant", "public_pool", "public_garage",
+        ]);
         const mlsParams: any = {};
         for (const [k, v] of params.entries()) {
           if (k === "endpoint") continue;
-          if (["bedrooms_min", "bedrooms_max", "listing_price_min", "listing_price_max", "size", "resultIndex", "latitude", "longitude", "radius"].includes(k)) {
-            mlsParams[k] = Number(v);
-          } else if (["active", "pending", "sold", "cancelled", "failed", "include_photos"].includes(k)) {
-            mlsParams[k] = v === "true";
-          } else {
-            mlsParams[k] = v;
-          }
+          if (numericFields.has(k)) mlsParams[k] = Number(v);
+          else if (booleanFields.has(k)) mlsParams[k] = v === "true";
+          else mlsParams[k] = v;
         }
         const raw = await client.searchMLS(mlsParams);
         result = {

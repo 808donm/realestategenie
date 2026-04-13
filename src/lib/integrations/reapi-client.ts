@@ -203,39 +203,102 @@ export interface ReapiAssessmentRecord {
 
 export interface ReapiMLSSearchParams {
   address?: string;
+  house?: string;
+  unit?: string;
+  street?: string;
   city?: string;
   state?: string;
   zip?: string;
+  county?: string;
   listing_id?: number;
   id?: number;
   mls_number?: string;
+  mls_board_code?: string;
   // Status filters
   active?: boolean;
   pending?: boolean;
   sold?: boolean;
   cancelled?: boolean;
   failed?: boolean;
+  status?: string;
+  custom_status?: string;
+  latest_only?: boolean;
   // Property filters
+  listing_property_type?: string;
+  property_sub_type?: string;
+  property_type?: string;
+  bedrooms?: number;
   bedrooms_min?: number;
   bedrooms_max?: number;
+  bathrooms?: number;
   bathrooms_min?: number;
   bathrooms_max?: number;
   listing_price_min?: number;
   listing_price_max?: number;
+  sold_price_min?: number;
+  sold_price_max?: number;
+  living_area_min?: number;
+  living_area_max?: number;
+  lot_size_min?: number;
+  lot_size_max?: number;
+  year_built_min?: number;
+  year_built_max?: number;
+  stories?: number;
+  price_per_sqft_min?: number;
+  price_per_sqft_max?: number;
+  days_on_market_min?: number;
+  days_on_market_max?: number;
+  // Date filters
   listing_date_min?: string;
   listing_date_max?: string;
-  sqft_min?: number;
-  sqft_max?: number;
-  property_type?: string;
+  sold_date_min?: string;
+  sold_date_max?: string;
+  modification_timestamp_min?: string;
+  modification_timestamp_max?: string;
+  price_change_timestamp_min?: string;
+  price_change_timestamp_max?: string;
+  last_status_change_date_min?: string;
+  last_status_change_date_max?: string;
+  // Feature filters
+  has_photos?: boolean;
+  has_pool?: boolean;
+  has_basement?: boolean;
+  is_water_view?: boolean;
+  is_water_front?: boolean;
+  is_mountain_view?: boolean;
+  // Agent/office search
+  listing_agent_email?: string;
+  listing_agent_mls_code?: string;
+  selling_agent_email?: string;
+  listing_office_name?: string;
+  // Public record overlays (search MLS + public records together)
+  public_absentee_type?: boolean;
+  public_corporate_owned?: boolean;
+  public_investor_buyer?: boolean;
+  public_vacant?: boolean;
+  public_years_owned_min?: number;
+  public_years_owned_max?: number;
+  public_properties_owned_min?: number;
+  public_properties_owned_max?: number;
+  public_pool?: boolean;
+  public_garage?: boolean;
+  // HOA
+  listing_association_fee_min?: number;
+  listing_association_fee_max?: number;
   // Geo search
   polygon?: string;
   latitude?: number;
   longitude?: number;
   radius?: number;
-  // Options
+  // Modes & options
+  count?: boolean;
+  ids_only?: boolean;
+  listing_ids_only?: boolean;
   include_photos?: boolean;
   size?: number;
   resultIndex?: number;
+  sort?: Record<string, any>;
+  exclude?: Array<Record<string, any>>;
 }
 
 export interface ReapiMLSResult {
