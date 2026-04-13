@@ -183,14 +183,14 @@ export class HonoluluTaxClient {
 
     const exactWhere = [...new Set(exactConditions)].join(" OR ");
     const exactResult = await this.query(this.ownallUrl, exactWhere, {
-      resultRecordCount: 5,
-      orderByFields: "tmk ASC",
+      resultRecordCount: 20,
+      orderByFields: "ownseq ASC",
     });
 
     let owners = (exactResult.features || []).map((f) => this.normalizeAttributes(f.attributes) as HonoluluOwner);
 
-    // If exact match found 1-2 results, return them (specific unit or SFR)
-    if (owners.length >= 1 && owners.length <= 2) {
+    // If exact match found results, return all of them (includes fee owners + lessees for condos)
+    if (owners.length >= 1) {
       return owners;
     }
 
