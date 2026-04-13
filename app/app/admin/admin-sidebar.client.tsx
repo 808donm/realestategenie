@@ -86,6 +86,9 @@ export default function AdminSidebar({ adminLevel = "global" }: { adminLevel?: s
             <NavLink href="/app/admin/error-logs" active={pathname === "/app/admin/error-logs"}>
               Error Logs
             </NavLink>
+            <NavLink href="/app/admin/skip-trace-billing" active={pathname === "/app/admin/skip-trace-billing"}>
+              Skip Trace Billing
+            </NavLink>
           </>
         )}
 

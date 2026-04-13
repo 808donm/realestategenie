@@ -6,6 +6,7 @@ import {
   mapReapiMLSToTrestleShape,
   mapReapiSkipTrace,
 } from "@/lib/integrations/reapi-client";
+import { logSkipTraceUsage } from "@/lib/billing/skip-trace-billing";
 import {
   buildPropertyCacheKey,
   propertyCacheGet,
@@ -270,6 +271,14 @@ export async function GET(request: NextRequest) {
           credits: raw.credits,
           source: "reapi",
         };
+        // Log billable skip trace
+        logSkipTraceUsage({
+          agentId: user.id,
+          address: skipParams.address,
+          ownerName: [skipParams.first_name, skipParams.last_name].filter(Boolean).join(" ") || undefined,
+          source: "property_detail",
+          cached: false,
+        }).catch(() => {});
         break;
       }
 

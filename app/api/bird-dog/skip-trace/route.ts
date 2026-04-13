@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { getReapiClient, mapReapiSkipTrace } from "@/lib/integrations/reapi-client";
+import { logSkipTraceUsage } from "@/lib/billing/skip-trace-billing";
 
 /**
  * POST /api/bird-dog/skip-trace
@@ -23,12 +24,13 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (existing) {
-      // Return cached skip trace data
+      // Return cached skip trace data (no charge)
       const { data: contact } = await supabase
         .from("bird_dog_contacts")
         .select("*")
         .eq("result_id", resultId)
         .single();
+      logSkipTraceUsage({ agentId: user.id, address: contact?.address, ownerName: contact?.owner_name, source: "bird_dog", cached: true }).catch(() => {});
       return NextResponse.json({ contact, cached: true });
     }
 
@@ -95,6 +97,9 @@ export async function POST(request: NextRequest) {
     if (insertError) {
       return NextResponse.json({ error: insertError.message }, { status: 500 });
     }
+
+    // Log billable skip trace
+    logSkipTraceUsage({ agentId: user.id, address: result.address, ownerName: result.owner_name, source: "bird_dog", cached: false }).catch(() => {});
 
     return NextResponse.json({ contact: inserted, cached: false });
   } catch (error: any) {
