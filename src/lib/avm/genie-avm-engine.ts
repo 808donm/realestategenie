@@ -236,10 +236,22 @@ export function computeGenieAvm(input: GenieAvmInput): GenieAvmResult | null {
   let lastSaleYearsAgo: number | null = null;
 
   if (input.lastSalePrice && input.lastSalePrice > 1000 && input.lastSaleDate) {
-    // Sanity check: if we have sqft, reject absurd price-per-sqft (>$5K/sqft)
-    // This catches building-level sales misattributed to a unit
+    // Sanity check: reject absurd price-per-sqft that indicate building-level
+    // sales misattributed to a unit. Thresholds by property type:
+    //   Condos: $2,000/sqft max (ultra-luxury in Waikiki tops ~$1,500)
+    //   SFR: $3,000/sqft max
+    //   Other: $5,000/sqft max
+    let maxPricePerSqft = 5000;
+    const subTypeLower = (input.propertySubType || "").toLowerCase();
+    if (subTypeLower.includes("condo") || subTypeLower.includes("townhouse") || subTypeLower.includes("apartment")) {
+      maxPricePerSqft = 2000;
+    } else if (subTypeLower.includes("single") || (input.propertyType || "").toLowerCase() === "residential") {
+      maxPricePerSqft = 3000;
+    }
     const salePricePerSqft = input.sqft && input.sqft > 0 ? input.lastSalePrice / input.sqft : 0;
-    const saleIsReasonable = salePricePerSqft === 0 || salePricePerSqft < 5000;
+    // Also reject if last sale is >150% of list price (likely building-level sale)
+    const saleVsListReasonable = !listPriceValue || input.lastSalePrice <= listPriceValue * 1.5;
+    const saleIsReasonable = (salePricePerSqft === 0 || salePricePerSqft < maxPricePerSqft) && saleVsListReasonable;
 
     const saleDate = new Date(input.lastSaleDate);
     const yearsAgo = (Date.now() - saleDate.getTime()) / (365.25 * 86400000);
