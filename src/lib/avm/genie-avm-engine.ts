@@ -534,9 +534,12 @@ export function computeGenieAvm(input: GenieAvmInput): GenieAvmResult | null {
     const leaseholdComps = adjustedComps.filter((c) => c.ownershipType?.toLowerCase() === "leasehold").length;
     const compsReflectLeasehold = adjustedComps.length > 0 && leaseholdComps >= adjustedComps.length * 0.5;
     const compsAlignWithList = compBasedValue && listPriceValue && Math.abs(compBasedValue - listPriceValue) / listPriceValue < 0.3;
-    if (!compsReflectLeasehold && !compsAlignWithList) {
+    const compsAlignWithAvm = compBasedValue && sanitizedPropertyAvm && Math.abs(compBasedValue - sanitizedPropertyAvm) / sanitizedPropertyAvm < 0.5;
+    if (!compsReflectLeasehold && !compsAlignWithList && !compsAlignWithAvm) {
       leaseholdAdj = discountPct;
       ensembleValue = Math.round(ensembleValue * (1 + discountPct));
+    } else {
+      console.log(`[GenieAVM] Leasehold discount SKIPPED: compsReflect=${compsReflectLeasehold}, compsAlignList=${!!compsAlignWithList}, compsAlignAvm=${!!compsAlignWithAvm}`);
     }
   }
 
