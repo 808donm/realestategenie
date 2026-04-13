@@ -237,6 +237,11 @@ function validateAvmInputs(input: GenieAvmInput): ValidatedInputs {
       discarded.push(`Sqft ${input.sqft} too large for condo unit - likely building data`);
     }
   }
+  // Lot size check: condos with lot > 10,000 sqft = building/parcel data
+  if (isCondo && input.lotSize && input.lotSize > 10000) {
+    isBuildingData = true;
+    discarded.push(`Lot size ${input.lotSize.toLocaleString()} sqft too large for condo unit - building parcel data`);
+  }
   // Property type mismatch: MLS says condo but data says Land/Multi-Family
   if (isCondo && (propTypeLower === "land" || propTypeLower === "multi-family" || propTypeLower === "other")) {
     isBuildingData = true;
