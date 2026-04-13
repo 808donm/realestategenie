@@ -189,10 +189,162 @@ const MIN_CORRELATION = 0.35;                  // Exclude comps below 35% match
 const MAX_ADJUSTMENT_PCT = 0.35;               // Exclude comps needing >35% total adjustment
 const OUTLIER_THRESHOLD = 0.50;                // Exclude comps >50% from median adjusted price
 
+// ── Pre-Flight Input Validation ──
+// Cross-checks all AVM inputs against each other BEFORE computing the ensemble.
+// Identifies and discards bad data (building-level sales, wrong property type, etc.)
+
+interface ValidatedInputs {
+  propertyAvm: number | null;
+  lastSaleAppreciated: number | null;
+  lastSaleYearsAgo: number | null;
+  listPriceValue: number | null;
+  trendAdjustedAssessment: number | null;
+  assessmentTrendPct: number | null;
+  isBuildingData: boolean;
+  discarded: string[];
+}
+
+function validateAvmInputs(input: GenieAvmInput): ValidatedInputs {
+  const discarded: string[] = [];
+  const subTypeLower = (input.propertySubType || "").toLowerCase();
+  const propTypeLower = (input.propertyType || "").toLowerCase();
+  const isCondo = subTypeLower.includes("condo") || subTypeLower.includes("townhouse") || subTypeLower.includes("apartment");
+  const isSFR = subTypeLower.includes("single") || (propTypeLower === "residential" && !isCondo);
+
+  // ── List Price ──
+  const rawListPrice = input.listPrice && input.listPrice > 0 ? input.listPrice : null;
+  const listPriceValue = rawListPrice && input.listToSaleRatio
+    ? Math.round(rawListPrice * input.listToSaleRatio)
+    : rawListPrice;
+
+  // ── Assessment ──
+  let trendAdjustedAssessment: number | null = null;
+  let assessmentTrendPct: number | null = null;
+  if (input.assessment?.value) {
+    const trend = computeAssessmentTrend(input.assessmentHistory || []);
+    assessmentTrendPct = trend;
+    trendAdjustedAssessment = Math.round(input.assessment.value * (1 + trend));
+  }
+
+  // ── Building vs Unit Detection (condos) ──
+  // If MLS says condo but property data has huge sqft, lot, or wrong type,
+  // we're looking at building-level data
+  let isBuildingData = false;
+  if (isCondo && input.sqft) {
+    // Condo units are rarely >3,000 sqft; buildings are 5,000-50,000+
+    if (input.sqft > 4000) {
+      isBuildingData = true;
+      discarded.push(`Sqft ${input.sqft} too large for condo unit - likely building data`);
+    }
+  }
+  // Property type mismatch: MLS says condo but data says Land/Multi-Family
+  if (isCondo && (propTypeLower === "land" || propTypeLower === "multi-family" || propTypeLower === "other")) {
+    isBuildingData = true;
+    discarded.push(`Property type "${input.propertyType}" conflicts with condo - likely building data`);
+  }
+
+  // ── Last Sale Validation ──
+  let lastSaleAppreciated: number | null = null;
+  let lastSaleYearsAgo: number | null = null;
+
+  if (input.lastSalePrice && input.lastSalePrice > 1000 && input.lastSaleDate) {
+    let saleIsReasonable = true;
+
+    // Check 1: Price per sqft sanity
+    if (input.sqft && input.sqft > 0) {
+      const salePricePerSqft = input.lastSalePrice / input.sqft;
+      const maxPsf = isCondo ? 2000 : isSFR ? 3000 : 5000;
+      if (salePricePerSqft > maxPsf) {
+        saleIsReasonable = false;
+        discarded.push(`Last sale $${input.lastSalePrice.toLocaleString()} = $${Math.round(salePricePerSqft)}/sqft exceeds ${maxPsf} max`);
+      }
+    }
+
+    // Check 2: Sale vs list price (>150% = likely building sale)
+    if (listPriceValue && input.lastSalePrice > listPriceValue * 1.5) {
+      saleIsReasonable = false;
+      discarded.push(`Last sale $${input.lastSalePrice.toLocaleString()} > 150% of list $${listPriceValue.toLocaleString()}`);
+    }
+
+    // Check 3: Sale vs assessment (>300% = likely building sale)
+    if (trendAdjustedAssessment && input.lastSalePrice > trendAdjustedAssessment * 3) {
+      saleIsReasonable = false;
+      discarded.push(`Last sale $${input.lastSalePrice.toLocaleString()} > 300% of assessment $${trendAdjustedAssessment.toLocaleString()}`);
+    }
+
+    // Check 4: Building data detected = discard sale
+    if (isBuildingData) {
+      saleIsReasonable = false;
+      discarded.push("Last sale discarded - building-level data detected");
+    }
+
+    const saleDate = new Date(input.lastSaleDate);
+    const yearsAgo = (Date.now() - saleDate.getTime()) / (365.25 * 86400000);
+    lastSaleYearsAgo = Math.round(yearsAgo * 10) / 10;
+
+    if (yearsAgo > 0.25 && yearsAgo <= 30 && saleIsReasonable) {
+      const defaultRate = isCondo ? DEFAULT_APPRECIATION_RATE_CONDO : DEFAULT_APPRECIATION_RATE_SFR;
+      const rate = input.appreciationRate ?? defaultRate;
+      lastSaleAppreciated = Math.round(input.lastSalePrice * Math.pow(1 + rate, yearsAgo));
+    }
+  }
+
+  // ── Property AVM Validation ──
+  let propertyAvm = input.propertyAvm?.value || null;
+
+  // Check 1: Building data detected = discard Property AVM
+  if (propertyAvm && isBuildingData) {
+    discarded.push(`Property AVM $${propertyAvm.toLocaleString()} discarded - building-level data`);
+    propertyAvm = null;
+  }
+
+  // Check 2: Property AVM < 60% of time-adjusted sale
+  if (propertyAvm && lastSaleAppreciated && propertyAvm < lastSaleAppreciated * 0.6) {
+    discarded.push(`Property AVM $${propertyAvm.toLocaleString()} < 60% of time-adjusted sale $${lastSaleAppreciated.toLocaleString()}`);
+    propertyAvm = null;
+  }
+
+  // Check 3: List price < 30% of Property AVM (AVM is for building, not unit)
+  if (propertyAvm && listPriceValue && listPriceValue < propertyAvm * 0.30) {
+    discarded.push(`Property AVM $${propertyAvm.toLocaleString()} > 3x list $${listPriceValue.toLocaleString()} - likely building AVM`);
+    propertyAvm = null;
+  }
+
+  // Check 4: Property AVM vs assessment (>300% or <30% = suspect)
+  if (propertyAvm && trendAdjustedAssessment) {
+    if (propertyAvm > trendAdjustedAssessment * 3 || propertyAvm < trendAdjustedAssessment * 0.3) {
+      discarded.push(`Property AVM $${propertyAvm.toLocaleString()} diverges >3x from assessment $${trendAdjustedAssessment.toLocaleString()}`);
+      propertyAvm = null;
+    }
+  }
+
+  // ── Consensus Check ──
+  // If list price and assessment agree but Property AVM disagrees, discard AVM
+  if (propertyAvm && listPriceValue && trendAdjustedAssessment) {
+    const listAssessAgree = Math.abs(listPriceValue - trendAdjustedAssessment) / trendAdjustedAssessment < 0.30;
+    const avmDisagrees = Math.abs(propertyAvm - listPriceValue) / listPriceValue > 0.50;
+    if (listAssessAgree && avmDisagrees) {
+      discarded.push(`Property AVM $${propertyAvm.toLocaleString()} disagrees with list+assessment consensus`);
+      propertyAvm = null;
+    }
+  }
+
+  if (discarded.length > 0) {
+    console.log(`[GenieAVM] Pre-flight: ${discarded.join("; ")}`);
+  }
+
+  return { propertyAvm, lastSaleAppreciated, lastSaleYearsAgo, listPriceValue, trendAdjustedAssessment, assessmentTrendPct, isBuildingData, discarded };
+}
+
 // ── Engine ──
 
 export function computeGenieAvm(input: GenieAvmInput): GenieAvmResult | null {
   const sources: { name: string; value: number; weight: number }[] = [];
+
+  // ── Pre-flight validation: cross-check all inputs ──
+  const validated = validateAvmInputs(input);
+  const { listPriceValue, trendAdjustedAssessment, assessmentTrendPct } = validated;
+  let { propertyAvm: sanitizedPropertyAvm, lastSaleAppreciated, lastSaleYearsAgo } = validated;
 
   // 1. MLS Comp-Based Value
   let compBasedValue: number | null = null;
@@ -202,86 +354,11 @@ export function computeGenieAvm(input: GenieAvmInput): GenieAvmResult | null {
     adjustedComps = adjustAndWeightComps(input);
 
     if (adjustedComps.length > 0) {
-      // Weighted average of adjusted prices
       const totalWeight = adjustedComps.reduce((s, c) => s + c.weight, 0);
       compBasedValue = Math.round(
         adjustedComps.reduce((s, c) => s + c.adjustedPrice * c.weight, 0) / totalWeight,
       );
     }
-  }
-
-  // 2. Property AVM (Realie/RentCast) -- strongest external signal
-  const propertyAvmValue = input.propertyAvm?.value || null;
-
-  // 3. County Assessment (trend-adjusted)
-  let trendAdjustedAssessment: number | null = null;
-  let assessmentTrendPct: number | null = null;
-
-  if (input.assessment?.value) {
-    const trend = computeAssessmentTrend(input.assessmentHistory || []);
-    assessmentTrendPct = trend;
-    trendAdjustedAssessment = Math.round(input.assessment.value * (1 + trend));
-  }
-
-  // 4. List Price (on-market) -- agent-set price is a strong market signal
-  // Apply list-to-sale ratio if available (e.g., 0.97 means homes sell at 97% of list)
-  const rawListPrice = input.listPrice && input.listPrice > 0 ? input.listPrice : null;
-  const listPriceValue = rawListPrice && input.listToSaleRatio
-    ? Math.round(rawListPrice * input.listToSaleRatio)
-    : rawListPrice;
-
-  // 5. Time-Adjusted Last Sale -- appreciate the last arm's-length sale price
-  // A property sold for $2.82M in 2023 should be worth at least $2.82M * (1.035)^3 in 2026
-  let lastSaleAppreciated: number | null = null;
-  let lastSaleYearsAgo: number | null = null;
-
-  if (input.lastSalePrice && input.lastSalePrice > 1000 && input.lastSaleDate) {
-    // Sanity check: reject absurd price-per-sqft that indicate building-level
-    // sales misattributed to a unit. Thresholds by property type:
-    //   Condos: $2,000/sqft max (ultra-luxury in Waikiki tops ~$1,500)
-    //   SFR: $3,000/sqft max
-    //   Other: $5,000/sqft max
-    let maxPricePerSqft = 5000;
-    const subTypeLower = (input.propertySubType || "").toLowerCase();
-    if (subTypeLower.includes("condo") || subTypeLower.includes("townhouse") || subTypeLower.includes("apartment")) {
-      maxPricePerSqft = 2000;
-    } else if (subTypeLower.includes("single") || (input.propertyType || "").toLowerCase() === "residential") {
-      maxPricePerSqft = 3000;
-    }
-    const salePricePerSqft = input.sqft && input.sqft > 0 ? input.lastSalePrice / input.sqft : 0;
-    // Also reject if last sale is >150% of list price (likely building-level sale)
-    const saleVsListReasonable = !listPriceValue || input.lastSalePrice <= listPriceValue * 1.5;
-    const saleIsReasonable = (salePricePerSqft === 0 || salePricePerSqft < maxPricePerSqft) && saleVsListReasonable;
-
-    const saleDate = new Date(input.lastSaleDate);
-    const yearsAgo = (Date.now() - saleDate.getTime()) / (365.25 * 86400000);
-    lastSaleYearsAgo = Math.round(yearsAgo * 10) / 10;
-
-    // Only use if arm's-length, within 30 years, and price is reasonable per sqft
-    if (yearsAgo > 0.25 && yearsAgo <= 30 && saleIsReasonable) {
-      const subType = (input.propertySubType || "").toLowerCase();
-      const isCondo = subType.includes("condo") || subType.includes("townhouse") || subType.includes("apartment");
-      const defaultRate = isCondo ? DEFAULT_APPRECIATION_RATE_CONDO : DEFAULT_APPRECIATION_RATE_SFR;
-      const rate = input.appreciationRate ?? defaultRate;
-      lastSaleAppreciated = Math.round(input.lastSalePrice * Math.pow(1 + rate, yearsAgo));
-    }
-  }
-
-  // ── Property AVM sanity check ──
-  // If the Property AVM is less than 60% of the time-adjusted last sale,
-  // it's likely erroneous (bad data, wrong property type, etc.) -- discard it.
-  let sanitizedPropertyAvm = propertyAvmValue;
-  if (sanitizedPropertyAvm && lastSaleAppreciated && sanitizedPropertyAvm < lastSaleAppreciated * 0.6) {
-    console.log(`[GenieAVM] Discarding Property AVM $${sanitizedPropertyAvm.toLocaleString()} — below 60% of time-adjusted sale $${lastSaleAppreciated.toLocaleString()}`);
-    sanitizedPropertyAvm = null;
-  }
-
-  // If list price is below 30% of Property AVM, the AVM is likely for the
-  // whole building (multi-family) or a different unit -- discard it.
-  // Also applies when Property AVM is >3x the list price for any property.
-  if (sanitizedPropertyAvm && listPriceValue && listPriceValue < sanitizedPropertyAvm * 0.30) {
-    console.log(`[GenieAVM] Discarding Property AVM $${sanitizedPropertyAvm.toLocaleString()} — list price $${listPriceValue.toLocaleString()} is <30% (likely whole-building AVM)`);
-    sanitizedPropertyAvm = null;
   }
 
   // ── Dynamic Weight Assignment ──
@@ -492,7 +569,7 @@ export function computeGenieAvm(input: GenieAvmInput): GenieAvmResult | null {
     source: "genie",
     methodology: {
       compBasedValue,
-      propertyAvm: propertyAvmValue,
+      propertyAvm: input.propertyAvm?.value || null,
       rentcastAvm: input.rentcastAvm?.value || null,
       realieAvm: input.realieAvm?.value || null,
       assessmentValue: input.assessment?.value || null,
