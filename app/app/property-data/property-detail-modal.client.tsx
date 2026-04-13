@@ -3471,7 +3471,11 @@ export default function PropertyDetailModal({
           const attomApn = mlsParcelNumber || p.identifier?.apn || null;
 
           // Build QPublic direct report link from TMK + county-specific AppID
+          // For condos, MLS ParcelNumber (unit-level) takes priority over GIS TMK (building-level)
           const qpubLink = (() => {
+            if (mlsParcelNumber) {
+              return buildQPublicUrl(mlsParcelNumber, hawaiiData?.parcel?.county, p.address?.postal1);
+            }
             if (hawaiiData?.parcel?.qpub_link) return hawaiiData.parcel.qpub_link;
 
             const keySource = tmkValue ? String(tmkValue) : attomApn;
