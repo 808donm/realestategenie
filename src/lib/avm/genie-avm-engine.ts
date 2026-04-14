@@ -311,8 +311,8 @@ function validateAvmInputs(input: GenieAvmInput): ValidatedInputs {
 
   // Check 3: Property AVM vs list price (too high or too low)
   if (propertyAvm && listPriceValue) {
-    if (listPriceValue < propertyAvm * 0.30) {
-      discarded.push(`Property AVM $${propertyAvm.toLocaleString()} > 3x list $${listPriceValue.toLocaleString()} - likely building AVM`);
+    if (propertyAvm > listPriceValue * 2) {
+      discarded.push(`Property AVM $${propertyAvm.toLocaleString()} > 2x list $${listPriceValue.toLocaleString()} - likely building/wrong unit AVM`);
       propertyAvm = null;
     } else if (propertyAvm < listPriceValue * 0.10) {
       discarded.push(`Property AVM $${propertyAvm.toLocaleString()} < 10% of list $${listPriceValue.toLocaleString()} - absurdly low, discarding`);
