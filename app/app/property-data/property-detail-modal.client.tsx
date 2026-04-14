@@ -392,8 +392,10 @@ export default function PropertyDetailModal({
   const rawAvmVal = p.avm?.amount?.value;
   const countyAssessment = p.assessment?.market?.mktTtlValue || p.assessment?.appraised?.apprTtlValue;
   // Prefer MLS verified sold price over property data provider sale amount
-  const lastSaleAmt = mlsSoldPrice?.price || p.sale?.amount?.saleAmt || p.sale?.amount?.salePrice;
-  const lastSaleDate = mlsSoldPrice?.date || p.sale?.amount?.saleTransDate;
+  // Ignore $0 sales from property data (non-arm's-length transfers)
+  const rawSaleAmt = p.sale?.amount?.saleAmt || p.sale?.amount?.salePrice;
+  const lastSaleAmt = mlsSoldPrice?.price || (rawSaleAmt && rawSaleAmt > 1000 ? rawSaleAmt : null);
+  const lastSaleDate = mlsSoldPrice?.date || (lastSaleAmt ? p.sale?.amount?.saleTransDate : null);
 
   // AVM is always shown when available
   const avmVal = rawAvmVal;
@@ -3240,7 +3242,6 @@ export default function PropertyDetailModal({
                 recordingDate: p.sale?.amount?.saleRecDate,
               }}
               reapiSaleHistory={reapiData?.saleHistory}
-              mlsSoldPrice={mlsSoldPrice || undefined}
             />
           );
         })()}
