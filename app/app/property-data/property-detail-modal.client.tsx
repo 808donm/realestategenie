@@ -322,6 +322,7 @@ export default function PropertyDetailModal({
   const [reapiAvm, setReapiAvm] = useState<{ value: number; raw?: any } | null>(null);
   const [reapiData, setReapiData] = useState<any>(null); // Full REAPI enrichment data
   const [reapiError, setReapiError] = useState(false); // True when REAPI fetch failed
+  const [mlsSoldPrice, setMlsSoldPrice] = useState<{ price: number; date: string } | null>(null); // From REAPI MLS
   const [skipTraceData, setSkipTraceData] = useState<any>(null);
   const [skipTraceLoading, setSkipTraceLoading] = useState(false);
   const [portfolioProperties, setPortfolioProperties] = useState<any[]>([]);
@@ -390,7 +391,9 @@ export default function PropertyDetailModal({
   // REAPI AVM is preferred over Realie/RentCast when available
   const rawAvmVal = p.avm?.amount?.value;
   const countyAssessment = p.assessment?.market?.mktTtlValue || p.assessment?.appraised?.apprTtlValue;
-  const lastSaleAmt = p.sale?.amount?.saleAmt || p.sale?.amount?.salePrice;
+  // Prefer MLS verified sold price over property data provider sale amount
+  const lastSaleAmt = mlsSoldPrice?.price || p.sale?.amount?.saleAmt || p.sale?.amount?.salePrice;
+  const lastSaleDate = mlsSoldPrice?.date || p.sale?.amount?.saleTransDate;
 
   // AVM is always shown when available
   const avmVal = rawAvmVal;
@@ -738,7 +741,7 @@ export default function PropertyDetailModal({
         fireplace: rf.fireplace ?? undefined,
         stories: reapiData?.building?.summary?.storyCount || undefined,
         lastSalePrice: lastSaleAmt || undefined,
-        lastSaleDate: p.sale?.amount?.saleTransDate || undefined,
+        lastSaleDate: lastSaleDate || p.sale?.amount?.saleTransDate || undefined,
         assessment: p.assessment?.market?.mktTtlValue
           ? { value: p.assessment.market.mktTtlValue, year: p.assessment.tax?.taxYear || 2025, land: 0, improvements: 0 }
           : null,
@@ -767,7 +770,7 @@ export default function PropertyDetailModal({
         }).catch(() => {});
       }
     }).catch(() => {});
-  }, [rentcastComps, genieAvm, p, mlsAddress, beds, baths, sqft, yearBuilt, reapiData]);
+  }, [rentcastComps, genieAvm, p, mlsAddress, beds, baths, sqft, yearBuilt, reapiData, mlsSoldPrice]);
 
   // Fetch REAPI enrichment data on modal open (background, cached 7 days)
   // Returns: owner info, prior owner, mortgage, sale history, schools, demographics,
@@ -807,6 +810,41 @@ export default function PropertyDetailModal({
       .catch((err) => {
         console.warn("[REAPI] Enrichment failed:", err.name === "AbortError" ? "timeout" : err.message);
         setReapiError(true);
+      });
+
+    // Also fetch REAPI MLS sold history for this address (parallel, fire-and-forget)
+    const mlsSearchParams = new URLSearchParams({
+      endpoint: "mls-search",
+      address: addr,
+      sold: "true",
+      state: reapiState || "HI",
+      size: "5",
+      include_photos: "false",
+    });
+    fetch(`/api/integrations/reapi?${mlsSearchParams.toString()}`, { signal: controller.signal })
+      .then((r) => r.json())
+      .then((data) => {
+        const listings = data.raw || data.listings || [];
+        // Find the most recent sold listing for this specific address
+        const soldListings = listings
+          .filter((l: any) => l.listing?.leadTypes?.mlsSoldPrice > 0)
+          .sort((a: any, b: any) => {
+            const dateA = a.listing?.leadTypes?.mlsSoldDate || "";
+            const dateB = b.listing?.leadTypes?.mlsSoldDate || "";
+            return dateB.localeCompare(dateA);
+          });
+        if (soldListings.length > 0) {
+          const best = soldListings[0];
+          const price = best.listing?.leadTypes?.mlsSoldPrice;
+          const date = best.listing?.leadTypes?.mlsSoldDate || best.listing?.soldDate;
+          if (price && price > 1000) {
+            console.log(`[REAPI MLS] Found sold price: $${price.toLocaleString()} on ${date}`);
+            setMlsSoldPrice({ price, date });
+          }
+        }
+      })
+      .catch(() => {
+        // MLS sold lookup is optional, don't block on failure
       })
       .finally(() => clearTimeout(timeout));
   }, [reapiData, p, mlsAddress]);
@@ -3197,11 +3235,12 @@ export default function PropertyDetailModal({
               address={salesAddr}
               publicRecords={p.saleHistory}
               propertySale={{
-                amount: p.sale?.amount?.saleAmt || p.sale?.amount?.salePrice,
-                date: p.sale?.amount?.saleTransDate,
+                amount: mlsSoldPrice?.price || p.sale?.amount?.saleAmt || p.sale?.amount?.salePrice,
+                date: mlsSoldPrice?.date || p.sale?.amount?.saleTransDate,
                 recordingDate: p.sale?.amount?.saleRecDate,
               }}
               reapiSaleHistory={reapiData?.saleHistory}
+              mlsSoldPrice={mlsSoldPrice || undefined}
             />
           );
         })()}
