@@ -858,8 +858,9 @@ export async function generateCMAReportPDF(
       doc.text(pdfSafe(school.grades || "-"), MARGIN + 105, y);
       if (school.rating) {
         // Color-coded rating dot
-        const rColor = school.rating >= 7 ? COLORS.greenAccent : school.rating >= 4 ? [217, 119, 6] as const : COLORS.redAccent;
-        doc.setFillColor(...rColor);
+        if (school.rating >= 7) doc.setFillColor(...COLORS.greenAccent);
+        else if (school.rating >= 4) doc.setFillColor(217, 119, 6);
+        else doc.setFillColor(...COLORS.redAccent);
         doc.circle(MARGIN + 133, y - 1, 2, "F");
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(5);
