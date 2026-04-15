@@ -22,6 +22,7 @@ export const ROUTE_TO_SECTION: Record<string, string> = {
   "/app/mls": "mls",
   "/app/property-data": "property-intel",
   "/app/seller-map": "seller-map",
+  "/app/seller-report": "property-intel",
   "/app/pipeline": "pipeline",
   "/app/open-houses": "open-houses",
   "/app/leads": "leads",

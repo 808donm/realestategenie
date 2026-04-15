@@ -1749,7 +1749,7 @@ export default function PropertyDetailModal({
     reapiData,
   ]);
 
-  const handleGenerateReport = useCallback(async () => {
+  const handleGenerateReport = useCallback(async (overrideType?: "property" | "buyer" | "seller" | "investor" | "cma") => {
     setReportGenerating(true);
     try {
       const reportData = collectReportData();
@@ -1844,8 +1844,8 @@ export default function PropertyDetailModal({
         };
       }
 
-      // Determine report type from viewingReport state
-      const rptType = viewingReport || "property";
+      // Determine report type from explicit parameter or viewingReport state
+      const rptType = overrideType || viewingReport || "property";
       const res = await fetch("/api/property-intelligence/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -6018,42 +6018,9 @@ export default function PropertyDetailModal({
 
   const reportActionBar = (
     <div style={{ display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap", alignItems: "center" }}>
-      {/* View Report dropdown */}
-      <div style={{ position: "relative", display: "inline-block" }}>
-        <select
-          onChange={(e) => {
-            const val = e.target.value as typeof viewingReport;
-            if (val) setViewingReport(val);
-            e.target.value = "";
-          }}
-          value=""
-          style={{
-            padding: "7px 14px",
-            fontSize: 12,
-            fontWeight: 600,
-            borderRadius: 6,
-            border: "none",
-            background: "#7c3aed",
-            color: "#fff",
-            cursor: "pointer",
-            appearance: "none",
-            WebkitAppearance: "none",
-            paddingRight: 28,
-            backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='white' d='M3 5l3 3 3-3z'/%3E%3C/svg%3E\")",
-            backgroundRepeat: "no-repeat",
-            backgroundPosition: "right 8px center",
-          }}
-        >
-          <option value="" disabled>View Report...</option>
-          {reportTypes.map((r) => (
-            <option key={r.id} value={r.id}>{r.icon} {r.label}</option>
-          ))}
-        </select>
-      </div>
-
-      {/* Download PDF */}
+      {/* Property Intelligence Report - blue button (interest/discovery phase) */}
       <button
-        onClick={handleGenerateReport}
+        onClick={() => handleGenerateReport("property")}
         disabled={reportGenerating}
         style={{
           padding: "7px 14px",
@@ -6067,8 +6034,60 @@ export default function PropertyDetailModal({
           opacity: reportGenerating ? 0.6 : 1,
         }}
       >
-        {reportGenerating ? "Generating..." : "Download PDF"}
+        {reportGenerating ? "Generating..." : "Property Report"}
       </button>
+
+      {/* Buyer Report - green button (offer phase) */}
+      <button
+        onClick={() => handleGenerateReport("buyer")}
+        disabled={reportGenerating}
+        style={{
+          padding: "7px 14px",
+          fontSize: 12,
+          fontWeight: 600,
+          borderRadius: 6,
+          border: "none",
+          background: "#059669",
+          color: "#fff",
+          cursor: reportGenerating ? "not-allowed" : "pointer",
+          opacity: reportGenerating ? 0.6 : 1,
+        }}
+      >
+        {reportGenerating ? "Generating..." : "Buyer Report"}
+      </button>
+
+      {/* More Reports dropdown (Seller, Investor, CMA - less common) */}
+      <div style={{ position: "relative", display: "inline-block" }}>
+        <select
+          onChange={(e) => {
+            const val = e.target.value as typeof viewingReport;
+            if (val) setViewingReport(val);
+            e.target.value = "";
+          }}
+          value=""
+          style={{
+            padding: "7px 14px",
+            fontSize: 12,
+            fontWeight: 600,
+            borderRadius: 6,
+            border: "1px solid #d1d5db",
+            background: "#fff",
+            color: "#374151",
+            cursor: "pointer",
+            appearance: "none",
+            WebkitAppearance: "none",
+            paddingRight: 28,
+            backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23374151' d='M3 5l3 3 3-3z'/%3E%3C/svg%3E\")",
+            backgroundRepeat: "no-repeat",
+            backgroundPosition: "right 8px center",
+          }}
+        >
+          <option value="" disabled>More Reports...</option>
+          {reportTypes.filter((r) => r.id !== "property" && r.id !== "buyer").map((r) => (
+            <option key={r.id} value={r.id}>{r.icon} {r.label}</option>
+          ))}
+        </select>
+      </div>
 
       {/* Download CMA PDF */}
       <button
@@ -6159,7 +6178,7 @@ export default function PropertyDetailModal({
             Print
           </button>
           <button
-            onClick={handleGenerateReport}
+            onClick={() => handleGenerateReport()}
             disabled={reportGenerating}
             style={{ padding: "5px 12px", fontSize: 12, fontWeight: 600, borderRadius: 6, border: "none", background: "#1e40af", color: "#fff", cursor: "pointer" }}
           >
@@ -6329,7 +6348,7 @@ export default function PropertyDetailModal({
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               {/* Generate Report */}
               <button
-                onClick={handleGenerateReport}
+                onClick={() => handleGenerateReport()}
                 disabled={reportGenerating}
                 style={{
                   padding: "6px 12px",

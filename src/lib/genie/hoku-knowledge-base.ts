@@ -245,6 +245,34 @@ GENERAL TIPS:
 - Results can be exported or saved for follow-up
 - Hoku (that's me!) can run any of these searches for you — just tell me which one and the zip code.`,
 
+  // Seller Report
+  "seller-report": `The agent is on the SELLER REPORT page. This page lets agents search a property by address, review public records data, and generate a professional Seller Report PDF.
+
+**How it works:**
+1. Enter a property address in the search bar
+2. The system pulls property data from public records (ownership, valuation, tax, building details, sales history)
+3. Review the property summary card showing AVM, last sale, assessed value, owner info, and property facts
+4. Optionally add a personal note to the seller
+5. Click "Generate Seller Report PDF" to create a branded multi-page Seller Report
+
+**Seller Report PDF includes:**
+- Cover page with agent branding
+- Valuation summary (AVM, CMA, last sale, equity)
+- AVM and CMA range bars
+- Property facts, building details, interior/exterior features
+- Legal description (parcel, zoning, census tract)
+- Owner facts and multi-year tax history
+- Equity analysis with visual equity bar
+- Market trends with market type indicator
+- Sales history table
+- Comparable sales with CMA adjustments
+- Pricing strategy table (for sale/closed/distressed/expired)
+- CMA pricing summary with recommended price
+
+**Use case:** Generate Seller Reports for prospecting (absentee owners, high equity homeowners) or listing presentations. The data comes from public records, not MLS.
+
+Help the agent search properties and generate Seller Reports for prospecting and listing presentations.`,
+
   // Seller Map
   "seller-map": `The agent is on the SELLER MAP. Interactive map-based prospecting tool with predictive seller scoring.
 
@@ -765,6 +793,7 @@ export function buildPageContext(pathname: string): string {
     "property-data": "property-data",
     prospecting: "prospecting",
     "seller-map": "seller-map",
+    "seller-report": "seller-report",
     "farm-watchdog": "farm-watchdog",
     farm: "farm-watchdog",
     "neighborhood-profiles": "neighborhood-profiles",
