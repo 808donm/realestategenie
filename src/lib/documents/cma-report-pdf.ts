@@ -526,8 +526,8 @@ export async function generateCMAReportPDF(
       doc.text(pdfSafe(sale.event || sale.deedType || "-"), MARGIN + 30, y);
       doc.text(sale.price ? fmt$(sale.price) : "Price Not Disclosed", MARGIN + 80, y);
       if (sale.changePct != null) {
-        const color = sale.changePct >= 0 ? COLORS.greenAccent : COLORS.redAccent;
-        doc.setTextColor(...color);
+        if (sale.changePct >= 0) doc.setTextColor(...COLORS.greenAccent);
+        else doc.setTextColor(...COLORS.redAccent);
         doc.text(`${sale.changePct >= 0 ? "+" : ""}${sale.changePct.toFixed(1)}%`, MARGIN + 130, y);
         doc.setTextColor(...COLORS.textDark);
       }
@@ -673,8 +673,8 @@ export async function generateCMAReportPDF(
         // Show adjustment if available
         if (comp.adjustments && comp.adjustments[label.toLowerCase()]) {
           const adj = comp.adjustments[label.toLowerCase()];
-          const adjColor = adj >= 0 ? COLORS.greenAccent : COLORS.redAccent;
-          doc.setTextColor(...adjColor);
+          if (adj >= 0) doc.setTextColor(...COLORS.greenAccent);
+          else doc.setTextColor(...COLORS.redAccent);
           doc.text(`${adj >= 0 ? "+" : ""}${fmt$(adj)}`, MARGIN + CONTENT_W - 25, y);
           doc.setTextColor(...COLORS.textDark);
         }
