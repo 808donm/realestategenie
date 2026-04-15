@@ -412,7 +412,7 @@ export async function generateCMAReportPDF(
   // ════════════════════════════════════════════════════════════════════
 
   y = newPage();
-  y = drawSectionTitle(doc, "Property Information", MARGIN, y, CONTENT_W);
+  y = drawSectionTitle(doc, "Property Information", y, MARGIN);
   y += 2;
 
   // Property Facts table (3 columns: Facts | Public Facts | Agent Refinement)
@@ -467,7 +467,7 @@ export async function generateCMAReportPDF(
   // ════════════════════════════════════════════════════════════════════
 
   y = newPage();
-  y = drawSectionTitle(doc, "Public Record History", MARGIN, y, CONTENT_W);
+  y = drawSectionTitle(doc, "Public Record History", y, MARGIN);
   y += 2;
 
   // Tax Assessment History
@@ -541,7 +541,7 @@ export async function generateCMAReportPDF(
 
   if (data.comps && data.comps.length > 0) {
     y = newPage();
-    y = drawSectionTitle(doc, "CMA", MARGIN, y, CONTENT_W);
+    y = drawSectionTitle(doc, "CMA", y, MARGIN);
     y += 2;
 
     doc.setFontSize(12);
@@ -610,7 +610,7 @@ export async function generateCMAReportPDF(
     for (let ci = 0; ci < maxCompPages; ci++) {
       const comp = data.comps[ci];
       y = newPage();
-      y = drawSectionTitle(doc, "Comp Property Adjustments", MARGIN, y, CONTENT_W);
+      y = drawSectionTitle(doc, "Comp Property Adjustments", y, MARGIN);
       y += 2;
 
       // Subject vs Comp side by side
@@ -706,7 +706,7 @@ export async function generateCMAReportPDF(
     // ════════════════════════════════════════════════════════════════════
 
     y = newPage();
-    y = drawSectionTitle(doc, "Pricing Strategy", MARGIN, y, CONTENT_W);
+    y = drawSectionTitle(doc, "Pricing Strategy", y, MARGIN);
     y += 8;
 
     if (data.cmaValue) {
@@ -773,7 +773,7 @@ export async function generateCMAReportPDF(
 
   if (data.marketType || data.monthsInventory) {
     y = newPage();
-    y = drawSectionTitle(doc, "Market Trends", MARGIN, y, CONTENT_W);
+    y = drawSectionTitle(doc, "Market Trends", y, MARGIN);
     y += 4;
 
     doc.setFontSize(12);
@@ -810,7 +810,7 @@ export async function generateCMAReportPDF(
 
   if (data.photos && data.photos.length > 0) {
     y = newPage();
-    y = drawSectionTitle(doc, "Photos", MARGIN, y, CONTENT_W);
+    y = drawSectionTitle(doc, "Photos", y, MARGIN);
     y += 4;
 
     doc.setFontSize(10);
