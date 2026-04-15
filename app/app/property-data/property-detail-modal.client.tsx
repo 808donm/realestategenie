@@ -1768,6 +1768,107 @@ export default function PropertyDetailModal({
     }
   }, [collectReportData, addr]);
 
+  // ── CMA PDF Generation ──
+  const [cmaGenerating, setCmaGenerating] = useState(false);
+  const handleGenerateCMAPdf = useCallback(async () => {
+    setCmaGenerating(true);
+    try {
+      const { generateCMAReportPDF } = await import("@/lib/documents/cma-report-pdf");
+
+      // Collect CMA data from available sources
+      const cmaComps = (rentcastComps || []).map((c: any) => ({
+        address: c.address || c.formattedAddress || "",
+        city: c.city || "",
+        status: c.status || "Closed",
+        listPrice: c.listPrice || c.price || 0,
+        closePrice: c.closePrice || c.price || 0,
+        beds: c.bedrooms || c.beds,
+        baths: c.bathrooms || c.baths,
+        sqft: c.squareFootage || c.sqft,
+        lotSize: c.lotSize,
+        yearBuilt: c.yearBuilt,
+        dom: c.daysOnMarket,
+        closeDate: c.closeDate,
+        pricePerSqft: c.squareFootage ? Math.round((c.closePrice || c.price || 0) / c.squareFootage) : undefined,
+        correlation: c.correlation,
+        distance: c.distance,
+      }));
+
+      const cmaData = {
+        address: mlsAddress || addr.split(",")[0].trim(),
+        city: p.address?.locality || (p as any).City || "",
+        state: p.address?.countrySubd || (p as any).StateOrProvince || "HI",
+        zip: p.address?.postal1 || (p as any).PostalCode || "",
+        mlsNumber: (p as any).ListingId || (p as any).mlsNumber,
+        listPrice: mlsListPrice || (p as any).ListPrice,
+        status: (p as any).StandardStatus || "Active",
+        description: (p as any).publicRemarks || (p as any).ListingDescription,
+        propertyType: mlsPropertyType || p.summary?.propType,
+        propertySubType: mlsPropertySubType || p.summary?.propSubType,
+        beds,
+        baths,
+        sqft,
+        lotSize: p.lot?.lotSize1,
+        yearBuilt,
+        stories: reapiData?.building?.summary?.storyCount,
+        pool: reapiData?.building?.features?.pool,
+        fireplace: reapiData?.building?.features?.fireplace,
+        condition: reapiData?._raw?.propertyInfo?.buildingCondition,
+        construction: reapiData?.building?.features?.construction,
+        ownershipType: mlsOwnershipType || (p as any).OwnershipType,
+        avmValue: genieAvm?.value || avmVal,
+        avmLow: genieAvm?.low || avmLow,
+        avmHigh: genieAvm?.high || avmHigh,
+        avmConfidence: genieAvm?.confidence,
+        lastSalePrice: lastSaleAmt ?? undefined,
+        lastSaleDate: lastSaleDate ?? undefined,
+        assessedValue: p.assessment?.market?.mktTtlValue || p.assessment?.assessed?.assdTtlValue,
+        taxAmount: p.assessment?.tax?.taxAmt,
+        comps: cmaComps,
+        photos: (p as any).Media?.filter((m: any) => m.MediaType?.startsWith("image")).map((m: any) => m.MediaURL).slice(0, 9),
+      };
+
+      const agentBranding = {
+        displayName: "Agent",
+        email: "",
+        phone: null,
+        licenseNumber: null,
+        photoUrl: null,
+      };
+
+      // Try to get agent info
+      try {
+        const agentRes = await fetch("/api/agent/profile");
+        if (agentRes.ok) {
+          const agentData = await agentRes.json();
+          if (agentData.agent) {
+            agentBranding.displayName = agentData.agent.display_name || "Agent";
+            agentBranding.email = agentData.agent.email || "";
+            agentBranding.phone = agentData.agent.phone || null;
+            agentBranding.licenseNumber = agentData.agent.license_number || null;
+          }
+        }
+      } catch { /* use defaults */ }
+
+      const blob = await generateCMAReportPDF(cmaData, agentBranding);
+
+      // Download
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `CMA_${cmaData.address.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("[CMA PDF] Generation failed:", err);
+      alert("Failed to generate CMA report. Please try again.");
+    } finally {
+      setCmaGenerating(false);
+    }
+  }, [addr, p, mlsAddress, mlsListPrice, mlsPropertyType, mlsPropertySubType, mlsOwnershipType, beds, baths, sqft, yearBuilt, genieAvm, avmVal, avmLow, avmHigh, lastSaleAmt, lastSaleDate, rentcastComps, reapiData]);
+
   const handleShareReport = useCallback(async () => {
     // Wait briefly for hazard data if it's still loading
     if (hazardLoading) {
@@ -5862,6 +5963,25 @@ export default function PropertyDetailModal({
         }}
       >
         {reportGenerating ? "Generating..." : "Download PDF"}
+      </button>
+
+      {/* Download CMA PDF */}
+      <button
+        onClick={handleGenerateCMAPdf}
+        disabled={cmaGenerating}
+        style={{
+          padding: "7px 14px",
+          fontSize: 12,
+          fontWeight: 600,
+          borderRadius: 6,
+          border: "none",
+          background: "#059669",
+          color: "#fff",
+          cursor: cmaGenerating ? "not-allowed" : "pointer",
+          opacity: cmaGenerating ? 0.6 : 1,
+        }}
+      >
+        {cmaGenerating ? "Generating..." : "CMA PDF"}
       </button>
 
       {/* Shareable Link */}
