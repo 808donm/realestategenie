@@ -844,9 +844,20 @@ export default function PropertyDetailModal({
       .then((r) => r.json())
       .then((data) => {
         const listings = data.raw || data.listings || [];
-        // Find the most recent sold listing for this specific address
+        // Find the most recent SALE (not lease) for this specific address/unit
+        const addrLower = addr.toLowerCase().replace(/[^a-z0-9]/g, "");
         const soldListings = listings
-          .filter((l: any) => l.listing?.leadTypes?.mlsSoldPrice > 0)
+          .filter((l: any) => {
+            const price = l.listing?.leadTypes?.mlsSoldPrice;
+            if (!price || price <= 0) return false;
+            // Exclude residential leases
+            const mlsType = l.listing?.leadTypes?.mlsType;
+            if (Array.isArray(mlsType) && mlsType.some((t: string) => t.toLowerCase().includes("lease"))) return false;
+            // Try to match the specific unit address
+            const listAddr = (l.listing?.address?.unparsedAddress || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+            if (listAddr && addrLower && !listAddr.includes(addrLower.slice(0, 15))) return false;
+            return true;
+          })
           .sort((a: any, b: any) => {
             const dateA = a.listing?.leadTypes?.mlsSoldDate || "";
             const dateB = b.listing?.leadTypes?.mlsSoldDate || "";
