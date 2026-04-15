@@ -431,12 +431,18 @@ Help the agent understand market trends, compare neighborhoods, and identify opp
   "neighborhood-profiles": `The agent is on the NEIGHBORHOOD PROFILES page. AI-powered neighborhood profile generation with Census data enrichment.
 - Input: neighborhood name, address, city, state, optional architectural style, nearby amenities, additional context
 - **AI-Generated Sections**: Lifestyle & Vibe, Location Intelligence, Market Pulse (optional), Community Resources, Local Amenities
-- **Census Data Pages** (auto-fetched at export): Housing Facts comparison table (ZIP/County/State/USA), People Facts, Education levels bar charts, Age distribution, Income brackets, Occupational categories, Commute time distribution, Economy
-- **Market Trends**: Market type indicator (Seller's/Balanced/Buyer's), months of inventory, sold-to-list ratio, median DOM, median sold price
-- **Schools**: Detailed school listing with enrollment, student-teacher ratio, grade range
+- **Census Data Pages** (auto-fetched at export): Housing Facts comparison table (ZIP/County/State/USA), People Facts, Education levels, Age distribution, Income brackets, Occupational categories, Commute time distribution, Economy
+- **Market Trends**: Market type indicator (Seller's/Balanced/Buyer's), months of inventory, sold-to-list ratio, median DOM, median sold price, MoM trend arrows for all key metrics, median estimated value with MoM and 12-month change
+- **Sold Home Stats**: Distribution bar charts showing price ranges, price per sqft, home sizes, home ages, and bedroom counts of recently sold homes
+- **People Facts**: Population, density, pop change since 2020, median age across 4 geographic levels
+- **Households with Children**: Breakdown of married with/without children and single with children
+- **Transportation Modes**: How people get to work (drive/carpool, walk, bicycle, public transit, work from home)
+- **Quality of Life**: Elevation, annual rainfall, average temperatures (Jan/Jul min/max), commute time, superfund and brownfield sites
+- **Schools**: Detailed school listing with enrollment, student-teacher ratio, grade range (up to 15 schools)
 - **Walkability Score**: Walk score display when available
+- **Nearby Neighborhoods**: Grid of up to 6 nearby micro-neighborhoods with median home value, number of homes, and population
 - **Data Sources**: Census ACS 5-year (education, income, age, occupation, commute at 4 geographic levels), NCES schools, FBI crime, FEMA/USGS hazards, OSM POI, FRED sales trends, Hawaii GIS school zones
-- **Export**: Multi-page PDF (10-12 pages, RPR-quality layout with cover page, bar charts, comparison tables, agent branding) and Word/DOCX
+- **Export**: Multi-page branded PDF (12-14+ pages with cover page, bar charts, comparison tables, value cards, agent branding) and Word/DOCX
 - **Fair Housing Compliance**: Built-in compliance check -- validates no discriminatory language
 Help the agent generate neighborhood profiles for marketing materials and client presentations.`,
 

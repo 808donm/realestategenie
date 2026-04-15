@@ -284,7 +284,7 @@ Investment verdict (Strong Buy/Good/Moderate/Weak/Pass), rental income analysis 
 AVM + CMA valuation, property facts, comp stats by status (Active/Pending/Closed), comp table, per-comp adjustment cards with dollar adjustments, pricing summary with recommended price
 
 ### Neighborhood Report
-Cover map, housing comparison table (ZIP/County/State/USA), market trends, education/age/income/occupation bar charts, commute distribution, schools, walkability, lifestyle narrative, amenities
+Cover page with neighborhood map, housing facts comparison table (ZIP/County/State/USA with median value, income, population, age, own/rent split), market trends with market type indicator and MoM arrows (median price, inventory, DOM, sold-to-list, median estimated value), sold home stats bar charts (price range, price/sqft, home size, home age, bedroom count distributions), people facts comparison table (population, density, pop change, median age), education levels bar charts, age distribution bar charts, household income brackets bar chart, occupational categories bar chart, households with children breakdown, transportation modes (how people get to work), economy comparison table with commute data, commute time distribution, quality of life facts (elevation, rainfall, temperature, superfund/brownfield sites), schools table (up to 15 with type, grades, enrollment, student-teacher ratio), walkability score, lifestyle & vibe narrative, location intelligence, local amenities (parks, shopping, dining), nearby neighborhoods grid (median value, homes, population)
 
 ### Shared Report Components
 ReportHeader, ValueCard, ReportRow, TwoColumnGrid, MarketTypeIndicator, EquityBar, AvmRangeBar, HorizontalBarChart, ComparisonTable, PhotoGallery, ReportFooter

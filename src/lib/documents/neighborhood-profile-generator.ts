@@ -84,6 +84,61 @@ export interface ProfileData {
 
   // Walkability
   walkScore?: number;
+
+  // Market MoM trend indicators
+  marketTrends?: {
+    medianPriceMoM?: number;
+    inventoryMoM?: number;
+    domMoM?: number;
+    soldToListMoM?: number;
+    medianEstimatedValue?: number;
+    estimatedValueMoM?: number;
+    estimatedValue12Mo?: number;
+  };
+
+  // Sold home stats (distributions for bar charts)
+  soldHomeStats?: {
+    priceRanges?: Array<{ label: string; count: number }>;
+    pricePerSqftRanges?: Array<{ label: string; count: number }>;
+    sizeRanges?: Array<{ label: string; count: number }>;
+    ageRanges?: Array<{ label: string; count: number }>;
+    bedroomCounts?: Array<{ label: string; count: number }>;
+  };
+
+  // Households with children
+  householdsWithChildren?: {
+    marriedWithChildren?: number;
+    marriedWithoutChildren?: number;
+    singleWithChildren?: number;
+  };
+
+  // Transportation modes (how people get to work)
+  transportationModes?: Array<{ label: string; count: number }>;
+
+  // Quality of life
+  qualityOfLife?: {
+    elevation?: number;
+    annualRainfall?: number;
+    avgJanMin?: number;
+    avgJanMax?: number;
+    avgJulMin?: number;
+    avgJulMax?: number;
+    commuteMinutes?: number;
+    superfundSites?: number;
+    brownfieldSites?: boolean;
+  };
+
+  // Nearby neighborhoods
+  nearbyNeighborhoods?: Array<{
+    name: string;
+    medianValue?: number;
+    numberOfHomes?: number;
+    population?: number;
+  }>;
+
+  // Population density & change
+  populationDensity?: number;
+  populationChange?: number;
 }
 
 // ── Helpers ──
@@ -225,25 +280,122 @@ export function generatePDF(profileData: ProfileData, agentBranding: AgentBrandi
       y = drawValueCards(doc, marketCards, y, margin);
     }
 
-    // Additional market data
+    // Additional market data rows
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...COLORS.textDark);
     const medPrice = typeof md.medianPrice === "number" ? $(md.medianPrice) : md.medianPrice;
     if (medPrice) {
-      doc.setFontSize(9);
-      doc.setFont("helvetica", "normal");
+      ensureSpace(6);
       doc.setTextColor(...COLORS.textMuted);
-      doc.text(pdfSafe(`Median List Price: ${medPrice}`), margin, y);
+      doc.text("Median List Price:", margin, y);
+      doc.setTextColor(...COLORS.textDark);
+      doc.text(pdfSafe(String(medPrice)), margin + 40, y);
       y += 5;
     }
     if (md.activeInventory != null) {
-      doc.text(pdfSafe(`Active Inventory: ${md.activeInventory} listings`), margin, y);
+      ensureSpace(6);
+      doc.setTextColor(...COLORS.textMuted);
+      doc.text("Active Inventory:", margin, y);
+      doc.setTextColor(...COLORS.textDark);
+      doc.text(pdfSafe(`${md.activeInventory} listings`), margin + 40, y);
       y += 5;
     }
     const ppsf = typeof md.pricePerSqFt === "number" ? `$${md.pricePerSqFt.toLocaleString()}` : md.pricePerSqFt;
     if (ppsf) {
-      doc.text(pdfSafe(`Price per Sqft: ${ppsf}`), margin, y);
+      ensureSpace(6);
+      doc.setTextColor(...COLORS.textMuted);
+      doc.text("Price per Sqft:", margin, y);
+      doc.setTextColor(...COLORS.textDark);
+      doc.text(pdfSafe(String(ppsf)), margin + 40, y);
       y += 5;
     }
+
+    // MoM trend indicators
+    const mt = profileData.marketTrends;
+    if (mt) {
+      y += 2;
+      const trend = (label: string, v?: number) => {
+        if (v == null) return;
+        ensureSpace(6);
+        doc.setFontSize(8);
+        doc.setTextColor(...COLORS.textMuted);
+        doc.text(pdfSafe(label), margin, y);
+        const arrow = v > 0 ? "+" : "";
+        const color = v > 0 ? COLORS.greenAccent : v < 0 ? COLORS.redAccent : COLORS.textMuted;
+        doc.setTextColor(color[0], color[1], color[2]);
+        doc.setFont("helvetica", "bold");
+        doc.text(pdfSafe(`${arrow}${v.toFixed(1)}% MoM`), margin + 40, y);
+        doc.setFont("helvetica", "normal");
+        y += 5;
+      };
+      trend("Median Price", mt.medianPriceMoM);
+      trend("Inventory", mt.inventoryMoM);
+      trend("Days on Market", mt.domMoM);
+      trend("Sold-to-List", mt.soldToListMoM);
+
+      // Median Estimated Value summary
+      if (mt.medianEstimatedValue != null) {
+        ensureSpace(20);
+        y += 4;
+        doc.setFillColor(...COLORS.lightBlueBg);
+        doc.roundedRect(margin - 2, y - 4, contentW + 4, 16, 2, 2, "F");
+        doc.setFontSize(8);
+        doc.setTextColor(...COLORS.textMuted);
+        doc.text("Median Estimated Value", margin, y);
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(...COLORS.brandBlue);
+        doc.text(pdfSafe($(mt.medianEstimatedValue)), margin + 50, y + 2);
+        if (mt.estimatedValueMoM != null) {
+          doc.setFontSize(8);
+          doc.setFont("helvetica", "normal");
+          doc.text(pdfSafe(`MoM: ${mt.estimatedValueMoM > 0 ? "+" : ""}${mt.estimatedValueMoM.toFixed(1)}%`), margin + 105, y);
+        }
+        if (mt.estimatedValue12Mo != null) {
+          doc.text(pdfSafe(`12-Mo: ${mt.estimatedValue12Mo > 0 ? "+" : ""}${mt.estimatedValue12Mo.toFixed(1)}%`), margin + 105, y + 5);
+        }
+        y += 18;
+      }
+    }
     y += 4;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // SOLD HOME STATS (bar chart distributions)
+  // ═══════════════════════════════════════════════════════════════════════
+
+  if (profileData.soldHomeStats) {
+    const shs = profileData.soldHomeStats;
+
+    const drawDistChart = (title: string, items: Array<{ label: string; count: number }>) => {
+      if (!items || items.length === 0) return;
+      ensureSpace(10 + items.length * 10);
+      section(title);
+      const chartData: BarChartItem[] = items.map((item) => ({
+        label: item.label,
+        value: item.count,
+        displayValue: String(item.count),
+      }));
+      y = drawHorizontalBarChart(doc, chartData, {
+        x: margin,
+        y,
+        width: contentW,
+        labelWidth: 45,
+        barHeight: 7,
+        barGap: 3,
+        maxValue: Math.max(...chartData.map((d) => d.value), 1),
+        barColor: COLORS.brandBlue,
+        showValues: true,
+      });
+      y += 6;
+    };
+
+    if (shs.priceRanges) drawDistChart("Price Range of Homes Sold", shs.priceRanges);
+    if (shs.pricePerSqftRanges) drawDistChart("Price per Sqft of Homes Sold", shs.pricePerSqftRanges);
+    if (shs.sizeRanges) drawDistChart("Size of Homes Sold", shs.sizeRanges);
+    if (shs.ageRanges) drawDistChart("Age of Homes Sold", shs.ageRanges);
+    if (shs.bedroomCounts) drawDistChart("Bedrooms in Homes Sold", shs.bedroomCounts);
   }
 
   // ═══════════════════════════════════════════════════════════════════════
@@ -265,8 +417,13 @@ export function generatePDF(profileData: ProfileData, agentBranding: AgentBrandi
     const peopleRows: ComparisonTableRow[] = [
       { label: "Population", values: [demo.zip, demo.county, demo.state, demo.national].map((l) => l?.totalPopulation != null ? fmtK(l.totalPopulation as number) : "-") },
       { label: "Median Age", values: [demo.zip, demo.county, demo.state, demo.national].map((l) => l?.medianAge != null ? String(l.medianAge) : "-") },
-      { label: "Households with Children", values: [demo.zip, demo.county, demo.state, demo.national].map((l) => l?.householdsWithChildrenPct != null ? `${l.householdsWithChildrenPct}%` : "-") },
     ];
+    if (profileData.populationDensity != null) {
+      peopleRows.push({ label: "Pop. Density / Sq Mi", values: [fmtK(profileData.populationDensity), "-", "-", "-"] });
+    }
+    if (profileData.populationChange != null) {
+      peopleRows.push({ label: "Pop. Change since 2020", values: [`${profileData.populationChange > 0 ? "+" : ""}${profileData.populationChange.toFixed(1)}%`, "-", "-", "-"] });
+    }
 
     y = drawComparisonTable(doc, geoHeaders, peopleRows, margin, y, contentW);
     y += 8;
@@ -437,6 +594,136 @@ export function generatePDF(profileData: ProfileData, agentBranding: AgentBrandi
   }
 
   // ═══════════════════════════════════════════════════════════════════════
+  // HOUSEHOLDS WITH CHILDREN
+  // ═══════════════════════════════════════════════════════════════════════
+
+  if (profileData.householdsWithChildren) {
+    const hc = profileData.householdsWithChildren;
+    if (hc.marriedWithChildren || hc.marriedWithoutChildren || hc.singleWithChildren) {
+      ensureSpace(40);
+      section("Households with Children");
+
+      const hhData: BarChartItem[] = [];
+      if (hc.marriedWithoutChildren) hhData.push({ label: "Married w/o Children", value: hc.marriedWithoutChildren, displayValue: fmtK(hc.marriedWithoutChildren) });
+      if (hc.marriedWithChildren) hhData.push({ label: "Married with Children", value: hc.marriedWithChildren, displayValue: fmtK(hc.marriedWithChildren) });
+      if (hc.singleWithChildren) hhData.push({ label: "Single with Children", value: hc.singleWithChildren, displayValue: fmtK(hc.singleWithChildren) });
+
+      y = drawHorizontalBarChart(doc, hhData, {
+        x: margin,
+        y,
+        width: contentW,
+        labelWidth: 55,
+        barHeight: 8,
+        barGap: 4,
+        maxValue: Math.max(...hhData.map((d) => d.value), 1),
+        barColor: COLORS.brandBlue,
+        showValues: true,
+      });
+      y += 6;
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // TRANSPORTATION MODES
+  // ═══════════════════════════════════════════════════════════════════════
+
+  if (profileData.transportationModes && profileData.transportationModes.length > 0) {
+    ensureSpace(10 + profileData.transportationModes.length * 10);
+    section("How People Get to Work");
+
+    const transData: BarChartItem[] = profileData.transportationModes.map((t) => ({
+      label: t.label,
+      value: t.count,
+      displayValue: fmtK(t.count),
+    }));
+
+    y = drawHorizontalBarChart(doc, transData, {
+      x: margin,
+      y,
+      width: contentW,
+      labelWidth: 55,
+      barHeight: 8,
+      barGap: 3,
+      maxValue: Math.max(...transData.map((d) => d.value), 1),
+      barColor: COLORS.brandBlue,
+      showValues: true,
+    });
+    y += 6;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // QUALITY OF LIFE
+  // ═══════════════════════════════════════════════════════════════════════
+
+  if (profileData.qualityOfLife) {
+    const qol = profileData.qualityOfLife;
+    ensureSpace(60);
+
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...COLORS.textDark);
+    doc.text("Quality of Life", margin, y + 4);
+    y += 10;
+
+    section("Quality of Life Facts");
+
+    if (qol.elevation != null) {
+      ensureSpace(6);
+      doc.setFontSize(8);
+      doc.setTextColor(...COLORS.textMuted);
+      doc.text("Elevation (ft):", margin, y);
+      doc.setTextColor(...COLORS.textDark);
+      doc.text(String(qol.elevation), margin + 40, y);
+      y += 5;
+    }
+    if (qol.annualRainfall != null) {
+      doc.setTextColor(...COLORS.textMuted);
+      doc.text("Annual Rainfall (in):", margin, y);
+      doc.setTextColor(...COLORS.textDark);
+      doc.text(qol.annualRainfall.toFixed(1), margin + 40, y);
+      y += 5;
+    }
+    if (qol.commuteMinutes != null) {
+      doc.setTextColor(...COLORS.textMuted);
+      doc.text("Avg Commute (min):", margin, y);
+      doc.setTextColor(...COLORS.textDark);
+      doc.text(String(qol.commuteMinutes), margin + 40, y);
+      y += 5;
+    }
+    if (qol.superfundSites != null) {
+      doc.setTextColor(...COLORS.textMuted);
+      doc.text("Superfund Sites:", margin, y);
+      doc.setTextColor(...COLORS.textDark);
+      doc.text(String(qol.superfundSites), margin + 40, y);
+      y += 5;
+    }
+    if (qol.brownfieldSites != null) {
+      doc.setTextColor(...COLORS.textMuted);
+      doc.text("Brownfield Sites:", margin, y);
+      doc.setTextColor(...COLORS.textDark);
+      doc.text(qol.brownfieldSites ? "Yes" : "No", margin + 40, y);
+      y += 5;
+    }
+
+    // Temperature summary
+    if (qol.avgJanMin != null && qol.avgJulMax != null) {
+      y += 4;
+      ensureSpace(16);
+      section("Average Temperature");
+      const tempCards: ValueCard[] = [];
+      if (qol.avgJanMin != null) tempCards.push({ label: "JAN MIN", value: `${qol.avgJanMin}F` });
+      if (qol.avgJanMax != null) tempCards.push({ label: "JAN MAX", value: `${qol.avgJanMax}F` });
+      if (qol.avgJulMin != null) tempCards.push({ label: "JUL MIN", value: `${qol.avgJulMin}F` });
+      if (qol.avgJulMax != null) tempCards.push({ label: "JUL MAX", value: `${qol.avgJulMax}F` });
+      if (tempCards.length > 0) {
+        ensureSpace(24);
+        y = drawValueCards(doc, tempCards, y, margin);
+      }
+    }
+    y += 6;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
   // SCHOOLS
   // ═══════════════════════════════════════════════════════════════════════
 
@@ -565,6 +852,51 @@ export function generatePDF(profileData: ProfileData, agentBranding: AgentBrandi
     renderList("Parks & Recreation", profileData.amenitiesList.parks);
     renderList("Shopping", profileData.amenitiesList.shopping);
     renderList("Dining", profileData.amenitiesList.dining);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // NEARBY NEIGHBORHOODS
+  // ═══════════════════════════════════════════════════════════════════════
+
+  if (profileData.nearbyNeighborhoods && profileData.nearbyNeighborhoods.length > 0) {
+    ensureSpace(40);
+
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...COLORS.textDark);
+    doc.text("Nearby Neighborhoods", margin, y + 4);
+    y += 12;
+
+    // Render as a grid of neighborhood cards (2 columns)
+    const nbrs = profileData.nearbyNeighborhoods.slice(0, 6);
+    const colW = (contentW - 6) / 2;
+
+    for (let i = 0; i < nbrs.length; i += 2) {
+      ensureSpace(30);
+      for (let col = 0; col < 2 && i + col < nbrs.length; col++) {
+        const nb = nbrs[i + col];
+        const x = margin + col * (colW + 6);
+
+        doc.setFillColor(...COLORS.cardBg);
+        doc.roundedRect(x, y - 2, colW, 22, 2, 2, "F");
+        doc.setDrawColor(...COLORS.lightGray);
+        doc.roundedRect(x, y - 2, colW, 22, 2, 2, "S");
+
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(...COLORS.brandBlue);
+        doc.text(pdfSafe(nb.name.substring(0, 35)), x + 3, y + 3);
+
+        doc.setFontSize(7);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(...COLORS.textDark);
+        if (nb.medianValue != null) doc.text(pdfSafe(`Median Value: ${$(nb.medianValue)}`), x + 3, y + 9);
+        if (nb.numberOfHomes != null) doc.text(pdfSafe(`Homes: ${fmtK(nb.numberOfHomes)}`), x + 3, y + 14);
+        if (nb.population != null) doc.text(pdfSafe(`Population: ${fmtK(nb.population)}`), x + 3, y + 19);
+      }
+      y += 28;
+    }
+    y += 4;
   }
 
   // ═══════════════════════════════════════════════════════════════════════

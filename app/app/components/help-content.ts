@@ -906,16 +906,27 @@ Every profile includes a built-in Fair Housing Act compliance check that validat
 
 ### 12.5 Export
 
-Export profiles as a professional multi-page PDF (10-12 pages) or Word/DOCX. The PDF includes:
-- **Cover page** with map, neighborhood name, and your agent branding (headshot, name, license, brokerage logo)
-- **Housing Facts & Stats** comparison table (ZIP vs. County vs. State vs. USA) with median home value, income, population, own/rent percentages
-- **Market Trends** with market type indicator (Seller's/Balanced/Buyer's Market), key stats cards
-- **People Facts & Demographics** with education levels, age distribution, income brackets, and occupational categories as horizontal bar charts
-- **Economy** with commute time distribution and income comparisons
-- **Schools** listing with enrollment, student-teacher ratio
-- **Lifestyle & Community** AI-generated narrative content
-- **Local Amenities** organized by category
-- Consistent headers, footers, and page numbers throughout
+Export profiles as a professional multi-page PDF (12-14+ pages) or Word/DOCX. The PDF includes:
+
+1. **Cover Page**: Neighborhood map, name, city/state, agent branding (headshot, name, license, brokerage logo)
+2. **Housing Facts & Stats**: Comparison table (ZIP vs County vs State vs USA) with median home value, household income, population, median age, housing units, own/rent percentages
+3. **Market Trends**: Market type indicator (Seller's/Balanced/Buyer's Market), key stats cards (months of inventory, sold-to-list, median DOM, median sold price), MoM trend arrows for all metrics, median estimated value with 1-month and 12-month change
+4. **Sold Home Stats**: Distribution bar charts showing price ranges, price per sqft, home sizes, home ages, and bedroom counts of recently sold homes
+5. **People Facts & Stats**: Population, density, population change since 2020, median age across geographic levels
+6. **Education Levels**: Horizontal bar charts showing graduate/professional, bachelor's, some college, associate's, high school, less than HS
+7. **Age Distribution**: Bar chart showing population by age group (Under 18 through 65+)
+8. **Household Income Brackets**: Bar chart from >$200K down to <$25K
+9. **Occupational Categories**: Bar chart of employment categories (management, service, sales, construction, production)
+10. **Households with Children**: Breakdown of married with/without children and single with children
+11. **Transportation Modes**: How people get to work (drive/carpool, walk, bicycle, public transit, work from home)
+12. **Economy**: Multi-geo comparison table with income, commute time; commute time distribution bar chart
+13. **Quality of Life**: Elevation, annual rainfall, average temperatures (Jan/Jul min/max), commute time, superfund/brownfield sites
+14. **Schools**: Table of up to 15 schools with type, grade range, enrollment, and student-teacher ratio
+15. **Walkability**: Walk score display with label
+16. **Lifestyle & Vibe**: AI-generated character narrative
+17. **Location Intelligence**: AI-generated proximity and accessibility analysis
+18. **Local Amenities**: Parks, shopping, and dining organized by category
+19. **Nearby Neighborhoods**: Grid of up to 6 micro-neighborhoods with median home value, number of homes, and population
 
 Census data is automatically fetched from the ACS 5-year survey at 4 geographic levels when you export the PDF.`,
   },
