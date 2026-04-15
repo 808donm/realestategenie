@@ -877,7 +877,7 @@ export async function generateCMAReportPDF(
   // APPLY FOOTERS TO ALL PAGES
   // ════════════════════════════════════════════════════════════════════
 
-  applyFootersToAllPages(doc, agent);
+  applyFootersToAllPages(doc, new Date().toLocaleDateString(), agent.displayName);
 
   return doc.output("blob");
 }
