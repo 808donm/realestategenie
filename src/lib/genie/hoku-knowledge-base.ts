@@ -155,7 +155,27 @@ Help the agent search listings, run comps, match leads, analyze investments, exp
   - **Market Stats**: Median price, avg DOM, active listings, price/sqft, median rent
   - **Federal/GIS**: School zones (elementary/middle/high attendance boundaries), hazards (FEMA NRI), flood/tsunami/fire zones, opportunity zones
 - **AVM Reliability**: Compared to county assessment and recent sale. If >30% difference, suppressed -- county assessment shown instead
-- Download professional multi-page PDF report (cover page with map, value snapshot, AVM range bar, equity visual, photo gallery, comps table, market type indicator, hazards, demographics) or generate shareable link (expires 30 days)
+- Download professional multi-page PDF report or generate shareable link (expires 30 days). The Property Report includes:
+  - Cover page with map and hero photo, branded with agent info
+  - Value Snapshot: AVM, last sale, equity, LTV with AVM range bar and rental estimate
+  - Property Details: type, beds/baths/sqft, lot size, parking, year built, land tenure
+  - Interior Features: plumbing fixtures, fireplace, attic, interior structure
+  - Exterior Features: pool, deck, patio, porch, building condition, fire sprinklers
+  - Legal Description: zoning, census tract, subdivision, legal description text
+  - Tax History: multi-year comparison table (up to 5 years of land, improvement, total assessed, tax amount)
+  - Deed/Transaction Details: contract/recording dates, buyer/seller, vesting, title company, doc numbers, transfer tax
+  - Mortgage & Equity: loan balance, original loan, lender, loan type, LTV, equity with visual bar
+  - Mortgage Payment Estimate: estimated monthly payment with principal/interest/tax/HOA breakdown
+  - Sales History: table with dates, amounts, buyer/seller names
+  - Ownership: owner name, co-owner, occupancy status, absentee/corporate flags, mailing address
+  - Comparable Sales: table with address, price, beds/baths, sqft, close date, match percentage
+  - Area Market Statistics: market type indicator, months of inventory, sold-to-list ratio, avg DOM, median price, MoM trend indicators
+  - Hazard & Environmental Zones: tsunami, lava flow, flood, sea level rise, cesspool, SMA, DHHL
+  - Neighborhood & Economic Context: median income, home value, age, population density, unemployment, poverty, own/rent split
+  - Neighborhood Comparison: side-by-side table comparing ZIP vs County vs State metrics
+  - Schools: up to 6 nearby schools with level, grades, enrollment, student-teacher ratio, overall grade
+  - Livability & Walkability: livability index score with category breakdowns (bars), walkability score
+  - Photo Gallery: up to 6 MLS photos
 
 **Tab 2 - Prospecting** (6 search types): See prospecting context.
 

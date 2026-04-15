@@ -159,6 +159,72 @@ export interface PropertyReportData {
   marketType?: "sellers" | "balanced" | "buyers";
   monthsOfInventory?: number;
   soldToListRatio?: number;
+  // Schools
+  schools?: Array<{
+    name: string;
+    level: string; // "Elementary" | "Middle" | "High"
+    grades?: string;
+    distance?: string;
+    enrollment?: number;
+    studentTeacherRatio?: string;
+    overallGrade?: string;
+    mathProficiency?: string;
+    readingProficiency?: string;
+  }>;
+  // Multi-year tax history
+  taxHistory?: Array<{
+    year: number;
+    assessedLand?: number;
+    assessedImpr?: number;
+    assessedTotal?: number;
+    marketLand?: number;
+    marketImpr?: number;
+    marketTotal?: number;
+    taxAmount?: number;
+  }>;
+  // Deed / transaction details
+  deed?: {
+    contractDate?: string;
+    recordingDate?: string;
+    documentType?: string;
+    buyerVesting?: string;
+    sellerName?: string;
+    buyerName?: string;
+    titleCompany?: string;
+    documentNumber?: string;
+    mortgageDocNumber?: string;
+    transferTax?: number;
+  };
+  // Legal description
+  legal?: {
+    zoning?: string;
+    censusTract?: string;
+    legalDescription?: string;
+    subdivision?: string;
+    block?: string;
+    tract?: string;
+  };
+  // Interior / Exterior expanded
+  interiorFeatures?: Array<{ label: string; value: string }>;
+  exteriorFeatures?: Array<{ label: string; value: string }>;
+  // Neighborhood comparison
+  neighborhoodComparison?: {
+    zip?: { label: string; medianValue?: number; medianAge?: number; ownPct?: number; rentPct?: number; homeValueChange?: number };
+    county?: { label: string; medianValue?: number; medianAge?: number; ownPct?: number; rentPct?: number; homeValueChange?: number };
+    state?: { label: string; medianValue?: number; medianAge?: number; ownPct?: number; rentPct?: number; homeValueChange?: number };
+    usa?: { label: string; medianValue?: number; medianAge?: number; ownPct?: number; rentPct?: number; homeValueChange?: number };
+  };
+  // Livability / Walkability
+  livabilityScore?: number;
+  livabilityCategories?: Array<{ label: string; score: number }>;
+  walkabilityScore?: number;
+  // Market trend MoM indicators
+  marketTrends?: {
+    medianPriceMoM?: number;
+    inventoryMoM?: number;
+    domMoM?: number;
+    soldToListMoM?: number;
+  };
   // Generated timestamp
   generatedAt: string;
 }
@@ -171,6 +237,14 @@ export type { AgentBranding } from "./pdf-report-utils";
 const $ = (n?: number | null) => fmt$(n);
 const num = (n?: number | null) => fmtNum(n);
 const pct = (n?: number | null) => fmtPct(n);
+
+/** Format a date string (ISO or other) to MM/DD/YYYY. Returns the original if unparseable. */
+const fmtDate = (d?: string | null): string | undefined => {
+  if (!d) return undefined;
+  const parsed = new Date(d);
+  if (isNaN(parsed.getTime())) return d;
+  return `${parsed.getMonth() + 1}/${parsed.getDate()}/${parsed.getFullYear()}`;
+};
 
 /**
  * Generate a branded Property Intelligence Report PDF.
@@ -237,7 +311,7 @@ export function generatePropertyIntelligencePDF(data: PropertyReportData, brandi
 
   const valueCards: ValueCard[] = [
     { label: "AVM VALUE", value: $(data.avmValue), sub: data.avmDate ? `As of ${data.avmDate}` : undefined, color: COLORS.brandBlue },
-    { label: "LAST SALE", value: $(data.lastSalePrice), sub: data.lastSaleDate || undefined, color: COLORS.brandBlue },
+    { label: "LAST SALE", value: $(data.lastSalePrice), sub: fmtDate(data.lastSaleDate) || undefined, color: COLORS.brandBlue },
     {
       label: "EST. EQUITY",
       value: data.estimatedEquity != null ? `${data.estimatedEquity >= 0 ? "+" : ""}${$(data.estimatedEquity)}` : "-",
@@ -349,10 +423,73 @@ export function generatePropertyIntelligencePDF(data: PropertyReportData, brandi
   }
 
   // ═══════════════════════════════════════════════════════════════════════
-  // TAX & PUBLIC RECORDS
+  // INTERIOR / EXTERIOR FEATURES (expanded)
   // ═══════════════════════════════════════════════════════════════════════
 
-  if (data.assessedTotal != null || data.taxAmount != null) {
+  if (data.interiorFeatures && data.interiorFeatures.length > 0) {
+    section("INTERIOR FEATURES");
+    data.interiorFeatures.forEach((f) => row(f.label, f.value));
+    y += 4;
+  }
+
+  if (data.exteriorFeatures && data.exteriorFeatures.length > 0) {
+    section("EXTERIOR FEATURES");
+    data.exteriorFeatures.forEach((f) => row(f.label, f.value));
+    y += 4;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // LEGAL DESCRIPTION
+  // ═══════════════════════════════════════════════════════════════════════
+
+  if (data.legal) {
+    const lg = data.legal;
+    if (lg.zoning || lg.censusTract || lg.legalDescription || lg.subdivision) {
+      section("LEGAL DESCRIPTION");
+      row("Zoning", lg.zoning);
+      row("Census Tract", lg.censusTract);
+      row("Subdivision", lg.subdivision);
+      if (lg.legalDescription) {
+        ensureSpace(14);
+        doc.setFontSize(8);
+        doc.setTextColor(...COLORS.textMuted);
+        doc.text("Legal Description:", margin, y);
+        y += 5;
+        doc.setTextColor(...COLORS.textDark);
+        doc.setFont("helvetica", "normal");
+        const legalLines = doc.splitTextToSize(pdfSafe(lg.legalDescription.substring(0, 300)), contentW);
+        legalLines.slice(0, 6).forEach((line: string) => {
+          ensureSpace(6);
+          doc.setFontSize(8);
+          doc.text(line, margin, y);
+          y += 4;
+        });
+      }
+      y += 4;
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // TAX HISTORY (multi-year)
+  // ═══════════════════════════════════════════════════════════════════════
+
+  if (data.taxHistory && data.taxHistory.length > 0) {
+    section("TAX HISTORY");
+
+    const taxHeaders = ["Year", "Land", "Improvements", "Total Assessed", "Tax Amount"];
+    const taxRows = data.taxHistory.slice(0, 5).map((t) => ({
+      label: String(t.year),
+      values: [
+        $(t.assessedLand || t.marketLand),
+        $(t.assessedImpr || t.marketImpr),
+        $(t.assessedTotal || t.marketTotal),
+        $(t.taxAmount),
+      ],
+    }));
+
+    y = drawComparisonTable(doc, taxHeaders, taxRows, margin, y, contentW);
+    y += 4;
+  } else if (data.assessedTotal != null || data.taxAmount != null) {
     section("TAX ASSESSMENT");
     row("Assessed Total", $(data.assessedTotal));
     row("Land Value", $(data.assessedLand));
@@ -364,13 +501,36 @@ export function generatePropertyIntelligencePDF(data: PropertyReportData, brandi
   }
 
   // ═══════════════════════════════════════════════════════════════════════
+  // DEED / TRANSACTION DETAILS
+  // ═══════════════════════════════════════════════════════════════════════
+
+  if (data.deed) {
+    const d = data.deed;
+    if (d.contractDate || d.documentType || d.buyerName || d.sellerName) {
+      section("DEED / TRANSACTION DETAILS");
+      row("Contract Date", fmtDate(d.contractDate));
+      row("Recording Date", fmtDate(d.recordingDate));
+      row("Document Type", d.documentType);
+      row("Buyer", d.buyerName);
+      row("Buyer Vesting", d.buyerVesting);
+      row("Seller", d.sellerName);
+      row("Title Company", d.titleCompany);
+      row("Document #", d.documentNumber);
+      row("Mortgage Document #", d.mortgageDocNumber);
+      if (d.transferTax != null) row("Transfer Tax", $(d.transferTax));
+      y += 4;
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
   // MORTGAGE & EQUITY
   // ═══════════════════════════════════════════════════════════════════════
 
   if (data.loanBalance != null || data.loanAmount != null || data.lender) {
     section("MORTGAGE & EQUITY");
     row("Loan Balance", $(data.loanBalance));
-    row("Original Loan", $(data.loanAmount));
+    const loanAmt = typeof data.loanAmount === "object" ? (data.loanAmount as unknown as Record<string, number>)?.firstAmt : data.loanAmount;
+    row("Original Loan", $(loanAmt));
     row("Lender", data.lender);
     row("Loan Type", data.loanType);
     row("Active Loans", data.loanCount != null ? String(data.loanCount) : null);
@@ -445,15 +605,18 @@ export function generatePropertyIntelligencePDF(data: PropertyReportData, brandi
     section("SALES HISTORY");
 
     const headers = ["", "Date", "Amount", "Buyer", "Seller"];
-    const rows = data.salesHistory.slice(0, 10).map((sale, i) => ({
-      label: String(i + 1),
-      values: [
-        sale.date || "-",
-        sale.amount != null ? $(sale.amount) : "-",
-        (sale.buyer || "-").substring(0, 22),
-        (sale.seller || "-").substring(0, 22),
-      ],
-    }));
+    const rows = data.salesHistory.slice(0, 10).map((sale, i) => {
+      const amt = typeof sale.amount === "object" ? (sale.amount as unknown as Record<string, number>)?.saleAmt : sale.amount;
+      return {
+        label: String(i + 1),
+        values: [
+          fmtDate(sale.date) || "-",
+          amt != null ? $(amt) : "-",
+          (sale.buyer || "-").substring(0, 22),
+          (sale.seller || "-").substring(0, 22),
+        ],
+      };
+    });
 
     y = drawComparisonTable(doc, headers, rows, margin, y, contentW);
     y += 4;
@@ -491,7 +654,7 @@ export function generatePropertyIntelligencePDF(data: PropertyReportData, brandi
         comp.price != null ? $(comp.price) : "-",
         `${comp.beds || "?"}/${comp.baths || "?"}`,
         comp.sqft != null ? num(comp.sqft) : "-",
-        comp.closeDate || "-",
+        fmtDate(comp.closeDate) || "-",
         comp.correlation != null
           ? `${Math.round(comp.correlation <= 1 ? comp.correlation * 100 : comp.correlation)}%`
           : "-",
@@ -534,6 +697,20 @@ export function generatePropertyIntelligencePDF(data: PropertyReportData, brandi
       const ms = data.marketStats;
       row("Active Listings", ms.totalListings != null ? String(ms.totalListings) : null);
       row("Price per Sqft", ms.pricePerSqft != null ? `$${ms.pricePerSqft.toLocaleString()}` : null);
+    }
+
+    // MoM trend indicators
+    if (data.marketTrends) {
+      const mt = data.marketTrends;
+      const trend = (v?: number) => {
+        if (v == null) return null;
+        const arrow = v > 0 ? "+" : "";
+        return `${arrow}${v.toFixed(1)}% MoM`;
+      };
+      if (mt.medianPriceMoM != null) row("Median Price Trend", trend(mt.medianPriceMoM));
+      if (mt.inventoryMoM != null) row("Inventory Trend", trend(mt.inventoryMoM));
+      if (mt.domMoM != null) row("DOM Trend", trend(mt.domMoM));
+      if (mt.soldToListMoM != null) row("Sold-to-List Trend", trend(mt.soldToListMoM));
     }
     y += 4;
   }
@@ -586,6 +763,118 @@ export function generatePropertyIntelligencePDF(data: PropertyReportData, brandi
       row("30-yr Mortgage Rate", fd.mortgageRate30yr != null ? pct(fd.mortgageRate30yr) : null);
       y += 4;
     }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // NEIGHBORHOOD COMPARISON TABLE
+  // ═══════════════════════════════════════════════════════════════════════
+
+  if (data.neighborhoodComparison) {
+    const nc = data.neighborhoodComparison;
+    const areas = [nc.zip, nc.county, nc.state, nc.usa].filter(Boolean);
+    if (areas.length > 1) {
+      section("NEIGHBORHOOD COMPARISON");
+      const ncHeaders = ["", ...areas.map((a) => a!.label)];
+      const ncRows: { label: string; values: string[] }[] = [
+        { label: "Median Home Value", values: areas.map((a) => $(a!.medianValue)) },
+        { label: "Value 12-Mo Change", values: areas.map((a) => a!.homeValueChange != null ? `${a!.homeValueChange > 0 ? "+" : ""}${a!.homeValueChange.toFixed(1)}%` : "-") },
+        { label: "Median Home Age", values: areas.map((a) => a!.medianAge != null ? String(a!.medianAge) : "-") },
+        { label: "Owner-Occupied", values: areas.map((a) => a!.ownPct != null ? `${a!.ownPct}%` : "-") },
+        { label: "Renter-Occupied", values: areas.map((a) => a!.rentPct != null ? `${a!.rentPct}%` : "-") },
+      ];
+      y = drawComparisonTable(doc, ncHeaders, ncRows, margin, y, contentW);
+      y += 4;
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // SCHOOLS
+  // ═══════════════════════════════════════════════════════════════════════
+
+  if (data.schools && data.schools.length > 0) {
+    section("SCHOOLS");
+
+    data.schools.forEach((school) => {
+      ensureSpace(36);
+      // School name and level badge
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...COLORS.brandBlue);
+      doc.text(pdfSafe(school.name), margin, y);
+      y += 5;
+
+      // Level and grades
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...COLORS.textMuted);
+      const levelLine = [school.level, school.grades ? `Grades ${school.grades}` : null, school.distance].filter(Boolean).join("  |  ");
+      doc.text(pdfSafe(levelLine), margin, y);
+      y += 6;
+
+      doc.setTextColor(...COLORS.textDark);
+      if (school.overallGrade) row("Overall Grade", school.overallGrade);
+      if (school.enrollment) row("Enrollment", num(school.enrollment));
+      if (school.studentTeacherRatio) row("Student-Teacher Ratio", school.studentTeacherRatio);
+      if (school.mathProficiency) row("Math Proficiency", school.mathProficiency);
+      if (school.readingProficiency) row("Reading Proficiency", school.readingProficiency);
+      y += 4;
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // LIVABILITY & WALKABILITY
+  // ═══════════════════════════════════════════════════════════════════════
+
+  if (data.livabilityScore != null || data.walkabilityScore != null) {
+    section("LIVABILITY & WALKABILITY");
+
+    if (data.livabilityScore != null) {
+      ensureSpace(16);
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...COLORS.textMuted);
+      doc.text("Livability Index", margin, y);
+      doc.setFontSize(16);
+      doc.setFont("helvetica", "bold");
+      const livColor = data.livabilityScore >= 60 ? COLORS.greenAccent : data.livabilityScore >= 40 ? COLORS.brandGold : COLORS.redAccent;
+      doc.setTextColor(livColor[0], livColor[1], livColor[2]);
+      doc.text(`${data.livabilityScore}/100`, margin + 40, y + 1);
+      doc.setFontSize(7);
+      doc.setTextColor(...COLORS.textMuted);
+      doc.setFont("helvetica", "normal");
+      doc.text("(50+ is above average)", margin + 68, y + 1);
+      y += 10;
+    }
+
+    if (data.livabilityCategories && data.livabilityCategories.length > 0) {
+      data.livabilityCategories.forEach((cat) => {
+        ensureSpace(8);
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(...COLORS.textDark);
+        doc.text(pdfSafe(cat.label), margin, y);
+        // Score bar
+        const barX = margin + 55;
+        const barW = 60;
+        const filledW = (cat.score / 100) * barW;
+        doc.setFillColor(...COLORS.lightGray);
+        doc.roundedRect(barX, y - 3, barW, 4, 1, 1, "F");
+        const barColor = cat.score >= 60 ? COLORS.greenAccent : cat.score >= 40 ? COLORS.brandGold : COLORS.redAccent;
+        doc.setFillColor(barColor[0], barColor[1], barColor[2]);
+        doc.roundedRect(barX, y - 3, Math.max(filledW, 2), 4, 1, 1, "F");
+        doc.setFontSize(7);
+        doc.setTextColor(...COLORS.textMuted);
+        doc.text(String(cat.score), barX + barW + 3, y);
+        y += 6;
+      });
+    }
+
+    if (data.walkabilityScore != null) {
+      ensureSpace(10);
+      y += 2;
+      row("Walkability Score", `${data.walkabilityScore.toFixed(1)} / 5`);
+    }
+    y += 4;
   }
 
   // ═══════════════════════════════════════════════════════════════════════

@@ -269,7 +269,7 @@ Agent-to-agent listing marketing for promoting current inventory.
 All reports render in-browser with the same quality as PDF exports. Each has Print, Download PDF, and Close buttons.
 
 ### Property Report
-Cover page, AVM range bar, value cards, property/building details, MLS listing, tax assessment, mortgage estimate, equity bar, sales history, comps table, market type indicator, hazards, demographics, photo gallery
+Cover page with map and hero photo, AVM range bar, value cards (AVM, last sale, equity, LTV), rental estimate, property details, building details, MLS listing with description, interior features (plumbing, fireplace, attic, structure), exterior features (pool, deck, patio, porch, condition), legal description (zoning, census tract, subdivision), multi-year tax history comparison table (5-year land/improvement/total/tax), deed/transaction details (buyer/seller, vesting, title company, doc numbers, transfer tax), mortgage & equity with visual bar, mortgage payment estimate, sales history table, ownership details, comparable sales table with match scores, area market statistics with market type indicator and MoM trend arrows, hazard & environmental zones, neighborhood & economic context, neighborhood comparison table (ZIP vs County vs State), schools (up to 6 with grades, enrollment, student-teacher ratio, overall grade), livability index with category score bars, walkability score, photo gallery
 
 ### Buyer Report
 Personal note, price/AVM overview, mortgage payment estimate, property details, photos, market trends, neighborhood demographics (4-geo comparison tables), age/income bar charts, walkability scores, hazards, comps

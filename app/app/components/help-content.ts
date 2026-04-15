@@ -777,6 +777,38 @@ The model also uses list-to-sale ratio calibration -- it tracks how properties i
 
 Generic AVMs often miss Hawaii-specific factors like leasehold tenure, which can reduce a property's value by a third. The Genie AVM accounts for these local realities. For methodology details, see this help section. The Property Detail Modal keeps the display clean with just the value and confidence badge.
 
+### 11.2b Property Report (PDF)
+
+From the Property Detail Modal, click the green **Property Report** button to generate a professional multi-page branded PDF. The report is designed as a complete property intelligence briefing.
+
+**Report sections:**
+
+1. **Cover Page**: Property address, map image, hero photo, agent branding (name, license, phone, email, brokerage)
+2. **Value Snapshot**: AVM value, last sale price/date, estimated equity, LTV ratio, AVM confidence range bar, rental estimate with range and gross yield
+3. **Property Details**: Property type, year built, beds/baths, living area, lot size, stories, parking, APN/TMK, county, land tenure
+4. **Interior Features**: Plumbing fixtures, fireplace, attic, interior structure (when available)
+5. **Exterior Features**: Building condition, pool, deck, patio, porch, fire sprinklers (when available)
+6. **Legal Description**: Zoning, census tract, subdivision, legal description text
+7. **Tax History**: Multi-year comparison table showing up to 5 years of land value, improvement value, total assessed, and annual tax amount
+8. **Deed/Transaction Details**: Contract and recording dates, document type, buyer/seller names, buyer vesting, title company, document numbers, transfer tax
+9. **Mortgage & Equity**: Loan balance, original loan amount, lender, loan type, LTV ratio, estimated equity with visual equity bar
+10. **Mortgage Payment Estimate**: Estimated monthly payment with home price, down payment, loan amount, interest rate, P&I, tax, HOA, and total interest breakdown
+11. **Sales History**: Table of all recorded transactions with dates, amounts, buyer/seller names
+12. **Ownership**: Owner name, co-owner, occupancy status, absentee/corporate indicators, mailing address
+13. **Comparable Sales**: Table showing up to 10 comps with address, price, beds/baths, sqft, close date, and match percentage
+14. **Area Market Statistics**: Market type indicator (Seller's/Balanced/Buyer's), months of inventory, sold-to-list ratio, average DOM, median price, active listings, price per sqft, MoM trend indicators
+15. **Hazard & Environmental Zones**: Hawaii-specific hazards (tsunami, lava flow, sea level rise, cesspool, SMA, DHHL) plus FEMA flood zone
+16. **Neighborhood & Economic Context**: Median household income, median home value, median age, population density, unemployment rate, poverty rate, owner/renter occupied percentages
+17. **Neighborhood Comparison**: Side-by-side table comparing your ZIP code vs County vs State on key housing metrics
+18. **Schools**: Up to 6 nearby schools with name, level (Elementary/Middle/High), grades served, distance, enrollment, student-teacher ratio, and overall grade
+19. **Livability & Walkability**: Livability index with total score and category breakdown bars (housing, neighborhood, transportation, environment, health, engagement, opportunity), plus walkability score
+20. **Photo Gallery**: Up to 6 MLS photos
+
+**Tips:**
+- The report pulls all data already loaded in the Property Detail Modal -- no extra API calls
+- Reports can also be saved and shared via a public link (expires after 30 days)
+- All reports are branded with your agent information
+
 ### 11.3 Prospecting (6 Search Types)
 
 1. **Absentee Owners**: Finds owners not living at the property. Best targets: 15+ years owned, out-of-state mailing address.

@@ -789,10 +789,11 @@ export function checkNewPage(
   headerFn?: () => number,
 ): number {
   if (y + needed > 275) {
-    doc.addPage();
+    // If headerFn is provided, it handles addPage + header drawing itself
     if (headerFn) {
       return headerFn();
     }
+    doc.addPage();
     return 16;
   }
   return y;

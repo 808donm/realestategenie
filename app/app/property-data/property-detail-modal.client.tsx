@@ -470,7 +470,7 @@ export default function PropertyDetailModal({
       avmLow: p.avm?.amount?.low,
       avmHigh: p.avm?.amount?.high,
       lastSalePrice: lastSaleAmt ?? undefined,
-      lastSaleDate: p.sale?.amount?.saleTransDate,
+      lastSaleDate: lastSaleDate || p.sale?.amount?.saleTransDate,
       estimatedEquity: equity ?? he?.equity,
       ltv: ltv ?? he?.ltv,
       loanBalance: he?.outstandingBalance,
@@ -1571,13 +1571,13 @@ export default function PropertyDetailModal({
       taxAmount: p.assessment?.tax?.taxAmt,
       taxYear: p.assessment?.tax?.taxYear,
       lastSalePrice: lastSaleAmt ?? undefined,
-      lastSaleDate: p.sale?.amount?.saleTransDate,
+      lastSaleDate: lastSaleDate || p.sale?.amount?.saleTransDate,
       estimatedEquity: equity ?? he?.equity,
       loanBalance: he?.outstandingBalance ?? he?.loanBalance,
       ltv: ltv ?? he?.ltv ?? he?.loanToValue,
       loanCount: he?.loanCount ?? p.mortgage?.lienCount,
-      lender: p.mortgage?.lender?.fullName,
-      loanAmount: p.mortgage?.amount,
+      lender: p.mortgage?.lender?.fullName || (p.mortgage?.lender as any)?.name,
+      loanAmount: typeof p.mortgage?.amount === "object" ? (p.mortgage?.amount as any)?.firstAmt : p.mortgage?.amount,
       loanType: p.mortgage?.loanType,
       rentalEstimate: rentVal != null ? Number(rentVal) : undefined,
       rentalLow: rental?.estimatedMinRentalValue ?? rental?.rentalAmount?.low,
@@ -1611,14 +1611,14 @@ export default function PropertyDetailModal({
       absenteeOwner: p.owner?.absenteeOwnerStatus,
       mailingAddress: p.owner?.mailingAddressOneLine,
       corporateOwner: p.owner?.corporateIndicator,
-      // Sale history from property data
-      salesHistory: p.saleHistory?.map((s) => ({
-        date: s.date,
-        recordingDate: s.recordingDate,
-        amount: s.amount,
-        buyer: s.buyerName,
-        seller: s.sellerName,
-        docType: s.deedType,
+      // Sale history from property data (handle both REAPI nested and legacy flat formats)
+      salesHistory: p.saleHistory?.map((s: any) => ({
+        date: s.date || s.amount?.saleTransDate,
+        recordingDate: s.recordingDate || s.amount?.saleRecDate,
+        amount: typeof s.amount === "object" ? s.amount?.saleAmt : s.amount,
+        buyer: s.buyerName || s.buyerNames,
+        seller: s.sellerName || s.sellerNames,
+        docType: s.deedType || s.documentType,
       })),
       hazards: hazards.length > 0 ? hazards : undefined,
       federalData: federal,
@@ -1633,6 +1633,98 @@ export default function PropertyDetailModal({
       listPrice: mlsListPrice || (p as any).ListPrice || avmVal || bestValue,
       taxAnnualAmount: p.assessment?.tax?.taxAmt,
       associationFee: p.hoa?.fee ? p.hoa.fee * 12 : undefined,
+      // Schools (from neighborhood data)
+      schools: (() => {
+        const schoolsRaw = neighborhoodData?.schools;
+        const schools = schoolsRaw?.school || schoolsRaw?.response?.result?.package?.item || (Array.isArray(schoolsRaw) ? schoolsRaw : []);
+        const schoolList = Array.isArray(schools) ? schools : schools ? [schools] : [];
+        return schoolList.slice(0, 6).map((s: any) => {
+          const detail = s.detail || s;
+          const lvl = [detail.elementarySchoolInd === "Y" && "Elementary", detail.middleSchoolInd === "Y" && "Middle", detail.highSchoolInd === "Y" && "High"].filter(Boolean).join("/") || detail.instructionalLevel || "";
+          return {
+            name: detail.schoolName || detail.InstitutionName || s.schoolName || "Unknown",
+            level: lvl,
+            grades: detail.gradeSpanLow && detail.gradeSpanHigh ? `${detail.gradeSpanLow}-${detail.gradeSpanHigh}` : s.gradeRange,
+            distance: s.location?.distance ? `${Number(s.location.distance).toFixed(1)} mi` : s.distance ? `${Number(s.distance).toFixed(1)} mi` : undefined,
+            enrollment: detail.studentCnt ? Number(detail.studentCnt) : s.enrollment ? Number(s.enrollment) : undefined,
+            studentTeacherRatio: detail.studentCnt && detail.teacherCnt ? `${Math.round(detail.studentCnt / detail.teacherCnt)}:1` : undefined,
+            overallGrade: detail.schoolRating || s.rating,
+            mathProficiency: undefined,
+            readingProficiency: undefined,
+          };
+        }).filter((s: any) => s.name !== "Unknown");
+      })(),
+      // Multi-year tax history (from REAPI assessment_history)
+      taxHistory: reapiData?.assessment_history?.map((t: any) => ({
+        year: t.year,
+        assessedLand: t.land,
+        assessedImpr: t.improvement,
+        assessedTotal: t.total,
+      })),
+      // Deed / transaction details (from most recent sale)
+      deed: (() => {
+        const sale = p.sale as any;
+        if (!sale) return undefined;
+        return {
+          contractDate: sale.amount?.saleTransDate,
+          recordingDate: sale.amount?.saleRecDate,
+          documentType: sale.documentType,
+          buyerVesting: sale.buyerVesting,
+          sellerName: sale.sellerNames || sale.seller?.fullName,
+          buyerName: sale.buyerNames || sale.buyer?.fullName,
+          titleCompany: sale.titleCompany,
+          documentNumber: sale.documentNumber,
+          mortgageDocNumber: sale.mortgageDocumentNumber,
+          transferTax: sale.transferTax,
+        };
+      })(),
+      // Legal description
+      legal: (() => {
+        const rl = reapiData?.lot || {};
+        const zoning = p.lot?.siteZoningIdent || (rl as any).zoning;
+        const censusTract = (rl as any).censusTract;
+        const legalDescription = p.summary?.legal1 || (rl as any).legalDescription;
+        const subdivision = (rl as any).subdivision;
+        if (!zoning && !censusTract && !legalDescription && !subdivision) return undefined;
+        return { zoning, censusTract, legalDescription, subdivision };
+      })(),
+      // Interior features
+      interiorFeatures: (() => {
+        const features: Array<{ label: string; value: string }> = [];
+        const rf = reapiData?.building?.features || {};
+        const rRaw = reapiData?._raw?.propertyInfo || {};
+        if (rRaw.plumbingFixturesCount) features.push({ label: "Plumbing Fixtures", value: String(rRaw.plumbingFixturesCount) });
+        if (rRaw.interiorStructure) features.push({ label: "Interior Structure", value: String(rRaw.interiorStructure) });
+        if ((rf as any).fireplace) features.push({ label: "Fireplace", value: "Yes" });
+        if (rRaw.attic === true) features.push({ label: "Attic", value: "Yes" });
+        return features.length > 0 ? features : undefined;
+      })(),
+      // Exterior features
+      exteriorFeatures: (() => {
+        const features: Array<{ label: string; value: string }> = [];
+        const rf = reapiData?.building?.features || {};
+        const rRaw = reapiData?._raw?.propertyInfo || {};
+        if (rRaw.buildingCondition) features.push({ label: "Building Condition", value: String(rRaw.buildingCondition) });
+        if ((rf as any).pool) features.push({ label: "Pool", value: "Yes" });
+        if ((rf as any).deck) features.push({ label: "Deck", value: rRaw.deckArea ? `Yes (${rRaw.deckArea} sqft)` : "Yes" });
+        if ((rf as any).patio) features.push({ label: "Patio", value: rRaw.patioArea ? `Yes (${rRaw.patioArea} sqft)` : "Yes" });
+        if (rRaw.porchType) features.push({ label: "Porch", value: `${rRaw.porchType}${rRaw.porchArea ? ` (${rRaw.porchArea} sqft)` : ""}` });
+        if (rRaw.safetyFireSprinklers === true) features.push({ label: "Fire Sprinklers", value: "Yes" });
+        return features.length > 0 ? features : undefined;
+      })(),
+      // Neighborhood comparison
+      neighborhoodComparison: (() => {
+        const fd = federalData as any;
+        const census = fd?.census || fd?.demographics || {};
+        if (!census.medianHomeValue) return undefined;
+        return {
+          zip: { label: p.address?.postal1 || "ZIP", medianValue: census.medianHomeValue, medianAge: census.medianAge, ownPct: census.ownerOccupiedPct ? Math.round(census.ownerOccupiedPct) : undefined, rentPct: census.renterOccupiedPct ? Math.round(census.renterOccupiedPct) : undefined },
+          county: census.countyMedianHomeValue ? { label: p.area?.munName || "County", medianValue: census.countyMedianHomeValue } : undefined,
+          state: census.stateMedianHomeValue ? { label: p.address?.countrySubd || "State", medianValue: census.stateMedianHomeValue } : undefined,
+        };
+      })(),
+      // Walkability
+      walkabilityScore: neighborhoodData?.walkScore ? Number(neighborhoodData.walkScore) / 20 : undefined,
       generatedAt: new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }),
     };
   }, [
@@ -1641,6 +1733,7 @@ export default function PropertyDetailModal({
     avmVal,
     bestValue,
     lastSaleAmt,
+    lastSaleDate,
     equity,
     ltv,
     yearBuilt,
@@ -1652,6 +1745,8 @@ export default function PropertyDetailModal({
     enrichedFinancial,
     mlsPhotos,
     mlsListPrice,
+    neighborhoodData,
+    reapiData,
   ]);
 
   const handleGenerateReport = useCallback(async () => {
@@ -1693,16 +1788,23 @@ export default function PropertyDetailModal({
       // Add comps to report — /api/comps returns camelCase fields
       const compsData = compsRes.status === "fulfilled" ? compsRes.value : null;
       if (compsData?.comparables?.length) {
-        reportData.comps = compsData.comparables.slice(0, 10).map((c: any) => ({
-          address: c.address || c.formattedAddress || "Unknown",
-          price: c.closePrice || c.listPrice || c.price,
-          beds: c.bedrooms || c.beds,
-          baths: c.bathrooms || c.baths,
-          sqft: c.squareFootage || c.sqft,
-          closeDate: c.closeDate,
-          correlation: c.correlation,
-          source: c.source || "rentcast",
-        }));
+        reportData.comps = compsData.comparables
+          .filter((c: any) => {
+            // Filter out rental listings (price < $10K is monthly rent, not a sale)
+            const price = c.closePrice || c.listPrice || c.price || 0;
+            return price >= 10000;
+          })
+          .slice(0, 10)
+          .map((c: any) => ({
+            address: c.address || c.formattedAddress || "Unknown",
+            price: c.closePrice || c.listPrice || c.price,
+            beds: c.bedrooms || c.beds,
+            baths: c.bathrooms || c.baths,
+            sqft: c.squareFootage || c.sqft,
+            closeDate: c.closeDate,
+            correlation: c.correlation,
+            source: c.source || "rentcast",
+          }));
       }
 
       // Add MLS sales history
