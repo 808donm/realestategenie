@@ -1844,17 +1844,20 @@ export default function PropertyDetailModal({
         };
       }
 
+      // Determine report type from viewingReport state
+      const rptType = viewingReport || "property";
       const res = await fetch("/api/property-intelligence/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ property: reportData }),
+        body: JSON.stringify({ property: reportData, reportType: rptType }),
       });
       if (!res.ok) throw new Error("Failed to generate report");
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `Property_Intelligence_${addr
+      const prefixMap: Record<string, string> = { property: "Property_Intelligence", buyer: "Buyer_Report", seller: "Seller_Report", investor: "Investor_Report", cma: "CMA_Report" };
+      a.download = `${prefixMap[rptType] || "Report"}_${addr
         .replace(/[^a-zA-Z0-9 ]/g, "")
         .replace(/\s+/g, "_")
         .substring(0, 40)}.pdf`;

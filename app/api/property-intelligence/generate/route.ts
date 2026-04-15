@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { generatePropertyIntelligencePDF, type PropertyReportData } from "@/lib/documents/property-intelligence-report";
+import { generateBuyerReportPDF, type BuyerReportData } from "@/lib/documents/buyer-report-pdf";
+import { generateSellerReportPDF, type SellerReportData } from "@/lib/documents/seller-report-pdf";
 import { fetchImageAsDataUri, fetchStaticMapImage, type AgentBranding } from "@/lib/documents/pdf-report-utils";
 
 /**
@@ -26,6 +28,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
+    const reportType: string = body.reportType || "property"; // "property" | "buyer" | "seller"
     const property: PropertyReportData = body.property;
 
     if (!property || !property.address) {
@@ -118,21 +121,36 @@ export async function POST(request: NextRequest) {
 
     await Promise.allSettled(enrichPromises);
 
-    // Generate PDF
-    const pdfBlob = generatePropertyIntelligencePDF(property, branding);
+    // Generate PDF based on report type
+    let pdfBlob: Blob;
+    let filenamePrefix: string;
+    switch (reportType) {
+      case "buyer":
+        pdfBlob = generateBuyerReportPDF(property as BuyerReportData, branding);
+        filenamePrefix = "Buyer_Report";
+        break;
+      case "seller":
+        pdfBlob = generateSellerReportPDF(property as SellerReportData, branding);
+        filenamePrefix = "Seller_Report";
+        break;
+      default:
+        pdfBlob = generatePropertyIntelligencePDF(property, branding);
+        filenamePrefix = "Property_Intelligence";
+        break;
+    }
 
     // Convert Blob to ArrayBuffer for the response
     const arrayBuffer = await pdfBlob.arrayBuffer();
 
     // Log activity (fire-and-forget)
-    void (async () => { try { await supabase.from("agent_activity_log").insert({ agent_id: user.id, action: "report_generated", details: { address: property.address, type: "property_intelligence" } }); } catch {} })();
+    void (async () => { try { await supabase.from("agent_activity_log").insert({ agent_id: user.id, action: "report_generated", details: { address: property.address, type: reportType } }); } catch {} })();
 
     // Sanitize filename
     const safeAddr = property.address
       .replace(/[^a-zA-Z0-9 ]/g, "")
       .replace(/\s+/g, "_")
       .substring(0, 60);
-    const filename = `Property_Intelligence_${safeAddr}.pdf`;
+    const filename = `${filenamePrefix}_${safeAddr}.pdf`;
 
     return new NextResponse(arrayBuffer, {
       status: 200,

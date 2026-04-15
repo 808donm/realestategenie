@@ -809,6 +809,50 @@ From the Property Detail Modal, click the green **Property Report** button to ge
 - Reports can also be saved and shared via a public link (expires after 30 days)
 - All reports are branded with your agent information
 
+### 11.2c Buyer Report (PDF)
+
+The Buyer Report is generated from **MLS listing data** and is designed for buyer clients evaluating a listed property. Click the **Buyer Report** button in the Property Detail Modal.
+
+**Buyer Report sections:**
+1. Cover page with hero photo and agent branding
+2. Personal note (optional agent message to the buyer)
+3. Listing status badge, price and AVM value cards with range bar
+4. Basic facts (beds, baths, sqft, lot size)
+5. Property information and building details
+6. Interior and exterior features
+7. MLS listing description
+8. Location details (subdivision, zoning, flood zone)
+9. Photo gallery (up to 12 listing photos)
+10. Mortgage payment estimate with full PITI breakdown
+11. Market trends with market type indicator and MoM trend arrows
+12. Neighborhood section: Housing Facts & Stats comparison table (ZIP vs County vs State vs USA), People Facts, age distribution bar chart, income bracket bar chart
+13. Walkability score
+14. Environmental and hazard zones
+15. Comparable sales table
+
+### 11.2d Seller Report (PDF)
+
+The Seller Report is generated from **property data (public records)** and is designed for seller clients considering listing their property. It includes valuation, equity analysis, and a pricing strategy.
+
+**Seller Report sections:**
+1. Cover page with hero photo and agent branding
+2. Personal note (optional agent message to the seller)
+3. Valuation summary cards (AVM, CMA value, last sale, estimated equity)
+4. AVM range bar and CMA range bar
+5. Property facts and building details
+6. Interior and exterior features
+7. Legal description (parcel number, zoning, census tract, subdivision, legal text)
+8. Owner facts (owner name, co-owner, occupancy, mailing address)
+9. Multi-year tax history comparison table (up to 5 years)
+10. Estimated equity section with visual equity bar (property value vs loan balance)
+11. Photo gallery (up to 12 photos)
+12. Market trends with market type indicator and MoM trend arrows
+13. Sales history table with dates, amounts, buyer/seller names
+14. Comparable sales with CMA adjustments (address, status, original price, adjusted price)
+15. Pricing strategy table comparing For Sale, Closed, Distressed, and Expired listings
+16. CMA pricing summary with recommended price, average of comps, adjustments, and CMA range
+17. Environmental and hazard zones
+
 ### 11.3 Prospecting (6 Search Types)
 
 1. **Absentee Owners**: Finds owners not living at the property. Best targets: 15+ years owned, out-of-state mailing address.

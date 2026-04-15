@@ -176,6 +176,8 @@ Help the agent search listings, run comps, match leads, analyze investments, exp
   - Schools: up to 6 nearby schools with level, grades, enrollment, student-teacher ratio, overall grade
   - Livability & Walkability: livability index score with category breakdowns (bars), walkability score
   - Photo Gallery: up to 6 MLS photos
+- **Buyer Report PDF**: Generated from MLS listing data. Includes cover page, personal note, listing status badge, price/AVM cards with range bar, basic facts, property details, building details, interior/exterior features, MLS description, location details, photo gallery (up to 12), mortgage payment estimate with PITI breakdown, market trends with MoM arrows, neighborhood demographics (4-geo comparison tables for housing and people), age distribution and income bracket bar charts, walkability score, hazards, comparable sales. Designed for buyer clients evaluating a listed property.
+- **Seller Report PDF**: Generated from REAPI/public records data. Includes cover page, personal note, valuation cards (AVM + CMA + equity), AVM and CMA range bars, property facts, building details, legal description (parcel, zoning, census tract), owner facts, multi-year tax history table, equity section with visual bar, photo gallery, market trends, sales history, comparable sales with CMA adjustments, pricing strategy table (for sale/closed/distressed/expired), CMA pricing summary with recommended price. Designed for seller clients considering listing their property.
 
 **Tab 2 - Prospecting** (6 search types): See prospecting context.
 
