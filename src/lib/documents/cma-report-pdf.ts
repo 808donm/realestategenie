@@ -800,7 +800,7 @@ export async function generateCMAReportPDF(
       doc.setFont("helvetica", "bold");
       doc.text("Key Details", MARGIN, y);
       y += 4;
-      y = drawValueCards(doc, marketCards, MARGIN, y, CONTENT_W);
+      y = drawValueCards(doc, marketCards, y, MARGIN);
     }
   }
 
@@ -819,7 +819,7 @@ export async function generateCMAReportPDF(
     doc.text("Listing Photos", MARGIN, y);
     y += 4;
 
-    y = drawPhotoGallery(doc, data.photos.slice(0, 9), MARGIN, y, CONTENT_W);
+    y = drawPhotoGallery(doc, data.photos.slice(0, 9), y, MARGIN);
   }
 
   // ════════════════════════════════════════════════════════════════════
