@@ -392,10 +392,27 @@ export default function PropertyDetailModal({
   const rawAvmVal = p.avm?.amount?.value;
   const countyAssessment = p.assessment?.market?.mktTtlValue || p.assessment?.appraised?.apprTtlValue;
   // Prefer MLS verified sold price over property data provider sale amount
-  // Ignore $0 sales from property data (non-arm's-length transfers)
+  // Ignore non-arm's-length sales (< $1K or < 1% of list price)
+  // If most recent sale is a transfer, check sale history for real sale
   const rawSaleAmt = p.sale?.amount?.saleAmt || p.sale?.amount?.salePrice;
-  const lastSaleAmt = mlsSoldPrice?.price || (rawSaleAmt && rawSaleAmt > 1000 ? rawSaleAmt : null);
-  const lastSaleDate = mlsSoldPrice?.date || (lastSaleAmt ? p.sale?.amount?.saleTransDate : null);
+  const mlsListNum = mlsListPrice || (p as any).ListPrice || 0;
+  let bestSaleAmt = rawSaleAmt && rawSaleAmt > 1000 ? rawSaleAmt : null;
+  let bestSaleDate: string | null = bestSaleAmt ? (p.sale?.amount?.saleTransDate || null) : null;
+
+  // If raw sale < 1% of list, it's a transfer - look for real sale in history
+  if (bestSaleAmt && mlsListNum && bestSaleAmt < mlsListNum * 0.01 && p.saleHistory?.length) {
+    const realSale = (p.saleHistory as any[]).find((s) => {
+      const amt = s.amount || s.saleAmt;
+      return amt && amt > mlsListNum * 0.1;
+    });
+    if (realSale) {
+      bestSaleAmt = realSale.amount || realSale.saleAmt;
+      bestSaleDate = realSale.date || realSale.saleTransDate || null;
+    }
+  }
+
+  const lastSaleAmt = mlsSoldPrice?.price || bestSaleAmt;
+  const lastSaleDate = mlsSoldPrice?.date || bestSaleDate;
 
   // AVM is always shown when available
   const avmVal = rawAvmVal;

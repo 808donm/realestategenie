@@ -255,6 +255,12 @@ function validateAvmInputs(input: GenieAvmInput): ValidatedInputs {
   if (input.lastSalePrice && input.lastSalePrice > 1000 && input.lastSaleDate) {
     let saleIsReasonable = true;
 
+    // Check 0: Sale < 1% of list price = not arm's-length (transfers, gifts, etc.)
+    if (listPriceValue && input.lastSalePrice < listPriceValue * 0.01) {
+      saleIsReasonable = false;
+      discarded.push(`Last sale $${input.lastSalePrice.toLocaleString()} < 1% of list $${listPriceValue.toLocaleString()} - not arm's-length`);
+    }
+
     // Check 1: Price per sqft sanity
     if (input.sqft && input.sqft > 0) {
       const salePricePerSqft = input.lastSalePrice / input.sqft;
