@@ -784,7 +784,7 @@ export async function generateCMAReportPDF(
 
     // Market Type indicator
     if (data.marketType) {
-      y = drawMarketTypeIndicator(doc, data.marketType, MARGIN, y, CONTENT_W);
+      y = drawMarketTypeIndicator(doc, data.marketType as "sellers" | "balanced" | "buyers", y, MARGIN);
       y += 10;
     }
 
