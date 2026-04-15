@@ -731,7 +731,7 @@ export async function generateCMAReportPDF(
 
       // CMA Range bar
       if (data.cmaLow && data.cmaHigh) {
-        drawAvmRangeBar(doc, data.cmaValue, data.cmaLow, data.cmaHigh, MARGIN + 20, y, CONTENT_W - 40);
+        drawAvmRangeBar(doc, data.cmaLow, data.cmaValue, data.cmaHigh, y, MARGIN);
         y += 14;
       }
 
