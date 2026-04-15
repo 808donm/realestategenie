@@ -750,8 +750,8 @@ export async function generateCMAReportPDF(
         const totalAdj = data.cmaValue - avgComps;
 
         doc.setFontSize(9);
-        y = drawRow(doc, "Average of Comps", fmt$(avgComps), MARGIN, y, CONTENT_W);
-        y = drawRow(doc, "Adjustments", `${totalAdj >= 0 ? "+" : ""}${fmt$(totalAdj)}`, MARGIN, y, CONTENT_W);
+        y = drawRow(doc, "Average of Comps", fmt$(avgComps), y, MARGIN);
+        y = drawRow(doc, "Adjustments", `${totalAdj >= 0 ? "+" : ""}${fmt$(totalAdj)}`, y, MARGIN);
         y += 2;
         doc.setDrawColor(...COLORS.brandBlue);
         doc.setLineWidth(0.5);
