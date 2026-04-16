@@ -305,6 +305,85 @@ export function buildSellerReportHtml(data: SellerReportData, branding: AgentBra
       data.marketStats?.medianPrice != null ? `<div class="value-card dark"><div class="vc-label">Median Sold</div><div class="vc-value">${fmt$(data.marketStats.medianPrice)}</div></div>` : "",
     ].filter(Boolean).join("");
 
+    // Build chart data from monthly trends
+    const trends = (data as any).monthlyTrends || [];
+    let chartHtml = "";
+    if (trends.length >= 3) {
+      const labels = trends.map((t: any) => t.month || "").map((m: string) => {
+        if (!m) return "";
+        // Format "2025-08" to "Aug '25"
+        const parts = m.split("-");
+        if (parts.length === 2) {
+          const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+          return `${months[parseInt(parts[1]) - 1] || parts[1]} '${parts[0].slice(2)}`;
+        }
+        return m;
+      });
+      const prices = trends.map((t: any) => t.medianPrice || t.avgPrice || 0);
+      const listings = trends.map((t: any) => t.listings || 0);
+      const doms = trends.map((t: any) => t.dom || 0);
+
+      chartHtml = `
+        <div class="section-title" style="margin-top: 20px;">Median Sale Price Trend</div>
+        <div class="chart-container" style="height: 220px;"><canvas id="priceChart"></canvas></div>
+
+        <div class="section-title" style="margin-top: 16px;">Listings & Days on Market</div>
+        <div class="chart-container" style="height: 200px;"><canvas id="listingsChart"></canvas></div>
+
+        <script>
+          document.addEventListener('DOMContentLoaded', function() {
+            // Price Trend Chart
+            new Chart(document.getElementById('priceChart'), {
+              type: 'line',
+              data: {
+                labels: ${JSON.stringify(labels)},
+                datasets: [{
+                  label: 'Median Price',
+                  data: ${JSON.stringify(prices)},
+                  borderColor: '#1e40af',
+                  backgroundColor: 'rgba(30,64,175,0.1)',
+                  fill: true,
+                  tension: 0.3,
+                  pointRadius: 3,
+                  pointBackgroundColor: '#1e40af',
+                }]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                  y: { ticks: { callback: function(v) { return '$' + (v/1000).toFixed(0) + 'K'; } } },
+                  x: { ticks: { font: { size: 9 } } }
+                }
+              }
+            });
+
+            // Listings + DOM Chart
+            new Chart(document.getElementById('listingsChart'), {
+              type: 'bar',
+              data: {
+                labels: ${JSON.stringify(labels)},
+                datasets: [
+                  { label: 'Listings', data: ${JSON.stringify(listings)}, backgroundColor: '#3b82f6', borderRadius: 3 },
+                  { label: 'Avg DOM', data: ${JSON.stringify(doms)}, backgroundColor: '#f59e0b', borderRadius: 3 }
+                ]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom', labels: { font: { size: 9 } } } },
+                scales: {
+                  y: { beginAtZero: true },
+                  x: { ticks: { font: { size: 9 } } }
+                }
+              }
+            });
+          });
+        </script>
+      `;
+    }
+
     marketSection = `
       <div class="page-break"></div>
       ${hdr}<div class="gold-accent"></div>
@@ -319,6 +398,7 @@ export function buildSellerReportHtml(data: SellerReportData, branding: AgentBra
       </div>
       <div class="value-cards">${mCards}</div>
       ${data.marketStats ? `${row("Active Listings", data.marketStats.totalListings)}${row("Price per Sqft", data.marketStats.pricePerSqft ? `$${data.marketStats.pricePerSqft.toLocaleString()}` : null)}` : ""}
+      ${chartHtml}
     `;
   }
 
@@ -330,7 +410,8 @@ export function buildSellerReportHtml(data: SellerReportData, branding: AgentBra
   if (data.salesHistory && data.salesHistory.length > 0) {
     const salesRows = data.salesHistory.slice(0, 10).map((s, i) => {
       const amt = typeof s.amount === "object" ? (s.amount as any)?.saleAmt : s.amount;
-      return `<tr><td>${i + 1}</td><td>${fmtDate(s.date)}</td><td class="num">${amt != null ? fmt$(amt) : "-"}</td><td>${esc((s.buyer || "-").substring(0, 25))}</td><td>${esc((s.seller || "-").substring(0, 25))}</td></tr>`;
+      const amtDisplay = amt == null ? "-" : amt <= 100 ? "Price Not Disclosed" : fmt$(amt);
+      return `<tr><td>${i + 1}</td><td>${fmtDate(s.date)}</td><td class="num">${amtDisplay}</td><td>${esc((s.buyer || "-").substring(0, 25))}</td><td>${esc((s.seller || "-").substring(0, 25))}</td></tr>`;
     }).join("");
     salesSection = `
       <div class="section-title">Sales History</div>
@@ -406,6 +487,7 @@ export function buildSellerReportHtml(data: SellerReportData, branding: AgentBra
 <html>
 <head>
   <meta charset="utf-8">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
   <style>${getReportBaseStyles()}</style>
 </head>
 <body>

@@ -211,28 +211,51 @@ export default function SellerReportClient() {
       if (rRaw.interiorStructure) interiorFeatures.push({ label: "Interior Structure", value: String(rRaw.interiorStructure) });
       if (rRaw.plumbingFixturesCount) interiorFeatures.push({ label: "Plumbing Fixtures", value: String(rRaw.plumbingFixturesCount) });
       if (building.interior?.bsmtSize) interiorFeatures.push({ label: "Basement Finished", value: `${building.interior.bsmtSize} sq ft` });
-      if (building.parking?.prkgSize) interiorFeatures.push({ label: "Garage", value: `${building.parking.prkgSize} sq ft` });
-      if (bldgFeatures.fireplace) interiorFeatures.push({ label: "Fireplace", value: "Yes" });
+      if (bldgFeatures.fireplace === true) interiorFeatures.push({ label: "Fireplace", value: "Yes" });
+      if (bldgFeatures.fireplace === false) interiorFeatures.push({ label: "Fireplace", value: "No" });
       if (rRaw.attic === true) interiorFeatures.push({ label: "Attic", value: "Yes" });
+      if (rRaw.attic === false) interiorFeatures.push({ label: "Attic", value: "No" });
+      if (bldgRooms.roomsTotal) interiorFeatures.push({ label: "Total Rooms", value: String(bldgRooms.roomsTotal) });
+      if (bldgRooms.bathsHalf) interiorFeatures.push({ label: "Partial Baths", value: String(bldgRooms.bathsHalf) });
+      if (bldgSummary.unitsCount) interiorFeatures.push({ label: "Units", value: String(bldgSummary.unitsCount) });
 
-      // Exterior features
+      // Exterior features - extract ALL from REAPI building features + raw data
       const exteriorFeatures: Array<{ label: string; value: string }> = [];
-      if (mlsListing.ConstructionMaterials) exteriorFeatures.push({ label: "Construction", value: String(mlsListing.ConstructionMaterials) });
-      if (mlsListing.Roof) exteriorFeatures.push({ label: "Roof", value: String(mlsListing.Roof) });
-      if (mlsListing.SecurityFeatures) exteriorFeatures.push({ label: "Security", value: String(mlsListing.SecurityFeatures) });
-      if (mlsListing.PoolFeatures || mlsListing.PoolPrivateYN) exteriorFeatures.push({ label: "Pool", value: mlsListing.PoolFeatures || (mlsListing.PoolPrivateYN === true ? "Yes" : "None") });
-      if (mlsListing.ParkingFeatures) exteriorFeatures.push({ label: "Parking", value: String(mlsListing.ParkingFeatures) });
-      if (mlsListing.ParkingTotal) exteriorFeatures.push({ label: "Parking Spaces", value: String(mlsListing.ParkingTotal) });
+      // Parking & Garage
+      if (building.parking?.garageType) exteriorFeatures.push({ label: "Garage Type", value: String(building.parking.garageType) });
+      if (building.parking?.prkgSize) exteriorFeatures.push({ label: "Garage Size", value: `${building.parking.prkgSize} sqft` });
+      if (building.parking?.prkgSpaces) exteriorFeatures.push({ label: "Parking Spaces", value: String(building.parking.prkgSpaces) });
+      if (rRaw.carport === true) exteriorFeatures.push({ label: "Carport", value: "Yes" });
+      if (rRaw.carport === false) exteriorFeatures.push({ label: "Carport", value: "No" });
+      if (rRaw.rvParking === true) exteriorFeatures.push({ label: "RV Parking", value: "Yes" });
+      if (rRaw.rvParking === false) exteriorFeatures.push({ label: "RV Parking", value: "No" });
+      // Pool, Deck, Porch, Patio
+      if (bldgFeatures.pool === true) exteriorFeatures.push({ label: "Pool", value: "Yes" });
+      if (bldgFeatures.pool === false) exteriorFeatures.push({ label: "Pool", value: "No" });
+      if (bldgFeatures.deck === true) exteriorFeatures.push({ label: "Deck", value: rRaw.deckArea ? `Yes (${rRaw.deckArea} sqft)` : "Yes" });
+      if (bldgFeatures.deck === false) exteriorFeatures.push({ label: "Deck", value: "No" });
+      if (rRaw.porchType) exteriorFeatures.push({ label: "Porch", value: `${rRaw.porchType}${rRaw.porchArea ? ` (${rRaw.porchArea} sqft)` : ""}` });
+      if (bldgFeatures.patio === true) exteriorFeatures.push({ label: "Patio", value: rRaw.patioArea ? `Yes (${rRaw.patioArea} sqft)` : "Yes" });
+      if (bldgFeatures.patio === false) exteriorFeatures.push({ label: "Patio", value: "No" });
+      if (rRaw.balcony === true) exteriorFeatures.push({ label: "Balcony", value: "Yes" });
+      if (rRaw.balcony === false) exteriorFeatures.push({ label: "Balcony", value: "No" });
+      // Building quality/condition
+      if (rRaw.buildingCondition) exteriorFeatures.push({ label: "Building Condition", value: String(rRaw.buildingCondition) });
+      if (rRaw.buildingQuality) exteriorFeatures.push({ label: "Building Quality", value: String(rRaw.buildingQuality) });
+      if (rRaw.neighborhoodCode) exteriorFeatures.push({ label: "Neighborhood Code", value: String(rRaw.neighborhoodCode) });
+      if (rRaw.effectiveYearBuilt) exteriorFeatures.push({ label: "Effective Year Built", value: String(rRaw.effectiveYearBuilt) });
+      if (rRaw.safetyFireSprinklers === true) exteriorFeatures.push({ label: "Fire Sprinklers", value: "Yes" });
+      if (rRaw.safetyFireSprinklers === false) exteriorFeatures.push({ label: "Fire Sprinklers", value: "No" });
+      // HOA
+      if (rRaw.hoaFee || bldgFeatures.hoa) exteriorFeatures.push({ label: "HOA", value: rRaw.hoaFee ? `$${rRaw.hoaFee}/mo` : "Yes" });
+      // Lot
+      const lotAcres = lot.lotSize2 || (lot.lotSize1 ? (Number(lot.lotSize1) / 43560).toFixed(2) : null);
+      if (lot.lotSize1) exteriorFeatures.push({ label: "Lot Size", value: `${Number(lot.lotSize1).toLocaleString()} sq ft${lotAcres ? ` (${lotAcres} acres)` : ""}` });
+      // MLS-only fields
       if (mlsListing.Utilities) exteriorFeatures.push({ label: "Utilities", value: String(mlsListing.Utilities).substring(0, 100) });
       if (mlsListing.View) exteriorFeatures.push({ label: "View", value: String(mlsListing.View) });
       if (mlsListing.LotFeatures) exteriorFeatures.push({ label: "Lot Features", value: String(mlsListing.LotFeatures) });
-      if (rRaw.buildingCondition) exteriorFeatures.push({ label: "Building Condition", value: String(rRaw.buildingCondition) });
-      if (rRaw.buildingQuality) exteriorFeatures.push({ label: "Building Quality", value: String(rRaw.buildingQuality) });
-      if (rRaw.roofType) exteriorFeatures.push({ label: "Roof Type (Public)", value: String(rRaw.roofType) });
-      if (rRaw.neighborhoodCode) exteriorFeatures.push({ label: "Neighborhood Code", value: String(rRaw.neighborhoodCode) });
       if (rRaw.effectiveYearBuilt) exteriorFeatures.push({ label: "Effective Year Built", value: String(rRaw.effectiveYearBuilt) });
-      const lotAcres = lot.lotSize2 || (lot.lotSize1 ? (lot.lotSize1 / 43560).toFixed(2) : null);
-      if (lot.lotSize1) exteriorFeatures.push({ label: "Lot Size", value: `${Number(lot.lotSize1).toLocaleString()} sq ft${lotAcres ? ` (${lotAcres} acres)` : ""}` });
 
       // Tax history from REAPI
       const taxHistory = (rd.assessment_history || []).map((t: any) => ({
@@ -324,20 +347,20 @@ export default function SellerReportClient() {
         absenteeOwner: owner.absenteeOwnerStatus,
         mailingAddress: owner.mailingAddressOneLine,
         corporateOwner: owner.corporateIndicator,
-        // Building
-        constructionType: bldgConstruction.constructionType || mlsListing.ConstructionMaterials,
-        roofType: bldgConstruction.roofCover || mlsListing.Roof,
-        foundationType: bldgConstruction.foundationType,
-        heatingType: mlsListing.Heating || (p.utilities || {}).heatingType,
-        coolingType: mlsListing.Cooling || (p.utilities || {}).coolingType,
-        fireplaceCount: building.interior?.fplcCount,
-        basementType: building.interior?.bsmtType || mlsListing.Basement,
+        // Building - extract ALL available fields from REAPI
+        constructionType: bldgConstruction.constructionType || rRaw.constructionType || mlsListing.ConstructionMaterials,
+        roofType: bldgConstruction.roofCover || rRaw.roofMaterial || rRaw.roofType || mlsListing.Roof,
+        foundationType: bldgConstruction.foundationType || rRaw.foundationType,
+        heatingType: rRaw.heatingType || mlsListing.Heating || (p.utilities || {}).heatingType,
+        coolingType: rRaw.coolingType || rRaw.airConditioningType || mlsListing.Cooling || (p.utilities || {}).coolingType,
+        fireplaceCount: building.interior?.fplcCount || (bldgFeatures.fireplace ? 1 : 0),
+        basementType: building.interior?.bsmtType || rRaw.basementType || mlsListing.Basement,
         basementSize: building.interior?.bsmtSize,
-        architectureStyle: bldgSummary.archStyle,
+        architectureStyle: bldgSummary.archStyle || rRaw.architecturalStyle,
         condition: bldgConstruction.condition || rRaw.buildingCondition,
-        exteriorWalls: bldgConstruction.wallType || rRaw.exteriorWalls,
-        parkingType: building.parking?.garageType || building.parking?.prkgType,
-        parkingSpaces: building.parking?.prkgSpaces,
+        exteriorWalls: bldgConstruction.wallType || rRaw.exteriorWalls || rRaw.wallType,
+        parkingType: building.parking?.garageType || building.parking?.prkgType || rRaw.garageType,
+        parkingSpaces: building.parking?.prkgSpaces || rRaw.parkingSpaces,
         // Features
         interiorFeatures: interiorFeatures.length > 0 ? interiorFeatures : undefined,
         exteriorFeatures: exteriorFeatures.length > 0 ? exteriorFeatures : undefined,
@@ -369,34 +392,53 @@ export default function SellerReportClient() {
         generatedAt: new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }),
       };
 
-      // Fetch comps and market stats in parallel
+      // Fetch comps (prefer REAPI comps, fallback to /api/comps) and market stats
       const lat = (rd.location || p.location || {}).latitude;
       const lng = (rd.location || p.location || {}).longitude;
       const zip = property.zip;
 
+      // Try REAPI comps first (already in the enrichment data)
+      const reapiComps = (rd._raw?.comps || []).map((c: any) => ({
+        address: c.address?.address ? `${c.address.address}, ${c.address.city}` : c.formattedAddress || "Unknown",
+        price: c.lastSaleAmount ? Number(c.lastSaleAmount) : c.closePrice || 0,
+        beds: c.bedrooms ? Number(c.bedrooms) : undefined,
+        baths: c.bathrooms ? Number(c.bathrooms) : undefined,
+        sqft: c.squareFeet ? Number(c.squareFeet) : undefined,
+        closeDate: c.lastSaleDate || c.closeDate || "",
+        correlation: c.correlation || c.similarityScore,
+        yearBuilt: c.yearBuilt ? Number(c.yearBuilt) : undefined,
+      })).filter((c: any) => c.price > 1000);
+
+      // Also fetch from /api/comps for MLS-sourced comps with correlation scores
       const [compsRes, marketRes] = await Promise.allSettled([
-        fetch(`/api/comps?address=${encodeURIComponent(property.address)}&latitude=${lat || ""}&longitude=${lng || ""}&compCount=10&nocache=1`)
+        fetch(`/api/comps?address=${encodeURIComponent(property.address)}&latitude=${lat || ""}&longitude=${lng || ""}&compCount=15&beds=${property.beds || ""}&baths=${property.baths || ""}&sqft=${property.sqft || ""}&yearBuilt=${property.yearBuilt || ""}`)
           .then((r) => r.ok ? r.json() : null).catch(() => null),
         zip ? fetch(`/api/rentcast/market-stats?zipCode=${zip}`)
           .then((r) => r.ok ? r.json() : null).catch(() => null) : Promise.resolve(null),
       ]);
 
-      // Comps
+      // Merge comps: prefer MLS comps with correlations, then add REAPI comps
       const compsData = compsRes.status === "fulfilled" ? compsRes.value : null;
-      if (compsData?.comparables?.length) {
-        reportData.comps = compsData.comparables
-          .filter((c: any) => ((c.closePrice || c.listPrice || 0) >= 10000))
-          .slice(0, 10)
-          .map((c: any) => ({
-            address: c.address || c.formattedAddress || "Unknown",
-            price: c.closePrice || c.listPrice || c.price,
-            beds: c.bedrooms || c.beds,
-            baths: c.bathrooms || c.baths,
-            sqft: c.squareFootage || c.sqft,
-            closeDate: c.closeDate,
-            correlation: c.correlation,
-          }));
-      }
+      const mlsComps = (compsData?.comparables || [])
+        .filter((c: any) => ((c.closePrice || c.listPrice || 0) >= 10000))
+        .slice(0, 10)
+        .map((c: any) => ({
+          address: c.address || c.formattedAddress || "Unknown",
+          price: c.closePrice || c.listPrice || c.price,
+          beds: c.bedrooms || c.beds,
+          baths: c.bathrooms || c.baths,
+          sqft: c.squareFootage || c.sqft,
+          closeDate: c.closeDate,
+          correlation: c.correlation,
+        }));
+
+      // Deduplicate: use MLS comps first, add REAPI comps that aren't already present
+      const seenAddrs = new Set(mlsComps.map((c: any) => (c.address || "").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 20)));
+      const uniqueReapiComps = reapiComps.filter((c: any) => {
+        const key = (c.address || "").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 20);
+        return key && !seenAddrs.has(key);
+      });
+      reportData.comps = [...mlsComps, ...uniqueReapiComps].slice(0, 10);
 
       // Market stats
       const marketData = marketRes.status === "fulfilled" ? marketRes.value : null;
@@ -414,6 +456,19 @@ export default function SellerReportClient() {
           totalListings: rptSale.totalListings,
           pricePerSqft: rptSale.averagePricePerSquareFoot || rptSale.medianPricePerSquareFoot,
         };
+
+        // Extract monthly sale trends for charts
+        const monthlyHistory = marketData.history || marketData.saleHistory || saleStats.history || [];
+        if (Array.isArray(monthlyHistory) && monthlyHistory.length > 0) {
+          reportData.monthlyTrends = monthlyHistory.slice(-12).map((m: any) => ({
+            month: m.month || m.date || m.period,
+            medianPrice: m.medianPrice || m.medianSalePrice,
+            avgPrice: m.averagePrice || m.averageSalePrice,
+            pricePerSqft: m.averagePricePerSquareFoot || m.medianPricePerSquareFoot,
+            dom: m.averageDaysOnMarket || m.medianDaysOnMarket,
+            listings: m.totalListings || m.activeListings,
+          }));
+        }
 
         // Compute market type
         const totalListings = reportData.marketStats.totalListings;

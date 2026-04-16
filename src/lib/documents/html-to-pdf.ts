@@ -107,23 +107,24 @@ export async function renderHtmlToPdf(
       timeout: 30000,
     });
 
-    // Wait for any async chart rendering (Chart.js, etc.)
-    await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 500)));
+    // Wait for Chart.js and images to render
+    await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 1500)));
 
-    // Generate PDF
+    // Generate PDF with native header/footer for consistent rendering
+    const useNativeHeaderFooter = !!options?.headerTemplate || !!options?.footerTemplate;
     const pdfBuffer = await page.pdf({
       format: options?.format || "Letter",
       landscape: options?.landscape || false,
       printBackground: options?.printBackground !== false,
       margin: options?.margin || {
-        top: "0.4in",
-        right: "0.4in",
-        bottom: "0.6in",
-        left: "0.4in",
+        top: useNativeHeaderFooter ? "0.8in" : "0.5in",
+        right: "0.5in",
+        bottom: useNativeHeaderFooter ? "0.7in" : "0.5in",
+        left: "0.5in",
       },
-      displayHeaderFooter: options?.displayHeaderFooter || false,
-      headerTemplate: options?.headerTemplate || "",
-      footerTemplate: options?.footerTemplate || "",
+      displayHeaderFooter: useNativeHeaderFooter,
+      headerTemplate: options?.headerTemplate || "<span></span>",
+      footerTemplate: options?.footerTemplate || "<span></span>",
     });
 
     return Buffer.from(pdfBuffer);
@@ -152,28 +153,25 @@ export function getReportBaseStyles(): string {
     .page-break { page-break-before: always; }
     .avoid-break { page-break-inside: avoid; }
 
-    /* Header bar */
+    /* Header bar - fits within content area, no negative margins */
     .report-header {
       background: #1e40af;
       color: white;
-      padding: 10px 20px;
+      padding: 10px 16px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin: -0.4in -0.4in 0 -0.4in;
-      width: calc(100% + 0.8in);
-      overflow: hidden;
+      border-radius: 4px 4px 0 0;
       min-height: 36px;
     }
     .report-header .report-type { font-size: 8px; opacity: 0.8; letter-spacing: 0.5px; }
-    .report-header .report-address { font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70%; }
+    .report-header .report-address { font-size: 11px; font-weight: 700; }
     .report-header .brand { font-size: 10px; font-weight: 700; white-space: nowrap; }
     .report-header .brand-tm { font-size: 5px; vertical-align: super; }
     .gold-accent {
       height: 3px;
       background: #b4822a;
-      margin: 0 -0.4in 16px -0.4in;
-      width: calc(100% + 0.8in);
+      margin: 0 0 16px 0;
     }
 
     /* Cover page */
@@ -182,13 +180,12 @@ export function getReportBaseStyles(): string {
       padding: 40px 0;
     }
     .cover-page .cover-title {
-      font-size: 28px;
+      font-size: 26px;
       font-weight: 800;
       color: white;
       background: #1e40af;
-      padding: 30px 40px;
-      margin: -0.4in -0.4in 0 -0.4in;
-      width: calc(100% + 0.8in);
+      padding: 28px 36px;
+      border-radius: 4px 4px 0 0;
     }
     .cover-page .cover-subtitle {
       font-size: 14px;
@@ -199,8 +196,7 @@ export function getReportBaseStyles(): string {
     .cover-page .cover-gold {
       height: 4px;
       background: #b4822a;
-      margin: 0 -0.4in 20px -0.4in;
-      width: calc(100% + 0.8in);
+      margin: 0 0 20px 0;
     }
 
     /* Section titles */
