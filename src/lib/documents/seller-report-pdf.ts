@@ -134,6 +134,34 @@ export function generateSellerReportPDF(data: SellerReportData, branding: AgentB
     y += 10;
   }
 
+  // Listing status badge (if on MLS)
+  if (data.listingStatus) {
+    ensureSpace(12);
+    const statusColor = data.listingStatus === "Active" ? COLORS.greenAccent : COLORS.brandBlue;
+    doc.setFillColor(statusColor[0], statusColor[1], statusColor[2]);
+    doc.roundedRect(margin, y - 3, 55, 6, 1, 1, "F");
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(255, 255, 255);
+    doc.text(pdfSafe(`${data.listingStatus} / For Sale`), margin + 2, y + 1);
+    y += 8;
+
+    // Show list price prominently if available
+    if (data.listPrice) {
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...COLORS.textDark);
+      doc.text(pdfSafe(`List Price: ${$(data.listPrice)}`), margin, y);
+      if (data.mlsNumber) {
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(...COLORS.textMuted);
+        doc.text(pdfSafe(`MLS# ${data.mlsNumber}`), margin + 80, y);
+      }
+      y += 8;
+    }
+  }
+
   // Valuation cards
   const valCards: ValueCard[] = [];
   if (data.avmValue != null) valCards.push({ label: "ESTIMATED VALUE", value: $(data.avmValue), sub: data.avmDate ? `As of ${data.avmDate}` : undefined, color: COLORS.brandBlue });
@@ -217,6 +245,25 @@ export function generateSellerReportPDF(data: SellerReportData, branding: AgentB
   }
 
   // ═══════════════════════════════════════════════════════════════════════
+  // MLS LISTING DESCRIPTION
+  // ═══════════════════════════════════════════════════════════════════════
+
+  if (data.listingDescription) {
+    section("LISTING DESCRIPTION");
+    ensureSpace(20);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...COLORS.textDark);
+    const descLines = doc.splitTextToSize(pdfSafe(data.listingDescription.substring(0, 800)), contentW);
+    descLines.slice(0, 15).forEach((line: string) => {
+      ensureSpace(5);
+      doc.text(line, margin, y);
+      y += 4;
+    });
+    y += 4;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
   // LEGAL DESCRIPTION
   // ═══════════════════════════════════════════════════════════════════════
 
@@ -252,10 +299,25 @@ export function generateSellerReportPDF(data: SellerReportData, branding: AgentB
 
   if (data.owner1 || data.owner2 || data.mailingAddress) {
     section("OWNER FACTS");
-    row("Owner", data.owner1, { bold: true });
-    if (data.owner2) row("Co-Owner", data.owner2);
+    row("Owner Name (Public)", data.owner1, { bold: true });
+    if (data.owner2) row("Owner Name 2 (Public)", data.owner2);
     row("Owner Occupied", data.ownerOccupied === "Y" ? "Yes" : data.ownerOccupied === "N" ? "No" : data.ownerOccupied);
+    row("Absentee Owner", data.absenteeOwner === "A" ? "Yes" : data.absenteeOwner === "Y" ? "Yes" : data.absenteeOwner);
+    row("Corporate Owner", data.corporateOwner === "Y" ? "Yes" : data.corporateOwner === "N" ? "No" : data.corporateOwner);
+    if (data.deed?.buyerVesting) row("Vesting", data.deed.buyerVesting);
     row("Mailing Address", data.mailingAddress);
+    y += 4;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // LOCATION DETAILS
+  // ═══════════════════════════════════════════════════════════════════════
+
+  if (data.legal?.subdivision || data.legal?.zoning || data.federalData?.floodZone) {
+    section("LOCATION DETAILS");
+    row("Subdivision", data.legal?.subdivision);
+    row("Zoning", data.legal?.zoning);
+    if (data.federalData?.floodZone) row("Flood Zone", data.federalData.floodZone);
     y += 4;
   }
 

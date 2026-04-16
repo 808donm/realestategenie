@@ -2,6 +2,8 @@
 
 import { useState, useCallback } from "react";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 interface PropertyResult {
   address: string;
   city?: string;
@@ -22,9 +24,20 @@ interface PropertyResult {
   lastSalePrice?: number;
   lastSaleDate?: string;
   apn?: string;
+  estimatedEquity?: number;
+  loanBalance?: number;
+  // Enrichment status
+  enriched?: boolean;
+  mlsFound?: boolean;
+  mlsPhotos?: string[];
+  mlsListPrice?: number;
+  mlsStatus?: string;
+  mlsDaysOnMarket?: number;
+  mlsDescription?: string;
   // Raw data for report generation
-  _rawReapiData?: Record<string, unknown>;
-  _rawPropertyData?: Record<string, unknown>;
+  _rawPropertyData?: any;
+  _rawReapiData?: any;
+  _rawMlsData?: any;
 }
 
 export default function SellerReportClient() {
@@ -34,7 +47,9 @@ export default function SellerReportClient() {
   const [error, setError] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [personalNote, setPersonalNote] = useState("");
+  const [enriching, setEnriching] = useState(false);
 
+  // ── Step 1: Search property by address ──
   const handleSearch = useCallback(async () => {
     if (!searchAddress.trim()) return;
     setSearching(true);
@@ -42,7 +57,7 @@ export default function SellerReportClient() {
     setProperty(null);
 
     try {
-      // Search REAPI for property data by address
+      // Search via expanded property endpoint
       const res = await fetch(`/api/integrations/attom/property?endpoint=expanded&address=${encodeURIComponent(searchAddress.trim())}&pagesize=1`);
       if (!res.ok) throw new Error("Property not found");
       const data = await res.json();
@@ -54,8 +69,9 @@ export default function SellerReportClient() {
 
       const addr = p.address?.oneLine || `${p.address?.line1}, ${p.address?.locality}, ${p.address?.countrySubd} ${p.address?.postal1}`;
       const sale = p.sale?.amount;
+      const he = p.homeEquity || {};
 
-      setProperty({
+      const propResult: PropertyResult = {
         address: addr,
         city: p.address?.locality,
         state: p.address?.countrySubd,
@@ -75,125 +91,280 @@ export default function SellerReportClient() {
         lastSalePrice: sale?.saleAmt || sale?.salePrice,
         lastSaleDate: sale?.saleTransDate,
         apn: p.identifier?.apn,
+        estimatedEquity: he.equity,
+        loanBalance: he.outstandingBalance || he.loanBalance,
         _rawPropertyData: p,
+      };
+
+      setProperty(propResult);
+
+      // ── Step 2: Enrich with REAPI + MLS in parallel ──
+      setEnriching(true);
+      const reapiParams = new URLSearchParams({ endpoint: "property-detail", address: addr });
+      if (p.address?.locality) reapiParams.set("city", p.address.locality);
+      if (p.address?.countrySubd) reapiParams.set("state", p.address.countrySubd);
+      if (p.address?.postal1) reapiParams.set("zip", p.address.postal1);
+
+      const [reapiRes, mlsRes] = await Promise.allSettled([
+        fetch(`/api/integrations/reapi?${reapiParams.toString()}`, { signal: AbortSignal.timeout(15000) })
+          .then((r) => r.ok ? r.json() : null).catch(() => null),
+        fetch(`/api/mls/sales-history?address=${encodeURIComponent(addr)}`)
+          .then((r) => r.ok ? r.json() : null).catch(() => null),
+      ]);
+
+      const reapiData = reapiRes.status === "fulfilled" ? reapiRes.value?.property : null;
+      const mlsData = mlsRes.status === "fulfilled" ? mlsRes.value : null;
+
+      // Also try to find an active MLS listing for photos
+      let mlsListing: any = null;
+      try {
+        const line1 = p.address?.line1 || addr.split(",")[0].trim();
+        const mlsSearchRes = await fetch(`/api/mls/search?address=${encodeURIComponent(line1)}&status=Active,Pending,Closed&limit=1`);
+        if (mlsSearchRes.ok) {
+          const mlsSearchData = await mlsSearchRes.json();
+          mlsListing = mlsSearchData.listings?.[0] || mlsSearchData.results?.[0] || null;
+        }
+      } catch {}
+
+      // Update property with enriched data
+      setProperty((prev) => {
+        if (!prev) return prev;
+        const rd = reapiData || {};
+        return {
+          ...prev,
+          enriched: true,
+          // REAPI enrichment overrides
+          avmValue: rd.avm?.amount?.value || prev.avmValue,
+          beds: rd.building?.rooms?.beds || prev.beds,
+          baths: rd.building?.rooms?.bathsFull || rd.building?.rooms?.bathsTotal || prev.baths,
+          sqft: rd.building?.size?.livingSize || rd.building?.size?.universalSize || prev.sqft,
+          estimatedEquity: rd.homeEquity?.equity || prev.estimatedEquity,
+          loanBalance: rd.homeEquity?.outstandingBalance || rd.homeEquity?.loanBalance || prev.loanBalance,
+          // MLS data
+          mlsFound: !!mlsListing,
+          mlsPhotos: (mlsListing?.Media || []).filter((m: any) => m.MediaURL && (m.MediaType || "").startsWith("image")).slice(0, 20).map((m: any) => m.MediaURL),
+          mlsListPrice: mlsListing?.ListPrice,
+          mlsStatus: mlsListing?.StandardStatus,
+          mlsDaysOnMarket: mlsListing?.DaysOnMarket,
+          mlsDescription: mlsListing?.PublicRemarks,
+          _rawReapiData: reapiData,
+          _rawMlsData: { salesHistory: mlsData, listing: mlsListing },
+        };
       });
+      setEnriching(false);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Search failed";
       setError(msg);
+      setEnriching(false);
     } finally {
       setSearching(false);
     }
   }, [searchAddress]);
 
+  // ── Generate comprehensive Seller Report PDF ──
   const handleGenerateSellerReport = useCallback(async () => {
     if (!property) return;
     setGenerating(true);
     try {
-      const p = property._rawPropertyData as Record<string, unknown> || {};
-      const sale = (p.sale as Record<string, unknown>)?.amount as Record<string, unknown> || {};
-      const he = (p as Record<string, unknown>).homeEquity as Record<string, unknown> || {};
-      const mortgage = (p as Record<string, unknown>).mortgage as Record<string, unknown> || {};
-      const mortgageAmt = mortgage.amount as Record<string, unknown> || {};
-      const lender = mortgage.lender as Record<string, unknown> || {};
-      const assessment = (p as Record<string, unknown>).assessment as Record<string, unknown> || {};
-      const assessed = assessment.assessed as Record<string, unknown> || {};
-      const market = assessment.market as Record<string, unknown> || {};
-      const tax = assessment.tax as Record<string, unknown> || {};
-      const avm = (p as Record<string, unknown>).avm as Record<string, unknown> || {};
-      const avmAmount = avm.amount as Record<string, unknown> || {};
-      const lot = (p as Record<string, unknown>).lot as Record<string, unknown> || {};
-      const building = (p as Record<string, unknown>).building as Record<string, unknown> || {};
-      const bldgSize = building.size as Record<string, unknown> || {};
-      const bldgRooms = building.rooms as Record<string, unknown> || {};
-      const bldgSummary = building.summary as Record<string, unknown> || {};
-      const bldgConstruction = building.construction as Record<string, unknown> || {};
-      const owner = (p as Record<string, unknown>).owner as Record<string, unknown> || {};
-      const owner1 = owner.owner1 as Record<string, unknown> || {};
-      const owner2 = owner.owner2 as Record<string, unknown> || {};
-      const addr = (p as Record<string, unknown>).address as Record<string, unknown> || {};
-      const summary = (p as Record<string, unknown>).summary as Record<string, unknown> || {};
-      const identifier = (p as Record<string, unknown>).identifier as Record<string, unknown> || {};
+      const p = property._rawPropertyData || {};
+      const rd = property._rawReapiData || {};
+      const mlsListing = property._rawMlsData?.listing || {};
+      const mlsSalesHistory = property._rawMlsData?.salesHistory || {};
 
-      // Build report data from raw REAPI property
-      const reportData = {
+      // Merge property data (REAPI overrides basic property data)
+      const sale = rd.sale?.amount || p.sale?.amount || {};
+      const he = rd.homeEquity || p.homeEquity || {};
+      const mortgage = rd.mortgage || p.mortgage || {};
+      const mortgageAmt = mortgage.amount || {};
+      const lender = mortgage.lender || {};
+      const assessment = rd.assessment || p.assessment || {};
+      const assessed = assessment.assessed || {};
+      const market = assessment.market || {};
+      const tax = assessment.tax || {};
+      const avm = rd.avm || p.avm || {};
+      const avmAmount = avm.amount || {};
+      const lot = rd.lot || p.lot || {};
+      const building = rd.building || p.building || {};
+      const bldgSize = building.size || {};
+      const bldgRooms = building.rooms || {};
+      const bldgSummary = building.summary || {};
+      const bldgConstruction = building.construction || {};
+      const bldgFeatures = building.features || {};
+      const owner = rd.owner || p.owner || {};
+      const owner1Obj = owner.owner1 || {};
+      const owner2Obj = owner.owner2 || {};
+      const addr = rd.address || p.address || {};
+      const summary = rd.summary || p.summary || {};
+      const identifier = rd.identifier || p.identifier || {};
+      const rRaw = rd._raw?.propertyInfo || {};
+      const rl = rd.lot || {};
+
+      // Interior features
+      const interiorFeatures: Array<{ label: string; value: string }> = [];
+      if (mlsListing.InteriorFeatures) interiorFeatures.push({ label: "Interior", value: String(mlsListing.InteriorFeatures).substring(0, 100) });
+      if (mlsListing.Flooring) interiorFeatures.push({ label: "Floor", value: String(mlsListing.Flooring) });
+      if (rRaw.plumbingFixturesCount) interiorFeatures.push({ label: "Plumbing Fixtures", value: String(rRaw.plumbingFixturesCount) });
+      if (rRaw.interiorStructure) interiorFeatures.push({ label: "Interior Structure", value: String(rRaw.interiorStructure) });
+      if (bldgFeatures.fireplace) interiorFeatures.push({ label: "Fireplace", value: "Yes" });
+      if (building.interior?.bsmtSize) interiorFeatures.push({ label: "Basement Finished", value: `${building.interior.bsmtSize} sq ft` });
+      if (building.parking?.prkgSize) interiorFeatures.push({ label: "Garage", value: `${building.parking.prkgSize} sq ft` });
+      if (rRaw.floorCover) interiorFeatures.push({ label: "Floor Cover", value: String(rRaw.floorCover) });
+      if (rRaw.interiorWalls) interiorFeatures.push({ label: "Interior Walls", value: String(rRaw.interiorWalls) });
+
+      // Exterior features
+      const exteriorFeatures: Array<{ label: string; value: string }> = [];
+      if (mlsListing.ConstructionMaterials) exteriorFeatures.push({ label: "Construction", value: String(mlsListing.ConstructionMaterials) });
+      if (mlsListing.Roof) exteriorFeatures.push({ label: "Roof", value: String(mlsListing.Roof) });
+      if (mlsListing.SecurityFeatures) exteriorFeatures.push({ label: "Security", value: String(mlsListing.SecurityFeatures) });
+      if (mlsListing.PoolFeatures || mlsListing.PoolPrivateYN) exteriorFeatures.push({ label: "Pool", value: mlsListing.PoolFeatures || (mlsListing.PoolPrivateYN === true ? "Yes" : "None") });
+      if (mlsListing.ParkingFeatures) exteriorFeatures.push({ label: "Parking", value: String(mlsListing.ParkingFeatures) });
+      if (mlsListing.ParkingTotal) exteriorFeatures.push({ label: "Parking Spaces", value: String(mlsListing.ParkingTotal) });
+      if (mlsListing.Utilities) exteriorFeatures.push({ label: "Utilities", value: String(mlsListing.Utilities).substring(0, 100) });
+      if (mlsListing.View) exteriorFeatures.push({ label: "View", value: String(mlsListing.View) });
+      if (mlsListing.LotFeatures) exteriorFeatures.push({ label: "Lot Features", value: String(mlsListing.LotFeatures) });
+      if (rRaw.buildingCondition) exteriorFeatures.push({ label: "Building Condition", value: String(rRaw.buildingCondition) });
+      if (rRaw.buildingQuality) exteriorFeatures.push({ label: "Building Quality", value: String(rRaw.buildingQuality) });
+      if (rRaw.roofType) exteriorFeatures.push({ label: "Roof Type (Public)", value: String(rRaw.roofType) });
+      if (rRaw.neighborhoodCode) exteriorFeatures.push({ label: "Neighborhood Code", value: String(rRaw.neighborhoodCode) });
+      if (rRaw.effectiveYearBuilt) exteriorFeatures.push({ label: "Effective Year Built", value: String(rRaw.effectiveYearBuilt) });
+      const lotAcres = lot.lotSize2 || (lot.lotSize1 ? (lot.lotSize1 / 43560).toFixed(2) : null);
+      if (lot.lotSize1) exteriorFeatures.push({ label: "Lot Size", value: `${Number(lot.lotSize1).toLocaleString()} sq ft${lotAcres ? ` (${lotAcres} acres)` : ""}` });
+
+      // Tax history from REAPI
+      const taxHistory = (rd.assessment_history || []).map((t: any) => ({
+        year: t.year,
+        assessedLand: t.land,
+        assessedImpr: t.improvement,
+        assessedTotal: t.total,
+      }));
+
+      // Sales history (merge MLS + public records)
+      const publicSalesHistory = (rd.saleHistory || p.saleHistory || []).map((s: any) => {
+        const saleAmt = s.amount || {};
+        return {
+          date: s.date || saleAmt.saleTransDate,
+          recordingDate: s.recordingDate || saleAmt.saleRecDate,
+          amount: typeof s.amount === "object" ? saleAmt.saleAmt : s.amount,
+          buyer: s.buyerName || s.buyerNames,
+          seller: s.sellerName || s.sellerNames,
+          docType: s.deedType || s.documentType,
+        };
+      });
+      const mlsSales = (mlsSalesHistory.unitHistory || mlsSalesHistory.buildingHistory || []).map((s: any) => ({
+        date: s.CloseDate || s.closeDate,
+        amount: s.ClosePrice || s.closePrice,
+        buyer: s.BuyerAgentFullName,
+        seller: s.ListAgentFullName,
+      }));
+      const allSalesHistory = [...mlsSales, ...publicSalesHistory];
+
+      // MLS photos
+      const photos = (property.mlsPhotos || []).slice(0, 20);
+
+      // Build the comprehensive report data
+      const reportData: any = {
         address: property.address,
-        city: addr.locality as string || property.city,
-        state: addr.countrySubd as string || property.state,
-        zip: addr.postal1 as string || property.zip,
+        city: addr.locality || property.city,
+        state: addr.countrySubd || property.state,
+        zip: addr.postal1 || property.zip,
         county: property.county,
-        apn: identifier.apn as string || property.apn,
-        propertyType: summary.propType as string || summary.propertyType as string || property.propertyType,
-        yearBuilt: (bldgSummary.yearBuilt as number) || (summary.yearBuilt as number) || property.yearBuilt,
-        beds: bldgRooms.beds as number || property.beds,
-        baths: (bldgRooms.bathsFull as number) || (bldgRooms.bathsTotal as number) || property.baths,
-        sqft: (bldgSize.livingSize as number) || (bldgSize.universalSize as number) || property.sqft,
-        lotSizeSqft: (lot.lotSize1 as number) || property.lotSizeSqft,
-        lotSizeAcres: lot.lotSize2 as number,
-        avmValue: (avmAmount.value as number) || property.avmValue,
-        avmLow: avmAmount.low as number,
-        avmHigh: avmAmount.high as number,
-        avmConfidence: avmAmount.scr as number,
-        avmDate: avm.eventDate as string,
-        assessedTotal: (assessed.assdTtlValue as number) || property.assessedTotal,
-        assessedLand: assessed.assdLandValue as number,
-        assessedImpr: assessed.assdImprValue as number,
-        marketTotal: market.mktTtlValue as number,
-        taxAmount: tax.taxAmt as number,
-        taxYear: tax.taxYear as number,
-        lastSalePrice: (sale.saleAmt as number) || (sale.salePrice as number) || property.lastSalePrice,
-        lastSaleDate: (sale.saleTransDate as string) || property.lastSaleDate,
-        estimatedEquity: (he.equity as number) || undefined,
-        loanBalance: (he.outstandingBalance as number) || (he.loanBalance as number) || undefined,
-        ltv: (he.ltv as number) || (he.loanToValue as number) || undefined,
-        lender: (lender.fullName as string) || (lender.name as string) || undefined,
-        loanAmount: typeof mortgageAmt === "object" ? (mortgageAmt.firstAmt as number) : (mortgage.amount as number),
-        loanType: mortgage.loanType as string,
-        owner1: owner1.fullName as string || property.owner1,
-        owner2: owner2.fullName as string || property.owner2,
-        ownerOccupied: owner.ownerOccupied as string || property.ownerOccupied,
-        absenteeOwner: owner.absenteeOwnerStatus as string,
-        mailingAddress: owner.mailingAddressOneLine as string,
-        corporateOwner: owner.corporateIndicator as string,
-        constructionType: bldgConstruction.constructionType as string,
-        roofType: bldgConstruction.roofCover as string,
-        foundationType: bldgConstruction.foundationType as string,
-        condition: bldgConstruction.condition as string,
-        architectureStyle: bldgSummary.archStyle as string,
-        stories: bldgSummary.levels as number,
-        // Sales history
-        salesHistory: ((p as Record<string, unknown>).saleHistory as Array<Record<string, unknown>> || []).map((s) => {
-          const saleAmt = s.amount as Record<string, unknown> || {};
-          return {
-            date: (s.date as string) || (saleAmt.saleTransDate as string),
-            recordingDate: (s.recordingDate as string) || (saleAmt.saleRecDate as string),
-            amount: typeof s.amount === "object" ? (saleAmt.saleAmt as number) : (s.amount as number),
-            buyer: (s.buyerName as string) || (s.buyerNames as string),
-            seller: (s.sellerName as string) || (s.sellerNames as string),
-            docType: (s.deedType as string) || (s.documentType as string),
-          };
-        }),
+        apn: identifier.apn || property.apn,
+        propertyType: summary.propType || summary.propertyType || property.propertyType,
+        yearBuilt: bldgSummary.yearBuilt || summary.yearBuilt || property.yearBuilt,
+        beds: bldgRooms.beds || property.beds,
+        baths: bldgRooms.bathsFull || bldgRooms.bathsTotal || property.baths,
+        sqft: bldgSize.livingSize || bldgSize.universalSize || property.sqft,
+        lotSizeSqft: lot.lotSize1 || property.lotSizeSqft,
+        lotSizeAcres: lot.lotSize2,
+        stories: bldgSummary.levels || bldgSummary.storyCount,
+        garageSpaces: building.parking?.prkgSpaces,
+        pool: lot.poolInd === "Y" ? true : lot.poolInd === "N" ? false : undefined,
+        // Valuation
+        avmValue: avmAmount.value || property.avmValue,
+        avmLow: avmAmount.low,
+        avmHigh: avmAmount.high,
+        avmConfidence: avmAmount.scr,
+        avmDate: avm.eventDate,
+        listPrice: property.mlsListPrice,
+        // MLS listing info
+        mlsNumber: mlsListing.ListingId,
+        listingStatus: property.mlsStatus || mlsListing.StandardStatus,
+        daysOnMarket: property.mlsDaysOnMarket || mlsListing.DaysOnMarket,
+        listingAgentName: mlsListing.ListAgentFullName,
+        listingOfficeName: mlsListing.ListOfficeName,
+        listingDescription: property.mlsDescription || mlsListing.PublicRemarks,
+        ownershipType: mlsListing.OwnershipType,
+        // Tax
+        assessedTotal: assessed.assdTtlValue || property.assessedTotal,
+        assessedLand: assessed.assdLandValue,
+        assessedImpr: assessed.assdImprValue,
+        marketTotal: market.mktTtlValue,
+        taxAmount: tax.taxAmt,
+        taxYear: tax.taxYear,
+        taxHistory,
+        // Sale
+        lastSalePrice: sale.saleAmt || sale.salePrice || property.lastSalePrice,
+        lastSaleDate: sale.saleTransDate || property.lastSaleDate,
+        // Equity & Mortgage
+        estimatedEquity: he.equity || property.estimatedEquity,
+        loanBalance: he.outstandingBalance || he.loanBalance || property.loanBalance,
+        ltv: he.ltv || he.loanToValue,
+        loanCount: he.loanCount || mortgage.lienCount,
+        lender: lender.fullName || lender.name,
+        loanAmount: typeof mortgageAmt === "object" ? mortgageAmt.firstAmt : mortgage.amount,
+        loanType: mortgage.loanType,
+        // Ownership
+        owner1: owner1Obj.fullName || property.owner1,
+        owner2: owner2Obj.fullName || property.owner2,
+        ownerOccupied: owner.ownerOccupied || property.ownerOccupied,
+        absenteeOwner: owner.absenteeOwnerStatus,
+        mailingAddress: owner.mailingAddressOneLine,
+        corporateOwner: owner.corporateIndicator,
+        // Building
+        constructionType: bldgConstruction.constructionType || mlsListing.ConstructionMaterials,
+        roofType: bldgConstruction.roofCover || mlsListing.Roof,
+        foundationType: bldgConstruction.foundationType,
+        heatingType: mlsListing.Heating || (p.utilities || {}).heatingType,
+        coolingType: mlsListing.Cooling || (p.utilities || {}).coolingType,
+        fireplaceCount: building.interior?.fplcCount,
+        basementType: building.interior?.bsmtType || mlsListing.Basement,
+        basementSize: building.interior?.bsmtSize,
+        architectureStyle: bldgSummary.archStyle,
+        condition: bldgConstruction.condition || rRaw.buildingCondition,
+        parkingType: building.parking?.garageType || building.parking?.prkgType,
+        parkingSpaces: building.parking?.prkgSpaces,
+        // Features
+        interiorFeatures: interiorFeatures.length > 0 ? interiorFeatures : undefined,
+        exteriorFeatures: exteriorFeatures.length > 0 ? exteriorFeatures : undefined,
         // Legal
-        legal: (lot.zoning || lot.censusTract || lot.legalDescription || lot.subdivision) ? {
-          zoning: (lot.siteZoningIdent as string) || (lot.zoning as string),
-          censusTract: lot.censusTract as string,
-          legalDescription: (summary.legal1 as string) || (lot.legalDescription as string),
-          subdivision: lot.subdivision as string,
+        legal: (rl.zoning || rl.censusTract || rl.legalDescription || rl.subdivision || lot.siteZoningIdent || summary.legal1) ? {
+          zoning: lot.siteZoningIdent || rl.zoning,
+          censusTract: rl.censusTract,
+          legalDescription: summary.legal1 || rl.legalDescription,
+          subdivision: rl.subdivision || mlsListing.SubdivisionName,
         } : undefined,
-        // Deed details
+        // Deed
         deed: sale.saleTransDate ? {
-          contractDate: sale.saleTransDate as string,
-          recordingDate: sale.saleRecDate as string,
-          documentType: (p as Record<string, unknown>).sale && ((p as Record<string, unknown>).sale as Record<string, unknown>).documentType as string,
-          sellerName: ((p as Record<string, unknown>).sale as Record<string, unknown>)?.sellerNames as string,
-          buyerName: ((p as Record<string, unknown>).sale as Record<string, unknown>)?.buyerNames as string,
+          contractDate: sale.saleTransDate,
+          recordingDate: sale.saleRecDate,
+          documentType: (rd.sale || p.sale || {}).documentType,
+          sellerName: (rd.sale || p.sale || {}).sellerNames,
+          buyerName: (rd.sale || p.sale || {}).buyerNames,
+          buyerVesting: (rd.sale || p.sale || {}).buyerVesting,
+          transferTax: (rd.sale || p.sale || {}).transferTax,
         } : undefined,
+        // History
+        salesHistory: allSalesHistory,
+        // Photos
+        photos,
+        // Personal note
         personalNote: personalNote || undefined,
         generatedAt: new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }),
       };
 
-      // Also fetch comps and market stats for the report
-      const lat = ((p as Record<string, unknown>).location as Record<string, unknown>)?.latitude;
-      const lng = ((p as Record<string, unknown>).location as Record<string, unknown>)?.longitude;
+      // Fetch comps and market stats in parallel
+      const lat = (rd.location || p.location || {}).latitude;
+      const lng = (rd.location || p.location || {}).longitude;
       const zip = property.zip;
 
       const [compsRes, marketRes] = await Promise.allSettled([
@@ -203,12 +374,13 @@ export default function SellerReportClient() {
           .then((r) => r.ok ? r.json() : null).catch(() => null) : Promise.resolve(null),
       ]);
 
+      // Comps
       const compsData = compsRes.status === "fulfilled" ? compsRes.value : null;
       if (compsData?.comparables?.length) {
-        (reportData as Record<string, unknown>).comps = compsData.comparables
-          .filter((c: Record<string, unknown>) => ((c.closePrice as number) || (c.listPrice as number) || 0) >= 10000)
+        reportData.comps = compsData.comparables
+          .filter((c: any) => ((c.closePrice || c.listPrice || 0) >= 10000))
           .slice(0, 10)
-          .map((c: Record<string, unknown>) => ({
+          .map((c: any) => ({
             address: c.address || c.formattedAddress || "Unknown",
             price: c.closePrice || c.listPrice || c.price,
             beds: c.bedrooms || c.beds,
@@ -219,15 +391,34 @@ export default function SellerReportClient() {
           }));
       }
 
+      // Market stats
       const marketData = marketRes.status === "fulfilled" ? marketRes.value : null;
       if (marketData?.saleData || marketData?.sale) {
         const saleStats = marketData.saleData || marketData.sale || {};
-        (reportData as Record<string, unknown>).marketStats = {
-          medianPrice: saleStats.medianPrice || saleStats.averagePrice,
-          avgDOM: saleStats.averageDaysOnMarket || saleStats.medianDaysOnMarket,
-          totalListings: saleStats.totalListings,
-          pricePerSqft: saleStats.averagePricePerSquareFoot,
+        const rptPropType = summary.propType || summary.propertyType;
+        const typeMap: Record<string, string> = { sfr: "Single Family", "single family": "Single Family", condo: "Condo", townhouse: "Townhouse" };
+        const rcType = rptPropType ? typeMap[(rptPropType || "").toLowerCase()] : undefined;
+        const typeMatch = rcType && saleStats.dataByPropertyType?.find((d: any) => d.propertyType === rcType);
+        const rptSale = typeMatch || saleStats;
+
+        reportData.marketStats = {
+          medianPrice: rptSale.medianPrice || rptSale.averagePrice,
+          avgDOM: rptSale.averageDaysOnMarket || rptSale.medianDaysOnMarket,
+          totalListings: rptSale.totalListings,
+          pricePerSqft: rptSale.averagePricePerSquareFoot || rptSale.medianPricePerSquareFoot,
         };
+
+        // Compute market type
+        const totalListings = reportData.marketStats.totalListings;
+        const avgDOM = reportData.marketStats.avgDOM;
+        if (totalListings && avgDOM && avgDOM > 0) {
+          const monthlySales = totalListings / (avgDOM / 30);
+          if (monthlySales > 0) {
+            const moi = totalListings / monthlySales;
+            reportData.monthsOfInventory = Math.round(moi * 10) / 10;
+            reportData.marketType = moi <= 4 ? "sellers" : moi <= 6 ? "balanced" : "buyers";
+          }
+        }
       }
 
       // Generate PDF via API
@@ -267,30 +458,12 @@ export default function SellerReportClient() {
           value={searchAddress}
           onChange={(e) => setSearchAddress(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") handleSearch(); }}
-          style={{
-            flex: 1,
-            padding: "12px 16px",
-            fontSize: 14,
-            borderRadius: 8,
-            border: "1px solid #d1d5db",
-            outline: "none",
-          }}
+          style={{ flex: 1, padding: "12px 16px", fontSize: 14, borderRadius: 8, border: "1px solid #d1d5db", outline: "none" }}
         />
         <button
           onClick={handleSearch}
           disabled={searching || !searchAddress.trim()}
-          style={{
-            padding: "12px 24px",
-            fontSize: 14,
-            fontWeight: 600,
-            borderRadius: 8,
-            border: "none",
-            background: "#1e40af",
-            color: "#fff",
-            cursor: searching ? "not-allowed" : "pointer",
-            opacity: searching ? 0.6 : 1,
-            whiteSpace: "nowrap",
-          }}
+          style={{ padding: "12px 24px", fontSize: 14, fontWeight: 600, borderRadius: 8, border: "none", background: "#1e40af", color: "#fff", cursor: searching ? "not-allowed" : "pointer", opacity: searching ? 0.6 : 1, whiteSpace: "nowrap" }}
         >
           {searching ? "Searching..." : "Search Property"}
         </button>
@@ -306,35 +479,57 @@ export default function SellerReportClient() {
       {/* Property preview card */}
       {property && (
         <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, overflow: "hidden", marginBottom: 24 }}>
-          {/* Header */}
-          <div style={{ padding: "20px 24px", background: "#1e40af", color: "#fff" }}>
-            <div style={{ fontSize: 18, fontWeight: 700 }}>{property.address}</div>
-            <div style={{ fontSize: 13, opacity: 0.8, marginTop: 4 }}>
-              {[property.city, property.state, property.zip].filter(Boolean).join(", ")}
+          {/* Header with photo if MLS found */}
+          <div style={{ display: "flex" }}>
+            {property.mlsPhotos && property.mlsPhotos[0] && (
+              <div style={{ width: 200, height: 160, flexShrink: 0, overflow: "hidden" }}>
+                <img src={property.mlsPhotos[0]} alt="Property" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              </div>
+            )}
+            <div style={{ flex: 1, padding: "20px 24px", background: "#1e40af", color: "#fff", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+              <div style={{ fontSize: 18, fontWeight: 700 }}>{property.address}</div>
+              <div style={{ fontSize: 13, opacity: 0.8, marginTop: 4 }}>
+                {[property.city, property.state, property.zip].filter(Boolean).join(", ")}
+              </div>
+              {enriching && <div style={{ fontSize: 11, opacity: 0.7, marginTop: 8 }}>Enriching with additional data sources...</div>}
+              {property.enriched && (
+                <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                  <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: "rgba(255,255,255,0.2)" }}>Public Records</span>
+                  <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: "rgba(255,255,255,0.2)" }}>Property Data</span>
+                  {property.mlsFound && <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: "rgba(16,185,129,0.3)" }}>MLS Found</span>}
+                </div>
+              )}
             </div>
           </div>
 
           {/* Property details grid */}
           <div style={{ padding: "20px 24px" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16, marginBottom: 20 }}>
-              {/* Value cards */}
+            {/* Value cards */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12, marginBottom: 20 }}>
               {property.avmValue != null && (
                 <div style={{ padding: "12px 16px", background: "#eff6ff", borderRadius: 8 }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", textTransform: "uppercase" }}>AVM Value</div>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: "#1e40af" }}>{fmt$(property.avmValue)}</div>
+                  <div style={{ fontSize: 10, fontWeight: 600, color: "#6b7280", textTransform: "uppercase" }}>AVM Value</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: "#1e40af" }}>{fmt$(property.avmValue)}</div>
+                </div>
+              )}
+              {property.mlsListPrice != null && (
+                <div style={{ padding: "12px 16px", background: "#fefce8", borderRadius: 8 }}>
+                  <div style={{ fontSize: 10, fontWeight: 600, color: "#6b7280", textTransform: "uppercase" }}>List Price</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: "#b45309" }}>{fmt$(property.mlsListPrice)}</div>
+                  {property.mlsStatus && <div style={{ fontSize: 10, color: "#6b7280" }}>{property.mlsStatus}</div>}
                 </div>
               )}
               {property.lastSalePrice != null && (
                 <div style={{ padding: "12px 16px", background: "#f0fdf4", borderRadius: 8 }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", textTransform: "uppercase" }}>Last Sale</div>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: "#15803d" }}>{fmt$(property.lastSalePrice)}</div>
-                  {property.lastSaleDate && <div style={{ fontSize: 11, color: "#6b7280" }}>{property.lastSaleDate}</div>}
+                  <div style={{ fontSize: 10, fontWeight: 600, color: "#6b7280", textTransform: "uppercase" }}>Last Sale</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: "#15803d" }}>{fmt$(property.lastSalePrice)}</div>
+                  {property.lastSaleDate && <div style={{ fontSize: 10, color: "#6b7280" }}>{property.lastSaleDate}</div>}
                 </div>
               )}
-              {property.assessedTotal != null && (
-                <div style={{ padding: "12px 16px", background: "#faf5ff", borderRadius: 8 }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", textTransform: "uppercase" }}>Assessed Value</div>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: "#7c3aed" }}>{fmt$(property.assessedTotal)}</div>
+              {property.estimatedEquity != null && (
+                <div style={{ padding: "12px 16px", background: property.estimatedEquity >= 0 ? "#ecfdf5" : "#fef2f2", borderRadius: 8 }}>
+                  <div style={{ fontSize: 10, fontWeight: 600, color: "#6b7280", textTransform: "uppercase" }}>Est. Equity</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: property.estimatedEquity >= 0 ? "#15803d" : "#dc2626" }}>{property.estimatedEquity >= 0 ? "+" : ""}{fmt$(property.estimatedEquity)}</div>
                 </div>
               )}
             </div>
@@ -351,6 +546,7 @@ export default function SellerReportClient() {
                 { label: "APN", value: property.apn },
                 { label: "County", value: property.county },
                 { label: "Owner", value: property.owner1 },
+                { label: "Co-Owner", value: property.owner2 },
                 { label: "Owner Occupied", value: property.ownerOccupied === "Y" ? "Yes" : property.ownerOccupied === "N" ? "No" : property.ownerOccupied },
               ].filter((r) => r.value != null && r.value !== undefined).map((r, i) => (
                 <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #f3f4f6" }}>
@@ -360,6 +556,25 @@ export default function SellerReportClient() {
               ))}
             </div>
 
+            {/* MLS photos preview */}
+            {property.mlsPhotos && property.mlsPhotos.length > 1 && (
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 8 }}>{property.mlsPhotos.length} MLS Photos Available</div>
+                <div style={{ display: "flex", gap: 4, overflow: "hidden" }}>
+                  {property.mlsPhotos.slice(0, 5).map((url, i) => (
+                    <div key={i} style={{ width: 80, height: 60, borderRadius: 4, overflow: "hidden", flexShrink: 0 }}>
+                      <img src={url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    </div>
+                  ))}
+                  {property.mlsPhotos.length > 5 && (
+                    <div style={{ width: 80, height: 60, borderRadius: 4, background: "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "#6b7280", flexShrink: 0 }}>
+                      +{property.mlsPhotos.length - 5}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Personal note */}
             <div style={{ marginBottom: 20 }}>
               <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>
@@ -368,25 +583,16 @@ export default function SellerReportClient() {
               <textarea
                 value={personalNote}
                 onChange={(e) => setPersonalNote(e.target.value)}
-                placeholder="Add a personal message to the seller (e.g., 'I noticed your home has been in the family for 20+ years. Here is a market analysis...')"
+                placeholder="Add a personal message to the seller..."
                 rows={3}
-                style={{
-                  width: "100%",
-                  padding: "10px 14px",
-                  fontSize: 13,
-                  borderRadius: 8,
-                  border: "1px solid #d1d5db",
-                  outline: "none",
-                  resize: "vertical",
-                  fontFamily: "inherit",
-                }}
+                style={{ width: "100%", padding: "10px 14px", fontSize: 13, borderRadius: 8, border: "1px solid #d1d5db", outline: "none", resize: "vertical", fontFamily: "inherit" }}
               />
             </div>
 
             {/* Generate button */}
             <button
               onClick={handleGenerateSellerReport}
-              disabled={generating}
+              disabled={generating || enriching}
               style={{
                 width: "100%",
                 padding: "14px 20px",
@@ -394,13 +600,12 @@ export default function SellerReportClient() {
                 fontWeight: 700,
                 borderRadius: 8,
                 border: "none",
-                background: generating ? "#9ca3af" : "#b45309",
+                background: generating ? "#9ca3af" : enriching ? "#d97706" : "#b45309",
                 color: "#fff",
-                cursor: generating ? "not-allowed" : "pointer",
-                transition: "background 0.2s",
+                cursor: generating || enriching ? "not-allowed" : "pointer",
               }}
             >
-              {generating ? "Generating Seller Report..." : "Generate Seller Report PDF"}
+              {generating ? "Generating Seller Report..." : enriching ? "Enriching Data..." : "Generate Seller Report PDF"}
             </button>
           </div>
         </div>
@@ -412,7 +617,7 @@ export default function SellerReportClient() {
           <div style={{ fontSize: 48, marginBottom: 16 }}>&#x1F3E0;</div>
           <div style={{ fontSize: 16, fontWeight: 600, color: "#6b7280", marginBottom: 8 }}>Search for a property to get started</div>
           <div style={{ fontSize: 13, maxWidth: 400, margin: "0 auto", lineHeight: 1.6 }}>
-            Enter a property address above to pull public records data and generate a professional Seller Report PDF with valuation, equity analysis, market trends, and pricing strategy.
+            Enter a property address above to pull public records data, MLS listing info, and generate a professional Seller Report PDF with valuation, equity analysis, market trends, and pricing strategy.
           </div>
         </div>
       )}
