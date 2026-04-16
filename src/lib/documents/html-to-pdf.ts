@@ -32,7 +32,7 @@ async function getBrowser(): Promise<Browser> {
       // Uses chromium-min which downloads the binary from GitHub at runtime
       // This avoids the 50MB function size limit on Vercel
       const chromium = await import("@sparticuz/chromium-min");
-      const chromiumPack = "https://github.com/Sparticuz/chromium/releases/download/v147.0.0/chromium-v147.0.0-pack.tar";
+      const chromiumPack = "https://github.com/Sparticuz/chromium/releases/download/v147.0.0/chromium-v147.0.0-pack.x64.tar";
       return puppeteer.default.launch({
         args: chromium.default.args,
         defaultViewport: { width: 1200, height: 1600 },
