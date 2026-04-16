@@ -111,20 +111,30 @@ export async function POST(request: NextRequest) {
           console.log("[reports/generate] No GOOGLE_MAPS_API_KEY found");
         }
 
+        // Fallback: check if Google returned a valid image (>5KB means real image, <5KB means error page)
+        if (property.mapImageData && property.mapImageData.length < 5000) {
+          console.warn(`[reports/generate] Google map image too small (${property.mapImageData.length}b), likely error - discarding`);
+          property.mapImageData = undefined;
+        }
+
         // Fallback to OpenStreetMap
         if (!property.mapImageData) {
           try {
             const { fetchStaticMapImage } = await import("@/lib/documents/pdf-report-utils");
             const mapData = await fetchStaticMapImage(lat, lng, 600, 400, 15);
-            if (mapData) {
+            if (mapData && mapData.length > 5000) {
               property.mapImageData = mapData;
-              console.log("[reports/generate] OSM map image fetched");
+              console.log(`[reports/generate] OSM map fetched (${mapData.length} chars)`);
             } else {
-              console.warn("[reports/generate] OSM map returned null");
+              console.warn(`[reports/generate] OSM map too small or null (${mapData?.length || 0})`);
             }
           } catch (e: unknown) {
-            console.warn("[reports/generate] OSM map fetch failed:", e instanceof Error ? e.message : e);
+            console.warn("[reports/generate] OSM map fetch error:", e instanceof Error ? e.message : e);
           }
+        }
+
+        if (!property.mapImageData) {
+          console.warn("[reports/generate] All map providers failed - no map on cover");
         }
       } else {
         console.warn(`[reports/generate] Invalid lat/lng: ${property.latitude}, ${property.longitude}`);

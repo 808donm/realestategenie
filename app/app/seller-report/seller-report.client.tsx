@@ -410,11 +410,13 @@ export default function SellerReportClient() {
         yearBuilt: c.yearBuilt ? Number(c.yearBuilt) : undefined,
       })).filter((c: any) => c.price > 1000);
 
-      // Also fetch from /api/comps for MLS-sourced comps with correlation scores
-      const [compsRes, marketRes] = await Promise.allSettled([
+      // Fetch comps, RentCast market stats, AND MLS neighborhood stats in parallel
+      const [compsRes, marketRes, mlsStatsRes] = await Promise.allSettled([
         fetch(`/api/comps?address=${encodeURIComponent(property.address)}&latitude=${lat || ""}&longitude=${lng || ""}&compCount=15&beds=${property.beds || ""}&baths=${property.baths || ""}&sqft=${property.sqft || ""}&yearBuilt=${property.yearBuilt || ""}`)
           .then((r) => r.ok ? r.json() : null).catch(() => null),
         zip ? fetch(`/api/rentcast/market-stats?zipCode=${zip}`)
+          .then((r) => r.ok ? r.json() : null).catch(() => null) : Promise.resolve(null),
+        zip ? fetch(`/api/mls/neighborhood-stats?subdivision=${encodeURIComponent(zip)}&months=12`)
           .then((r) => r.ok ? r.json() : null).catch(() => null) : Promise.resolve(null),
       ]);
 
@@ -458,17 +460,31 @@ export default function SellerReportClient() {
           pricePerSqft: rptSale.averagePricePerSquareFoot || rptSale.medianPricePerSquareFoot,
         };
 
-        // Extract monthly sale trends for charts
-        const monthlyHistory = marketData.history || marketData.saleHistory || saleStats.history || [];
-        if (Array.isArray(monthlyHistory) && monthlyHistory.length > 0) {
-          reportData.monthlyTrends = monthlyHistory.slice(-12).map((m: any) => ({
-            month: m.month || m.date || m.period,
-            medianPrice: m.medianPrice || m.medianSalePrice,
-            avgPrice: m.averagePrice || m.averageSalePrice,
-            pricePerSqft: m.averagePricePerSquareFoot || m.medianPricePerSquareFoot,
-            dom: m.averageDaysOnMarket || m.medianDaysOnMarket,
-            listings: m.totalListings || m.activeListings,
+        // Extract monthly sale trends for charts from MLS neighborhood stats
+        const mlsStats = mlsStatsRes.status === "fulfilled" ? mlsStatsRes.value : null;
+        if (mlsStats?.monthly?.length > 0) {
+          reportData.monthlyTrends = mlsStats.monthly.map((m: any) => ({
+            month: m.month,
+            medianPrice: m.avgPrice || 0,
+            avgPrice: m.avgPrice || 0,
+            listings: m.totalSales || 0,
+            dom: 0,
           }));
+          console.log(`[SellerReport] Got ${mlsStats.monthly.length} months of MLS trend data`);
+        }
+
+        // Also use MLS stats for richer market data if available
+        if (mlsStats?.stats) {
+          reportData.marketStats = {
+            ...reportData.marketStats,
+            medianPrice: mlsStats.stats.medianPrice || reportData.marketStats?.medianPrice,
+            avgDOM: mlsStats.stats.medianDOM || mlsStats.stats.avgDOM || reportData.marketStats?.avgDOM,
+            totalListings: mlsStats.stats.totalSales || reportData.marketStats?.totalListings,
+            pricePerSqft: mlsStats.stats.medianPricePerSqft || mlsStats.stats.avgPricePerSqft || reportData.marketStats?.pricePerSqft,
+          };
+          if (mlsStats.stats.listToSaleRatio) {
+            reportData.soldToListRatio = mlsStats.stats.listToSaleRatio;
+          }
         }
 
         // Compute market type
