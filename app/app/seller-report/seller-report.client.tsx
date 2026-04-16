@@ -348,8 +348,9 @@ export default function SellerReportClient() {
         mailingAddress: owner.mailingAddressOneLine,
         corporateOwner: owner.corporateIndicator,
         // Building - extract ALL available fields from REAPI
-        constructionType: (bldgConstruction.constructionType && !/^\d+$/.test(String(bldgConstruction.constructionType)) ? bldgConstruction.constructionType : null) || rRaw.constructionType || mlsListing.ConstructionMaterials,
-        roofType: bldgFeatures.roofMaterial || (bldgConstruction.roofCover && !/^\d+$/.test(String(bldgConstruction.roofCover)) ? bldgConstruction.roofCover : null) || rRaw.roofMaterial || mlsListing.Roof,
+        // Helper: filter out purely numeric codes (e.g., "127" for roof, "401" for construction)
+        constructionType: [bldgFeatures.construction, bldgConstruction.constructionType, rRaw.constructionType, mlsListing.ConstructionMaterials].find((v) => v && !/^\d+$/.test(String(v))),
+        roofType: [bldgFeatures.roofMaterial, bldgConstruction.roofCover, rRaw.roofMaterial, mlsListing.Roof].find((v) => v && !/^\d+$/.test(String(v))),
         foundationType: bldgConstruction.foundationType || rRaw.foundationType,
         heatingType: rRaw.heatingType || mlsListing.Heating || (p.utilities || {}).heatingType,
         coolingType: rRaw.coolingType || rRaw.airConditioningType || mlsListing.Cooling || (p.utilities || {}).coolingType,

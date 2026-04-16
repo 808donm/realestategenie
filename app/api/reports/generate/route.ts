@@ -85,38 +85,49 @@ export async function POST(request: NextRequest) {
     if (property.latitude && property.longitude && !property.mapImageData) {
       const lat = Number(property.latitude);
       const lng = Number(property.longitude);
-      console.log(`[reports/generate] Fetching map for ${lat},${lng}`);
 
-      // Try Google Maps Static API first (if key available), then OpenStreetMap
-      const gkey = process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-      if (gkey) {
-        try {
-          const gmapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=15&size=600x400&maptype=satellite&markers=color:red%7C${lat},${lng}&key=${gkey}`;
-          const { fetchImageAsDataUri } = await import("@/lib/documents/pdf-report-utils");
-          const mapData = await fetchImageAsDataUri(gmapUrl);
-          if (mapData) {
-            property.mapImageData = mapData;
-            console.log("[reports/generate] Google Maps image fetched");
-          }
-        } catch (e: unknown) {
-          console.warn("[reports/generate] Google Maps fetch failed:", e instanceof Error ? e.message : e);
-        }
-      }
+      if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+        console.log(`[reports/generate] Fetching map for ${lat},${lng}`);
 
-      // Fallback to OpenStreetMap
-      if (!property.mapImageData) {
-        try {
-          const { fetchStaticMapImage } = await import("@/lib/documents/pdf-report-utils");
-          const mapData = await fetchStaticMapImage(lat, lng, 600, 400, 15);
-          if (mapData) {
-            property.mapImageData = mapData;
-            console.log("[reports/generate] OSM map image fetched");
-          } else {
-            console.warn("[reports/generate] OSM map returned null");
+        // Try Google Maps Static API first (if key available)
+        const gkey = process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+        if (gkey) {
+          try {
+            // Use roadmap type (more reliable than satellite for Static Maps API)
+            const gmapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=16&size=600x400&maptype=roadmap&markers=color:red%7C${lat},${lng}&style=feature:poi%7Cvisibility:off&key=${gkey}`;
+            console.log(`[reports/generate] Google Maps URL: ${gmapUrl.substring(0, 100)}...`);
+            const { fetchImageAsDataUri } = await import("@/lib/documents/pdf-report-utils");
+            const mapData = await fetchImageAsDataUri(gmapUrl);
+            if (mapData) {
+              property.mapImageData = mapData;
+              console.log("[reports/generate] Google Maps image fetched successfully");
+            } else {
+              console.warn("[reports/generate] Google Maps returned empty data");
+            }
+          } catch (e: unknown) {
+            console.warn("[reports/generate] Google Maps fetch failed:", e instanceof Error ? e.message : e);
           }
-        } catch (e: unknown) {
-          console.warn("[reports/generate] OSM map fetch failed:", e instanceof Error ? e.message : e);
+        } else {
+          console.log("[reports/generate] No GOOGLE_MAPS_API_KEY found");
         }
+
+        // Fallback to OpenStreetMap
+        if (!property.mapImageData) {
+          try {
+            const { fetchStaticMapImage } = await import("@/lib/documents/pdf-report-utils");
+            const mapData = await fetchStaticMapImage(lat, lng, 600, 400, 15);
+            if (mapData) {
+              property.mapImageData = mapData;
+              console.log("[reports/generate] OSM map image fetched");
+            } else {
+              console.warn("[reports/generate] OSM map returned null");
+            }
+          } catch (e: unknown) {
+            console.warn("[reports/generate] OSM map fetch failed:", e instanceof Error ? e.message : e);
+          }
+        }
+      } else {
+        console.warn(`[reports/generate] Invalid lat/lng: ${property.latitude}, ${property.longitude}`);
       }
     }
 

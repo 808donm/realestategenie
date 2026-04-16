@@ -107,20 +107,32 @@ export async function renderHtmlToPdf(
       timeout: 30000,
     });
 
-    // Load Chart.js if the HTML contains canvas elements (charts)
+    // Load Chart.js and render charts if the HTML contains canvas elements
     const hasCharts = html.includes("<canvas");
     if (hasCharts) {
-      await page.addScriptTag({
-        url: "https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js",
-      });
-      // Execute any inline chart scripts after Chart.js is loaded
-      await page.evaluate(() => {
-        // Re-fire DOMContentLoaded to trigger chart initialization
-        document.dispatchEvent(new Event("DOMContentLoaded"));
-      });
+      try {
+        await page.addScriptTag({
+          url: "https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js",
+        });
+        // Execute chart creation code directly (not via DOMContentLoaded)
+        await page.evaluate(() => {
+          // Find and execute all script blocks that contain chart creation code
+          const scripts = document.querySelectorAll("script[data-chart]");
+          scripts.forEach((script) => {
+            try {
+              // eslint-disable-next-line no-eval
+              eval(script.textContent || "");
+            } catch (e) {
+              console.error("Chart script error:", e);
+            }
+          });
+        });
+      } catch (e) {
+        console.error("[html-to-pdf] Chart.js loading failed:", e);
+      }
     }
 
-    // Wait for charts and images to render
+    // Wait for charts, images, and fonts to render
     await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 2000)));
 
     // Generate PDF with native header/footer for consistent rendering

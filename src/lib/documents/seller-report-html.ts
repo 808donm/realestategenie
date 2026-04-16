@@ -330,55 +330,55 @@ export function buildSellerReportHtml(data: SellerReportData, branding: AgentBra
         <div class="section-title" style="margin-top: 16px;">Listings & Days on Market</div>
         <div class="chart-container" style="height: 200px;"><canvas id="listingsChart"></canvas></div>
 
-        <script>
-          document.addEventListener('DOMContentLoaded', function() {
-            // Price Trend Chart
-            new Chart(document.getElementById('priceChart'), {
-              type: 'line',
-              data: {
-                labels: ${JSON.stringify(labels)},
-                datasets: [{
-                  label: 'Median Price',
-                  data: ${JSON.stringify(prices)},
-                  borderColor: '#1e40af',
-                  backgroundColor: 'rgba(30,64,175,0.1)',
-                  fill: true,
-                  tension: 0.3,
-                  pointRadius: 3,
-                  pointBackgroundColor: '#1e40af',
-                }]
-              },
-              options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                  y: { ticks: { callback: function(v) { return '$' + (v/1000).toFixed(0) + 'K'; } } },
-                  x: { ticks: { font: { size: 9 } } }
-                }
+        <script data-chart>
+          // Price Trend Chart - executed by Puppeteer after Chart.js loads
+          new Chart(document.getElementById('priceChart'), {
+            type: 'line',
+            data: {
+              labels: ${JSON.stringify(labels)},
+              datasets: [{
+                label: 'Median Price',
+                data: ${JSON.stringify(prices)},
+                borderColor: '#1e40af',
+                backgroundColor: 'rgba(30,64,175,0.1)',
+                fill: true,
+                tension: 0.3,
+                pointRadius: 3,
+                pointBackgroundColor: '#1e40af',
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              animation: false,
+              plugins: { legend: { display: false } },
+              scales: {
+                y: { ticks: { callback: function(v) { return '$' + (v/1000).toFixed(0) + 'K'; } } },
+                x: { ticks: { font: { size: 9 } } }
               }
-            });
+            }
+          });
 
-            // Listings + DOM Chart
-            new Chart(document.getElementById('listingsChart'), {
-              type: 'bar',
-              data: {
-                labels: ${JSON.stringify(labels)},
-                datasets: [
-                  { label: 'Listings', data: ${JSON.stringify(listings)}, backgroundColor: '#3b82f6', borderRadius: 3 },
-                  { label: 'Avg DOM', data: ${JSON.stringify(doms)}, backgroundColor: '#f59e0b', borderRadius: 3 }
-                ]
-              },
-              options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { position: 'bottom', labels: { font: { size: 9 } } } },
-                scales: {
-                  y: { beginAtZero: true },
-                  x: { ticks: { font: { size: 9 } } }
-                }
+          // Listings + DOM Chart
+          new Chart(document.getElementById('listingsChart'), {
+            type: 'bar',
+            data: {
+              labels: ${JSON.stringify(labels)},
+              datasets: [
+                { label: 'Listings', data: ${JSON.stringify(listings)}, backgroundColor: '#3b82f6', borderRadius: 3 },
+                { label: 'Avg DOM', data: ${JSON.stringify(doms)}, backgroundColor: '#f59e0b', borderRadius: 3 }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              animation: false,
+              plugins: { legend: { position: 'bottom', labels: { font: { size: 9 } } } },
+              scales: {
+                y: { beginAtZero: true },
+                x: { ticks: { font: { size: 9 } } }
               }
-            });
+            }
           });
         </script>
       `;
