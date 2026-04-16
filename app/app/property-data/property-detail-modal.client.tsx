@@ -1846,6 +1846,50 @@ export default function PropertyDetailModal({
 
       // Determine report type from explicit parameter or viewingReport state
       const rptType = overrideType || viewingReport || "property";
+
+      // For Buyer Report, enrich with demographics, walkability, and MLS listing details
+      if (rptType === "buyer") {
+        const buyerData = reportData as any;
+        // Add Census demographics if available
+        if (federalData) {
+          const fd = federalData as any;
+          const census = fd.census || fd.demographics || {};
+          buyerData.demographics = {
+            zip: { medianHomeValue: census.medianHomeValue, medianHouseholdIncome: census.medianHouseholdIncome, totalPopulation: census.totalPopulation, medianAge: census.medianAge, ownerOccupied: census.ownerOccupied, renterOccupied: census.renterOccupied, totalHousingUnits: census.totalHousingUnits, ageGroups: census.ageGroups, incomeBrackets: census.incomeBrackets, education: census.education },
+          };
+        }
+        // Add walkability
+        if (neighborhoodData?.walkScore) {
+          buyerData.walkScore = Number(neighborhoodData.walkScore) / 20;
+        }
+        // Add MLS listing details for richer report
+        const mlsListing = (p as any);
+        if (mlsListing.ListingId || mlsListing.mlsNumber) {
+          buyerData.mlsNumber = mlsListing.ListingId || mlsListing.mlsNumber;
+          buyerData.listingStatus = mlsListing.StandardStatus || mlsListing.listingStatus;
+          buyerData.daysOnMarket = mlsListing.DaysOnMarket;
+          buyerData.listingAgentName = mlsListing.ListAgentFullName;
+          buyerData.listingOfficeName = mlsListing.ListOfficeName;
+          buyerData.listingDescription = mlsListing.PublicRemarks;
+        }
+        // Tax assessment (ensure it's in report)
+        if (!buyerData.taxAmount && p.assessment?.tax?.taxAmt) {
+          buyerData.taxAmount = p.assessment.tax.taxAmt;
+          buyerData.taxYear = p.assessment.tax.taxYear;
+        }
+        if (!buyerData.assessedTotal && p.assessment?.assessed?.assdTtlValue) {
+          buyerData.assessedTotal = p.assessment.assessed.assdTtlValue;
+          buyerData.assessedLand = p.assessment.assessed.assdLandValue;
+          buyerData.assessedImpr = p.assessment.assessed.assdImprValue;
+        }
+        // Tax history from REAPI
+        if (reapiData?.assessment_history?.length) {
+          buyerData.taxHistory = reapiData.assessment_history.map((t: any) => ({
+            year: t.year, assessedLand: t.land, assessedImpr: t.improvement, assessedTotal: t.total,
+          }));
+        }
+      }
+
       const res = await fetch("/api/property-intelligence/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1871,7 +1915,7 @@ export default function PropertyDetailModal({
     } finally {
       setReportGenerating(false);
     }
-  }, [collectReportData, addr]);
+  }, [collectReportData, addr, p, federalData, neighborhoodData, reapiData, viewingReport]);
 
   // ── CMA PDF Generation ──
   const [cmaGenerating, setCmaGenerating] = useState(false);

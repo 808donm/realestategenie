@@ -181,10 +181,23 @@ export function generateBuyerReportPDF(data: BuyerReportData, branding: AgentBra
   if (data.daysOnMarket != null) row("Days on Market", String(data.daysOnMarket));
   row("Year Built", data.yearBuilt != null ? String(data.yearBuilt) : null);
   if (price && data.sqft) row("Price per Sqft", `$${Math.round(price / data.sqft).toLocaleString()}`);
+  if (price && data.avmValue && data.avmValue > 0) row("Price to Est. Value", `${Math.round((price / data.avmValue) * 100)}%`);
   row("Zoning", data.legal?.zoning);
+  row("Land Use", data.propertyType);
   row("APN / TMK", data.apn);
   row("Land Tenure", data.ownershipType);
   y += 4;
+
+  // MLS Listing details (if available)
+  if (data.mlsNumber || data.listingAgentName) {
+    section("MLS LISTING");
+    row("MLS #", data.mlsNumber);
+    row("Status", data.listingStatus);
+    if (data.daysOnMarket != null) row("Days on Market", String(data.daysOnMarket));
+    row("Listing Agent", data.listingAgentName);
+    row("Office", data.listingOfficeName);
+    y += 4;
+  }
 
   // ═══════════════════════════════════════════════════════════════════════
   // PROPERTY INFORMATION
@@ -254,6 +267,30 @@ export function generateBuyerReportPDF(data: BuyerReportData, branding: AgentBra
     if (data.legal?.subdivision) row("Subdivision", data.legal.subdivision);
     if (data.legal?.zoning) row("Zoning", data.legal.zoning);
     if (data.federalData?.floodZone) row("Flood Zone", data.federalData.floodZone);
+    y += 4;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // TAX ASSESSMENT
+  // ═══════════════════════════════════════════════════════════════════════
+
+  if (data.taxHistory && data.taxHistory.length > 0) {
+    section("TAX HISTORY");
+    const taxHeaders = ["Year", "Land", "Improvements", "Total Assessed", "Tax Amount"];
+    const taxRows = data.taxHistory.slice(0, 5).map((t) => ({
+      label: String(t.year),
+      values: [$(t.assessedLand || t.marketLand), $(t.assessedImpr || t.marketImpr), $(t.assessedTotal || t.marketTotal), $(t.taxAmount)],
+    }));
+    y = drawComparisonTable(doc, taxHeaders, taxRows, margin, y, contentW);
+    y += 4;
+  } else if (data.assessedTotal != null || data.taxAmount != null) {
+    section("TAX ASSESSMENT");
+    row("Assessed Total", $(data.assessedTotal));
+    row("Land Value", $(data.assessedLand));
+    row("Improvement Value", $(data.assessedImpr));
+    row("Market Value", $(data.marketTotal));
+    row("Annual Tax", $(data.taxAmount));
+    row("Tax Year", data.taxYear != null ? String(data.taxYear) : null);
     y += 4;
   }
 
