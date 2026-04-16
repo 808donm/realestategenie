@@ -107,8 +107,21 @@ export async function renderHtmlToPdf(
       timeout: 30000,
     });
 
-    // Wait for Chart.js and images to render
-    await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 1500)));
+    // Load Chart.js if the HTML contains canvas elements (charts)
+    const hasCharts = html.includes("<canvas");
+    if (hasCharts) {
+      await page.addScriptTag({
+        url: "https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js",
+      });
+      // Execute any inline chart scripts after Chart.js is loaded
+      await page.evaluate(() => {
+        // Re-fire DOMContentLoaded to trigger chart initialization
+        document.dispatchEvent(new Event("DOMContentLoaded"));
+      });
+    }
+
+    // Wait for charts and images to render
+    await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 2000)));
 
     // Generate PDF with native header/footer for consistent rendering
     const useNativeHeaderFooter = !!options?.headerTemplate || !!options?.footerTemplate;

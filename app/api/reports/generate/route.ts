@@ -81,17 +81,43 @@ export async function POST(request: NextRequest) {
       } catch {}
     }
 
-    // Pre-fetch Google Maps static image for cover page
+    // Pre-fetch map image for cover page
     if (property.latitude && property.longitude && !property.mapImageData) {
-      try {
-        const { fetchStaticMapImage } = await import("@/lib/documents/pdf-report-utils");
-        const mapData = await fetchStaticMapImage(
-          Number(property.latitude),
-          Number(property.longitude),
-          600, 400, 15
-        );
-        if (mapData) property.mapImageData = mapData;
-      } catch {}
+      const lat = Number(property.latitude);
+      const lng = Number(property.longitude);
+      console.log(`[reports/generate] Fetching map for ${lat},${lng}`);
+
+      // Try Google Maps Static API first (if key available), then OpenStreetMap
+      const gkey = process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+      if (gkey) {
+        try {
+          const gmapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=15&size=600x400&maptype=satellite&markers=color:red%7C${lat},${lng}&key=${gkey}`;
+          const { fetchImageAsDataUri } = await import("@/lib/documents/pdf-report-utils");
+          const mapData = await fetchImageAsDataUri(gmapUrl);
+          if (mapData) {
+            property.mapImageData = mapData;
+            console.log("[reports/generate] Google Maps image fetched");
+          }
+        } catch (e: unknown) {
+          console.warn("[reports/generate] Google Maps fetch failed:", e instanceof Error ? e.message : e);
+        }
+      }
+
+      // Fallback to OpenStreetMap
+      if (!property.mapImageData) {
+        try {
+          const { fetchStaticMapImage } = await import("@/lib/documents/pdf-report-utils");
+          const mapData = await fetchStaticMapImage(lat, lng, 600, 400, 15);
+          if (mapData) {
+            property.mapImageData = mapData;
+            console.log("[reports/generate] OSM map image fetched");
+          } else {
+            console.warn("[reports/generate] OSM map returned null");
+          }
+        } catch (e: unknown) {
+          console.warn("[reports/generate] OSM map fetch failed:", e instanceof Error ? e.message : e);
+        }
+      }
     }
 
     // Build HTML and render to PDF

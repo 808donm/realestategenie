@@ -487,7 +487,6 @@ export function buildSellerReportHtml(data: SellerReportData, branding: AgentBra
 <html>
 <head>
   <meta charset="utf-8">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
   <style>${getReportBaseStyles()}</style>
 </head>
 <body>
