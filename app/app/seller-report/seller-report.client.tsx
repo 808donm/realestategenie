@@ -48,6 +48,7 @@ export default function SellerReportClient() {
   const [generating, setGenerating] = useState(false);
   const [personalNote, setPersonalNote] = useState("");
   const [enriching, setEnriching] = useState(false);
+  const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([]);
 
   // ── Step 1: Search property by address ──
   const handleSearch = useCallback(async () => {
@@ -199,17 +200,20 @@ export default function SellerReportClient() {
       const rRaw = rd._raw?.propertyInfo || {};
       const rl = rd.lot || {};
 
-      // Interior features
+      // Interior features - extract everything available from REAPI + MLS
       const interiorFeatures: Array<{ label: string; value: string }> = [];
-      if (mlsListing.InteriorFeatures) interiorFeatures.push({ label: "Interior", value: String(mlsListing.InteriorFeatures).substring(0, 100) });
+      if (mlsListing.InteriorFeatures) interiorFeatures.push({ label: "Interior", value: String(mlsListing.InteriorFeatures).substring(0, 120) });
       if (mlsListing.Flooring) interiorFeatures.push({ label: "Floor", value: String(mlsListing.Flooring) });
-      if (rRaw.plumbingFixturesCount) interiorFeatures.push({ label: "Plumbing Fixtures", value: String(rRaw.plumbingFixturesCount) });
-      if (rRaw.interiorStructure) interiorFeatures.push({ label: "Interior Structure", value: String(rRaw.interiorStructure) });
-      if (bldgFeatures.fireplace) interiorFeatures.push({ label: "Fireplace", value: "Yes" });
-      if (building.interior?.bsmtSize) interiorFeatures.push({ label: "Basement Finished", value: `${building.interior.bsmtSize} sq ft` });
-      if (building.parking?.prkgSize) interiorFeatures.push({ label: "Garage", value: `${building.parking.prkgSize} sq ft` });
+      if (mlsListing.Appliances) interiorFeatures.push({ label: "Appliances", value: String(mlsListing.Appliances).substring(0, 120) });
+      if (rRaw.baseArea) interiorFeatures.push({ label: "Base Area", value: `${Number(rRaw.baseArea).toLocaleString()} sq ft` });
       if (rRaw.floorCover) interiorFeatures.push({ label: "Floor Cover", value: String(rRaw.floorCover) });
       if (rRaw.interiorWalls) interiorFeatures.push({ label: "Interior Walls", value: String(rRaw.interiorWalls) });
+      if (rRaw.interiorStructure) interiorFeatures.push({ label: "Interior Structure", value: String(rRaw.interiorStructure) });
+      if (rRaw.plumbingFixturesCount) interiorFeatures.push({ label: "Plumbing Fixtures", value: String(rRaw.plumbingFixturesCount) });
+      if (building.interior?.bsmtSize) interiorFeatures.push({ label: "Basement Finished", value: `${building.interior.bsmtSize} sq ft` });
+      if (building.parking?.prkgSize) interiorFeatures.push({ label: "Garage", value: `${building.parking.prkgSize} sq ft` });
+      if (bldgFeatures.fireplace) interiorFeatures.push({ label: "Fireplace", value: "Yes" });
+      if (rRaw.attic === true) interiorFeatures.push({ label: "Attic", value: "Yes" });
 
       // Exterior features
       const exteriorFeatures: Array<{ label: string; value: string }> = [];
@@ -331,6 +335,7 @@ export default function SellerReportClient() {
         basementSize: building.interior?.bsmtSize,
         architectureStyle: bldgSummary.archStyle,
         condition: bldgConstruction.condition || rRaw.buildingCondition,
+        exteriorWalls: bldgConstruction.wallType || rRaw.exteriorWalls,
         parkingType: building.parking?.garageType || building.parking?.prkgType,
         parkingSpaces: building.parking?.prkgSpaces,
         // Features
@@ -359,6 +364,8 @@ export default function SellerReportClient() {
         photos,
         // Personal note
         personalNote: personalNote || undefined,
+        latitude: (rd.location || p.location || {}).latitude,
+        longitude: (rd.location || p.location || {}).longitude,
         generatedAt: new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }),
       };
 
@@ -421,6 +428,11 @@ export default function SellerReportClient() {
         }
       }
 
+      // Add uploaded photos to report data
+      if (uploadedPhotos.length > 0) {
+        reportData.uploadedPhotos = uploadedPhotos;
+      }
+
       // Generate PDF via HTML-to-PDF rendering (RPR quality)
       const res = await fetch("/api/reports/generate", {
         method: "POST",
@@ -444,7 +456,7 @@ export default function SellerReportClient() {
     } finally {
       setGenerating(false);
     }
-  }, [property, personalNote]);
+  }, [property, personalNote, uploadedPhotos]);
 
   const fmt$ = (n?: number | null) => n != null ? `$${n.toLocaleString()}` : "-";
 
@@ -587,6 +599,49 @@ export default function SellerReportClient() {
                 rows={3}
                 style={{ width: "100%", padding: "10px 14px", fontSize: 13, borderRadius: 8, border: "1px solid #d1d5db", outline: "none", resize: "vertical", fontFamily: "inherit" }}
               />
+            </div>
+
+            {/* Photo upload */}
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>
+                Property Photos (optional)
+              </label>
+              <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}>
+                Upload exterior photos of the property to include in the report. Drive-by photos, street view, or any photos you have access to.
+              </div>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={(e) => {
+                  const files = Array.from(e.target.files || []);
+                  files.forEach((file) => {
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                      if (reader.result) {
+                        setUploadedPhotos((prev) => [...prev, reader.result as string].slice(0, 10));
+                      }
+                    };
+                    reader.readAsDataURL(file);
+                  });
+                }}
+                style={{ fontSize: 12 }}
+              />
+              {uploadedPhotos.length > 0 && (
+                <div style={{ display: "flex", gap: 4, marginTop: 8, flexWrap: "wrap" }}>
+                  {uploadedPhotos.map((url, i) => (
+                    <div key={i} style={{ position: "relative", width: 80, height: 60 }}>
+                      <img src={url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 4 }} />
+                      <button
+                        onClick={() => setUploadedPhotos((prev) => prev.filter((_, idx) => idx !== i))}
+                        style={{ position: "absolute", top: -4, right: -4, width: 18, height: 18, borderRadius: "50%", border: "none", background: "#dc2626", color: "#fff", fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                      >
+                        x
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Generate button */}

@@ -81,6 +81,19 @@ export async function POST(request: NextRequest) {
       } catch {}
     }
 
+    // Pre-fetch Google Maps static image for cover page
+    if (property.latitude && property.longitude && !property.mapImageData) {
+      try {
+        const { fetchStaticMapImage } = await import("@/lib/documents/pdf-report-utils");
+        const mapData = await fetchStaticMapImage(
+          Number(property.latitude),
+          Number(property.longitude),
+          600, 400, 15
+        );
+        if (mapData) property.mapImageData = mapData;
+      } catch {}
+    }
+
     // Build HTML and render to PDF
     let html: string;
     let filenamePrefix: string;

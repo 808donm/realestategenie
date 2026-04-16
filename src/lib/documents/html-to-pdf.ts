@@ -156,21 +156,23 @@ export function getReportBaseStyles(): string {
     .report-header {
       background: #1e40af;
       color: white;
-      padding: 12px 20px;
+      padding: 10px 20px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin: -0.4in -0.4in 16px -0.4in;
+      margin: -0.4in -0.4in 0 -0.4in;
       width: calc(100% + 0.8in);
+      overflow: hidden;
+      min-height: 36px;
     }
-    .report-header .report-type { font-size: 9px; opacity: 0.8; }
-    .report-header .report-address { font-size: 13px; font-weight: 700; }
-    .report-header .brand { font-size: 11px; font-weight: 700; }
-    .report-header .brand-tm { font-size: 6px; vertical-align: super; }
+    .report-header .report-type { font-size: 8px; opacity: 0.8; letter-spacing: 0.5px; }
+    .report-header .report-address { font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70%; }
+    .report-header .brand { font-size: 10px; font-weight: 700; white-space: nowrap; }
+    .report-header .brand-tm { font-size: 5px; vertical-align: super; }
     .gold-accent {
       height: 3px;
       background: #b4822a;
-      margin: -16px -0.4in 16px -0.4in;
+      margin: 0 -0.4in 16px -0.4in;
       width: calc(100% + 0.8in);
     }
 
