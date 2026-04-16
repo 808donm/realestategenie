@@ -421,8 +421,8 @@ export default function SellerReportClient() {
         }
       }
 
-      // Generate PDF via API
-      const res = await fetch("/api/property-intelligence/generate", {
+      // Generate PDF via HTML-to-PDF rendering (RPR quality)
+      const res = await fetch("/api/reports/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ property: reportData, reportType: "seller" }),
