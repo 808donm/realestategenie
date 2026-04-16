@@ -33,24 +33,117 @@ export async function GET(request: NextRequest) {
     since.setMonth(since.getMonth() - months);
     const sinceStr = since.toISOString().split("T")[0];
 
+    // Hawaii neighborhood names map to ZIP codes (MLS uses subdivision names, not neighborhood names)
+    const neighborhoodZipMap: Record<string, string[]> = {
+      "hawaii kai": ["96825"],
+      "aina haina": ["96821"],
+      "kahala": ["96816"],
+      "kailua": ["96734"],
+      "kaneohe": ["96744"],
+      "kapolei": ["96707"],
+      "ewa beach": ["96706"],
+      "mililani": ["96789"],
+      "pearl city": ["96782"],
+      "aiea": ["96701"],
+      "waikiki": ["96815"],
+      "manoa": ["96822"],
+      "makiki": ["96822"],
+      "kaimuki": ["96816"],
+      "kapahulu": ["96816"],
+      "moiliili": ["96826"],
+      "waipahu": ["96797"],
+      "wahiawa": ["96786"],
+      "haleiwa": ["96712"],
+      "laie": ["96762"],
+      "waimanalo": ["96795"],
+      "enchanted lake": ["96734"],
+      "lanikai": ["96734"],
+      "diamond head": ["96816"],
+      "salt lake": ["96818"],
+      "foster village": ["96818"],
+      "nuuanu": ["96817"],
+      "palolo": ["96816"],
+      "st louis": ["96816"],
+      "wilhelmina rise": ["96816"],
+    };
+    const searchLower = subdivision.trim().toLowerCase();
+    const mappedZips = neighborhoodZipMap[searchLower] || [];
+
     const escaped = subdivision.replace(/'/g, "''").toLowerCase();
+    const selectFields = [
+      "ListingKey", "ClosePrice", "ListPrice", "CloseDate", "OnMarketDate",
+      "DaysOnMarket", "PropertyType", "PropertySubType", "SubdivisionName",
+      "BedroomsTotal", "BathroomsTotalInteger", "LivingArea", "YearBuilt",
+      "City", "PostalCode",
+    ].join(",");
+
+    // Try subdivision name first
     let filter = `StandardStatus eq 'Closed' and CloseDate ge ${sinceStr} and contains(tolower(SubdivisionName), '${escaped}')`;
     if (zip) filter += ` and startswith(PostalCode, '${zip}')`;
 
-    const result = await trestle.getProperties({
+    let result = await trestle.getProperties({
       $filter: filter,
-      $select: [
-        "ListingKey", "ClosePrice", "ListPrice", "CloseDate", "OnMarketDate",
-        "DaysOnMarket", "PropertyType", "PropertySubType", "SubdivisionName",
-        "BedroomsTotal", "BathroomsTotalInteger", "LivingArea", "YearBuilt",
-        "City", "PostalCode",
-      ].join(","),
+      $select: selectFields,
       $orderby: "CloseDate desc",
       $top: 500,
       $count: true,
     });
 
-    const sales = result.value || [];
+    let sales = result.value || [];
+
+    // If no results by subdivision, try City name
+    if (sales.length === 0) {
+      console.log(`[NeighborhoodStats] No results for subdivision '${escaped}', trying City search`);
+      const cityFilter = `StandardStatus eq 'Closed' and CloseDate ge ${sinceStr} and contains(tolower(City), '${escaped}')`;
+      result = await trestle.getProperties({
+        $filter: zip ? `${cityFilter} and startswith(PostalCode, '${zip}')` : cityFilter,
+        $select: selectFields,
+        $orderby: "CloseDate desc",
+        $top: 500,
+        $count: true,
+      });
+      sales = result.value || [];
+    }
+
+    // If no results and we have a mapped ZIP for this neighborhood name, search by ZIP
+    if (sales.length === 0 && mappedZips.length > 0) {
+      console.log(`[NeighborhoodStats] Using mapped ZIP(s) for '${searchLower}': ${mappedZips.join(", ")}`);
+      const zipFilter = mappedZips.map((z) => `startswith(PostalCode, '${z}')`).join(" or ");
+      result = await trestle.getProperties({
+        $filter: `StandardStatus eq 'Closed' and CloseDate ge ${sinceStr} and (${zipFilter})`,
+        $select: selectFields,
+        $orderby: "CloseDate desc",
+        $top: 500,
+        $count: true,
+      });
+      sales = result.value || [];
+    }
+
+    // If still no results and input looks like a ZIP code, search by ZIP
+    if (sales.length === 0 && /^\d{5}$/.test(subdivision.trim())) {
+      console.log(`[NeighborhoodStats] Trying ZIP code search for '${subdivision.trim()}'`);
+      result = await trestle.getProperties({
+        $filter: `StandardStatus eq 'Closed' and CloseDate ge ${sinceStr} and startswith(PostalCode, '${subdivision.trim()}')`,
+        $select: selectFields,
+        $orderby: "CloseDate desc",
+        $top: 500,
+        $count: true,
+      });
+      sales = result.value || [];
+    }
+
+    // If still no results and a ZIP was provided, try just the ZIP without subdivision
+    if (sales.length === 0 && zip) {
+      console.log(`[NeighborhoodStats] Trying ZIP-only search for '${zip}'`);
+      result = await trestle.getProperties({
+        $filter: `StandardStatus eq 'Closed' and CloseDate ge ${sinceStr} and startswith(PostalCode, '${zip}')`,
+        $select: selectFields,
+        $orderby: "CloseDate desc",
+        $top: 500,
+        $count: true,
+      });
+      sales = result.value || [];
+    }
 
     if (sales.length === 0) {
       return NextResponse.json({
