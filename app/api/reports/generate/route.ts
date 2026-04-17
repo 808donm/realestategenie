@@ -173,7 +173,7 @@ Paragraph 4: Equity and financial position - estimated value, tax assessment, eq
 Paragraph 5: Considerations - hazard zones if any, HOA, zoning, and what makes this property marketable`;
 
         const result = await trackedGenerateText({
-          model: "anthropic/claude-haiku-4",
+          model: process.env.REPORT_AI_MODEL || "anthropic/claude-haiku-4-5-20251001",
           prompt: narrativePrompt,
           temperature: 0.6,
           maxTokens: 700,
