@@ -559,13 +559,19 @@ export function buildSellerReportHtml(data: SellerReportData, branding: AgentBra
       <div class="big-section-header">${esc(co.county)} County Market Overview</div>
       <div class="value-cards">
         <div class="value-card dark"><div class="vc-label">Median Sale Price</div><div class="vc-value">${fmt$(co.medianSalePrice)}</div><div class="vc-sub">All Property Types</div></div>
-        ${co.sfrMedianPrice ? `<div class="value-card" style="border-left: 3px solid #dc2626;"><div class="vc-label">SFR Median</div><div class="vc-value">${fmt$(co.sfrMedianPrice)}</div></div>` : ""}
-        ${co.condoMedianPrice ? `<div class="value-card" style="border-left: 3px solid #3b82f6;"><div class="vc-label">Condo/TH Median</div><div class="vc-value">${fmt$(co.condoMedianPrice)}</div></div>` : ""}
+        ${co.sfrMedianPrice ? `<div class="value-card" style="border-left: 3px solid #dc2626;"><div class="vc-label">SFR Median</div><div class="vc-value">${fmt$(co.sfrMedianPrice)}</div><div class="vc-sub">Single Family</div></div>` : ""}
+        ${co.condoMedianPrice ? `<div class="value-card" style="border-left: 3px solid #3b82f6;"><div class="vc-label">Condo/TH Median</div><div class="vc-value">${fmt$(co.condoMedianPrice)}</div><div class="vc-sub">Condo & Townhouse</div></div>` : ""}
         <div class="value-card dark"><div class="vc-label">Price/Sqft</div><div class="vc-value">$${co.medianPricePerSqft || "-"}</div></div>
         <div class="value-card dark"><div class="vc-label">Median DOM</div><div class="vc-value">${co.medianDOM || "-"} days</div></div>
         <div class="value-card dark"><div class="vc-label">Total Listings</div><div class="vc-value">${co.totalListings?.toLocaleString() || "-"}</div></div>
+        ${co.medianRent ? `<div class="value-card dark"><div class="vc-label">Median Rent</div><div class="vc-value">$${co.medianRent.toLocaleString()}/mo</div></div>` : ""}
       </div>
-      ${co.yoyPriceChange != null ? `<div style="margin: 8px 0;"><span style="font-size: 10px; color: #6b7280;">YoY Price Change:</span> <span style="font-size: 12px; font-weight: 700; color: ${co.yoyPriceChange >= 0 ? "#15803d" : "#dc2626"};">${co.yoyPriceChange > 0 ? "+" : ""}${co.yoyPriceChange}%</span></div>` : ""}
+      <!-- Secondary indicator cards -->
+      <div class="value-cards" style="margin-top: 8px;">
+        ${co.yoyPriceChange != null ? `<div class="value-card" style="background: ${co.yoyPriceChange >= 0 ? "#ecfdf5" : "#fef2f2"};"><div class="vc-label">YoY Price Change</div><div class="vc-value" style="color: ${co.yoyPriceChange >= 0 ? "#15803d" : "#dc2626"};">${co.yoyPriceChange > 0 ? "+" : ""}${co.yoyPriceChange}%</div><div class="vc-sub">vs. prior year</div></div>` : ""}
+        ${co.salesMomentum != null ? `<div class="value-card" style="background: ${co.salesMomentum >= 0 ? "#ecfdf5" : "#fef2f2"};"><div class="vc-label">Sales Momentum</div><div class="vc-value" style="color: ${co.salesMomentum >= 0 ? "#15803d" : "#dc2626"};">${co.salesMomentum > 0 ? "+" : ""}${co.salesMomentum}%</div><div class="vc-sub">6mo vs prior 6mo</div></div>` : ""}
+        <div class="value-card" style="background: #eff6ff;"><div class="vc-label">Total Listings</div><div class="vc-value">${co.totalListings?.toLocaleString() || "-"}</div></div>
+      </div>
     `;
 
     // ZIP Comparison Table
@@ -594,6 +600,46 @@ export function buildSellerReportHtml(data: SellerReportData, branding: AgentBra
         </table>
         ${subjectZip ? `<div style="font-size: 9px; color: #6b7280; margin-top: 4px;">* Subject property ZIP code highlighted</div>` : ""}
       `;
+
+      // ZIP Median Price horizontal bar chart (SFR vs Condo)
+      const zipChartData = countyAnalytics.zipTable.slice(0, 20).reverse(); // Bottom to top
+      if (zipChartData.length > 3) {
+        const zipLabels = zipChartData.map((z: any) => z.zipCode);
+        const zipSfr = zipChartData.map((z: any) => z.sfrMedian || 0);
+        const zipCondo = zipChartData.map((z: any) => z.condoMedian || 0);
+
+        countySection += `
+          <div class="page-break"></div>
+          ${hdr}<div class="gold-accent"></div>
+          <div class="section-title">Median Sale Price by ZIP Code - SFR vs Condo/Townhouse</div>
+          <div class="chart-container" style="height: ${Math.max(300, zipChartData.length * 22)}px;"><canvas id="zipBarChart"></canvas></div>
+
+          <script data-chart>
+            new Chart(document.getElementById('zipBarChart'), {
+              type: 'bar',
+              data: {
+                labels: ${JSON.stringify(zipLabels)},
+                datasets: [
+                  { label: 'Single Family', data: ${JSON.stringify(zipSfr)}, backgroundColor: '#dc2626', borderRadius: 2 },
+                  { label: 'Condo/Townhouse', data: ${JSON.stringify(zipCondo)}, backgroundColor: '#3b82f6', borderRadius: 2 }
+                ]
+              },
+              options: {
+                indexAxis: 'y',
+                responsive: true, maintainAspectRatio: false, animation: false,
+                plugins: {
+                  legend: { position: 'top', labels: { font: { size: 9 }, usePointStyle: true } },
+                  tooltip: { callbacks: { label: function(c) { return c.dataset.label + ': $' + (c.raw/1000).toFixed(0) + 'K'; } } }
+                },
+                scales: {
+                  x: { ticks: { callback: function(v) { return '$' + (v/1000000).toFixed(1) + 'M'; }, font: { size: 8 } } },
+                  y: { ticks: { font: { size: 9 } } }
+                }
+              }
+            });
+          </script>
+        `;
+      }
     }
   }
 
