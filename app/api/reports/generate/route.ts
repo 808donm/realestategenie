@@ -142,46 +142,54 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate AI property narrative for Seller Report
+    const t0 = Date.now();
     if (reportType === "seller" && !property.aiNarrative) {
       try {
         const { trackedGenerateText } = await import("@/lib/ai/ai-call-logger");
-        const narrativePrompt = `Write a professional real estate property analysis for a seller considering listing their property. Use 4-5 concise paragraphs. Be factual, not salesy. No headers or bullet points - just flowing paragraphs.
+        const narrativePrompt = `You are a licensed real estate professional writing a property analysis for a seller report. Write 4-5 concise paragraphs. Be factual, objective, and professional. No headers or bullet points - just flowing paragraphs.
+
+IMPORTANT: You MUST comply with the Fair Housing Act and NAR (National Association of REALTORS) standards:
+- Do NOT reference race, color, religion, sex, national origin, familial status, or disability
+- Do NOT describe the demographics or characteristics of neighborhood residents
+- Do NOT use language that could be perceived as steering or discriminatory
+- Focus on the PROPERTY features, market data, and financial analysis only
+- Refer to the neighborhood by name and geographic features, not by the people who live there
 
 Property: ${property.address}, ${property.city}, ${property.state} ${property.zip}
 Type: ${property.propertyType || "Residential"} | Year Built: ${property.yearBuilt || "N/A"} | ${property.beds || "?"}bd/${property.baths || "?"}ba | ${property.sqft ? property.sqft.toLocaleString() + " sqft" : "N/A"} | Lot: ${property.lotSizeSqft ? property.lotSizeSqft.toLocaleString() + " sqft" : "N/A"}
 AVM: ${property.avmValue ? "$" + property.avmValue.toLocaleString() : "N/A"} | Last Sale: ${property.lastSalePrice ? "$" + property.lastSalePrice.toLocaleString() : "Price not disclosed"} (${property.lastSaleDate || "N/A"})
 Tax Assessment: ${property.assessedTotal ? "$" + property.assessedTotal.toLocaleString() : "N/A"} | Annual Tax: ${property.taxAmount ? "$" + property.taxAmount.toLocaleString() : "N/A"}
-Owner: ${property.owner1 || "N/A"} | Owner Occupied: ${property.ownerOccupied === "Y" ? "Yes" : property.ownerOccupied === "N" ? "No" : "Unknown"}
 Construction: ${property.constructionType || "N/A"} | Condition: ${property.condition || "N/A"} | Roof: ${property.roofType || "N/A"}
 ${property.legal?.subdivision ? "Subdivision: " + property.legal.subdivision : ""} | Zoning: ${property.legal?.zoning || "N/A"}
 Market: ${property.marketStats?.medianPrice ? "Median Sold $" + property.marketStats.medianPrice.toLocaleString() : ""} | ${property.marketStats?.avgDOM ? "Avg DOM " + property.marketStats.avgDOM + " days" : ""} | ${property.monthsOfInventory ? "Inventory " + property.monthsOfInventory + " months" : ""} | ${property.marketType ? property.marketType + " market" : ""}
 ${property.hazards?.length ? "Hazard Zones: " + property.hazards.map((h: { label: string }) => h.label).join(", ") : "No known hazard zones"}
-${property.schools?.length ? "Nearby Schools: " + property.schools.map((s: { name: string }) => s.name).join(", ") : ""}
 
 Paragraph 1: Property overview - location, type, size, lot, key features
-Paragraph 2: Building details and condition - construction, notable features (deck, porch, pool, etc.)
-Paragraph 3: Market context - current market conditions, how property compares to area median, recent trends
+Paragraph 2: Building details and condition - construction quality, notable features
+Paragraph 3: Market context - current market conditions, how property value compares to area median
 Paragraph 4: Equity and financial position - estimated value, tax assessment, equity status
-Paragraph 5: Considerations - any hazard zones, HOA, schools, and what makes this property attractive to buyers`;
+Paragraph 5: Considerations - hazard zones if any, HOA, zoning, and what makes this property marketable`;
 
         const result = await trackedGenerateText({
-          model: process.env.COPILOT_AI_MODEL || "openai/gpt-4o-mini",
+          model: "anthropic/claude-haiku-4",
           prompt: narrativePrompt,
-          temperature: 0.7,
-          maxTokens: 800,
+          temperature: 0.6,
+          maxTokens: 700,
           source: "seller-report-narrative",
           agentId: user.id,
         });
         if (result.text) {
           property.aiNarrative = result.text;
-          console.log(`[reports/generate] AI narrative generated (${result.text.length} chars)`);
+          console.log(`[reports/generate] AI narrative: ${Date.now() - t0}ms (${result.text.length} chars)`);
         }
       } catch (e: unknown) {
-        console.warn("[reports/generate] AI narrative failed:", e instanceof Error ? e.message : e);
+        console.warn(`[reports/generate] AI narrative failed (${Date.now() - t0}ms):`, e instanceof Error ? e.message : e);
       }
     }
 
     // Build HTML and render to PDF
+    const t1 = Date.now();
+    console.log(`[reports/generate] Pre-render setup: ${t1 - t0}ms`);
     let html: string;
     let filenamePrefix: string;
 
@@ -195,7 +203,11 @@ Paragraph 5: Considerations - any hazard zones, HOA, schools, and what makes thi
         return NextResponse.json({ error: `Unsupported report type: ${reportType}` }, { status: 400 });
     }
 
+    console.log(`[reports/generate] HTML built: ${Date.now() - t1}ms (${html.length} chars)`);
+    const t2 = Date.now();
     const pdfBuffer = await renderHtmlToPdf(html);
+    console.log(`[reports/generate] PDF rendered: ${Date.now() - t2}ms (${pdfBuffer.length} bytes)`);
+    console.log(`[reports/generate] Total: ${Date.now() - t0}ms`);
 
     // Log activity (fire-and-forget)
     void (async () => {

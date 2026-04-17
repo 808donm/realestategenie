@@ -548,13 +548,18 @@ export default function SellerReportClient() {
       } catch {}
 
       // Generate PDF via HTML-to-PDF rendering (RPR quality)
+      // 55s timeout - Vercel function limit is 60s, give 5s buffer
       const res = await fetch("/api/reports/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ property: reportData, reportType: "seller" }),
+        signal: AbortSignal.timeout(55000),
       });
 
-      if (!res.ok) throw new Error("Failed to generate report");
+      if (!res.ok) {
+        const errText = await res.text().catch(() => "Unknown error");
+        throw new Error(`Report generation failed (${res.status}): ${errText.substring(0, 100)}`);
+      }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
