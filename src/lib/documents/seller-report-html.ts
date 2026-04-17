@@ -400,6 +400,9 @@ export function buildSellerReportHtml(data: SellerReportData, branding: AgentBra
   // MARKET TRENDS
   // ═══════════════════════════════════════════════════════════════════════
 
+  // Chart HTML needs to be in outer scope so it's accessible in assembly
+  let chartHtml_outer = "";
+
   let marketSection = "";
   if (data.marketStats || data.marketType) {
     const marketArrowPos = data.marketType === "sellers" ? "16%" : data.marketType === "buyers" ? "83%" : "50%";
@@ -489,6 +492,9 @@ export function buildSellerReportHtml(data: SellerReportData, branding: AgentBra
       `;
     }
 
+    // Copy chart HTML to outer scope for assembly
+    chartHtml_outer = chartHtml;
+
     marketSection = `
       <div class="page-break"></div>
       ${hdr}<div class="gold-accent"></div>
@@ -503,12 +509,11 @@ export function buildSellerReportHtml(data: SellerReportData, branding: AgentBra
       </div>
       <div class="value-cards">${mCards}</div>
       ${data.marketStats ? `${row("Active Listings", data.marketStats.totalListings)}${row("Price per Sqft", data.marketStats.pricePerSqft ? `$${data.marketStats.pricePerSqft.toLocaleString()}` : null)}` : ""}
-      ${chartHtml}
     `;
   }
 
   // ═══════════════════════════════════════════════════════════════════════
-  // SFR vs CONDO MARKET SPLIT
+  // SFR vs CONDO MARKET SPLIT (inserted into market section, before charts)
   // ═══════════════════════════════════════════════════════════════════════
 
   let sfrCondoSection = "";
@@ -600,22 +605,39 @@ export function buildSellerReportHtml(data: SellerReportData, branding: AgentBra
   const oahuTrends = (data as any).oahuTrends;
   if (oahuTrends?.length > 5) {
     const trendLabels = oahuTrends.map((y: any) => String(y.year));
-    const sfrPrices = oahuTrends.map((y: any) => y.sfrMedian);
-    const condoPrices = oahuTrends.map((y: any) => y.condoMedian);
+    const sfrMedians = oahuTrends.map((y: any) => y.sfrMedian);
+    const condoMedians = oahuTrends.map((y: any) => y.condoMedian);
+    const sfrAvgs = oahuTrends.map((y: any) => y.sfrAvg);
+    const condoAvgs = oahuTrends.map((y: any) => y.condoAvg);
+    const sfrSales = oahuTrends.map((y: any) => y.sfrSales);
+    const condoSales = oahuTrends.map((y: any) => y.condoSales);
 
     oahuTrendSection = `
-      <div class="section-title" style="margin-top: 20px;">Oahu Median Sale Price Trend</div>
+      <div class="page-break"></div>
+      ${hdr}<div class="gold-accent"></div>
+      <div class="big-section-header">Oahu Market Trends</div>
+
+      <div class="section-title">Median Sale Price - Oahu (${oahuTrends.length} Years)</div>
       <div style="font-size: 9px; color: #6b7280; margin-bottom: 4px;">Single Family vs Condo/Townhouse | Source: HiCentral MLS</div>
-      <div class="chart-container" style="height: 240px;"><canvas id="oahuTrendChart"></canvas></div>
+      <div class="chart-container" style="height: 220px;"><canvas id="oahuMedianChart"></canvas></div>
+
+      <div class="section-title" style="margin-top: 16px;">Average Sale Price - Oahu (${oahuTrends.length} Years)</div>
+      <div style="font-size: 9px; color: #6b7280; margin-bottom: 4px;">Single Family vs Condo/Townhouse | Source: HiCentral MLS</div>
+      <div class="chart-container" style="height: 220px;"><canvas id="oahuAvgChart"></canvas></div>
+
+      <div class="section-title" style="margin-top: 16px;">Annual Sales Volume - Oahu (${oahuTrends.length} Years)</div>
+      <div style="font-size: 9px; color: #6b7280; margin-bottom: 4px;">Number of residential resales per year | Source: HiCentral MLS</div>
+      <div class="chart-container" style="height: 220px;"><canvas id="oahuVolumeChart"></canvas></div>
 
       <script data-chart>
-        new Chart(document.getElementById('oahuTrendChart'), {
+        // Median Sale Price Chart
+        new Chart(document.getElementById('oahuMedianChart'), {
           type: 'line',
           data: {
             labels: ${JSON.stringify(trendLabels)},
             datasets: [
-              { label: 'Single Family', data: ${JSON.stringify(sfrPrices)}, borderColor: '#dc2626', backgroundColor: 'transparent', tension: 0.3, pointRadius: 2, borderWidth: 2 },
-              { label: 'Condo/TH', data: ${JSON.stringify(condoPrices)}, borderColor: '#3b82f6', backgroundColor: 'transparent', tension: 0.3, pointRadius: 2, borderWidth: 2 }
+              { label: 'Single Family', data: ${JSON.stringify(sfrMedians)}, borderColor: '#dc2626', backgroundColor: 'transparent', tension: 0.3, pointRadius: 2, borderWidth: 2 },
+              { label: 'Condo/TH', data: ${JSON.stringify(condoMedians)}, borderColor: '#3b82f6', backgroundColor: 'transparent', tension: 0.3, pointRadius: 2, borderWidth: 2 }
             ]
           },
           options: {
@@ -623,6 +645,46 @@ export function buildSellerReportHtml(data: SellerReportData, branding: AgentBra
             plugins: { legend: { position: 'bottom', labels: { font: { size: 9 }, usePointStyle: true } } },
             scales: {
               y: { ticks: { callback: function(v) { return '$' + (v/1000).toFixed(0) + 'K'; }, font: { size: 9 } } },
+              x: { ticks: { font: { size: 8 }, maxRotation: 45 } }
+            }
+          }
+        });
+
+        // Average Sale Price Chart
+        new Chart(document.getElementById('oahuAvgChart'), {
+          type: 'line',
+          data: {
+            labels: ${JSON.stringify(trendLabels)},
+            datasets: [
+              { label: 'Single Family', data: ${JSON.stringify(sfrAvgs)}, borderColor: '#dc2626', backgroundColor: 'transparent', tension: 0.3, pointRadius: 2, borderWidth: 2 },
+              { label: 'Condo/TH', data: ${JSON.stringify(condoAvgs)}, borderColor: '#3b82f6', backgroundColor: 'transparent', tension: 0.3, pointRadius: 2, borderWidth: 2 }
+            ]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false, animation: false,
+            plugins: { legend: { position: 'bottom', labels: { font: { size: 9 }, usePointStyle: true } } },
+            scales: {
+              y: { ticks: { callback: function(v) { return '$' + (v/1000).toFixed(0) + 'K'; }, font: { size: 9 } } },
+              x: { ticks: { font: { size: 8 }, maxRotation: 45 } }
+            }
+          }
+        });
+
+        // Annual Sales Volume Chart
+        new Chart(document.getElementById('oahuVolumeChart'), {
+          type: 'line',
+          data: {
+            labels: ${JSON.stringify(trendLabels)},
+            datasets: [
+              { label: 'Single Family', data: ${JSON.stringify(sfrSales)}, borderColor: '#dc2626', backgroundColor: 'transparent', tension: 0.3, pointRadius: 2, borderWidth: 2 },
+              { label: 'Condo/TH', data: ${JSON.stringify(condoSales)}, borderColor: '#3b82f6', backgroundColor: 'transparent', tension: 0.3, pointRadius: 2, borderWidth: 2 }
+            ]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false, animation: false,
+            plugins: { legend: { position: 'bottom', labels: { font: { size: 9 }, usePointStyle: true } } },
+            scales: {
+              y: { beginAtZero: true, ticks: { font: { size: 9 } } },
               x: { ticks: { font: { size: 8 }, maxRotation: 45 } }
             }
           }
@@ -756,6 +818,7 @@ export function buildSellerReportHtml(data: SellerReportData, branding: AgentBra
   <!-- MARKET ANALYSIS -->
   ${marketSection}
   ${sfrCondoSection}
+  ${chartHtml_outer}
   ${countySection}
   ${oahuTrendSection}
 
