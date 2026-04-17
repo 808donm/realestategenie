@@ -114,6 +114,19 @@ export function buildSellerReportHtml(data: SellerReportData, branding: AgentBra
   })() : "";
 
   // ═══════════════════════════════════════════════════════════════════════
+  // AI-GENERATED PROPERTY NARRATIVE
+  // ═══════════════════════════════════════════════════════════════════════
+
+  const aiNarrative = (data as any).aiNarrative ? `
+    <div style="margin: 20px 0; padding: 16px 20px; background: #f9fafb; border-radius: 8px; border-left: 4px solid #1e40af;">
+      <div style="font-size: 12px; font-weight: 700; color: #1e40af; text-transform: uppercase; margin-bottom: 8px;">Property Analysis</div>
+      <div style="font-size: 11px; color: #374151; line-height: 1.8;">
+        ${esc((data as any).aiNarrative).replace(/\n\n/g, '</div><div style="font-size: 11px; color: #374151; line-height: 1.8; margin-top: 10px;">').replace(/\n/g, '<br/>')}
+      </div>
+    </div>
+  ` : "";
+
+  // ═══════════════════════════════════════════════════════════════════════
   // PROPERTY INFORMATION (continuous flow, no forced page breaks)
   // ═══════════════════════════════════════════════════════════════════════
 
@@ -275,6 +288,98 @@ export function buildSellerReportHtml(data: SellerReportData, branding: AgentBra
         ${row("Lender", data.lender)}
         ${row("Loan Type", data.loanType)}
         ${row("LTV Ratio", data.ltv != null ? `${data.ltv.toFixed(1)}%` : null)}
+      </div>
+    `;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // HOME EQUITY ANALYSIS (visual)
+  // ═══════════════════════════════════════════════════════════════════════
+
+  let equityAnalysis = "";
+  if (data.avmValue) {
+    const purchasePrice = lastSaleAmt && lastSaleAmt > 1000 ? lastSaleAmt : null;
+    const appreciation = purchasePrice ? data.avmValue - purchasePrice : null;
+    const appreciationPct = purchasePrice ? ((appreciation! / purchasePrice) * 100).toFixed(1) : null;
+    const yearsOwned = lastSaleDate ? Math.max(1, Math.round((Date.now() - new Date(lastSaleDate).getTime()) / (365.25 * 86400000))) : null;
+    const annualAppreciation = appreciationPct && yearsOwned ? (Number(appreciationPct) / yearsOwned).toFixed(1) : null;
+
+    equityAnalysis = `
+      <div class="section-title">Home Equity Analysis</div>
+      <div class="avoid-break" style="margin-bottom: 16px;">
+        <div class="value-cards">
+          <div class="value-card"><div class="vc-label">Current Value</div><div class="vc-value">${fmt$(data.avmValue)}</div></div>
+          ${purchasePrice ? `<div class="value-card"><div class="vc-label">Purchase Price</div><div class="vc-value">${fmt$(purchasePrice)}</div><div class="vc-sub">${fmtDate(lastSaleDate)}</div></div>` : ""}
+          ${appreciation ? `<div class="value-card green"><div class="vc-label">Appreciation</div><div class="vc-value">+${fmt$(appreciation)}</div><div class="vc-sub">${appreciationPct}%${yearsOwned ? ` over ${yearsOwned} years` : ""}</div></div>` : ""}
+          ${annualAppreciation ? `<div class="value-card"><div class="vc-label">Annual Avg</div><div class="vc-value">+${annualAppreciation}%/yr</div></div>` : ""}
+        </div>
+        ${purchasePrice ? `
+          <div style="margin-top: 8px;">
+            <div style="display: flex; height: 20px; border-radius: 4px; overflow: hidden;">
+              <div style="width: ${Math.round((purchasePrice / data.avmValue) * 100)}%; background: #6b7280; display: flex; align-items: center; justify-content: center; font-size: 8px; color: white; font-weight: 600;">Purchase</div>
+              <div style="flex: 1; background: #15803d; display: flex; align-items: center; justify-content: center; font-size: 8px; color: white; font-weight: 600;">Appreciation +${fmt$(appreciation)}</div>
+            </div>
+          </div>
+        ` : ""}
+        ${data.assessedTotal ? `<div style="margin-top: 8px; font-size: 10px; color: #6b7280;">County Assessment: ${fmt$(data.assessedTotal)} (${data.taxYear || "current"}) | ${data.assessedTotal < data.avmValue ? "Below market value" : "At or above market value"}</div>` : ""}
+      </div>
+    `;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // SCHOOLS
+  // ═══════════════════════════════════════════════════════════════════════
+
+  const schools = (data as any).schools || [];
+  const schoolsSection = schools.length > 0 ? `
+    <div class="section-title">Nearby Schools</div>
+    <table class="comp-table avoid-break">
+      <thead><tr><th>School</th><th>Level</th><th>Grades</th><th>Distance</th><th>Enrollment</th><th>Rating</th></tr></thead>
+      <tbody>${schools.slice(0, 8).map((s: any) => `
+        <tr>
+          <td>${esc(s.name)}</td>
+          <td>${esc(s.level || s.type || "")}</td>
+          <td>${esc(s.grades || s.gradeRange || "")}</td>
+          <td>${s.distance || "-"}</td>
+          <td class="num">${s.enrollment || "-"}</td>
+          <td>${esc(s.overallGrade || s.rating || "-")}</td>
+        </tr>
+      `).join("")}</tbody>
+    </table>
+  ` : "";
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // HAZARD ZONES
+  // ═══════════════════════════════════════════════════════════════════════
+
+  const hazardSection = (data.hazards && data.hazards.length > 0) ? `
+    <div class="section-title">Environmental & Hazard Zones</div>
+    ${data.hazards.map((h) => `<div class="hazard-badge"><div class="hb-label">${esc(h.label)}</div><div class="hb-value">${esc(h.value)}</div></div>`).join("")}
+  ` : "";
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // NEIGHBORHOOD DEMOGRAPHICS
+  // ═══════════════════════════════════════════════════════════════════════
+
+  const demographics = (data as any).demographics || (data as any).federalData;
+  let demographicsSection = "";
+  if (demographics) {
+    const census = demographics.census || demographics;
+    demographicsSection = `
+      <div class="section-title">Neighborhood Demographics</div>
+      <div class="two-col avoid-break">
+        <div>
+          ${row("Median Household Income", census.medianHouseholdIncome || census.medianIncome ? fmt$(census.medianHouseholdIncome || census.medianIncome) : null)}
+          ${row("Median Home Value (Area)", census.medianHomeValue ? fmt$(census.medianHomeValue) : null)}
+          ${row("Population", census.totalPopulation ? Number(census.totalPopulation).toLocaleString() : null)}
+          ${row("Median Age", census.medianAge)}
+        </div>
+        <div>
+          ${row("Owner-Occupied", census.ownerOccupiedPct ? `${census.ownerOccupiedPct}%` : null)}
+          ${row("Renter-Occupied", census.renterOccupiedPct ? `${census.renterOccupiedPct}%` : null)}
+          ${row("Unemployment Rate", census.unemploymentRate ? `${census.unemploymentRate}%` : null)}
+          ${row("Population Density", census.populationDensity ? `${Number(census.populationDensity).toLocaleString()}/sq mi` : null)}
+        </div>
       </div>
     `;
   }
@@ -473,12 +578,6 @@ export function buildSellerReportHtml(data: SellerReportData, branding: AgentBra
     `;
   }
 
-  // Hazards
-  const hazardSection = (data.hazards && data.hazards.length > 0) ? `
-    <div class="section-title">Environmental & Hazard Zones</div>
-    ${data.hazards.map((h) => `<div class="hazard-badge"><div class="hb-label">${esc(h.label)}</div><div class="hb-value">${esc(h.value)}</div></div>`).join("")}
-  ` : "";
-
   // ═══════════════════════════════════════════════════════════════════════
   // ASSEMBLE DOCUMENT
   // ═══════════════════════════════════════════════════════════════════════
@@ -498,6 +597,7 @@ export function buildSellerReportHtml(data: SellerReportData, branding: AgentBra
   ${listingBadge}
   <div class="value-cards">${valCards}</div>
   ${avmBar}
+  ${aiNarrative}
 
   ${propFacts}
   ${buildingDetails}
@@ -508,7 +608,11 @@ export function buildSellerReportHtml(data: SellerReportData, branding: AgentBra
   ${ownerSection}
   ${locationSection}
   ${taxSection}
+  ${equityAnalysis}
   ${equitySection}
+  ${hazardSection}
+  ${schoolsSection}
+  ${demographicsSection}
 
   ${photoSection}
   ${marketSection}
@@ -516,7 +620,6 @@ export function buildSellerReportHtml(data: SellerReportData, branding: AgentBra
   ${compsSection}
   ${pricingSection}
   ${cmaSummary}
-  ${hazardSection}
 
   ${ftr}
 

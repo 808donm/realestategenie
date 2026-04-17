@@ -410,13 +410,19 @@ export default function SellerReportClient() {
         yearBuilt: c.yearBuilt ? Number(c.yearBuilt) : undefined,
       })).filter((c: any) => c.price > 1000);
 
-      // Fetch comps, RentCast market stats, AND MLS neighborhood stats in parallel
-      const [compsRes, marketRes, mlsStatsRes] = await Promise.allSettled([
+      // Fetch comps, market stats, MLS stats, federal data, and hazards in parallel
+      const [compsRes, marketRes, mlsStatsRes, federalRes, hazardRes] = await Promise.allSettled([
         fetch(`/api/comps?address=${encodeURIComponent(property.address)}&latitude=${lat || ""}&longitude=${lng || ""}&compCount=15&beds=${property.beds || ""}&baths=${property.baths || ""}&sqft=${property.sqft || ""}&yearBuilt=${property.yearBuilt || ""}`)
           .then((r) => r.ok ? r.json() : null).catch(() => null),
         zip ? fetch(`/api/rentcast/market-stats?zipCode=${zip}`)
           .then((r) => r.ok ? r.json() : null).catch(() => null) : Promise.resolve(null),
         zip ? fetch(`/api/mls/neighborhood-stats?subdivision=${encodeURIComponent(zip)}&months=12`)
+          .then((r) => r.ok ? r.json() : null).catch(() => null) : Promise.resolve(null),
+        // Federal data (Census demographics)
+        zip ? fetch(`/api/integrations/federal?zip=${zip}`)
+          .then((r) => r.ok ? r.json() : null).catch(() => null) : Promise.resolve(null),
+        // Hazard zones (if lat/lng available)
+        lat && lng ? fetch(`/api/integrations/hazards?lat=${lat}&lng=${lng}`)
           .then((r) => r.ok ? r.json() : null).catch(() => null) : Promise.resolve(null),
       ]);
 
@@ -503,6 +509,41 @@ export default function SellerReportClient() {
       // Add uploaded photos to report data
       if (uploadedPhotos.length > 0) {
         reportData.uploadedPhotos = uploadedPhotos;
+      }
+
+      // Add federal/Census demographics
+      const federalData = federalRes.status === "fulfilled" ? federalRes.value : null;
+      if (federalData) {
+        reportData.federalData = federalData;
+        reportData.demographics = federalData;
+      }
+
+      // Add hazard zones
+      const hazardData = hazardRes.status === "fulfilled" ? hazardRes.value : null;
+      if (hazardData) {
+        const hazards: Array<{ label: string; value: string }> = [];
+        if (hazardData.tsunami?.found) hazards.push({ label: "Tsunami Evacuation Zone", value: "In tsunami evacuation zone" });
+        if (hazardData.extremeTsunami?.found) hazards.push({ label: "Extreme Tsunami Zone", value: "Extreme warnings only" });
+        if (hazardData.seaLevelRise?.found) hazards.push({ label: "Sea Level Rise", value: "In 3.2ft SLR coastal flood zone" });
+        if (hazardData.lavaFlow?.found) hazards.push({ label: "Lava Flow Zone", value: `Zone ${hazardData.lavaFlow.attributes?.hazard || "?"}` });
+        if (hazardData.cesspoolPriority?.found) hazards.push({ label: "Cesspool Priority", value: "In priority area" });
+        if (hazardData.dhhl?.found) hazards.push({ label: "Hawaiian Home Lands", value: "On DHHL land" });
+        if (hazardData.sma?.found) hazards.push({ label: "Special Mgmt Area", value: "Coastal zone - SMA permits may apply" });
+        if (hazardData.floodZone) hazards.push({ label: "FEMA Flood Zone", value: hazardData.floodZone });
+        if (hazards.length > 0) reportData.hazards = hazards;
+      }
+
+      // Add schools from neighborhood data (if REAPI enrichment included them)
+      const neighborhoodSchools = rd._raw?.schools || rd._raw?.nearbySchools || [];
+      if (neighborhoodSchools.length > 0) {
+        reportData.schools = neighborhoodSchools.slice(0, 8).map((s: any) => ({
+          name: s.schoolName || s.name || "Unknown",
+          level: s.schoolType || s.type || s.level || "",
+          grades: s.gradeRange || (s.gradeSpanLow && s.gradeSpanHigh ? `${s.gradeSpanLow}-${s.gradeSpanHigh}` : ""),
+          distance: s.distance ? `${Number(s.distance).toFixed(1)} mi` : "",
+          enrollment: s.enrollment || s.studentCnt,
+          rating: s.rating || s.schoolRating,
+        }));
       }
 
       // Generate PDF via HTML-to-PDF rendering (RPR quality)
