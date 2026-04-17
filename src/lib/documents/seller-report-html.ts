@@ -716,6 +716,7 @@ export function buildSellerReportHtml(data: SellerReportData, branding: AgentBra
 
   ${coverPage}
 
+  <!-- PAGE 2: Valuation + AI Narrative -->
   <div class="page-break"></div>
   ${hdr}<div class="gold-accent"></div>
   ${listingBadge}
@@ -723,28 +724,42 @@ export function buildSellerReportHtml(data: SellerReportData, branding: AgentBra
   ${avmBar}
   ${aiNarrative}
 
+  <!-- PAGE 3: Property Details -->
+  <div class="page-break"></div>
+  ${hdr}<div class="gold-accent"></div>
+  <div class="big-section-header">Property Information</div>
   ${propFacts}
   ${buildingDetails}
   ${interiorSection}
   ${exteriorSection}
   ${descSection}
+
+  <!-- PAGE 4: Legal, Owner, Location, Tax -->
   ${legalSection}
   ${ownerSection}
   ${locationSection}
   ${taxSection}
+
+  <!-- HOME EQUITY & SALES ANALYSIS (consolidated - no duplicate) -->
   ${equityAnalysis}
-  ${equitySection}
+  ${salesSection}
+  ${compsSection}
+
+  <!-- Hazards, Schools, Demographics -->
   ${hazardSection}
   ${schoolsSection}
   ${demographicsSection}
 
+  <!-- Photos -->
   ${photoSection}
+
+  <!-- MARKET ANALYSIS -->
   ${marketSection}
   ${sfrCondoSection}
   ${countySection}
   ${oahuTrendSection}
-  ${salesSection}
-  ${compsSection}
+
+  <!-- Pricing -->
   ${pricingSection}
   ${cmaSummary}
 
