@@ -410,20 +410,21 @@ export default function SellerReportClient() {
         yearBuilt: c.yearBuilt ? Number(c.yearBuilt) : undefined,
       })).filter((c: any) => c.price > 1000);
 
-      // Fetch comps, market stats, MLS stats, federal data, and hazards in parallel
-      const [compsRes, marketRes, mlsStatsRes, federalRes, hazardRes] = await Promise.allSettled([
+      // Fetch comps, market stats, MLS stats, federal data, hazards, AND county market analytics in parallel
+      const [compsRes, marketRes, mlsStatsRes, federalRes, hazardRes, countyAnalyticsRes] = await Promise.allSettled([
         fetch(`/api/comps?address=${encodeURIComponent(property.address)}&latitude=${lat || ""}&longitude=${lng || ""}&compCount=15&beds=${property.beds || ""}&baths=${property.baths || ""}&sqft=${property.sqft || ""}&yearBuilt=${property.yearBuilt || ""}`)
           .then((r) => r.ok ? r.json() : null).catch(() => null),
         zip ? fetch(`/api/rentcast/market-stats?zipCode=${zip}`)
           .then((r) => r.ok ? r.json() : null).catch(() => null) : Promise.resolve(null),
         zip ? fetch(`/api/mls/neighborhood-stats?subdivision=${encodeURIComponent(zip)}&months=12`)
           .then((r) => r.ok ? r.json() : null).catch(() => null) : Promise.resolve(null),
-        // Federal data (Census demographics)
         zip ? fetch(`/api/integrations/federal?zip=${zip}`)
           .then((r) => r.ok ? r.json() : null).catch(() => null) : Promise.resolve(null),
-        // Hazard zones (if lat/lng available)
         lat && lng ? fetch(`/api/integrations/hazards?lat=${lat}&lng=${lng}`)
           .then((r) => r.ok ? r.json() : null).catch(() => null) : Promise.resolve(null),
+        // County-level market analytics (ZIP comparison table, SFR/Condo splits, city stats)
+        fetch("/api/reports/market-analytics?county=honolulu")
+          .then((r) => r.ok ? r.json() : null).catch(() => null),
       ]);
 
       // Merge comps: prefer MLS comps with correlations, then add REAPI comps
@@ -545,6 +546,38 @@ export default function SellerReportClient() {
           rating: s.rating || s.schoolRating,
         }));
       }
+
+      // Add county market analytics (ZIP comparison, SFR/Condo splits, city stats)
+      const countyData = countyAnalyticsRes.status === "fulfilled" ? countyAnalyticsRes.value : null;
+      if (countyData) {
+        reportData.countyAnalytics = {
+          overview: countyData.overview,
+          zipTable: countyData.zipTable,
+          cityStats: countyData.cityStats,
+        };
+        // Also add SFR/Condo-specific stats from MLS neighborhood stats
+        const mlsStats = mlsStatsRes.status === "fulfilled" ? mlsStatsRes.value : null;
+        if (mlsStats?.sfrStats || mlsStats?.condoStats) {
+          reportData.sfrStats = mlsStats.sfrStats;
+          reportData.condoStats = mlsStats.condoStats;
+          reportData.mlsSalesCount = mlsStats.sales;
+        }
+      }
+
+      // Add 40-year Oahu resales trend data (static import - no API call needed)
+      try {
+        const { OAHU_RESALES_DATA } = await import("@/lib/data/oahu-resales-data");
+        // Only include last 20 years to keep chart readable
+        reportData.oahuTrends = OAHU_RESALES_DATA.slice(-20).map((yr: any) => ({
+          year: yr.year,
+          sfrMedian: yr.singleFamily.medianPrice,
+          sfrAvg: yr.singleFamily.avgPrice,
+          sfrSales: yr.singleFamily.sales,
+          condoMedian: yr.condo.medianPrice,
+          condoAvg: yr.condo.avgPrice,
+          condoSales: yr.condo.sales,
+        }));
+      } catch {}
 
       // Generate PDF via HTML-to-PDF rendering (RPR quality)
       const res = await fetch("/api/reports/generate", {

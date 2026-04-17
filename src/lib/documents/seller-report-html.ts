@@ -508,6 +508,130 @@ export function buildSellerReportHtml(data: SellerReportData, branding: AgentBra
   }
 
   // ═══════════════════════════════════════════════════════════════════════
+  // SFR vs CONDO MARKET SPLIT
+  // ═══════════════════════════════════════════════════════════════════════
+
+  let sfrCondoSection = "";
+  const sfrStats = (data as any).sfrStats;
+  const condoStats = (data as any).condoStats;
+  if (sfrStats || condoStats) {
+    sfrCondoSection = `
+      <div class="section-title">Market by Property Type</div>
+      <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+        ${sfrStats ? `
+          <div style="flex: 1; border: 2px solid #dc2626; border-radius: 8px; padding: 12px;">
+            <div style="font-size: 11px; font-weight: 700; color: #dc2626; margin-bottom: 8px;">Single Family (${sfrStats.totalSales || 0} sales)</div>
+            <div class="data-row"><span class="dr-label">Median Price</span><span class="dr-value">${fmt$(sfrStats.medianPrice)}</span></div>
+            <div class="data-row"><span class="dr-label">Price/Sqft</span><span class="dr-value">${sfrStats.medianPricePerSqft ? `$${sfrStats.medianPricePerSqft}` : "-"}</span></div>
+            <div class="data-row"><span class="dr-label">Median DOM</span><span class="dr-value">${sfrStats.medianDOM || "-"} days</span></div>
+            ${sfrStats.listToSaleRatio ? `<div class="data-row"><span class="dr-label">List-to-Sale</span><span class="dr-value">${sfrStats.listToSaleRatio}%</span></div>` : ""}
+          </div>
+        ` : ""}
+        ${condoStats ? `
+          <div style="flex: 1; border: 2px solid #3b82f6; border-radius: 8px; padding: 12px;">
+            <div style="font-size: 11px; font-weight: 700; color: #3b82f6; margin-bottom: 8px;">Condo / Townhouse (${condoStats.totalSales || 0} sales)</div>
+            <div class="data-row"><span class="dr-label">Median Price</span><span class="dr-value">${fmt$(condoStats.medianPrice)}</span></div>
+            <div class="data-row"><span class="dr-label">Price/Sqft</span><span class="dr-value">${condoStats.medianPricePerSqft ? `$${condoStats.medianPricePerSqft}` : "-"}</span></div>
+            <div class="data-row"><span class="dr-label">Median DOM</span><span class="dr-value">${condoStats.medianDOM || "-"} days</span></div>
+            ${condoStats.listToSaleRatio ? `<div class="data-row"><span class="dr-label">List-to-Sale</span><span class="dr-value">${condoStats.listToSaleRatio}%</span></div>` : ""}
+          </div>
+        ` : ""}
+      </div>
+    `;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // COUNTY OVERVIEW & ZIP COMPARISON
+  // ═══════════════════════════════════════════════════════════════════════
+
+  let countySection = "";
+  const countyAnalytics = (data as any).countyAnalytics;
+  if (countyAnalytics?.overview) {
+    const co = countyAnalytics.overview;
+    countySection = `
+      <div class="page-break"></div>
+      ${hdr}<div class="gold-accent"></div>
+      <div class="big-section-header">${esc(co.county)} County Market Overview</div>
+      <div class="value-cards">
+        <div class="value-card dark"><div class="vc-label">Median Sale Price</div><div class="vc-value">${fmt$(co.medianSalePrice)}</div><div class="vc-sub">All Property Types</div></div>
+        ${co.sfrMedianPrice ? `<div class="value-card" style="border-left: 3px solid #dc2626;"><div class="vc-label">SFR Median</div><div class="vc-value">${fmt$(co.sfrMedianPrice)}</div></div>` : ""}
+        ${co.condoMedianPrice ? `<div class="value-card" style="border-left: 3px solid #3b82f6;"><div class="vc-label">Condo/TH Median</div><div class="vc-value">${fmt$(co.condoMedianPrice)}</div></div>` : ""}
+        <div class="value-card dark"><div class="vc-label">Price/Sqft</div><div class="vc-value">$${co.medianPricePerSqft || "-"}</div></div>
+        <div class="value-card dark"><div class="vc-label">Median DOM</div><div class="vc-value">${co.medianDOM || "-"} days</div></div>
+        <div class="value-card dark"><div class="vc-label">Total Listings</div><div class="vc-value">${co.totalListings?.toLocaleString() || "-"}</div></div>
+      </div>
+      ${co.yoyPriceChange != null ? `<div style="margin: 8px 0;"><span style="font-size: 10px; color: #6b7280;">YoY Price Change:</span> <span style="font-size: 12px; font-weight: 700; color: ${co.yoyPriceChange >= 0 ? "#15803d" : "#dc2626"};">${co.yoyPriceChange > 0 ? "+" : ""}${co.yoyPriceChange}%</span></div>` : ""}
+    `;
+
+    // ZIP Comparison Table
+    if (countyAnalytics.zipTable?.length > 0) {
+      const subjectZip = data.zip;
+      const zipRows = countyAnalytics.zipTable.slice(0, 20).map((z: any) => {
+        const isSubject = z.zipCode === subjectZip;
+        const rowStyle = isSubject ? ' style="background: #eff6ff; font-weight: 700;"' : '';
+        return `<tr${rowStyle}>
+          <td>${z.zipCode}${isSubject ? " *" : ""}</td>
+          <td class="num">${fmt$(z.medianPrice)}</td>
+          <td class="num">${fmt$(z.sfrMedian)}</td>
+          <td class="num">${fmt$(z.condoMedian)}</td>
+          <td class="num">${z.medianPricePerSqft ? `$${z.medianPricePerSqft}` : "-"}</td>
+          <td class="num">${z.totalListings || "-"}</td>
+          <td class="num">${z.medianDOM || "-"}</td>
+          <td class="num">${z.medianRent ? `$${z.medianRent.toLocaleString()}` : "-"}</td>
+        </tr>`;
+      }).join("");
+
+      countySection += `
+        <div class="section-title" style="margin-top: 16px;">Sales Price by ZIP Code</div>
+        <table class="comp-table" style="font-size: 9px;">
+          <thead><tr><th>ZIP</th><th>Median</th><th>SFR Median</th><th>Condo/TH</th><th>$/Sqft</th><th>Listings</th><th>DOM</th><th>Rent</th></tr></thead>
+          <tbody>${zipRows}</tbody>
+        </table>
+        ${subjectZip ? `<div style="font-size: 9px; color: #6b7280; margin-top: 4px;">* Subject property ZIP code highlighted</div>` : ""}
+      `;
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // OAHU 20-YEAR TREND CHART
+  // ═══════════════════════════════════════════════════════════════════════
+
+  let oahuTrendSection = "";
+  const oahuTrends = (data as any).oahuTrends;
+  if (oahuTrends?.length > 5) {
+    const trendLabels = oahuTrends.map((y: any) => String(y.year));
+    const sfrPrices = oahuTrends.map((y: any) => y.sfrMedian);
+    const condoPrices = oahuTrends.map((y: any) => y.condoMedian);
+
+    oahuTrendSection = `
+      <div class="section-title" style="margin-top: 20px;">Oahu Median Sale Price Trend</div>
+      <div style="font-size: 9px; color: #6b7280; margin-bottom: 4px;">Single Family vs Condo/Townhouse | Source: HiCentral MLS</div>
+      <div class="chart-container" style="height: 240px;"><canvas id="oahuTrendChart"></canvas></div>
+
+      <script data-chart>
+        new Chart(document.getElementById('oahuTrendChart'), {
+          type: 'line',
+          data: {
+            labels: ${JSON.stringify(trendLabels)},
+            datasets: [
+              { label: 'Single Family', data: ${JSON.stringify(sfrPrices)}, borderColor: '#dc2626', backgroundColor: 'transparent', tension: 0.3, pointRadius: 2, borderWidth: 2 },
+              { label: 'Condo/TH', data: ${JSON.stringify(condoPrices)}, borderColor: '#3b82f6', backgroundColor: 'transparent', tension: 0.3, pointRadius: 2, borderWidth: 2 }
+            ]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false, animation: false,
+            plugins: { legend: { position: 'bottom', labels: { font: { size: 9 }, usePointStyle: true } } },
+            scales: {
+              y: { ticks: { callback: function(v) { return '$' + (v/1000).toFixed(0) + 'K'; }, font: { size: 9 } } },
+              x: { ticks: { font: { size: 8 }, maxRotation: 45 } }
+            }
+          }
+        });
+      </script>
+    `;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
   // SALES HISTORY
   // ═══════════════════════════════════════════════════════════════════════
 
@@ -616,6 +740,9 @@ export function buildSellerReportHtml(data: SellerReportData, branding: AgentBra
 
   ${photoSection}
   ${marketSection}
+  ${sfrCondoSection}
+  ${countySection}
+  ${oahuTrendSection}
   ${salesSection}
   ${compsSection}
   ${pricingSection}
