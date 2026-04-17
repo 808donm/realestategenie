@@ -414,21 +414,19 @@ export default function SellerReportClient() {
       const fetchWithTimeout = (url: string, timeoutMs: number = 15000) =>
         fetch(url, { signal: AbortSignal.timeout(timeoutMs) }).then((r) => r.ok ? r.json() : null).catch(() => null);
 
-      // Fetch core data (essential - 15s timeout each)
-      const [compsRes, marketRes, mlsStatsRes] = await Promise.allSettled([
+      // Fetch all data from MLS + REAPI only (NO RentCast calls to save API credits)
+      // MLS neighborhood-stats provides: monthly trends, SFR/Condo split, median prices, DOM
+      // /api/comps provides: comparable sales with correlation scores from MLS
+      const [compsRes, mlsStatsRes] = await Promise.allSettled([
         fetchWithTimeout(`/api/comps?address=${encodeURIComponent(property.address)}&latitude=${lat || ""}&longitude=${lng || ""}&compCount=15&beds=${property.beds || ""}&baths=${property.baths || ""}&sqft=${property.sqft || ""}&yearBuilt=${property.yearBuilt || ""}`, 15000),
-        zip ? fetchWithTimeout(`/api/rentcast/market-stats?zipCode=${zip}`, 10000) : Promise.resolve(null),
         zip ? fetchWithTimeout(`/api/mls/neighborhood-stats?subdivision=${encodeURIComponent(zip)}&months=12`, 15000) : Promise.resolve(null),
       ]);
 
-      // Fetch supplementary data (nice-to-have - graceful failure)
-      // Note: federal and hazards don't have standalone API routes yet,
-      // so we skip them for now. County analytics uses RentCast cache (30-day TTL).
+      // County analytics - only if cached (uses RentCast cache, won't trigger new API calls)
+      // This data changes monthly so a cache miss is acceptable to skip
       const [countyAnalyticsRes] = await Promise.allSettled([
-        fetchWithTimeout("/api/reports/market-analytics?county=honolulu", 25000),
+        fetchWithTimeout("/api/reports/market-analytics?county=honolulu", 20000),
       ]);
-      // Note: federal/hazards APIs don't exist as standalone endpoints yet.
-      // TODO: Create /api/integrations/federal and /api/integrations/hazards
 
       // Merge comps: prefer MLS comps with correlations, then add REAPI comps
       const compsData = compsRes.status === "fulfilled" ? compsRes.value : null;
@@ -453,26 +451,21 @@ export default function SellerReportClient() {
       });
       reportData.comps = [...mlsComps, ...uniqueReapiComps].slice(0, 10);
 
-      // Market stats
-      const marketData = marketRes.status === "fulfilled" ? marketRes.value : null;
-      if (marketData?.saleData || marketData?.sale) {
-        const saleStats = marketData.saleData || marketData.sale || {};
-        const rptPropType = summary.propType || summary.propertyType;
-        const typeMap: Record<string, string> = { sfr: "Single Family", "single family": "Single Family", condo: "Condo", townhouse: "Townhouse" };
-        const rcType = rptPropType ? typeMap[(rptPropType || "").toLowerCase()] : undefined;
-        const typeMatch = rcType && saleStats.dataByPropertyType?.find((d: any) => d.propertyType === rcType);
-        const rptSale = typeMatch || saleStats;
-
+      // Market stats - ALL from MLS (no RentCast calls)
+      const mlsStats = mlsStatsRes.status === "fulfilled" ? mlsStatsRes.value : null;
+      if (mlsStats?.stats) {
         reportData.marketStats = {
-          medianPrice: rptSale.medianPrice || rptSale.averagePrice,
-          avgDOM: rptSale.averageDaysOnMarket || rptSale.medianDaysOnMarket,
-          totalListings: rptSale.totalListings,
-          pricePerSqft: rptSale.averagePricePerSquareFoot || rptSale.medianPricePerSquareFoot,
+          medianPrice: mlsStats.stats.medianPrice,
+          avgDOM: mlsStats.stats.medianDOM || mlsStats.stats.avgDOM,
+          totalListings: mlsStats.stats.totalSales,
+          pricePerSqft: mlsStats.stats.medianPricePerSqft || mlsStats.stats.avgPricePerSqft,
         };
+        if (mlsStats.stats.listToSaleRatio) {
+          reportData.soldToListRatio = mlsStats.stats.listToSaleRatio;
+        }
 
-        // Extract monthly sale trends for charts from MLS neighborhood stats
-        const mlsStats = mlsStatsRes.status === "fulfilled" ? mlsStatsRes.value : null;
-        if (mlsStats?.monthly?.length > 0) {
+        // Monthly trends for charts
+        if (mlsStats.monthly?.length > 0) {
           reportData.monthlyTrends = mlsStats.monthly.map((m: any) => ({
             month: m.month,
             medianPrice: m.avgPrice || 0,
@@ -481,20 +474,6 @@ export default function SellerReportClient() {
             dom: 0,
           }));
           console.log(`[SellerReport] Got ${mlsStats.monthly.length} months of MLS trend data`);
-        }
-
-        // Also use MLS stats for richer market data if available
-        if (mlsStats?.stats) {
-          reportData.marketStats = {
-            ...reportData.marketStats,
-            medianPrice: mlsStats.stats.medianPrice || reportData.marketStats?.medianPrice,
-            avgDOM: mlsStats.stats.medianDOM || mlsStats.stats.avgDOM || reportData.marketStats?.avgDOM,
-            totalListings: mlsStats.stats.totalSales || reportData.marketStats?.totalListings,
-            pricePerSqft: mlsStats.stats.medianPricePerSqft || mlsStats.stats.avgPricePerSqft || reportData.marketStats?.pricePerSqft,
-          };
-          if (mlsStats.stats.listToSaleRatio) {
-            reportData.soldToListRatio = mlsStats.stats.listToSaleRatio;
-          }
         }
 
         // Compute market type
