@@ -90,31 +90,31 @@ export async function POST(request: NextRequest) {
         console.log(`[reports/generate] Fetching map for ${lat},${lng}`);
 
         // Try Google Maps Static API first (if key available)
-        const gkey = process.env.GOOGLE_STATIC_MAP_API_KEY || process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-        if (gkey) {
+        const gkey = (process.env.GOOGLE_STATIC_MAP_API_KEY || process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "").trim();
+        console.log(`[reports/generate] API key source: ${process.env.GOOGLE_STATIC_MAP_API_KEY ? "GOOGLE_STATIC_MAP_API_KEY" : process.env.GOOGLE_MAPS_API_KEY ? "GOOGLE_MAPS_API_KEY" : process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ? "NEXT_PUBLIC" : "NONE"}, prefix: ${gkey.substring(0, 8)}...`);
+        if (gkey && gkey.length > 10) {
           try {
-            // Use roadmap type (more reliable than satellite for Static Maps API)
-            const gmapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=16&size=600x400&maptype=roadmap&markers=color:red%7C${lat},${lng}&style=feature:poi%7Cvisibility:off&key=${gkey}`;
-            console.log(`[reports/generate] Google Maps URL: ${gmapUrl.substring(0, 100)}...`);
-            const { fetchImageAsDataUri } = await import("@/lib/documents/pdf-report-utils");
-            const mapData = await fetchImageAsDataUri(gmapUrl);
-            if (mapData) {
-              property.mapImageData = mapData;
-              console.log("[reports/generate] Google Maps image fetched successfully");
+            const gmapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=16&size=600x400&maptype=roadmap&markers=color:red%7C${lat},${lng}&key=${gkey}`;
+            const testRes = await fetch(gmapUrl, { signal: AbortSignal.timeout(10000) });
+            console.log(`[reports/generate] Google Maps HTTP ${testRes.status}, content-type: ${testRes.headers.get("content-type")}, size: ${testRes.headers.get("content-length")}`);
+            if (testRes.ok && (testRes.headers.get("content-type") || "").includes("image")) {
+              const buffer = await testRes.arrayBuffer();
+              if (buffer.byteLength > 5000) {
+                const base64 = Buffer.from(buffer).toString("base64");
+                property.mapImageData = `data:image/png;base64,${base64}`;
+                console.log(`[reports/generate] Google Maps image saved (${buffer.byteLength} bytes)`);
+              } else {
+                console.warn(`[reports/generate] Google Maps image too small: ${buffer.byteLength} bytes`);
+              }
             } else {
-              console.warn("[reports/generate] Google Maps returned empty data");
+              const body = await testRes.text();
+              console.warn(`[reports/generate] Google Maps error: ${body.substring(0, 200)}`);
             }
           } catch (e: unknown) {
             console.warn("[reports/generate] Google Maps fetch failed:", e instanceof Error ? e.message : e);
           }
         } else {
-          console.log("[reports/generate] No GOOGLE_MAPS_API_KEY found");
-        }
-
-        // Fallback: check if Google returned a valid image (>5KB means real image, <5KB means error page)
-        if (property.mapImageData && property.mapImageData.length < 5000) {
-          console.warn(`[reports/generate] Google map image too small (${property.mapImageData.length}b), likely error - discarding`);
-          property.mapImageData = undefined;
+          console.log("[reports/generate] No valid Google Maps API key found");
         }
 
         // Fallback to OpenStreetMap
