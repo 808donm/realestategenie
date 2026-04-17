@@ -25,7 +25,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
+    const rawBody = await request.text();
+    console.log(`[reports/generate] Request body size: ${(rawBody.length / 1024).toFixed(0)}KB`);
+    const body = JSON.parse(rawBody);
     const reportType: string = body.reportType || "seller";
     const property = body.property;
 
@@ -185,6 +187,22 @@ Paragraph 5: Considerations - hazard zones if any, HOA, zoning, and what makes t
       } catch (e: unknown) {
         console.warn(`[reports/generate] AI narrative failed (${Date.now() - t0}ms):`, e instanceof Error ? e.message : e);
       }
+    }
+
+    // Import Oahu trends server-side (static data, no API call)
+    if (reportType === "seller" && (property as any).includeOahuTrends && !(property as any).oahuTrends) {
+      try {
+        const { OAHU_RESALES_DATA } = await import("@/lib/data/oahu-resales-data");
+        (property as any).oahuTrends = OAHU_RESALES_DATA.slice(-20).map((yr: any) => ({
+          year: yr.year,
+          sfrMedian: yr.singleFamily.medianPrice,
+          sfrAvg: yr.singleFamily.avgPrice,
+          sfrSales: yr.singleFamily.sales,
+          condoMedian: yr.condo.medianPrice,
+          condoAvg: yr.condo.avgPrice,
+          condoSales: yr.condo.sales,
+        }));
+      } catch {}
     }
 
     // Build HTML and render to PDF

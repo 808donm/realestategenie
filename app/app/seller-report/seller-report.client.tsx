@@ -532,27 +532,27 @@ export default function SellerReportClient() {
         }
       }
 
-      // Add 40-year Oahu resales trend data (static import - no API call needed)
-      try {
-        const { OAHU_RESALES_DATA } = await import("@/lib/data/oahu-resales-data");
-        // Only include last 20 years to keep chart readable
-        reportData.oahuTrends = OAHU_RESALES_DATA.slice(-20).map((yr: any) => ({
-          year: yr.year,
-          sfrMedian: yr.singleFamily.medianPrice,
-          sfrAvg: yr.singleFamily.avgPrice,
-          sfrSales: yr.singleFamily.sales,
-          condoMedian: yr.condo.medianPrice,
-          condoAvg: yr.condo.avgPrice,
-          condoSales: yr.condo.sales,
-        }));
-      } catch {}
+      // Note: Oahu trends are imported server-side in /api/reports/generate
+      // to avoid sending large static data over the wire.
+      // Flag to tell server to include it:
+      reportData.includeOahuTrends = true;
+
+      // Estimate payload size - warn if too large (Vercel 4.5MB limit)
+      const payload = JSON.stringify({ property: reportData, reportType: "seller" });
+      const payloadMB = (payload.length / 1024 / 1024).toFixed(1);
+      console.log(`[SellerReport] Payload size: ${payloadMB}MB`);
+      if (payload.length > 4000000) {
+        // Remove uploaded photos from payload if too large - let server fetch them
+        console.warn(`[SellerReport] Payload too large (${payloadMB}MB), removing photos`);
+        delete reportData.uploadedPhotos;
+      }
 
       // Generate PDF via HTML-to-PDF rendering (RPR quality)
       // 55s timeout - Vercel function limit is 60s, give 5s buffer
       const res = await fetch("/api/reports/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ property: reportData, reportType: "seller" }),
+        body: payload.length > 4000000 ? JSON.stringify({ property: reportData, reportType: "seller" }) : payload,
         signal: AbortSignal.timeout(55000),
       });
 
