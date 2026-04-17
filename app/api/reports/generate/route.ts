@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
         console.log(`[reports/generate] Fetching map for ${lat},${lng}`);
 
         // Try Google Maps Static API first (if key available)
-        const gkey = process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+        const gkey = process.env.GOOGLE_STATIC_MAP_API_KEY || process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
         if (gkey) {
           try {
             // Use roadmap type (more reliable than satellite for Static Maps API)
