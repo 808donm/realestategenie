@@ -410,22 +410,25 @@ export default function SellerReportClient() {
         yearBuilt: c.yearBuilt ? Number(c.yearBuilt) : undefined,
       })).filter((c: any) => c.price > 1000);
 
-      // Fetch comps, market stats, MLS stats, federal data, hazards, AND county market analytics in parallel
-      const [compsRes, marketRes, mlsStatsRes, federalRes, hazardRes, countyAnalyticsRes] = await Promise.allSettled([
-        fetch(`/api/comps?address=${encodeURIComponent(property.address)}&latitude=${lat || ""}&longitude=${lng || ""}&compCount=15&beds=${property.beds || ""}&baths=${property.baths || ""}&sqft=${property.sqft || ""}&yearBuilt=${property.yearBuilt || ""}`)
-          .then((r) => r.ok ? r.json() : null).catch(() => null),
-        zip ? fetch(`/api/rentcast/market-stats?zipCode=${zip}`)
-          .then((r) => r.ok ? r.json() : null).catch(() => null) : Promise.resolve(null),
-        zip ? fetch(`/api/mls/neighborhood-stats?subdivision=${encodeURIComponent(zip)}&months=12`)
-          .then((r) => r.ok ? r.json() : null).catch(() => null) : Promise.resolve(null),
-        zip ? fetch(`/api/integrations/federal?zip=${zip}`)
-          .then((r) => r.ok ? r.json() : null).catch(() => null) : Promise.resolve(null),
-        lat && lng ? fetch(`/api/integrations/hazards?lat=${lat}&lng=${lng}`)
-          .then((r) => r.ok ? r.json() : null).catch(() => null) : Promise.resolve(null),
-        // County-level market analytics (ZIP comparison table, SFR/Condo splits, city stats)
-        fetch("/api/reports/market-analytics?county=honolulu")
-          .then((r) => r.ok ? r.json() : null).catch(() => null),
+      // Helper: fetch with timeout (prevents one slow API from blocking everything)
+      const fetchWithTimeout = (url: string, timeoutMs: number = 15000) =>
+        fetch(url, { signal: AbortSignal.timeout(timeoutMs) }).then((r) => r.ok ? r.json() : null).catch(() => null);
+
+      // Fetch core data (essential - 15s timeout each)
+      const [compsRes, marketRes, mlsStatsRes] = await Promise.allSettled([
+        fetchWithTimeout(`/api/comps?address=${encodeURIComponent(property.address)}&latitude=${lat || ""}&longitude=${lng || ""}&compCount=15&beds=${property.beds || ""}&baths=${property.baths || ""}&sqft=${property.sqft || ""}&yearBuilt=${property.yearBuilt || ""}`, 15000),
+        zip ? fetchWithTimeout(`/api/rentcast/market-stats?zipCode=${zip}`, 10000) : Promise.resolve(null),
+        zip ? fetchWithTimeout(`/api/mls/neighborhood-stats?subdivision=${encodeURIComponent(zip)}&months=12`, 15000) : Promise.resolve(null),
       ]);
+
+      // Fetch supplementary data (nice-to-have - graceful failure)
+      // Note: federal and hazards don't have standalone API routes yet,
+      // so we skip them for now. County analytics uses RentCast cache (30-day TTL).
+      const [countyAnalyticsRes] = await Promise.allSettled([
+        fetchWithTimeout("/api/reports/market-analytics?county=honolulu", 25000),
+      ]);
+      // Note: federal/hazards APIs don't exist as standalone endpoints yet.
+      // TODO: Create /api/integrations/federal and /api/integrations/hazards
 
       // Merge comps: prefer MLS comps with correlations, then add REAPI comps
       const compsData = compsRes.status === "fulfilled" ? compsRes.value : null;
@@ -512,27 +515,13 @@ export default function SellerReportClient() {
         reportData.uploadedPhotos = uploadedPhotos;
       }
 
-      // Add federal/Census demographics
-      const federalData = federalRes.status === "fulfilled" ? federalRes.value : null;
-      if (federalData) {
-        reportData.federalData = federalData;
-        reportData.demographics = federalData;
-      }
+      // Federal/Census demographics - not available yet as standalone API
+      // TODO: Add when /api/integrations/federal endpoint is created
 
-      // Add hazard zones
-      const hazardData = hazardRes.status === "fulfilled" ? hazardRes.value : null;
-      if (hazardData) {
-        const hazards: Array<{ label: string; value: string }> = [];
-        if (hazardData.tsunami?.found) hazards.push({ label: "Tsunami Evacuation Zone", value: "In tsunami evacuation zone" });
-        if (hazardData.extremeTsunami?.found) hazards.push({ label: "Extreme Tsunami Zone", value: "Extreme warnings only" });
-        if (hazardData.seaLevelRise?.found) hazards.push({ label: "Sea Level Rise", value: "In 3.2ft SLR coastal flood zone" });
-        if (hazardData.lavaFlow?.found) hazards.push({ label: "Lava Flow Zone", value: `Zone ${hazardData.lavaFlow.attributes?.hazard || "?"}` });
-        if (hazardData.cesspoolPriority?.found) hazards.push({ label: "Cesspool Priority", value: "In priority area" });
-        if (hazardData.dhhl?.found) hazards.push({ label: "Hawaiian Home Lands", value: "On DHHL land" });
-        if (hazardData.sma?.found) hazards.push({ label: "Special Mgmt Area", value: "Coastal zone - SMA permits may apply" });
-        if (hazardData.floodZone) hazards.push({ label: "FEMA Flood Zone", value: hazardData.floodZone });
-        if (hazards.length > 0) reportData.hazards = hazards;
-      }
+      // Add hazard zones (when hazard API is available in the future)
+      // Note: /api/integrations/hazards doesn't exist yet as a standalone endpoint.
+      // Hazard data is currently only available through the Property Detail Modal.
+      // TODO: Create a standalone hazard lookup API endpoint.
 
       // Add schools from neighborhood data (if REAPI enrichment included them)
       const neighborhoodSchools = rd._raw?.schools || rd._raw?.nearbySchools || [];

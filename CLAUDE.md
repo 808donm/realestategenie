@@ -125,10 +125,13 @@ When merging data from multiple sources, Realie is authoritative for sales histo
 
 ### API Call Discipline
 
-- **Always weigh cost vs. necessity** before making external API calls. Realie, RentCast, and Trestle charge per call.
-- **Cache aggressively.** Property data, area statistics, and market data should be cached and reused.
-- Never make redundant API calls. Check if data is already loaded or cached before fetching.
-- Batch requests where the API supports it.
+- **Evaluate every API call.** Before writing any external API fetch, ask: "Is this call necessary? Can we use cached data instead?" Realie, RentCast, and Trestle charge per call and have monthly quotas.
+- **Cache aggressively.** Property data, area statistics, and market data should be cached and reused. Default cache TTL: 30 days for market stats, 1 year for schools, 7 days for property data, 24 hours for active listings.
+- **Never make redundant API calls.** Check if data is already loaded in the component state, cached in Supabase (`area_data_cache`), or available from a prior fetch before making a new call.
+- **Batch requests where the API supports it.** Never loop through ZIP codes making individual calls when a batch endpoint exists.
+- **Be economical.** When building features that aggregate data (like market analytics across 27 ZIPs), always check the cache first. Only refresh data that absolutely needs refreshing. Market data changes monthly, not daily -- cache accordingly.
+- **Refresh schedule.** Market stats refresh on the 7th-10th of each month. School data refreshes August 1. Property data refreshes on access if >7 days old. Active MLS listings refresh every search.
+- **Cost awareness.** A single Seller Report should NOT trigger 27+ RentCast API calls. If the data isn't cached, the report should gracefully omit that section rather than burning API credits.
 
 ### Caching Strategy
 

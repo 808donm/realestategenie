@@ -64,9 +64,17 @@ export async function GET(request: NextRequest) {
 
     if (cached?.data && cached.fetched_at) {
       const cacheAge = Date.now() - new Date(cached.fetched_at).getTime();
-      if (cacheAge < 24 * 60 * 60 * 1000) { // 24-hour cache
+      // Cache for 30 days - market analytics data changes monthly, not daily
+      // Refresh on the 7th of the month (data typically updates by then)
+      const now = new Date();
+      const refreshDay = 7;
+      const staleDate = new Date(now.getFullYear(), now.getMonth() - (now.getDate() >= refreshDay ? 0 : 1), refreshDay);
+      const isFresh = new Date(cached.fetched_at) >= staleDate || cacheAge < 30 * 24 * 60 * 60 * 1000;
+      if (isFresh) {
+        console.log(`[Market Analytics] Cache HIT for ${county} (age: ${Math.round(cacheAge / 86400000)}d)`);
         return NextResponse.json({ ...cached.data, cacheHit: true });
       }
+      console.log(`[Market Analytics] Cache STALE for ${county} (age: ${Math.round(cacheAge / 86400000)}d, refresh after ${staleDate.toISOString().split("T")[0]})`);
     }
 
     // Fetch market stats from RentCast for each zip
