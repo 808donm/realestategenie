@@ -272,7 +272,7 @@ GENERAL TIPS:
 
 Pages 1, 2, and 13 render real data now; pages 3-12 currently show "Section in progress" notices and are being rebuilt. Every page is agent-branded. No RPR branding; footer reads "Report produced by Real Estate Genie · © Hulia'u Software, Inc."
 
-**5 visual templates** (agent picks per report via `data.theme`):
+**5 visual templates** (agent picks per report via data.theme):
 - **The Editor** (default) — classic navy + gold + bone; Playfair Display display; trust and gravitas.
 - **The Archive** — modern minimal Swiss grid; Inter + JetBrains Mono; bold oversized numerals.
 - **Noir** — luxury dark; Cormorant Garamond on black with champagne accents; Sotheby's-adjacent.
