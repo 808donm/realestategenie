@@ -17,13 +17,21 @@
 --     "connected_at": "2026-..."
 --   }
 
--- 1. Extend the provider CHECK constraint. Postgres requires drop+add for CHECK updates.
+-- 1. Extend the provider CHECK constraint. Postgres requires drop+add for CHECK
+--    updates. We must preserve every provider already allowed by the previous
+--    constraint (from migration 20260321000000_flexible_mls_connections.sql)
+--    plus any added since — otherwise existing rows violate the new check.
 ALTER TABLE integrations DROP CONSTRAINT IF EXISTS integrations_provider_check;
 
 ALTER TABLE integrations ADD CONSTRAINT integrations_provider_check
   CHECK (provider IN (
+    -- Existing providers (DO NOT remove — breaks installed deployments)
     'ghl', 'n8n', 'idx', 'qbo', 'pandadoc', 'docusign', 'paypal', 'stripe',
-    'trestle', 'rmls', 'attom'
+    'trestle', 'bridge', 'idx_broker', 'direct_mls',
+    'attom', 'federal_data', 'realie', 'rentcast',
+    'google_calendar', 'microsoft_calendar',
+    -- New (this migration)
+    'rmls'
   ));
 
 -- 2. Helper view: active MLS connections per agent.
