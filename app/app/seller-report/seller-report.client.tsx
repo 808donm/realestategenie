@@ -419,7 +419,7 @@ export default function SellerReportClient() {
       // /api/comps provides: comparable sales with correlation scores from MLS
       const [compsRes, mlsStatsRes] = await Promise.allSettled([
         fetchWithTimeout(`/api/comps?address=${encodeURIComponent(property.address)}&latitude=${lat || ""}&longitude=${lng || ""}&compCount=15&beds=${property.beds || ""}&baths=${property.baths || ""}&sqft=${property.sqft || ""}&yearBuilt=${property.yearBuilt || ""}`, 15000),
-        zip ? fetchWithTimeout(`/api/mls/neighborhood-stats?subdivision=${encodeURIComponent(zip)}&months=12`, 15000) : Promise.resolve(null),
+        zip ? fetchWithTimeout(`/api/mls/neighborhood-stats?subdivision=${encodeURIComponent(zip)}&months=24`, 20000) : Promise.resolve(null),
       ]);
 
       // County analytics - only if cached (uses RentCast cache, won't trigger new API calls)
@@ -473,10 +473,16 @@ export default function SellerReportClient() {
             listings: m.totalSales || 0,
             sfrSales: m.sfrSales || 0,
             condoSales: m.condoSales || 0,
+            sfrAvgPrice: m.sfrAvgPrice || 0,
+            condoAvgPrice: m.condoAvgPrice || 0,
             dom: m.medianDOM || m.avgDOM || 0,
           }));
           console.log(`[SellerReport] Got ${mlsStats.monthly.length} months of MLS trend data`);
         }
+
+        // MoM / YoY trend comparisons (by property type)
+        if (mlsStats.mom) reportData.momTrend = mlsStats.mom;
+        if (mlsStats.yoy) reportData.yoyTrend = mlsStats.yoy;
 
         // Compute market type
         const totalListings = reportData.marketStats.totalListings;

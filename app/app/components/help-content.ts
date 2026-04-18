@@ -850,15 +850,17 @@ The Seller Report is generated from **property data (public records)** and is de
 12. Market trends with market type indicator and dual-axis Listings/DOM chart
 13. Market by Property Type split cards (Single Family vs Condo/Townhouse)
 14. Median sale price trend line chart
-15. County Market Overview with YoY and Sales Momentum badges on primary metric cards
-16. ZIP comparison table with subject property ZIP highlighted
-17. Median Sale Price by ZIP horizontal bar chart (SFR vs Condo/Townhouse)
-18. Oahu 20-year trend charts (median price, average price, sales volume) split by property type
-19. Sales history table with dates, amounts, buyer/seller names
-20. Comparable sales with CMA adjustments (address, status, original price, adjusted price)
-21. Pricing strategy table comparing For Sale, Closed, Distressed, and Expired listings
-22. CMA pricing summary with recommended price, average of comps, adjustments, and CMA range
-23. Environmental and hazard zones
+15. Sales Trends MoM and YoY cards per property type (sales volume and median price % change, using 24 months of MLS history)
+16. Monthly Sales Volume by Property Type grouped bar chart (SFR vs Condo/Townhouse)
+17. County Market Overview with YoY and Sales Momentum badges on primary metric cards
+18. ZIP comparison table with subject property ZIP highlighted
+19. Median Sale Price by ZIP horizontal bar chart (SFR vs Condo/Townhouse)
+20. Oahu 20-year trend charts (median price, average price, sales volume) split by property type
+21. Sales history table with dates, amounts, buyer/seller names
+22. Comparable sales with CMA adjustments (address, status, original price, adjusted price)
+23. Pricing strategy table comparing For Sale, Closed, Distressed, and Expired listings
+24. CMA pricing summary with recommended price, average of comps, adjustments, and CMA range
+25. Environmental and hazard zones
 
 ### 11.3 Prospecting (6 Search Types)
 

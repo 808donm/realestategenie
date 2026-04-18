@@ -552,6 +552,100 @@ export function buildSellerReportHtml(data: SellerReportData, branding: AgentBra
   }
 
   // ═══════════════════════════════════════════════════════════════════════
+  // MoM / YoY SALES TRENDS BY PROPERTY TYPE + MONTHLY VOLUME CHART
+  // ═══════════════════════════════════════════════════════════════════════
+
+  let momYoySection = "";
+  const momTrend = (data as any).momTrend;
+  const yoyTrend = (data as any).yoyTrend;
+  const localTrends = (data as any).monthlyTrends || [];
+  const hasMomYoy = momTrend || yoyTrend;
+  const hasMonthlySales = localTrends.length >= 3 && localTrends.some((t: any) => (t.sfrSales || 0) + (t.condoSales || 0) > 0);
+
+  if (hasMomYoy || hasMonthlySales) {
+    const pill = (val?: number | null) => {
+      if (val == null) return `<span style="color: #9ca3af; font-size: 10px;">-</span>`;
+      const positive = val >= 0;
+      const color = positive ? "#15803d" : "#dc2626";
+      const bg = positive ? "#dcfce7" : "#fee2e2";
+      const arrow = positive ? "▲" : "▼";
+      return `<span style="display: inline-block; padding: 2px 8px; font-size: 10px; font-weight: 700; color: ${color}; background: ${bg}; border-radius: 10px;">${arrow} ${positive ? "+" : ""}${val}%</span>`;
+    };
+
+    const trendCard = (label: string, color: string, vol: { mom?: number | null; yoy?: number | null }, price: { mom?: number | null; yoy?: number | null }) => `
+      <div style="flex: 1; border: 2px solid ${color}; border-radius: 8px; padding: 12px;">
+        <div style="font-size: 11px; font-weight: 700; color: ${color}; margin-bottom: 10px;">${label}</div>
+        <div style="display: grid; grid-template-columns: 1fr auto auto; gap: 6px 10px; font-size: 10px; align-items: center;">
+          <div style="color: #6b7280; text-transform: uppercase; font-size: 9px; font-weight: 600;">Sales Volume</div>
+          <div style="text-align: right;"><span style="color: #9ca3af; font-size: 9px;">MoM</span> ${pill(vol.mom)}</div>
+          <div style="text-align: right;"><span style="color: #9ca3af; font-size: 9px;">YoY</span> ${pill(vol.yoy)}</div>
+          <div style="color: #6b7280; text-transform: uppercase; font-size: 9px; font-weight: 600;">Median Price</div>
+          <div style="text-align: right;"><span style="color: #9ca3af; font-size: 9px;">MoM</span> ${pill(price.mom)}</div>
+          <div style="text-align: right;"><span style="color: #9ca3af; font-size: 9px;">YoY</span> ${pill(price.yoy)}</div>
+        </div>
+      </div>
+    `;
+
+    const cards = hasMomYoy ? `
+      <div class="section-title" style="margin-top: 16px;">Sales Trends - Month Over Month & Year Over Year</div>
+      <div style="display: flex; gap: 12px; margin-bottom: 16px;" class="avoid-break">
+        ${trendCard("Single Family", "#dc2626",
+          { mom: momTrend?.sfrSalesChange, yoy: yoyTrend?.sfrSalesChange },
+          { mom: momTrend?.sfrPriceChange, yoy: yoyTrend?.sfrPriceChange }
+        )}
+        ${trendCard("Condo / Townhouse", "#3b82f6",
+          { mom: momTrend?.condoSalesChange, yoy: yoyTrend?.condoSalesChange },
+          { mom: momTrend?.condoPriceChange, yoy: yoyTrend?.condoPriceChange }
+        )}
+      </div>
+      ${yoyTrend ? "" : `<div style="font-size: 9px; color: #9ca3af; margin-top: -8px; margin-bottom: 12px;">YoY requires 24 months of MLS sales history.</div>`}
+    ` : "";
+
+    let chart = "";
+    if (hasMonthlySales) {
+      const monthLabels = localTrends.map((t: any) => {
+        const parts = String(t.month || "").split("-");
+        if (parts.length === 2) {
+          const names = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+          return `${names[parseInt(parts[1]) - 1] || parts[1]} '${parts[0].slice(2)}`;
+        }
+        return t.month || "";
+      });
+      const sfrSeries = localTrends.map((t: any) => t.sfrSales || 0);
+      const condoSeries = localTrends.map((t: any) => t.condoSales || 0);
+
+      chart = `
+        <div class="avoid-break">
+          <div class="section-title" style="margin-top: 8px;">Monthly Sales Volume by Property Type</div>
+          <div class="chart-container" style="height: 220px;"><canvas id="monthlySalesChart"></canvas></div>
+        </div>
+        <script data-chart>
+          new Chart(document.getElementById('monthlySalesChart'), {
+            type: 'bar',
+            data: {
+              labels: ${JSON.stringify(monthLabels)},
+              datasets: [
+                { label: 'Single Family', data: ${JSON.stringify(sfrSeries)}, backgroundColor: '#dc2626', borderRadius: 2 },
+                { label: 'Condo/Townhouse', data: ${JSON.stringify(condoSeries)}, backgroundColor: '#3b82f6', borderRadius: 2 }
+              ]
+            },
+            options: {
+              responsive: true, maintainAspectRatio: false, animation: false,
+              plugins: { legend: { position: 'bottom', labels: { font: { size: 9 }, usePointStyle: true, pointStyle: 'rect' } } },
+              scales: {
+                y: { beginAtZero: true, title: { display: true, text: 'Closed Sales', font: { size: 9 } }, ticks: { font: { size: 9 }, precision: 0 } },
+                x: { ticks: { font: { size: 8 }, maxRotation: 45 } }
+              }
+            }
+          });
+        </script>
+      `;
+    }
+
+    momYoySection = cards + chart;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
   // COUNTY OVERVIEW & ZIP COMPARISON
   // ═══════════════════════════════════════════════════════════════════════
 
@@ -883,6 +977,7 @@ export function buildSellerReportHtml(data: SellerReportData, branding: AgentBra
   ${marketSection}
   ${sfrCondoSection}
   ${chartHtml_outer}
+  ${momYoySection}
   ${countySection}
   ${oahuTrendSection}
 

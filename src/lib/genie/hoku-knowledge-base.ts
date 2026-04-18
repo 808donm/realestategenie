@@ -267,6 +267,8 @@ GENERAL TIPS:
 - Market trends with market type indicator and dual-axis Listings/DOM chart
 - Market by Property Type split cards (Single Family vs Condo/Townhouse)
 - Median Sale Price trend line chart
+- Sales Trends MoM and YoY cards per property type (sales volume and median price % change, 24 months of MLS history)
+- Monthly Sales Volume by Property Type grouped bar chart (SFR vs Condo/Townhouse)
 - County Market Overview with YoY and Sales Momentum badges on primary metrics
 - ZIP comparison table with subject property ZIP highlighted
 - Median Sale Price by ZIP bar chart (SFR vs Condo/Townhouse)

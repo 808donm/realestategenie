@@ -243,6 +243,46 @@ export async function GET(request: NextRequest) {
       typeMap.set(type, (typeMap.get(type) || 0) + 1);
     }
 
+    // MoM / YoY comparison (only meaningful when >=24 months of data requested)
+    const pct = (cur: number, prior: number): number | null => {
+      if (prior <= 0 || cur == null) return null;
+      return Math.round(((cur - prior) / prior) * 1000) / 10;
+    };
+    const medianClose = (arr: any[]) => median(arr.map((s) => s.ClosePrice).filter((p: number) => p > 0));
+
+    // MoM: compare latest full month to prior month
+    let mom: Record<string, number | null> | null = null;
+    if (monthly.length >= 2) {
+      const a = monthly[monthly.length - 1];
+      const b = monthly[monthly.length - 2];
+      mom = {
+        sfrSalesChange: pct(a.sfrSales, b.sfrSales),
+        condoSalesChange: pct(a.condoSales, b.condoSales),
+        sfrPriceChange: pct(a.sfrAvgPrice, b.sfrAvgPrice),
+        condoPriceChange: pct(a.condoAvgPrice, b.condoAvgPrice),
+      };
+    }
+
+    // YoY: compare most recent 12 months vs prior 12 months (requires months>=24)
+    let yoy: Record<string, number | null> | null = null;
+    if (months >= 24) {
+      const cutoff12 = new Date();
+      cutoff12.setMonth(cutoff12.getMonth() - 12);
+      const cutoff12Str = cutoff12.toISOString().split("T")[0];
+      const last12 = sales.filter((s) => s.CloseDate && s.CloseDate >= cutoff12Str);
+      const prior12 = sales.filter((s) => s.CloseDate && s.CloseDate < cutoff12Str);
+      const last12Sfr = last12.filter(isSFR);
+      const last12Condo = last12.filter(isCondo);
+      const prior12Sfr = prior12.filter(isSFR);
+      const prior12Condo = prior12.filter(isCondo);
+      yoy = {
+        sfrSalesChange: pct(last12Sfr.length, prior12Sfr.length),
+        condoSalesChange: pct(last12Condo.length, prior12Condo.length),
+        sfrPriceChange: pct(medianClose(last12Sfr), medianClose(prior12Sfr)),
+        condoPriceChange: pct(medianClose(last12Condo), medianClose(prior12Condo)),
+      };
+    }
+
     return NextResponse.json({
       subdivision,
       sales: sales.length,
@@ -250,6 +290,8 @@ export async function GET(request: NextRequest) {
       sfrStats,
       condoStats,
       monthly,
+      mom,
+      yoy,
       propertyTypes: Object.fromEntries(typeMap),
       dateRange: { from: sinceStr, to: new Date().toISOString().split("T")[0] },
     });
