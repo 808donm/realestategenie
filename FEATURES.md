@@ -278,17 +278,19 @@ Cover page with hero photo and agent branding, personal note, listing status bad
 13-page RPR-equivalent report, agent-branded on every page, rendered HTML-to-PDF with inline-SVG charts (no client-side chart library). Sections:
 1. Cover — full-bleed hero photo (or fallback), address overlay, listing status pill, agent card with headshot, license, phone, email, brokerage.
 2. Valuation — Genie AVM™ primary card (value, confidence stars 1-5, month and 12-month delta), list price, estimated equity, estimated value range bar, tax & assessment strip.
-3. Property Facts — 3-column table (Public Records / Listing / Agent Refinements). [rebuild in progress]
-4. Interior & Exterior Features — listing-side vs public-records-side split tables. [rebuild in progress]
-5. Legal · Owner · Hazards · Sales History — parcel/zoning/census/subdivision, owner facts, Hawaii-specific hazards (Flood Zone, Tsunami Evacuation Zone, Sea Level Rise Exposure, Cesspool Priority), sales-history table. [rebuild in progress]
-6. Property Photos — curated listing gallery. [rebuild in progress]
+3. Property Facts — 3-column table (Public Records / Listing / Agent Refinements) covering property type, beds/baths, living area, lot, construction, year built, stories, roofing, heating, cooling, foundation, condition, and more. Agent Refinements column reserved for agent-editable corrections.
+4. Interior & Exterior Features — two feature tables each split into Listing-side and Public-Records-side columns; floor, appliances, fireplace, laundry, construction, security, parking, utilities, view, lot features, roof, pool, levels.
+5. Legal · Owner · Hazards · Sales History — legal description block (parcel/APN, county, zoning, census tract, subdivision, block/tract), owner facts (names, time owned, occupancy, absentee, corporate, mailing address, vesting), 4-up hazard grid with Hawaii-specific rows (Flood Zone, Tsunami Evacuation Zone, Sea Level Rise Exposure, Cesspool Priority), sales history table with date/amount/buyer/seller/document-type (no truncation).
+6. Property Photos — 6-photo gallery using a magazine grid (wide hero, two secondary, three thirds).
 7. Market Trends — 4 KPI cards (months of inventory, sold-to-list %, median DOM, median sold price) each with MoM delta, 5-point market-type gauge, ZIP/County/State/USA median estimated value line chart 2008-present. [rebuild in progress]
 8. Active Listings — 5-year list-price trend chart, price-band breakdown. [rebuild in progress]
 9. Sold Listings — 5-year sold-price trend, 12-month Sales-vs-Listings grouped bar chart. [rebuild in progress]
 10. Price vs Volume — dual-axis charts for Median Sold Price vs Sold Listings and Median List Price vs Active Listings over 24 months. [rebuild in progress]
 11. Market Activity — 4-column New / Closed / Distressed / Expired summary (count, low, median, high, living area, $/sqft, DOM, age, source), area comp map with status pins. [rebuild in progress]
-12. Pricing Strategy & Refined Value — comparable groups table (For Sale / Distressed / Expired / Closed), 90-day sold-price comparison, CMA summary with agent-selected comps, Refined Value breakdown (original AVM + home-fact / improvement / needed-improvement / market-condition adjustments). [rebuild in progress]
-13. About — About Real Estate Genie, data sources, agent card repeat, Equal Housing Opportunity glyph, disclaimer.
+12. Pricing Strategy & Refined Value — 4-column Comparable Groups table (For Sale / Distressed / Expired / Closed) with Lowest / Median / Highest / Median $/sqft / Median DOM rows; 90-day Sold Price Comparison filtered to similar beds/baths/sqft; CMA Summary card (Average of Comps, Total Adjustments, CMA Result, Result $/sqft) fed from the CMA workbench when comps are selected; Refined Value Summary with agent-editable rows (Original AVM, Changes from Home Facts, Home Improvement Adjustments, Needed Improvement Adjustments, Market Condition Adjustments, total Estimate + Adjustments). Agent-editable rows show "—" until populated.
+13. About — About Real Estate Genie description, data sources (MLS, Honolulu County Assessor, Bureau of Conveyances, FEMA NRI & Flood, Hawaii State GIS, Tsunami Evac Maps, Sea Level Rise Viewer, DOH Cesspool Inventory, U.S. Census ACS, NCES, HUD FMR, BLS), agent closing card, Equal Housing Opportunity SVG glyph, disclaimer.
+
+Pages 1-6, 12, and 13 render real data. Pages 7-11 (market pages) currently show "Section in progress" notices pending new market-data endpoints (multi-geography value history, 5-year trends, 24-month dual-axis, status-grouped activity + comp-map pins).
 
 Design: Playfair Display + Inter + JetBrains Mono fonts, navy/gold/bone color palette, `@page` US Letter portrait with zero margins (all page chrome handled by `.page-body` absolute positioning). Footer on every page reads "Report produced by Real Estate Genie · © Hulia'u Software, Inc." with page N of 13.
 

@@ -270,7 +270,7 @@ GENERAL TIPS:
 12. Pricing Strategy & Refined Value — comparable groups, 90-day sold comparison, CMA summary, Refined Value breakdown
 13. About — Real Estate Genie description, data sources, agent closing card, Equal Housing glyph
 
-Pages 1, 2, and 13 render real data now; pages 3-12 currently show "Section in progress" notices and are being rebuilt. Every page is agent-branded. No RPR branding; footer reads "Report produced by Real Estate Genie · © Hulia'u Software, Inc."
+Pages 1-6, 12, and 13 render real data. Pages 7-11 (market pages) currently show "Section in progress" notices pending new market-data endpoints. Every page is agent-branded. No RPR branding; footer reads "Report produced by Real Estate Genie · © Hulia'u Software, Inc."
 
 **5 visual templates** (agent picks per report via data.theme):
 - **The Editor** (default) — classic navy + gold + bone; Playfair Display display; trust and gravitas.

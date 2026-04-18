@@ -21,6 +21,11 @@ export function pageCover(data: SellerReportData, branding: AgentBranding, total
 // ─── helpers ───────────────────────────────────────────────────────────
 
 function cityLine(d: SellerReportData) { return [d.city, d.state, d.zip].filter(Boolean).join(", "); }
+function streetOnly(address?: string) {
+  if (!address) return "Property";
+  // Strip trailing ", City, ST ZIP" portions if present so the H1 only shows the street.
+  return String(address).split(",")[0].trim() || address;
+}
 function avatarInner(branding: AgentBranding): string { return branding.headshotData ? "" : esc(initial(branding.displayName)); }
 function hasHeadshot(b: AgentBranding) { return !!b.headshotData; }
 function lic(b: AgentBranding): string { return b.licenseNumber ? `LIC #${esc(b.licenseNumber)}` : ""; }
@@ -56,7 +61,7 @@ function coverEditor(data: SellerReportData, branding: AgentBranding, totalPages
       <div class="cover-hero"><div class="hero-scrim"></div></div>
       <div class="cover-overlay">
         <div class="eyebrow">SELLER REPORT</div>
-        <h1>${esc(data.address)}</h1>
+        <h1>${esc(streetOnly(data.address))}</h1>
         <h2>${esc(cityLine(data))}</h2>
         ${statusPill(data)}
       </div>

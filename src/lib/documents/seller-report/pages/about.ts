@@ -67,8 +67,15 @@ export function pageAbout(data: SellerReportData, branding: AgentBranding, pageN
     </p>
   `;
 
-  // Equal Housing Opportunity glyph rendered as absolute element inside page
+  // Equal Housing Opportunity glyph — inline SVG so there's no font dependency
+  const ehoSvg = `
+    <div class="eho" title="Equal Housing Opportunity">
+      <svg viewBox="0 0 40 40" width="26" height="26" style="color: inherit;">
+        <path d="M5 22 L20 10 L35 22 L35 34 L25 34 L25 26 L15 26 L15 34 L5 34 Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+        <circle cx="20" cy="19" r="1.5" fill="currentColor"/>
+      </svg>
+    </div>
+  `;
   const raw = pageWithBand(data, branding, pageNum, totalPages, generatedAt, theme, body, "p13");
-  // Inject EHO glyph just before the footer close — simplest: append to returned string inside the </section>
-  return raw.replace(/<\/section>\s*$/, `<div class="eho" title="Equal Housing Opportunity">≡</div></section>`);
+  return raw.replace(/<\/section>\s*$/, `${ehoSvg}</section>`);
 }

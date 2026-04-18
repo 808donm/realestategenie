@@ -13,6 +13,11 @@ import { getSellerReportStyles } from "./seller-report/styles";
 import { resolveTheme, googleFontsLink } from "./seller-report/themes";
 import { pageCover } from "./seller-report/pages/cover";
 import { pageValuation } from "./seller-report/pages/valuation";
+import { pagePropertyFacts } from "./seller-report/pages/property-facts";
+import { pageFeatures } from "./seller-report/pages/features";
+import { pageLegalOwner } from "./seller-report/pages/legal-owner";
+import { pagePhotos } from "./seller-report/pages/photos";
+import { pagePricingStrategy } from "./seller-report/pages/pricing-strategy";
 import { pageAbout } from "./seller-report/pages/about";
 import { stubPage } from "./seller-report/pages/stubs";
 
@@ -30,26 +35,10 @@ export function buildSellerReportHtml(data: SellerReportData, branding: AgentBra
 
   const p1 = pageCover(data, branding, TOTAL_PAGES, generatedAt, theme, clientName);
   const p2 = pageValuation(data, branding, 2, TOTAL_PAGES, generatedAt, theme);
-
-  const p3 = stubPage(data, branding, 3, TOTAL_PAGES, generatedAt, theme, "p3",
-    "Property Facts",
-    "Public Records · Listing · Agent Refinements",
-    "The 3-column property-facts table is being rebuilt to show public records, listing data, and agent refinements side by side.");
-
-  const p4 = stubPage(data, branding, 4, TOTAL_PAGES, generatedAt, theme, "p4",
-    "Interior & Exterior Features",
-    "Listing vs Public",
-    "Detailed interior and exterior feature tables (listing-side vs public-records side) are being rebuilt.");
-
-  const p5 = stubPage(data, branding, 5, TOTAL_PAGES, generatedAt, theme, "p5",
-    "Legal · Owner · Hazards",
-    "Hawaii-specific hazards + sales history",
-    "Legal description, owner facts, sales history, and Hawaii-specific hazard zones (Flood, Tsunami Evacuation, Sea Level Rise, Cesspool Priority) are being rebuilt.");
-
-  const p6 = stubPage(data, branding, 6, TOTAL_PAGES, generatedAt, theme, "p6",
-    "Property Photos",
-    "Listing gallery",
-    "A curated photo gallery pulled from the MLS listing is being rebuilt.");
+  const p3 = pagePropertyFacts(data, branding, 3, TOTAL_PAGES, generatedAt, theme);
+  const p4 = pageFeatures(data, branding, 4, TOTAL_PAGES, generatedAt, theme);
+  const p5 = pageLegalOwner(data, branding, 5, TOTAL_PAGES, generatedAt, theme);
+  const p6 = pagePhotos(data, branding, 6, TOTAL_PAGES, generatedAt, theme);
 
   const p7 = stubPage(data, branding, 7, TOTAL_PAGES, generatedAt, theme, "p7",
     "Market Trends",
@@ -76,10 +65,7 @@ export function buildSellerReportHtml(data: SellerReportData, branding: AgentBra
     "New · Closed · Distressed · Expired",
     "The 4-column market-activity summary (new, closed, distressed, expired) and the area comp map are being rebuilt.");
 
-  const p12 = stubPage(data, branding, 12, TOTAL_PAGES, generatedAt, theme, "p12",
-    "Pricing Strategy & Refined Value",
-    "CMA workbench · agent-editable",
-    "Pricing Strategy comparable-groups table, 90-day sold-price comparison, CMA summary, and Refined Value breakdown are being rebuilt.");
+  const p12 = pagePricingStrategy(data, branding, 12, TOTAL_PAGES, generatedAt, theme);
 
   const p13 = pageAbout(data, branding, 13, TOTAL_PAGES, generatedAt, theme);
 
