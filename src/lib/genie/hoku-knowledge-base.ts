@@ -256,14 +256,21 @@ GENERAL TIPS:
 5. Click "Generate Seller Report PDF" to create a branded multi-page Seller Report
 
 **Seller Report PDF includes:**
-- Cover page with agent branding
+- Cover page with property map (Google Maps) and agent branding
+- AI-generated Property Analysis narrative (Fair Housing compliant)
 - Valuation summary (AVM, CMA, last sale, equity)
 - AVM and CMA range bars
 - Property facts, building details, interior/exterior features
 - Legal description (parcel, zoning, census tract)
 - Owner facts and multi-year tax history
-- Equity analysis with visual equity bar
-- Market trends with market type indicator
+- Equity analysis with visual equity bar and appreciation timeline
+- Market trends with market type indicator and dual-axis Listings/DOM chart
+- Market by Property Type split cards (Single Family vs Condo/Townhouse)
+- Median Sale Price trend line chart
+- County Market Overview with YoY and Sales Momentum badges on primary metrics
+- ZIP comparison table with subject property ZIP highlighted
+- Median Sale Price by ZIP bar chart (SFR vs Condo/Townhouse)
+- Oahu 20-year trend charts (median, average, volume) by property type
 - Sales history table
 - Comparable sales with CMA adjustments
 - Pricing strategy table (for sale/closed/distressed/expired)

@@ -836,8 +836,8 @@ The Buyer Report is generated from **MLS listing data** and is designed for buye
 The Seller Report is generated from **property data (public records)** and is designed for seller clients considering listing their property. It includes valuation, equity analysis, and a pricing strategy.
 
 **Seller Report sections:**
-1. Cover page with hero photo and agent branding
-2. Personal note (optional agent message to the seller)
+1. Cover page with property map and agent branding
+2. AI-generated Property Analysis narrative (Fair Housing compliant)
 3. Valuation summary cards (AVM, CMA value, last sale, estimated equity)
 4. AVM range bar and CMA range bar
 5. Property facts and building details
@@ -845,14 +845,20 @@ The Seller Report is generated from **property data (public records)** and is de
 7. Legal description (parcel number, zoning, census tract, subdivision, legal text)
 8. Owner facts (owner name, co-owner, occupancy, mailing address)
 9. Multi-year tax history comparison table (up to 5 years)
-10. Estimated equity section with visual equity bar (property value vs loan balance)
-11. Photo gallery (up to 12 photos)
-12. Market trends with market type indicator and MoM trend arrows
-13. Sales history table with dates, amounts, buyer/seller names
-14. Comparable sales with CMA adjustments (address, status, original price, adjusted price)
-15. Pricing strategy table comparing For Sale, Closed, Distressed, and Expired listings
-16. CMA pricing summary with recommended price, average of comps, adjustments, and CMA range
-17. Environmental and hazard zones
+10. Estimated equity section with visual equity bar (property value vs loan balance) and appreciation timeline
+11. Photo gallery (up to 16 photos)
+12. Market trends with market type indicator and dual-axis Listings/DOM chart
+13. Market by Property Type split cards (Single Family vs Condo/Townhouse)
+14. Median sale price trend line chart
+15. County Market Overview with YoY and Sales Momentum badges on primary metric cards
+16. ZIP comparison table with subject property ZIP highlighted
+17. Median Sale Price by ZIP horizontal bar chart (SFR vs Condo/Townhouse)
+18. Oahu 20-year trend charts (median price, average price, sales volume) split by property type
+19. Sales history table with dates, amounts, buyer/seller names
+20. Comparable sales with CMA adjustments (address, status, original price, adjusted price)
+21. Pricing strategy table comparing For Sale, Closed, Distressed, and Expired listings
+22. CMA pricing summary with recommended price, average of comps, adjustments, and CMA range
+23. Environmental and hazard zones
 
 ### 11.3 Prospecting (6 Search Types)
 

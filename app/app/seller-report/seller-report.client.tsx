@@ -471,7 +471,9 @@ export default function SellerReportClient() {
             medianPrice: m.avgPrice || 0,
             avgPrice: m.avgPrice || 0,
             listings: m.totalSales || 0,
-            dom: 0,
+            sfrSales: m.sfrSales || 0,
+            condoSales: m.condoSales || 0,
+            dom: m.medianDOM || m.avgDOM || 0,
           }));
           console.log(`[SellerReport] Got ${mlsStats.monthly.length} months of MLS trend data`);
         }

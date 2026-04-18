@@ -234,6 +234,8 @@ export function getReportBaseStyles(): string {
       background: #f3f4f6;
       border-left: 4px solid #1e40af;
       margin: 20px 0 12px 0;
+      page-break-after: avoid;
+      break-after: avoid;
     }
 
     /* Big section headers (like RPR's "Housing", "People", etc.) */
@@ -244,6 +246,17 @@ export function getReportBaseStyles(): string {
       border-bottom: 3px solid #1e40af;
       padding-bottom: 8px;
       margin: 30px 0 16px 0;
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+
+    /* Keep chart/table headers attached to the chart/table that follows */
+    .section-title + .chart-container,
+    .section-title + table,
+    .section-title + .value-cards,
+    .section-title + .two-col {
+      page-break-before: avoid;
+      break-before: avoid;
     }
 
     /* Value cards */

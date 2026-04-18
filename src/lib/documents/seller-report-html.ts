@@ -79,7 +79,7 @@ export function buildSellerReportHtml(data: SellerReportData, branding: AgentBra
         <div style="text-align: left;">
           <div class="ab-name">${esc(branding.displayName)}</div>
           <div class="ab-detail">${branding.licenseNumber ? `Lic# ${esc(branding.licenseNumber)} | ` : ""}${esc(branding.phone || "")} | ${esc(branding.brokerageName || "Real Estate Genie")}</div>
-          <div class="ab-detail">${esc(cityLine)}</div>
+          ${branding.email ? `<div class="ab-detail">${esc(branding.email)}</div>` : ""}
         </div>
       </div>
       <div style="margin-top: 16px; font-size: 12px; color: #6b7280;">Generated: ${esc(date)}</div>
@@ -117,11 +117,16 @@ export function buildSellerReportHtml(data: SellerReportData, branding: AgentBra
   // AI-GENERATED PROPERTY NARRATIVE
   // ═══════════════════════════════════════════════════════════════════════
 
-  const aiNarrative = (data as any).aiNarrative ? `
+  const rawNarrative = String((data as any).aiNarrative || "")
+    .replace(/^#+\s+.*$/gm, "")
+    .replace(/\*\*(.+?)\*\*/g, "$1")
+    .replace(/^\s*[-*]\s+/gm, "")
+    .trim();
+  const aiNarrative = rawNarrative ? `
     <div style="margin: 20px 0; padding: 16px 20px; background: #f9fafb; border-radius: 8px; border-left: 4px solid #1e40af;">
       <div style="font-size: 12px; font-weight: 700; color: #1e40af; text-transform: uppercase; margin-bottom: 8px;">Property Analysis</div>
       <div style="font-size: 11px; color: #374151; line-height: 1.8;">
-        ${esc((data as any).aiNarrative).replace(/\n\n/g, '</div><div style="font-size: 11px; color: #374151; line-height: 1.8; margin-top: 10px;">').replace(/\n/g, '<br/>')}
+        ${esc(rawNarrative).replace(/\n\n/g, '</div><div style="font-size: 11px; color: #374151; line-height: 1.8; margin-top: 10px;">').replace(/\n/g, '<br/>')}
       </div>
     </div>
   ` : "";
@@ -467,23 +472,24 @@ export function buildSellerReportHtml(data: SellerReportData, branding: AgentBra
             }
           });
 
-          // Listings + DOM Chart
+          // Listings + DOM Chart (dual y-axis)
           new Chart(document.getElementById('listingsChart'), {
             type: 'bar',
             data: {
               labels: ${JSON.stringify(labels)},
               datasets: [
-                { label: 'Listings', data: ${JSON.stringify(listings)}, backgroundColor: '#3b82f6', borderRadius: 3 },
-                { label: 'Avg DOM', data: ${JSON.stringify(doms)}, backgroundColor: '#f59e0b', borderRadius: 3 }
+                { label: 'Listings', data: ${JSON.stringify(listings)}, backgroundColor: '#3b82f6', borderRadius: 3, yAxisID: 'y' },
+                { label: 'Median DOM (days)', data: ${JSON.stringify(doms)}, backgroundColor: '#f59e0b', borderRadius: 3, yAxisID: 'yDom' }
               ]
             },
             options: {
               responsive: true,
               maintainAspectRatio: false,
               animation: false,
-              plugins: { legend: { position: 'bottom', labels: { font: { size: 9 } } } },
+              plugins: { legend: { position: 'bottom', labels: { font: { size: 9 }, usePointStyle: true, pointStyle: 'rect' } } },
               scales: {
-                y: { beginAtZero: true },
+                y: { beginAtZero: true, position: 'left', title: { display: true, text: 'Listings', font: { size: 9 } }, ticks: { font: { size: 9 } } },
+                yDom: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Days', font: { size: 9 } }, ticks: { font: { size: 9 } } },
                 x: { ticks: { font: { size: 9 } } }
               }
             }
@@ -553,24 +559,28 @@ export function buildSellerReportHtml(data: SellerReportData, branding: AgentBra
   const countyAnalytics = (data as any).countyAnalytics;
   if (countyAnalytics?.overview) {
     const co = countyAnalytics.overview;
+    const trendBadge = (val?: number | null) => {
+      if (val == null) return "";
+      const positive = val >= 0;
+      const color = positive ? "#15803d" : "#dc2626";
+      const bg = positive ? "#dcfce7" : "#fee2e2";
+      const arrow = positive ? "▲" : "▼";
+      return `<span style="display: inline-block; margin-left: 6px; padding: 1px 6px; font-size: 9px; font-weight: 700; color: ${color}; background: ${bg}; border-radius: 10px; vertical-align: middle;">${arrow} ${positive ? "+" : ""}${val}%</span>`;
+    };
+    const yoyBadge = trendBadge(co.yoyPriceChange);
+    const momentumBadge = trendBadge(co.salesMomentum);
     countySection = `
       <div class="page-break"></div>
       ${hdr}<div class="gold-accent"></div>
       <div class="big-section-header">${esc(co.county)} County Market Overview</div>
       <div class="value-cards">
-        <div class="value-card dark"><div class="vc-label">Median Sale Price</div><div class="vc-value">${fmt$(co.medianSalePrice)}</div><div class="vc-sub">All Property Types</div></div>
+        <div class="value-card dark"><div class="vc-label">Median Sale Price ${yoyBadge}</div><div class="vc-value">${fmt$(co.medianSalePrice)}</div><div class="vc-sub">All Property Types${co.yoyPriceChange != null ? " · YoY vs prior year" : ""}</div></div>
         ${co.sfrMedianPrice ? `<div class="value-card" style="border-left: 3px solid #dc2626;"><div class="vc-label">SFR Median</div><div class="vc-value">${fmt$(co.sfrMedianPrice)}</div><div class="vc-sub">Single Family</div></div>` : ""}
         ${co.condoMedianPrice ? `<div class="value-card" style="border-left: 3px solid #3b82f6;"><div class="vc-label">Condo/TH Median</div><div class="vc-value">${fmt$(co.condoMedianPrice)}</div><div class="vc-sub">Condo & Townhouse</div></div>` : ""}
         <div class="value-card dark"><div class="vc-label">Price/Sqft</div><div class="vc-value">$${co.medianPricePerSqft || "-"}</div></div>
         <div class="value-card dark"><div class="vc-label">Median DOM</div><div class="vc-value">${co.medianDOM || "-"} days</div></div>
-        <div class="value-card dark"><div class="vc-label">Total Listings</div><div class="vc-value">${co.totalListings?.toLocaleString() || "-"}</div></div>
+        <div class="value-card dark"><div class="vc-label">Total Listings ${momentumBadge}</div><div class="vc-value">${co.totalListings?.toLocaleString() || "-"}</div><div class="vc-sub">${co.salesMomentum != null ? "6mo vs prior 6mo" : "Active inventory"}</div></div>
         ${co.medianRent ? `<div class="value-card dark"><div class="vc-label">Median Rent</div><div class="vc-value">$${co.medianRent.toLocaleString()}/mo</div></div>` : ""}
-      </div>
-      <!-- Secondary indicator cards -->
-      <div class="value-cards" style="margin-top: 8px;">
-        ${co.yoyPriceChange != null ? `<div class="value-card" style="background: ${co.yoyPriceChange >= 0 ? "#ecfdf5" : "#fef2f2"};"><div class="vc-label">YoY Price Change</div><div class="vc-value" style="color: ${co.yoyPriceChange >= 0 ? "#15803d" : "#dc2626"};">${co.yoyPriceChange > 0 ? "+" : ""}${co.yoyPriceChange}%</div><div class="vc-sub">vs. prior year</div></div>` : ""}
-        ${co.salesMomentum != null ? `<div class="value-card" style="background: ${co.salesMomentum >= 0 ? "#ecfdf5" : "#fef2f2"};"><div class="vc-label">Sales Momentum</div><div class="vc-value" style="color: ${co.salesMomentum >= 0 ? "#15803d" : "#dc2626"};">${co.salesMomentum > 0 ? "+" : ""}${co.salesMomentum}%</div><div class="vc-sub">6mo vs prior 6mo</div></div>` : ""}
-        <div class="value-card" style="background: #eff6ff;"><div class="vc-label">Total Listings</div><div class="vc-value">${co.totalListings?.toLocaleString() || "-"}</div></div>
       </div>
     `;
 
@@ -593,8 +603,10 @@ export function buildSellerReportHtml(data: SellerReportData, branding: AgentBra
       }).join("");
 
       countySection += `
-        <div class="section-title" style="margin-top: 16px;">Sales Price by ZIP Code</div>
-        <table class="comp-table" style="font-size: 9px;">
+        <div class="page-break"></div>
+        ${hdr}<div class="gold-accent"></div>
+        <div class="big-section-header">Sales Price by ZIP Code</div>
+        <table class="comp-table zip-table" style="font-size: 9px;">
           <thead><tr><th>ZIP</th><th>Median</th><th>SFR Median</th><th>Condo/TH</th><th>$/Sqft</th><th>Listings</th><th>DOM</th><th>Rent</th></tr></thead>
           <tbody>${zipRows}</tbody>
         </table>
@@ -663,17 +675,23 @@ export function buildSellerReportHtml(data: SellerReportData, branding: AgentBra
       ${hdr}<div class="gold-accent"></div>
       <div class="big-section-header">Oahu Market Trends</div>
 
-      <div class="section-title">Median Sale Price - Oahu (${oahuTrends.length} Years)</div>
-      <div style="font-size: 9px; color: #6b7280; margin-bottom: 4px;">Single Family vs Condo/Townhouse | Source: HiCentral MLS</div>
-      <div class="chart-container" style="height: 220px;"><canvas id="oahuMedianChart"></canvas></div>
+      <div class="avoid-break">
+        <div class="section-title">Median Sale Price - Oahu (${oahuTrends.length} Years)</div>
+        <div style="font-size: 9px; color: #6b7280; margin-bottom: 4px;">Single Family vs Condo/Townhouse | Source: HiCentral MLS</div>
+        <div class="chart-container" style="height: 220px;"><canvas id="oahuMedianChart"></canvas></div>
+      </div>
 
-      <div class="section-title" style="margin-top: 16px;">Average Sale Price - Oahu (${oahuTrends.length} Years)</div>
-      <div style="font-size: 9px; color: #6b7280; margin-bottom: 4px;">Single Family vs Condo/Townhouse | Source: HiCentral MLS</div>
-      <div class="chart-container" style="height: 220px;"><canvas id="oahuAvgChart"></canvas></div>
+      <div class="avoid-break">
+        <div class="section-title" style="margin-top: 16px;">Average Sale Price - Oahu (${oahuTrends.length} Years)</div>
+        <div style="font-size: 9px; color: #6b7280; margin-bottom: 4px;">Single Family vs Condo/Townhouse | Source: HiCentral MLS</div>
+        <div class="chart-container" style="height: 220px;"><canvas id="oahuAvgChart"></canvas></div>
+      </div>
 
-      <div class="section-title" style="margin-top: 16px;">Annual Sales Volume - Oahu (${oahuTrends.length} Years)</div>
-      <div style="font-size: 9px; color: #6b7280; margin-bottom: 4px;">Number of residential resales per year | Source: HiCentral MLS</div>
-      <div class="chart-container" style="height: 220px;"><canvas id="oahuVolumeChart"></canvas></div>
+      <div class="avoid-break">
+        <div class="section-title" style="margin-top: 16px;">Annual Sales Volume - Oahu (${oahuTrends.length} Years)</div>
+        <div style="font-size: 9px; color: #6b7280; margin-bottom: 4px;">Number of residential resales per year | Source: HiCentral MLS</div>
+        <div class="chart-container" style="height: 220px;"><canvas id="oahuVolumeChart"></canvas></div>
+      </div>
 
       <script data-chart>
         // Median Sale Price Chart
@@ -682,8 +700,8 @@ export function buildSellerReportHtml(data: SellerReportData, branding: AgentBra
           data: {
             labels: ${JSON.stringify(trendLabels)},
             datasets: [
-              { label: 'Single Family', data: ${JSON.stringify(sfrMedians)}, borderColor: '#dc2626', backgroundColor: 'transparent', tension: 0.3, pointRadius: 2, borderWidth: 2 },
-              { label: 'Condo/TH', data: ${JSON.stringify(condoMedians)}, borderColor: '#3b82f6', backgroundColor: 'transparent', tension: 0.3, pointRadius: 2, borderWidth: 2 }
+              { label: 'Single Family', data: ${JSON.stringify(sfrMedians)}, borderColor: '#dc2626', backgroundColor: '#dc2626', pointBackgroundColor: '#dc2626', fill: false, tension: 0.3, pointRadius: 2, borderWidth: 2 },
+              { label: 'Condo/TH', data: ${JSON.stringify(condoMedians)}, borderColor: '#3b82f6', backgroundColor: '#3b82f6', pointBackgroundColor: '#3b82f6', fill: false, tension: 0.3, pointRadius: 2, borderWidth: 2 }
             ]
           },
           options: {
@@ -702,8 +720,8 @@ export function buildSellerReportHtml(data: SellerReportData, branding: AgentBra
           data: {
             labels: ${JSON.stringify(trendLabels)},
             datasets: [
-              { label: 'Single Family', data: ${JSON.stringify(sfrAvgs)}, borderColor: '#dc2626', backgroundColor: 'transparent', tension: 0.3, pointRadius: 2, borderWidth: 2 },
-              { label: 'Condo/TH', data: ${JSON.stringify(condoAvgs)}, borderColor: '#3b82f6', backgroundColor: 'transparent', tension: 0.3, pointRadius: 2, borderWidth: 2 }
+              { label: 'Single Family', data: ${JSON.stringify(sfrAvgs)}, borderColor: '#dc2626', backgroundColor: '#dc2626', pointBackgroundColor: '#dc2626', fill: false, tension: 0.3, pointRadius: 2, borderWidth: 2 },
+              { label: 'Condo/TH', data: ${JSON.stringify(condoAvgs)}, borderColor: '#3b82f6', backgroundColor: '#3b82f6', pointBackgroundColor: '#3b82f6', fill: false, tension: 0.3, pointRadius: 2, borderWidth: 2 }
             ]
           },
           options: {
@@ -722,8 +740,8 @@ export function buildSellerReportHtml(data: SellerReportData, branding: AgentBra
           data: {
             labels: ${JSON.stringify(trendLabels)},
             datasets: [
-              { label: 'Single Family', data: ${JSON.stringify(sfrSales)}, borderColor: '#dc2626', backgroundColor: 'transparent', tension: 0.3, pointRadius: 2, borderWidth: 2 },
-              { label: 'Condo/TH', data: ${JSON.stringify(condoSales)}, borderColor: '#3b82f6', backgroundColor: 'transparent', tension: 0.3, pointRadius: 2, borderWidth: 2 }
+              { label: 'Single Family', data: ${JSON.stringify(sfrSales)}, borderColor: '#dc2626', backgroundColor: '#dc2626', pointBackgroundColor: '#dc2626', fill: false, tension: 0.3, pointRadius: 2, borderWidth: 2 },
+              { label: 'Condo/TH', data: ${JSON.stringify(condoSales)}, borderColor: '#3b82f6', backgroundColor: '#3b82f6', pointBackgroundColor: '#3b82f6', fill: false, tension: 0.3, pointRadius: 2, borderWidth: 2 }
             ]
           },
           options: {

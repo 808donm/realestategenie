@@ -204,13 +204,14 @@ export async function GET(request: NextRequest) {
     const condoStats = condoSales.length > 0 ? computeStats(condoSales) : null;
 
     // Monthly breakdown by type
-    const monthlyMap = new Map<string, { sfrSales: number; condoSales: number; totalSales: number; sfrPrice: number; condoPrice: number; totalPrice: number }>();
+    const monthlyMap = new Map<string, { sfrSales: number; condoSales: number; totalSales: number; sfrPrice: number; condoPrice: number; totalPrice: number; doms: number[] }>();
     for (const s of sales) {
       if (!s.CloseDate) continue;
       const month = s.CloseDate.substring(0, 7);
-      const existing = monthlyMap.get(month) || { sfrSales: 0, condoSales: 0, totalSales: 0, sfrPrice: 0, condoPrice: 0, totalPrice: 0 };
+      const existing = monthlyMap.get(month) || { sfrSales: 0, condoSales: 0, totalSales: 0, sfrPrice: 0, condoPrice: 0, totalPrice: 0, doms: [] };
       existing.totalSales++;
       if (s.ClosePrice && s.ClosePrice > 0) existing.totalPrice += s.ClosePrice;
+      if (s.DaysOnMarket != null && s.DaysOnMarket >= 0) existing.doms.push(s.DaysOnMarket);
       if (isSFR(s)) {
         existing.sfrSales++;
         if (s.ClosePrice && s.ClosePrice > 0) existing.sfrPrice += s.ClosePrice;
@@ -231,6 +232,8 @@ export async function GET(request: NextRequest) {
         sfrAvgPrice: data.sfrSales > 0 ? Math.round(data.sfrPrice / data.sfrSales) : 0,
         condoAvgPrice: data.condoSales > 0 ? Math.round(data.condoPrice / data.condoSales) : 0,
         avgPrice: data.totalSales > 0 ? Math.round(data.totalPrice / data.totalSales) : 0,
+        medianDOM: median(data.doms),
+        avgDOM: avg(data.doms),
       }));
 
     // Property type breakdown
