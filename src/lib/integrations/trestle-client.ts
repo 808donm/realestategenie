@@ -178,6 +178,7 @@ export interface TrestleAuthConfig {
 }
 
 export class TrestleClient {
+  public readonly provider = "trestle" as const;
   private authConfig: TrestleAuthConfig;
   private accessToken: string | null = null;
   private tokenExpiry: Date | null = null;
