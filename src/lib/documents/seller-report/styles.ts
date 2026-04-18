@@ -8,10 +8,10 @@
  * so fonts arrive before PDF render.
  */
 
-export function getSellerReportStyles(): string {
+export function getSellerReportStyles(headshotUrl?: string | null, heroUrl?: string | null): string {
+  const headshotVar = headshotUrl ? `--headshot-url: url('${headshotUrl.replace(/'/g, "\\'")}');` : "";
+  const heroVar = heroUrl ? `--hero-url: url('${heroUrl.replace(/'/g, "\\'")}');` : "";
   return `
-    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
-
     @page { size: 8.5in 11in; margin: 0; }
 
     :root {
@@ -35,6 +35,8 @@ export function getSellerReportStyles(): string {
       --font-display: "Playfair Display", Georgia, serif;
       --font-sans: "Inter", -apple-system, sans-serif;
       --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      ${headshotVar}
+      ${heroVar}
     }
 
     * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -64,8 +66,8 @@ export function getSellerReportStyles(): string {
 
     /* Agent band (pages 2-12) */
     .agent-band { display: flex; align-items: center; gap: 12px; padding: 0 0 12px; border-bottom: 0.5px solid var(--bone-300); margin-bottom: 22px; }
-    .agent-band .photo { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #D9B88E 0%, #A27548 100%); border: 1.5px solid var(--gold-500); flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 600; font-size: 13px; font-family: var(--font-display); object-fit: cover; overflow: hidden; }
-    .agent-band .photo img { width: 100%; height: 100%; object-fit: cover; }
+    .agent-band .photo { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #D9B88E 0%, #A27548 100%); border: 1.5px solid var(--gold-500); flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 600; font-size: 13px; font-family: var(--font-display); overflow: hidden; background-size: cover; background-position: center; }
+    .agent-band .photo.has-photo { background-image: var(--headshot-url); color: transparent; }
     .agent-band .who { flex: 1; line-height: 1.3; }
     .agent-band .who .name { font-family: var(--font-display); font-weight: 600; font-size: 13px; color: var(--navy-900); }
     .agent-band .who .sub { font-size: 9px; color: var(--ink-mute); font-family: var(--font-mono); letter-spacing: 0.04em; }
@@ -77,8 +79,7 @@ export function getSellerReportStyles(): string {
 
     /* Cover */
     .cover-hero { position: absolute; inset: 0 0 auto 0; height: 620px; background: linear-gradient(180deg, transparent 50%, rgba(6,26,58,0.72) 100%), linear-gradient(135deg, #3a5a7f 0%, #1a3a5a 40%, #0a2442 100%); overflow: hidden; }
-    .cover-hero.with-photo { background: none; }
-    .cover-hero .hero-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
+    .cover-hero.with-photo { background-image: var(--hero-url); background-size: cover; background-position: center; }
     .cover-hero .hero-scrim { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(6,26,58,0.2) 0%, rgba(6,26,58,0.72) 100%); z-index: 1; }
     .cover-hero::before { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse 800px 400px at 60% 20%, rgba(242,206,122,0.35), transparent 60%), linear-gradient(180deg, #d8c4a0 0%, #c8a878 30%, #88603a 60%, #4a3a2a 85%); }
     .cover-hero.with-photo::before { display: none; }
@@ -93,8 +94,8 @@ export function getSellerReportStyles(): string {
     .cover-overlay .pill .dot { width: 6px; height: 6px; background: var(--green-600); border-radius: 50%; }
 
     .agent-card { position: absolute; left: 48px; right: 48px; bottom: 72px; background: #fff; border-top: 3px solid var(--gold-500); padding: 28px 32px; box-shadow: 0 20px 40px -20px rgba(6,26,58,0.3); display: grid; grid-template-columns: 90px 1fr 1fr; gap: 28px; align-items: flex-start; }
-    .agent-card .big-photo { width: 90px; height: 90px; border-radius: 50%; background: linear-gradient(135deg, #D9B88E 0%, #8a5c38 100%); display: flex; align-items: center; justify-content: center; color: #fff; font-family: var(--font-display); font-size: 34px; font-weight: 600; border: 3px solid var(--bone-100); box-shadow: 0 4px 16px -4px rgba(0,0,0,0.3); overflow: hidden; }
-    .agent-card .big-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .agent-card .big-photo { width: 90px; height: 90px; border-radius: 50%; background: linear-gradient(135deg, #D9B88E 0%, #8a5c38 100%); display: flex; align-items: center; justify-content: center; color: #fff; font-family: var(--font-display); font-size: 34px; font-weight: 600; border: 3px solid var(--bone-100); box-shadow: 0 4px 16px -4px rgba(0,0,0,0.3); overflow: hidden; background-size: cover; background-position: center; }
+    .agent-card .big-photo.has-photo { background-image: var(--headshot-url); color: transparent; }
     .agent-card .agent-name { font-family: var(--font-display); font-size: 24px; font-weight: 700; color: var(--navy-900); line-height: 1.05; margin-bottom: 3px; }
     .agent-card .agent-title { font-size: 11px; color: var(--ink-mute); margin-bottom: 10px; }
     .agent-card .agent-lic { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em; color: var(--gold-600); padding: 3px 8px; background: var(--bone-100); border-radius: 3px; display: inline-block; margin-bottom: 10px; }

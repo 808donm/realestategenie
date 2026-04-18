@@ -48,13 +48,11 @@ export function initial(name?: string | null): string {
  */
 export function agentBand(data: SellerReportData, branding: AgentBranding): string {
   const cityLine = [data.city, data.state, data.zip].filter(Boolean).join(", ");
-  const avatar = branding.headshotData
-    ? `<img src="${esc(branding.headshotData)}" alt="" />`
-    : esc(initial(branding.displayName));
+  const hasPhoto = !!branding.headshotData;
   const licenseLine = [branding.licenseNumber, branding.brokerageName].filter(Boolean).join(" · ").toUpperCase();
   return `
     <div class="agent-band">
-      <div class="photo">${avatar}</div>
+      <div class="photo${hasPhoto ? " has-photo" : ""}">${hasPhoto ? "" : esc(initial(branding.displayName))}</div>
       <div class="who">
         <div class="name">${esc(branding.displayName)}</div>
         <div class="sub">${esc(licenseLine) || "&nbsp;"}</div>

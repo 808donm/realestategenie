@@ -225,7 +225,12 @@ Paragraph 5: Considerations - hazard zones if any, HOA, zoning, and what makes t
     const t2 = Date.now();
     // Seller report v2 uses @page CSS for full-bleed layout; other reports keep the default 0.5in margin.
     const pdfOptions = reportType === "seller"
-      ? { margin: { top: "0", right: "0", bottom: "0", left: "0" }, format: "Letter" as const }
+      ? {
+          margin: { top: "0", right: "0", bottom: "0", left: "0" },
+          format: "Letter" as const,
+          waitUntil: "networkidle2" as const,
+          timeoutMs: 50000,
+        }
       : undefined;
     const pdfBuffer = await renderHtmlToPdf(html, pdfOptions);
     console.log(`[reports/generate] PDF rendered: ${Date.now() - t2}ms (${pdfBuffer.length} bytes)`);

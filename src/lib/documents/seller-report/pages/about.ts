@@ -7,9 +7,9 @@ import type { AgentBranding } from "../../pdf-report-utils";
 import { esc, initial, pageWithBand } from "../shell";
 
 export function pageAbout(data: SellerReportData, branding: AgentBranding, pageNum: number, totalPages: number, generatedAt: string): string {
-  const avatar = branding.headshotData
-    ? `<img src="${esc(branding.headshotData)}" alt="" />`
-    : esc(initial(branding.displayName));
+  const hasPhoto = !!branding.headshotData;
+  const avatarCls = hasPhoto ? "has-photo" : "";
+  const avatarInner = hasPhoto ? "" : esc(initial(branding.displayName));
 
   const dataSources = [
     "MLS · HiCentral",
@@ -43,7 +43,7 @@ export function pageAbout(data: SellerReportData, branding: AgentBranding, pageN
     </div>
 
     <div style="background: #fff; border: 1px solid var(--bone-300); padding: 20px 24px; margin-top: 18px; display: grid; grid-template-columns: 72px 1fr 1fr; gap: 22px; align-items: flex-start;">
-      <div style="width: 72px; height: 72px; border-radius: 50%; background: linear-gradient(135deg, #D9B88E, #8a5c38); display: flex; align-items: center; justify-content: center; color: #fff; font-family: var(--font-display); font-size: 28px; font-weight: 600; border: 2px solid var(--bone-100); overflow: hidden;">${avatar}</div>
+      <div class="big-photo ${avatarCls}" style="width: 72px; height: 72px; border-radius: 50%; background: linear-gradient(135deg, #D9B88E, #8a5c38); display: flex; align-items: center; justify-content: center; color: #fff; font-family: var(--font-display); font-size: 28px; font-weight: 600; border: 2px solid var(--bone-100); overflow: hidden; background-size: cover; background-position: center;${hasPhoto ? " background-image: var(--headshot-url);" : ""}">${avatarInner}</div>
       <div>
         <div style="font-family: var(--font-display); font-size: 20px; font-weight: 700; color: var(--navy-900);">${esc(branding.displayName)}</div>
         <div style="font-size: 10px; color: var(--ink-mute); margin-bottom: 8px;">${esc((branding as any).title || "REALTOR · Listing Agent")}</div>

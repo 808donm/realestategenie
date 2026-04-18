@@ -95,6 +95,8 @@ export async function renderHtmlToPdf(
     displayHeaderFooter?: boolean;
     headerTemplate?: string;
     footerTemplate?: string;
+    waitUntil?: "load" | "domcontentloaded" | "networkidle0" | "networkidle2";
+    timeoutMs?: number;
   },
 ): Promise<Buffer> {
   const browser = await getBrowser();
@@ -103,8 +105,8 @@ export async function renderHtmlToPdf(
   try {
     // Set content with generous timeout for image loading
     await page.setContent(html, {
-      waitUntil: "networkidle0",
-      timeout: 30000,
+      waitUntil: options?.waitUntil || "networkidle0",
+      timeout: options?.timeoutMs ?? 30000,
     });
 
     // Load Chart.js and render charts if the HTML contains canvas elements

@@ -12,14 +12,14 @@ import { svgPalm } from "../svg";
 
 export function pageCover(data: SellerReportData, branding: AgentBranding, totalPages: number, generatedAt: string, clientName?: string): string {
   const cityLine = [data.city, data.state, data.zip].filter(Boolean).join(", ");
-  const heroUrl = data.primaryPhotoData || (data.photoGalleryData && data.photoGalleryData[0]) || data.mapImageData || null;
-  const hero = heroUrl
-    ? `<div class="cover-hero with-photo"><img class="hero-img" src="${esc(heroUrl)}" alt="" /><div class="hero-scrim"></div></div>`
+  const hasHero = !!(data.primaryPhotoData || (data.photoGalleryData && data.photoGalleryData[0]) || data.mapImageData);
+  const hero = hasHero
+    ? `<div class="cover-hero with-photo"><div class="hero-scrim"></div></div>`
     : `<div class="cover-hero">${svgPalm()}</div>`;
 
-  const avatar = branding.headshotData
-    ? `<img src="${esc(branding.headshotData)}" alt="" />`
-    : esc(initial(branding.displayName));
+  const hasPhoto = !!branding.headshotData;
+  const avatarCls = hasPhoto ? "big-photo has-photo" : "big-photo";
+  const avatarInner = hasPhoto ? "" : esc(initial(branding.displayName));
 
   // Build status pill. If listing is active show "ACTIVE", else omit.
   const statusText = data.listingStatus || null;
@@ -50,7 +50,7 @@ export function pageCover(data: SellerReportData, branding: AgentBranding, total
       </div>
 
       <div class="agent-card">
-        <div class="big-photo">${avatar}</div>
+        <div class="${avatarCls}">${avatarInner}</div>
         <div>
           <div class="agent-name">${esc(branding.displayName)}</div>
           <div class="agent-title">${esc((branding as any).title || "REALTOR · Listing Agent")}</div>
