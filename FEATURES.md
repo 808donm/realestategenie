@@ -292,6 +292,15 @@ Cover page with hero photo and agent branding, personal note, listing status bad
 
 Design: Playfair Display + Inter + JetBrains Mono fonts, navy/gold/bone color palette, `@page` US Letter portrait with zero margins (all page chrome handled by `.page-body` absolute positioning). Footer on every page reads "Report produced by Real Estate Genie · © Hulia'u Software, Inc." with page N of 13.
 
+**5 visual templates (agent picks per report via `data.theme`)**:
+- **The Editor** (default) — Classic navy + gold + bone, Playfair Display. Trust and gravitas; works from coastal luxury to established brokerages.
+- **The Archive** — Modern minimal, Swiss grid, Inter + JetBrains Mono. Black/white with bold oversized numerals. For urban markets, new-construction, and architectural listings.
+- **Noir** — Luxury dark, Cormorant Garamond on near-black with champagne accents. Sotheby's-adjacent — for waterfront, trophy homes, private offices.
+- **Terracotta** — Warm clay + cream, Fraunces rounded serif. Boutique lifestyle agents — Southwest, Austin, Sonoma, Santa Fe, coastal Florida.
+- **Blueprint** — Corporate data, IBM Plex Sans + Mono, cobalt blue with grid accents. Team brands, Keller Williams/Compass-style agents, data-forward sellers.
+
+Same 13-page structure, same data, different personality. Each template controls color tokens, font stacks, cover layout, agent-card styling, page-number format (Page 01 of 13 / I of XIII / P. 01/13 / 01 / 13), and footer copy.
+
 ### Investor Report
 Investment verdict (Strong Buy/Good/Moderate/Weak/Pass), rental income analysis (AVM, GRM, 1% rule, vacancy, HUD Fair Market Rents), return metrics (cap rate, cash-on-cash, DSCR), monthly cash flow breakdown, 3 financing scenario comparison (Conventional/Investor/Cash), tax benefits (27.5yr depreciation), exit strategy projections (5/10/15yr), risk assessment, market overview
 

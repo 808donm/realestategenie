@@ -4,6 +4,8 @@
 
 import type { SellerReportData } from "../seller-report-pdf";
 import type { AgentBranding } from "../pdf-report-utils";
+import type { ThemeTokens } from "./themes";
+import { formatPageNumber, footerCenterCopy } from "./themes";
 
 export function esc(s?: string | number | null): string {
   if (s == null) return "";
@@ -44,7 +46,6 @@ export function initial(name?: string | null): string {
 
 /**
  * Agent band rendered at top of pages 2-12.
- * Small avatar, name + license line, subject address on right.
  */
 export function agentBand(data: SellerReportData, branding: AgentBranding): string {
   const cityLine = [data.city, data.state, data.zip].filter(Boolean).join(", ");
@@ -66,31 +67,27 @@ export function agentBand(data: SellerReportData, branding: AgentBranding): stri
 }
 
 /**
- * Global footer on every page.
- * Left: address + agent + generation date. Center: Hulia'u mark. Right: page N of total.
+ * Global footer on every page. Per-theme copy and page-number format.
  */
-export function pageFooter(data: SellerReportData, branding: AgentBranding, pageNum: number, totalPages: number, generatedAt: string): string {
-  const pg = String(pageNum).padStart(2, "0");
-  const total = String(totalPages).padStart(2, "0");
+export function pageFooter(data: SellerReportData, branding: AgentBranding, pageNum: number, totalPages: number, generatedAt: string, theme: ThemeTokens): string {
+  const pgLabel = formatPageNumber(pageNum, totalPages, theme.pageNumber);
+  const centerCopy = footerCenterCopy(theme.id, generatedAt);
   return `
     <div class="page-footer">
       <div>${esc(data.address)} · ${esc(branding.displayName)}<br/>Generated ${esc(generatedAt)}</div>
-      <div class="ctr"><strong>Report produced by Real Estate Genie</strong><br/>© Hulia'u Software, Inc.</div>
-      <div class="rt">Page ${pg} of ${total}</div>
+      <div class="ctr"><strong>${esc(centerCopy.split(" · ")[0] || centerCopy)}</strong>${centerCopy.includes(" · ") ? `<br/>${esc(centerCopy.split(" · ").slice(1).join(" · "))}` : ""}</div>
+      <div class="rt">${esc(pgLabel)}</div>
     </div>
   `;
 }
 
-/**
- * Wrap a page body with the agent band + body content + footer.
- * Used for pages 2-12. Cover (p1) and About (p13) use their own layout.
- */
 export function pageWithBand(
   data: SellerReportData,
   branding: AgentBranding,
   pageNum: number,
   totalPages: number,
   generatedAt: string,
+  theme: ThemeTokens,
   bodyHtml: string,
   pageId?: string,
 ): string {
@@ -100,7 +97,7 @@ export function pageWithBand(
         ${agentBand(data, branding)}
         ${bodyHtml}
       </div>
-      ${pageFooter(data, branding, pageNum, totalPages, generatedAt)}
+      ${pageFooter(data, branding, pageNum, totalPages, generatedAt, theme)}
     </section>
   `;
 }

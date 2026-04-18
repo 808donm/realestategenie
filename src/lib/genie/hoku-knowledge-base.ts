@@ -272,6 +272,15 @@ GENERAL TIPS:
 
 Pages 1, 2, and 13 render real data now; pages 3-12 currently show "Section in progress" notices and are being rebuilt. Every page is agent-branded. No RPR branding; footer reads "Report produced by Real Estate Genie · © Hulia'u Software, Inc."
 
+**5 visual templates** (agent picks per report via `data.theme`):
+- **The Editor** (default) — classic navy + gold + bone; Playfair Display display; trust and gravitas.
+- **The Archive** — modern minimal Swiss grid; Inter + JetBrains Mono; bold oversized numerals.
+- **Noir** — luxury dark; Cormorant Garamond on black with champagne accents; Sotheby's-adjacent.
+- **Terracotta** — warm clay + cream; Fraunces rounded serif; boutique lifestyle.
+- **Blueprint** — corporate data; IBM Plex + cobalt blue with grid accents; data-forward teams.
+
+Each template controls colors, fonts, cover layout, page-number format, and footer copy. Same 13-page structure regardless of theme.
+
 **Use case:** Generate Seller Reports for prospecting (absentee owners, high equity homeowners) or listing presentations. The data comes from public records, not MLS.
 
 Help the agent search properties and generate Seller Reports for prospecting and listing presentations.`,

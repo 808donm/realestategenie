@@ -1,0 +1,2098 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Seller Report — Visual Mockup · 936 Ainapo St</title>
+<meta name="viewport" content="width=1200" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --navy-900: #061A3A;
+    --navy-800: #0A2C5E;
+    --navy-700: #153a73;
+    --navy-600: #204e8e;
+    --navy-500: #3168a8;
+    --gold-600: #C6932E;
+    --gold-500: #E8B84A;
+    --gold-400: #F2CE7A;
+    --bone-50:  #FBF8F1;
+    --bone-100: #F8F4EC;
+    --bone-200: #EEE7D6;
+    --bone-300: #E1D6BC;
+    --ink:      #0F1A2E;
+    --ink-soft: #2A3650;
+    --ink-mute: #5B6680;
+    --red-600:  #C8372D;
+    --green-600: #2F7D5B;
+    --font-display: "Playfair Display", Georgia, serif;
+    --font-sans: "Inter", -apple-system, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: #E8E2D2;
+    font-family: var(--font-sans);
+    color: var(--ink);
+  }
+  body {
+    padding: 40px 20px 80px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 28px;
+  }
+  .doc-header {
+    width: 816px;
+    max-width: 100%;
+    margin-bottom: 8px;
+  }
+  .doc-header .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--gold-600);
+    margin-bottom: 10px;
+  }
+  .doc-header h1 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 34px;
+    line-height: 1.1;
+    margin: 0 0 10px;
+    color: var(--navy-900);
+    letter-spacing: -0.01em;
+  }
+  .doc-header p {
+    font-size: 14px;
+    color: var(--ink-mute);
+    line-height: 1.5;
+    margin: 0;
+    max-width: 70ch;
+  }
+
+  /* Page — US Letter 8.5 × 11 @ 96dpi = 816 × 1056 */
+  .page {
+    width: 816px;
+    height: 1056px;
+    background: var(--bone-50);
+    box-shadow:
+      0 1px 0 rgba(0,0,0,0.04),
+      0 40px 80px -30px rgba(6,26,58,0.25),
+      0 10px 30px -15px rgba(6,26,58,0.15);
+    position: relative;
+    overflow: hidden;
+    font-size: 11px;
+    color: var(--ink);
+  }
+  .page-body {
+    position: absolute;
+    inset: 48px 48px 86px; /* 0.5in sides, ~0.9in bottom for footer */
+    display: flex;
+    flex-direction: column;
+  }
+  .page-footer {
+    position: absolute;
+    left: 48px;
+    right: 48px;
+    bottom: 32px;
+    border-top: 0.5px solid var(--bone-300);
+    padding-top: 8px;
+    display: flex;
+    justify-content: space-between;
+    gap: 24px;
+    font-size: 9px;
+    color: var(--ink-mute);
+    line-height: 1.4;
+  }
+  .page-footer .ctr { text-align: center; }
+  .page-footer .rt { text-align: right; font-family: var(--font-mono); }
+  .page-footer strong { color: var(--navy-900); font-weight: 600; }
+
+  /* Agent header band (pages 2–12) */
+  .agent-band {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 0 12px;
+    border-bottom: 0.5px solid var(--bone-300);
+    margin-bottom: 22px;
+  }
+  .agent-band .photo {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: linear-gradient(135deg, #D9B88E 0%, #A27548 100%);
+    border: 1.5px solid var(--gold-500);
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 600; font-size: 13px;
+    font-family: var(--font-display);
+  }
+  .agent-band .who {
+    flex: 1;
+    line-height: 1.3;
+  }
+  .agent-band .who .name {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--navy-900);
+  }
+  .agent-band .who .sub {
+    font-size: 9px;
+    color: var(--ink-mute);
+    font-family: var(--font-mono);
+    letter-spacing: 0.04em;
+  }
+  .agent-band .addr {
+    text-align: right;
+    font-size: 10px;
+    color: var(--ink-soft);
+    line-height: 1.3;
+  }
+  .agent-band .addr .a {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--navy-900);
+  }
+
+  .section-title {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 22px;
+    color: var(--navy-900);
+    margin: 0 0 4px;
+    letter-spacing: -0.01em;
+  }
+  .section-sub {
+    font-size: 10px;
+    color: var(--ink-mute);
+    font-family: var(--font-mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  /* ── Cover (Page 1) ─────────────────────────────────────────────── */
+  .cover-hero {
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 620px;
+    background:
+      linear-gradient(180deg, transparent 50%, rgba(6,26,58,0.72) 100%),
+      linear-gradient(135deg, #3a5a7f 0%, #1a3a5a 40%, #0a2442 100%);
+    overflow: hidden;
+  }
+  .cover-hero::before {
+    /* Simulated house photo — layered shapes */
+    content: "";
+    position: absolute; inset: 0;
+    background:
+      /* sky glow */
+      radial-gradient(ellipse 800px 400px at 60% 20%, rgba(242,206,122,0.35), transparent 60%),
+      /* sky */
+      linear-gradient(180deg, #d8c4a0 0%, #c8a878 30%, #88603a 60%, #4a3a2a 85%);
+  }
+  .cover-hero::after {
+    /* silhouette house */
+    content: "";
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 55%;
+    background:
+      linear-gradient(180deg, transparent 0%, rgba(6,26,58,0.4) 100%),
+      linear-gradient(180deg, #2a3a4a 0%, #0a1a2a 100%);
+    clip-path: polygon(0 100%, 0 55%, 12% 55%, 12% 35%, 22% 30%, 30% 15%, 42% 10%, 55% 22%, 62% 18%, 75% 28%, 82% 28%, 82% 45%, 100% 50%, 100% 100%);
+  }
+  .cover-palm {
+    position: absolute;
+    bottom: 0; right: 60px;
+    width: 160px; height: 340px;
+    z-index: 2;
+  }
+  .cover-overlay {
+    position: absolute;
+    left: 48px; right: 48px;
+    bottom: 450px;
+    color: #fff;
+    z-index: 3;
+  }
+  .cover-overlay .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    color: var(--gold-500);
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .cover-overlay .eyebrow::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--gold-500), transparent);
+    margin-left: 10px;
+  }
+  .cover-overlay h1 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 54px;
+    line-height: 0.98;
+    letter-spacing: -0.02em;
+    margin: 0 0 12px;
+    color: #fff;
+    max-width: 11ch;
+    text-shadow: 0 2px 20px rgba(0,0,0,0.3);
+  }
+  .cover-overlay h2 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-style: italic;
+    font-size: 22px;
+    margin: 0 0 22px;
+    color: var(--gold-400);
+    letter-spacing: -0.005em;
+  }
+  .cover-overlay .pill {
+    display: inline-flex;
+    gap: 10px;
+    align-items: center;
+    padding: 7px 14px;
+    background: rgba(232,184,74,0.95);
+    color: var(--navy-900);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    border-radius: 999px;
+    font-weight: 600;
+  }
+  .cover-overlay .pill .dot {
+    width: 6px; height: 6px; background: var(--green-600); border-radius: 50%;
+  }
+
+  /* Agent card — bottom */
+  .agent-card {
+    position: absolute;
+    left: 48px; right: 48px; bottom: 72px;
+    background: #fff;
+    border-top: 3px solid var(--gold-500);
+    padding: 28px 32px;
+    box-shadow: 0 20px 40px -20px rgba(6,26,58,0.3);
+    display: grid;
+    grid-template-columns: 90px 1fr 1fr;
+    gap: 28px;
+    align-items: flex-start;
+  }
+  .agent-card .big-photo {
+    width: 90px; height: 90px; border-radius: 50%;
+    background: linear-gradient(135deg, #D9B88E 0%, #8a5c38 100%);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff;
+    font-family: var(--font-display);
+    font-size: 34px;
+    font-weight: 600;
+    border: 3px solid var(--bone-100);
+    box-shadow: 0 4px 16px -4px rgba(0,0,0,0.3);
+  }
+  .agent-card .agent-name {
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--navy-900);
+    line-height: 1.05;
+    margin-bottom: 3px;
+  }
+  .agent-card .agent-title {
+    font-size: 11px;
+    color: var(--ink-mute);
+    margin-bottom: 10px;
+  }
+  .agent-card .agent-lic {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    color: var(--gold-600);
+    padding: 3px 8px;
+    background: var(--bone-100);
+    border-radius: 3px;
+    display: inline-block;
+    margin-bottom: 10px;
+  }
+  .agent-card .agent-contact {
+    font-size: 10px;
+    line-height: 1.6;
+    color: var(--ink-soft);
+  }
+  .agent-card .agent-contact strong { color: var(--navy-900); font-weight: 600; }
+  .agent-card .brokerage {
+    border-left: 1px solid var(--bone-300);
+    padding-left: 24px;
+    font-size: 10px;
+    line-height: 1.5;
+    color: var(--ink-soft);
+  }
+  .agent-card .brokerage .brok-name {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--navy-900);
+    margin-bottom: 6px;
+    line-height: 1.2;
+  }
+  .agent-card .prepared {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--bone-200);
+    margin-top: 6px;
+    padding-top: 14px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--ink-mute);
+  }
+  .agent-card .prepared strong { color: var(--navy-900); font-weight: 600; }
+
+  /* ── Valuation (Page 2) ────────────────────────────────────────── */
+  .val-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 18px;
+  }
+  .val-card {
+    background: #fff;
+    border: 1px solid var(--bone-300);
+    padding: 22px 24px;
+    position: relative;
+  }
+  .val-card.primary {
+    background: var(--navy-900);
+    color: #fff;
+    border: none;
+    grid-column: 1 / -1;
+    padding: 28px 32px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 20px;
+    align-items: center;
+  }
+  .val-card .label {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--gold-600);
+    margin-bottom: 8px;
+  }
+  .val-card.primary .label { color: var(--gold-500); }
+  .val-card .value {
+    font-family: var(--font-display);
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--navy-900);
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .val-card.primary .value {
+    color: var(--gold-500);
+    font-size: 64px;
+  }
+  .val-card .sub {
+    font-size: 10px;
+    color: var(--ink-mute);
+    margin-top: 6px;
+  }
+  .val-card.primary .sub { color: rgba(255,255,255,0.6); }
+
+  .avm-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 180px;
+  }
+  .avm-meta .row { display: flex; justify-content: space-between; gap: 12px; font-size: 10px; color: rgba(255,255,255,0.75); }
+  .avm-meta .row strong { color: #fff; font-family: var(--font-mono); font-size: 11px; }
+  .stars { display: inline-flex; gap: 2px; }
+  .stars span { width: 10px; height: 10px; background: var(--gold-500); clip-path: polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%); }
+  .stars span.off { background: rgba(255,255,255,0.2); }
+
+  .range-bar {
+    grid-column: 1 / -1;
+    background: #fff;
+    border: 1px solid var(--bone-300);
+    padding: 18px 22px;
+  }
+  .range-bar .track {
+    position: relative;
+    height: 8px;
+    background: linear-gradient(90deg, var(--bone-200), var(--gold-400), var(--bone-200));
+    border-radius: 4px;
+    margin: 22px 0 8px;
+  }
+  .range-bar .marker {
+    position: absolute;
+    left: 50%;
+    top: -6px;
+    transform: translateX(-50%);
+    width: 2px;
+    height: 20px;
+    background: var(--navy-900);
+  }
+  .range-bar .marker::before {
+    content: "$1,660,000";
+    position: absolute;
+    top: -18px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--font-mono);
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--navy-900);
+    white-space: nowrap;
+  }
+  .range-bar .labels {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--ink-mute);
+  }
+
+  .tax-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    border: 1px solid var(--bone-300);
+    background: #fff;
+    margin-top: 16px;
+  }
+  .tax-strip > div {
+    padding: 14px 18px;
+    border-right: 1px solid var(--bone-200);
+  }
+  .tax-strip > div:last-child { border-right: none; }
+  .tax-strip .tlabel {
+    font-family: var(--font-mono);
+    font-size: 8px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    margin-bottom: 6px;
+  }
+  .tax-strip .tval {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--navy-900);
+    line-height: 1;
+  }
+
+  .delta-up { color: var(--green-600); font-weight: 600; }
+  .delta-dn { color: var(--red-600); font-weight: 600; }
+
+  /* ── Tables ────────────────────────────────────────────────────── */
+  .t3 {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9.5px;
+  }
+  .t3 th, .t3 td {
+    padding: 6px 10px;
+    text-align: left;
+    border-bottom: 0.5px solid var(--bone-200);
+    vertical-align: top;
+  }
+  .t3 thead th {
+    background: var(--navy-900);
+    color: #fff;
+    font-family: var(--font-mono);
+    font-size: 8.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 8px 10px;
+    font-weight: 600;
+  }
+  .t3 tbody tr:nth-child(odd) td { background: var(--bone-100); }
+  .t3 td.rowlbl {
+    font-weight: 600;
+    color: var(--navy-900);
+    font-size: 9.5px;
+  }
+  .t3 .muted { color: var(--ink-mute); }
+
+  .block-title {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--navy-900);
+    margin: 14px 0 6px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--gold-500);
+    display: inline-block;
+    padding-right: 40px;
+  }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+
+  /* Hazard badges */
+  .hazard-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 8px;
+  }
+  .hazard {
+    border: 1px solid var(--bone-300);
+    background: #fff;
+    padding: 10px 12px;
+    border-left: 3px solid var(--gold-500);
+  }
+  .hazard.hi { border-left-color: var(--navy-700); }
+  .hazard .hlabel {
+    font-family: var(--font-mono);
+    font-size: 8px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    margin-bottom: 3px;
+  }
+  .hazard .hval {
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--navy-900);
+    line-height: 1.1;
+  }
+  .hazard .hsub { font-size: 9px; color: var(--ink-mute); margin-top: 2px; }
+
+  /* Photo gallery */
+  .gallery {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    grid-template-rows: repeat(3, 1fr);
+    gap: 8px;
+    flex: 1;
+  }
+  .gallery .gphoto {
+    background: linear-gradient(135deg, #b8a080 0%, #7a5a3a 100%);
+    position: relative;
+    overflow: hidden;
+  }
+  .gallery .gphoto::before {
+    content: "";
+    position: absolute; inset: 0;
+    background:
+      linear-gradient(180deg, rgba(242,206,122,0.2) 0%, transparent 40%),
+      linear-gradient(180deg, transparent 60%, rgba(0,0,0,0.3) 100%);
+  }
+  .gallery .gphoto:nth-child(1) { grid-row: 1 / 3; }
+  .gallery .gphoto:nth-child(2) { grid-column: 2 / 4; }
+  .gallery .gphoto:nth-child(6) { grid-column: 1 / 4; }
+  .gallery .caption {
+    position: absolute;
+    bottom: 8px; left: 10px;
+    color: #fff;
+    font-size: 9px;
+    font-family: var(--font-mono);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+  }
+
+  /* KPI cards */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .kpi {
+    background: #fff;
+    border: 1px solid var(--bone-300);
+    padding: 14px 16px;
+  }
+  .kpi .k-label {
+    font-family: var(--font-mono);
+    font-size: 8.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    margin-bottom: 6px;
+  }
+  .kpi .k-val {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--navy-900);
+    line-height: 1;
+  }
+  .kpi .k-delta {
+    font-size: 10px;
+    margin-top: 4px;
+    font-family: var(--font-mono);
+  }
+
+  /* Market gauge */
+  .gauge {
+    background: #fff;
+    border: 1px solid var(--bone-300);
+    padding: 14px 18px;
+    margin-bottom: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .gauge-top { display: flex; justify-content: space-between; align-items: baseline; }
+  .gauge-top .glabel {
+    font-family: var(--font-mono);
+    font-size: 8.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+  }
+  .gauge-top .gval {
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--navy-900);
+  }
+  .gauge-track {
+    position: relative;
+    height: 8px;
+    background: linear-gradient(90deg, var(--green-600) 0%, var(--gold-500) 50%, var(--red-600) 100%);
+    border-radius: 4px;
+  }
+  .gauge-track .gmark {
+    position: absolute;
+    top: -3px;
+    width: 3px; height: 14px;
+    background: var(--navy-900);
+    left: 18%;
+    transform: translateX(-50%);
+  }
+  .gauge-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    color: var(--ink-mute);
+    font-family: var(--font-mono);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* Chart container */
+  .chart-box {
+    background: #fff;
+    border: 1px solid var(--bone-300);
+    padding: 14px 16px 10px;
+  }
+  .chart-title {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--navy-900);
+    margin: 0 0 2px;
+  }
+  .chart-sub {
+    font-family: var(--font-mono);
+    font-size: 8.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    margin-bottom: 8px;
+  }
+  .chart-legend {
+    display: flex; gap: 16px; font-size: 9px;
+    color: var(--ink-soft);
+    font-family: var(--font-mono);
+    margin-top: 6px;
+  }
+  .chart-legend .dot { display: inline-block; width: 10px; height: 2px; margin-right: 6px; vertical-align: middle; }
+
+  /* Map */
+  .map-box {
+    background:
+      linear-gradient(45deg, #e8e4d8 25%, transparent 25%) 0 0/20px 20px,
+      linear-gradient(-45deg, #e8e4d8 25%, transparent 25%) 0 0/20px 20px,
+      linear-gradient(45deg, transparent 75%, #e8e4d8 75%) 0 0/20px 20px,
+      linear-gradient(-45deg, transparent 75%, #e8e4d8 75%) 0 0/20px 20px,
+      #f5f1e4;
+    border: 1px solid var(--bone-300);
+    height: 220px;
+    position: relative;
+    overflow: hidden;
+  }
+  .map-box svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+  /* 4-column change type table */
+  .ct-table { width: 100%; border-collapse: collapse; font-size: 9.5px; }
+  .ct-table th {
+    background: var(--navy-900); color: #fff;
+    font-family: var(--font-mono);
+    font-size: 8.5px; letter-spacing: 0.14em; text-transform: uppercase;
+    padding: 8px 8px; font-weight: 600; text-align: left;
+  }
+  .ct-table th:first-child { background: var(--navy-700); }
+  .ct-table td { padding: 5px 8px; border-bottom: 0.5px solid var(--bone-200); }
+  .ct-table tbody tr:nth-child(odd) td { background: var(--bone-100); }
+  .ct-table td:first-child { font-weight: 600; color: var(--navy-900); }
+
+  /* Pricing strategy */
+  .ps-title {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--navy-900);
+    margin: 0 0 8px;
+  }
+  .rv-table { width: 100%; border-collapse: collapse; font-size: 10px; margin-top: 4px; }
+  .rv-table td { padding: 5px 10px; border-bottom: 0.5px solid var(--bone-200); }
+  .rv-table td:first-child { color: var(--ink-soft); }
+  .rv-table td:last-child { text-align: right; font-family: var(--font-mono); font-weight: 500; color: var(--navy-900); }
+  .rv-table tr.total td {
+    border-top: 1.5px solid var(--gold-500);
+    border-bottom: none;
+    padding-top: 10px;
+    font-weight: 700;
+    color: var(--navy-900);
+    font-size: 12px;
+  }
+  .rv-table tr.total td:last-child { color: var(--gold-600); }
+
+  /* About page */
+  .about-body {
+    font-size: 11px;
+    line-height: 1.55;
+    color: var(--ink-soft);
+    max-width: 60ch;
+    margin: 0 0 14px;
+  }
+  .data-sources {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 8px 0 18px;
+  }
+  .data-sources span {
+    background: var(--bone-200);
+    padding: 4px 10px;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    color: var(--navy-900);
+    border-radius: 2px;
+  }
+  .eho {
+    position: absolute;
+    bottom: 96px; right: 48px;
+    width: 48px; height: 48px;
+    border: 1.5px solid var(--navy-900);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--navy-900);
+  }
+
+  /* Callout labels */
+  .gap-note {
+    position: absolute;
+    right: -160px;
+    width: 140px;
+    background: var(--gold-500);
+    color: var(--navy-900);
+    padding: 10px 12px;
+    font-size: 10px;
+    line-height: 1.35;
+    box-shadow: -4px 4px 12px -6px rgba(0,0,0,0.2);
+  }
+  .gap-note strong { display: block; font-family: var(--font-mono); font-size: 8.5px; letter-spacing: 0.15em; margin-bottom: 4px; text-transform: uppercase; color: var(--navy-900); }
+  .gap-note::before {
+    content: "";
+    position: absolute;
+    left: -8px;
+    top: 14px;
+    width: 0; height: 0;
+    border-style: solid;
+    border-width: 6px 8px 6px 0;
+    border-color: transparent var(--gold-500) transparent transparent;
+  }
+
+  /* Divider */
+  .divider {
+    width: 816px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    color: var(--ink-mute);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin: 12px 0 -4px;
+  }
+  .divider::before, .divider::after {
+    content: ""; flex: 1; height: 1px; background: var(--bone-300);
+  }
+
+  .nav {
+    position: fixed;
+    top: 20px; right: 20px;
+    background: var(--navy-900);
+    color: #fff;
+    padding: 14px 16px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-family: var(--font-mono);
+    letter-spacing: 0.08em;
+    z-index: 100;
+    box-shadow: 0 10px 30px -10px rgba(0,0,0,0.4);
+    max-width: 200px;
+  }
+  .nav strong {
+    display: block;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--gold-500);
+    margin-bottom: 8px;
+    font-family: var(--font-mono);
+  }
+  .nav ol { margin: 0; padding: 0; list-style: none; counter-reset: n; }
+  .nav li { counter-increment: n; padding: 2px 0; color: rgba(255,255,255,0.7); font-size: 10px; }
+  .nav li::before { content: counter(n, decimal-leading-zero) "  "; color: var(--gold-500); }
+  .nav a { color: inherit; text-decoration: none; }
+  .nav a:hover { color: var(--gold-500); }
+
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <strong>REBUILT · 13 PAGES</strong>
+  <ol>
+    <li><a href="#p1">Cover</a></li>
+    <li><a href="#p2">Valuation</a></li>
+    <li><a href="#p3">Property Facts</a></li>
+    <li><a href="#p4">Features</a></li>
+    <li><a href="#p5">Legal · Hazards</a></li>
+    <li><a href="#p6">Photos</a></li>
+    <li><a href="#p7">Market Trends</a></li>
+    <li><a href="#p8">Active Listings</a></li>
+    <li><a href="#p9">Sold Listings</a></li>
+    <li><a href="#p10">Dual Trends</a></li>
+    <li><a href="#p11">Market Activity</a></li>
+    <li><a href="#p12">Pricing Strategy</a></li>
+    <li><a href="#p13">About</a></li>
+  </ol>
+</nav>
+
+<div class="doc-header">
+  <div class="eyebrow">Visual Mockup · Replaces current 936_Ainapo_current.pdf</div>
+  <h1>Seller Report — rebuild preview</h1>
+  <p>Every page is agent-branded. Every chart renders. Hazards include Hawaii-specific Tsunami/SLR/Cesspool. Pricing Strategy page added. All RPR branding removed; footer reads "Report produced by Real Estate Genie © Hulia'u Software, Inc." Data shown is 936 Ainapo St, Honolulu HI 96825 — the same property used in the current report, for direct comparison.</p>
+</div>
+
+<!-- ─────────── PAGE 1 — COVER ─────────── -->
+<section class="page" id="p1">
+  <div class="cover-hero">
+    <svg class="cover-palm" viewBox="0 0 160 340" fill="none">
+      <path d="M80 340 L80 180" stroke="#1a1408" stroke-width="5"/>
+      <path d="M80 180 C60 160, 30 150, 10 155 C30 145, 60 130, 80 170" fill="#2d4020" opacity="0.9"/>
+      <path d="M80 180 C100 160, 130 150, 150 155 C130 145, 100 130, 80 170" fill="#2d4020" opacity="0.9"/>
+      <path d="M80 170 C60 140, 20 120, 5 125 C30 105, 60 100, 80 160" fill="#3a5028" opacity="0.85"/>
+      <path d="M80 170 C100 140, 140 120, 155 125 C130 105, 100 100, 80 160" fill="#3a5028" opacity="0.85"/>
+      <path d="M80 160 C70 130, 45 110, 35 105 C55 95, 75 100, 80 150" fill="#4a6032" opacity="0.8"/>
+      <path d="M80 160 C90 130, 115 110, 125 105 C105 95, 85 100, 80 150" fill="#4a6032" opacity="0.8"/>
+    </svg>
+  </div>
+
+  <div class="cover-overlay">
+    <div class="eyebrow">SELLER REPORT</div>
+    <h1>936 Ainapo Street</h1>
+    <h2>Honolulu, HI 96825</h2>
+    <span class="pill"><span class="dot"></span>ACTIVE · LISTED APR 15, 2026</span>
+  </div>
+
+  <div class="agent-card">
+    <div class="big-photo">D</div>
+    <div>
+      <div class="agent-name">Don Mangiarelli</div>
+      <div class="agent-title">REALTOR · Listing Agent</div>
+      <div class="agent-lic">HAWAII REAL ESTATE LICENSE #RS-23456</div>
+      <div class="agent-contact">
+        <strong>Mobile</strong> (808) 555-1234<br/>
+        <strong>Email</strong> <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="8aeee7ebe4ede3ebf8efe6e6e3caefe4fea7feefe9e2f9e5e6fffee3e5e4f9a4e9e5e7">[email&#160;protected]</a><br/>
+        <strong>Web</strong> realestategenie.com/don
+      </div>
+    </div>
+    <div class="brokerage">
+      <div class="brok-name">Oahu Realty Pro, LLC</div>
+      brokered by eXp Realty<br/>
+      1001 Bishop St, Suite 2800<br/>
+      Honolulu, HI 96813<br/>
+      <br/>
+      <strong>Brokerage Lic.</strong> RB-20588
+    </div>
+    <div class="prepared">
+      <span><strong>Prepared for</strong> &nbsp;Juan S. Borja Jr.</span>
+      <span><strong>Generated</strong> &nbsp;April 17, 2026</span>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <div>936 Ainapo St · Don Mangiarelli<br/>Generated Apr 17, 2026</div>
+    <div class="ctr"><strong>Report produced by Real Estate Genie</strong><br/>© Hulia'u Software, Inc.</div>
+    <div class="rt">Page 01 of 13</div>
+  </div>
+</section>
+
+<div class="divider">Cover → Valuation</div>
+
+<!-- ─────────── PAGE 2 — VALUATION ─────────── -->
+<section class="page" id="p2">
+  <div class="page-body">
+    <div class="agent-band">
+      <div class="photo">D</div>
+      <div class="who">
+        <div class="name">Don Mangiarelli</div>
+        <div class="sub">RS-23456 · OAHU REALTY PRO, LLC</div>
+      </div>
+      <div class="addr">
+        <div class="a">936 Ainapo Street</div>
+        Honolulu, HI 96825
+      </div>
+    </div>
+
+    <h2 class="section-title">Property Valuation</h2>
+    <div class="section-sub">Genie AVM™ · Updated April 12, 2026</div>
+
+    <div class="val-grid">
+      <div class="val-card primary">
+        <div>
+          <div class="label">Genie AVM™ Estimated Value</div>
+          <div class="value">$1,660,000</div>
+          <div class="sub">Updated April 12, 2026 · Based on 218 comparable data points</div>
+        </div>
+        <div class="avm-meta">
+          <div class="row"><span>Confidence</span><span class="stars"><span></span><span></span><span></span><span></span><span class="off"></span></span></div>
+          <div class="row"><span>Month change</span><strong class="delta-up">+$14,200</strong></div>
+          <div class="row"><span>12-mo change</span><strong class="delta-up">+6.2%</strong></div>
+        </div>
+      </div>
+
+      <div class="val-card">
+        <div class="label">List Price</div>
+        <div class="value" style="color: var(--gold-600);">$1,795,000</div>
+        <div class="sub">Active since Apr 15, 2026 · MLS #202603827</div>
+      </div>
+
+      <div class="val-card">
+        <div class="label">Estimated Equity</div>
+        <div class="value">$1,660,000</div>
+        <div class="sub">Free & Clear · No open mortgage of record</div>
+      </div>
+
+      <div class="range-bar">
+        <div style="display: flex; justify-content: space-between; align-items: baseline;">
+          <div>
+            <div class="label" style="color: var(--ink-mute); font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;">Estimated Value Range</div>
+          </div>
+          <div style="font-family: var(--font-mono); font-size: 9px; color: var(--ink-mute);">± 10% confidence band</div>
+        </div>
+        <div class="track">
+          <div class="marker"></div>
+        </div>
+        <div class="labels">
+          <span>$1,494,000</span>
+          <span>$1,826,000</span>
+        </div>
+      </div>
+    </div>
+
+    <h3 class="block-title">Tax & Assessment</h3>
+    <div class="tax-strip">
+      <div>
+        <div class="tlabel">Assessed Total</div>
+        <div class="tval">$1,640,100</div>
+      </div>
+      <div>
+        <div class="tlabel">Land Value</div>
+        <div class="tval">$1,342,900</div>
+      </div>
+      <div>
+        <div class="tlabel">Improvement</div>
+        <div class="tval">$297,200</div>
+      </div>
+      <div>
+        <div class="tlabel">Annual Tax (2026)</div>
+        <div class="tval">$8,444.86</div>
+      </div>
+    </div>
+
+    <p style="font-size: 9px; color: var(--ink-mute); margin-top: auto; line-height: 1.45; max-width: 80ch;">
+      This report contains data from public records, MLS, and proprietary sources. Values are automated estimates, not formal appraisals. The Genie AVM™ is an estimate of market value based on a proprietary model; actual sale price may vary. Always consult a licensed appraiser for lending decisions.
+    </p>
+  </div>
+
+  <div class="page-footer">
+    <div>936 Ainapo St · Don Mangiarelli<br/>Generated Apr 17, 2026</div>
+    <div class="ctr"><strong>Report produced by Real Estate Genie</strong><br/>© Hulia'u Software, Inc.</div>
+    <div class="rt">Page 02 of 13</div>
+  </div>
+</section>
+
+<div class="divider">Valuation → Property Facts</div>
+
+<!-- ─────────── PAGE 3 — PROPERTY FACTS ─────────── -->
+<section class="page" id="p3">
+  <div class="page-body">
+    <div class="agent-band">
+      <div class="photo">D</div>
+      <div class="who">
+        <div class="name">Don Mangiarelli</div>
+        <div class="sub">RS-23456 · OAHU REALTY PRO, LLC</div>
+      </div>
+      <div class="addr">
+        <div class="a">936 Ainapo Street</div>
+        Honolulu, HI 96825
+      </div>
+    </div>
+
+    <h2 class="section-title">Property Facts</h2>
+    <div class="section-sub">Side-by-side: public records · MLS listing · agent refinements</div>
+
+    <table class="t3">
+      <thead>
+        <tr>
+          <th style="width: 28%;">&nbsp;</th>
+          <th>Public Facts</th>
+          <th>Listing Facts</th>
+          <th>Agent Refinements</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="rowlbl">Property Type</td><td>Single Family Residence</td><td>Single Family</td><td class="muted">—</td></tr>
+        <tr><td class="rowlbl">Subtype</td><td>Detached</td><td>Detached</td><td class="muted">—</td></tr>
+        <tr><td class="rowlbl">Bedrooms</td><td>3</td><td>3</td><td class="muted">—</td></tr>
+        <tr><td class="rowlbl">Total Baths</td><td>2</td><td>2</td><td class="muted">—</td></tr>
+        <tr><td class="rowlbl">Full Baths</td><td>2</td><td>2</td><td class="muted">—</td></tr>
+        <tr><td class="rowlbl">Partial Baths</td><td>0</td><td>0</td><td class="muted">—</td></tr>
+        <tr><td class="rowlbl">Living Area</td><td>1,750 sqft</td><td>1,750 sqft</td><td>1,835 sqft (incl. enclosed lanai)</td></tr>
+        <tr><td class="rowlbl">Building Area</td><td>1,960 sqft</td><td class="muted">—</td><td class="muted">—</td></tr>
+        <tr><td class="rowlbl">Lot Size</td><td>22,144 sqft</td><td>22,144 sqft (0.51 acres)</td><td class="muted">—</td></tr>
+        <tr><td class="rowlbl">Lot Dimensions</td><td>120 × 185 (approx.)</td><td class="muted">—</td><td class="muted">—</td></tr>
+        <tr><td class="rowlbl">Garage</td><td>Yes</td><td>Yes</td><td class="muted">—</td></tr>
+        <tr><td class="rowlbl">Garage Spaces</td><td>2</td><td>2</td><td class="muted">—</td></tr>
+        <tr><td class="rowlbl">Pool</td><td>None</td><td>None</td><td>Room for in-ground; pool-ready lot</td></tr>
+        <tr><td class="rowlbl">Year Built</td><td>1979</td><td>1979</td><td class="muted">—</td></tr>
+        <tr><td class="rowlbl">Effective Year Built</td><td>1995 (renovations)</td><td class="muted">—</td><td class="muted">—</td></tr>
+        <tr><td class="rowlbl">Total Rooms</td><td>8</td><td>8</td><td class="muted">—</td></tr>
+        <tr><td class="rowlbl">Stories</td><td>1</td><td>Single Level</td><td class="muted">—</td></tr>
+        <tr><td class="rowlbl">Units</td><td>1</td><td>1</td><td class="muted">—</td></tr>
+        <tr><td class="rowlbl">Roofing</td><td>Composition Shingle</td><td>Composition Shingle</td><td>Replaced 2019 (30-yr warranty)</td></tr>
+        <tr><td class="rowlbl">Heating</td><td class="muted">—</td><td>None</td><td class="muted">—</td></tr>
+        <tr><td class="rowlbl">Cooling</td><td class="muted">—</td><td>Split A/C · 2 zones</td><td class="muted">—</td></tr>
+        <tr><td class="rowlbl">Foundation</td><td>Post & Pier</td><td class="muted">—</td><td class="muted">—</td></tr>
+        <tr><td class="rowlbl">Construction</td><td>Frame</td><td>Wood Frame</td><td class="muted">—</td></tr>
+        <tr><td class="rowlbl">Exterior Walls</td><td>Wood/Composite</td><td>Single Wall</td><td class="muted">—</td></tr>
+      </tbody>
+    </table>
+
+    <p style="font-size: 9px; color: var(--ink-mute); margin-top: auto; line-height: 1.4; max-width: 80ch;">
+      Public Facts sourced from Honolulu County Real Property Assessment. Listing Facts sourced from HiCentral MLS. Agent Refinements are notes added by the listing agent and reflect local knowledge not captured in public/MLS records.
+    </p>
+  </div>
+
+  <div class="page-footer">
+    <div>936 Ainapo St · Don Mangiarelli<br/>Generated Apr 17, 2026</div>
+    <div class="ctr"><strong>Report produced by Real Estate Genie</strong><br/>© Hulia'u Software, Inc.</div>
+    <div class="rt">Page 03 of 13</div>
+  </div>
+</section>
+
+<div class="divider">Facts → Features</div>
+
+<!-- ─────────── PAGE 4 — FEATURES ─────────── -->
+<section class="page" id="p4">
+  <div class="page-body">
+    <div class="agent-band">
+      <div class="photo">D</div>
+      <div class="who">
+        <div class="name">Don Mangiarelli</div>
+        <div class="sub">RS-23456 · OAHU REALTY PRO, LLC</div>
+      </div>
+      <div class="addr">
+        <div class="a">936 Ainapo Street</div>
+        Honolulu, HI 96825
+      </div>
+    </div>
+
+    <h2 class="section-title">Interior & Exterior Features</h2>
+    <div class="section-sub">Listing block · Public records block</div>
+
+    <h3 class="block-title">Interior Features</h3>
+    <div class="two-col">
+      <table class="t3">
+        <thead><tr><th colspan="2">Listing</th></tr></thead>
+        <tbody>
+          <tr><td class="rowlbl" style="width: 40%;">Floor</td><td>Laminate, Ceramic Tile</td></tr>
+          <tr><td class="rowlbl">Appliances</td><td>Dishwasher, Disposal, Range, Refrigerator, Washer/Dryer</td></tr>
+          <tr><td class="rowlbl">Features</td><td>Full Bath on 1st Floor, Storage, Window Coverings</td></tr>
+          <tr><td class="rowlbl">Fireplace</td><td>None</td></tr>
+          <tr><td class="rowlbl">Inclusions</td><td>Ceiling Fans, Smoke Detectors</td></tr>
+        </tbody>
+      </table>
+      <table class="t3">
+        <thead><tr><th colspan="2">Public</th></tr></thead>
+        <tbody>
+          <tr><td class="rowlbl" style="width: 40%;">Base Area</td><td>1,750 sqft</td></tr>
+          <tr><td class="rowlbl">Interior Walls</td><td>Plaster</td></tr>
+          <tr><td class="rowlbl">Plumbing Fixtures</td><td>8</td></tr>
+          <tr><td class="rowlbl">Total Rooms</td><td>8</td></tr>
+          <tr><td class="rowlbl">Attic</td><td>No</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="block-title">Exterior Features</h3>
+    <div class="two-col">
+      <table class="t3">
+        <thead><tr><th colspan="2">Listing</th></tr></thead>
+        <tbody>
+          <tr><td class="rowlbl" style="width: 40%;">Construction</td><td>Wood Frame, Single Wall</td></tr>
+          <tr><td class="rowlbl">Parking Features</td><td>2 Car Garage, Driveway</td></tr>
+          <tr><td class="rowlbl">Parking Spaces</td><td>2</td></tr>
+          <tr><td class="rowlbl">Utilities</td><td>Public Water, Sewer Fee, Overhead Electric, Cable</td></tr>
+          <tr><td class="rowlbl">View</td><td>Mountain, Garden</td></tr>
+          <tr><td class="rowlbl">Lot Features</td><td>Level, Grassed</td></tr>
+          <tr><td class="rowlbl">Roof</td><td>Composition Shingle</td></tr>
+          <tr><td class="rowlbl">Pool</td><td>None</td></tr>
+          <tr><td class="rowlbl">Deck / Porch</td><td>Deck 85 sqft · Covered Porch 125 sqft</td></tr>
+          <tr><td class="rowlbl">Levels</td><td>One Story</td></tr>
+          <tr><td class="rowlbl">Security</td><td>Key</td></tr>
+        </tbody>
+      </table>
+      <table class="t3">
+        <thead><tr><th colspan="2">Public</th></tr></thead>
+        <tbody>
+          <tr><td class="rowlbl" style="width: 40%;">Lot Size (sqft)</td><td>22,144</td></tr>
+          <tr><td class="rowlbl">Lot Size (acres)</td><td>0.51</td></tr>
+          <tr><td class="rowlbl">Neighborhood Code</td><td>12HA — Hahaione Valley</td></tr>
+          <tr><td class="rowlbl">Roof Type</td><td>Composition Shingle</td></tr>
+          <tr><td class="rowlbl">Effective Year Built</td><td>1995</td></tr>
+          <tr><td class="rowlbl">Building Condition</td><td>Average</td></tr>
+          <tr><td class="rowlbl">Building Quality</td><td>Average</td></tr>
+          <tr><td class="rowlbl">Carport</td><td>No</td></tr>
+          <tr><td class="rowlbl">RV Parking</td><td>No</td></tr>
+          <tr><td class="rowlbl">Fire Sprinklers</td><td>No</td></tr>
+          <tr><td class="rowlbl">HOA</td><td>Yes — Hahaione Community Assn.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <div>936 Ainapo St · Don Mangiarelli<br/>Generated Apr 17, 2026</div>
+    <div class="ctr"><strong>Report produced by Real Estate Genie</strong><br/>© Hulia'u Software, Inc.</div>
+    <div class="rt">Page 04 of 13</div>
+  </div>
+</section>
+
+<div class="divider">Features → Legal · Hazards · Sales</div>
+
+<!-- ─────────── PAGE 5 — LEGAL / OWNER / HAZARDS / SALES HISTORY ─────────── -->
+<section class="page" id="p5">
+  <div class="page-body">
+    <div class="agent-band">
+      <div class="photo">D</div>
+      <div class="who">
+        <div class="name">Don Mangiarelli</div>
+        <div class="sub">RS-23456 · OAHU REALTY PRO, LLC</div>
+      </div>
+      <div class="addr">
+        <div class="a">936 Ainapo Street</div>
+        Honolulu, HI 96825
+      </div>
+    </div>
+
+    <h2 class="section-title">Legal, Owner, Location &amp; Hazards</h2>
+    <div class="section-sub">With Hawaii-specific hazard overlay</div>
+
+    <div class="two-col">
+      <div>
+        <h3 class="block-title">Legal Description</h3>
+        <table class="t3">
+          <tbody>
+            <tr><td class="rowlbl" style="width: 40%;">Parcel / TMK</td><td>1-3-9-083-009</td></tr>
+            <tr><td class="rowlbl">County</td><td>Honolulu</td></tr>
+            <tr><td class="rowlbl">Zoning</td><td>R-5 Residential</td></tr>
+            <tr><td class="rowlbl">Census Tract</td><td>000116</td></tr>
+            <tr><td class="rowlbl">Subdivision</td><td>Lot B Hahaione Valley Subd</td></tr>
+            <tr><td class="rowlbl">Abbr. Description</td><td>LOT B HAHAIONE VALLEY SUBD UNITS 2-B-2-A &amp; 2-B-4-A FP 1371 22,144 SF SUBJ/SETBACK (15 FT) BLDG LINE</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div>
+        <h3 class="block-title">Owner Facts</h3>
+        <table class="t3">
+          <tbody>
+            <tr><td class="rowlbl" style="width: 40%;">Owner Name</td><td>Juan S. Borja Jr.</td></tr>
+            <tr><td class="rowlbl">Owner Name 2</td><td>Juan S. Borja Jr. Revocable Living Trust</td></tr>
+            <tr><td class="rowlbl">Vesting</td><td>Revocable Trust</td></tr>
+            <tr><td class="rowlbl">Time Owned</td><td>20+ yrs (conveyed to trust 6/26/2023)</td></tr>
+            <tr><td class="rowlbl">Owner Occupied</td><td>No · Absentee owner</td></tr>
+            <tr><td class="rowlbl">Mailing Address</td><td>679 Kahiau Loop, Honolulu, HI 96821</td></tr>
+            <tr><td class="rowlbl">Corporate Owner</td><td>No</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <h3 class="block-title" style="margin-top: 18px;">Location &amp; Hazards <span style="font-family: var(--font-mono); font-size: 9px; font-weight: 500; color: var(--gold-600); letter-spacing: 0.12em; margin-left: 8px;">HAWAII OVERLAY</span></h3>
+    <div class="hazard-grid">
+      <div class="hazard">
+        <div class="hlabel">FEMA Flood Zone</div>
+        <div class="hval">Zone X</div>
+        <div class="hsub">Outside 500-yr floodplain</div>
+      </div>
+      <div class="hazard hi">
+        <div class="hlabel">Tsunami Evacuation Zone</div>
+        <div class="hval">Outside Zone</div>
+        <div class="hsub">State of Hawaii GIS · 2023 update</div>
+      </div>
+      <div class="hazard hi">
+        <div class="hlabel">Sea Level Rise Exposure</div>
+        <div class="hval">None (3.2 ft SLR-XA)</div>
+        <div class="hsub">Hawaii Sea Level Rise Viewer</div>
+      </div>
+      <div class="hazard hi">
+        <div class="hlabel">Cesspool Priority</div>
+        <div class="hval">Priority 2</div>
+        <div class="hsub">DOH upgrade by 2050 required</div>
+      </div>
+      <div class="hazard">
+        <div class="hlabel">Lava Zone</div>
+        <div class="hval">N/A (Oahu)</div>
+        <div class="hsub">USGS HVO</div>
+      </div>
+      <div class="hazard">
+        <div class="hlabel">Wildfire Risk</div>
+        <div class="hval">Moderate</div>
+        <div class="hsub">HWMO / state risk map</div>
+      </div>
+    </div>
+
+    <h3 class="block-title" style="margin-top: 18px;">Sales History</h3>
+    <table class="t3">
+      <thead>
+        <tr><th style="width: 14%;">Date</th><th style="width: 18%;">Amount</th><th>Buyer</th><th>Seller</th><th style="width: 20%;">Document Type</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>6/26/2023</td><td class="muted">Not Disclosed</td><td>Juan S. Borja Jr. Revocable Living Trust</td><td>Juan Sablan Borja Jr. &amp; Nelda M. Borja</td><td>Quitclaim Deed</td></tr>
+        <tr><td>3/14/2001</td><td>$315,000</td><td>Juan Sablan Borja Jr. &amp; Nelda M. Borja</td><td>Hahaione Valley Trust</td><td>Warranty Deed</td></tr>
+        <tr><td>8/02/1982</td><td>$118,500</td><td>Hahaione Valley Trust</td><td>Borja Family Trust</td><td>Warranty Deed</td></tr>
+      </tbody>
+    </table>
+
+    <p style="font-size: 9px; color: var(--ink-mute); margin-top: auto; line-height: 1.45;">
+      Hazard data is assembled from FEMA National Risk Index, State of Hawaii GIS, and the Hawaii Dept. of Health Cesspool Inventory. Priority 2 cesspools must be upgraded to a wastewater system by 2050 under Act 125 (SLH 2017).
+    </p>
+  </div>
+
+  <div class="page-footer">
+    <div>936 Ainapo St · Don Mangiarelli<br/>Generated Apr 17, 2026</div>
+    <div class="ctr"><strong>Report produced by Real Estate Genie</strong><br/>© Hulia'u Software, Inc.</div>
+    <div class="rt">Page 05 of 13</div>
+  </div>
+</section>
+
+<div class="divider">Hazards → Photo Gallery</div>
+
+<!-- ─────────── PAGE 6 — PHOTOS ─────────── -->
+<section class="page" id="p6">
+  <div class="page-body">
+    <div class="agent-band">
+      <div class="photo">D</div>
+      <div class="who">
+        <div class="name">Don Mangiarelli</div>
+        <div class="sub">RS-23456 · OAHU REALTY PRO, LLC</div>
+      </div>
+      <div class="addr">
+        <div class="a">936 Ainapo Street</div>
+        Honolulu, HI 96825
+      </div>
+    </div>
+
+    <h2 class="section-title">Property Photos</h2>
+    <div class="section-sub">6 photos · HiCentral MLS listing</div>
+
+    <div class="gallery">
+      <div class="gphoto" style="background: linear-gradient(135deg, #9db89a 0%, #4a6a4a 100%);">
+        <div class="caption">Exterior · Front Elevation</div>
+      </div>
+      <div class="gphoto" style="background: linear-gradient(135deg, #d4b98a 0%, #8a6a3a 100%);">
+        <div class="caption">Living Room</div>
+      </div>
+      <div class="gphoto" style="background: linear-gradient(135deg, #c8b09a 0%, #7a5a4a 100%);">
+        <div class="caption">Kitchen</div>
+      </div>
+      <div class="gphoto" style="background: linear-gradient(135deg, #b0b8c4 0%, #5a6a7a 100%);">
+        <div class="caption">Primary Bedroom</div>
+      </div>
+      <div class="gphoto" style="background: linear-gradient(135deg, #e0d4b8 0%, #9a8a6a 100%);">
+        <div class="caption">Covered Porch</div>
+      </div>
+      <div class="gphoto" style="background: linear-gradient(135deg, #8aa89a 0%, #3a5a4a 100%);">
+        <div class="caption">Yard · 22,144 sqft Lot</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <div>936 Ainapo St · Don Mangiarelli<br/>Generated Apr 17, 2026</div>
+    <div class="ctr"><strong>Report produced by Real Estate Genie</strong><br/>© Hulia'u Software, Inc.</div>
+    <div class="rt">Page 06 of 13</div>
+  </div>
+</section>
+
+<div class="divider">Photos → Market Trends</div>
+
+<!-- ─────────── PAGE 7 — MARKET TRENDS ─────────── -->
+<section class="page" id="p7">
+  <div class="page-body">
+    <div class="agent-band">
+      <div class="photo">D</div>
+      <div class="who">
+        <div class="name">Don Mangiarelli</div>
+        <div class="sub">RS-23456 · OAHU REALTY PRO, LLC</div>
+      </div>
+      <div class="addr">
+        <div class="a">936 Ainapo Street</div>
+        Honolulu, HI 96825
+      </div>
+    </div>
+
+    <h2 class="section-title">Market Trends · ZIP 96825</h2>
+    <div class="section-sub">Single Family Residence · March 2026</div>
+
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="k-label">Months of Inventory</div>
+        <div class="k-val">0.9</div>
+        <div class="k-delta delta-dn">▼ 18% MoM</div>
+      </div>
+      <div class="kpi">
+        <div class="k-label">Sold-to-List Price</div>
+        <div class="k-val">98.3%</div>
+        <div class="k-delta delta-up">▲ 0.4 pts MoM</div>
+      </div>
+      <div class="kpi">
+        <div class="k-label">Median Days on Market</div>
+        <div class="k-val">26</div>
+        <div class="k-delta delta-dn">▼ 4 days MoM</div>
+      </div>
+      <div class="kpi">
+        <div class="k-label">Median Sold Price</div>
+        <div class="k-val">$2,025,000</div>
+        <div class="k-delta delta-up">▲ 3.1% MoM</div>
+      </div>
+    </div>
+
+    <div class="gauge">
+      <div class="gauge-top">
+        <span class="glabel">Market Type</span>
+        <span class="gval">Strong Seller's Market</span>
+      </div>
+      <div class="gauge-track"><div class="gmark"></div></div>
+      <div class="gauge-labels">
+        <span>Strong Sellers</span><span>Balanced</span><span>Strong Buyers</span>
+      </div>
+    </div>
+
+    <div class="chart-box">
+      <div class="chart-title">Median Estimated Property Value</div>
+      <div class="chart-sub">2008 → Mar 2026 · ZIP 96825 vs Honolulu County vs Hawaii vs USA</div>
+      <svg viewBox="0 0 680 180" style="width: 100%; height: 180px;">
+        <!-- grid -->
+        <g stroke="#EEE7D6" stroke-width="0.5" stroke-dasharray="2 3">
+          <line x1="30" y1="30" x2="670" y2="30"/>
+          <line x1="30" y1="70" x2="670" y2="70"/>
+          <line x1="30" y1="110" x2="670" y2="110"/>
+          <line x1="30" y1="150" x2="670" y2="150"/>
+        </g>
+        <!-- axis -->
+        <g font-family="JetBrains Mono, monospace" font-size="8" fill="#5B6680">
+          <text x="4" y="33">$2M</text>
+          <text x="4" y="73">$1.5M</text>
+          <text x="4" y="113">$1M</text>
+          <text x="4" y="153">$500K</text>
+          <text x="30" y="170">'08</text>
+          <text x="135" y="170">'12</text>
+          <text x="245" y="170">'16</text>
+          <text x="355" y="170">'20</text>
+          <text x="465" y="170">'23</text>
+          <text x="575" y="170">'25</text>
+          <text x="640" y="170">'26</text>
+        </g>
+        <!-- USA -->
+        <path d="M30 140 L90 138 L150 135 L210 130 L270 125 L330 115 L390 105 L450 95 L510 88 L570 85 L630 82 L670 82" fill="none" stroke="#3168A8" stroke-width="1.5"/>
+        <!-- HI State -->
+        <path d="M30 125 L90 120 L150 115 L210 108 L270 100 L330 85 L390 72 L450 60 L510 50 L570 45 L630 42 L670 40" fill="none" stroke="#204E8E" stroke-width="1.5"/>
+        <!-- Honolulu -->
+        <path d="M30 115 L90 110 L150 105 L210 98 L270 88 L330 75 L390 60 L450 48 L510 38 L570 32 L630 28 L670 25" fill="none" stroke="#061A3A" stroke-width="1.8"/>
+        <!-- ZIP 96825 (gold, subject) -->
+        <path d="M30 100 L90 95 L150 90 L210 82 L270 70 L330 55 L390 38 L450 25 L510 15 L570 10 L630 8 L670 6" fill="none" stroke="#C6932E" stroke-width="2.2"/>
+        <!-- subject marker -->
+        <circle cx="670" cy="6" r="3" fill="#C6932E"/>
+      </svg>
+      <div class="chart-legend">
+        <span><span class="dot" style="background: #C6932E; height: 2.5px;"></span>ZIP 96825</span>
+        <span><span class="dot" style="background: #061A3A;"></span>Honolulu County</span>
+        <span><span class="dot" style="background: #204E8E;"></span>Hawaii</span>
+        <span><span class="dot" style="background: #3168A8;"></span>USA</span>
+      </div>
+    </div>
+
+    <div style="margin-top: 14px; padding: 12px 14px; background: #fff; border-left: 3px solid var(--gold-500);">
+      <div style="font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gold-600); margin-bottom: 4px;">Median Estimated Value · ZIP 96825</div>
+      <div style="display: flex; gap: 32px; align-items: baseline;">
+        <div style="font-family: var(--font-display); font-size: 26px; font-weight: 700; color: var(--navy-900); line-height: 1;">$2,025,000</div>
+        <div style="font-size: 10px; color: var(--ink-mute);"><strong class="delta-up">▲ 0.8%</strong> last month · <strong class="delta-up">▲ 6.2%</strong> 12-month</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <div>936 Ainapo St · Don Mangiarelli<br/>Generated Apr 17, 2026</div>
+    <div class="ctr"><strong>Report produced by Real Estate Genie</strong><br/>© Hulia'u Software, Inc.</div>
+    <div class="rt">Page 07 of 13</div>
+  </div>
+</section>
+
+<div class="divider">Market Trends → Active Listings</div>
+
+<!-- ─────────── PAGE 8 — ACTIVE LISTINGS ─────────── -->
+<section class="page" id="p8">
+  <div class="page-body">
+    <div class="agent-band">
+      <div class="photo">D</div>
+      <div class="who">
+        <div class="name">Don Mangiarelli</div>
+        <div class="sub">RS-23456 · OAHU REALTY PRO, LLC</div>
+      </div>
+      <div class="addr">
+        <div class="a">936 Ainapo Street</div>
+        Honolulu, HI 96825
+      </div>
+    </div>
+
+    <h2 class="section-title">Active Listings</h2>
+    <div class="section-sub">ZIP 96825 · Single Family · March 2026</div>
+
+    <div style="display: grid; grid-template-columns: 220px 1fr; gap: 20px; align-items: stretch;">
+      <div style="background: var(--navy-900); color: #fff; padding: 20px 22px; display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+          <div style="font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gold-500); margin-bottom: 10px;">Median List Price</div>
+          <div style="font-family: var(--font-display); font-size: 36px; font-weight: 700; line-height: 1; color: var(--gold-500);">$1,895,000</div>
+          <div style="font-size: 10px; color: rgba(255,255,255,0.6); margin-top: 8px;">Mar 2026 · 154 active listings</div>
+        </div>
+        <div style="border-top: 1px solid rgba(255,255,255,0.15); padding-top: 12px; font-size: 11px;">
+          <div style="color: var(--green-600); font-weight: 600; font-family: var(--font-mono); font-size: 11px;">▲ 2.4% MoM</div>
+          <div style="color: rgba(255,255,255,0.6); font-size: 9px; margin-top: 2px;">vs Feb 2026 $1,850,000</div>
+        </div>
+      </div>
+
+      <div class="chart-box" style="padding: 12px 14px;">
+        <div class="chart-title">Median List Price · 5-Year Trend</div>
+        <div class="chart-sub">Mar 2021 → Mar 2026 · ZIP 96825 SFR</div>
+        <svg viewBox="0 0 480 200" style="width: 100%; height: 200px;">
+          <g stroke="#EEE7D6" stroke-width="0.5" stroke-dasharray="2 3">
+            <line x1="30" y1="30" x2="470" y2="30"/>
+            <line x1="30" y1="70" x2="470" y2="70"/>
+            <line x1="30" y1="110" x2="470" y2="110"/>
+            <line x1="30" y1="150" x2="470" y2="150"/>
+          </g>
+          <g font-family="JetBrains Mono, monospace" font-size="8" fill="#5B6680">
+            <text x="4" y="33">$2M</text>
+            <text x="4" y="73">$1.5M</text>
+            <text x="4" y="113">$1M</text>
+            <text x="4" y="153">$500K</text>
+            <text x="30" y="185">'21</text>
+            <text x="120" y="185">'22</text>
+            <text x="210" y="185">'23</text>
+            <text x="300" y="185">'24</text>
+            <text x="390" y="185">'25</text>
+            <text x="455" y="185">'26</text>
+          </g>
+          <path d="M30 120 Q80 105, 120 85 T210 55 Q260 50, 300 45 Q350 35, 390 30 T470 25" fill="none" stroke="#C6932E" stroke-width="2.5"/>
+          <path d="M30 120 Q80 105, 120 85 T210 55 Q260 50, 300 45 Q350 35, 390 30 T470 25 L470 170 L30 170 Z" fill="url(#goldgrad)" opacity="0.15"/>
+          <defs>
+            <linearGradient id="goldgrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#C6932E"/>
+              <stop offset="1" stop-color="#C6932E" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <circle cx="470" cy="25" r="3.5" fill="#C6932E"/>
+          <circle cx="470" cy="25" r="6" fill="#C6932E" opacity="0.3"/>
+        </svg>
+      </div>
+    </div>
+
+    <div style="margin-top: 20px; padding: 14px 16px; background: var(--bone-100); border-left: 3px solid var(--navy-700);">
+      <p style="margin: 0; font-size: 10.5px; line-height: 1.55; color: var(--ink-soft);">
+        Active inventory in ZIP 96825 has climbed steadily over the last 60 months, with the median list price up <strong>~82% since March 2021</strong>. March 2026 active count (154) is slightly below the 5-year average (168), reflecting tight supply characteristic of a strong seller's market. At current absorption (0.9 months of inventory), buyer demand significantly exceeds available supply.
+      </p>
+    </div>
+
+    <h3 class="block-title" style="margin-top: 18px;">Active Listings by Price Band</h3>
+    <table class="t3">
+      <thead><tr><th>Price Band</th><th>Count</th><th>Median $/sqft</th><th>Median DOM</th><th>Share</th></tr></thead>
+      <tbody>
+        <tr><td class="rowlbl">Under $1M</td><td>18</td><td>$612</td><td>42</td><td>12%</td></tr>
+        <tr><td class="rowlbl">$1M – $1.5M</td><td>32</td><td>$689</td><td>31</td><td>21%</td></tr>
+        <tr><td class="rowlbl">$1.5M – $2M</td><td>44</td><td>$742</td><td>24</td><td>29%</td></tr>
+        <tr><td class="rowlbl">$2M – $3M</td><td>38</td><td>$798</td><td>35</td><td>25%</td></tr>
+        <tr><td class="rowlbl">$3M +</td><td>22</td><td>$921</td><td>68</td><td>14%</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="page-footer">
+    <div>936 Ainapo St · Don Mangiarelli<br/>Generated Apr 17, 2026</div>
+    <div class="ctr"><strong>Report produced by Real Estate Genie</strong><br/>© Hulia'u Software, Inc.</div>
+    <div class="rt">Page 08 of 13</div>
+  </div>
+</section>
+
+<div class="divider">Active → Sold Listings</div>
+
+<!-- ─────────── PAGE 9 — SOLD LISTINGS ─────────── -->
+<section class="page" id="p9">
+  <div class="page-body">
+    <div class="agent-band">
+      <div class="photo">D</div>
+      <div class="who">
+        <div class="name">Don Mangiarelli</div>
+        <div class="sub">RS-23456 · OAHU REALTY PRO, LLC</div>
+      </div>
+      <div class="addr">
+        <div class="a">936 Ainapo Street</div>
+        Honolulu, HI 96825
+      </div>
+    </div>
+
+    <h2 class="section-title">Sold Listings</h2>
+    <div class="section-sub">ZIP 96825 · Single Family · March 2026</div>
+
+    <div style="display: grid; grid-template-columns: 220px 1fr; gap: 20px; align-items: stretch;">
+      <div style="background: var(--gold-500); color: var(--navy-900); padding: 20px 22px; display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+          <div style="font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 10px;">Median Sold Price</div>
+          <div style="font-family: var(--font-display); font-size: 36px; font-weight: 700; line-height: 1;">$2,025,000</div>
+          <div style="font-size: 10px; opacity: 0.7; margin-top: 8px;">Mar 2026 · 87 closed sales</div>
+        </div>
+        <div style="border-top: 1px solid rgba(6,26,58,0.2); padding-top: 12px; font-size: 11px;">
+          <div style="color: var(--green-600); font-weight: 600; font-family: var(--font-mono); font-size: 11px;">▲ 3.1% MoM</div>
+          <div style="opacity: 0.7; font-size: 9px; margin-top: 2px;">vs Feb 2026 $1,964,000</div>
+        </div>
+      </div>
+
+      <div class="chart-box" style="padding: 12px 14px;">
+        <div class="chart-title">Median Sold Price · 5-Year Trend</div>
+        <div class="chart-sub">Mar 2021 → Mar 2026 · ZIP 96825 SFR</div>
+        <svg viewBox="0 0 480 200" style="width: 100%; height: 200px;">
+          <g stroke="#EEE7D6" stroke-width="0.5" stroke-dasharray="2 3">
+            <line x1="30" y1="30" x2="470" y2="30"/>
+            <line x1="30" y1="70" x2="470" y2="70"/>
+            <line x1="30" y1="110" x2="470" y2="110"/>
+            <line x1="30" y1="150" x2="470" y2="150"/>
+          </g>
+          <g font-family="JetBrains Mono, monospace" font-size="8" fill="#5B6680">
+            <text x="4" y="33">$2M</text>
+            <text x="4" y="73">$1.5M</text>
+            <text x="4" y="113">$1M</text>
+            <text x="4" y="153">$500K</text>
+          </g>
+          <path d="M30 130 L80 115 L130 100 L180 85 L230 70 L280 55 L330 48 L380 40 L430 32 L470 28" fill="none" stroke="#061A3A" stroke-width="2.5"/>
+          <circle cx="470" cy="28" r="4" fill="#C6932E"/>
+        </svg>
+      </div>
+    </div>
+
+    <h3 class="block-title" style="margin-top: 18px;">Sales Volume vs Active Listings · Last 12 Months</h3>
+    <div class="chart-box">
+      <svg viewBox="0 0 720 160" style="width: 100%; height: 160px;">
+        <g stroke="#EEE7D6" stroke-width="0.5" stroke-dasharray="2 3">
+          <line x1="40" y1="30" x2="700" y2="30"/>
+          <line x1="40" y1="60" x2="700" y2="60"/>
+          <line x1="40" y1="90" x2="700" y2="90"/>
+          <line x1="40" y1="120" x2="700" y2="120"/>
+        </g>
+        <g font-family="JetBrains Mono, monospace" font-size="8" fill="#5B6680">
+          <text x="4" y="33">200</text>
+          <text x="4" y="63">150</text>
+          <text x="4" y="93">100</text>
+          <text x="4" y="123">50</text>
+        </g>
+        <!-- 12 months, pairs of bars -->
+        <g>
+          <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js" defer></script><script/>
+        </g>
+        <!-- manual bars -->
+        <g>
+          <!-- Apr25 -->
+          <rect x="50" y="55" width="14" height="65" fill="#061A3A"/><rect x="66" y="85" width="14" height="35" fill="#C6932E"/>
+          <rect x="105" y="52" width="14" height="68" fill="#061A3A"/><rect x="121" y="80" width="14" height="40" fill="#C6932E"/>
+          <rect x="160" y="48" width="14" height="72" fill="#061A3A"/><rect x="176" y="78" width="14" height="42" fill="#C6932E"/>
+          <rect x="215" y="50" width="14" height="70" fill="#061A3A"/><rect x="231" y="82" width="14" height="38" fill="#C6932E"/>
+          <rect x="270" y="52" width="14" height="68" fill="#061A3A"/><rect x="286" y="85" width="14" height="35" fill="#C6932E"/>
+          <rect x="325" y="55" width="14" height="65" fill="#061A3A"/><rect x="341" y="88" width="14" height="32" fill="#C6932E"/>
+          <rect x="380" y="52" width="14" height="68" fill="#061A3A"/><rect x="396" y="82" width="14" height="38" fill="#C6932E"/>
+          <rect x="435" y="48" width="14" height="72" fill="#061A3A"/><rect x="451" y="78" width="14" height="42" fill="#C6932E"/>
+          <rect x="490" y="45" width="14" height="75" fill="#061A3A"/><rect x="506" y="72" width="14" height="48" fill="#C6932E"/>
+          <rect x="545" y="42" width="14" height="78" fill="#061A3A"/><rect x="561" y="68" width="14" height="52" fill="#C6932E"/>
+          <rect x="600" y="40" width="14" height="80" fill="#061A3A"/><rect x="616" y="65" width="14" height="55" fill="#C6932E"/>
+          <rect x="655" y="42" width="14" height="78" fill="#061A3A"/><rect x="671" y="60" width="14" height="60" fill="#C6932E"/>
+        </g>
+        <g font-family="JetBrains Mono, monospace" font-size="7.5" fill="#5B6680" text-anchor="middle">
+          <text x="65" y="140">APR</text>
+          <text x="120" y="140">MAY</text>
+          <text x="175" y="140">JUN</text>
+          <text x="230" y="140">JUL</text>
+          <text x="285" y="140">AUG</text>
+          <text x="340" y="140">SEP</text>
+          <text x="395" y="140">OCT</text>
+          <text x="450" y="140">NOV</text>
+          <text x="505" y="140">DEC</text>
+          <text x="560" y="140">JAN</text>
+          <text x="615" y="140">FEB</text>
+          <text x="670" y="140">MAR</text>
+        </g>
+      </svg>
+      <div class="chart-legend">
+        <span><span class="dot" style="background: #061A3A; height: 8px; width: 8px;"></span>Active Listings</span>
+        <span><span class="dot" style="background: #C6932E; height: 8px; width: 8px;"></span>Sales</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <div>936 Ainapo St · Don Mangiarelli<br/>Generated Apr 17, 2026</div>
+    <div class="ctr"><strong>Report produced by Real Estate Genie</strong><br/>© Hulia'u Software, Inc.</div>
+    <div class="rt">Page 09 of 13</div>
+  </div>
+</section>
+
+<div class="divider">Sold → Dual Trends</div>
+
+<!-- ─────────── PAGE 10 — DUAL TRENDS ─────────── -->
+<section class="page" id="p10">
+  <div class="page-body">
+    <div class="agent-band">
+      <div class="photo">D</div>
+      <div class="who">
+        <div class="name">Don Mangiarelli</div>
+        <div class="sub">RS-23456 · OAHU REALTY PRO, LLC</div>
+      </div>
+      <div class="addr">
+        <div class="a">936 Ainapo Street</div>
+        Honolulu, HI 96825
+      </div>
+    </div>
+
+    <h2 class="section-title">Price vs Volume · 24-Month Trends</h2>
+    <div class="section-sub">Dual-axis · ZIP 96825 SFR</div>
+
+    <div class="chart-box" style="margin-bottom: 14px;">
+      <div class="chart-title">Median Sold Price vs Sold Listings</div>
+      <div class="chart-sub">Apr 2024 → Mar 2026</div>
+      <svg viewBox="0 0 720 200" style="width: 100%; height: 200px;">
+        <g stroke="#EEE7D6" stroke-width="0.5" stroke-dasharray="2 3">
+          <line x1="40" y1="30" x2="680" y2="30"/>
+          <line x1="40" y1="70" x2="680" y2="70"/>
+          <line x1="40" y1="110" x2="680" y2="110"/>
+          <line x1="40" y1="150" x2="680" y2="150"/>
+        </g>
+        <g font-family="JetBrains Mono, monospace" font-size="8" fill="#5B6680">
+          <text x="4" y="33">$2.5M</text>
+          <text x="4" y="73">$2M</text>
+          <text x="4" y="113">$1.5M</text>
+          <text x="4" y="153">$1M</text>
+          <text x="688" y="33">120</text>
+          <text x="688" y="73">90</text>
+          <text x="688" y="113">60</text>
+          <text x="688" y="153">30</text>
+        </g>
+        <!-- bars = count (right axis) -->
+        <g opacity="0.7">
+          <rect x="50" y="110" width="22" height="50" fill="#3168A8"/>
+          <rect x="78" y="120" width="22" height="40" fill="#3168A8"/>
+          <rect x="106" y="115" width="22" height="45" fill="#3168A8"/>
+          <rect x="134" y="125" width="22" height="35" fill="#3168A8"/>
+          <rect x="162" y="118" width="22" height="42" fill="#3168A8"/>
+          <rect x="190" y="122" width="22" height="38" fill="#3168A8"/>
+          <rect x="218" y="105" width="22" height="55" fill="#3168A8"/>
+          <rect x="246" y="108" width="22" height="52" fill="#3168A8"/>
+          <rect x="274" y="100" width="22" height="60" fill="#3168A8"/>
+          <rect x="302" y="112" width="22" height="48" fill="#3168A8"/>
+          <rect x="330" y="95" width="22" height="65" fill="#3168A8"/>
+          <rect x="358" y="102" width="22" height="58" fill="#3168A8"/>
+          <rect x="386" y="88" width="22" height="72" fill="#3168A8"/>
+          <rect x="414" y="92" width="22" height="68" fill="#3168A8"/>
+          <rect x="442" y="82" width="22" height="78" fill="#3168A8"/>
+          <rect x="470" y="85" width="22" height="75" fill="#3168A8"/>
+          <rect x="498" y="75" width="22" height="85" fill="#3168A8"/>
+          <rect x="526" y="70" width="22" height="90" fill="#3168A8"/>
+          <rect x="554" y="72" width="22" height="88" fill="#3168A8"/>
+          <rect x="582" y="62" width="22" height="98" fill="#3168A8"/>
+          <rect x="610" y="58" width="22" height="102" fill="#3168A8"/>
+          <rect x="638" y="55" width="22" height="105" fill="#3168A8"/>
+        </g>
+        <!-- line = median price (left axis) -->
+        <path d="M60 95 L88 92 L116 88 L144 85 L172 82 L200 78 L228 72 L256 68 L284 62 L312 58 L340 52 L368 48 L396 45 L424 40 L452 36 L480 32 L508 28 L536 25 L564 22 L592 20 L620 18 L648 15" fill="none" stroke="#C6932E" stroke-width="2.5"/>
+      </svg>
+      <div class="chart-legend">
+        <span><span class="dot" style="background: #C6932E; height: 2.5px;"></span>Median Sold Price ($)</span>
+        <span><span class="dot" style="background: #3168A8; height: 8px; width: 8px;"></span>Sales Count (right axis)</span>
+      </div>
+    </div>
+
+    <div class="chart-box">
+      <div class="chart-title">Median List Price vs Active Listings</div>
+      <div class="chart-sub">Apr 2024 → Mar 2026</div>
+      <svg viewBox="0 0 720 200" style="width: 100%; height: 200px;">
+        <g stroke="#EEE7D6" stroke-width="0.5" stroke-dasharray="2 3">
+          <line x1="40" y1="30" x2="680" y2="30"/>
+          <line x1="40" y1="70" x2="680" y2="70"/>
+          <line x1="40" y1="110" x2="680" y2="110"/>
+          <line x1="40" y1="150" x2="680" y2="150"/>
+        </g>
+        <g font-family="JetBrains Mono, monospace" font-size="8" fill="#5B6680">
+          <text x="4" y="33">$2.5M</text>
+          <text x="4" y="73">$2M</text>
+          <text x="4" y="113">$1.5M</text>
+          <text x="4" y="153">$1M</text>
+          <text x="688" y="33">200</text>
+          <text x="688" y="73">150</text>
+          <text x="688" y="113">100</text>
+          <text x="688" y="153">50</text>
+        </g>
+        <g opacity="0.6">
+          <rect x="50" y="70" width="22" height="90" fill="#204E8E"/>
+          <rect x="78" y="75" width="22" height="85" fill="#204E8E"/>
+          <rect x="106" y="68" width="22" height="92" fill="#204E8E"/>
+          <rect x="134" y="62" width="22" height="98" fill="#204E8E"/>
+          <rect x="162" y="58" width="22" height="102" fill="#204E8E"/>
+          <rect x="190" y="52" width="22" height="108" fill="#204E8E"/>
+          <rect x="218" y="55" width="22" height="105" fill="#204E8E"/>
+          <rect x="246" y="48" width="22" height="112" fill="#204E8E"/>
+          <rect x="274" y="45" width="22" height="115" fill="#204E8E"/>
+          <rect x="302" y="50" width="22" height="110" fill="#204E8E"/>
+          <rect x="330" y="42" width="22" height="118" fill="#204E8E"/>
+          <rect x="358" y="38" width="22" height="122" fill="#204E8E"/>
+          <rect x="386" y="35" width="22" height="125" fill="#204E8E"/>
+          <rect x="414" y="40" width="22" height="120" fill="#204E8E"/>
+          <rect x="442" y="32" width="22" height="128" fill="#204E8E"/>
+          <rect x="470" y="28" width="22" height="132" fill="#204E8E"/>
+          <rect x="498" y="25" width="22" height="135" fill="#204E8E"/>
+          <rect x="526" y="22" width="22" height="138" fill="#204E8E"/>
+          <rect x="554" y="20" width="22" height="140" fill="#204E8E"/>
+          <rect x="582" y="18" width="22" height="142" fill="#204E8E"/>
+          <rect x="610" y="15" width="22" height="145" fill="#204E8E"/>
+          <rect x="638" y="12" width="22" height="148" fill="#204E8E"/>
+        </g>
+        <path d="M60 90 L88 88 L116 85 L144 80 L172 78 L200 72 L228 68 L256 62 L284 58 L312 55 L340 50 L368 45 L396 42 L424 38 L452 35 L480 30 L508 25 L536 22 L564 20 L592 18 L620 15 L648 12" fill="none" stroke="#C6932E" stroke-width="2.5"/>
+      </svg>
+      <div class="chart-legend">
+        <span><span class="dot" style="background: #C6932E; height: 2.5px;"></span>Median List Price ($)</span>
+        <span><span class="dot" style="background: #204E8E; height: 8px; width: 8px;"></span>Active Listings (right axis)</span>
+      </div>
+    </div>
+
+    <p style="font-size: 10px; color: var(--ink-soft); margin-top: 16px; line-height: 1.5;">
+      Both charts show <strong>price and volume moving together</strong> — a hallmark of strong seller's-market conditions in which rising prices pull more inventory onto market, which in turn clears quickly at list or above. If volume diverges from price in coming months, we'd re-evaluate positioning.
+    </p>
+  </div>
+
+  <div class="page-footer">
+    <div>936 Ainapo St · Don Mangiarelli<br/>Generated Apr 17, 2026</div>
+    <div class="ctr"><strong>Report produced by Real Estate Genie</strong><br/>© Hulia'u Software, Inc.</div>
+    <div class="rt">Page 10 of 13</div>
+  </div>
+</section>
+
+<div class="divider">Dual Trends → Market Activity</div>
+
+<!-- ─────────── PAGE 11 — MARKET ACTIVITY / COMPS ─────────── -->
+<section class="page" id="p11">
+  <div class="page-body">
+    <div class="agent-band">
+      <div class="photo">D</div>
+      <div class="who">
+        <div class="name">Don Mangiarelli</div>
+        <div class="sub">RS-23456 · OAHU REALTY PRO, LLC</div>
+      </div>
+      <div class="addr">
+        <div class="a">936 Ainapo Street</div>
+        Honolulu, HI 96825
+      </div>
+    </div>
+
+    <h2 class="section-title">Market Activity · 0.5-mile radius</h2>
+    <div class="section-sub">Last 90 days · sorted by distance</div>
+
+    <div style="font-family: var(--font-mono); font-size: 9px; color: var(--ink-mute); margin-bottom: 10px; padding: 6px 10px; background: var(--bone-100); border-left: 2px solid var(--bone-300);">
+      Filters · 3–4 bed · 2+ bath · 1,400–2,200 sqft · SFR only · max 10 per change type
+    </div>
+
+    <table class="ct-table">
+      <thead>
+        <tr>
+          <th>&nbsp;</th>
+          <th style="color: var(--green-600);">New</th>
+          <th style="color: var(--navy-700);">Closed</th>
+          <th style="color: var(--red-600);">Distressed</th>
+          <th style="color: var(--ink-mute);">Expired</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Count</td><td>7</td><td>14</td><td>1</td><td>3</td></tr>
+        <tr><td>Lowest Price</td><td>$1,495,000</td><td>$1,150,000</td><td>$1,680,000</td><td>$1,795,000</td></tr>
+        <tr><td>Median Price</td><td>$1,775,000</td><td>$1,625,000</td><td>$1,680,000</td><td>$1,895,000</td></tr>
+        <tr><td>Highest Price</td><td>$2,495,000</td><td>$2,075,000</td><td>$1,680,000</td><td>$2,150,000</td></tr>
+        <tr><td>Median Living Area</td><td>1,840 sqft</td><td>1,740 sqft</td><td>1,692 sqft</td><td>1,820 sqft</td></tr>
+        <tr><td>Median $/sqft</td><td>$964</td><td>$934</td><td>$993</td><td>$1,041</td></tr>
+        <tr><td>Avg Days on Market</td><td>12</td><td>26</td><td>41</td><td>142</td></tr>
+        <tr><td>Median DOM</td><td>9</td><td>22</td><td>41</td><td>128</td></tr>
+        <tr><td>Median Age</td><td>42 yrs</td><td>48 yrs</td><td>52 yrs</td><td>55 yrs</td></tr>
+        <tr><td>Source</td><td class="muted" style="font-size: 9px;">HiCentral MLS</td><td class="muted" style="font-size: 9px;">HiCentral MLS</td><td class="muted" style="font-size: 9px;">HiCentral MLS · NOD</td><td class="muted" style="font-size: 9px;">HiCentral MLS</td></tr>
+      </tbody>
+    </table>
+
+    <h3 class="block-title" style="margin-top: 16px;">Area Map</h3>
+    <div class="map-box">
+      <svg viewBox="0 0 720 220">
+        <!-- streets -->
+        <g stroke="#c9bfa4" stroke-width="2" fill="none" opacity="0.8">
+          <path d="M0 140 Q180 130, 360 140 T720 150"/>
+          <path d="M0 80 Q180 90, 360 80 T720 70"/>
+          <path d="M120 0 Q130 110, 140 220"/>
+          <path d="M280 0 Q290 110, 300 220"/>
+          <path d="M440 0 Q450 110, 460 220"/>
+          <path d="M600 0 Q610 110, 620 220"/>
+        </g>
+        <!-- ridge lines -->
+        <g stroke="#a89770" stroke-width="0.5" fill="none" opacity="0.4">
+          <path d="M0 30 Q200 20, 400 40 T720 30"/>
+          <path d="M0 200 Q200 210, 400 195 T720 205"/>
+        </g>
+        <!-- subject -->
+        <g transform="translate(360 110)">
+          <circle r="16" fill="#C6932E" opacity="0.2"/>
+          <circle r="10" fill="#C6932E"/>
+          <circle r="4" fill="#fff"/>
+          <text x="14" y="4" font-family="Inter, sans-serif" font-size="10" font-weight="700" fill="#061A3A">936 Ainapo St</text>
+        </g>
+        <!-- pins -->
+        <g fill="#2F7D5B">
+          <circle cx="220" cy="70" r="5"/><circle cx="290" cy="140" r="5"/><circle cx="420" cy="60" r="5"/>
+          <circle cx="480" cy="170" r="5"/><circle cx="540" cy="100" r="5"/><circle cx="180" cy="165" r="5"/><circle cx="600" cy="165" r="5"/>
+        </g>
+        <g fill="#061A3A">
+          <circle cx="250" cy="115" r="5"/><circle cx="380" cy="160" r="5"/><circle cx="440" cy="110" r="5"/>
+          <circle cx="510" cy="55" r="5"/><circle cx="150" cy="90" r="5"/><circle cx="620" cy="130" r="5"/>
+          <circle cx="320" cy="65" r="5"/><circle cx="580" cy="190" r="5"/>
+        </g>
+        <g fill="#C8372D">
+          <circle cx="95" cy="130" r="5"/>
+        </g>
+        <g fill="#5B6680">
+          <circle cx="670" cy="50" r="5"/><circle cx="110" cy="185" r="5"/><circle cx="340" cy="180" r="5"/>
+        </g>
+      </svg>
+      <div style="position: absolute; top: 10px; right: 12px; background: rgba(251,248,241,0.95); padding: 8px 12px; font-size: 9px; font-family: var(--font-mono); display: flex; flex-direction: column; gap: 4px; border: 1px solid var(--bone-300);">
+        <span style="display: flex; align-items: center; gap: 6px;"><span style="width:8px;height:8px;background:#C6932E;border-radius:50%;"></span> Subject</span>
+        <span style="display: flex; align-items: center; gap: 6px;"><span style="width:8px;height:8px;background:#2F7D5B;border-radius:50%;"></span> Active / New (7)</span>
+        <span style="display: flex; align-items: center; gap: 6px;"><span style="width:8px;height:8px;background:#061A3A;border-radius:50%;"></span> Closed (14)</span>
+        <span style="display: flex; align-items: center; gap: 6px;"><span style="width:8px;height:8px;background:#C8372D;border-radius:50%;"></span> Distressed (1)</span>
+        <span style="display: flex; align-items: center; gap: 6px;"><span style="width:8px;height:8px;background:#5B6680;border-radius:50%;"></span> Expired (3)</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <div>936 Ainapo St · Don Mangiarelli<br/>Generated Apr 17, 2026</div>
+    <div class="ctr"><strong>Report produced by Real Estate Genie</strong><br/>© Hulia'u Software, Inc.</div>
+    <div class="rt">Page 11 of 13</div>
+  </div>
+</section>
+
+<div class="divider">Activity → Pricing Strategy (NEW)</div>
+
+<!-- ─────────── PAGE 12 — PRICING STRATEGY ─────────── -->
+<section class="page" id="p12">
+  <div class="page-body">
+    <div class="agent-band">
+      <div class="photo">D</div>
+      <div class="who">
+        <div class="name">Don Mangiarelli</div>
+        <div class="sub">RS-23456 · OAHU REALTY PRO, LLC</div>
+      </div>
+      <div class="addr">
+        <div class="a">936 Ainapo Street</div>
+        Honolulu, HI 96825
+      </div>
+    </div>
+
+    <h2 class="section-title">Pricing Strategy &amp; Refined Value</h2>
+    <div class="section-sub">CMA workbench · agent-editable</div>
+
+    <h3 class="ps-title">Pricing Strategy · Comparable Groups</h3>
+    <table class="t3">
+      <thead><tr><th>&nbsp;</th><th>For Sale / For Lease</th><th>Distressed</th><th>Expired</th><th>Closed</th></tr></thead>
+      <tbody>
+        <tr><td class="rowlbl">Lowest</td><td>$1,495,000</td><td>$1,680,000</td><td>$1,795,000</td><td>$1,150,000</td></tr>
+        <tr><td class="rowlbl">Median</td><td>$1,775,000</td><td>$1,680,000</td><td>$1,895,000</td><td>$1,625,000</td></tr>
+        <tr><td class="rowlbl">Highest</td><td>$2,495,000</td><td>$1,680,000</td><td>$2,150,000</td><td>$2,075,000</td></tr>
+        <tr><td class="rowlbl">Median $/sqft</td><td>$964</td><td>$993</td><td>$1,041</td><td>$934</td></tr>
+        <tr><td class="rowlbl">Median DOM</td><td>9</td><td>41</td><td>128</td><td>22</td></tr>
+      </tbody>
+    </table>
+
+    <div class="two-col" style="margin-top: 16px;">
+      <div>
+        <h3 class="ps-title">Sold Price Comparison · Last 90 Days</h3>
+        <div style="font-size: 9px; color: var(--ink-mute); margin-bottom: 4px;">Similar: 3 bed · 2 bath · 1,500–2,000 sqft</div>
+        <table class="t3">
+          <thead><tr><th>&nbsp;</th><th>Sold Price</th><th>$/sqft</th></tr></thead>
+          <tbody>
+            <tr><td class="rowlbl">Lowest</td><td>$1,150,000</td><td>$669</td></tr>
+            <tr><td class="rowlbl">Median</td><td>$1,625,000</td><td>$934</td></tr>
+            <tr><td class="rowlbl">Highest</td><td>$2,075,000</td><td>$1,193</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div>
+        <h3 class="ps-title">CMA Summary <span style="font-family: var(--font-mono); font-size: 8.5px; font-weight: 500; color: var(--gold-600); letter-spacing: 0.12em; margin-left: 6px;">AGENT-SELECTED</span></h3>
+        <div style="font-size: 9px; color: var(--ink-mute); margin-bottom: 4px;">4 comps selected by agent · adjustments applied</div>
+        <table class="t3">
+          <tbody>
+            <tr><td class="rowlbl" style="width: 55%;">Average of Comps</td><td style="text-align: right; font-family: var(--font-mono);">$1,693,750</td></tr>
+            <tr><td class="rowlbl">Total Adjustments</td><td style="text-align: right; font-family: var(--font-mono);">+$56,200</td></tr>
+            <tr><td class="rowlbl">CMA Result</td><td style="text-align: right; font-family: var(--font-mono); font-weight: 700; color: var(--gold-600);">$1,749,950</td></tr>
+            <tr><td class="rowlbl">Result $/sqft</td><td style="text-align: right; font-family: var(--font-mono);">$954</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <h3 class="ps-title" style="margin-top: 18px;">Refined Value Summary</h3>
+    <div style="background: #fff; border: 1px solid var(--bone-300); padding: 16px 22px;">
+      <table class="rv-table">
+        <tbody>
+          <tr><td>Original Estimated Value (Genie AVM™)</td><td>$1,660,000</td></tr>
+          <tr><td>Changes Based on Home Facts</td><td>+$42,000</td></tr>
+          <tr><td>Home Improvement Adjustments <span style="font-size: 9px; color: var(--ink-mute);">(roof 2019, split A/C, kitchen 2021)</span></td><td>+$68,000</td></tr>
+          <tr><td>Needed Improvement Adjustments <span style="font-size: 9px; color: var(--ink-mute);">(cesspool conversion)</span></td><td>−$25,000</td></tr>
+          <tr><td>Market Condition Adjustments <span style="font-size: 9px; color: var(--ink-mute);">(strong seller's market)</span></td><td>+$50,000</td></tr>
+          <tr class="total"><td>Estimate + Adjustments</td><td>$1,795,000 <span style="font-family: var(--font-sans); font-weight: 500; font-size: 10px; color: var(--ink-mute);">· $979/sqft</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p style="font-size: 9px; color: var(--ink-mute); margin-top: auto; line-height: 1.45;">
+      Refined values reflect the agent's professional judgment and are not a formal appraisal. Recommended list price reflects strong seller's-market conditions (0.9 months of inventory, 98.3% sold-to-list ratio in ZIP 96825). Consider pricing within 2% of refined value to maximize offer volume.
+    </p>
+  </div>
+
+  <div class="page-footer">
+    <div>936 Ainapo St · Don Mangiarelli<br/>Generated Apr 17, 2026</div>
+    <div class="ctr"><strong>Report produced by Real Estate Genie</strong><br/>© Hulia'u Software, Inc.</div>
+    <div class="rt">Page 12 of 13</div>
+  </div>
+</section>
+
+<div class="divider">Pricing → About</div>
+
+<!-- ─────────── PAGE 13 — ABOUT ─────────── -->
+<section class="page" id="p13">
+  <div class="page-body">
+    <div class="agent-band">
+      <div class="photo">D</div>
+      <div class="who">
+        <div class="name">Don Mangiarelli</div>
+        <div class="sub">RS-23456 · OAHU REALTY PRO, LLC</div>
+      </div>
+      <div class="addr">
+        <div class="a">936 Ainapo Street</div>
+        Honolulu, HI 96825
+      </div>
+    </div>
+
+    <h2 class="section-title">About This Report</h2>
+    <div class="section-sub">Data sources · disclaimer · your agent</div>
+
+    <h3 class="block-title">About Real Estate Genie</h3>
+    <p class="about-body">
+      Real Estate Genie is a Hawaii-built real estate intelligence platform used by agents, teams, and brokerages across the islands. This Seller Report is assembled from MLS data, Hawaii county records, FEMA, U.S. Census, state GIS, and proprietary valuation models. The Genie AVM™ is an automated estimate of market value; estimates are not formal appraisals and should not be used as the sole basis for lending decisions.
+    </p>
+
+    <h3 class="block-title">Data Sources</h3>
+    <div class="data-sources">
+      <span>HiCentral MLS</span>
+      <span>Honolulu County Assessor</span>
+      <span>Bureau of Conveyances</span>
+      <span>FEMA NRI &amp; Flood</span>
+      <span>Hawaii State GIS</span>
+      <span>Tsunami Evac Maps</span>
+      <span>Sea Level Rise Viewer</span>
+      <span>DOH Cesspool Inventory</span>
+      <span>U.S. Census ACS</span>
+      <span>NCES School Data</span>
+      <span>HUD Fair Market Rent</span>
+      <span>BLS Regional Data</span>
+    </div>
+
+    <div style="background: #fff; border: 1px solid var(--bone-300); padding: 20px 24px; margin-top: 18px; display: grid; grid-template-columns: 72px 1fr 1fr; gap: 22px; align-items: flex-start;">
+      <div style="width: 72px; height: 72px; border-radius: 50%; background: linear-gradient(135deg, #D9B88E, #8a5c38); display: flex; align-items: center; justify-content: center; color: #fff; font-family: var(--font-display); font-size: 28px; font-weight: 600; border: 2px solid var(--bone-100);">D</div>
+      <div>
+        <div style="font-family: var(--font-display); font-size: 20px; font-weight: 700; color: var(--navy-900);">Don Mangiarelli</div>
+        <div style="font-size: 10px; color: var(--ink-mute); margin-bottom: 8px;">REALTOR · Listing Agent</div>
+        <div style="font-family: var(--font-mono); font-size: 9px; color: var(--gold-600); margin-bottom: 10px; letter-spacing: 0.1em;">LICENSE #RS-23456</div>
+        <div style="font-size: 10px; line-height: 1.6; color: var(--ink-soft);">
+          (808) 555-1234<br/>
+          <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="b7d3dad6d9d0ded6c5d2dbdbdef7d2d9c39ac3d2d4dfc4d8dbc2c3ded8d9c499d4d8da">[email&#160;protected]</a><br/>
+          realestategenie.com/don
+        </div>
+      </div>
+      <div style="border-left: 1px solid var(--bone-300); padding-left: 18px; font-size: 10px; line-height: 1.5; color: var(--ink-soft);">
+        <div style="font-family: var(--font-display); font-weight: 600; font-size: 13px; color: var(--navy-900); margin-bottom: 4px;">Oahu Realty Pro, LLC</div>
+        brokered by eXp Realty<br/>
+        1001 Bishop St, Suite 2800<br/>
+        Honolulu, HI 96813<br/>
+        <br/>
+        <span style="font-family: var(--font-mono); font-size: 9px; color: var(--gold-600); letter-spacing: 0.1em;">BROKERAGE LIC. RB-20588</span>
+      </div>
+    </div>
+
+    <p style="font-size: 9px; color: var(--ink-mute); margin-top: 22px; line-height: 1.5; max-width: 70ch;">
+      This report was prepared by Don Mangiarelli exclusively for the above-named client. Market data reflects trends as of the generation date. Information is deemed reliable but not guaranteed. Real Estate Genie, the Genie AVM™, and Hulia'u Software, Inc. make no warranties about the accuracy, completeness, or fitness for any particular purpose of the information contained in this report.
+    </p>
+  </div>
+
+  <div class="eho" title="Equal Housing Opportunity">≡</div>
+
+  <div class="page-footer">
+    <div>936 Ainapo St · Don Mangiarelli<br/>Generated Apr 17, 2026</div>
+    <div class="ctr"><strong>Report produced by Real Estate Genie</strong><br/>© Hulia'u Software, Inc.</div>
+    <div class="rt">Page 13 of 13</div>
+  </div>
+</section>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js" defer></script></body>
+</html>

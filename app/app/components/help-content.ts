@@ -837,6 +837,15 @@ The Seller Report is generated from **property data (public records)** and is de
 
 **Seller Report is being rebuilt to a 13-page RPR-equivalent format.** The new report is agent-branded on every page, matches industry-standard Seller Report depth, and includes a Pricing Strategy workbench page.
 
+**Pick your template.** Every report can be generated in one of five visual directions:
+- **The Editor** (default) — classic navy + gold + bone; Playfair Display serif. Trust and gravitas.
+- **The Archive** — modern minimal Swiss grid; Inter + JetBrains Mono; bold oversized numerals. Urban, new-construction, architectural.
+- **Noir** — luxury dark; Cormorant Garamond on black with champagne accents. Waterfront, trophy homes, private offices.
+- **Terracotta** — warm clay + cream; Fraunces rounded serif. Boutique lifestyle (Southwest, Austin, Sonoma, Santa Fe, coastal FL).
+- **Blueprint** — corporate data; IBM Plex + cobalt blue with grid accents. Team brands, Compass/KW-style agents, data-forward sellers.
+
+Same 13 sections and same data in every template — different personality, different fonts, different page-number format, different footer copy. Agent picks per report.
+
 **13 sections (pages 1, 2, and 13 are live now — pages 3-12 are in progress and currently show a "Section in progress" notice):**
 1. Cover — hero photo, address overlay, listing status pill, full agent card (live)
 2. Valuation — Genie AVM™ with confidence stars, month-change, 12-month change, range bar, tax & assessment strip (live)

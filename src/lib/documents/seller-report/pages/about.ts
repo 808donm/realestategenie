@@ -4,9 +4,10 @@
 
 import type { SellerReportData } from "../../seller-report-pdf";
 import type { AgentBranding } from "../../pdf-report-utils";
+import type { ThemeTokens } from "../themes";
 import { esc, initial, pageWithBand } from "../shell";
 
-export function pageAbout(data: SellerReportData, branding: AgentBranding, pageNum: number, totalPages: number, generatedAt: string): string {
+export function pageAbout(data: SellerReportData, branding: AgentBranding, pageNum: number, totalPages: number, generatedAt: string, theme: ThemeTokens): string {
   const hasPhoto = !!branding.headshotData;
   const avatarCls = hasPhoto ? "has-photo" : "";
   const avatarInner = hasPhoto ? "" : esc(initial(branding.displayName));
@@ -67,7 +68,7 @@ export function pageAbout(data: SellerReportData, branding: AgentBranding, pageN
   `;
 
   // Equal Housing Opportunity glyph rendered as absolute element inside page
-  const raw = pageWithBand(data, branding, pageNum, totalPages, generatedAt, body, "p13");
+  const raw = pageWithBand(data, branding, pageNum, totalPages, generatedAt, theme, body, "p13");
   // Inject EHO glyph just before the footer close — simplest: append to returned string inside the </section>
   return raw.replace(/<\/section>\s*$/, `<div class="eho" title="Equal Housing Opportunity">≡</div></section>`);
 }

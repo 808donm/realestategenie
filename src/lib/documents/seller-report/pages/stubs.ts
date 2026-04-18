@@ -8,6 +8,7 @@
 
 import type { SellerReportData } from "../../seller-report-pdf";
 import type { AgentBranding } from "../../pdf-report-utils";
+import type { ThemeTokens } from "../themes";
 import { esc, pageWithBand } from "../shell";
 
 export function stubPage(
@@ -16,6 +17,7 @@ export function stubPage(
   pageNum: number,
   totalPages: number,
   generatedAt: string,
+  theme: ThemeTokens,
   pageId: string,
   title: string,
   subtitle: string,
@@ -30,5 +32,5 @@ export function stubPage(
       <div class="stub-body">${esc(description)}</div>
     </div>
   `;
-  return pageWithBand(data, branding, pageNum, totalPages, generatedAt, body, pageId);
+  return pageWithBand(data, branding, pageNum, totalPages, generatedAt, theme, body, pageId);
 }

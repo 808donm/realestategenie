@@ -7,10 +7,11 @@
 
 import type { SellerReportData } from "../../seller-report-pdf";
 import type { AgentBranding } from "../../pdf-report-utils";
+import type { ThemeTokens } from "../themes";
 import { esc, fmt$, fmtDateShort, pageWithBand } from "../shell";
 import { avmRangeBar, svgConfidenceStars } from "../svg";
 
-export function pageValuation(data: SellerReportData, branding: AgentBranding, pageNum: number, totalPages: number, generatedAt: string): string {
+export function pageValuation(data: SellerReportData, branding: AgentBranding, pageNum: number, totalPages: number, generatedAt: string, theme: ThemeTokens): string {
   const avm = data.avmValue;
   const avmDate = data.avmDate ? fmtDateShort(data.avmDate) : null;
   const avmLow = data.avmLow;
@@ -107,5 +108,5 @@ export function pageValuation(data: SellerReportData, branding: AgentBranding, p
     </p>
   `;
 
-  return pageWithBand(data, branding, pageNum, totalPages, generatedAt, body, "p2");
+  return pageWithBand(data, branding, pageNum, totalPages, generatedAt, theme, body, "p2");
 }
