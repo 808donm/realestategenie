@@ -1,992 +1,124 @@
 /**
- * Seller Report HTML Template
+ * Seller Report HTML Builder — v2 (13-page RPR-equivalent rebuild).
  *
- * Generates a complete HTML document that Puppeteer renders to PDF.
- * Matches RPR Seller Report quality with rich layouts, charts, and photos.
+ * Orchestrates the 13 page modules under ./seller-report/ into a single
+ * HTML document. Puppeteer renders the result to PDF.
+ *
+ * Pages already built render real data; pages still under construction
+ * render a stub notice so the PDF always has 13 pages during the rebuild.
+ *
+ * Build order (each page ships as a separate commit):
+ *   p1  Cover              ✓
+ *   p2  Valuation          ✓
+ *   p3  Property Facts     stub
+ *   p4  Features           stub
+ *   p5  Legal · Hazards    stub
+ *   p6  Photos             stub
+ *   p7  Market Trends      stub (needs 4-geo 2008-present history endpoint)
+ *   p8  Active Listings    stub (needs 5yr list-price trend)
+ *   p9  Sold Listings      stub (needs 5yr sold trend + 12mo grouped)
+ *   p10 Dual Trends        stub (needs 24mo dual-axis data)
+ *   p11 Market Activity    stub (needs status-grouped stats + map pins)
+ *   p12 Pricing Strategy   stub (needs CMA + refined value wire-up)
+ *   p13 About              ✓
  */
 
-import { getReportBaseStyles, buildPageHeader, buildPageFooter } from "./html-to-pdf";
 import type { SellerReportData } from "./seller-report-pdf";
 import type { AgentBranding } from "./pdf-report-utils";
+import { getSellerReportStyles } from "./seller-report/styles";
+import { pageCover } from "./seller-report/pages/cover";
+import { pageValuation } from "./seller-report/pages/valuation";
+import { pageAbout } from "./seller-report/pages/about";
+import { stubPage } from "./seller-report/pages/stubs";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+const TOTAL_PAGES = 13;
 
-const fmt$ = (n?: number | null) => (n != null ? `$${n.toLocaleString()}` : "-");
-const fmtDate = (d?: string | null): string => {
-  if (!d) return "-";
-  const parsed = new Date(d);
-  if (isNaN(parsed.getTime())) return d;
-  return `${parsed.getMonth() + 1}/${parsed.getDate()}/${parsed.getFullYear()}`;
-};
-
-function esc(s?: string | null): string {
-  if (!s) return "";
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
-
-/**
- * Generate the complete HTML document for a Seller Report.
- */
 export function buildSellerReportHtml(data: SellerReportData, branding: AgentBranding): string {
-  const cityLine = [data.city, data.state, data.zip].filter(Boolean).join(", ");
-  const date = data.generatedAt || new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
-  const hdr = buildPageHeader("Seller Report", `${esc(data.address)}`);
-  const ftr = buildPageFooter(date, branding.displayName);
-
-  // Find real last sale (filter out $0 trust transfers)
-  const realLastSale = data.lastSalePrice && data.lastSalePrice > 1000
-    ? { price: data.lastSalePrice, date: data.lastSaleDate }
-    : data.salesHistory?.find((s) => {
-        const amt = typeof s.amount === "object" ? (s.amount as any)?.saleAmt : s.amount;
-        return amt && amt > 1000;
-      });
-  const lastSaleAmt = realLastSale
-    ? (typeof (realLastSale as any).price === "number" ? (realLastSale as any).price : typeof (realLastSale as any).amount === "object" ? ((realLastSale as any).amount as any)?.saleAmt : (realLastSale as any).amount)
-    : null;
-  const lastSaleDate = realLastSale ? ((realLastSale as any).date || data.lastSaleDate) : null;
-
-  // Equity logic: if no loan balance, show "Free & Clear"
-  const hasLoanData = data.loanBalance != null && data.loanBalance > 0;
-  const equityLabel = hasLoanData ? `${data.estimatedEquity != null && data.estimatedEquity >= 0 ? "+" : ""}${fmt$(data.estimatedEquity)}` : "Free & Clear";
-  const equityColor = hasLoanData ? (data.estimatedEquity != null && data.estimatedEquity >= 0 ? "green" : "red") : "green";
-
-  const row = (label: string, value?: string | number | null) => {
-    if (value == null || value === "" || value === "-") return "";
-    return `<div class="data-row"><span class="dr-label">${esc(label)}</span><span class="dr-value">${esc(String(value))}</span></div>`;
-  };
-
-  // ═══════════════════════════════════════════════════════════════════════
-  // COVER PAGE
-  // ═══════════════════════════════════════════════════════════════════════
-
-  const mapImage = data.mapImageData
-    ? `<div style="margin: 20px auto; max-width: 500px;"><img src="${data.mapImageData}" style="width: 100%; border-radius: 8px;" /></div>`
-    : "";
-  const heroImage = data.primaryPhotoData
-    ? `<div style="margin: 20px auto; max-width: 500px;"><img src="${data.primaryPhotoData}" style="width: 100%; border-radius: 8px;" /></div>`
-    : "";
-
-  const coverPage = `
-    <div class="cover-page">
-      <div class="cover-title">
-        ${esc(data.address)}
-        <div class="cover-subtitle">${esc(cityLine)}</div>
-      </div>
-      <div class="cover-gold"></div>
-      ${heroImage || mapImage}
-      <div class="agent-branding" style="justify-content: center; border: none; margin-top: 20px;">
-        ${branding.headshotData ? `<img class="headshot" src="${branding.headshotData}" />` : ""}
-        <div style="text-align: left;">
-          <div class="ab-name">${esc(branding.displayName)}</div>
-          <div class="ab-detail">${branding.licenseNumber ? `Lic# ${esc(branding.licenseNumber)} | ` : ""}${esc(branding.phone || "")} | ${esc(branding.brokerageName || "Real Estate Genie")}</div>
-          ${branding.email ? `<div class="ab-detail">${esc(branding.email)}</div>` : ""}
-        </div>
-      </div>
-      <div style="margin-top: 16px; font-size: 12px; color: #6b7280;">Generated: ${esc(date)}</div>
-    </div>
-  `;
-
-  // ═══════════════════════════════════════════════════════════════════════
-  // VALUATION SUMMARY (page 2)
-  // ═══════════════════════════════════════════════════════════════════════
-
-  const listingBadge = data.listingStatus
-    ? `<div style="margin-bottom: 12px;"><span class="status-badge active">${esc(data.listingStatus)} / For Sale</span>${data.listPrice ? ` &nbsp; List Price: <strong>${fmt$(data.listPrice)}</strong>` : ""}${data.mlsNumber ? ` &nbsp; MLS# ${esc(data.mlsNumber)}` : ""}</div>`
-    : "";
-
-  const valCards = [
-    data.avmValue != null ? `<div class="value-card"><div class="vc-label">Estimated Value</div><div class="vc-value">${fmt$(data.avmValue)}</div>${data.avmDate ? `<div class="vc-sub">As of ${esc(data.avmDate)}</div>` : ""}</div>` : "",
-    data.cma ? `<div class="value-card gold"><div class="vc-label">CMA Value</div><div class="vc-value">${fmt$(data.cma.recommendedPrice)}</div><div class="vc-sub">Based on ${data.cma.adjustedComps.length} comps</div></div>` : "",
-    lastSaleAmt != null && lastSaleAmt > 1000 ? `<div class="value-card"><div class="vc-label">Last Sale</div><div class="vc-value">${fmt$(lastSaleAmt)}</div><div class="vc-sub">${fmtDate(lastSaleDate)}</div></div>` : "",
-    `<div class="value-card ${equityColor}"><div class="vc-label">Est. Equity</div><div class="vc-value">${equityLabel}</div></div>`,
-  ].filter(Boolean).join("");
-
-  // AVM Range Bar
-  const avmBar = (data.avmLow != null && data.avmHigh != null && data.avmValue != null) ? (() => {
-    const range = data.avmHigh! - data.avmLow!;
-    const pct = range > 0 ? ((data.avmValue! - data.avmLow!) / range) * 100 : 50;
-    return `
-      <div class="avm-bar-container avoid-break">
-        <div class="avm-bar-value">${fmt$(data.avmValue)}</div>
-        <div class="avm-bar"><div class="avm-dot" style="left: ${pct}%;"></div></div>
-        <div class="avm-bar-labels"><span>${fmt$(data.avmLow)}</span><span>${fmt$(data.avmHigh)}</span></div>
-      </div>`;
-  })() : "";
-
-  // ═══════════════════════════════════════════════════════════════════════
-  // AI-GENERATED PROPERTY NARRATIVE
-  // ═══════════════════════════════════════════════════════════════════════
-
-  const rawNarrative = String((data as any).aiNarrative || "")
-    .replace(/^#+\s+.*$/gm, "")
-    .replace(/\*\*(.+?)\*\*/g, "$1")
-    .replace(/^\s*[-*]\s+/gm, "")
-    .trim();
-  const aiNarrative = rawNarrative ? `
-    <div style="margin: 20px 0; padding: 16px 20px; background: #f9fafb; border-radius: 8px; border-left: 4px solid #1e40af;">
-      <div style="font-size: 12px; font-weight: 700; color: #1e40af; text-transform: uppercase; margin-bottom: 8px;">Property Analysis</div>
-      <div style="font-size: 11px; color: #374151; line-height: 1.8;">
-        ${esc(rawNarrative).replace(/\n\n/g, '</div><div style="font-size: 11px; color: #374151; line-height: 1.8; margin-top: 10px;">').replace(/\n/g, '<br/>')}
-      </div>
-    </div>
-  ` : "";
-
-  // ═══════════════════════════════════════════════════════════════════════
-  // PROPERTY INFORMATION (continuous flow, no forced page breaks)
-  // ═══════════════════════════════════════════════════════════════════════
-
-  const propFacts = `
-    <div class="section-title">Property Facts</div>
-    <div class="two-col avoid-break">
-      <div>
-        ${row("Property Type", data.propertyType)}
-        ${row("Year Built", data.yearBuilt)}
-        ${row("Bedrooms", data.beds)}
-        ${row("Bathrooms", data.baths)}
-        ${row("Living Area", data.sqft ? `${data.sqft.toLocaleString()} sqft` : null)}
-        ${row("Lot Size", data.lotSizeSqft ? `${data.lotSizeSqft.toLocaleString()} sqft${data.lotSizeAcres ? ` (${data.lotSizeAcres} acres)` : ""}` : null)}
-      </div>
-      <div>
-        ${row("Stories", data.stories)}
-        ${row("Parking", data.parkingSpaces || data.garageSpaces)}
-        ${row("Pool", data.pool != null ? (data.pool ? "Yes" : "No") : null)}
-        ${row("APN / TMK", data.apn)}
-        ${row("County", data.county)}
-        ${row("Land Tenure", data.ownershipType)}
-      </div>
-    </div>
-  `;
-
-  // Building details
-  const buildingDetails = (data.constructionType || data.roofType || data.heatingType || data.coolingType || data.foundationType || data.architectureStyle || data.condition) ? `
-    <div class="section-title">Building Details</div>
-    <div class="two-col avoid-break">
-      <div>
-        ${row("Architecture", data.architectureStyle)}
-        ${row("Construction", data.constructionType)}
-        ${row("Condition", data.condition)}
-        ${row("Roof", data.roofType)}
-        ${row("Exterior Walls", (data as any).exteriorWalls)}
-      </div>
-      <div>
-        ${row("Foundation", data.foundationType)}
-        ${row("Heating", data.heatingType)}
-        ${row("Cooling", data.coolingType)}
-        ${row("Fireplaces", data.fireplaceCount)}
-        ${row("Basement", data.basementType ? `${data.basementType}${data.basementSize ? ` (${data.basementSize.toLocaleString()} sqft)` : ""}` : null)}
-      </div>
-    </div>
-  ` : "";
-
-  // Interior features
-  const interiorSection = (data.interiorFeatures && data.interiorFeatures.length > 0) ? `
-    <div class="section-title">Interior Features</div>
-    <div class="avoid-break">${data.interiorFeatures.map((f) => row(f.label, f.value)).join("")}</div>
-  ` : "";
-
-  // Exterior features
-  const exteriorSection = (data.exteriorFeatures && data.exteriorFeatures.length > 0) ? `
-    <div class="section-title">Exterior Features</div>
-    <div class="avoid-break">${data.exteriorFeatures.map((f) => row(f.label, f.value)).join("")}</div>
-  ` : "";
-
-  // MLS Description
-  const descSection = data.listingDescription ? `
-    <div class="section-title">Listing Description</div>
-    <div style="font-size: 11px; color: #374151; line-height: 1.7; padding: 10px 14px; background: #f9fafb; border-radius: 6px;" class="avoid-break">
-      ${esc(data.listingDescription.substring(0, 1000))}
-    </div>
-  ` : "";
-
-  // Legal Description
-  const legalSection = (data.legal || data.apn) ? `
-    <div class="section-title">Legal Description</div>
-    <div class="two-col avoid-break">
-      <div>
-        ${row("Parcel Number", data.apn)}
-        ${row("County", data.county)}
-        ${row("Zoning", data.legal?.zoning)}
-      </div>
-      <div>
-        ${row("Census Tract", data.legal?.censusTract)}
-        ${row("Subdivision", data.legal?.subdivision)}
-      </div>
-    </div>
-    ${data.legal?.legalDescription ? `<div style="margin-top: 6px; font-size: 10px; color: #6b7280;"><strong>Legal Description:</strong> ${esc(data.legal.legalDescription.substring(0, 300))}</div>` : ""}
-  ` : "";
-
-  // Owner Facts
-  const ownerSection = (data.owner1 || data.owner2) ? `
-    <div class="section-title">Owner Facts</div>
-    <div class="two-col avoid-break">
-      <div>
-        ${row("Owner Name (Public)", data.owner1)}
-        ${data.owner2 ? row("Owner Name 2 (Public)", data.owner2) : ""}
-        ${row("Owner Occupied", data.ownerOccupied === "Y" ? "Yes" : data.ownerOccupied === "N" ? "No" : data.ownerOccupied)}
-      </div>
-      <div>
-        ${row("Absentee Owner", data.absenteeOwner === "A" || data.absenteeOwner === "Y" ? "Yes" : data.absenteeOwner === "O" ? "Yes" : data.absenteeOwner)}
-        ${row("Corporate Owner", data.corporateOwner === "Y" ? "Yes" : data.corporateOwner === "N" ? "No" : data.corporateOwner)}
-        ${row("Mailing Address", data.mailingAddress)}
-        ${data.deed?.buyerVesting ? row("Vesting", data.deed.buyerVesting) : ""}
-      </div>
-    </div>
-  ` : "";
-
-  // Location Details
-  const locationSection = (data.legal?.subdivision || data.federalData?.floodZone) ? `
-    <div class="section-title">Location Details</div>
-    <div class="avoid-break">
-      ${row("Subdivision", data.legal?.subdivision)}
-      ${row("Zoning", data.legal?.zoning)}
-      ${row("Flood Zone", data.federalData?.floodZone)}
-    </div>
-  ` : "";
-
-  // Tax Assessment
-  let taxSection = "";
-  if (data.taxHistory && data.taxHistory.length > 0) {
-    const taxRows = data.taxHistory.slice(0, 5).map((t) => `
-      <tr><td><strong>${t.year}</strong></td><td class="num">${fmt$(t.assessedLand || t.marketLand)}</td><td class="num">${fmt$(t.assessedImpr || t.marketImpr)}</td><td class="num">${fmt$(t.assessedTotal || t.marketTotal)}</td><td class="num">${fmt$(t.taxAmount)}</td></tr>
-    `).join("");
-    taxSection = `
-      <div class="section-title">Tax History</div>
-      <table class="comp-table avoid-break"><thead><tr><th>Year</th><th>Land</th><th>Improvements</th><th>Total Assessed</th><th>Tax Amount</th></tr></thead><tbody>${taxRows}</tbody></table>
-    `;
-  } else if (data.assessedTotal != null || data.taxAmount != null) {
-    taxSection = `
-      <div class="section-title">Tax Assessment</div>
-      <div class="avoid-break">
-        ${row("Assessed Total", fmt$(data.assessedTotal))}
-        ${row("Land Value", fmt$(data.assessedLand))}
-        ${row("Improvement Value", fmt$(data.assessedImpr))}
-        ${row("Market Value", fmt$(data.marketTotal))}
-        ${row("Annual Tax", fmt$(data.taxAmount))}
-        ${row("Tax Year", data.taxYear)}
-      </div>
-    `;
-  }
-
-  // Equity Section
-  let equitySection = "";
-  if (data.avmValue != null) {
-    const eqCards = [
-      `<div class="value-card dark"><div class="vc-label">Property Value</div><div class="vc-value">${fmt$(data.avmValue)}</div></div>`,
-      hasLoanData ? `<div class="value-card dark"><div class="vc-label">Loan Balance</div><div class="vc-value">${fmt$(data.loanBalance)}</div></div>` : "",
-      `<div class="value-card ${equityColor}"><div class="vc-label">Estimated Equity</div><div class="vc-value">${equityLabel}</div></div>`,
-    ].filter(Boolean).join("");
-
-    let equityBar = "";
-    if (hasLoanData && data.avmValue > 0) {
-      const loanPct = Math.min(100, (data.loanBalance! / data.avmValue) * 100);
-      equityBar = `<div class="equity-bar"><div class="eb-loan" style="width: ${loanPct}%;"></div><div class="eb-equity" style="width: ${100 - loanPct}%;"></div></div>
-        <div style="display: flex; justify-content: space-between; font-size: 9px; color: #6b7280; margin-top: 2px;">
-          <span>Loan ${Math.round(loanPct)}%</span><span>Equity ${Math.round(100 - loanPct)}%</span>
-        </div>`;
-    }
-
-    equitySection = `
-      <div class="section-title">Estimated Equity</div>
-      <div class="value-cards avoid-break">${eqCards}</div>
-      ${equityBar}
-      <div class="avoid-break">
-        ${row("Lender", data.lender)}
-        ${row("Loan Type", data.loanType)}
-        ${row("LTV Ratio", data.ltv != null ? `${data.ltv.toFixed(1)}%` : null)}
-      </div>
-    `;
-  }
-
-  // ═══════════════════════════════════════════════════════════════════════
-  // HOME EQUITY ANALYSIS (visual)
-  // ═══════════════════════════════════════════════════════════════════════
-
-  let equityAnalysis = "";
-  if (data.avmValue) {
-    const purchasePrice = lastSaleAmt && lastSaleAmt > 1000 ? lastSaleAmt : null;
-    const appreciation = purchasePrice ? data.avmValue - purchasePrice : null;
-    const appreciationPct = purchasePrice ? ((appreciation! / purchasePrice) * 100).toFixed(1) : null;
-    const yearsOwned = lastSaleDate ? Math.max(1, Math.round((Date.now() - new Date(lastSaleDate).getTime()) / (365.25 * 86400000))) : null;
-    const annualAppreciation = appreciationPct && yearsOwned ? (Number(appreciationPct) / yearsOwned).toFixed(1) : null;
-
-    equityAnalysis = `
-      <div class="section-title">Home Equity Analysis</div>
-      <div class="avoid-break" style="margin-bottom: 16px;">
-        <div class="value-cards">
-          <div class="value-card"><div class="vc-label">Current Value</div><div class="vc-value">${fmt$(data.avmValue)}</div></div>
-          ${purchasePrice ? `<div class="value-card"><div class="vc-label">Purchase Price</div><div class="vc-value">${fmt$(purchasePrice)}</div><div class="vc-sub">${fmtDate(lastSaleDate)}</div></div>` : ""}
-          ${appreciation ? `<div class="value-card green"><div class="vc-label">Appreciation</div><div class="vc-value">+${fmt$(appreciation)}</div><div class="vc-sub">${appreciationPct}%${yearsOwned ? ` over ${yearsOwned} years` : ""}</div></div>` : ""}
-          ${annualAppreciation ? `<div class="value-card"><div class="vc-label">Annual Avg</div><div class="vc-value">+${annualAppreciation}%/yr</div></div>` : ""}
-        </div>
-        ${purchasePrice ? `
-          <div style="margin-top: 8px;">
-            <div style="display: flex; height: 20px; border-radius: 4px; overflow: hidden;">
-              <div style="width: ${Math.round((purchasePrice / data.avmValue) * 100)}%; background: #6b7280; display: flex; align-items: center; justify-content: center; font-size: 8px; color: white; font-weight: 600;">Purchase</div>
-              <div style="flex: 1; background: #15803d; display: flex; align-items: center; justify-content: center; font-size: 8px; color: white; font-weight: 600;">Appreciation +${fmt$(appreciation)}</div>
-            </div>
-          </div>
-        ` : ""}
-        ${data.assessedTotal ? `<div style="margin-top: 8px; font-size: 10px; color: #6b7280;">County Assessment: ${fmt$(data.assessedTotal)} (${data.taxYear || "current"}) | ${data.assessedTotal < data.avmValue ? "Below market value" : "At or above market value"}</div>` : ""}
-      </div>
-    `;
-  }
-
-  // ═══════════════════════════════════════════════════════════════════════
-  // SCHOOLS
-  // ═══════════════════════════════════════════════════════════════════════
-
-  const schools = (data as any).schools || [];
-  const schoolsSection = schools.length > 0 ? `
-    <div class="section-title">Nearby Schools</div>
-    <table class="comp-table avoid-break">
-      <thead><tr><th>School</th><th>Level</th><th>Grades</th><th>Distance</th><th>Enrollment</th><th>Rating</th></tr></thead>
-      <tbody>${schools.slice(0, 8).map((s: any) => `
-        <tr>
-          <td>${esc(s.name)}</td>
-          <td>${esc(s.level || s.type || "")}</td>
-          <td>${esc(s.grades || s.gradeRange || "")}</td>
-          <td>${s.distance || "-"}</td>
-          <td class="num">${s.enrollment || "-"}</td>
-          <td>${esc(s.overallGrade || s.rating || "-")}</td>
-        </tr>
-      `).join("")}</tbody>
-    </table>
-  ` : "";
-
-  // ═══════════════════════════════════════════════════════════════════════
-  // HAZARD ZONES
-  // ═══════════════════════════════════════════════════════════════════════
-
-  const hazardSection = (data.hazards && data.hazards.length > 0) ? `
-    <div class="section-title">Environmental & Hazard Zones</div>
-    ${data.hazards.map((h) => `<div class="hazard-badge"><div class="hb-label">${esc(h.label)}</div><div class="hb-value">${esc(h.value)}</div></div>`).join("")}
-  ` : "";
-
-  // ═══════════════════════════════════════════════════════════════════════
-  // NEIGHBORHOOD DEMOGRAPHICS
-  // ═══════════════════════════════════════════════════════════════════════
-
-  const demographics = (data as any).demographics || (data as any).federalData;
-  let demographicsSection = "";
-  if (demographics) {
-    const census = demographics.census || demographics;
-    demographicsSection = `
-      <div class="section-title">Neighborhood Demographics</div>
-      <div class="two-col avoid-break">
-        <div>
-          ${row("Median Household Income", census.medianHouseholdIncome || census.medianIncome ? fmt$(census.medianHouseholdIncome || census.medianIncome) : null)}
-          ${row("Median Home Value (Area)", census.medianHomeValue ? fmt$(census.medianHomeValue) : null)}
-          ${row("Population", census.totalPopulation ? Number(census.totalPopulation).toLocaleString() : null)}
-          ${row("Median Age", census.medianAge)}
-        </div>
-        <div>
-          ${row("Owner-Occupied", census.ownerOccupiedPct ? `${census.ownerOccupiedPct}%` : null)}
-          ${row("Renter-Occupied", census.renterOccupiedPct ? `${census.renterOccupiedPct}%` : null)}
-          ${row("Unemployment Rate", census.unemploymentRate ? `${census.unemploymentRate}%` : null)}
-          ${row("Population Density", census.populationDensity ? `${Number(census.populationDensity).toLocaleString()}/sq mi` : null)}
-        </div>
-      </div>
-    `;
-  }
-
-  // ═══════════════════════════════════════════════════════════════════════
-  // PHOTOS (uploaded by agent + MLS if available)
-  // ═══════════════════════════════════════════════════════════════════════
-
-  const allPhotos = [...(data.photoGalleryData || []), ...((data as any).uploadedPhotos || [])];
-  const photoSection = allPhotos.length > 0 ? `
-    <div class="page-break"></div>
-    ${hdr}<div class="gold-accent"></div>
-    <div class="big-section-header">Photos</div>
-    <div class="photo-grid large">${allPhotos.slice(0, 16).map((url: string) => `<img src="${url}" />`).join("")}</div>
-  ` : "";
-
-  // ═══════════════════════════════════════════════════════════════════════
-  // MARKET TRENDS
-  // ═══════════════════════════════════════════════════════════════════════
-
-  // Chart HTML needs to be in outer scope so it's accessible in assembly
-  let chartHtml_outer = "";
-
-  let marketSection = "";
-  if (data.marketStats || data.marketType) {
-    const marketArrowPos = data.marketType === "sellers" ? "16%" : data.marketType === "buyers" ? "83%" : "50%";
-    const mCards = [
-      data.monthsOfInventory != null ? `<div class="value-card dark"><div class="vc-label">Months Inventory</div><div class="vc-value">${data.monthsOfInventory.toFixed(1)}</div></div>` : "",
-      data.soldToListRatio != null ? `<div class="value-card dark"><div class="vc-label">Sold-to-List %</div><div class="vc-value">${data.soldToListRatio.toFixed(1)}%</div></div>` : "",
-      data.marketStats?.avgDOM != null ? `<div class="value-card dark"><div class="vc-label">Median DOM</div><div class="vc-value">${data.marketStats.avgDOM}</div></div>` : "",
-      data.marketStats?.medianPrice != null ? `<div class="value-card dark"><div class="vc-label">Median Sold</div><div class="vc-value">${fmt$(data.marketStats.medianPrice)}</div></div>` : "",
-    ].filter(Boolean).join("");
-
-    // Build chart data from monthly trends
-    const trends = (data as any).monthlyTrends || [];
-    let chartHtml = "";
-    if (trends.length >= 3) {
-      const labels = trends.map((t: any) => t.month || "").map((m: string) => {
-        if (!m) return "";
-        // Format "2025-08" to "Aug '25"
-        const parts = m.split("-");
-        if (parts.length === 2) {
-          const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-          return `${months[parseInt(parts[1]) - 1] || parts[1]} '${parts[0].slice(2)}`;
-        }
-        return m;
-      });
-      const prices = trends.map((t: any) => t.medianPrice || t.avgPrice || 0);
-      const listings = trends.map((t: any) => t.listings || 0);
-      const doms = trends.map((t: any) => t.dom || 0);
-
-      chartHtml = `
-        <div class="section-title" style="margin-top: 20px;">Median Sale Price Trend</div>
-        <div class="chart-container" style="height: 220px;"><canvas id="priceChart"></canvas></div>
-
-        <div class="section-title" style="margin-top: 16px;">Listings & Days on Market</div>
-        <div class="chart-container" style="height: 200px;"><canvas id="listingsChart"></canvas></div>
-
-        <script data-chart>
-          // Price Trend Chart - executed by Puppeteer after Chart.js loads
-          new Chart(document.getElementById('priceChart'), {
-            type: 'line',
-            data: {
-              labels: ${JSON.stringify(labels)},
-              datasets: [{
-                label: 'Median Price',
-                data: ${JSON.stringify(prices)},
-                borderColor: '#1e40af',
-                backgroundColor: 'rgba(30,64,175,0.1)',
-                fill: true,
-                tension: 0.3,
-                pointRadius: 3,
-                pointBackgroundColor: '#1e40af',
-              }]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              animation: false,
-              plugins: { legend: { display: false } },
-              scales: {
-                y: { ticks: { callback: function(v) { return '$' + (v/1000).toFixed(0) + 'K'; } } },
-                x: { ticks: { font: { size: 9 } } }
-              }
-            }
-          });
-
-          // Listings + DOM Chart (dual y-axis)
-          new Chart(document.getElementById('listingsChart'), {
-            type: 'bar',
-            data: {
-              labels: ${JSON.stringify(labels)},
-              datasets: [
-                { label: 'Listings', data: ${JSON.stringify(listings)}, backgroundColor: '#3b82f6', borderRadius: 3, yAxisID: 'y' },
-                { label: 'Median DOM (days)', data: ${JSON.stringify(doms)}, backgroundColor: '#f59e0b', borderRadius: 3, yAxisID: 'yDom' }
-              ]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              animation: false,
-              plugins: { legend: { position: 'bottom', labels: { font: { size: 9 }, usePointStyle: true, pointStyle: 'rect' } } },
-              scales: {
-                y: { beginAtZero: true, position: 'left', title: { display: true, text: 'Listings', font: { size: 9 } }, ticks: { font: { size: 9 } } },
-                yDom: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Days', font: { size: 9 } }, ticks: { font: { size: 9 } } },
-                x: { ticks: { font: { size: 9 } } }
-              }
-            }
-          });
-        </script>
-      `;
-    }
-
-    // Copy chart HTML to outer scope for assembly
-    chartHtml_outer = chartHtml;
-
-    marketSection = `
-      <div class="page-break"></div>
-      ${hdr}<div class="gold-accent"></div>
-      <div class="big-section-header">Market Trends</div>
-      <div class="section-title">Market Trends</div>
-      <div class="avoid-break">
-        <div style="position: relative; height: 18px; margin-bottom: 4px;">
-          <div class="market-arrow" style="position: absolute; left: ${marketArrowPos}; transform: translateX(-50%);"></div>
-        </div>
-        <div class="market-indicator"><div class="mi-sellers"></div><div class="mi-balanced"></div><div class="mi-buyers"></div></div>
-        <div class="market-indicator-labels"><span>Seller's Market</span><span>Balanced</span><span>Buyer's Market</span></div>
-      </div>
-      <div class="value-cards">${mCards}</div>
-      ${data.marketStats ? `${row("Active Listings", data.marketStats.totalListings)}${row("Price per Sqft", data.marketStats.pricePerSqft ? `$${data.marketStats.pricePerSqft.toLocaleString()}` : null)}` : ""}
-    `;
-  }
-
-  // ═══════════════════════════════════════════════════════════════════════
-  // SFR vs CONDO MARKET SPLIT (inserted into market section, before charts)
-  // ═══════════════════════════════════════════════════════════════════════
-
-  let sfrCondoSection = "";
-  const sfrStats = (data as any).sfrStats;
-  const condoStats = (data as any).condoStats;
-  if (sfrStats || condoStats) {
-    sfrCondoSection = `
-      <div class="section-title">Market by Property Type</div>
-      <div style="display: flex; gap: 12px; margin-bottom: 16px;">
-        ${sfrStats ? `
-          <div style="flex: 1; border: 2px solid #dc2626; border-radius: 8px; padding: 12px;">
-            <div style="font-size: 11px; font-weight: 700; color: #dc2626; margin-bottom: 8px;">Single Family (${sfrStats.totalSales || 0} sales)</div>
-            <div class="data-row"><span class="dr-label">Median Price</span><span class="dr-value">${fmt$(sfrStats.medianPrice)}</span></div>
-            <div class="data-row"><span class="dr-label">Price/Sqft</span><span class="dr-value">${sfrStats.medianPricePerSqft ? `$${sfrStats.medianPricePerSqft}` : "-"}</span></div>
-            <div class="data-row"><span class="dr-label">Median DOM</span><span class="dr-value">${sfrStats.medianDOM || "-"} days</span></div>
-            ${sfrStats.listToSaleRatio ? `<div class="data-row"><span class="dr-label">List-to-Sale</span><span class="dr-value">${sfrStats.listToSaleRatio}%</span></div>` : ""}
-          </div>
-        ` : ""}
-        ${condoStats ? `
-          <div style="flex: 1; border: 2px solid #3b82f6; border-radius: 8px; padding: 12px;">
-            <div style="font-size: 11px; font-weight: 700; color: #3b82f6; margin-bottom: 8px;">Condo / Townhouse (${condoStats.totalSales || 0} sales)</div>
-            <div class="data-row"><span class="dr-label">Median Price</span><span class="dr-value">${fmt$(condoStats.medianPrice)}</span></div>
-            <div class="data-row"><span class="dr-label">Price/Sqft</span><span class="dr-value">${condoStats.medianPricePerSqft ? `$${condoStats.medianPricePerSqft}` : "-"}</span></div>
-            <div class="data-row"><span class="dr-label">Median DOM</span><span class="dr-value">${condoStats.medianDOM || "-"} days</span></div>
-            ${condoStats.listToSaleRatio ? `<div class="data-row"><span class="dr-label">List-to-Sale</span><span class="dr-value">${condoStats.listToSaleRatio}%</span></div>` : ""}
-          </div>
-        ` : ""}
-      </div>
-    `;
-  }
-
-  // ═══════════════════════════════════════════════════════════════════════
-  // MoM / YoY SALES TRENDS BY PROPERTY TYPE + MONTHLY VOLUME CHART
-  // ═══════════════════════════════════════════════════════════════════════
-
-  let momYoySection = "";
-  const momTrend = (data as any).momTrend;
-  const yoyTrend = (data as any).yoyTrend;
-  const localTrends = (data as any).monthlyTrends || [];
-  const hasMomYoy = momTrend || yoyTrend;
-  const hasMonthlySales = localTrends.length >= 3 && localTrends.some((t: any) => (t.sfrSales || 0) + (t.condoSales || 0) > 0);
-
-  if (hasMomYoy || hasMonthlySales) {
-    const pill = (val?: number | null) => {
-      if (val == null) return `<span style="color: #9ca3af; font-size: 10px;">-</span>`;
-      const positive = val >= 0;
-      const color = positive ? "#15803d" : "#dc2626";
-      const bg = positive ? "#dcfce7" : "#fee2e2";
-      const arrow = positive ? "▲" : "▼";
-      return `<span style="display: inline-block; padding: 2px 8px; font-size: 10px; font-weight: 700; color: ${color}; background: ${bg}; border-radius: 10px;">${arrow} ${positive ? "+" : ""}${val}%</span>`;
-    };
-
-    const trendCard = (label: string, color: string, vol: { mom?: number | null; yoy?: number | null }, price: { mom?: number | null; yoy?: number | null }) => `
-      <div style="flex: 1; border: 2px solid ${color}; border-radius: 8px; padding: 12px;">
-        <div style="font-size: 11px; font-weight: 700; color: ${color}; margin-bottom: 10px;">${label}</div>
-        <div style="display: grid; grid-template-columns: 1fr auto auto; gap: 6px 10px; font-size: 10px; align-items: center;">
-          <div style="color: #6b7280; text-transform: uppercase; font-size: 9px; font-weight: 600;">Sales Volume</div>
-          <div style="text-align: right;"><span style="color: #9ca3af; font-size: 9px;">MoM</span> ${pill(vol.mom)}</div>
-          <div style="text-align: right;"><span style="color: #9ca3af; font-size: 9px;">YoY</span> ${pill(vol.yoy)}</div>
-          <div style="color: #6b7280; text-transform: uppercase; font-size: 9px; font-weight: 600;">Median Price</div>
-          <div style="text-align: right;"><span style="color: #9ca3af; font-size: 9px;">MoM</span> ${pill(price.mom)}</div>
-          <div style="text-align: right;"><span style="color: #9ca3af; font-size: 9px;">YoY</span> ${pill(price.yoy)}</div>
-        </div>
-      </div>
-    `;
-
-    const cards = hasMomYoy ? `
-      <div class="section-title" style="margin-top: 16px;">Sales Trends - Month Over Month & Year Over Year</div>
-      <div style="display: flex; gap: 12px; margin-bottom: 16px;" class="avoid-break">
-        ${trendCard("Single Family", "#dc2626",
-          { mom: momTrend?.sfrSalesChange, yoy: yoyTrend?.sfrSalesChange },
-          { mom: momTrend?.sfrPriceChange, yoy: yoyTrend?.sfrPriceChange }
-        )}
-        ${trendCard("Condo / Townhouse", "#3b82f6",
-          { mom: momTrend?.condoSalesChange, yoy: yoyTrend?.condoSalesChange },
-          { mom: momTrend?.condoPriceChange, yoy: yoyTrend?.condoPriceChange }
-        )}
-      </div>
-      ${yoyTrend ? "" : `<div style="font-size: 9px; color: #9ca3af; margin-top: -8px; margin-bottom: 12px;">YoY requires 24 months of MLS sales history.</div>`}
-    ` : "";
-
-    let chart = "";
-    if (hasMonthlySales) {
-      const monthLabels = localTrends.map((t: any) => {
-        const parts = String(t.month || "").split("-");
-        if (parts.length === 2) {
-          const names = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-          return `${names[parseInt(parts[1]) - 1] || parts[1]} '${parts[0].slice(2)}`;
-        }
-        return t.month || "";
-      });
-      const sfrSeries = localTrends.map((t: any) => t.sfrSales || 0);
-      const condoSeries = localTrends.map((t: any) => t.condoSales || 0);
-
-      chart = `
-        <div class="avoid-break">
-          <div class="section-title" style="margin-top: 8px;">Monthly Sales Volume by Property Type</div>
-          <div class="chart-container" style="height: 220px;"><canvas id="monthlySalesChart"></canvas></div>
-        </div>
-        <script data-chart>
-          new Chart(document.getElementById('monthlySalesChart'), {
-            type: 'bar',
-            data: {
-              labels: ${JSON.stringify(monthLabels)},
-              datasets: [
-                { label: 'Single Family', data: ${JSON.stringify(sfrSeries)}, backgroundColor: '#dc2626', borderRadius: 2 },
-                { label: 'Condo/Townhouse', data: ${JSON.stringify(condoSeries)}, backgroundColor: '#3b82f6', borderRadius: 2 }
-              ]
-            },
-            options: {
-              responsive: true, maintainAspectRatio: false, animation: false,
-              plugins: { legend: { position: 'bottom', labels: { font: { size: 9 }, usePointStyle: true, pointStyle: 'rect' } } },
-              scales: {
-                y: { beginAtZero: true, title: { display: true, text: 'Closed Sales', font: { size: 9 } }, ticks: { font: { size: 9 }, precision: 0 } },
-                x: { ticks: { font: { size: 8 }, maxRotation: 45 } }
-              }
-            }
-          });
-        </script>
-      `;
-    }
-
-    momYoySection = cards + chart;
-  }
-
-  // ═══════════════════════════════════════════════════════════════════════
-  // COUNTY OVERVIEW & ZIP COMPARISON
-  // ═══════════════════════════════════════════════════════════════════════
-
-  let countySection = "";
-  const countyAnalytics = (data as any).countyAnalytics;
-  if (countyAnalytics?.overview) {
-    const co = countyAnalytics.overview;
-    const trendBadge = (val?: number | null) => {
-      if (val == null) return "";
-      const positive = val >= 0;
-      const color = positive ? "#15803d" : "#dc2626";
-      const bg = positive ? "#dcfce7" : "#fee2e2";
-      const arrow = positive ? "▲" : "▼";
-      return `<span style="display: inline-block; margin-left: 6px; padding: 1px 6px; font-size: 9px; font-weight: 700; color: ${color}; background: ${bg}; border-radius: 10px; vertical-align: middle;">${arrow} ${positive ? "+" : ""}${val}%</span>`;
-    };
-    const yoyBadge = trendBadge(co.yoyPriceChange);
-    const momentumBadge = trendBadge(co.salesMomentum);
-    countySection = `
-      <div class="page-break"></div>
-      ${hdr}<div class="gold-accent"></div>
-      <div class="big-section-header">${esc(co.county)} County Market Overview</div>
-      <div class="value-cards">
-        <div class="value-card dark"><div class="vc-label">Median Sale Price ${yoyBadge}</div><div class="vc-value">${fmt$(co.medianSalePrice)}</div><div class="vc-sub">All Property Types${co.yoyPriceChange != null ? " · YoY vs prior year" : ""}</div></div>
-        ${co.sfrMedianPrice ? `<div class="value-card" style="border-left: 3px solid #dc2626;"><div class="vc-label">SFR Median</div><div class="vc-value">${fmt$(co.sfrMedianPrice)}</div><div class="vc-sub">Single Family</div></div>` : ""}
-        ${co.condoMedianPrice ? `<div class="value-card" style="border-left: 3px solid #3b82f6;"><div class="vc-label">Condo/TH Median</div><div class="vc-value">${fmt$(co.condoMedianPrice)}</div><div class="vc-sub">Condo & Townhouse</div></div>` : ""}
-        <div class="value-card dark"><div class="vc-label">Price/Sqft</div><div class="vc-value">$${co.medianPricePerSqft || "-"}</div></div>
-        <div class="value-card dark"><div class="vc-label">Median DOM</div><div class="vc-value">${co.medianDOM || "-"} days</div></div>
-        <div class="value-card dark"><div class="vc-label">Total Listings ${momentumBadge}</div><div class="vc-value">${co.totalListings?.toLocaleString() || "-"}</div><div class="vc-sub">${co.salesMomentum != null ? "6mo vs prior 6mo" : "Active inventory"}</div></div>
-        ${co.medianRent ? `<div class="value-card dark"><div class="vc-label">Median Rent</div><div class="vc-value">$${co.medianRent.toLocaleString()}/mo</div></div>` : ""}
-      </div>
-    `;
-
-    // ZIP Comparison Table
-    if (countyAnalytics.zipTable?.length > 0) {
-      const subjectZip = data.zip;
-      const zipRows = countyAnalytics.zipTable.slice(0, 20).map((z: any) => {
-        const isSubject = z.zipCode === subjectZip;
-        const rowStyle = isSubject ? ' style="background: #eff6ff; font-weight: 700;"' : '';
-        return `<tr${rowStyle}>
-          <td>${z.zipCode}${isSubject ? " *" : ""}</td>
-          <td class="num">${fmt$(z.medianPrice)}</td>
-          <td class="num">${fmt$(z.sfrMedian)}</td>
-          <td class="num">${fmt$(z.condoMedian)}</td>
-          <td class="num">${z.medianPricePerSqft ? `$${z.medianPricePerSqft}` : "-"}</td>
-          <td class="num">${z.totalListings || "-"}</td>
-          <td class="num">${z.medianDOM || "-"}</td>
-          <td class="num">${z.medianRent ? `$${z.medianRent.toLocaleString()}` : "-"}</td>
-        </tr>`;
-      }).join("");
-
-      countySection += `
-        <div class="page-break"></div>
-        ${hdr}<div class="gold-accent"></div>
-        <div class="big-section-header">Sales Price by ZIP Code</div>
-        <table class="comp-table zip-table" style="font-size: 9px;">
-          <thead><tr><th>ZIP</th><th>Median</th><th>SFR Median</th><th>Condo/TH</th><th>$/Sqft</th><th>Listings</th><th>DOM</th><th>Rent</th></tr></thead>
-          <tbody>${zipRows}</tbody>
-        </table>
-        ${subjectZip ? `<div style="font-size: 9px; color: #6b7280; margin-top: 4px;">* Subject property ZIP code highlighted</div>` : ""}
-      `;
-
-      // ZIP Median Price horizontal bar chart (SFR vs Condo)
-      const zipChartData = countyAnalytics.zipTable.slice(0, 20).reverse(); // Bottom to top
-      if (zipChartData.length > 3) {
-        const zipLabels = zipChartData.map((z: any) => z.zipCode);
-        const zipSfr = zipChartData.map((z: any) => z.sfrMedian || 0);
-        const zipCondo = zipChartData.map((z: any) => z.condoMedian || 0);
-
-        countySection += `
-          <div class="page-break"></div>
-          ${hdr}<div class="gold-accent"></div>
-          <div class="section-title">Median Sale Price by ZIP Code - SFR vs Condo/Townhouse</div>
-          <div class="chart-container" style="height: ${Math.max(300, zipChartData.length * 22)}px;"><canvas id="zipBarChart"></canvas></div>
-
-          <script data-chart>
-            new Chart(document.getElementById('zipBarChart'), {
-              type: 'bar',
-              data: {
-                labels: ${JSON.stringify(zipLabels)},
-                datasets: [
-                  { label: 'Single Family', data: ${JSON.stringify(zipSfr)}, backgroundColor: '#dc2626', borderRadius: 2 },
-                  { label: 'Condo/Townhouse', data: ${JSON.stringify(zipCondo)}, backgroundColor: '#3b82f6', borderRadius: 2 }
-                ]
-              },
-              options: {
-                indexAxis: 'y',
-                responsive: true, maintainAspectRatio: false, animation: false,
-                plugins: {
-                  legend: { position: 'top', labels: { font: { size: 9 }, usePointStyle: true } },
-                  tooltip: { callbacks: { label: function(c) { return c.dataset.label + ': $' + (c.raw/1000).toFixed(0) + 'K'; } } }
-                },
-                scales: {
-                  x: { ticks: { callback: function(v) { return '$' + (v/1000000).toFixed(1) + 'M'; }, font: { size: 8 } } },
-                  y: { ticks: { font: { size: 9 } } }
-                }
-              }
-            });
-          </script>
-        `;
-      }
-    }
-  }
-
-  // ═══════════════════════════════════════════════════════════════════════
-  // OAHU 20-YEAR TREND CHART
-  // ═══════════════════════════════════════════════════════════════════════
-
-  let oahuTrendSection = "";
-  const oahuTrends = (data as any).oahuTrends;
-  if (oahuTrends?.length > 5) {
-    const trendLabels = oahuTrends.map((y: any) => String(y.year));
-    const sfrMedians = oahuTrends.map((y: any) => y.sfrMedian);
-    const condoMedians = oahuTrends.map((y: any) => y.condoMedian);
-    const sfrAvgs = oahuTrends.map((y: any) => y.sfrAvg);
-    const condoAvgs = oahuTrends.map((y: any) => y.condoAvg);
-    const sfrSales = oahuTrends.map((y: any) => y.sfrSales);
-    const condoSales = oahuTrends.map((y: any) => y.condoSales);
-
-    oahuTrendSection = `
-      <div class="page-break"></div>
-      ${hdr}<div class="gold-accent"></div>
-      <div class="big-section-header">Oahu Market Trends</div>
-
-      <div class="avoid-break">
-        <div class="section-title">Median Sale Price - Oahu (${oahuTrends.length} Years)</div>
-        <div style="font-size: 9px; color: #6b7280; margin-bottom: 4px;">Single Family vs Condo/Townhouse | Source: HiCentral MLS</div>
-        <div class="chart-container" style="height: 220px;"><canvas id="oahuMedianChart"></canvas></div>
-      </div>
-
-      <div class="avoid-break">
-        <div class="section-title" style="margin-top: 16px;">Average Sale Price - Oahu (${oahuTrends.length} Years)</div>
-        <div style="font-size: 9px; color: #6b7280; margin-bottom: 4px;">Single Family vs Condo/Townhouse | Source: HiCentral MLS</div>
-        <div class="chart-container" style="height: 220px;"><canvas id="oahuAvgChart"></canvas></div>
-      </div>
-
-      <div class="avoid-break">
-        <div class="section-title" style="margin-top: 16px;">Annual Sales Volume - Oahu (${oahuTrends.length} Years)</div>
-        <div style="font-size: 9px; color: #6b7280; margin-bottom: 4px;">Number of residential resales per year | Source: HiCentral MLS</div>
-        <div class="chart-container" style="height: 220px;"><canvas id="oahuVolumeChart"></canvas></div>
-      </div>
-
-      <script data-chart>
-        // Median Sale Price Chart
-        new Chart(document.getElementById('oahuMedianChart'), {
-          type: 'line',
-          data: {
-            labels: ${JSON.stringify(trendLabels)},
-            datasets: [
-              { label: 'Single Family', data: ${JSON.stringify(sfrMedians)}, borderColor: '#dc2626', backgroundColor: '#dc2626', pointBackgroundColor: '#dc2626', fill: false, tension: 0.3, pointRadius: 2, borderWidth: 2 },
-              { label: 'Condo/TH', data: ${JSON.stringify(condoMedians)}, borderColor: '#3b82f6', backgroundColor: '#3b82f6', pointBackgroundColor: '#3b82f6', fill: false, tension: 0.3, pointRadius: 2, borderWidth: 2 }
-            ]
-          },
-          options: {
-            responsive: true, maintainAspectRatio: false, animation: false,
-            plugins: { legend: { position: 'bottom', labels: { font: { size: 9 }, usePointStyle: true } } },
-            scales: {
-              y: { ticks: { callback: function(v) { return '$' + (v/1000).toFixed(0) + 'K'; }, font: { size: 9 } } },
-              x: { ticks: { font: { size: 8 }, maxRotation: 45 } }
-            }
-          }
-        });
-
-        // Average Sale Price Chart
-        new Chart(document.getElementById('oahuAvgChart'), {
-          type: 'line',
-          data: {
-            labels: ${JSON.stringify(trendLabels)},
-            datasets: [
-              { label: 'Single Family', data: ${JSON.stringify(sfrAvgs)}, borderColor: '#dc2626', backgroundColor: '#dc2626', pointBackgroundColor: '#dc2626', fill: false, tension: 0.3, pointRadius: 2, borderWidth: 2 },
-              { label: 'Condo/TH', data: ${JSON.stringify(condoAvgs)}, borderColor: '#3b82f6', backgroundColor: '#3b82f6', pointBackgroundColor: '#3b82f6', fill: false, tension: 0.3, pointRadius: 2, borderWidth: 2 }
-            ]
-          },
-          options: {
-            responsive: true, maintainAspectRatio: false, animation: false,
-            plugins: { legend: { position: 'bottom', labels: { font: { size: 9 }, usePointStyle: true } } },
-            scales: {
-              y: { ticks: { callback: function(v) { return '$' + (v/1000).toFixed(0) + 'K'; }, font: { size: 9 } } },
-              x: { ticks: { font: { size: 8 }, maxRotation: 45 } }
-            }
-          }
-        });
-
-        // Annual Sales Volume Chart
-        new Chart(document.getElementById('oahuVolumeChart'), {
-          type: 'line',
-          data: {
-            labels: ${JSON.stringify(trendLabels)},
-            datasets: [
-              { label: 'Single Family', data: ${JSON.stringify(sfrSales)}, borderColor: '#dc2626', backgroundColor: '#dc2626', pointBackgroundColor: '#dc2626', fill: false, tension: 0.3, pointRadius: 2, borderWidth: 2 },
-              { label: 'Condo/TH', data: ${JSON.stringify(condoSales)}, borderColor: '#3b82f6', backgroundColor: '#3b82f6', pointBackgroundColor: '#3b82f6', fill: false, tension: 0.3, pointRadius: 2, borderWidth: 2 }
-            ]
-          },
-          options: {
-            responsive: true, maintainAspectRatio: false, animation: false,
-            plugins: { legend: { position: 'bottom', labels: { font: { size: 9 }, usePointStyle: true } } },
-            scales: {
-              y: { beginAtZero: true, ticks: { font: { size: 9 } } },
-              x: { ticks: { font: { size: 8 }, maxRotation: 45 } }
-            }
-          }
-        });
-      </script>
-    `;
-  }
-
-  // ═══════════════════════════════════════════════════════════════════════
-  // SALES HISTORY
-  // ═══════════════════════════════════════════════════════════════════════
-
-  let salesSection = "";
-  if (data.salesHistory && data.salesHistory.length > 0) {
-    const salesRows = data.salesHistory.slice(0, 10).map((s, i) => {
-      const amt = typeof s.amount === "object" ? (s.amount as any)?.saleAmt : s.amount;
-      const amtDisplay = amt == null ? "-" : amt <= 100 ? "Price Not Disclosed" : fmt$(amt);
-      return `<tr><td>${i + 1}</td><td>${fmtDate(s.date)}</td><td class="num">${amtDisplay}</td><td>${esc((s.buyer || "-").substring(0, 25))}</td><td>${esc((s.seller || "-").substring(0, 25))}</td></tr>`;
-    }).join("");
-    salesSection = `
-      <div class="section-title">Sales History</div>
-      <table class="comp-table avoid-break"><thead><tr><th></th><th>Date</th><th>Amount</th><th>Buyer</th><th>Seller</th></tr></thead><tbody>${salesRows}</tbody></table>
-    `;
-  }
-
-  // ═══════════════════════════════════════════════════════════════════════
-  // COMPARABLE SALES
-  // ═══════════════════════════════════════════════════════════════════════
-
-  let compsSection = "";
-  if (data.comps && data.comps.length > 0) {
-    const compRows = data.comps.slice(0, 10).map((c) => `
-      <tr><td>${esc((c.address || "-").substring(0, 35))}</td><td class="num">${c.price != null ? fmt$(c.price) : "-"}</td><td>${c.beds || "?"}/${c.baths || "?"}</td><td class="num">${c.sqft ? c.sqft.toLocaleString() : "-"}</td><td>${fmtDate(c.closeDate)}</td><td class="num">${c.correlation != null && c.correlation > 0 ? `${Math.round(c.correlation <= 1 ? c.correlation * 100 : c.correlation)}%` : "-"}</td></tr>
-    `).join("");
-    compsSection = `
-      <div class="section-title">Comparable Sales</div>
-      <table class="comp-table avoid-break"><thead><tr><th>Address</th><th>Price</th><th>Bd/Ba</th><th>Sqft</th><th>Closed</th><th>Match</th></tr></thead><tbody>${compRows}</tbody></table>
-    `;
-  }
-
-  // ═══════════════════════════════════════════════════════════════════════
-  // PRICING STRATEGY
-  // ═══════════════════════════════════════════════════════════════════════
-
-  let pricingSection = "";
-  if (data.pricingStrategy) {
-    const ps = data.pricingStrategy;
-    pricingSection = `
-      <div class="page-break"></div>
-      ${hdr}<div class="gold-accent"></div>
-      <div class="big-section-header">Pricing Strategy</div>
-      <table class="comp-table avoid-break">
-        <thead><tr><th></th><th>For Sale Listings</th><th>Distressed</th><th>Expired</th><th>Closed</th></tr></thead>
-        <tbody>
-          <tr><td><strong>Lowest Price</strong></td><td class="num">${fmt$(ps.forSale?.lowest)}</td><td class="num">${fmt$(ps.distressed?.lowest)}</td><td class="num">${fmt$(ps.expired?.lowest)}</td><td class="num">${fmt$(ps.closed?.lowest)}</td></tr>
-          <tr><td><strong>Median Price</strong></td><td class="num">${fmt$(ps.forSale?.median)}</td><td class="num">${fmt$(ps.distressed?.median)}</td><td class="num">${fmt$(ps.expired?.median)}</td><td class="num">${fmt$(ps.closed?.median)}</td></tr>
-          <tr><td><strong>Highest Price</strong></td><td class="num">${fmt$(ps.forSale?.highest)}</td><td class="num">${fmt$(ps.distressed?.highest)}</td><td class="num">${fmt$(ps.expired?.highest)}</td><td class="num">${fmt$(ps.closed?.highest)}</td></tr>
-        </tbody>
-      </table>
-    `;
-  }
-
-  // CMA Summary
-  let cmaSummary = "";
-  if (data.cma) {
-    cmaSummary = `
-      <div class="section-title">Pricing Summary</div>
-      <div class="pricing-box avoid-break">
-        <div class="pb-label">Recommended Price</div>
-        <div class="pb-value">${fmt$(data.cma.recommendedPrice)}</div>
-        ${data.cma.recommendedPricePerSqft > 0 ? `<div class="pb-sub">at $${data.cma.recommendedPricePerSqft}/sq. ft.</div>` : ""}
-        <div style="margin-top: 12px; text-align: left; font-size: 11px;">
-          ${row("Average of Comps", fmt$(data.cma.averageOfComps))}
-          ${row("Adjustments", data.cma.totalAdjustment !== 0 ? `${data.cma.totalAdjustment > 0 ? "+" : ""}${fmt$(data.cma.totalAdjustment)}` : "$0")}
-        </div>
-      </div>
-    `;
-  }
-
-  // ═══════════════════════════════════════════════════════════════════════
-  // ASSEMBLE DOCUMENT
-  // ═══════════════════════════════════════════════════════════════════════
+  const generatedAt =
+    data.generatedAt ||
+    new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  const clientName = (data as any).clientName || (data as any).preparedFor;
+
+  const p1 = pageCover(data, branding, TOTAL_PAGES, generatedAt, clientName);
+  const p2 = pageValuation(data, branding, 2, TOTAL_PAGES, generatedAt);
+
+  const p3 = stubPage(data, branding, 3, TOTAL_PAGES, generatedAt, "p3",
+    "Property Facts",
+    "Public Records · Listing · Agent Refinements",
+    "The 3-column property-facts table is being rebuilt to show public records, listing data, and agent refinements side by side.");
+
+  const p4 = stubPage(data, branding, 4, TOTAL_PAGES, generatedAt, "p4",
+    "Interior & Exterior Features",
+    "Listing vs Public",
+    "Detailed interior and exterior feature tables (listing-side vs public-records side) are being rebuilt.");
+
+  const p5 = stubPage(data, branding, 5, TOTAL_PAGES, generatedAt, "p5",
+    "Legal · Owner · Hazards",
+    "Hawaii-specific hazards + sales history",
+    "Legal description, owner facts, sales history, and Hawaii-specific hazard zones (Flood, Tsunami Evacuation, Sea Level Rise, Cesspool Priority) are being rebuilt.");
+
+  const p6 = stubPage(data, branding, 6, TOTAL_PAGES, generatedAt, "p6",
+    "Property Photos",
+    "Listing gallery",
+    "A curated photo gallery pulled from the MLS listing is being rebuilt.");
+
+  const p7 = stubPage(data, branding, 7, TOTAL_PAGES, generatedAt, "p7",
+    "Market Trends",
+    `${data.zip ? `ZIP ${data.zip}` : "Area"} · ${data.propertyType || "Residential"}`,
+    "4 KPIs with month-over-month deltas, a 5-point market-type gauge, and the multi-geography (ZIP / County / State / USA) median-estimated-value trend chart are being rebuilt.");
+
+  const p8 = stubPage(data, branding, 8, TOTAL_PAGES, generatedAt, "p8",
+    "Active Listings",
+    "5-year list-price trend",
+    "The 5-year list-price trend chart and active-listings price-band breakdown are being rebuilt.");
+
+  const p9 = stubPage(data, branding, 9, TOTAL_PAGES, generatedAt, "p9",
+    "Sold Listings",
+    "5-year sold-price trend + 12-month sales vs listings",
+    "The 5-year sold-price trend and the 12-month Sales-vs-Listings grouped bar chart are being rebuilt.");
+
+  const p10 = stubPage(data, branding, 10, TOTAL_PAGES, generatedAt, "p10",
+    "Price vs Volume · 24-Month Trends",
+    "Dual-axis — price and count",
+    "Dual-axis charts comparing median sold price against sales count, and median list price against active listings, over 24 months are being rebuilt.");
+
+  const p11 = stubPage(data, branding, 11, TOTAL_PAGES, generatedAt, "p11",
+    "Market Activity",
+    "New · Closed · Distressed · Expired",
+    "The 4-column market-activity summary (new, closed, distressed, expired) and the area comp map are being rebuilt.");
+
+  const p12 = stubPage(data, branding, 12, TOTAL_PAGES, generatedAt, "p12",
+    "Pricing Strategy & Refined Value",
+    "CMA workbench · agent-editable",
+    "Pricing Strategy comparable-groups table, 90-day sold-price comparison, CMA summary, and Refined Value breakdown are being rebuilt.");
+
+  const p13 = pageAbout(data, branding, 13, TOTAL_PAGES, generatedAt);
 
   return `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
-  <style>${getReportBaseStyles()}</style>
+  <title>Seller Report — ${escape(data.address || "Property")}</title>
+  <style>${getSellerReportStyles()}</style>
 </head>
 <body>
-
-  ${coverPage}
-
-  <!-- PAGE 2: Valuation + AI Narrative -->
-  <div class="page-break"></div>
-  ${hdr}<div class="gold-accent"></div>
-  ${listingBadge}
-  <div class="value-cards">${valCards}</div>
-  ${avmBar}
-  ${aiNarrative}
-
-  <!-- PAGE 3: Property Details -->
-  <div class="page-break"></div>
-  ${hdr}<div class="gold-accent"></div>
-  <div class="big-section-header">Property Information</div>
-  ${propFacts}
-  ${buildingDetails}
-  ${interiorSection}
-  ${exteriorSection}
-  ${descSection}
-
-  <!-- PAGE 4: Legal, Owner, Location, Tax -->
-  ${legalSection}
-  ${ownerSection}
-  ${locationSection}
-  ${taxSection}
-
-  <!-- HOME EQUITY & SALES ANALYSIS (consolidated - no duplicate) -->
-  ${equityAnalysis}
-  ${salesSection}
-  ${compsSection}
-
-  <!-- Hazards, Schools, Demographics -->
-  ${hazardSection}
-  ${schoolsSection}
-  ${demographicsSection}
-
-  <!-- Photos -->
-  ${photoSection}
-
-  <!-- MARKET ANALYSIS -->
-  ${marketSection}
-  ${sfrCondoSection}
-  ${chartHtml_outer}
-  ${momYoySection}
-  ${countySection}
-  ${oahuTrendSection}
-
-  <!-- Pricing -->
-  ${pricingSection}
-  ${cmaSummary}
-
-  ${ftr}
-
+${p1}
+${p2}
+${p3}
+${p4}
+${p5}
+${p6}
+${p7}
+${p8}
+${p9}
+${p10}
+${p11}
+${p12}
+${p13}
 </body>
 </html>`;
+}
+
+function escape(s: string): string {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }

@@ -255,28 +255,22 @@ GENERAL TIPS:
 4. Optionally add a personal note to the seller
 5. Click "Generate Seller Report PDF" to create a branded multi-page Seller Report
 
-**Seller Report PDF includes:**
-- Cover page with property map (Google Maps) and agent branding
-- AI-generated Property Analysis narrative (Fair Housing compliant)
-- Valuation summary (AVM, CMA, last sale, equity)
-- AVM and CMA range bars
-- Property facts, building details, interior/exterior features
-- Legal description (parcel, zoning, census tract)
-- Owner facts and multi-year tax history
-- Equity analysis with visual equity bar and appreciation timeline
-- Market trends with market type indicator and dual-axis Listings/DOM chart
-- Market by Property Type split cards (Single Family vs Condo/Townhouse)
-- Median Sale Price trend line chart
-- Sales Trends MoM and YoY cards per property type (sales volume and median price % change, 24 months of MLS history)
-- Monthly Sales Volume by Property Type grouped bar chart (SFR vs Condo/Townhouse)
-- County Market Overview with YoY and Sales Momentum badges on primary metrics
-- ZIP comparison table with subject property ZIP highlighted
-- Median Sale Price by ZIP bar chart (SFR vs Condo/Townhouse)
-- Oahu 20-year trend charts (median, average, volume) by property type
-- Sales history table
-- Comparable sales with CMA adjustments
-- Pricing strategy table (for sale/closed/distressed/expired)
-- CMA pricing summary with recommended price
+**Seller Report PDF (13-page RPR-equivalent, rebuild in progress):**
+1. Cover — hero photo, address overlay, listing status pill, agent card (headshot, license, contact, brokerage)
+2. Valuation — Genie AVM™ primary card with confidence stars, month/12-mo deltas, range bar, tax & assessment strip
+3. Property Facts — 3-column table (Public / Listing / Agent Refinements)
+4. Interior & Exterior Features — listing-side vs public-records split
+5. Legal · Owner · Hazards — parcel/zoning/subdivision, owner facts, Hawaii-specific hazards (Flood, Tsunami Evac, Sea Level Rise, Cesspool Priority), sales history
+6. Property Photos — listing gallery
+7. Market Trends — 4 KPIs with MoM, 5-point market-type gauge, ZIP/County/State/USA value history chart
+8. Active Listings — 5-year list-price trend
+9. Sold Listings — 5-year sold-price trend + 12-month sales vs listings grouped bars
+10. Dual Trends — Median Sold Price vs Sold Listings and Median List Price vs Active Listings (dual-axis, 24 months)
+11. Market Activity — 4-column New/Closed/Distressed/Expired summary with area comp map
+12. Pricing Strategy & Refined Value — comparable groups, 90-day sold comparison, CMA summary, Refined Value breakdown
+13. About — Real Estate Genie description, data sources, agent closing card, Equal Housing glyph
+
+Pages 1, 2, and 13 render real data now; pages 3-12 currently show "Section in progress" notices and are being rebuilt. Every page is agent-branded. No RPR branding; footer reads "Report produced by Real Estate Genie · © Hulia'u Software, Inc."
 
 **Use case:** Generate Seller Reports for prospecting (absentee owners, high equity homeowners) or listing presentations. The data comes from public records, not MLS.
 

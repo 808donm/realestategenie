@@ -835,32 +835,22 @@ The Buyer Report is generated from **MLS listing data** and is designed for buye
 
 The Seller Report is generated from **property data (public records)** and is designed for seller clients considering listing their property. It includes valuation, equity analysis, and a pricing strategy.
 
-**Seller Report sections:**
-1. Cover page with property map and agent branding
-2. AI-generated Property Analysis narrative (Fair Housing compliant)
-3. Valuation summary cards (AVM, CMA value, last sale, estimated equity)
-4. AVM range bar and CMA range bar
-5. Property facts and building details
-6. Interior and exterior features
-7. Legal description (parcel number, zoning, census tract, subdivision, legal text)
-8. Owner facts (owner name, co-owner, occupancy, mailing address)
-9. Multi-year tax history comparison table (up to 5 years)
-10. Estimated equity section with visual equity bar (property value vs loan balance) and appreciation timeline
-11. Photo gallery (up to 16 photos)
-12. Market trends with market type indicator and dual-axis Listings/DOM chart
-13. Market by Property Type split cards (Single Family vs Condo/Townhouse)
-14. Median sale price trend line chart
-15. Sales Trends MoM and YoY cards per property type (sales volume and median price % change, using 24 months of MLS history)
-16. Monthly Sales Volume by Property Type grouped bar chart (SFR vs Condo/Townhouse)
-17. County Market Overview with YoY and Sales Momentum badges on primary metric cards
-18. ZIP comparison table with subject property ZIP highlighted
-19. Median Sale Price by ZIP horizontal bar chart (SFR vs Condo/Townhouse)
-20. Oahu 20-year trend charts (median price, average price, sales volume) split by property type
-21. Sales history table with dates, amounts, buyer/seller names
-22. Comparable sales with CMA adjustments (address, status, original price, adjusted price)
-23. Pricing strategy table comparing For Sale, Closed, Distressed, and Expired listings
-24. CMA pricing summary with recommended price, average of comps, adjustments, and CMA range
-25. Environmental and hazard zones
+**Seller Report is being rebuilt to a 13-page RPR-equivalent format.** The new report is agent-branded on every page, matches industry-standard Seller Report depth, and includes a Pricing Strategy workbench page.
+
+**13 sections (pages 1, 2, and 13 are live now — pages 3-12 are in progress and currently show a "Section in progress" notice):**
+1. Cover — hero photo, address overlay, listing status pill, full agent card (live)
+2. Valuation — Genie AVM™ with confidence stars, month-change, 12-month change, range bar, tax & assessment strip (live)
+3. Property Facts — 3-column table showing Public Records, Listing, and Agent Refinements (in progress)
+4. Interior & Exterior Features — listing vs public-records split tables (in progress)
+5. Legal · Owner · Hazards — parcel/zoning/subdivision, owner facts, Hawaii-specific hazards (Flood Zone, Tsunami Evacuation Zone, Sea Level Rise Exposure, Cesspool Priority), sales history (in progress)
+6. Property Photos — curated listing gallery (in progress)
+7. Market Trends — 4 KPIs with month-over-month deltas, 5-point market-type gauge, ZIP vs County vs State vs USA median-value history chart (in progress)
+8. Active Listings — 5-year list-price trend chart, price-band breakdown (in progress)
+9. Sold Listings — 5-year sold-price trend + 12-month Sales vs Listings grouped bar chart (in progress)
+10. Price vs Volume — dual-axis charts over 24 months (Median Sold Price vs Sales Count, Median List Price vs Active Listings) (in progress)
+11. Market Activity — 4-column New / Closed / Distressed / Expired summary, area comp map with status pins (in progress)
+12. Pricing Strategy & Refined Value — comparable groups, 90-day sold comparison, CMA summary, Refined Value breakdown (in progress)
+13. About — About Real Estate Genie, data sources, agent card repeat, Equal Housing Opportunity glyph, disclaimer (live)
 
 ### 11.3 Prospecting (6 Search Types)
 
