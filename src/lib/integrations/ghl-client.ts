@@ -605,6 +605,13 @@ export class GHLClient {
     country?: string;
     postalCode?: string;
     website?: string;
+    /**
+     * Snapshot ID to apply during sub-account creation. Replicates workflows,
+     * pipelines, custom fields, templates, calendars, and triggers from the
+     * snapshot into the new location in a single atomic call. Omit for an
+     * empty sub-account.
+     */
+    snapshotId?: string;
   }): Promise<{ id: string; location: any }> {
     return this.request<{ id: string; location: any }>("/locations/", {
       method: "POST",
@@ -619,6 +626,7 @@ export class GHLClient {
         country: data.country || "US",
         postalCode: data.postalCode || "",
         website: data.website || "",
+        ...(data.snapshotId ? { snapshotId: data.snapshotId } : {}),
       }),
     });
   }

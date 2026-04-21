@@ -63,10 +63,31 @@ After saving your app, you'll see:
 Add these to your `.env` file (or Vercel environment variables):
 
 ```bash
+# Marketplace OAuth (only if using marketplace apps — not needed in pure PIT mode)
 GHL_CLIENT_ID=your_client_id_here
 GHL_CLIENT_SECRET=your_client_secret_here
+
+# Agency-level credentials for programmatic sub-account provisioning
+GHL_AGENCY_ACCESS_TOKEN=agency_pit_or_oauth_token
+GHL_COMPANY_ID=your_company_relationship_number
+
+# Snapshot ID applied to every new sub-account created via agency API.
+# The snapshot replicates pipelines, custom fields, workflows, calendars, and
+# triggers into the new sub-account during creation (single atomic call).
+# Optional — if unset, new sub-accounts are empty.
+GHL_SNAPSHOT_ID=your_snapshot_id
+
 NEXT_PUBLIC_APP_URL=https://yourdomain.com
 ```
+
+### Snapshot updates for existing sub-accounts
+
+GHL tracks every snapshot deployment. When you update the snapshot (add a new pipeline, new custom field, etc.), you can push the update to all existing sub-accounts that were created from it — no per-sub-account migration required. Push updates via:
+
+- **GHL UI:** Agency View → Snapshots → select the snapshot → **Push Updates** → choose target sub-accounts or push to all
+- **API:** `POST /snapshots/{snapshotId}/push` (requires agency PIT scope `snapshots.write`)
+
+So version-bumping the snapshot name (like `rg-v1.3 → rg-v1.4`) isn't necessary for config changes. Update in place, push to fleet. Keep the `GHL_SNAPSHOT_ID` env var stable across updates.
 
 **For Vercel:**
 

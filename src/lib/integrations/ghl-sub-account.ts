@@ -47,16 +47,23 @@ export async function createGHLSubAccount(agentId: string): Promise<{
     // Create GHL client with agency token
     const client = new GHLClient(agencyToken);
 
-    // Create sub-account (location)
+    // Create sub-account (location). If GHL_SNAPSHOT_ID is set, the snapshot
+    // is applied atomically during creation — new sub-account ships with the
+    // Real Estate Genie pipelines, custom fields, workflows, and triggers
+    // already configured. Omitting the env var falls back to an empty sub-account.
+    const snapshotId = process.env.GHL_SNAPSHOT_ID?.trim() || undefined;
     const locationData = {
       name: agent.display_name || agent.email,
       email: agent.email,
       phone: agent.phone_e164 || "+1 (555) 000-0000", // Default if not provided
       address: agent.agency_name || "",
       country: "US",
+      ...(snapshotId ? { snapshotId } : {}),
     };
 
-    console.log(`Creating GHL sub-account for agent ${agent.email}...`);
+    console.log(
+      `Creating GHL sub-account for agent ${agent.email}${snapshotId ? ` (snapshot ${snapshotId.substring(0, 8)}...)` : " (no snapshot)"}...`,
+    );
 
     const { id: locationId, location } = await client.createLocation(locationData);
 

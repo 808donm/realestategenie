@@ -372,9 +372,22 @@ Workflow C calls: `POST /api/ghl/flyer-choice`
 Ensure these are set in your `.env`:
 
 ```bash
-# GHL OAuth
+# GHL marketplace OAuth (only needed if using marketplace flow — not required in PIT-only mode)
 GHL_CLIENT_ID=your-client-id
 GHL_CLIENT_SECRET=your-client-secret
+
+# GHL agency-level credentials for automated sub-account provisioning
+GHL_AGENCY_ACCESS_TOKEN=your-agency-pit-or-oauth-token
+GHL_COMPANY_ID=your-company-relationship-number
+
+# Snapshot applied to each new sub-account during creation.
+# Ships new sub-accounts pre-configured with pipelines, custom fields,
+# workflows, calendars, and triggers. Update and push to existing sub-accounts
+# via Agency View → Snapshots → Push Updates. Omit to create empty sub-accounts.
+GHL_SNAPSHOT_ID=your-snapshot-id
+
+# Webhook HMAC secret (separate from OAuth)
+GHL_WEBHOOK_SECRET=your-webhook-secret
 
 # App URL (for webhook callbacks)
 NEXT_PUBLIC_APP_URL=https://www.realestategenie.app
