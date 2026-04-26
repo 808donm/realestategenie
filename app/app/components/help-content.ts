@@ -267,6 +267,26 @@ Your account must have Trestle (CoreLogic) credentials configured. This is set u
 
 **AI Tools**: Generate AI-powered listing descriptions (multiple tones) and social media content (Instagram, Facebook, LinkedIn, TikTok) with captions, hashtags, and video scripts.
 
+**VA Assumable Loan Search**: For military buyers (or any buyer who can assume an existing VA mortgage), this search finds active listings where the seller's VA loan can be inherited at the original locked-in rate — typically 2.5-3.5% on loans originated 2020-2022.
+
+How to use:
+1. Ask Hoku: "Find VA assumable homes in Hawaii Kai under 1.2M for my military buyer" — Hoku routes to the search and returns results
+2. Or hit the API directly: GET /api/mls/search-assumable-va?city=...&zip=...&minPrice=...&maxPrice=...&minBeds=...
+
+Results come back in three confidence tiers:
+- **Tier 1 — Explicitly tagged**: Listing agent checked AssumableYN AND included VA in ListingTerms. Highest confidence; usually 5-15% of true VA-assumable inventory.
+- **Tier 2 — Mentioned in remarks**: Listing description contains phrases like "Assumable VA", "Assume our VA loan", or specific rate language ("Assume at 2.875%"). Where most real inventory lives.
+- **Tier 3 — Assumable, loan type unclear**: AssumableYN=true but the financing type isn't specified. Manual review needed — could be VA, FHA, or conventional.
+
+When a rate appears in the public remarks (e.g., "Assume our 2.875% VA loan!"), the system extracts it and displays alongside the listing — agents can immediately see the savings vs current market rates.
+
+Caveats agents should know:
+- VA loan assumption requires lender approval (typically 60-90 days)
+- VA-eligible buyers (military, veterans) are preferred — assumption preserves the seller's VA entitlement so the seller can use VA financing again later
+- Non-VA buyers can also assume VA loans, but consume the seller's entitlement
+- Funding fee on assumption is 0.5% of loan balance (much lower than 2.15-3.3% on a fresh origination)
+- Rates extracted from remarks are agent-stated, not verified — confirm with the listing agent before quoting to a buyer
+
 ### 5.3 Market Monitor (Tab 2)
 
 Market Monitor monitors market activity for a specific zip code or area.

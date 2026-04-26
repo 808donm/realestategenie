@@ -124,6 +124,13 @@
 - AI Description Generator (multiple tones)
 - AI Social Media Generator (Instagram, Facebook, LinkedIn, TikTok)
 
+### VA Assumable Loan Search
+- Find active listings where a buyer can assume an existing VA mortgage from the seller (inheriting their locked-in low rate from a 2020-2022 origination)
+- Three-tier confidence search: explicit MLS tags (AssumableYN + ListingTerms includes VA), public-remarks text mining (catches "Assume our 2.875% VA loan!"), and assumable-loan-type-unspecified (manual review)
+- Each result includes the assumable rate parsed from public remarks when available, plus a snippet of the listing agent's exact wording
+- Caveats surfaced inline: VA loan assumption requires lender approval (60-90 days), VA-eligible buyers preserve seller entitlement (non-VA buyers consume it), funding fee on assumption is 0.5% (much lower than fresh origination)
+- Routable by Hoku: "find VA assumable homes in Honolulu under 1.2M for my military buyer"
+
 ### Tab 2: Market Monitor
 - Map view with color-coded markers by status, shaped by property type
 - ZIP code boundary overlay

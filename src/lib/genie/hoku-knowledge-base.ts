@@ -750,6 +750,22 @@ Levels: Very Likely (70-100), Likely (50-69), Possible (30-49), Unlikely (0-29)
 - Agent can search by neighborhood name (e.g., "Kaimuki", "Diamond Head", "Hawaii Kai").
 - This powers both direct MLS search and the Email Blast feature.
 
+### VA Assumable Loan Search
+- Find active listings where the buyer can assume an existing VA mortgage from the seller.
+- High-value in current rate environment: VA loans originated 2020-2022 sit at 2.5-3.5% rates while market is 6-7%. A buyer assuming the loan inherits the locked-in low rate.
+- VA-eligible buyers (military, veterans) are preferred — assumption preserves the seller's VA entitlement. Non-VA buyers can also assume but consume the seller's entitlement.
+- Endpoint: GET /api/mls/search-assumable-va?city=...&zip=...&minPrice=...&maxPrice=...&minBeds=...&limit=...
+- Returns three confidence tiers:
+  - tier1Explicit — listings with AssumableYN=true AND ListingTerms includes 'VA' (highest confidence)
+  - tier2Remarks — PublicRemarks mentions VA + assumable phrasing (most listings; medium confidence)
+  - tier3Unspecified — AssumableYN=true but loan type unclear (lowest confidence; needs review)
+- Each result includes an extracted assumable rate parsed out of PublicRemarks when found, plus a snippet showing the listing agent's exact wording.
+- Hoku can route queries like:
+  - "Find VA assumable homes in Honolulu"
+  - "Show me homes where my military buyer can assume the loan in 96825"
+  - "Assumable VA loans in Hawaii Kai under 1.2M"
+- Caveats Hoku should mention: VA loan assumption requires lender approval (typically 60-90 days), the seller must release entitlement for non-VA buyers, funding fee on assumption is 0.5% (much lower than fresh origination at 2.15-3.3%). Rate extracted from remarks is agent-stated, not verified.
+
 ### Open House QR Flow
 1. Agent creates open house (import from MLS by MLS# or address, or create manually)
 2. Choose template (Modern, Modern Blue, Elegant Warm) and upload property photos

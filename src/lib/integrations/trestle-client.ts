@@ -78,6 +78,11 @@ export interface TrestleProperty {
   LeaseAmount?: number; // Monthly lease rent
   LeaseExpiration?: string; // Lease expiration date
   LeaseAmountFrequency?: string; // "Monthly", "Annually"
+  // Financing / assumable loan fields (RESO standard — present on both Trestle and RMLS)
+  ListingTerms?: string; // Multi-value: e.g. "Cash, Conventional, FHA, VA, Assumable"
+  BuyerFinancing?: string; // Closed listings only: financing actually used (e.g. "VA", "FHA", "Cash")
+  AssumableYN?: boolean; // Existing loan can be assumed by buyer
+  AssumableContractTerms?: string; // Free text describing assumption terms (rate, lender, balance)
 }
 
 export interface TrestleMedia {
