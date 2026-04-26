@@ -71,8 +71,17 @@ export async function searchAssumableVa(
 
   const baseFilter = [activeFilter, ...sharedFilters].join(" and ");
 
+  // NOTE on schema: Cotality/Trestle's RESO DD implementation does NOT expose
+  // AssumableYN or AssumableContractTerms — referencing them in $filter or
+  // $select returns 400 "Could not find a property named 'AssumableYN'".
+  // We rely on ListingTerms (multi-value string) and PublicRemarks (long text)
+  // which are present in the schema. Fields like AssumableYN may be present
+  // in other MLS feeds; if so, future enhancement could branch on provider.
+
   // ─── Tier 1 — explicit MLS tags ─────────────────────────────────────
-  const tier1Filter = `${baseFilter} and (AssumableYN eq true or contains(ListingTerms, 'Assumable')) and contains(ListingTerms, 'VA')`;
+  // Strongest signal we can get from structured fields: seller's listing
+  // terms must include BOTH 'Assumable' and 'VA'.
+  const tier1Filter = `${baseFilter} and contains(ListingTerms, 'Assumable') and contains(ListingTerms, 'VA')`;
 
   // ─── Tier 2 — text mining PublicRemarks ─────────────────────────────
   // Match common phrasings agents use when the loan is VA-assumable.
@@ -86,30 +95,50 @@ export async function searchAssumableVa(
   ].join(" or ");
   const tier2Filter = `${baseFilter} and (${remarksClauses})`;
 
-  // ─── Tier 3 — assumable but loan type unspecified ────────────────────
-  const tier3Filter = `${baseFilter} and AssumableYN eq true`;
+  // ─── Tier 3 — assumable, loan type unclear ───────────────────────────
+  // Listing tagged Assumable but doesn't say VA in the structured fields.
+  // Loan could be VA, FHA, or conventional — needs review.
+  const tier3Filter = `${baseFilter} and contains(ListingTerms, 'Assumable')`;
 
   // Run the three queries in parallel.
+  // Drop $select for now — some MLS feeds (HiCentral) don't expose AssumableYN
+  // in the schema and a $select referencing a non-existent field 400s the
+  // whole request. Returning all fields is a few KB more per response but
+  // bulletproof against schema variation.
   const [tier1Res, tier2Res, tier3Res] = await Promise.allSettled([
     client.getProperties({
       $filter: tier1Filter,
       $orderby: "ListPrice asc",
       $top: limit,
-      $select: ASSUMABLE_SELECT,
     }),
     client.getProperties({
       $filter: tier2Filter,
       $orderby: "ListPrice asc",
       $top: limit,
-      $select: ASSUMABLE_SELECT,
     }),
     client.getProperties({
       $filter: tier3Filter,
       $orderby: "ListPrice asc",
       $top: limit,
-      $select: ASSUMABLE_SELECT,
     }),
   ]);
+
+  // Log per-tier outcome so silent failures are visible in Vercel runtime logs.
+  const tierStatus = (res: PromiseSettledResult<unknown>, label: string) => {
+    if (res.status === "fulfilled") {
+      const count = (res.value as { value?: unknown[] })?.value?.length ?? 0;
+      console.log(`[search-assumable-va] ${label} (${client.provider}): OK · ${count} rows`);
+    } else {
+      const msg = res.reason instanceof Error ? res.reason.message : String(res.reason);
+      console.warn(`[search-assumable-va] ${label} (${client.provider}): FAILED — ${msg}`);
+    }
+  };
+  tierStatus(tier1Res, "tier1Explicit");
+  tierStatus(tier2Res, "tier2Remarks");
+  tierStatus(tier3Res, "tier3Unspecified");
+  console.log(`[search-assumable-va] filters · t1: ${tier1Filter}`);
+  console.log(`[search-assumable-va] filters · t2: ${tier2Filter}`);
+  console.log(`[search-assumable-va] filters · t3: ${tier3Filter}`);
 
   const tier1Raw = tier1Res.status === "fulfilled" ? tier1Res.value.value : [];
   const tier2Raw = tier2Res.status === "fulfilled" ? tier2Res.value.value : [];

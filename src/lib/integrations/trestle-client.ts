@@ -78,11 +78,16 @@ export interface TrestleProperty {
   LeaseAmount?: number; // Monthly lease rent
   LeaseExpiration?: string; // Lease expiration date
   LeaseAmountFrequency?: string; // "Monthly", "Annually"
-  // Financing / assumable loan fields (RESO standard — present on both Trestle and RMLS)
+  // Financing fields. RESO standard but support varies per implementation:
+  //   - ListingTerms: present in Cotality/Trestle and RMLS schemas. Reliable.
+  //   - BuyerFinancing: present on Closed listings in both. Reliable.
+  //   - AssumableYN / AssumableContractTerms: NOT in Cotality's schema (HiCentral via Trestle).
+  //     Querying or $select-ing these fields against Cotality returns HTTP 400. They
+  //     may exist in other MLS feeds. Treat as opportunistic / read-only.
   ListingTerms?: string; // Multi-value: e.g. "Cash, Conventional, FHA, VA, Assumable"
   BuyerFinancing?: string; // Closed listings only: financing actually used (e.g. "VA", "FHA", "Cash")
-  AssumableYN?: boolean; // Existing loan can be assumed by buyer
-  AssumableContractTerms?: string; // Free text describing assumption terms (rate, lender, balance)
+  AssumableYN?: boolean; // Reserved — not exposed by Cotality. Do not reference in $filter/$select against Trestle.
+  AssumableContractTerms?: string; // Reserved — not exposed by Cotality. Do not reference in $filter/$select against Trestle.
 }
 
 export interface TrestleMedia {
