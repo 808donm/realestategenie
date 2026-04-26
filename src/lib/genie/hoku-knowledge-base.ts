@@ -415,6 +415,32 @@ Help agents set up targeted searches. Suggest combining criteria for highest qua
 
 Help agents set up targeted monitors. Suggest appropriate alert types based on whether the client is a buyer (new listings, price drops, back on market) or seller (expired/withdrawn, pending for market awareness).`,
 
+  // VA Assumable Loan Search
+  "assumable-va": `The agent is on the VA ASSUMABLE LOAN SEARCH page. This is a flagship buyer-side search that finds active listings where a buyer can assume the seller's existing VA mortgage — inheriting the original locked-in 2-4% rate from the 2020-2022 origination boom while market rates sit at 6-7%.
+
+**How the search works** (3-tier confidence):
+1. **Tier 1 — Explicit MLS Tags**: ListingTerms includes both 'Assumable' AND 'VA'. Highest precision, lowest recall. Most listing agents don't fill this combination.
+2. **Tier 2 — Mentioned in Remarks**: Public remarks contain phrases like "VA Assumable @2.75%", "Assume our VA loan", "Assumable VA mortgage". This is where most real inventory shows up — agents who know assumable is a selling point shout it in remarks.
+3. **Tier 3 — Assumable, Loan Type Unclear**: Listing terms include 'Assumable' but no VA mention. Manual review tier — could be VA, FHA, or conventional.
+
+**Rate extraction**: When public remarks include a percentage near the assumable mention, the system extracts it (e.g., "VA Assumable @2.75%!" → "2.75%") and computes the monthly savings vs current market rate using an 80% LTV assumption on a 30-year mortgage. Result cards show "Assumable Rate 2.75% · $1,847/mo savings vs 6.5% market".
+
+**Filters**: City, ZIP, min beds, min/max price. The market rate used for savings comparison is also editable (default 6.5%).
+
+**Caveats Hoku should mention to agents**:
+- VA loan assumption requires lender approval (typically 60-90 days)
+- VA-eligible buyers (military, veterans) preserve the seller's VA entitlement; non-VA buyers consume it
+- Funding fee on assumption is 0.5% (much lower than 2.15-3.3% on fresh origination)
+- Rate extracted from remarks is agent-stated, not verified — confirm with listing agent before quoting a buyer
+- Loan balance shown is approximated at 80% LTV; actual assumed balance varies and isn't published in MLS
+
+**Ideal use case**: Agent has a military buyer (VA-eligible). Search by city or ZIP, sort by extracted rate ascending. Tier 2 results are usually the most actionable. Click "View Listing" to open the full MLS detail.
+
+**Hoku queries that should route here**:
+- "Find VA assumable homes in Honolulu"
+- "Show me homes my military buyer can assume in 96825 under 1.2M"
+- "Assumable VA listings in Hawaii Kai with 3+ beds"`,
+
   // Open Houses
   "open-houses": `The agent is on the OPEN HOUSES page. Complete open house lifecycle management.
 
@@ -805,6 +831,7 @@ export function buildPageContext(pathname: string): string {
     return PAGE_CONTEXT["market-watch"] || "";
   }
   if (pathname.includes("market-monitor")) return PAGE_CONTEXT["market-monitor"] || "";
+  if (pathname.includes("assumable-va")) return PAGE_CONTEXT["assumable-va"] || "";
 
   // Page-level routing
   const routeMap: Record<string, string> = {

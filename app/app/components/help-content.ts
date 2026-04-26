@@ -270,8 +270,16 @@ Your account must have Trestle (CoreLogic) credentials configured. This is set u
 **VA Assumable Loan Search**: For military buyers (or any buyer who can assume an existing VA mortgage), this search finds active listings where the seller's VA loan can be inherited at the original locked-in rate — typically 2.5-3.5% on loans originated 2020-2022.
 
 How to use:
-1. Ask Hoku: "Find VA assumable homes in Hawaii Kai under 1.2M for my military buyer" — Hoku routes to the search and returns results
-2. Or hit the API directly: GET /api/mls/search-assumable-va?city=...&zip=...&minPrice=...&maxPrice=...&minBeds=...
+1. Sidebar → **Opportunities** → **VA Assumable** opens the dedicated search page (or navigate directly to /app/mls/assumable-va)
+2. Enter a city or ZIP, optional bed and price filters
+3. Click **Search VA Assumable**
+4. Results appear in three confidence tiers — each card shows the listing details, the assumable rate (when extracted from remarks), and monthly savings vs current market rate
+5. Adjust the "Compare savings against market rate of X%" field to model the deal at your buyer's actual rate quote
+6. Click **View Listing →** on any card to open the full MLS details
+
+Or ask Hoku: "Find VA assumable homes in Hawaii Kai under 1.2M for my military buyer" — Hoku routes to the search and returns results.
+
+API: GET /api/mls/search-assumable-va?city=...&zip=...&minPrice=...&maxPrice=...&minBeds=...
 
 Results come back in three confidence tiers:
 - **Tier 1 — Explicitly tagged**: Listing agent checked AssumableYN AND included VA in ListingTerms. Highest confidence; usually 5-15% of true VA-assumable inventory.

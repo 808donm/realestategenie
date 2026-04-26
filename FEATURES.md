@@ -125,11 +125,19 @@
 - AI Social Media Generator (Instagram, Facebook, LinkedIn, TikTok)
 
 ### VA Assumable Loan Search
-- Find active listings where a buyer can assume an existing VA mortgage from the seller (inheriting their locked-in low rate from a 2020-2022 origination)
-- Three-tier confidence search: explicit MLS tags (AssumableYN + ListingTerms includes VA), public-remarks text mining (catches "Assume our 2.875% VA loan!"), and assumable-loan-type-unspecified (manual review)
-- Each result includes the assumable rate parsed from public remarks when available, plus a snippet of the listing agent's exact wording
-- Caveats surfaced inline: VA loan assumption requires lender approval (60-90 days), VA-eligible buyers preserve seller entitlement (non-VA buyers consume it), funding fee on assumption is 0.5% (much lower than fresh origination)
-- Routable by Hoku: "find VA assumable homes in Honolulu under 1.2M for my military buyer"
+Dedicated page at /app/mls/assumable-va — listed under Opportunities in the sidebar.
+- Find active listings where a buyer can assume an existing VA mortgage from the seller (inheriting their locked-in 2-4% rate from a 2020-2022 origination)
+- Three-tier confidence search:
+  - Tier 1 explicit: ListingTerms includes both 'Assumable' and 'VA'
+  - Tier 2 remarks: PublicRemarks text-mining for "VA assumable", "Assume our VA loan", "VA loan assum*", etc.
+  - Tier 3 unspecified: ListingTerms includes 'Assumable' but no VA mention (manual review)
+- Filters: city, ZIP, min beds, min/max price, market rate for savings comparison (default 6.5%)
+- Each result card shows: address, beds/baths/sqft, list price, assumable rate badge (when extracted from remarks), monthly savings calculation vs market rate (80% LTV / 30-year), remarks snippet showing the listing agent's exact wording, listing-agent attribution, link to MLS
+- Rate extraction handles real-world phrasings: "VA Assumable @2.75%!", "Assume our 2.875%", "VA loan assumable at 3.25%", "Assumable mortgage - 2.5%"
+- Plausibility gate: rates outside 1.5-9% range are rejected (filters false matches like "2.0 baths")
+- Caveats surfaced inline: VA loan assumption requires lender approval (60-90 days), VA-eligible buyers preserve seller entitlement (non-VA buyers consume it), funding fee on assumption is 0.5% (much lower than fresh origination), rates extracted from remarks are agent-stated (not verified)
+- Schema note: Cotality's RESO implementation does not expose AssumableYN. Fields used are ListingTerms (string) and PublicRemarks (long text). RMLS support: same fields, same query path, drop-in compatible
+- Routable by Hoku: "Find VA assumable homes in Honolulu under 1.2M for my military buyer" → routes to this page or returns inline results
 
 ### Tab 2: Market Monitor
 - Map view with color-coded markers by status, shaped by property type
