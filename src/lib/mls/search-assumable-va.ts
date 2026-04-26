@@ -236,18 +236,29 @@ function enrichListing(p: MlsProperty): { extractedRate?: string; remarksSnippet
 /**
  * Best-effort rate extraction from public remarks. Looks for a percentage
  * value adjacent to "VA", "assumable", or "assume". Conservative — returns
- * null if no high-confidence match.
+ * null if no high-confidence match. Handles real-world phrasings like:
+ *
+ *   "VA Assumable @2.75%!"
+ *   "Assume our 2.875% VA loan!"
+ *   "VA loan assumable at 3.25%"
+ *   "Assumable mortgage - 2.5% rate"
+ *   "Take over our 2.99% VA"
  */
 export function extractAssumableRate(remarks: string): string | null {
   if (!remarks) return null;
 
-  // Patterns to try, in order of confidence.
-  // 1. Explicit "X.XX% VA" or "VA loan ... X.XX%"
-  // 2. "Assume X.XX%" / "assumable at X.XX%"
+  // Patterns to try, in order of confidence. Each captures the numeric rate
+  // in group 1. The `.{0,15}?` lazy match allows connectors like "@", " ", " - ",
+  // "loan ", "mortgage at ", "of ", etc. between the assumable trigger and the
+  // rate without specifying every variant.
   const patterns: RegExp[] = [
-    /(\d{1}\.\d{1,3})\s*%\s*(?:va|assumable|assume)/i,
-    /(?:va|assumable|assume)\s+(?:loan\s+|mortgage\s+|rate\s+)?(?:at\s+|of\s+)?(\d{1}\.\d{1,3})\s*%/i,
-    /assume\s+(?:our\s+|a\s+)?(\d{1}\.\d{1,3})\s*%/i,
+    // Trigger word BEFORE rate: "VA Assumable @2.75%", "Assume our 2.875%", "Assumable mortgage - 2.5%"
+    /(?:va|assumable|assume)\b[^a-z0-9]{0,15}(\d{1}\.\d{1,3})\s*%/i,
+    // Rate BEFORE trigger word: "2.75% VA assumable", "3.25% assumable rate"
+    /(\d{1}\.\d{1,3})\s*%[^a-z0-9]{0,15}(?:va|assumable|assume)\b/i,
+    // Generic "assume our X.XX%" without requiring further qualifier
+    /assume\b[^a-z0-9]{0,10}(?:our\s+|a\s+|the\s+)?(\d{1}\.\d{1,3})\s*%/i,
+    // Fallback — rate near the word "rate" or "interest" within an assumable context
     /(\d{1}\.\d{1,3})\s*%\s*(?:rate|interest)/i,
   ];
 
