@@ -13,8 +13,12 @@ import { searchAssumableVa } from "@/lib/mls/search-assumable-va";
  *   - tier3Unspecified: AssumableYN=true but loan type unclear
  *
  * Query params (all optional, but at least one geographic narrowing recommended):
- *   city            — case-insensitive substring match
- *   zip             — startswith match
+ *   city            — case-insensitive substring match on City
+ *   zip             — startswith match on PostalCode
+ *   neighborhood    — case-insensitive substring on SubdivisionName
+ *                     (alias: subdivision)
+ *   tmk             — TMK / parcel-number substring match (handles dashed
+ *                     and undashed forms). Alias: parcel
  *   minPrice        — integer
  *   maxPrice        — integer
  *   minBeds         — integer
@@ -43,6 +47,8 @@ export async function GET(request: NextRequest) {
 
     const cityRaw = params.get("city")?.trim();
     const zipRaw = params.get("zip")?.trim();
+    const neighborhoodRaw = (params.get("neighborhood") || params.get("subdivision"))?.trim();
+    const tmkRaw = (params.get("tmk") || params.get("parcel"))?.trim();
     const minPriceRaw = params.get("minPrice");
     const maxPriceRaw = params.get("maxPrice");
     const minBedsRaw = params.get("minBeds");
@@ -51,6 +57,8 @@ export async function GET(request: NextRequest) {
     const result = await searchAssumableVa(client, {
       city: cityRaw || undefined,
       postalCode: zipRaw || undefined,
+      subdivisionName: neighborhoodRaw || undefined,
+      parcelNumber: tmkRaw || undefined,
       minPrice: minPriceRaw ? Number(minPriceRaw) : undefined,
       maxPrice: maxPriceRaw ? Number(maxPriceRaw) : undefined,
       minBeds: minBedsRaw ? Number(minBedsRaw) : undefined,

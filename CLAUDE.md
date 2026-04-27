@@ -270,11 +270,13 @@ Whenever a feature is added, modified, or removed, **you must update all three**
    - If a new page is added, add a new `PAGE_CONTEXT` entry and a route in `buildPageContext`.
    - Update `APP_KNOWLEDGE` if the change affects data sources, scoring, or platform-wide behavior.
    - Keep descriptions action-oriented -- Hoku needs to know what the agent can *do*, not just what exists.
+   - **Include numbered step-by-step instructions for every interactive workflow** (see "Step-by-step instructions are mandatory" below).
 
 2. **Help Content** (`app/app/components/help-content.ts`):
    - Update the relevant `HELP_SECTIONS` entry with step-by-step instructions for the feature.
    - If a new page is added, add a new section and a `ROUTE_TO_SECTION` mapping.
    - Write for the end user (real estate agent), not a developer. Use numbered steps and plain language.
+   - **Step-by-step instructions are mandatory** (see below).
 
 3. **Features List** (`FEATURES.md`):
    - Update the relevant section to reflect the current state of the feature.
@@ -283,6 +285,49 @@ Whenever a feature is added, modified, or removed, **you must update all three**
    - Keep descriptions concise and factual -- this is the canonical feature inventory for the product.
 
 This is not optional. Outdated help, AI context, and feature documentation degrade the user experience and create confusion. Treat these three files as part of every feature's deliverable.
+
+### Step-by-step instructions are mandatory
+
+When an agent asks Hoku **"How do I ...?"** they should get the same numbered walkthrough they would find in the in-app Help. To make that work, every feature with an interactive workflow MUST include numbered step-by-steps in **both** files (mirrored, identical content): `app/app/components/help-content.ts` (canonical) and `src/lib/genie/hoku-knowledge-base.ts` (so Hoku at runtime can recite them).
+
+**Format requirements** (apply to both files):
+
+1. Use an `H3` heading framed as a question the agent would actually ask:
+   - `### How do I open the VA Assumable search page?`
+   - `### How do I search VA-assumable homes by Neighborhood?`
+   - `### How do I send a Seller Report to a client?`
+   - Match natural-language phrasing -- Hoku's matching depends on it.
+2. Numbered list of explicit, atomic steps. Each step is one click, one keypress, or one observation. Do not combine multiple actions into one step.
+3. Reference UI elements by their exact label as shown to the agent: `Click **Search VA Assumable**`, not `Click the search button`.
+4. Reference navigation paths sidebar-first: `Sidebar → Opportunities → VA Assumable`, then add the URL fallback in parentheses: `(or /app/mls/assumable-va)`.
+5. Distinct workflows get their own H3. Do not nest two workflows under one heading. A feature with four search modes gets four H3s, not one with sub-bullets.
+6. Mention the **Hoku-equivalent** at the end of the page section: a short list of natural-language queries that should route to or run the feature inline. This anchors Hoku's training and tells agents the alternate path.
+7. Surface caveats inline, not buried at the bottom: data quality, gotchas, what to confirm with counterparties.
+
+**Example pattern from `app/app/components/help-content.ts`** (VA Assumable Loan Search):
+
+```
+### How do I search VA-assumable homes by Neighborhood?
+
+1. Open the VA Assumable page.
+2. Click the **Neighborhood** tab at the top of the search form.
+3. In the **Neighborhood / Subdivision** field, type the neighborhood name
+   (e.g., "Hawaii Kai", "Kaimuki", "Hahaione Valley").
+4. Optionally narrow with **Min Beds**, **Min Price**, and **Max Price**.
+5. Click **Search VA Assumable**.
+```
+
+The Hoku KB version lives under the matching `PAGE_CONTEXT["assumable-va"]` entry in `src/lib/genie/hoku-knowledge-base.ts`. Steps must be word-for-word identical to the help content (or close enough that an agent reading both wouldn't notice a difference). When you update one, update the other.
+
+**When does a feature need step-by-steps?**
+
+- Any new interactive page -> yes
+- Any new search mode, filter, or workflow on an existing page -> yes
+- Any new modal, drawer, or wizard -> yes
+- Backend-only changes with no UI -> no
+- Cosmetic / refactor / bug fix with no behavior change -> no
+
+If you're unsure, default to writing them. Cheap to add, expensive to retrofit.
 
 ### Platform & Provider Branding Rule
 

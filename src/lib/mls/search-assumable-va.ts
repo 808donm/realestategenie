@@ -27,7 +27,12 @@ export type AssumableListing = MlsProperty & {
 export type SearchAssumableVaOptions = {
   /** Geographic narrowing (at least one is recommended for performance). */
   city?: string;
+  /** ZIP / postal code. Substring match via startswith(). */
   postalCode?: string;
+  /** Subdivision / neighborhood name (e.g., "Hawaii Kai", "Kaimuki"). Case-insensitive substring match on SubdivisionName. */
+  subdivisionName?: string;
+  /** TMK / parcel number (e.g., "1-3-9-083-009"). Substring match on ParcelNumber to be tolerant of dash/no-dash and trailing zero variants. */
+  parcelNumber?: string;
   /** Price filters. */
   minPrice?: number;
   maxPrice?: number;
@@ -201,6 +206,20 @@ function buildSharedFilters(client: MLSClient, options: SearchAssumableVaOptions
   }
   if (options.postalCode) {
     filters.push(`startswith(PostalCode, '${escapeStr(options.postalCode)}')`);
+  }
+  if (options.subdivisionName) {
+    filters.push(`contains(tolower(SubdivisionName), '${escapeStr(options.subdivisionName.toLowerCase())}')`);
+  }
+  if (options.parcelNumber) {
+    // Strip dashes from input and search both with and without dashes —
+    // Hawaii TMKs are commonly stored with dashes (e.g., "1-3-9-083-009")
+    // but agents type both forms. Match on ParcelNumber substring to be tolerant.
+    const stripped = options.parcelNumber.trim().replace(/[\s-]/g, "");
+    if (stripped) {
+      filters.push(
+        `(contains(replace(ParcelNumber, '-', ''), '${escapeStr(stripped)}') or contains(ParcelNumber, '${escapeStr(options.parcelNumber.trim())}'))`,
+      );
+    }
   }
   if (options.minPrice !== undefined) {
     filters.push(`ListPrice ge ${options.minPrice}`);

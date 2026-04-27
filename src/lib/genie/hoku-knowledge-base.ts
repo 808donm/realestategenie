@@ -418,28 +418,65 @@ Help agents set up targeted monitors. Suggest appropriate alert types based on w
   // VA Assumable Loan Search
   "assumable-va": `The agent is on the VA ASSUMABLE LOAN SEARCH page. This is a flagship buyer-side search that finds active listings where a buyer can assume the seller's existing VA mortgage — inheriting the original locked-in 2-4% rate from the 2020-2022 origination boom while market rates sit at 6-7%.
 
+**Four search modes** (one at a time):
+- **City** — case-insensitive substring on City field (e.g., "Honolulu", "Kailua")
+- **Neighborhood** — substring on SubdivisionName (e.g., "Hawaii Kai", "Kaimuki", "Hahaione Valley")
+- **ZIP Code** — startswith match on PostalCode (e.g., "96825" or partial "968")
+- **TMK / Parcel** — substring on ParcelNumber, accepts both dashed ("1-3-9-083-009") and undashed ("139083009") forms
+
 **How the search works** (3-tier confidence):
-1. **Tier 1 — Explicit MLS Tags**: ListingTerms includes both 'Assumable' AND 'VA'. Highest precision, lowest recall. Most listing agents don't fill this combination.
-2. **Tier 2 — Mentioned in Remarks**: Public remarks contain phrases like "VA Assumable @2.75%", "Assume our VA loan", "Assumable VA mortgage". This is where most real inventory shows up — agents who know assumable is a selling point shout it in remarks.
-3. **Tier 3 — Assumable, Loan Type Unclear**: Listing terms include 'Assumable' but no VA mention. Manual review tier — could be VA, FHA, or conventional.
+1. **Tier 1 — Explicit MLS Tags**: ListingTerms includes both 'Assumable' AND 'VA'. Highest precision, lowest recall.
+2. **Tier 2 — Mentioned in Remarks**: Public remarks contain phrases like "VA Assumable @2.75%", "Assume our VA loan", "Assumable VA mortgage". Where most real inventory shows up.
+3. **Tier 3 — Assumable, Loan Type Unclear**: ListingTerms includes 'Assumable' but no VA mention. Could be VA, FHA, or conventional.
 
-**Rate extraction**: When public remarks include a percentage near the assumable mention, the system extracts it (e.g., "VA Assumable @2.75%!" → "2.75%") and computes the monthly savings vs current market rate using an 80% LTV assumption on a 30-year mortgage. Result cards show "Assumable Rate 2.75% · $1,847/mo savings vs 6.5% market".
+**Rate extraction**: When public remarks include a percentage near the assumable mention, the system extracts it (e.g., "VA Assumable @2.75%!" → "2.75%") and computes monthly savings vs current market rate using 80% LTV / 30-year math. Result cards show the rate badge plus "$X,XXX/mo savings vs 6.5% market".
 
-**Filters**: City, ZIP, min beds, min/max price. The market rate used for savings comparison is also editable (default 6.5%).
+**Step-by-step instructions Hoku should give when asked "How do I search VA-assumable homes by [mode]?"**:
+
+CITY:
+1. Open VA Assumable page (Sidebar → Opportunities → VA Assumable, or /app/mls/assumable-va)
+2. Click the **City** tab (selected by default)
+3. Type the city name in the **City** field (e.g., "Honolulu")
+4. Optionally set Min Beds, Min/Max Price
+5. Click **Search VA Assumable**
+
+NEIGHBORHOOD:
+1. Open VA Assumable page
+2. Click the **Neighborhood** tab
+3. Type the neighborhood / subdivision name (e.g., "Hawaii Kai", "Hahaione Valley")
+4. Optionally narrow with Min Beds and price filters
+5. Click **Search VA Assumable**
+6. If neighborhood search returns nothing, fall back to City or ZIP — subdivision tagging by listing agents is inconsistent.
+
+ZIP CODE:
+1. Open VA Assumable page
+2. Click the **ZIP Code** tab
+3. Type the 5-digit ZIP (e.g., "96825") — partial ZIPs are accepted via startswith match
+4. Optionally narrow with Min Beds and price filters
+5. Click **Search VA Assumable**
+
+TMK / PARCEL:
+1. Open VA Assumable page
+2. Click the **TMK / Parcel** tab
+3. Type the parcel number with or without dashes (e.g., "1-3-9-083-009" or "139083009")
+4. Click **Search VA Assumable**
+5. Best for confirming whether a known property is VA-assumable. Single-property results are typical.
+
+**Adjusting savings comparison**: At the bottom of the search form there's a "Compare savings against market rate of X%" field (default 6.5%). Edit it to reflect the buyer's actual rate quote — savings on every result card recompute automatically without re-running the search.
 
 **Caveats Hoku should mention to agents**:
 - VA loan assumption requires lender approval (typically 60-90 days)
 - VA-eligible buyers (military, veterans) preserve the seller's VA entitlement; non-VA buyers consume it
-- Funding fee on assumption is 0.5% (much lower than 2.15-3.3% on fresh origination)
-- Rate extracted from remarks is agent-stated, not verified — confirm with listing agent before quoting a buyer
-- Loan balance shown is approximated at 80% LTV; actual assumed balance varies and isn't published in MLS
+- Funding fee on assumption is 0.5% — vs 2.15-3.3% on fresh origination
+- Rate extracted from remarks is agent-stated, not verified — confirm with listing agent
+- 80% LTV assumption is approximate; actual assumed balance varies and isn't published in MLS
 
-**Ideal use case**: Agent has a military buyer (VA-eligible). Search by city or ZIP, sort by extracted rate ascending. Tier 2 results are usually the most actionable. Click "View Listing" to open the full MLS detail.
-
-**Hoku queries that should route here**:
-- "Find VA assumable homes in Honolulu"
-- "Show me homes my military buyer can assume in 96825 under 1.2M"
-- "Assumable VA listings in Hawaii Kai with 3+ beds"`,
+**Hoku queries that should route here or run this search inline**:
+- "Find VA assumable homes in Honolulu" → city search
+- "Show me homes in Hawaii Kai my military buyer can assume" → neighborhood search
+- "Assumable VA listings in 96825 with 3+ beds" → ZIP search + minBeds=3
+- "Look up TMK 1-3-9-083-009 for VA assumable" → TMK search
+- "How do I search VA assumable by neighborhood?" → walk through the 5-step neighborhood instructions above`,
 
   // Open Houses
   "open-houses": `The agent is on the OPEN HOUSES page. Complete open house lifecycle management.

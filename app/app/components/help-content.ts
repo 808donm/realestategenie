@@ -267,19 +267,104 @@ Your account must have Trestle (CoreLogic) credentials configured. This is set u
 
 **AI Tools**: Generate AI-powered listing descriptions (multiple tones) and social media content (Instagram, Facebook, LinkedIn, TikTok) with captions, hashtags, and video scripts.
 
-**VA Assumable Loan Search**: For military buyers (or any buyer who can assume an existing VA mortgage), this search finds active listings where the seller's VA loan can be inherited at the original locked-in rate — typically 2.5-3.5% on loans originated 2020-2022.
+**VA Assumable Loan Search**: For military buyers (or any buyer who can assume an existing VA mortgage), this search finds active listings where the seller's VA loan can be inherited at the original locked-in rate — typically 2.5-3.5% on loans originated 2020-2022. Real $1,000-2,000/mo savings vs current market rates.
 
-How to use:
-1. Sidebar → **Opportunities** → **VA Assumable** opens the dedicated search page (or navigate directly to /app/mls/assumable-va)
-2. Enter a city or ZIP, optional bed and price filters
-3. Click **Search VA Assumable**
-4. Results appear in three confidence tiers — each card shows the listing details, the assumable rate (when extracted from remarks), and monthly savings vs current market rate
-5. Adjust the "Compare savings against market rate of X%" field to model the deal at your buyer's actual rate quote
-6. Click **View Listing →** on any card to open the full MLS details
+The page supports four search modes: **City**, **Neighborhood**, **ZIP Code**, and **TMK / Parcel Number**. Pick one mode at a time — fields from inactive modes are not used in the query.
 
-Or ask Hoku: "Find VA assumable homes in Hawaii Kai under 1.2M for my military buyer" — Hoku routes to the search and returns results.
+### How do I open the VA Assumable search page?
 
-API: GET /api/mls/search-assumable-va?city=...&zip=...&minPrice=...&maxPrice=...&minBeds=...
+1. In the left sidebar, click **Opportunities** to expand it.
+2. Click **VA Assumable** in the submenu.
+3. Or navigate directly to /app/mls/assumable-va in your browser.
+
+### How do I search VA-assumable homes by City?
+
+1. Open the VA Assumable page.
+2. Click the **City** tab at the top of the search form (selected by default).
+3. In the **City** field, type the city name (e.g., "Honolulu", "Kailua", "Aiea"). Match is case-insensitive substring.
+4. Optionally narrow with **Min Beds**, **Min Price**, and **Max Price**.
+5. Click **Search VA Assumable**.
+6. Review results in three confidence tiers (Tier 1 explicit MLS tags, Tier 2 remarks text-mining, Tier 3 unspecified).
+
+### How do I search VA-assumable homes by Neighborhood?
+
+1. Open the VA Assumable page.
+2. Click the **Neighborhood** tab at the top of the search form.
+3. In the **Neighborhood / Subdivision** field, type the neighborhood name (e.g., "Hawaii Kai", "Kaimuki", "Hahaione Valley", "Diamond Head"). Match is case-insensitive substring on the SubdivisionName field.
+4. Optionally narrow with **Min Beds**, **Min Price**, and **Max Price**.
+5. Click **Search VA Assumable**.
+
+Tip: neighborhood matching depends on listing-agent tagging. If a neighborhood search returns nothing, try the City mode or use a ZIP that covers the same area.
+
+### How do I search VA-assumable homes by ZIP Code?
+
+1. Open the VA Assumable page.
+2. Click the **ZIP Code** tab at the top of the search form.
+3. In the **ZIP Code** field, type a 5-digit ZIP (e.g., "96825"). Partial ZIPs (e.g., "968") are accepted — match uses startswith.
+4. Optionally narrow with **Min Beds**, **Min Price**, and **Max Price**.
+5. Click **Search VA Assumable**.
+
+### How do I search VA-assumable homes by TMK / Parcel Number?
+
+1. Open the VA Assumable page.
+2. Click the **TMK / Parcel** tab at the top of the search form.
+3. In the **TMK / Parcel Number** field, type the parcel number with or without dashes (e.g., "1-3-9-083-009" or "139083009"). Both forms work — the search strips dashes internally and matches on substring.
+4. Optionally narrow with **Min Beds**, **Min Price**, and **Max Price** (most TMK searches return a single property, so price filters are usually unnecessary).
+5. Click **Search VA Assumable**.
+
+This mode is useful when an agent already has the parcel from a property tax record or a prospect list and wants to confirm whether that specific property is currently a VA-assumable opportunity.
+
+### How do I read the result cards?
+
+Each listing card shows:
+- **Address** and city/state/ZIP at the top
+- **List price** in the top right
+- **Beds / baths / sqft / year built / property subtype / MLS#** in the meta row
+- **Big green rate badge** (e.g., "2.75%") when the assumable rate was extracted from listing remarks
+- **Monthly savings** (e.g., "$1,847/mo savings vs 6.5% market") computed at 80% LTV / 30-year mortgage
+- **Remarks snippet** — the listing agent's exact wording about the assumable loan
+- **Listing agent attribution**
+- **View Listing →** link opens the full MLS detail
+
+### How do I adjust the savings calculation?
+
+By default savings are computed against a **6.5%** market rate. To model the deal at your buyer's actual rate quote:
+
+1. Locate the "Compare savings against market rate of X%" field at the bottom of the search form.
+2. Type your buyer's rate quote (e.g., 6.875).
+3. The savings on every result card recomputes automatically — no need to re-search.
+
+### How do I share a result with my buyer?
+
+For now, click **View Listing →** on the card to open the full MLS details, then use your normal listing-share workflow (CRM → send via email/SMS, or save to a buyer's saved-search). A built-in "Send to Buyer" button is on the roadmap.
+
+### What if the search returns no results?
+
+VA-assumable listings are scarce. Try:
+1. **Widen filters**: drop Min Beds, broaden price range.
+2. **Switch search modes**: a ZIP search often catches listings that a Neighborhood search misses (subdivision tagging is inconsistent).
+3. **Drop the geo filter entirely** to verify there are *any* VA-assumable listings in your MLS region.
+4. **Ask Hoku**: "Are there any VA assumable listings in my MLS right now?" — Hoku will suggest follow-ups based on the result.
+
+### Caveats every agent should tell the buyer
+
+- VA loan assumption requires lender approval (typically 60-90 days)
+- VA-eligible buyers (military / veterans) preserve the seller's VA entitlement; non-VA buyers can also assume but consume it
+- Funding fee on assumption is **0.5%** of loan balance — vs. **2.15-3.3%** on a fresh origination
+- The rate displayed on result cards is extracted from the listing's public remarks. It is **agent-stated, not verified**. Confirm with the listing agent before quoting a buyer.
+- Monthly savings shown assume 80% LTV. The actual assumed loan balance depends on what the seller has paid down — confirm the actual balance with the listing agent.
+
+### Hoku-equivalent
+
+Instead of the page, you can also ask Hoku:
+- "Find VA assumable homes in Honolulu under 1.2M"
+- "Show me homes my military buyer can assume in 96825"
+- "Look up TMK 1-3-9-083-009 for VA assumable"
+- "Are there any VA-assumable listings in Hawaii Kai with 3+ beds?"
+
+Hoku will run the same search and summarize the top results inline.
+
+API endpoint: GET /api/mls/search-assumable-va?city=...&neighborhood=...&zip=...&tmk=...&minPrice=...&maxPrice=...&minBeds=...
 
 Results come back in three confidence tiers:
 - **Tier 1 — Explicitly tagged**: Listing agent checked AssumableYN AND included VA in ListingTerms. Highest confidence; usually 5-15% of true VA-assumable inventory.

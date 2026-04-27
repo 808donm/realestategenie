@@ -46,9 +46,14 @@ type SearchResponse = {
 
 const DEFAULT_MARKET_RATE = 6.5;
 
+type SearchMode = "city" | "neighborhood" | "zip" | "tmk";
+
 export default function AssumableVaPage() {
+  const [mode, setMode] = useState<SearchMode>("city");
   const [city, setCity] = useState("");
+  const [neighborhood, setNeighborhood] = useState("");
   const [zip, setZip] = useState("");
+  const [tmk, setTmk] = useState("");
   const [minBeds, setMinBeds] = useState("");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
@@ -65,8 +70,12 @@ export default function AssumableVaPage() {
     setHasSearched(true);
 
     const params = new URLSearchParams();
-    if (city.trim()) params.append("city", city.trim());
-    if (zip.trim()) params.append("zip", zip.trim());
+    // Only the active mode's primary field is sent — keeps the query tight and
+    // avoids accidentally combining a stale value from a different mode.
+    if (mode === "city" && city.trim()) params.append("city", city.trim());
+    if (mode === "neighborhood" && neighborhood.trim()) params.append("neighborhood", neighborhood.trim());
+    if (mode === "zip" && zip.trim()) params.append("zip", zip.trim());
+    if (mode === "tmk" && tmk.trim()) params.append("tmk", tmk.trim());
     if (minBeds) params.append("minBeds", minBeds);
     if (minPrice) params.append("minPrice", minPrice);
     if (maxPrice) params.append("maxPrice", maxPrice);
@@ -88,7 +97,9 @@ export default function AssumableVaPage() {
 
   const onClear = () => {
     setCity("");
+    setNeighborhood("");
     setZip("");
+    setTmk("");
     setMinBeds("");
     setMinPrice("");
     setMaxPrice("");
@@ -157,32 +168,84 @@ export default function AssumableVaPage() {
           boxShadow: "0 2px 4px rgba(0,0,0,0.02)",
         }}
       >
+        {/* Search mode tabs */}
+        <div style={{ display: "flex", gap: 4, marginBottom: 14, flexWrap: "wrap" }}>
+          {([
+            { id: "city", label: "City" },
+            { id: "neighborhood", label: "Neighborhood" },
+            { id: "zip", label: "ZIP Code" },
+            { id: "tmk", label: "TMK / Parcel" },
+          ] as const).map((opt) => (
+            <button
+              key={opt.id}
+              type="button"
+              onClick={() => setMode(opt.id)}
+              style={{
+                ...modeTabStyle,
+                ...(mode === opt.id ? modeTabActiveStyle : null),
+              }}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr",
+            gridTemplateColumns: "2fr 1fr 1fr 1fr",
             gap: 12,
             alignItems: "end",
           }}
         >
-          <FieldGroup label="City">
-            <input
-              type="text"
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              placeholder="e.g. Honolulu"
-              style={inputStyle}
-            />
-          </FieldGroup>
-          <FieldGroup label="ZIP">
-            <input
-              type="text"
-              value={zip}
-              onChange={(e) => setZip(e.target.value)}
-              placeholder="96825"
-              style={inputStyle}
-            />
-          </FieldGroup>
+          {mode === "city" && (
+            <FieldGroup label="City">
+              <input
+                type="text"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                placeholder="e.g. Honolulu"
+                style={inputStyle}
+                autoFocus
+              />
+            </FieldGroup>
+          )}
+          {mode === "neighborhood" && (
+            <FieldGroup label="Neighborhood / Subdivision">
+              <input
+                type="text"
+                value={neighborhood}
+                onChange={(e) => setNeighborhood(e.target.value)}
+                placeholder="e.g. Hawaii Kai, Kaimuki, Hahaione Valley"
+                style={inputStyle}
+                autoFocus
+              />
+            </FieldGroup>
+          )}
+          {mode === "zip" && (
+            <FieldGroup label="ZIP Code">
+              <input
+                type="text"
+                value={zip}
+                onChange={(e) => setZip(e.target.value)}
+                placeholder="96825"
+                style={inputStyle}
+                autoFocus
+              />
+            </FieldGroup>
+          )}
+          {mode === "tmk" && (
+            <FieldGroup label="TMK / Parcel Number">
+              <input
+                type="text"
+                value={tmk}
+                onChange={(e) => setTmk(e.target.value)}
+                placeholder="1-3-9-083-009 (with or without dashes)"
+                style={inputStyle}
+                autoFocus
+              />
+            </FieldGroup>
+          )}
           <FieldGroup label="Min Beds">
             <input
               type="number"
@@ -701,4 +764,23 @@ const btnSecondaryStyle: React.CSSProperties = {
   fontWeight: 600,
   cursor: "pointer",
   fontFamily: "inherit",
+};
+
+const modeTabStyle: React.CSSProperties = {
+  background: "#f9fafb",
+  color: "#6b7280",
+  border: "1px solid #e5e7eb",
+  borderRadius: 6,
+  padding: "8px 16px",
+  fontSize: 12,
+  fontWeight: 600,
+  cursor: "pointer",
+  fontFamily: "inherit",
+  letterSpacing: "0.02em",
+};
+
+const modeTabActiveStyle: React.CSSProperties = {
+  background: "#061A3A",
+  color: "#fff",
+  borderColor: "#061A3A",
 };
