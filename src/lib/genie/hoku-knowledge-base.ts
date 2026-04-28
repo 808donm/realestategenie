@@ -36,29 +36,90 @@ Help the agent understand their daily priorities and offer to take action on bri
 Help the agent manage their schedule, sync calendars, and create events.`,
 
   // Pipeline
-  pipeline: `The agent is on the PIPELINE page. This is a visual Kanban-style board for managing deal flow.
-- **11 Pipeline Stages**: New Lead -> Initial Contact -> Qualification -> Initial Consultation -> Property Search/Listing Prep -> Open Houses & Tours -> Offer & Negotiation -> Under Contract/Escrow -> Closing Coordination -> Closed & Follow-up -> Review Request
-- Each stage has a unique color and shows: lead count, total pipeline value, individual opportunity cards
-- **Drag-and-drop** cards between stages to update status
-- **Card Details**: Lead/opportunity name, contact name, monetary value, status, creation date
-- **Lead Detail Modal**: Full info, notes history, conversation history, action buttons (email draft, create task, advance stage, mark as lost)
-- **CRM Sync**: If CRM connected, pipeline maps to CRM pipeline stages. Leads auto-advance when emails/SMS sent.
-- **Local Pipeline**: Available for agents without CRM connection
-- **Pipeline Selection**: Dropdown to switch between multiple pipelines
-Help the agent manage their deal flow and advance opportunities through stages.`,
+  pipeline: `The agent is on the PIPELINE page. Visual Kanban-style board for managing deal flow from initial lead to closing.
+
+### How do I open the Pipeline?
+1. Sidebar → click **Pipeline**.
+
+### How do I move a deal between stages?
+1. Click and hold the deal card.
+2. Drag to the target stage column.
+3. Release.
+
+### How do I view a deal's details?
+1. Click (don't drag) the deal card.
+2. The detail modal opens with contact info, notes, conversation history, and action buttons.
+
+### How do I draft an email to a deal contact?
+1. Open the deal modal.
+2. Click **Email** action button.
+3. Pick a template or start fresh.
+4. Edit subject and body, click **Send**.
+
+### How do I advance a deal to the next stage?
+1. Open the deal modal.
+2. Click **Next Stage** in the top-right.
+3. (Or drag the card on the board.)
+
+### How do I mark a deal as lost?
+1. Open the deal modal.
+2. Click **⋯** → **Mark as Lost**.
+3. Pick loss reason and confirm.
+
+### How do I switch between multiple pipelines?
+1. Click the **Pipeline** dropdown at the top of the board.
+2. Select Listings, Buyers, Investors, or any custom pipeline.
+
+**11 default stages**: New Lead · Initial Contact · Qualification · Initial Consultation · Property Search/Listing Prep · Open Houses & Tours · Offer & Negotiation · Under Contract/Escrow · Closing Coordination · Closed & Follow-up · Review Request
+
+CRM sync: when connected, pipeline stages map to CRM stages and auto-advance on email/SMS. Local pipeline is available for agents without CRM.
+
+**Hoku-equivalent queries**:
+- "Move [deal] to Offer & Negotiation"
+- "Show me deals in Under Contract"
+- "What's in stage 7 of my Buyers pipeline?"
+- "Mark [deal] as lost — reason: timing"`,
 
   // Tasks
-  tasks: `The agent is on the TASKS page. Full task management system.
-- **Tabs**: All / Overdue / Today / Upcoming / Completed
-- **Task Fields**: Title, description, priority (Urgent/High/Medium/Low with color dots), due date/time, type (General/Follow-Up/Call/Email/Meeting/Showing/Document/Closing), status, recurrence (Daily/Weekly/Bi-weekly/Monthly/Quarterly)
-- **Entity Linking**: Link tasks to a Lead, Contact, Open House, or Transaction
-- **Assignment**: Assign to self or team member
-- **Actions**: Mark complete, snooze (tomorrow/next week/2 weeks/custom), edit, delete
-- **Quick Contact**: Call/Text/Email icons if linked entity has contact info
-- **Bulk Operations**: Multi-select for bulk complete, snooze, or delete
-- **Export**: CSV or PDF with columns (Title, Priority, Status, Due Date, Type, Linked To, Assigned To, Recurring)
-- **Recurring Tasks**: Auto-creates new instances on recurrence date (iCalendar RRULE format)
-Help the agent manage tasks, set priorities, and stay on top of follow-ups.`,
+  tasks: `The agent is on the TASKS page. Full task management with priorities, due dates, types, recurrence, and entity linking.
+
+### How do I open Tasks?
+1. Sidebar → click **Tasks**.
+
+### How do I create a task?
+1. Click **+ New Task**.
+2. Enter Title (required).
+3. (Optional) Description, Priority (Urgent/High/Medium/Low), due date/time, Type (General/Follow-Up/Call/Email/Meeting/Showing/Document/Closing), Recurrence (Daily/Weekly/Bi-weekly/Monthly/Quarterly).
+4. (Optional) Link to Lead, Contact, Open House, or Transaction.
+5. Click **Save**.
+
+### How do I see overdue or upcoming tasks?
+1. Click a tab: **All**, **Overdue**, **Today**, **Upcoming**, **Completed**.
+
+### How do I mark a task complete?
+1. Click the checkbox on the row.
+
+### How do I snooze a task?
+1. Click **Snooze** icon on the row.
+2. Choose Tomorrow / Next Week / 2 Weeks / Custom.
+
+### How do I bulk-complete or bulk-delete?
+1. Check multiple task rows.
+2. Use the bulk-action bar that appears (Complete / Snooze / Delete).
+
+### How do I export tasks?
+1. Set the tab filter.
+2. Click **Export** in the top-right.
+3. Choose CSV or PDF.
+
+Recurring tasks auto-create new instances on the recurrence date (iCalendar RRULE format).
+
+**Hoku-equivalent queries**:
+- "Add a task to call [contact] tomorrow at 10am"
+- "What's overdue?"
+- "Snooze [task] for a week"
+- "Complete all tasks linked to [deal]"
+- "Show me today's tasks"`,
 
   // Contacts
   contacts: `The agent is on the CONTACTS page. These are CRM contacts synced from your CRM (different from Leads which are auto-captured from open houses).
@@ -74,34 +135,51 @@ NOTE: Leads = auto-captured from open house check-ins (scored 0-100). Contacts =
 Help the agent manage contacts, sync with CRM, and draft communications.`,
 
   // Leads
-  leads: `The agent is on the LEADS page. Leads are automatically captured from open house QR check-ins and webhooks.
+  leads: `The agent is on the LEADS page. Manages prospects from open house QR check-ins, lead-source webhooks, and other intake channels.
 
-**Dashboard Charts**: Leads by source, by event, heat score distribution, pipeline stage breakdown, leads over time, buyer readiness
+### How do I open the Leads page?
+1. Sidebar → click **Leads**.
 
-**Lead List (Tabbed)**: Hot / Warm / Cold / DNC tabs
-- Each lead shows: Name, Contact buttons (Call/Text/Email), Property, Heat Score, Timeline, Date
-- Click lead name to generate neighborhood profile
-- Add Follow-Up button on each lead
-- Export to PDF/XLSX
+### How do I view Hot, Warm, Cold, or DNC leads?
+1. Open Leads.
+2. Click the appropriate tab: **Hot** (80+), **Warm** (50-79), **Cold** (<50), **DNC** (already has an agent).
 
-**Heat Score (0-100)**: Auto-calculated at check-in:
-- Contact info (30pts): email + phone + consent
-- Representation (20pts): not represented = highest
-- Agent reach out opt-in (15pts)
-- Timeline (20pts): 0-3 months = highest
-- Financing (15pts): pre-approved/cash = highest
-- Specificity (10pts): neighborhoods + must-haves mentioned
-- Multiple visits to same property = boosted to 100 (RED HOT)
+### How do I contact a lead from the list?
+1. Find the lead row.
+2. Click Phone / Message / Email icon.
+3. Activity logs to the lead's history automatically.
 
-**Classifications**: Hot (80+) red, Warm (50-79) orange, Cold (<50) blue, DNC gray (already has agent)
+### How do I view a lead's full detail?
+1. Click the lead's name.
+2. The detail panel shows contact info, source, heat score breakdown, property of interest, timeline, financing, neighborhoods, must-haves, conversation history.
 
-**Pipeline Stages**: New Lead -> Initial Contact -> Qualification -> Consultation -> Property Search -> Tours -> Offer -> Under Contract -> Closing -> Closed -> Review
+### How do I export the lead list?
+1. Set the tab filter.
+2. Click **Export** in the top-right.
+3. Choose **PDF** or **XLSX**.
 
-**Lead Matches**: Automatically matches active MLS listings to each lead's criteria
-- Scores 0-100: location (40pts) + must-haves (30pts) + timeline urgency (15pts) + financing readiness (15pts)
-- Top 5 matches per lead with reasons, saved with status tracking (new/sent/viewed/dismissed)
+### How do I read the analytics charts?
+The top of the page shows: Leads by Source, Leads by Event, Heat Score Distribution, Pipeline Stage Breakdown, Leads Over Time (weekly), Buyer Readiness.
 
-Help the agent prioritize leads, view matched properties, draft communications, and understand heat scores.`,
+**Heat scoring** (auto-applied at check-in, 0-100):
+- Contact Info (30 pts) — Email/Phone/Consents
+- Representation (20 pts) — No agent = highest
+- Agent Reach Out (15 pts) — Opted-in
+- Timeline (20 pts) — 0-3mo = highest
+- Financing (15 pts) — Pre-approved/Cash = highest
+- Specificity (10 pts) — Neighborhoods + Must-haves
+- Multiple visits to same property → 100 (RED HOT)
+
+DNC: leads who said they have a realtor — do not solicit.
+
+Lead Matches: auto-matches active MLS listings to each lead's criteria. Top 5 matches per lead, scored 0-100 (location 40 + must-haves 30 + timeline 15 + financing 15).
+
+**Hoku-equivalent queries**:
+- "Show me my hot leads"
+- "Who came to my open house yesterday?"
+- "What's the heat score on [lead name]?"
+- "Export this week's leads to PDF"
+- "Show matched properties for [lead]"`,
 
   // MLS Listings
   "mls-listings": `The agent is on the MLS page. This has 9 tabs powered by the agent's connected MLS provider.
@@ -525,58 +603,122 @@ IMPORTANT: It is unethical (and often illegal) to solicit sellers whose property
 Help the agent set up effective farms and configure watchdog alerts.`,
 
   // Bird Dog Prospecting
-  "bird-dog": `The agent is on the BIRD DOG PROSPECTING page. Automated off-market lead hunting.
+  "bird-dog": `The agent is on the BIRD DOG PROSPECTING page. Automated off-market lead hunting that runs on schedule and only alerts on NEW leads.
 
-**How Bird Dog Works**:
-1. Agent creates a search with criteria (ZIP code, lead flags, property type, equity %, schedule)
-2. Bird Dog automatically searches for matching properties on schedule (daily/weekly/monthly)
-3. Only alerts on NEW properties not previously found (zero-cost initial scanning)
-4. Each lead is scored by seller motivation: HOT (red), WARM (orange), COLD/NURTURE (gray)
+### How do I open Bird Dog?
+1. Sidebar → click **Opportunities** to expand.
+2. Click **Bird Dog**.
 
-**Creating a Search**: Agent can use the UI form or tell you: "Bird dog absentee owners in [ZIP] with high equity, run weekly"
-- Use action create_bird_dog with params: zip, absentee, highEquity, vacant, foreclosure, investor, taxDelinquent, propertyType, equityMin, name, schedule
+### How do I create a Bird Dog search?
+1. Open Bird Dog.
+2. Click **+ New Search**.
+3. Enter a ZIP code (or list).
+4. Check filters: Absentee Owner, High Equity, Vacant, Pre-Foreclosure, Investor, Tax Delinquent.
+5. (Optional) Set Min Equity %, Min Years Owned, Property Type.
+6. Pick schedule: Daily, Weekly, or Monthly.
+7. Name the search.
+8. Click **Create Search**.
 
-**Lead Scoring**:
-- HOT: Inherited, pre-foreclosure, death transfer, tax lien, vacant+absentee, foreclosure, deed in lieu
-- WARM: Out-of-state absentee + high equity + long ownership, free & clear, absentee + equity > 40%
-- COLD: Monitoring -- no urgency signals detected
+HOKU CAN: Create Bird Dog searches from natural language using action create_bird_dog with params: zip, absentee, highEquity, vacant, foreclosure, investor, taxDelinquent, propertyType, equityMin, name, schedule.
 
-**Available Actions**:
-- "Run Now" button triggers immediate search
-- "Export Hot Sheet" downloads color-coded XLSX with Summary, Hot Sheet, and Contacts tabs
-- Skip Trace button on individual leads (manual, finds phone/email/social)
-- Star important leads for follow-up
+### How do I run a search now?
+1. Open Bird Dog.
+2. Click **Run Now** on the search card.
+3. New leads appear within 1-3 minutes.
 
-Help agents set up targeted searches. Suggest combining criteria for highest quality leads (e.g., absentee + high equity + long ownership for prime seller prospects).`,
+### How do I view leads from a search?
+1. Click the search card to open its detail page.
+2. Each row shows owner name, address, equity, years owned, lead-score color, and trigger reasons.
+
+### How do I skip-trace a lead?
+1. Click a lead row.
+2. Click **Skip Trace** in the detail panel.
+3. Confirm the credit charge.
+4. Phone, email, and social profiles appear within 5-30 seconds.
+
+### How do I export the Hot Sheet?
+1. Open a Bird Dog search.
+2. Click **Export Hot Sheet** → **XLSX**.
+3. The download is color-coded (HOT red / WARM orange / COLD gray) with full property, owner, and skip-traced contact data.
+
+### How do I star a lead?
+1. Click the **★** icon on any lead row.
+2. View starred leads under the **Starred** tab on the search detail page.
+
+### How do I edit or pause a search?
+1. Open the search detail page.
+2. Click **Edit** to change criteria, or toggle **Active** off to pause.
+
+**Lead-scoring tiers**:
+- HOT (red): Inherited, pre-foreclosure, death transfer, tax lien, vacant+absentee, foreclosure, deed in lieu
+- WARM (orange): Out-of-state absentee + high equity + long ownership, free & clear, absentee + equity > 40%
+- COLD (gray): Monitoring — no urgency signals detected
+
+**Hoku-equivalent queries**:
+- "Bird dog absentee owners in [ZIP] with high equity, run weekly"
+- "Run [search name] now"
+- "What new Bird Dog leads came in this week?"
+- "Skip trace [owner name]"
+- "Export the Hot Sheet for [search name]"
+
+Suggest to agents: combine criteria for highest quality (e.g., absentee + high equity + long ownership = prime seller prospects).`,
 
   // Market Monitor
   "market-monitor": `The agent is on the MARKET MONITOR page. Automated MLS alerts for buyer and seller clients.
 
-**How Market Monitor Works**:
-1. Agent creates a monitoring profile for a client with search criteria (location, price range, property type, beds/baths)
-2. Agent sets notification preferences (email, SMS, CRM) and alert types (new listings, price drops, back on market, expired/withdrawn, pending)
-3. Market Monitor scans the MLS daily for matching properties
-4. Alerts are sent directly to the client via their preferred channels
+### How do I open Market Monitor?
+1. Sidebar → click **Opportunities** to expand.
+2. Click **Market Monitor**.
 
-**Alert Types**:
-- New Listing: Fresh listings matching client criteria
-- Price Drop: Price reductions on previously matched listings
-- Back on Market: Listings that fell out of contract and are available again
-- Expired/Withdrawn: Listings removed from market (useful for seller clients targeting off-market leads)
-- Pending: Listings going under contract (market activity awareness)
+### How do I create a new client profile?
+1. Open Market Monitor.
+2. Click **+ New Profile** in the top-right.
+3. Enter client info (name, email, phone — at least one channel required).
+4. Set search criteria: ZIP, beds, baths, price range, property type.
+5. Pick notification channels: Email, SMS, or CRM.
+6. Pick alert types: New Listing, Price Drop, Back on Market, Expired/Withdrawn, Pending.
+7. Click **Save Profile**.
 
-**Notification Channels**:
-- Email: Branded HTML with property photos and details
-- SMS: Short text with key property info and link
-- CRM: Creates conversation via CRM conversations API
+### How do I edit an existing profile?
+1. Open Market Monitor.
+2. Click the profile card.
+3. Click **Edit** in the top-right.
+4. Adjust fields and click **Save**.
 
-**Available Actions**:
-- Create new monitor profile for a client
-- Edit existing profile criteria and notification preferences
-- Pause/resume monitoring
-- View alert history
+### How do I pause monitoring for a client?
+1. Open the profile.
+2. Toggle **Active** off (or click **Pause**).
 
-Help agents set up targeted monitors. Suggest appropriate alert types based on whether the client is a buyer (new listings, price drops, back on market) or seller (expired/withdrawn, pending for market awareness).`,
+### How do I trigger an immediate scan?
+1. Open the profile.
+2. Click **Run Now** in the top-right.
+3. Check Alert History after 1-2 minutes.
+
+### How do I view alert history?
+1. Open the profile.
+2. Click the **Alerts** tab.
+3. Each row shows timestamp, alert type, listing, and per-channel delivery status (email opened, SMS delivered, CRM thread created).
+
+### How do I delete a profile?
+1. Open the profile.
+2. Click **⋯** → **Delete** → confirm.
+3. Past alert history is retained; the profile is deactivated.
+
+**Alert types** (recap for Hoku to recommend by client type):
+- BUYER clients: New Listing, Price Drop, Back on Market
+- SELLER clients: Pending, Expired/Withdrawn
+
+**Notification channels**:
+- Email: branded HTML with photos and details
+- SMS: short text with key info and link
+- CRM: creates a conversation in the agent's CRM
+
+**Hoku-equivalent queries**:
+- "Set up a Market Monitor for [client] in [ZIP]"
+- "Pause Market Monitor for [client]"
+- "Run [client]'s Market Monitor now"
+- "What alerts has [client] received this week?"
+- "Create a buyer monitor for [client] in [ZIP] for 3-bed homes under [price]"`,
 
   // VA Assumable Loan Search
   "assumable-va": `The agent is on the VA ASSUMABLE LOAN SEARCH page. This is a flagship buyer-side search that finds active listings where a buyer can assume the seller's existing VA mortgage — inheriting the original locked-in 2-4% rate from the 2020-2022 origination boom while market rates sit at 6-7%.
@@ -642,46 +784,75 @@ TMK / PARCEL:
 - "How do I search VA assumable by neighborhood?" → walk through the 5-step neighborhood instructions above`,
 
   // Open Houses
-  "open-houses": `The agent is on the OPEN HOUSES page. Complete open house lifecycle management.
+  "open-houses": `The agent is on the OPEN HOUSES page. Complete open house lifecycle management with QR-code-based lead capture.
 
-**Creating an Open House**:
-1. Choose event type: Sales, Rental Showing, or Both
-2. **Import from MLS** (recommended): Search by MLS# or address, select from results (shows photo, beds/baths/sqft/price/status)
-   - Auto-fills: address, beds, baths, sqft, price, description, key features, photos, lat/lng, MLS listing key
-3. Set start/end date and time
-4. Save as draft -- redirects to detail page
+### How do I open the Open Houses page?
+1. Sidebar → click **Open Houses**.
 
-**Open House Detail Page**:
-- Status selector: Draft -> Published -> Archived
-- Edit property details (address, beds/baths/sqft, price, description, key features, photos)
-- **Flyer Template Selection**: Modern, Modern Blue, Elegant Warm -- each with custom color swatches and image upload slots
-- **QR Check-In Panel**: Displays QR code (320x320), copy link, print button. Check-in URL: /oh/{eventId}?token={secureToken}
-- Property location map (Google Maps)
+### How do I create an open house from MLS?
+1. Open the Open Houses page.
+2. Click **Create Open House**.
+3. Choose Event Type: Sales, Rental Showing, or Both.
+4. In **Import from MLS**, search by MLS Number or address.
+5. Click the matching listing — fields auto-fill (address, beds/baths/sqft, price, description, key features, photos, location).
+6. Set Start and End Date/Time.
+7. Click **Save**. Created as Draft.
 
-**Downloading the Flyer**:
-- Generates branded PDF with: agent name, license#, phone, headshot, company logo, property photos, address, date/time, beds/baths/sqft/price, key features, map, QR code
-- Template-specific layouts
+### How do I create an open house manually?
+1. Open the page and click **Create Open House**.
+2. Choose Event Type.
+3. Click **Skip Import** (or scroll past the MLS import).
+4. Manually enter property details and upload photos.
+5. Set date/time and **Save**.
 
-**How It Works (QR Flow)**:
-1. Agent prints flyer and displays at property entrance
-2. Visitors scan QR code with phone camera
-3. Opens registration page (secure token, 72-hour expiration)
+### How do I pick a flyer template?
+1. Open the event detail page.
+2. Scroll to **Flyer Template** section.
+3. Click one: Modern, Modern Blue, Elegant Warm.
 
-**Registration Page Asks**:
-- Name, email, phone (required), consent checkboxes (email + SMS)
-- "Do you currently have a realtor?" (Yes -> show realtor name / No/Unsure -> show "Want agent to reach out?")
-- If not represented: Timeline (0-3mo / 3-6mo / 6+mo / Just browsing), Financing (Pre-approved / Cash / Need lender / Not sure), Neighborhoods interested, Must-haves
-- Submit -> auto-scored as lead (0-100 heat score) -> enters pipeline -> syncs to CRM
+### How do I upload photos to the flyer?
+1. On the event detail page, scroll to **Photos**.
+2. Click each image slot (Primary / Secondary / Tertiary depending on template).
+3. Choose JPEG, PNG, or WebP under 5 MB.
 
-**Attendees & Scorecard**:
-- Attendees list with export to CSV
-- Scorecard metrics: Sign-ins captured, Contacted within 5 min (%), Represented by realtor (%), Looking for agent (%)
-- Overall performance score (0-100): weighted formula of contact speed, agent interest, representation status
-- Contact tracking: mark each lead as contacted (call/text/email) with timestamp
+### How do I download the flyer PDF?
+1. On the event detail page, click **Download Flyer**.
+2. Wait 5-10 seconds for render.
+3. Save the PDF (includes agent branding, photos, address, date/time, key features, map, QR check-in code).
 
-**OH Sync**: Two-way sync with MLS (pull upcoming events, push local events). Prevents duplicates via MLS key tracking.
+### How do I publish so guests can check in?
+1. On the event detail page, find the **Status** selector at the top.
+2. Change Draft → **Published**.
+3. The QR check-in URL is now live.
 
-Help the agent create events, import from MLS, customize flyers, understand the QR flow, and manage attendees.`,
+### How do I view check-ins after the event?
+1. Open the event detail page.
+2. Click the **Attendees** tab.
+3. Each row: name, email, phone, sign-in time, representation status, timeline, financing.
+4. Click **Export to CSV** to download.
+
+### How do I view performance metrics?
+1. On the event detail page, click the **Scorecard** tab.
+2. View sign-ins captured, contacted-within-5-min %, represented-by-realtor %, looking-for-agent %.
+3. Overall performance score (0-100) combines them.
+
+### Mark a lead as contacted
+1. From Attendees tab, click the contact icon on a row.
+2. Choose Call / Text / Email.
+3. Timestamp records automatically; counts toward the contacted-within-5-min metric.
+
+**QR check-in flow** (how it works for the guest):
+1. Guest scans the printed flyer's QR code with their phone camera.
+2. Secure registration page opens (token valid until event-end + 72 hours).
+3. Guest fills name, email, phone, consent (email + SMS), representation, timeline, financing, neighborhoods, must-haves.
+4. Submit → auto-scored 0-100 heat score → enters pipeline → syncs to CRM if connected.
+
+**Hoku-equivalent queries**:
+- "Create an open house for [MLS#] [day] [start time] to [end time]"
+- "Show me attendees from [event name or address]"
+- "What was the heat score on [guest name]?"
+- "Download the flyer for [event]"
+- "Mark [guest] as contacted via SMS"`,
 
   // Market Analytics
   "market-analytics": `The agent is on the MARKET ANALYTICS page. County-level market statistics dashboard.
