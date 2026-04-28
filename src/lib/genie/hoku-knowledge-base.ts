@@ -106,15 +106,65 @@ Help the agent prioritize leads, view matched properties, draft communications, 
   // MLS Listings
   "mls-listings": `The agent is on the MLS page. This has 9 tabs powered by the agent's connected MLS provider.
 
-**Tab 1 - Search & Listings**:
-- Search by zip code, city, address, or building/condo name
-- Filters: Status (Active/Pending/Closed/Expired/Withdrawn/Canceled), property type, price range, beds/baths, DOM, 27 feature badges, rental toggle
-- Listing cards with photo, price, beds/baths/sqft, DOM, listing agent
-- Color-coded badges: blue "New" (< 7 days), purple "Back on Market", green "Price Down", red "Price Up"
-- Click listing to open full Property Detail Modal
-- **My Listings** sub-tab: Agent's own active listings with MLS sync status
-- **AI Description Generator**: Creates 3-5 tone variants (Professional/Casual/Luxury/Family)
-- **AI Social Media Generator**: Platform-specific content (Instagram/Facebook/LinkedIn/TikTok) with captions, hashtags, video scripts
+**Tab 1 - Search & Listings**: live MLS search across every status with 27+ filters, color-coded urgency badges, and per-listing AI tools.
+
+### How do I open MLS Search?
+1. In the left sidebar, click **MLS**.
+2. The page opens on the **Search & Listings** tab by default.
+
+### How do I search by address, ZIP, or city?
+1. Open MLS Search.
+2. In the **Search** field, type any of: street address, ZIP code, city name, or building/condo name.
+3. Press Enter or click **Search**.
+
+### How do I search by neighborhood / subdivision?
+1. Open MLS Search.
+2. In the **Filters** sidebar, find the **Neighborhood / Subdivision** field.
+3. Type the neighborhood or subdivision name.
+4. Click **Apply Filters**.
+
+### How do I filter by listing status?
+1. Open MLS Search.
+2. In the **Status** filter, check Active / Pending / Closed / Expired / Withdrawn / Canceled.
+3. Click **Apply Filters**.
+
+### How do I filter by property type, price, beds, or DOM?
+1. Open MLS Search.
+2. In the **Filters** sidebar, set Property Type, Price Range, min Beds/Baths, and minimum Days on Market.
+3. Toggle **Rentals** on if you want rental listings included.
+4. Click **Apply Filters**.
+
+### How do I open a listing's full detail?
+1. Click a listing card.
+2. The Property Detail Modal opens with tabs: Overview, Photos, AVM, Equity, Sales History, Comps, Hazards, Schools, Crime, Neighborhood, Owner, Reports, Hoku.
+3. Close with the **X** or Esc.
+
+**Listing-card badges** to surface to the agent: blue **New** (<7 days), purple **Back on Market**, green **Price Down**, red **Price Up**.
+
+### How do I see only my own listings?
+1. Open MLS Search.
+2. Click the **My Listings** sub-tab.
+
+### How do I generate an AI listing description?
+1. Open My Listings or any listing modal.
+2. Click **AI Description**.
+3. Choose a tone: Professional, Conversational, Luxury, Quick & Punchy, or Detail-Heavy.
+4. Click **Generate**.
+5. Click **Regenerate** to try variants, **Copy** to use. Drafts are Fair Housing-checked.
+
+### How do I generate AI social media content?
+1. Open a listing modal.
+2. Click **AI Social**.
+3. Pick a platform: Instagram, Facebook, LinkedIn, or TikTok.
+4. Click **Generate**.
+5. Output includes caption, hashtags, and (for video) a script outline. **Copy** each section.
+
+**Hoku-equivalent queries**:
+- "Search MLS for 3-bed homes under [price] in [city]"
+- "Show me Active listings on [street]"
+- "Pull stale listings (DOM > 90) in [ZIP]"
+- "Generate a Professional description for my listing on [street]"
+- "Write an Instagram post for [MLS#]"
 
 **Tab 2 - Market Monitor**: Map + Hot Sheet for market monitoring (see market-watch context)
 
@@ -122,7 +172,39 @@ Help the agent prioritize leads, view matched properties, draft communications, 
 
 **Tab 4 - Market Analytics**: County-level market statistics (see market-analytics context). Also accessible from the sidebar.
 
-**Tab 5 - CMA**: Comparative Market Analysis with MLS comps, RentCast/Realie fallback, correlation scoring, suggested price range
+**Tab 5 - CMA**: Comparative Market Analysis with MLS comps, public-records/AVM fallback, correlation scoring, suggested price range, saved CMAs, and PDF report generation.
+
+### How do I open the CMA tab?
+1. Click **MLS** in the sidebar.
+2. Click the **CMA** tab.
+
+### How do I run a CMA from scratch?
+1. Open the CMA tab.
+2. Fill in the **Subject Property** form: Address, City, Postal Code, List Price, Beds, Baths, Living Area, Year Built, Property Type.
+3. Click **Run CMA**.
+4. Review comp counts, suggested price range, and the Comps table with correlation scores.
+
+### How do I run a CMA for an existing MLS listing?
+1. Open MLS Search and click a listing card to open its modal.
+2. Click the **Comps** tab inside the modal.
+3. Click **Run CMA**.
+4. The form pre-fills from the listing — adjust if needed, then run.
+
+### How do I adjust comp filters?
+1. In CMA results, find the **Filters** panel above the Comps table.
+2. Adjust comp window, distance radius, sqft band, status checkboxes.
+3. Click **Re-run**.
+
+### How do I save and generate a CMA Report?
+1. Click **Save** in the top-right of CMA results to save with a name.
+2. Saved CMAs appear at the top of the CMA tab for one-click reload.
+3. Click **Generate Report** to produce a branded PDF (cover map, subject details, comp table with adjustments, suggested price range).
+
+**Hoku-equivalent CMA queries**:
+- "Run a CMA for [address]"
+- "Closed comps within half a mile of [address]"
+- "Suggested price for [address]"
+- "Generate a CMA Report for [MLS#]"
 
 **Tab 6 - Lead Matches**: Auto-matches pipeline leads to active MLS listings (scored 0-100)
 
@@ -137,7 +219,64 @@ Help the agent search listings, run comps, match leads, analyze investments, exp
   // Property Data / Prospecting
   "property-data": `The agent is on the PROPERTY INTEL page. This has 2 tabs: Property Search and Prospecting.
 
-**Tab 1 - Property Search** (3 search modes):
+### How do I open Property Intel?
+1. In the left sidebar, click **Property Intel**.
+2. The page opens on the **Property Search** tab.
+
+### How do I look up a property by address?
+1. Open Property Intel.
+2. Select **By Address** mode.
+3. Type the street address — autocomplete suggests matches.
+4. Click the suggestion or press Enter.
+5. The Property Detail Modal opens with all data tabs.
+
+### How do I browse properties in a ZIP code?
+1. Open Property Intel.
+2. Select **By Zip Code** mode.
+3. Type a 5-digit ZIP and click **Search**.
+4. Apply filters in the sidebar to narrow.
+
+### How do I search a radius around a point?
+1. Open Property Intel.
+2. Select **By Lat/Lng + Radius** mode.
+3. Enter latitude, longitude, and radius (max 50 miles).
+4. Click **Search**.
+
+### How do I narrow results with filters?
+1. After running a search, scroll to the **Filters** sidebar.
+2. Adjust property type, beds/baths, year built, sqft, lot size, AVM value, sale amount, assessed value, absentee owner toggle, sale date range.
+3. Click **Apply Filters**.
+
+### How do I generate a Property Report PDF?
+1. Open the Property Detail Modal for the subject.
+2. Click the green **Property Report** button.
+3. Wait 5-15 seconds for render.
+4. Click **Download** or **Copy Share Link** (link expires after 30 days).
+
+### How do I generate a Buyer Report PDF?
+1. From MLS Search or Property Intel, open a listing's modal.
+2. Click **Buyer Report**.
+3. (Optional) Type a personal note to the buyer.
+4. Click **Generate** and download or share.
+
+### How do I generate a Seller Report PDF?
+1. Sidebar → click **Seller Report**.
+2. Type the seller's address in the search field and select the match.
+3. Review the property summary card.
+4. (Optional) Add a personal note.
+5. (Optional) Pick a Template (Editor / Archive / Noir / Terracotta / Blueprint).
+6. Click **Generate Seller Report PDF**.
+7. Download or share.
+
+**Hoku-equivalent queries**:
+- "Look up [address]"
+- "What's the AVM on [address]?"
+- "Generate a Property Report for [address]"
+- "Pull a Buyer Report on [MLS#]"
+- "Generate a Seller Report for [address]"
+
+---
+**Tab 1 - Property Search** reference (3 search modes):
 1. **By Address**: Single address search with autocomplete
 2. **By Zip Code**: Returns all properties in a zip code
 3. **By Lat/Lng + Radius**: Latitude, longitude, and radius in miles
@@ -248,12 +387,36 @@ GENERAL TIPS:
   // Seller Report
   "seller-report": `The agent is on the SELLER REPORT page. This page lets agents search a property by address, review public records data, and generate a professional Seller Report PDF.
 
-**How it works:**
-1. Enter a property address in the search bar
-2. The system pulls property data from public records (ownership, valuation, tax, building details, sales history)
-3. Review the property summary card showing AVM, last sale, assessed value, owner info, and property facts
-4. Optionally add a personal note to the seller
-5. Click "Generate Seller Report PDF" to create a branded multi-page Seller Report
+### How do I open the Seller Report page?
+1. In the left sidebar, click **Seller Report** (under Reports / Property Intel).
+2. The page opens with the address search bar at the top.
+
+### How do I generate a Seller Report?
+1. Open the Seller Report page.
+2. In the **Search** field, type the seller's property address. Autocomplete suggests matches.
+3. Click the matching suggestion or press Enter.
+4. Review the **Property Summary** card that appears: AVM, last sale, assessed value, owner info, property facts.
+5. (Optional) Type a personal note to the seller in the **Personal Note** field.
+6. (Optional) Pick a visual template under **Template**: The Editor (default classic navy + gold), The Archive (minimal), Noir (luxury dark), Terracotta (warm), or Blueprint (corporate data).
+7. Click **Generate Seller Report PDF**.
+8. Wait 10-30 seconds for render (depends on photos and chart count).
+9. Click **Download** to save, or **Copy Share Link** for a 30-day public URL.
+
+### How do I share the Seller Report with the seller?
+1. After generating, click **Copy Share Link** in the result panel.
+2. Paste the link into an email, SMS, or your CRM message to the seller.
+3. The link works for 30 days without requiring the seller to log in.
+4. Each visit is logged so you can see whether the seller opened the report.
+
+### How do I switch templates after generating?
+1. After the report renders, change the **Template** selector at the top.
+2. Click **Generate** again — a fresh PDF renders with the new visual style.
+3. The data is identical across templates; only colors, fonts, cover layout, page numbering, and footer copy change.
+
+**Hoku-equivalent queries**:
+- "Generate a Seller Report for [address]"
+- "Run a Seller Report on [address] using the Noir template"
+- "Send the Seller Report for [address] to my client" (creates a share link)
 
 **Seller Report PDF (13-page RPR-equivalent, rebuild in progress):**
 1. Cover — hero photo, address overlay, listing status pill, agent card (headshot, license, contact, brokerage)

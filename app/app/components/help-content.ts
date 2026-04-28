@@ -257,15 +257,92 @@ Your account must have MLS credentials configured. This is set up by a platform 
 
 ### 5.2 MLS Search (Tab 1)
 
-1. Navigate to **MLS** from the main navigation.
-2. Search by zip code, city, address, or building/condo name (e.g., "Park Lane", "The Century").
-3. Filter by: Status (Active, Pending, Closed, Expired, Withdrawn, Canceled), property type, price range, beds/baths, Days on Market, Neighborhood/Subdivision name, 27 property feature badges, and a rental toggle.
-4. Listings display color-coded badges: blue **New** (on market < 7 days), purple **Back on Market**, green **Price Down**, red **Price Up**.
-5. Click any listing to open the full Property Detail Modal with all tabs.
+The MLS Search tab lets you search live listings across every status (Active, Pending, Closed, Expired, Withdrawn, Canceled), filter by 27+ property features, and open each result in a full Property Detail Modal.
 
-**My Listings** sub-tab shows your own active listings with MLS sync status.
+### How do I open MLS Search?
 
-**AI Tools**: Generate AI-powered listing descriptions (multiple tones) and social media content (Instagram, Facebook, LinkedIn, TikTok) with captions, hashtags, and video scripts.
+1. In the left sidebar, click **MLS**.
+2. The page opens on the **Search & Listings** tab by default.
+
+### How do I search by address, ZIP, or city?
+
+1. Open MLS Search.
+2. In the **Search** field at the top, type any of: a street address, a ZIP code, a city name, or a building/condo name.
+3. Press Enter or click the **Search** button.
+4. Listings matching your query appear in the results grid below.
+
+### How do I search by neighborhood or subdivision?
+
+1. Open MLS Search.
+2. Scroll to the **Filters** sidebar (or click the filter icon on mobile).
+3. Find the **Neighborhood / Subdivision** field.
+4. Type the neighborhood or subdivision name as it appears in the MLS.
+5. Click **Apply Filters**.
+
+### How do I filter by listing status?
+
+1. Open MLS Search.
+2. In the **Status** filter, check the boxes for the statuses you want: **Active**, **Pending**, **Closed**, **Expired**, **Withdrawn**, **Canceled**.
+3. Click **Apply Filters**.
+
+### How do I filter by property type, price, beds, or DOM?
+
+1. Open MLS Search.
+2. In the **Filters** sidebar, set:
+   - **Property Type**: Residential, Condominium, Townhouse, Land, Multi-Family, etc.
+   - **Price Range**: drag the min and max sliders or type values
+   - **Beds / Baths**: minimum counts
+   - **Days on Market**: minimum DOM (useful for stale-listing prospecting)
+3. Toggle **Rentals** if you want to include rental listings.
+4. Click **Apply Filters**.
+
+### How do I read the badges on a listing card?
+
+Each card shows up to four colored badges to flag time-sensitive signals:
+- **Blue: New** — on market less than 7 days
+- **Purple: Back on Market** — was previously off-market and is active again
+- **Green: Price Down** — most recent price change was a reduction
+- **Red: Price Up** — most recent price change was an increase
+
+### How do I open a listing's full detail?
+
+1. Click anywhere on the listing card.
+2. The **Property Detail Modal** opens with tabs: Overview, Photos, AVM, Equity, Sales History, Comps, Hazards, Schools, Crime, Neighborhood, Owner, Reports, Hoku.
+3. Use the modal tabs to explore every available data source for that property.
+4. Close the modal with the **X** in the top-right or the **Esc** key.
+
+### How do I see only my own listings?
+
+1. Open the MLS Search page.
+2. Click the **My Listings** sub-tab next to **Search & Listings**.
+3. The grid shows only listings where you are the listing agent, with an MLS sync status indicator on each card.
+
+### How do I generate an AI listing description?
+
+1. Open the **My Listings** sub-tab (or open any listing's Property Detail Modal).
+2. Click the **AI Description** button.
+3. Choose a tone: Professional, Conversational, Luxury, Quick & Punchy, or Detail-Heavy.
+4. Click **Generate**.
+5. Review the draft. Click **Regenerate** to try a different version, or **Copy** to use it.
+6. Drafts are Fair Housing compliance-checked automatically before display.
+
+### How do I generate AI social media content?
+
+1. Open the **My Listings** sub-tab (or any listing modal).
+2. Click the **AI Social** button.
+3. Pick a platform: Instagram, Facebook, LinkedIn, or TikTok.
+4. Click **Generate**.
+5. The output includes a platform-appropriate caption, hashtags, and (for video platforms) a script outline.
+6. Click **Copy** on each section to paste into the platform's composer.
+
+### Hoku-equivalent
+
+Instead of the page, ask Hoku:
+- "Search MLS for 3-bed homes under [price] in [city]"
+- "Show me Active listings on [street name]"
+- "Pull stale listings (DOM > 90) in [ZIP]"
+- "Generate a Professional description for my listing on [street]"
+- "Write an Instagram post for [MLS#]"
 
 **VA Assumable Loan Search**: For military buyers (or any buyer who can assume an existing VA mortgage), this search finds active listings where the seller's VA loan can be inherited at the original locked-in rate — typically 2.5-3.5% on loans originated 2020-2022. Real $1,000-2,000/mo savings vs current market rates.
 
@@ -413,16 +490,74 @@ County-level market statistics dashboard. Also accessible from the sidebar under
 
 Data sources: market stats provider, MLS, HUD. Cached 24 hours.
 
-### 5.6 CMA (Tab 5)
+### 5.6 CMA — Comparative Market Analysis (Tab 5)
 
-Generate a Comparative Market Analysis for any property.
+The CMA tab pulls comparable sales (Active / Pending / Closed within the same area, last 6 months by default), scores each comp's correlation to the subject property, calculates a suggested price range, and lets you save the report. When MLS comps are sparse, the system automatically falls back to public-records and AVM data.
 
-1. Enter the subject property details: address, city, postal code, list price, beds, baths, sqft, year built, property type.
-2. The system pulls comparable sales from MLS (Active, Pending, Closed within the same area, last 6 months).
-3. If MLS data is limited, it automatically falls back to RentCast and Realie AVM.
-4. Review: total/active/pending/sold comp counts, average and median prices, price per sqft, average DOM, suggested price range, list-to-sale ratio.
-5. Each comp is scored for correlation to the subject property.
-6. Save CMA reports for future reference.
+### How do I open the CMA tab?
+
+1. In the left sidebar, click **MLS**.
+2. Click the **CMA** tab.
+
+### How do I run a CMA from scratch?
+
+1. Open the CMA tab.
+2. Enter the subject property in the **Subject Property** form:
+   - **Address**, **City**, **Postal Code**
+   - **List Price** (or your target price if not listed)
+   - **Beds**, **Baths**, **Living Area (sqft)**, **Year Built**, **Property Type**
+3. Click **Run CMA**.
+4. The page shows comp counts (total / active / pending / sold), average & median price, price per sqft, average DOM, list-to-sale ratio, and a suggested price range.
+5. Scroll to the **Comps** table to review each comparable property with its correlation score.
+
+### How do I run a CMA for an existing listing?
+
+1. Open MLS Search and find the listing.
+2. Click the listing card to open the Property Detail Modal.
+3. Click the **Comps** tab inside the modal.
+4. Click **Run CMA**.
+5. The CMA pre-fills the subject details from the listing — review and click **Run** if you want to adjust any field first.
+
+### How do I adjust comp filters?
+
+1. In the CMA results, find the **Filters** panel above the comps table.
+2. Adjust:
+   - **Comp window** (default last 6 months)
+   - **Distance radius** (default 1 mile)
+   - **Sqft band** (default ±15%)
+   - **Status** (Active / Pending / Closed checkboxes)
+3. Click **Re-run** to refresh the comp set.
+
+### How do I view the correlation score on each comp?
+
+Each comp row in the table shows a **Correlation %** column — higher percentages mean closer match to the subject in size, age, beds/baths, and location. Comps below a minimum threshold are auto-excluded; you can override by clicking **Include** on any row.
+
+### How do I save the CMA?
+
+1. After running the CMA, click the **Save** button in the top-right of the results panel.
+2. Give the saved CMA a name (defaults to the subject address).
+3. The CMA appears under **Saved CMAs** at the top of the page for one-click reload later.
+
+### How do I generate a CMA Report PDF?
+
+1. After running or loading a CMA, click **Generate Report**.
+2. Choose the report style.
+3. The branded PDF includes: cover page with map, subject property details, comp table with adjustments, suggested price range, market context, and your agent branding.
+4. Download or share the PDF link.
+
+### What if MLS data is limited or returns no comps?
+
+1. The system automatically falls back to public-records and AVM providers when MLS comp counts are low.
+2. Comp count and source badges in the results panel make this transparent.
+3. If the AVM-only fallback still doesn't return enough data, widen the comp window or distance radius and re-run.
+
+### Hoku-equivalent
+
+Instead of the page, ask Hoku:
+- "Run a CMA for [address]"
+- "What are the closed comps within a half mile of [address]?"
+- "Suggested price for [address] based on the last 6 months"
+- "Generate a CMA Report for [MLS#]"
 
 ### 5.7 Lead Matches (Tab 6)
 
@@ -843,9 +978,53 @@ The Property Intel page provides comprehensive property intelligence and 6 speci
 
 ### 11.1 Property Search (3 Methods)
 
-1. **By Address**: Enter a street address for an exact property lookup.
-2. **By Zip Code**: Enter a zip code to browse all properties in that area.
-3. **By Lat/Lng + Radius**: Enter latitude, longitude, and radius in miles.
+The Property Intel page provides comprehensive property intelligence powered by public records, AVM data, and MLS — all merged into one unified Property Detail Modal regardless of where the data came from.
+
+### How do I open Property Intel?
+
+1. In the left sidebar, click **Property Intel**.
+2. The page opens on the **Property Search** tab.
+
+### How do I look up a single property by address?
+
+1. Open Property Intel.
+2. In the search bar at the top, select the **By Address** mode.
+3. Type the street address (autocomplete will suggest matches).
+4. Click the matching suggestion or press Enter.
+5. The Property Detail Modal opens automatically with all data tabs ready.
+
+### How do I browse all properties in a ZIP code?
+
+1. Open Property Intel.
+2. Select the **By Zip Code** mode.
+3. Type a 5-digit ZIP.
+4. Click **Search**.
+5. The grid below shows every property indexed in that ZIP. Apply filters in the sidebar to narrow.
+
+### How do I search a radius around a point?
+
+1. Open Property Intel.
+2. Select the **By Lat/Lng + Radius** mode.
+3. Enter latitude, longitude, and radius in miles (max 50).
+4. Click **Search**.
+5. Results show all properties within the radius.
+
+### How do I narrow results with filters?
+
+1. After running any search, scroll to the **Filters** panel in the sidebar.
+2. Adjust any combination of: Property Type, Beds, Baths, Year Built range, Sqft range, Lot Size, AVM Value range, Sale Amount range, Assessed Value range, Sale Date range, **Absentee Owner** toggle.
+3. Click **Apply Filters** — results refresh in place.
+
+### How do I open the full Property Detail Modal?
+
+1. From any search result, click the property card.
+2. The modal opens with these tabs (visibility depends on data availability):
+   - **Opportunity Score** (when seller signals exist)
+   - **Overview** · **Building** · **Financial** · **Sales History** · **Listing History**
+   - **Comps** · **Ownership** · **Neighborhood** · **Market Stats** · **Federal/GIS**
+3. Use **Esc** or the X to close.
+
+### Reference detail (kept for context)
 
 Apply filters: property type, beds/baths, year built, sqft, lot size, AVM value, sale amount, assessed value, absentee owner toggle, sale date range.
 
@@ -922,6 +1101,31 @@ From the Property Detail Modal, click the green **Property Report** button to ge
 - The report pulls all data already loaded in the Property Detail Modal -- no extra API calls
 - Reports can also be saved and shared via a public link (expires after 30 days)
 - All reports are branded with your agent information
+
+### How do I generate a Property Report PDF?
+
+1. Open Property Intel and look up the property by address.
+2. In the Property Detail Modal, click the green **Property Report** button.
+3. Wait for the report to render — typically 5-15 seconds depending on photos and chart count.
+4. Click **Download** to save the PDF or **Copy Share Link** for a 30-day public link.
+
+### How do I generate a Buyer Report PDF?
+
+1. Open MLS Search or Property Intel and find the listed property.
+2. In the Property Detail Modal, click the **Buyer Report** button.
+3. (Optional) Type a **Personal Note** to your buyer in the modal that appears.
+4. Click **Generate**.
+5. Download the PDF or send the share link.
+
+### How do I generate a Seller Report PDF?
+
+1. From the sidebar, click **Seller Report** (under Reports / Property Intel).
+2. In the **Search** field, type the seller's property address and select the suggested match.
+3. Review the property summary card — public records, AVM, last sale, owner.
+4. (Optional) Add a **Personal Note** to the seller in the optional message field.
+5. (Optional) Pick a **Template** for the visual style (Editor / Archive / Noir / Terracotta / Blueprint).
+6. Click **Generate Seller Report PDF**.
+7. Download the PDF or copy the share link.
 
 ### 11.2c Buyer Report (PDF)
 
