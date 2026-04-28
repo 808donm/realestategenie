@@ -481,14 +481,54 @@ Data is cached for 24 hours.
 
 ### 5.5 Market Analytics (Tab 4)
 
-County-level market statistics dashboard. Also accessible from the sidebar under Deals.
+County-level market statistics dashboard. Combines MLS data with market-stats provider and HUD Fair Market Rents into one shareable analytics page. Cached 24 hours.
 
-1. Go to **MLS** > **Market Analytics** tab.
-2. View overview cards: Median Sale Price, SFR Median, Condo/TH Median, $/Sqft, DOM, YoY Price Change, Sales Momentum, MLS Active, MLS Closed (30d).
-3. Browse the **Sales Price by ZIP Code** table - click any ZIP for a detailed breakdown.
-4. Review grouped bar charts (SFR vs Condo/TH by ZIP), sale volume by city, fair market rents by bedroom count, and median rent by ZIP.
+### How do I open Market Analytics?
+1. In the left sidebar, click **MLS**.
+2. Click the **Market Analytics** tab.
 
-Data sources: market stats provider, MLS, HUD. Cached 24 hours.
+(Or go directly via Sidebar → **Deals** → **Market Analytics**.)
+
+### How do I read the overview cards?
+At the top of the page, the overview row shows:
+- **Median Sale Price** — across all property types
+- **SFR Median** — Single-Family Residence median
+- **Condo/TH Median** — Condo + Townhouse median
+- **$/Sqft** — median price per square foot
+- **DOM** — median days on market
+- **YoY Price Change** — year-over-year median price delta
+- **Sales Momentum** — 6-month vs prior 6-month volume change
+- **MLS Active** — current active listing count
+- **MLS Closed (30d)** — closings in the last 30 days
+
+### How do I drill into a specific ZIP?
+1. Scroll to the **Sales Price by ZIP Code** table.
+2. Click a ZIP row.
+3. The breakdown panel opens with that ZIP's median, SFR median, Condo/TH median, $/sqft, listing count, DOM, and median rent.
+
+### How do I read the grouped bar chart?
+1. Scroll to the **Median Sale Price by ZIP** chart.
+2. Each ZIP has two adjacent bars: SFR (red) vs Condo/TH (blue).
+3. Sorted by SFR price descending. Hover any bar to see the exact value.
+
+### How do I switch counties?
+1. Click the **County** dropdown at the top of the page.
+2. Pick the county you want.
+3. The page reloads with that county's data.
+
+### How do I export the data?
+1. Click **Export** in the top-right of the page.
+2. Choose **CSV** for the raw ZIP-level table or **PDF** for a branded report.
+
+### Data sources
+
+MLS (active and closed listings), market-stats provider (volume momentum and YoY), HUD (Fair Market Rents). All data cached 24 hours; refresh by reloading the page or clicking **Refresh** in the top-right.
+
+### Hoku-equivalent
+- "What's the median price in [county]?"
+- "Show me YoY price change for [county]"
+- "Compare SFR vs Condo medians in [ZIP]"
+- "Export market analytics for [county] as PDF"
 
 ### 5.6 CMA — Comparative Market Analysis (Tab 5)
 
@@ -1284,14 +1324,85 @@ Same 13 sections and same data in every template — different personality, diff
 
 ### 11.3 Prospecting (6 Search Types)
 
-1. **Absentee Owners**: Finds owners not living at the property. Best targets: 15+ years owned, out-of-state mailing address.
-2. **High Equity**: Finds owners with significant equity (AVM - mortgage). Focus on 70%+ equity with long ownership.
-3. **Pre-Foreclosure/Distressed**: Properties showing distress signals (underwater, high LTV, assessment drops). Be sensitive -- position as someone who can help.
-4. **Just Sold (Farming)**: Recent closed sales (last 6 months) + all neighboring homes within 0.5 miles for postcard campaigns.
-5. **Investor Portfolios**: Multi-property owners grouped by name. Approach with investment messaging (cap rates, 1031 exchanges, ROI).
-6. **DOM Prospecting**: Stale, expired, and withdrawn listings tiered by DOM ratio (Red/Orange/Charcoal/Green). Only contact expired/withdrawn listings -- never solicit active listings.
+The Prospecting tab on Property Intel offers six specialized lead-finding searches. Each includes AI-powered prospect analysis with tier scoring, outreach drafts (letters, emails, SMS, talking points), and CSV/PDF export.
 
-Each search includes AI-powered prospect analysis with scoring, tier assignment, outreach drafts (letters, emails, SMS, talking points), and CSV/PDF export.
+### How do I open the Prospecting tab?
+1. In the left sidebar, click **Property Intel**.
+2. Click the **Prospecting** tab.
+
+### How do I run an Absentee Owners search?
+1. Open Prospecting.
+2. Click the **Absentee Owners** card.
+3. Type a 5-digit ZIP and (optionally) set min years owned, beds/baths, property type filters.
+4. Click **Run Search**.
+5. Best targets: 15+ years owned with out-of-state mailing address.
+
+### How do I run a High Equity search?
+1. Open Prospecting and click **High Equity**.
+2. Type a ZIP and (optionally) set a minimum equity percentage.
+3. Click **Run Search**. Results sort by equity descending.
+4. Focus on 70%+ equity combined with long ownership for the strongest prospects.
+
+### How do I run a Pre-Foreclosure / Distressed search?
+1. Open Prospecting and click **Pre-Foreclosure**.
+2. Type a ZIP. Results show properties with active foreclosure filings, default amounts, and auction dates.
+3. Click any property row for full distress signals (underwater status, LTV, lien counts).
+4. Position outreach as "I can help you sell quickly to avoid foreclosure" — be sensitive; these owners are in distress.
+
+### How do I run a Just Sold (Farming) search?
+1. Open Prospecting and click **Just Sold**.
+2. Type a ZIP. Results show closed sales from the last 6 months.
+3. Click any sold property to see all neighboring homes within 0.5 miles.
+4. Export the neighbor list as a postcard recipient list.
+5. Send "Just Sold" postcards within 1-2 weeks of the closing while it's still fresh news.
+
+### How do I run an Investor Portfolios search?
+1. Open Prospecting and click **Investor Portfolios**.
+2. Type a ZIP and set the minimum number of parcels owned.
+3. Click **Run Search**. Results group by owner name showing every property in that owner's portfolio.
+4. Approach with investment messaging — cap rates, 1031 exchanges, portfolio ROI.
+
+### How do I run a DOM Prospecting search?
+1. Open Prospecting and click **DOM Prospecting**.
+2. Type one or more ZIPs.
+3. (Optional) Adjust the tier multiplier vs market-average DOM (default 2.0x for Red).
+4. Click **Run Search**.
+5. Results are tiered:
+   - **Red** (2x+ market-average DOM) — most stale, highest priority
+   - **Orange** (1.5x+) — getting stale
+   - **Charcoal** (1.15x+) — approaching threshold, monitor
+   - **Green** (Expired/Withdrawn) — fair game; no active listing agreement
+6. **IMPORTANT**: Only contact properties in the **Green** tier (expired/withdrawn). Soliciting active listings represented by another agent is unethical and often illegal.
+
+### How do I monitor specific listings over time (DOM)?
+1. After running a DOM Prospecting search, click any result.
+2. Click **Monitor** to add it to your monitored list.
+3. View monitored listings on the **Monitored Properties** sub-tab.
+4. Receive alerts on tier changes, status changes (active → expired), and price changes via the **Alerts** sub-tab.
+
+### How do I save a prospecting search for reuse?
+1. After running any prospecting search, click **Save Search** in the top-right.
+2. Name the search.
+3. The saved search appears under **Saved Searches** for one-click reload.
+
+### How do I export prospecting results?
+1. After running a search, click **Export**.
+2. Choose **CSV** (raw data) or **PDF** (branded report).
+3. Each export includes all displayed columns plus skip-traced contact data where available.
+
+### How do I draft AI outreach for a prospect?
+1. Click any prospect row to open the detail panel.
+2. Click **Outreach** to see AI-generated drafts.
+3. Pick a format: **Letter**, **Email**, **SMS**, or **Talking Points**.
+4. Edit the draft inline; click **Copy** to use.
+
+### Hoku-equivalent
+- "Find absentee owners with 15+ years ownership in [ZIP]"
+- "Run a high-equity search in [ZIP] for 70%+ equity owners"
+- "Show me pre-foreclosures in [ZIP]"
+- "Find recent sold homes in [ZIP] for a postcard campaign"
+- "Show me stale listings in [ZIP] with DOM > 90"
+- "Generate an outreach letter for [address]"
 
 ### 11.4 Bird Dog Automated Prospecting
 
@@ -1602,73 +1713,153 @@ The following integrations are available only to platform administrators and are
     title: "14. Seller Opportunity Map",
     content: `## 14. Seller Opportunity Map
 
-The Seller Opportunity Map is an interactive, map-based prospecting tool that uses predictive analytics to identify likely sellers.
+The Seller Opportunity Map is an interactive, map-based prospecting tool that uses predictive analytics to identify likely sellers across an area.
 
-### 14.1 Searching
+### How do I open the Seller Map?
+1. In the left sidebar, click **Opportunities** to expand it.
+2. Click **Seller Map**.
 
-Search by: zip code, latitude/longitude + radius (up to 50 miles), or parcel ID (TMK in Hawaii, APN in most other states).
+### How do I search by ZIP code?
+1. Open Seller Map.
+2. In the search bar at the top, select the **ZIP** mode.
+3. Type a 5-digit ZIP and press Enter.
+4. The map zooms to the area and color-coded markers appear for every scored property.
 
-### 14.2 Seller Motivation Score (0-100)
+### How do I search by lat/lng + radius?
+1. Open Seller Map.
+2. Select the **Radius** mode in the search bar.
+3. Enter latitude, longitude, and radius in miles (max 50).
+4. Press Enter or click **Search**.
 
-Each property is scored across 12 dimensions:
-- High equity (15pts), Long ownership (15pts), Absentee owner (12pts), Distress signals (12pts)
-- Multi-property portfolio (8pts), Transfer recency (8pts), Owner type (6pts)
-- Tax assessment gap (5pts), Market trend (5pts), Tax trend (5pts), Appreciation (5pts), HOA burden (4pts)
+### How do I search by parcel ID?
+1. Open Seller Map.
+2. Select the **Parcel** mode (called TMK in Hawaii, APN in most other states).
+3. Type the parcel number with or without dashes.
+4. Press Enter — the map centers on that parcel.
 
-Scores are normalized based on available data (missing data excluded from the denominator).
+### How do I narrow results with filters?
+1. After running a search, open the **Filters** panel on the left.
+2. Adjust:
+   - **Min Motivation Score** (default 40) — sets the minimum opportunity score for markers shown
+   - **Absentee Only** — toggle on to show only properties where owner address differs from property
+   - **Min Ownership Years** — minimum years owned
+   - **Min Equity %** — minimum equity percentage
+   - **Property Type** — Residential, Condo, Townhouse, Land, etc.
+   - **Min Parcels Owned** — for finding investor portfolios
+3. Filters apply live; markers update as you change values.
 
-**Score Levels:** Very Likely (70-100) red, Likely (50-69) orange, Possible (30-49) yellow, Unlikely (0-29) blue
+### How do I read the marker colors?
+- **Red** — Very Likely seller (motivation score 70-100)
+- **Orange** — Likely (50-69)
+- **Yellow** — Possible (30-49)
+- **Blue** — Unlikely (0-29)
 
-### 14.3 Map Features
+### How do I view a property's full detail and outreach options?
+1. Click a marker on the map.
+2. The Property Detail Modal opens with the **Opportunity Score** tab first.
+3. The Opportunity Score tab shows the scoring breakdown across all 12 dimensions plus AI-generated outreach suggestions.
+4. Click **Letter**, **Email**, **SMS**, or **Talking Points** under outreach to generate a tailored message draft.
+5. Use the other tabs (Overview, Building, Financial, Sales History, etc.) for the complete property briefing.
 
-- Color-coded property markers by motivation score
-- Heat map layer showing density of high-motivation sellers
-- ZIP code boundary overlay (clickable for search)
-- Parcel boundary overlay (Hawaii TMK via state ArcGIS; other markets where supported)
-- Streets and satellite imagery toggle
-- Auto-search on pan/zoom (debounced 600ms)
+### How do I toggle the heat map or boundary overlays?
+1. Open Seller Map.
+2. In the **Layers** panel (top-right of the map), toggle:
+   - **Heat Map** — density visualization of high-motivation sellers
+   - **ZIP Boundaries** — click any ZIP to recenter the search
+   - **Parcel Boundaries** — overlay parcel lines (Hawaii TMK via state GIS; other markets where supported)
+   - **Satellite** — switch from streets to satellite imagery
 
-### 14.4 Filters
+### How do I save the current search?
+1. Set up your filters and search area as desired.
+2. Click **Save Search** in the top-right of the page.
+3. Give the search a name (e.g., "Absentee + High Equity in [ZIP]").
+4. Click **Save**. The search appears under **Saved Searches** for one-click reload.
+5. Saved search results are globally cached for 7 days.
 
-Min motivation score (default 40), absentee-only toggle, min ownership years, min equity %, property type, min parcels owned.
+### How do I load a saved search?
+1. Open Seller Map.
+2. Click **Saved Searches** in the top-right.
+3. Click the saved entry. The map loads with those filters and area applied.
 
-### 14.5 Property Details and Outreach
+### Seller Motivation Score (reference, 0-100)
 
-Click any property to open the full Property Detail Modal with the Opportunity Score tab first. This shows the scoring breakdown, AI-generated outreach suggestions (letters, emails, SMS, talking points), and all standard property tabs.
+12-dimension scoring algorithm. Scores normalized based on available data:
+- High equity (15) · Long ownership (15) · Absentee owner (12) · Distress signals (12)
+- Multi-property portfolio (8) · Transfer recency (8) · Owner type (6)
+- Tax assessment gap (5) · Market trend (5) · Tax trend (5) · Appreciation (5) · HOA burden (4)
 
-### 14.6 Saved Searches
-
-Save search parameters with a custom name for quick reload. Search results are cached globally for 7 days.`,
+### Hoku-equivalent
+- "Open the Seller Map for [ZIP]"
+- "Find absentee owners with 70%+ equity in [ZIP]"
+- "Save this search as [name]"
+- "Show me my saved searches"
+- "Generate an outreach letter for [address]"`,
   },
   {
     id: "farm-watchdog",
     title: "15. Farm & Watchdog",
     content: `## 15. Farm & Watchdog
 
-The Farm & Watchdog page lets you monitor geographic areas and set up automated alerts for market changes.
+Farm & Watchdog lets you monitor geographic areas with automated alerts for market changes (price drops, DOM thresholds, status flips, new listings).
 
-### 15.1 Creating a Farm Area
+### How do I open Farm & Watchdog?
+1. In the left sidebar, click **Opportunities** to expand it.
+2. Click **Farm & Watchdog**.
 
-1. Navigate to **Farm** from the main navigation.
-2. Click **Create Farm Area**.
-3. Define the area by: zip code, radius (lat/lng), or parcel-ID prefix (TMK in Hawaii, APN in most other states).
+### How do I create a farm area?
+1. Open Farm & Watchdog.
+2. Click **+ Create Farm Area** in the top-right.
+3. Choose how to define the area:
+   - **ZIP** — type one or more 5-digit ZIPs
+   - **Radius** — enter lat/lng + radius in miles
+   - **Parcel Prefix** — type a partial parcel ID (TMK in Hawaii, APN elsewhere) to cover a section/block
 4. Set property filters: price range, bedrooms, property types, listing statuses.
-5. Save the farm area with a custom name.
+5. Give the farm a name.
+6. Click **Save**.
 
-### 15.2 Farm Listings
+### How do I view live listings in my farm?
+1. Open Farm & Watchdog.
+2. Click the farm card.
+3. The detail page shows live MLS listings matching the farm's criteria.
+4. Sort by clicking column headers: **Days on Market**, **Price** (asc/desc), or **Price Drop %**.
+5. Click any listing card to open the full Property Detail Modal.
 
-Each farm area shows live MLS listings matching your criteria. Sort by: Days on Market, price ascending/descending, or price drop percentage. View full property details including agent info, photos, and virtual tour links.
+### How do I add a Watchdog alert rule?
+1. Open the farm's detail page.
+2. Click the **Watchdog** tab.
+3. Click **+ Add Rule**.
+4. Choose rule type:
+   - **DOM Threshold** — alert when listings exceed a specified number of days on market (e.g., 75+ days)
+   - **Price Drop Monitoring** — alert on price reductions, optionally with a minimum % threshold
+   - **Status Changes** — alert on new listings, expirations, or withdrawals
+5. Set notification channels: **Push**, **Email**, **SMS** (any combination).
+6. Click **Save Rule**.
 
-### 15.3 Watchdog Rules
+### How do I view and manage alerts?
+1. Open the farm's detail page.
+2. Click the **Alerts** tab.
+3. Each alert shows timestamp, rule that triggered it, listing details, and a link to the full property.
+4. Use the status badges to filter: **Unread**, **Read**, **Archived**.
+5. Click an alert row to mark it read; click the archive icon to archive.
 
-Create automated alert rules for each farm area:
-- **DOM Threshold**: Alert when listings exceed a specified number of days on market
-- **Price Drop Monitoring**: Track price reductions with percentage calculations
-- **Status Changes**: New listings, expirations, withdrawals
+### How do I edit or pause a farm area?
+1. Open the farm's detail page.
+2. Click **Edit** (top-right) to change criteria or filters.
+3. Toggle **Active** off to pause monitoring without deleting the farm.
 
-### 15.4 Notifications
+### How do I delete a farm area?
+1. Open the farm's detail page.
+2. Click **⋯** → **Delete**.
+3. Confirm. Past alerts are retained for compliance; the farm is removed.
 
-Configure multi-channel alerts: push notifications, email, and SMS. Alert statuses track as unread, read, or archived. A background cron job (MLS Watchdog) periodically checks your monitored properties and generates alerts on changes.`,
+A background MLS Watchdog job periodically scans your monitored areas and generates alerts on changes — no manual triggering required after rules are saved.
+
+### Hoku-equivalent
+- "Create a farm area for [ZIP] focused on 3-bed homes under [price]"
+- "Show me listings in my [farm name] farm with price drops"
+- "Alert me when listings in [ZIP] exceed 90 days on market"
+- "Pause my [farm name] farm"
+- "What new alerts do I have today?"`,
   },
   {
     id: "billing",
@@ -1846,14 +2037,44 @@ Use Email Blast to send your current listings to other agents for Broker's Open 
 
 The MLS Agent Leaderboard ranks agents in your market based on closed MLS transactions. Use it to identify top producers, track competition, and build your Broker's Open contact list.
 
-### How to Use
+### How do I open the MLS Agent Leaderboard?
+1. In the left sidebar, click **Reports**.
+2. Click **MLS Agent Leaderboard**.
 
-1. Go to **Reports > MLS Agent Leaderboard**.
-2. Set the time period and property types to analyze.
-3. Click **Generate** to build the leaderboard.
-4. Sort by any column (closings, volume, average price, etc.).
-5. Click **Export to Excel** to download the data as a spreadsheet.
-6. Click **Export to CRM** to push agent contacts into your CRM with the "MLS Agent" tag for use with Email Blast and Broker's Open outreach.`,
+### How do I generate a leaderboard?
+1. Open the MLS Agent Leaderboard.
+2. Set the **Time Period** dropdown (e.g., Last 30 days, Last Quarter, Last Year, Custom).
+3. (Optional) Choose **Property Types** to include (Residential, Condo, Townhouse, etc.).
+4. (Optional) Choose **Sides** (Listing Agent, Buyer Agent, or Both).
+5. Click **Generate**.
+
+### How do I sort the leaderboard?
+1. After generating, click any column header in the table:
+   - **Closings** — number of closed transactions
+   - **Volume** — total dollar volume
+   - **Average Price**
+   - **Median DOM**
+   - **List-to-Sale Ratio**
+2. Click again to reverse the sort direction.
+
+### How do I view an individual agent's detail?
+1. Click an agent row in the leaderboard.
+2. The detail panel shows their closed listings, average prices, DOM, and contact info pulled from MLS.
+
+### How do I export to Excel?
+1. After generating the leaderboard, click **Export to Excel** in the top-right.
+2. The XLSX includes every column shown plus full agent contact data.
+
+### How do I push agents to my CRM for Broker's Open outreach?
+1. Click **Export to CRM** in the top-right.
+2. Confirm. Each agent on the leaderboard is created/updated as a CRM contact with the **"MLS Agent"** tag.
+3. Use that tag in **Email Blast** or **Broker's Open** to send branded outreach to the full list.
+
+### Hoku-equivalent
+- "Show me the top 20 agents in [county] this quarter"
+- "Who closed the most volume in [ZIP] last year?"
+- "Export the leaderboard for [county] to Excel"
+- "Push leaderboard agents to my CRM with the MLS Agent tag"`,
   },
   {
     id: "glossary",

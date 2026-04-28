@@ -529,25 +529,62 @@ Help the agent search properties and generate Seller Reports for prospecting and
   // Seller Map
   "seller-map": `The agent is on the SELLER MAP. Interactive map-based prospecting tool with predictive seller scoring.
 
-**Search Methods**: By zip code, by lat/lng + radius (up to 50 miles), by parcel ID (TMK in Hawaii, APN in most other states)
-**Map Features**: Google Maps with color-coded markers (red=very likely, orange=likely, yellow=possible, blue=unlikely), heat map layer, ZIP boundary overlay, parcel boundary overlay where supported (Hawaii TMK via state ArcGIS), streets/satellite toggle, auto-search on pan/zoom
+### How do I open the Seller Map?
+1. Sidebar → click **Opportunities** to expand.
+2. Click **Seller Map**.
 
-**Seller Motivation Score (0-100)** -- 12 scoring dimensions:
-- High equity (15pts), Long ownership (15pts), Absentee owner (12pts), Distress signals (12pts)
-- Multi-property portfolio (8pts), Transfer recency (8pts), Owner type (6pts: estate/bank/REO = highest)
-- Tax assessment gap (5pts), Market trend (5pts), Tax trend (5pts), Appreciation (5pts), HOA burden (4pts)
-- Scores normalized based on available data (missing data excluded from denominator)
+### How do I search by ZIP code?
+1. Open Seller Map.
+2. Select **ZIP** mode in the search bar.
+3. Type the 5-digit ZIP and press Enter.
 
-**Score Levels**: Very Likely (70-100), Likely (50-69), Possible (30-49), Unlikely (0-29)
+### How do I search by lat/lng + radius?
+1. Select **Radius** mode.
+2. Enter latitude, longitude, radius in miles (max 50).
+3. Press Enter.
 
-**Filters**: Min motivation score (default 40), absentee-only toggle, min ownership years, min equity %, property type, min parcels owned
+### How do I search by parcel ID?
+1. Select **Parcel** mode (TMK in Hawaii, APN elsewhere).
+2. Type the parcel number with or without dashes.
+3. Press Enter.
 
-**Property Detail**: Opens Opportunity Score tab first with scoring breakdown, AI outreach suggestions (letters, emails, SMS, talking points). Full Property Detail Modal with all tabs.
+### How do I narrow with filters?
+1. Open the **Filters** panel on the left.
+2. Adjust Min Motivation Score (default 40), Absentee Only toggle, Min Ownership Years, Min Equity %, Property Type, Min Parcels Owned.
+3. Filters apply live.
 
-**Saved Searches**: Save search parameters with custom name for quick reload. 7-day global cache.
+### How do I view a property's full detail and outreach options?
+1. Click any marker on the map.
+2. The Property Detail Modal opens with **Opportunity Score** tab first.
+3. The tab shows scoring breakdown across 12 dimensions plus AI-generated outreach suggestions.
+4. Click **Letter / Email / SMS / Talking Points** to generate a tailored draft.
 
-Data sources: market-data provider (property data, AVM), public-records provider (equity, liens, distress), state GIS for parcel overlays where available.
-Help the agent understand scoring, identify best prospects, and generate outreach materials.`,
+### How do I toggle the heat map or boundary overlays?
+1. Open the **Layers** panel (top-right of the map).
+2. Toggle Heat Map, ZIP Boundaries, Parcel Boundaries (where supported), or Satellite.
+
+### How do I save the current search?
+1. Set up filters and search area.
+2. Click **Save Search** in the top-right.
+3. Name it and click **Save**. Cached globally for 7 days.
+
+### How do I load a saved search?
+1. Click **Saved Searches** in the top-right.
+2. Click the entry to reload filters and area.
+
+**Marker colors**: Red = Very Likely (70-100), Orange = Likely (50-69), Yellow = Possible (30-49), Blue = Unlikely (0-29)
+
+**Seller Motivation Score (0-100)** — 12 dimensions:
+- High equity (15) · Long ownership (15) · Absentee (12) · Distress (12)
+- Multi-property portfolio (8) · Transfer recency (8) · Owner type (6: estate/bank/REO highest)
+- Tax assessment gap (5) · Market trend (5) · Tax trend (5) · Appreciation (5) · HOA burden (4)
+
+**Hoku-equivalent queries**:
+- "Open the Seller Map for [ZIP]"
+- "Find absentee owners with 70%+ equity in [ZIP]"
+- "Save this search as [name]"
+- "Show me my saved searches"
+- "Generate an outreach letter for [address]"`,
 
   // Market Monitor
   "market-watch": `The agent is on the MARKET MONITOR page (a tab within MLS). This is a real-time market monitoring tool:
@@ -568,39 +605,97 @@ Help the agent understand scoring, identify best prospects, and generate outreac
 Help the agent monitor their market, identify new opportunities, and track price changes.`,
 
   // DOM Prospecting
-  "dom-prospecting": `The agent is on the DOM PROSPECTING page. This identifies stale and expired listings for prospecting.
-- **3 Tabs**: Search Results, Monitored Properties, Alerts (with unread count)
-- **Tier System** (customizable multipliers vs. avg DOM per property type):
-  - RED (2x+ avg DOM): Likely target -- very stale
-  - ORANGE (1.5x avg): Possible target -- getting stale
-  - CHARCOAL (1.15x avg): Monitor -- approaching threshold
-  - GREEN (Expired/Withdrawn): Fair game for outreach -- no active listing agreement
-- **Filters**: Multi-zip search, property type, price range, tier multiplier adjustment
-- **Monitoring**: Track specific listings for tier/status changes over time
-- **Alerts**: Real-time notifications on tier changes, status changes (active->expired), price changes
-- **Saved Searches**: Persist search criteria for recurring monitoring
-- Data from MLS (primary) with public-records provider as fallback
-IMPORTANT: It is unethical (and often illegal) to solicit sellers whose property is actively listed with another agent. Only contact expired/withdrawn listings.`,
+  "dom-prospecting": `The agent is on the DOM PROSPECTING page. Identifies stale and expired listings for prospecting.
+
+### How do I run a DOM Prospecting search?
+1. Sidebar → **Property Intel** → click **Prospecting** tab → click **DOM Prospecting**.
+2. Type one or more ZIPs.
+3. (Optional) Adjust the tier multiplier vs market-average DOM (default 2.0x for Red).
+4. Click **Run Search**.
+5. Results appear tiered (Red / Orange / Charcoal / Green).
+
+### How do I monitor a specific listing over time?
+1. Run a DOM Prospecting search.
+2. Click a listing card.
+3. Click **Monitor** to add it to your monitored list.
+4. View monitored listings on the **Monitored Properties** sub-tab.
+
+### How do I view DOM alerts?
+1. On the DOM Prospecting page, click the **Alerts** sub-tab (with unread count badge).
+2. Each alert shows tier change, status change (active → expired), or price change.
+
+### How do I save a DOM search?
+1. Run the search you want to save.
+2. Click **Save Search** in the top-right.
+3. Name it. Reload it from **Saved Searches** later.
+
+**Tier system** (customizable multipliers vs market-average DOM):
+- RED (2x+ avg DOM) — likely target, very stale
+- ORANGE (1.5x avg) — possible target, getting stale
+- CHARCOAL (1.15x avg) — approaching threshold, monitor
+- GREEN (Expired/Withdrawn) — fair game for outreach, no active listing agreement
+
+Data from MLS (primary) with public-records provider as fallback.
+
+**IMPORTANT**: It is unethical (and often illegal) to solicit sellers whose property is actively listed with another agent. Only contact properties in the GREEN tier (expired/withdrawn).
+
+**Hoku-equivalent queries**:
+- "Show me stale listings in [ZIP] with DOM > 90"
+- "Find expired listings in [ZIP]"
+- "Monitor [address] for tier changes"
+- "What new DOM alerts do I have?"`,
 
   // Farm & Watchdog
   "farm-watchdog": `The agent is on the FARM & WATCHDOG page. Geographic monitoring with automated alerts.
 
-**Farm Areas**:
-- Create by zip code, radius (lat/lng), or parcel-ID prefix (TMK in Hawaii, APN in most other states)
-- Set property filters: price range, bedrooms, property types, statuses
-- Live MLS search across farm area with sortable results (DOM, price, price drop %)
-- Multiple saved farm areas with individual configurations
+### How do I open Farm & Watchdog?
+1. Sidebar → click **Opportunities** to expand.
+2. Click **Farm & Watchdog**.
 
-**Watchdog Rules** (per farm area):
-- DOM threshold triggers (e.g., 75+ days on market)
-- Price drop monitoring with percentage tracking
-- Status change tracking (new listings, expirations, withdrawals)
-- Multi-channel notifications: push, email, SMS
-- Alert management: unread/read/archived statuses
-- Cron-based periodic checking via MLS Watchdog job
+### How do I create a farm area?
+1. Click **+ Create Farm Area** in the top-right.
+2. Define the area: ZIP (one or more), Radius (lat/lng + miles), or Parcel Prefix (TMK in Hawaii, APN elsewhere).
+3. Set property filters: price range, bedrooms, property types, listing statuses.
+4. Name the farm.
+5. Click **Save**.
 
-**Listing Display**: Address, price, original price, price drop %, beds/baths, sqft, DOM, agent/office info, media, virtual tour links
-Help the agent set up effective farms and configure watchdog alerts.`,
+### How do I view live listings in my farm?
+1. Click the farm card.
+2. The detail page shows live MLS listings matching criteria.
+3. Sort by Days on Market, Price asc/desc, or Price Drop %.
+4. Click any listing card to open Property Detail Modal.
+
+### How do I add a Watchdog alert rule?
+1. Open the farm's detail page.
+2. Click the **Watchdog** tab.
+3. Click **+ Add Rule**.
+4. Choose rule type: DOM Threshold (e.g., 75+ days), Price Drop Monitoring (optional % threshold), or Status Changes (new/expired/withdrawn).
+5. Pick notification channels: Push, Email, SMS (any combination).
+6. Click **Save Rule**.
+
+### How do I view and manage alerts?
+1. Open the farm's detail page.
+2. Click the **Alerts** tab.
+3. Each alert shows timestamp, triggering rule, listing details, link to the property.
+4. Filter by status badge: Unread / Read / Archived.
+5. Click a row to mark read; click the archive icon to archive.
+
+### How do I edit or pause a farm?
+1. Open the farm's detail page.
+2. Click **Edit** to change criteria, or toggle **Active** off to pause.
+
+### How do I delete a farm?
+1. Open the detail page.
+2. Click **⋯** → **Delete** → confirm.
+
+A background MLS Watchdog cron periodically scans monitored areas and generates alerts. No manual triggering required after rules are saved.
+
+**Hoku-equivalent queries**:
+- "Create a farm area for [ZIP] focused on 3-bed homes under [price]"
+- "Show me listings in my [farm name] farm with price drops"
+- "Alert me when listings in [ZIP] exceed 90 days on market"
+- "Pause my [farm name] farm"
+- "What new alerts do I have today?"`,
 
   // Bird Dog Prospecting
   "bird-dog": `The agent is on the BIRD DOG PROSPECTING page. Automated off-market lead hunting that runs on schedule and only alerts on NEW leads.
@@ -856,15 +951,35 @@ TMK / PARCEL:
 
   // Market Analytics
   "market-analytics": `The agent is on the MARKET ANALYTICS page. County-level market statistics dashboard.
-- **Overview Cards**: Median Sale Price (all types), SFR Median, Condo/TH Median, $/Sqft, DOM, YoY Price Change, Sales Momentum (6mo vs prior 6mo), Total Listings, MLS Active, MLS Closed (30d)
-- **ZIP Table**: Interactive table with every county ZIP showing median price, SFR median, Condo/TH median, $/sqft, listings, DOM, rent. Click any ZIP for detail.
-- **Grouped Bar Chart**: SFR (red) vs Condo/Townhouse (blue) median price by ZIP, sorted by SFR price descending
-- **Sale Volume by Cities**: Vertical bar chart showing listings per city
-- **Fair Market Rents**: HUD Section 8 rents by bedroom count (Efficiency through 4BR)
-- **Median Rent by ZIP**: Rental medians sorted descending
-- Also accessible as Tab 4 in the MLS page (between Market Snapshot and CMA)
-- Data: market-stats provider, MLS, HUD. Cached 24 hours.
-Help the agent understand market trends, compare neighborhoods, and identify opportunities.`,
+
+### How do I open Market Analytics?
+1. Sidebar → click **MLS**, then click the **Market Analytics** tab.
+2. Or sidebar → **Deals** → **Market Analytics**.
+
+### How do I read the overview cards?
+Top of the page shows: Median Sale Price (all types), SFR Median, Condo/TH Median, $/Sqft, DOM, YoY Price Change, Sales Momentum (6mo vs prior 6mo), MLS Active, MLS Closed (30d).
+
+### How do I drill into a ZIP?
+1. Scroll to the **Sales Price by ZIP Code** table.
+2. Click a ZIP row.
+3. Detail panel shows that ZIP's median, SFR median, Condo/TH median, $/sqft, listings, DOM, median rent.
+
+### How do I read the grouped bar chart?
+The **Median Sale Price by ZIP** chart pairs SFR (red) and Condo/TH (blue) bars per ZIP, sorted by SFR price descending. Hover any bar to see the exact value.
+
+### How do I switch counties?
+Click the **County** dropdown at the top of the page and pick the county.
+
+### How do I export the data?
+Click **Export** in the top-right; choose **CSV** for the raw ZIP table or **PDF** for a branded report.
+
+**Data sources**: MLS (active + closed), market-stats provider (volume momentum, YoY), HUD (Fair Market Rents). Cached 24 hours; refresh via page reload or **Refresh** button.
+
+**Hoku-equivalent queries**:
+- "What's the median price in [county]?"
+- "Show me YoY price change for [county]"
+- "Compare SFR vs Condo medians in [ZIP]"
+- "Export market analytics for [county] as PDF"`,
 
   // Neighborhood Profiles
   "neighborhood-profiles": `The agent is on the NEIGHBORHOOD PROFILES page. AI-powered neighborhood profile generation with Census data enrichment.
@@ -1004,21 +1119,46 @@ Help the agent connect their integrations and troubleshoot connection issues.`,
 Hoku can help set up email blasts: "Create an email blast for Kaimuki listings" or "Send Hawaii Kai listings to my contacts."`,
 
   // MLS Agent Leaderboard
-  "mls-leaderboard": `The agent is on the MLS AGENT LEADERBOARD page. Market-wide agent performance rankings.
+  "mls-leaderboard": `The agent is on the MLS AGENT LEADERBOARD page. Market-wide agent performance rankings based on closed MLS transactions.
 
-**Features**:
-- Generate a leaderboard ranking agents across the MLS by production metrics
-- Export leaderboard data to Excel for analysis
-- Export agents to CRM with rank tags for networking and outreach
-- Identify top-producing agents in specific markets or areas
+### How do I open the MLS Agent Leaderboard?
+1. Sidebar → click **Reports**.
+2. Click **MLS Agent Leaderboard**.
 
-**Use Cases**:
-- Competitive analysis: see where you rank vs other agents in your market
-- Recruit top agents (for brokers)
+### How do I generate a leaderboard?
+1. Set **Time Period** (e.g., Last 30 days, Last Quarter, Last Year, Custom).
+2. (Optional) Choose **Property Types** to include.
+3. (Optional) Choose **Sides** (Listing Agent, Buyer Agent, or Both).
+4. Click **Generate**.
+
+### How do I sort?
+1. Click any column header to sort: Closings, Volume, Average Price, Median DOM, List-to-Sale Ratio.
+2. Click again to reverse direction.
+
+### How do I view an individual agent's detail?
+1. Click an agent row.
+2. The detail panel shows closed listings, average prices, DOM, and contact info from MLS.
+
+### How do I export to Excel?
+1. Click **Export to Excel** in the top-right.
+2. Includes every column plus full agent contact data.
+
+### How do I push leaderboard agents to my CRM?
+1. Click **Export to CRM** in the top-right.
+2. Confirm. Each agent is created/updated as a CRM contact with the **"MLS Agent"** tag.
+3. Use that tag in Email Blast or Broker's Open for branded outreach.
+
+**Use cases**:
+- Competitive analysis — see where you rank vs other agents in your market
+- Recruiting (for brokers)
 - Build a network of active agents for referrals and Broker's Open invitations
-- Export agents to CRM tagged "MLS Agent" for use with Broker's Open feature
+- Bulk-outreach foundation via the "MLS Agent" CRM tag
 
-Help the agent generate rankings, export data, and understand their competitive position.`,
+**Hoku-equivalent queries**:
+- "Show me the top 20 agents in [county] this quarter"
+- "Who closed the most volume in [ZIP] last year?"
+- "Export the leaderboard for [county] to Excel"
+- "Push leaderboard agents to my CRM"`,
 
   // Billing
   billing: `The agent is on the BILLING page.
