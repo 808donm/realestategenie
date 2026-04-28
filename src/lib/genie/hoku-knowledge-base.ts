@@ -1285,21 +1285,85 @@ Data tracks: MLS searches, report generation, CMA generation, lead captures. All
 Help the broker manage their team, identify coaching opportunities, and track business performance.`,
 
   // Team Management
-  team: `The agent is on the TEAM MANAGEMENT page (Account Admins only).
-- **Usage Overview**: 4 cards showing current/limit for Agents, Assistants, Site Admins, Offices with progress bars
-- **Seat Limit Warnings**: Critical alert banner when limits reached, prompts upgrade
-- **Team Members List**: Name, email, role (owner/admin/agent/assistant), office assignment, join date
-- **Actions**: Invite member (by email), create member (direct), change role, assign office, remove member
-- **Account Bootstrap**: Auto-creates team account on first visit (default: Brokerage Growth plan, 10 agents, 5 assistants, 1 admin)
-Help the admin manage their team, invite members, and assign roles.`,
+  team: `The agent is on the TEAM MANAGEMENT page. Manage team members, roles, office assignments, seat limits. Account Admins only.
+
+### How do I open Team Management?
+1. Sidebar → click **Team** (or /app/team). (Account Admins only.)
+
+### How do I read seat usage?
+1. 4 cards at the top: Agents, Assistants, Site Admins, Offices with current/limit progress bars.
+2. Red banner appears when any limit is reached.
+
+### How do I invite a team member?
+1. Click **Invite Member** → email → role (Agent, Assistant, Team Lead, Admin) → (optional) office → **Send Invite**.
+
+### How do I create a member directly?
+1. Click **+ Create Member** → name/email/role/office → temp password → **Create**.
+
+### How do I change a member's role?
+1. Find row → **Role** dropdown → select new role. Effective immediately.
+
+### How do I assign an office?
+1. Find row → **Office** dropdown → select office.
+
+### How do I remove a member?
+1. Find row → **...** → **Remove** → confirm. Member loses access; their data stays.
+
+**Roles**: Owner (full control), Admin (manage team/settings), Team Lead (agent + Team Dashboard), Agent (standard), Assistant (read-mostly to assigned agents).
+
+**Hoku-equivalent queries**:
+- "Invite [email] as an agent"
+- "Change [name]'s role to admin"
+- "Show me my team usage"
+- "Remove [name] from my team"`,
 
   // Admin
-  admin: `The agent is on the ADMIN section (Platform Admins only).
-**Dashboard**: Total users, active users, access requests, critical/warning alerts, open houses, leads, 24h errors
-**Sales Opportunities**: Agents with critical alerts (exceeded plan limits) for upsell targeting
-**Sections**: User Management (all platform users), Access Requests (approve/reject), Invitations (bulk send, track status), Subscription Management (per-agent plans), Plan Management (create/edit plans, feature matrix), Feature Management (toggle features per plan), API Usage Report (cost tracking), Error Logs (last 1000 entries with stack traces)
-**User MLS Integrations**: Per-agent or per-vendor MLS credentials (provider varies by region), with IDX Broker as optional fallback.
-Help the admin manage the platform, users, plans, and integrations.`,
+  admin: `The agent is in the ADMIN section. Platform-level management: users, plans, integrations, error logs, API usage. Visible only to Platform Admins.
+
+### How do I open the Admin panel?
+1. Sidebar → click **Admin** (or /admin). Visible only to Platform Admins.
+
+### How do I review the Admin Dashboard?
+1. Landing page shows: total users, active users, access requests, critical/warning alerts, open houses, leads, 24h errors.
+2. **Sales Opportunities** lists agents who exceeded plan limits — upsell candidates.
+
+### How do I manage users?
+1. Admin → **User Management** → search by email/name → click row to see profile/plan/integrations/activity.
+2. Action buttons: **Impersonate** (View as Agent), **Reset Password**, **Suspend**, **Restore**, **Delete**.
+
+### How do I approve access requests?
+1. Admin → **Access Requests** → review row → **Approve** or **Reject**. Bulk-select supported.
+
+### How do I send invitations?
+1. Admin → **Invitations** → **+ Bulk Invite** → paste emails → pick default plan → **Send**.
+
+### How do I manage subscription plans?
+1. Admin → **Plan Management** → click any plan to edit name/price/cycle/seat limits, or **+ Create Plan**.
+
+### How do I assign or change a user's plan?
+1. Admin → **Subscription Management** → find user → **Change Plan** → pick plan → Effective Now / Next Cycle → confirm.
+
+### How do I configure feature toggles?
+1. Admin → **Feature Management** → toggle features × plan matrix → **Save**.
+
+### How do I configure MLS integrations per region?
+1. Admin → **User MLS Integrations** → find user → **Configure** → pick provider → enter credentials → **Test Connection** → **Save**.
+
+### How do I monitor API usage and costs?
+1. Admin → **API Usage Report** → calls per provider, cost per call, monthly burn, with date filter.
+
+### How do I review error logs?
+1. Admin → **Error Logs** → last 1000 entries with stack traces. Searchable.
+
+### How do I impersonate an agent?
+1. Admin → **User Management** → find user → **View as Agent** → see app exactly as that agent does.
+2. Click **Exit Impersonation** banner to return to admin view.
+
+**Hoku-equivalent queries**:
+- "Show me agents who exceeded their plan this month"
+- "Approve [email]'s access request"
+- "What's our API spend this month?"
+- "Impersonate [agent name]"`,
 
   // Integrations
   integrations: `The agent is on the INTEGRATIONS page. Connect external services — CRM, MLS, calendars, Hoku web widget, webhooks, social channels.
@@ -1490,22 +1554,70 @@ Help the admin manage the platform, users, plans, and integrations.`,
 - "Show my showings this week"`,
 
   // Billing
-  billing: `The agent is on the BILLING page.
-- **Current Subscription**: Plan name, status badge (active/cancelled/past_due/suspended), monthly price, billing cycle, plan limits (agents, assistants, admins, offices), next billing date
-- **Summary Stats**: Total paid (lifetime), unpaid invoices, next payment amount/date
-- **Recent Invoices**: Number, description, due date, status, amount, paid date
-- **Payment History**: Date, invoice reference, method, amount, status
-- **Upgrade**: Change plan, compare features
-- **Payment Methods**: Manage via Stripe or PayPal
-Help the agent manage their subscription, view invoices, and upgrade their plan.`,
+  billing: `The agent is on the BILLING page. Manage subscription, payment methods, view invoices, and upgrade/downgrade plan.
+
+### How do I open Billing?
+1. Sidebar → click **Billing** (or /app/billing).
+
+### How do I see my current plan and limits?
+1. **Current Subscription** card shows plan, status, price, billing cycle, plan limits (agents, assistants, admins, offices), next billing date.
+2. **Summary Stats** strip shows lifetime paid, unpaid invoices, next payment.
+
+### How do I view invoices?
+1. **Recent Invoices** list — click any row to see detail and download PDF.
+
+### How do I view payment history?
+1. **Payment History** list — date, invoice ref, method, amount, status.
+
+### How do I upgrade?
+1. Click **Change Plan** → compare → **Select** under target plan → complete payment → upgrade is immediate.
+
+### How do I downgrade or cancel?
+1. **Change Plan** → click current plan → **Cancel Subscription** → choose effective date → confirm.
+
+### How do I add or change a payment method?
+1. **Payment Methods** section → **Add Payment Method** or **Edit** → enter details → **Set as Default**.
+
+### What happens when I hit a usage limit?
+1. A warning banner appears in the app. Click it to see which limit was hit and the recommended upgrade.
+
+**Hoku-equivalent queries**:
+- "What's my current plan?"
+- "Show me my next invoice"
+- "When does my subscription renew?"
+- "Upgrade me to [plan name]"`,
 
   // Settings
-  settings: `The agent is on the SETTINGS page.
-**Profile**: Display name, email, license number, agency name, phone, locations served, headshot URL, company logo URL, timezone, landing page preference (Dashboard or Open Houses)
-**Auto-Response**: AI-powered 24/7 auto-responses for SMS and email lead follow-up
-**Escalation Rules**: Define rules for automatic lead escalation based on intent signals, sentiment analysis, engagement patterns
-**Security**: MFA setup (authenticator app), password change, active sessions
-Help the agent configure their profile, notifications, and security settings.`,
+  settings: `The agent is on the SETTINGS page. Profile, branding, AI auto-response, escalation rules, security, notifications.
+
+### How do I open Settings?
+1. Sidebar → click **Settings** (or /app/settings).
+
+### How do I update my profile?
+1. **Profile** tab → edit Display Name, Email, License Number, Agency Name, Phone, Locations Served, Timezone, Landing Page preference (Dashboard or Open Houses) → **Save**.
+
+### How do I update my branding (headshot and logo)?
+1. **Profile** tab → paste/upload **Headshot URL** and **Company Logo URL** → **Save**.
+2. Branding flows into every PDF (Property Report, Seller Report, CMA, Neighborhood Profile) and Email Blast.
+
+### How do I configure AI auto-response?
+1. **Auto-Response** tab → toggle SMS and Email auto-response on/off.
+2. Edit AI Persona prompt and set Active Hours → **Save**. Hoku now replies to inbound SMS/email leads with context-aware messages.
+
+### How do I set escalation rules?
+1. **Escalation Rules** tab → **+ New Rule** → pick trigger (Intent Signal, Sentiment, Engagement, Heat Score Threshold) → pick action (Notify me, Pause auto-response, Move pipeline stage, Tag) → **Save**.
+
+### How do I manage notifications?
+1. **Notifications** tab → toggle Email/SMS/Push for each event (New Lead, Hot Lead, Open House Reminder, Watchdog Alert, Pipeline Stage Change, Daily Briefing, Weekly Recap) → **Save**.
+
+### How do I change security settings?
+1. **Security** tab → see Security & MFA section for full details (MFA enable/disable, password change, active sessions).
+
+**Hoku-equivalent queries**:
+- "Update my phone number to [phone]"
+- "Turn on SMS auto-response"
+- "Change my landing page to Open Houses"
+- "Update my brokerage logo to [URL]"`,
 };
 
 // ── General app knowledge (always included) ──

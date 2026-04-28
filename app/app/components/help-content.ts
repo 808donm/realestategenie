@@ -1927,124 +1927,308 @@ A background MLS Watchdog job periodically scans your monitored areas and genera
     title: "16. Billing & Plans",
     content: `## 16. Billing & Plans
 
-Manage your subscription, view invoices, and upgrade your plan from the Billing section.
+Manage your subscription, payment methods, view invoices, and upgrade your plan.
 
-### 16.1 Subscription Plans
+### How do I open Billing?
+1. Sidebar \u2192 click **Billing** (or /app/billing).
 
-The Real Estate Genie offers multiple subscription tiers:
+### How do I see my current plan and limits?
+1. The **Current Subscription** card shows plan name, status (active/cancelled/past_due/suspended), monthly price, billing cycle, plan limits (agents, assistants, admins, offices), and next billing date.
+2. The **Summary Stats** strip shows lifetime paid, unpaid invoices, and next payment amount/date.
 
-- **Starter / Free Tier** \u2014 Access to core features with usage limits. Ideal for individual agents getting started.
-- **Brokerage Growth** \u2014 Unlocks the Broker Dashboard, advanced analytics, and higher usage limits. Designed for brokers and growing teams.
+### How do I view invoices?
+1. Scroll to **Recent Invoices** \u2014 number, description, due date, status, amount, paid date.
+2. Click any row to see the invoice detail and download a PDF.
 
-Additional plans may be available. Visit the Billing page for the most current plan options and pricing.
+### How do I view payment history?
+1. Scroll to **Payment History** \u2014 date, invoice reference, payment method, amount, status.
 
-### 16.2 How to Upgrade
+### How do I upgrade my plan?
+1. Click **Change Plan** in the top-right.
+2. Compare features side-by-side.
+3. Click **Select** under the desired plan.
+4. Complete payment through the secure payment flow.
+5. The upgrade takes effect immediately \u2014 new features unlock right away.
 
-1. Navigate to **Billing** from the main navigation.
-2. Review the available plans and their features.
-3. Click **Upgrade** on your desired plan.
-4. Complete the payment process through Stripe or PayPal.
-5. Your account will be upgraded immediately, and new features will become available.
+### How do I downgrade or cancel?
+1. Click **Change Plan** \u2192 click your current plan \u2192 click **Cancel Subscription**.
+2. Choose effective date (immediate or end of billing cycle).
+3. Confirm.
 
-### 16.3 Usage Limits and Warnings
+### How do I add or change a payment method?
+1. Scroll to **Payment Methods** \u2192 click **Add Payment Method** or **Edit** on an existing one.
+2. Enter card or PayPal details.
+3. Click **Set as Default** to use for the next invoice.
 
-Each plan includes usage limits for certain features (such as number of leads, analyses, or integrations). When you approach a limit, a warning banner will appear in the app. To remove limits, upgrade to a higher-tier plan.
+### What happens when I hit a usage limit?
+1. A warning banner appears in the app when you near or hit a plan limit (leads, analyses, integrations).
+2. Click the banner to view which limit was hit and the recommended upgrade.
 
-### 16.4 Payment Methods
-
-The Real Estate Genie accepts payments via Stripe (credit/debit cards) and PayPal. Manage your payment methods from the Billing page.`,
+**Hoku-equivalent queries**:
+- "What's my current plan?"
+- "Show me my next invoice"
+- "When does my subscription renew?"
+- "Upgrade me to [plan name]"`,
   },
   {
     id: "team-management",
     title: "17. Team Management",
     content: `## 17. Team Management
 
-Account administrators can manage team members, roles, and permissions from the Team section.
+Manage team members, roles, office assignments, and seat limits. Visible to **Account Admins** only.
 
-### 17.1 Inviting Team Members
+### How do I open Team Management?
+1. Sidebar \u2192 click **Team** (or /app/team).
+2. (Visible only to Account Admins.)
 
-1. Navigate to **Team** from the main navigation (visible to Account Admins only).
-2. Click **Invite Member**.
-3. Enter the team member\u2019s email address and select their role (Agent, Team Lead, or Admin).
-4. Click **Send Invite**. The invitee will receive an email with an invitation link.
-5. The invitee clicks the link, creates an account (or signs in if they already have one), and is added to your team.
+### How do I read the seat usage cards?
+1. The top of the page shows 4 usage cards: **Agents**, **Assistants**, **Site Admins**, **Offices**.
+2. Each card shows current/limit with a progress bar.
+3. A red banner appears when any limit is reached \u2014 click it to upgrade your plan.
 
-### 17.2 Team Roles
+### How do I invite a team member?
+1. Click **Invite Member** in the top-right.
+2. Enter their **email address**.
+3. Select their **Role**: Agent, Assistant, Team Lead, or Admin.
+4. (Optional) Pick an **Office** if you have multiple locations.
+5. Click **Send Invite**.
+6. The invitee gets an email link \u2192 they click it \u2192 create account (or sign in) \u2192 they're added to your team.
 
-- **Owner** \u2014 Full control over the account, billing, and all settings.
-- **Admin** \u2014 Can manage team members, settings, and most account functions.
-- **Team Lead** \u2014 Standard agent access plus the Team Dashboard for monitoring team activity.
-- **Agent** \u2014 Standard access to all core features.
+### How do I create a member directly (without sending an invite)?
+1. Click **+ Create Member**.
+2. Enter name, email, role, office.
+3. Set a temporary password (the member can change it on first login).
+4. Click **Create**.
 
-### 17.3 Managing Team Members
+### How do I change a member's role?
+1. Find the member row.
+2. Click the **Role** dropdown \u2192 select the new role.
+3. Change takes effect immediately.
 
-From the Team page, you can view all team members, change their roles, or remove them from the team. Changes take effect immediately.`,
+### How do I assign a member to an office?
+1. Find the member row \u2192 click the **Office** dropdown \u2192 select the office.
+
+### How do I remove a member?
+1. Find the member row \u2192 click **\u22ef** \u2192 **Remove**.
+2. Confirm. The member loses access immediately. Their lead/transaction data stays in the brokerage.
+
+### What are the team roles?
+- **Owner** \u2014 full control over account, billing, all settings.
+- **Admin** \u2014 manage team, settings, most account functions.
+- **Team Lead** \u2014 standard agent access + Team Dashboard for team activity.
+- **Agent** \u2014 standard access to all core features.
+- **Assistant** \u2014 read-mostly access to assigned agents' work.
+
+**Hoku-equivalent queries**:
+- "Invite [email] as an agent"
+- "Change [name]'s role to admin"
+- "Show me my team usage"
+- "Remove [name] from my team"`,
   },
   {
     id: "security",
     title: "18. Security & MFA",
     content: `## 18. Security & MFA
 
-Protect your account with Multi-Factor Authentication and other security settings.
+Protect your account with Multi-Factor Authentication, strong passwords, and active session management. All security settings live under **Settings → Security**.
 
-### 18.1 Multi-Factor Authentication (MFA)
+### How do I open Security settings?
+1. Sidebar → click **Settings**.
+2. Click the **Security** tab.
 
-MFA requires a second verification step when signing in, significantly reducing the risk of unauthorized access. See Section 1.4 for detailed setup instructions.
+### How do I enable Multi-Factor Authentication (MFA)?
+1. In Security settings, find the **MFA** section.
+2. Click **Enable MFA**.
+3. Open your authenticator app (Google Authenticator, Authy, 1Password, Microsoft Authenticator).
+4. Scan the QR code shown on screen.
+5. Enter the 6-digit code from your authenticator to verify.
+6. Click **Save Backup Codes** — store them somewhere safe (password manager or printed).
+7. Click **Done**. MFA is now active on your next sign-in.
 
-### 18.2 Security Best Practices
+### How do I sign in with MFA enabled?
+1. Enter email and password as usual.
+2. Open your authenticator app.
+3. Type the 6-digit code into the **MFA Code** field.
+4. Click **Verify**.
 
-- Enable MFA on your account.
-- Use a strong, unique password that you do not use for other services.
-- Store your MFA backup codes in a secure location.
-- Review your account activity regularly.
-- If you suspect unauthorized access, change your password immediately and contact support.`,
+### How do I use a backup code if I lose my authenticator?
+1. On the MFA prompt, click **Use Backup Code**.
+2. Enter one of your saved 8-character backup codes.
+3. Each code works once. Generate new codes from Security settings after using one.
+
+### How do I change my password?
+1. In Security settings, find **Password**.
+2. Enter **Current Password**, then **New Password** and confirmation.
+3. Click **Change Password**.
+4. You'll be signed out of other sessions for safety.
+
+### How do I review and end active sessions?
+1. In Security settings, scroll to **Active Sessions**.
+2. Each session shows device, location, IP, and last-active time.
+3. Click **End Session** on any session you don't recognize.
+4. Click **Sign Out All Other Sessions** to nuke everything except your current device.
+
+### How do I disable MFA?
+1. Security settings → MFA → click **Disable MFA**.
+2. Enter your password to confirm.
+
+### What if I think my account is compromised?
+1. **Change your password immediately** (Security → Password → Change Password).
+2. Click **Sign Out All Other Sessions**.
+3. Re-enable MFA if it wasn't already on.
+4. Email **support@realestategenie.app** with the timeline of what you noticed.
+
+### Security best practices
+- Enable MFA. It blocks 99%+ of credential-stuffing attacks.
+- Use a long, unique password (12+ chars, not reused on other sites). A password manager helps.
+- Store backup codes somewhere offline.
+- Review active sessions monthly.
+
+**Hoku-equivalent queries**:
+- "Enable MFA on my account"
+- "Change my password"
+- "Show my active sessions"
+- "Sign me out of all other devices"`,
   },
   {
     id: "settings",
     title: "19. Settings",
     content: `## 19. Settings
 
-Customize your profile and account preferences from the Settings section.
+Configure your profile, branding, AI auto-response, escalation rules, and security. Most agent-facing settings live here.
 
-### 19.1 Profile Settings
+### How do I open Settings?
+1. Sidebar → click **Settings** (or /app/settings).
 
-1. Navigate to **Settings > Profile**.
-2. Update your personal information including name, email, phone number, and profile photo.
-3. Set your preferred notification preferences.
-4. Click **Save** to apply your changes.
+### How do I update my profile?
+1. Open Settings → **Profile** tab.
+2. Update **Display Name**, **Email**, **License Number**, **Agency Name**, **Phone**.
+3. Set **Locations Served** (cities/ZIPs/regions you cover).
+4. Set **Timezone** (controls scheduled emails, reports, and event times).
+5. Set **Landing Page** preference: Dashboard or Open Houses.
+6. Click **Save**.
 
-### 19.2 Security Settings
+### How do I update my branding (headshot and logo)?
+1. Open Settings → **Profile** tab.
+2. Under **Headshot URL**, paste a public URL or click **Upload** to upload a photo.
+3. Under **Company Logo URL**, paste your brokerage logo URL or upload.
+4. Click **Save**.
+5. Branding appears on every PDF (Property Report, Seller Report, CMA, Neighborhood Profile) and in Email Blast.
 
-Access security settings at **Settings > Security** to manage MFA, change your password, and review active sessions. See Section 18 for details.`,
+### How do I configure AI auto-response?
+1. Open Settings → **Auto-Response** tab.
+2. Toggle **SMS Auto-Response** on/off.
+3. Toggle **Email Auto-Response** on/off.
+4. Edit the **AI Persona** prompt (default works for most agents — customize tone if you want).
+5. Set **Active Hours** (e.g., 24/7, business hours only, custom).
+6. Click **Save**. Hoku now replies to inbound SMS/email leads automatically with context-aware messages.
+
+### How do I set up escalation rules?
+1. Open Settings → **Escalation Rules** tab.
+2. Click **+ New Rule**.
+3. Pick a trigger:
+   - **Intent Signal** — strong buying/selling intent in the conversation.
+   - **Sentiment** — frustrated/urgent tone.
+   - **Engagement** — multi-message back-and-forth.
+   - **Heat Score Threshold** — score crosses a value.
+4. Pick the action: **Notify me**, **Pause auto-response**, **Move to pipeline stage**, **Tag**.
+5. Click **Save**.
+
+### How do I change security settings?
+1. Open Settings → **Security** tab.
+2. See the dedicated Security & MFA help section for full step-by-steps.
+
+### How do I manage notifications?
+1. Open Settings → **Notifications** tab.
+2. Toggle **Email**, **SMS**, **Push** for each event: New Lead, Hot Lead, Open House Reminder, Watchdog Alert, Pipeline Stage Change, Daily Briefing, Weekly Recap.
+3. Click **Save**.
+
+**Hoku-equivalent queries**:
+- "Update my phone number to [phone]"
+- "Turn on SMS auto-response"
+- "Change my landing page to Open Houses"
+- "Update my brokerage logo to [URL]"`,
   },
   {
     id: "admin-guide",
     title: "20. Admin Guide",
     content: `## 20. Admin Guide
 
-This section is for platform administrators with access to the Admin panel.
+Platform admin tools: user management, plan configuration, MLS integrations, access requests, error logs, API usage. Visible only to users with the **Platform Admin** role.
 
-### 20.1 Accessing the Admin Panel
+### How do I open the Admin panel?
+1. Sidebar \u2192 click **Admin** (or /admin).
+2. (Visible only to Platform Admins.)
 
-Platform admins can access the Admin panel from the main navigation. The **Admin** link is visible only to users with the Platform Admin role.
+### How do I review the Admin Dashboard?
+1. The Admin landing page shows: total users, active users, access requests, critical/warning alerts, open houses, leads, and 24h error count.
+2. **Sales Opportunities** lists agents who exceeded plan limits \u2014 upsell candidates.
 
-### 20.2 Admin-Only Integrations
+### How do I manage users?
+1. Open Admin \u2192 **User Management**.
+2. Search by email or name.
+3. Click any user row to see their profile, plan, integrations, and activity.
+4. Use the action buttons on each row: **Impersonate** ("View as Agent"), **Reset Password**, **Suspend**, **Restore**, **Delete**.
 
-Several integrations require admin access to configure:
+### How do I approve access requests?
+1. Open Admin \u2192 **Access Requests**.
+2. Each row shows requester email, requested role, signup date.
+3. Click **Approve** or **Reject**.
+4. (Optional) Bulk-select rows and approve/reject in batch.
 
-- **Stripe** \u2014 Configure payment processing for the platform. Manage API keys and webhook endpoints.
-- **PayPal** \u2014 Set up PayPal as an alternative payment processor.
-- **Realie.ai** \u2014 Configure property intelligence data access. This is a platform-wide integration that provides equity, ownership, LTV, foreclosure, and absentee owner data.
-- **Federal Data** \u2014 Configure access to federal data sources including FRED (economic data), HUD (Fair Market Rents, income limits, Section 8), USPS (address validation), Census Bureau (demographics), and BLS (employment data).
-- **MLS** \u2014 Configure MLS data access credentials. Provider varies by region; your administrator selects the appropriate MLS for your market.
+### How do I send invitations?
+1. Open Admin \u2192 **Invitations**.
+2. Click **+ Bulk Invite** \u2192 paste comma- or newline-separated emails.
+3. Pick the default plan for invitees.
+4. Click **Send**.
+5. Track delivery, accepted, and expired status from this page.
 
-### 20.3 User Management
+### How do I manage subscription plans?
+1. Open Admin \u2192 **Plan Management**.
+2. Click any plan to edit name, price, billing cycle, agent/assistant/admin/office seat limits.
+3. Click **+ Create Plan** for a new plan.
+4. **Save** \u2014 changes apply to new subscriptions immediately; existing subscriptions stay on their current terms.
 
-From the Admin panel, platform administrators can manage all users on the platform, review account statuses, and handle support escalations.
+### How do I assign or change a user's plan?
+1. Open Admin \u2192 **Subscription Management**.
+2. Find the user \u2192 click **Change Plan** \u2192 pick the target plan.
+3. Choose **Effective Now** or **At Next Billing Cycle**.
+4. Confirm.
 
-### 20.4 Platform Configuration
+### How do I configure feature toggles?
+1. Open Admin \u2192 **Feature Management**.
+2. Each row is a feature \u00d7 plan matrix.
+3. Toggle a feature on/off per plan.
+4. **Save**. Affects all users on the affected plan immediately.
 
-Admins can configure platform-wide settings including Google Maps API keys, webhook configurations, and integration defaults that apply to all users.`,
+### How do I configure MLS integrations per region?
+1. Open Admin \u2192 **User MLS Integrations**.
+2. Find the user \u2192 click **Configure**.
+3. Pick the MLS provider for their region.
+4. Enter credentials (OAuth, Basic Auth, or vendor Bearer token depending on provider).
+5. Click **Test Connection** \u2192 **Save**.
+
+### How do I monitor API usage and costs?
+1. Open Admin \u2192 **API Usage Report**.
+2. View calls per provider (MLS, Property Data, AI, Maps), cost per call, and total monthly burn.
+3. Filter by date range and provider.
+
+### How do I review error logs?
+1. Open Admin \u2192 **Error Logs**.
+2. Last 1000 entries shown with timestamp, user, route, status code, stack trace.
+3. Search/filter by user or route.
+
+### How do I impersonate an agent for support?
+1. Open Admin \u2192 **User Management** \u2192 find the user.
+2. Click **View as Agent**.
+3. You see the app exactly as that agent sees it.
+4. Click **Exit Impersonation** in the banner to return to admin view.
+
+**Hoku-equivalent queries**:
+- "Show me agents who exceeded their plan this month"
+- "Approve [email]'s access request"
+- "What's our API spend this month?"
+- "Impersonate [agent name]"`,
   },
   {
     id: "showing-scheduler",
