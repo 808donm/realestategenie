@@ -249,11 +249,11 @@ Use the source toggles to show or hide events from specific calendars. Each even
     title: "5. MLS",
     content: `## 5. MLS (Multiple Listing Service)
 
-The MLS section provides 9 tabs for working with MLS data, powered by HiCentral MLS via Trestle by CoreLogic.
+The MLS section provides 9 tabs for working with MLS data, powered by your MLS provider.
 
 ### 5.1 Prerequisites
 
-Your account must have Trestle (CoreLogic) credentials configured. This is set up by a platform administrator under **Integrations**. If you do not see MLS data, contact your administrator.
+Your account must have MLS credentials configured. This is set up by a platform administrator under **Integrations**. If you do not see MLS data, contact your administrator.
 
 ### 5.2 MLS Search (Tab 1)
 
@@ -281,7 +281,7 @@ The page supports four search modes: **City**, **Neighborhood**, **ZIP Code**, a
 
 1. Open the VA Assumable page.
 2. Click the **City** tab at the top of the search form (selected by default).
-3. In the **City** field, type the city name (e.g., "Honolulu", "Kailua", "Aiea"). Match is case-insensitive substring.
+3. In the **City** field, type the city name. Match is case-insensitive substring.
 4. Optionally narrow with **Min Beds**, **Min Price**, and **Max Price**.
 5. Click **Search VA Assumable**.
 6. Review results in three confidence tiers (Tier 1 explicit MLS tags, Tier 2 remarks text-mining, Tier 3 unspecified).
@@ -290,7 +290,7 @@ The page supports four search modes: **City**, **Neighborhood**, **ZIP Code**, a
 
 1. Open the VA Assumable page.
 2. Click the **Neighborhood** tab at the top of the search form.
-3. In the **Neighborhood / Subdivision** field, type the neighborhood name (e.g., "Hawaii Kai", "Kaimuki", "Hahaione Valley", "Diamond Head"). Match is case-insensitive substring on the SubdivisionName field.
+3. In the **Neighborhood / Subdivision** field, type the neighborhood or subdivision name. Match is case-insensitive substring on the SubdivisionName field.
 4. Optionally narrow with **Min Beds**, **Min Price**, and **Max Price**.
 5. Click **Search VA Assumable**.
 
@@ -300,7 +300,7 @@ Tip: neighborhood matching depends on listing-agent tagging. If a neighborhood s
 
 1. Open the VA Assumable page.
 2. Click the **ZIP Code** tab at the top of the search form.
-3. In the **ZIP Code** field, type a 5-digit ZIP (e.g., "96825"). Partial ZIPs (e.g., "968") are accepted — match uses startswith.
+3. In the **ZIP Code** field, type a 5-digit ZIP. Partial ZIPs (first 3 digits) are accepted — match uses startswith.
 4. Optionally narrow with **Min Beds**, **Min Price**, and **Max Price**.
 5. Click **Search VA Assumable**.
 
@@ -308,11 +308,11 @@ Tip: neighborhood matching depends on listing-agent tagging. If a neighborhood s
 
 1. Open the VA Assumable page.
 2. Click the **TMK / Parcel** tab at the top of the search form.
-3. In the **TMK / Parcel Number** field, type the parcel number with or without dashes (e.g., "1-3-9-083-009" or "139083009"). Both forms work — the search strips dashes internally and matches on substring.
-4. Optionally narrow with **Min Beds**, **Min Price**, and **Max Price** (most TMK searches return a single property, so price filters are usually unnecessary).
+3. In the **TMK / Parcel Number** field, type the parcel number (called TMK in Hawaii, APN in most other states). Dashes are optional — the search strips them and matches on substring.
+4. Optionally narrow with **Min Beds**, **Min Price**, and **Max Price** (most parcel searches return a single property, so price filters are usually unnecessary).
 5. Click **Search VA Assumable**.
 
-This mode is useful when an agent already has the parcel from a property tax record or a prospect list and wants to confirm whether that specific property is currently a VA-assumable opportunity.
+This mode is useful when an agent already has the parcel ID from a property tax record or a prospect list and wants to confirm whether that specific property is currently a VA-assumable opportunity.
 
 ### How do I read the result cards?
 
@@ -357,10 +357,10 @@ VA-assumable listings are scarce. Try:
 ### Hoku-equivalent
 
 Instead of the page, you can also ask Hoku:
-- "Find VA assumable homes in Honolulu under 1.2M"
-- "Show me homes my military buyer can assume in 96825"
-- "Look up TMK 1-3-9-083-009 for VA assumable"
-- "Are there any VA-assumable listings in Hawaii Kai with 3+ beds?"
+- "Find VA assumable homes in [your city] under [price]"
+- "Show me homes my military buyer can assume in [ZIP]"
+- "Look up parcel [number] for VA assumable"
+- "Are there any VA-assumable listings in [neighborhood] with 3+ beds?"
 
 Hoku will run the same search and summarize the top results inline.
 
@@ -392,10 +392,10 @@ Market Monitor monitors market activity for a specific zip code or area.
 
 ### 5.4 Market Snapshot (Tab 3)
 
-Real-time market statistics computed from Trestle MLS data.
+Real-time market statistics computed from MLS data.
 
 1. Go to **MLS** > **Market Snapshot** tab.
-2. Select a county from the dropdown (Hawaii counties supported).
+2. Select a county from the dropdown.
 3. View the **Market Temperature** gauge to see whether it is a buyer's or seller's market.
 4. Review the **Quick Stats** cards: Closed Sales, Pending, Active, Months of Inventory, Days on Market, and Sale-to-List Ratio. Each card shows a 90-day trend arrow.
 5. Analyze the **12-month bar charts** for Average Sales Price and Sales Activity trends.
@@ -411,7 +411,7 @@ County-level market statistics dashboard. Also accessible from the sidebar under
 3. Browse the **Sales Price by ZIP Code** table - click any ZIP for a detailed breakdown.
 4. Review grouped bar charts (SFR vs Condo/TH by ZIP), sale volume by city, fair market rents by bedroom count, and median rent by ZIP.
 
-Data sources: RentCast market stats, Trestle MLS, HUD. Cached 24 hours.
+Data sources: market stats provider, MLS, HUD. Cached 24 hours.
 
 ### 5.6 CMA (Tab 5)
 
@@ -771,14 +771,14 @@ Analyze the financial performance of a rental property investment.
 
 ### 9.13 Short-Term Rental (STR) Analyzer
 
-Analyze Airbnb/VRBO investment potential with Hawaii-specific tax calculations.
+Analyze Airbnb/VRBO investment potential with locale-aware tax calculations.
 
-**Key Features:** Nightly rate and occupancy modeling, Hawaii GET (4.712%) and TAT (10.25%) tax calculations, monthly and yearly cash flow projections, expense breakdown charts, multi-year revenue projections.
+**Key Features:** Nightly rate and occupancy modeling, locale-specific lodging/transient tax calculations (e.g., Hawaii GET 4.712% + TAT 10.25%; configurable for other states), monthly and yearly cash flow projections, expense breakdown charts, multi-year revenue projections.
 
 **How to Use:**
 1. Navigate to **Analyzers > STR Analyzer**.
 2. Enter the nightly rate, expected occupancy rate, cleaning fees per turnover, and property expenses.
-3. Review monthly and annual cash flow with Hawaii-specific tax deductions.
+3. Review monthly and annual cash flow with locale-specific tax deductions applied automatically.
 4. View charts showing revenue projections and expense breakdowns.
 
 ### 9.14 Shared Features
@@ -997,7 +997,7 @@ Bird Dog is an automated off-market lead hunting tool that searches for properti
 5. Click **Create Search**
 6. Click **Run Now** to search immediately, or wait for the next scheduled run
 
-**Or tell Hoku:** "Bird dog absentee owners in 96825 with high equity, run weekly"
+**Or tell Hoku:** "Bird dog absentee owners in [your ZIP] with high equity, run weekly"
 
 **Lead Scoring:**
 - **HOT (red)**: Most likely to sell -- inherited property, pre-foreclosure, death transfer, tax delinquent, vacant + absentee, foreclosure
@@ -1063,7 +1063,7 @@ Generate AI-powered neighborhood profiles for marketing materials and client pre
 
 ### 12.3 Data Sources
 
-Profiles pull from: NCES schools, FBI crime, FEMA/USGS hazards, OpenStreetMap POI, FRED sales trends, Hawaii GIS school zones, and Census demographics. School data is cached for 1 year (refreshes August 1).
+Profiles pull from: NCES schools, FBI crime, FEMA/USGS hazards, OpenStreetMap POI, FRED sales trends, state GIS school zones (where available), and Census demographics. School data is cached for 1 year (refreshes August 1).
 
 ### 12.4 Fair Housing Compliance
 
@@ -1136,13 +1136,13 @@ You will receive an invitation email from **noreply@mg.aiprofitandgrowth.com**. 
 - **Tag Management** \u2014 Apply and manage tags on CRM contacts from within the app.
 - **Notes** \u2014 Notes added in the app sync to the corresponding CRM contact.
 
-### 14.2 Trestle (CoreLogic MLS)
+### 14.2 MLS
 
-Trestle by CoreLogic provides access to MLS listing data. This is a credentials-based integration configured by a platform administrator.
+Provides access to MLS listing data for the agent's market. This is a credentials-based integration configured by a platform administrator (the actual MLS provider varies by region — your administrator handles provider selection and credentials).
 
 **Setup (Admin Only):**
-1. Navigate to **Integrations** and locate the Trestle card.
-2. Enter your Trestle API credentials (provided by CoreLogic).
+1. Navigate to **Integrations** and locate the MLS card.
+2. Enter your MLS API credentials (provided by your MLS).
 3. Click **Save and Verify** to confirm the connection.
 4. Once verified, MLS data will be available to all users in the MLS section.
 
@@ -1176,7 +1176,7 @@ Add an AI chat assistant to your website that pre-qualifies visitors and capture
 1. Navigate to **Integrations** and find the **Hoku Web Assistant** card.
 2. Copy the embed code and paste it before the closing \\</body\\> tag on your website.
 3. A floating chat button appears in the bottom-right corner of your site.
-4. Optionally enter your IDX Broker API key to enable MLS search (if you don't have Trestle connected).
+4. Optionally enter your IDX Broker API key to enable MLS search (if you don't have a direct MLS integration connected).
 
 **How It Works:**
 - Visitors click the chat button and Hoku greets them as your assistant.
@@ -1215,7 +1215,7 @@ The Seller Opportunity Map is an interactive, map-based prospecting tool that us
 
 ### 14.1 Searching
 
-Search by: zip code, latitude/longitude + radius (up to 50 miles), or TMK (Tax Map Key) for Hawaii parcels.
+Search by: zip code, latitude/longitude + radius (up to 50 miles), or parcel ID (TMK in Hawaii, APN in most other states).
 
 ### 14.2 Seller Motivation Score (0-100)
 
@@ -1233,7 +1233,7 @@ Scores are normalized based on available data (missing data excluded from the de
 - Color-coded property markers by motivation score
 - Heat map layer showing density of high-motivation sellers
 - ZIP code boundary overlay (clickable for search)
-- TMK parcel boundary overlay (Hawaii) via ArcGIS
+- Parcel boundary overlay (Hawaii TMK via state ArcGIS; other markets where supported)
 - Streets and satellite imagery toggle
 - Auto-search on pan/zoom (debounced 600ms)
 
@@ -1260,7 +1260,7 @@ The Farm & Watchdog page lets you monitor geographic areas and set up automated 
 
 1. Navigate to **Farm** from the main navigation.
 2. Click **Create Farm Area**.
-3. Define the area by: zip code, radius (lat/lng), or TMK prefix.
+3. Define the area by: zip code, radius (lat/lng), or parcel-ID prefix (TMK in Hawaii, APN in most other states).
 4. Set property filters: price range, bedrooms, property types, listing statuses.
 5. Save the farm area with a custom name.
 
@@ -1393,7 +1393,7 @@ Several integrations require admin access to configure:
 - **PayPal** \u2014 Set up PayPal as an alternative payment processor.
 - **Realie.ai** \u2014 Configure property intelligence data access. This is a platform-wide integration that provides equity, ownership, LTV, foreclosure, and absentee owner data.
 - **Federal Data** \u2014 Configure access to federal data sources including FRED (economic data), HUD (Fair Market Rents, income limits, Section 8), USPS (address validation), Census Bureau (demographics), and BLS (employment data).
-- **Trestle (CoreLogic MLS)** \u2014 Configure MLS data access credentials.
+- **MLS** \u2014 Configure MLS data access credentials. Provider varies by region; your administrator selects the appropriate MLS for your market.
 
 ### 20.3 User Management
 
@@ -1505,7 +1505,7 @@ Key terms used throughout The Real Estate Genie.
 
 **MFA (Multi-Factor Authentication):** A security method that requires two or more verification steps to sign in, such as a password plus a code from an authenticator app.
 
-**MLS (Multiple Listing Service):** A database of real estate listings shared among licensed real estate professionals. The Real Estate Genie accesses MLS data through the Trestle by CoreLogic integration.
+**MLS (Multiple Listing Service):** A database of real estate listings shared among licensed real estate professionals. The Real Estate Genie accesses MLS data through your region's MLS provider, configured by a platform administrator.
 
 **NOI (Net Operating Income):** Gross rental income minus operating expenses (excluding mortgage payments). Used to calculate Cap Rate and DSCR.
 
@@ -1517,7 +1517,9 @@ Key terms used throughout The Real Estate Genie.
 
 **Seller Net Sheet:** A document estimating the seller\u2019s proceeds from a property sale after deducting commissions, closing costs, mortgage payoff, and any concessions.
 
-**TMK (Tax Map Key):** A unique identifier for parcels of land in Hawaii, used in property records and tax assessments. The Seller Opportunity Map overlays TMK parcel boundaries.
+**TMK (Tax Map Key):** Hawaii's unique parcel identifier, used in property records and tax assessments. Most other states use APN (Assessor's Parcel Number) for the same purpose. The Seller Opportunity Map overlays parcel boundaries where supported.
+
+**APN (Assessor's Parcel Number):** A unique parcel identifier issued by a county assessor. Equivalent to TMK in Hawaii. Format and dash conventions vary by county.
 
 **Webhook:** An HTTP callback that sends real-time data to an external URL when a specific event occurs. The Real Estate Genie supports webhooks via n8n integration.`,
   },

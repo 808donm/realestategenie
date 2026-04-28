@@ -104,7 +104,7 @@ Help the agent manage contacts, sync with CRM, and draft communications.`,
 Help the agent prioritize leads, view matched properties, draft communications, and understand heat scores.`,
 
   // MLS Listings
-  "mls-listings": `The agent is on the MLS page. This has 9 tabs powered by HiCentral MLS (Trestle).
+  "mls-listings": `The agent is on the MLS page. This has 9 tabs powered by the agent's connected MLS provider.
 
 **Tab 1 - Search & Listings**:
 - Search by zip code, city, address, or building/condo name
@@ -118,7 +118,7 @@ Help the agent prioritize leads, view matched properties, draft communications, 
 
 **Tab 2 - Market Monitor**: Map + Hot Sheet for market monitoring (see market-watch context)
 
-**Tab 3 - Market Snapshot**: Real-time market statistics computed from MLS data. Market Temperature gauge (buyer's vs seller's market), Quick Stats (closed sales, pending, active, months of inventory, DOM, sale-to-list ratio) with 90-day trend arrows, and 12-month bar charts for average sales price and sales activity. County selector for Hawaii counties. Cached 24 hours.
+**Tab 3 - Market Snapshot**: Real-time market statistics computed from MLS data. Market Temperature gauge (buyer's vs seller's market), Quick Stats (closed sales, pending, active, months of inventory, DOM, sale-to-list ratio) with 90-day trend arrows, and 12-month bar charts for average sales price and sales activity. County selector. Cached 24 hours.
 
 **Tab 4 - Market Analytics**: County-level market statistics (see market-analytics context). Also accessible from the sidebar.
 
@@ -130,7 +130,7 @@ Help the agent prioritize leads, view matched properties, draft communications, 
 
 **Tab 8 - Investment**: Multi-unit property analysis with per-unit rent breakdown, auto-fills BRRRR and Flip analyzers
 
-**Tab 9 - Hazard Map**: Shows flood zones (FEMA DFIRM), tsunami evacuation zones, and sea level rise exposure areas as colored polygon overlays on Google Maps. Agents can toggle layers on/off and search by address or ZIP. Blue = flood zones, Cyan = tsunami, Teal = sea level rise. Hawaii layers use State GIS data; mainland uses FEMA NFHL. Deep link from Property Detail Modal.
+**Tab 9 - Hazard Map**: Shows flood zones (FEMA DFIRM) plus locale-specific hazards (Hawaii: tsunami evacuation zones, sea level rise exposure) as colored polygon overlays on Google Maps. Agents can toggle layers on/off and search by address or ZIP. Blue = flood zones, Cyan = tsunami, Teal = sea level rise. Hawaii uses State GIS data; other markets use FEMA NFHL. Deep link from Property Detail Modal.
 
 Help the agent search listings, run comps, match leads, analyze investments, explore hazard zones, and review market statistics.`,
 
@@ -225,7 +225,7 @@ Help the agent search properties, understand data, run reports/calculators, and 
 7. **Bird Dog Automated Prospecting** — Automated off-market lead hunting on a schedule.
    - HOW IT WORKS: Agent sets criteria (ZIP, lead flags, property type, equity %) and a schedule (daily/weekly/monthly). Bird Dog automatically searches for matching properties and alerts on NEW leads.
    - LEAD SCORING: HOT (red) = most likely to sell (inherited, pre-foreclosure, death, tax lien, vacant+absentee). WARM (orange) = moderately likely (out-of-state absentee + equity, free & clear). COLD (gray) = nurture/monitor.
-   - HOKU CAN: Create a Bird Dog search from natural language: "Bird dog absentee owners in 96825 with high equity, run weekly". Use action create_bird_dog with params: zip, absentee, highEquity, vacant, foreclosure, investor, taxDelinquent, propertyType, equityMin, name, schedule.
+   - HOKU CAN: Create a Bird Dog search from natural language: "Bird dog absentee owners in [ZIP] with high equity, run weekly". Use action create_bird_dog with params: zip, absentee, highEquity, vacant, foreclosure, investor, taxDelinquent, propertyType, equityMin, name, schedule.
    - HOKU CAN: Run a Bird Dog search immediately with run_bird_dog action and searchId param.
    - HOKU CAN: Navigate to Bird Dog results with bird_dog_results action.
    - HOT SHEET: Agent can export a color-coded XLSX spreadsheet with all lead data, owner info, equity, and skip trace contacts.
@@ -288,8 +288,8 @@ Help the agent search properties and generate Seller Reports for prospecting and
   // Seller Map
   "seller-map": `The agent is on the SELLER MAP. Interactive map-based prospecting tool with predictive seller scoring.
 
-**Search Methods**: By zip code, by lat/lng + radius (up to 50 miles), by TMK (Hawaii parcel ID)
-**Map Features**: Google Maps with color-coded markers (red=very likely, orange=likely, yellow=possible, blue=unlikely), heat map layer, ZIP boundary overlay, TMK parcel overlay (Hawaii), streets/satellite toggle, auto-search on pan/zoom
+**Search Methods**: By zip code, by lat/lng + radius (up to 50 miles), by parcel ID (TMK in Hawaii, APN in most other states)
+**Map Features**: Google Maps with color-coded markers (red=very likely, orange=likely, yellow=possible, blue=unlikely), heat map layer, ZIP boundary overlay, parcel boundary overlay where supported (Hawaii TMK via state ArcGIS), streets/satellite toggle, auto-search on pan/zoom
 
 **Seller Motivation Score (0-100)** -- 12 scoring dimensions:
 - High equity (15pts), Long ownership (15pts), Absentee owner (12pts), Distress signals (12pts)
@@ -305,7 +305,7 @@ Help the agent search properties and generate Seller Reports for prospecting and
 
 **Saved Searches**: Save search parameters with custom name for quick reload. 7-day global cache.
 
-Data sources: RentCast (property data, AVM), Realie (equity, liens, distress), Hawaii GIS (TMK parcels).
+Data sources: market-data provider (property data, AVM), public-records provider (equity, liens, distress), state GIS for parcel overlays where available.
 Help the agent understand scoring, identify best prospects, and generate outreach materials.`,
 
   // Market Monitor
@@ -338,14 +338,14 @@ Help the agent monitor their market, identify new opportunities, and track price
 - **Monitoring**: Track specific listings for tier/status changes over time
 - **Alerts**: Real-time notifications on tier changes, status changes (active->expired), price changes
 - **Saved Searches**: Persist search criteria for recurring monitoring
-- Data from Trestle MLS (primary) with RentCast fallback
+- Data from MLS (primary) with public-records provider as fallback
 IMPORTANT: It is unethical (and often illegal) to solicit sellers whose property is actively listed with another agent. Only contact expired/withdrawn listings.`,
 
   // Farm & Watchdog
   "farm-watchdog": `The agent is on the FARM & WATCHDOG page. Geographic monitoring with automated alerts.
 
 **Farm Areas**:
-- Create by zip code, radius (lat/lng), or TMK prefix
+- Create by zip code, radius (lat/lng), or parcel-ID prefix (TMK in Hawaii, APN in most other states)
 - Set property filters: price range, bedrooms, property types, statuses
 - Live MLS search across farm area with sortable results (DOM, price, price drop %)
 - Multiple saved farm areas with individual configurations
@@ -370,7 +370,7 @@ Help the agent set up effective farms and configure watchdog alerts.`,
 3. Only alerts on NEW properties not previously found (zero-cost initial scanning)
 4. Each lead is scored by seller motivation: HOT (red), WARM (orange), COLD/NURTURE (gray)
 
-**Creating a Search**: Agent can use the UI form or tell you: "Bird dog absentee owners in 96825 with high equity, run weekly"
+**Creating a Search**: Agent can use the UI form or tell you: "Bird dog absentee owners in [ZIP] with high equity, run weekly"
 - Use action create_bird_dog with params: zip, absentee, highEquity, vacant, foreclosure, investor, taxDelinquent, propertyType, equityMin, name, schedule
 
 **Lead Scoring**:
@@ -419,10 +419,10 @@ Help agents set up targeted monitors. Suggest appropriate alert types based on w
   "assumable-va": `The agent is on the VA ASSUMABLE LOAN SEARCH page. This is a flagship buyer-side search that finds active listings where a buyer can assume the seller's existing VA mortgage — inheriting the original locked-in 2-4% rate from the 2020-2022 origination boom while market rates sit at 6-7%.
 
 **Four search modes** (one at a time):
-- **City** — case-insensitive substring on City field (e.g., "Honolulu", "Kailua")
-- **Neighborhood** — substring on SubdivisionName (e.g., "Hawaii Kai", "Kaimuki", "Hahaione Valley")
-- **ZIP Code** — startswith match on PostalCode (e.g., "96825" or partial "968")
-- **TMK / Parcel** — substring on ParcelNumber, accepts both dashed ("1-3-9-083-009") and undashed ("139083009") forms
+- **City** — case-insensitive substring on City field
+- **Neighborhood** — substring on SubdivisionName
+- **ZIP Code** — startswith match on PostalCode (full 5-digit or first 3 digits)
+- **TMK / Parcel** — substring on ParcelNumber. Accepts dashed and undashed forms. Called TMK in Hawaii, APN in most other states.
 
 **How the search works** (3-tier confidence):
 1. **Tier 1 — Explicit MLS Tags**: ListingTerms includes both 'Assumable' AND 'VA'. Highest precision, lowest recall.
@@ -436,14 +436,14 @@ Help agents set up targeted monitors. Suggest appropriate alert types based on w
 CITY:
 1. Open VA Assumable page (Sidebar → Opportunities → VA Assumable, or /app/mls/assumable-va)
 2. Click the **City** tab (selected by default)
-3. Type the city name in the **City** field (e.g., "Honolulu")
+3. Type the city name in the **City** field
 4. Optionally set Min Beds, Min/Max Price
 5. Click **Search VA Assumable**
 
 NEIGHBORHOOD:
 1. Open VA Assumable page
 2. Click the **Neighborhood** tab
-3. Type the neighborhood / subdivision name (e.g., "Hawaii Kai", "Hahaione Valley")
+3. Type the neighborhood / subdivision name
 4. Optionally narrow with Min Beds and price filters
 5. Click **Search VA Assumable**
 6. If neighborhood search returns nothing, fall back to City or ZIP — subdivision tagging by listing agents is inconsistent.
@@ -451,14 +451,14 @@ NEIGHBORHOOD:
 ZIP CODE:
 1. Open VA Assumable page
 2. Click the **ZIP Code** tab
-3. Type the 5-digit ZIP (e.g., "96825") — partial ZIPs are accepted via startswith match
+3. Type the 5-digit ZIP — partial ZIPs (first 3 digits) are accepted via startswith match
 4. Optionally narrow with Min Beds and price filters
 5. Click **Search VA Assumable**
 
 TMK / PARCEL:
 1. Open VA Assumable page
 2. Click the **TMK / Parcel** tab
-3. Type the parcel number with or without dashes (e.g., "1-3-9-083-009" or "139083009")
+3. Type the parcel number with or without dashes
 4. Click **Search VA Assumable**
 5. Best for confirming whether a known property is VA-assumable. Single-property results are typical.
 
@@ -472,10 +472,10 @@ TMK / PARCEL:
 - 80% LTV assumption is approximate; actual assumed balance varies and isn't published in MLS
 
 **Hoku queries that should route here or run this search inline**:
-- "Find VA assumable homes in Honolulu" → city search
-- "Show me homes in Hawaii Kai my military buyer can assume" → neighborhood search
-- "Assumable VA listings in 96825 with 3+ beds" → ZIP search + minBeds=3
-- "Look up TMK 1-3-9-083-009 for VA assumable" → TMK search
+- "Find VA assumable homes in [city]" → city search
+- "Show me homes in [neighborhood] my military buyer can assume" → neighborhood search
+- "Assumable VA listings in [ZIP] with 3+ beds" → ZIP search + minBeds=3
+- "Look up parcel [number] for VA assumable" → TMK / parcel search
 - "How do I search VA assumable by neighborhood?" → walk through the 5-step neighborhood instructions above`,
 
   // Open Houses
@@ -529,7 +529,7 @@ Help the agent create events, import from MLS, customize flyers, understand the 
 - **Fair Market Rents**: HUD Section 8 rents by bedroom count (Efficiency through 4BR)
 - **Median Rent by ZIP**: Rental medians sorted descending
 - Also accessible as Tab 4 in the MLS page (between Market Snapshot and CMA)
-- Data: RentCast market stats, Trestle MLS, HUD. Cached 24 hours.
+- Data: market-stats provider, MLS, HUD. Cached 24 hours.
 Help the agent understand market trends, compare neighborhoods, and identify opportunities.`,
 
   // Neighborhood Profiles
@@ -622,7 +622,7 @@ Help the admin manage their team, invite members, and assign roles.`,
 **Dashboard**: Total users, active users, access requests, critical/warning alerts, open houses, leads, 24h errors
 **Sales Opportunities**: Agents with critical alerts (exceeded plan limits) for upsell targeting
 **Sections**: User Management (all platform users), Access Requests (approve/reject), Invitations (bulk send, track status), Subscription Management (per-agent plans), Plan Management (create/edit plans, feature matrix), Feature Management (toggle features per plan), API Usage Report (cost tracking), Error Logs (last 1000 entries with stack traces)
-**User MLS Integrations**: Per-user Trestle credentials (OAuth2/Basic auth), Bridge Interactive (coming), IDX Broker (coming)
+**User MLS Integrations**: Per-agent or per-vendor MLS credentials (provider varies by region), with IDX Broker as optional fallback.
 Help the admin manage the platform, users, plans, and integrations.`,
 
   // Integrations
@@ -630,7 +630,7 @@ Help the admin manage the platform, users, plans, and integrations.`,
 
 **Primary Integrations**:
 - **CRM**: Contacts, pipeline, email/SMS automation. Setup: Private Integration API Key + Location ID + Pipeline selection + New Lead Stage mapping.
-- **Trestle (HiCentral MLS)**: MLS listings, property data, comps, market monitor, OH sync. Setup: Trestle API credentials (OAuth2 or Basic Auth).
+- **MLS**: MLS listings, property data, comps, market monitor, OH sync. Setup: MLS credentials (varies by provider — OAuth2, Basic Auth, or vendor Bearer token).
 
 **Calendar Integrations** (Two-Way Sync):
 - **Google Calendar**: OAuth connection, bidirectional event sync
@@ -639,7 +639,7 @@ Help the admin manage the platform, users, plans, and integrations.`,
 **Hoku Web Assistant**:
 - **Embeddable chat widget** for agent websites. Copy embed code or direct link from this page.
 - Pre-qualifies visitors (buyer/seller), captures leads, searches MLS, emails properties, creates CRM contacts with conversation notes.
-- Uses the agent's Trestle MLS connection for property search (same as App Hoku). IDX Broker as optional fallback.
+- Uses the agent's MLS connection for property search (same as App Hoku). IDX Broker as optional fallback.
 - Optional IDX Broker API key for additional MLS source.
 
 **Other**:
@@ -657,7 +657,7 @@ Help the agent connect their integrations and troubleshoot connection issues.`,
   "mls-blast": `The agent is on the EMAIL BLAST page. Neighborhood email marketing tool.
 
 **How It Works**:
-1. Agent creates a blast by choosing a subdivision/neighborhood name (e.g., "Kaimuki", "Diamond Head")
+1. Agent creates a blast by choosing a subdivision/neighborhood name from their market
 2. System searches MLS by SubdivisionName for active listings in that area
 3. Listings are compiled into a branded HTML email template
 4. Agent selects CRM contacts as recipients and sends the blast
@@ -711,15 +711,14 @@ export const APP_KNOWLEDGE = `
 ## Real Estate Genie — Platform Knowledge
 
 ### Data Sources (priority order)
-1. **MLS (Trestle/HiCentral)** — Active/Pending/Closed/Expired/Withdrawn/Canceled listings, actual sale prices, agent info, photos, DOM. Most accurate for Hawaii.
-2. **Realie** — AVM with confidence range (modelValue/min/max), equity, LTV, liens, parcel geometry, deed transfers. Best for property valuation.
-3. **RentCast** — Property records, owner info, absentee status, rental AVM, market stats, comps fallback. Best for owner intelligence.
-4. **Honolulu County OWNINFO** — Current deed owner from county records (green "County Records" badge). Prioritized over Realie/RentCast for ownership.
-5. **Hawaii State GIS** — Flood zones, tsunami zones, fire risk, school attendance boundaries, opportunity zones, parcel boundaries (TMK). Free public data.
-6. **FEMA NRI** — County-level hazard risk ratings (flood, hurricane, wildfire, earthquake, tornado, wind, volcanic, drought, tsunami, landslide, lightning, coastal flood).
-7. **FBI CDE** — Crime statistics by county (violent crime, property crime, arson).
-8. **Census ACS / FRED / BLS / HUD** — Demographics, mortgage rates, employment, fair market rents.
-9. **NCES** — School data: enrollment, student-teacher ratio, free/reduced lunch %, Title I, grade range.
+1. **MLS** — Active/Pending/Closed/Expired/Withdrawn/Canceled listings, actual sale prices, agent info, photos, DOM. Provider varies by region (configured per agent or per vendor).
+2. **Public-records / property data provider** — AVM with confidence range, equity, LTV, liens, parcel geometry, deed transfers. Best for property valuation.
+3. **Rental data provider** — Property records, owner info, absentee status, rental AVM, market stats, comps fallback. Best for owner intelligence.
+4. **County / state GIS** — Current deed owner from county records (green "County Records" badge), parcel boundaries, flood/hazard layers. Available for Hawaii (state GIS) and many mainland counties via FEMA NFHL. Prioritized over commercial providers for ownership.
+5. **FEMA NRI** — County-level hazard risk ratings (flood, hurricane, wildfire, earthquake, tornado, wind, volcanic, drought, tsunami, landslide, lightning, coastal flood).
+6. **FBI CDE** — Crime statistics by county (violent crime, property crime, arson).
+7. **Census ACS / FRED / BLS / HUD** — Demographics, mortgage rates, employment, fair market rents.
+8. **NCES** — School data: enrollment, student-teacher ratio, free/reduced lunch %, Title I, grade range.
 
 ### AVM Reliability
 - AVM is compared to county assessment and recent sale price (within 2 years)
@@ -734,20 +733,23 @@ export const APP_KNOWLEDGE = `
 - Comp quality filters: minimum correlation threshold, max adjustment cap (35%), outlier removal, up to 15 comps
 - List-to-sale ratio calibration adjusts list price based on how properties actually sell in that area
 - Condo-specific tuning: increased sqft adjustment weight, reduced bed/bath adjustment
-- Hawaii-specific adjustments: leasehold discount (25-35%), flood zone discount (3-5%), and high HOA impact
+- Locale-specific adjustments where applicable (e.g., Hawaii leasehold discount 25-35%, flood-zone discounts)
 - The Genie AVM appears as a "Genie AVM" value card on the Property Detail Modal with a confidence rating
 - When an agent asks about a property's value, reference the Genie AVM as the primary estimate and explain that it blends listing price, MLS sales data, and county assessments with local adjustments
 
-### Hawaii-Specific Knowledge
+### Locale-Specific Knowledge (apply only when relevant to the agent's market)
+
+**When the agent operates in Hawaii (HI):**
 - Hawaii is a **non-disclosure state** — actual sale prices are NOT in public records. Only MLS has closed prices.
 - **Leasehold vs Fee Simple** is critical in Hawaii — always mention if a property is leasehold. Leasehold means the land is leased (common in condos).
-- **TMK (Tax Map Key)** is Hawaii's parcel ID format: Island-Zone-Section-Plat-Parcel (e.g., 1-4-2-018-077)
-- Common hazards: Tsunami evacuation zones, sea level rise, lava flow zones (Big Island), cesspool priority areas, Special Management Areas (coastal)
-- Oahu zip codes: 96701-96898 (many 968xx are PO Box/admin zips)
-- **IMPORTANT**: Any address ending in ", HI" is in Hawaii. Common Hawaii cities/towns on Oahu include:
-  Honolulu, Kailua, Kaneohe, Kapolei, Ewa Beach, Waipahu, Pearl City, Aiea, Mililani, Wahiawa, Haleiwa, Laie, Waimanalo, Hawaii Kai, Kahala, Waikiki, Manoa, Makiki, Kaimuki, Kapahulu, Moiliili, Palolo, Nuuanu, Pauoa, Liliha, Kalihi, Salt Lake, Foster Village, Red Hill, Iroquois Point, Ewa Villages, Kunia, Schofield, Wheeler, Waianae, Makaha, Nanakuli, Kaena
-  On other islands: Hilo, Kona (Kailua-Kona), Waimea (Kamuela), Captain Cook, Pahoa, Volcano (Big Island); Kahului, Kihei, Lahaina, Wailuku, Haiku, Paia, Kula, Makawao (Maui); Lihue, Kapaa, Princeville, Poipu, Koloa, Hanapepe, Waimea (Kauai)
-- When you see "Waipahu, HI" or "Kapolei, HI" or any city followed by "HI" — this is Hawaii, NOT a typo or abbreviation for something else.
+- **TMK (Tax Map Key)** is Hawaii's parcel ID format: Island-Zone-Section-Plat-Parcel (e.g., 1-4-2-018-077). Other states use APN.
+- Hawaii-specific hazards: Tsunami evacuation zones, sea level rise, lava flow zones (Big Island), cesspool priority areas, Special Management Areas (coastal).
+- Oahu zip codes: 96701-96898 (many 968xx are PO Box/admin zips).
+- Common Hawaii cities/towns on Oahu: Honolulu, Kailua, Kaneohe, Kapolei, Ewa Beach, Waipahu, Pearl City, Aiea, Mililani, Wahiawa, Haleiwa, Laie, Waimanalo, Hawaii Kai, Kahala, Waikiki, Manoa, Makiki, Kaimuki, Kapahulu, Moiliili, Palolo, Nuuanu, Pauoa, Liliha, Kalihi, Salt Lake, Foster Village, Red Hill, Iroquois Point, Ewa Villages, Kunia, Schofield, Wheeler, Waianae, Makaha, Nanakuli, Kaena.
+  Other islands: Hilo, Kona (Kailua-Kona), Waimea (Kamuela), Captain Cook, Pahoa, Volcano (Big Island); Kahului, Kihei, Lahaina, Wailuku, Haiku, Paia, Kula, Makawao (Maui); Lihue, Kapaa, Princeville, Poipu, Koloa, Hanapepe, Waimea (Kauai).
+- Any address ending in ", HI" is in Hawaii — not a typo or abbreviation for another state.
+
+**For markets outside Hawaii**: rely on Census ACS, FEMA NFHL, county assessor data, and the agent's MLS feed. Don't assume disclosure or non-disclosure status — it varies by state. APN is the standard parcel ID outside Hawaii. Locale-specific tax structures (e.g., Texas no state income tax, California Prop 13) should be noted when calculating ROI but are not built into automated calculations unless the analyzer explicitly supports them.
 
 ### Lead Scoring (Heat Score 0-100)
 Calculated automatically at open house check-in:
@@ -810,23 +812,23 @@ Levels: Very Likely (70-100), Likely (50-69), Possible (30-49), Unlikely (0-29)
 
 ### Neighborhood Search (MLS)
 - MLS search supports SubdivisionName filter in addition to ZIP, city, and address.
-- Agent can search by neighborhood name (e.g., "Kaimuki", "Diamond Head", "Hawaii Kai").
+- Agent can search by neighborhood name from their market.
 - This powers both direct MLS search and the Email Blast feature.
 
 ### VA Assumable Loan Search
 - Find active listings where the buyer can assume an existing VA mortgage from the seller.
 - High-value in current rate environment: VA loans originated 2020-2022 sit at 2.5-3.5% rates while market is 6-7%. A buyer assuming the loan inherits the locked-in low rate.
 - VA-eligible buyers (military, veterans) are preferred — assumption preserves the seller's VA entitlement. Non-VA buyers can also assume but consume the seller's entitlement.
-- Endpoint: GET /api/mls/search-assumable-va?city=...&zip=...&minPrice=...&maxPrice=...&minBeds=...&limit=...
+- Endpoint: GET /api/mls/search-assumable-va?city=...&neighborhood=...&zip=...&tmk=...&minPrice=...&maxPrice=...&minBeds=...&limit=...
 - Returns three confidence tiers:
-  - tier1Explicit — listings with AssumableYN=true AND ListingTerms includes 'VA' (highest confidence)
+  - tier1Explicit — listings with ListingTerms including both 'Assumable' AND 'VA' (highest confidence)
   - tier2Remarks — PublicRemarks mentions VA + assumable phrasing (most listings; medium confidence)
-  - tier3Unspecified — AssumableYN=true but loan type unclear (lowest confidence; needs review)
+  - tier3Unspecified — ListingTerms includes 'Assumable' but loan type unclear (lowest confidence; needs review)
 - Each result includes an extracted assumable rate parsed out of PublicRemarks when found, plus a snippet showing the listing agent's exact wording.
 - Hoku can route queries like:
-  - "Find VA assumable homes in Honolulu"
-  - "Show me homes where my military buyer can assume the loan in 96825"
-  - "Assumable VA loans in Hawaii Kai under 1.2M"
+  - "Find VA assumable homes in [city]"
+  - "Show me homes where my military buyer can assume the loan in [ZIP]"
+  - "Assumable VA loans in [neighborhood] under [price]"
 - Caveats Hoku should mention: VA loan assumption requires lender approval (typically 60-90 days), the seller must release entitlement for non-VA buyers, funding fee on assumption is 0.5% (much lower than fresh origination at 2.15-3.3%). Rate extracted from remarks is agent-stated, not verified.
 
 ### Open House QR Flow
