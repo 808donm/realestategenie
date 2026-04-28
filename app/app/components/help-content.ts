@@ -126,47 +126,65 @@ The Real Estate Genie supports several user roles, each with different levels of
     title: "2. Dashboard",
     content: `## 2. Dashboard
 
-The Dashboard is your command center in The Real Estate Genie. It provides a comprehensive overview of your real estate business with intelligent recommendations.
+Command center for your day: needs attention, AI daily briefing, pipeline stats, tasks, upcoming events, active listings, hot-lead one-tap actions, and recent activity.
 
-### 2.1 Needs Attention
+### How do I open the Dashboard?
+1. Sidebar → click **Dashboard** (or /app — Dashboard is the default landing page unless you set Open Houses in Settings).
 
-At the top, the **Needs Attention** section highlights urgent follow-ups -- leads that have not been contacted in 3 or more days and have a heat score of 50 or above. These are shown in amber to draw your attention.
+### How do I read the Needs Attention banner?
+1. The amber banner at the top lists hot leads (heat score 50+) you haven't contacted in 3+ days.
+2. Click any name to open the lead drawer and call/text/email.
 
-### 2.2 Hoku Assistant
+### How do I get the AI Daily Briefing?
+1. The Daily Briefing card auto-generates each morning — a numbered 1-3 item priority list (urgent follow-ups, hot lead count, today's open houses, new leads this week).
+2. Click **Refresh** to regenerate on demand.
 
-Hoku is your AI copilot, available as a floating button on the bottom-right of every page. Click the Hoku button to open a conversational interface where you can ask questions, run searches, draft communications, and execute tasks. Hoku knows about every property you are viewing and can provide context-aware help.
+### How do I read the Pipeline Stats card?
+1. The card shows a count-by-stage breakdown plus total leads and hot-lead count.
+2. Click any stage to jump to that filter in the Pipeline page.
 
-### 2.3 AI Daily Briefing
+### How do I quick-complete a task from the Dashboard?
+1. The **Tasks** widget shows three sections: **Overdue**, **Today**, **Upcoming** (3 each).
+2. Click the checkbox next to any task to mark it done without leaving the page.
+3. Click the task title to open the full task drawer.
 
-The AI Daily Briefing generates a numbered priority list (1-3 items) based on your current business state: urgent follow-ups, hot lead count, today's open house events, and new leads this week. It helps you start your day knowing exactly what needs attention first.
+### How do I see today's events?
+1. The **Upcoming Events** card lists the next 5 events across all connected calendars (Google, Outlook, CRM, local).
+2. Each event shows a colored dot for its source. Click to open the event details.
 
-### 2.4 Pipeline Stats
+### How do I check my active listings?
+1. The **Active Listings** card shows total active count, average DOM, and a warning section listing every listing with **21+ DOM** (stale).
+2. Click any flagged address to jump to the property.
 
-Shows a count-by-stage breakdown of your leads, total lead count, and hot leads count. Click through to the full Pipeline view to manage your deal flow.
+### How do I one-tap-contact a hot lead?
+1. Scroll to **One-Tap Contact Actions**.
+2. Each hot lead (heat score 70+) shows **Call**, **Text**, **Email** buttons.
+3. Click **Call** to dial, **Text** to open the SMS composer (auto-logged to CRM), **Email** to compose (auto-logged).
 
-### 2.5 Tasks Widget
+### How do I use the Quick Actions grid?
+1. The 7-button grid has: **New Open House**, **View Leads**, **Pipeline**, **MLS Search**, **Reports**, **Calculators**, **Tasks**.
+2. Click any to navigate.
 
-Displays your tasks in three sections: Overdue, Today, and Upcoming (3 tasks per section). Each task shows a priority color dot (red/orange/blue/green). Quick-complete checkboxes let you mark tasks done without leaving the dashboard.
+### How do I read the Recent Activity feed?
+1. Real-time chronological feed of leads, open houses, integrations, webhooks.
+2. Leads show **HOT/WARM/COLD** badges. Times are relative ("5m ago", "3d ago").
+3. Click any row to open its source.
 
-### 2.6 Upcoming Events
+### How do I check Sync Health?
+1. The **Sync Health** card shows connection status for each calendar/CRM integration with last-sync timestamp.
+2. **Green** = connected, **amber** = warning, **red** = error.
+3. Click any failing source to jump to Integrations and reconnect.
 
-Shows your next 5 events from the next 2 weeks across all connected calendars (Google Calendar, Outlook, CRM). Events are color-coded by source for easy identification.
+### How do I open Hoku from the Dashboard?
+1. Click the floating **Hoku** button in the bottom-right corner (visible on every page).
+2. Or press the keyboard shortcut shown on the button.
 
-### 2.7 Active Listings
-
-Displays your total active listings, average Days on Market (DOM), and flags stale listings (21+ DOM) with a warning section showing affected addresses.
-
-### 2.8 Quick Actions
-
-A 7-button grid for one-click navigation: New Open House, View Leads, Pipeline, MLS Search, Reports, Calculators, Tasks. Below this, **One-Tap Contact Actions** show your hot leads (heat score 70+) with direct Call, Text, and Email links. A floating action bar at the bottom-right provides quick access to common actions.
-
-### 2.9 Recent Activity Feed
-
-A real-time chronological log of leads, open house events, integrations, and webhooks. Leads display heat score badges (HOT/WARM/COLD). Times are shown relative (Just now, 5m ago, 1h ago, 3d ago).
-
-### 2.10 Sync Health
-
-Shows the connection status of your calendar integrations (Google Calendar, Outlook, CRM) with last sync timestamps. Green = connected, amber = warning, red = error.`,
+**Hoku-equivalent queries**:
+- "What needs my attention today?"
+- "Show me my hot leads"
+- "Generate my daily briefing"
+- "What's my pipeline value?"
+- "Show me stale listings"`,
   },
   {
     id: "broker-dashboard",
@@ -209,40 +227,52 @@ Per-agent activity metrics: MLS Searches performed, Reports Generated, Last Acti
     title: "4. Calendar",
     content: `## 4. Calendar
 
-The Calendar provides a unified view of all your events across connected calendar systems.
+Unified calendar across Google, Outlook/Microsoft, your CRM, and local app events. Two-way sync — changes in any source flow to the others.
 
-### 4.1 Calendar Integrations
+### How do I open the Calendar?
+1. Sidebar → click **Calendar** (or /app/calendar).
 
-The Calendar supports three external sources plus local events:
+### What sources show on the Calendar?
+- **Google Calendar** — blue dot. Connect via OAuth on the Integrations page.
+- **Outlook/Microsoft** — green dot. Connect via OAuth on the Integrations page.
+- **CRM Calendar** — purple dot. Connects automatically when CRM is connected.
+- **Local** — gray dot. Events created in-app.
 
-- **Google Calendar** (blue dot) -- Connect via OAuth on the Integrations page
-- **Microsoft/Outlook Calendar** (green dot) -- Connect via OAuth on the Integrations page
-- **CRM Calendar** (purple dot) -- Connect via CRM API key on the Integrations page
-- **Local Calendar** (gray dot) -- Events created directly in the app
+### How do I switch views?
+1. At the top of the Calendar, click **Month**, **Week**, or **Day**.
+2. Use the arrow buttons to move between periods.
+3. Click **Today** to jump back to today.
 
-### 4.2 Views and Navigation
+### How do I create an event?
+1. Click **Create Event** in the top-right (or click any empty slot on the grid).
+2. Enter **Title**, **Description**, **Location**.
+3. Set **Start** and **End** date/time, or toggle **All Day**.
+4. Pick which **Calendar** to create the event in (Google, Outlook, CRM, or Local).
+5. Add **Attendees** by email if needed.
+6. Click **Save**.
 
-Toggle between Month, Week, and Day views. Use the navigation arrows to move between date ranges. The current date is always highlighted.
+### How do I edit or delete an event?
+1. Click the event on the grid.
+2. In the popover, click **Edit** to change details, or **Delete** to remove.
+3. **Save** changes.
 
-### 4.3 Managing Events
+### How do I force a calendar sync?
+1. Click **Sync** in the top-right.
+2. The badge updates with the sync timestamp when complete.
 
-1. Click **Create Event** to open the event form.
-2. Enter a title, description, location, date/time range, and optionally toggle all-day.
-3. Select which calendar to create the event in.
-4. Add attendees if needed.
-5. Click **Save** to create the event.
+### How do I show or hide a specific source?
+1. In the **Sources** panel on the left, toggle the source on/off.
+2. Events from hidden sources disappear from the grid (no data is deleted).
 
-You can also click on any existing event to edit or delete it.
+### How does conflict resolution work?
+1. **App edits** win by default if the same event was modified in both places.
+2. **CRM-booked meetings** (from online booking pages) always take precedence — they reflect a live customer-confirmed slot.
 
-### 4.4 Two-Way Sync
-
-Changes made in The Real Estate Genie sync back to your connected calendars, and vice versa. The sync engine handles conflict resolution: app edits win by default, except for CRM booked meetings (from online booking pages), which always take precedence.
-
-Use the **Sync** button to force a full sync across all connected sources.
-
-### 4.5 Source Filtering
-
-Use the source toggles to show or hide events from specific calendars. Each event displays a colored dot indicating its source.`,
+**Hoku-equivalent queries**:
+- "Add a showing on [date] at [time] for [address]"
+- "What's on my calendar this week?"
+- "Show my open houses tomorrow"
+- "Reschedule [event] to [new time]"`,
   },
   {
     id: "mls",
@@ -866,31 +896,59 @@ CRM sync: When a lead is submitted, it syncs to the connected CRM and triggers w
     title: "9. Contacts",
     content: `## 9. Contacts
 
-The Contacts section manages your CRM contacts. Note: Contacts are different from Leads -- Leads are auto-captured from open house check-ins, while Contacts are synced from your CRM.
+The full address book — every contact synced from your CRM. Different from **Leads** (which are auto-captured from open-house check-ins): Contacts are the long-term database that lives in your CRM.
 
-### 9.1 Contact List
+### How do I open Contacts?
+1. Sidebar → click **Contacts** (or /app/contacts).
+2. Requires CRM integration. If not connected, a warning banner links you to Integrations.
 
-Contacts are alphabetically grouped and searchable (with debounced search). Each contact shows: Name, Email, Phone, Location (City/State), and Tags (displayed as badges).
+### How do I find a contact?
+1. Type in the **Search** field at the top (debounced — results refresh as you type).
+2. Search matches name, email, phone, and tags.
 
-### 9.2 Actions
+### How do I view a contact's detail?
+1. Click any contact row.
+2. The detail page shows full profile, communication history, notes, and tags from your CRM.
 
-Each contact has Call, Text, and Email action buttons. Click a contact to view their full detail page with history and notes from CRM.
+### How do I call/text/email a contact?
+1. From the contact list, click the **Call**, **Text**, or **Email** button on the row.
+2. Or open the detail page and use the same buttons in the header.
+3. All communication is logged automatically to the contact's CRM record.
 
-### 9.3 Adding Contacts
+### How do I add a new contact?
+1. Click **Add Contact** in the top-right.
+2. Enter **First Name**, **Last Name**, **Email**, **Phone**, **Address** (optional).
+3. Click **Save**.
+4. The contact syncs to your CRM automatically.
 
-Click **Add Contact** to manually create a contact (first name, last name, email, phone, address). New contacts sync to your CRM automatically.
+### How do I tag a contact?
+1. Open the contact's detail page.
+2. Click the **Tags** field → type a tag name → press Enter.
+3. Use existing tags by clicking them in the dropdown.
+4. Tags sync back to the CRM and become available in Email Blast audience filtering.
 
-### 9.4 Bulk Operations
+### How do I send bulk Email or SMS to multiple contacts?
+1. From the contact list, click the checkbox on each contact you want to include.
+2. Click **Bulk Email** or **Bulk SMS** in the action bar.
+3. Compose the message → click **Send**.
+4. Review the sent/failed counts after delivery.
 
-Select multiple contacts using checkboxes, then send bulk Email or SMS messages. Track sent/failed counts.
+### How do I export my contacts?
+1. (Optional) Apply a filter or select specific contacts.
+2. Click **Export** in the top-right.
+3. Choose **PDF** or **Excel (XLSX)**.
+4. The file downloads with columns: Name, Email, Phone, City, Tags.
 
-### 9.5 Export
+### How do I keep contacts and leads in sync?
+1. Leads automatically promote into Contacts when a lead is moved past the **New Lead** stage in your pipeline.
+2. Existing CRM contacts who match an incoming lead by email/phone are linked rather than duplicated.
 
-Export your contacts to PDF or XLSX with columns: Name, Email, Phone, City, Tags.
-
-### 9.6 CRM Requirement
-
-The Contacts page requires the CRM integration. If not connected, a warning banner appears with a link to the Integrations page.`,
+**Hoku-equivalent queries**:
+- "Find [name] in my contacts"
+- "Add [name] as a contact with email [email] and phone [phone]"
+- "Tag [name] as [tag]"
+- "Email all my [tag] contacts"
+- "Export contacts tagged [tag] to Excel"`,
   },
   {
     id: "analyzers",
@@ -1605,114 +1663,111 @@ AI-generated, branded neighborhood reports for buyer/seller presentations and ma
   },
   {
     id: "integrations",
-    title: "12. Integrations",
-    content: `## 14. Integrations
+    title: "13. Integrations",
+    content: `## 13. Integrations
 
-The Integrations page allows you to connect third-party services to extend the functionality of The Real Estate Genie. Navigate to **Integrations** from the main navigation to view and manage all available integrations.
+Connect external services — CRM, MLS, calendars, web assistant, webhooks, social — and centralize lead, contact, and event flow.
 
-### 14.1 CRM Integration
+### How do I open Integrations?
+1. Sidebar → click **Integrations** (or /app/integrations).
+2. Each integration shows a card with **Connected**/**Disconnected** status, last-sync timestamp, and a **Test Connection** button.
 
-Connect your CRM to sync contacts, manage opportunities, map pipelines, and automate lead workflows. Follow the five steps below to get fully set up.
+### How do I connect my CRM?
 
-**Step 1 — Sign In to Your CRM**
-You will receive an invitation email from **noreply@mg.aiprofitandgrowth.com**. Click the link in the email to accept the invitation, then sign in to your CRM at **app.aiprofitandgrowth.com**.
+1. Open the invitation email from **noreply@mg.aiprofitandgrowth.com** and accept.
+2. Sign in to your CRM at **app.aiprofitandgrowth.com**.
+3. In your CRM: **Settings → Private Integrations** → **+ Create Private Integration**.
+4. Copy the **API Key** immediately (it will not be shown again).
+5. Back in Real Estate Genie → **Integrations** → locate the **CRM** card.
+6. Paste the API Key into the **API Key** field → click **Connect**. Status flips to **Connected**.
+7. In your CRM: **Settings → Business Profile** → copy your **Location ID**.
+8. In the CRM card → paste into **Location ID** → click **Save**.
+9. Click **Load Pipelines** → pick your real estate sales pipeline.
+10. Select **New Lead Stage** (where new leads land).
+11. (Optional) Select **Initial Contact Stage** (leads auto-advance here when an email/SMS is sent).
+12. Click **Save**.
 
-**Step 2 — Create a Private Integration API Key**
-1. Inside your CRM, navigate to **Settings > Private Integrations**.
-2. Create a new Private Integration and copy the API Key immediately — it will not be shown again.
+### How do I connect Google Calendar?
+1. On the **Google Calendar** card, click **Connect**.
+2. Sign in with Google in the OAuth popup.
+3. Grant calendar read/write permissions.
+4. The card flips to **Connected** with a sync timestamp.
 
-**Step 3 — Connect the CRM in REG**
-1. In The Real Estate Genie, navigate to **Integrations** and locate the CRM card.
-2. Paste the API Key you copied in Step 2 into the API Key field.
-3. Click **Connect**. The integration status will show as **Connected**.
+### How do I connect Outlook/Microsoft Calendar?
+1. On the **Outlook Calendar** card, click **Connect**.
+2. Sign in with your Microsoft account.
+3. Grant calendar permissions.
+4. The card flips to **Connected**.
 
-**Step 4 — Add Your CRM Location ID**
-1. In your CRM, navigate to **Settings > Business Profile** and copy your **Location ID**.
-2. Back in The Real Estate Genie CRM integration settings, paste the Location ID into the Location ID field and save.
+### How do I disconnect a calendar?
+1. On the calendar card, click the **...** menu \u2192 **Disconnect**.
+2. Confirm. Local events stay; future syncs stop.
 
-**Step 5 — Select Your Sales Pipeline**
-1. Click **Load Pipelines** to pull your CRM pipelines.
-2. Select the pipeline that corresponds to your real estate deal flow.
-3. Select the **New Lead Stage** — this is where new leads will land when synced.
-4. Optionally, select an **Initial Contact Stage** — leads will automatically move to this stage after an email or SMS is sent.
-5. Click **Save** to finalize your configuration.
+### What does the CRM connection give me?
+- **Contact Sync** \u2014 bidirectional contact sync between Real Estate Genie and your CRM.
+- **Opportunity Creation** \u2014 new leads auto-create opportunities in your CRM pipeline.
+- **Pipeline Mapping** \u2014 map app pipeline stages to CRM pipeline stages.
+- **Tag Management** \u2014 apply/manage CRM contact tags from within the app.
+- **Notes** \u2014 notes added in the app sync to the matching CRM contact.
 
-**CRM Features:**
-- **Contact Sync** \u2014 Contacts are synced bidirectionally between The Real Estate Genie and your CRM.
-- **Opportunity Creation** \u2014 New leads automatically create opportunities in your CRM pipeline.
-- **Pipeline Mapping** \u2014 Map your app pipeline stages to CRM pipeline stages.
-- **Tag Management** \u2014 Apply and manage tags on CRM contacts from within the app.
-- **Notes** \u2014 Notes added in the app sync to the corresponding CRM contact.
+### How do I check or reconnect MLS?
+1. The MLS card shows your current connection status (set up by your platform admin per region).
+2. If status is **Disconnected**, contact your platform admin to reconfigure credentials.
+3. Click **Test Connection** to verify the connection is alive.
 
-### 14.2 MLS
-
-Provides access to MLS listing data for the agent's market. This is a credentials-based integration configured by a platform administrator (the actual MLS provider varies by region — your administrator handles provider selection and credentials).
-
-**Setup (Admin Only):**
-1. Navigate to **Integrations** and locate the MLS card.
-2. Enter your MLS API credentials (provided by your MLS).
-3. Click **Save and Verify** to confirm the connection.
-4. Once verified, MLS data will be available to all users in the MLS section.
-
-### 14.3 n8n Webhooks
-
-Connect The Real Estate Genie to n8n workflow automation by configuring webhook endpoints that trigger on specific events.
-
-**Setting Up Webhooks:**
-1. Navigate to **Integrations** and locate the n8n Webhooks card.
-2. Click **Configure**.
-3. Enter your n8n webhook URL.
-4. (Optional) Add an HMAC secret key for webhook signature verification.
-5. Select which events should trigger the webhook (see list below).
-6. Click **Save**.
+### How do I configure n8n webhooks?
+1. On the **n8n Webhooks** card, click **Configure**.
+2. Enter your n8n webhook URL.
+3. (Optional) Add an **HMAC secret key** for webhook signature verification.
+4. Check the events to trigger (see below).
+5. Click **Save**.
 
 **Available Webhook Events:**
-- **Lead Submitted** \u2014 Triggered when a new lead is created.
-- **Hot Lead** \u2014 Triggered when a lead\u2019s Heat Score reaches 80 or above.
-- **Open House Published** \u2014 Triggered when an open house event is published.
-- **Open House Ended** \u2014 Triggered when an open house event concludes.
-- **Consent Captured** \u2014 Triggered when a lead provides consent.
-- **Integration Connected** \u2014 Triggered when a new integration is connected.
+- **Lead Submitted** - new lead created.
+- **Hot Lead** - heat score reaches 80+.
+- **Open House Published** - open house event is published.
+- **Open House Ended** - open house event concludes.
+- **Consent Captured** - lead provides consent.
+- **Integration Connected** - new integration is connected.
 
-**Webhook Reliability:** Webhooks include automatic retry logic with up to 3 attempts if delivery fails. You can view delivery logs directly in the app to troubleshoot any issues.
+Failed webhooks auto-retry up to 3 times. View delivery logs from the card.
 
-### 14.4 Hoku Web Assistant
+### How do I install the Hoku Web Assistant on my website?
+1. On the **Hoku Web Assistant** card, click **View Embed Code**.
+2. Copy the snippet.
+3. Paste it before the closing **</body>** tag on your website.
+4. A floating chat button appears in the bottom-right of every page.
+5. (Optional) Add an **IDX Broker API key** in the card to enable IDX-only MLS search alongside your direct MLS connection.
+6. Click **Save**.
 
-Add an AI chat assistant to your website that pre-qualifies visitors and captures leads.
-
-**Setup:**
-1. Navigate to **Integrations** and find the **Hoku Web Assistant** card.
-2. Copy the embed code and paste it before the closing \\</body\\> tag on your website.
-3. A floating chat button appears in the bottom-right corner of your site.
-4. Optionally enter your IDX Broker API key to enable MLS search (if you don't have a direct MLS integration connected).
-
-**How It Works:**
-- Visitors click the chat button and Hoku greets them as your assistant.
-- **Buyers**: Hoku captures name, email, phone, timeline, pre-approval, neighborhoods, and must-haves. Optionally searches for matching MLS listings and emails them to the visitor.
-- **Sellers**: Hoku captures the property address, looks up the AVM and property details, then captures contact info.
-- A scored lead is created in your pipeline and a contact is created in your CRM with the full conversation in the notes.
+### How does the Hoku Web Assistant qualify visitors?
+- **Buyers** - captures name, email, phone, timeline, pre-approval, neighborhoods, must-haves. Optionally emails matching MLS listings.
+- **Sellers** - captures the property address, looks up AVM and property details, then captures contact info.
+- A scored lead lands in your pipeline; a CRM contact is created with the full conversation logged in notes.
 - The lead appears on your Dashboard as "Needs Attention."
 
-### 14.5 Social Channels
+### How do I connect social channels?
+1. On the **Social Channels** card, click **Connect** for each platform.
+2. Sign in to authorize.
+3. Lead responses from each platform now route into your unified inbox.
 
-Connect social media channels to manage lead responses from social platforms. Configure your social channels under the Integrations page to centralize your lead communication.
+### How do I test an integration's connection?
+1. On any integration card, click **Test Connection**.
+2. The card shows a green checkmark on success or a red error with details on failure.
 
-### 14.7 Google Maps
+### What integrations are admin-only?
+Configured at the platform level (not per-agent):
+- **MLS** - credentials configured by platform admin per region.
+- **Payment** - for subscription billing.
+- **Property Data** - public-records, equity, ownership, foreclosure, absentee detection.
+- **Federal Data** - FRED rates, HUD Fair Market Rents, USPS address validation, Census, BLS.
+- **Maps** - geocoding and map embeds (no setup required).
 
-Google Maps powers geocoding, property map embeds, and location-based features throughout the app (including the Seller Opportunity Map). This integration is configured via the platform\u2019s Google Maps API key and does not require individual user setup.
-
-### 14.8 Bridge Interactive / Zillow (Coming Soon)
-
-This integration will provide property valuations, rental estimates, and market data from Zillow. It is currently in development and will be available in a future release.
-
-### 14.7 Admin-Only Integrations
-
-The following integrations are available only to platform administrators and are configured at the platform level:
-
-- **Stripe** \u2014 Payment processing for subscription billing.
-- **PayPal** \u2014 Alternative payment processing.
-- **Realie.ai** \u2014 Property intelligence data including equity estimates, ownership information, loan-to-value ratios, foreclosure status, and absentee owner detection.
-- **Federal Data** \u2014 Access to data from the Federal Reserve (FRED), HUD (Fair Market Rents, income limits, Section 8), USPS (address validation), Census Bureau (demographics), and Bureau of Labor Statistics (employment data).`,
+**Hoku-equivalent queries**:
+- "Connect my Google Calendar"
+- "Test my CRM connection"
+- "Show me my webhook delivery logs"
+- "What's my MLS connection status?"`,
   },
   {
     id: "seller-map",
@@ -1996,14 +2051,55 @@ Admins can configure platform-wide settings including Google Maps API keys, webh
     title: "21. Showing Scheduler",
     content: `## 21. Showing Scheduler
 
-The Showing Scheduler provides a public-facing page where your clients can schedule property showings.
+A public-facing page where buyers and clients can self-book a property showing on your calendar. Confirmed bookings sync to your calendar and create a CRM activity.
 
-### 21.1 How It Works
+### How do I open the Showing Scheduler?
+1. Sidebar → click **Showing Scheduler** (or /app/showing-scheduler).
 
-1. Share your showing scheduler link with clients (realestategenie.app/showing).
-2. Clients select a property and choose an available date and time.
-3. You receive a notification of the new showing request.
-4. Manage and confirm showings from within the app.`,
+### How do I share my booking link with a client?
+1. Open the Showing Scheduler.
+2. Click **Copy Link** in the top-right.
+3. Paste it into a text/email/social DM. (The public URL is realestategenie.app/showing.)
+
+### How does a client book a showing?
+1. The client opens the link.
+2. They search a property by address or pick from your active listings.
+3. They choose an available date and time on your calendar.
+4. They enter name, email, phone, and any notes.
+5. Submit creates a booking request that lands in your **Pending** queue.
+
+### How do I review and confirm pending requests?
+1. Open the Showing Scheduler.
+2. Click the **Pending** tab.
+3. Review each request — address, requested time, client info.
+4. Click **Confirm** to accept (event goes on your calendar; client gets a confirmation).
+5. Click **Decline** to reject (client gets a polite decline + offer to suggest alternate times).
+
+### How do I block off times when I'm unavailable?
+1. Open the Showing Scheduler.
+2. Click the **Availability** tab.
+3. Set your default weekly availability (e.g., Mon-Fri 9am-6pm).
+4. Click **+ Block Time** to add specific blackouts (vacation, listing presentations, family commitments).
+5. Save.
+
+### How do I set the buffer between showings?
+1. Open the **Settings** tab inside the Showing Scheduler.
+2. Set **Buffer** (e.g., 30 min before/after each showing for travel).
+3. Set **Min Notice** (e.g., 4 hours — clients can't book within that window).
+4. Set **Max Showings/Day** if you want a daily cap.
+5. Click **Save**.
+
+### How do I cancel or reschedule a confirmed showing?
+1. Open the **Confirmed** tab.
+2. Click the row.
+3. Click **Reschedule** to suggest a new time, or **Cancel** to release the slot.
+4. The client gets an automatic notification either way.
+
+**Hoku-equivalent queries**:
+- "What showings are pending?"
+- "Confirm the showing at [address]"
+- "Block off Friday afternoon"
+- "Show my showings this week"`,
   },
   {
     id: "email-blast",
