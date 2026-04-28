@@ -267,16 +267,19 @@ export function extractAssumableRate(remarks: string): string | null {
   if (!remarks) return null;
 
   // Patterns to try, in order of confidence. Each captures the numeric rate
-  // in group 1. The `.{0,15}?` lazy match allows connectors like "@", " ", " - ",
-  // "loan ", "mortgage at ", "of ", etc. between the assumable trigger and the
-  // rate without specifying every variant.
+  // in group 1. The lazy `[^\n.!?]{0,30}?` match allows short connector phrases
+  // ("loan at", "Loan at", "LOAN at", "mortgage at", "rate of", "with a
+  // balance of …", "@", " ", "! at ", etc.) between the trigger and the rate
+  // — but stops at sentence terminators so we don't cross into unrelated
+  // statements within the same paragraph.
   const patterns: RegExp[] = [
-    // Trigger word BEFORE rate: "VA Assumable @2.75%", "Assume our 2.875%", "Assumable mortgage - 2.5%"
-    /(?:va|assumable|assume)\b[^a-z0-9]{0,15}(\d{1}\.\d{1,3})\s*%/i,
+    // Trigger word BEFORE rate: "VA Assumable @2.75%", "Assumable LOAN at 3.125%",
+    // "Assumable Loan at 4.717%", "VA assumable at 2.25%", "VA ASSUMABLE! at 4.875%"
+    /(?:va|assumable|assume)\b[^\n.?]{0,30}?(\d{1}\.\d{1,3})\s*%/i,
     // Rate BEFORE trigger word: "2.75% VA assumable", "3.25% assumable rate"
-    /(\d{1}\.\d{1,3})\s*%[^a-z0-9]{0,15}(?:va|assumable|assume)\b/i,
+    /(\d{1}\.\d{1,3})\s*%[^\n.?]{0,30}?(?:va|assumable|assume)\b/i,
     // Generic "assume our X.XX%" without requiring further qualifier
-    /assume\b[^a-z0-9]{0,10}(?:our\s+|a\s+|the\s+)?(\d{1}\.\d{1,3})\s*%/i,
+    /assume\b[^\n.?]{0,15}?(?:our\s+|a\s+|the\s+)?(\d{1}\.\d{1,3})\s*%/i,
     // Fallback — rate near the word "rate" or "interest" within an assumable context
     /(\d{1}\.\d{1,3})\s*%\s*(?:rate|interest)/i,
   ];
