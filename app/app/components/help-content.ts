@@ -897,221 +897,199 @@ The Contacts page requires the CRM integration. If not connected, a warning bann
     title: "9. Investment Analyzers",
     content: `## 9. Investment Analyzers
 
-The Analyzers section provides 12 powerful financial analysis tools designed for real estate investment evaluation. Each tool is tailored to a specific investment strategy or transaction calculation.
+13 financial calculators for evaluating deals: investment property, BRRRR, flip, rental, STR, 1031, mortgage, net sheets, commission splits, and more. Most support MLS auto-import and PDF/Excel export.
 
-### 9.1 Investment Property Analyzer
+### How do I open the Analyzers?
+1. Sidebar \u2192 click **Analyzers** (or /app/analyzers).
+2. The page shows a tile grid of all 13 calculators.
 
-Evaluate the financial performance of a potential investment property.
+### How do I auto-import a property from MLS into any analyzer?
+1. Open the calculator.
+2. Click **Import from MLS**.
+3. Search by address or MLS number \u2192 click the result.
+4. Address, purchase price, taxes, beds/baths populate automatically.
+5. Fill in remaining fields (loan terms, rent, etc.) and run the calculation.
 
-**Key Metrics:** Return on Investment (ROI), Capitalization Rate (Cap Rate), Internal Rate of Return (IRR), and Cash-on-Cash Return.
+### How do I export results?
+1. After running any calculation, click **Export PDF** (branded) or **Export Excel** in the top-right.
+2. Or click **Email** to send results directly to a CRM contact.
 
-**How to Use:**
-1. Navigate to **Analyzers > Investment Property Analyzer**.
-2. Enter property details: purchase price, down payment, loan terms, expected rental income, and operating expenses.
-3. Review the calculated metrics and financial projections.
-4. Save the analysis to your database for future reference.
+### How do I save an analysis for later?
+1. Click **Save Analysis** in the top-right.
+2. Enter a name and pick a folder.
+3. Re-open from the **Saved** tab on the Analyzers page.
 
-### 9.2 1031 Exchange Analyzer
+### How do I run an Investment Property analysis?
+1. From the Analyzers page, open **Investment Property**.
+2. Enter **Purchase Price**, **Down Payment**, **Interest Rate**, **Loan Term**, **Monthly Rent**, and **Operating Expenses**.
+3. Click **Calculate**.
+4. Review **ROI**, **Cap Rate**, **IRR**, **Cash-on-Cash Return**, and 30-year projections.
+5. (Optional) Click **Save Analysis** to persist for the Compare Properties tool.
 
-Plan and track a 1031 tax-deferred exchange with timeline management and tax savings calculations.
+### How do I compare multiple investment properties?
+1. Open **Compare Properties**.
+2. Click each saved property to add it to the comparison (up to 5 at a time).
+3. Review the side-by-side table \u2014 Cap Rate, Cash-on-Cash, IRR, Total ROI, Composite Score.
+4. Sort by any metric to rank.
 
-**Key Features:** IRS 45-day identification rule tracking, 180-day closing deadline tracking, tax savings calculations, and replacement property comparison.
+### How do I run a Rental Property analysis?
+1. Open **Rental Property**.
+2. Enter purchase price, financing, monthly rent, and operating expenses.
+3. Click **Calculate**.
+4. Review **NOI**, **Cap Rate**, **Cash-on-Cash**, **DSCR**, **GRM**, and monthly cash flow.
 
-**How to Use:**
-1. Navigate to **Analyzers > 1031 Exchange Analyzer**.
-2. Enter the relinquished (sold) property details: sale price, adjusted basis, depreciation recapture.
-3. Add potential replacement properties for comparison.
-4. The tool tracks your critical deadlines: 45 days to identify replacement properties and 180 days to close.
-5. Review estimated tax savings from deferring capital gains.
+### How do I run a Short-Term Rental (STR) analysis?
+1. Open **STR Analyzer**.
+2. Enter nightly rate, expected occupancy %, cleaning fees per turnover, and operating expenses.
+3. (Locale taxes apply automatically \u2014 e.g., GET + TAT for Hawaii markets.)
+4. Click **Calculate**.
+5. Review monthly and annual cash flow, expense breakdown chart, and multi-year revenue projection.
 
-### 9.3 BRRR Strategy Analyzer
+### How do I run a House Flip analysis?
+1. Open **House Flip Analyzer**.
+2. Enter **Purchase Price**, **ARV** (after-repair value), and **Renovation Budget**.
+3. Click **Calculate**.
+4. Review **70% Rule compliance**, projected gross/net profit, ROI, and annualized ROI.
+5. (Optional) **Save Analysis**.
 
-Analyze the Buy, Renovate, Refinance, Rent (BRRR) investment strategy.
+### How do I run a Quick Flip score?
+1. Open **Quick Flip Analyzer**.
+2. Enter ARV, repair costs, target purchase price.
+3. Instantly see deal score, projected profit, ROI, 70% Rule pass/fail.
 
-**Key Metrics:** Infinite Returns analysis, cash-out refinancing projections, and multi-family support.
+### How do I run a Wholesale MAO calculation?
+1. Open **Wholesale MAO Calculator**.
+2. Enter **ARV**, **Repair Costs**, and **Your Wholesale Fee**.
+3. Click **Calculate**.
+4. Review **MAO**, low/mid/high offer range, and investor margin.
 
-**How to Use:**
-1. Navigate to **Analyzers > BRRR Strategy Analyzer**.
-2. Enter the purchase price, renovation costs, and after-repair value (ARV).
-3. Input refinancing terms (LTV ratio, interest rate, loan term).
+### How do I run a BRRRR analysis?
+1. Open **BRRRR Calculator**.
+2. Enter purchase price, renovation costs, and ARV.
+3. Enter refinance terms (LTV %, rate, term).
 4. Enter projected rental income and operating expenses.
-5. Review whether the deal achieves infinite returns (all initial capital recovered through refinance).
+5. Click **Calculate**.
+6. Review whether the deal hits **infinite returns** (all initial capital recovered at refi), 5-year projections, and equity capture.
 
-### 9.4 House Flip Analyzer
+### How do I plan a 1031 Exchange?
+1. Open **1031 Exchange Analyzer**.
+2. Enter the relinquished property's sale price, adjusted basis, and depreciation recapture.
+3. Add up to 3 candidate replacement properties.
+4. Click **Calculate**.
+5. Review the **45-day identification deadline**, **180-day close deadline**, estimated tax savings, and 3-property rule validation.
 
-Evaluate potential house flip deals using the 70% Rule and detailed ROI projections.
+### How do I run a Mortgage Calculator?
+1. Open **Mortgage Calculator**.
+2. Enter loan amount, rate, term, taxes, insurance.
+3. (Optional) Add HOA and PMI.
+4. Click **Calculate**.
+5. Review the PITI breakdown and full amortization schedule.
+6. Click **Export Excel** for the amortization table.
 
-**Key Metrics:** 70% Rule compliance, projected ROI, rehab cost estimates, and financing options analysis.
-
-**How to Use:**
-1. Navigate to **Analyzers > House Flip Analyzer**.
-2. Enter the purchase price, estimated ARV, and renovation budget.
-3. The tool calculates whether the deal meets the 70% Rule (purchase + rehab \u2264 70% of ARV).
-4. Review projected profit, ROI, and holding cost estimates.
-
-### 9.5 Compare Properties
-
-Place multiple investment properties side by side for direct comparison.
-
-**Key Features:** Side-by-side comparison of all key financial metrics for multiple properties.
-
-**How to Use:**
-1. Navigate to **Analyzers > Compare Properties**.
-2. Select two or more saved property analyses.
-3. View a side-by-side comparison of all key metrics including Cap Rate, Cash-on-Cash Return, IRR, and more.
-4. Use the comparison to make informed investment decisions.
-
-### 9.6 Mortgage Calculator
-
-Calculate monthly mortgage payments with a full PITI (Principal, Interest, Taxes, Insurance) breakdown.
-
-**Key Features:** PITI calculation, HOA and PMI inclusion, full amortization schedule, and Excel export.
-
-**How to Use:**
-1. Navigate to **Analyzers > Mortgage Calculator**.
-2. Enter loan amount, interest rate, loan term, property taxes, and insurance.
-3. Optionally add HOA fees and PMI (if down payment is less than 20%).
-4. Review the monthly payment breakdown and amortization schedule.
-5. Export the amortization schedule to Excel for your records.
-
-### 9.7 Seller Net Sheet
-
-Estimate a seller\u2019s net proceeds after all closing costs and deductions.
-
-**Key Features:** Commission calculations, closing cost estimates, mortgage payoff, seller concessions, and PDF/Excel export.
-
-**How to Use:**
-1. Navigate to **Analyzers > Seller Net Sheet**.
-2. Enter the sale price, outstanding mortgage balance, commission rates, and estimated closing costs.
+### How do I run a Seller Net Sheet?
+1. Open **Seller Net Sheet**.
+2. Enter sale price, mortgage payoff, commission rates, closing costs.
 3. Add any seller concessions or credits.
-4. Review the estimated net proceeds.
-5. Export to PDF or Excel to share with your client.
+4. Click **Calculate**.
+5. Review estimated net proceeds \u2192 **Export PDF** to share with the seller.
 
-### 9.8 Buyer Cash-to-Close
+### How do I run a Buyer Cash-to-Close?
+1. Open **Buyer Cash-to-Close**.
+2. Enter purchase price, down payment %, closing costs, prepaids, escrow reserves.
+3. Add any seller or lender credits.
+4. Click **Calculate**.
+5. Review total cash needed \u2192 **Export PDF** to share with the buyer.
 
-Calculate the total cash a buyer needs at closing.
+### How do I run a Commission Split calculation?
+1. Open **Commission Split Calculator**.
+2. Enter total commission and your split with your brokerage (or pick a preset).
+3. Add transaction fees, E&O, team overrides.
+4. (If approaching your cap) enter your year-to-date commission.
+5. Click **Calculate**.
+6. Review your estimated net commission. (Optional) **Save** the split as a preset.
 
-**Key Features:** Down payment, closing costs, prepaids, escrow reserves, and credit calculations. PDF export.
-
-**How to Use:**
-1. Navigate to **Analyzers > Buyer Cash-to-Close**.
-2. Enter the purchase price, down payment percentage, estimated closing costs, and prepaid items.
-3. Add any seller credits or lender credits.
-4. Review the total cash-to-close estimate.
-5. Export to PDF to share with your buyer.
-
-### 9.9 Commission Split Calculator
-
-Calculate agent net income after brokerage splits, caps, and fees.
-
-**Key Features:** Brokerage split structures, cap tracking, transaction fee calculations, team override management, and split presets.
-
-**How to Use:**
-1. Navigate to **Analyzers > Commission Split Calculator**.
-2. Enter the total commission amount and your split arrangement with your brokerage.
-3. Add any transaction fees, E&O insurance, or team overrides.
-4. If you are approaching your cap, enter your year-to-date commission for accurate calculations.
-5. Review your estimated net commission. Save split presets for quick future calculations.
-
-### 9.10 Quick Flip Analyzer
-
-Quickly evaluate a potential flip deal with a streamlined scoring system.
-
-**Key Features:** Fast deal scoring, profit projection, ROI calculation, and 70% Rule MAO (Maximum Allowable Offer) check.
-
-**How to Use:**
-1. Navigate to **Analyzers > Quick Flip Analyzer**.
-2. Enter the ARV, repair costs, and target purchase price.
-3. Instantly see the deal score, projected profit, ROI, and whether it passes the 70% Rule.
-
-### 9.11 Wholesale MAO Calculator
-
-Calculate the Maximum Allowable Offer (MAO) for wholesale deals.
-
-**Key Features:** MAO calculation, investor margin analysis, and offer range recommendations.
-
-**How to Use:**
-1. Navigate to **Analyzers > Wholesale MAO Calculator**.
-2. Enter the ARV, estimated repair costs, and your desired wholesale fee.
-3. The calculator determines the MAO and provides an offer range.
-4. Review the investor margin to ensure the deal is attractive to end buyers.
-
-### 9.12 Rental Property Calculator
-
-Analyze the financial performance of a rental property investment.
-
-**Key Metrics:** Net Operating Income (NOI), Cap Rate, Cash-on-Cash Return, Debt Service Coverage Ratio (DSCR), Gross Rent Multiplier (GRM), and monthly cash flow.
-
-**How to Use:**
-1. Navigate to **Analyzers > Rental Property Calculator**.
-2. Enter the purchase price, financing details, monthly rental income, and operating expenses.
-3. Review all key financial metrics.
-4. Use the DSCR to assess whether the property generates sufficient income to cover debt service.
-
-### 9.13 Short-Term Rental (STR) Analyzer
-
-Analyze Airbnb/VRBO investment potential with locale-aware tax calculations.
-
-**Key Features:** Nightly rate and occupancy modeling, locale-specific lodging/transient tax calculations (e.g., Hawaii GET 4.712% + TAT 10.25%; configurable for other states), monthly and yearly cash flow projections, expense breakdown charts, multi-year revenue projections.
-
-**How to Use:**
-1. Navigate to **Analyzers > STR Analyzer**.
-2. Enter the nightly rate, expected occupancy rate, cleaning fees per turnover, and property expenses.
-3. Review monthly and annual cash flow with locale-specific tax deductions applied automatically.
-4. View charts showing revenue projections and expense breakdowns.
-
-### 9.14 Shared Features
-
-All calculators share these capabilities:
-- **MLS Auto-Import**: One-click data pull from MLS listings (address, purchase price, taxes, insurance)
-- **Export**: Excel (.xlsx) and PDF with professional formatting and agent branding
-- **Email Sharing**: Send results directly to a client contact
-- **Save/Load**: Complex analyses (Investment, Flip, BRRRR, 1031) persist in the database for future reference
-- **Charts**: Pie charts (expense breakdown), line charts (cash flow projections), bar charts (deal scoring)`,
+**Hoku-equivalent queries**:
+- "Run an investment analysis on [address]"
+- "What's the cap rate on [address] at [rent]/month?"
+- "Does this flip pass the 70% rule? ARV [value], rehab [value], purchase [value]"
+- "Calculate net proceeds for [address] selling at [price]"
+- "Calculate the mortgage payment on [price] at [rate]% over 30 years"`,
   },
   {
     id: "reports",
     title: "13. Reports",
     content: `## 13. Reports
 
-The Reports section provides comprehensive analytics organized by role and category. All reports support PDF export, Excel export, and print-friendly format.
+Comprehensive analytics organized by role: market stats, solo-agent performance, team metrics, brokerage operations, and admin checklists. Most reports support PDF export, Excel export, and print-friendly view.
 
-### 13.1 Market Statistics (Red)
+### How do I open Reports?
+1. Sidebar → click **Reports** (or /app/reports).
 
-- **Oahu Annual Resales**: 40 years of residential sales data with line/bar/area charts
-- **Oahu Monthly Report**: SF & condo sales, median prices, DOM, pending inventory, YoY comparisons
-- **Maui Monthly**, **Hawaii Island Monthly**, **Kauai Monthly**: Island-specific market data
-- **Statewide Comparison**: Official Hawaii Realtors stats across all four counties
-- **York & Adams Counties, PA**: RAYAC monthly data with school district breakdowns
+### How do I navigate the categories?
+The Reports page is grouped by audience and color-coded:
+1. **Market Statistics (Red)** — public market data tied to your MLS market.
+2. **Solo Agent (Blue)** — your personal performance.
+3. **Small Teams (Purple)** — team-wide metrics.
+4. **Brokerage (Green)** — brokerage-wide analytics. Visible to brokers/admins only.
+5. **Assistants & Office Admin (Orange)** — operational checklists.
+6. **MLS Agent Leaderboard** — see the dedicated section.
 
-### 13.2 Solo Agent Reports (Blue)
+### How do I open a Market Statistics report?
+1. Open Reports.
+2. In the **Market Statistics** group, click the report tile for your market.
+3. The report renders with charts (line/bar/area), comparison tables, and YoY toggles.
+4. Use the date-range selector at the top to scope the period.
+5. Click **Export PDF** or **Export Excel** in the top-right.
 
-- **Lead Source ROI**: Conversion rates and cost-per-closing by lead source
-- **Pipeline Velocity**: Days per pipeline stage, deal bottleneck identification
-- **Tax & Savings Reserve**: Gross commission vs. tax/expense reserves
-- **Speed-to-Lead Audit**: Average response time to portal leads
+### How do I run a Solo Agent report?
+1. Open Reports → **Solo Agent** group.
+2. Click one:
+   - **Lead Source ROI** — conversion rate and cost-per-closing by source.
+   - **Pipeline Velocity** — average days per pipeline stage; bottleneck flags.
+   - **Tax & Savings Reserve** — gross commission vs. recommended tax/expense reserves.
+   - **Speed-to-Lead Audit** — average response time to portal leads.
+3. Set the date range.
+4. Click **Generate**.
+5. Export PDF/Excel as needed.
 
-### 13.3 Small Teams Reports (Purple)
+### How do I run a Small Teams report?
+1. Open Reports → **Small Teams** group.
+2. Click one:
+   - **Agent Leaderboard** — closings, calls, SMS, showings (radar chart).
+   - **Lead Assignment Fairness** — per-member lead count and conversion rate.
+   - **Team Commission Split Tracker** — house vs agent portions.
+   - **Listing Inventory Health** — active listings, DOM, price-adjustment alerts at 21+ DOM.
+3. Set the date range and click **Generate**.
 
-- **Agent Leaderboard**: Activity vs. results with radar chart comparison
-- **Lead Assignment Fairness**: Per-member leads and conversion rates
-- **Team Commission Split Tracker**: House vs. agent portions
-- **Listing Inventory Health**: Active listings, DOM, price adjustment alerts for 21+ DOM
+### How do I run a Brokerage report?
+1. Open Reports → **Brokerage** group (visible to brokers/admins only).
+2. Click one:
+   - **Company Dollar** — revenue after commissions and expenses.
+   - **Compliance & Audit Log** — signed documents, ID verifications, wire confirmations.
+   - **Brokerage Market Share** — rank by ZIP vs. national brands.
+   - **Agent Retention Risk** — AI flags agents with 40%+ activity drop over 30 days.
+3. Set scope (whole brokerage / office / team).
+4. Click **Generate**.
 
-### 13.4 Brokerage Reports (Green)
+### How do I run the Pending Document Checklist?
+1. Open Reports → **Assistants & Office Admin** group.
+2. Click **Pending Document Checklist**.
+3. Review under-contract deals missing required signatures/forms.
+4. Click any deal to jump to its file.
 
-- **Company Dollar**: Revenue after commissions and expenses
-- **Compliance & Audit Log**: Signed documents, ID verifications, wire confirmations
-- **Brokerage Market Share**: Rank by zip code vs. Big Box brands
-- **Agent Retention Risk**: AI flags for agents with 40%+ activity drop over 30 days
+### How does report routing work?
+Reports auto-filter to your MLS market. You only see market-statistics tiles for your connected MLS region — an agent in a Pacific Northwest market sees PNW market reports, an agent in the Mid-Atlantic sees regional county reports, etc.
 
-### 13.5 Assistants & Office Admin (Orange)
+### How do I export a report?
+1. Open the report.
+2. Click **Export PDF** for a branded PDF, **Export Excel** for the underlying data, or **Print** for the print-friendly view.
 
-- **Pending Document Checklist**: Under-contract deals missing required signatures/forms
-
-### 13.6 Report Routing
-
-Reports are filtered based on your MLS connection. You will only see reports relevant to your market. For example, an agent connected to a Hawaii MLS will see Hawaii market reports, while an agent connected to a Pennsylvania MLS will see Pennsylvania reports.`,
+**Hoku-equivalent queries**:
+- "Show me my Lead Source ROI for last quarter"
+- "What's my pipeline velocity?"
+- "Show me the team leaderboard for [period]"
+- "Generate the company dollar report"
+- "Which agents are flagged for retention risk?"`,
   },
   {
     id: "property-intel",
@@ -1547,55 +1525,83 @@ Market Monitor is an automated MLS alert system that sends notifications to your
     title: "12. Neighborhood Profiles",
     content: `## 12. Neighborhood Profiles
 
-Generate AI-powered neighborhood profiles for marketing materials and client presentations.
+AI-generated, branded neighborhood reports for buyer/seller presentations and marketing. Pulls Census, schools, hazards, crime, and market data into a single 12-14 page PDF (or Word/DOCX).
 
-### 12.1 Creating a Profile
+### How do I open Neighborhood Profiles?
+1. Sidebar → click **Neighborhoods** (or /app/neighborhoods).
 
-1. Navigate to **Neighborhoods** from the main navigation.
-2. Enter: neighborhood name, address, city, state, and optionally architectural style, nearby amenities, and additional context.
-3. Click **Generate** to create the profile using AI (GPT-4).
+### How do I generate a new profile?
+1. Click **+ New Profile** in the top-right.
+2. Enter the **Neighborhood Name** (e.g., [neighborhood]).
+3. Enter the **Address** (any address inside the neighborhood — used to anchor maps and data).
+4. Enter **City** and **State**.
+5. (Optional) Add **Architectural Style** (e.g., Craftsman, Mid-century).
+6. (Optional) Add **Nearby Amenities** (free-text — parks, schools, shopping you want highlighted).
+7. (Optional) Add **Additional Context** (free-text — anything you want the AI to weave into the narrative).
+8. Click **Generate**.
+9. Wait ~10-20 seconds for the AI sections to render.
 
-### 12.2 Profile Sections
+### How do I review the AI sections before exporting?
+1. Open the generated profile.
+2. Scroll through the on-page preview: **Lifestyle & Vibe**, **Location Intelligence**, **Market Pulse**, **Community Resources**, **Local Amenities**.
+3. Click any section's **Edit** button to rewrite the text manually.
+4. Click **Save**.
 
-1. **Lifestyle & Vibe**: Character description, walkability, community feel
-2. **Location Intelligence**: Proximity to transit, commute corridors, accessibility
-3. **Market Pulse** (optional): Median price, days on market, active inventory, price per sqft
-4. **Community Resources**: Schools with district info, safety/law enforcement disclaimer
-5. **Local Amenities**: Parks, shopping, dining organized by type
+### How do I export the profile to PDF?
+1. Click **Export PDF** in the top-right.
+2. The PDF assembles 12-14+ pages with cover, housing facts, market trends, education, age, income, occupation, transportation, schools, amenities, and nearby neighborhoods.
+3. The PDF saves to your downloads.
 
-### 12.3 Data Sources
+### How do I export the profile to Word?
+1. Click **Export Word** (or **DOCX**) in the top-right.
+2. The DOCX saves to your downloads — edit it freely in Word.
 
-Profiles pull from: NCES schools, FBI crime, FEMA/USGS hazards, OpenStreetMap POI, FRED sales trends, state GIS school zones (where available), and Census demographics. School data is cached for 1 year (refreshes August 1).
+### How do I email the profile to a client?
+1. Click **Send to Contact**.
+2. Pick a CRM contact.
+3. (Optional) Edit the cover note.
+4. Click **Send**.
 
-### 12.4 Fair Housing Compliance
+### What's in the exported PDF?
+1. **Cover** — neighborhood map, name, city/state, your branding (headshot, name, license, brokerage logo).
+2. **Housing Facts** — comparison table: ZIP vs County vs State vs USA (median home value, household income, population, median age, housing units, own/rent %).
+3. **Market Trends** — Seller's/Balanced/Buyer's market indicator, months of inventory, sold-to-list ratio, median DOM, median sold price, MoM trend arrows, median estimated value with 1-month and 12-month change.
+4. **Sold Home Stats** — distribution bar charts: price ranges, price/sqft, home sizes, home ages, bedroom counts.
+5. **People Facts** — population, density, change since 2020, median age across geographic levels.
+6. **Education Levels** — horizontal bars (graduate/pro, bachelor's, some college, associate's, HS, less than HS).
+7. **Age Distribution** — bars by age group (Under 18 → 65+).
+8. **Household Income** — brackets from >$200K down to <$25K.
+9. **Occupational Categories** — management, service, sales, construction, production.
+10. **Households with Children** — married with/without children, single with children.
+11. **Transportation Modes** — drive/carpool, walk, bicycle, public transit, work from home.
+12. **Economy** — multi-geo comparison + commute time distribution bar chart.
+13. **Quality of Life** — elevation, rainfall, avg temperatures, commute time, superfund/brownfield sites.
+14. **Schools** — up to 15 schools: type, grade range, enrollment, student-teacher ratio.
+15. **Walkability** — Walk Score with label.
+16. **Lifestyle & Vibe** — AI narrative.
+17. **Location Intelligence** — AI proximity/accessibility analysis.
+18. **Local Amenities** — parks, shopping, dining organized by category.
+19. **Nearby Neighborhoods** — up to 6 micro-neighborhoods with median home value, home count, population.
 
-Every profile includes a built-in Fair Housing Act compliance check that validates no discriminatory language is present.
+### Where does the data come from?
+- **Census ACS 5-year** — demographics, education, income, occupation, commute (4 geographic levels).
+- **NCES** — public + private schools (cached for 1 year, refreshes August 1).
+- **FBI CDE** — county crime statistics.
+- **FEMA NRI / USGS** — hazard risk ratings.
+- **OpenStreetMap** — points of interest (POIs).
+- **FRED** — local sales trends.
+- **State GIS** — school zone boundaries (Hawaii and other states with public GIS layers).
 
-### 12.5 Export
+### How does Fair Housing compliance work?
+1. Every generated profile runs through a built-in **Fair Housing Act compliance check** before display.
+2. The check flags discriminatory language and re-prompts the AI to rewrite if found.
+3. You can also toggle Fair Housing Mode in **Settings** to require an extra confirmation before export.
 
-Export profiles as a professional multi-page PDF (12-14+ pages) or Word/DOCX. The PDF includes:
-
-1. **Cover Page**: Neighborhood map, name, city/state, agent branding (headshot, name, license, brokerage logo)
-2. **Housing Facts & Stats**: Comparison table (ZIP vs County vs State vs USA) with median home value, household income, population, median age, housing units, own/rent percentages
-3. **Market Trends**: Market type indicator (Seller's/Balanced/Buyer's Market), key stats cards (months of inventory, sold-to-list, median DOM, median sold price), MoM trend arrows for all metrics, median estimated value with 1-month and 12-month change
-4. **Sold Home Stats**: Distribution bar charts showing price ranges, price per sqft, home sizes, home ages, and bedroom counts of recently sold homes
-5. **People Facts & Stats**: Population, density, population change since 2020, median age across geographic levels
-6. **Education Levels**: Horizontal bar charts showing graduate/professional, bachelor's, some college, associate's, high school, less than HS
-7. **Age Distribution**: Bar chart showing population by age group (Under 18 through 65+)
-8. **Household Income Brackets**: Bar chart from >$200K down to <$25K
-9. **Occupational Categories**: Bar chart of employment categories (management, service, sales, construction, production)
-10. **Households with Children**: Breakdown of married with/without children and single with children
-11. **Transportation Modes**: How people get to work (drive/carpool, walk, bicycle, public transit, work from home)
-12. **Economy**: Multi-geo comparison table with income, commute time; commute time distribution bar chart
-13. **Quality of Life**: Elevation, annual rainfall, average temperatures (Jan/Jul min/max), commute time, superfund/brownfield sites
-14. **Schools**: Table of up to 15 schools with type, grade range, enrollment, and student-teacher ratio
-15. **Walkability**: Walk score display with label
-16. **Lifestyle & Vibe**: AI-generated character narrative
-17. **Location Intelligence**: AI-generated proximity and accessibility analysis
-18. **Local Amenities**: Parks, shopping, and dining organized by category
-19. **Nearby Neighborhoods**: Grid of up to 6 micro-neighborhoods with median home value, number of homes, and population
-
-Census data is automatically fetched from the ACS 5-year survey at 4 geographic levels when you export the PDF.`,
+**Hoku-equivalent queries**:
+- "Generate a neighborhood profile for [neighborhood]"
+- "Make a profile for [city]"
+- "Export the [neighborhood] profile to PDF"
+- "Send the [neighborhood] profile to [contact]"`,
   },
   {
     id: "integrations",
@@ -2004,31 +2010,60 @@ The Showing Scheduler provides a public-facing page where your clients can sched
     title: "22. Email Blast",
     content: `## 22. Email Blast
 
-Email Blast lets you send MLS neighborhood updates to your CRM contacts on a recurring schedule. You can also use it for Broker's Open announcements to share your current listings with other agents.
+Email Blast sends MLS neighborhood listing updates to CRM contacts on a recurring schedule. Also used for Broker's Open announcements to share your active listings with other agents in the market.
 
-### 22.1 Creating a Blast
+### How do I open Email Blast?
+1. In the left sidebar, click **Opportunities** to expand it.
+2. Click **Email Blast**.
 
-1. Navigate to **Email Blast** from the main navigation.
-2. Click **+ New Blast**.
-3. Enter the neighborhood or subdivision name and one or more ZIP codes.
-4. Select the MLS statuses to include: Active, Closed, Price Change, or any combination.
-5. Search your CRM contacts and add them to the recipient list.
-6. Set a schedule: Weekly, Biweekly, Monthly, or Manual (send only when you choose).
-7. Click **Create** to save the blast.
+### How do I create a new Email Blast?
+1. Open Email Blast.
+2. Click **+ New Blast** in the top-right.
+3. Type a **Blast Name** (e.g., "[neighborhood] weekly listings").
+4. In the **Search Criteria** section:
+   - Type the neighborhood or subdivision name
+   - Add one or more ZIP codes
+   - Check the MLS statuses to include: **Active**, **Closed**, **Price Change** (any combination)
+5. In the **Recipients** section, search your CRM contacts and add them to the list.
+6. Set the **Schedule**: Weekly, Biweekly, Monthly, or Manual (send only when you trigger it).
+7. Click **Create**.
 
-### 22.2 Sending a Blast
+### How do I send a blast right now?
+1. Open Email Blast.
+2. Find the blast in the list.
+3. Click **Send Now** on the row.
+4. The system pulls the latest MLS data for the configured area, builds the email, and sends to all recipients.
 
-- Scheduled blasts run automatically at the configured interval.
-- Click **Send Now** on any blast to trigger it immediately, regardless of schedule.
-- Each blast pulls the latest MLS data for the configured area and statuses before sending.
+### How do I edit a blast?
+1. Click the blast row to open its detail page.
+2. Click **Edit** in the top-right.
+3. Adjust criteria, recipients, or schedule.
+4. Click **Save**.
 
-### 22.3 Broker's Open
+### How do I pause a recurring blast?
+1. Open the blast detail page.
+2. Toggle **Active** off.
+3. Scheduled sends stop until toggled back on.
 
-Use Email Blast to send your current listings to other agents for Broker's Open events.
+### How do I see who received my last blast?
+1. Open the blast detail page.
+2. Click the **History** tab.
+3. Each row shows send date, recipient count, opens, clicks, and any bounces.
 
-1. Export agents from the **MLS Agent Leaderboard** to your CRM (they are tagged "MLS Agent").
-2. Create a new blast targeting contacts tagged "MLS Agent."
-3. Include your active listings and send on demand or on a schedule.`,
+### How do I create a Broker's Open blast (send my listings to other agents)?
+1. First, build the recipient list: open **Reports** → **MLS Agent Leaderboard**, generate the leaderboard, click **Export to CRM**. Agents are pushed to your CRM tagged "MLS Agent."
+2. Open Email Blast and click **+ New Blast**.
+3. In Recipients, filter by the **"MLS Agent"** tag to add the full agent list.
+4. In Search Criteria, leave the neighborhood blank and check **My Listings Only** (the blast pulls your active listings instead of an area's listings).
+5. Set schedule to **Manual** for one-off Broker's Open invites, or recurring if you regularly share inventory.
+6. Click **Create**, then click **Send Now**.
+
+### Hoku-equivalent
+- "Create a weekly Email Blast for [neighborhood] active listings"
+- "Send my [blast name] now"
+- "Pause my [blast name] blast"
+- "Show me last week's blast performance for [blast name]"
+- "Send my listings to MLS agents in my CRM for a Broker's Open"`,
   },
   {
     id: "mls-leaderboard",
