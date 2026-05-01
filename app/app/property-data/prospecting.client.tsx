@@ -1358,7 +1358,11 @@ export default function Prospecting() {
         if (!isAbsenteeOwner(p)) return false;
         if (ownershipCutoff) {
           const owned = getOwnershipDate(p);
-          if (!owned || owned > ownershipCutoff) return false;
+          // Lenient: only drop when we know the date AND it fails the cutoff.
+          // When the date is unknown (no sale record + no mortgage origination),
+          // pass it through — the alternative is silently dropping every record
+          // in markets where public-records mortgage data is sparse.
+          if (owned && owned > ownershipCutoff) return false;
         }
         return true;
       });
@@ -1417,8 +1421,9 @@ export default function Prospecting() {
         if (!propVal || propVal <= 0) return false;
         if (minAvm > 0 && propVal < minAvm) return false;
         const ownershipDate = getOwnershipDate(p);
-        if (!ownershipDate) return false;
-        if (ownershipDate > cutoffDate) return false;
+        // Lenient: only drop when ownership date is known AND fails the cutoff.
+        // When unknown (no sale record + no mortgage origination), pass through.
+        if (ownershipDate && ownershipDate > cutoffDate) return false;
         const purchasePrice = getSaleAmount(p) || 0;
         if (purchasePrice > 0 && propVal <= purchasePrice) return false;
         return true;
@@ -1457,7 +1462,9 @@ export default function Prospecting() {
       const ownershipFiltered = invCutoff
         ? allRaw.filter((p) => {
             const owned = getOwnershipDate(p);
-            return owned && owned <= invCutoff;
+            // Lenient: only drop when ownership date is known AND fails cutoff.
+            // Unknown date passes through.
+            return !owned || owned <= invCutoff;
           })
         : allRaw;
 

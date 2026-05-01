@@ -1,6 +1,8 @@
 ﻿"use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, lazy, Suspense } from "react";
+
+const PropertyDetailModal = lazy(() => import("../../property-data/property-detail-modal.client"));
 
 interface DomResult {
   listingKey?: string;
@@ -82,6 +84,11 @@ export function DomProspectingClient() {
   const [alerts, setAlerts] = useState<any[]>([]);
   const [alertsLoading, setAlertsLoading] = useState(false);
   const [unreadAlerts, setUnreadAlerts] = useState(0);
+  // Selected DOM result for the property-detail modal. We pass MLS-style
+  // overrides (address, beds, baths, list price, type) so the modal renders
+  // immediately with what we know from the listing; the modal fetches its
+  // own enrichment (REAPI features, comps, Genie AVM) after it opens.
+  const [selectedDomResult, setSelectedDomResult] = useState<DomResult | null>(null);
 
   // Load monitored properties when tab is selected
   useEffect(() => {
@@ -605,6 +612,7 @@ export function DomProspectingClient() {
                       return (
                         <div
                           key={r.listingKey || i}
+                          onClick={() => setSelectedDomResult(r)}
                           style={{
                             padding: "12px 14px",
                             borderRadius: 8,
@@ -613,6 +621,14 @@ export function DomProspectingClient() {
                             display: "grid",
                             gridTemplateColumns: "1fr auto",
                             gap: 12,
+                            cursor: "pointer",
+                            transition: "transform 0.1s, box-shadow 0.1s",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.boxShadow = "none";
                           }}
                         >
                           <div>
@@ -889,6 +905,49 @@ export function DomProspectingClient() {
             );
           })}
         </div>
+      )}
+
+      {/* Property Detail Modal */}
+      {selectedDomResult && (
+        <Suspense fallback={null}>
+          <PropertyDetailModal
+            property={{
+              identifier: { attomId: selectedDomResult.listingKey ? Number(selectedDomResult.listingKey) || undefined : undefined },
+              address: {
+                oneLine: [selectedDomResult.address, selectedDomResult.city, selectedDomResult.state, selectedDomResult.zipCode]
+                  .filter(Boolean)
+                  .join(", "),
+                line1: selectedDomResult.address,
+                locality: selectedDomResult.city,
+                countrySubd: selectedDomResult.state,
+                postal1: selectedDomResult.zipCode,
+              },
+              location:
+                selectedDomResult.latitude && selectedDomResult.longitude
+                  ? { latitude: String(selectedDomResult.latitude), longitude: String(selectedDomResult.longitude) }
+                  : undefined,
+              summary: {
+                propType: selectedDomResult.propertyType,
+                propSubType: selectedDomResult.propertyType,
+                yearBuilt: selectedDomResult.yearBuilt,
+              },
+              building: {
+                rooms: { beds: selectedDomResult.beds, bathsFull: selectedDomResult.baths },
+                size: { livingSize: selectedDomResult.sqft },
+                summary: { yearBuilt: selectedDomResult.yearBuilt },
+              },
+            }}
+            onClose={() => setSelectedDomResult(null)}
+            mlsListPrice={selectedDomResult.listPrice}
+            mlsAddress={selectedDomResult.address}
+            mlsBeds={selectedDomResult.beds}
+            mlsBaths={selectedDomResult.baths}
+            mlsSqft={selectedDomResult.sqft}
+            mlsYearBuilt={selectedDomResult.yearBuilt}
+            mlsPropertyType={selectedDomResult.propertyType}
+            mlsPropertySubType={selectedDomResult.propertyType}
+          />
+        </Suspense>
       )}
     </div>
   );
