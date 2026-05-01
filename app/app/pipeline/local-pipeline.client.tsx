@@ -482,7 +482,7 @@ export default function LocalPipelineClient() {
                   minWidth: 240,
                   maxWidth: 280,
                   flex: "1 0 240px",
-                  background: isDragTarget ? `${color}10` : "#f9fafb",
+                  background: isDragTarget ? `${color}10` : "hsl(var(--muted))",
                   borderRadius: 12,
                   display: "flex",
                   flexDirection: "column",

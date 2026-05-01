@@ -1,4 +1,4 @@
-import { supabaseServer } from "@/lib/supabase/server";
+﻿import { supabaseServer } from "@/lib/supabase/server";
 
 export default async function AdminDiagnosticPage() {
   const supabase = await supabaseServer();
@@ -58,7 +58,7 @@ export default async function AdminDiagnosticPage() {
     <div style={{ padding: 32, maxWidth: 800 }}>
       <h1 style={{ fontSize: 32, fontWeight: 800, marginBottom: 24 }}>Admin System Diagnostic</h1>
 
-      <div style={{ background: "white", borderRadius: 12, padding: 24, marginBottom: 20 }}>
+      <div style={{ background: "hsl(var(--card))", borderRadius: 12, padding: 24, marginBottom: 20 }}>
         <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 16 }}>User Status</h2>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <tbody>
@@ -92,7 +92,7 @@ export default async function AdminDiagnosticPage() {
         </table>
       </div>
 
-      <div style={{ background: "white", borderRadius: 12, padding: 24, marginBottom: 20 }}>
+      <div style={{ background: "hsl(var(--card))", borderRadius: 12, padding: 24, marginBottom: 20 }}>
         <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 16 }}>Database Tables</h2>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <tbody>

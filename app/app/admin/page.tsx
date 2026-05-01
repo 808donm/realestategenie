@@ -133,7 +133,7 @@ export default async function AdminOverviewPage() {
         />
       </div>
 
-      <div style={{ background: "white", borderRadius: 12, padding: 24, border: "1px solid hsl(var(--border))" }}>
+      <div style={{ background: "hsl(var(--card))", borderRadius: 12, padding: 24, border: "1px solid hsl(var(--border))" }}>
         <h2 style={{ fontSize: 18, fontWeight: 700, margin: "0 0 16px 0" }}>Quick Actions</h2>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
           <QuickActionButton href="/app/admin/users">Manage Users</QuickActionButton>
@@ -153,7 +153,7 @@ function StatCard({ title, value, icon, color }: { title: string; value: number;
   return (
     <div
       style={{
-        background: "white",
+        background: "hsl(var(--card))",
         borderRadius: 12,
         padding: 24,
         border: "1px solid hsl(var(--border))",

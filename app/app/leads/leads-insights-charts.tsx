@@ -45,7 +45,7 @@ export default function LeadsInsightsCharts({
       {/* Heat Score Distribution */}
       <div
         style={{
-          background: "white",
+          background: "hsl(var(--card))",
           borderRadius: 12,
           padding: 24,
           border: "1px solid #e5e7eb",
@@ -75,7 +75,7 @@ export default function LeadsInsightsCharts({
       {/* Pipeline Stage Breakdown */}
       <div
         style={{
-          background: "white",
+          background: "hsl(var(--card))",
           borderRadius: 12,
           padding: 24,
           border: "1px solid #e5e7eb",
@@ -111,7 +111,7 @@ export default function LeadsInsightsCharts({
       {/* Leads Over Time */}
       <div
         style={{
-          background: "white",
+          background: "hsl(var(--card))",
           borderRadius: 12,
           padding: 24,
           border: "1px solid #e5e7eb",
@@ -143,7 +143,7 @@ export default function LeadsInsightsCharts({
       {/* Buyer Readiness */}
       <div
         style={{
-          background: "white",
+          background: "hsl(var(--card))",
           borderRadius: 12,
           padding: 24,
           border: "1px solid #e5e7eb",

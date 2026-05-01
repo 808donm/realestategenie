@@ -173,13 +173,13 @@ export default function CalculatorGrid({ cards }: { cards: CalculatorCard[] }) {
               onClick={() => setDrawerCalc({ href: card.href, title: card.title })}
               style={{
                 padding: 24,
-                border: "1px solid #e6e6e6",
+                border: "1px solid hsl(var(--border))",
                 borderRadius: 12,
                 textDecoration: "none",
                 color: "inherit",
                 display: "block",
                 transition: "border-color 0.2s",
-                background: card.background || undefined,
+                background: card.background || "hsl(var(--card))",
                 cursor: "pointer",
               }}
               draggable={false}

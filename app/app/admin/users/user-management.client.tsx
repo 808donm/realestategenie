@@ -420,7 +420,7 @@ export default function UserManagementClient({ users, plans, subscriptionMap }: 
         >
           <div
             style={{
-              background: "white",
+              background: "hsl(var(--card))",
               borderRadius: 12,
               padding: 32,
               width: "100%",
@@ -485,7 +485,7 @@ export default function UserManagementClient({ users, plans, subscriptionMap }: 
                   border: "1px solid hsl(var(--border))",
                   borderRadius: 8,
                   fontSize: 14,
-                  background: "white",
+                  background: "hsl(var(--card))",
                 }}
               >
                 <option value="">Select a plan...</option>
@@ -567,7 +567,7 @@ export default function UserManagementClient({ users, plans, subscriptionMap }: 
                   fontWeight: 600,
                   borderRadius: 8,
                   border: "1px solid hsl(var(--border))",
-                  background: "white",
+                  background: "hsl(var(--card))",
                   color: "hsl(var(--foreground))",
                   cursor: "pointer",
                 }}

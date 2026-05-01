@@ -800,7 +800,7 @@ export default function Exchange1031Client({ savedExchanges, investmentPropertie
                     fontSize: 12,
                     color: "red",
                     border: "1px solid red",
-                    background: "white",
+                    background: "hsl(var(--card))",
                   }}
                 >
                   Remove

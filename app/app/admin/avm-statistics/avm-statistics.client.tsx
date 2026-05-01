@@ -73,7 +73,7 @@ interface AvmStats {
 const fmt = (n: number) => "$" + n.toLocaleString();
 
 const card = {
-  background: "white",
+  background: "hsl(var(--card))",
   borderRadius: 12,
   border: "1px solid hsl(var(--border))",
   padding: 20,

@@ -59,7 +59,7 @@ export default async function UsersManagementPage() {
 
       <div
         style={{
-          background: "white",
+          background: "hsl(var(--card))",
           borderRadius: 12,
           border: "1px solid hsl(var(--border))",
           overflow: "hidden",

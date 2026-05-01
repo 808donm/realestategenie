@@ -1974,8 +1974,8 @@ export default function Prospecting() {
         key={prop.identifier?.attomId || idx}
         onClick={() => setSelectedProperty(prop)}
         style={{
-          background: "#fff",
-          border: "1px solid #e5e7eb",
+          background: "hsl(var(--card))",
+          border: "1px solid hsl(var(--border))",
           borderRadius: 10,
           padding: 16,
           cursor: "pointer",
@@ -2032,7 +2032,7 @@ export default function Prospecting() {
                 </span>
               )}
             </div>
-            <div style={{ fontSize: 13, color: "#6b7280" }}>
+            <div style={{ fontSize: 13, color: "hsl(var(--muted-foreground))" }}>
               {[
                 beds != null ? `${beds} bed` : null,
                 baths != null ? `${baths} bath` : null,
@@ -2042,7 +2042,7 @@ export default function Prospecting() {
                 .filter(Boolean)
                 .join(" · ")}
             </div>
-            <div style={{ fontSize: 13, color: "#6b7280", marginTop: 2 }}>
+            <div style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>
               {owner ? (
                 <>
                   {isOwnerFromMortgage(prop) ? "Mortgagor" : "Owner"}: {owner}
@@ -2100,10 +2100,10 @@ export default function Prospecting() {
             </div>
             {/* Additional owners (owner 2, 3, 4) */}
             {ownerObj?.owner2?.fullName && (
-              <div style={{ fontSize: 12, color: "#6b7280", marginTop: 1 }}>Owner 2: {ownerObj.owner2.fullName}</div>
+              <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 1 }}>Owner 2: {ownerObj.owner2.fullName}</div>
             )}
             {ownerObj?.owner3?.fullName && (
-              <div style={{ fontSize: 12, color: "#6b7280", marginTop: 1 }}>Owner 3: {ownerObj.owner3.fullName}</div>
+              <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 1 }}>Owner 3: {ownerObj.owner3.fullName}</div>
             )}
 
             {/* Always show mailing address if available — key contact point for absentee owners.
@@ -2127,7 +2127,7 @@ export default function Prospecting() {
               yearsOwned != null ||
               saleDateStr ||
               ownerObj?.ownerRelationshipType) && (
-              <div style={{ marginTop: 4, display: "flex", flexWrap: "wrap", gap: 8, fontSize: 11, color: "#6b7280" }}>
+              <div style={{ marginTop: 4, display: "flex", flexWrap: "wrap", gap: 8, fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
                 {(() => {
                   const occ = (ownerObj?.absenteeOwnerStatus || "").toUpperCase();
                   const ind = (prop.summary?.absenteeInd || "").toUpperCase();
@@ -2183,9 +2183,9 @@ export default function Prospecting() {
 
             {qpubTmk && qpubUrl && (
               <div
-                style={{ fontSize: 12, color: "#6b7280", marginTop: 2, display: "flex", alignItems: "center", gap: 6 }}
+                style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2, display: "flex", alignItems: "center", gap: 6 }}
               >
-                <span style={{ fontFamily: "monospace", fontWeight: 600, color: "#374151" }}>TMK: {qpubTmk}</span>
+                <span style={{ fontFamily: "monospace", fontWeight: 600, color: "hsl(var(--foreground))" }}>TMK: {qpubTmk}</span>
                 <a
                   href={qpubUrl}
                   target="_blank"
@@ -2199,7 +2199,7 @@ export default function Prospecting() {
             )}
 
             {/* Key financial data row — always visible for all modes */}
-            <div style={{ marginTop: 6, display: "flex", flexWrap: "wrap", gap: 12, fontSize: 12, color: "#374151" }}>
+            <div style={{ marginTop: 6, display: "flex", flexWrap: "wrap", gap: 12, fontSize: 12, color: "hsl(var(--foreground))" }}>
               {avmVal != null && (
                 <span>
                   <strong>Estimated Value:</strong> <span style={{ color: "#059669" }}>{fmt(avmVal)}</span>
@@ -2236,7 +2236,7 @@ export default function Prospecting() {
                     {fmt(heEquity)}
                   </span>
                   {heLtv != null && (
-                    <span style={{ fontSize: 11, color: "#6b7280", marginLeft: 4 }}>
+                    <span style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginLeft: 4 }}>
                       (LTV {Number(heLtv).toFixed(0)}%)
                     </span>
                   )}
@@ -2279,11 +2279,11 @@ export default function Prospecting() {
                     Owned {yearsOwned} years
                   </span>
                   {ownershipDate && (
-                    <span style={{ color: "#6b7280" }}>
+                    <span style={{ color: "hsl(var(--muted-foreground))" }}>
                       Purchased: {ownershipDate.toLocaleDateString("en-US", { month: "short", year: "numeric" })}
                     </span>
                   )}
-                  {lastSale != null && <span style={{ color: "#6b7280" }}>for {fmt(lastSale)}</span>}
+                  {lastSale != null && <span style={{ color: "hsl(var(--muted-foreground))" }}>for {fmt(lastSale)}</span>}
                   {equity != null && equity > 0 && (
                     <span style={{ color: "#059669", fontWeight: 600 }}>Est. appreciation: +{fmt(equity)}</span>
                   )}
@@ -2523,10 +2523,10 @@ export default function Prospecting() {
                       <strong>Sold:</strong> {fmt(lastSale)}
                     </span>
                   ) : (
-                    <span style={{ color: "#9ca3af" }}>
+                    <span style={{ color: "hsl(var(--muted-foreground))" }}>
                       <strong>Sale price:</strong> Not disclosed
                       {avmVal != null && (
-                        <span style={{ color: "#6b7280" }}>
+                        <span style={{ color: "hsl(var(--muted-foreground))" }}>
                           {" "}
                           — <strong>Est. value:</strong> {fmt(avmVal)}
                         </span>
@@ -2543,7 +2543,7 @@ export default function Prospecting() {
                       <strong>$/sqft:</strong> ${Math.round(lastSale / sqft).toLocaleString()}
                     </span>
                   ) : sqft && avmVal ? (
-                    <span style={{ color: "#9ca3af" }}>
+                    <span style={{ color: "hsl(var(--muted-foreground))" }}>
                       <strong>Est. $/sqft:</strong> ~${Math.round(avmVal / sqft).toLocaleString()}
                     </span>
                   ) : null}
@@ -2572,7 +2572,7 @@ export default function Prospecting() {
                   )}
                 </div>
                 {hasRealAvm && avmLow != null && avmHigh != null && avmVal != null && (
-                  <div style={{ marginTop: 4, fontSize: 11, color: "#6b7280" }}>
+                  <div style={{ marginTop: 4, fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
                     AVM range: {fmt(avmLow)} – {fmt(avmHigh)} (est. {fmt(avmVal)})
                   </div>
                 )}
@@ -2587,7 +2587,7 @@ export default function Prospecting() {
             {/* Primary value metric per mode */}
             {mode === "absentee" && avmVal != null && (
               <div>
-                <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", textTransform: "uppercase", letterSpacing: 0.5 }}>
                   Estimated Value
                 </div>
                 <div style={{ fontWeight: 700, fontSize: 15, color: "#059669" }}>{fmt(avmVal)}</div>
@@ -2595,7 +2595,7 @@ export default function Prospecting() {
             )}
             {mode === "equity" && equity != null && (
               <div>
-                <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", textTransform: "uppercase", letterSpacing: 0.5 }}>
                   Est. Equity
                 </div>
                 <div style={{ fontWeight: 700, fontSize: 15, color: equity > 0 ? "#a16207" : "#dc2626" }}>
@@ -2609,7 +2609,7 @@ export default function Prospecting() {
             )}
             {mode === "equity" && yearsOwned != null && (
               <div>
-                <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", textTransform: "uppercase", letterSpacing: 0.5 }}>
                   Tenure
                 </div>
                 <div style={{ fontWeight: 700, fontSize: 15, color: yearsOwned >= 20 ? "#059669" : "#10b981" }}>
@@ -2619,7 +2619,7 @@ export default function Prospecting() {
             )}
             {mode === "foreclosure" && distress?.ltvPct != null && (
               <div>
-                <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", textTransform: "uppercase", letterSpacing: 0.5 }}>
                   LTV
                 </div>
                 <div
@@ -2635,18 +2635,18 @@ export default function Prospecting() {
             )}
             {mode === "radius" && (
               <div>
-                <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", textTransform: "uppercase", letterSpacing: 0.5 }}>
                   {lastSale != null && lastSale > 0 ? "Sale Price" : "Estimated Value"}
                 </div>
                 <div style={{ fontWeight: 700, fontSize: 15, color: "#7c3aed" }}>
                   {lastSale != null && lastSale > 0 ? fmt(lastSale) : avmVal != null ? fmt(avmVal) : "N/A"}
                 </div>
-                {saleDateStr && <div style={{ fontSize: 11, color: "#9ca3af" }}>{saleDateStr}</div>}
+                {saleDateStr && <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>{saleDateStr}</div>}
               </div>
             )}
             {mode === "investor" && avmVal != null && (
               <div>
-                <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", textTransform: "uppercase", letterSpacing: 0.5 }}>
                   Estimated Value
                 </div>
                 <div style={{ fontWeight: 700, fontSize: 15, color: "#059669" }}>{fmt(avmVal)}</div>
@@ -2655,7 +2655,7 @@ export default function Prospecting() {
             {/* Rental AVM — shown for all modes when available */}
             {rentalVal != null && (
               <div>
-                <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", textTransform: "uppercase", letterSpacing: 0.5 }}>
                   Rent Est.
                 </div>
                 <div style={{ fontWeight: 700, fontSize: 15, color: "#7c3aed" }}>
@@ -2680,8 +2680,8 @@ export default function Prospecting() {
       <div
         key={`${group.ownerName}|${idx}`}
         style={{
-          background: "#fff",
-          border: "1px solid #e5e7eb",
+          background: "hsl(var(--card))",
+          border: "1px solid hsl(var(--border))",
           borderRadius: 10,
           overflow: "hidden",
         }}
@@ -2736,10 +2736,10 @@ export default function Prospecting() {
                 )}
               </div>
               {group.mailingAddress && (
-                <div style={{ fontSize: 12, color: "#6b7280" }}>Mailing: {group.mailingAddress}</div>
+                <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>Mailing: {group.mailingAddress}</div>
               )}
               {group.oldestYearBuilt && (
-                <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
+                <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>
                   Oldest property: Built {group.oldestYearBuilt}
                   {group.oldestYearBuilt < 1980 && (
                     <span
@@ -2761,19 +2761,19 @@ export default function Prospecting() {
             </div>
             <div style={{ display: "flex", gap: 16, flexWrap: "wrap", textAlign: "right" }}>
               <div>
-                <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", textTransform: "uppercase", letterSpacing: 0.5 }}>
                   Properties
                 </div>
                 <div style={{ fontWeight: 700, fontSize: 15, color: "#3b82f6" }}>{group.properties.length}</div>
               </div>
               <div>
-                <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", textTransform: "uppercase", letterSpacing: 0.5 }}>
                   Total Value
                 </div>
                 <div style={{ fontWeight: 700, fontSize: 15, color: "#059669" }}>{fmt(group.totalAvmValue)}</div>
               </div>
               <div>
-                <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", textTransform: "uppercase", letterSpacing: 0.5 }}>
                   Tax Burden/yr
                 </div>
                 <div
@@ -2784,7 +2784,7 @@ export default function Prospecting() {
               </div>
               {group.totalRentalIncome > 0 && (
                 <div>
-                  <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                  <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", textTransform: "uppercase", letterSpacing: 0.5 }}>
                     Rent Est./mo
                   </div>
                   <div style={{ fontWeight: 700, fontSize: 15, color: "#7c3aed" }}>
@@ -2799,7 +2799,7 @@ export default function Prospecting() {
               )}
               {group.totalEquity != null && (
                 <div>
-                  <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                  <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", textTransform: "uppercase", letterSpacing: 0.5 }}>
                     Est. Equity
                   </div>
                   <div style={{ fontWeight: 700, fontSize: 15, color: group.totalEquity >= 0 ? "#059669" : "#dc2626" }}>
@@ -2810,7 +2810,7 @@ export default function Prospecting() {
               )}
             </div>
           </div>
-          <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 4 }}>
+          <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>
             {isExpanded ? "Click to collapse" : "Click to see individual properties"}
           </div>
         </div>
@@ -2846,7 +2846,7 @@ export default function Prospecting() {
                 padding: 14,
                 borderRadius: 10,
                 border: `2px solid ${m.color}`,
-                background: `${m.color}08`,
+                background: `${m.color}1A`,
                 cursor: "pointer",
                 textAlign: "left",
                 textDecoration: "none",
@@ -2854,7 +2854,7 @@ export default function Prospecting() {
               }}
             >
               <div style={{ fontWeight: 700, fontSize: 13, color: m.color, marginBottom: 4 }}>{m.label} &rarr;</div>
-              <div style={{ fontSize: 11, color: "#6b7280", lineHeight: 1.4 }}>{m.desc}</div>
+              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", lineHeight: 1.4 }}>{m.desc}</div>
             </a>
           ) : (
             <button
@@ -2882,25 +2882,30 @@ export default function Prospecting() {
               style={{
                 padding: 14,
                 borderRadius: 10,
-                border: mode === m.id ? `2px solid ${m.color}` : "1px solid #e5e7eb",
-                background: mode === m.id ? `${m.color}08` : "#fff",
+                border: mode === m.id ? `2px solid ${m.color}` : "1px solid hsl(var(--border))",
+                background: mode === m.id ? `${m.color}1A` : "hsl(var(--card))",
                 cursor: "pointer",
                 textAlign: "left",
               }}
             >
               <div
-                style={{ fontWeight: 700, fontSize: 13, color: mode === m.id ? m.color : "#374151", marginBottom: 4 }}
+                style={{
+                  fontWeight: 700,
+                  fontSize: 13,
+                  color: mode === m.id ? m.color : "hsl(var(--foreground))",
+                  marginBottom: 4,
+                }}
               >
                 {m.label}
               </div>
-              <div style={{ fontSize: 11, color: "#6b7280", lineHeight: 1.4 }}>{m.desc}</div>
+              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", lineHeight: 1.4 }}>{m.desc}</div>
             </button>
           ),
         )}
       </div>
 
       {/* Search Form */}
-      <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 20, marginBottom: 20 }}>
+      <div style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, padding: 20, marginBottom: 20 }}>
         {/* Search mode toggle for Just Sold Farming */}
         {mode === "radius" && (
           <div style={{ display: "flex", gap: 0, marginBottom: 12 }}>
@@ -2910,7 +2915,7 @@ export default function Prospecting() {
                 padding: "6px 16px",
                 fontSize: 12,
                 fontWeight: 600,
-                border: "1px solid #d1d5db",
+                border: "1px solid hsl(var(--border))",
                 borderRadius: "6px 0 0 6px",
                 cursor: "pointer",
                 background: farmSearchMode === "zip" ? "#7c3aed" : "#fff",
@@ -2925,7 +2930,7 @@ export default function Prospecting() {
                 padding: "6px 16px",
                 fontSize: 12,
                 fontWeight: 600,
-                border: "1px solid #d1d5db",
+                border: "1px solid hsl(var(--border))",
                 borderLeft: "none",
                 borderRadius: "0 6px 6px 0",
                 cursor: "pointer",
@@ -2942,7 +2947,7 @@ export default function Prospecting() {
           {/* Address input for radius/address mode */}
           {mode === "radius" && farmSearchMode === "address" ? (
             <div style={{ flex: 1, minWidth: 250 }}>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 4 }}>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "hsl(var(--foreground))", marginBottom: 4 }}>
                 Sold Property Address
               </label>
               <input
@@ -2955,14 +2960,14 @@ export default function Prospecting() {
                   width: "100%",
                   padding: "8px 12px",
                   fontSize: 14,
-                  border: "1px solid #d1d5db",
+                  border: "1px solid hsl(var(--border))",
                   borderRadius: 6,
                 }}
               />
             </div>
           ) : (
             <div>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 4 }}>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "hsl(var(--foreground))", marginBottom: 4 }}>
                 Zip Code
               </label>
               <input
@@ -2979,12 +2984,12 @@ export default function Prospecting() {
                 }}
                 placeholder="e.g. 80211"
                 onKeyDown={(e) => e.key === "Enter" && handleSearch(1)}
-                style={{ width: 140, padding: "8px 12px", fontSize: 14, border: "1px solid #d1d5db", borderRadius: 6 }}
+                style={{ width: 140, padding: "8px 12px", fontSize: 14, border: "1px solid hsl(var(--border))", borderRadius: 6 }}
               />
             </div>
           )}
           <div>
-            <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 4 }}>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "hsl(var(--foreground))", marginBottom: 4 }}>
               Property Type
             </label>
             <select
@@ -2998,7 +3003,7 @@ export default function Prospecting() {
                   setPropertyCacheKey("");
                 }
               }}
-              style={{ padding: "8px 12px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 6 }}
+              style={{ padding: "8px 12px", fontSize: 13, border: "1px solid hsl(var(--border))", borderRadius: 6 }}
             >
               {PROPERTY_TYPES.map((t) => (
                 <option key={t.value} value={t.value}>
@@ -3010,7 +3015,7 @@ export default function Prospecting() {
 
           {(mode === "absentee" || mode === "equity" || mode === "investor") && (
             <div>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 4 }}>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "hsl(var(--foreground))", marginBottom: 4 }}>
                 Min Years Owned
               </label>
               <input
@@ -3022,7 +3027,7 @@ export default function Prospecting() {
                   width: 100,
                   padding: "8px 12px",
                   fontSize: 14,
-                  border: "1px solid #d1d5db",
+                  border: "1px solid hsl(var(--border))",
                   borderRadius: 6,
                 }}
               />
@@ -3031,7 +3036,7 @@ export default function Prospecting() {
 
           {mode === "equity" && (
             <div>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 4 }}>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "hsl(var(--foreground))", marginBottom: 4 }}>
                 Min Equity ($)
               </label>
               <input
@@ -3043,7 +3048,7 @@ export default function Prospecting() {
                   width: 140,
                   padding: "8px 12px",
                   fontSize: 14,
-                  border: "1px solid #d1d5db",
+                  border: "1px solid hsl(var(--border))",
                   borderRadius: 6,
                 }}
               />
@@ -3053,29 +3058,29 @@ export default function Prospecting() {
           {mode === "radius" && (
             <>
               <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 4 }}>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "hsl(var(--foreground))", marginBottom: 4 }}>
                   Start Date
                 </label>
                 <input
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  style={{ padding: "8px 12px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 6 }}
+                  style={{ padding: "8px 12px", fontSize: 13, border: "1px solid hsl(var(--border))", borderRadius: 6 }}
                 />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 4 }}>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "hsl(var(--foreground))", marginBottom: 4 }}>
                   End Date
                 </label>
                 <input
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  style={{ padding: "8px 12px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 6 }}
+                  style={{ padding: "8px 12px", fontSize: 13, border: "1px solid hsl(var(--border))", borderRadius: 6 }}
                 />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 4 }}>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "hsl(var(--foreground))", marginBottom: 4 }}>
                   Radius (miles)
                 </label>
                 <input
@@ -3086,7 +3091,7 @@ export default function Prospecting() {
                   step="0.1"
                   min="0.1"
                   max="5"
-                  style={{ width: 80, padding: "8px 12px", fontSize: 14, border: "1px solid #d1d5db", borderRadius: 6 }}
+                  style={{ width: 80, padding: "8px 12px", fontSize: 14, border: "1px solid hsl(var(--border))", borderRadius: 6 }}
                 />
               </div>
             </>
@@ -3179,13 +3184,13 @@ export default function Prospecting() {
                   right: 0,
                   width: 340,
                   padding: 16,
-                  background: "#fff",
+                  background: "hsl(var(--card))",
                   borderRadius: 10,
-                  border: "1px solid #e5e7eb",
+                  border: "1px solid hsl(var(--border))",
                   boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
                   zIndex: 50,
                   fontSize: 13,
-                  color: "#374151",
+                  color: "hsl(var(--foreground))",
                   lineHeight: 1.6,
                 }}
               >
@@ -3210,7 +3215,7 @@ export default function Prospecting() {
                     <strong>Export</strong> results as PDF reports or CSV for your CRM
                   </li>
                 </ul>
-                <p style={{ margin: "0 0 4px", fontSize: 12, color: "#6b7280" }}>
+                <p style={{ margin: "0 0 4px", fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
                   First click <strong>Find Properties</strong> to load results, then click{" "}
                   <strong>Prospect with AI</strong> to analyze them.
                 </p>
@@ -3220,11 +3225,11 @@ export default function Prospecting() {
                     style={{
                       padding: "4px 12px",
                       borderRadius: 4,
-                      border: "1px solid #d1d5db",
-                      background: "#f9fafb",
+                      border: "1px solid hsl(var(--border))",
+                      background: "hsl(var(--muted))",
                       fontSize: 12,
                       cursor: "pointer",
-                      color: "#6b7280",
+                      color: "hsl(var(--muted-foreground))",
                     }}
                   >
                     Got it
@@ -3252,7 +3257,7 @@ export default function Prospecting() {
       )}
 
       {isLoading && (
-        <div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>
+        <div style={{ padding: 40, textAlign: "center", color: "hsl(var(--muted-foreground))" }}>
           Scanning property records (multiple pages)...
         </div>
       )}
@@ -3365,7 +3370,7 @@ export default function Prospecting() {
       </div>
 
       {!isLoading && hasSearched && results.length === 0 && investorGroups.length === 0 && (
-        <div style={{ padding: 40, textAlign: "center", color: "#6b7280", background: "#f9fafb", borderRadius: 12 }}>
+        <div style={{ padding: 40, textAlign: "center", color: "hsl(var(--muted-foreground))", background: "hsl(var(--muted))", borderRadius: 12 }}>
           No properties found. Try adjusting your filters.
         </div>
       )}
@@ -3373,7 +3378,7 @@ export default function Prospecting() {
       {/* Investor mode — grouped view */}
       {!isLoading && mode === "investor" && investorGroups.length > 0 && (
         <>
-          <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 12 }}>
+          <div style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", marginBottom: 12 }}>
             {investorGroups.length} multi-property owner{investorGroups.length === 1 ? "" : "s"} found ({results.length}{" "}
             total properties scanned)
           </div>
@@ -3384,7 +3389,7 @@ export default function Prospecting() {
       )}
 
       {!isLoading && hasSearched && mode === "investor" && investorGroups.length === 0 && results.length > 0 && (
-        <div style={{ padding: 40, textAlign: "center", color: "#6b7280", background: "#f9fafb", borderRadius: 12 }}>
+        <div style={{ padding: 40, textAlign: "center", color: "hsl(var(--muted-foreground))", background: "hsl(var(--muted))", borderRadius: 12 }}>
           No investor-owned properties found in this zip code. All {results.length} properties appear to be
           owner-occupied individual owners.
         </div>
@@ -3393,7 +3398,7 @@ export default function Prospecting() {
       {/* Standard list view for all other modes */}
       {!isLoading && mode !== "investor" && results.length > 0 && (
         <>
-          <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 12 }}>
+          <div style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", marginBottom: 12 }}>
             {totalCount.toLocaleString()} propert{totalCount === 1 ? "y" : "ies"} found
           </div>
 
@@ -3409,8 +3414,8 @@ export default function Prospecting() {
                 style={{
                   padding: "8px 16px",
                   borderRadius: 6,
-                  border: "1px solid #d1d5db",
-                  background: "#fff",
+                  border: "1px solid hsl(var(--border))",
+                  background: "hsl(var(--card))",
                   cursor: page <= 1 ? "not-allowed" : "pointer",
                   opacity: page <= 1 ? 0.5 : 1,
                   fontSize: 13,
@@ -3418,7 +3423,7 @@ export default function Prospecting() {
               >
                 Previous
               </button>
-              <span style={{ padding: "8px 12px", fontSize: 13, color: "#6b7280" }}>
+              <span style={{ padding: "8px 12px", fontSize: 13, color: "hsl(var(--muted-foreground))" }}>
                 Page {page} of {totalPages}
               </span>
               <button
@@ -3427,8 +3432,8 @@ export default function Prospecting() {
                 style={{
                   padding: "8px 16px",
                   borderRadius: 6,
-                  border: "1px solid #d1d5db",
-                  background: "#fff",
+                  border: "1px solid hsl(var(--border))",
+                  background: "hsl(var(--card))",
                   cursor: page >= totalPages ? "not-allowed" : "pointer",
                   opacity: page >= totalPages ? 0.5 : 1,
                   fontSize: 13,
@@ -3471,11 +3476,11 @@ export default function Prospecting() {
                   Trestle
                 </span>
               </h3>
-              <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>Recently closed listings from MLS data</div>
+              <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>Recently closed listings from MLS data</div>
             </div>
           </div>
           {mlsLoading && (
-            <div style={{ padding: 20, textAlign: "center", color: "#6b7280" }}>
+            <div style={{ padding: 20, textAlign: "center", color: "hsl(var(--muted-foreground))" }}>
               Searching MLS for closed listings...
             </div>
           )}
@@ -3484,8 +3489,8 @@ export default function Prospecting() {
               style={{
                 padding: 16,
                 textAlign: "center",
-                color: "#9ca3af",
-                background: "#f9fafb",
+                color: "hsl(var(--muted-foreground))",
+                background: "hsl(var(--muted))",
                 borderRadius: 8,
                 fontSize: 13,
               }}
@@ -3495,7 +3500,7 @@ export default function Prospecting() {
           )}
           {!mlsLoading && mlsResults.length > 0 && (
             <>
-              <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}>
+              <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 8 }}>
                 {mlsResults.length} closed MLS listing{mlsResults.length !== 1 ? "s" : ""} found
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -3518,7 +3523,7 @@ export default function Prospecting() {
                       key={(prop._mlsListingKey as string) || idx}
                       onClick={() => setSelectedProperty(prop)}
                       style={{
-                        background: "#fff",
+                        background: "hsl(var(--card))",
                         border: "1px solid #c7d2fe",
                         borderRadius: 10,
                         padding: 16,
@@ -3551,7 +3556,7 @@ export default function Prospecting() {
                           >
                             <div>
                               <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 2 }}>{getAddress(prop)}</div>
-                              <div style={{ fontSize: 13, color: "#6b7280" }}>
+                              <div style={{ fontSize: 13, color: "hsl(var(--muted-foreground))" }}>
                                 {[
                                   beds != null ? `${beds} bed` : null,
                                   baths != null ? `${baths} bath` : null,
@@ -3620,7 +3625,7 @@ export default function Prospecting() {
                               )}
                             </div>
                             {(agent || office) && (
-                              <div style={{ marginTop: 4, color: "#6b7280", fontSize: 11 }}>
+                              <div style={{ marginTop: 4, color: "hsl(var(--muted-foreground))", fontSize: 11 }}>
                                 {agent && <span>Agent: {agent}</span>}
                                 {agent && office && <span> &middot; </span>}
                                 {office && <span>Office: {office}</span>}
@@ -3694,7 +3699,7 @@ export default function Prospecting() {
               <h3 style={{ fontSize: 15, fontWeight: 700, color: "#7c3aed", margin: 0 }}>
                 Nearby Owners — {radiusMiles} mi radius
               </h3>
-              <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>Center: {radiusCenter.address}</div>
+              <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>Center: {radiusCenter.address}</div>
             </div>
             <button
               onClick={() => {
@@ -3703,10 +3708,10 @@ export default function Prospecting() {
               }}
               style={{
                 padding: "4px 12px",
-                background: "#f3f4f6",
-                color: "#6b7280",
+                background: "hsl(var(--muted))",
+                color: "hsl(var(--muted-foreground))",
                 borderRadius: 6,
-                border: "1px solid #e5e7eb",
+                border: "1px solid hsl(var(--border))",
                 fontSize: 12,
                 cursor: "pointer",
               }}
@@ -3715,16 +3720,16 @@ export default function Prospecting() {
             </button>
           </div>
           {radiusLoading && (
-            <div style={{ padding: 20, textAlign: "center", color: "#6b7280" }}>Searching nearby properties...</div>
+            <div style={{ padding: 20, textAlign: "center", color: "hsl(var(--muted-foreground))" }}>Searching nearby properties...</div>
           )}
           {!radiusLoading && radiusResults.length === 0 && (
-            <div style={{ padding: 20, textAlign: "center", color: "#9ca3af", background: "#f9fafb", borderRadius: 8 }}>
+            <div style={{ padding: 20, textAlign: "center", color: "hsl(var(--muted-foreground))", background: "hsl(var(--muted))", borderRadius: 8 }}>
               No nearby properties found.
             </div>
           )}
           {!radiusLoading && radiusResults.length > 0 && (
             <>
-              <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}>
+              <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 8 }}>
                 {radiusResults.length} nearby propert{radiusResults.length === 1 ? "y" : "ies"} found —{" "}
                 {radiusResults.filter((p) => getOwnerName(p)).length} with owner/mortgagor info
               </div>
@@ -3734,8 +3739,8 @@ export default function Prospecting() {
                     key={prop.identifier?.attomId || idx}
                     onClick={() => setSelectedProperty(prop)}
                     style={{
-                      background: "#fff",
-                      border: "1px solid #e5e7eb",
+                      background: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
                       borderRadius: 8,
                       padding: 12,
                       cursor: "pointer",
@@ -3746,7 +3751,7 @@ export default function Prospecting() {
                     onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "none")}
                   >
                     <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 3 }}>{getAddress(prop)}</div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 12, color: "#6b7280" }}>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 12, color: "hsl(var(--muted-foreground))" }}>
                       <span>
                         {getOwnerName(prop)
                           ? `${isOwnerFromMortgage(prop) ? "Mortgagor" : "Owner"}: ${getOwnerName(prop)}`
@@ -3798,7 +3803,7 @@ export default function Prospecting() {
       )}
 
       {!hasSearched && !isLoading && (
-        <div style={{ padding: 40, textAlign: "center", color: "#9ca3af", background: "#f9fafb", borderRadius: 12 }}>
+        <div style={{ padding: 40, textAlign: "center", color: "hsl(var(--muted-foreground))", background: "hsl(var(--muted))", borderRadius: 12 }}>
           <div style={{ fontSize: 32, marginBottom: 8 }}>
             {mode === "absentee" && "\u{1F3E0}"}
             {mode === "equity" && "\u{1F4B0}"}

@@ -160,8 +160,8 @@ export default function AssumableVaPage() {
       <form
         onSubmit={onSearch}
         style={{
-          background: "#fff",
-          border: "1px solid #e5e7eb",
+          background: "hsl(var(--card))",
+          border: "1px solid hsl(var(--border))",
           borderRadius: 10,
           padding: 20,
           marginBottom: 20,
@@ -288,7 +288,7 @@ export default function AssumableVaPage() {
             flexWrap: "wrap",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#374151" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "hsl(var(--foreground))" }}>
             <span>Compare savings against market rate of</span>
             <input
               type="number"
@@ -298,7 +298,7 @@ export default function AssumableVaPage() {
               style={{ ...inputStyle, width: 80, padding: "6px 8px" }}
             />
             <span>%</span>
-            <span style={{ color: "#9ca3af", fontSize: 11, marginLeft: 4 }}>
+            <span style={{ color: "hsl(var(--muted-foreground))", fontSize: 11, marginLeft: 4 }}>
               (used to compute monthly savings on assumed loans)
             </span>
           </div>
@@ -339,12 +339,12 @@ export default function AssumableVaPage() {
       {!results && hasSearched && !loading && !error && (
         <div
           style={{
-            background: "#f9fafb",
+            background: "hsl(var(--muted))",
             border: "1px dashed #d1d5db",
             padding: 32,
             textAlign: "center",
             borderRadius: 8,
-            color: "#6b7280",
+            color: "hsl(var(--muted-foreground))",
           }}
         >
           No results yet — try adjusting filters.
@@ -404,15 +404,15 @@ function ResultsView({ results, marketRate }: { results: SearchResponse; marketR
       {all.length === 0 && (
         <div
           style={{
-            background: "#fff",
-            border: "1px solid #e5e7eb",
+            background: "hsl(var(--card))",
+            border: "1px solid hsl(var(--border))",
             padding: 32,
             textAlign: "center",
             borderRadius: 10,
-            color: "#6b7280",
+            color: "hsl(var(--muted-foreground))",
           }}
         >
-          <div style={{ fontSize: 16, fontWeight: 600, color: "#374151", marginBottom: 4 }}>
+          <div style={{ fontSize: 16, fontWeight: 600, color: "hsl(var(--foreground))", marginBottom: 4 }}>
             No VA assumable listings matched.
           </div>
           <div style={{ fontSize: 13 }}>
@@ -477,7 +477,7 @@ function TierSection({
         }}
       >
         <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0, color: "#061A3A" }}>{title}</h2>
-        <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>{subtitle}</div>
+        <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>{subtitle}</div>
       </div>
       <div
         style={{
@@ -520,8 +520,8 @@ function ListingCard({
   return (
     <div
       style={{
-        background: "#fff",
-        border: "1px solid #e5e7eb",
+        background: "hsl(var(--card))",
+        border: "1px solid hsl(var(--border))",
         borderTop: `3px solid ${accent}`,
         borderRadius: 8,
         padding: 16,
@@ -533,14 +533,14 @@ function ListingCard({
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 15, fontWeight: 700, color: "#061A3A", lineHeight: 1.25 }}>{address}</div>
-          <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>{cityState}</div>
+          <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>{cityState}</div>
         </div>
         <div style={{ textAlign: "right", flexShrink: 0 }}>
           <div style={{ fontSize: 18, fontWeight: 800, color: "#061A3A" }}>{fmt$(listing.ListPrice)}</div>
         </div>
       </div>
 
-      <div style={{ fontSize: 12, color: "#374151", display: "flex", gap: 12, flexWrap: "wrap" }}>
+      <div style={{ fontSize: 12, color: "hsl(var(--foreground))", display: "flex", gap: 12, flexWrap: "wrap" }}>
         <span>
           <strong>{beds}</strong> bd · <strong>{baths}</strong> ba
         </span>
@@ -550,7 +550,7 @@ function ListingCard({
         {listing.YearBuilt && <span>Built {listing.YearBuilt}</span>}
         {listing.PropertySubType && <span>{listing.PropertySubType}</span>}
         {listing.ListingId && (
-          <span style={{ marginLeft: "auto", fontFamily: "JetBrains Mono, monospace", color: "#9ca3af" }}>
+          <span style={{ marginLeft: "auto", fontFamily: "JetBrains Mono, monospace", color: "hsl(var(--muted-foreground))" }}>
             MLS {listing.ListingId}
           </span>
         )}
@@ -595,26 +595,26 @@ function ListingCard({
       {listing.remarksSnippet && (
         <div
           style={{
-            background: "#f9fafb",
+            background: "hsl(var(--muted))",
             borderLeft: "3px solid #C6932E",
             padding: "8px 12px",
             fontSize: 12,
-            color: "#374151",
+            color: "hsl(var(--foreground))",
             lineHeight: 1.5,
             borderRadius: "0 4px 4px 0",
           }}
         >
-          <div style={{ fontSize: 9, fontFamily: "JetBrains Mono, monospace", color: "#9ca3af", letterSpacing: "0.12em", marginBottom: 4 }}>
+          <div style={{ fontSize: 9, fontFamily: "JetBrains Mono, monospace", color: "hsl(var(--muted-foreground))", letterSpacing: "0.12em", marginBottom: 4 }}>
             FROM LISTING REMARKS
           </div>
           {listing.remarksSnippet}
         </div>
       )}
 
-      <div style={{ display: "flex", gap: 8, fontSize: 11, color: "#6b7280", marginTop: "auto" }}>
+      <div style={{ display: "flex", gap: 8, fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: "auto" }}>
         {listing.ListAgentFullName && (
           <span>
-            Listed by <strong style={{ color: "#374151" }}>{listing.ListAgentFullName}</strong>
+            Listed by <strong style={{ color: "hsl(var(--foreground))" }}>{listing.ListAgentFullName}</strong>
             {listing.ListOfficeName && ` · ${listing.ListOfficeName}`}
           </span>
         )}
@@ -644,18 +644,18 @@ function SummaryCard({ label, value, accent, sub }: { label: string; value: stri
   return (
     <div
       style={{
-        background: "#fff",
-        border: "1px solid #e5e7eb",
+        background: "hsl(var(--card))",
+        border: "1px solid hsl(var(--border))",
         borderTop: `3px solid ${accent}`,
         borderRadius: 8,
         padding: "12px 16px",
       }}
     >
-      <div style={{ fontSize: 10, fontFamily: "JetBrains Mono, monospace", color: "#6b7280", letterSpacing: "0.14em", textTransform: "uppercase" }}>
+      <div style={{ fontSize: 10, fontFamily: "JetBrains Mono, monospace", color: "hsl(var(--muted-foreground))", letterSpacing: "0.14em", textTransform: "uppercase" }}>
         {label}
       </div>
       <div style={{ fontSize: 28, fontWeight: 800, color: "#061A3A", lineHeight: 1, marginTop: 4 }}>{value}</div>
-      {sub && <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4, lineHeight: 1.4 }}>{sub}</div>}
+      {sub && <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 4, lineHeight: 1.4 }}>{sub}</div>}
     </div>
   );
 }
@@ -663,7 +663,7 @@ function SummaryCard({ label, value, accent, sub }: { label: string; value: stri
 function FieldGroup({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-      <span style={{ fontSize: 11, fontFamily: "JetBrains Mono, monospace", color: "#6b7280", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+      <span style={{ fontSize: 11, fontFamily: "JetBrains Mono, monospace", color: "hsl(var(--muted-foreground))", letterSpacing: "0.12em", textTransform: "uppercase" }}>
         {label}
       </span>
       {children}
@@ -675,12 +675,12 @@ function EmptyHero() {
   return (
     <div
       style={{
-        background: "#fff",
-        border: "1px solid #e5e7eb",
+        background: "hsl(var(--card))",
+        border: "1px solid hsl(var(--border))",
         borderRadius: 10,
         padding: "48px 36px",
         textAlign: "center",
-        color: "#6b7280",
+        color: "hsl(var(--muted-foreground))",
       }}
     >
       <div style={{ fontSize: 16, fontWeight: 600, color: "#061A3A", marginBottom: 8 }}>
@@ -696,7 +696,7 @@ function EmptyHero() {
         style={{
           fontSize: 11,
           fontFamily: "JetBrains Mono, monospace",
-          color: "#9ca3af",
+          color: "hsl(var(--muted-foreground))",
           letterSpacing: "0.1em",
         }}
       >
@@ -755,8 +755,8 @@ const btnPrimaryStyle: React.CSSProperties = {
 };
 
 const btnSecondaryStyle: React.CSSProperties = {
-  background: "#fff",
-  color: "#374151",
+  background: "hsl(var(--card))",
+  color: "hsl(var(--foreground))",
   border: "1px solid #d1d5db",
   borderRadius: 6,
   padding: "10px 20px",
@@ -767,9 +767,9 @@ const btnSecondaryStyle: React.CSSProperties = {
 };
 
 const modeTabStyle: React.CSSProperties = {
-  background: "#f9fafb",
-  color: "#6b7280",
-  border: "1px solid #e5e7eb",
+  background: "hsl(var(--muted))",
+  color: "hsl(var(--muted-foreground))",
+  border: "1px solid hsl(var(--border))",
   borderRadius: 6,
   padding: "8px 16px",
   fontSize: 12,

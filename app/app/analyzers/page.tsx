@@ -36,7 +36,7 @@ export default async function AnalyzersPage() {
       description:
         "Calculate monthly payments with P&I, taxes, insurance, HOA, and PMI. Includes amortization schedule and loan comparison.",
       footerText: "PITI breakdown • Excel export",
-      background: "linear-gradient(135deg, #ecfdf5 0%, #ffffff 100%)",
+      background: "linear-gradient(135deg, rgba(16, 185, 129, 0.10) 0%, hsl(var(--card)) 100%)",
     },
     {
       id: "cash-to-close",
@@ -46,7 +46,7 @@ export default async function AnalyzersPage() {
       description:
         "Estimate total cash needed at closing including down payment, closing costs, prepaids, escrows, and credits.",
       footerText: "Range estimates • PDF export",
-      background: "linear-gradient(135deg, #ede9fe 0%, #ffffff 100%)",
+      background: "linear-gradient(135deg, rgba(139, 92, 246, 0.10) 0%, hsl(var(--card)) 100%)",
     },
     {
       id: "commission-split",
@@ -55,7 +55,7 @@ export default async function AnalyzersPage() {
       title: "Commission Split Calculator",
       description: "Calculate agent net and brokerage gross after splits, caps, transaction fees, and team overrides.",
       footerText: "Cap tracking • Split presets",
-      background: "linear-gradient(135deg, #dbeafe 0%, #ffffff 100%)",
+      background: "linear-gradient(135deg, rgba(59, 130, 246, 0.10) 0%, hsl(var(--card)) 100%)",
     },
     {
       id: "net-sheet",
@@ -65,7 +65,7 @@ export default async function AnalyzersPage() {
       description:
         "Estimate seller proceeds after commissions, closing costs, mortgage payoff, and concessions. PDF and Excel export.",
       footerText: "Proceeds estimate • Itemized costs",
-      background: "linear-gradient(135deg, #fef3c7 0%, #ffffff 100%)",
+      background: "linear-gradient(135deg, rgba(245, 158, 11, 0.10) 0%, hsl(var(--card)) 100%)",
     },
     {
       id: "compare",
@@ -86,7 +86,7 @@ export default async function AnalyzersPage() {
       description:
         "Quick rental analysis with NOI, cap rate, cash-on-cash return, DSCR, and monthly cash flow breakdown.",
       footerText: "DSCR • Cash flow • GRM",
-      background: "linear-gradient(135deg, #d1fae5 0%, #ffffff 100%)",
+      background: "linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, hsl(var(--card)) 100%)",
     },
     {
       id: "quick-flip",
@@ -95,7 +95,7 @@ export default async function AnalyzersPage() {
       title: "Short-Term Rental Analyzer (VRBO/Airbnb)",
       description: "Airbnb & VRBO cash flow analysis with STR taxes, expense breakdown, and multi-year equity projections.",
       footerText: "STR taxes . Occupancy analysis",
-      background: "linear-gradient(135deg, #e0f2fe 0%, #ffffff 100%)",
+      background: "linear-gradient(135deg, rgba(14, 165, 233, 0.10) 0%, hsl(var(--card)) 100%)",
     },
     {
       id: "wholesale-mao",
@@ -105,7 +105,7 @@ export default async function AnalyzersPage() {
       description:
         "Calculate maximum allowable offer and suggested offer range for wholesale deals with investor margin analysis.",
       footerText: "Offer range • Investor ROI",
-      background: "linear-gradient(135deg, #fef9c3 0%, #ffffff 100%)",
+      background: "linear-gradient(135deg, rgba(234, 179, 8, 0.10) 0%, hsl(var(--card)) 100%)",
     },
     {
       id: "flip",
@@ -117,7 +117,7 @@ export default async function AnalyzersPage() {
       footerCount: flipCount || 0,
       footerCountLabel: "saved analyses",
       footerText: "",
-      background: "linear-gradient(135deg, #fff7ed 0%, #ffffff 100%)",
+      background: "linear-gradient(135deg, rgba(249, 115, 22, 0.10) 0%, hsl(var(--card)) 100%)",
     },
     {
       id: "brrr",
@@ -129,7 +129,7 @@ export default async function AnalyzersPage() {
       footerCount: brrrCount || 0,
       footerCountLabel: "saved analyses",
       footerText: "",
-      background: "linear-gradient(135deg, #f0f9ff 0%, #ffffff 100%)",
+      background: "linear-gradient(135deg, rgba(14, 165, 233, 0.08) 0%, hsl(var(--card)) 100%)",
     },
     {
       id: "1031",

@@ -116,7 +116,7 @@ export default function ErrorLogsClient({ errorLogs }: { errorLogs: ErrorLog[] }
         <div
           style={{
             padding: 20,
-            background: "white",
+            background: "hsl(var(--card))",
             borderRadius: 8,
             border: "1px solid hsl(var(--border))",
           }}
@@ -128,7 +128,7 @@ export default function ErrorLogsClient({ errorLogs }: { errorLogs: ErrorLog[] }
         <div
           style={{
             padding: 20,
-            background: "white",
+            background: "hsl(var(--card))",
             borderRadius: 8,
             border: "1px solid hsl(var(--border))",
           }}
@@ -140,7 +140,7 @@ export default function ErrorLogsClient({ errorLogs }: { errorLogs: ErrorLog[] }
         <div
           style={{
             padding: 20,
-            background: "white",
+            background: "hsl(var(--card))",
             borderRadius: 8,
             border: "1px solid hsl(var(--border))",
           }}
@@ -152,7 +152,7 @@ export default function ErrorLogsClient({ errorLogs }: { errorLogs: ErrorLog[] }
         <div
           style={{
             padding: 20,
-            background: "white",
+            background: "hsl(var(--card))",
             borderRadius: 8,
             border: "1px solid hsl(var(--border))",
           }}
@@ -165,7 +165,7 @@ export default function ErrorLogsClient({ errorLogs }: { errorLogs: ErrorLog[] }
       {/* Filters and Search */}
       <div
         style={{
-          background: "white",
+          background: "hsl(var(--card))",
           borderRadius: 8,
           padding: 20,
           border: "1px solid hsl(var(--border))",
@@ -204,7 +204,7 @@ export default function ErrorLogsClient({ errorLogs }: { errorLogs: ErrorLog[] }
               borderRadius: 6,
               border: "1px solid hsl(var(--border))",
               fontSize: 14,
-              background: "white",
+              background: "hsl(var(--card))",
             }}
           >
             <option value="all">All Severities</option>
@@ -241,7 +241,7 @@ export default function ErrorLogsClient({ errorLogs }: { errorLogs: ErrorLog[] }
       {/* Error Logs Table */}
       <div
         style={{
-          background: "white",
+          background: "hsl(var(--card))",
           borderRadius: 8,
           border: "1px solid hsl(var(--border))",
           overflow: "hidden",
@@ -424,7 +424,7 @@ export default function ErrorLogsClient({ errorLogs }: { errorLogs: ErrorLog[] }
                               <div
                                 style={{
                                   padding: 12,
-                                  background: "white",
+                                  background: "hsl(var(--card))",
                                   borderRadius: 6,
                                   fontSize: 14,
                                   fontFamily: "monospace",
@@ -451,7 +451,7 @@ export default function ErrorLogsClient({ errorLogs }: { errorLogs: ErrorLog[] }
                                 <div
                                   style={{
                                     padding: 12,
-                                    background: "white",
+                                    background: "hsl(var(--card))",
                                     borderRadius: 6,
                                     fontSize: 14,
                                     fontFamily: "monospace",
@@ -477,7 +477,7 @@ export default function ErrorLogsClient({ errorLogs }: { errorLogs: ErrorLog[] }
                                 <div
                                   style={{
                                     padding: 12,
-                                    background: "white",
+                                    background: "hsl(var(--card))",
                                     borderRadius: 6,
                                     fontSize: 12,
                                     fontFamily: "monospace",
@@ -507,7 +507,7 @@ export default function ErrorLogsClient({ errorLogs }: { errorLogs: ErrorLog[] }
                                 <div
                                   style={{
                                     padding: 12,
-                                    background: "white",
+                                    background: "hsl(var(--card))",
                                     borderRadius: 6,
                                     fontSize: 12,
                                     fontFamily: "monospace",
@@ -533,7 +533,7 @@ export default function ErrorLogsClient({ errorLogs }: { errorLogs: ErrorLog[] }
                               <div
                                 style={{
                                   padding: 12,
-                                  background: "white",
+                                  background: "hsl(var(--card))",
                                   borderRadius: 6,
                                   fontSize: 14,
                                 }}

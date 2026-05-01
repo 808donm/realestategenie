@@ -312,13 +312,13 @@ export default function FarmClient({ trestleConnected }: { trestleConnected: boo
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-6 border-b border-gray-200">
+      <div className="flex gap-1 mb-6 border-b border-border">
         {(["search", "farms", "alerts"] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              tab === t ? "border-indigo-600 text-indigo-600" : "border-transparent text-gray-500 hover:text-gray-700"
+              tab === t ? "border-indigo-600 text-indigo-600" : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
             {t === "search" ? "Search" : t === "farms" ? "My Farm Areas" : "Alerts"}
@@ -334,11 +334,11 @@ export default function FarmClient({ trestleConnected }: { trestleConnected: boo
       {/* ── SEARCH TAB ─────────────────────────────────────────────── */}
       {tab === "search" && (
         <div>
-          <form onSubmit={searchFarm} className="bg-white rounded-xl border border-gray-200 p-5 mb-6">
+          <form onSubmit={searchFarm} className="bg-card rounded-xl border border-border p-5 mb-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-4">
               {/* Search Type */}
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Search By</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">Search By</label>
                 <select
                   value={searchType}
                   onChange={(e) => setSearchType(e.target.value as any)}
@@ -352,7 +352,7 @@ export default function FarmClient({ trestleConnected }: { trestleConnected: boo
               {/* Location input */}
               {searchType === "zip" ? (
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Zip Codes</label>
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">Zip Codes</label>
                   <input
                     type="text"
                     value={postalCodes}
@@ -363,7 +363,7 @@ export default function FarmClient({ trestleConnected }: { trestleConnected: boo
                 </div>
               ) : (
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">TMK Prefix</label>
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">TMK Prefix</label>
                   <input
                     type="text"
                     value={tmkPrefix}
@@ -376,7 +376,7 @@ export default function FarmClient({ trestleConnected }: { trestleConnected: boo
 
               {/* Price Range */}
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Price Range</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">Price Range</label>
                 <div className="flex gap-1">
                   <input
                     type="number"
@@ -397,7 +397,7 @@ export default function FarmClient({ trestleConnected }: { trestleConnected: boo
 
               {/* Property Type */}
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Property Type</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">Property Type</label>
                 <select
                   value={propertyType}
                   onChange={(e) => setPropertyType(e.target.value)}
@@ -415,7 +415,7 @@ export default function FarmClient({ trestleConnected }: { trestleConnected: boo
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Min Beds</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">Min Beds</label>
                 <input
                   type="number"
                   value={minBeds}
@@ -425,7 +425,7 @@ export default function FarmClient({ trestleConnected }: { trestleConnected: boo
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Min Days on Market</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">Min Days on Market</label>
                 <input
                   type="number"
                   value={minDOM}
@@ -435,7 +435,7 @@ export default function FarmClient({ trestleConnected }: { trestleConnected: boo
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Sort By</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">Sort By</label>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
@@ -462,7 +462,7 @@ export default function FarmClient({ trestleConnected }: { trestleConnected: boo
           {/* Results */}
           {listings.length > 0 && (
             <div className="mb-4 flex items-center justify-between">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-muted-foreground">
                 {totalCount} listing{totalCount !== 1 ? "s" : ""} found
               </p>
               <button
@@ -488,11 +488,11 @@ export default function FarmClient({ trestleConnected }: { trestleConnected: boo
           {/* Save Farm Area Modal */}
           {showCreateForm && (
             <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-              <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6">
+              <div className="bg-card rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6">
                 <h2 className="text-lg font-bold mb-4">Save Farm Area & Configure Alerts</h2>
 
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Farm Area Name</label>
+                  <label className="block text-sm font-medium text-foreground mb-1">Farm Area Name</label>
                   <input
                     type="text"
                     value={farmName}
@@ -504,7 +504,7 @@ export default function FarmClient({ trestleConnected }: { trestleConnected: boo
 
                 <div className="mb-4">
                   <div className="flex items-center justify-between mb-2">
-                    <label className="text-sm font-medium text-gray-700">Watch Rules</label>
+                    <label className="text-sm font-medium text-foreground">Watch Rules</label>
                     <button onClick={addRule} className="text-xs text-indigo-600 font-medium hover:text-indigo-700">
                       + Add Rule
                     </button>
@@ -517,7 +517,7 @@ export default function FarmClient({ trestleConnected }: { trestleConnected: boo
                   )}
 
                   {newRules.map((rule, idx) => (
-                    <div key={idx} className="border border-gray-200 rounded-lg p-3 mb-2">
+                    <div key={idx} className="border border-border rounded-lg p-3 mb-2">
                       <div className="flex justify-between items-start mb-2">
                         <select
                           value={rule.trigger_type}
@@ -537,7 +537,7 @@ export default function FarmClient({ trestleConnected }: { trestleConnected: boo
 
                       {rule.trigger_type !== "new_listing" && rule.trigger_type !== "status_change" && (
                         <div className="mb-2">
-                          <label className="block text-xs text-gray-500 mb-1">
+                          <label className="block text-xs text-muted-foreground mb-1">
                             {rule.trigger_type === "dom_threshold"
                               ? "Days"
                               : rule.trigger_type === "price_drop_amount"
@@ -555,7 +555,7 @@ export default function FarmClient({ trestleConnected }: { trestleConnected: boo
 
                       {rule.trigger_type === "status_change" && (
                         <div className="mb-2">
-                          <label className="block text-xs text-gray-500 mb-1">Trigger on</label>
+                          <label className="block text-xs text-muted-foreground mb-1">Trigger on</label>
                           <div className="flex flex-wrap gap-2">
                             {["Expired", "Withdrawn", "Canceled", "Active"].map((s) => (
                               <label key={s} className="flex items-center gap-1 text-xs">
@@ -612,7 +612,7 @@ export default function FarmClient({ trestleConnected }: { trestleConnected: boo
                       setShowCreateForm(false);
                       setNewRules([]);
                     }}
-                    className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
+                    className="px-4 py-2 text-sm text-muted-foreground hover:text-gray-800"
                   >
                     Cancel
                   </button>
@@ -641,11 +641,11 @@ export default function FarmClient({ trestleConnected }: { trestleConnected: boo
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {farmAreas.map((farm) => (
-                <div key={farm.id} className="bg-white border border-gray-200 rounded-xl p-5">
+                <div key={farm.id} className="bg-card border border-border rounded-xl p-5">
                   <div className="flex items-start justify-between mb-3">
                     <div>
                       <h3 className="font-bold text-lg">{farm.name}</h3>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-muted-foreground">
                         {farm.search_type === "zip" && `Zip: ${farm.postal_codes?.join(", ")}`}
                         {farm.search_type === "tmk" && `TMK: ${farm.tmk_prefix}`}
                         {farm.search_type === "radius" && `Radius: ${farm.radius_miles} mi`}
@@ -661,7 +661,7 @@ export default function FarmClient({ trestleConnected }: { trestleConnected: boo
                   {/* Watch Rules Summary */}
                   {farm.mls_watch_rules.length > 0 ? (
                     <div className="mb-3">
-                      <p className="text-xs font-medium text-gray-500 mb-1">Watch Rules:</p>
+                      <p className="text-xs font-medium text-muted-foreground mb-1">Watch Rules:</p>
                       <div className="flex flex-wrap gap-1">
                         {farm.mls_watch_rules.map((rule) => (
                           <span
@@ -680,20 +680,20 @@ export default function FarmClient({ trestleConnected }: { trestleConnected: boo
                   {/* Filters Summary */}
                   <div className="flex flex-wrap gap-1 mb-3">
                     {farm.min_price && (
-                      <span className="text-xs bg-gray-100 px-2 py-0.5 rounded">
+                      <span className="text-xs bg-muted px-2 py-0.5 rounded">
                         ${(farm.min_price / 1000).toFixed(0)}k+
                       </span>
                     )}
                     {farm.max_price && (
-                      <span className="text-xs bg-gray-100 px-2 py-0.5 rounded">
+                      <span className="text-xs bg-muted px-2 py-0.5 rounded">
                         ${(farm.max_price / 1000).toFixed(0)}k max
                       </span>
                     )}
                     {farm.min_beds && (
-                      <span className="text-xs bg-gray-100 px-2 py-0.5 rounded">{farm.min_beds}+ beds</span>
+                      <span className="text-xs bg-muted px-2 py-0.5 rounded">{farm.min_beds}+ beds</span>
                     )}
                     {farm.property_types?.length > 0 && (
-                      <span className="text-xs bg-gray-100 px-2 py-0.5 rounded">{farm.property_types[0]}</span>
+                      <span className="text-xs bg-muted px-2 py-0.5 rounded">{farm.property_types[0]}</span>
                     )}
                   </div>
 
@@ -745,15 +745,15 @@ export default function FarmClient({ trestleConnected }: { trestleConnected: boo
               {alerts.map((alert) => (
                 <div
                   key={alert.id}
-                  className={`bg-white border rounded-xl p-4 flex items-start gap-4 ${
-                    alert.status === "new" ? "border-indigo-300 bg-indigo-50/30" : "border-gray-200"
+                  className={`bg-card border rounded-xl p-4 flex items-start gap-4 ${
+                    alert.status === "new" ? "border-indigo-300 bg-indigo-50/30" : "border-border"
                   }`}
                 >
                   <div className="flex-shrink-0 mt-0.5">
                     <AlertIcon type={alert.alert_type} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium ${alert.status === "new" ? "text-gray-900" : "text-gray-600"}`}>
+                    <p className={`text-sm font-medium ${alert.status === "new" ? "text-foreground" : "text-muted-foreground"}`}>
                       {alert.alert_title}
                     </p>
                     <p className="text-xs text-gray-400 mt-0.5">
@@ -771,7 +771,7 @@ export default function FarmClient({ trestleConnected }: { trestleConnected: boo
                     {alert.status === "new" && (
                       <button
                         onClick={() => updateAlertStatus([alert.id], "viewed")}
-                        className="text-xs text-gray-400 hover:text-gray-600 px-2 py-1"
+                        className="text-xs text-gray-400 hover:text-muted-foreground px-2 py-1"
                         title="Mark as read"
                       >
                         Read
@@ -806,9 +806,9 @@ function ListingCard({ listing }: { listing: MlsListing }) {
   const photoUrl = listing.Media?.[0]?.MediaURL;
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+    <div className="bg-card border border-border rounded-xl overflow-hidden">
       {photoUrl && (
-        <div className="h-40 bg-gray-100 overflow-hidden">
+        <div className="h-40 bg-muted overflow-hidden">
           <img src={photoUrl} alt={address} className="w-full h-full object-cover" />
         </div>
       )}
@@ -821,12 +821,12 @@ function ListingCard({ listing }: { listing: MlsListing }) {
             </span>
           )}
         </div>
-        <p className="text-sm text-gray-600 mb-1">{address}</p>
+        <p className="text-sm text-muted-foreground mb-1">{address}</p>
         <p className="text-xs text-gray-400">
           {listing.City}, {listing.PostalCode}
         </p>
 
-        <div className="flex gap-3 mt-2 text-xs text-gray-500">
+        <div className="flex gap-3 mt-2 text-xs text-muted-foreground">
           {listing.BedroomsTotal && <span>{listing.BedroomsTotal} bd</span>}
           {listing.BathroomsTotalInteger && <span>{listing.BathroomsTotalInteger} ba</span>}
           {listing.LivingArea && <span>{listing.LivingArea.toLocaleString()} sqft</span>}
@@ -850,7 +850,7 @@ function ListingCard({ listing }: { listing: MlsListing }) {
               </span>
             )}
             {listing.AssociationFee && (
-              <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
+              <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
                 HOA ${listing.AssociationFee}/mo
               </span>
             )}
@@ -925,7 +925,7 @@ function AlertIcon({ type }: { type: string }) {
 function AlertDetails({ type, details }: { type: string; details: Record<string, any> }) {
   if (type === "price_drop_amount" || type === "price_drop_pct") {
     return (
-      <div className="flex gap-3 mt-1 text-xs text-gray-500">
+      <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
         <span>Was ${details.previousPrice?.toLocaleString()}</span>
         <span>Now ${details.currentPrice?.toLocaleString()}</span>
         {details.totalDropPct && <span>Total drop: {details.totalDropPct}%</span>}
@@ -934,7 +934,7 @@ function AlertDetails({ type, details }: { type: string; details: Record<string,
   }
   if (type === "dom_threshold") {
     return (
-      <p className="text-xs text-gray-500 mt-1">
+      <p className="text-xs text-muted-foreground mt-1">
         {details.daysOnMarket} days on market (threshold: {details.threshold})
         {details.listPrice && ` · $${details.listPrice.toLocaleString()}`}
       </p>
@@ -942,7 +942,7 @@ function AlertDetails({ type, details }: { type: string; details: Record<string,
   }
   if (type === "status_change") {
     return (
-      <p className="text-xs text-gray-500 mt-1">
+      <p className="text-xs text-muted-foreground mt-1">
         {details.previousStatus} &rarr; {details.newStatus}
         {details.listPrice && ` · $${details.listPrice.toLocaleString()}`}
       </p>
@@ -950,7 +950,7 @@ function AlertDetails({ type, details }: { type: string; details: Record<string,
   }
   if (type === "new_listing") {
     return (
-      <p className="text-xs text-gray-500 mt-1">
+      <p className="text-xs text-muted-foreground mt-1">
         ${details.listPrice?.toLocaleString()}
         {details.beds && ` · ${details.beds} bd`}
         {details.baths && ` ${details.baths} ba`}

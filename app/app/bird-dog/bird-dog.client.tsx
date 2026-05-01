@@ -188,7 +188,7 @@ export function BirdDogPage() {
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           {view !== "searches" && (
-            <button onClick={() => setView("searches")} style={{ padding: "8px 16px", background: "#f3f4f6", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 13, cursor: "pointer" }}>
+            <button onClick={() => setView("searches")} style={{ padding: "8px 16px", background: "hsl(var(--muted))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 13, cursor: "pointer" }}>
               Back to Searches
             </button>
           )}
@@ -202,17 +202,17 @@ export function BirdDogPage() {
 
       {/* ── CREATE SEARCH FORM ── */}
       {view === "create" && (
-        <div style={{ background: "white", border: "1px solid #e5e7eb", borderRadius: 12, padding: 24 }}>
+        <div style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, padding: 24 }}>
           <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 16 }}>Create Bird Dog Search</h2>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
             <div>
               <label style={{ fontSize: 12, fontWeight: 600, color: "#374151", display: "block", marginBottom: 4 }}>Search Name</label>
-              <input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="e.g., Hawaii Kai Absentee Owners" style={{ width: "100%", padding: "8px 12px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }} />
+              <input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="e.g., Hawaii Kai Absentee Owners" style={{ width: "100%", padding: "8px 12px", border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 14 }} />
             </div>
             <div>
               <label style={{ fontSize: 12, fontWeight: 600, color: "#374151", display: "block", marginBottom: 4 }}>ZIP Code</label>
-              <input value={formZip} onChange={(e) => setFormZip(e.target.value)} placeholder="96825" style={{ width: "100%", padding: "8px 12px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }} />
+              <input value={formZip} onChange={(e) => setFormZip(e.target.value)} placeholder="96825" style={{ width: "100%", padding: "8px 12px", border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 14 }} />
             </div>
           </div>
 
@@ -238,7 +238,7 @@ export function BirdDogPage() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 20 }}>
             <div>
               <label style={{ fontSize: 12, fontWeight: 600, color: "#374151", display: "block", marginBottom: 4 }}>Schedule</label>
-              <select value={formSchedule} onChange={(e) => setFormSchedule(e.target.value)} style={{ width: "100%", padding: "8px 12px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}>
+              <select value={formSchedule} onChange={(e) => setFormSchedule(e.target.value)} style={{ width: "100%", padding: "8px 12px", border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 14 }}>
                 <option value="daily">Daily</option>
                 <option value="weekly">Weekly</option>
                 <option value="monthly">Monthly</option>
@@ -246,7 +246,7 @@ export function BirdDogPage() {
             </div>
             <div>
               <label style={{ fontSize: 12, fontWeight: 600, color: "#374151", display: "block", marginBottom: 4 }}>Property Type</label>
-              <select value={formPropertyType} onChange={(e) => setFormPropertyType(e.target.value)} style={{ width: "100%", padding: "8px 12px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}>
+              <select value={formPropertyType} onChange={(e) => setFormPropertyType(e.target.value)} style={{ width: "100%", padding: "8px 12px", border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 14 }}>
                 <option value="">All Types</option>
                 <option value="SFR">Single Family</option>
                 <option value="CONDO">Condo</option>
@@ -256,7 +256,7 @@ export function BirdDogPage() {
             </div>
             <div>
               <label style={{ fontSize: 12, fontWeight: 600, color: "#374151", display: "block", marginBottom: 4 }}>Min Equity %</label>
-              <input value={formEquityMin} onChange={(e) => setFormEquityMin(e.target.value)} placeholder="e.g., 50" type="number" style={{ width: "100%", padding: "8px 12px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }} />
+              <input value={formEquityMin} onChange={(e) => setFormEquityMin(e.target.value)} placeholder="e.g., 50" type="number" style={{ width: "100%", padding: "8px 12px", border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 14 }} />
             </div>
           </div>
 
@@ -280,7 +280,7 @@ export function BirdDogPage() {
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {searches.map((s) => (
-                <div key={s.id} style={{ background: "white", border: "1px solid #e5e7eb", borderRadius: 12, padding: 16 }}>
+                <div key={s.id} style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, padding: 16 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
                     <div>
                       <div style={{ fontSize: 16, fontWeight: 700, color: "#111827" }}>{s.name}</div>
@@ -327,7 +327,7 @@ export function BirdDogPage() {
                       if (!confirm("Reset this search? This clears all previous results and re-scans from scratch.")) return;
                       await fetch("/api/bird-dog/searches", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: s.id, action: "reset" }) });
                       fetch("/api/bird-dog/searches").then((r) => r.json()).then((d) => setSearches(d.searches || []));
-                    }} style={{ padding: "6px 14px", background: "#f3f4f6", color: "#6b7280", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13, cursor: "pointer" }}>
+                    }} style={{ padding: "6px 14px", background: "hsl(var(--muted))", color: "#6b7280", border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 13, cursor: "pointer" }}>
                       Reset
                     </button>
                     <button onClick={async () => {
@@ -381,7 +381,7 @@ export function BirdDogPage() {
               {results.map((r) => {
                 const sc = SCORE_COLORS[r.lead_score];
                 return (
-                  <div key={r.id} style={{ background: "white", border: `1px solid ${sc.border}`, borderLeft: `4px solid ${sc.text}`, borderRadius: 8, padding: 14 }}>
+                  <div key={r.id} style={{ background: "hsl(var(--card))", border: `1px solid ${sc.border}`, borderLeft: `4px solid ${sc.text}`, borderRadius: 8, padding: 14 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
                       <div>
                         <div

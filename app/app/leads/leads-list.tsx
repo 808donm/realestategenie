@@ -196,7 +196,7 @@ export default function LeadsList({ leads, eventMap }: LeadsListProps) {
             onClick={() => setActiveTab(tab.key)}
             style={{
               padding: 16,
-              background: activeTab === tab.key ? tab.color : "#fff",
+              background: activeTab === tab.key ? tab.color : "hsl(var(--card))",
               color: activeTab === tab.key ? "#fff" : tab.color,
               border: `2px solid ${tab.color}`,
               borderRadius: 12,

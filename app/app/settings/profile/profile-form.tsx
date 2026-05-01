@@ -266,7 +266,7 @@ export default function ProfileForm({ agent }: { agent: Agent }) {
                   borderRadius: 8,
                   border: "2px solid hsl(var(--border))",
                   padding: 10,
-                  background: "white",
+                  background: "hsl(var(--card))",
                 }}
               />
               <button

@@ -230,7 +230,7 @@ export default function PropertySearch() {
   return (
     <div>
       {/* Search Bar */}
-      <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 20, marginBottom: 20 }}>
+      <div style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, padding: 20, marginBottom: 20 }}>
         {/* Mode Toggle */}
         <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
           {(["address", "zip", "radius"] as const).map((mode) => (
@@ -242,7 +242,7 @@ export default function PropertySearch() {
                 fontSize: 13,
                 fontWeight: 600,
                 borderRadius: 6,
-                border: "1px solid #e5e7eb",
+                border: "1px solid hsl(var(--border))",
                 cursor: "pointer",
                 background: searchMode === mode ? "#3b82f6" : "#fff",
                 color: searchMode === mode ? "#fff" : "#374151",
@@ -429,7 +429,7 @@ export default function PropertySearch() {
             {/* Row 2: Size, Year, Lot */}
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
               <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                <span style={{ fontSize: 12, color: "#6b7280", whiteSpace: "nowrap" }}>Sqft:</span>
+                <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", whiteSpace: "nowrap" }}>Sqft:</span>
                 <input
                   type="number"
                   value={minUniversalSize}
@@ -437,7 +437,7 @@ export default function PropertySearch() {
                   placeholder="Min"
                   style={{ width: 80, padding: "8px 10px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 6 }}
                 />
-                <span style={{ fontSize: 12, color: "#9ca3af" }}>–</span>
+                <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>–</span>
                 <input
                   type="number"
                   value={maxUniversalSize}
@@ -447,7 +447,7 @@ export default function PropertySearch() {
                 />
               </div>
               <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                <span style={{ fontSize: 12, color: "#6b7280", whiteSpace: "nowrap" }}>Year:</span>
+                <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", whiteSpace: "nowrap" }}>Year:</span>
                 <input
                   type="number"
                   value={minYearBuilt}
@@ -455,7 +455,7 @@ export default function PropertySearch() {
                   placeholder="Min"
                   style={{ width: 75, padding: "8px 10px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 6 }}
                 />
-                <span style={{ fontSize: 12, color: "#9ca3af" }}>–</span>
+                <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>–</span>
                 <input
                   type="number"
                   value={maxYearBuilt}
@@ -465,7 +465,7 @@ export default function PropertySearch() {
                 />
               </div>
               <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                <span style={{ fontSize: 12, color: "#6b7280", whiteSpace: "nowrap" }}>Lot (acres):</span>
+                <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", whiteSpace: "nowrap" }}>Lot (acres):</span>
                 <input
                   type="number"
                   value={minLotSize1}
@@ -474,7 +474,7 @@ export default function PropertySearch() {
                   step="0.1"
                   style={{ width: 70, padding: "8px 10px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 6 }}
                 />
-                <span style={{ fontSize: 12, color: "#9ca3af" }}>–</span>
+                <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>–</span>
                 <input
                   type="number"
                   value={maxLotSize1}
@@ -489,7 +489,7 @@ export default function PropertySearch() {
             {/* Row 3: Valuation Filters */}
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
               <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                <span style={{ fontSize: 12, color: "#6b7280", whiteSpace: "nowrap" }}>AVM:</span>
+                <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", whiteSpace: "nowrap" }}>AVM:</span>
                 <input
                   type="number"
                   value={minAVMValue}
@@ -497,7 +497,7 @@ export default function PropertySearch() {
                   placeholder="Min $"
                   style={{ width: 95, padding: "8px 10px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 6 }}
                 />
-                <span style={{ fontSize: 12, color: "#9ca3af" }}>–</span>
+                <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>–</span>
                 <input
                   type="number"
                   value={maxAVMValue}
@@ -507,7 +507,7 @@ export default function PropertySearch() {
                 />
               </div>
               <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                <span style={{ fontSize: 12, color: "#6b7280", whiteSpace: "nowrap" }}>Sale $:</span>
+                <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", whiteSpace: "nowrap" }}>Sale $:</span>
                 <input
                   type="number"
                   value={minSaleAmt}
@@ -515,7 +515,7 @@ export default function PropertySearch() {
                   placeholder="Min $"
                   style={{ width: 95, padding: "8px 10px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 6 }}
                 />
-                <span style={{ fontSize: 12, color: "#9ca3af" }}>–</span>
+                <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>–</span>
                 <input
                   type="number"
                   value={maxSaleAmt}
@@ -525,7 +525,7 @@ export default function PropertySearch() {
                 />
               </div>
               <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                <span style={{ fontSize: 12, color: "#6b7280", whiteSpace: "nowrap" }}>Assessed:</span>
+                <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", whiteSpace: "nowrap" }}>Assessed:</span>
                 <input
                   type="number"
                   value={minAssdTtlValue}
@@ -533,7 +533,7 @@ export default function PropertySearch() {
                   placeholder="Min $"
                   style={{ width: 95, padding: "8px 10px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 6 }}
                 />
-                <span style={{ fontSize: 12, color: "#9ca3af" }}>–</span>
+                <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>–</span>
                 <input
                   type="number"
                   value={maxAssdTtlValue}
@@ -547,7 +547,7 @@ export default function PropertySearch() {
             {/* Row 4: Market Value & Sale Date */}
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
               <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                <span style={{ fontSize: 12, color: "#6b7280", whiteSpace: "nowrap" }}>Market Value:</span>
+                <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", whiteSpace: "nowrap" }}>Market Value:</span>
                 <input
                   type="number"
                   value={minMktTtlValue}
@@ -555,7 +555,7 @@ export default function PropertySearch() {
                   placeholder="Min $"
                   style={{ width: 95, padding: "8px 10px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 6 }}
                 />
-                <span style={{ fontSize: 12, color: "#9ca3af" }}>–</span>
+                <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>–</span>
                 <input
                   type="number"
                   value={maxMktTtlValue}
@@ -565,7 +565,7 @@ export default function PropertySearch() {
                 />
               </div>
               <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                <span style={{ fontSize: 12, color: "#6b7280", whiteSpace: "nowrap" }}>Sale Date:</span>
+                <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", whiteSpace: "nowrap" }}>Sale Date:</span>
                 <input
                   type="text"
                   value={startSaleSearchDate}
@@ -579,7 +579,7 @@ export default function PropertySearch() {
                     borderRadius: 6,
                   }}
                 />
-                <span style={{ fontSize: 12, color: "#9ca3af" }}>–</span>
+                <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>–</span>
                 <input
                   type="text"
                   value={endSaleSearchDate}
@@ -616,18 +616,18 @@ export default function PropertySearch() {
 
       {/* Results */}
       {isLoading && (
-        <div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>Searching property records...</div>
+        <div style={{ padding: 40, textAlign: "center", color: "hsl(var(--muted-foreground))" }}>Searching property records...</div>
       )}
 
       {!isLoading && hasSearched && results.length === 0 && (
-        <div style={{ padding: 40, textAlign: "center", color: "#6b7280", background: "#f9fafb", borderRadius: 12 }}>
+        <div style={{ padding: 40, textAlign: "center", color: "hsl(var(--muted-foreground))", background: "hsl(var(--muted))", borderRadius: 12 }}>
           No properties found. Try a different search.
         </div>
       )}
 
       {!isLoading && results.length > 0 && (
         <>
-          <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 12 }}>
+          <div style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", marginBottom: 12 }}>
             {totalCount.toLocaleString()} propert{totalCount === 1 ? "y" : "ies"} found
           </div>
 
@@ -665,8 +665,8 @@ export default function PropertySearch() {
                   key={prop.identifier?.attomId || idx}
                   onClick={() => setSelectedProperty(prop)}
                   style={{
-                    background: "#fff",
-                    border: "1px solid #e5e7eb",
+                    background: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
                     borderRadius: 10,
                     padding: 16,
                     cursor: "pointer",
@@ -686,13 +686,13 @@ export default function PropertySearch() {
                   >
                     <div style={{ flex: 1, minWidth: 220 }}>
                       <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>{getAddress(prop)}</div>
-                      <div style={{ fontSize: 13, color: "#6b7280" }}>
+                      <div style={{ fontSize: 13, color: "hsl(var(--muted-foreground))" }}>
                         {getBedBath(prop)}
                         {getSqft(prop) ? ` · ${fmtNum(getSqft(prop))} sqft` : ""}
                         {prop.building?.summary?.yearBuilt ? ` · Built ${prop.building.summary.yearBuilt}` : ""}
                       </div>
                       {owner && (
-                        <div style={{ fontSize: 13, color: "#6b7280", marginTop: 2 }}>
+                        <div style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>
                           Owner: {owner}
                           {absentee && (
                             <span
@@ -715,7 +715,7 @@ export default function PropertySearch() {
                         <div
                           style={{
                             fontSize: 12,
-                            color: "#6b7280",
+                            color: "hsl(var(--muted-foreground))",
                             marginTop: 2,
                             display: "flex",
                             alignItems: "center",
@@ -742,7 +742,7 @@ export default function PropertySearch() {
                       {avmVal != null && (
                         <div>
                           <div
-                            style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}
+                            style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", textTransform: "uppercase", letterSpacing: 0.5 }}
                           >
                             AVM
                           </div>
@@ -752,7 +752,7 @@ export default function PropertySearch() {
                       {lastSale != null && (
                         <div>
                           <div
-                            style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}
+                            style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", textTransform: "uppercase", letterSpacing: 0.5 }}
                           >
                             Last Sale
                           </div>
@@ -762,7 +762,7 @@ export default function PropertySearch() {
                       {assessed != null && !avmVal && (
                         <div>
                           <div
-                            style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 }}
+                            style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", textTransform: "uppercase", letterSpacing: 0.5 }}
                           >
                             Assessed
                           </div>
@@ -786,7 +786,7 @@ export default function PropertySearch() {
                   padding: "8px 16px",
                   borderRadius: 6,
                   border: "1px solid #d1d5db",
-                  background: "#fff",
+                  background: "hsl(var(--card))",
                   cursor: page <= 1 ? "not-allowed" : "pointer",
                   opacity: page <= 1 ? 0.5 : 1,
                   fontSize: 13,
@@ -794,7 +794,7 @@ export default function PropertySearch() {
               >
                 Previous
               </button>
-              <span style={{ padding: "8px 12px", fontSize: 13, color: "#6b7280" }}>
+              <span style={{ padding: "8px 12px", fontSize: 13, color: "hsl(var(--muted-foreground))" }}>
                 Page {page} of {totalPages}
               </span>
               <button
@@ -804,7 +804,7 @@ export default function PropertySearch() {
                   padding: "8px 16px",
                   borderRadius: 6,
                   border: "1px solid #d1d5db",
-                  background: "#fff",
+                  background: "hsl(var(--card))",
                   cursor: page >= totalPages ? "not-allowed" : "pointer",
                   opacity: page >= totalPages ? 0.5 : 1,
                   fontSize: 13,
@@ -818,7 +818,7 @@ export default function PropertySearch() {
       )}
 
       {!hasSearched && !isLoading && (
-        <div style={{ padding: 40, textAlign: "center", color: "#9ca3af", background: "#f9fafb", borderRadius: 12 }}>
+        <div style={{ padding: 40, textAlign: "center", color: "hsl(var(--muted-foreground))", background: "hsl(var(--muted))", borderRadius: 12 }}>
           <div style={{ fontSize: 32, marginBottom: 8 }}>&#x1F3E0;</div>
           <div style={{ fontWeight: 600, marginBottom: 4 }}>Search 155M+ US Property Records</div>
           <div style={{ fontSize: 13 }}>

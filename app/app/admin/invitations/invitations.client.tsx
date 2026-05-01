@@ -103,7 +103,7 @@ export default function InvitationsClient({ invitations, adminId }: { invitation
       {/* Create Invitation Form */}
       <div
         style={{
-          background: "white",
+          background: "hsl(var(--card))",
           borderRadius: 12,
           padding: 24,
           border: "1px solid hsl(var(--border))",
@@ -150,7 +150,7 @@ export default function InvitationsClient({ invitations, adminId }: { invitation
       {pendingInvites.length > 0 && (
         <div
           style={{
-            background: "white",
+            background: "hsl(var(--card))",
             borderRadius: 12,
             border: "1px solid hsl(var(--border))",
             overflow: "hidden",
@@ -178,7 +178,7 @@ export default function InvitationsClient({ invitations, adminId }: { invitation
       {otherInvites.length > 0 && (
         <div
           style={{
-            background: "white",
+            background: "hsl(var(--card))",
             borderRadius: 12,
             border: "1px solid hsl(var(--border))",
             overflow: "hidden",

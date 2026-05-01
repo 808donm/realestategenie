@@ -45,7 +45,7 @@ export default function LeadsBySourceChart({ bySource, byEvent }: LeadsBySourceC
       {/* Leads by Source - Donut Chart */}
       <div
         style={{
-          background: "white",
+          background: "hsl(var(--card))",
           borderRadius: 12,
           padding: 24,
           border: "1px solid #e5e7eb",
@@ -85,7 +85,7 @@ export default function LeadsBySourceChart({ bySource, byEvent }: LeadsBySourceC
       {/* Leads by Open House - Bar Chart */}
       <div
         style={{
-          background: "white",
+          background: "hsl(var(--card))",
           borderRadius: 12,
           padding: 24,
           border: "1px solid #e5e7eb",
